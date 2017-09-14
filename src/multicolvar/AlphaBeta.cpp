@@ -29,17 +29,17 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace multicolvar{
+namespace PLMD {
+namespace multicolvar {
 
-//+PLUMEDOC COLVAR ALPHABETA 
+//+PLUMEDOC COLVAR ALPHABETA
 /*
 Measures a distance including pbc between the instantaneous values of a set of torsional angles and set of reference values.
 
 This colvar calculates the following quantity.
 
 \f[
-s = \frac{1}{2} \sum_i \left[ 1 + \cos( \phi_i - \phi_i^{\textrm{Ref}} ) \right]   
+s = \frac{1}{2} \sum_i \left[ 1 + \cos( \phi_i - \phi_i^{\textrm{Ref}} ) \right]
 \f]
 
 where the \f$\phi_i\f$ values are the instantaneous values for the \ref TORSION angles of interest.
@@ -49,44 +49,44 @@ The \f$\phi_i^{\textrm{Ref}}\f$ values are the user-specified reference values f
 
 The following provides an example of the input for an alpha beta similarity.
 
-\verbatim
+\plumedfile
 ALPHABETA ...
-ATOMS1=168,170,172,188 REFERENCE1=3.14 
-ATOMS2=170,172,188,190 REFERENCE2=3.14 
+ATOMS1=168,170,172,188 REFERENCE1=3.14
+ATOMS2=170,172,188,190 REFERENCE2=3.14
 ATOMS3=188,190,192,230 REFERENCE3=3.14
 LABEL=ab
 ... ALPHABETA
 PRINT ARG=ab FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Because all the reference values are the same we can calculate the same quantity using
 
-\verbatim
+\plumedfile
 ALPHABETA ...
-ATOMS1=168,170,172,188 REFERENCE=3.14 
-ATOMS2=170,172,188,190 
-ATOMS3=188,190,192,230 
+ATOMS1=168,170,172,188 REFERENCE=3.14
+ATOMS2=170,172,188,190
+ATOMS3=188,190,192,230
 LABEL=ab
 ... ALPHABETA
 PRINT ARG=ab FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Writing out the atoms involved in all the torsions in this way can be rather tedious. Thankfully if you are working with protein you
-can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn 
+can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
-\verbatim
+\plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 ALPHABETA ...
 ATOMS1=@phi-3 REFERENCE=3.14
 ATOMS2=@psi-3
 ATOMS3=@phi-4
 LABEL=ab
-... ALPHABETA 
+... ALPHABETA
 PRINT ARG=ab FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
-Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.  
+Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
 Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
 
 
@@ -100,27 +100,27 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit AlphaBeta(const ActionOptions&);
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(AlphaBeta,"ALPHABETA")
 
-void AlphaBeta::registerKeywords( Keywords& keys ){
+void AlphaBeta::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.add("numbered","ATOMS","the atoms involved in each of the alpha-beta variables you wish to calculate. "
-                               "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one alpha-beta values will be "
-                               "calculated for each ATOM keyword you specify (all ATOM keywords should "
-                               "specify the indices of four atoms).  The eventual number of quantities calculated by this "
-                               "action will depend on what functions of the distribution you choose to calculate.");
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one alpha-beta values will be "
+           "calculated for each ATOM keyword you specify (all ATOM keywords should "
+           "specify the indices of four atoms).  The eventual number of quantities calculated by this "
+           "action will depend on what functions of the distribution you choose to calculate.");
   keys.reset_style("ATOMS","atoms");
-  keys.add("numbered","REFERENCE","the reference values for each of the torsional angles.  If you use a single REFERENCE value the " 
-                                  "same reference value is used for all torsions");
+  keys.add("numbered","REFERENCE","the reference values for each of the torsional angles.  If you use a single REFERENCE value the "
+           "same reference value is used for all torsions");
   keys.reset_style("REFERENCE","compulsory");
 }
 
 AlphaBeta::AlphaBeta(const ActionOptions&ao):
-Action(ao),
-MultiColvarBase(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
@@ -129,28 +129,28 @@ MultiColvarBase(ao)
   // Resize target
   target.resize( getFullNumberOfTasks() );
   // Setup central atom indices
-  std::vector<bool> catom_ind(4, false); 
+  std::vector<bool> catom_ind(4, false);
   catom_ind[1]=catom_ind[2]=true;
   setAtomsForCentralAtom( catom_ind );
 
   // Read in reference values
   unsigned ntarget=0;
-  for(unsigned i=0;i<target.size();++i){
-     if( !parseNumbered( "REFERENCE", i+1, target[i] ) ) break;
-     ntarget++; 
+  for(unsigned i=0; i<target.size(); ++i) {
+    if( !parseNumbered( "REFERENCE", i+1, target[i] ) ) break;
+    ntarget++;
   }
-  if( ntarget==0 ){
-      parse("REFERENCE",target[0]);
-      for(unsigned i=1;i<target.size();++i) target[i]=target[0];
-  } else if( ntarget!=target.size() ){
-      error("found wrong number of REFERENCE values");
+  if( ntarget==0 ) {
+    parse("REFERENCE",target[0]);
+    for(unsigned i=1; i<target.size(); ++i) target[i]=target[0];
+  } else if( ntarget!=target.size() ) {
+    error("found wrong number of REFERENCE values");
   }
 
   // And setup the ActionWithVessel
-  if( getNumberOfVessels()==0 ){
-     std::string fake_input;
-     addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
-     readVesselKeywords();  // This makes sure resizing is done
+  if( getNumberOfVessels()==0 ) {
+    std::string fake_input;
+    addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
+    readVesselKeywords();  // This makes sure resizing is done
   }
 
   // And check everything has been read in correctly

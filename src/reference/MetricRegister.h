@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,11 +31,11 @@
 #include "tools/PDB.h"
 #include "ReferenceConfiguration.h"
 
-namespace PLMD{
+namespace PLMD {
 
 class PDB;
 
-class MetricRegister{
+class MetricRegister {
 private:
 /// Pointer to a function which, given the type for a ReferenceConfiguration, creates it
   typedef ReferenceConfiguration*(*creator_pointer)(const ReferenceConfigurationOptions&);
@@ -53,9 +53,9 @@ public:
 /// Create a reference configuration and don't set a point of reference
   template <class T>
   T* create( const std::string& type );
-/// Create a reference configuration and set the point of reference from the pdb 
+/// Create a reference configuration and set the point of reference from the pdb
   template <class T>
-  T* create( const std::string& type , const PDB& pdb );
+  T* create( const std::string& type, const PDB& pdb );
 };
 
 MetricRegister& metricRegister();
@@ -69,13 +69,13 @@ MetricRegister& metricRegister();
   } classname##RegisterMeObject;
 
 template <class T>
-T* MetricRegister::create( const std::string& type ){
+T* MetricRegister::create( const std::string& type ) {
   std::string ftype;
-  if( type.find("MULTI-")!=std::string::npos ){
-     ftype="MULTI";
+  if( type.find("MULTI-")!=std::string::npos ) {
+    ftype="MULTI";
   } else {
-     std::size_t dash=type.find("-FAST"); // We must remove the fast label 
-     ftype=type.substr(0,dash);   
+    std::size_t dash=type.find("-FAST"); // We must remove the fast label
+    ftype=type.substr(0,dash);
   }
   plumed_massert( check(ftype), "metric " + ftype + " does not exist" );
   ReferenceConfigurationOptions ro( type );
@@ -86,16 +86,16 @@ T* MetricRegister::create( const std::string& type ){
 }
 
 template <class T>
-T* MetricRegister::create( const std::string& type, const PDB& pdb ){
+T* MetricRegister::create( const std::string& type, const PDB& pdb ) {
   std::string rtype;
-  if( type.length()==0 ){
-     std::vector<std::string> remarks( pdb.getRemark() );
-     bool found=Tools::parse( remarks, "TYPE", rtype );
-     if(!found) plumed_merror("TYPE not specified in pdb input file");
+  if( type.length()==0 ) {
+    std::vector<std::string> remarks( pdb.getRemark() );
+    bool found=Tools::parse( remarks, "TYPE", rtype );
+    if(!found) plumed_merror("TYPE not specified in pdb input file");
   } else {
-     rtype=type;
-  } 
-  T* confout=create<T>( rtype ); 
+    rtype=type;
+  }
+  T* confout=create<T>( rtype );
   confout->set( pdb );
   return confout;
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,7 +23,7 @@
 #include "VesselRegister.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 class Sum : public FunctionVessel {
 public:
@@ -36,22 +36,22 @@ public:
 
 PLUMED_REGISTER_VESSEL(Sum,"SUM")
 
-void Sum::registerKeywords( Keywords& keys ){
+void Sum::registerKeywords( Keywords& keys ) {
   FunctionVessel::registerKeywords( keys );
 }
 
-void Sum::reserveKeyword( Keywords& keys ){
+void Sum::reserveKeyword( Keywords& keys ) {
   keys.reserve("vessel","SUM","calculate the sum of all the quantities.");
   keys.addOutputComponent("sum","SUM","the sum of values");
 }
 
 Sum::Sum( const VesselOptions& da ) :
-FunctionVessel(da)
+  FunctionVessel(da)
 {
 }
 
-std::string Sum::value_descriptor(){
-  return "the sum of all the values"; 
+std::string Sum::value_descriptor() {
+  return "the sum of all the values";
 }
 
 double Sum::calcTransform( const double& val, double& dv ) const {

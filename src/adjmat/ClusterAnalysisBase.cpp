@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,17 +24,17 @@
 namespace PLMD {
 namespace adjmat {
 
-void ClusterAnalysisBase::registerKeywords( Keywords& keys ){
+void ClusterAnalysisBase::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
 }
 
 ClusterAnalysisBase::ClusterAnalysisBase(const ActionOptions& ao):
-Action(ao),
-MultiColvarBase(ao),
-myfvals(0,0),
-myfatoms( myfvals, this ),
-myclusters(NULL)
+  Action(ao),
+  MultiColvarBase(ao),
+  myfvals(0,0),
+  myfatoms( myfvals, this ),
+  myclusters(NULL)
 {
   // This makes these colvars behave appropriately with dump and analysis
   matsums=usespecies=true; std::vector<AtomNumber> fake_atoms;
@@ -46,14 +46,14 @@ myclusters(NULL)
   // Setup the atom pack
   myfatoms.setNumberOfAtoms( myclusters->getNumberOfNodes() );
   myfvals.getIndices().resize( myclusters->getNumberOfNodes() );
-  for(unsigned i=0;i<myclusters->getNumberOfNodes();++i) myfatoms.setAtomIndex( i, i );
+  for(unsigned i=0; i<myclusters->getNumberOfNodes(); ++i) myfatoms.setAtomIndex( i, i );
 }
 
-void ClusterAnalysisBase::turnOnDerivatives(){ 
+void ClusterAnalysisBase::turnOnDerivatives() {
   // Check for dubious vessels
-  for(unsigned i=0;i<getNumberOfVessels();++i){
-     if( getPntrToVessel(i)->getName()=="MEAN" ) error("MEAN of cluster is not differentiable");
-     if( getPntrToVessel(i)->getName()=="VMEAN" ) error("VMEAN of cluster is not differentiable");  
+  for(unsigned i=0; i<getNumberOfVessels(); ++i) {
+    if( getPntrToVessel(i)->getName()=="MEAN" ) error("MEAN of cluster is not differentiable");
+    if( getPntrToVessel(i)->getName()=="VMEAN" ) error("VMEAN of cluster is not differentiable");
   }
   MultiColvarBase::turnOnDerivatives();
 }
@@ -70,7 +70,7 @@ unsigned ClusterAnalysisBase::getNumberOfClusters() const {
   return myclusters->getNumberOfClusters();
 }
 
-bool ClusterAnalysisBase::isPeriodic(){
+bool ClusterAnalysisBase::isPeriodic() {
   return mybasemulticolvars[0]->isPeriodic();
 }
 

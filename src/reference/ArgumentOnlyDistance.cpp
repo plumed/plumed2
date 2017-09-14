@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,24 +25,24 @@
 namespace PLMD {
 
 ArgumentOnlyDistance::ArgumentOnlyDistance( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro),
-ReferenceArguments(ro)
+  ReferenceConfiguration(ro),
+  ReferenceArguments(ro)
 {
 }
 
-void ArgumentOnlyDistance::read( const PDB& pdb ){
+void ArgumentOnlyDistance::read( const PDB& pdb ) {
   readArgumentsFromPDB( pdb );
 }
 
 double ArgumentOnlyDistance::calculate( const std::vector<Value*>& vals, ReferenceValuePack& myder, const bool& squared ) const {
   std::vector<double> tmparg( vals.size() );
-  for(unsigned i=0;i<vals.size();++i) tmparg[i]=vals[i]->get();
+  for(unsigned i=0; i<vals.size(); ++i) tmparg[i]=vals[i]->get();
   double d=calculateArgumentDistance( vals, tmparg, myder, squared );
   if( !myder.updateComplete() ) myder.updateDynamicLists();
   return d;
 }
 
-double ArgumentOnlyDistance::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, 
+double ArgumentOnlyDistance::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg,
                                    ReferenceValuePack& myder, const bool& squared ) const {
   plumed_dbg_assert( pos.size()==0 );
   double d=calculateArgumentDistance( vals, arg, myder, squared );

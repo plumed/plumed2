@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,7 +24,7 @@
 
 #include "Action.h"
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup MULTIINHERIT
@@ -36,11 +36,11 @@ public:
 /// Constructor
   explicit ActionSetup(const ActionOptions&ao);
 /// Creator of keywords
-  static void registerKeywords( Keywords& keys ); 
+  static void registerKeywords( Keywords& keys );
 /// Do nothing.
-  void calculate(){}
+  void calculate() {}
 /// Do nothing.
-  void apply(){}
+  void apply() {}
 };
 
 }

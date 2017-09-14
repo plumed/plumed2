@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,12 +26,12 @@
 #include <string>
 #include "AtomNumber.h"
 
-namespace PLMD{
+namespace PLMD {
 
 class PDB;
 
 /// This class provides information on various kinds of molecules
-/// for instance the kinds of residues that are in a protein 
+/// for instance the kinds of residues that are in a protein
 /// the atoms involved in the backbone of a particular residue etc
 class MolDataClass {
 public:
@@ -40,7 +40,7 @@ public:
 /// Return the number of atoms in the backbone per residue e.g. 5 for proteins
   static unsigned numberOfAtomsPerResidueInBackbone( const std::string& type );
 /// Return the names of the atoms in the backbone e.g. N, CA, CB, C, O for most protein residues
-  static void getBackboneForResidue( const std::string& type, const unsigned& residuenum, const PDB& mypdb, std::vector<AtomNumber>& atoms ); 
+  static void getBackboneForResidue( const std::string& type, const unsigned& residuenum, const PDB& mypdb, std::vector<AtomNumber>& atoms );
 /// Return true if the residue is a terminal group e.g. ACE, NME for proteins
   static bool isTerminalGroup( const std::string& type, const std::string& residuename );
 /// Used to interpret special symbols - currently phi and psi and omega

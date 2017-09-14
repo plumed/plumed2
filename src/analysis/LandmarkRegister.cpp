@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,46 +22,46 @@
 #include "LandmarkRegister.h"
 #include <iostream>
 
-namespace PLMD{
-namespace analysis{
+namespace PLMD {
+namespace analysis {
 
-LandmarkRegister::~LandmarkRegister(){
-  if(m.size()>0){
+LandmarkRegister::~LandmarkRegister() {
+  if(m.size()>0) {
     std::string names="";
     for(const auto & p : m) names+=p.first+" ";
     std::cerr<<"WARNING: ReferenceConfiguration "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
 }
 
-LandmarkRegister& landmarkRegister(){
+LandmarkRegister& landmarkRegister() {
   static LandmarkRegister ans;
   return ans;
 }
 
-void LandmarkRegister::remove(creator_pointer f){
-  for(auto p=m.begin();p!=m.end();++p){
-    if((*p).second==f){
+void LandmarkRegister::remove(creator_pointer f) {
+  for(auto p=m.begin(); p!=m.end(); ++p) {
+    if((*p).second==f) {
       m.erase(p); break;
     }
   }
 }
 
-void LandmarkRegister::add( std::string type, creator_pointer f ){
+void LandmarkRegister::add( std::string type, creator_pointer f ) {
   plumed_massert(m.count(type)==0,"type has already been registered");
   m.insert(std::pair<std::string,creator_pointer>(type,f));
 }
 
-bool LandmarkRegister::check(std::string type){
+bool LandmarkRegister::check(std::string type) {
   if( m.count(type)>0 ) return true;
   return false;
 }
 
-LandmarkSelectionBase* LandmarkRegister::create( const LandmarkSelectionOptions& lo ){
-  LandmarkSelectionBase* lselect;
-  if( check(lo.words[0]) ){
-     lselect=m[lo.words[0]](lo);
-     lselect->checkRead();
-  } else lselect=NULL;
+std::unique_ptr<LandmarkSelectionBase> LandmarkRegister::create( const LandmarkSelectionOptions& lo ) {
+  std::unique_ptr<LandmarkSelectionBase> lselect;
+  if( check(lo.words[0]) ) {
+    lselect=m[lo.words[0]](lo);
+    lselect->checkRead();
+  }
   return lselect;
 }
 

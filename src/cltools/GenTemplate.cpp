@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,7 +32,7 @@
 using namespace std;
 
 namespace PLMD {
-namespace cltools{
+namespace cltools {
 
 //+PLUMEDOC TOOLS gentemplate
 /*
@@ -48,26 +48,26 @@ The following generates template input for the action DISTANCE.
 \verbatim
 plumed gentemplate --action DISTANCE
 \endverbatim
- 
+
 
 */
 //+ENDPLUMEDOC
 
 class GenTemplate:
-public CLTool
+  public CLTool
 {
 public:
   static void registerKeywords( Keywords& keys );
   explicit GenTemplate(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const{
+  string description()const {
     return "print out a template input for a particular action";
   }
 };
 
 PLUMED_REGISTER_CLTOOL(GenTemplate,"gentemplate")
 
-void GenTemplate::registerKeywords( Keywords& keys ){
+void GenTemplate::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("optional","--action","print the template for this particular action");
   keys.addFlag("--list",false,"print a list of the available actions");
@@ -75,32 +75,32 @@ void GenTemplate::registerKeywords( Keywords& keys ){
 }
 
 GenTemplate::GenTemplate(const CLToolOptions& co ):
-CLTool(co)
+  CLTool(co)
 {
   inputdata=commandline;
 }
 
-int GenTemplate::main(FILE* in, FILE*out,Communicator& pc){
+int GenTemplate::main(FILE* in, FILE*out,Communicator& pc) {
 
- std::string action; 
- bool list_templates=false;
- parseFlag("--list",list_templates);
+  std::string action;
+  bool list_templates=false;
+  parseFlag("--list",list_templates);
 
- if(list_templates) {
-   std::cerr<<actionRegister()<<"\n"; 
-   return 0;
- } else if(parse("--action",action)) {
-   bool include_optional;
-   parseFlag("--include-optional",include_optional);
-   if( !actionRegister().printTemplate(action,include_optional) ){
-       error("there is no registered action named " + action);  
-       return 1; 
-   }
- } else return 1;
+  if(list_templates) {
+    std::cerr<<actionRegister()<<"\n";
+    return 0;
+  } else if(parse("--action",action)) {
+    bool include_optional;
+    parseFlag("--include-optional",include_optional);
+    if( !actionRegister().printTemplate(action,include_optional) ) {
+      error("there is no registered action named " + action);
+      return 1;
+    }
+  } else return 1;
 
 
 
- return 0;
+  return 0;
 }
 }
 

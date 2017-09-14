@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,8 +23,8 @@
 #include "VesselRegister.h"
 #include "ShortcutVessel.h"
 
-namespace PLMD{
-namespace vesselbase{
+namespace PLMD {
+namespace vesselbase {
 
 class Histogram : public ShortcutVessel {
 public:
@@ -35,25 +35,28 @@ public:
 
 PLUMED_REGISTER_VESSEL(Histogram,"HISTOGRAM")
 
-void Histogram::registerKeywords( Keywords& keys ){
+void Histogram::registerKeywords( Keywords& keys ) {
   ShortcutVessel::registerKeywords( keys );
   HistogramBead::registerKeywords( keys );
   keys.add("compulsory","NBINS","The number of equal width bins you want to divide the range into");
-  keys.addFlag("NORM",false,"calculate the fraction of values rather than the number"); 
+  keys.addFlag("NORM",false,"calculate the fraction of values rather than the number");
+  keys.add("compulsory","COMPONENT","1","the component of the vector for which to calculate this quantity");
 }
 
-void Histogram::reserveKeyword( Keywords& keys ){
+void Histogram::reserveKeyword( Keywords& keys ) {
   keys.reserve("vessel","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
-                                    "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
+               "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
 }
 
 Histogram::Histogram( const VesselOptions& da ):
-ShortcutVessel(da)
+  ShortcutVessel(da)
 {
   bool norm; parseFlag("NORM",norm); std::string normstr="";
   if(norm) normstr=" NORM";
+  std::string compstr; parse("COMPONENT",compstr);
+  normstr+=" COMPONENT=" + compstr;
   std::vector<std::string> bins; HistogramBead::generateBins( getAllInput(), bins );
-  for(unsigned i=0;i<bins.size();++i) addVessel("BETWEEN",bins[i] + normstr);
+  for(unsigned i=0; i<bins.size(); ++i) addVessel("BETWEEN",bins[i] + normstr);
 }
 
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,42 +30,42 @@
 #include <map>
 #include <utility>
 
-namespace PLMD{
+namespace PLMD {
 
 class PDB;
 class Pbc;
 
 /// A class that implements ERMSD calculations
 class ERMSD {
-     //std::map< std::pair <unsigned,unsigned> , double> targets;
-     //unsigned natoms;
-     std::vector<Vector4d> reference_mat;
-     unsigned natoms;
-     unsigned nresidues;
-     std::vector<std::pair <unsigned,unsigned> > pairs;
-     double cutoff;
+  //std::map< std::pair <unsigned,unsigned> , double> targets;
+  //unsigned natoms;
+  std::vector<Vector4d> reference_mat;
+  unsigned natoms;
+  unsigned nresidues;
+  std::vector<std::pair <unsigned,unsigned> > pairs;
+  double cutoff;
 
-  public:
+public:
 /// Constructor
-     ERMSD(): natoms(0),nresidues(0), cutoff(0.0) {}
+  ERMSD(): natoms(0),nresidues(0), cutoff(0.0) {}
 
 /// clear the structure
-     void clear();
+  void clear();
 
-     bool inPair(unsigned i, unsigned j);
+  bool inPair(unsigned i, unsigned j);
 
 /// set reference coordinates
-     void setReference(const std::vector<Vector> & reference, const std::vector<unsigned> & pairs_vec,double mycutoff=0.24);
+  void setReference(const std::vector<Vector> & reference, const std::vector<unsigned> & pairs_vec,double mycutoff=0.24);
 
-     void calcMat(const std::vector<Vector> & positions, const Pbc& pbc,std::vector<Vector4d> &mat,std::vector<TensorGeneric<4,3> > & Gderivatives);
+  void calcMat(const std::vector<Vector> & positions, const Pbc& pbc,std::vector<Vector4d> &mat,std::vector<TensorGeneric<4,3> > & Gderivatives);
 
 /// Compute ermsd ( no pbc )
 //  double calculate(const std::vector<Vector> & positions,
 //                   std::vector<Vector> &derivatives, Tensor& virial) const ;
 /// Compute ermsd ( with pbc )
-     double calculate(const std::vector<Vector>& positions, const Pbc& pbc,std::vector<Vector> &derivatives, Tensor& virial);
+  double calculate(const std::vector<Vector>& positions, const Pbc& pbc,std::vector<Vector> &derivatives, Tensor& virial);
 };
-     
+
 }
 
 #endif

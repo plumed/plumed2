@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,18 +31,18 @@ namespace secondarystructure {
 /*
 Probe the parallel beta sheet content of your protein structure.
 
-Two protein segments containing three continguous residues can form a parallel beta sheet. 
-Although if the two segments are part of the same protein chain they must be separated by 
-a minimum of 3 residues to make room for the turn. This colvar thus generates the set of 
-all possible six residue sections that could conceivably form a parallel beta sheet 
+Two protein segments containing three continguous residues can form a parallel beta sheet.
+Although if the two segments are part of the same protein chain they must be separated by
+a minimum of 3 residues to make room for the turn. This colvar thus generates the set of
+all possible six residue sections that could conceivably form a parallel beta sheet
 and calculates the RMSD distance between the configuration in which the residues find themselves
-and an idealized parallel beta sheet structure. These distances can be calculated by either 
+and an idealized parallel beta sheet structure. These distances can be calculated by either
 aligning the instantaneous structure with the reference structure and measuring each
 atomic displacement or by calculating differences between the set of interatomic
-distances in the reference and instantaneous structures. 
+distances in the reference and instantaneous structures.
 
-This colvar is based on the following reference \cite pietrucci09jctc.  The authors of 
-this paper use the set of distances from the parallel beta sheet configurations to measure 
+This colvar is based on the following reference \cite pietrucci09jctc.  The authors of
+this paper use the set of distances from the parallel beta sheet configurations to measure
 the number of segments whose configuration resembles a parallel beta sheet. This is done by calculating
 the following sum of functions of the rmsd distances:
 
@@ -50,31 +50,30 @@ the following sum of functions of the rmsd distances:
 s = \sum_i \frac{ 1 - \left(\frac{r_i-d_0}{r_0}\right)^n } { 1 - \left(\frac{r_i-d_0}{r_0}\right)^m }
 \f]
 
-where the sum runs over all possible segments of parallel beta sheet.  By default the 
+where the sum runs over all possible segments of parallel beta sheet.  By default the
 NN, MM and D_0 parameters are set equal to those used in \cite pietrucci09jctc.  The R_0
 parameter must be set by the user - the value used in \cite pietrucci09jctc was 0.08 nm.
 
 If you change the function in the above sum you can calculate quantities such as the average
-distance from a structure composed of only parallel beta sheets or the distance between the set of 
-residues that is closest to a parallel beta sheet and the reference configuration. To do these sorts of 
+distance from a structure composed of only parallel beta sheets or the distance between the set of
+residues that is closest to a parallel beta sheet and the reference configuration. To do these sorts of
 calculations you can use the AVERAGE and MIN keywords. In addition you can use the LESS_THAN
 keyword if you would like to change the form of the switching function. If you use any of these
-options you no longer need to specify NN, R_0, MM and D_0.   
+options you no longer need to specify NN, R_0, MM and D_0.
 
-Please be aware that for codes like gromacs you must ensure that plumed 
+Please be aware that for codes like gromacs you must ensure that plumed
 reconstructs the chains involved in your CV when you calculate this CV using
 anthing other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
 
 \par Examples
 
-The following input calculates the number of six residue segments of 
+The following input calculates the number of six residue segments of
 protein that are in an parallel beta sheet configuration.
 
-\verbatim
+\plumedfile
 MOLINFO STRUCTURE=helix.pdb
 PARABETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
-\endverbatim
-(see also \ref MOLINFO)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -83,84 +82,84 @@ class ParabetaRMSD : public SecondaryStructureRMSD {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ParabetaRMSD(const ActionOptions&);
-}; 
+};
 
 PLUMED_REGISTER_ACTION(ParabetaRMSD,"PARABETARMSD")
 
-void ParabetaRMSD::registerKeywords( Keywords& keys ){
+void ParabetaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
   keys.add("compulsory","STYLE","all","Parallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
-                                      "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
-                                      "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
-                                      "only sheet-like configurations involving a single chain are counted");
+           "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
+           "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
+           "only sheet-like configurations involving a single chain are counted");
   keys.use("STRANDS_CUTOFF");
 }
 
 ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
-Action(ao),
-SecondaryStructureRMSD(ao)
+  Action(ao),
+  SecondaryStructureRMSD(ao)
 {
   // read in the backbone atoms
   std::vector<unsigned> chains; readBackboneAtoms( "protein", chains );
 
-  bool intra_chain(false), inter_chain(false); 
+  bool intra_chain(false), inter_chain(false);
   std::string style; parse("STYLE",style);
-  if( style=="all" ){ 
-      intra_chain=true; inter_chain=true;
-  } else if( style=="inter"){
-      intra_chain=false; inter_chain=true;
-  } else if( style=="intra"){
-      intra_chain=true; inter_chain=false;
+  if( style=="all" ) {
+    intra_chain=true; inter_chain=true;
+  } else if( style=="inter") {
+    intra_chain=false; inter_chain=true;
+  } else if( style=="intra") {
+    intra_chain=true; inter_chain=false;
   } else {
-      error( style + " is not a valid directive for the STYLE keyword");
+    error( style + " is not a valid directive for the STYLE keyword");
   }
 
   // Align the atoms based on the positions of these two atoms
   setAtomsFromStrands( 6, 21 );
 
   // This constructs all conceivable sections of antibeta sheet in the backbone of the chains
-  if( intra_chain ){
+  if( intra_chain ) {
     unsigned nres, nprevious=0; std::vector<unsigned> nlist(30);
-    for(unsigned i=0;i<chains.size();++i){
-       if( chains[i]<40 ) error("segment of backbone is not long enough to form an antiparallel beta hairpin. Each backbone fragment must contain a minimum of 8 residues");
-       // Loop over all possible triples in each 8 residue segment of protein
-       nres=chains[i]/5;
-       if( chains[i]%5!=0 ) error("backbone segment received does not contain a multiple of five residues"); 
-       for(unsigned ires=0;ires<nres-8;ires++){
-           for(unsigned jres=ires+6;jres<nres-2;jres++){
-               for(unsigned k=0;k<15;++k){
-                  nlist[k]=nprevious + ires*5+k;
-                  nlist[k+15]=nprevious + jres*5+k;
-               }
-               addColvar( nlist );
-           }
-       }
-       nprevious+=chains[i];
+    for(unsigned i=0; i<chains.size(); ++i) {
+      if( chains[i]<40 ) error("segment of backbone is not long enough to form an antiparallel beta hairpin. Each backbone fragment must contain a minimum of 8 residues");
+      // Loop over all possible triples in each 8 residue segment of protein
+      nres=chains[i]/5;
+      if( chains[i]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
+      for(unsigned ires=0; ires<nres-8; ires++) {
+        for(unsigned jres=ires+6; jres<nres-2; jres++) {
+          for(unsigned k=0; k<15; ++k) {
+            nlist[k]=nprevious + ires*5+k;
+            nlist[k+15]=nprevious + jres*5+k;
+          }
+          addColvar( nlist );
+        }
+      }
+      nprevious+=chains[i];
     }
   }
   // This constructs all conceivable sections of antibeta sheet that form between chains
-  if( inter_chain ){
-      if( chains.size()==1 && style!="all" ) error("there is only one chain defined so cannot use inter_chain option");
-      unsigned iprev,jprev,inres,jnres; std::vector<unsigned> nlist(30);
-      for(unsigned ichain=1;ichain<chains.size();++ichain){
-         iprev=0; for(unsigned i=0;i<ichain;++i) iprev+=chains[i];
-         inres=chains[ichain]/5;
-         if( chains[ichain]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
-         for(unsigned ires=0;ires<inres-2;++ires){
-            for(unsigned jchain=0;jchain<ichain;++jchain){
-                jprev=0; for(unsigned i=0;i<jchain;++i) jprev+=chains[i];
-                jnres=chains[jchain]/5; 
-                if( chains[jchain]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
-                for(unsigned jres=0;jres<jnres-2;++jres){
-                    for(unsigned k=0;k<15;++k){
-                       nlist[k]=iprev + ires*5+k;
-                       nlist[k+15]=jprev + jres*5+k;
-                    } 
-                    addColvar( nlist );
-                }
+  if( inter_chain ) {
+    if( chains.size()==1 && style!="all" ) error("there is only one chain defined so cannot use inter_chain option");
+    unsigned iprev,jprev,inres,jnres; std::vector<unsigned> nlist(30);
+    for(unsigned ichain=1; ichain<chains.size(); ++ichain) {
+      iprev=0; for(unsigned i=0; i<ichain; ++i) iprev+=chains[i];
+      inres=chains[ichain]/5;
+      if( chains[ichain]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
+      for(unsigned ires=0; ires<inres-2; ++ires) {
+        for(unsigned jchain=0; jchain<ichain; ++jchain) {
+          jprev=0; for(unsigned i=0; i<jchain; ++i) jprev+=chains[i];
+          jnres=chains[jchain]/5;
+          if( chains[jchain]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
+          for(unsigned jres=0; jres<jnres-2; ++jres) {
+            for(unsigned k=0; k<15; ++k) {
+              nlist[k]=iprev + ires*5+k;
+              nlist[k+15]=jprev + jres*5+k;
             }
-         }
-      } 
+            addColvar( nlist );
+          }
+        }
+      }
+    }
   }
 
   // Build the reference structure ( in angstroms )
@@ -196,7 +195,7 @@ SecondaryStructureRMSD(ao)
   reference[28]=Vector(-0.229,  4.791,  1.038); // C
   reference[29]=Vector( 0.523,  5.771,  0.996); // O
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
-  setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() ); 
+  setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
 
   reference[0]=Vector(-1.439, -5.122, -1.144); // N    i
   reference[1]=Vector(-0.816, -3.803, -1.013); // CA

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -47,7 +47,7 @@ private:
   engf_pointer calc;
 /// Member of class that calcualtes the energy we are trying to minimise
   engfnc_pointer calc2;
-public: 
+public:
   explicit F1dim( const std::vector<double>& pp, const std::vector<double>& dd, FCLASS* ff, engf_pointer cc, engfnc_pointer cc2 );
 /// Calculate the energy at \f$\mathbf{p} + xt*\mathbf{dir}\f$
   double getEng( const double& xt );
@@ -55,21 +55,21 @@ public:
 
 template <class FCLASS>
 F1dim<FCLASS>::F1dim( const std::vector<double>& pp, const std::vector<double>& dd, FCLASS* ff, engf_pointer cc, engfnc_pointer cc2 ):
-p(pp),
-dir(dd),
-pt(pp.size()),
-fake_der(pp.size()),
-func(ff),
-calc(cc),
-calc2(cc2)
+  p(pp),
+  dir(dd),
+  pt(pp.size()),
+  fake_der(pp.size()),
+  func(ff),
+  calc(cc),
+  calc2(cc2)
 {
   plumed_assert( calc || calc2 );
 }
 
 template <class FCLASS>
-double F1dim<FCLASS>::getEng( const double& xt ){
-  for(unsigned j=0;j<pt.size();++j) pt[j] = p[j] + xt*dir[j];
-  if( calc ) return (func->*calc)(pt,fake_der); 
+double F1dim<FCLASS>::getEng( const double& xt ) {
+  for(unsigned j=0; j<pt.size(); ++j) pt[j] = p[j] + xt*dir[j];
+  if( calc ) return (func->*calc)(pt,fake_der);
   return (func->*calc2)(pt,fake_der);
 }
 
@@ -82,7 +82,7 @@ private:
 /// The class that calculates the energy given a position
   FCLASS* myclass_func;
 protected:
-/// This calculates the derivatives at a point 
+/// This calculates the derivatives at a point
   double calcDerivatives( const std::vector<double>& p, std::vector<double>& der, engf_pointer myfunc );
 public:
   explicit MinimiseBase( FCLASS* funcc ) : myclass_func(funcc) {}
@@ -91,8 +91,8 @@ public:
 };
 
 template <class FCLASS>
-double MinimiseBase<FCLASS>::linemin( const std::vector<double>& dir, std::vector<double>& p, engf_pointer myfunc ){
-  // Construct the object that turns points on a line into vectors 
+double MinimiseBase<FCLASS>::linemin( const std::vector<double>& dir, std::vector<double>& p, engf_pointer myfunc ) {
+  // Construct the object that turns points on a line into vectors
   F1dim<FCLASS> f1dim( p, dir, myclass_func, NULL, myfunc );
 
   // Construct an object that will do the line search for the minimum
@@ -100,14 +100,14 @@ double MinimiseBase<FCLASS>::linemin( const std::vector<double>& dir, std::vecto
 
   // This does the actual line minimisation
   double ax=0.0, xx=1.0;
-  bb.bracket( ax, xx, &F1dim<FCLASS>::getEng ); 
+  bb.bracket( ax, xx, &F1dim<FCLASS>::getEng );
   double xmin=bb.minimise( &F1dim<FCLASS>::getEng );
-  for(unsigned i=0;i<p.size();++i) p[i] += xmin*dir[i];
+  for(unsigned i=0; i<p.size(); ++i) p[i] += xmin*dir[i];
   return bb.getMinimumValue();
 }
 
 template <class FCLASS>
-double MinimiseBase<FCLASS>::calcDerivatives( const std::vector<double>& p, std::vector<double>& der, engf_pointer myfunc ){
+double MinimiseBase<FCLASS>::calcDerivatives( const std::vector<double>& p, std::vector<double>& der, engf_pointer myfunc ) {
 
   return (myclass_func->*myfunc)( p, der );
 }

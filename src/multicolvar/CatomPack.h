@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,24 +36,24 @@ private:
   std::vector<Tensor> derivs;
 public:
   void resize( const unsigned& );
-  void setIndex( const unsigned& , const unsigned& );
-  void setDerivative( const unsigned& , const Tensor& );
+  void setIndex( const unsigned&, const unsigned& );
+  void setDerivative( const unsigned&, const Tensor& );
   unsigned getNumberOfAtomsWithDerivatives() const ;
   unsigned getIndex( const unsigned& ) const ;
-  double getDerivative( const unsigned&, const unsigned& , const Vector& ) const ;
+  double getDerivative( const unsigned&, const unsigned&, const Vector& ) const ;
 };
 
 inline
-void CatomPack::setIndex( const unsigned& jind, const unsigned& ind ){
+void CatomPack::setIndex( const unsigned& jind, const unsigned& ind ) {
   plumed_dbg_assert( jind<indices.size() );
   indices[jind]=ind;
 }
 
 inline
-void CatomPack::setDerivative( const unsigned& jind , const Tensor& der ){
+void CatomPack::setDerivative( const unsigned& jind, const Tensor& der ) {
   plumed_dbg_assert( jind<indices.size() );
   derivs[jind]=der;
-} 
+}
 
 inline
 unsigned CatomPack::getNumberOfAtomsWithDerivatives() const {
@@ -75,4 +75,4 @@ double CatomPack::getDerivative( const unsigned& iatom, const unsigned& jcomp, c
 }
 }
 
-#endif 
+#endif

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,7 +24,7 @@
 
 #include "Vector.h"
 
-namespace PLMD{
+namespace PLMD {
 
 /// \ingroup TOOLBOX
 /// Class to compute torsional angles.
@@ -36,7 +36,7 @@ namespace PLMD{
 /// I know it is a bit misleading. If we really do not need to store "options"
 /// inside the Torsion class, we can remove it later and write compute as
 /// a static function.
-class Torsion{
+class Torsion {
 // still empty, but may accomodate some options in the future
 public:
 /// Compute the angle between the projections of v1 and v3 on the plane orthogonal

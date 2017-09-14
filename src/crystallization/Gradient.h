@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,7 +28,7 @@ namespace PLMD {
 namespace crystallization {
 
 class Gradient : public multicolvar::VolumeGradientBase {
-friend class GradientVessel;
+  friend class GradientVessel;
 private:
 /// The value of sigma
   double sigma;
@@ -52,7 +52,7 @@ public:
 inline
 unsigned Gradient::getNumberOfQuantities() const {
   return nquantities;
-} 
+}
 
 }
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,8 +23,8 @@
 #include "core/ActionRegister.h"
 #include "AverageVessel.h"
 
-//+PLUMEDOC GRIDCALC AVERAGE 
-/* 
+//+PLUMEDOC GRIDCALC AVERAGE
+/*
 Calculate the ensemble average of a collective variable
 
 The ensemble average for a non-periodic, collective variable, \f$s\f$ is given by the following expression:
@@ -34,8 +34,8 @@ The ensemble average for a non-periodic, collective variable, \f$s\f$ is given b
 \f]
 
 Here the sum runs over a the trajectory and \f$s(t')\f$ is used to denote the value of the collective variable
-at time \f$t'\f$.  The final quantity evalulated is a weighted 
-average as the weights, \f$w(t')\f$, allow us to negate the effect any bias might have on the region of phase space 
+at time \f$t'\f$.  The final quantity evalulated is a weighted
+average as the weights, \f$w(t')\f$, allow us to negate the effect any bias might have on the region of phase space
 sampled by the system.  This is discussed in the section of the manual on \ref Analysis.
 
 When the variable is periodic (e.g. \ref TORSION) and has a value, \f$s\f$, in \f$a \le s \le b\f$ the ensemble average is evaluated using:
@@ -47,41 +47,41 @@ When the variable is periodic (e.g. \ref TORSION) and has a value, \f$s\f$, in \
 \par Examples
 
 The following example calculates the ensemble average for the distance between atoms 1 and 2
-and output this to a file called COLVAR.  In this example it is assumed that no bias is acting 
-on the system and that the weights, \f$w(t')\f$ in the formulae above can thus all be set equal 
-to one. 
+and output this to a file called COLVAR.  In this example it is assumed that no bias is acting
+on the system and that the weights, \f$w(t')\f$ in the formulae above can thus all be set equal
+to one.
 
-\verbatim
-d1: DISTANCE ATOMS=1,2 
+\plumedfile
+d1: DISTANCE ATOMS=1,2
 d1a: AVERAGE ARG=d1
 PRINT ARG=d1a FILE=colvar STRIDE=100
-\endverbatim
+\endplumedfile
 
 The following example calculates the ensemble average for the torsional angle involving atoms 1, 2, 3 and 4.
 At variance with the previous example this quantity is periodic so the second formula in the above introduction
 is used to calculate the average.  Furthermore, by using the CLEAR keyword we have specified that block averages
-are to be calculated.  Consequently, after 100 steps all the information aquired thus far in the simulation is 
-forgotten and the process of averaging is begun again.  The quantities output in the colvar file are thus the 
+are to be calculated.  Consequently, after 100 steps all the information aquired thus far in the simulation is
+forgotten and the process of averaging is begun again.  The quantities output in the colvar file are thus the
 block averages taken over the first 100 frames of the trajectory, the block average over the second 100 frames
 of trajectory and so on.
 
-\verbatim
-t1: TORSION ATOMS=1,2,3,4 
+\plumedfile
+t1: TORSION ATOMS=1,2,3,4
 t1a: AVERAGE ARG=t1 CLEAR=100
 PRINT ARG=t1a FILE=colvar STRIDE=100
-\endverbatim
+\endplumedfile
 
 This third example incorporates a bias.  Notice that the effect the bias has on the ensemble average is removed by taking
 advantage of the \ref REWEIGHT_BIAS method.  The final ensemble averages output to the file are thus block ensemble averages for the
-unbiased canononical ensemble at a temperature of 300 K. 
+unbiased canononical ensemble at a temperature of 300 K.
 
-\verbatim
-t1: TORSION ATOMS=1,2,3,4 
+\plumedfile
+t1: TORSION ATOMS=1,2,3,4
 RESTRAINT ARG=t1 AT=pi KAPPA=100.
 ww: REWEIGHT_BIAS TEMP=300
 t1a: AVERAGE ARG=t1 LOGWEIGHTS=ww CLEAR=100
 PRINT ARG=t1a FILE=colvar STRIDE=100
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -95,47 +95,47 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
   void performOperations( const bool& from_update );
   void finishAveraging();
-  bool isPeriodic(){ return false; } 
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const { plumed_error(); }
+  bool isPeriodic() { return false; }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")
 
-void Average::registerKeywords( Keywords& keys ){
+void Average::registerKeywords( Keywords& keys ) {
   vesselbase::ActionWithAveraging::registerKeywords( keys ); keys.use("ARG");
-  keys.remove("SERIAL"); keys.remove("LOWMEM"); 
+  keys.remove("SERIAL"); keys.remove("LOWMEM");
 }
 
 Average::Average( const ActionOptions& ao ):
-Action(ao),
-ActionWithAveraging(ao)
+  Action(ao),
+  ActionWithAveraging(ao)
 {
-   addValue(); // Create a value so that we can output the average
-   if( getNumberOfArguments()!=1 ) error("only one quantity can be averaged at a time");
-   std::string instring; 
-   if( getPntrToArgument(0)->isPeriodic() ){
-      std::string min, max; getPntrToArgument(0)->getDomain(min,max); 
-      instring = "PERIODIC=" + min + "," + max; setPeriodic( min, max );
-   } else {
-      setNotPeriodic();
-   }
-   // Create a vessel to hold the average
-   vesselbase::VesselOptions da("myaverage","",-1,instring,this);
-   Keywords keys; AverageVessel::registerKeywords( keys );
-   vesselbase::VesselOptions dar( da, keys );
-   myaverage = new AverageVessel(dar); setAveragingAction( myaverage, false );
+  addValue(); // Create a value so that we can output the average
+  if( getNumberOfArguments()!=1 ) error("only one quantity can be averaged at a time");
+  std::string instring;
+  if( getPntrToArgument(0)->isPeriodic() ) {
+    std::string min, max; getPntrToArgument(0)->getDomain(min,max);
+    instring = "PERIODIC=" + min + "," + max; setPeriodic( min, max );
+  } else {
+    setNotPeriodic();
+  }
+  // Create a vessel to hold the average
+  vesselbase::VesselOptions da("myaverage","",-1,instring,this);
+  Keywords keys; AverageVessel::registerKeywords( keys );
+  vesselbase::VesselOptions dar( da, keys );
+  myaverage = new AverageVessel(dar); setAveragingAction( myaverage, false );
 }
 
-void Average::performOperations( const bool& from_update ){
-   myaverage->accumulate( cweight, getArgument(0) );
+void Average::performOperations( const bool& from_update ) {
+  myaverage->accumulate( cweight, getArgument(0) );
 }
 
-void Average::finishAveraging(){
-   setValue( myaverage->getAverage() );
+void Average::finishAveraging() {
+  setValue( myaverage->getAverage() );
 }
 
 }

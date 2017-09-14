@@ -23,6 +23,7 @@
 #define __PLUMED_core_ActionSet_h
 
 #include "Action.h"
+#include <memory>
 
 namespace PLMD {
 
@@ -36,7 +37,7 @@ class PlumedMain;
 /// Finally, since it holds pointers, there is a clearDelete() function
 /// which deletes the pointers before deleting the vector
 class ActionSet:
-  public std::vector<Action*>
+  public std::vector<std::unique_ptr<Action>>
 {
   PlumedMain& plumed;
 public:
@@ -62,7 +63,7 @@ public:
   T selectWithLabel(const std::string&s)const;
 /// get the labels in the list of actions in form of a string (useful to debug)
   std::string getLabelList() const;
-/// get the labels in the form of a vector of strings  
+/// get the labels in the form of a vector of strings
   std::vector<std::string> getLabelVector() const;
 };
 
@@ -70,30 +71,30 @@ public:
 // INLINE IMPLEMENTATIONS:
 
 template <class T>
-std::vector<T> ActionSet::select()const{
+std::vector<T> ActionSet::select()const {
   std::vector<T> ret;
-  for(const auto & p : (*this)){
-    T t=dynamic_cast<T>(p);
+  for(const auto & p : (*this)) {
+    T t=dynamic_cast<T>(p.get());
     if(t) ret.push_back(t);
   };
   return ret;
 }
 
 template <class T>
-T ActionSet::selectWithLabel(const std::string&s)const{
-  for(const auto & p : (*this)){
-    T t=dynamic_cast<T>(p);
+T ActionSet::selectWithLabel(const std::string&s)const {
+  for(const auto & p : (*this)) {
+    T t=dynamic_cast<T>(p.get());
     if(t && dynamic_cast<Action*>(t)->getLabel()==s) return t;
   };
   return NULL;
 }
 
 template <class T>
-std::vector<Action*> ActionSet::selectNot()const{
+std::vector<Action*> ActionSet::selectNot()const {
   std::vector<Action*> ret;
-  for(const auto & p : (*this)){
+  for(const auto & p : (*this)) {
     T t=dynamic_cast<T>(p);
-    if(!t) ret.push_back(p);
+    if(!t) ret.push_back(p.get());
   };
   return ret;
 }

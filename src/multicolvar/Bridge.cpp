@@ -29,10 +29,10 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace multicolvar{
+namespace PLMD {
+namespace multicolvar {
 
-//+PLUMEDOC MCOLVAR BRIDGE 
+//+PLUMEDOC MCOLVAR BRIDGE
 /*
 Calculate the number of atoms that bridge two parts of a structure
 
@@ -40,21 +40,21 @@ This quantity calculates:
 
 \f[
  f(x) = \sum_{ijk} s_A(r_{ij})s_B(r_{ik})
-\f] 
+\f]
 
-where the sum over \f$i\f$ is over all the ``bridging atoms" and 
+where the sum over \f$i\f$ is over all the ``bridging atoms" and
 \f$s_A\f$ and \f$s_B\f$ are \ref switchingfunction.
 
 \par Examples
 
 The following example instructs plumed to calculate the number of water molecules
-that are bridging betweeen atoms 1-10 and atoms 11-20 and to print the value 
+that are bridging betweeen atoms 1-10 and atoms 11-20 and to print the value
 to a file
 
-\verbatim
+\plumedfile
 BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 LABEL=w1
-PRINT ARG=a1.mean FILE=colvar 
-\endverbatim
+PRINT ARG=a1.mean FILE=colvar
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -69,27 +69,27 @@ public:
   explicit Bridge(const ActionOptions&);
 // active methods:
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(Bridge,"BRIDGE")
 
-void Bridge::registerKeywords( Keywords& keys ){
+void Bridge::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.add("atoms-2","BRIDGING_ATOMS","The list of atoms that can form the bridge between the two interesting parts "
-                                      "of the structure.");
-  keys.add("atoms-2","GROUPA","The list of atoms that are in the first interesting part of the structure"); 
-  keys.add("atoms-2","GROUPB","The list of atoms that are in the second interesting part of the structure"); 
+           "of the structure.");
+  keys.add("atoms-2","GROUPA","The list of atoms that are in the first interesting part of the structure");
+  keys.add("atoms-2","GROUPB","The list of atoms that are in the second interesting part of the structure");
   keys.add("optional","SWITCH","The parameters of the two \\ref switchingfunction in the above formula");
   keys.add("optional","SWITCHA","The \\ref switchingfunction on the distance between bridging atoms and the atoms in "
-                                "group A");
+           "group A");
   keys.add("optional","SWITCHB","The \\ref switchingfunction on the distance between the bridging atoms and the atoms in "
-                                "group B");
+           "group B");
 }
 
 Bridge::Bridge(const ActionOptions&ao):
-Action(ao),
-MultiColvarBase(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
@@ -98,27 +98,27 @@ MultiColvarBase(ao)
   setupMultiColvarBase( all_atoms );
   // Setup Central atom atoms
   std::vector<bool> catom_ind(3, false); catom_ind[0]=true;
-  setAtomsForCentralAtom( catom_ind ); 
+  setAtomsForCentralAtom( catom_ind );
 
   std::string sfinput,errors; parse("SWITCH",sfinput);
-  if( sfinput.length()>0 ){
-      sf1.set(sfinput,errors);
-      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
-      sf2.set(sfinput,errors);
-      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );   
+  if( sfinput.length()>0 ) {
+    sf1.set(sfinput,errors);
+    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    sf2.set(sfinput,errors);
+    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
   } else {
-      parse("SWITCHA",sfinput); 
-      if(sfinput.length()>0){
-         weightHasDerivatives=true;
-         sf1.set(sfinput,errors);
-         if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors );
-         sfinput.clear(); parse("SWITCHB",sfinput);
-         if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
-         sf2.set(sfinput,errors); 
-         if( errors.length()!=0 ) error("problem reading SWITCHB keyword : " + errors );
-      } else {
-         error("missing definition of switching functions");
-      } 
+    parse("SWITCHA",sfinput);
+    if(sfinput.length()>0) {
+      weightHasDerivatives=true;
+      sf1.set(sfinput,errors);
+      if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors );
+      sfinput.clear(); parse("SWITCHB",sfinput);
+      if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
+      sf2.set(sfinput,errors);
+      if( errors.length()!=0 ) error("problem reading SWITCHB keyword : " + errors );
+    } else {
+      error("missing definition of switching functions");
+    }
   }
   log.printf("  distance between bridging atoms and atoms in GROUPA must be less than %s\n",sf1.description().c_str());
   log.printf("  distance between bridging atoms and atoms in GROUPB must be less than %s\n",sf2.description().c_str());
@@ -137,18 +137,18 @@ MultiColvarBase(ao)
 
 double Bridge::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   double tot=0;
-  for(unsigned i=2;i<myatoms.getNumberOfAtoms();++i){
-      Vector dij=getSeparation( myatoms.getPosition(i), myatoms.getPosition(0) );
-      double dw1, w1=sf1.calculateSqr( dij.modulo2(), dw1 );
-      Vector dik=getSeparation( myatoms.getPosition(i), myatoms.getPosition(1) );
-      double dw2, w2=sf2.calculateSqr( dik.modulo2(), dw2 );
+  for(unsigned i=2; i<myatoms.getNumberOfAtoms(); ++i) {
+    Vector dij=getSeparation( myatoms.getPosition(i), myatoms.getPosition(0) );
+    double dw1, w1=sf1.calculateSqr( dij.modulo2(), dw1 );
+    Vector dik=getSeparation( myatoms.getPosition(i), myatoms.getPosition(1) );
+    double dw2, w2=sf2.calculateSqr( dik.modulo2(), dw2 );
 
-      tot += w1*w2;
-      // And finish the calculation
-      addAtomDerivatives( 1, 0,  w2*dw1*dij, myatoms );
-      addAtomDerivatives( 1, 1,  w1*dw2*dik, myatoms ); 
-      addAtomDerivatives( 1, i, -w1*dw2*dik-w2*dw1*dij, myatoms );
-      myatoms.addBoxDerivatives( 1, w1*(-dw2)*Tensor(dik,dik)+w2*(-dw1)*Tensor(dij,dij) );
+    tot += w1*w2;
+    // And finish the calculation
+    addAtomDerivatives( 1, 0,  w2*dw1*dij, myatoms );
+    addAtomDerivatives( 1, 1,  w1*dw2*dik, myatoms );
+    addAtomDerivatives( 1, i, -w1*dw2*dik-w2*dw1*dij, myatoms );
+    myatoms.addBoxDerivatives( 1, w1*(-dw2)*Tensor(dik,dik)+w2*(-dw1)*Tensor(dij,dij) );
   }
   return tot;
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,7 +23,7 @@
 #include "VesselRegister.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 class Highest : public OrderingVessel {
 public:
@@ -31,30 +31,30 @@ public:
   static void reserveKeyword( Keywords& keys );
   explicit Highest( const VesselOptions& da );
   std::string value_descriptor();
-  bool compare( const double& , const double& );
+  bool compare( const double&, const double& );
 };
 
 PLUMED_REGISTER_VESSEL(Highest,"HIGHEST")
 
-void Highest::registerKeywords( Keywords& keys ){
+void Highest::registerKeywords( Keywords& keys ) {
   OrderingVessel::registerKeywords( keys );
 }
 
-void Highest::reserveKeyword( Keywords& keys ){
+void Highest::reserveKeyword( Keywords& keys ) {
   keys.reserve("vessel","HIGHEST","this flag allows you to recover the highest of these variables.");
   keys.addOutputComponent("highest","HIGHEST","the lowest of the quantitities calculated by this action");
 }
 
 Highest::Highest( const VesselOptions& da ) :
-OrderingVessel(da)
+  OrderingVessel(da)
 {
 }
 
-std::string Highest::value_descriptor(){
+std::string Highest::value_descriptor() {
   return "the highest of the individual colvar values";
 }
 
-bool Highest::compare( const double& val1, const double& val2 ){
+bool Highest::compare( const double& val1, const double& val2 ) {
   return val1>val2;
 }
 

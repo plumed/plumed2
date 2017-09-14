@@ -27,12 +27,14 @@
 #include "tools/Units.h"
 #include "tools/Exception.h"
 #include "tools/AtomNumber.h"
+#include "tools/ForwardDecl.h"
 #include <vector>
 #include <set>
 #include <map>
 #include <string>
+#include <memory>
 
-namespace PLMD{
+namespace PLMD {
 
 class MDAtomsBase;
 class PlumedMain;
@@ -47,13 +49,16 @@ class Atoms
   friend class ActionAtomistic;
   friend class ActionWithVirtualAtom;
   int natoms;
+  std::set<AtomNumber> unique;
+  std::vector<unsigned> uniq_index;
   std::vector<Vector> positions;
   std::vector<Vector> forces;
   std::vector<double> masses;
   std::vector<double> charges;
   std::vector<ActionWithVirtualAtom*> virtualAtomsActions;
   Tensor box;
-  Pbc&   pbc;
+  ForwardDecl<Pbc> pbc_fwd;
+  Pbc&   pbc=*pbc_fwd;
   Tensor virial;
 // this is the energy set by each processor:
   double md_energy;
@@ -77,8 +82,8 @@ class Atoms
   void resizeVectors(unsigned);
 
   std::vector<int> fullList;
-  
-  MDAtomsBase* mdatoms;
+
+  std::unique_ptr<MDAtomsBase> mdatoms;
 
   PlumedMain & plumed;
 
@@ -98,7 +103,7 @@ class Atoms
 
   double kbT;
 
-  std::vector<const ActionAtomistic*> actions;
+  std::vector<ActionAtomistic*> actions;
   std::vector<int>    gatindex;
 
   bool asyncSent;
@@ -114,15 +119,15 @@ class Atoms
 
     std::vector<Communicator::Request> mpi_request_positions;
     std::vector<Communicator::Request> mpi_request_index;
-    
+
     std::vector<double> positionsToBeSent;
     std::vector<double> positionsToBeReceived;
     std::vector<int>    indexToBeSent;
     std::vector<int>    indexToBeReceived;
-    operator bool() const{return on;}
+    operator bool() const {return on;}
     DomainDecomposition():
       on(false), async(false)
-      {}
+    {}
     void enable(Communicator& c);
   };
 
@@ -164,7 +169,7 @@ public:
   void getLocalMDForces(std::vector<Vector>&);
   const Tensor& getVirial()const;
 
-  void setCollectEnergy(bool b){ collectEnergy=b; }
+  void setCollectEnergy(bool b) { collectEnergy=b; }
 
   void setDomainDecomposition(Communicator&);
   void setAtomsGatindex(int*,bool);
@@ -191,21 +196,21 @@ public:
   void getFullList(int**);
   void clearFullList();
 
-  void add(const ActionAtomistic*);
-  void remove(const ActionAtomistic*);
+  void add(ActionAtomistic*);
+  void remove(ActionAtomistic*);
 
-  double getEnergy()const{plumed_assert(collectEnergy && energyHasBeenSet); return energy;}
+  double getEnergy()const {plumed_assert(collectEnergy && energyHasBeenSet); return energy;}
 
-  bool isEnergyNeeded()const{return collectEnergy;}
+  bool isEnergyNeeded()const {return collectEnergy;}
 
-  void setMDEnergyUnits(double d){MDUnits.setEnergy(d);}
-  void setMDLengthUnits(double d){MDUnits.setLength(d);}
-  void setMDTimeUnits(double d){MDUnits.setTime(d);}
-  void setMDChargeUnits(double d){MDUnits.setCharge(d);}
-  void setMDMassUnits(double d){MDUnits.setMass(d);}
-  const Units& getMDUnits(){return MDUnits;}
-  void setUnits(const Units&u){units=u;}
-  const Units& getUnits(){return units;}
+  void setMDEnergyUnits(double d) {MDUnits.setEnergy(d);}
+  void setMDLengthUnits(double d) {MDUnits.setLength(d);}
+  void setMDTimeUnits(double d) {MDUnits.setTime(d);}
+  void setMDChargeUnits(double d) {MDUnits.setCharge(d);}
+  void setMDMassUnits(double d) {MDUnits.setMass(d);}
+  const Units& getMDUnits() {return MDUnits;}
+  void setUnits(const Units&u) {units=u;}
+  const Units& getUnits() {return units;}
   void updateUnits();
 
   AtomNumber addVirtualAtom(ActionWithVirtualAtom*);
@@ -219,37 +224,37 @@ public:
   double getKBoltzmann()const;
   double getMDKBoltzmann()const;
   bool usingNaturalUnits()const;
-  void setNaturalUnits(bool n){naturalUnits=n;}
-  void setMDNaturalUnits(bool n){MDnaturalUnits=n;}
+  void setNaturalUnits(bool n) {naturalUnits=n;}
+  void setMDNaturalUnits(bool n) {MDnaturalUnits=n;}
 };
 
 inline
-const int & Atoms::getNatoms()const{
+const int & Atoms::getNatoms()const {
   return natoms;
 }
 
 inline
-const long int& Atoms::getDdStep()const{
+const long int& Atoms::getDdStep()const {
   return ddStep;
 }
 
 inline
-const std::vector<int>& Atoms::getGatindex()const{
+const std::vector<int>& Atoms::getGatindex()const {
   return gatindex;
 }
 
 inline
-const Pbc& Atoms::getPbc()const{
+const Pbc& Atoms::getPbc()const {
   return pbc;
 }
 
 inline
-bool Atoms::isVirtualAtom(AtomNumber i)const{
+bool Atoms::isVirtualAtom(AtomNumber i)const {
   return i.index()>=(unsigned) getNatoms();
 }
 
 inline
-ActionWithVirtualAtom* Atoms::getVirtualAtomsAction(AtomNumber i)const{
+ActionWithVirtualAtom* Atoms::getVirtualAtomsAction(AtomNumber i)const {
   return virtualAtomsActions[i.index()-getNatoms()];
 }
 
@@ -269,7 +274,7 @@ bool Atoms::boxWasSet() const {
 }
 
 inline
-const Tensor& Atoms::getVirial()const{
+const Tensor& Atoms::getVirial()const {
   return virial;
 }
 

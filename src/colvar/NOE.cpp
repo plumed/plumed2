@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,7 +32,7 @@ using namespace std;
 namespace PLMD {
 namespace colvar {
 
-//+PLUMEDOC COLVAR NOE 
+//+PLUMEDOC COLVAR NOE
 /*
 Calculates NOE intensities as sums of 1/r^6, also averaging over multiple equivalent atoms
 or ambiguous NOE.
@@ -41,33 +41,33 @@ Each NOE is defined by two groups containing the same number of atoms, distances
 calculated in pairs, transformed in 1/r^6, summed and saved as components.
 
 \f[
-NOE() = (\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))^{\frac{-1}{6}} 
+NOE() = (\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))^{\frac{-1}{6}}
 \f]
 
 Intensities can then in principle ensemble averaged using \ref ENSEMBLE and used to
 calculate a scoring function for example with \ref METAINFERENCE.
 
 \par Examples
+
 In the following examples three noes are defined, the first is calculated based on the distances
 of atom 1-2 and 3-2; the second is defined by the distance 5-7 and the third by the distances
 4-15,4-16,8-15,8-16.
 
-\verbatim
+\plumedfile
 NOE ...
-GROUPA1=1,3 GROUPB1=2,2 
+GROUPA1=1,3 GROUPB1=2,2
 GROUPA2=5 GROUPB2=7
 GROUPA3=4,4,8,8 GROUPB3=15,16,15,16
 LABEL=noes
 ... NOE
 
 PRINT ARG=noes.* FILE=colvar
-\endverbatim
-(See also \ref PRINT) 
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
 
-class NOE : public Colvar {   
+class NOE : public Colvar {
 private:
   bool             pbc;
   vector<unsigned> nga;
@@ -81,49 +81,49 @@ public:
 
 PLUMED_REGISTER_ACTION(NOE,"NOE")
 
-void NOE::registerKeywords( Keywords& keys ){
+void NOE::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
   keys.add("numbered","GROUPA","the atoms involved in each of the contacts you wish to calculate. "
-                   "Keywords like GROUPA1, GROUPA2, GROUPA3,... should be listed and one contact will be "
-                   "calculated for each ATOM keyword you specify.");
+           "Keywords like GROUPA1, GROUPA2, GROUPA3,... should be listed and one contact will be "
+           "calculated for each ATOM keyword you specify.");
   keys.add("numbered","GROUPB","the atoms involved in each of the contacts you wish to calculate. "
-                   "Keywords like GROUPB1, GROUPB2, GROUPB3,... should be listed and one contact will be "
-                   "calculated for each ATOM keyword you specify.");
+           "Keywords like GROUPB1, GROUPB2, GROUPB3,... should be listed and one contact will be "
+           "calculated for each ATOM keyword you specify.");
   keys.reset_style("GROUPA","atoms");
   keys.reset_style("GROUPB","atoms");
-  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimental reference values.");  
+  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimental reference values.");
   keys.add("numbered","NOEDIST","Add an experimental value for each NOE.");
   keys.addOutputComponent("noe","default","the # NOE");
   keys.addOutputComponent("exp","ADDEXP","the # NOE experimental distance");
 }
 
 NOE::NOE(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  pbc(true)
 {
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
-  pbc=!nopbc;  
+  pbc=!nopbc;
 
   // Read in the atoms
   vector<AtomNumber> t, ga_lista, gb_lista;
-  for(int i=1;;++i ){
-     parseAtomList("GROUPA", i, t );
-     if( t.empty() ) break;
-     for(unsigned j=0;j<t.size();j++) ga_lista.push_back(t[j]);
-     nga.push_back(t.size());
-     t.resize(0); 
+  for(int i=1;; ++i ) {
+    parseAtomList("GROUPA", i, t );
+    if( t.empty() ) break;
+    for(unsigned j=0; j<t.size(); j++) ga_lista.push_back(t[j]);
+    nga.push_back(t.size());
+    t.resize(0);
   }
   vector<unsigned> ngb;
-  for(int i=1;;++i ){
-     parseAtomList("GROUPB", i, t );
-     if( t.empty() ) break;
-     for(unsigned j=0;j<t.size();j++) gb_lista.push_back(t[j]);
-     ngb.push_back(t.size());
-     if(ngb[i-1]!=nga[i-1]) error("The same number of atoms is expected for the same GROUPA-GROUPB couple");
-     t.resize(0); 
+  for(int i=1;; ++i ) {
+    parseAtomList("GROUPB", i, t );
+    if( t.empty() ) break;
+    for(unsigned j=0; j<t.size(); j++) gb_lista.push_back(t[j]);
+    ngb.push_back(t.size());
+    if(ngb[i-1]!=nga[i-1]) error("The same number of atoms is expected for the same GROUPA-GROUPB couple");
+    t.resize(0);
   }
   if(nga.size()!=ngb.size()) error("There should be the same number of GROUPA and GROUPB keywords");
   // Create neighbour lists
@@ -134,21 +134,21 @@ pbc(true)
 
   vector<double> noedist;
   if(addexp) {
-    noedist.resize( nga.size() ); 
+    noedist.resize( nga.size() );
     unsigned ntarget=0;
 
-    for(unsigned i=0;i<nga.size();++i){
-       if( !parseNumbered( "NOEDIST", i+1, noedist[i] ) ) break;
-       ntarget++; 
+    for(unsigned i=0; i<nga.size(); ++i) {
+      if( !parseNumbered( "NOEDIST", i+1, noedist[i] ) ) break;
+      ntarget++;
     }
     if( ntarget!=nga.size() ) error("found wrong number of NOEDIST values");
   }
 
   // Ouput details of all contacts
-  unsigned index=0; 
-  for(unsigned i=0;i<nga.size();++i){
+  unsigned index=0;
+  for(unsigned i=0; i<nga.size(); ++i) {
     log.printf("  The %uth NOE is calculated using %u equivalent couples of atoms\n", i, nga[i]);
-    for(unsigned j=0;j<nga[i];j++) {
+    for(unsigned j=0; j<nga[i]; j++) {
       log.printf("    couple %u is %d %d.\n", j, ga_lista[index].serial(), gb_lista[index].serial() );
       index++;
     }
@@ -157,14 +157,14 @@ pbc(true)
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
 
-  for(unsigned i=0;i<nga.size();i++) {
+  for(unsigned i=0; i<nga.size(); i++) {
     string num; Tools::convert(i,num);
     addComponentWithDerivatives("noe_"+num);
     componentIsNotPeriodic("noe_"+num);
   }
 
   if(addexp) {
-    for(unsigned i=0;i<nga.size();i++) {
+    for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
       addComponent("exp_"+num);
       componentIsNotPeriodic("exp_"+num);
@@ -177,24 +177,24 @@ pbc(true)
   checkRead();
 }
 
-NOE::~NOE(){
+NOE::~NOE() {
   delete nl;
-} 
+}
 
 void NOE::calculate()
 {
   const unsigned ngasz=nga.size();
 
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
-  for(unsigned i=0;i<ngasz;i++) {
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned i=0; i<ngasz; i++) {
     Tensor dervir;
     double noe=0;
     unsigned index=0;
-    for(unsigned k=0; k<i; k++) index+=nga[k]; 
+    for(unsigned k=0; k<i; k++) index+=nga[k];
     const double c_aver=1./static_cast<double>(nga[i]);
     Value* val=getPntrToComponent(i);
-    // cycle over equivalent atoms 
-    for(unsigned j=0;j<nga[i];j++) {
+    // cycle over equivalent atoms
+    for(unsigned j=0; j<nga[i]; j++) {
       const unsigned i0=nl->getClosePair(index+j).first;
       const unsigned i1=nl->getClosePair(index+j).second;
 

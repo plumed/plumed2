@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,8 +26,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace generic{
+namespace PLMD {
+namespace generic {
 
 //+PLUMEDOC PRINTANALYSIS UPDATE_IF
 /*
@@ -60,24 +60,27 @@ particular sense. For example, conditionally updating a \ref METAD keyword
 can lead to unexpected results.
 
 \par Examples
+
 The following input instructs plumed dump all the snapshots where an atom is in touch with
 the solute.
-\verbatim
+\plumedfile
 solute: GROUP ATOMS=1-124
 coord: COORDINATION GROUPA=solute GROUPB=500 R_0=0.5
 
-UPDATE_IF ARG=coord LESS_THAN=0.5
+# A coordination number higher than 0.5 indicate that there is at least one
+# atom of group `solute` at less than 5 A from atom number 500
+
+UPDATE_IF ARG=coord MORE_THAN=0.5
 DUMPATOMS ATOMS=solute,500 FILE=output.xyz
 UPDATE_IF ARG=coord END
-\endverbatim
-(See also \ref GROUP, \ref COORDINATION, and \ref DUMPATOMS)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
 
 class UpdateIf:
-public ActionPilot,
-public ActionWithArguments
+  public ActionPilot,
+  public ActionWithArguments
 {
   std::vector<double> lower;
   std::vector<double> upper;
@@ -89,13 +92,13 @@ public:
   void beforeUpdate();
   explicit UpdateIf(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply(){}
+  void apply() {}
   ~UpdateIf();
 };
 
 PLUMED_REGISTER_ACTION(UpdateIf,"UPDATE_IF")
 
-void UpdateIf::registerKeywords(Keywords& keys){
+void UpdateIf::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
@@ -107,11 +110,11 @@ void UpdateIf::registerKeywords(Keywords& keys){
 }
 
 UpdateIf::UpdateIf(const ActionOptions&ao):
-Action(ao),
-ActionPilot(ao),
-ActionWithArguments(ao),
-on(false),
-end(false)
+  Action(ao),
+  ActionPilot(ao),
+  ActionWithArguments(ao),
+  on(false),
+  end(false)
 {
   parseFlag("END",end);
   parseVector("LESS_THAN",upper);
@@ -122,24 +125,24 @@ end(false)
   if(lower.size()==0) lower.assign(getNumberOfArguments(),-std::numeric_limits<double>::max());
   if(upper.size()!=getNumberOfArguments()) error("LESS_THAN should have the same size as ARG");
   if(lower.size()!=getNumberOfArguments()) error("MORE_THAN should have the same size as ARG");
-  for(unsigned i=0;i<getNumberOfArguments();++i){
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     log<<"  boundaries for argument "<<i<<"    "<<lower[i]<<" "<<upper[i]<<"\n";
   }
   checkRead();
 }
 
-void UpdateIf::prepare(){
+void UpdateIf::prepare() {
   on=false;
 }
 
-void UpdateIf::calculate(){
+void UpdateIf::calculate() {
   on=true;
-  for(unsigned i=0;i<getNumberOfArguments();++i){
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if(getArgument(i)>=upper[i] || getArgument(i)<=lower[i]) on=false;
   }
 }
 
-void UpdateIf::beforeUpdate(){
+void UpdateIf::beforeUpdate() {
   if(end) plumed.updateFlagsPop();
   else {
     if(on) plumed.updateFlagsPush(plumed.updateFlagsTop());
@@ -148,7 +151,7 @@ void UpdateIf::beforeUpdate(){
 }
 
 
-UpdateIf::~UpdateIf(){
+UpdateIf::~UpdateIf() {
 }
 
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -50,9 +50,9 @@ public:
   double calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const ;
 ///
   bool pcaIsEnabledForThisReference();
-  void extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& direction ) const ;
-  double projectAtomicDisplacementOnVector( const std::vector<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ; 
-  void setupPCAStorage( ReferenceValuePack& mypack ); 
+  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const ;
+  double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const ;
+  void setupPCAStorage( ReferenceValuePack& mypack );
 };
 
 }

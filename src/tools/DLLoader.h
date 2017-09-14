@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,7 @@
 #include <stack>
 #include <string>
 
-namespace PLMD{
+namespace PLMD {
 
 /// \ingroup TOOLBOX
 /// Class taking care of dynamic loading.
@@ -37,7 +37,7 @@ namespace PLMD{
 /// means that they are not accessible from outside. Still, if they
 /// contain self-registering classes, they will register themselves
 /// to the ActionRegister object.
-class DLLoader{
+class DLLoader {
   std::stack<void*> handles;
   std::string lastError;
 /// Private copy constructor

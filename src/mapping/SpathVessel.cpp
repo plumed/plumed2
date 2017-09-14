@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,35 +42,35 @@ public:
 
 PLUMED_REGISTER_VESSEL(SpathVessel,"SPATH")
 
-void SpathVessel::registerKeywords( Keywords& keys ){
+void SpathVessel::registerKeywords( Keywords& keys ) {
   FunctionVessel::registerKeywords(keys);
 }
 
-void SpathVessel::reserveKeyword( Keywords& keys ){
+void SpathVessel::reserveKeyword( Keywords& keys ) {
   keys.reserve("vessel","SPATH","docs should not appear");
   keys.addOutputComponent("spath","SPATH","the position on the path");
 }
 
 SpathVessel::SpathVessel( const vesselbase::VesselOptions& da ):
-FunctionVessel(da),
-foundoneclose(false)
+  FunctionVessel(da),
+  foundoneclose(false)
 {
   mymap=dynamic_cast<Mapping*>( getAction() );
   plumed_massert( mymap, "SpathVessel can only be used with mappings");
   // Retrieve the index of the property in the underlying mapping
-  mycoordnumber=mymap->getPropertyIndex( getLabel() ); 
-  usetol=true; norm=true; 
+  mycoordnumber=mymap->getPropertyIndex( getLabel() );
+  usetol=true; norm=true;
 
-  for(unsigned i=0;i<mymap->getFullNumberOfTasks();++i){
-     if( mymap->getTaskCode(i)!=mymap->getPositionInFullTaskList(i) ) error("mismatched tasks and codes");
+  for(unsigned i=0; i<mymap->getFullNumberOfTasks(); ++i) {
+    if( mymap->getTaskCode(i)!=mymap->getPositionInFullTaskList(i) ) error("mismatched tasks and codes");
   }
 }
 
-std::string SpathVessel::value_descriptor(){
+std::string SpathVessel::value_descriptor() {
   return "the position on the path";
 }
 
-void SpathVessel::prepare(){
+void SpathVessel::prepare() {
   foundoneclose=false;
 }
 
@@ -78,10 +78,10 @@ void SpathVessel::calculate( const unsigned& current, MultiValue& myvals, std::v
   double pp=mymap->getPropertyValue( current, mycoordnumber ), weight=myvals.get(0);
   if( weight<getTolerance() ) return;
   unsigned nderivatives=getFinalValue()->getNumberOfDerivatives();
-  buffer[bufstart] += weight*pp; buffer[bufstart+1+nderivatives] += weight; 
-  if( getAction()->derivativesAreRequired() ){
-     myvals.chainRule( 0, 0, 1, 0, pp, bufstart, buffer );
-     myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );
+  buffer[bufstart] += weight*pp; buffer[bufstart+1+nderivatives] += weight;
+  if( getAction()->derivativesAreRequired() ) {
+    myvals.chainRule( 0, 0, 1, 0, pp, bufstart, buffer );
+    myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );
   }
 }
 

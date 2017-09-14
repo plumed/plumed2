@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,13 +24,13 @@
 
 #include "Action.h"
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup MULTIINHERIT
 This is used to create PLMD::Action objects that are run with some set frequency.
-Any PLMD::Action 
-that does not inherit from PLMD::Action is only run when some other Action requires the output from 
+Any PLMD::Action
+that does not inherit from PLMD::Action is only run when some other Action requires the output from
 it in order to run.  This class is used in PLMD::Bias
  Action which drives the execution of other Action's.
  Action's of this kind are executed with a fixed stride

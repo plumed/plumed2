@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,9 +28,9 @@
 namespace PLMD {
 namespace analysis {
 
-class LandmarkSelectionOptions{
-friend class LandmarkRegister;
-friend class LandmarkSelectionBase;
+class LandmarkSelectionOptions {
+  friend class LandmarkRegister;
+  friend class LandmarkSelectionBase;
 private:
   std::vector<std::string> words;
   AnalysisWithLandmarks* action;
@@ -39,8 +39,8 @@ public:
 };
 
 class LandmarkSelectionBase {
-friend class AnalysisWithLandmarks;
-friend class CopyAllFrames;
+  friend class AnalysisWithLandmarks;
+  friend class CopyAllFrames;
 private:
 /// Name of the method we are using for landmark selection
   std::string style;
@@ -57,9 +57,9 @@ protected:
   unsigned getNumberOfLandmarks() const ;
 /// Return the communicator
   Communicator& getCommunicator();
-/// Read a keywords from the input 
+/// Read a keywords from the input
   template <class T>
-  void parse(const std::string& ,T& );
+  void parse(const std::string&,T& );
 /// Read a flag from the input
   void parseFlag(const std::string& key, bool& t);
 /// Get the number of frames in the underlying action
@@ -67,9 +67,9 @@ protected:
 /// Get the weight of the ith frame
   double getWeightOfFrame( const unsigned& );
 /// Calculate the distance between the ith and jth frames
-  double getDistanceBetweenFrames( const unsigned& , const unsigned&  );
+  double getDistanceBetweenFrames( const unsigned&, const unsigned&  );
 /// Transfer frame i in the underlying action to the object we are going to analyze
-  void selectFrame( const unsigned& , MultiReferenceBase* );
+  void selectFrame( const unsigned&, MultiReferenceBase* );
 public:
   explicit LandmarkSelectionBase( const LandmarkSelectionOptions& lo );
   virtual ~LandmarkSelectionBase();
@@ -78,7 +78,7 @@ public:
 /// Return a description of the landmark selection protocol
   std::string description();
 /// Overwrite this to have a more descriptive output
-  virtual std::string rest_of_description(){ return ""; };
+  virtual std::string rest_of_description() { return ""; };
 /// Actually do landmark selection
   void selectLandmarks( MultiReferenceBase* );
   virtual void select( MultiReferenceBase* )=0;
@@ -90,7 +90,7 @@ unsigned LandmarkSelectionBase::getNumberOfLandmarks() const {
 }
 
 inline
-Communicator& LandmarkSelectionBase::getCommunicator(){
+Communicator& LandmarkSelectionBase::getCommunicator() {
   return action->comm;
 }
 
@@ -100,7 +100,7 @@ unsigned LandmarkSelectionBase::getNumberOfFrames() const {
 }
 
 template <class T>
-void LandmarkSelectionBase::parse( const std::string& key, T& t ){
+void LandmarkSelectionBase::parse( const std::string& key, T& t ) {
   bool found=Tools::parse(input,key,t);
   if(!found) plumed_merror("landmark seleciton style " + style + " requires " + key + " keyword");
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,7 +32,7 @@ class ClusteringBase : public ActionWithInputMatrix {
 protected:
 /// Vector that stores the sizes of the current set of clusters
   std::vector< std::pair<unsigned,unsigned> > cluster_sizes;
-/// Used to identify the cluster we are working on 
+/// Used to identify the cluster we are working on
   int number_of_cluster;
 /// Vector that identifies the cluster each atom belongs to
   std::vector<unsigned> which_cluster;
@@ -47,15 +47,15 @@ public:
   bool areConnected( const unsigned& iatom, const unsigned& jatom ) const ;
 /// Do the calculation
   void calculate();
-/// Do the clustering 
+/// Do the clustering
   virtual void performClustering()=0;
 /// Get the number of clusters that have been found
   unsigned getNumberOfClusters() const ;
 /// Get the atoms in one of the clusters
   virtual void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
 /// Do nothing for apply here
-  void apply(){}
-/// Get the cutoff 
+  void apply() {}
+/// Get the cutoff
   virtual double getCutoffForConnection() const ;
 };
 

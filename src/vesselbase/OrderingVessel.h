@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,7 +30,7 @@
 #include "core/Value.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 class OrderingVessel : public ValueVessel {
 private:
@@ -41,7 +41,7 @@ public:
   void resize();
   void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {}
   void finish( const std::vector<double>& buffer );
-  virtual bool compare( const double& , const double& )=0;
+  virtual bool compare( const double&, const double& )=0;
 };
 
 }

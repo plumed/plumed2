@@ -27,9 +27,9 @@
 /*
 This action can be useed to transform the colvar values calculated by a multicolvar using one minus a \ref switchingfunction
 
-In this action each colvar, \f$s_i\f$, calculated by multicolvar is transformed by a \ref switchingfunction function that 
-is equal to one if the colvar is greater than a certain target value and which is equal to zero otherwise.  
-It is important to understand the distinction between what is done here and what is done by \ref MFILTER_MORE.  
+In this action each colvar, \f$s_i\f$, calculated by multicolvar is transformed by a \ref switchingfunction function that
+is equal to one if the colvar is greater than a certain target value and which is equal to zero otherwise.
+It is important to understand the distinction between what is done here and what is done by \ref MFILTER_MORE.
 In \ref MFILTER_MORE a weight, \f$w_i\f$ for the colvar is calculated using the \ref histogrambead.  If one calculates the
 MEAN for \ref MFILTER_MORE one is thus calculating:
 
@@ -37,53 +37,53 @@ MEAN for \ref MFILTER_MORE one is thus calculating:
 \mu = \frac{ \sum_i [1 - \sigma(s_i) ] s_i }{\sum_i [1 - \sigma(s_i)] }
 \f]
 
-where \f$\sigma\f$ is the \ref switchingfunction.  In this action by contrast the colvar is being transformed by the \ref switchingfunction.  
+where \f$\sigma\f$ is the \ref switchingfunction.  In this action by contrast the colvar is being transformed by the \ref switchingfunction.
 If one thus calculates a MEAN for this action one computes:
 
 \f[
-\mu = \frac{ \sum_{i=1}^N 1 - \sigma(s_i) }{ N } 
+\mu = \frac{ \sum_{i=1}^N 1 - \sigma(s_i) }{ N }
 \f]
 
-In other words, you are calculating the mean for the transformed colvar. 
+In other words, you are calculating the mean for the transformed colvar.
 
 \par Examples
 
-The following input gives an example of how a MTRANSFORM_MORE action can be used to duplicate 
-functionality that is elsehwere in PLUMED. 
+The following input gives an example of how a MTRANSFORM_MORE action can be used to duplicate
+functionality that is elsehwere in PLUMED.
 
-\verbatim
+\plumedfile
 DISTANCES ...
  GROUPA=1-10 GROUPB=11-20
  LABEL=d1
 ... DISTANCES
 MTRANSFORM_MORE DATA=d1 SWITCH={GAUSSIAN D_0=1.5 R_0=0.00001}
-\endverbatim
+\endplumedfile
 
 In this case you can achieve the same result by using:
 
-\verbatim
+\plumedfile
 DISTANCES ...
- GROUPA=1-10 GROUPB=11-20 
+ GROUPA=1-10 GROUPB=11-20
  MORE_THAN={GAUSSIAN D_0=1.5 R_0=0.00001}
 ... DISTANCES
-\endverbatim
+\endplumedfile
 (see \ref DISTANCES)
 
 The advantage of MTRANSFORM_MORE comes, however, if you want to use transformed colvars as input
-for \ref MULTICOLVARDENS 
+for \ref MULTICOLVARDENS
 
 */
 //+ENDPLUMEDOC
 
 //+PLUMEDOC MFILTERS MFILTER_MORE
 /*
-This action can be used to filter the distribution of colvar values in a multicolvar 
+This action can be used to filter the distribution of colvar values in a multicolvar
 so that one can compute the mean and so on for only those multicolvars more than a tolerance.
 
 This action can be used to create a dynamic group of atom based on the value of a multicolvar.
 In this action a multicolvar is within the dynamic group if its value is greater than a target.
 In practise a weight, \f$w_i\f$  is ascribed to each colvar, \f$s_i\f$ calculated by a multicolvar
-and this weight measures the degree to which a colvar is a member of the group.  This weight is 
+and this weight measures the degree to which a colvar is a member of the group.  This weight is
 calculated using a \ref switchingfunction , \f$\sigma\f$ so it is given by:
 
 \f[
@@ -91,7 +91,7 @@ w_i = 1 - \sigma(s_i)
 \f]
 
 If one calculates a function of the set of multicolvars
-these weights are included in the calculation.  As such if one calculates the MEAN, \f$\mu\f$ of a filtered 
+these weights are included in the calculation.  As such if one calculates the MEAN, \f$\mu\f$ of a filtered
 multicolvar what is computed is the following:
 
 \f[
@@ -104,22 +104,22 @@ One is thus calculating the mean for those colvars that are greater than the tar
 
 The example shown below calculates the mean for those distances that greater than 1.5 nm in length
 
-\verbatim
+\plumedfile
 DISTANCES GROUPA=1 GROUPB=2-50 MEAN LABEL=d1
 MFILTER_MORE DATA=d1 SWITCH={GAUSSIAN D_0=1.5 R_0=0.00001} MEAN LABEL=d4
-\endverbatim
+\endplumedfile
 
-More complicated things can be done by using the label of a filter as input to a new multicolvar as shown 
-in the example below.  Here the coordination numbers of all atoms are computed.  The atoms with a coordination 
+More complicated things can be done by using the label of a filter as input to a new multicolvar as shown
+in the example below.  Here the coordination numbers of all atoms are computed.  The atoms with a coordination
 number greater than 2 are then identified using the filter.  This reduced list of atoms is then used as input
-to a second coordination number calculation.  This second coordination number thus measures the number of 
+to a second coordination number calculation.  This second coordination number thus measures the number of
 two-coordinated atoms that each of the two-coordinated atoms is bound to.
 
-\verbatim
+\plumedfile
 1: COORDINATIONNUMBER SPECIES=1-150 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 cf: MFILTER_MORE DATA=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM
 c2: COORDINATIONNUMBER SPECIES=cf SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0} MORE_THAN={RATIONAL D_0=2.0 R_0=0.1}
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -134,41 +134,41 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FilterMore(const ActionOptions& ao);
   double applyFilter( const double& val, double& df ) const ;
-}; 
+};
 
 PLUMED_REGISTER_ACTION(FilterMore,"MFILTER_MORE")
 PLUMED_REGISTER_ACTION(FilterMore,"MTRANSFORM_MORE")
 
-void FilterMore::registerKeywords( Keywords& keys ){
+void FilterMore::registerKeywords( Keywords& keys ) {
   MultiColvarFilter::registerKeywords( keys );
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-                               "The following provides information on the \\ref switchingfunction that are available. "
-                               "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+           "The following provides information on the \\ref switchingfunction that are available. "
+           "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
 }
 
 FilterMore::FilterMore(const ActionOptions& ao):
-Action(ao),
-MultiColvarFilter(ao)
+  Action(ao),
+  MultiColvarFilter(ao)
 {
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
-  if(sw.length()>0){
-     sf.set(sw,errors);
-     if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+  if(sw.length()>0) {
+    sf.set(sw,errors);
+    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
   } else {
-     double r_0=-1.0, d_0; int nn, mm;
-     parse("NN",nn); parse("MM",mm);
-     parse("R_0",r_0); parse("D_0",d_0);
-     if( r_0<0.0 ) error("you must set a value for R_0");
-     sf.set(nn,mm,r_0,d_0);
+    double r_0=-1.0, d_0; int nn, mm;
+    parse("NN",nn); parse("MM",mm);
+    parse("R_0",r_0); parse("D_0",d_0);
+    if( r_0<0.0 ) error("you must set a value for R_0");
+    sf.set(nn,mm,r_0,d_0);
   }
   log.printf("  filtering colvar values and focussing only on those more than %s\n",( sf.description() ).c_str() );
 
-  checkRead();  
+  checkRead();
 }
 
 double FilterMore::applyFilter( const double& val, double& df ) const {

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,47 +23,47 @@
 #include "core/ActionWithValue.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 
-void OrderingVessel::registerKeywords( Keywords& keys ){
+void OrderingVessel::registerKeywords( Keywords& keys ) {
   ValueVessel::registerKeywords( keys );
 }
 
 OrderingVessel::OrderingVessel( const VesselOptions& da ) :
-ValueVessel(da)
+  ValueVessel(da)
 {
   mydata = getAction()->buildDataStashes( NULL );
-  for(unsigned i=0;i<getAction()->getNumberOfVessels();++i){
-      if( getAction()->getPntrToVessel(i)->getName()==getName() ) 
-           error("calculating lowest/highest value multiple times serves no purpose");
+  for(unsigned i=0; i<getAction()->getNumberOfVessels(); ++i) {
+    if( getAction()->getPntrToVessel(i)->getName()==getName() )
+      error("calculating lowest/highest value multiple times serves no purpose");
   }
 }
 
-void OrderingVessel::resize(){
-  resizeBuffer( 0 ); 
+void OrderingVessel::resize() {
+  resizeBuffer( 0 );
   if( getAction()->derivativesAreRequired() ) getFinalValue()->resizeDerivatives( getAction()->getNumberOfDerivatives() );
 }
 
-void OrderingVessel::finish( const std::vector<double>& buffer ){
+void OrderingVessel::finish( const std::vector<double>& buffer ) {
   std::vector<double> values( getAction()->getNumberOfQuantities() );
   mydata->retrieveSequentialValue( 0, false, values );
 
   double min=values[mycomp]; unsigned mini=getAction()->getPositionInFullTaskList(0);
-  for(unsigned i=1;i<mydata->getNumberOfStoredValues();++i){
-      mydata->retrieveSequentialValue( i, false, values );
-      double newval = values[mycomp];
-      if( compare( newval, min ) ){ min=newval; mini=getAction()->getPositionInFullTaskList(i); }
+  for(unsigned i=1; i<mydata->getNumberOfStoredValues(); ++i) {
+    mydata->retrieveSequentialValue( i, false, values );
+    double newval = values[mycomp];
+    if( compare( newval, min ) ) { min=newval; mini=getAction()->getPositionInFullTaskList(i); }
   }
   setOutputValue( min );
 
-  if( getAction()->derivativesAreRequired() ){
-     MultiValue myvals( getAction()->getNumberOfQuantities(), getAction()->getNumberOfDerivatives() );
-     mydata->retrieveDerivatives( mini, false, myvals ); Value* fval=getFinalValue();
-     for(unsigned i=0;i<myvals.getNumberActive();++i){ 
-         unsigned ider=myvals.getActiveIndex(i); 
-         fval->setDerivative( ider, myvals.getDerivative(mycomp,ider) );
-     }
+  if( getAction()->derivativesAreRequired() ) {
+    MultiValue myvals( getAction()->getNumberOfQuantities(), getAction()->getNumberOfDerivatives() );
+    mydata->retrieveDerivatives( mini, false, myvals ); Value* fval=getFinalValue();
+    for(unsigned i=0; i<myvals.getNumberActive(); ++i) {
+      unsigned ider=myvals.getActiveIndex(i);
+      fval->setDerivative( ider, myvals.getDerivative(mycomp,ider) );
+    }
   }
 }
 

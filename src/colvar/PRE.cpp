@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,7 +32,7 @@ using namespace std;
 namespace PLMD {
 namespace colvar {
 
-//+PLUMEDOC COLVAR PRE 
+//+PLUMEDOC COLVAR PRE
 /*
 Calculates the Paramegnetic Resonance Enhancement  intensity ratio between two atoms.
 The reference atom for the spin label is added with SPINLABEL, the affected atom(s)
@@ -47,7 +47,7 @@ In the following example five PRE intensities are calculated using the distance 
 oxigen of the spin label and the backbone hydrogens. Omega is the NMR frequency, RTWO the
 R2 for the hydrogens, INEPT of 8 ms for the experiment and a TAUC of 1.21 ns
 
-\verbatim
+\plumedfile
 PRE ...
 LABEL=HN_pre
 INEPT=8
@@ -63,12 +63,12 @@ GROUPA5=451 RTWO5=0.0086341843
 
 PRINT ARG=HN_pre.* FILE=PRE.dat STRIDE=1
 
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
 
-class PRE : public Colvar {   
+class PRE : public Colvar {
 private:
   bool             pbc;
   double           constant, inept;
@@ -84,7 +84,7 @@ public:
 
 PLUMED_REGISTER_ACTION(PRE,"PRE")
 
-void PRE::registerKeywords( Keywords& keys ){
+void PRE::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
@@ -93,24 +93,24 @@ void PRE::registerKeywords( Keywords& keys ){
   keys.add("compulsory","OMEGA","is the Larmor frequency of the nuclear spin (in MHz).");
   keys.add("atoms","SPINLABEL","The atom to be used as the paramagnetic center.");
   keys.add("numbered","GROUPA","the atoms involved in each of the contacts you wish to calculate. "
-                   "Keywords like GROUPA1, GROUPA2, GROUPA3,... should be listed and one contact will be "
-                   "calculated for each ATOM keyword you specify.");
+           "Keywords like GROUPA1, GROUPA2, GROUPA3,... should be listed and one contact will be "
+           "calculated for each ATOM keyword you specify.");
   keys.reset_style("GROUPA","atoms");
   keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
-                   "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
-  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");  
+           "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
+  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
   keys.add("numbered","PREINT","Add an experimental value for each PRE.");
   keys.addOutputComponent("pre","default","the # PRE");
   keys.addOutputComponent("exp","ADDEXP","the # PRE experimental intensity");
 }
 
 PRE::PRE(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  pbc(true)
 {
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
-  pbc=!nopbc;  
+  pbc=!nopbc;
 
   vector<AtomNumber> atom;
   parseAtomList("SPINLABEL",atom);
@@ -118,24 +118,24 @@ pbc(true)
 
   // Read in the atoms
   vector<AtomNumber> t, ga_lista, gb_lista;
-  for(int i=1;;++i ){
-     parseAtomList("GROUPA", i, t );
-     if( t.empty() ) break;
-     for(unsigned j=0;j<t.size();j++) {ga_lista.push_back(t[j]); gb_lista.push_back(atom[0]);}
-     nga.push_back(t.size());
-     t.resize(0); 
+  for(int i=1;; ++i ) {
+    parseAtomList("GROUPA", i, t );
+    if( t.empty() ) break;
+    for(unsigned j=0; j<t.size(); j++) {ga_lista.push_back(t[j]); gb_lista.push_back(atom[0]);}
+    nga.push_back(t.size());
+    t.resize(0);
   }
 
   // Read in reference values
-  rtwo.resize( nga.size() ); 
+  rtwo.resize( nga.size() );
   unsigned ntarget=0;
-  for(unsigned i=0;i<nga.size();++i){
-     if( !parseNumbered( "RTWO", i+1, rtwo[i] ) ) break;
-     ntarget++; 
+  for(unsigned i=0; i<nga.size(); ++i) {
+    if( !parseNumbered( "RTWO", i+1, rtwo[i] ) ) break;
+    ntarget++;
   }
-  if( ntarget==0 ){
-      parse("RTWO",rtwo[0]);
-      for(unsigned i=1;i<nga.size();++i) rtwo[i]=rtwo[0];
+  if( ntarget==0 ) {
+    parse("RTWO",rtwo[0]);
+    for(unsigned i=1; i<nga.size(); ++i) rtwo[i]=rtwo[0];
   } else if( ntarget!=nga.size() ) error("found wrong number of RTWO values");
 
   double tauc=0.;
@@ -153,10 +153,10 @@ pbc(true)
 
   const double ns2s   = 0.000000001;
   const double MHz2Hz = 1000000.;
-  const double Kappa  = 12300000000.00; // this is 1/15*S*(S+1)*gamma^2*g^2*beta^2 
-                                        // where gamma is the nuclear gyromagnetic ratio, 
-                                        // g is the electronic g factor, and beta is the Bohr magneton
-                                        // in nm^6/s^2
+  const double Kappa  = 12300000000.00; // this is 1/15*S*(S+1)*gamma^2*g^2*beta^2
+  // where gamma is the nuclear gyromagnetic ratio,
+  // g is the electronic g factor, and beta is the Bohr magneton
+  // in nm^6/s^2
   constant = (4.*tauc*ns2s+(3.*tauc*ns2s)/(1+omega*omega*MHz2Hz*MHz2Hz*tauc*tauc*ns2s*ns2s))*Kappa;
 
   bool addexp=false;
@@ -164,12 +164,12 @@ pbc(true)
 
   vector<double> exppre;
   if(addexp) {
-    exppre.resize( nga.size() ); 
+    exppre.resize( nga.size() );
     unsigned ntarget=0;
 
-    for(unsigned i=0;i<nga.size();++i){
-       if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
-       ntarget++; 
+    for(unsigned i=0; i<nga.size(); ++i) {
+      if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
+      ntarget++;
     }
     if( ntarget!=nga.size() ) error("found wrong number of PREINT values");
   }
@@ -178,12 +178,12 @@ pbc(true)
   nl= new NeighborList(gb_lista,ga_lista,true,pbc,getPbc());
 
   // Ouput details of all contacts
-  unsigned index=0; 
-  for(unsigned i=0;i<nga.size();++i){
+  unsigned index=0;
+  for(unsigned i=0; i<nga.size(); ++i) {
     log.printf("  The %uth PRE is calculated using %u equivalent atoms:\n", i, nga[i]);
     log.printf("    %d", ga_lista[index].serial());
     index++;
-    for(unsigned j=1;j<nga[i];j++) {
+    for(unsigned j=1; j<nga[i]; j++) {
       log.printf(" %d", ga_lista[index].serial());
       index++;
     }
@@ -193,18 +193,18 @@ pbc(true)
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
 
-  for(unsigned i=0;i<nga.size();i++) {
+  for(unsigned i=0; i<nga.size(); i++) {
     string num; Tools::convert(i,num);
     addComponentWithDerivatives("pre_"+num);
     componentIsNotPeriodic("pre_"+num);
   }
 
   if(addexp) {
-    for(unsigned i=0;i<nga.size();i++) {
+    for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
       addComponent("exp_"+num);
       componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num); 
+      Value* comp=getPntrToComponent("exp_"+num);
       comp->set(exppre[i]);
     }
   }
@@ -213,22 +213,22 @@ pbc(true)
   checkRead();
 }
 
-PRE::~PRE(){
+PRE::~PRE() {
   delete nl;
-} 
+}
 
 void PRE::calculate()
 {
 // cycle over the number of PRE
-#pragma omp parallel for num_threads(OpenMP::getNumThreads()) 
-  for(unsigned i=0;i<nga.size();i++) {
-    vector<Vector> deriv; 
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned i=0; i<nga.size(); i++) {
+    vector<Vector> deriv;
     Tensor dervir;
     double pre=0;
     unsigned index=0;
-    for(unsigned k=0; k<i; k++) index+=nga[k]; 
-    // cycle over equivalent atoms 
-    for(unsigned j=0;j<nga[i];j++) {
+    for(unsigned k=0; k<i; k++) index+=nga[k];
+    // cycle over equivalent atoms
+    for(unsigned j=0; j<nga[i]; j++) {
       const double c_aver=constant/((double)nga[i]);
       // the first atom is always the same (the paramagnetic group)
       const unsigned i0=nl->getClosePair(index+j).first;
@@ -257,7 +257,7 @@ void PRE::calculate()
     val->set(ratio);
     setBoxDerivatives(val, fact*dervir);
 
-    for(unsigned j=0;j<nga[i];j++) {
+    for(unsigned j=0; j<nga[i]; j++) {
       const unsigned i0=nl->getClosePair(index+j).first;
       const unsigned i1=nl->getClosePair(index+j).second;
       setAtomsDerivatives(val, i0,  fact*deriv[j]);

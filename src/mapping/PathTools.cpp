@@ -35,30 +35,30 @@
 using namespace std;
 
 namespace PLMD {
-namespace mapping{
+namespace mapping {
 
 //+PLUMEDOC TOOLS pathtools
 /*
 pathtools can be used to construct paths from pdb data
 
 The path CVs in PLUMED are curvilinear coordinates through a high dimensional vector space.
-Enhanced sampling calculations are ofen run using the progress along the paths and the distance from the path as CVs 
+Enhanced sampling calculations are ofen run using the progress along the paths and the distance from the path as CVs
 as this provides a convenient way of defining a reaction coordinate for a complicated process.  This method is explained
 in the documentation for \ref PATH.
 
 The path itself is an ordered set of equally-spaced, high-dimensional frames the way in which these frames
 should be constructed will depend on the problem in hand.  In other words, you will need to understand the reaction
-you wish to study in order to select a sensible set of frames to use in your path CV.  This tool provides two 
+you wish to study in order to select a sensible set of frames to use in your path CV.  This tool provides two
 methods that may be useful when it comes to constructing paths; namely:
 
 - A tool that takes in an initial guess path in which the frames are not equally spaced.  This tool adjusts the positions
 of the frames in order to make them equally spaced so that they can be used as the basis for a path CV.
 
-- A tool that takes two frames as input and that allows you to return a linear path connecting these two frames.  The 
-output from this method may be useful as an initial guess path.  It is arguable that a linear path rather defeats the 
+- A tool that takes two frames as input and that allows you to return a linear path connecting these two frames.  The
+output from this method may be useful as an initial guess path.  It is arguable that a linear path rather defeats the
 purpose of the path CV method, however, as the whole purpose is to be able to define non-linear paths.
 
-Notice that you can use these two methods and take advantage of all the ways of measuring \ref dists that are available within 
+Notice that you can use these two methods and take advantage of all the ways of measuring \ref dists that are available within
 PLUMED. The way you do this with each of these tools described above is explained in the example below.
 
 \par Examples
@@ -75,12 +75,12 @@ The example below shows how can create an initial linear path connecting the two
 end.pdb.  In this case the path output to path.pdb will consist of 6 frames: the initial and final frames that
 were contained in start.pdb and end.pdb as well as four equally spaced frames along the vector connecting
 start.pdb to end.pdb.
- 
+
 \verbatim
 plumed pathtools --start start.pdb --end end.pdb --nframes 4 --metric OPTIMAL --out path.pdb
 \endverbatim
 
-Often the idea with path cvs is to create a path connecting some initial state A to some final state B.  You would 
+Often the idea with path cvs is to create a path connecting some initial state A to some final state B.  You would
 in this case have representative configurations from your A and B states defined in the input files to pathtools
 that we have called start.pdb and end.pdb in the example above.  Furthermore, it may be useful to have a few frames
 before your start frame and after your end frame.  You can use path tools to create these extended paths as shown below.
@@ -93,7 +93,7 @@ plumed pathtools --start start.pdb --end end.pdb --nframes 4 --metric OPTIMAL --
 \endverbatim
 
 Notice also that when you reparameterise paths you must choose two frames to fix.  Generally you chose to fix the states
-that are representative of your states A and B.  By default pathtools will fix the first and last frames.  You can, however, 
+that are representative of your states A and B.  By default pathtools will fix the first and last frames.  You can, however,
 change the states to fix by taking advantage of the fixed flag as shown below.
 
 \verbatim
@@ -104,20 +104,20 @@ plumed pathtools --path inpath.pdb --metric EUCLIDEAN --out outpath.pdb --fixed 
 //+ENDPLUMEDOC
 
 class PathTools :
-public CLTool
+  public CLTool
 {
 public:
   static void registerKeywords( Keywords& keys );
   explicit PathTools(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const{
+  string description()const {
     return "print out a description of the keywords for an action in html";
   }
 };
 
 PLUMED_REGISTER_CLTOOL(PathTools,"pathtools")
 
-void PathTools::registerKeywords( Keywords& keys ){
+void PathTools::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("atoms","--start","a pdb file that contains the structure for the initial frame of your path");
   keys.add("atoms","--end","a pdb file that contains the structure for the final frame of your path");
@@ -133,160 +133,160 @@ void PathTools::registerKeywords( Keywords& keys ){
 }
 
 PathTools::PathTools(const CLToolOptions& co ):
-CLTool(co)
+  CLTool(co)
 {
   inputdata=commandline;
 }
 
-int PathTools::main(FILE* in, FILE*out,Communicator& pc){
+int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 
- std::string mtype; parse("--metric",mtype);
- std::string ifilename; parse("--path",ifilename); 
- std::string ofmt; parse("--arg-fmt",ofmt);
- std::string ofilename; parse("--out",ofilename);
- if( ifilename.length()>0 ){
-     fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() ); 
-     FILE* fp=fopen(ifilename.c_str(),"r"); 
-     bool do_read=true; std::vector<ReferenceConfiguration*> frames;
-     while (do_read) {
-        PDB mypdb;
-        // Read the pdb file
-        do_read=mypdb.readFromFilepointer(fp,false,0.1);
-        if( do_read ){ 
-            ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
-            frames.push_back( mymsd ); mymsd->checkRead();
-        }
-     }
-     std::vector<unsigned> fixed; parseVector("--fixed",fixed);
-     if( fixed.size()==1 ){ 
-         if( fixed[0]!=0 ) error("input to --fixed should be two integers");
-         fixed.resize(2); fixed[0]=0; fixed[1]=frames.size()-1; 
-     } else if( fixed.size()==2 ){
-         if( fixed[0]<0 || fixed[1]<0 || fixed[0]>(frames.size()-1) || fixed[1]>(frames.size()-1) ){
-             error("input to --fixed should be two numbers between 0 and the number of frames-1");
-         }
-     } else {
-         error("input to --fixed should be two integers");
-     }
-     std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;
-     for(unsigned i=0;i<frames.size();++i){ 
-        frames[i]->getAtomRequests( atoms); 
-        frames[i]->getArgumentRequests( arg_names ); 
-     }
-     // Generate stuff to reparameterize
-     Pbc fake_pbc; std::vector<Value*> vals; 
-     for(unsigned i=0;i<frames[0]->getNumberOfReferenceArguments();++i){
-         vals.push_back(new Value()); vals[vals.size()-1]->setNotPeriodic();
-     }
-     // And reparameterize
-     PathReparameterization myparam( fake_pbc, vals, frames );
-     // And make all points equally spaced
-     double tol; parse("--tolerance",tol); myparam.reparameterize( fixed[0], fixed[1], tol );
+  std::string mtype; parse("--metric",mtype);
+  std::string ifilename; parse("--path",ifilename);
+  std::string ofmt; parse("--arg-fmt",ofmt);
+  std::string ofilename; parse("--out",ofilename);
+  if( ifilename.length()>0 ) {
+    fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
+    FILE* fp=fopen(ifilename.c_str(),"r");
+    bool do_read=true; std::vector<ReferenceConfiguration*> frames;
+    while (do_read) {
+      PDB mypdb;
+      // Read the pdb file
+      do_read=mypdb.readFromFilepointer(fp,false,0.1);
+      if( do_read ) {
+        ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
+        frames.push_back( mymsd ); mymsd->checkRead();
+      }
+    }
+    std::vector<unsigned> fixed; parseVector("--fixed",fixed);
+    if( fixed.size()==1 ) {
+      if( fixed[0]!=0 ) error("input to --fixed should be two integers");
+      fixed.resize(2); fixed[0]=0; fixed[1]=frames.size()-1;
+    } else if( fixed.size()==2 ) {
+      if( fixed[0]<0 || fixed[1]<0 || fixed[0]>(frames.size()-1) || fixed[1]>(frames.size()-1) ) {
+        error("input to --fixed should be two numbers between 0 and the number of frames-1");
+      }
+    } else {
+      error("input to --fixed should be two integers");
+    }
+    std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;
+    for(unsigned i=0; i<frames.size(); ++i) {
+      frames[i]->getAtomRequests( atoms);
+      frames[i]->getArgumentRequests( arg_names );
+    }
+    // Generate stuff to reparameterize
+    Pbc fake_pbc; std::vector<Value*> vals;
+    for(unsigned i=0; i<frames[0]->getNumberOfReferenceArguments(); ++i) {
+      vals.push_back(new Value()); vals[vals.size()-1]->setNotPeriodic();
+    }
+    // And reparameterize
+    PathReparameterization myparam( fake_pbc, vals, frames );
+    // And make all points equally spaced
+    double tol; parse("--tolerance",tol); myparam.reparameterize( fixed[0], fixed[1], tol );
 
-     // Ouput data on spacings
-     double mean=0;
-     MultiValue myvpack( 1, frames[0]->getNumberOfReferenceArguments() + 3*frames[0]->getNumberOfReferencePositions() + 9 );
-     ReferenceValuePack mypack( frames[0]->getNumberOfReferenceArguments(), frames[0]->getNumberOfReferencePositions(), myvpack );
-     for(unsigned i=1;i<frames.size();++i){ 
-        double len = frames[i]->calc( frames[i-1]->getReferencePositions(), fake_pbc, vals, frames[i-1]->getReferenceArguments(), mypack, false );
-        printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
-        mean+=len;
-     }
-     printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( frames.size()-1 ) );
+    // Ouput data on spacings
+    double mean=0;
+    MultiValue myvpack( 1, frames[0]->getNumberOfReferenceArguments() + 3*frames[0]->getNumberOfReferencePositions() + 9 );
+    ReferenceValuePack mypack( frames[0]->getNumberOfReferenceArguments(), frames[0]->getNumberOfReferencePositions(), myvpack );
+    for(unsigned i=1; i<frames.size(); ++i) {
+      double len = frames[i]->calc( frames[i-1]->getReferencePositions(), fake_pbc, vals, frames[i-1]->getReferenceArguments(), mypack, false );
+      printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
+      mean+=len;
+    }
+    printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( frames.size()-1 ) );
 
-     // Delete all the frames
-     OFile ofile; ofile.open(ofilename);
-     for(unsigned i=0;i<frames.size();++i){ frames[i]->print( ofile, ofmt, 10. ); delete frames[i]; }
-     // Delete the vals as we don't need them
-     for(unsigned i=0;i<vals.size();++i) delete vals[i]; 
-     // Return as we are done
-     ofile.close(); return 0;
- }
- 
- // Read initial frame
- std::string istart; parse("--start",istart); FILE* fp2=fopen(istart.c_str(),"r"); PDB mystartpdb;
- if( istart.length()==0 ) error("input is missing use --istart + --iend or --path");
- if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) error("could not read fila " + istart); 
- ReferenceConfiguration* sframe=metricRegister().create<ReferenceConfiguration>( mtype, mystartpdb );
- fclose(fp2);
+    // Delete all the frames
+    OFile ofile; ofile.open(ofilename);
+    for(unsigned i=0; i<frames.size(); ++i) { frames[i]->print( ofile, ofmt, 10. ); delete frames[i]; }
+    // Delete the vals as we don't need them
+    for(unsigned i=0; i<vals.size(); ++i) delete vals[i];
+    // Return as we are done
+    ofile.close(); return 0;
+  }
 
- // Read final frame
- std::string iend; parse("--end",iend); FILE* fp1=fopen(iend.c_str(),"r"); PDB myendpdb;
- if( iend.length()==0 ) error("input is missing using --istart + --iend or --path"); 
- if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
- ReferenceConfiguration* eframe=metricRegister().create<ReferenceConfiguration>( mtype, myendpdb );
- fclose(fp1);
+// Read initial frame
+  std::string istart; parse("--start",istart); FILE* fp2=fopen(istart.c_str(),"r"); PDB mystartpdb;
+  if( istart.length()==0 ) error("input is missing use --istart + --iend or --path");
+  if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) error("could not read fila " + istart);
+  ReferenceConfiguration* sframe=metricRegister().create<ReferenceConfiguration>( mtype, mystartpdb );
+  fclose(fp2);
 
- // Get atoms and arg requests
- std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;
- sframe->getAtomRequests( atoms); eframe->getAtomRequests( atoms);
- sframe->getArgumentRequests( arg_names ); eframe->getArgumentRequests( arg_names );
+// Read final frame
+  std::string iend; parse("--end",iend); FILE* fp1=fopen(iend.c_str(),"r"); PDB myendpdb;
+  if( iend.length()==0 ) error("input is missing using --istart + --iend or --path");
+  if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
+  ReferenceConfiguration* eframe=metricRegister().create<ReferenceConfiguration>( mtype, myendpdb );
+  fclose(fp1);
 
- // Now read in the rest of the instructions
- unsigned nbefore, nbetween, nafter;
- parse("--nframes-before-start",nbefore); parse("--nframes",nbetween); parse("--nframes-after-end",nafter);
- nbetween++;
- fprintf(out,"Generating linear path connecting structure in file named %s to structure in file named %s \n",istart.c_str(),iend.c_str() );
- fprintf(out,"A path consisting of %u equally-spaced frames before the initial structure, %u frames between the intial and final structures "
-             "and %u frames after the final structure will be created \n",nbefore,nbetween,nafter);
+// Get atoms and arg requests
+  std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;
+  sframe->getAtomRequests( atoms); eframe->getAtomRequests( atoms);
+  sframe->getArgumentRequests( arg_names ); eframe->getArgumentRequests( arg_names );
 
- // Create a vector of arguments to use for calculating displacements
- Pbc fpbc; std::vector<Value*> args;
- for(unsigned i=0;i<eframe->getNumberOfReferenceArguments();++i){
-    args.push_back(new Value()); args[args.size()-1]->setNotPeriodic(); 
- }
+// Now read in the rest of the instructions
+  unsigned nbefore, nbetween, nafter;
+  parse("--nframes-before-start",nbefore); parse("--nframes",nbetween); parse("--nframes-after-end",nafter);
+  nbetween++;
+  fprintf(out,"Generating linear path connecting structure in file named %s to structure in file named %s \n",istart.c_str(),iend.c_str() );
+  fprintf(out,"A path consisting of %u equally-spaced frames before the initial structure, %u frames between the intial and final structures "
+          "and %u frames after the final structure will be created \n",nbefore,nbetween,nafter);
 
- // Calculate the distance between the start and the end
- MultiValue myvpack( 1, sframe->getNumberOfReferenceArguments() + 3*sframe->getNumberOfReferencePositions() + 9); 
- ReferenceValuePack mypack( sframe->getNumberOfReferenceArguments(), sframe->getNumberOfReferencePositions(), myvpack );
- double pathlen = sframe->calc( eframe->getReferencePositions(), fpbc, args, eframe->getReferenceArguments(), mypack, false );
- // And the spacing between frames
- double delr = 1.0 / static_cast<double>( nbetween );
- // Calculate the vector connecting the start to the end
- Direction mydir(ReferenceConfigurationOptions("DIRECTION")); sframe->setupPCAStorage( mypack );
- mydir.setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() ); mydir.zeroDirection();
- sframe->extractDisplacementVector( eframe->getReferencePositions(), args, eframe->getReferenceArguments(), false, false, mydir );
+// Create a vector of arguments to use for calculating displacements
+  Pbc fpbc; std::vector<Value*> args;
+  for(unsigned i=0; i<eframe->getNumberOfReferenceArguments(); ++i) {
+    args.push_back(new Value()); args[args.size()-1]->setNotPeriodic();
+  }
+
+// Calculate the distance between the start and the end
+  MultiValue myvpack( 1, sframe->getNumberOfReferenceArguments() + 3*sframe->getNumberOfReferencePositions() + 9);
+  ReferenceValuePack mypack( sframe->getNumberOfReferenceArguments(), sframe->getNumberOfReferencePositions(), myvpack );
+  double pathlen = sframe->calc( eframe->getReferencePositions(), fpbc, args, eframe->getReferenceArguments(), mypack, false );
+// And the spacing between frames
+  double delr = 1.0 / static_cast<double>( nbetween );
+// Calculate the vector connecting the start to the end
+  Direction mydir(ReferenceConfigurationOptions("DIRECTION")); sframe->setupPCAStorage( mypack );
+  mydir.setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() ); mydir.zeroDirection();
+  sframe->extractDisplacementVector( eframe->getReferencePositions(), args, eframe->getReferenceArguments(), false, mydir );
 
 
- // Now create frames
- std::vector<ReferenceConfiguration*> final_path; 
- Direction pos(ReferenceConfigurationOptions("DIRECTION")); 
- pos.setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
- for(int i=0;i<nbefore;++i){
+// Now create frames
+  std::vector<ReferenceConfiguration*> final_path;
+  Direction pos(ReferenceConfigurationOptions("DIRECTION"));
+  pos.setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
+  for(int i=0; i<nbefore; ++i) {
     pos.setDirection( sframe->getReferencePositions(), sframe->getReferenceArguments() );
-    pos.displaceReferenceConfiguration( -i*delr, mydir ); 
-    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) ); 
+    pos.displaceReferenceConfiguration( -i*delr, mydir );
+    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) );
     final_path[final_path.size()-1]->setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
     final_path[final_path.size()-1]->setReferenceConfig( pos.getReferencePositions(), pos.getReferenceArguments(), sframe->getReferenceMetric() );
- }
- for(unsigned i=1;i<nbetween;++i){
+  }
+  for(unsigned i=1; i<nbetween; ++i) {
     pos.setDirection( sframe->getReferencePositions(), sframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( i*delr, mydir );
-    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) ); 
+    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) );
     final_path[final_path.size()-1]->setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
     final_path[final_path.size()-1]->setReferenceConfig( pos.getReferencePositions(), pos.getReferenceArguments(), sframe->getReferenceMetric() );
- }
- for(unsigned i=0;i<nafter;++i){
+  }
+  for(unsigned i=0; i<nafter; ++i) {
     pos.setDirection( eframe->getReferencePositions(), eframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( i*delr, mydir );
     final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) );
     final_path[final_path.size()-1]->setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
     final_path[final_path.size()-1]->setReferenceConfig( pos.getReferencePositions(), pos.getReferenceArguments(), sframe->getReferenceMetric() );
- }  
+  }
 
- double mean=0; printf("DISTANCE BETWEEN ORIGINAL FRAMES %f \n",pathlen);
- for(unsigned i=1;i<final_path.size();++i){
+  double mean=0; printf("DISTANCE BETWEEN ORIGINAL FRAMES %f \n",pathlen);
+  for(unsigned i=1; i<final_path.size(); ++i) {
     double len = final_path[i]->calc( final_path[i-1]->getReferencePositions(), fpbc, args, final_path[i-1]->getReferenceArguments(), mypack, false );
     printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
     mean+=len;
- }
- printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );
+  }
+  printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );
 
- OFile ofile; ofile.open(ofilename); 
- for(unsigned i=0;i<final_path.size();++i){ final_path[i]->print( ofile, ofmt, 10. ); delete final_path[i]; }
- // Delete the args as we don't need them anymore
- for(unsigned i=0;i<args.size();++i) delete args[i];
- ofile.close(); delete sframe; delete eframe; return 0;
+  OFile ofile; ofile.open(ofilename);
+  for(unsigned i=0; i<final_path.size(); ++i) { final_path[i]->print( ofile, ofmt, 10. ); delete final_path[i]; }
+// Delete the args as we don't need them anymore
+  for(unsigned i=0; i<args.size(); ++i) delete args[i];
+  ofile.close(); delete sframe; delete eframe; return 0;
 }
 
 } // End of namespace

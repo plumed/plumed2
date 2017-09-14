@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,57 +26,57 @@
 namespace PLMD {
 namespace gridtools {
 
-void ActionWithGrid::registerKeywords( Keywords& keys ){
+void ActionWithGrid::registerKeywords( Keywords& keys ) {
   vesselbase::ActionWithAveraging::registerKeywords( keys );
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
-                                            "in plumed plumed can be found in \\ref kernelfunctions.");
+           "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","CONCENTRATION","the concentration parameter for Von Mises-Fisher distributions");
 }
 
 ActionWithGrid::ActionWithGrid( const ActionOptions& ao):
-Action(ao),
-ActionWithAveraging(ao),
-mygrid(NULL)
+  Action(ao),
+  ActionWithAveraging(ao),
+  mygrid(NULL)
 {
 }
 
-void ActionWithGrid::createGrid( const std::string& type, const std::string& inputstr ){
+void ActionWithGrid::createGrid( const std::string& type, const std::string& inputstr ) {
   // Start creating the input for the grid
-  std::string vstring = inputstr; 
-  if( keywords.exists("KERNEL") ){
-      std::string vconc; parse("CONCENTRATION",vconc);
-      if( vconc.length()>0 ){
-          vstring += " TYPE=fibonacci CONCENTRATION=" + vconc;   
-      } else {
-          std::string kstring; parse("KERNEL",kstring);
-          if( kstring=="DISCRETE" ) vstring += " KERNEL=" + kstring;
-          else vstring += " KERNEL=" + kstring + " " + getKeyword("BANDWIDTH");
-      }
+  std::string vstring = inputstr;
+  if( keywords.exists("KERNEL") ) {
+    std::string vconc; parse("CONCENTRATION",vconc);
+    if( vconc.length()>0 ) {
+      vstring += " TYPE=fibonacci CONCENTRATION=" + vconc;
+    } else {
+      std::string kstring; parse("KERNEL",kstring);
+      if( kstring=="DISCRETE" ) vstring += " KERNEL=" + kstring;
+      else vstring += " KERNEL=" + kstring + " " + getKeyword("BANDWIDTH");
+    }
   }
   vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
   Keywords keys; gridtools::AverageOnGrid::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
-  if( type=="histogram" ){
-     mygrid = new HistogramOnGrid(dar); 
-  } else if( type=="average" ){
-     mygrid = new AverageOnGrid(dar); 
-  } else if( type=="grid" ){
-     mygrid = new GridVessel(dar); 
+  if( type=="histogram" ) {
+    mygrid = new HistogramOnGrid(dar);
+  } else if( type=="average" ) {
+    mygrid = new AverageOnGrid(dar);
+  } else if( type=="grid" ) {
+    mygrid = new GridVessel(dar);
   } else {
-     plumed_merror("no way to create grid of type " + type );
-  } 
+    plumed_merror("no way to create grid of type " + type );
+  }
 }
 
-void ActionWithGrid::turnOnDerivatives(){
-  needsDerivatives(); ActionWithValue::turnOnDerivatives(); 
+void ActionWithGrid::turnOnDerivatives() {
+  needsDerivatives(); ActionWithValue::turnOnDerivatives();
   if( getStride()==1 ) setStride(0);
   else if( getStride()!=0 ) error("conflicting instructions for grid - stride was set but must be evaluated on every step for derivatives - remove STRIDE keyword");
-  if( clearstride>1 ) error("conflicting instructions for grid - CLEAR was set but grid must be reset on every step for derivatives - remove CLEAR keyword" ); 
-  if( weights.size()>0 ) error("conflicting instructions for grid - LOGWEIGHTS was set but weights are not considered when derivatives of grid are evaluated - remove LOGWEIGHTS keyword"); 
+  if( clearstride>1 ) error("conflicting instructions for grid - CLEAR was set but grid must be reset on every step for derivatives - remove CLEAR keyword" );
+  if( weights.size()>0 ) error("conflicting instructions for grid - LOGWEIGHTS was set but weights are not considered when derivatives of grid are evaluated - remove LOGWEIGHTS keyword");
 }
 
-void ActionWithGrid::calculate(){
+void ActionWithGrid::calculate() {
   // Do nothing if derivatives are not required
   if( doNotCalculateDerivatives() ) return;
   // Clear on every step

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,20 +54,20 @@ void RootFindingBase<FCLASS>::doSearch( const std::vector<double>& dir, std::vec
   double ax=0.0, xx=1.0;
   bb.bracket( ax, xx, &F1dim<FCLASS>::getEng );
   double xmin=bb.search( &F1dim<FCLASS>::getEng );
-  for(unsigned i=0;i<p.size();++i) p[i] += xmin*dir[i];
+  for(unsigned i=0; i<p.size(); ++i) p[i] += xmin*dir[i];
 }
 
 template <class FCLASS>
 void RootFindingBase<FCLASS>::linesearch( const std::vector<double>& dir, std::vector<double>& p, engf_pointer myfunc ) const {
-  // Construct the object that turns points on a line into vectors 
+  // Construct the object that turns points on a line into vectors
   F1dim<FCLASS> f1dim( p, dir, myclass_func, myfunc, NULL );
   // Actually do the search
-  doSearch( dir, p, f1dim ); 
+  doSearch( dir, p, f1dim );
 }
 
 template <class FCLASS>
 void RootFindingBase<FCLASS>::lsearch( const std::vector<double>& dir, std::vector<double>& p, engfnc_pointer myfunc ) const {
-  // Construct the object that turns points on a line into vectors 
+  // Construct the object that turns points on a line into vectors
   F1dim<FCLASS> f1dim( p, dir, myclass_func, NULL, myfunc );
   // Actually do the search
   doSearch( dir, p, f1dim );

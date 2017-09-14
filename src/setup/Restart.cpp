@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,8 +27,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace setup{
+namespace PLMD {
+namespace setup {
 
 //+PLUMEDOC GENERIC RESTART
 /*
@@ -51,31 +51,38 @@ and \ref PBMETAD and on some analysis action.
 \par Examples
 
 Using the following input:
-\verbatim
+\plumedfile
 d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=out
-\endverbatim
-(See also \ref DISTANCE and \ref PRINT).
+\endplumedfile
 a new 'out' file will be created. If an old one is on the way, it will be automatically backed up.
 
 On the other hand, using the following input:
-\verbatim
+\plumedfile
 RESTART
 d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=out
-\endverbatim
+\endplumedfile
 the file 'out' will be appended.
-(See also \ref DISTANCE and \ref PRINT).
 
 In the following case, file out1 will be backed up and file out2 will be concatenated
-\verbatim
+\plumedfile
 RESTART
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=1,2
 PRINT ARG=d1 FILE=out1 RESTART=NO
 PRINT ARG=d2 FILE=out2
-\endverbatim
-(See also \ref DISTANCE and \ref PRINT).
+\endplumedfile
+
+In the following case, file out will backed up even if the MD code thinks that we
+are restarting. Notice that not all the MD code send to PLUMED information about restarts.
+If you are not sure, always put `RESTART` when you are restarting and nothing when you aren't
+\plumedfile
+RESTART NO
+d1: DISTANCE ATOMS=1,2
+PRINT ARG=d1 FILE=out1
+\endplumedfile
+
 
 
 
@@ -93,20 +100,20 @@ public:
 
 PLUMED_REGISTER_ACTION(Restart,"RESTART")
 
-void Restart::registerKeywords( Keywords& keys ){
+void Restart::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);
   keys.addFlag("NO",false,"switch off restart - can be used to override the behavior of the MD engine");
 }
 
 Restart::Restart(const ActionOptions&ao):
-Action(ao),
-ActionSetup(ao)
+  Action(ao),
+  ActionSetup(ao)
 {
   bool no=false;
   parseFlag("NO",no);
   bool md=plumed.getRestart();
   log<<"  MD code "<<(md?"did":"didn't")<<" require restart\n";
-  if(no){
+  if(no) {
     if(md) log<<"  Switching off restart\n";
     plumed.setRestart(false);
     log<<"  Not restarting simulation: files will be backed up\n";

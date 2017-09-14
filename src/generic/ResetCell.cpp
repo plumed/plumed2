@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,7 +35,7 @@
 using namespace std;
 
 namespace PLMD {
-namespace generic{
+namespace generic {
 
 //+PLUMEDOC GENERIC RESET_CELL
 /*
@@ -58,7 +58,7 @@ arbitrary.
 
 \attention
 The implementation of this action is available but should be considered in testing phase. Please report any
-strange behavior. 
+strange behavior.
 
 \attention
 This directive modifies the stored position at the precise moment
@@ -71,14 +71,13 @@ this action is performed at every MD step.
 \par Examples
 
 Reset cell to be triangular after a rototranslational fit
-\verbatim
+\plumedfile
 DUMPATOMS FILE=dump-original.xyz ATOMS=1-20
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=OPTIMAL
 DUMPATOMS FILE=dump-fit.xyz ATOMS=1-20
 RESET_CELL TYPE=TRIANGULAR
 DUMPATOMS FILE=dump-reset.xyz ATOMS=1-20
-\endverbatim
-(see also \ref DUMPATOMS)
+\endplumedfile
 
 
 */
@@ -91,7 +90,7 @@ class ResetCell:
 {
   std::string type;
   Tensor rotation,newbox;
-        
+
 public:
   explicit ResetCell(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -101,7 +100,7 @@ public:
 
 PLUMED_REGISTER_ACTION(ResetCell,"RESET_CELL")
 
-void ResetCell::registerKeywords( Keywords& keys ){
+void ResetCell::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
@@ -109,66 +108,66 @@ void ResetCell::registerKeywords( Keywords& keys ){
 }
 
 ResetCell::ResetCell(const ActionOptions&ao):
-Action(ao),
-ActionPilot(ao),
-ActionAtomistic(ao)
+  Action(ao),
+  ActionPilot(ao),
+  ActionAtomistic(ao)
 {
   type.assign("TRIANGULAR");
   parse("TYPE",type);
 
   log<<"  type: "<<type<<"\n";
-  if(type=="TRIANGULAR"){
+  if(type=="TRIANGULAR") {
   } else error("undefined type "+type);
 
   checkRead();
 }
 
 
-void ResetCell::calculate(){
+void ResetCell::calculate() {
 
-	Pbc & pbc(modifyGlobalPbc());
+  Pbc & pbc(modifyGlobalPbc());
 
-	Tensor box=pbc.getBox();
+  Tensor box=pbc.getBox();
 
 // moduli of lattice vectors
-	double a=modulo(box.getRow(0));
-	double b=modulo(box.getRow(1));
-	double c=modulo(box.getRow(2));
+  double a=modulo(box.getRow(0));
+  double b=modulo(box.getRow(1));
+  double c=modulo(box.getRow(2));
 // cos-angle between lattice vectors
-	double ab=dotProduct(box.getRow(0),box.getRow(1))/(a*b);
-	double ac=dotProduct(box.getRow(0),box.getRow(2))/(a*c);
-	double bc=dotProduct(box.getRow(1),box.getRow(2))/(b*c);
+  double ab=dotProduct(box.getRow(0),box.getRow(1))/(a*b);
+  double ac=dotProduct(box.getRow(0),box.getRow(2))/(a*c);
+  double bc=dotProduct(box.getRow(1),box.getRow(2))/(b*c);
 
 // generate a new set of lattice vectors as a lower triangular matrix
-	newbox[0][0]=a;
-	newbox[1][0]=b*ab;
-	newbox[1][1]=std::sqrt(b*b-newbox[1][0]*newbox[1][0]);
-	newbox[2][0]=c*ac;
-	newbox[2][1]=c*(bc-ac*ab)/std::sqrt(1-ab*ab);
-	newbox[2][2]=std::sqrt(c*c-newbox[2][0]*newbox[2][0]-newbox[2][1]*newbox[2][1]);
+  newbox[0][0]=a;
+  newbox[1][0]=b*ab;
+  newbox[1][1]=std::sqrt(b*b-newbox[1][0]*newbox[1][0]);
+  newbox[2][0]=c*ac;
+  newbox[2][1]=c*(bc-ac*ab)/std::sqrt(1-ab*ab);
+  newbox[2][2]=std::sqrt(c*c-newbox[2][0]*newbox[2][0]-newbox[2][1]*newbox[2][1]);
 
-        if(determinant(newbox)*determinant(box)<0) newbox[2][2]=-newbox[2][2];
+  if(determinant(newbox)*determinant(box)<0) newbox[2][2]=-newbox[2][2];
 
 // rotation matrix from old to new coordinates
-	rotation=transpose(matmul(inverse(box),newbox));
+  rotation=transpose(matmul(inverse(box),newbox));
 
 // rotate all coordinates
-	for(unsigned i=0;i<getTotAtoms();i++){
-		Vector & ato (modifyPosition(AtomNumber::index(i)));
-		ato=matmul(rotation,ato);
-	}
+  for(unsigned i=0; i<getTotAtoms(); i++) {
+    Vector & ato (modifyPosition(AtomNumber::index(i)));
+    ato=matmul(rotation,ato);
+  }
 // rotate box
-	pbc.setBox(newbox);
+  pbc.setBox(newbox);
 }
 
-void ResetCell::apply(){
+void ResetCell::apply() {
 // rotate back forces
-	for(unsigned i=0;i<getTotAtoms(); i++) {
-        	Vector & f(modifyGlobalForce(AtomNumber::index(i)));
-		f=matmul(transpose(rotation),f);
-	}
+  for(unsigned i=0; i<getTotAtoms(); i++) {
+    Vector & f(modifyGlobalForce(AtomNumber::index(i)));
+    f=matmul(transpose(rotation),f);
+  }
 
-        Tensor& virial(modifyGlobalVirial());
+  Tensor& virial(modifyGlobalVirial());
 // I have no mathematical derivation for this.
 // The reasoning is the following.
 // virial= h^T * dU/dh, where h is the box matrix and dU/dh its derivatives.
@@ -181,11 +180,11 @@ void ResetCell::apply(){
 // Thus, the only possibility is to set the corresponding elements
 // of the virial matrix equal to their symmetric ones.
 // GB
-	virial[0][1]=virial[1][0];
-	virial[0][2]=virial[2][0];
-	virial[1][2]=virial[2][1];
+  virial[0][1]=virial[1][0];
+  virial[0][2]=virial[2][0];
+  virial[1][2]=virial[2][1];
 // rotate back virial
-	virial=matmul(transpose(rotation),matmul(virial,rotation));
+  virial=matmul(transpose(rotation),matmul(virial,rotation));
 
 
 

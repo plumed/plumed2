@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,7 +28,7 @@ namespace PLMD {
 namespace multicolvar {
 
 class VolumeGradientBase : public BridgedMultiColvarFunction {
-friend class MultiColvarBase;   
+  friend class MultiColvarBase;
 private:
 /// This is used to store forces temporarily in apply
   std::vector<double> tmpforces;
@@ -41,10 +41,10 @@ protected:
   Vector pbcDistance( const Vector& v1, const Vector& v2) const;
 /// Get position of atom
   Vector getPosition( int iatom ) const ;
-/// Request the atoms 
+/// Request the atoms
   void requestAtoms( const std::vector<AtomNumber>& atoms );
 /// Set the number in the volume
-  void setNumberInVolume( const unsigned& , const unsigned& , const double& , const Vector& , const Tensor& , const std::vector<Vector>& , MultiValue& ) const ;
+  void setNumberInVolume( const unsigned&, const unsigned&, const double&, const Vector&, const Tensor&, const std::vector<Vector>&, MultiValue& ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeGradientBase(const ActionOptions&);
@@ -54,40 +54,40 @@ public:
   void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const ;
 /// Calculate what is in the volumes
   virtual void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const=0;
-/// Setup the regions that this is based on 
+/// Setup the regions that this is based on
   virtual void setupRegions()=0;
 /// Forces here are applied through the bridge
   void addBridgeForces( const std::vector<double>& bb );
 };
 
 inline
-const Tensor & VolumeGradientBase::getBox()const{
+const Tensor & VolumeGradientBase::getBox()const {
   return getPntrToMultiColvar()->getBox();
-} 
+}
 
 inline
 const Pbc & VolumeGradientBase::getPbc() const {
- return getPntrToMultiColvar()->getPbc();
+  return getPntrToMultiColvar()->getPbc();
 }
 
 inline
 Vector VolumeGradientBase::pbcDistance( const Vector& v1, const Vector& v2) const {
- return getPntrToMultiColvar()->pbcDistance(v1,v2);
+  return getPntrToMultiColvar()->pbcDistance(v1,v2);
 }
 
 inline
 Vector VolumeGradientBase::getPosition( int iatom ) const {
- if( !checkNumericalDerivatives() ) return ActionAtomistic::getPosition(iatom);
- // This is for numerical derivatives of quantity wrt to the local atoms
- Vector tmp_p = ActionAtomistic::getPosition(iatom);
- if( bridgeVariable<3*getNumberOfAtoms() ){
+  if( !checkNumericalDerivatives() ) return ActionAtomistic::getPosition(iatom);
+// This is for numerical derivatives of quantity wrt to the local atoms
+  Vector tmp_p = ActionAtomistic::getPosition(iatom);
+  if( bridgeVariable<3*getNumberOfAtoms() ) {
     if( bridgeVariable>=3*iatom && bridgeVariable<(iatom+1)*3 ) tmp_p[bridgeVariable%3]+=sqrt(epsilon);
- }
- // This makes sure that numerical derivatives of virial are calculated correctly
- tmp_p = ActionAtomistic::getPbc().realToScaled( tmp_p ); 
- tmp_p = getPbc().scaledToReal( tmp_p );
- return tmp_p;
-} 
+  }
+// This makes sure that numerical derivatives of virial are calculated correctly
+  tmp_p = ActionAtomistic::getPbc().realToScaled( tmp_p );
+  tmp_p = getPbc().scaledToReal( tmp_p );
+  return tmp_p;
+}
 
 }
 }

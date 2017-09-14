@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,32 +23,33 @@
 #include "Exception.h"
 #include <cstdio>
 
-namespace PLMD{
+namespace PLMD {
 
 using namespace std;
 
 const double epsilon=1e-14;
 
-void LatticeReduction::sort(Vector v[3]){
+void LatticeReduction::sort(Vector v[3]) {
   const double onePlusEpsilon=(1.0+epsilon);
-  for(int i=0;i<3;i++) for(int j=i+1;j<3;j++) if(modulo2(v[i])>modulo2(v[j])){
-    Vector x=v[i]; v[i]=v[j]; v[j]=x;
-  }
-  for(int i=0;i<2;i++) plumed_assert(modulo2(v[i])<=modulo2(v[i+1])*onePlusEpsilon);
+  for(int i=0; i<3; i++) for(int j=i+1; j<3; j++) if(modulo2(v[i])>modulo2(v[j])) {
+        Vector x=v[i]; v[i]=v[j]; v[j]=x;
+      }
+  for(int i=0; i<2; i++) plumed_assert(modulo2(v[i])<=modulo2(v[i+1])*onePlusEpsilon);
 }
 
-void LatticeReduction::reduce(Vector&a,Vector&b){
+void LatticeReduction::reduce(Vector&a,Vector&b) {
+  const double onePlusEpsilon=(1.0+epsilon);
   double ma=modulo2(a);
   double mb=modulo2(b);
   unsigned counter=0;
-  while(true){
-    if(mb>ma){
+  while(true) {
+    if(mb>ma) {
       Vector t(a); a=b; b=t;
       double mt(ma); ma=mb; mb=mt;
     }
     a-=b*floor(dotProduct(a,b)/modulo2(b)+0.5);
     ma=modulo2(a);
-    if(mb<=ma+epsilon) break;
+    if(mb<=ma*onePlusEpsilon) break;
     counter++;
     if(counter%10000==0) fprintf(stderr,"WARNING: LatticeReduction::reduce stuck after %u iterations\n",counter);
   }
@@ -56,16 +57,16 @@ void LatticeReduction::reduce(Vector&a,Vector&b){
   Vector t(a); a=b; b=t;
 }
 
-void LatticeReduction::reduce2(Vector&a,Vector&b,Vector&c){
+void LatticeReduction::reduce2(Vector&a,Vector&b,Vector&c) {
   Vector v[3];
   v[0]=a; v[1]=b; v[2]=c;
   int iter=0;
   int ok=0;
-  while(ok<3){
+  while(ok<3) {
     int i,j;
-    if(iter%3==0){
+    if(iter%3==0) {
       i=0; j=1;
-    } else if(iter%3==1){
+    } else if(iter%3==1) {
       i=0; j=2;
     } else {
       i=1; j=2;
@@ -80,15 +81,15 @@ void LatticeReduction::reduce2(Vector&a,Vector&b,Vector&c){
   a=v[0]; b=v[1]; c=v[2];
 }
 
-bool LatticeReduction::isReduced(const Vector&a,const Vector&b){
+bool LatticeReduction::isReduced(const Vector&a,const Vector&b) {
   const int cut=5;
-  for(int i=-cut;i<=cut;i++){
+  for(int i=-cut; i<=cut; i++) {
     if(modulo2(b+i*a)<modulo2(b)) return false;
   }
   return modulo2(a)<=modulo2(b) && 2.0*dotProduct(a,b)<=modulo2(a);
 }
 
-void LatticeReduction::reduce2(Tensor&t){
+void LatticeReduction::reduce2(Tensor&t) {
   Vector a=t.getRow(0);
   Vector b=t.getRow(1);
   Vector c=t.getRow(2);
@@ -98,17 +99,18 @@ void LatticeReduction::reduce2(Tensor&t){
   t.setRow(2,c);
 }
 
-void LatticeReduction::reduce(Tensor&t){
+void LatticeReduction::reduce(Tensor&t) {
   reduceFast(t);
 }
 
-void LatticeReduction::reduceFast(Tensor&t){
+void LatticeReduction::reduceFast(Tensor&t) {
+  const double onePlusEpsilon=(1.0+epsilon);
   Vector v[3];
   v[0]=t.getRow(0);
   v[1]=t.getRow(1);
   v[2]=t.getRow(2);
   unsigned counter=0;
-  while(true){
+  while(true) {
     sort(v);
     reduce(v[0],v[1]);
     double b11=modulo2(v[0]);
@@ -126,17 +128,17 @@ void LatticeReduction::reduceFast(Tensor&t){
     bool first=true;
     double mbest,mtrial;
     Vector trial,best;
-    for(int x1=x1min;x1<=x1max;x1++)
-    for(int x2=x2min;x2<=x2max;x2++){
-      trial=v[2]+x2*v[1]+x1*v[0];
-      mtrial=modulo2(trial);
-      if(first || mtrial<mbest){
-        mbest=mtrial;
-        best=trial;
-        first=false;
+    for(int x1=x1min; x1<=x1max; x1++)
+      for(int x2=x2min; x2<=x2max; x2++) {
+        trial=v[2]+x2*v[1]+x1*v[0];
+        mtrial=modulo2(trial);
+        if(first || mtrial<mbest) {
+          mbest=mtrial;
+          best=trial;
+          first=false;
+        }
       }
-    }
-    if(modulo2(best)+epsilon>=modulo2(v[2])) break;
+    if(modulo2(best)*onePlusEpsilon>=modulo2(v[2])) break;
     counter++;
     if(counter%10000==0) fprintf(stderr,"WARNING: LatticeReduction::reduceFast stuck after %u iterations\n",counter);
     v[2]=best;
@@ -148,7 +150,7 @@ void LatticeReduction::reduceFast(Tensor&t){
 }
 
 
-void LatticeReduction::reduceSlow(Tensor&t){
+void LatticeReduction::reduceSlow(Tensor&t) {
   Vector v[3];
   v[0]=t.getRow(0);
   v[1]=t.getRow(1);
@@ -157,14 +159,14 @@ void LatticeReduction::reduceSlow(Tensor&t){
   double e01=dotProduct(v[0],v[1]);
   double e02=dotProduct(v[0],v[2]);
   double e12=dotProduct(v[1],v[2]);
-  if(e01*e02*e12<0){
+  if(e01*e02*e12<0) {
     int eps01=0; if(e01>0.0) eps01=1; else if(e01<0.0) eps01=-1;
     int eps02=0; if(e02>0.0) eps02=1; else if(e02<0.0) eps02=-1;
     Vector n=v[0]-eps01*v[1]-eps02*v[2];
     int i=0; double mx=modulo2(v[i]);
-    for(int j=1;j<3;j++){
+    for(int j=1; j<3; j++) {
       double f=modulo2(v[j]);
-      if(f>mx){
+      if(f>mx) {
         i=j;
         mx=f;
       }
@@ -177,23 +179,23 @@ void LatticeReduction::reduceSlow(Tensor&t){
   t.setRow(2,v[2]);
 }
 
-bool LatticeReduction::isReduced2(const Vector&a,const Vector&b,const Vector &c){
+bool LatticeReduction::isReduced2(const Vector&a,const Vector&b,const Vector &c) {
   return isReduced(a,b) && isReduced(a,b) && isReduced(b,c);
 }
 
-bool LatticeReduction::isReduced(const Tensor&t){
+bool LatticeReduction::isReduced(const Tensor&t) {
   Vector v[3];
   double m[3];
   v[0]=t.getRow(0);
   v[1]=t.getRow(1);
   v[2]=t.getRow(2);
-  for(int i=0;i<3;i++) m[i]=modulo2(v[i]);
+  for(int i=0; i<3; i++) m[i]=modulo2(v[i]);
   if(!((m[0]<=m[1]) && m[1]<=m[2])) return false;
   const int cut=5;
-  for(int i=-cut;i<=cut;i++){
+  for(int i=-cut; i<=cut; i++) {
     double mm=modulo2(v[1]+i*v[0]);
     if(mm<m[1]) return false;
-    for(int j=-cut;j<=cut;j++){
+    for(int j=-cut; j<=cut; j++) {
       double mx=modulo2(v[2]+i*v[1]+j*v[0]);
       if(mx<m[2])return false;
     }

@@ -29,8 +29,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace multicolvar{
+namespace PLMD {
+namespace multicolvar {
 
 //+PLUMEDOC COLVAR DIHCOR
 /*
@@ -48,14 +48,14 @@ where the \f$\phi_i\f$ and \f$\psi\f$ values and the instantaneous values for th
 
 The following provides an example input for the dihcor action
 
-\verbatim
+\plumedfile
 DIHCOR ...
   ATOMS1=1,2,3,4,5,6,7,8
   ATOMS2=5,6,7,8,9,10,11,12
   LABEL=dih
 ... DIHCOR
 PRINT ARG=dih FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 In the above input we are calculating the correation between the torsion angle involving atoms 1, 2, 3 and 4 and the torsion angle
 involving atoms 5, 6, 7 and 8.	This is then added to the correlation betwene the torsion angle involving atoms 5, 6, 7 and 8 and the
@@ -65,7 +65,7 @@ Writing out the atoms involved in all the torsions in this way can be rather ted
 can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
-\verbatim
+\plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 DIHCOR ...
 ATOMS1=@phi-3,@psi-3
@@ -73,7 +73,7 @@ ATOMS2=@psi-3,@phi-4
 ATOMS4=@phi-4,@psi-4
 ... DIHCOR
 PRINT ARG=dih FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
 Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
@@ -87,39 +87,39 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
 
-void DihedralCorrelation::registerKeywords( Keywords& keys ){
+void DihedralCorrelation::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.add("numbered","ATOMS","the atoms involved in each of the dihedral correlation values you wish to calculate. "
-                               "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dihedral correlation will be "
-                               "calculated for each ATOM keyword you specify (all ATOM keywords should "
-                               "specify the indices of 8 atoms).  The eventual number of quantities calculated by this "
-                               "action will depend on what functions of the distribution you choose to calculate.");
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dihedral correlation will be "
+           "calculated for each ATOM keyword you specify (all ATOM keywords should "
+           "specify the indices of 8 atoms).  The eventual number of quantities calculated by this "
+           "action will depend on what functions of the distribution you choose to calculate.");
   keys.reset_style("ATOMS","atoms");
 }
 
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
-Action(ao),
-MultiColvarBase(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readAtomsLikeKeyword( "ATOMS", 8, all_atoms );
   setupMultiColvarBase( all_atoms );
   // Stuff for central atoms
-  std::vector<bool> catom_ind(8, false); 
+  std::vector<bool> catom_ind(8, false);
   catom_ind[1]=catom_ind[2]=catom_ind[5]=catom_ind[6]=true;
   setAtomsForCentralAtom( catom_ind );
 
   // And setup the ActionWithVessel
-  if( getNumberOfVessels()==0 ){
-     std::string fake_input;
-     addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
-     readVesselKeywords();  // This makes sure resizing is done
+  if( getNumberOfVessels()==0 ) {
+    std::string fake_input;
+    addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
+    readVesselKeywords();  // This makes sure resizing is done
   }
 
   // And check everything has been read in correctly
@@ -148,9 +148,9 @@ double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myat
   const double value = 0.5*(1.+cos(diff));
   // Derivatives wrt phi1
   const double dval = 0.5*sin(diff);
-  dd10 *= dval; 
-  dd11 *= dval; 
-  dd12 *= dval; 
+  dd10 *= dval;
+  dd11 *= dval;
+  dd12 *= dval;
   // And add
   addAtomDerivatives(1, 0, dd10, myatoms );
   addAtomDerivatives(1, 1, dd11-dd10, myatoms );

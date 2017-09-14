@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,32 +25,32 @@
 #include <string>
 
 using namespace std;
-namespace PLMD{
+namespace PLMD {
 
 Colvar::Colvar(const ActionOptions&ao):
-Action(ao),
-ActionAtomistic(ao),
-ActionWithValue(ao),
-isEnergy(false)
+  Action(ao),
+  ActionAtomistic(ao),
+  ActionWithValue(ao),
+  isEnergy(false)
 {
 }
 
-void Colvar::registerKeywords( Keywords& keys ){
+void Colvar::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-}  
+}
 
-void Colvar::requestAtoms(const vector<AtomNumber> & a){
+void Colvar::requestAtoms(const vector<AtomNumber> & a) {
   plumed_massert(!isEnergy,"request atoms should not be called if this is energy");
 // Tell actionAtomistic what atoms we are getting
   ActionAtomistic::requestAtoms(a);
 // Resize the derivatives of all atoms
-  for(int i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
+  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
 }
 
-void Colvar::apply(){
+void Colvar::apply() {
   vector<Vector>&   f(modifyForces());
   Tensor&           v(modifyVirial());
   const unsigned    nat=getNumberOfAtoms();
@@ -67,16 +67,16 @@ void Colvar::apply(){
   unsigned nt=OpenMP::getNumThreads();
   if(nt>ncp/(2.*stride)) nt=1;
 
-  if(!isEnergy){
-    #pragma omp parallel num_threads(nt) 
+  if(!isEnergy) {
+    #pragma omp parallel num_threads(nt)
     {
       vector<Vector> omp_f(fsz);
       Tensor         omp_v;
       vector<double> forces(3*nat+9);
-      #pragma omp for 
-      for(unsigned i=rank;i<ncp;i+=stride){
-        if(getPntrToComponent(i)->applyForce(forces)){
-          for(unsigned j=0;j<nat;++j){
+      #pragma omp for
+      for(unsigned i=rank; i<ncp; i+=stride) {
+        if(getPntrToComponent(i)->applyForce(forces)) {
+          for(unsigned j=0; j<nat; ++j) {
             omp_f[j][0]+=forces[3*j+0];
             omp_f[j][1]+=forces[3*j+1];
             omp_f[j][2]+=forces[3*j+2];
@@ -94,7 +94,7 @@ void Colvar::apply(){
       }
       #pragma omp critical
       {
-        for(unsigned j=0;j<nat;++j) f[j]+=omp_f[j]; 
+        for(unsigned j=0; j<nat; ++j) f[j]+=omp_f[j];
         v+=omp_v;
       }
     }
@@ -104,19 +104,19 @@ void Colvar::apply(){
       comm.Sum(&v[0][0],9);
     }
 
-  } else if( isEnergy ){
+  } else if( isEnergy ) {
     vector<double> forces(1);
     if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];
   }
 }
 
-void Colvar::setBoxDerivativesNoPbc(Value* v){
+void Colvar::setBoxDerivativesNoPbc(Value* v) {
   Tensor virial;
   unsigned nat=getNumberOfAtoms();
-  for(unsigned i=0;i<nat;i++) virial-=Tensor(getPosition(i),
-    Vector(v->getDerivative(3*i+0),
-           v->getDerivative(3*i+1),
-           v->getDerivative(3*i+2)));
+  for(unsigned i=0; i<nat; i++) virial-=Tensor(getPosition(i),
+                                          Vector(v->getDerivative(3*i+0),
+                                              v->getDerivative(3*i+1),
+                                              v->getDerivative(3*i+2)));
   setBoxDerivatives(v,virial);
 }
 }

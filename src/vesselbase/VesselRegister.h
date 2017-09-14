@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,13 +29,13 @@
 #include "tools/Exception.h"
 #include "tools/Keywords.h"
 
-namespace PLMD{
-namespace vesselbase{
+namespace PLMD {
+namespace vesselbase {
 
 class Vessel;
 class VesselOptions;
 
-class VesselRegister{
+class VesselRegister {
 private:
 /// Pointer to a function which, given the keyword for a distribution function, creates it
   typedef Vessel*(*creator_pointer)(const VesselOptions&);

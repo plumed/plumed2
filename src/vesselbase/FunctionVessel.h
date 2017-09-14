@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,13 +29,13 @@
 #include "core/Value.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 /**
 \ingroup TOOLBOX
 Objects that inherit from FunctionVessel can be used (in tandem with PLMD::vesselbase::ActionWithVessel) to calculate
 functions of the form \f$\prod_k H_k[ \sum_j \prod_i g_i(x) ]\f$.  They should take in a series of values
-and return one single value.   
+and return one single value.
 */
 
 class FunctionVessel : public ValueVessel {

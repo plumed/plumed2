@@ -1,0 +1,43 @@
+;
+;	File 'topol.top' was generated
+;	By user: carlo (501)
+;	On host: CarloMB
+;	At date: Sun May 14 17:04:23 2017
+
+;
+;	This is a standalone topology file
+;
+;	Created by:
+;	                    :-) GROMACS - gmx pdb2gmx, 2016.3 (-:
+;	
+;	Executable:   /Users/carlo/Codes/gromacs-2016.3/exe/bin/gmx_mpi
+;	Data prefix:  /Users/carlo/Codes/gromacs-2016.3/exe
+;	Working dir:  /Users/carlo/Projects/Tests/tutorial
+;	Command line:
+;	  gmx_mpi pdb2gmx -f spc216.gro
+;	Force field was read from the standard GROMACS share directory.
+;
+
+; Include forcefield parameters
+#include "amber03.ff/forcefield.itp"
+
+; Include water topology
+#include "amber03.ff/tip3p.itp"
+
+#ifdef POSRES_WATER
+; Position restraint for each water oxygen
+[ position_restraints ]
+;  i funct       fcx        fcy        fcz
+   1    1       1000       1000       1000
+#endif
+
+; Include topology for ions
+#include "amber03.ff/ions.itp"
+
+[ system ]
+; Name
+TIP3PDIMER
+
+[ molecules ]
+; Compound        #mols
+SOL                 2

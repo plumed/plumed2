@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,11 +25,11 @@
 #include <iostream>
 
 using namespace std;
-namespace PLMD{
+namespace PLMD {
 
-std::string Citations::cite(const std::string & item){
+std::string Citations::cite(const std::string & item) {
   unsigned i;
-  for(i=0;i<items.size();++i) if(items[i]==item) break;
+  for(i=0; i<items.size(); ++i) if(items[i]==item) break;
   if(i==items.size()) items.push_back(item);
   plumed_assert(i<items.size());
   string ret;
@@ -38,17 +38,17 @@ std::string Citations::cite(const std::string & item){
   return ret;
 }
 
-std::ostream & operator<<(std::ostream &log,const Citations&cit){
-  for(unsigned i=0;i<cit.items.size();++i)
+std::ostream & operator<<(std::ostream &log,const Citations&cit) {
+  for(unsigned i=0; i<cit.items.size(); ++i)
     log<<"  ["<<i+1<<"] "<<cit.items[i]<<"\n";
   return log;
 }
 
-void Citations::clear(){
+void Citations::clear() {
   items.clear();
 }
 
-bool Citations::empty()const{
+bool Citations::empty()const {
   return items.empty();
 }
 

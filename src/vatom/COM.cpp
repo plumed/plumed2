@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,8 +26,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace vatom{
+namespace PLMD {
+namespace vatom {
 
 //+PLUMEDOC VATOM COM
 /*
@@ -39,12 +39,12 @@ an atom list through the label for the COM action that creates it.
 
 For arbitrary weights (e.g. geometric center) see \ref CENTER.
 
-When running with periodic boundary conditions, the atoms should be 
+When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.2,
 by considering the ordered list of atoms and rebuilding PBCs with a procedure
 that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
 rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
-which actually modifies the coordinates stored in PLUMED. 
+which actually modifies the coordinates stored in PLUMED.
 
 In case you want to recover the old behavior you should use the NOPBC flag.
 In that case you need to take care that atoms are in the correct
@@ -54,13 +54,12 @@ periodic image.
 
 The following input instructs plumed to print the distance between the
 center of mass for atoms 1,2,3,4,5,6,7 and that for atoms 15,20:
-\verbatim
-COM ATOMS=1-7         LABEL=c1
-COM ATOMS=15,20       LABEL=c2
-DISTANCE ATOMS=c1,c2  LABEL=d1
+\plumedfile
+c1: COM ATOMS=1-7
+c2: COM ATOMS=15,20
+d1: DISTANCE ATOMS=c1,c2
 PRINT ARG=d1
-\endverbatim
-(See also \ref DISTANCE and \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -78,7 +77,7 @@ public:
 
 PLUMED_REGISTER_ACTION(COM,"COM")
 
-void COM::registerKeywords(Keywords& keys){
+void COM::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
@@ -94,9 +93,12 @@ COM::COM(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   checkRead();
   log.printf("  of atoms");
-  for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial());
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf(" %d",atoms[i].serial());
+  }
   log.printf("\n");
-  if(!nopbc){
+  if(!nopbc) {
     log<<"  PBC will be ignored\n";
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
@@ -104,20 +106,20 @@ COM::COM(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void COM::calculate(){
+void COM::calculate() {
   Vector pos;
   if(!nopbc) makeWhole();
   double mass(0.0);
   vector<Tensor> deriv(getNumberOfAtoms());
-  for(unsigned i=0;i<getNumberOfAtoms();i++) mass+=getMass(i);
-  if( plumed.getAtoms().chargesWereSet() ){
-     double charge(0.0);
-     for(unsigned i=0;i<getNumberOfAtoms();i++) charge+=getCharge(i);
-     setCharge(charge);
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
+  if( plumed.getAtoms().chargesWereSet() ) {
+    double charge(0.0);
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
+    setCharge(charge);
   } else {
-     setCharge(0.0);
+    setCharge(0.0);
   }
-  for(unsigned i=0;i<getNumberOfAtoms();i++){
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
     pos+=(getMass(i)/mass)*getPosition(i);
     deriv[i]=(getMass(i)/mass)*Tensor::identity();
   }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,10 +29,10 @@ namespace PLMD {
 namespace adjmat {
 
 class AdjacencyMatrixBase : public multicolvar::MultiColvarBase {
-friend class AdjacencyMatrixVessel;
-friend class ActionWithInputMatrix;
-friend class MatrixColumnSums;
-friend class MatrixRowSums;
+  friend class AdjacencyMatrixVessel;
+  friend class ActionWithInputMatrix;
+  friend class MatrixColumnSums;
+  friend class MatrixRowSums;
 private:
 /// Used for read in of multiple connection descriptors
   unsigned connect_id;
@@ -73,28 +73,28 @@ public:
 /// Create the connection object
   virtual void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) = 0;
 /// None of these things are allowed
-  bool isPeriodic(){ return false; }
-  Vector getCentralAtom(){ plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
+  bool isPeriodic() { return false; }
+  Vector getCentralAtom() { plumed_merror("cannot find central atoms for adjacency matrix actions"); Vector dum; return dum; }
 /// Get the atom number
-  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ; 
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& i ) const ;
 };
 
 inline
-AdjacencyMatrixVessel* AdjacencyMatrixBase::getAdjacencyVessel(){
+AdjacencyMatrixVessel* AdjacencyMatrixBase::getAdjacencyVessel() {
   return mat;
 }
 
 inline
 unsigned AdjacencyMatrixBase::getBaseColvarNumber( const unsigned& inum ) const {
-  if( atom_lab[inum].first>0 ) return atom_lab[inum].first-1; 
+  if( atom_lab[inum].first>0 ) return atom_lab[inum].first-1;
   return 0;
 }
 
 inline
 AtomNumber AdjacencyMatrixBase::getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const {
-  if( atom_lab[iatom].first>0 ){
-      unsigned mmc=atom_lab[ iatom ].first - 1;
-      return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( atom_lab[iatom].second );
+  if( atom_lab[iatom].first>0 ) {
+    unsigned mmc=atom_lab[ iatom ].first - 1;
+    return mybasemulticolvars[mmc]->getAbsoluteIndexOfCentralAtom( atom_lab[iatom].second );
   }
   return ActionAtomistic::getAbsoluteIndex( atom_lab[iatom].second );
 }

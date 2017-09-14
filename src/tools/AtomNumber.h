@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,7 @@
 #include "Exception.h"
 #include <limits>
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup TOOLBOX
@@ -36,7 +36,7 @@ namespace PLMD{
  no ambiguity about using the "from 0" (index) or
  "from 1" (serial) numbering (names as in VMD convention).
 */
-class AtomNumber{
+class AtomNumber {
   unsigned index_;
 /// Construct with a given index.
 /// This constructor is kept private to avoid implicit cast.
@@ -71,27 +71,27 @@ public:
 };
 
 inline
-AtomNumber::AtomNumber(){
+AtomNumber::AtomNumber() {
   index_=0;
 }
 
 inline
-AtomNumber::AtomNumber(unsigned i){
+AtomNumber::AtomNumber(unsigned i) {
   index_=i;
 }
 
 inline
-unsigned AtomNumber::serial()const{
+unsigned AtomNumber::serial()const {
   return index_+1;
 }
 
 inline
-unsigned AtomNumber::index()const{
+unsigned AtomNumber::index()const {
   return index_;
 }
 
 inline
-AtomNumber & AtomNumber::setSerial(unsigned i){
+AtomNumber & AtomNumber::setSerial(unsigned i) {
   plumed_massert(i>0,"serial of an atom cannot be zero");
   plumed_massert(i<std::numeric_limits<unsigned>::max()/2,"serial cannot be negative");
   index_=i-1;
@@ -99,50 +99,50 @@ AtomNumber & AtomNumber::setSerial(unsigned i){
 }
 
 inline
-AtomNumber & AtomNumber::setIndex(unsigned i){
+AtomNumber & AtomNumber::setIndex(unsigned i) {
   index_=i;
   return *this;
 }
 
 inline
-AtomNumber AtomNumber::serial(unsigned i){
+AtomNumber AtomNumber::serial(unsigned i) {
   plumed_massert(i>0,"serial of an atom cannot be zero");
   plumed_massert(i<std::numeric_limits<unsigned>::max()/2,"serial cannot be negative");
   return AtomNumber(i-1);
 }
 
 inline
-AtomNumber AtomNumber::index(unsigned i){
+AtomNumber AtomNumber::index(unsigned i) {
   return AtomNumber(i);
 }
 
 inline
-bool operator<(const AtomNumber&a,const AtomNumber&b){
+bool operator<(const AtomNumber&a,const AtomNumber&b) {
   return a.index_<b.index_;
 }
 
 inline
-bool operator>(const AtomNumber&a,const AtomNumber&b){
+bool operator>(const AtomNumber&a,const AtomNumber&b) {
   return a.index_>b.index_;
 }
 
 inline
-bool operator<=(const AtomNumber&a,const AtomNumber&b){
+bool operator<=(const AtomNumber&a,const AtomNumber&b) {
   return a.index_<=b.index_;
 }
 
 inline
-bool operator>=(const AtomNumber&a,const AtomNumber&b){
+bool operator>=(const AtomNumber&a,const AtomNumber&b) {
   return a.index_>=b.index_;
 }
 
 inline
-bool operator==(const AtomNumber&a,const AtomNumber&b){
+bool operator==(const AtomNumber&a,const AtomNumber&b) {
   return a.index_==b.index_;
 }
 
 inline
-bool operator!=(const AtomNumber&a,const AtomNumber&b){
+bool operator!=(const AtomNumber&a,const AtomNumber&b) {
   return a.index_!=b.index_;
 }
 

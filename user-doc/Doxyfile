@@ -228,11 +228,17 @@ TAB_SIZE               = 8
 # "Side Effects:". You can put \n's in the value part of an alias to insert
 # newlines.
 
-ALIASES                = "hidden=\htmlonly <details> <summary> <b> To learn more </b> </summary> <div class=\"hidden\"> \endhtmlonly" \
+ALIASES                = \
+                         "hidden=\htmlonly <details> <summary> <b> To learn more </b> </summary> <div class=\"hidden\"> \endhtmlonly" \
                          "hidden{1}=\htmlonly <details> <summary> <b> To learn more: \1 </b> </summary> <div class=\"hidden\"> \endhtmlonly" \
                          "endhidden=\htmlonly </div> </details> \endhtmlonly" \
                          "issue{1}=<a href=\"http://github.com/plumed/plumed2/issues/\1\">#\1</a>" \
-                         "branch{1}=<a href=\"http://github.com/plumed/plumed2/commits/\1\">\1</a>"
+                         "branch{1}=<a href=\"http://github.com/plumed/plumed2/commits/\1\">\1</a>" \
+                         "highlight{1}=\htmlonly<span style=\"background-color:yellow\">\endhtmlonly\1\htmlonly</span>\endhtmlonly" \
+                         "tarball{1}=<a href=\"tutorial-resources/\1.tar.gz\" style=\"font-weight:bold\" style=\"color:green\" download=\"\1.tar.gz\"> TARBALL </a>" \
+                         "plumedfile=\verbatim BEGIN_PLUMED_FILE" \
+                         "endplumedfile=\endverbatim"
+
 
 # This tag can be used to specify a number of word-keyword mappings (TCL only).
 # A mapping has the form "name=value". For example adding "class=itcl::class"
@@ -778,7 +784,7 @@ INPUT_ENCODING         = UTF-8
 # *.md, *.mm, *.dox, *.py, *.f90, *.f, *.for, *.tcl, *.vhd, *.vhdl, *.ucf,
 # *.qsf, *.as and *.js.
 
-FILE_PATTERNS          = *.txt
+FILE_PATTERNS          = *.txt *.md
 
 # The RECURSIVE tag can be used to specify whether or not subdirectories should
 # be searched for input files as well.

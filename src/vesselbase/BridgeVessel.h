@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,7 +35,7 @@ namespace vesselbase {
 /**
 \ingroup TOOLBOX
 This class allows you to calculate the vessel in one ActionWithVessel.  The user thinks
-it is created in a different Action however.  At the moment this is used for region 
+it is created in a different Action however.  At the moment this is used for region
 */
 
 class BridgeVessel : public Vessel {
@@ -57,13 +57,13 @@ public:
   ActionWithVessel* getOutputAction();
 /// Setup the action we are outputting to
   void setOutputAction( ActionWithVessel* myOutputAction );
-/// Apply some force 
+/// Apply some force
   bool applyForce( std::vector<double>& forces );
 /// Should not be called
   std::string description();
 /// Jobs to do before the task list starts
   void prepare();
-/// Set the start of the buffer 
+/// Set the start of the buffer
   void setBufferStart( unsigned& start );
 /// This transforms the derivatives using the output value
   MultiValue& transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals );
@@ -76,11 +76,11 @@ public:
 /// Set the task flags in the bridged class the same as in the original class
   void copyTaskFlags();
 /// Return a tempory multi value - we do this so as to avoid vector resizing
-  MultiValue& getTemporyMultiValue();  
+  MultiValue& getTemporyMultiValue();
 };
 
 inline
-ActionWithVessel* BridgeVessel::getOutputAction(){
+ActionWithVessel* BridgeVessel::getOutputAction() {
   return myOutputAction;
 }
 

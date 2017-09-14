@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,18 +25,18 @@
 #include <cmath>
 #include <iostream>
 
-namespace PLMD{
+namespace PLMD {
 
-double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3)const{
-    const Vector nv2(v2*(1.0/v2.modulo()));
-    const Vector a(crossProduct(nv2,v1));
-    const Vector b(crossProduct(v3,nv2));
-    const double cosangle=dotProduct(a,b);
-    const double sinangle=dotProduct(crossProduct(a,b),nv2);
-    return std::atan2(-sinangle,cosangle);
+double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3)const {
+  const Vector nv2(v2*(1.0/v2.modulo()));
+  const Vector a(crossProduct(nv2,v1));
+  const Vector b(crossProduct(v3,nv2));
+  const double cosangle=dotProduct(a,b);
+  const double sinangle=dotProduct(crossProduct(a,b),nv2);
+  return std::atan2(-sinangle,cosangle);
 }
 
-double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3,Vector& d1,Vector& d2,Vector& d3)const{
+double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3,Vector& d1,Vector& d2,Vector& d3)const {
 
   const double modv2(1./v2.modulo());
   const Vector nv2(v2*modv2);

@@ -20,17 +20,17 @@ AC_INIT([PLUMED], [2])
 # they just need to be different with optionname contains a "-"
 # (not allowed in shell variable names)
 AC_DEFUN([PLUMED_CONFIG_ENABLE], [
-$1=
-AC_ARG_ENABLE([$2],
-  AS_HELP_STRING([--enable-$2], [enable $3, default: $4]),
+m4_bpatsubst([$1],-,_)=
+AC_ARG_ENABLE([$1],
+  AS_HELP_STRING([--enable-$1], [enable $2, default: $3]),
   [case "${enableval}" in
-             (yes) $1=true ;;
-             (no)  $1=false ;;
-             (*)   AC_MSG_ERROR([wrong argument to --enable-$2]) ;;
+             (yes) m4_bpatsubst([$1],-,_)=true ;;
+             (no)  m4_bpatsubst([$1],-,_)=false ;;
+             (*)   AC_MSG_ERROR([wrong argument to --enable-$1]) ;;
   esac],
-  [case "$4" in
-             (yes) $1=true ;;
-             (no)  $1=false ;;
+  [case "$3" in
+             (yes) m4_bpatsubst([$1],-,_)=true ;;
+             (no)  m4_bpatsubst([$1],-,_)=false ;;
   esac]
 )
 ])
@@ -80,25 +80,73 @@ AC_DEFUN([PLUMED_CHECK_LDFLAGS], [
     [AC_MSG_RESULT([no]); LDFLAGS="$save_LDFLAGS"])
 ])
 
+# PLUMED_SEARCH_LIBS(function,search-libs[,action-if-found][,action-if-not-found][,other-libraries])
+# same as AC_SEARCH_LIBS, but does not try any library unless $libsearch==true
+# Should be used instead of AC_SEARCH_LIBS in order to make --disable-libsearch work correctly
+AC_DEFUN([PLUMED_SEARCH_LIBS], [
+  if test "${libsearch}" == true ; then
+    AC_SEARCH_LIBS([$1],[$2],[$3],[$4],[$5])
+  else
+    AC_SEARCH_LIBS([$1],[],[$3],[$4],[])
+  fi
+])
+
 # PLUMED_CHECK_PACKAGE(header,function,define[,library])
 # first we check if the header is present. if so, we check if the given function can be found.
 # if it cannot be found and the fourth argument (library) has been supplied, we look for it
 # in the library. finally, we set the define flag
 AC_DEFUN([PLUMED_CHECK_PACKAGE], [
     found=ko
+    $3=no
     AC_CHECK_HEADER( [$1],[
-      AC_CHECK_FUNC(   [$2], [found=ok],
-        m4_ifnblank([$4],[
-          if test "${libsearch}" == true ; then
-           AC_CHECK_LIB(    [$4], [$2], [LIBS="-l$4 $LIBS" && found=ok])
-          fi
-        ])
-      )
+      PLUMED_SEARCH_LIBS([$2],[$4],[found=ok])
     ])
     if test $found == ok ; then
-      AC_DEFINE([$3])
+       AC_DEFINE([$3])
+       $3=yes
     else
        AC_MSG_WARN([cannot enable $3]) 
+    fi
+])
+
+# PLUMED_CHECK_CXX_PACKAGE(name,program,define[,library])
+# Similar to PLUMED_CHECK_PACKAGE but suitable for checking C++ libraries.
+# Name is just a string used in the configure log
+# program is a string containing a short C++ program that should compiled.
+# If present and necessary, library is also linked.
+AC_DEFUN([PLUMED_CHECK_CXX_PACKAGE], [
+    found=ko
+    $3=no
+    if test "${libsearch}" == true ; then
+      testlibs="$4"
+    else
+      testlibs=""
+    fi
+    for testlib in "" $testlibs
+    do
+      save_LIBS="$LIBS"
+      if test -n "$testlib" ; then
+        AC_MSG_CHECKING([$1 with -l$testlib])
+        LIBS="-l$testlib $LIBS"
+      else
+        AC_MSG_CHECKING([$1 without extra libs])
+      fi
+      AC_LINK_IFELSE([AC_LANG_SOURCE([$2])],
+          [found=ok]
+          [AC_MSG_RESULT([yes])],
+          [AC_MSG_RESULT([no])]
+      )
+      if test $found == ok ; then
+        break
+      fi
+      LIBS="$save_LIBS"
+    done
+    if test $found == ok ; then
+      AC_DEFINE([$3])
+      $3=yes
+    else
+      AC_MSG_WARN([cannot enable $3]) 
+      LIBS="$save_LIBS"
     fi
 ])
 
@@ -167,34 +215,40 @@ AC_ARG_ENABLE([modules],
 # This can be disabled when configuring within a package manager
 # such as macports to make sure that only libraries explicitly
 # listed in LDFLAGS are linked
-PLUMED_CONFIG_ENABLE([libsearch],[libsearch],[search for libraries],[yes])
+PLUMED_CONFIG_ENABLE([libsearch],[search for libraries],[yes])
 
-PLUMED_CONFIG_ENABLE([doc],[doc],[documentation],[yes])
-PLUMED_CONFIG_ENABLE([pdfdoc],[pdfdoc],[pdf version of the manual],[no])
-PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
-PLUMED_CONFIG_ENABLE([gcov],[gcov],[gcov to estimate code coverage],[no])
-PLUMED_CONFIG_ENABLE([basic_warnings],[basic-warnings],[basic warnings],[yes])
-PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])
-PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no])
-PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
-PLUMED_CONFIG_ENABLE([dependency_tracking],[dependency-tracking],[dependency tracking],[yes])
-PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
-PLUMED_CONFIG_ENABLE([ld_r],[ld-r],[group object files],[yes])
-PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
-PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
-PLUMED_CONFIG_ENABLE([external_blas],[external-blas],[search for external blas],[yes])
-PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[yes])
-PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
-PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
-PLUMED_CONFIG_ENABLE([zlib],[zlib],[search for zlib],[yes])
-PLUMED_CONFIG_ENABLE([readdir_r],[readdir-r],[search for readdir_r (threadsafe)],[yes])
-PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
-PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
-PLUMED_CONFIG_ENABLE([execinfo],[execinfo],[search for execinfo],[yes])
-PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[yes])
-PLUMED_CONFIG_ENABLE([xdrfile],[xdrfile],[search for xdrfile],[yes])
-PLUMED_CONFIG_ENABLE([boost_graph],[boost_graph],[search for boost graph],[no])
-PLUMED_CONFIG_ENABLE([fftw],[fftw],[search for fftw],[no])
+# This can be disabled to avoid the extra tests for static patching.
+# In the future, when this is disabled, we could disable the "--static" flag
+# of "plumed patch"
+PLUMED_CONFIG_ENABLE([static-patch],[allow statically linking plumed],[yes])
+
+PLUMED_CONFIG_ENABLE([doc],[documentation],[yes])
+PLUMED_CONFIG_ENABLE([pdfdoc],[pdf version of the manual],[no])
+PLUMED_CONFIG_ENABLE([debug],[debugging],[no])
+PLUMED_CONFIG_ENABLE([gcov],[gcov to estimate code coverage],[no])
+PLUMED_CONFIG_ENABLE([basic-warnings],[basic warnings],[yes])
+PLUMED_CONFIG_ENABLE([fussy],[fussy warnings],[no])
+PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
+PLUMED_CONFIG_ENABLE([shared],[shared libs],[yes])
+PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
+PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
+PLUMED_CONFIG_ENABLE([cxx-exceptions],[c++ exceptions],[yes])
+PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
+PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
+PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
+PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
+PLUMED_CONFIG_ENABLE([molfile-plugins],[use molfile_plugins],[yes])
+PLUMED_CONFIG_ENABLE([external-molfile-plugins],[search for external molfile_plugins],[yes])
+PLUMED_CONFIG_ENABLE([zlib],[search for zlib],[yes])
+PLUMED_CONFIG_ENABLE([readdir-r],[search for readdir_r (threadsafe)],[yes])
+PLUMED_CONFIG_ENABLE([cregex],[search for C regular expression],[yes])
+PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
+PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
+PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
+PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
+PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
+PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
+PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -347,10 +401,8 @@ AC_MSG_NOTICE([Now we will check compulsory headers and libraries])
 AC_CHECK_HEADER([dirent.h],     [ ], [AC_MSG_ERROR([compulsory header not found])] )
 AC_CHECK_FUNC(  [readdir],      [ ], [AC_MSG_ERROR([compulsory function not found])] )
 
-save_LIBS="$LIBS"
 # Then check for blas. This is a bit complicated because we want to allow
 # either the version with underscore or the one without
-# If they are not found in the normal search path, we repeat the search with -lblas
 blas_found=
 lapack_found=
 
@@ -364,21 +416,14 @@ fi
 
 # first look for blas
 if test "$external_blas" == true ; then
-AC_CHECK_FUNC(  [dgemv], [blas_found=nounderscore], [
-AC_CHECK_FUNC(  [dgemv_],[blas_found=underscore],   [
-if test "${libsearch}" == true ; then
-  AC_CHECK_LIB(   [blas],[dgemv],  [LIBS="-lblas $LIBS"] [blas_found=nounderscore], [
-  AC_CHECK_LIB(   [blas],[dgemv_], [LIBS="-lblas $LIBS"] [blas_found=underscore]
-) ])
-fi
-]) ])
+  PLUMED_SEARCH_LIBS([dgemv],[blas],[blas_found=nounderscore], [
+    PLUMED_SEARCH_LIBS([dgemv_],[blas],[blas_found=underscore])
+  ])
 fi
 
 # if not found, then use internal lapack and blas
 if test -z "$blas_found" ; then
 AC_MSG_WARN([using internal lapack and blas, could be inefficient])
-LIBS="$save_LIBS"
-
 fi
 
 # if found, also look for external lapack
@@ -386,26 +431,18 @@ if test -n "$blas_found" ; then
 
 AC_DEFINE([__PLUMED_HAS_EXTERNAL_BLAS])
 
-save_LIBS="$LIBS"
-
 if test "$external_lapack" == true ; then
 # Then we look for lapack using same underscoring
 case "$blas_found" in
 (underscore) search_for=dsyevr_ ;;
 (nounderscore) search_for=dsyevr ;;
 esac
-AC_CHECK_FUNC( [$search_for], [lapack_found=$blas_found], [
-if test "${libsearch}" == true ; then
-  AC_CHECK_LIB(  [lapack],[$search_for], [LIBS="-llapack $LIBS"] [lapack_found=yes])
-fi
-])
+PLUMED_SEARCH_LIBS( [$search_for],[lapack],[lapack_found=yes])
 fi
 
 # if not found, then use internal lapack with external blas
 if test -z "$lapack_found" ; then
 AC_MSG_WARN([using internal lapack, could be inefficient])
-LIBS="$save_LIBS"
-
 else
 AC_DEFINE([__PLUMED_HAS_EXTERNAL_LAPACK])
 fi
@@ -418,6 +455,68 @@ fi
 if test "$blas_found" == nounderscore
 then
   AC_DEFINE([F77_NO_UNDERSCORE])
+fi
+
+if test -n "$blas_found" ; then
+
+AC_DEFUN([PLUMED_TEST_SDOT],[
+#if ! defined(F77_NO_UNDERSCORE)
+#define sdot sdot_
+#endif
+extern "C"{
+$1 sdot(int *n, float *dx, int *incx, float *dy, int *incy);
+}
+
+int main(){
+  int size=5;
+// notice that [[]] is required to cheat autoconf
+  float af[[5]],bf[[5]];
+  for(unsigned i=0;i<size;i++){
+    af[[i]]=size;
+    bf[[i]]=size-i;
+  }
+  int inca=1;
+  int incb=1;
+  $1 f=sdot(&size,af,&inca,bf,&incb)-75;
+  if(f*f<1e-10) return 0;
+  else return 1;
+}
+])
+
+
+AC_MSG_CHECKING([whether sdot returns float])
+AC_RUN_IFELSE([AC_LANG_SOURCE([PLUMED_TEST_SDOT([float])])],
+  [ sdot_returns_float=yes ; AC_MSG_RESULT([yes]) ],
+  [ sdot_returns_float=no ;  AC_MSG_RESULT([no]) ],
+  [ AC_MSG_RESULT([not checked (cross compiling)]) ]
+)
+
+if test "$sdot_returns_float" == no ;
+then
+
+AC_MSG_CHECKING([whether sdot returns double])
+AC_RUN_IFELSE([AC_LANG_SOURCE([PLUMED_TEST_SDOT([double])])],
+  [ sdot_returns_double=yes ; AC_MSG_RESULT([yes]) ],
+  [ sdot_returns_double=no ;  AC_MSG_RESULT([no]) ],
+  [ AC_MSG_RESULT([not checked (cross compiling)]) ]
+)
+
+fi
+
+if test "$sdot_returns_double" = yes ; then
+  AC_MSG_NOTICE([Setting workaround for blas float functions returning double])
+  AC_DEFINE(__PLUMED_BLAS_RETURNS_FLOAT,double)
+  if test -n "$lapack_found" ; then
+    AC_MSG_NOTICE([Setting workaround for lapack float functions returning double])
+    AC_DEFINE(__PLUMED_LAPACK_RETURNS_FLOAT,double)
+  fi
+else if test "$sdot_returns_float" = no && test "$sdot_returns_double" = no ;
+then
+  AC_MSG_WARN([There is a problem with your blas implementation])
+fi
+
+fi
+
 fi
 
 #### End of compulsory libraries ####
@@ -441,23 +540,15 @@ if test $molfile_plugins == true ; then
 # We always have molfile, now
 AC_DEFINE([__PLUMED_HAS_MOLFILE_PLUGINS])
 
-found=ko
-if test "$external_molfile_plugins" == true ; then
-	AC_CHECK_LIB([molfile_plugin],[molfile_dcdplugin_init],
-           if test "${libsearch}" == true ; then
-        	[ AC_CHECK_HEADER([libmolfile_plugin.h], [LIBS="-lmolfile_plugin $LIBS"] [found=ok] ) ]
-           fi
-)
+  if test "$external_molfile_plugins" == true ; then
+    PLUMED_CHECK_PACKAGE([libmolfile_plugin.h],[molfile_dcdplugin_init],[__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS],molfile_plugin)
+    if test "$__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS" != yes ; then
+      AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
+    else
+      AC_DEFINE([__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS])
+    fi
+  fi
 fi
-if test $found == ko ; then
-	AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
-else
-	AC_DEFINE([__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS])
-fi
-
-fi
-
-
 
 # this is special and is also attached to STATIC_LIBS
 # this flag should be used also when linking MD engines to allow plumed
@@ -468,7 +559,7 @@ mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
   PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_HAS_MPI])
-  if test "x$ac_cv_func_MPI_Init" = xyes; then
+  if test "$__PLUMED_HAS_MPI" = yes; then
     mpi_found=ok
   fi
 else 
@@ -479,9 +570,6 @@ fi
 # when configuring with --disable-openmp
 AC_OPENMP
 
-if test $matheval == true ; then
-  PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
-fi
 if test $readdir_r == true ; then
   PLUMED_CHECK_PACKAGE([dirent.h],[readdir_r],[__PLUMED_HAS_READDIR_R])
 fi
@@ -498,39 +586,51 @@ if test $zlib == true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
 fi
 
-save_LIBS="$LIBS"
-
 if test $gsl == true ; then
   found=ko
-  AC_CHECK_FUNC(  [cblas_dgemv], [found=ok], [
-  if test "${libsearch}" == true ; then
-    AC_CHECK_LIB(   [gslcblas],[cblas_dgemv], [LIBS="-lgslcblas $LIBS"] [found=ok])
-  fi
-  ])
-  if test $found == ok ; then
-    found=ko
+  PLUMED_SEARCH_LIBS([cblas_dgemv],[gslcblas], [
     AC_CHECK_HEADER(  [gsl/gsl_vector.h], [
-      AC_CHECK_FUNC(  [gsl_vector_alloc], [found=ok], [
-      if test "${libsearch}" == true ; then
-        AC_CHECK_LIB(   [gsl],[gsl_vector_alloc], [LIBS="-lgsl $LIBS"] [found=ok])
-      fi
+      PLUMED_SEARCH_LIBS([gsl_vector_alloc],[gsl],[found=ok])
     ])
-    ])
-  fi
+  ])
   if test $found == ok ; then
     AC_DEFINE([__PLUMED_HAS_GSL])
   else
-     LIBS="$save_LIBS"
-     AC_MSG_WARN([cannot enable __PLUMED_HAS_GSL])
+    AC_MSG_WARN([cannot enable __PLUMED_HAS_GSL])
   fi
 fi
 
 if test $xdrfile == true ; then
   PLUMED_CHECK_PACKAGE([xdrfile/xdrfile_xtc.h],[write_xtc],[__PLUMED_HAS_XDRFILE],[xdrfile])
 fi
+
 if test $boost_graph == true ; then
-  PLUMED_CHECK_PACKAGE([boost/graph/graph_utility.hpp],[exit],[__PLUMED_HAS_BOOST_GRAPH],[boost_graph])
+  PLUMED_CHECK_CXX_PACKAGE([boost graph],[
+#include <boost/graph/graph_utility.hpp>
+#include <boost/graph/adjacency_matrix.hpp>
+int
+main ()
+{
+  boost::adjacency_matrix<boost::directedS> a(1);
+  ;
+  return 0;
+}
+  ], [__PLUMED_HAS_BOOST_GRAPH])
 fi
+
+if test $boost_serialization == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([boost serialization],[
+#include <fstream>
+#include <boost/archive/text_oarchive.hpp>
+int main() {
+    std::ofstream ofs("filename");
+    boost::archive::text_oarchive oa(ofs);
+    return 0;
+}
+  ], [__PLUMED_HAS_BOOST_SERIALIZATION],[boost_serialization boost_serialization-mt])
+# notice: macports install libraries with -mt suffix
+fi
+
 if test $fftw == true ; then
   PLUMED_CHECK_PACKAGE([fftw3.h],[fftw_execute],[__PLUMED_HAS_FFTW],[fftw3])
 fi
@@ -570,7 +670,11 @@ if test "$shared" == true ; then
     AC_MSG_NOTICE([Dynamic library extension is 'dylib'])
     AC_MSG_NOTICE([LDSO needs special flags])
     SOEXT=dylib
-    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib"
+    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
+    if test "$rpath" = true ; then
+      AC_MSG_NOTICE([Switching off rpath on OSX])
+      rpath=false
+    fi
   ;;
   (Linux)
     AC_MSG_NOTICE([*** Special settings for dynamic libraries on Linux ***])
@@ -602,6 +706,22 @@ then
     AC_MSG_RESULT([no])
     AC_MSG_WARN([dynamic library will be disabled])
     SOEXT=
+  fi
+  if test -n "$SOEXT" && test "$rpath" = true ; then
+    rm -f conftest.$SOEXT
+    readelf=""
+    AC_CHECK_PROG([readelf],[readelf],[found])
+    if test "$readelf" == found ; then
+      test_LDSO="$LDSO -Wl,-R -Wl,/some/random/dir/"
+      $test_LDSO $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
+      if readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
+        LDSO="$LDSO -Wl,-R -Wl,\"$LIBRARY_PATH\""
+      else
+        AC_MSG_WARN([-R option seems not working, disabling rpath])
+      fi
+    else
+      AC_MSG_WARN([readelf not available, no way to set rpath])
+    fi 
   fi
   rm -f conftest.*
 fi
@@ -750,6 +870,8 @@ EOF
   fi
 fi
 
+if test "${static_patch}" == true ; then
+
 AC_MSG_NOTICE([I will now check if C++ objects can be linked by C/Fortran compilers])
 AC_MSG_NOTICE([This is relevant if you want to use plumed patch --static on a non-C++ code])
 
@@ -816,6 +938,10 @@ EOF
   fi
   rm -f conftest.* conftest-main.*
 done
+
+else
+AC_MSG_NOTICE([Static patching is disabled, thus tests required for static patching will be skipped])
+fi
 
 if test "$prefix" == NONE
 then

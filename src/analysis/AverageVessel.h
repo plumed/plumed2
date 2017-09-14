@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,21 +29,21 @@ namespace analysis {
 
 class AverageVessel : public vesselbase::AveragingVessel {
 private:
- std::vector<double> domain;
+  std::vector<double> domain;
 public:
   /// keywords
- static void registerKeywords( Keywords& keys );
+  static void registerKeywords( Keywords& keys );
 /// Constructor
- explicit AverageVessel( const vesselbase::VesselOptions& );
+  explicit AverageVessel( const vesselbase::VesselOptions& );
 /// Set the size of the data vessel
- void resize();
+  void resize();
 /// This does nothing
- void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
- std::string description(){ return ""; } 
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  std::string description() { return ""; }
 /// Accumulate the average
- void accumulate( const double& weight, const double& val );
+  void accumulate( const double& weight, const double& val );
 /// Get the average value
- double getAverage() const ;
+  double getAverage() const ;
 };
 
 }

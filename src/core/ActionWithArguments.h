@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,16 +26,16 @@
 #include "Value.h"
 #include <vector>
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup MULTIINHERIT
-This is used to create PLMD::Action objects that take the output from some other Action as input.  
+This is used to create PLMD::Action objects that take the output from some other Action as input.
 This is used in PLMD::Function and PLMD::Bias
- PLMD::Action objects that inherit from PLMD::ActionWithArguments take 
+ PLMD::Action objects that inherit from PLMD::ActionWithArguments take
  values and components calculated in other PLMD::Action objects and
- use this information to calculate some new function.  If you have 
- only one list of arguments you should use the reserved keyword <b> ARG </b> 
+ use this information to calculate some new function.  If you have
+ only one list of arguments you should use the reserved keyword <b> ARG </b>
  when you use parseArgumentList.
 */
 
@@ -60,7 +60,7 @@ public:
   virtual unsigned getNumberOfArguments() const ;
 /// Takes the difference taking into account pbc for arg i
   double difference(int, double, double) const;
-/// Takes one value and brings it back into the pbc of argument i 
+/// Takes one value and brings it back into the pbc of argument i
   double bringBackInPbc(int i,double d1)const;
 /// Parse a list of arguments
   void parseArgumentList(const std::string&key,std::vector<Value*>&args);
@@ -72,9 +72,9 @@ public:
   void addForcesOnArguments( const std::vector<double>& forces );
 public:
   explicit ActionWithArguments(const ActionOptions&);
-  virtual ~ActionWithArguments(){}
+  virtual ~ActionWithArguments() {}
 /// Calculate the numerical derivatives
-/// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
+/// N.B. only pass an ActionWithValue to this routine if you know exactly what you
 /// are doing.  The default will be correct for the vast majority of cases
   virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   void lockRequests();
@@ -87,7 +87,7 @@ public:
 
 
 inline
-Value* ActionWithArguments::getPntrToArgument( const unsigned n ){
+Value* ActionWithArguments::getPntrToArgument( const unsigned n ) {
   return arguments[n];
 }
 
@@ -97,27 +97,27 @@ double ActionWithArguments::getArgument(const unsigned n) const {
 }
 
 inline
-unsigned ActionWithArguments::getNumberOfArguments()const{
+unsigned ActionWithArguments::getNumberOfArguments()const {
   return arguments.size();
 }
 
 inline
-double ActionWithArguments::difference(int i,double d1,double d2)const{
+double ActionWithArguments::difference(int i,double d1,double d2)const {
   return arguments[i]->difference(d1,d2);
 }
 
 inline
-double ActionWithArguments::bringBackInPbc(int i,double d1)const{
+double ActionWithArguments::bringBackInPbc(int i,double d1)const {
   return arguments[i]->bringBackInPbc(d1);
 }
 
 inline
-void ActionWithArguments::lockRequests(){
+void ActionWithArguments::lockRequests() {
   lockRequestArguments=true;
 }
 
 inline
-void ActionWithArguments::unlockRequests(){
+void ActionWithArguments::unlockRequests() {
   lockRequestArguments=false;
 }
 

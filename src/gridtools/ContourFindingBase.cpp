@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,19 +24,19 @@
 namespace PLMD {
 namespace gridtools {
 
-void ContourFindingBase::registerKeywords( Keywords& keys ){
+void ContourFindingBase::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("compulsory","CONTOUR","the value we would like to draw the contour at in the space");
   keys.remove("KERNEL"); keys.remove("BANDWIDTH");
 }
 
 ContourFindingBase::ContourFindingBase(const ActionOptions&ao):
-Action(ao),
-ActionWithInputGrid(ao),
-mymin(this)
+  Action(ao),
+  ActionWithInputGrid(ao),
+  mymin(this)
 {
   if( ingrid->noDerivatives() ) error("cannot find contours if input grid has no derivatives");
-  parse("CONTOUR",contour); 
+  parse("CONTOUR",contour);
   log.printf("  calculating dividing surface along which function equals %f \n", contour);
 }
 

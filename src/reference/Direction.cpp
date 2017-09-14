@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,47 +27,48 @@ namespace PLMD {
 PLUMED_REGISTER_METRIC(Direction,"DIRECTION")
 
 Direction::Direction( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro),
-ReferenceAtoms(ro),
-ReferenceArguments(ro)
+  ReferenceConfiguration(ro),
+  ReferenceAtoms(ro),
+  ReferenceArguments(ro),
+  normalized(false)
 {
 }
 
-void Direction::read( const PDB& pdb ){
+void Direction::read( const PDB& pdb ) {
   readAtomsFromPDB( pdb );
   readArgumentsFromPDB( pdb );
 }
 
-void Direction::setDirection( const std::vector<Vector>& conf, const std::vector<double>& args ){
+void Direction::setDirection( const std::vector<Vector>& conf, const std::vector<double>& args ) {
   std::vector<double> sigma( args.size(), 1.0 ); setReferenceArguments( args, sigma );
 
   reference_atoms.resize( conf.size() ); align.resize( conf.size() );
   displace.resize( conf.size() ); atom_der_index.resize( conf.size() );
-  for(unsigned i=0;i<conf.size();++i){ align[i]=1.0; displace[i]=1.0; atom_der_index[i]=i; reference_atoms[i]=conf[i]; }
+  for(unsigned i=0; i<conf.size(); ++i) { align[i]=1.0; displace[i]=1.0; atom_der_index[i]=i; reference_atoms[i]=conf[i]; }
 }
 
-void Direction::addDirection( const double& weight, const Direction& dir ){
+void Direction::addDirection( const double& weight, const Direction& dir ) {
   plumed_dbg_assert( dir.getNumberOfReferenceArguments()==getNumberOfReferenceArguments() && dir.reference_atoms.size()==reference_atoms.size() );
-  for(unsigned i=0;i<reference_args.size();++i) reference_args[i] += weight*dir.reference_args[i];
-  for(unsigned i=0;i<reference_atoms.size();++i) reference_atoms[i] += weight*dir.reference_atoms[i];
+  for(unsigned i=0; i<reference_args.size(); ++i) reference_args[i] += weight*dir.reference_args[i];
+  for(unsigned i=0; i<reference_atoms.size(); ++i) reference_atoms[i] += weight*reference_atoms.size()*dir.reference_atoms[i];
 }
 
-void Direction::zeroDirection(){
-  for(unsigned i=0;i<reference_args.size();++i) reference_args[i] = 0.;
-  for(unsigned i=0;i<reference_atoms.size();++i) reference_atoms[i].zero();
+void Direction::zeroDirection() {
+  for(unsigned i=0; i<reference_args.size(); ++i) reference_args[i] = 0.;
+  for(unsigned i=0; i<reference_atoms.size(); ++i) reference_atoms[i].zero();
 }
 
 double Direction::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args,
                         ReferenceValuePack& myder, const bool& squared ) const {
-  plumed_merror("You should never be calling calc for a direction"); return 1.0; 
+  plumed_merror("You should never be calling calc for a direction"); return 1.0;
 }
 
 void Direction::extractArgumentDisplacement( const std::vector<Value*>& vals, const std::vector<double>& arg, std::vector<double>& dirout ) const {
-  for(unsigned i=0;i<getNumberOfReferenceArguments();++i) dirout[i]=getReferenceArgument(i);
+  for(unsigned i=0; i<getNumberOfReferenceArguments(); ++i) dirout[i]=getReferenceArgument(i);
 }
 
-void Direction::extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& dirout ) const {
-  for(unsigned i=0;i<getNumberOfAtoms();++i) dirout[i]=getReferencePosition(i); 
+void Direction::extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& dirout ) const {
+  for(unsigned i=0; i<getNumberOfAtoms(); ++i) dirout[i]=getReferencePosition(i);
 }
 
 }

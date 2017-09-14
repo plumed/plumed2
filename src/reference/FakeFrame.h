@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,13 +27,13 @@
 namespace PLMD {
 
 class FakeFrame :
-public PLMD::ReferenceConfiguration
+  public PLMD::ReferenceConfiguration
 {
 public:
   explicit FakeFrame( const ReferenceConfigurationOptions& ro ) : ReferenceConfiguration(ro) {}
-  void read( const PDB& ){ plumed_merror("should not be called"); }
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const { 
-     plumed_merror("should not be called"); return 1.0; 
+  void read( const PDB& ) { plumed_merror("should not be called"); }
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const {
+    plumed_merror("should not be called"); return 1.0;
   }
 };
 

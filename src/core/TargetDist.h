@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,7 @@
 #include <vector>
 #include <string>
 
-namespace PLMD{
+namespace PLMD {
 
 class Log;
 class PDB;
@@ -33,12 +33,12 @@ class Value;
 
 class TargetDist {
 private:
-  std::vector<Value*> args; 
+  std::vector<Value*> args;
   std::vector<double> target;
   Log &log;
 public:
   explicit TargetDist(Log& log) : log(log) {}
-  void read( const PDB& pdb, std::vector<Value*> args ); 
+  void read( const PDB& pdb, std::vector<Value*> args );
   void read( const std::vector<double>& targ, std::vector<Value*> ar );
   double calculate( std::vector<double>& derivs );
 };

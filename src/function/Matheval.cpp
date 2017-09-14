@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,14 +22,28 @@
 #include "ActionRegister.h"
 #include "Function.h"
 
-#ifdef __PLUMED_HAS_MATHEVAL
-#include <matheval.h>
-#endif
+#include "lepton/Lepton.h"
 
 using namespace std;
 
-namespace PLMD{
-namespace function{
+namespace PLMD {
+namespace function {
+
+static std::map<string, double> leptonConstants= {
+  {"e", std::exp(1.0)},
+  {"log2e", 1.0/std::log(2.0)},
+  {"log10e", 1.0/std::log(10.0)},
+  {"ln2", std::log(2.0)},
+  {"ln10", std::log(10.0)},
+  {"pi", pi},
+  {"pi_2", pi*0.5},
+  {"pi_4", pi*0.25},
+//  {"1_pi", 1.0/pi},
+//  {"2_pi", 2.0/pi},
+//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
+  {"sqrt2", std::sqrt(2.0)},
+  {"sqrt1_2", std::sqrt(0.5)}
+};
 
 
 //+PLUMEDOC FUNCTION MATHEVAL
@@ -46,36 +60,31 @@ This names can be customized using the VAR keyword (see examples below).
 If you want a function that depends not only on collective variables
 but also on time you can use the \subpage TIME action.
 
-\attention
-The MATHEVAL object only works if libmatheval is installed on the system and
-PLUMED has been linked to it
-
 \par Examples
 
 The following input tells plumed to perform a metadynamics
 using as a CV the difference between two distances.
-\verbatim
-dAB: DISTANCE ARG=10,12
-dAC: DISTANCE ARG=10,15
+\plumedfile
+dAB: DISTANCE ATOMS=10,12
+dAC: DISTANCE ATOMS=10,15
 diff: MATHEVAL ARG=dAB,dAC FUNC=y-x PERIODIC=NO
 # notice: the previous line could be replaced with the following
 # diff: COMBINE ARG=dAB,dAC COEFFICIENTS=-1,1
 METAD ARG=diff WIDTH=0.1 HEIGHT=0.5 BIASFACTOR=10 PACE=100
-\endverbatim
+\endplumedfile
 (see also \ref DISTANCE, \ref COMBINE, and \ref METAD).
 Notice that forces applied to diff will be correctly propagated
 to atoms 10, 12, and 15.
 Also notice that since MATHEVAL is used without the VAR option
 the two arguments should be referred to as x and y in the expression FUNC.
 For simple functions
-such as this one it is possible to use \ref COMBINE, which does
-not require libmatheval to be installed on your system.
+such as this one it is possible to use \ref COMBINE.
 
 The following input tells plumed to print the angle between vectors
 identified by atoms 1,2 and atoms 2,3
 its square (as computed from the x,y,z components) and the distance
 again as computed from the square root of the square.
-\verbatim
+\plumedfile
 DISTANCE LABEL=d1 ATOMS=1,2 COMPONENTS
 DISTANCE LABEL=d2 ATOMS=2,3 COMPONENTS
 MATHEVAL ...
@@ -86,23 +95,23 @@ MATHEVAL ...
   PERIODIC=NO
 ... MATHEVAL
 PRINT ARG=theta
-\endverbatim
+\endplumedfile
 (See also \ref PRINT and \ref DISTANCE).
 
-Notice that the matheval library implements a large number of functions (trigonometric, exp, log, etc).
+Notice that this action implements a large number of functions (trigonometric, exp, log, etc).
 Among the useful functions, have a look at the step function (that is the Heaviside function).
 `step(x)` is defined as 1 when `x` is positive and `0` when x is negative. This allows for
 a straightforward implementation of if clauses.
 
 For example, imagine that you want to implement a restraint that only acts when a
 distance is larger than 0.5. You can do it with
-\verbatim
+\plumedfile
 d: DISTANCE ATOMS=10,15
 m: MATHEVAL ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
 # check the function you are applying:
 PRINT ARG=d,n FILE=checkme
 RESTRAINT ARG=d AT=0.5 KAPPA=10.0
-\endverbatim
+\endplumedfile
 (see also \ref DISTANCE, \ref PRINT, and \ref RESTRAINT)
 
 The meaning of the function `0.5*step(0.5-x)+x*step(x-0.5)` is:
@@ -133,7 +142,7 @@ MATHEVAL can be used in combination with \ref DISTANCE to implement variants of 
 DISTANCE keyword that were present in PLUMED 1.3 and that allowed to compute
 the distance of a point from a line defined by two other points, or the progression
 along that line.
-\verbatim
+\plumedfile
 # take center of atoms 1 to 10 as reference point 1
 p1: CENTER ATOMS=1-10
 # take center of atoms 11 to 20 as reference point 2
@@ -156,7 +165,7 @@ fromaxis: MATHEVAL ARG=d13,d23,d12,onaxis VAR=x,y,z,o FUNC=(0.5*(y^2+x^2)-o^2-0.
 
 PRINT ARG=onaxis,fromaxis
 
-\endverbatim
+\endplumedfile
 
 Notice that these equations have been used to combine \ref RMSD
 from different snapshots of a protein so as to define
@@ -170,23 +179,47 @@ progression (S) and distance (Z) variables \cite perez2015atp.
 class Matheval :
   public Function
 {
-  void* evaluator;
-  vector<void*> evaluator_deriv;
+  lepton::CompiledExpression expression;
+  std::vector<lepton::CompiledExpression> expression_deriv;
   vector<string> var;
   string func;
   vector<double> values;
   vector<char*> names;
 public:
   explicit Matheval(const ActionOptions&);
-  ~Matheval();
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-#ifdef __PLUMED_HAS_MATHEVAL
 PLUMED_REGISTER_ACTION(Matheval,"MATHEVAL")
 
-void Matheval::registerKeywords(Keywords& keys){
+//+PLUMEDOC FUNCTION CUSTOM
+/*
+An alias to the \ref MATHEVAL function.
+
+\par Examples
+
+Just replace \ref MATHEVAL with \ref CUSTOM.
+
+\plumedfile
+d: DISTANCE ATOMS=10,15
+m: CUSTOM ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
+# check the function you are applying:
+PRINT ARG=d,n FILE=checkme
+RESTRAINT ARG=d AT=0.5 KAPPA=10.0
+\endplumedfile
+(see also \ref DISTANCE, \ref PRINT, and \ref RESTRAINT)
+
+*/
+//+ENDPLUMEDOC
+
+class Custom :
+  public Matheval {
+};
+
+PLUMED_REGISTER_ACTION(Matheval,"CUSTOM")
+
+void Matheval::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG"); keys.use("PERIODIC");
   keys.add("compulsory","FUNC","the function you wish to evaluate");
@@ -194,14 +227,14 @@ void Matheval::registerKeywords(Keywords& keys){
 }
 
 Matheval::Matheval(const ActionOptions&ao):
-Action(ao),
-Function(ao),
-evaluator_deriv(getNumberOfArguments()),
-values(getNumberOfArguments()),
-names(getNumberOfArguments())
+  Action(ao),
+  Function(ao),
+  expression_deriv(getNumberOfArguments()),
+  values(getNumberOfArguments()),
+  names(getNumberOfArguments())
 {
   parseVector("VAR",var);
-  if(var.size()==0){
+  if(var.size()==0) {
     var.resize(getNumberOfArguments());
     if(getNumberOfArguments()>3)
       error("Using more than 3 arguments you should explicitly write their names with VAR");
@@ -212,59 +245,52 @@ names(getNumberOfArguments())
   if(var.size()!=getNumberOfArguments())
     error("Size of VAR array should be the same as number of arguments");
   parse("FUNC",func);
-  addValueWithDerivatives(); 
+  addValueWithDerivatives();
   checkRead();
-
-  evaluator=evaluator_create(const_cast<char*>(func.c_str()));
-
-  if(!evaluator) error("There was some problem in parsing matheval formula "+func);
-
-  char **check_names;
-  int    check_count;
-  evaluator_get_variables(evaluator,&check_names,&check_count);
-  if(check_count!=int(getNumberOfArguments())){
-    string sc;
-    Tools::convert(check_count,sc);
-    error("Your function string contains "+sc+" arguments. This should be equal to the number of ARGs");
-  }
-  for(unsigned i=0;i<getNumberOfArguments();i++){
-    bool found=false;
-    for(unsigned j=0;j<getNumberOfArguments();j++){
-      if(var[i]==check_names[j])found=true;
-    }
-    if(!found)
-      error("Variable "+var[i]+" cannot be found in your function string");
-  }
-
-  for(unsigned i=0;i<getNumberOfArguments();i++)
-    evaluator_deriv[i]=evaluator_derivative(evaluator,const_cast<char*>(var[i].c_str()));
-
 
   log.printf("  with function : %s\n",func.c_str());
   log.printf("  with variables :");
-  for(unsigned i=0;i<var.size();i++) log.printf(" %s",var[i].c_str());
+  for(unsigned i=0; i<var.size(); i++) log.printf(" %s",var[i].c_str());
   log.printf("\n");
-  log.printf("  function as parsed by matheval: %s\n", evaluator_get_string(evaluator));
-  log.printf("  derivatives as computed by matheval:\n");
-  for(unsigned i=0;i<var.size();i++) log.printf("    %s\n",evaluator_get_string(evaluator_deriv[i]));
-}
 
-void Matheval::calculate(){
-  for(unsigned i=0;i<getNumberOfArguments();i++) values[i]=getArgument(i);
-  for(unsigned i=0;i<getNumberOfArguments();i++) names[i]=const_cast<char*>(var[i].c_str());
-  setValue(evaluator_evaluate(evaluator,names.size(),&names[0],&values[0]));
-
-  for(unsigned i=0;i<getNumberOfArguments();i++){
-    setDerivative(i,evaluator_evaluate(evaluator_deriv[i],names.size(),&names[0],&values[0]));
+  lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(leptonConstants);
+  log<<"  function as parsed by lepton: "<<pe<<"\n";
+  expression=pe.createCompiledExpression();
+  for(auto &p: expression.getVariables()) {
+    if(std::find(var.begin(),var.end(),p)==var.end()) {
+      error("variable " + p + " is not defined");
+    }
+  }
+  log<<"  derivatives as computed by lepton:\n";
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(leptonConstants);
+    log<<"    "<<pe<<"\n";
+    expression_deriv[i]=pe.createCompiledExpression();
   }
 }
 
-Matheval::~Matheval(){
-  evaluator_destroy(evaluator);
-  for(unsigned i=0;i<evaluator_deriv.size();i++)evaluator_destroy(evaluator_deriv[i]);
+void Matheval::calculate() {
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    try {
+      expression.getVariableReference(var[i])=getArgument(i);
+    } catch(PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=0*x
+    }
+  }
+  setValue(expression.evaluate());
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    for(unsigned j=0; j<getNumberOfArguments(); j++) {
+      try {
+        expression_deriv[i].getVariableReference(var[j])=getArgument(j);
+      } catch(PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=0*x
+      }
+    }
+    setDerivative(i,expression_deriv[i].evaluate());
+  }
 }
-
-#endif
 
 }
 }

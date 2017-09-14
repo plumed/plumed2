@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,39 +34,39 @@ class Log;
 
 /**
 \ingroup TOOLBOX
-A class for calculating whether or not values are within a given range using : \f$ \sum_i \int_a^b G( s_i, \sigma*(b-a) ) \f$    
-*/      
+A class for calculating whether or not values are within a given range using : \f$ \sum_i \int_a^b G( s_i, \sigma*(b-a) ) \f$
+*/
 
-class HistogramBead{
-private:	
-	bool init;
-	double lowb;
-	double highb;
-	double width;
-        double cutoff;
-        enum {gaussian,triangular} type;
-        enum {unset,periodic,notperiodic} periodicity;
-        double min, max, max_minus_min, inv_max_minus_min;
-        double difference( const double& d1, const double& d2 ) const ;
+class HistogramBead {
+private:
+  bool init;
+  double lowb;
+  double highb;
+  double width;
+  double cutoff;
+  enum {gaussian,triangular} type;
+  enum {unset,periodic,notperiodic} periodicity;
+  double min, max, max_minus_min, inv_max_minus_min;
+  double difference( const double& d1, const double& d2 ) const ;
 public:
-        static void registerKeywords( Keywords& keys );
-        static void generateBins( const std::string& params, std::vector<std::string>& bins );  
-	HistogramBead();
-        std::string description() const ;
-        bool hasBeenSet() const;
-        void isNotPeriodic();
-        void isPeriodic( const double& mlow, const double& mhigh );
-        void setKernelType( const std::string& ktype );
-        void set(const std::string& params, std::string& errormsg);
-	void set(double l, double h, double w);
-	double calculate(double x, double&df) const;
-        double calculateWithCutoff( double x, double& df ) const; 
-        double lboundDerivative( const double& x ) const;
-        double uboundDerivative( const double& x ) const;
-	double getlowb() const ;
-	double getbigb() const ;
-        double getCutoff() const ;
-};	
+  static void registerKeywords( Keywords& keys );
+  static void generateBins( const std::string& params, std::vector<std::string>& bins );
+  HistogramBead();
+  std::string description() const ;
+  bool hasBeenSet() const;
+  void isNotPeriodic();
+  void isPeriodic( const double& mlow, const double& mhigh );
+  void setKernelType( const std::string& ktype );
+  void set(const std::string& params, std::string& errormsg);
+  void set(double l, double h, double w);
+  double calculate(double x, double&df) const;
+  double calculateWithCutoff( double x, double& df ) const;
+  double lboundDerivative( const double& x ) const;
+  double uboundDerivative( const double& x ) const;
+  double getlowb() const ;
+  double getbigb() const ;
+  double getCutoff() const ;
+};
 
 inline
 bool HistogramBead::hasBeenSet() const {
@@ -74,12 +74,12 @@ bool HistogramBead::hasBeenSet() const {
 }
 
 inline
-void HistogramBead::isNotPeriodic(){
+void HistogramBead::isNotPeriodic() {
   periodicity=notperiodic;
 }
 
 inline
-void HistogramBead::isPeriodic( const double& mlow, const double& mhigh ){
+void HistogramBead::isPeriodic( const double& mlow, const double& mhigh ) {
   periodicity=periodic; min=mlow; max=mhigh;
   max_minus_min=max-min;
   plumed_massert(max_minus_min>0, "your function has a very strange domain?");
@@ -88,7 +88,7 @@ void HistogramBead::isPeriodic( const double& mlow, const double& mhigh ){
 
 inline
 double HistogramBead::getlowb() const { return lowb; }
-	
+
 inline
 double HistogramBead::getbigb() const { return highb; }
 
@@ -97,9 +97,9 @@ double HistogramBead::getCutoff() const { return cutoff*width; }
 
 inline
 double HistogramBead::difference( const double& d1, const double& d2 ) const {
-  if(periodicity==notperiodic){
+  if(periodicity==notperiodic) {
     return d2-d1;
-  } else if(periodicity==periodic){
+  } else if(periodicity==periodic) {
     // Make sure the point is in the target range
     double newx=d1*inv_max_minus_min;
     newx=Tools::pbc(newx);

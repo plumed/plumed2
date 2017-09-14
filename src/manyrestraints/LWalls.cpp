@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,7 @@
 namespace PLMD {
 namespace manyrestraints {
 
-//+PLUMEDOC MCOLVARB LWALLS 
+//+PLUMEDOC MCOLVARB LWALLS
 /*
 Add \ref LOWER_WALLS restraints on all the multicolvar values
 
@@ -36,20 +36,20 @@ keyword and places a restraint on each quantity, \f$x\f$, with the following fun
   k((x-a+o)/s)^e
 \f$
 
-\f$k\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s\f$ (EPS) a rescaling factor and 
+\f$k\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s\f$ (EPS) a rescaling factor and
 \f$e\f$ (EXP) the exponent determining the power law. By default: EXP = 2, EPS = 1.0, OFF = 0.
 
 \par Examples
 
 The following set of commands can be used to stop any of the 800 atoms in group A from moving more than 2.46425 nm
-in the z direction from atom 34137.  This is done by adding a lower wall on the z-distance between all the atoms in 
-group A and the position of 34137. 
+in the z direction from atom 34137.  This is done by adding a lower wall on the z-distance between all the atoms in
+group A and the position of 34137.
 
-\verbatim
+\plumedfile
 l: ZDISTANCES GROUPA=1-800 GROUPB=34137 NOPBC
 LWALLS DATA=l AT=2.46465 KAPPA=150.0 EXP=2 EPS=1 OFFSET=0 LABEL=lwall
-\endverbatim
- 
+\endplumedfile
+
 
 */
 //+ENDPLUMEDOC
@@ -70,7 +70,7 @@ public:
 
 PLUMED_REGISTER_ACTION(LWalls,"LWALLS")
 
-void LWalls::registerKeywords( Keywords& keys ){
+void LWalls::registerKeywords( Keywords& keys ) {
   ManyRestraintsBase::registerKeywords( keys );
   keys.add("compulsory","AT","the radius of the sphere");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
@@ -80,8 +80,8 @@ void LWalls::registerKeywords( Keywords& keys ){
 }
 
 LWalls::LWalls(const ActionOptions& ao):
-Action(ao),
-ManyRestraintsBase(ao)
+  Action(ao),
+  ManyRestraintsBase(ao)
 {
   parse("AT",at);
   parse("OFFSET",offset);
@@ -91,13 +91,13 @@ ManyRestraintsBase(ao)
   checkRead();
 }
 
-double LWalls::calcPotential( const double& val, double& df ) const { 
+double LWalls::calcPotential( const double& val, double& df ) const {
   double uscale = (val - at + offset)/eps;
-  if( uscale < 0. ){
-     double power = pow( uscale, exp );
-     df = ( kappa / eps ) * exp * power / uscale;
+  if( uscale < 0. ) {
+    double power = pow( uscale, exp );
+    df = ( kappa / eps ) * exp * power / uscale;
 
-     return kappa*power;
+    return kappa*power;
   }
 
   return 0.0;

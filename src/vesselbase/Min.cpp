@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,7 +24,7 @@
 #include "ActionWithVessel.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 class Min : public FunctionVessel {
 private:
@@ -40,22 +40,22 @@ public:
 
 PLUMED_REGISTER_VESSEL(Min,"MIN")
 
-void Min::registerKeywords( Keywords& keys ){
+void Min::registerKeywords( Keywords& keys ) {
   FunctionVessel::registerKeywords( keys );
   keys.add("compulsory","BETA","the value of beta for the equation in the manual");
 }
 
-void Min::reserveKeyword( Keywords& keys ){
+void Min::reserveKeyword( Keywords& keys ) {
   keys.reserve("vessel","MIN","calculate the minimum value. "
-                                "To make this quantity continuous the minimum is calculated using "
-                                "\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ "
-                                "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
+               "To make this quantity continuous the minimum is calculated using "
+               "\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ "
+               "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
   keys.addOutputComponent("min","MIN","the minimum value. This is calculated using the formula described in the description of the "
-                                      "keyword so as to make it continuous.");
+                          "keyword so as to make it continuous.");
 }
 
 Min::Min( const VesselOptions& da ) :
-FunctionVessel(da)
+  FunctionVessel(da)
 {
   if( getAction()->isPeriodic() ) error("min is not a meaningful option for periodic variables");
   parse("BETA",beta);
@@ -63,17 +63,17 @@ FunctionVessel(da)
   if( diffweight ) error("can't calculate min if weight is differentiable");
 }
 
-std::string Min::value_descriptor(){
+std::string Min::value_descriptor() {
   std::string str_beta; Tools::convert( beta, str_beta );
   return "the minimum value. Beta is equal to " + str_beta;
 }
 
 double Min::calcTransform( const double& val, double& dv ) const {
   double f = exp(beta/val); dv=f/(val*val);
-  return f; 
+  return f;
 }
 
-double Min::finalTransform( const double& val, double& dv ){
+double Min::finalTransform( const double& val, double& dv ) {
   double dist=beta/std::log( val );
   dv = dist*dist/val; return dist;
 }

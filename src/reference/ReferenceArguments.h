@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,22 +29,22 @@ namespace PLMD {
 
 /// \ingroup TOOLBOX
 /// In many applications (e.g. paths, fields, property maps) it is necessary to calculate
-/// the distance between two configurations.  These distances can be calculated in a variety of 
+/// the distance between two configurations.  These distances can be calculated in a variety of
 /// different ways.  For instance, one can assert that the distance between the two configuration
 /// is the distance one would have to move all the atoms to transform configuration 1 into configuration
 /// 2. Alternatively, one could calculate the values of a large set of collective coordinates in the two
-/// configurations and then calculate the Euclidean distances between these two points in the resulting 
-/// high-dimensional vector space.  Lastly, one can combine these two forms of distance calculation to calculate 
+/// configurations and then calculate the Euclidean distances between these two points in the resulting
+/// high-dimensional vector space.  Lastly, one can combine these two forms of distance calculation to calculate
 /// a hybrid distance.  Plumed allows one to use all these forms of distance calculations and also to implement
 /// new forms of distance.  You should inherit from this class if your distance involves reference colvar values.
-/// This class and \ref PLMD::ReferenceAtoms mirror the functionalities in \ref PLMD::ActionWithArguments and 
-/// \ref PLMD::ActionAtomistic respectively but for distances.  
+/// This class and \ref PLMD::ReferenceAtoms mirror the functionalities in \ref PLMD::ActionWithArguments and
+/// \ref PLMD::ActionAtomistic respectively but for distances.
 
 class ReferenceArguments :
   virtual public ReferenceConfiguration
 {
-friend class Direction;
-friend class ReferenceConfiguration;
+  friend class Direction;
+  friend class ReferenceConfiguration;
 private:
 /// The weights for normed euclidean distance
   std::vector<double> weights, sqrtweight;
@@ -60,7 +60,7 @@ private:
 protected:
 /// Are we reading weights from input
   bool hasweights;
-/// Are we calculating a Malanobius distance 
+/// Are we calculating a Malanobius distance
   bool hasmetric;
 /// Read in the atoms from the pdb file
   void readArgumentsFromPDB( const PDB& pdb );
@@ -70,7 +70,7 @@ public:
   explicit ReferenceArguments( const ReferenceConfigurationOptions& ro );
 /// Get the number of reference arguments
   unsigned getNumberOfReferenceArguments() const ;
-/// Get the arguments required 
+/// Get the arguments required
   void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false );
 /// Set the names of the arguments
   void setArgumentNames( const std::vector<std::string>& arg_vals );
@@ -110,7 +110,7 @@ const std::vector<double>& ReferenceArguments::getReferenceArguments() const {
 }
 
 inline
-const std::vector<std::string>& ReferenceArguments::getArgumentNames(){
+const std::vector<std::string>& ReferenceArguments::getArgumentNames() {
   return arg_names;
 }
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,10 +23,10 @@
 #include "tools/OpenMP.h"
 
 using namespace std;
-namespace PLMD{
-namespace function{
+namespace PLMD {
+namespace function {
 
-void Function::registerKeywords(Keywords& keys){
+void Function::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
@@ -34,29 +34,29 @@ void Function::registerKeywords(Keywords& keys){
 }
 
 Function::Function(const ActionOptions&ao):
-Action(ao),
-ActionWithValue(ao),
-ActionWithArguments(ao)
+  Action(ao),
+  ActionWithValue(ao),
+  ActionWithArguments(ao)
 {
 }
 
-void Function::addValueWithDerivatives(){
+void Function::addValueWithDerivatives() {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
-  ActionWithValue::addValueWithDerivatives();  
+  ActionWithValue::addValueWithDerivatives();
   getPntrToValue()->resizeDerivatives(getNumberOfArguments());
 
-  if( keywords.exists("PERIODIC") ){
-     std::vector<std::string> period;  
-     parseVector("PERIODIC",period);  
-     if(period.size()==1 && period[0]=="NO"){
-        setNotPeriodic();
-     } else if(period.size()==2){
-        setPeriodic(period[0],period[1]);
-     } else error("missing PERIODIC keyword");
+  if( keywords.exists("PERIODIC") ) {
+    std::vector<std::string> period;
+    parseVector("PERIODIC",period);
+    if(period.size()==1 && period[0]=="NO") {
+      setNotPeriodic();
+    } else if(period.size()==2) {
+      setPeriodic(period[0],period[1]);
+    } else error("missing PERIODIC keyword");
   }
-} 
-  
-void Function::addComponentWithDerivatives( const std::string& name ){
+}
+
+void Function::addComponentWithDerivatives( const std::string& name ) {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
   ActionWithValue::addComponentWithDerivatives(name);
   getPntrToComponent(name)->resizeDerivatives(getNumberOfArguments());
@@ -83,19 +83,19 @@ void Function::apply()
     vector<double> omp_f(noa,0.0);
     vector<double> forces(noa);
     #pragma omp for reduction( + : at_least_one_forced)
-    for(unsigned i=rank;i<ncp;i+=stride) {
+    for(unsigned i=rank; i<ncp; i+=stride) {
       if(getPntrToComponent(i)->applyForce(forces)) {
         at_least_one_forced+=1;
-        for(unsigned j=0;j<noa;j++) omp_f[j]+=forces[j]; 
+        for(unsigned j=0; j<noa; j++) omp_f[j]+=forces[j];
       }
     }
     #pragma omp critical
-    for(unsigned j=0;j<noa;j++) f[j]+=omp_f[j]; 
+    for(unsigned j=0; j<noa; j++) f[j]+=omp_f[j];
   }
 
   if(noa>0&&ncp>4*cgs) { comm.Sum(&f[0],noa); comm.Sum(at_least_one_forced); }
 
-  if(at_least_one_forced>0) for(unsigned i=0;i<noa;++i) getPntrToArgument(i)->addForce(f[i]);
+  if(at_least_one_forced>0) for(unsigned i=0; i<noa; ++i) getPntrToArgument(i)->addForce(f[i]);
 }
 
 }

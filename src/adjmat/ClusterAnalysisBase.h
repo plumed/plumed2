@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,7 +48,7 @@ public:
   unsigned getNumberOfQuantities() const ;
   bool isPeriodic();
   void turnOnDerivatives();
-  void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ){}
+  void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ) {}
   Vector getPositionOfAtomForLinkCells( const unsigned& ) const ;
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
 };

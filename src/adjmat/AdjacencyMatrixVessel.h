@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,7 +22,7 @@
 #ifndef __PLUMED_adjmat_AdjacencyMatrixVessel_h
 #define __PLUMED_adjmat_AdjacencyMatrixVessel_h
 
-#include "vesselbase/StoreDataVessel.h" 
+#include "vesselbase/StoreDataVessel.h"
 #include "multicolvar/MultiColvarBase.h"
 
 namespace PLMD {
@@ -30,15 +30,15 @@ namespace adjmat {
 
 class AdjacencyMatrixBase;
 
-// One school of thought would have it that it makes more sense to 
+// One school of thought would have it that it makes more sense to
 // have the functionality contained within this class in AdjacencyMatrixBase
 // I have not done this as I can inherit many useful things from StoreDataVessel
 // If I put this functionality within AdjacencyMatrixBase I would have to reimplement
 // these features.
 
 class AdjacencyMatrixVessel : public vesselbase::StoreDataVessel {
-friend class AdjacencyMatrixBase;
-friend class ActionWithInputMatrix;
+  friend class AdjacencyMatrixBase;
+  friend class ActionWithInputMatrix;
 private:
 /// Pointer to underlying action
   AdjacencyMatrixBase* function;
@@ -63,7 +63,7 @@ public:
 ///
   void getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j ) const ;
 /// Can we think of the matrix as an undirected graph
-  bool undirectedGraph() const ; 
+  bool undirectedGraph() const ;
 /// Is the matrix symmetric
   bool isSymmetric() const ;
 /// Get the number of rows

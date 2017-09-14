@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,24 +26,24 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace function{
+namespace PLMD {
+namespace function {
 
 //+PLUMEDOC FUNCTION ENSEMBLE
 /*
 Calculates the replica averaging of a collective variable over multiple replicas.
 
-Each collective variable is averaged separately and stored in a component labelled <em>label</em>.cvlabel.  
+Each collective variable is averaged separately and stored in a component labelled <em>label</em>.cvlabel.
 
 \par Examples
+
 The following input tells plumed to calculate the distance between atoms 3 and 5
 and the average it over the available replicas.
-\verbatim
-dist: DISTANCE ATOMS=3,5 
+\plumedfile
+dist: DISTANCE ATOMS=3,5
 ens: ENSEMBLE ARG=dist
 PRINT ARG=dist,ens.dist
-\endverbatim
-(See also \ref PRINT and \ref DISTANCE).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -72,11 +72,11 @@ public:
 
 PLUMED_REGISTER_ACTION(Ensemble,"ENSEMBLE")
 
-void Ensemble::registerKeywords(Keywords& keys){
+void Ensemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG");
-  keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy"); 
-  keys.addFlag("CENTRAL",false,"calculate a central moment instead of a standard moment"); 
+  keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the latest ARG as energy");
+  keys.addFlag("CENTRAL",false,"calculate a central moment instead of a standard moment");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are reweighting");
   keys.add("optional","MOMENT","the moment you want to calculate in alternative to the mean or the variance");
   keys.add("optional","POWER","the power of the mean (and moment)");
@@ -84,17 +84,17 @@ void Ensemble::registerKeywords(Keywords& keys){
 }
 
 Ensemble::Ensemble(const ActionOptions&ao):
-Action(ao),
-Function(ao),
-do_reweight(false),
-do_moments(false),
-do_central(false),
-do_powers(false),
-kbt(-1.0),
-moment(0),
-power(0)
+  Action(ao),
+  Function(ao),
+  do_reweight(false),
+  do_moments(false),
+  do_central(false),
+  do_powers(false),
+  kbt(-1.0),
+  moment(0),
+  power(0)
 {
-  parseFlag("REWEIGHT", do_reweight); 
+  parseFlag("REWEIGHT", do_reweight);
   double temp=0.0;
   parse("TEMP",temp);
   if(do_reweight) {
@@ -108,7 +108,7 @@ power(0)
   if(moment!=0) do_moments=true;
   parseFlag("CENTRAL", do_central);
   if(!do_moments&&do_central) error("To calculate a CENTRAL moment you need to define for which MOMENT");
- 
+
   parse("POWER",power);
   if(power==1) error("POWER can be any number but for 0 and 1");
   if(power!=0) do_powers=true;
@@ -116,7 +116,7 @@ power(0)
   checkRead();
 
   master = (comm.Get_rank()==0);
-  ens_dim=0; 
+  ens_dim=0;
   my_repl=0;
   if(master) {
     ens_dim=multi_sim_comm.Get_size();
@@ -125,22 +125,22 @@ power(0)
   comm.Bcast(ens_dim,0);
   comm.Bcast(my_repl,0);
   if(ens_dim<2) log.printf("WARNING: ENSEMBLE with one replica is not doing any averaging!\n");
- 
+
   // prepare output components, the number depending on reweighing or not
   narg = getNumberOfArguments();
   if(do_reweight) narg--;
-  
+
   // these are the averages
-  for(unsigned i=0;i<narg;i++) {
-     std::string s=getPntrToArgument(i)->getName();
-     addComponentWithDerivatives(s); 
-     getPntrToComponent(i)->setNotPeriodic();
+  for(unsigned i=0; i<narg; i++) {
+    std::string s=getPntrToArgument(i)->getName();
+    addComponentWithDerivatives(s);
+    getPntrToComponent(i)->setNotPeriodic();
   }
-  // these are the moments 
+  // these are the moments
   if(do_moments) {
-    for(unsigned i=0;i<narg;i++) {
+    for(unsigned i=0; i<narg; i++) {
       std::string s=getPntrToArgument(i)->getName()+"_m";
-      addComponentWithDerivatives(s); 
+      addComponentWithDerivatives(s);
       getPntrToComponent(i+narg)->setNotPeriodic();
     }
   }
@@ -152,38 +152,38 @@ power(0)
   if(do_powers)                log.printf("  calculating the %lf power of the mean (and moment)\n", power);
 }
 
-void Ensemble::calculate(){
+void Ensemble::calculate() {
   double norm = 0.0;
   double fact = 0.0;
 
-  // calculate the weights either from BIAS 
-  if(do_reweight){
+  // calculate the weights either from BIAS
+  if(do_reweight) {
     vector<double> bias;
     bias.resize(ens_dim);
-    if(master){
-      bias[my_repl] = getArgument(narg); 
-      if(ens_dim>1) multi_sim_comm.Sum(&bias[0], ens_dim);  
+    if(master) {
+      bias[my_repl] = getArgument(narg);
+      if(ens_dim>1) multi_sim_comm.Sum(&bias[0], ens_dim);
     }
     comm.Sum(&bias[0], ens_dim);
     const double maxbias = *(std::max_element(bias.begin(), bias.end()));
-    for(unsigned i=0; i<ens_dim; ++i){
-      bias[i] = exp((bias[i]-maxbias)/kbt); 
+    for(unsigned i=0; i<ens_dim; ++i) {
+      bias[i] = exp((bias[i]-maxbias)/kbt);
       norm += bias[i];
     }
     fact = bias[my_repl]/norm;
-  // or arithmetic ones
+    // or arithmetic ones
   } else {
-    norm = static_cast<double>(ens_dim); 
-    fact = 1.0/norm; 
+    norm = static_cast<double>(ens_dim);
+    fact = 1.0/norm;
   }
 
   const double fact_kbt = fact/kbt;
 
   vector<double> mean(narg);
   vector<double> dmean(narg,fact);
-  // calculate the mean 
+  // calculate the mean
   if(master) {
-    for(unsigned i=0;i<narg;++i) mean[i] = fact*getArgument(i); 
+    for(unsigned i=0; i<narg; ++i) mean[i] = fact*getArgument(i);
     if(ens_dim>1) multi_sim_comm.Sum(&mean[0], narg);
   }
   comm.Sum(&mean[0], narg);
@@ -196,29 +196,29 @@ void Ensemble::calculate(){
     // standard moment
     if(!do_central) {
       if(master) {
-        for(unsigned i=0;i<narg;++i) { 
+        for(unsigned i=0; i<narg; ++i) {
           const double tmp = fact*pow(getArgument(i),moment-1);
           v_moment[i]      = tmp*getArgument(i);
           dv_moment[i]     = moment*tmp;
         }
         if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
       } else {
-        for(unsigned i=0;i<narg;++i) {
+        for(unsigned i=0; i<narg; ++i) {
           const double tmp = fact*pow(getArgument(i),moment-1);
           dv_moment[i]     = moment*tmp;
         }
       }
-    // central moment
+      // central moment
     } else {
       if(master) {
-        for(unsigned i=0;i<narg;++i) { 
+        for(unsigned i=0; i<narg; ++i) {
           const double tmp = pow(getArgument(i)-mean[i],moment-1);
           v_moment[i]      = fact*tmp*(getArgument(i)-mean[i]);
           dv_moment[i]     = moment*tmp*(fact-fact/norm);
         }
         if(ens_dim>1) multi_sim_comm.Sum(&v_moment[0], narg);
       } else {
-        for(unsigned i=0;i<narg;++i) {
+        for(unsigned i=0; i<narg; ++i) {
           const double tmp = pow(getArgument(i)-mean[i],moment-1);
           dv_moment[i]     = moment*tmp*(fact-fact/norm);
         }
@@ -229,20 +229,20 @@ void Ensemble::calculate(){
 
   // calculate powers of moments
   if(do_powers) {
-    for(unsigned i=0;i<narg;++i) {
+    for(unsigned i=0; i<narg; ++i) {
       const double tmp1 = pow(mean[i],power-1);
       mean[i]          *= tmp1;
       dmean[i]         *= power*tmp1;
-      if(do_moments) { 
+      if(do_moments) {
         const double tmp2 = pow(v_moment[i],power-1);
         v_moment[i]      *= tmp2;
-        dv_moment[i]     *= power*tmp2; 
+        dv_moment[i]     *= power*tmp2;
       }
     }
   }
-  
+
   // set components
-  for(unsigned i=0;i<narg;++i){
+  for(unsigned i=0; i<narg; ++i) {
     // set mean
     Value* v=getPntrToComponent(i);
     v->set(mean[i]);
@@ -261,7 +261,7 @@ void Ensemble::calculate(){
         setDerivative(u, narg, w_tmp);
       }
     }
-  } 
+  }
 }
 
 }

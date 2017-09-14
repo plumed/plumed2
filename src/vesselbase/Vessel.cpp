@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,66 +26,66 @@
 #include "tools/Log.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 Keywords VesselOptions::emptyKeys;
 
 VesselOptions::VesselOptions(const std::string& thisname, const std::string& thislab, const unsigned& nlab, const std::string& params, ActionWithVessel* aa ):
-myname(thisname),
-mylabel(thislab),
-numlab(nlab),
-action(aa),
-keywords(emptyKeys),
-parameters(params)
+  myname(thisname),
+  mylabel(thislab),
+  numlab(nlab),
+  action(aa),
+  keywords(emptyKeys),
+  parameters(params)
 {
 }
 
 VesselOptions::VesselOptions(const VesselOptions& da, const Keywords& keys ):
-myname(da.myname),
-mylabel(da.mylabel),
-numlab(da.numlab),
-action(da.action),
-keywords(keys),
-parameters(da.parameters)
+  myname(da.myname),
+  mylabel(da.mylabel),
+  numlab(da.numlab),
+  action(da.action),
+  keywords(keys),
+  parameters(da.parameters)
 {
 }
 
-void Vessel::registerKeywords( Keywords& keys ){
+void Vessel::registerKeywords( Keywords& keys ) {
   plumed_assert( keys.size()==0 );
   keys.add("optional","LABEL","the label used to reference this particular quantity");
 }
 
-std::string Vessel::transformName( const std::string& name ){
-   std::string tlabel=name; 
-   // Convert to lower case
-   std::transform( tlabel.begin(), tlabel.end(), tlabel.begin(), tolower );
-   // Remove any underscore characters (as these are reserved)
-   for(unsigned i=0;;++i){
-      std::size_t num=tlabel.find_first_of("_");
-      if( num==std::string::npos ) break;
-      tlabel.erase( tlabel.begin() + num, tlabel.begin() + num + 1 );
-   }
-   return tlabel;
+std::string Vessel::transformName( const std::string& name ) {
+  std::string tlabel=name;
+  // Convert to lower case
+  std::transform( tlabel.begin(), tlabel.end(), tlabel.begin(), tolower );
+  // Remove any underscore characters (as these are reserved)
+  for(unsigned i=0;; ++i) {
+    std::size_t num=tlabel.find_first_of("_");
+    if( num==std::string::npos ) break;
+    tlabel.erase( tlabel.begin() + num, tlabel.begin() + num + 1 );
+  }
+  return tlabel;
 }
 
 Vessel::Vessel( const VesselOptions& da ):
-myname(da.myname),
-numlab(da.numlab),
-action(da.action),
-line(Tools::getWords( da.parameters )),
-keywords(da.keywords),
-finished_read(false),
-comm(da.action->comm),
-log((da.action)->log)
+  myname(da.myname),
+  numlab(da.numlab),
+  action(da.action),
+  line(Tools::getWords( da.parameters )),
+  keywords(da.keywords),
+  finished_read(false),
+  comm(da.action->comm),
+  log((da.action)->log)
 {
-  if( da.mylabel.length()>0){
-      mylabel=da.mylabel;
+  if( da.mylabel.length()>0) {
+    mylabel=da.mylabel;
   } else {
-      if( keywords.exists("LABEL") ) parse("LABEL",mylabel);
-      if( mylabel.length()==0 && numlab>=0 ){
-          mylabel=transformName( myname ); std::string nn; 
-          if(numlab>0){ Tools::convert( numlab, nn ); mylabel =  mylabel + "-" + nn; }
-      } 
+    if( keywords.exists("LABEL") ) parse("LABEL",mylabel);
+    if( mylabel.length()==0 && numlab>=0 ) {
+      mylabel=transformName( myname ); std::string nn;
+      if(numlab>0) { Tools::convert( numlab, nn ); mylabel =  mylabel + "-" + nn; }
+    }
   }
 }
 
@@ -97,37 +97,37 @@ std::string Vessel::getLabel() const {
   return mylabel;
 }
 
-std::string Vessel::getAllInput(){
+std::string Vessel::getAllInput() {
   std::string fullstring;
-  for(unsigned i=0;i<line.size();++i){ 
-      fullstring = fullstring + " " + line[i];
-  } 
+  for(unsigned i=0; i<line.size(); ++i) {
+    fullstring = fullstring + " " + line[i];
+  }
   line.clear(); line.resize(0);
   return fullstring;
 }
 
-void Vessel::parseFlag(const std::string&key, bool & t){
+void Vessel::parseFlag(const std::string&key, bool & t) {
   // Check keyword has been registered
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
   // Check keyword is a flag
-  if(!keywords.style(key,"nohtml")){
-     plumed_massert(keywords.style(key,"flag"), "keyword " + key + " is not a flag");
+  if(!keywords.style(key,"nohtml")) {
+    plumed_massert(keywords.style(key,"flag"), "keyword " + key + " is not a flag");
   }
 
   // Read in the flag otherwise get the default value from the keywords object
-  if(!Tools::parseFlag(line,key,t)){
-     if( keywords.style(key,"nohtml") ){ 
-        t=false; 
-     } else if ( !keywords.getLogicalDefault(key,t) ){
-        plumed_merror("there is a flag with no logical default in a vessel - weird");
-     }
+  if(!Tools::parseFlag(line,key,t)) {
+    if( keywords.style(key,"nohtml") ) {
+      t=false;
+    } else if ( !keywords.getLogicalDefault(key,t) ) {
+      plumed_merror("there is a flag with no logical default in a vessel - weird");
+    }
   }
 }
 
-void Vessel::checkRead(){
-  if(!line.empty()){
+void Vessel::checkRead() {
+  if(!line.empty()) {
     std::string msg="cannot understand the following words from input : ";
-    for(unsigned i=0;i<line.size();i++) msg = msg + line[i] + ", ";
+    for(unsigned i=0; i<line.size(); i++) msg = msg + line[i] + ", ";
     error(msg);
   }
   finished_read=true;
@@ -135,7 +135,7 @@ void Vessel::checkRead(){
   if( describe.length()>0 ) log.printf("  %s\n", describe.c_str() );
 }
 
-void Vessel::error( const std::string& msg ){
+void Vessel::error( const std::string& msg ) {
   action->log.printf("ERROR for keyword %s in action %s with label %s : %s \n \n",myname.c_str(), (action->getName()).c_str(), (action->getLabel()).c_str(), msg.c_str() );
   if(finished_read) keywords.print( log );
   plumed_merror("ERROR for keyword " + myname + " in action "  + action->getName() + " with label " + action->getLabel() + " : " + msg );

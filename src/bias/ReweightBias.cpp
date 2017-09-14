@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,27 +26,27 @@
 /*
 Calculate weights for ensemble averages that negate the effect the bias has on the region of phase space explored
 
-If a static or pseudo-static bias \f$V(x,t')\f$ is acting on 
+If a static or pseudo-static bias \f$V(x,t')\f$ is acting on
 the system we can remove the bias and get the unbiased probability distribution using:
 
 \f[
-\langle P(s',t) \rangle = \frac{ \sum_{t'}^t \delta( s(x) - s' ) \exp\left( +\frac{V(x,t')}{k_B T} \right) }{ \sum_t'^t \exp\left( +\frac{V(x,t')}{k_B T} \right) } 
+\langle P(s',t) \rangle = \frac{ \sum_{t'}^t \delta( s(x) - s' ) \exp\left( +\frac{V(x,t')}{k_B T} \right) }{ \sum_t'^t \exp\left( +\frac{V(x,t')}{k_B T} \right) }
 \f]
 
-The weights calculated by this action are equal to \f$\exp\left( +\frac{V(x,t')}{k_B T} \right)\f$ these weights can then be used in any action 
-that computes ensemble averages.  For example this action can be used in tandem with \ref HISTOGRAM or \ref AVERAGE. 
+The weights calculated by this action are equal to \f$\exp\left( +\frac{V(x,t')}{k_B T} \right)\f$ these weights can then be used in any action
+that computes ensemble averages.  For example this action can be used in tandem with \ref HISTOGRAM or \ref AVERAGE.
 
 \par Examples
 
-In the following example there is a fixed restraint on the distance between atoms 1 and 2.  Clearly, this 
+In the following example there is a fixed restraint on the distance between atoms 1 and 2.  Clearly, this
 restraint will have an effect on the region of phase space that will be sampled when an MD simulation is
 run using this variable.  Consequently, when the histogram as a function of the distance, \f$x\f$, is accumulated,
 we use reweighting into order to discount the effect of the bias from our final histogram.
 
-\verbatim 
+\plumedfile
 x: DISTANCE ATOMS=1,2
 RESTRAINT ARG=x SLOPE=1.0 AT=0.0
-as: REWEIGHT_BIAS TEMP=300
+bias: REWEIGHT_BIAS TEMP=300
 
 HISTOGRAM ...
   ARG=x
@@ -59,7 +59,7 @@ HISTOGRAM ...
 ... HISTOGRAM
 
 DUMPGRID GRID=hB FILE=histoB STRIDE=1 FMT=%8.4f
-\endverbatim
+\endplumedfile
 
 
 */
@@ -77,21 +77,21 @@ public:
 
 PLUMED_REGISTER_ACTION(ReweightBias,"REWEIGHT_BIAS")
 
-void ReweightBias::registerKeywords(Keywords& keys ){
+void ReweightBias::registerKeywords(Keywords& keys ) {
   ReweightBase::registerKeywords( keys ); keys.remove("ARG");
   keys.add("compulsory","ARG","*.bias","the biases that must be taken into account when reweighting");
 }
 
 ReweightBias::ReweightBias(const ActionOptions&ao):
-Action(ao),
-ReweightBase(ao)
+  Action(ao),
+  ReweightBase(ao)
 {
 }
 
 double ReweightBias::getLogWeight() const {
-   // Retrieve the bias
-   double bias=0.0; for(unsigned i=0;i<getNumberOfArguments();++i) bias+=getArgument(i);
-   return bias / simtemp;
+  // Retrieve the bias
+  double bias=0.0; for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgument(i);
+  return bias / simtemp;
 }
 
 }

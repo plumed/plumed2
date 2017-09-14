@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,28 +24,28 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR PATHMSD
 /*
-This Colvar calculates path collective variables. 
+This Colvar calculates path collective variables.
 
-This is the Path Collective Variables implementation 
+This is the Path Collective Variables implementation
 ( see \cite brand07 ).
-This variable computes the progress along a given set of frames that is provided  
-in input ("sss" component) and the distance from them ("zzz" component). 
+This variable computes the progress along a given set of frames that is provided
+in input ("sss" component) and the distance from them ("zzz" component).
 (see below).
 
 \par Examples
 
-Here below is a case where you have defined three frames and you want to  
+Here below is a case where you have defined three frames and you want to
 calculate the progress along the path and the distance from it in p1
 
-\verbatim
-p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=4 NEIGH_SIZE=8 
+\plumedfile
+p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=4 NEIGH_SIZE=8
 PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
-\endverbatim
+\endplumedfile
 
 note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighborlist parameter (optional but
 recommended for performance) and states that the neighbor list will be calculated every 4
@@ -60,7 +60,7 @@ is shared, as well as most input options.
 
 */
 //+ENDPLUMEDOC
-   
+
 class PathMSD : public PathMSDBase {
 public:
   explicit PathMSD(const ActionOptions&);
@@ -69,7 +69,7 @@ public:
 
 PLUMED_REGISTER_ACTION(PathMSD,"PATHMSD")
 
-void PathMSD::registerKeywords(Keywords& keys){
+void PathMSD::registerKeywords(Keywords& keys) {
   PathMSDBase::registerKeywords(keys);
   componentsAreNotOptional(keys);
   keys.addOutputComponent("sss","default","the position on the path");
@@ -77,7 +77,7 @@ void PathMSD::registerKeywords(Keywords& keys){
 }
 
 PathMSD::PathMSD(const ActionOptions&ao):
-Action(ao),PathMSDBase(ao)
+  Action(ao),PathMSDBase(ao)
 {
   checkRead();
 
@@ -87,12 +87,12 @@ Action(ao),PathMSDBase(ao)
   // no need to read anything
   addComponentWithDerivatives("sss"); componentIsNotPeriodic("sss");
   addComponentWithDerivatives("zzz"); componentIsNotPeriodic("zzz");
-  requestAtoms(pdbv[0].getAtomNumbers());  
+  requestAtoms(pdbv[0].getAtomNumbers());
 
   double i=1.;
-  for(unsigned it=0 ;it<nframes ;++it){
-                vector<double> v; v.push_back(i);
-		indexvec.push_back(v);i+=1.; 
+  for(unsigned it=0 ; it<nframes ; ++it) {
+    vector<double> v; v.push_back(i);
+    indexvec.push_back(v); i+=1.;
   }
 }
 

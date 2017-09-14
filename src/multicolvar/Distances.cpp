@@ -30,48 +30,48 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace multicolvar{
+namespace PLMD {
+namespace multicolvar {
 
 //+PLUMEDOC MCOLVAR DISTANCES
 /*
 Calculate the distances between one or many pairs of atoms.  You can then calculate functions of the distribution of
-distances such as the minimum, the number less than a certain quantity and so on. 
+distances such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
 
-The following input tells plumed to calculate the distances between atoms 3 and 5 and between atoms 1 and 2 and to 
+The following input tells plumed to calculate the distances between atoms 3 and 5 and between atoms 1 and 2 and to
 print the minimum for these two distances.
-\verbatim
+\plumedfile
 DISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
-\endverbatim
+\endplumedfile
 (See also \ref PRINT).
 
 The following input tells plumed to calculate the distances between atoms 3 and 5 and between atoms 1 and 2
 and then to calculate the number of these distances that are less than 0.1 nm.  The number of distances
 less than 0.1nm is then printed to a file.
-\verbatim
+\plumedfile
 DISTANCES ATOMS1=3,5 ATOMS2=1,2 LABEL=d1 LESS_THAN={RATIONAL R_0=0.1}
 PRINT ARG=d1.lt0.1
-\endverbatim
+\endplumedfile
 (See also \ref PRINT \ref switchingfunction).
 
 The following input tells plumed to calculate all the distances between atoms 1, 2 and 3 (i.e. the distances between atoms
 1 and 2, atoms 1 and 3 and atoms 2 and 3).  The average of these distances is then calculated.
-\verbatim
+\plumedfile
 DISTANCES GROUP=1-3 MEAN LABEL=d1
 PRINT ARG=d1.mean
-\endverbatim
+\endplumedfile
 (See also \ref PRINT)
 
 The following input tells plumed to calculate all the distances between the atoms in GROUPA and the atoms in GROUPB.
 In other words the distances between atoms 1 and 2 and the distance between atoms 1 and 3.  The number of distances
 more than 0.1 is then printed to a file.
-\verbatim
+\plumedfile
 DISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
-PRINT ARG=d1.gt0.1 
-\endverbatim
+PRINT ARG=d1.gt0.1
+\endplumedfile
 (See also \ref PRINT \ref switchingfunction)
 
 
@@ -79,10 +79,10 @@ PRINT ARG=d1.gt0.1
 
 To calculate and print the minimum distance between two groups of atoms you use the following commands
 
-\verbatim
-d1: DISTANCES GROUPA=1-10 GROUPB=11-20 MIN={BETA=500.} 
+\plumedfile
+d1: DISTANCES GROUPA=1-10 GROUPB=11-20 MIN={BETA=500.}
 PRINT ARG=d1.min FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 (see \ref DISTANCES and \ref PRINT)
 
 In order to ensure differentiability the minimum is calculated using the following function:
@@ -93,29 +93,29 @@ s = \frac{\beta}{ \log \sum_i \exp\left( \frac{\beta}{s_i} \right) }
 
 where \f$\beta\f$ is a user specified parameter.
 
-This input is used rather than a separate MINDIST colvar so that the same routine and the same input style can be 
-used to calculate minimum coordinatetion numbers (see \ref COORDINATIONNUMBER), minimum 
-angles (see \ref ANGLES) and many other variables.  
+This input is used rather than a separate MINDIST colvar so that the same routine and the same input style can be
+used to calculate minimum coordinatetion numbers (see \ref COORDINATIONNUMBER), minimum
+angles (see \ref ANGLES) and many other variables.
 
 This new way of calculating mindist is part of plumed 2's multicolvar functionality.  These special actions
-allow you to calculate multiple functions of a distribution of simple collective variables.  As an example you 
+allow you to calculate multiple functions of a distribution of simple collective variables.  As an example you
 can calculate the number of distances less than 1.0, the minimum distance, the number of distances more than
 2.0 and the number of distances between 1.0 and 2.0 by using the following command:
 
-\verbatim
+\plumedfile
 DISTANCES ...
- GROUPA=1-10 GROUPB=11-20 
- LESS_THAN={RATIONAL R_0=1.0} 
- MORE_THAN={RATIONAL R_0=2.0} 
- BETWEEN={GAUSSIAN LOWER=1.0 UPPER=2.0} 
+ GROUPA=1-10 GROUPB=11-20
+ LESS_THAN={RATIONAL R_0=1.0}
+ MORE_THAN={RATIONAL R_0=2.0}
+ BETWEEN={GAUSSIAN LOWER=1.0 UPPER=2.0}
  MIN={BETA=500.}
 ... DISTANCES
 PRINT ARG=d1.lessthan,d1.morethan,d1.between,d1.min FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 (see \ref DISTANCES and \ref PRINT)
 
-A calculation performed this way is fast because the expensive part of the calculation - the calculation of all the distances - is only 
-done once per step.  Furthermore, it can be made faster by using the TOL keyword to discard those distance that make only a small contributions 
+A calculation performed this way is fast because the expensive part of the calculation - the calculation of all the distances - is only
+done once per step.  Furthermore, it can be made faster by using the TOL keyword to discard those distance that make only a small contributions
 to the final values together with the NL_STRIDE keyword, which ensures that the distances that make only a small contribution to the final values aren't
 calculated at every step.
 
@@ -131,35 +131,35 @@ public:
 // active methods:
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Returns the number of coordinates of the field
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
 
-void Distances::registerKeywords( Keywords& keys ){
+void Distances::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST"); 
+  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
   keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); // keys.use("DHENERGY");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("numbered","ATOMS","the atoms involved in each of the distances you wish to calculate. "
-                               "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one distance will be "
-                               "calculated for each ATOM keyword you specify (all ATOM keywords should "
-                               "specify the indices of two atoms).  The eventual number of quantities calculated by this "
-                               "action will depend on what functions of the distribution you choose to calculate.");
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one distance will be "
+           "calculated for each ATOM keyword you specify (all ATOM keywords should "
+           "specify the indices of two atoms).  The eventual number of quantities calculated by this "
+           "action will depend on what functions of the distribution you choose to calculate.");
   keys.reset_style("ATOMS","atoms");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-                              "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+           "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
   keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-                              "in GROUPB. This must be used in conjuction with GROUPA.");
+           "in GROUPB. This must be used in conjuction with GROUPA.");
 }
 
 Distances::Distances(const ActionOptions&ao):
-Action(ao),
-MultiColvarBase(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
   // Read in the atoms
-  std::vector<AtomNumber> all_atoms; 
+  std::vector<AtomNumber> all_atoms;
   readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
   if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
   setupMultiColvarBase( all_atoms );
@@ -168,44 +168,44 @@ MultiColvarBase(ao)
 
   // Now check if we can use link cells
   bool use_link=false; double rcut;
-  if( getNumberOfVessels()>0 ){
-     vesselbase::LessThan* lt=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(0) );
-     if( lt ){
-         use_link=true; rcut=lt->getCutoff();
-     } else {
-         vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(0) );
-         if( bt ){ use_link=true; rcut=bt->getCutoff(); }
-     }
-     if( use_link ){
-         for(unsigned i=1;i<getNumberOfVessels();++i){
-            vesselbase::LessThan* lt2=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(i) );
-            vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(i) );
-            if( lt2 ){
-                double tcut=lt2->getCutoff();
-                if( tcut>rcut ) rcut=tcut;
-            } else if( bt ){
-                double tcut=bt->getCutoff();
-                if( tcut>rcut ) rcut=tcut;
-            } else {
-               use_link=false;
-            }
-         }
-     }
-     if( use_link ) setLinkCellCutoff( rcut );
+  if( getNumberOfVessels()>0 ) {
+    vesselbase::LessThan* lt=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(0) );
+    if( lt ) {
+      use_link=true; rcut=lt->getCutoff();
+    } else {
+      vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(0) );
+      if( bt ) { use_link=true; rcut=bt->getCutoff(); }
+    }
+    if( use_link ) {
+      for(unsigned i=1; i<getNumberOfVessels(); ++i) {
+        vesselbase::LessThan* lt2=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(i) );
+        vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(i) );
+        if( lt2 ) {
+          double tcut=lt2->getCutoff();
+          if( tcut>rcut ) rcut=tcut;
+        } else if( bt ) {
+          double tcut=bt->getCutoff();
+          if( tcut>rcut ) rcut=tcut;
+        } else {
+          use_link=false;
+        }
+      }
+    }
+    if( use_link ) setLinkCellCutoff( rcut );
   }
 }
 
 double Distances::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-   Vector distance; 
-   distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-   const double value=distance.modulo();
-   const double invvalue=1.0/value;
+  Vector distance;
+  distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+  const double value=distance.modulo();
+  const double invvalue=1.0/value;
 
-   // And finish the calculation
-   addAtomDerivatives( 1, 0,-invvalue*distance, myatoms );
-   addAtomDerivatives( 1, 1, invvalue*distance, myatoms );
-   myatoms.addBoxDerivatives( 1, -invvalue*Tensor(distance,distance) );
-   return value;
+  // And finish the calculation
+  addAtomDerivatives( 1, 0,-invvalue*distance, myatoms );
+  addAtomDerivatives( 1, 1, invvalue*distance, myatoms );
+  myatoms.addBoxDerivatives( 1, -invvalue*Tensor(distance,distance) );
+  return value;
 }
 
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,32 +22,32 @@
 #include "Bias.h"
 
 
-namespace PLMD{
-namespace bias{
+namespace PLMD {
+namespace bias {
 
 Bias::Bias(const ActionOptions&ao):
-Action(ao),
-ActionPilot(ao),
-ActionWithValue(ao),
-ActionWithArguments(ao),
-outputForces(getNumberOfArguments(),0.0)
+  Action(ao),
+  ActionPilot(ao),
+  ActionWithValue(ao),
+  ActionWithArguments(ao),
+  outputForces(getNumberOfArguments(),0.0)
 {
-  addComponentWithDerivatives("bias"); 
+  addComponentWithDerivatives("bias");
   componentIsNotPeriodic("bias");
   valueBias=getPntrToComponent("bias");
 
-  if(getStride()>1){
+  if(getStride()>1) {
     log<<"  multiple time step "<<getStride()<<" ";
     log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
   }
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
 
   turnOnDerivatives();
 }
 
-void Bias::registerKeywords( Keywords& keys ){
+void Bias::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
@@ -57,13 +57,13 @@ void Bias::registerKeywords( Keywords& keys ){
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
-void Bias::apply(){
+void Bias::apply() {
   const unsigned noa=getNumberOfArguments();
   const unsigned ncp=getNumberOfComponents();
 
-  if(onStep()) { 
+  if(onStep()) {
     double gstr = static_cast<double>(getStride());
-    for(unsigned i=0;i<noa;++i) {
+    for(unsigned i=0; i<noa; ++i) {
       getPntrToArgument(i)->addForce(gstr*outputForces[i]);
     }
   }
@@ -73,18 +73,18 @@ void Bias::apply(){
   std::vector<double> forces(noa);
 
   bool at_least_one_forced=false;
-  for(unsigned i=0;i<ncp;++i){
-    if(getPntrToComponent(i)->applyForce(forces)){
-       at_least_one_forced=true;
-       for(unsigned j=0;j<noa;j++) f[j]+=forces[j]; 
+  for(unsigned i=0; i<ncp; ++i) {
+    if(getPntrToComponent(i)->applyForce(forces)) {
+      at_least_one_forced=true;
+      for(unsigned j=0; j<noa; j++) f[j]+=forces[j];
     }
   }
 
   if(at_least_one_forced && !onStep()) error("you are biasing a bias with an inconsistent STRIDE");
 
-  if(at_least_one_forced) for(unsigned i=0;i<noa;++i){
-    getPntrToArgument(i)->addForce(f[i]);
-  }
+  if(at_least_one_forced) for(unsigned i=0; i<noa; ++i) {
+      getPntrToArgument(i)->addForce(f[i]);
+    }
 
 }
 

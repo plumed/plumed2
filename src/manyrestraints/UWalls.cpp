@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,7 @@
 namespace PLMD {
 namespace manyrestraints {
 
-//+PLUMEDOC MCOLVARB UWALLS 
+//+PLUMEDOC MCOLVARB UWALLS
 /*
 Add \ref UPPER_WALLS restraints on all the multicolvar values
 
@@ -36,24 +36,24 @@ keyword and places a restraint on each quantity, \f$x\f$, with the following fun
   k((x-a+o)/s)^e
 \f$
 
-\f$k\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s\f$ (EPS) a rescaling factor and 
+\f$k\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s\f$ (EPS) a rescaling factor and
 \f$e\f$ (EXP) the exponent determining the power law. By default: EXP = 2, EPS = 1.0, OFF = 0.
 
 \par Examples
 
-The following set of commands can be used to stop a cluster composed of 20 atoms subliming.  The position of 
-the centre of mass of the cluster is calculated by the \ref COM command labelled c1.  The \ref DISTANCES 
-command labelled d1 is then used to calculate the distance between each of the 20 atoms in the cluster 
+The following set of commands can be used to stop a cluster composed of 20 atoms subliming.  The position of
+the centre of mass of the cluster is calculated by the \ref COM command labelled c1.  The \ref DISTANCES
+command labelled d1 is then used to calculate the distance between each of the 20 atoms in the cluster
 and the center of mass of the cluster.  These distances are then passed to the UWALLS command, which adds
 a \ref UPPER_WALLS restraint on each of them and thereby prevents each of them from moving very far from the centre
 of mass of the cluster.
 
-\verbatim
+\plumedfile
 COM ATOMS=1-20 LABEL=c1
 DISTANCES GROUPA=c1 GROUPB=1-20 LABEL=d1
 UWALLS DATA=d1 AT=2.5 KAPPA=0.2 LABEL=sr
-\endverbatim
- 
+\endplumedfile
+
 
 */
 //+ENDPLUMEDOC
@@ -74,7 +74,7 @@ public:
 
 PLUMED_REGISTER_ACTION(UWalls,"UWALLS")
 
-void UWalls::registerKeywords( Keywords& keys ){
+void UWalls::registerKeywords( Keywords& keys ) {
   ManyRestraintsBase::registerKeywords( keys );
   keys.add("compulsory","AT","the radius of the sphere");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
@@ -84,8 +84,8 @@ void UWalls::registerKeywords( Keywords& keys ){
 }
 
 UWalls::UWalls(const ActionOptions& ao):
-Action(ao),
-ManyRestraintsBase(ao)
+  Action(ao),
+  ManyRestraintsBase(ao)
 {
   parse("AT",at);
   parse("OFFSET",offset);
@@ -95,13 +95,13 @@ ManyRestraintsBase(ao)
   checkRead();
 }
 
-double UWalls::calcPotential( const double& val, double& df ) const { 
+double UWalls::calcPotential( const double& val, double& df ) const {
   double uscale = (val - at + offset)/eps;
-  if( uscale > 0. ){
-     double power = pow( uscale, exp );
-     df = ( kappa / eps ) * exp * power / uscale;
+  if( uscale > 0. ) {
+    double power = pow( uscale, exp );
+    df = ( kappa / eps ) * exp * power / uscale;
 
-     return kappa*power;
+    return kappa*power;
   }
 
   return 0.0;

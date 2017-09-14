@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,8 +28,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR ANGLE
 /*
@@ -67,9 +67,9 @@ This command tells plumed to calculate the angle between the vector connecting a
 the vector connecting atom 2 to atom 3 and to print it on file COLVAR1. At the same time,
 the angle between vector connecting atom 1 to atom 2 and the vector connecting atom 3 to atom 4 is printed
 on file COLVAR2.
-\verbatim
+\plumedfile
 
-a: ANGLE ATOMS=1,2,3 
+a: ANGLE ATOMS=1,2,3
 # equivalently one could state:
 # a: ANGLE ATOMS=1,2,2,3
 
@@ -77,13 +77,12 @@ b: ANGLE ATOMS=1,2,3,4
 
 PRINT ARG=a FILE=COLVAR1
 PRINT ARG=b FILE=COLVAR2
-\endverbatim
-(see also \ref PRINT)
+\endplumedfile
 
 
 */
 //+ENDPLUMEDOC
-   
+
 class Angle : public Colvar {
   bool pbc;
 
@@ -96,14 +95,14 @@ public:
 
 PLUMED_REGISTER_ACTION(Angle,"ANGLE")
 
-void Angle::registerKeywords( Keywords& keys ){
+void Angle::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys);
   keys.add("atoms","ATOMS","the list of atoms involved in this collective variable (either 3 or 4 atoms)");
 }
 
 Angle::Angle(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  pbc(true)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -111,14 +110,14 @@ pbc(true)
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
-  if(atoms.size()==3){
+  if(atoms.size()==3) {
     log.printf("  between atoms %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial());
     atoms.resize(4);
     atoms[3]=atoms[2];
     atoms[2]=atoms[1];
-  }else if(atoms.size()==4){
+  } else if(atoms.size()==4) {
     log.printf("  between lines %d-%d and %d-%d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
-  }else error("Number of specified atoms should be either 3 or 4");
+  } else error("Number of specified atoms should be either 3 or 4");
 
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
@@ -129,7 +128,7 @@ pbc(true)
 }
 
 // calculator
-void Angle::calculate(){
+void Angle::calculate() {
 
   if(pbc) makeWhole();
 

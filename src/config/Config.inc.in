@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,18 +25,18 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace PLMD{
-namespace config{
+namespace PLMD {
+namespace config {
 
-std::string getSoExt(){
+std::string getSoExt() {
   return "@SOEXT@";
 }
 
-bool isInstalled(){
+bool isInstalled() {
   return @ISINSTALLED@;
 }
 
-std::string getPlumedRoot(){
+std::string getPlumedRoot() {
   char *env = std::getenv("PLUMED_ROOT");
   std::string ss;
   if( env == NULL) {
@@ -47,7 +47,7 @@ std::string getPlumedRoot(){
   return ss;
 }
 
-std::string getPlumedHtmldir(){
+std::string getPlumedHtmldir() {
   if(!isInstalled()) return getPlumedRoot();
   char *env = std::getenv("PLUMED_HTMLDIR");
   std::string ss;
@@ -59,7 +59,7 @@ std::string getPlumedHtmldir(){
   return ss;
 }
 
-std::string getPlumedIncludedir(){
+std::string getPlumedIncludedir() {
   if(!isInstalled()) return getPlumedRoot()+"/include";
   char *env = std::getenv("PLUMED_INCLUDEDIR");
   std::string ss;
@@ -71,7 +71,7 @@ std::string getPlumedIncludedir(){
   return ss;
 }
 
-std::string getPlumedProgramName(){
+std::string getPlumedProgramName() {
   if(!isInstalled()) return "plumed";
   char *env = std::getenv("PLUMED_PROGRAM_NAME");
   std::string ss;
@@ -83,86 +83,87 @@ std::string getPlumedProgramName(){
   return ss;
 }
 
-std::string getEnvCommand(){
+std::string getEnvCommand() {
   return "env PLUMED_ROOT=\""+getPlumedRoot()+"\""+
-        " env PLUMED_HTMLDIR=\""+getPlumedHtmldir()+"\""+
-        " env PLUMED_INCLUDEDIR=\""+getPlumedIncludedir()+"\""+
-        " env PLUMED_PROGRAM_NAME=\""+getPlumedProgramName()+"\""+
-        " env PLUMED_IS_INSTALLED=\""+(@ISINSTALLED@?"yes":"no")+"\"";
+         " env PLUMED_HTMLDIR=\""+getPlumedHtmldir()+"\""+
+         " env PLUMED_INCLUDEDIR=\""+getPlumedIncludedir()+"\""+
+         " env PLUMED_PROGRAM_NAME=\""+getPlumedProgramName()+"\""+
+         " env PLUMED_IS_INSTALLED=\""+(@ISINSTALLED@?"yes":"no")+"\"";
 }
 
-std::string getVersion(){
+std::string getVersion() {
   return PLUMED_VERSION_SHORT;
 }
 
-std::string getVersionLong(){
+std::string getVersionLong() {
   return PLUMED_VERSION_LONG;
 }
 
-std::string getVersionGit(){
+std::string getVersionGit() {
   return PLUMED_VERSION_GIT;
 }
 
-std::string getMakefile(){
-  static const char conf [] ={
+std::string getMakefile() {
+  static const char conf [] = {
 #include "Makefile.conf.xxd"
-    , 0x00 };
+    , 0x00
+  };
   return std::string(conf,conf+std::strlen(conf));
 }
 
-bool hasMatheval(){
+bool hasMatheval() {
 #if __PLUMED_HAS_MATHEVAL
-      return true;
+  return true;
 #else
-      return false;
+  return false;
 #endif
 }
 
-bool hasDlopen(){
+bool hasDlopen() {
 #if __PLUMED_HAS_DLOPEN
-      return true;
+  return true;
 #else
-      return false;
+  return false;
 #endif
 }
 
-bool hasCregex(){
+bool hasCregex() {
 #if __PLUMED_HAS_CREGEX
-      return true;
+  return true;
 #else
-      return false;
+  return false;
 #endif
 }
 
-bool hasMolfile(){
+bool hasMolfile() {
 #if __PLUMED_HAS_MOLFILE_PLUGINS
-      return true;
+  return true;
 #else
-      return false;
+  return false;
 #endif
 }
 
-bool hasExternalMolfile(){
+bool hasExternalMolfile() {
 #if __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS
-      return true;
+  return true;
 #else
-      return false;
+  return false;
 #endif
 }
 
-bool hasZlib(){
+bool hasZlib() {
 #if __PLUMED_HAS_ZLIB
-      return true;
+  return true;
 #else
-      return false;
+  return false;
 #endif
 }
 
-bool hasXdrfile(){
+bool hasXdrfile() {
 #if __PLUMED_HAS_XDRFILE
-      return true;
+  return true;
 #else
-      return false;
+  return false;
 #endif
 }
 

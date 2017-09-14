@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,31 +30,31 @@
 #include "tools/AtomNumber.h"
 #include "tools/Vector.h"
 
-namespace PLMD{
+namespace PLMD {
 
 class ActionWithValue;
 
 /// \ingroup TOOLBOX
 /// A class for holding the value of a function together with its derivatives.
-/// Typically, an  object of type PLMD::ActionWithValue will contain one 
-/// object of type PLUMD::Value that will be named after the label.  If the 
-/// PLMD::ActionWithValue is part of a class that calculates multiple components 
+/// Typically, an  object of type PLMD::ActionWithValue will contain one
+/// object of type PLUMD::Value that will be named after the label.  If the
+/// PLMD::ActionWithValue is part of a class that calculates multiple components
 /// then the class will contain multiple that will be called label.component-name
-/// This class is used to pass information between different PLMD::Action 
+/// This class is used to pass information between different PLMD::Action
 /// objects.  However, if you find a use for a tempory PLMD::Value in some method
 /// you are implementing please feel free to use it.
-class Value{
-friend class ActionWithValue;
+class Value {
+  friend class ActionWithValue;
 /// This copies the contents of a value into a second value (just the derivatives and value)
-friend void copy( const Value& val1, Value& val2 );
+  friend void copy( const Value& val1, Value& val2 );
 /// This copies the contents of a value into a second value (but second value is a pointer)
-friend void copy( const Value& val, Value* val2 );
+  friend void copy( const Value& val, Value* val2 );
 /// This adds some derivatives onto the value
-friend void add( const Value& val1, Value* valout );
+  friend void add( const Value& val1, Value* valout );
 /// This calculates val1*val2 and sorts out the derivatives
-friend void product( const Value& val1, const Value& val2, Value& valout );
+  friend void product( const Value& val1, const Value& val2, Value& valout );
 /// This calculates va1/val2 and sorts out the derivatives
-friend void quotient( const Value& val1, const Value& val2, Value* valout );
+  friend void quotient( const Value& val1, const Value& val2, Value* valout );
 private:
 /// The action in which this quantity is calculated
   ActionWithValue* action;
@@ -89,7 +89,7 @@ public:
   Value();
 /// A constructor that is used throughout the code to setup the value poiters
   Value(ActionWithValue* av, const std::string& name, const bool withderiv);
-/// Set the value of the function 
+/// Set the value of the function
   void set(double);
 /// Add something to the value of the function
   void add(double);
@@ -102,7 +102,7 @@ public:
 /// Set the function not periodic
   void setNotPeriodic();
 /// Set the domain of the function
-  void setDomain(const std::string&, const std::string&); 
+  void setDomain(const std::string&, const std::string&);
 /// Get the domain of the quantity
   void getDomain(std::string&,std::string&) const;
 /// Get the domain of the quantity
@@ -112,7 +112,7 @@ public:
 /// Check whether or not this particular quantity has derivatives
   bool hasDerivatives()const;
 /// Get the number of derivatives that this particular value has
-  unsigned getNumberOfDerivatives() const; 
+  unsigned getNumberOfDerivatives() const;
 /// Set the number of derivatives
   void resizeDerivatives(int n);
 /// Set all the derivatives to zero
@@ -135,12 +135,14 @@ public:
   bool applyForce( std::vector<double>& forces ) const ;
 /// Calculate the difference between the instantaneous value of the function and some other point: other_point-inst_val
   double difference(double)const;
-/// Calculate the difference between two values of this function: d2 -d1 
+/// Calculate the difference between two values of this function: d2 -d1
   double difference(double d1,double d2)const;
 /// This returns the pointer to the action where this value is calculated
   ActionWithValue* getPntrToAction();
 /// Bring back one value into the correct pbc if needed, else give back the value
   double bringBackInPbc(double d1)const;
+/// Get the difference between max and minimum of domain
+  double getMaxMinusMin()const;
 /// This sets up the gradients
   void setGradients();
   static double projection(const Value&,const Value&);
@@ -151,57 +153,57 @@ void copy( const Value& val1, Value* val2 );
 void add( const Value& val1, Value* valout );
 
 inline
-void Value::applyPeriodicity(){
-  if(periodicity==periodic){
+void Value::applyPeriodicity() {
+  if(periodicity==periodic) {
     value=min+difference(min,value);
     if(value<min)value+=max_minus_min;
   }
 }
 
 inline
-void product( const Value& val1, const Value& val2, Value& valout ){
+void product( const Value& val1, const Value& val2, Value& valout ) {
   plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
   if( valout.derivatives.size()!=val1.derivatives.size() ) valout.resizeDerivatives( val1.derivatives.size() );
-  valout.value_set=false; 
+  valout.value_set=false;
   valout.clearDerivatives();
-  double u=val1.value; 
+  double u=val1.value;
   double v=val2.value;
-  for(unsigned i=0;i<val1.derivatives.size();++i){
-     valout.addDerivative(i, u*val2.derivatives[i] + v*val1.derivatives[i] );
+  for(unsigned i=0; i<val1.derivatives.size(); ++i) {
+    valout.addDerivative(i, u*val2.derivatives[i] + v*val1.derivatives[i] );
   }
   valout.set( u*v );
 }
 
 inline
-void quotient( const Value& val1, const Value& val2, Value* valout ){
+void quotient( const Value& val1, const Value& val2, Value* valout ) {
   plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
   if( valout->derivatives.size()!=val1.derivatives.size() ) valout->resizeDerivatives( val1.derivatives.size() );
-  valout->value_set=false; 
+  valout->value_set=false;
   valout->clearDerivatives();
-  double u=val1.get(); 
+  double u=val1.get();
   double v=val2.get();
-  for(unsigned i=0;i<val1.getNumberOfDerivatives();++i){
-     valout->addDerivative(i, v*val1.getDerivative(i) - u*val2.getDerivative(i) );
+  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) {
+    valout->addDerivative(i, v*val1.getDerivative(i) - u*val2.getDerivative(i) );
   }
   valout->chainRule( 1/(v*v) ); valout->set( u / v );
 }
 
 inline
-void Value::set(double v){
+void Value::set(double v) {
   value_set=true;
   value=v;
   applyPeriodicity();
 }
 
 inline
-void Value::add(double v){
+void Value::add(double v) {
   value_set=true;
   value+=v;
   applyPeriodicity();
 }
 
 inline
-double Value::get()const{
+double Value::get()const {
   return value;
 }
 
@@ -211,7 +213,7 @@ bool Value::valueHasBeenSet() const {
 }
 
 inline
-const std::string& Value::getName()const{
+const std::string& Value::getName()const {
   return name;
 }
 
@@ -233,41 +235,41 @@ bool Value::hasDerivatives() const {
 }
 
 inline
-void Value::resizeDerivatives(int n){
+void Value::resizeDerivatives(int n) {
   if(hasDeriv) derivatives.resize(n);
 }
 
 inline
-void Value::addDerivative(unsigned i,double d){
+void Value::addDerivative(unsigned i,double d) {
   plumed_dbg_massert(i<derivatives.size(),"derivative is out of bounds");
   derivatives[i]+=d;
 }
 
 inline
-void Value::setDerivative(unsigned i, double d){
+void Value::setDerivative(unsigned i, double d) {
   plumed_dbg_massert(i<derivatives.size(),"derivative is out of bounds");
   derivatives[i]=d;
 }
 
 inline
-void Value::chainRule(double df){
-  for(unsigned i=0;i<derivatives.size();++i) derivatives[i]*=df;
+void Value::chainRule(double df) {
+  for(unsigned i=0; i<derivatives.size(); ++i) derivatives[i]*=df;
 }
 
 inline
-void Value::clearInputForce(){
+void Value::clearInputForce() {
   hasForce=false;
   inputForce=0.0;
 }
 
 inline
-void Value::clearDerivatives(){
+void Value::clearDerivatives() {
   value_set=false;
   std::fill(derivatives.begin(), derivatives.end(), 0);
 }
 
 inline
-void Value::addForce(double f){
+void Value::addForce(double f) {
   plumed_dbg_massert(hasDerivatives(),"forces can only be added to values with derivatives");
   hasForce=true;
   inputForce+=f;
@@ -279,10 +281,10 @@ double Value::getForce() const {
 }
 /// d2-d1
 inline
-double Value::difference(double d1,double d2)const{
-  if(periodicity==notperiodic){
+double Value::difference(double d1,double d2)const {
+  if(periodicity==notperiodic) {
     return d2-d1;
-  }else if(periodicity==periodic){
+  } else if(periodicity==periodic) {
     double s=(d2-d1)*inv_max_minus_min;
     // remember: pbc brings the difference in a range of -0.5:0.5
     s=Tools::pbc(s);
@@ -291,13 +293,19 @@ double Value::difference(double d1,double d2)const{
 }
 
 inline
-double Value::bringBackInPbc(double d1)const{
-	return difference(min+max_minus_min/2. , d1);
+double Value::bringBackInPbc(double d1)const {
+  return min+max_minus_min/2.+difference(min+max_minus_min/2., d1);
 }
 
 inline
-double Value::difference(double d)const{
+double Value::difference(double d)const {
   return difference(get(),d);
+}
+
+inline
+double Value::getMaxMinusMin()const {
+  plumed_dbg_assert( periodicity==periodic );
+  return max_minus_min;
 }
 
 }

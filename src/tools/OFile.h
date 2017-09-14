@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,8 +25,9 @@
 #include "FileBase.h"
 #include <vector>
 #include <sstream>
+#include <memory>
 
-namespace PLMD{
+namespace PLMD {
 
 class Value;
 
@@ -90,7 +91,7 @@ the enforceRestart() method before opening a file.
 
 To have all files managed consistently, it is important to use OFile in the proper way.
 This should allow multi-replica plumed, restart and backups to work in
-the expected way. For this reason all the operations in OFile and IFile 
+the expected way. For this reason all the operations in OFile and IFile
 are synchronizing all the processors of the group, so call to OFile functions
 should always be performed by all processes; for this reason is also not usefull
 to use Log for debugging because only master threads will actually write.
@@ -129,7 +130,7 @@ int main(){
     snp.flush();
 // the only difference is that snp is rewound
 // notice that it should be rewound just before writing
-// because rewind is going to move the file out of the way 
+// because rewind is going to move the file out of the way
 // to have a safe copy of the file ("bck.last.filename")
 // Also notice that snapshots should be flushed
 // for this reason, it is better to write them only
@@ -145,21 +146,21 @@ int main(){
 */
 
 class OFile:
-public virtual FileBase{
+  public virtual FileBase {
 /// Pointer to a linked OFile.
 /// see link(OFile&)
   OFile* linked;
 /// Internal buffer for printf
-  char* buffer_string;
+  std::unique_ptr<char[]> buffer_string;
 /// Internal buffer (generic use)
-  char* buffer;
+  std::unique_ptr<char[]> buffer;
 /// Internal buffer length
   int buflen;
 /// This variables stores the actual buffer length
   unsigned actual_buffer_length;
 /// Class identifying a single field for fielded output
   class Field:
-  public FieldBase{
+    public FieldBase {
   };
 /// Low-level write
   size_t llwrite(const char*,size_t);
@@ -192,8 +193,6 @@ public virtual FileBase{
 public:
 /// Constructor
   OFile();
-/// Destructor
-  ~OFile();
 /// Allows overloading of link
   using FileBase::link;
 /// Allows overloading of open
@@ -208,13 +207,13 @@ public:
 /// Backup a file by giving it a different name
   void backupFile( const std::string& bstring, const std::string& fname );
 /// This backs up all the files that would have been created with the
-/// name str.  It is used in analysis when you are not restarting.  Analysis 
+/// name str.  It is used in analysis when you are not restarting.  Analysis
 /// output files at different times, which are names analysis.0.<filename>,
 /// analysis.1.<filename> and <filename>, are backed up to bck.0.analysis.0.<filename>,
 /// bck.0.analysis.1.<filename> and bck.0.<filename>
   void backupAllFiles( const std::string& str );
 /// Opens the file using automatic append/backup
-  OFile& open(const std::string&name); 
+  OFile& open(const std::string&name);
 /// Set the prefix for output.
 /// Typically "PLUMED: ". Notice that lines with a prefix cannot
 /// be parsed using fields in a IFile.
@@ -235,18 +234,18 @@ public:
   OFile& setupPrintValue( Value *val );
 /// Print a value
   OFile& printField( Value* val, const double& v );
-/** Close a line.
-Typically used as
-\verbatim
-  of.printField("a",a).printField("b",b).printField();
-\endverbatim
-*/
+  /** Close a line.
+  Typically used as
+  \verbatim
+    of.printField("a",a).printField("b",b).printField();
+  \endverbatim
+  */
   OFile& printField();
-/**
-Resets the list of fields.
-As it is only possible to add new constant fields (addConstantField()),
-this method can be used to clean the field list.
-*/
+  /**
+  Resets the list of fields.
+  As it is only possible to add new constant fields (addConstantField()),
+  this method can be used to clean the field list.
+  */
   OFile& clearFields();
 /// Formatted output with explicit format - a la printf
   int printf(const char*fmt,...);
@@ -266,7 +265,7 @@ this method can be used to clean the field list.
 
 /// Write using << syntax
 template <class T>
-OFile& operator<<(OFile&of,const T &t){
+OFile& operator<<(OFile&of,const T &t) {
   of.oss<<t;
   of.printf("%s",of.oss.str().c_str());
   of.oss.str("");

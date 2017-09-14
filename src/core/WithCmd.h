@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,14 +24,14 @@
 
 #include <string>
 
-namespace PLMD{
+namespace PLMD {
 
 /// Base for classes with cmd() method.
 /// This is an abstract base class for classes with
 /// cmd() method. It takes care of "const" cast, and
 /// in the future it may be used to enforce some sort
 /// of type checking on passed arguments.
-class WithCmd{
+class WithCmd {
 public:
   virtual ~WithCmd();
 /// Const val version, which indeed just overrides the const and call the virtual method.
@@ -41,7 +41,7 @@ public:
 };
 
 inline
-void WithCmd::cmd(const std::string& key,const void*val){
+void WithCmd::cmd(const std::string& key,const void*val) {
 // this is nasty trick:
   cmd(key,const_cast<void*>(val));
 // in this manner, a const pointer can be used for val, allowing the user to pass
@@ -50,7 +50,7 @@ void WithCmd::cmd(const std::string& key,const void*val){
 }
 
 inline
-WithCmd::~WithCmd(){
+WithCmd::~WithCmd() {
 // do nothing
 // here just to allow inheriting from this class properly
 }

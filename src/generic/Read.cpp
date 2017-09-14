@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,21 +26,22 @@
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
 #include "tools/IFile.h"
+#include <memory>
 
-namespace PLMD{
-namespace generic{
+namespace PLMD {
+namespace generic {
 
 //+PLUMEDOC GENERIC READ
-/* 
+/*
 Read quantities from a colvar file.
 
-This Action can be used with driver to read in a colvar file that was generated during 
+This Action can be used with driver to read in a colvar file that was generated during
 an MD simulation
 
 \par Description of components
 
 The READ command will read those fields that are labelled with the text string given to the
-VALUE keyword.  It will also read in any fields that are labelleled with the text string 
+VALUE keyword.  It will also read in any fields that are labelleled with the text string
 given to the VALUE keyword followed by a dot and a further string. If a single Value is read in
 this value can be referenced using the label of the Action.  Alternatively, if multiple quanties
 are read in, they can be referenced elsewhere in the input by using the label for the Action
@@ -49,21 +50,21 @@ followed by a dot and the character string that appeared after the dot in the ti
 \par Examples
 
 This input reads in data from a file called input_colvar.data that was generated
-in a calculation that involved PLUMED.  The first command reads in the data from the 
+in a calculation that involved PLUMED.  The first command reads in the data from the
 column headed phi1 while the second reads in the data from the column headed phi2.
 
-\verbatim
+\plumedfile
 rphi1:       READ FILE=input_colvar.data  VALUES=phi1
 rphi2:       READ FILE=input_colvar.data  VALUES=phi2
 PRINT ARG=rphi1,rphi2 STRIDE=500  FILE=output_colvar.data
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
 
 class Read :
-public ActionPilot,
-public ActionWithValue
+  public ActionPilot,
+  public ActionWithValue
 {
 private:
   bool ignore_time;
@@ -71,14 +72,18 @@ private:
   bool cloned_file;
   unsigned nlinesPerStep;
   std::string filename;
+/// Unique pointer with the same scope as ifile.
+  std::unique_ptr<IFile> ifile_ptr;
+/// Pointer to input file.
+/// It is either pointing to the content of ifile_ptr
+/// or to the file it is cloned from.
   IFile* ifile;
-  std::vector<Value*> readvals;
+  std::vector<std::unique_ptr<Value>> readvals;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Read(const ActionOptions&);
-  ~Read();
   void prepare();
-  void apply(){}
+  void apply() {}
   void calculate();
   void update();
   std::string getFilename() const;
@@ -89,7 +94,7 @@ public:
 
 PLUMED_REGISTER_ACTION(Read,"READ")
 
-void Read::registerKeywords(Keywords& keys){
+void Read::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
@@ -98,9 +103,9 @@ void Read::registerKeywords(Keywords& keys){
   keys.add("compulsory","VALUES","the values to read from the file");
   keys.add("compulsory","FILE","the name of the file from which to read these quantities");
   keys.addFlag("IGNORE_TIME",false,"ignore the time in the colvar file. When this flag is not present read will be quite strict "
-                                   "about the start time of the simulation and the stride between frames");
+               "about the start time of the simulation and the stride between frames");
   keys.addFlag("IGNORE_FORCES",false,"use this flag if the forces added by any bias can be safely ignored.  As an example forces can be "
-                                     "safely ignored if you are doing postprocessing that does not involve outputting forces");
+               "safely ignored if you are doing postprocessing that does not involve outputting forces");
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -108,12 +113,12 @@ void Read::registerKeywords(Keywords& keys){
 }
 
 Read::Read(const ActionOptions&ao):
-Action(ao),
-ActionPilot(ao),
-ActionWithValue(ao),
-ignore_time(false),
-ignore_forces(false),
-nlinesPerStep(1)
+  Action(ao),
+  ActionPilot(ao),
+  ActionWithValue(ao),
+  ignore_time(false),
+  ignore_forces(false),
+  nlinesPerStep(1)
 {
   // Read the file name from the input line
   parse("FILE",filename);
@@ -124,18 +129,19 @@ nlinesPerStep(1)
   // Open the file if it is not already opened
   cloned_file=false;
   std::vector<Read*> other_reads=plumed.getActionSet().select<Read*>();
-  for(unsigned i=0;i<other_reads.size();++i){
-      if( other_reads[i]->getFilename()==filename ){
-          ifile=other_reads[i]->getFile();
-          cloned_file=true;
-      }
+  for(unsigned i=0; i<other_reads.size(); ++i) {
+    if( other_reads[i]->getFilename()==filename ) {
+      ifile=other_reads[i]->getFile();
+      cloned_file=true;
+    }
   }
-  if( !cloned_file ){
-      ifile=new IFile();
-      if( !ifile->FileExist(filename) ) error("could not find file named " + filename);
-      ifile->link(*this);
-      ifile->open(filename);
-      ifile->allowIgnoredFields();
+  if( !cloned_file ) {
+    ifile_ptr.reset(new IFile());
+    ifile=ifile_ptr.get();
+    if( !ifile->FileExist(filename) ) error("could not find file named " + filename);
+    ifile->link(*this);
+    ifile->open(filename);
+    ifile->allowIgnoredFields();
   }
   parse("EVERY",nlinesPerStep);
   if(nlinesPerStep>1) log.printf("  only reading every %uth line of file %s\n",nlinesPerStep,filename.c_str() );
@@ -144,93 +150,90 @@ nlinesPerStep(1)
   std::vector<std::string> valread; parseVector("VALUES",valread);
 
   std::size_t dot=valread[0].find_first_of('.');
-  if( valread[0].find(".")!=std::string::npos ){
-      std::string label=valread[0].substr(0,dot);
-      std::string name=valread[0].substr(dot+1);
-      if( name=="*" ){
-         if( valread.size()>1 ) error("all values must be from the same Action when using READ");
-         std::vector<std::string> fieldnames;
-         ifile->scanFieldList( fieldnames );
-         for(unsigned i=0;i<fieldnames.size();++i){
-             if( fieldnames[i].substr(0,dot)==label ){
-                 readvals.push_back(new Value(this, fieldnames[i], false) ); addComponentWithDerivatives( fieldnames[i].substr(dot+1) ); 
-                 if( ifile->FieldExist("min_" + fieldnames[i]) ) componentIsPeriodic( fieldnames[i].substr(dot+1), "-pi","pi" );
-                 else componentIsNotPeriodic( fieldnames[i].substr(dot+1) );
-             }
-         }
-      } else {
-         readvals.push_back(new Value(this, valread[0], false) ); addComponentWithDerivatives( name ); 
-         if( ifile->FieldExist("min_" + valread[0]) ) componentIsPeriodic( valread[0].substr(dot+1), "-pi", "pi" );
-         else componentIsNotPeriodic( valread[0].substr(dot+1) );
-         for(unsigned i=1;i<valread.size();++i) {
-             if( valread[i].substr(0,dot)!=label ) error("all values must be from the same Action when using READ");;
-             readvals.push_back(new Value(this, valread[i], false) ); addComponentWithDerivatives( valread[i].substr(dot+1) ); 
-             if( ifile->FieldExist("min_" + valread[i]) ) componentIsPeriodic( valread[i].substr(dot+1), "-pi", "pi" );
-             else componentIsNotPeriodic( valread[i].substr(dot+1) );
-         }
+  if( valread[0].find(".")!=std::string::npos ) {
+    std::string label=valread[0].substr(0,dot);
+    std::string name=valread[0].substr(dot+1);
+    if( name=="*" ) {
+      if( valread.size()>1 ) error("all values must be from the same Action when using READ");
+      std::vector<std::string> fieldnames;
+      ifile->scanFieldList( fieldnames );
+      for(unsigned i=0; i<fieldnames.size(); ++i) {
+        if( fieldnames[i].substr(0,dot)==label ) {
+          readvals.emplace_back(new Value(this, fieldnames[i], false) ); addComponentWithDerivatives( fieldnames[i].substr(dot+1) );
+          if( ifile->FieldExist("min_" + fieldnames[i]) ) componentIsPeriodic( fieldnames[i].substr(dot+1), "-pi","pi" );
+          else componentIsNotPeriodic( fieldnames[i].substr(dot+1) );
+        }
       }
+    } else {
+      readvals.emplace_back(new Value(this, valread[0], false) ); addComponentWithDerivatives( name );
+      if( ifile->FieldExist("min_" + valread[0]) ) componentIsPeriodic( valread[0].substr(dot+1), "-pi", "pi" );
+      else componentIsNotPeriodic( valread[0].substr(dot+1) );
+      for(unsigned i=1; i<valread.size(); ++i) {
+        if( valread[i].substr(0,dot)!=label ) error("all values must be from the same Action when using READ");;
+        readvals.emplace_back(new Value(this, valread[i], false) ); addComponentWithDerivatives( valread[i].substr(dot+1) );
+        if( ifile->FieldExist("min_" + valread[i]) ) componentIsPeriodic( valread[i].substr(dot+1), "-pi", "pi" );
+        else componentIsNotPeriodic( valread[i].substr(dot+1) );
+      }
+    }
   } else {
-      if( valread.size()!=1 ) error("all values must be from the same Action when using READ");
-      readvals.push_back(new Value(this, valread[0], false) ); addValueWithDerivatives();
-      if( ifile->FieldExist("min_" + valread[0]) ) setPeriodic( "-pi", "pi" ); 
-      else setNotPeriodic();
-      log.printf("  reading value %s and storing as %s\n",valread[0].c_str() ,getLabel().c_str() );   
+    if( valread.size()!=1 ) error("all values must be from the same Action when using READ");
+    readvals.emplace_back(new Value(this, valread[0], false) ); addValueWithDerivatives();
+    if( ifile->FieldExist("min_" + valread[0]) ) setPeriodic( "-pi", "pi" );
+    else setNotPeriodic();
+    log.printf("  reading value %s and storing as %s\n",valread[0].c_str(),getLabel().c_str() );
   }
   checkRead();
-}
-
-Read::~Read(){
-  if( !cloned_file ){ ifile->close(); delete ifile; }
-  for(unsigned i=0;i<readvals.size();++i) delete readvals[i];
 }
 
 std::string Read::getFilename() const {
   return filename;
 }
 
-IFile* Read::getFile(){
+IFile* Read::getFile() {
   return ifile;
 }
 
-unsigned Read::getNumberOfDerivatives(){
+unsigned Read::getNumberOfDerivatives() {
   return 0;
 }
 
-void Read::turnOnDerivatives(){
+void Read::turnOnDerivatives() {
   if( !ignore_forces ) error("cannot calculate derivatives for colvars that are read in from a file.  If you are postprocessing and "
-                             "these forces do not matter add the flag IGNORE_FORCES to all READ actions");
+                               "these forces do not matter add the flag IGNORE_FORCES to all READ actions");
 }
 
-void Read::prepare(){
-  if( !cloned_file ){
-      double du_time; 
-      if( !ifile->scanField("time",du_time) ){
-           error("Reached end of file " + filename + " before end of trajectory");
-      } else if( fabs( du_time-getTime() )>plumed.getAtoms().getTimeStep() && !ignore_time ){
-          std::string str_dutime,str_ptime; Tools::convert(du_time,str_dutime); Tools::convert(getTime(),str_ptime);
-          error("mismatched times in colvar files : colvar time=" + str_dutime + " plumed time=" + str_ptime + ". Add IGNORE_TIME to ignore error.");
-      }
-  }  
-}
-
-void Read::calculate(){
-  std::string smin, smax;
-  for(unsigned i=0;i<readvals.size();++i){
-     ifile->scanField( readvals[i] );
-     getPntrToComponent(i)->set( readvals[i]->get() );
-     if( readvals[i]->isPeriodic() ){
-         readvals[i]->getDomain( smin, smax );
-         getPntrToComponent(i)->setDomain( smin, smax );
-     } 
+void Read::prepare() {
+  if( !cloned_file ) {
+    double du_time;
+    if( !ifile->scanField("time",du_time) ) {
+      error("Reached end of file " + filename + " before end of trajectory");
+    } else if( fabs( du_time-getTime() )>plumed.getAtoms().getTimeStep() && !ignore_time ) {
+      std::string str_dutime,str_ptime; Tools::convert(du_time,str_dutime); Tools::convert(getTime(),str_ptime);
+      error("mismatched times in colvar files : colvar time=" + str_dutime + " plumed time=" + str_ptime + ". Add IGNORE_TIME to ignore error.");
+    }
   }
 }
 
-void Read::update(){
-  if( !cloned_file ){
-      for(unsigned i=0;i<nlinesPerStep;++i){
-         ifile->scanField(); double du_time;
-         if( plumed.getAtoms().getNatoms()==0 && !ifile->scanField("time",du_time) ) plumed.stop(); 
-      }
+void Read::calculate() {
+  std::string smin, smax;
+  for(unsigned i=0; i<readvals.size(); ++i) {
+// .get  returns the raw pointer
+// ->get calls the Value::get() method
+    ifile->scanField( readvals[i].get() );
+    getPntrToComponent(i)->set( readvals[i]->get() );
+    if( readvals[i]->isPeriodic() ) {
+      readvals[i]->getDomain( smin, smax );
+      getPntrToComponent(i)->setDomain( smin, smax );
+    }
+  }
+}
+
+void Read::update() {
+  if( !cloned_file ) {
+    for(unsigned i=0; i<nlinesPerStep; ++i) {
+      ifile->scanField(); double du_time;
+      if( plumed.getAtoms().getNatoms()==0 && !ifile->scanField("time",du_time) ) plumed.stop();
+    }
   }
 }
 

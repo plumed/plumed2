@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,8 +28,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR DISTANCE
 /*
@@ -49,46 +49,44 @@ better to use SCALED_COMPONENTS.
 
 The following input tells plumed to print the distance between atoms 3 and 5,
 the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
-\verbatim
+\plumedfile
 d1:  DISTANCE ATOMS=3,5
 d2:  DISTANCE ATOMS=2,4
 d2c: DISTANCE ATOMS=2,4 COMPONENTS
 PRINT ARG=d1,d2,d2c.x
-\endverbatim
-(See also \ref PRINT).
+\endplumedfile
 
 The following input computes the end-to-end distance for a polymer
 of 100 atoms and keeps it at a value around 5.
-\verbatim
+\plumedfile
 WHOLEMOLECULES ENTITY0=1-100
 e2e: DISTANCE ATOMS=1,100 NOPBC
 RESTRAINT ARG=e2e KAPPA=1 AT=5
-\endverbatim
-(See also \ref WHOLEMOLECULES and \ref RESTRAINT).
+\endplumedfile
 
 Notice that NOPBC is used
 to be sure that if the end-to-end distance is larger than half the simulation
 box the distance is compute properly. Also notice that, since many MD
 codes break molecules across cell boundary, it might be necessary to
 use the \ref WHOLEMOLECULES keyword (also notice that it should be
-_before_ distance). The list of atoms provided to WHOLEMOLECULES
+_before_ distance). The list of atoms provided to \ref WHOLEMOLECULES
 here contains all the atoms between 1 and 100. Strictly speaking, this
 is not necessary. If you know for sure that atoms with difference in
 the index say equal to 10 are _not_ going to be farther than half cell
 you can e.g. use
-\verbatim
+\plumedfile
 WHOLEMOLECULES ENTITY0=1,10,20,30,40,50,60,70,80,90,100
 e2e: DISTANCE ATOMS=1,100 NOPBC
 RESTRAINT ARG=e2e KAPPA=1 AT=5
-\endverbatim
-Just be sure that the ordered list provide to WHOLEMOLECULES has the following
+\endplumedfile
+Just be sure that the ordered list provide to \ref WHOLEMOLECULES has the following
 properties:
 - Consecutive atoms should be closer than half-cell throughout the entire simulation.
 - Atoms required later for the distance (e.g. 1 and 100) should be included in the list
 
 The following example shows how to take into account periodicity e.g.
 in z-component of a distance
-\verbatim
+\plumedfile
 # this is a center of mass of a large group
 c: COM ATOMS=1-100
 # this is the distance between atom 101 and the group
@@ -99,8 +97,7 @@ d: DISTANCE ATOMS=c,101 COMPONENTS
 dz: COMBINE ARG=d.z PERIODIC=-10,10
 # metadynamics on dd
 METAD ARG=dz SIGMA=0.1 HEIGHT=0.1 PACE=200
-\endverbatim
-(see also \ref COM, \ref COMBINE, and \ref METAD)
+\endplumedfile
 
 Using SCALED_COMPONENTS this problem should not arise because they are always periodic
 with domain (-0.5,+0.5).
@@ -110,7 +107,7 @@ with domain (-0.5,+0.5).
 
 */
 //+ENDPLUMEDOC
-   
+
 class Distance : public Colvar {
   bool components;
   bool scaled_components;
@@ -125,11 +122,11 @@ public:
 
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
 
-void Distance::registerKeywords( Keywords& keys ){
+void Distance::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
-  keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");  
-  keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");  
+  keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
+  keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
   keys.addOutputComponent("x","COMPONENTS","the x-component of the vector connecting the two atoms");
   keys.addOutputComponent("y","COMPONENTS","the y-component of the vector connecting the two atoms");
   keys.addOutputComponent("z","COMPONENTS","the z-component of the vector connecting the two atoms");
@@ -139,10 +136,10 @@ void Distance::registerKeywords( Keywords& keys ){
 }
 
 Distance::Distance(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-components(false),
-scaled_components(false),
-pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  components(false),
+  scaled_components(false),
+  pbc(true)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -161,12 +158,12 @@ pbc(true)
 
   if(components && scaled_components) error("COMPONENTS and SCALED_COMPONENTS are not compatible");
 
-  if(components){
+  if(components) {
     addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
     addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
     addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
     log<<"  WARNING: components will not have the proper periodicity - see manual\n";
-  } else if(scaled_components){
+  } else if(scaled_components) {
     addComponentWithDerivatives("a"); componentIsPeriodic("a","-0.5","+0.5");
     addComponentWithDerivatives("b"); componentIsPeriodic("b","-0.5","+0.5");
     addComponentWithDerivatives("c"); componentIsPeriodic("c","-0.5","+0.5");
@@ -180,7 +177,7 @@ pbc(true)
 
 
 // calculator
-void Distance::calculate(){
+void Distance::calculate() {
 
   if(pbc) makeWhole();
 
@@ -188,7 +185,7 @@ void Distance::calculate(){
   const double value=distance.modulo();
   const double invvalue=1.0/value;
 
-  if(components){
+  if(components) {
     Value* valuex=getPntrToComponent("x");
     Value* valuey=getPntrToComponent("y");
     Value* valuez=getPntrToComponent("z");
@@ -207,7 +204,7 @@ void Distance::calculate(){
     setAtomsDerivatives (valuez,1,Vector(0,0,+1));
     setBoxDerivativesNoPbc(valuez);
     valuez->set(distance[2]);
-  } else if(scaled_components){
+  } else if(scaled_components) {
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");

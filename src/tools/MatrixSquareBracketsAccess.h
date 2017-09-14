@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,7 +22,7 @@
 #ifndef __PLUMED_tools_MatrixSquareBracketsAccess_h
 #define __PLUMED_tools_MatrixSquareBracketsAccess_h
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 Utility class to add [][] access
@@ -66,27 +66,27 @@ int main(){
 */
 
 template<class T,class C,class I=unsigned,class J=unsigned>
-class MatrixSquareBracketsAccess{
+class MatrixSquareBracketsAccess {
 /// Small utility class which just contains a pointer to the T and the row number
-  class Const_row{
+  class Const_row {
     friend class MatrixSquareBracketsAccess; // this so as to allow only T to instantiate Const_row
-                    // the user should not manipulate it directly
+    // the user should not manipulate it directly
     const MatrixSquareBracketsAccess& t;
     const I i;
     Const_row(const MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
   public:
-  /// access element
+    /// access element
     const C & operator[] (J j)const;
   };
 /// Small utility class which just contains a pointer to the T and the row number
-  class Row{
+  class Row {
     friend class MatrixSquareBracketsAccess; // this so as to allow only T to instantiate Const_row
-                         // the user should not manipulate it directly
+    // the user should not manipulate it directly
     MatrixSquareBracketsAccess& t;
     const I i;
     Row(MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
   public:
-  /// access element
+    /// access element
     C & operator[] (J j);
   };
 public:
@@ -98,29 +98,29 @@ public:
 
 template<class T,class C,class I,class J>
 MatrixSquareBracketsAccess<T,C,I,J>::Const_row::Const_row(const MatrixSquareBracketsAccess&t,I i):
-  t(t),i(i){}
+  t(t),i(i) {}
 
 template<class T,class C,class I,class J>
 MatrixSquareBracketsAccess<T,C,I,J>::Row::Row(MatrixSquareBracketsAccess&t,I i):
-  t(t),i(i){}
+  t(t),i(i) {}
 
 template<class T,class C,class I,class J>
-const C & MatrixSquareBracketsAccess<T,C,I,J>::Const_row::operator[] (J j)const{
+const C & MatrixSquareBracketsAccess<T,C,I,J>::Const_row::operator[] (J j)const {
   return (*static_cast<const T*>(&t))(i,j);
 }
 
 template<class T,class C,class I,class J>
-C & MatrixSquareBracketsAccess<T,C,I,J>::Row::operator[] (J j){
+C & MatrixSquareBracketsAccess<T,C,I,J>::Row::operator[] (J j) {
   return (*static_cast<T*>(&t))(i,j);
 }
 
 template<class T,class C,class I,class J>
-typename MatrixSquareBracketsAccess<T,C,I,J>::Row MatrixSquareBracketsAccess<T,C,I,J>::operator[] (I i){
+typename MatrixSquareBracketsAccess<T,C,I,J>::Row MatrixSquareBracketsAccess<T,C,I,J>::operator[] (I i) {
   return Row(*this,i);
 }
 
 template<class T,class C,class I,class J>
-typename MatrixSquareBracketsAccess<T,C,I,J>::Const_row MatrixSquareBracketsAccess<T,C,I,J>::operator[] (I i)const{
+typename MatrixSquareBracketsAccess<T,C,I,J>::Const_row MatrixSquareBracketsAccess<T,C,I,J>::operator[] (I i)const {
   return Const_row(*this,i);
 }
 

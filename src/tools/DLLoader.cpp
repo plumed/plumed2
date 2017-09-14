@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,9 +25,9 @@
 #include <dlfcn.h>
 #endif
 
-namespace PLMD{
+namespace PLMD {
 
-bool DLLoader::installed(){
+bool DLLoader::installed() {
 #ifdef __PLUMED_HAS_DLOPEN
   return true;
 #else
@@ -36,10 +36,10 @@ bool DLLoader::installed(){
 }
 
 
-void* DLLoader::load(const std::string&s){
+void* DLLoader::load(const std::string&s) {
 #ifdef __PLUMED_HAS_DLOPEN
   void* p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
-  if(!p){
+  if(!p) {
     lastError=dlerror();
   } else {
     lastError="";
@@ -51,20 +51,20 @@ void* DLLoader::load(const std::string&s){
 #endif
 }
 
-const std::string & DLLoader::error(){
+const std::string & DLLoader::error() {
   return lastError;
 }
 
-DLLoader::~DLLoader(){
+DLLoader::~DLLoader() {
 #ifdef __PLUMED_HAS_DLOPEN
-  while(!handles.empty()){
+  while(!handles.empty()) {
     dlclose(handles.top());
     handles.pop();
   }
 #endif
 }
 
-DLLoader::DLLoader(){
+DLLoader::DLLoader() {
   // do nothing
 }
 

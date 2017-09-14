@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,10 +28,10 @@
 namespace PLMD {
 namespace vesselbase {
 
-void ActionWithInputVessel::registerKeywords(Keywords& keys){
+void ActionWithInputVessel::registerKeywords(Keywords& keys) {
   keys.add("compulsory","DATA","certain actions in plumed work by calculating a list of variables and summing over them. "
-                               "This particular action can be used to calculate functions of these base variables or prints "
-                               "them to a file. This keyword thus takes the label of one of those such variables as input.");
+           "This particular action can be used to calculate functions of these base variables or prints "
+           "them to a file. This keyword thus takes the label of one of those such variables as input.");
   keys.reserve("compulsory","GRID","the action that creates the input grid you would like to use");
 }
 
@@ -42,46 +42,46 @@ ActionWithInputVessel::ActionWithInputVessel(const ActionOptions&ao):
 {
 }
 
-void ActionWithInputVessel::readArgument( const std::string& type ){
-  std::string mlab; 
+void ActionWithInputVessel::readArgument( const std::string& type ) {
+  std::string mlab;
   if( keywords.exists("DATA") && type!="grid" ) parse("DATA",mlab);
   ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mlab);
   if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
   addDependency(mves);
 
   ActionWithValue* aval=dynamic_cast<ActionWithValue*>( this );
-  if(aval){
-      if( aval->checkNumericalDerivatives() ){
-          ActionWithValue* aval2=dynamic_cast<ActionWithValue*>( mves );
-          plumed_assert( aval2 ); aval2->useNumericalDerivatives();
-      } 
+  if(aval) {
+    if( aval->checkNumericalDerivatives() ) {
+      ActionWithValue* aval2=dynamic_cast<ActionWithValue*>( mves );
+      plumed_assert( aval2 ); aval2->useNumericalDerivatives();
+    }
   }
 
-  if( type=="bridge" ){
-     ActionWithVessel* aves=dynamic_cast<ActionWithVessel*>( this );
-     plumed_assert(aves); myBridgeVessel = mves->addBridgingVessel( aves ); 
-     arguments = dynamic_cast<Vessel*>( myBridgeVessel );
-  } else  if( type=="store" ){ 
-     arguments = dynamic_cast<Vessel*>( mves->buildDataStashes( NULL ) );  
+  if( type=="bridge" ) {
+    ActionWithVessel* aves=dynamic_cast<ActionWithVessel*>( this );
+    plumed_assert(aves); myBridgeVessel = mves->addBridgingVessel( aves );
+    arguments = dynamic_cast<Vessel*>( myBridgeVessel );
+  } else  if( type=="store" ) {
+    arguments = dynamic_cast<Vessel*>( mves->buildDataStashes( NULL ) );
   } else {
-     plumed_error();
+    plumed_error();
   }
 }
 
-void ActionWithInputVessel::calculateNumericalDerivatives( ActionWithValue* a ){
-  if(!a){
+void ActionWithInputVessel::calculateNumericalDerivatives( ActionWithValue* a ) {
+  if(!a) {
     a=dynamic_cast<ActionWithValue*>(this);
     plumed_massert(a,"cannot compute numerical derivatives for an action without values");
   }
-  if( myBridgeVessel ){
-     myBridgeVessel->completeNumericalDerivatives();
+  if( myBridgeVessel ) {
+    myBridgeVessel->completeNumericalDerivatives();
   } else {
-     error("numerical derivatives are not implemented"); 
+    error("numerical derivatives are not implemented");
   }
 }
 
-void ActionWithInputVessel::applyBridgeForces( const std::vector<double>& bb ){
-  plumed_dbg_assert( myBridgeVessel ); addBridgeForces( bb ); 
+void ActionWithInputVessel::applyBridgeForces( const std::vector<double>& bb ) {
+  plumed_dbg_assert( myBridgeVessel ); addBridgeForces( bb );
 }
 
 }

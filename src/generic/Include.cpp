@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,8 +26,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace generic{
+namespace PLMD {
+namespace generic {
 
 //+PLUMEDOC GENERIC INCLUDE
 /*
@@ -37,28 +37,105 @@ Useful to split very large plumed.dat files.
 
 \par Examples
 
-This input
-\verbatim
+This input:
+\plumedfile
 c1: COM ATOMS=1-100
 c2: COM ATOMS=101-202
-d: DISTANCE ARG=c1,c2
+d: DISTANCE ATOMS=c1,c2
 PRINT ARG=d
-\endverbatim
-
-can be replaced with
-\verbatim
+\endplumedfile
+can be replaced with this input:
+\plumedfile
 INCLUDE FILE=pippo.dat
-d: DISTANCE ARG=c1,c2
+d: DISTANCE ATOMS=c1,c2
 PRINT ARG=d
-\endverbatim
-
+\endplumedfile
 where the content of file pippo.dat is
-\verbatim
+\plumedfile
 c1: COM ATOMS=1-100
 c2: COM ATOMS=101-202
-\endverbatim
+\endplumedfile
 
-(see also \ref COM, \ref DISTANCE, and \ref PRINT).
+The files in this example are rather short, but imagine a case like this one:
+\plumedfile
+INCLUDE FILE=groups.dat
+c: COORDINATION GROUPA=groupa GROUPB=groupb R_0=0.5
+METAD ARG=c HEIGHT=0.2 PACE=100 SIGMA=0.2 BIASFACTOR=5
+\endplumedfile
+Here `groups.dat` could be huge file containing group definitions such as
+\plumedfile
+groupa: GROUP ...
+  ATOMS={
+    10
+    50
+    60
+## imagine a long list here
+    70
+    80
+    120
+  }
+...
+groupb: GROUP ...
+  ATOMS={
+    11
+    51
+    61
+## imagine a long list here
+    71
+    81
+    121
+  }
+...
+\endplumedfile
+So, included files are the best place where one can store long definitions.
+
+Another case where INCLUDE is very useful is when running multi-replica simulations.
+Here different replicas might have different input files, but perhaps a large part of the
+input is shared. This part can be put in a common included file. For instance you could have
+`common.dat`:
+\plumedfile
+# this is common.dat
+t: TORSION ATOMS=1,2,3,4
+\endplumedfile
+Then `plumed.0.dat`:
+\plumedfile
+# this is plumed.0.dat
+INCLUDE FILE=common.dat
+RESTRAINT ARG=t AT=1.0 KAPPA=10
+\endplumedfile
+And `plumed.1.dat`:
+\plumedfile
+# this is plumed.1.dat
+INCLUDE FILE=common.dat
+RESTRAINT ARG=t AT=1.2 KAPPA=10
+\endplumedfile
+
+\warning
+Remember that when using multi replica simulations whenever plumed tried to open
+a file for reading it looks for a file with the replica suffix first.
+This is true also for files opened by INCLUDE!
+
+As an example, the same result of the inputs above could have been obtained using
+`plumed.dat`:
+\plumedfile
+# this is plumed.dat
+t: TORSION ATOMS=1,2,3,4
+INCLUDE FILE=other.dat
+\endplumedfile
+Then `other.0.dat`:
+\plumedfile
+# this is other.0.dat
+RESTRAINT ARG=t AT=1.0 KAPPA=10
+\endplumedfile
+And `other.1.dat`:
+\plumedfile
+# this is other.1.dat
+RESTRAINT ARG=t AT=1.2 KAPPA=10
+\endplumedfile
+
+
+
+
 
 */
 //+ENDPLUMEDOC
@@ -69,19 +146,19 @@ class Include :
 public:
   static void registerKeywords( Keywords& keys );
   explicit Include(const ActionOptions&ao);
-  void calculate(){}
-  void apply(){}
+  void calculate() {}
+  void apply() {}
 };
 
 PLUMED_REGISTER_ACTION(Include,"INCLUDE")
 
-void Include::registerKeywords( Keywords& keys ){
+void Include::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
   keys.add("compulsory","FILE","file to be included");
 }
 
 Include::Include(const ActionOptions&ao):
-Action(ao)
+  Action(ao)
 {
   std::string f;
   parse("FILE",f);

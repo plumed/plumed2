@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,8 +28,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR POSITION
 /*
@@ -37,7 +37,7 @@ Calculate the components of the position of an atom.
 
 Notice that single components will not have the proper periodicity!
 If you need the values to be consistent through PBC you should use SCALED_COMPONENTS,
-which defines values that by construction are in the -0.5,0.5 domain. This is 
+which defines values that by construction are in the -0.5,0.5 domain. This is
 similar to the equivalent flag for \ref DISTANCE.
 Also notice that by default the minimal image distance from the
 origin is considered (can be changed with NOPBC).
@@ -45,7 +45,7 @@ origin is considered (can be changed with NOPBC).
 \attention
 This variable should be used with extreme care since it allows to easily go into troubles. See comments below.
 
-This variable can be safely used only if 
+This variable can be safely used only if
 Hamiltonian is not invariant for translation (i.e. there are other absolute positions which are biased, e.g. by position restraints)
 and cell size and shapes are fixed through the simulation.
 
@@ -54,18 +54,16 @@ This can be done e.g. using \ref FIT_TO_TEMPLATE.
 
 \par Examples
 
-\verbatim
+\plumedfile
 # align to a template
 FIT_TO_TEMPLATE REFERENCE=ref.pdb
 p: POSITION ATOM=3
 PRINT ARG=p.x,p.y,p.z
-\endverbatim
-(see also \ref FIT_TO_TEMPLATE)
-
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
-   
+
 class Position : public Colvar {
   bool scaled_components;
   bool pbc;
@@ -79,7 +77,7 @@ public:
 
 PLUMED_REGISTER_ACTION(Position,"POSITION")
 
-void Position::registerKeywords( Keywords& keys ){
+void Position::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
   keys.add("atoms","ATOM","the atom number");
@@ -93,9 +91,9 @@ void Position::registerKeywords( Keywords& keys ){
 }
 
 Position::Position(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-scaled_components(false),
-pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  scaled_components(false),
+  pbc(true)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOM",atoms);
@@ -111,7 +109,7 @@ pbc(true)
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 
-  if(scaled_components){
+  if(scaled_components) {
     addComponentWithDerivatives("a"); componentIsPeriodic("a","-0.5","+0.5");
     addComponentWithDerivatives("b"); componentIsPeriodic("b","-0.5","+0.5");
     addComponentWithDerivatives("c"); componentIsPeriodic("c","-0.5","+0.5");
@@ -127,16 +125,16 @@ pbc(true)
 
 
 // calculator
-void Position::calculate(){
+void Position::calculate() {
 
   Vector distance;
-  if(pbc){
+  if(pbc) {
     distance=pbcDistance(Vector(0.0,0.0,0.0),getPosition(0));
   } else {
     distance=delta(Vector(0.0,0.0,0.0),getPosition(0));
   }
 
-  if(scaled_components){
+  if(scaled_components) {
     Value* valuea=getPntrToComponent("a");
     Value* valueb=getPntrToComponent("b");
     Value* valuec=getPntrToComponent("c");

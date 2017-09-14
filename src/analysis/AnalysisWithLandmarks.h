@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #define __PLUMED_analysis_AnalysisWithLandmarks_h
 
 #include "Analysis.h"
+#include <memory>
 
 namespace PLMD {
 
@@ -33,12 +34,12 @@ namespace analysis {
 class LandmarkSelectionBase;
 
 class AnalysisWithLandmarks : public Analysis {
-friend class LandmarkSelectionBase;
-friend class CopyAllFrames;
+  friend class LandmarkSelectionBase;
+  friend class CopyAllFrames;
 private:
 /// This object selects landmarks from the data
-  LandmarkSelectionBase* landmarkSelector;
-/// A pointer to the data we are analyzing             
+  std::unique_ptr<LandmarkSelectionBase> landmarkSelector;
+/// A pointer to the data we are analyzing
   MultiReferenceBase* data_to_analyze;
 protected:
 /// Set the data that needs to be analyzed
@@ -53,7 +54,7 @@ public:
   void performAnalysis();
   virtual void analyzeLandmarks()=0;
 /// This does nothing
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
 };
 
 }

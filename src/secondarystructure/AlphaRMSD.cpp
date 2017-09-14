@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,13 +34,13 @@ Probe the alpha helical content of a protein structure.
 Any chain of six contiguous residues in a protein chain can form an alpha helix. This
 colvar thus generates the set of all possible six residue sections and calculates
 the RMSD distance between the configuration in which the residues find themselves
-and an idealized alpha helical structure. These distances can be calculated by either 
+and an idealized alpha helical structure. These distances can be calculated by either
 aligning the instantaneous structure with the reference structure and measuring each
 atomic displacement or by calculating differences between the set of interatomic
-distances in the reference and instantaneous structures. 
+distances in the reference and instantaneous structures.
 
-This colvar is based on the following reference \cite pietrucci09jctc.  The authors of 
-this paper use the set of distances from the alpha helix configurations to measure 
+This colvar is based on the following reference \cite pietrucci09jctc.  The authors of
+this paper use the set of distances from the alpha helix configurations to measure
 the number of segments that have an alpha helical configuration. This is done by calculating
 the following sum of functions of the rmsd distances:
 
@@ -48,31 +48,30 @@ the following sum of functions of the rmsd distances:
 s = \sum_i \frac{ 1 - \left(\frac{r_i-d_0}{r_0}\right)^n } { 1 - \left(\frac{r_i-d_0}{r_0}\right)^m }
 \f]
 
-where the sum runs over all possible segments of alpha helix.  By default the 
+where the sum runs over all possible segments of alpha helix.  By default the
 NN, MM and D_0 parameters are set equal to those used in \cite pietrucci09jctc.  The R_0
 parameter must be set by the user - the value used in \cite pietrucci09jctc was 0.08 nm.
 
 If you change the function in the above sum you can calculate quantities such as the average
-distance from a purely the alpha helical configuration or the distance between the set of 
-residues that is closest to an alpha helix and the reference configuration. To do these sorts of 
+distance from a purely the alpha helical configuration or the distance between the set of
+residues that is closest to an alpha helix and the reference configuration. To do these sorts of
 calculations you can use the AVERAGE and MIN keywords. In addition you can use the LESS_THAN
 keyword if you would like to change the form of the switching function. If you use any of these
-options you no longer need to specify NN, R_0, MM and D_0.   
+options you no longer need to specify NN, R_0, MM and D_0.
 
-Please be aware that for codes like gromacs you must ensure that plumed 
+Please be aware that for codes like gromacs you must ensure that plumed
 reconstructs the chains involved in your CV when you calculate this CV using
 anthing other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
 
 \par Examples
 
-The following input calculates the number of six residue segments of 
+The following input calculates the number of six residue segments of
 protein that are in an alpha helical configuration.
 
-\verbatim
+\plumedfile
 MOLINFO STRUCTURE=helix.pdb
 ALPHARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
-\endverbatim
-(see also \ref MOLINFO)
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -81,33 +80,33 @@ class AlphaRMSD : public SecondaryStructureRMSD {
 public:
   static void registerKeywords( Keywords& keys );
   explicit AlphaRMSD(const ActionOptions&);
-}; 
+};
 
 PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")
 
-void AlphaRMSD::registerKeywords( Keywords& keys ){
+void AlphaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
 }
 
 AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
-Action(ao),
-SecondaryStructureRMSD(ao)
+  Action(ao),
+  SecondaryStructureRMSD(ao)
 {
   // read in the backbone atoms
   std::vector<unsigned> chains; readBackboneAtoms( "protein", chains);
 
   // This constructs all conceivable sections of alpha helix in the backbone of the chains
   unsigned nres, nprevious=0; std::vector<unsigned> nlist(30);
-  for(unsigned i=0;i<chains.size();++i){
-     if( chains[i]<30 ) error("segment of backbone defined is not long enough to form an alpha helix. Each backbone fragment must contain a minimum of 6 residues");
-     nres=chains[i]/5;
-     if( chains[i]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
-     for(unsigned ires=0;ires<nres-5;ires++){
-       unsigned accum=nprevious + 5*ires; 
-       for(unsigned k=0;k<30;++k) nlist[k] = accum+k;
-       addColvar( nlist );
-     }
-     nprevious+=chains[i];
+  for(unsigned i=0; i<chains.size(); ++i) {
+    if( chains[i]<30 ) error("segment of backbone defined is not long enough to form an alpha helix. Each backbone fragment must contain a minimum of 6 residues");
+    nres=chains[i]/5;
+    if( chains[i]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
+    for(unsigned ires=0; ires<nres-5; ires++) {
+      unsigned accum=nprevious + 5*ires;
+      for(unsigned k=0; k<30; ++k) nlist[k] = accum+k;
+      addColvar( nlist );
+    }
+    nprevious+=chains[i];
   }
 
   // Build the reference structure ( in angstroms )
@@ -143,7 +142,7 @@ SecondaryStructureRMSD(ao)
   reference[28] = Vector(-1.663, -0.171, -4.475 ); // C
   reference[29] = Vector(-1.916, -0.296, -5.673 ); // O
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
-  setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() ); 
+  setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
 }
 
 }

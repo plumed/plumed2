@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,37 +31,37 @@ private:
 public:
   explicit IntermolecularDRMSD( const ReferenceConfigurationOptions& ro );
   void read( const PDB& pdb );
-  void setup_targets(); 
+  void setup_targets();
 };
 
 PLUMED_REGISTER_METRIC(IntermolecularDRMSD,"INTER-DRMSD")
 
 IntermolecularDRMSD::IntermolecularDRMSD( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration( ro ),
-DRMSD( ro ),
-nblocks(0)
+  ReferenceConfiguration( ro ),
+  DRMSD( ro ),
+  nblocks(0)
 {
 }
 
-void IntermolecularDRMSD::read( const PDB& pdb ){
+void IntermolecularDRMSD::read( const PDB& pdb ) {
   readAtomsFromPDB( pdb, true ); nblocks = pdb.getNumberOfAtomBlocks(); blocks.resize( nblocks+1 );
   if( nblocks==1 ) error("Trying to compute intermolecular rmsd but found no TERs in input PDB");
-  blocks[0]=0; for(unsigned i=0;i<nblocks;++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
+  blocks[0]=0; for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
   readBounds(); setup_targets();
 }
 
-void IntermolecularDRMSD::setup_targets(){
+void IntermolecularDRMSD::setup_targets() {
   plumed_massert( bounds_were_set, "I am missing a call to DRMSD::setBoundsOnDistances");
 
-  for(unsigned i=1;i<nblocks;++i){
-      for(unsigned j=0;j<i;++j){
-          for(unsigned iatom=blocks[i];iatom<blocks[i+1];++iatom){
-              for(unsigned jatom=blocks[j];jatom<blocks[j+1];++jatom){
-                  double distance = delta( getReferencePosition(iatom), getReferencePosition(jatom) ).modulo();
-                  if(distance < upper && distance > lower ) targets[std::make_pair(iatom,jatom)] = distance;
-              }
-          }
+  for(unsigned i=1; i<nblocks; ++i) {
+    for(unsigned j=0; j<i; ++j) {
+      for(unsigned iatom=blocks[i]; iatom<blocks[i+1]; ++iatom) {
+        for(unsigned jatom=blocks[j]; jatom<blocks[j+1]; ++jatom) {
+          double distance = delta( getReferencePosition(iatom), getReferencePosition(jatom) ).modulo();
+          if(distance < upper && distance > lower ) targets[std::make_pair(iatom,jatom)] = distance;
+        }
       }
+    }
   }
 }
 

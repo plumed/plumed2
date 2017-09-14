@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,18 +35,18 @@ public:
 PLUMED_REGISTER_METRIC(DotProductDistance,"DOTPRODUCT")
 
 DotProductDistance::DotProductDistance( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro),
-ArgumentOnlyDistance(ro)
+  ReferenceConfiguration(ro),
+  ArgumentOnlyDistance(ro)
 {
 }
 
-void DotProductDistance::read( const PDB& pdb ){
+void DotProductDistance::read( const PDB& pdb ) {
   readArgumentsFromPDB( pdb );
 }
 
-double DotProductDistance::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, 
-                                                      ReferenceValuePack& myder, const bool& squared ) const {
-  double dot=0.0; 
+double DotProductDistance::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg,
+    ReferenceValuePack& myder, const bool& squared ) const {
+  double dot=0.0;
   for (unsigned long i=0; i<vals.size(); ++i) dot+=getReferenceArgument(i)*arg[i];
   for (unsigned long i=0; i<vals.size(); ++i) myder.setArgumentDerivatives( i, -getReferenceArgument(i)/dot );
   return -log(dot);

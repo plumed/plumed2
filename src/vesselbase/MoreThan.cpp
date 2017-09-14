@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 #include "ActionWithVessel.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace vesselbase {
 
 class MoreThan : public FunctionVessel {
 private:
@@ -41,35 +41,35 @@ public:
 
 PLUMED_REGISTER_VESSEL(MoreThan,"MORE_THAN")
 
-void MoreThan::registerKeywords( Keywords& keys ){
+void MoreThan::registerKeywords( Keywords& keys ) {
   FunctionVessel::registerKeywords( keys );
   SwitchingFunction::registerKeywords( keys );
 }
 
-void MoreThan::reserveKeyword( Keywords& keys ){
+void MoreThan::reserveKeyword( Keywords& keys ) {
   keys.reserve("vessel","MORE_THAN","calculate the number of variables more than a certain target value. "
-                                      "This quantity is calculated using \\f$\\sum_i 1.0 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
-                                      "is a \\ref switchingfunction.");
+               "This quantity is calculated using \\f$\\sum_i 1.0 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
+               "is a \\ref switchingfunction.");
   keys.addOutputComponent("morethan","MORE_THAN","the number of values more than a target value. This is calculated using one of the "
-                                                 "formula described in the description of the keyword so as to make it continuous. "
-                                                 "You can calculate this quantity multiple times using different parameters."); 
+                          "formula described in the description of the keyword so as to make it continuous. "
+                          "You can calculate this quantity multiple times using different parameters.");
 }
 
 MoreThan::MoreThan( const VesselOptions& da ) :
-FunctionVessel(da)
+  FunctionVessel(da)
 {
-  usetol=true; 
+  usetol=true;
   if( getAction()->isPeriodic() ) error("more than is not a meaningful option for periodic variables");
   std::string errormsg; sf.set( getAllInput(), errormsg );
   if( errormsg.size()!=0 ) error( errormsg );
 }
 
-std::string MoreThan::value_descriptor(){
+std::string MoreThan::value_descriptor() {
   return "the number of values more than " + sf.description();
 }
 
 double MoreThan::calcTransform( const double& val, double& dv ) const {
-  double f = 1.0 - sf.calculate(val, dv); dv*=-val; return f; 
+  double f = 1.0 - sf.calculate(val, dv); dv*=-val; return f;
 }
 
 }

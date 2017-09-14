@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,13 +34,13 @@ public:
 PLUMED_REGISTER_LANDMARKS(CopyAllFrames,"ALL")
 
 CopyAllFrames::CopyAllFrames( const LandmarkSelectionOptions& lo ):
-LandmarkSelectionBase(lo)
+  LandmarkSelectionBase(lo)
 {
 }
 
-void CopyAllFrames::select( MultiReferenceBase* myframes ){
+void CopyAllFrames::select( MultiReferenceBase* myframes ) {
   nlandmarks = action->getNumberOfDataPoints();
-  for(unsigned i=0;i<getNumberOfFrames();++i) selectFrame( i, myframes );
+  for(unsigned i=0; i<getNumberOfFrames(); ++i) selectFrame( i, myframes );
 }
 
 }

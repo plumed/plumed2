@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,24 +29,23 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
-//+PLUMEDOC COLVAR FAKE 
+//+PLUMEDOC COLVAR FAKE
 /*
 This is a fake colvar container used by cltools or various other actions
 and just support input and period definition
 
 \par Examples
 
-\verbatim
+\plumedfile
 FAKE ATOMS=1 PERIODIC=-3.14,3.14   LABEL=d2
-\endverbatim
-(See also \ref PRINT).
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
-   
+
 class ColvarFake : public Colvar {
 
 public:
@@ -58,7 +57,7 @@ public:
 
 PLUMED_REGISTER_ACTION(ColvarFake,"FAKE")
 
-void ColvarFake::registerKeywords( Keywords& keys ){
+void ColvarFake::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the fake atom index, a number is enough");
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO,NO (one for the lower and the other for the upper boundary). For multicomponents then it is PERIODIC=mincomp1,maxcomp1,mincomp2,maxcomp2  etc ");
@@ -67,61 +66,61 @@ void ColvarFake::registerKeywords( Keywords& keys ){
 }
 
 ColvarFake::ColvarFake(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao)
+  PLUMED_COLVAR_INIT(ao)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
 
-  vector<string> comps; 
-  // multiple components for this variable 
+  vector<string> comps;
+  // multiple components for this variable
   parseVector("COMPONENTS",comps);
-  if(comps.size()!=0){
-	for(unsigned i=0;i<comps.size();i++){
-        	addComponentWithDerivatives(comps[i]);
-	}
-        // periodicity
-  }else{
-  // only one component for this variable 
-  	addValueWithDerivatives(); 
+  if(comps.size()!=0) {
+    for(unsigned i=0; i<comps.size(); i++) {
+      addComponentWithDerivatives(comps[i]);
+    }
+    // periodicity
+  } else {
+    // only one component for this variable
+    addValueWithDerivatives();
   }
   std::vector<std::string> period;
   parseVector("PERIODIC",period);
-  if(period.size()!=0){
-	  plumed_massert(getNumberOfComponents()*2==period.size(),"the periodicty should coincide with the number of components");
-	  if(comps.size()!=0){
-		  for(int i=0;i<getNumberOfComponents();i++){
-			  string pp=comps[i];
-			  if(period[i*2]!="none" && period[i*2+1]!="none" ){
-				  componentIsPeriodic(pp,period[i*2],period[i*2+1]);
-			  }else{
-				  componentIsNotPeriodic(pp);
-			  }
-		  }
-	  }else{
-		  if(period[0]!="none" && period[1]!="none" ){
-			  setPeriodic(period[0],period[1]);
-		  }else{
-			  setNotPeriodic();
-		  }
-	  }
-  }else{
-	  if(comps.size()!=0){
-		  for(int i=0;i<getNumberOfComponents();i++){
-			  componentIsNotPeriodic(getPntrToComponent(i)->getName());
-		  }
-	  } else {
-		  setNotPeriodic();
-	  }
+  if(period.size()!=0) {
+    plumed_massert(getNumberOfComponents()*2==period.size(),"the periodicty should coincide with the number of components");
+    if(comps.size()!=0) {
+      for(int i=0; i<getNumberOfComponents(); i++) {
+        string pp=comps[i];
+        if(period[i*2]!="none" && period[i*2+1]!="none" ) {
+          componentIsPeriodic(pp,period[i*2],period[i*2+1]);
+        } else {
+          componentIsNotPeriodic(pp);
+        }
+      }
+    } else {
+      if(period[0]!="none" && period[1]!="none" ) {
+        setPeriodic(period[0],period[1]);
+      } else {
+        setNotPeriodic();
+      }
+    }
+  } else {
+    if(comps.size()!=0) {
+      for(int i=0; i<getNumberOfComponents(); i++) {
+        componentIsNotPeriodic(getPntrToComponent(i)->getName());
+      }
+    } else {
+      setNotPeriodic();
+    }
   }
-   checkRead();
-   requestAtoms(atoms);
+  checkRead();
+  requestAtoms(atoms);
 
 }
 
 
 // calculator
-void ColvarFake::calculate(){
-    plumed_merror("you should never have got here");
+void ColvarFake::calculate() {
+  plumed_merror("you should never have got here");
 }
 
 }

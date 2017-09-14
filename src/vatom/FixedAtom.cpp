@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,8 +26,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace vatom{
+namespace PLMD {
+namespace vatom {
 
 //+PLUMEDOC VATOM FIXEDATOM
 /*
@@ -51,24 +51,22 @@ then it is safe to add further fixed atoms without breaking translational invari
 
 The following input instructs plumed to compute the angle between
 distance of atoms 15 and 20 and the z axis and keeping it close to zero.
-\verbatim
+\plumedfile
 a: FIXEDATOM AT=0,0,0
 b: FIXEDATOM AT=0,0,1
 an: ANGLE ATOMS=a,b,15,20
 RESTRAINT ARG=an AT=0.0 KAPPA=100.0
-\endverbatim
-(See also \ref ANGLE and \ref RESTRAINT).
+\endplumedfile
 
 The following input instructs plumed to align a protein on a template
 and then compute the distance of one of its atom from the point
 (10,20,30).
-\verbatim
+\plumedfile
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=SIMPLE
 a: FIXEDATOM AT=10,20,30
-d: DISTANCE ARG=a,20
+d: DISTANCE ATOMS=a,20
 PRINT ARG=d FILE=colvar
-\endverbatim
-(See also \ref FIT_TO_TEMPLATE and \ref DISTANCE).
+\endplumedfile
 
 
 */
@@ -89,7 +87,7 @@ public:
 
 PLUMED_REGISTER_ACTION(FixedAtom,"FIXEDATOM")
 
-void FixedAtom::registerKeywords(Keywords& keys){
+void FixedAtom::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);
   keys.add("compulsory","AT","coordinates of the virtual atom");
   keys.add("compulsory","SET_MASS","1","mass of the virtual atom");
@@ -123,9 +121,9 @@ FixedAtom::FixedAtom(const ActionOptions&ao):
   if(scaled_components) log<<"  position is in scaled components\n";
 }
 
-void FixedAtom::calculate(){
+void FixedAtom::calculate() {
   vector<Tensor> deriv(getNumberOfAtoms());
-  if(scaled_components){
+  if(scaled_components) {
     setPosition(getPbc().scaledToReal(coord));
   } else {
     setPosition(coord);

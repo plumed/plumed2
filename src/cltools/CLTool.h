@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,11 +22,11 @@
 #ifndef __PLUMED_cltools_CLTool_h
 #define __PLUMED_cltools_CLTool_h
 #include "core/CLTool.h"
-namespace PLMD{
-namespace cltools{
+namespace PLMD {
+namespace cltools {
 // Ideally core/CLTool.h should be moved to this directory and CLTool should stay in namespace PLMD::cltools
 // With this trick, PLMD::CLTool is visible as PLMD::cltools::CLTool
-  using PLMD::CLTool;
+using PLMD::CLTool;
 }
 }
 #endif

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 #include <string>
 #include <iosfwd>
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup TOOLBOX
@@ -51,7 +51,7 @@ int main(int argc,char**argv){
 \endverbatim
 */
 
-class Citations{
+class Citations {
   std::vector<std::string> items;
 public:
 /// Add a citation.

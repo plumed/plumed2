@@ -2,9 +2,32 @@
 
 source ../sourceme.sh
 
+LISTMORE=`ls *PP.md | grep -wvFf basic.list`
+
 LIST="
- IntroPP.txt ../CHANGES InstallationPP.txt SyntaxPP.txt ColvarPP.txt GroupPP.txt FunctionsPP.txt AnalysisPP.txt
-  BiasPP.txt ToolsPP.txt MiscPP.txt PerformancesPP.txt RegexPP.txt FilesPP.txt ModulesPP.txt TutorialsPP.txt GlossaryPP.txt automatic tutorials"
+ IntroductionPP.md
+ ChangeLogPP.md
+ ../CHANGES
+ InstallationPP.md
+ GettingStartedPP.md
+ CollectiveVariablesPP.md
+   GroupPP.md
+   FunctionsPP.md
+ AnalysisPP.md
+ BiasPP.md
+ AdditionalModulesPP.md
+ $LISTMORE
+ CommandLineToolsPP.md
+ MiscelaneousPP.md
+   RegexPP.md
+   FilesPP.md
+   ModulesPP.md
+   TutorialsPP.md
+ PerformancesPP.md
+ GlossaryPP.md
+ automatic tutorials tutorials/others"
+
+echo $LIST
 
 {
   cat Doxyfile
@@ -32,11 +55,12 @@ awk -v version="$version" '{
     sub("Page","("version")",$0);
     print
   } else if(match($0,"<span>Related&#160;Pages</span>")){
-    print "      <li><a href=\"_syntax.html\"><span>Getting&#160;started</span></a></li>"
+    print "      <li><a href=\"_syntax.html\"><span>Getting&#160;Started</span></a></li>"
     print "      <li><a href=\"tutorials.html\"><span>Tutorials</span></a></li>"
     print "      <li><a href=\"glossary.html\"><span>Index&#160;of&#160;Actions</span></a></li>"
   } else print
-}' $file > $file.tmp
+}' $file |
+awk -f plumed-syntax.awk > $file.tmp
 mv $file.tmp $file
 done
 # end of DOXYGEN <=1.8.10
@@ -45,12 +69,11 @@ done
 cat > html/menudata.js << EOF
 var menudata={children:[
 {text:'Home ($version)',url:'index.html'},
-{text:'Getting started',url:'_syntax.html'},
+{text:'Getting Started',url:'_syntax.html'},
 {text:'Tutorials',url:'tutorials.html'},
 {text:'Index of Actions',url:'glossary.html'}]}
 EOF
 # end of DOXYGEN >=1.8.12
-
 
 cat html/doxygen.css plumed.css > html/doxygen.css.tmp
 mv html/doxygen.css.tmp html/doxygen.css
@@ -63,7 +86,7 @@ cd latex
 
 # this is a workaround for a problem on the linux workstation
 # where I compile the manual - GB
-sed -i 's/pdfencoding=unicode/unicode/g' refman.tex
-make
+sed -ie 's/pdfencoding=unicode/unicode/g' refman.tex
+make -i
 cp refman.pdf ../manual.pdf
 

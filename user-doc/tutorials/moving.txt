@@ -33,7 +33,7 @@ TORSION LIST 7 9 15 17
 PRINT W_STRIDE 100
 \endverbatim
 in PLUMED 2.x becomes:
-\verbatim
+\plumedfile
 all:  GROUP     ATOMS=1,5,6,7,9,11,15,16,17,19
 rg:   GYRATION  ATOMS=all
 t1:   TORSION ATOMS=5,7,9,15
@@ -44,7 +44,7 @@ METAD ...
 ... METAD
 t2:   TORSION ATOMS=7,9,15,17
 PRINT ARG=t1,t2,meta.bias  STRIDE=100   FILE=COLVAR
-\endverbatim
+\endplumedfile
 Giving all quantities an explicit name makes the input easier to interpret.
 Additionally, all the parameters related to \ref METAD are placed on a single line
 (actually, this is done here exploiting continuation lines).
@@ -83,13 +83,13 @@ UMBRELLA CV 1 KAPPA 200 AT 1.0
 PRINT W_STRIDE 100
 \endverbatim
 The same in PLUMED 2.x reads:
-\verbatim
+\plumedfile
 g1: COM ATOMS=17,20,22,30
 g2: COM ATOMS=37-40
 d:  DISTANCE ATOMS=g1,g2
 r:  RESTRAINT ARG=d KAPPA=200 AT=1.0
 PRINT STRIDE=100 FILE=COLVAR ARG=d,r.*
-\endverbatim
+\endplumedfile
 
 Notice that virtual atoms are very powerful tools in PLUMED 2. Actually, they can be used
 in any collective variable where normal atoms can be used, just by calling them by name.
@@ -116,11 +116,11 @@ The first line of the COLVAR file was then
 #!  FIELDS time cv1 cv2
 \endverbatim
 The equivalent input file in PLUMED 2 is
-\verbatim
+\plumedfile
 d: DISTANCE ATOMS=1,2
 a: ANGLE    ATOMS=3,4,5
 PRINT ARG=d,a FILE=COLVAR STRIDE=100
-\endverbatim
+\endplumedfile
 The first line of the COLVAR file now is
 \verbatim
 #! FIELDS time d a

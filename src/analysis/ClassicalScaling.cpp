@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,31 +25,31 @@
 namespace PLMD {
 namespace analysis {
 
-void ClassicalScaling::run( PointWiseMapping* mymap ){
-   // Retrieve the distances from the dimensionality reduction object
-   double half=(-0.5); Matrix<double> distances( half*mymap->modifyDmat() ); 
- 
-   // Apply centering transtion
-   unsigned n=distances.nrows(); double sum;
-   // First HM
-   for(unsigned i=0;i<n;++i){
-       sum=0; for(unsigned j=0;j<n;++j) sum+=distances(i,j);
-       for(unsigned j=0;j<n;++j) distances(i,j) -= sum/n;
-   }
-   // Now (HM)H
-   for(unsigned i=0;i<n;++i){
-      sum=0; for(unsigned j=0;j<n;++j) sum+=distances(j,i);
-      for(unsigned j=0;j<n;++j) distances(j,i) -= sum/n; 
-   }
+void ClassicalScaling::run( PointWiseMapping* mymap ) {
+  // Retrieve the distances from the dimensionality reduction object
+  double half=(-0.5); Matrix<double> distances( half*mymap->modifyDmat() );
 
-   // Diagonalize matrix
-   std::vector<double> eigval(n); Matrix<double> eigvec(n,n);
-   diagMat( distances, eigval, eigvec );
+  // Apply centering transtion
+  unsigned n=distances.nrows(); double sum;
+  // First HM
+  for(unsigned i=0; i<n; ++i) {
+    sum=0; for(unsigned j=0; j<n; ++j) sum+=distances(i,j);
+    for(unsigned j=0; j<n; ++j) distances(i,j) -= sum/n;
+  }
+  // Now (HM)H
+  for(unsigned i=0; i<n; ++i) {
+    sum=0; for(unsigned j=0; j<n; ++j) sum+=distances(j,i);
+    for(unsigned j=0; j<n; ++j) distances(j,i) -= sum/n;
+  }
 
-   // Pass final projections to map object
-   for(unsigned i=0;i<n;++i){
-      for(unsigned j=0;j<mymap->getNumberOfProperties();++j) mymap->setProjectionCoordinate( i, j, sqrt(eigval[n-1-j])*eigvec(n-1-j,i) ); 
-   }
+  // Diagonalize matrix
+  std::vector<double> eigval(n); Matrix<double> eigvec(n,n);
+  diagMat( distances, eigval, eigvec );
+
+  // Pass final projections to map object
+  for(unsigned i=0; i<n; ++i) {
+    for(unsigned j=0; j<mymap->getNumberOfProperties(); ++j) mymap->setProjectionCoordinate( i, j, sqrt(eigval[n-1-j])*eigvec(n-1-j,i) );
+  }
 }
 
 }

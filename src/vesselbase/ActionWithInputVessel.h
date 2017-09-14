@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,19 +48,19 @@ public:
 /// Registers the list of keywords
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputVessel(const ActionOptions&);
-  virtual ~ActionWithInputVessel(){}
+  virtual ~ActionWithInputVessel() {}
 /// Calculate the numerical derivatives
-/// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
+/// N.B. only pass an ActionWithValue to this routine if you know exactly what you
 /// are doing.  The default will be correct for the vast majority of cases
   virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 /// Apply forces from the bridge
   void applyBridgeForces( const std::vector<double>& bb );
 /// Apply forces from the bridge
-  virtual void addBridgeForces( const std::vector<double>& bb ){}
+  virtual void addBridgeForces( const std::vector<double>& bb ) {}
 };
 
 inline
-Vessel* ActionWithInputVessel::getPntrToArgument(){
+Vessel* ActionWithInputVessel::getPntrToArgument() {
   return arguments;
 }
 

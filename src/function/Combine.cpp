@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,8 +26,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace function{
+namespace PLMD {
+namespace function {
 
 //+PLUMEDOC FUNCTION COMBINE
 /*
@@ -49,26 +49,27 @@ is periodic.
 
 
 \par Examples
+
 The following input tells plumed to print the distance between atoms 3 and 5
 its square (as computed from the x,y,z components) and the distance
 again as computed from the square root of the square.
-\verbatim
+\plumedfile
 DISTANCE LABEL=dist      ATOMS=3,5 COMPONENTS
 COMBINE  LABEL=distance2 ARG=dist.x,dist.y,dist.z POWERS=2,2,2 PERIODIC=NO
 COMBINE  LABEL=distance  ARG=distance2 POWERS=0.5 PERIODIC=NO
 PRINT ARG=distance,distance2
-\endverbatim
+\endplumedfile
 (See also \ref PRINT and \ref DISTANCE).
 
 The following input tells plumed to add a restraint on the
 cube of a dihedral angle. Notice that since the angle has a
 periodic domain
 -pi,pi its cube has a domain -pi**3,pi**3.
-\verbatim
+\plumedfile
 t: TORSION ATOMS=1,3,5,7
 c: COMBINE ARG=t POWERS=3 PERIODIC=-31.0062766802998,31.0062766802998
 RESTRAINT ARG=c KAPPA=10 AT=0
-\endverbatim
+\endplumedfile
 
 
 
@@ -92,7 +93,7 @@ public:
 
 PLUMED_REGISTER_ACTION(Combine,"COMBINE")
 
-void Combine::registerKeywords(Keywords& keys){
+void Combine::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG"); keys.use("PERIODIC");
   keys.add("compulsory","COEFFICIENTS","1.0","the coefficients of the arguments in your function");
@@ -102,12 +103,12 @@ void Combine::registerKeywords(Keywords& keys){
 }
 
 Combine::Combine(const ActionOptions&ao):
-Action(ao),
-Function(ao),
-normalize(false),
-coefficients(getNumberOfArguments(),1.0),
-parameters(getNumberOfArguments(),0.0),
-powers(getNumberOfArguments(),1.0)
+  Action(ao),
+  Function(ao),
+  normalize(false),
+  coefficients(getNumberOfArguments(),1.0),
+  parameters(getNumberOfArguments(),0.0),
+  powers(getNumberOfArguments(),1.0)
 {
   parseVector("COEFFICIENTS",coefficients);
   if(coefficients.size()!=static_cast<unsigned>(getNumberOfArguments()))
@@ -123,29 +124,29 @@ powers(getNumberOfArguments(),1.0)
 
   parseFlag("NORMALIZE",normalize);
 
-  if(normalize){
+  if(normalize) {
     double n=0.0;
-    for(unsigned i=0;i<coefficients.size();i++) n+=coefficients[i];
-    for(unsigned i=0;i<coefficients.size();i++) coefficients[i]*=(1.0/n);
+    for(unsigned i=0; i<coefficients.size(); i++) n+=coefficients[i];
+    for(unsigned i=0; i<coefficients.size(); i++) coefficients[i]*=(1.0/n);
   }
- 
-  addValueWithDerivatives(); 
+
+  addValueWithDerivatives();
   checkRead();
 
   log.printf("  with coefficients:");
-  for(unsigned i=0;i<coefficients.size();i++) log.printf(" %f",coefficients[i]);
+  for(unsigned i=0; i<coefficients.size(); i++) log.printf(" %f",coefficients[i]);
   log.printf("\n");
   log.printf("  with parameters:");
-  for(unsigned i=0;i<parameters.size();i++) log.printf(" %f",parameters[i]);
+  for(unsigned i=0; i<parameters.size(); i++) log.printf(" %f",parameters[i]);
   log.printf("\n");
   log.printf("  and powers:");
-  for(unsigned i=0;i<powers.size();i++) log.printf(" %f",powers[i]);
+  for(unsigned i=0; i<powers.size(); i++) log.printf(" %f",powers[i]);
   log.printf("\n");
 }
 
-void Combine::calculate(){
+void Combine::calculate() {
   double combine=0.0;
-  for(unsigned i=0;i<coefficients.size();++i){
+  for(unsigned i=0; i<coefficients.size(); ++i) {
     double cv = (getArgument(i)-parameters[i]);
     combine+=coefficients[i]*pow(cv,powers[i]);
     setDerivative(i,coefficients[i]*powers[i]*pow(cv,powers[i]-1.0));

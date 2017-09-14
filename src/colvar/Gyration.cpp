@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,26 +29,26 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 
 //+PLUMEDOC COLVAR GYRATION
 /*
 Calculate the radius of gyration, or other properties related to it.
 
 The different properties can be calculated and selected by the TYPE keyword:
-the Radius of Gyration (RADIUS); the Trace of the Gyration Tensor (TRACE); 
+the Radius of Gyration (RADIUS); the Trace of the Gyration Tensor (TRACE);
 the Largest Principal Moment of the Gyration Tensor (GTPC_1); the middle Principal Moment of the Gyration Tensor (GTPC_2);
 the Smallest Principal Moment of the Gyration Tensor (GTPC_3); the Asphericiry (ASPHERICITY); the Acylindricity (ACYLINDRICITY);
-the Relative Shape Anisotropy (KAPPA2); the Smallest Principal Radius Of Gyration (GYRATION_3); 
+the Relative Shape Anisotropy (KAPPA2); the Smallest Principal Radius Of Gyration (GYRATION_3);
 the Middle Principal Radius of Gyration (GYRATION_2); the Largest Principal Radius of Gyration (GYRATION_1).
 A derivation of all these different variants can be found in \cite Vymetal:2011gv
 
 The radius of gyration is calculated using:
 
 \f[
-s_{\rm Gyr}=\Big ( \frac{\sum_i^{n}  
- m_i \vert {r}_i -{r}_{\rm COM} \vert ^2 }{\sum_i^{n} m_i} \Big)^{1/2} 
+s_{\rm Gyr}=\Big ( \frac{\sum_i^{n}
+ m_i \vert {r}_i -{r}_{\rm COM} \vert ^2 }{\sum_i^{n} m_i} \Big)^{1/2}
 \f]
 
 with the position of the center of mass \f${r}_{\rm COM}\f$ given by:
@@ -57,14 +57,14 @@ with the position of the center of mass \f${r}_{\rm COM}\f$ given by:
 {r}_{\rm COM}=\frac{\sum_i^{n} {r}_i\ m_i }{\sum_i^{n} m_i}
 \f]
 
-The radius of gyration usually makes sense when atoms used for the calculation 
+The radius of gyration usually makes sense when atoms used for the calculation
 are all part of the same molecule.
-When running with periodic boundary conditions, the atoms should be 
+When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.2,
 by considering the ordered list of atoms and rebuilding PBCs with a procedure
 that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
 rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
-which actually modifies the coordinates stored in PLUMED. 
+which actually modifies the coordinates stored in PLUMED.
 
 In case you want to recover the old behavior you should use the NOPBC flag.
 In that case you need to take care that atoms are in the correct
@@ -73,14 +73,12 @@ periodic image.
 
 \par Examples
 
-The following input tells plumed to print the radius of gyration of the 
+The following input tells plumed to print the radius of gyration of the
 chain containing atoms 10 to 20.
-\verbatim
-WHOLEMOLECULES ENTITY0=10-20
+\plumedfile
 GYRATION TYPE=RADIUS ATOMS=10-20 LABEL=rg
-PRINT ARG=rg STRIDE=1 FILE=colvar 
-\endverbatim
-(See also \ref PRINT)
+PRINT ARG=rg STRIDE=1 FILE=colvar
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -99,7 +97,7 @@ public:
 
 PLUMED_REGISTER_ACTION(Gyration,"GYRATION")
 
-void Gyration::registerKeywords(Keywords& keys){
+void Gyration::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
   keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
@@ -107,9 +105,9 @@ void Gyration::registerKeywords(Keywords& keys){
 }
 
 Gyration::Gyration(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-use_masses(false),
-nopbc(false)
+  PLUMED_COLVAR_INIT(ao),
+  use_masses(false),
+  nopbc(false)
 {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -135,25 +133,28 @@ nopbc(false)
 
   switch(rg_type)
   {
-    case RADIUS:   log.printf("  GYRATION RADIUS (Rg);"); break;
-    case TRACE:  log.printf("  TRACE OF THE GYRATION TENSOR;"); break;
-    case GTPC_1: log.printf("  THE LARGEST PRINCIPAL MOMENT OF THE GYRATION TENSOR (S'_1);"); break;
-    case GTPC_2: log.printf("  THE MIDDLE PRINCIPAL MOMENT OF THE GYRATION TENSOR (S'_2);");  break;
-    case GTPC_3: log.printf("  THE SMALLEST PRINCIPAL MOMENT OF THE GYRATION TENSOR (S'_3);"); break;
-    case ASPHERICITY: log.printf("  THE ASPHERICITY (b');"); break;
-    case ACYLINDRICITY: log.printf("  THE ACYLINDRICITY (c');"); break; 
-    case KAPPA2: log.printf("  THE RELATIVE SHAPE ANISOTROPY (kappa^2);"); break;
-    case GYRATION_3: log.printf("  THE SMALLEST PRINCIPAL RADIUS OF GYRATION (r_g3);"); break;
-    case GYRATION_2: log.printf("  THE MIDDLE PRINCIPAL RADIUS OF GYRATION (r_g2);"); break;
-    case GYRATION_1: log.printf("  THE LARGEST PRINCIPAL RADIUS OF GYRATION (r_g1);"); break;
+  case RADIUS:   log.printf("  GYRATION RADIUS (Rg);"); break;
+  case TRACE:  log.printf("  TRACE OF THE GYRATION TENSOR;"); break;
+  case GTPC_1: log.printf("  THE LARGEST PRINCIPAL MOMENT OF THE GYRATION TENSOR (S'_1);"); break;
+  case GTPC_2: log.printf("  THE MIDDLE PRINCIPAL MOMENT OF THE GYRATION TENSOR (S'_2);");  break;
+  case GTPC_3: log.printf("  THE SMALLEST PRINCIPAL MOMENT OF THE GYRATION TENSOR (S'_3);"); break;
+  case ASPHERICITY: log.printf("  THE ASPHERICITY (b');"); break;
+  case ACYLINDRICITY: log.printf("  THE ACYLINDRICITY (c');"); break;
+  case KAPPA2: log.printf("  THE RELATIVE SHAPE ANISOTROPY (kappa^2);"); break;
+  case GYRATION_3: log.printf("  THE SMALLEST PRINCIPAL RADIUS OF GYRATION (r_g3);"); break;
+  case GYRATION_2: log.printf("  THE MIDDLE PRINCIPAL RADIUS OF GYRATION (r_g2);"); break;
+  case GYRATION_1: log.printf("  THE LARGEST PRINCIPAL RADIUS OF GYRATION (r_g1);"); break;
   }
   if(rg_type>TRACE) log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)"); log<<"\n";
 
   log.printf("  atoms involved : ");
-  for(unsigned i=0;i<atoms.size();++i) log.printf("%d ",atoms[i].serial());
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf("%d ",atoms[i].serial());
+  }
   log.printf("\n");
 
-  if(!nopbc){
+  if(nopbc) {
     log<<"  PBC will be ignored\n";
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
@@ -163,20 +164,20 @@ nopbc(false)
   requestAtoms(atoms);
 }
 
-void Gyration::calculate(){
+void Gyration::calculate() {
 
   if(!nopbc) makeWhole();
 
   Vector com;
-  double totmass = 0.; 
+  double totmass = 0.;
   if( use_masses ) {
-    for(unsigned i=0;i<getNumberOfAtoms();i++){
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
       totmass+=getMass(i);
       com+=getMass(i)*getPosition(i);
     }
   } else {
     totmass = static_cast<double>(getNumberOfAtoms());
-    for(unsigned i=0;i<getNumberOfAtoms();i++){
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
       com+=getPosition(i);
     }
   }
@@ -187,15 +188,15 @@ void Gyration::calculate(){
   Tensor virial;
 
   if(rg_type==RADIUS||rg_type==TRACE) {
-    if( use_masses ){
-      for(unsigned i=0;i<getNumberOfAtoms();i++){
+    if( use_masses ) {
+      for(unsigned i=0; i<getNumberOfAtoms(); i++) {
         const Vector diff = delta( com, getPosition(i) );
         rgyr          += getMass(i)*diff.modulo2();
         derivatives[i] = diff*getMass(i);
         virial        -= Tensor(getPosition(i),derivatives[i]);
       }
     } else {
-      for(unsigned i=0;i<getNumberOfAtoms();i++){
+      for(unsigned i=0; i<getNumberOfAtoms(); i++) {
         const Vector diff = delta( com, getPosition(i) );
         rgyr          += diff.modulo2();
         derivatives[i] = diff;
@@ -211,17 +212,17 @@ void Gyration::calculate(){
       fact = 4;
     }
     setValue(rgyr);
-    for(unsigned i=0;i<getNumberOfAtoms();i++) setAtomsDerivatives(i,fact*derivatives[i]);
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives(i,fact*derivatives[i]);
     setBoxDerivatives(fact*virial);
     return;
   }
 
 
   Matrix<double> gyr_tens(3,3);
-  for(unsigned i=0;i<3;i++)  for(unsigned j=0;j<3;j++) gyr_tens(i,j)=0.;
+  for(unsigned i=0; i<3; i++)  for(unsigned j=0; j<3; j++) gyr_tens(i,j)=0.;
   //calculate gyration tensor
   if( use_masses ) {
-    for(unsigned i=0;i<getNumberOfAtoms();i++){
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
       const Vector diff=delta( com, getPosition(i) );
       gyr_tens[0][0]+=getMass(i)*diff[0]*diff[0];
       gyr_tens[1][1]+=getMass(i)*diff[1]*diff[1];
@@ -231,7 +232,7 @@ void Gyration::calculate(){
       gyr_tens[1][2]+=getMass(i)*diff[1]*diff[2];
     }
   } else {
-    for(unsigned i=0;i<getNumberOfAtoms();i++){
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
       const Vector diff=delta( com, getPosition(i) );
       gyr_tens[0][0]+=diff[0]*diff[0];
       gyr_tens[1][1]+=diff[1]*diff[1];
@@ -253,124 +254,124 @@ void Gyration::calculate(){
   diagMat(gyr_tens, princ_comp, ttransf);
   transpose(ttransf, transf);
   //sort eigenvalues and eigenvectors
-  if (princ_comp[0]<princ_comp[1]){
+  if (princ_comp[0]<princ_comp[1]) {
     double tmp=princ_comp[0]; princ_comp[0]=princ_comp[1]; princ_comp[1]=tmp;
-    for (unsigned i=0; i<3; i++){tmp=transf[i][0]; transf[i][0]=transf[i][1]; transf[i][1]=tmp;}
+    for (unsigned i=0; i<3; i++) {tmp=transf[i][0]; transf[i][0]=transf[i][1]; transf[i][1]=tmp;}
   }
-  if (princ_comp[1]<princ_comp[2]){
+  if (princ_comp[1]<princ_comp[2]) {
     double tmp=princ_comp[1]; princ_comp[1]=princ_comp[2]; princ_comp[2]=tmp;
-    for (unsigned i=0; i<3; i++){tmp=transf[i][1]; transf[i][1]=transf[i][2]; transf[i][2]=tmp;}
+    for (unsigned i=0; i<3; i++) {tmp=transf[i][1]; transf[i][1]=transf[i][2]; transf[i][2]=tmp;}
   }
-  if (princ_comp[0]<princ_comp[1]){
+  if (princ_comp[0]<princ_comp[1]) {
     double tmp=princ_comp[0]; princ_comp[0]=princ_comp[1]; princ_comp[1]=tmp;
-    for (unsigned i=0; i<3; i++){tmp=transf[i][0]; transf[i][0]=transf[i][1]; transf[i][1]=tmp;}      
+    for (unsigned i=0; i<3; i++) {tmp=transf[i][0]; transf[i][0]=transf[i][1]; transf[i][1]=tmp;}
   }
   //calculate determinant of transformation matrix
   double det = transf[0][0]*transf[1][1]*transf[2][2]+transf[0][1]*transf[1][2]*transf[2][0]+
                transf[0][2]*transf[1][0]*transf[2][1]-transf[0][2]*transf[1][1]*transf[2][0]-
-               transf[0][1]*transf[1][0]*transf[2][2]-transf[0][0]*transf[1][2]*transf[2][1]; 
+               transf[0][1]*transf[1][0]*transf[2][2]-transf[0][0]*transf[1][2]*transf[2][1];
   // trasformation matrix for rotation must have positive determinant, otherwise multiply one column by (-1)
-  if(det<0) { 
-    for(unsigned j=0;j<3;j++) transf[j][2]=-transf[j][2];
+  if(det<0) {
+    for(unsigned j=0; j<3; j++) transf[j][2]=-transf[j][2];
     det = -det;
-  } 
+  }
   if(fabs(det-1.)>0.0001) error("Plumed Error: Cannot diagonalize gyration tensor\n");
   switch(rg_type) {
-    case GTPC_1:
-    case GTPC_2:
-    case GTPC_3:
-    {
-      int pc_index = rg_type-2; //index of principal component
-      rgyr=sqrt(princ_comp[pc_index]/totmass);
-      double rm = rgyr*totmass;
-      if(rm>1e-6) prefactor[pc_index]=1.0/rm; //some parts of derivate
-      break;
+  case GTPC_1:
+  case GTPC_2:
+  case GTPC_3:
+  {
+    int pc_index = rg_type-2; //index of principal component
+    rgyr=sqrt(princ_comp[pc_index]/totmass);
+    double rm = rgyr*totmass;
+    if(rm>1e-6) prefactor[pc_index]=1.0/rm; //some parts of derivate
+    break;
+  }
+  case GYRATION_3:        //the smallest principal radius of gyration
+  {
+    rgyr=sqrt((princ_comp[1]+princ_comp[2])/totmass);
+    double rm = rgyr*totmass;
+    if (rm>1e-6) {
+      prefactor[1]=1.0/rm;
+      prefactor[2]=1.0/rm;
     }
-    case GYRATION_3:        //the smallest principal radius of gyration
-    {
-      rgyr=sqrt((princ_comp[1]+princ_comp[2])/totmass);
-      double rm = rgyr*totmass;
-      if (rm>1e-6){
-        prefactor[1]=1.0/rm;
-        prefactor[2]=1.0/rm;
-      }
-      break;
+    break;
+  }
+  case GYRATION_2:       //the midle principal radius of gyration
+  {
+    rgyr=sqrt((princ_comp[0]+princ_comp[2])/totmass);
+    double rm = rgyr*totmass;
+    if (rm>1e-6) {
+      prefactor[0]=1.0/rm;
+      prefactor[2]=1.0/rm;
     }
-    case GYRATION_2:       //the midle principal radius of gyration
-    {
-      rgyr=sqrt((princ_comp[0]+princ_comp[2])/totmass);
-      double rm = rgyr*totmass;
-      if (rm>1e-6){
-        prefactor[0]=1.0/rm;
-        prefactor[2]=1.0/rm;
-      }
-      break;
+    break;
+  }
+  case GYRATION_1:      //the largest principal radius of gyration
+  {
+    rgyr=sqrt((princ_comp[0]+princ_comp[1])/totmass);
+    double rm = rgyr*totmass;
+    if (rm>1e-6) {
+      prefactor[0]=1.0/rm;
+      prefactor[1]=1.0/rm;
     }
-    case GYRATION_1:      //the largest principal radius of gyration
-    {
-      rgyr=sqrt((princ_comp[0]+princ_comp[1])/totmass);
-      double rm = rgyr*totmass;
-      if (rm>1e-6){
-        prefactor[0]=1.0/rm;
-        prefactor[1]=1.0/rm;
-      }
-      break;             
+    break;
+  }
+  case ASPHERICITY:
+  {
+    rgyr=sqrt((princ_comp[0]-0.5*(princ_comp[1]+princ_comp[2]))/totmass);
+    double rm = rgyr*totmass;
+    if (rm>1e-6) {
+      prefactor[0]= 1.0/rm;
+      prefactor[1]=-0.5/rm;
+      prefactor[2]=-0.5/rm;
     }
-    case ASPHERICITY:
-    {
-      rgyr=sqrt((princ_comp[0]-0.5*(princ_comp[1]+princ_comp[2]))/totmass); 
-      double rm = rgyr*totmass;
-      if (rm>1e-6){   
-        prefactor[0]= 1.0/rm;
-        prefactor[1]=-0.5/rm;
-        prefactor[2]=-0.5/rm;
-      }
-      break;
+    break;
+  }
+  case ACYLINDRICITY:
+  {
+    rgyr=sqrt((princ_comp[1]-princ_comp[2])/totmass);
+    double rm = rgyr*totmass;
+    if (rm>1e-6) {  //avoid division by zero
+      prefactor[1]= 1.0/rm;
+      prefactor[2]=-1.0/rm;
     }
-    case ACYLINDRICITY:
-    {
-      rgyr=sqrt((princ_comp[1]-princ_comp[2])/totmass); 
-      double rm = rgyr*totmass;
-      if (rm>1e-6){   //avoid division by zero  
-        prefactor[1]= 1.0/rm;
-        prefactor[2]=-1.0/rm;
-      }
-      break;
+    break;
+  }
+  case KAPPA2: // relative shape anisotropy
+  {
+    double trace = princ_comp[0]+princ_comp[1]+princ_comp[2];
+    double tmp=princ_comp[0]*princ_comp[1]+ princ_comp[1]*princ_comp[2]+ princ_comp[0]*princ_comp[2];
+    rgyr=1.0-3*(tmp/(trace*trace));
+    if (rgyr>1e-6) {
+      prefactor[0]= -3*((princ_comp[1]+princ_comp[2])-2*tmp/trace)/(trace*trace) *2;
+      prefactor[1]= -3*((princ_comp[0]+princ_comp[2])-2*tmp/trace)/(trace*trace) *2;
+      prefactor[2]= -3*((princ_comp[0]+princ_comp[1])-2*tmp/trace)/(trace*trace) *2;
     }
-    case KAPPA2: // relative shape anisotropy
-    {
-      double trace = princ_comp[0]+princ_comp[1]+princ_comp[2];
-      double tmp=princ_comp[0]*princ_comp[1]+ princ_comp[1]*princ_comp[2]+ princ_comp[0]*princ_comp[2]; 
-      rgyr=1.0-3*(tmp/(trace*trace));
-      if (rgyr>1e-6){
-        prefactor[0]= -3*((princ_comp[1]+princ_comp[2])-2*tmp/trace)/(trace*trace) *2;
-        prefactor[1]= -3*((princ_comp[0]+princ_comp[2])-2*tmp/trace)/(trace*trace) *2;
-        prefactor[2]= -3*((princ_comp[0]+princ_comp[1])-2*tmp/trace)/(trace*trace) *2;
-      }
-      break;
-    }
+    break;
+  }
   }
 
-  if(use_masses) { 
-    for(unsigned i=0;i<getNumberOfAtoms();i++){
+  if(use_masses) {
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
       Vector tX;
       const Vector diff=delta( com,getPosition(i) );
       //project atomic postional vectors to diagonalized frame
-      for(unsigned j=0;j<3;j++) tX[j]=transf[0][j]*diff[0]+transf[1][j]*diff[1]+transf[2][j]*diff[2];  
-      for(unsigned j=0;j<3;j++) derivatives[i][j]=getMass(i)*(prefactor[0]*transf[j][0]*tX[0]+
-                                                              prefactor[1]*transf[j][1]*tX[1]+
-                                                              prefactor[2]*transf[j][2]*tX[2]);
+      for(unsigned j=0; j<3; j++) tX[j]=transf[0][j]*diff[0]+transf[1][j]*diff[1]+transf[2][j]*diff[2];
+      for(unsigned j=0; j<3; j++) derivatives[i][j]=getMass(i)*(prefactor[0]*transf[j][0]*tX[0]+
+            prefactor[1]*transf[j][1]*tX[1]+
+            prefactor[2]*transf[j][2]*tX[2]);
       setAtomsDerivatives(i,derivatives[i]);
     }
   } else {
-    for(unsigned i=0;i<getNumberOfAtoms();i++){
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
       Vector tX;
       const Vector diff=delta( com,getPosition(i) );
       //project atomic postional vectors to diagonalized frame
-      for(unsigned j=0;j<3;j++) tX[j]=transf[0][j]*diff[0]+transf[1][j]*diff[1]+transf[2][j]*diff[2];  
-      for(unsigned j=0;j<3;j++) derivatives[i][j]=prefactor[0]*transf[j][0]*tX[0]+
-                                                  prefactor[1]*transf[j][1]*tX[1]+
-                                                  prefactor[2]*transf[j][2]*tX[2];
+      for(unsigned j=0; j<3; j++) tX[j]=transf[0][j]*diff[0]+transf[1][j]*diff[1]+transf[2][j]*diff[2];
+      for(unsigned j=0; j<3; j++) derivatives[i][j]=prefactor[0]*transf[j][0]*tX[0]+
+            prefactor[1]*transf[j][1]*tX[1]+
+            prefactor[2]*transf[j][2]*tX[2];
       setAtomsDerivatives(i,derivatives[i]);
     }
   }

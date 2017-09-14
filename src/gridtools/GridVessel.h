@@ -31,154 +31,165 @@ namespace PLMD {
 namespace gridtools {
 
 class GridVessel : public vesselbase::AveragingVessel {
-friend class ActionWithInputGrid;
-friend class DumpGrid;
+  friend class ActionWithInputGrid;
+  friend class DumpGrid;
 private:
 /// The way that grid points are constructed
- enum {flat,fibonacci} gtype;
+  enum {flat,fibonacci} gtype;
 /// Have the minimum and maximum for the grid been set
- bool bounds_set;
+  bool bounds_set;
 /// The number of points in the grid
- unsigned npoints;
+  unsigned npoints;
 /// Stuff for fibonacci grids
- int fib_rnd;
- double fib_offset, fib_increment;
+  double root5, golden, igolden, log_golden2;
+/// Fib increment here is equal to 2*pi*(INVERSE GOLDEN RATIO)
+  double fib_offset, fib_increment, fib_shift;
+  std::vector<std::vector<unsigned> > fib_nlist;
 /// Units for Gaussian Cube file
- double cube_units;
-/// This flag is used to check if the user has created a valid input 
- bool foundprint;
+  double cube_units;
+/// This flag is used to check if the user has created a valid input
+  bool foundprint;
 /// The minimum and maximum of the grid stored as doubles
- std::vector<double> min, max;
+  std::vector<double> min, max;
 /// The numerical distance between adjacent grid points
- std::vector<unsigned> stride;
+  std::vector<unsigned> stride;
 /// The number of bins in each grid direction
- std::vector<unsigned> nbin;
+  std::vector<unsigned> nbin;
 /// The grid point that was requested last by getGridPointCoordinates
- unsigned currentGridPoint;
+  unsigned currentGridPoint;
 /// The forces that will be output at the end of the calculation
- std::vector<double> finalForces;
+  std::vector<double> finalForces;
 protected:
 /// Is forced
- bool wasforced;
+  bool wasforced;
 /// Forces acting on grid elements
- std::vector<double> forces;
+  std::vector<double> forces;
 /// Do we have derivatives
- bool noderiv;
+  bool noderiv;
 /// The names of the various columns in the grid file
- std::vector<std::string> arg_names; 
-/// The number of pieces of information we are storing for each 
+  std::vector<std::string> arg_names;
+/// The number of pieces of information we are storing for each
 /// point in the grid
- unsigned nper;
+  unsigned nper;
 /// Is this direction periodic
- std::vector<bool> pbc;
-/// The minimum and maximum in the grid stored as strings 
- std::vector<std::string> str_min, str_max;
+  std::vector<bool> pbc;
+/// The minimum and maximum in the grid stored as strings
+  std::vector<std::string> str_min, str_max;
 /// The spacing between grid points
- std::vector<double> dx;
+  std::vector<double> dx;
 /// The dimensionality of the grid
- unsigned dimension;
+  unsigned dimension;
 /// Which grid points are we actively accumulating
- std::vector<bool> active;
+  std::vector<bool> active;
 /// Convert a point in space the the correspoinding grid point
- unsigned getIndex( const std::vector<double>& p ) const ;
+  unsigned getIndex( const std::vector<double>& p ) const ;
+/// Get the index of the closest point on the fibonacci sphere
+  unsigned getFibonacciIndex( const std::vector<double>& p ) const ;
+/// Get the flat grid coordinates
+  void getFlatGridCoordinates( const unsigned& ipoint, std::vector<unsigned>& tindices, std::vector<double>& x ) const ;
+/// Get the coordinates on the Fibonacci grid
+  void getFibonacciCoordinates( const unsigned& ipoint, std::vector<double>& x ) const ;
 public:
 /// keywords
- static void registerKeywords( Keywords& keys );
+  static void registerKeywords( Keywords& keys );
 /// Constructor
- explicit GridVessel( const vesselbase::VesselOptions& );
-/// Remove the derivatives 
- void setNoDerivatives();
+  explicit GridVessel( const vesselbase::VesselOptions& );
+/// Remove the derivatives
+  void setNoDerivatives();
 /// Get the type of grid we are using
- std::string getType() const ;
+  std::string getType() const ;
 /// Set the minimum and maximum of the grid
- virtual void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax, const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
+  virtual void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax, const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
+/// Get the cutoff to use for the Fibonacci spheres
+  virtual double getFibonacciCutoff() const ;
 /// Setup the grid if it is a fibonacci grid on the surface of a sphere
- void setupFibonacciGrid( const unsigned& np );
+  void setupFibonacciGrid( const unsigned& np );
 /// Get a description of the grid to output to the log
- std::string description();
+  std::string description();
 /// Convert an index into indices
- void convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const ;
+  void convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const ;
 ///  Flatten the grid and get the grid index for a point
- unsigned getIndex( const std::vector<unsigned>& indices ) const ;
+  unsigned getIndex( const std::vector<unsigned>& indices ) const ;
 /// Get the indices fof a point
- void getIndices( const unsigned& index, std::vector<unsigned>& indices ) const ;
+  void getIndices( const unsigned& index, std::vector<unsigned>& indices ) const ;
 /// Get the indices of a particular point
- void getIndices( const std::vector<double>& point, std::vector<unsigned>& indices ) const ;
-
+  void getIndices( const std::vector<double>& point, std::vector<unsigned>& indices ) const ;
 /// Operations on one of the elements of grid point i
- void setGridElement( const unsigned&, const unsigned&, const double& );
-
+  void setGridElement( const unsigned&, const unsigned&, const double& );
+/// Add data to an element of the grid
+  void addToGridElement( const unsigned& ipoint, const unsigned& jelement, const double& value );
 /// Operations on one of the elements of grid point specified by vector
- double getGridElement( const std::vector<unsigned>&, const unsigned& ) const ;
- void setGridElement( const std::vector<unsigned>&, const unsigned&, const double& );
+  double getGridElement( const std::vector<unsigned>&, const unsigned& ) const ;
+  void setGridElement( const std::vector<unsigned>&, const unsigned&, const double& );
 /// Set the size of the buffer equal to nper*npoints
- virtual void resize();
+  virtual void resize();
 /// Get the number of points in the grid
- unsigned getNumberOfPoints() const;
+  unsigned getNumberOfPoints() const;
 /// Get the coordinates for a point in the grid
- void getGridPointCoordinates( const unsigned& , std::vector<double>& ) const ;
+  void getGridPointCoordinates( const unsigned&, std::vector<double>& ) const ;
+  void getGridPointCoordinates( const unsigned&, std::vector<unsigned>&, std::vector<double>& ) const ;
 /// Get the dimensionality of the function
- unsigned getDimension() const ;
+  unsigned getDimension() const ;
 /// Get the number of components in the vector stored on each grid point
- virtual unsigned getNumberOfComponents() const ;
+  virtual unsigned getNumberOfComponents() const ;
 /// Is the grid periodic in the ith direction
- bool isPeriodic( const unsigned& i ) const ;
+  bool isPeriodic( const unsigned& i ) const ;
 /// Get the number of quantities we have stored at each grid point
- unsigned getNumberOfQuantities() const ;
+  unsigned getNumberOfQuantities() const ;
 /// Get the number of grid points for each dimension
- std::vector<unsigned> getNbin() const ;
+  std::vector<unsigned> getNbin() const ;
 /// Get the name of the ith component
- std::string getComponentName( const unsigned& i ) const ;
+  std::string getComponentName( const unsigned& i ) const ;
 /// Get the vector containing the minimum value of the grid in each dimension
- std::vector<std::string> getMin() const ;
+  std::vector<std::string> getMin() const ;
 /// Get the vector containing the maximum value of the grid in each dimension
- std::vector<std::string> getMax() const ;
+  std::vector<std::string> getMax() const ;
 /// Get the number of points needed in the buffer
- virtual unsigned getNumberOfBufferPoints() const ;
+  virtual unsigned getNumberOfBufferPoints() const ;
 /// Get the stride (the distance between the grid points of an index)
- const std::vector<unsigned>& getStride() const ;
+  const std::vector<unsigned>& getStride() const ;
 /// Return the volume of one of the grid cells
- double getCellVolume() const ;
-/// Get the value of the ith grid element 
- virtual double getGridElement( const unsigned&, const unsigned& ) const ;
+  double getCellVolume() const ;
+/// Get the value of the ith grid element
+  virtual double getGridElement( const unsigned&, const unsigned& ) const ;
 /// Get the set of points neighouring a particular location in space
- void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
-                    unsigned& num_neighbours, std::vector<unsigned>& neighbors ) const ;
+  void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
+                     unsigned& num_neighbours, std::vector<unsigned>& neighbors ) const ;
 /// Get the neighbors for a set of indices of a point
- void getNeighbors( const std::vector<unsigned>& indices, const std::vector<unsigned>& nneigh,
-                    unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const ;
+  void getNeighbors( const std::vector<unsigned>& indices, const std::vector<unsigned>& nneigh,
+                     unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const ;
 /// Get the points neighboring a particular spline point
- void getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ) const ;
+  void getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ) const ;
 /// Get the spacing between grid points
- const std::vector<double>& getGridSpacing() const ;
+  const std::vector<double>& getGridSpacing() const ;
 /// Get the extent of the grid in one of the axis
- double getGridExtent( const unsigned& i ) const ;
+  double getGridExtent( const unsigned& i ) const ;
 /// Copy data from the action into the grid
- virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
 /// Finish the calculation
- virtual void finish( const std::vector<double>& buffer );
+  virtual void finish( const std::vector<double>& buffer );
 /// This ensures that Gaussian cube fies are in correct units
- void setCubeUnits( const double& units );
+  void setCubeUnits( const double& units );
 /// This ensures that Gaussian cube files are in correct units
- double getCubeUnits() const ;
+  double getCubeUnits() const ;
 /// Return a string containing the input to the grid so we can clone it
- std::string getInputString() const ;
+  std::string getInputString() const ;
 /// Does this have derivatives
- bool noDerivatives() const ;
+  bool noDerivatives() const ;
 /// Get the value and derivatives at a particular location using spline interpolation
- double getValueAndDerivatives( const std::vector<double>& x, const unsigned& ind, std::vector<double>& der ) const ; 
+  double getValueAndDerivatives( const std::vector<double>& x, const unsigned& ind, std::vector<double>& der ) const ;
 /// Deactivate all the grid points
- void activateThesePoints( const std::vector<bool>& to_activate );
+  void activateThesePoints( const std::vector<bool>& to_activate );
 /// Is this point active
- bool inactive( const unsigned& ip ) const ;
+  bool inactive( const unsigned& ip ) const ;
 /// This retrieves the final force
- virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ){ plumed_error(); }
+  virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ) { plumed_error(); }
 /// Apply the forces
- void setForce( const std::vector<double>& inforces ); 
+  void setForce( const std::vector<double>& inforces );
 /// Was a force added to the grid
- bool wasForced() const ;
+  bool wasForced() const ;
 /// And retrieve the forces
- bool applyForce( std::vector<double>& fforces );
+  bool applyForce( std::vector<double>& fforces );
 };
 
 inline
@@ -200,11 +211,11 @@ const std::vector<double>& GridVessel::getGridSpacing() const {
 
 inline
 double GridVessel::getCellVolume() const {
-  if( gtype==flat ){
-      double myvol=1.0; for(unsigned i=0;i<dimension;++i) myvol *= dx[i];
-      return myvol;
+  if( gtype==flat ) {
+    double myvol=1.0; for(unsigned i=0; i<dimension; ++i) myvol *= dx[i];
+    return myvol;
   } else {
-      return 4*pi / static_cast<double>( getNumberOfPoints() ); 
+    return 4*pi / static_cast<double>( getNumberOfPoints() );
   }
 }
 
@@ -263,6 +274,11 @@ std::string GridVessel::getType() const {
   if( gtype==flat ) return "flat";
   else if( gtype==fibonacci ) return "fibonacci";
   plumed_error();
+}
+
+inline
+double GridVessel::getFibonacciCutoff() const {
+  return 0.0;
 }
 
 }

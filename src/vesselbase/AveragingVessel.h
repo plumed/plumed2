@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,62 +30,62 @@ namespace vesselbase {
 class AveragingVessel : public Vessel {
 private:
 /// The grid was recently cleared and bounds can be set
- bool wascleared;
+  bool wascleared;
 /// Are we outputting unormalised data
- bool unormalised;
+  bool unormalised;
 /// The data that is being averaged
- std::vector<double> data;
+  std::vector<double> data;
 protected:
 /// Set the size of the data vector
- void setDataSize( const unsigned& size );
+  void setDataSize( const unsigned& size );
 /// Set an element of the data array
- void setDataElement( const unsigned& myelem, const double& value );
+  void setDataElement( const unsigned& myelem, const double& value );
 /// Add some value to an element of the data array
- void addDataElement( const unsigned& myelem, const double& value );
+  void addDataElement( const unsigned& myelem, const double& value );
 /// Get the value of one of the data element
- double getDataElement( const unsigned& myelem ) const ;
+  double getDataElement( const unsigned& myelem ) const ;
 /// Are we averaging the data
- bool noAverage() const { return unormalised; }
+  bool noAverage() const { return unormalised; }
 public:
 /// keywords
- static void registerKeywords( Keywords& keys );
+  static void registerKeywords( Keywords& keys );
 /// Constructor
- explicit AveragingVessel( const vesselbase::VesselOptions& );
+  explicit AveragingVessel( const vesselbase::VesselOptions& );
 /// Copy data from an accumulated buffer into the grid
- virtual void finish( const std::vector<double>& );
+  virtual void finish( const std::vector<double>& );
 /// Was the grid cleared on the last step
- bool wasreset() const ;
+  bool wasreset() const ;
 /// Clear all the data stored on the grid
- virtual void clear();
+  virtual void clear();
 /// Reset the grid so that it is cleared at start of next time it is calculated
- virtual void reset();
+  virtual void reset();
 /// Functions for dealing with normalisation constant
- void setNorm( const double& snorm );
- double getNorm() const ;
- virtual bool applyForce(  std::vector<double>& forces ){ return false; } 
+  void setNorm( const double& snorm );
+  double getNorm() const ;
+  virtual bool applyForce(  std::vector<double>& forces ) { return false; }
 };
 
 inline
-void AveragingVessel::setDataElement( const unsigned& myelem, const double& value ){
- plumed_dbg_assert( myelem<1+data.size() );
- wascleared=false; data[1+myelem]=value;
+void AveragingVessel::setDataElement( const unsigned& myelem, const double& value ) {
+  plumed_dbg_assert( myelem<1+data.size() );
+  wascleared=false; data[1+myelem]=value;
 }
 
 inline
-void AveragingVessel::addDataElement( const unsigned& myelem, const double& value ){
- plumed_dbg_assert( myelem<1+data.size() );
- wascleared=false; data[1+myelem]+=value;
+void AveragingVessel::addDataElement( const unsigned& myelem, const double& value ) {
+  plumed_dbg_assert( myelem<1+data.size() );
+  wascleared=false; data[1+myelem]+=value;
 }
 
 inline
 double AveragingVessel::getDataElement( const unsigned& myelem ) const {
- plumed_dbg_assert( myelem<data.size()-1 );
- if( unormalised ) return data[1+myelem];
- return data[1+myelem] / data[0];
+  plumed_dbg_assert( myelem<data.size()-1 );
+  if( unormalised ) return data[1+myelem];
+  return data[1+myelem] / data[0];
 }
 
 inline
-void AveragingVessel::setNorm( const double& snorm ){
+void AveragingVessel::setNorm( const double& snorm ) {
   plumed_dbg_assert( data.size()>0 );
   data[0]=snorm;
 }

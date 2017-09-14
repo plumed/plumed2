@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,11 +23,11 @@
 #define __PLUMED_colvar_CoordinationBase_h
 #include "Colvar.h"
 
-namespace PLMD{
+namespace PLMD {
 
 class NeighborList;
 
-namespace colvar{
+namespace colvar {
 
 class CoordinationBase : public Colvar {
   bool pbc;
@@ -35,7 +35,7 @@ class CoordinationBase : public Colvar {
   NeighborList *nl;
   bool invalidateList;
   bool firsttime;
-  
+
 public:
   explicit CoordinationBase(const ActionOptions&);
   ~CoordinationBase();

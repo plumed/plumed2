@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,18 +21,18 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "RMSDBase.h"
 
-namespace PLMD{
+namespace PLMD {
 
 RMSDBase::RMSDBase( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro),
-SingleDomainRMSD(ro)
+  ReferenceConfiguration(ro),
+  SingleDomainRMSD(ro)
 {
 }
 
 double RMSDBase::calculate( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
-//  clearDerivatives(); 
+//  clearDerivatives();
   return calc( pos, myder, squared );
-}    
+}
 
 double RMSDBase::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {
   plumed_dbg_assert( pos.size()==getNumberOfAtoms() );

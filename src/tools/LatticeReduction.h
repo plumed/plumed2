@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,16 +25,16 @@
 #include "Vector.h"
 #include "Tensor.h"
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 Class implementing algorithms for lattice reduction.
 
-This class implements algorithms described in 
+This class implements algorithms described in
 Igor Semaev, A 3-Dimensional Lattice Reduction Algorithm, CaLC 2001, LNCS 2146, pp. 181–193, 2001.
 It just collect static methods in a separate namespace.
 */
-class LatticeReduction{
+class LatticeReduction {
 /// Gaussian reduction
   static void reduce(Vector&a,Vector&b);
 /// Obtain three reduce-2 vectors (Algorithm 1 in the paper), equivalent to reduce2(Tensor&t)

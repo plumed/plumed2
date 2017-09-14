@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,7 @@
 #include "FileBase.h"
 #include <vector>
 
-namespace PLMD{
+namespace PLMD {
 
 class Value;
 
@@ -39,9 +39,9 @@ but only for sequential input. See OFile for sequential output.
 */
 class IFile:
 /// Class identifying a single field for fielded output
-public virtual FileBase{
+  public virtual FileBase {
   class Field:
-  public FieldBase{
+    public FieldBase {
   public:
     bool read;
     Field(): read(false) {}
@@ -66,7 +66,7 @@ public:
   IFile();
 /// Destructor
   ~IFile();
-/// Opens the file 
+/// Opens the file
   IFile& open(const std::string&name);
 /// Gets the list of all fields
   IFile& scanFieldList(std::vector<std::string>&);
@@ -76,20 +76,20 @@ public:
   IFile& scanField(const std::string&,int&);
 /// Read a string field
   IFile& scanField(const std::string&,std::string&);
-/**
- Ends a field-formatted line.
+  /**
+   Ends a field-formatted line.
 
-Typically used as
-\verbatim
-  if.scanField("a",a).scanField("b",b).scanField();
-\endverbatim
-*/
+  Typically used as
+  \verbatim
+    if.scanField("a",a).scanField("b",b).scanField();
+  \endverbatim
+  */
   IFile& scanField();
 /// Get a full line as a string
   IFile& getline(std::string&);
-/// Reset end of file                                                              
+/// Reset end of file
   void reset(bool);
-/// Check if a field exist                                                       
+/// Check if a field exist
   bool FieldExist(const std::string& s);
 /// Read in a value
   IFile& scanField(Value* val);

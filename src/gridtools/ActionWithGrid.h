@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,7 +43,7 @@ protected:
   void createGrid( const std::string& type, const std::string& inputstr );
 public:
   static void registerKeywords( Keywords& keys );
-  explicit ActionWithGrid( const ActionOptions& ); 
+  explicit ActionWithGrid( const ActionOptions& );
   virtual void turnOnDerivatives();
   void calculate();
   void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;

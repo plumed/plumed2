@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,14 +32,14 @@ namespace PLMD {
 
 /**
 \ingroup INHERIT
-This is the abstract base class to use for implementing new collective variables, within it there is 
-\ref AddingAColvar "information" as to how to go about implementing a new CV. 
+This is the abstract base class to use for implementing new collective variables, within it there is
+\ref AddingAColvar "information" as to how to go about implementing a new CV.
 */
 
 class Colvar :
   public ActionAtomistic,
   public ActionWithValue
-  {
+{
 private:
 protected:
   bool isEnergy;
@@ -47,7 +47,7 @@ protected:
 // Set the derivatives for a particular atom equal to the input Vector
 // This routine is called setAtomsDerivatives because not because you
 // are setting the derivative of many atoms but because you are setting
-// the derivatives of a particular atom.  The s is an apostrophe s 
+// the derivatives of a particular atom.  The s is an apostrophe s
 // but you can't put apostrophes in function names
   void           setAtomsDerivatives(int,const Vector&);
   void           setAtomsDerivatives(Value*,int,const Vector&);
@@ -63,15 +63,15 @@ protected:
   void           setBoxDerivativesNoPbc();
   void           setBoxDerivativesNoPbc(Value*);
 public:
-  bool checkIsEnergy(){return isEnergy;}
+  bool checkIsEnergy() {return isEnergy;}
   explicit Colvar(const ActionOptions&);
-  ~Colvar(){}
+  ~Colvar() {}
   static void registerKeywords( Keywords& keys );
   virtual unsigned getNumberOfDerivatives();
 };
 
 inline
-void Colvar::setAtomsDerivatives(Value*v,int i,const Vector&d){
+void Colvar::setAtomsDerivatives(Value*v,int i,const Vector&d) {
   v->addDerivative(3*i+0,d[0]);
   v->addDerivative(3*i+1,d[1]);
   v->addDerivative(3*i+2,d[2]);
@@ -79,7 +79,7 @@ void Colvar::setAtomsDerivatives(Value*v,int i,const Vector&d){
 
 
 inline
-void Colvar::setBoxDerivatives(Value* v,const Tensor&d){
+void Colvar::setBoxDerivatives(Value* v,const Tensor&d) {
   unsigned nat=getNumberOfAtoms();
   v->addDerivative(3*nat+0,d(0,0));
   v->addDerivative(3*nat+1,d(0,1));
@@ -93,22 +93,22 @@ void Colvar::setBoxDerivatives(Value* v,const Tensor&d){
 }
 
 inline
-void Colvar::setAtomsDerivatives(int i,const Vector&d){
+void Colvar::setAtomsDerivatives(int i,const Vector&d) {
   setAtomsDerivatives(getPntrToValue(),i,d);
 }
 
 inline
-void Colvar::setBoxDerivatives(const Tensor&d){
+void Colvar::setBoxDerivatives(const Tensor&d) {
   setBoxDerivatives(getPntrToValue(),d);
 }
 
 inline
-void Colvar::setBoxDerivativesNoPbc(){
+void Colvar::setBoxDerivativesNoPbc() {
   setBoxDerivativesNoPbc(getPntrToValue());
 }
 
 inline
-unsigned Colvar::getNumberOfDerivatives(){
+unsigned Colvar::getNumberOfDerivatives() {
   return 3*getNumberOfAtoms() + 9;
 }
 

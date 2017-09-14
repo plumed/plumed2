@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,7 +40,7 @@ public:
   unsigned getNumberOfDerivatives();
   void turnOnDerivatives();
 /// Unless I am mistaken an integral should never be a periodic function
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
   void apply();
 };
 
@@ -50,7 +50,7 @@ double ActionWithIntegral::getVolume() const {
 }
 
 inline
-unsigned ActionWithIntegral::getNumberOfDerivatives(){
+unsigned ActionWithIntegral::getNumberOfDerivatives() {
   return ingrid->getNumberOfPoints();
 }
 

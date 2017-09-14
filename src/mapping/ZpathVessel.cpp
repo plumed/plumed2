@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,24 +40,24 @@ public:
 
 PLUMED_REGISTER_VESSEL(ZpathVessel,"ZPATH")
 
-void ZpathVessel::registerKeywords( Keywords& keys ){
+void ZpathVessel::registerKeywords( Keywords& keys ) {
   FunctionVessel::registerKeywords(keys);
 }
 
-void ZpathVessel::reserveKeyword( Keywords& keys ){
+void ZpathVessel::reserveKeyword( Keywords& keys ) {
   keys.reserve("vessel","ZPATH","calculate the distance from the low dimensionality manifold");
   keys.addOutputComponent("zpath","ZPATH","the distance from the path");
 }
 
 ZpathVessel::ZpathVessel( const vesselbase::VesselOptions& da ):
-FunctionVessel(da)
+  FunctionVessel(da)
 {
   Mapping* mymap=dynamic_cast<Mapping*>( getAction() );
   plumed_massert( mymap, "ZpathVessel should only be used with mappings");
   invlambda = 1.0 / mymap->getLambda(); usetol=true;
 }
 
-std::string ZpathVessel::value_descriptor(){
+std::string ZpathVessel::value_descriptor() {
   return "the distance from the low-dimensional manifold";
 }
 
@@ -65,10 +65,10 @@ double ZpathVessel::calcTransform( const double& val, double& dv ) const {
   dv=0.0; return 1.0;
 }
 
-double ZpathVessel::finalTransform( const double& val, double& dv ){
-   dv = -invlambda / val;
-   return -invlambda*std::log( val );
-} 
+double ZpathVessel::finalTransform( const double& val, double& dv ) {
+  dv = -invlambda / val;
+  return -invlambda*std::log( val );
+}
 
 }
 }

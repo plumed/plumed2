@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,23 +30,23 @@ class Pbc;
 
 /// \ingroup TOOLBOX
 /// In many applications (e.g. paths, fields, property maps) it is necessary to calculate
-/// the distance between two configurations.  These distances can be calculated in a variety of 
+/// the distance between two configurations.  These distances can be calculated in a variety of
 /// different ways.  For instance, one can assert that the distance between the two configuration
 /// is the distance one would have to move all the atoms to transform configuration 1 into configuration
 /// 2. Alternatively, one could calculate the values of a large set of collective coordinates in the two
-/// configurations and then calculate the Euclidean distances between these two points in the resulting 
-/// high-dimensional vector space.  Lastly, one can combine these two forms of distance calculation to calculate 
+/// configurations and then calculate the Euclidean distances between these two points in the resulting
+/// high-dimensional vector space.  Lastly, one can combine these two forms of distance calculation to calculate
 /// a hybrid distance.  Plumed allows one to use all these forms of distance calculations and also to implement
 /// new forms of distance.  You should inherit from this class if your distance involves reference atomic positions.
-/// This class and \ref PLMD::ReferenceArguments mirror the functionalities in and \ref PLMD::ActionAtomistic 
-/// and \ref PLMD::ActionWithArguments respectively but for distances. 
+/// This class and \ref PLMD::ReferenceArguments mirror the functionalities in and \ref PLMD::ActionAtomistic
+/// and \ref PLMD::ActionWithArguments respectively but for distances.
 
 class ReferenceAtoms :
   virtual public ReferenceConfiguration
 {
-friend class Direction;
-friend class SingleDomainRMSD;
-friend class ReferenceConfiguration;
+  friend class Direction;
+  friend class SingleDomainRMSD;
+  friend class ReferenceConfiguration;
 private:
 /// This flag tells us if the user has disabled checking of the input in order to
 /// do fancy paths with weird inputs
@@ -69,13 +69,9 @@ protected:
 /// Add atom indices to list
   void setAtomIndices( const std::vector<AtomNumber>& atomnumbers );
 /// Read a list of atoms from the pdb input file
-  bool parseAtomList( const std::string& , std::vector<unsigned>& );
-/// Get the vector of alignment weights
-  const std::vector<double> & getAlign() const ;
-/// Get the vector of displacement weights
-  const std::vector<double> & getDisplace() const ;
+  bool parseAtomList( const std::string&, std::vector<unsigned>& );
 /// Get the position of the ith atom
-  Vector getReferencePosition( const unsigned& iatom ) const ;  
+  Vector getReferencePosition( const unsigned& iatom ) const ;
 /// Add derivatives to iatom th atom in list
 //  void addAtomicDerivatives( const unsigned& , const Vector& );
 /// Get the atomic derivatives on the ith atom in the list
@@ -105,15 +101,19 @@ public:
 /// This returns how many atoms there should be
   unsigned getNumberOfAtoms() const ;
 /// Displace the positions of the reference atoms a bit
-  void displaceReferenceAtoms( const double& weight, const std::vector<Vector>& dir ); 
+  void displaceReferenceAtoms( const double& weight, const std::vector<Vector>& dir );
 /// Extract a displacement from a position in space
-  virtual void extractAtomicDisplacement( const std::vector<Vector>& pos, const bool & anflag, std::vector<Vector>& direction ) const {
-     plumed_error(); 
+  virtual void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const {
+    plumed_error();
   }
 /// Project the displacement on a vector
-  virtual double projectAtomicDisplacementOnVector( const std::vector<Vector>& eigv, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
-     plumed_error(); return 1;
+  virtual double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& eigv, ReferenceValuePack& mypack ) const {
+    plumed_error(); return 1;
   }
+/// Get the vector of alignment weights
+  const std::vector<double> & getAlign() const ;
+/// Get the vector of displacement weights
+  const std::vector<double> & getDisplace() const ;
 };
 
 inline
@@ -171,7 +171,7 @@ const std::vector<Vector> & ReferenceAtoms::getReferencePositions() const {
 // }
 
 inline
-const std::vector<AtomNumber>& ReferenceAtoms::getAbsoluteIndexes(){
+const std::vector<AtomNumber>& ReferenceAtoms::getAbsoluteIndexes() {
   return indices;
 }
 

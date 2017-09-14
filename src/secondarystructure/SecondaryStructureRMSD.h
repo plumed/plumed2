@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,7 +35,7 @@ namespace secondarystructure {
 
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
 
-class SecondaryStructureRMSD : 
+class SecondaryStructureRMSD :
   public ActionAtomistic,
   public ActionWithValue,
   public vesselbase::ActionWithVessel
@@ -76,9 +76,9 @@ public:
   unsigned getNumberOfQuantities() const ;
   void turnOnDerivatives();
   void calculate();
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ; 
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
   void apply();
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
 };
 
 inline
@@ -88,12 +88,12 @@ unsigned SecondaryStructureRMSD::getNumberOfQuantities() const {
 
 
 inline
-unsigned SecondaryStructureRMSD::getNumberOfFunctionsInAction(){
+unsigned SecondaryStructureRMSD::getNumberOfFunctionsInAction() {
   return colvar_atoms.size();
 }
 
 inline
-unsigned SecondaryStructureRMSD::getNumberOfDerivatives(){
+unsigned SecondaryStructureRMSD::getNumberOfDerivatives() {
   return 3*getNumberOfAtoms()+9;
 }
 

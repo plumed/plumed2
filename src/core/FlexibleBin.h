@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,37 +24,37 @@
 
 #include<vector>
 
-namespace PLMD{
+namespace PLMD {
 
 class ActionWithArguments;
 
-class FlexibleBin{
-	private:
-		int type;
-		// this contains all the infos about the CVs including periodicity
-		ActionWithArguments *paction;
-		double sigma;	
-		// variance is the matrix that really matters
-		std::vector<double> variance;	
-		// this is only there
-		std::vector<double> average;
-		// minimum and maximum values	
-		std::vector<double> sigmamin;	
-		std::vector<double> sigmamax;	
-		std::vector<bool>  limitmax;	
-		std::vector<bool>  limitmin;	
-	public:
-		/// a constructor that takes the pointer of the action that contains it
-		FlexibleBin(int type,ActionWithArguments *paction, double const &d, std::vector<double> &sigmamin, std::vector<double> &sigmamax );
-                /// a constructor for 1D FlexBin (for PBMETAD)
-		FlexibleBin(int type, ActionWithArguments *paction, unsigned iarg, double const &d, std::vector<double> &sigmamin, std::vector<double> &sigmamax);
-		/// update the average (always for diffusion) or calculate the geom covariance (  only when do_when_zero is zero)
-		void update(bool nowAddAHill);
-		void update(bool nowAddAHill, unsigned iarg);
-		std::vector<double> getMatrix() const;
-		std::vector<double> getInverseMatrix() const;
-		std::vector<double> getInverseMatrix(unsigned iarg) const;
-		enum AdaptiveHillsType { none, diffusion, geometry }; 
+class FlexibleBin {
+private:
+  int type;
+  // this contains all the infos about the CVs including periodicity
+  ActionWithArguments *paction;
+  double sigma;
+  // variance is the matrix that really matters
+  std::vector<double> variance;
+  // this is only there
+  std::vector<double> average;
+  // minimum and maximum values
+  std::vector<double> sigmamin;
+  std::vector<double> sigmamax;
+  std::vector<bool>  limitmax;
+  std::vector<bool>  limitmin;
+public:
+  /// a constructor that takes the pointer of the action that contains it
+  FlexibleBin(int type,ActionWithArguments *paction, double const &d, std::vector<double> &sigmamin, std::vector<double> &sigmamax );
+  /// a constructor for 1D FlexBin (for PBMETAD)
+  FlexibleBin(int type, ActionWithArguments *paction, unsigned iarg, double const &d, std::vector<double> &sigmamin, std::vector<double> &sigmamax);
+  /// update the average (always for diffusion) or calculate the geom covariance (  only when do_when_zero is zero)
+  void update(bool nowAddAHill);
+  void update(bool nowAddAHill, unsigned iarg);
+  std::vector<double> getMatrix() const;
+  std::vector<double> getInverseMatrix() const;
+  std::vector<double> getInverseMatrix(unsigned iarg) const;
+  enum AdaptiveHillsType { none, diffusion, geometry };
 };
 
 

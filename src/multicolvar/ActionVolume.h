@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,8 +31,8 @@ namespace multicolvar {
 /**
 \ingroup INHERIT
 This is the abstract base class to use for implementing a new way of definining a particular region of the simulation
-box. You can use this to calculate the number of atoms inside that part or the average value of a quantity like the 
-coordination number inside that part of the cell. 
+box. You can use this to calculate the number of atoms inside that part or the average value of a quantity like the
+coordination number inside that part of the cell.
 */
 
 class ActionVolume : public VolumeGradientBase {
@@ -65,7 +65,7 @@ public:
 inline
 unsigned ActionVolume::getNumberOfQuantities() const {
   return nquantities;
-} 
+}
 
 inline
 double ActionVolume::getSigma() const {
@@ -78,8 +78,8 @@ std::string ActionVolume::getKernelType() const {
 }
 
 inline
-unsigned ActionVolume::getCentralAtomElementIndex(){
- return 1;
+unsigned ActionVolume::getCentralAtomElementIndex() {
+  return 1;
 }
 
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,7 +36,7 @@
 using namespace std;
 
 namespace PLMD {
-namespace generic{
+namespace generic {
 
 //+PLUMEDOC GENERIC WHOLEMOLECULES
 /*
@@ -47,7 +47,7 @@ It is similar to the ALIGN_ATOMS keyword of plumed1, and is needed since some
 MD dynamics code (e.g. GROMACS) can break molecules during the calculation.
 
 Running some CVs without this command can cause there to be discontinuities changes
-in the CV value and artifacts in the calculations.  This command can be applied 
+in the CV value and artifacts in the calculations.  This command can be applied
 more than once.  To see what effect is has use a variable without pbc or use
 the \ref DUMPATOMS directive to output the atomic positions.
 
@@ -74,30 +74,27 @@ to skip some atoms, provided consecute chosen atoms are close enough.
 This command instructs plumed to reconstruct the molecule containing atoms 1-20
 at every step of the calculation and dump them on a file.
 
-\verbatim
+\plumedfile
 # to see the effect, one could dump the atoms as they were before molecule reconstruction:
 # DUMPATOMS FILE=dump-broken.xyz ATOMS=1-20
 WHOLEMOLECULES ENTITY0=1-20
 DUMPATOMS FILE=dump.xyz ATOMS=1-20
-\endverbatim
-(see also \ref DUMPATOMS)
+\endplumedfile
 
 This command instructs plumed to reconstruct two molecules containing atoms 1-20 and 30-40
 
-\verbatim
+\plumedfile
 WHOLEMOLECULES ENTITY0=1-20 ENTITY1=30-40
 DUMPATOMS FILE=dump.xyz ATOMS=1-20,30-40
-\endverbatim
-(see also \ref DUMPATOMS)
+\endplumedfile
 
-This command instructs plumed to reconstruct the chain of backbone atoms in a 
+This command instructs plumed to reconstruct the chain of backbone atoms in a
 protein
 
-\verbatim
+\plumedfile
 MOLINFO STRUCTURE=helix.pdb
-WHOLEMOLECULES RESIDUES=all MOLTYPE=protein 
-\endverbatim
-(See also \ref MOLINFO)
+WHOLEMOLECULES RESIDUES=all MOLTYPE=protein
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -112,12 +109,12 @@ public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
   void calculate();
-  void apply(){}
+  void apply() {}
 };
 
 PLUMED_REGISTER_ACTION(WholeMolecules,"WHOLEMOLECULES")
 
-void WholeMolecules::registerKeywords( Keywords& keys ){
+void WholeMolecules::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
@@ -125,24 +122,24 @@ void WholeMolecules::registerKeywords( Keywords& keys ){
   keys.add("numbered","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY0, ENTITY1,...");
   keys.reset_style("ENTITY","atoms");
   keys.add("residues","RESIDUES","this command specifies that the backbone atoms in a set of residues all must be aligned. It must be used in tandem with the \\ref MOLINFO "
-                              "action and the MOLTYPE keyword. If you wish to use all the residues from all the chains in your system you can do so by "
-                              "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
-                              "you are interested in as a list of numbers"); 
+           "action and the MOLTYPE keyword. If you wish to use all the residues from all the chains in your system you can do so by "
+           "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
+           "you are interested in as a list of numbers");
   keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
 }
 
 WholeMolecules::WholeMolecules(const ActionOptions&ao):
-Action(ao),
-ActionPilot(ao),
-ActionAtomistic(ao)
+  Action(ao),
+  ActionPilot(ao),
+  ActionAtomistic(ao)
 {
   vector<AtomNumber> merge;
-  for(int i=0;;i++){
+  for(int i=0;; i++) {
     vector<AtomNumber> group;
-    parseAtomList("ENTITY",i,group); 
+    parseAtomList("ENTITY",i,group);
     if( group.empty() ) break;
     log.printf("  atoms in entity %d : ",i);
-    for(unsigned j=0;j<group.size();++j) log.printf("%d ",group[j].serial() );
+    for(unsigned j=0; j<group.size(); ++j) log.printf("%d ",group[j].serial() );
     log.printf("\n");
     groups.push_back(group);
     merge.insert(merge.end(),group.begin(),group.end());
@@ -150,23 +147,23 @@ ActionAtomistic(ao)
 
   // Read residues to align from MOLINFO
   vector<string> resstrings; parseVector("RESIDUES",resstrings);
-  if( resstrings.size()>0 ){
-      if( resstrings.size()==1 ){
-          if( resstrings[0]=="all" ) resstrings[0]="all-ter";   // Include terminal groups in alignment
-      }
-      string moltype; parse("MOLTYPE",moltype);
-      if(moltype.length()==0) error("Found RESIDUES keyword without specification of the moleclue - use MOLTYPE");
-      std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-      if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
-      std::vector< std::vector<AtomNumber> > backatoms;
-      moldat[0]->getBackbone( resstrings, moltype, backatoms );
-      for(unsigned i=0;i<backatoms.size();++i){
-          log.printf("  atoms in entity %u : ", static_cast<unsigned>(groups.size()+1));
-          for(unsigned j=0;j<backatoms[i].size();++j) log.printf("%d ",backatoms[i][j].serial() );
-          log.printf("\n");
-          groups.push_back( backatoms[i] );
-          merge.insert(merge.end(),backatoms[i].begin(),backatoms[i].end()); 
-      }
+  if( resstrings.size()>0 ) {
+    if( resstrings.size()==1 ) {
+      if( resstrings[0]=="all" ) resstrings[0]="all-ter";   // Include terminal groups in alignment
+    }
+    string moltype; parse("MOLTYPE",moltype);
+    if(moltype.length()==0) error("Found RESIDUES keyword without specification of the moleclue - use MOLTYPE");
+    std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+    if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
+    std::vector< std::vector<AtomNumber> > backatoms;
+    moldat[0]->getBackbone( resstrings, moltype, backatoms );
+    for(unsigned i=0; i<backatoms.size(); ++i) {
+      log.printf("  atoms in entity %u : ", static_cast<unsigned>(groups.size()+1));
+      for(unsigned j=0; j<backatoms[i].size(); ++j) log.printf("%d ",backatoms[i][j].serial() );
+      log.printf("\n");
+      groups.push_back( backatoms[i] );
+      merge.insert(merge.end(),backatoms[i].begin(),backatoms[i].end());
+    }
   }
 
   if(groups.size()==0) error("no atom found for WHOLEMOLECULES!");
@@ -178,9 +175,9 @@ ActionAtomistic(ao)
   doNotForce();
 }
 
-void WholeMolecules::calculate(){
-  for(unsigned i=0;i<groups.size();++i){
-    for(unsigned j=0;j<groups[i].size()-1;++j){
+void WholeMolecules::calculate() {
+  for(unsigned i=0; i<groups.size(); ++i) {
+    for(unsigned j=0; j<groups[i].size()-1; ++j) {
       const Vector & first (getPosition(groups[i][j]));
       Vector & second (modifyPosition(groups[i][j+1]));
       second=first+pbcDistance(first,second);

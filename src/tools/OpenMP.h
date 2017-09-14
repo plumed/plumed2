@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2016 The plumed team
+   Copyright (c) 2014-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,30 +24,33 @@
 
 #include <vector>
 
-namespace PLMD{
+namespace PLMD {
 
-class OpenMP{
+class OpenMP {
 
 public:
 
 /// Get number of threads that can be used by openMP
-static unsigned getNumThreads();
+  static unsigned getNumThreads();
+
+/// Returns a unique thread identification number within the current team
+  static unsigned getThreadNum();
 
 /// get cacheline size
-static unsigned getCachelineSize();
+  static unsigned getCachelineSize();
 
 /// Get a reasonable number of threads so as to access to an array of size s located at x
-template<typename T>
-static unsigned getGoodNumThreads(const T*x,unsigned s);
+  template<typename T>
+  static unsigned getGoodNumThreads(const T*x,unsigned s);
 
 /// Get a reasonable number of threads so as to access to vector v;
-template<typename T>
-static unsigned getGoodNumThreads(const std::vector<T> & v);
+  template<typename T>
+  static unsigned getGoodNumThreads(const std::vector<T> & v);
 
 };
 
 template<typename T>
-unsigned OpenMP::getGoodNumThreads(const T*x,unsigned n){
+unsigned OpenMP::getGoodNumThreads(const T*x,unsigned n) {
   unsigned long p=(unsigned long) x;
   (void) p; // this is not to have warnings. notice that the pointer location is not used actually.
 // a factor two is necessary since there is no guarantee that x is aligned
@@ -61,7 +64,7 @@ unsigned OpenMP::getGoodNumThreads(const T*x,unsigned n){
 
 
 template<typename T>
-unsigned OpenMP::getGoodNumThreads(const std::vector<T> & v){
+unsigned OpenMP::getGoodNumThreads(const std::vector<T> & v) {
   if(v.size()==0) return 1;
   else return getGoodNumThreads(&v[0],v.size());
 }

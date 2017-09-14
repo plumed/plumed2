@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015,2016 The plumed team
+   Copyright (c) 2016,2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,8 +29,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace bias{
+namespace PLMD {
+namespace bias {
 
 //+PLUMEDOC BIAS METAINFERENCE
 /*
@@ -46,9 +46,9 @@ point or a single long-tailed gaussian common to all the data points.
 As from Metainference theory there are two sigma values: SIGMA_MEAN represent the
 error of calculating an average quanity using a finite set of replica and should
 be set as small as possible following the guidelines for replica-averaged simulations
-in the framework of the Maximum Entropy Principle. 
-SIGMA_BIAS is an uncertainty parameter, sampled by a MC algorithm in the bounded interval 
-defined by SIGMA_MIN and SIGMA_MAX. The initial value is set at SIGMA0. The MC move is a 
+in the framework of the Maximum Entropy Principle.
+SIGMA_BIAS is an uncertainty parameter, sampled by a MC algorithm in the bounded interval
+defined by SIGMA_MIN and SIGMA_MAX. The initial value is set at SIGMA0. The MC move is a
 random displacement of maximum value equal to DSIGMA.
 
 \par Examples
@@ -58,7 +58,7 @@ them and comparing them with a set of experimental values. RDCs are compared wit
 the experimental data but for a multiplication factor SCALE that is also sampled by
 MC on-the-fly
 
-\verbatim
+\plumedfile
 RDC ...
 LABEL=rdc
 SCALE=0.0001
@@ -75,33 +75,31 @@ METAINFERENCE ...
 ARG=ardc.*
 NOISETYPE=MGAUSS
 PARAMETERS=1.9190,2.9190,3.9190,4.9190
-SCALEDATA SCALE0=1 SCALE_MIN=0.00001 SCALE_MAX=3 DSCALE=0.00 
-SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.00 
+SCALEDATA SCALE0=1 SCALE_MIN=0.00001 SCALE_MAX=3 DSCALE=0.00
+SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.00
 SIGMA_MEAN=0.001
 TEMP=300
 LABEL=spe
-... METAINFERENCE 
+... METAINFERENCE
 
-PRINT ARG=spe.bias FILE=BIAS STRIDE=1 
-\endverbatim
+PRINT ARG=spe.bias FILE=BIAS STRIDE=1
+\endplumedfile
 
 in the following example instead of using one uncertainty parameter per data point we use
 a single uncertainty value in a long-tailed gaussian to take into account for outliers.
 
-\verbatim
+\plumedfile
 METAINFERENCE ...
 ARG=ardc.*
 NOISETYPE=OUTLIERS
 PARAMETERS=1.9190,2.9190,3.9190,4.9190
-SCALEDATA SCALE0=1 SCALE_MIN=0.00001 SCALE_MAX=3 DSCALE=0.00 
-SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.00 
+SCALEDATA SCALE0=1 SCALE_MIN=0.00001 SCALE_MAX=3 DSCALE=0.00
+SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.00
 SIGMA_MEAN=0.001
 TEMP=300
 LABEL=spe
-... METAINFERENCE 
-\endverbatim
-
-(See also \ref RDC and \ref ENSEMBLE).
+... METAINFERENCE
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -150,7 +148,7 @@ class Metainference : public Bias
   void   doMonteCarlo();
   double getEnergyForceSPE();
   double getEnergyForceGJE();
-  
+
 public:
   explicit Metainference(const ActionOptions&);
   void calculate();
@@ -160,13 +158,13 @@ public:
 
 PLUMED_REGISTER_ACTION(Metainference,"METAINFERENCE")
 
-void Metainference::registerKeywords(Keywords& keys){
+void Metainference::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("optional","PARARG","reference values for the experimental data, these can be provided as arguments without derivatives"); 
+  keys.add("optional","PARARG","reference values for the experimental data, these can be provided as arguments without derivatives");
   keys.add("optional","PARAMETERS","reference values for the experimental data");
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS,MGAUSS,OUTLIERS)");
-  keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");  
+  keys.addFlag("SCALEDATA",false,"Set to TRUE if you want to sample a scaling factor common to all values and replicas");
   keys.add("compulsory","SCALE0","initial value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MIN","minimum value of the uncertainty parameter");
   keys.add("compulsory","SCALE_MAX","maximum value of the uncertainty parameter");
@@ -186,15 +184,15 @@ void Metainference::registerKeywords(Keywords& keys){
 }
 
 Metainference::Metainference(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao), 
-sqrt2_div_pi(0.45015815807855),
-sqrt2_pi(2.50662827463100050240),
-doscale_(false),
-ndata_(getNumberOfArguments()),
-MCsteps_(1), 
-MCstride_(1), 
-MCaccept_(0), 
-MCfirst_(-1)
+  PLUMED_BIAS_INIT(ao),
+  sqrt2_div_pi(0.45015815807855),
+  sqrt2_pi(2.50662827463100050240),
+  doscale_(false),
+  ndata_(getNumberOfArguments()),
+  MCsteps_(1),
+  MCstride_(1),
+  MCaccept_(0),
+  MCfirst_(-1)
 {
   parseVector("PARAMETERS",parameters);
   if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments())&&!parameters.empty())
@@ -206,21 +204,21 @@ MCfirst_(-1)
   if(!arg2.empty()) {
     if(parameters.size()>0) error("It is not possible to use PARARG and PARAMETERS together");
     if(arg2.size()!=getNumberOfArguments()) error("Size of PARARG array should be the same as number for arguments in ARG");
-    for(unsigned i=0;i<arg2.size();i++){
-      parameters.push_back(arg2[i]->get()); 
+    for(unsigned i=0; i<arg2.size(); i++) {
+      parameters.push_back(arg2[i]->get());
       if(arg2[i]->hasDerivatives()==true) error("PARARG can only accept arguments without derivatives");
     }
   }
 
-  if(parameters.size()!=getNumberOfArguments()) 
+  if(parameters.size()!=getNumberOfArguments())
     error("PARARG or PARAMETERS arrays should include the same number of elements as the arguments in ARG");
 
   string stringa_noise;
   parse("NOISETYPE",stringa_noise);
-  if(stringa_noise=="GAUSS")       noise_type_ = GAUSS; 
+  if(stringa_noise=="GAUSS")       noise_type_ = GAUSS;
   else if(stringa_noise=="MGAUSS") noise_type_ = MGAUSS;
   else if(stringa_noise=="OUTLIERS")  noise_type_ = OUTLIERS;
-  else error("Unkwnow noise type"); 
+  else error("Unkwnow noise type");
 
   parseFlag("SCALEDATA", doscale_);
   if(doscale_) {
@@ -243,7 +241,7 @@ MCfirst_(-1)
       sigma_.resize(getNumberOfArguments(),readsigma[0]);
     } else {
       error("SIGMA0 can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS)");
-    } 
+    }
   } else sigma_.resize(1, readsigma[0]);
 
   parse("SIGMA_MIN",sigma_min_);
@@ -279,15 +277,15 @@ MCfirst_(-1)
   MCstride_ *= getStride();
 
   switch(noise_type_) {
-    case GAUSS:
-      log.printf("  with gaussian noise and a single noise parameter for all the data\n");
-      break;
-    case MGAUSS:
-      log.printf("  with gaussian noise and a noise parameter for each data point\n");
-      break;
-    case OUTLIERS:
-      log.printf("  with long tailed gaussian noise and a single noise parameter for all the data\n");
-      break;
+  case GAUSS:
+    log.printf("  with gaussian noise and a single noise parameter for all the data\n");
+    break;
+  case MGAUSS:
+    log.printf("  with gaussian noise and a noise parameter for each data point\n");
+    break;
+  case OUTLIERS:
+    log.printf("  with long tailed gaussian noise and a single noise parameter for all the data\n");
+    break;
   }
 
   if(doscale_) {
@@ -301,7 +299,7 @@ MCfirst_(-1)
   if(readsigma.size()==1) log.printf("  initial data uncertainty %f\n",sigma_[0]);
   else {
     log.printf("  initial data uncertainties");
-    for(unsigned i=0;i<sigma_.size();++i) log.printf(" %f", sigma_[i]);
+    for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f", sigma_[i]);
     log.printf("\n");
   }
   log.printf("  minimum data uncertainty %f\n",sigma_min_);
@@ -314,8 +312,8 @@ MCfirst_(-1)
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  MC stride %u\n",MCstride_);
 
-  if(doscale_) { 
-    addComponent("scale");  
+  if(doscale_) {
+    addComponent("scale");
     componentIsNotPeriodic("scale");
     valueScale=getPntrToComponent("scale");
   }
@@ -324,7 +322,7 @@ MCfirst_(-1)
   valueAccept=getPntrToComponent("accept");
 
   if(noise_type_==MGAUSS) {
-    for(unsigned i=0;i<sigma_.size();++i){
+    for(unsigned i=0; i<sigma_.size(); ++i) {
       std::string num; Tools::convert(i,num);
       addComponent("sigma_"+num); componentIsNotPeriodic("sigma_"+num);
       valueSigma.push_back(getPntrToComponent("sigma_"+num));
@@ -336,21 +334,21 @@ MCfirst_(-1)
   // initialize random seed
   unsigned iseed;
   if(comm.Get_rank()==0) iseed = time(NULL)+replica_;
-  else iseed = 0;     
+  else iseed = 0;
   comm.Sum(&iseed, 1);
   srand(iseed);
 
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
 }
 
-double Metainference::getEnergySPE(const vector<double> &sigma, const double scale){
+double Metainference::getEnergySPE(const vector<double> &sigma, const double scale) {
   // calculate effective sigma
   const double smean2 = sigma_mean_*sigma_mean_;
   const double s = sqrt( sigma[0]*sigma[0] + smean2 );
   // cycle on arguments
   double ene = 0.0;
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-    const double dev = scale*getArgument(i)-parameters[i]; 
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    const double dev = scale*getArgument(i)-parameters[i];
     // argument
     const double a2 = 0.5*dev*dev + s*s;
     // increment energy
@@ -361,18 +359,18 @@ double Metainference::getEnergySPE(const vector<double> &sigma, const double sca
   return kbt_ * ene;
 }
 
-double Metainference::getEnergyGJE(const vector<double> &sigma, const double scale){
+double Metainference::getEnergyGJE(const vector<double> &sigma, const double scale) {
   // cycle on arguments
   double ene = 0.0;
   const double smean2 = sigma_mean_*sigma_mean_;
-  double ss = sigma[0]*sigma[0] + smean2; 
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-    if(noise_type_==MGAUSS){ 
+  double ss = sigma[0]*sigma[0] + smean2;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if(noise_type_==MGAUSS) {
       ss = sigma[i]*sigma[i] + smean2;
       // add Jeffrey's prior - one per sigma
       ene += 0.5*std::log(ss);
     }
-    const double dev = scale*getArgument(i)-parameters[i]; 
+    const double dev = scale*getArgument(i)-parameters[i];
     ene += 0.5*dev*dev/ss + 0.5*std::log(ss*sqrt2_pi);
   }
   // add Jeffrey's prior in case one sigma for all data points
@@ -380,21 +378,21 @@ double Metainference::getEnergyGJE(const vector<double> &sigma, const double sca
   return kbt_ * ene;
 }
 
-void Metainference::doMonteCarlo(){
+void Metainference::doMonteCarlo() {
   double old_energy;
   switch(noise_type_) {
-    case GAUSS:
-    case MGAUSS:
-      old_energy = getEnergyGJE(sigma_,scale_);
-      break;
-    case OUTLIERS:
-      old_energy = getEnergySPE(sigma_,scale_);
-      break;
+  case GAUSS:
+  case MGAUSS:
+    old_energy = getEnergyGJE(sigma_,scale_);
+    break;
+  case OUTLIERS:
+    old_energy = getEnergySPE(sigma_,scale_);
+    break;
   }
- 
-  // cycle on MC steps 
-  for(unsigned i=0;i<MCsteps_;++i){
- 
+
+  // cycle on MC steps
+  for(unsigned i=0; i<MCsteps_; ++i) {
+
     // propose move for scale
     double new_scale = scale_;
     if(doscale_) {
@@ -402,54 +400,54 @@ void Metainference::doMonteCarlo(){
       const double ds1 = -Dscale_ + r1 * 2.0 * Dscale_;
       new_scale += ds1;
       // check boundaries
-      if(new_scale > scale_max_){new_scale = 2.0 * scale_max_ - new_scale;}
-      if(new_scale < scale_min_){new_scale = 2.0 * scale_min_ - new_scale;}
+      if(new_scale > scale_max_) {new_scale = 2.0 * scale_max_ - new_scale;}
+      if(new_scale < scale_min_) {new_scale = 2.0 * scale_min_ - new_scale;}
       // the scaling factor should be the same for all the replicas
       if(comm.Get_rank()==0) multi_sim_comm.Bcast(new_scale,0);
       comm.Bcast(new_scale,0);
     }
-  
+
     // propose move for sigma
     vector<double> new_sigma(sigma_.size());
-    for(unsigned j=0;j<sigma_.size();j++) {
+    for(unsigned j=0; j<sigma_.size(); j++) {
       const double r2 = static_cast<double>(rand()) / RAND_MAX;
       const double ds2 = -Dsigma_ + r2 * 2.0 * Dsigma_;
       new_sigma[j] = sigma_[j] + ds2;
       // check boundaries
-      if(new_sigma[j] > sigma_max_){new_sigma[j] = 2.0 * sigma_max_ - new_sigma[j];}
-      if(new_sigma[j] < sigma_min_){new_sigma[j] = 2.0 * sigma_min_ - new_sigma[j];}
+      if(new_sigma[j] > sigma_max_) {new_sigma[j] = 2.0 * sigma_max_ - new_sigma[j];}
+      if(new_sigma[j] < sigma_min_) {new_sigma[j] = 2.0 * sigma_min_ - new_sigma[j];}
     }
- 
+
     // calculate new energy
     double new_energy=0;
     switch(noise_type_) {
-      case GAUSS:
-      case MGAUSS:
-        new_energy = getEnergyGJE(new_sigma,new_scale);
-        break;
-      case OUTLIERS:
-        new_energy = getEnergySPE(new_sigma,new_scale);
-        break;
+    case GAUSS:
+    case MGAUSS:
+      new_energy = getEnergyGJE(new_sigma,new_scale);
+      break;
+    case OUTLIERS:
+      new_energy = getEnergySPE(new_sigma,new_scale);
+      break;
     }
     // accept or reject
     const double delta = ( new_energy - old_energy ) / kbt_;
     // if delta is negative always accept move
-    if( delta <= 0.0 ){
+    if( delta <= 0.0 ) {
       old_energy = new_energy;
       scale_ = new_scale;
       sigma_ = new_sigma;
       MCaccept_++;
-    // otherwise extract random number
+      // otherwise extract random number
     } else {
       const double s = static_cast<double>(rand()) / RAND_MAX;
-      if( s < exp(-delta) ){
+      if( s < exp(-delta) ) {
         old_energy = new_energy;
         scale_ = new_scale;
         sigma_ = new_sigma;
         MCaccept_++;
       }
     }
- 
+
     if(doscale_) {
       // the scaling factor should be the same for all the replicas
       if(comm.Get_rank()==0) multi_sim_comm.Bcast(scale_,0);
@@ -466,26 +464,26 @@ double Metainference::getEnergyForceSPE()
   double ene = 0.0;
   const unsigned narg=getNumberOfArguments();
 
-  const double smean2 = sigma_mean_*sigma_mean_; 
+  const double smean2 = sigma_mean_*sigma_mean_;
   const double s = sqrt( sigma_[0]*sigma_[0] + smean2 );
   vector<double> f(narg,0);
-  
-  if(comm.Get_rank()==0){
-   for(unsigned i=0;i<narg;++i){
-     const double dev = scale_*getArgument(i)-parameters[i]; 
-     const double a2 = 0.5*dev*dev + s*s;
-     const double t = exp(-a2/smean2);
-     const double dt = 1./t;
-     const double it = 1./(1.-t);
-     const double dit = 1./(1.-dt);
-     ene += std::log(2.*a2*it);
-     f[i] = -scale_*dev*(dit/smean2 + 1./a2);
-   }
-   // collect contribution to forces and energy from other replicas
-   multi_sim_comm.Sum(&f[0],narg);
-   multi_sim_comm.Sum(&ene,1);
-   // add normalizations and priors of local replica
-   ene += std::log(s) - static_cast<double>(ndata_)*std::log(sqrt2_div_pi*s);
+
+  if(comm.Get_rank()==0) {
+    for(unsigned i=0; i<narg; ++i) {
+      const double dev = scale_*getArgument(i)-parameters[i];
+      const double a2 = 0.5*dev*dev + s*s;
+      const double t = exp(-a2/smean2);
+      const double dt = 1./t;
+      const double it = 1./(1.-t);
+      const double dit = 1./(1.-dt);
+      ene += std::log(2.*a2*it);
+      f[i] = -scale_*dev*(dit/smean2 + 1./a2);
+    }
+    // collect contribution to forces and energy from other replicas
+    multi_sim_comm.Sum(&f[0],narg);
+    multi_sim_comm.Sum(&ene,1);
+    // add normalizations and priors of local replica
+    ene += std::log(s) - static_cast<double>(ndata_)*std::log(sqrt2_div_pi*s);
   }
   // intra-replica summation
   comm.Sum(&f[0],narg);
@@ -504,19 +502,19 @@ double Metainference::getEnergyForceGJE()
   vector<double> inv_s2(ssize, 0.);
   const double smean2 = sigma_mean_*sigma_mean_;
 
-  for(unsigned i=0;i<ssize; ++i) {
+  for(unsigned i=0; i<ssize; ++i) {
     ss[i] = sigma_[i]*sigma_[i] + smean2;
     if(comm.Get_rank()==0) inv_s2[i] = 1.0/ss[i];
   }
 
-  if(comm.Get_rank()==0) multi_sim_comm.Sum(&inv_s2[0],ssize); 
-  comm.Sum(&inv_s2[0],ssize);  
-  
+  if(comm.Get_rank()==0) multi_sim_comm.Sum(&inv_s2[0],ssize);
+  comm.Sum(&inv_s2[0],ssize);
+
   const unsigned narg=getNumberOfArguments();
-  for(unsigned i=0;i<narg;++i){
-    const double dev = scale_*getArgument(i)-parameters[i]; 
+  for(unsigned i=0; i<narg; ++i) {
+    const double dev = scale_*getArgument(i)-parameters[i];
     unsigned sel_sigma=0;
-    if(noise_type_==MGAUSS){
+    if(noise_type_==MGAUSS) {
       sel_sigma=i;
       // add Jeffrey's prior - one per sigma
       ene += 0.5*std::log(ss[sel_sigma]);
@@ -529,7 +527,7 @@ double Metainference::getEnergyForceGJE()
   return ene;
 }
 
-void Metainference::calculate(){
+void Metainference::calculate() {
   /* MONTE CARLO */
   const long int step = getStep();
   if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo();
@@ -540,15 +538,15 @@ void Metainference::calculate(){
   valueAccept->set(accept);
 
   // calculate bias and forces
-  double ene = 0; 
+  double ene = 0;
   switch(noise_type_) {
-    case GAUSS:
-    case MGAUSS:
-      ene = getEnergyForceGJE();
-      break;
-    case OUTLIERS:
-      ene = getEnergyForceSPE();
-      break;
+  case GAUSS:
+  case MGAUSS:
+    ene = getEnergyForceGJE();
+    break;
+  case OUTLIERS:
+    ene = getEnergyForceSPE();
+    break;
   }
   // set value of the bias
   setBias(kbt_*ene);

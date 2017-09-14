@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,28 +39,28 @@ public:
 
 PLUMED_REGISTER_VESSEL(AltMin,"ALT_MIN")
 
-void AltMin::registerKeywords( Keywords& keys ){
+void AltMin::registerKeywords( Keywords& keys ) {
   FunctionVessel::registerKeywords(keys);
   keys.add("compulsory","BETA","the value of beta for the equation in the manual");
 }
 
-void AltMin::reserveKeyword( Keywords& keys ){
+void AltMin::reserveKeyword( Keywords& keys ) {
   keys.reserve("vessel","ALT_MIN","calculate the minimum value. "
-                                "To make this quantity continuous the minimum is calculated using "
-                                "\\f$ \\textrm{min} = -\\frac{1}{\\beta} \\log \\sum_i \\exp\\left( -\\beta s_i \\right)  \\f$ "
-                                "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$).");
+               "To make this quantity continuous the minimum is calculated using "
+               "\\f$ \\textrm{min} = -\\frac{1}{\\beta} \\log \\sum_i \\exp\\left( -\\beta s_i \\right)  \\f$ "
+               "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$).");
   keys.addOutputComponent("altmin","ALT_MIN","the minimum value. This is calculated using the formula described in the description of the "
-                                             "keyword so as to make it continuous.");
+                          "keyword so as to make it continuous.");
 }
 
 AltMin::AltMin( const vesselbase::VesselOptions& da ):
-FunctionVessel(da)
+  FunctionVessel(da)
 {
   if( getAction()->isPeriodic() ) error("MIN is not a meaningful option for periodic variables");
   parse("BETA",beta); usetol=true;
 }
 
-std::string AltMin::value_descriptor(){
+std::string AltMin::value_descriptor() {
   std::string str_beta; Tools::convert( beta, str_beta );
   return "the minimum value. Beta is equal to " + str_beta;
 }
@@ -69,9 +69,9 @@ double AltMin::calcTransform( const double& val, double& dv ) const {
   double f = exp( -beta*val ); dv = -beta*f; return f;
 }
 
-double AltMin::finalTransform( const double& val, double& dv ){
-   dv = - 1.0 /(beta*val); return -std::log( val ) / beta;
-} 
+double AltMin::finalTransform( const double& val, double& dv ) {
+  dv = - 1.0 /(beta*val); return -std::log( val ) / beta;
+}
 
 }
 }

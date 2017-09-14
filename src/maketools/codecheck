@@ -22,9 +22,9 @@ done
 
 if [ $do_plumedcheck == true ] ; then
   if [ $do_local == true ] ; then
-    ../maketools/plumedcheck *.{h,cpp} ../../configure.ac
+    ../maketools/plumedcheck *.{h,cpp} ../../configure.ac --astyle=../../astyle/astyle --astyle-options=../../.astyle.options
   else
-    maketools/plumedcheck --global-check */*.{h,cpp} ../configure.ac
+    maketools/plumedcheck --global-check */*.{h,cpp} ../configure.ac --astyle=../astyle/astyle --astyle-options=../.astyle.options
   fi
 fi
 
@@ -34,7 +34,7 @@ if [ $do_cppcheck == true ] ; then
   else
     files="$(echo */*.{h,cpp})"
   fi
-  cppcheck --std=c++11 --std=posix 4 -j 4 --platform=unix64 \
+  cppcheck --std=c++11 --std=posix 4 -j 4 --platform=unix64 --language=c++ -U__PRETTY_FUNCTION__ \
   --template='[{file}:{line}] ({severity}) :{id}: {message}' --enable=all --inline-suppr --force \
   $files
 fi
@@ -58,7 +58,7 @@ CLEAN_FILE="$TMPDIR/codecheck.clean"
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "  In the following analysis we exclude:"
-echo "    src/molfile src/lapack src/blas"
+echo "    src/molfile src/lapack src/blas src/lepton" 
 echo "  since they are full of false positives"
 cat codecheck.log |
  gawk '{
@@ -67,11 +67,13 @@ cat codecheck.log |
     if(match($0,"[[]lapack/")) next;
     if(match($0,"[[]blas/")) next;
     if(match($0,"[[]molfile/")) next;
+    if(match($0,"[[]lepton/")) next;
   } else {
 # with cppcheck we exclude molfile lapack and blas
     if(match($0,"[[]molfile/")) next;
     if(match($0,"[[]lapack/")) next;
     if(match($0,"[[]blas/")) next;
+    if(match($0,"[[]lepton/")) next;
   }
   print
 }' > "${CLEAN_FILE}"

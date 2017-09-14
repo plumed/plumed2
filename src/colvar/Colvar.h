@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,11 +22,11 @@
 #ifndef __PLUMED_colvar_Colvar_h
 #define __PLUMED_colvar_Colvar_h
 #include "core/Colvar.h"
-namespace PLMD{
-namespace colvar{
+namespace PLMD {
+namespace colvar {
 // Ideally core/Colvar.h should be moved to this directory and Colvar should stay in namespace PLMD::colvar
 // With this trick, PLMD::Colvar is visible as PLMD::colvar::Colvar
-  using PLMD::Colvar;
+using PLMD::Colvar;
 }
 }
 #endif

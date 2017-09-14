@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,11 +32,11 @@
 using namespace std;
 
 namespace PLMD {
-namespace cltools{
+namespace cltools {
 
 //+PLUMEDOC TOOLS manual
 /*
-manual is a tool that you can use to construct the manual page for 
+manual is a tool that you can use to construct the manual page for
 a particular action
 
 The manual constructed by this action is in html. In all probability you will never need to use this
@@ -49,52 +49,52 @@ The following generates the html manual for the action DISTANCE.
 \verbatim
 plumed manual --action DISTANCE
 \endverbatim
- 
+
 
 */
 //+ENDPLUMEDOC
 
 class Manual:
-public CLTool
+  public CLTool
 {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Manual(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const{
+  string description()const {
     return "print out a description of the keywords for an action in html";
   }
 };
 
 PLUMED_REGISTER_CLTOOL(Manual,"manual")
 
-void Manual::registerKeywords( Keywords& keys ){
+void Manual::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--action","print the manual for this particular action");
   keys.addFlag("--vim",false,"print the keywords in vim syntax");
 }
 
 Manual::Manual(const CLToolOptions& co ):
-CLTool(co)
+  CLTool(co)
 {
   inputdata=commandline;
 }
 
-int Manual::main(FILE* in, FILE*out,Communicator& pc){
+int Manual::main(FILE* in, FILE*out,Communicator& pc) {
 
- std::string action; 
- if( !parse("--action",action) ) return 1;
- std::cerr<<"LIST OF DOCUMENTED ACTIONS:\n";
- std::cerr<<actionRegister()<<"\n"; 
- std::cerr<<"LIST OF DOCUMENTED COMMAND LINE TOOLS:\n";
- std::cerr<<cltoolRegister()<<"\n\n";
- bool vimout; parseFlag("--vim",vimout);
- if( !actionRegister().printManual(action,vimout) && !cltoolRegister().printManual(action) ){
-       fprintf(stderr,"specified action is not registered\n");
-       return 1; 
- }
+  std::string action;
+  if( !parse("--action",action) ) return 1;
+  std::cerr<<"LIST OF DOCUMENTED ACTIONS:\n";
+  std::cerr<<actionRegister()<<"\n";
+  std::cerr<<"LIST OF DOCUMENTED COMMAND LINE TOOLS:\n";
+  std::cerr<<cltoolRegister()<<"\n\n";
+  bool vimout; parseFlag("--vim",vimout);
+  if( !actionRegister().printManual(action,vimout) && !cltoolRegister().printManual(action) ) {
+    fprintf(stderr,"specified action is not registered\n");
+    return 1;
+  }
 
- return 0;
+  return 0;
 }
 
 } // End of namespace

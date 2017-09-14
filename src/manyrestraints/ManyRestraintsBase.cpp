@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,7 @@
 namespace PLMD {
 namespace manyrestraints {
 
-void ManyRestraintsBase::registerKeywords( Keywords& keys ){
+void ManyRestraintsBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionWithVessel::registerKeywords( keys );
@@ -37,11 +37,11 @@ void ManyRestraintsBase::registerKeywords( Keywords& keys ){
 }
 
 ManyRestraintsBase::ManyRestraintsBase(const ActionOptions& ao):
-Action(ao),
-ActionWithValue(ao),
-ActionPilot(ao),
-ActionWithVessel(ao),
-ActionWithInputVessel(ao)
+  Action(ao),
+  ActionWithValue(ao),
+  ActionPilot(ao),
+  ActionWithVessel(ao),
+  ActionWithInputVessel(ao)
 {
   // Read in the vessel we are action on
   readArgument("bridge");
@@ -49,44 +49,44 @@ ActionWithInputVessel(ao)
 
   plumed_assert( getDependencies().size()==1 && aves );
   log.printf("  adding restraints on variables calculated by %s action with label %s\n",
-         aves->getName().c_str(),aves->getLabel().c_str());
+             aves->getName().c_str(),aves->getLabel().c_str());
 
   // Add a task list in order to avoid problems
-  for(unsigned i=0;i<aves->getFullNumberOfTasks();++i) addTaskToList( aves->getTaskCode(i) );
+  for(unsigned i=0; i<aves->getFullNumberOfTasks(); ++i) addTaskToList( aves->getTaskCode(i) );
   // And turn on the derivatives (note problems here because of ActionWithValue)
   turnOnDerivatives(); needsDerivatives();
 
   // Now create the vessel
   std::string fake_input="LABEL=bias";
-  addVessel( "SUM", fake_input, 0 ); 
+  addVessel( "SUM", fake_input, 0 );
   readVesselKeywords();
 }
 
-void ManyRestraintsBase::doJobsRequiredBeforeTaskList(){
+void ManyRestraintsBase::doJobsRequiredBeforeTaskList() {
   ActionWithVessel::doJobsRequiredBeforeTaskList();
   ActionWithValue::clearDerivatives();
 }
 
 void ManyRestraintsBase::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const {
   outvals.setValue( 0, invals.get(0) );
-  
+
   // Get the potential
   double dval=0, val=calcPotential( invals.get(1), dval );
 
   outvals.setValue( 1, val );
-  for(unsigned i=0;i<invals.getNumberActive();++i){
-      unsigned jder=invals.getActiveIndex(i);
-      outvals.addDerivative( 1, jder, dval*invals.getDerivative( 1, jder ) );
-  } 
+  for(unsigned i=0; i<invals.getNumberActive(); ++i) {
+    unsigned jder=invals.getActiveIndex(i);
+    outvals.addDerivative( 1, jder, dval*invals.getDerivative( 1, jder ) );
+  }
 
   // Now update the outvals derivatives lists
   outvals.emptyActiveMembers();
-  for(unsigned j=0;j<invals.getNumberActive();++j) outvals.updateIndex( invals.getActiveIndex(j) );
+  for(unsigned j=0; j<invals.getNumberActive(); ++j) outvals.updateIndex( invals.getActiveIndex(j) );
   outvals.completeUpdate();
   return;
 }
 
-void ManyRestraintsBase::apply(){
+void ManyRestraintsBase::apply() {
   plumed_dbg_assert( getNumberOfComponents()==1 );
   getPntrToComponent(0)->addForce( -1.0*getStride() );
 }

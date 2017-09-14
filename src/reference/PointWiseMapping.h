@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,7 +35,7 @@ private:
 /// The names of the projection coordinates
   std::vector<std::string> property;
 /// These are where the reference configurations should be projected
-  std::vector< std::vector<double> > low_dim;  
+  std::vector< std::vector<double> > low_dim;
 public:
   PointWiseMapping( const std::string& type, const bool& checksoff );
 /// Set the names of the low dimensional properties
@@ -44,11 +44,11 @@ public:
   bool mappingNeedsSetup() const;
 /// Delete the low dimensional projections
   void clearRestOfData();
-/// Read in the data from a file 
+/// Read in the data from a file
   void readRestOfFrame();
 /// Resize everything else from a file
   void resizeRestOfFrame();
-/// Make a second copy of the frame list 
+/// Make a second copy of the frame list
   void duplicateFrameList();
 /// Get the number of points we are mapping into the lower dimensional space
   unsigned getNumberOfMappedPoints() const ;
@@ -71,7 +71,7 @@ public:
 /// Get a pointer to the matrix of pairwise distances
   Matrix<double>& modifyDmat();
 /// Print out the low dimensional mapping
-  void print( const std::string& method, const double & time, OFile& afile, 
+  void print( const std::string& method, const double & time, OFile& afile,
               const std::string& fmt, const double& lunits );
 /// Get the low dimensional embedding coordinate
   double getProjectionCoordinate( const unsigned& iframe, const unsigned& jcoord ) const ;
@@ -86,7 +86,7 @@ bool PointWiseMapping::mappingNeedsSetup() const {
 }
 
 inline
-void PointWiseMapping::copyFrameDerivatives( const unsigned& from, const unsigned& to ){
+void PointWiseMapping::copyFrameDerivatives( const unsigned& from, const unsigned& to ) {
   plumed_dbg_assert( to>=frames.size()/2 && from<frames.size()/2 );
   frames[to]->copyDerivatives( frames[from] );
 }
@@ -117,7 +117,7 @@ double PointWiseMapping::getPropertyValue( const unsigned& iframe, const unsigne
 // Vector PointWiseMapping::getAtomDerivatives( const unsigned& iframe, const unsigned& jatom ){
 //   return frames[iframe]->getAtomDerivative(jatom);
 // }
-// 
+//
 // inline
 // bool PointWiseMapping::getVirial( const unsigned& iframe, Tensor& vir ){
 //   return frames[iframe]->getVirial( vir );
@@ -129,7 +129,7 @@ double PointWiseMapping::getPropertyValue( const unsigned& iframe, const unsigne
 // }
 
 inline
-Matrix<double>& PointWiseMapping::modifyDmat(){
+Matrix<double>& PointWiseMapping::modifyDmat() {
   if( dmat.nrows()!=frames.size() || dmat.ncols()!=frames.size() ) dmat.resize( frames.size(), frames.size() );
   return dmat;
 }
@@ -141,10 +141,10 @@ double PointWiseMapping::getProjectionCoordinate( const unsigned& iframe, const 
 }
 
 inline
-void PointWiseMapping::setProjectionCoordinate( const unsigned& iframe, const unsigned& jcoord, const double& coord ){
+void PointWiseMapping::setProjectionCoordinate( const unsigned& iframe, const unsigned& jcoord, const double& coord ) {
   plumed_dbg_assert( iframe<frames.size() && jcoord<property.size() );
   low_dim[iframe][jcoord]=coord;
-} 
+}
 
 }
 #endif

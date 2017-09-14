@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,7 +24,7 @@
 
 #include <string>
 
-namespace PLMD{
+namespace PLMD {
 
 /**
 \ingroup TOOLBOX
@@ -38,7 +38,7 @@ one can also use strings such as kcal/mol.
 
 
 */
-class Units{
+class Units {
 /// Units for energy, expressed in kj/mol (e.g. 4.184 means kcal/mol)
   double energy;
   std::string energyString;
@@ -111,52 +111,52 @@ public:
 };
 
 inline
-const double & Units::getEnergy()const{
+const double & Units::getEnergy()const {
   return energy;
 }
 
 inline
-const double & Units::getLength()const{
+const double & Units::getLength()const {
   return length;
 }
 
 inline
-const double & Units::getTime()const{
+const double & Units::getTime()const {
   return time;
 }
 
 inline
-const double & Units::getCharge()const{
+const double & Units::getCharge()const {
   return charge;
 }
 
 inline
-const double & Units::getMass()const{
+const double & Units::getMass()const {
   return mass;
 }
 
 inline
-const std::string & Units::getEnergyString()const{
+const std::string & Units::getEnergyString()const {
   return energyString;
 }
 
 inline
-const std::string & Units::getLengthString()const{
+const std::string & Units::getLengthString()const {
   return lengthString;
 }
 
 inline
-const std::string & Units::getTimeString()const{
+const std::string & Units::getTimeString()const {
   return timeString;
 }
 
 inline
-const std::string & Units::getChargeString()const{
+const std::string & Units::getChargeString()const {
   return chargeString;
 }
 
 inline
-const std::string & Units::getMassString()const{
+const std::string & Units::getMassString()const {
   return massString;
 }
 

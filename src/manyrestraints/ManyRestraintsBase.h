@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2016 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,10 +32,10 @@ namespace PLMD {
 namespace manyrestraints {
 
 class ManyRestraintsBase :
- public ActionWithValue,
- public ActionPilot,
- public vesselbase::ActionWithVessel,
- public vesselbase::ActionWithInputVessel
+  public ActionWithValue,
+  public ActionPilot,
+  public vesselbase::ActionWithVessel,
+  public vesselbase::ActionWithInputVessel
 {
 private:
 /// Pointer to underlying action with vessel
@@ -43,13 +43,13 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ManyRestraintsBase(const ActionOptions&);
-  bool isPeriodic(){ return false; }
+  bool isPeriodic() { return false; }
   unsigned getNumberOfDerivatives();
 /// Routines that have to be defined so as not to have problems with virtual methods
-  void deactivate_task( const unsigned & task_index ){};
-/// Don't actually clear the derivatives when this is called from plumed main.  
-/// They are calculated inside another action and clearing them would be bad  
-  void clearDerivatives(){}
+  void deactivate_task( const unsigned & task_index ) {};
+/// Don't actually clear the derivatives when this is called from plumed main.
+/// They are calculated inside another action and clearing them would be bad
+  void clearDerivatives() {}
 /// Do jobs required before tasks are undertaken
   void doJobsRequiredBeforeTaskList();
 /// This actually does the calculation
@@ -57,16 +57,16 @@ public:
 /// Calculate the potential
   virtual double calcPotential( const double& val, double& df ) const=0;
 // Calculate does nothing
-  void calculate(){};
+  void calculate() {};
 /// This should never be called
-  void performTask( const unsigned& , const unsigned& , MultiValue& ) const { plumed_error(); }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 /// Deactivate task now does nothing
   void apply();
-  void applyBridgeForces( const std::vector<double>& bb ){ plumed_assert( bb.size()==0 ); }
+  void applyBridgeForces( const std::vector<double>& bb ) { plumed_assert( bb.size()==0 ); }
 };
 
 inline
-unsigned ManyRestraintsBase::getNumberOfDerivatives(){
+unsigned ManyRestraintsBase::getNumberOfDerivatives() {
   return aves->getNumberOfDerivatives();
 }
 

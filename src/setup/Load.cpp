@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2016 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,8 +26,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace setup{
+namespace PLMD {
+namespace setup {
 
 //+PLUMEDOC GENERIC LOAD
 /*
@@ -43,9 +43,9 @@ If you have a shared object named extensions.so and want to
 use the functionalities implemented in it within PLUMED you can
 load it with the following syntax
 
-\verbatim
+\plumedfile
 LOAD FILE=extensions.so
-\endverbatim
+\endplumedfile
 
 As a more practical example, imagine that you want to make a
 small change to one collective variable that is already implemented
@@ -61,7 +61,7 @@ with different names. Then you can compile it into a shared object using
 This will generate a file `Distance2.so` (or `Distance2.dylib` on a mac)
 that can be loaded.
 Now you can use your new implementation with the following input
-\verbatim
+\plumedfile
 # load the new library
 LOAD FILE=Distance2.so
 # compute standard distance
@@ -70,11 +70,11 @@ d: DISTANCE ATOMS=1,10
 d2: DISTANCE2 ATOMS=1,10
 # print them on a file
 PRINT ARG=d,d2 FILE=compare-them
-\endverbatim
+\endplumedfile
 
 You can even skip the initial step and directly feed PLUMED
 with the `Distance2.cpp` file: it will be compiled on the fly.
-\verbatim
+\plumedfile
 # load the new definition
 # this is a cpp file so it will be compiled
 LOAD FILE=Distance2.cpp
@@ -84,11 +84,11 @@ d: DISTANCE ATOMS=1,10
 d2: DISTANCE2 ATOMS=1,10
 # print them on a file
 PRINT ARG=d,d2 FILE=compare-them
-\endverbatim
+\endplumedfile
 
 This will allow to make quick tests while developing your own
 variables. Of course, after your implementation is ready you might
-want to add it to the PLUMED source tree and recompile 
+want to add it to the PLUMED source tree and recompile
 the whole PLUMED.
 
 
@@ -105,14 +105,14 @@ public:
 
 PLUMED_REGISTER_ACTION(Load,"LOAD")
 
-void Load::registerKeywords( Keywords& keys ){
+void Load::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);
   keys.add("compulsory","FILE","file to be loaded");
 }
 
 Load::Load(const ActionOptions&ao):
-Action(ao),
-ActionSetup(ao)
+  Action(ao),
+  ActionSetup(ao)
 {
   std::string f;
   parse("FILE",f);
