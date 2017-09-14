@@ -53,7 +53,8 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   nframes(0),
   epsilonClose(-1),
   debugClose(0),
-  logClose(0)
+  logClose(0),
+  computeRefClose(false)
 {
   parse("LAMBDA",lambda);
   parse("NEIGH_SIZE",neigh_size);
@@ -110,15 +111,15 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
     log.printf("  Neighbor list NOT enabled \n");
   }
   if (epsilonClose > 0) {
-      log.printf(" Computing with the close structure, epsilon = %lf\n", epsilonClose);
-      log << "  Bibliography " << plumed.cite("Pazurikova J, Krenek A, Spiwok V, Simkova M J. Chem. Phys. 146, 115101 (2017)") << "\n";
+    log.printf(" Computing with the close structure, epsilon = %lf\n", epsilonClose);
+    log << "  Bibliography " << plumed.cite("Pazurikova J, Krenek A, Spiwok V, Simkova M J. Chem. Phys. 146, 115101 (2017)") << "\n";
   }
   else {
-      debugClose = 0;
-      logClose = 0;
+    debugClose = 0;
+    logClose = 0;
   }
   if (debugClose)
-      log.printf(" Extensive debug info regarding close structure turned on\n");
+    log.printf(" Extensive debug info regarding close structure turned on\n");
 
   rotationRefClose = new Tensor[nframes];
   drotationPosCloseDrr01 = new Tensor[9];
@@ -127,8 +128,8 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
 }
 
 PathMSDBase::~PathMSDBase() {
-    delete[] rotationRefClose;
-    delete[] drotationPosCloseDrr01;
+  delete[] rotationRefClose;
+  delete[] drotationPosCloseDrr01;
 }
 
 void PathMSDBase::calculate() {
@@ -158,33 +159,33 @@ void PathMSDBase::calculate() {
 
   Tensor* tmp_rotationRefClose = new Tensor[nframes];
 
-  if (epsilonClose > 0){
-      //compute rmsd between positions and close structure, save rotation matrix, drotation_drr01
-      double posclose = rmsdPosClose.calc_Rot_DRotDRr01(getPositions(), rotationPosClose, drotationPosCloseDrr01, true);
-      //if we compute for the first time or the existing close structure is too far from current structure
-      if (firstPosClose || (posclose > epsilonClose)){
-          //set the current structure as close one for a few next steps
-          if (logClose)
-              log << "PLUMED-CLOSE: new close structure, rmsd pos close " << posclose << "\n";
-          rmsdPosClose.clear();
-          rmsdPosClose.setReference(getPositions());
-          //as this is a new close structure, we need to save the rotation matrices fitted to the reference structures
-	  // and we need to accurately recalculate for all reference structures
-          computeRefClose = true;
-          imgVec.resize(nframes);
+  if (epsilonClose > 0) {
+    //compute rmsd between positions and close structure, save rotation matrix, drotation_drr01
+    double posclose = rmsdPosClose.calc_Rot_DRotDRr01(getPositions(), rotationPosClose, drotationPosCloseDrr01, true);
+    //if we compute for the first time or the existing close structure is too far from current structure
+    if (firstPosClose || (posclose > epsilonClose)) {
+      //set the current structure as close one for a few next steps
+      if (logClose)
+        log << "PLUMED-CLOSE: new close structure, rmsd pos close " << posclose << "\n";
+      rmsdPosClose.clear();
+      rmsdPosClose.setReference(getPositions());
+      //as this is a new close structure, we need to save the rotation matrices fitted to the reference structures
+      // and we need to accurately recalculate for all reference structures
+      computeRefClose = true;
+      imgVec.resize(nframes);
 #pragma simd
-          for(unsigned i=0;i<nframes;i++){
-              imgVec[i].property=indexvec[i];
-              imgVec[i].index=i;
-          }
-          firstPosClose = false;
+      for(unsigned i=0; i<nframes; i++) {
+        imgVec[i].property=indexvec[i];
+        imgVec[i].index=i;
       }
-      else{
-          //the current structure is pretty close to the close structure, so we use saved rotation matrices to decrease the complexity of rmsd comuptation
-          if (debugClose)
-              log << "PLUMED-CLOSE: old close structure, rmsd pos close " << posclose << "\n";
-          computeRefClose = false;
-      }
+      firstPosClose = false;
+    }
+    else {
+      //the current structure is pretty close to the close structure, so we use saved rotation matrices to decrease the complexity of rmsd comuptation
+      if (debugClose)
+        log << "PLUMED-CLOSE: old close structure, rmsd pos close " << posclose << "\n";
+      computeRefClose = false;
+    }
   }
 
   std::vector<double> tmp_distances(imgVec.size(),0.0);
@@ -193,54 +194,54 @@ void PathMSDBase::calculate() {
   std::vector<Vector> tmp_derivs2(imgVec.size()*nat);
 
 // if imgVec.size() is less than nframes, it means that only some msd will be calculated
-  if (epsilonClose > 0){
-      if (computeRefClose){
-          //recompute rotation matrices accurately
-          for(unsigned i=rank;i<imgVec.size();i+=stride){
-              tmp_distances[i] = msdv[imgVec[i].index].calc_Rot(getPositions(), tmp_derivs, tmp_rotationRefClose[imgVec[i].index], true);
-              plumed_assert(tmp_derivs.size()==nat);
+  if (epsilonClose > 0) {
+    if (computeRefClose) {
+      //recompute rotation matrices accurately
+      for(unsigned i=rank; i<imgVec.size(); i+=stride) {
+        tmp_distances[i] = msdv[imgVec[i].index].calc_Rot(getPositions(), tmp_derivs, tmp_rotationRefClose[imgVec[i].index], true);
+        plumed_assert(tmp_derivs.size()==nat);
 #pragma simd
-              for(unsigned j=0;j<nat;j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
-          }
+        for(unsigned j=0; j<nat; j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
       }
-      else{
-          //approximate distance with saved rotation matrices
-          for(unsigned i=rank;i<imgVec.size();i+=stride){
-              tmp_distances[i] = msdv[imgVec[i].index].calculateWithCloseStructure(getPositions(), tmp_derivs, rotationPosClose, rotationRefClose[imgVec[i].index], drotationPosCloseDrr01, true);
-              plumed_assert(tmp_derivs.size()==nat);
+    }
+    else {
+      //approximate distance with saved rotation matrices
+      for(unsigned i=rank; i<imgVec.size(); i+=stride) {
+        tmp_distances[i] = msdv[imgVec[i].index].calculateWithCloseStructure(getPositions(), tmp_derivs, rotationPosClose, rotationRefClose[imgVec[i].index], drotationPosCloseDrr01, true);
+        plumed_assert(tmp_derivs.size()==nat);
 #pragma simd
-              for(unsigned j=0;j<nat;j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
-              if (debugClose){
-                  double withclose = tmp_distances[i];
-                  RMSD opt;
-                  opt.setType("OPTIMAL");
-                  opt.setReference(msdv[imgVec[i].index].getReference());
-                  vector<Vector> ders;
-                  double withoutclose = opt.calculate(getPositions(), ders, true);
-                  float difference = fabs(withoutclose-withclose);
-                  log.printf("PLUMED-CLOSE: difference original %lf - with close %lf = %lf, step %d, i %d imgVec[i].index %d \n", withoutclose, withclose, difference, getStep(), i, imgVec[i].index);
-              }
-          }
+        for(unsigned j=0; j<nat; j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
+        if (debugClose) {
+          double withclose = tmp_distances[i];
+          RMSD opt;
+          opt.setType("OPTIMAL");
+          opt.setReference(msdv[imgVec[i].index].getReference());
+          vector<Vector> ders;
+          double withoutclose = opt.calculate(getPositions(), ders, true);
+          float difference = fabs(withoutclose-withclose);
+          log.printf("PLUMED-CLOSE: difference original %lf - with close %lf = %lf, step %d, i %d imgVec[i].index %d \n", withoutclose, withclose, difference, getStep(), i, imgVec[i].index);
+        }
       }
+    }
   }
-  else{
-      // store temporary local results
-      for(unsigned i=rank;i<imgVec.size();i+=stride){
-          tmp_distances[i]=msdv[imgVec[i].index].calculate(getPositions(),tmp_derivs,true);
-          plumed_assert(tmp_derivs.size()==nat);
+  else {
+    // store temporary local results
+    for(unsigned i=rank; i<imgVec.size(); i+=stride) {
+      tmp_distances[i]=msdv[imgVec[i].index].calculate(getPositions(),tmp_derivs,true);
+      plumed_assert(tmp_derivs.size()==nat);
 #pragma simd
-          for(unsigned j=0;j<nat;j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
-      }
+      for(unsigned j=0; j<nat; j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
+    }
   }
 
 // reduce over all processors
   comm.Sum(tmp_distances);
   comm.Sum(tmp_derivs2);
   if (epsilonClose > 0 && computeRefClose) {
-      comm.Sum(tmp_rotationRefClose, nframes);
-      for (unsigned i=0; i<nframes;i++) {
-	      rotationRefClose[i] = tmp_rotationRefClose[i];
-      }
+    comm.Sum(tmp_rotationRefClose, nframes);
+    for (unsigned i=0; i<nframes; i++) {
+      rotationRefClose[i] = tmp_rotationRefClose[i];
+    }
   }
   delete [] tmp_rotationRefClose;
 // assign imgVec[i].distance and imgVec[i].distder

@@ -131,34 +131,34 @@ public:
                           const std::vector<Vector> & reference,
                           std::vector<Vector>  & DDistDPos, bool squared=false)const;
 
-template <bool safe, bool alEqDis>
-    double optimalAlignmentWithCloseStructure(const  std::vector<double>  & align,
-            const  std::vector<double>  & displace,
-            const std::vector<Vector> & positions,
-            const std::vector<Vector> & reference ,
-            std::vector<Vector>  & derivatives,
-            Tensor & rotationPosClose,
-            Tensor & rotationRefClose,
-            Tensor * drotationPosCloseDrr01,
-            bool squared=false)const;
+  template <bool safe, bool alEqDis>
+  double optimalAlignmentWithCloseStructure(const  std::vector<double>  & align,
+      const  std::vector<double>  & displace,
+      const std::vector<Vector> & positions,
+      const std::vector<Vector> & reference,
+      std::vector<Vector>  & derivatives,
+      Tensor & rotationPosClose,
+      Tensor & rotationRefClose,
+      Tensor * drotationPosCloseDrr01,
+      bool squared=false)const;
 
-template <bool safe, bool alEqDis>
-    double optimalAlignment_Rot_DRotDRr01(const  std::vector<double>  & align,
-            const  std::vector<double>  & displace,
-            const std::vector<Vector> & positions,
-            const std::vector<Vector> & reference ,
-            Tensor & Rotation,
-            Tensor * drotationPosCloseDrr01,
-            bool squared=false)const;
+  template <bool safe, bool alEqDis>
+  double optimalAlignment_Rot_DRotDRr01(const  std::vector<double>  & align,
+                                        const  std::vector<double>  & displace,
+                                        const std::vector<Vector> & positions,
+                                        const std::vector<Vector> & reference,
+                                        Tensor & Rotation,
+                                        Tensor * drotationPosCloseDrr01,
+                                        bool squared=false)const;
 
-template <bool safe, bool alEqDis>
-    double optimalAlignment_Rot(const  std::vector<double>  & align,
-            const  std::vector<double>  & displace,
-            const std::vector<Vector> & positions,
-            const std::vector<Vector> & reference,
-            std::vector<Vector>  & derivatives,
-            Tensor & Rotation,
-            bool squared=false)const;
+  template <bool safe, bool alEqDis>
+  double optimalAlignment_Rot(const  std::vector<double>  & align,
+                              const  std::vector<double>  & displace,
+                              const std::vector<Vector> & positions,
+                              const std::vector<Vector> & reference,
+                              std::vector<Vector>  & derivatives,
+                              Tensor & Rotation,
+                              bool squared=false)const;
 
   template <bool safe,bool alEqDis>
   double optimalAlignment_DDistDRef(const  std::vector<double>  & align,
@@ -241,11 +241,11 @@ template <bool safe, bool alEqDis>
 /// convenience method to retrieve all the bits and pieces needed by FitToTemplate
   double calc_FitElements( const std::vector<Vector>& pos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector> & centeredpositions,Vector & center_positions, const bool& squared=false );
 ///calculate rotation matrix, derivative of rotation matrix w.r.t. positions, derivative of rotation matrix w.r.t. rr01
- double calc_Rot_DRotDRr01( const std::vector<Vector>& positions, Tensor & Rotation, Tensor * DRotDRr01, const bool squared=false   );
- ///calculate rotation matrix, derivative of rotation matrix w.r.t. positions
- double calc_Rot( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & Rotation, const bool squared=false   );
- ///calculate with close structure, i.e. approximate the RMSD without expensive computation of rotation matrix by reusing saved rotation matrices from previous iterations
- double calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & rotationPosClose, Tensor & rotationRefClose, Tensor * drotationPosCloseDrr01, const bool squared=false   );
+  double calc_Rot_DRotDRr01( const std::vector<Vector>& positions, Tensor & Rotation, Tensor * DRotDRr01, const bool squared=false   );
+///calculate rotation matrix, derivative of rotation matrix w.r.t. positions
+  double calc_Rot( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & Rotation, const bool squared=false   );
+///calculate with close structure, i.e. approximate the RMSD without expensive computation of rotation matrix by reusing saved rotation matrices from previous iterations
+  double calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & rotationPosClose, Tensor & rotationRefClose, Tensor * drotationPosCloseDrr01, const bool squared=false   );
 /// static convenience method to get the matrix i,a from drotdpos (which is a bit tricky)
   static  Tensor getMatrixFromDRot(Matrix< std::vector<Vector> > &drotdpos, const unsigned &i, const unsigned &a) {
     Tensor t;
@@ -331,7 +331,7 @@ public:
   // only_rotation=true does not retrieve the derivatives, just retrieve the optimal rotation (the same calc cannot be exploit further)
   void doCoreCalc(bool safe,bool alEqDis, bool only_rotation=false);
   // do calculation with close structure data structures
-  void doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor & rotationPosClose, Tensor & rotationRefClose, Tensor * drotationPosCloseDrr01);  
+  void doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor & rotationPosClose, Tensor & rotationRefClose, Tensor * drotationPosCloseDrr01);
   // retrieve the distance if required after doCoreCalc
   double getDistance(bool squared);
   // retrieve the derivative of the distance respect to the position
