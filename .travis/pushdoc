@@ -54,6 +54,15 @@ This is an auto redirect page.
 </html>
 EOF
 
+if test -z "${GIT_BOT}"
+then
+  export GIT_BOT=plumedbot
+fi
+
+if test -z "${GIT_BOT_EMAIL}"
+then
+  export GIT_BOT_EMAIL=giovanni.bussi+plumedbot@gmail.com
+fi
 
 git init
 git config user.email "${GIT_BOT_EMAIL}"
