@@ -62,8 +62,8 @@ public:
     : min(l), max(h), nbins(n), periodic(pbc), domainMax(dMax),
       domainMin(dMin), binWidth((max - min) / double(nbins)) {}
   /// Set values
-  void set(double l, double h, size_t n, bool pbc = false, double dmax = 0,
-           double dmin = 0) {
+  void set(double l, double h, size_t n, bool pbc = false, double dmin = 0,
+           double dmax = 0) {
     min = l;
     max = h;
     nbins = n;
@@ -73,7 +73,7 @@ public:
     binWidth = (max - min) / nbins;
   }
   /// Set PBC data
-  void setPeriodicity(double dmax, double dmin) {
+  void setPeriodicity(double dmin, double dmax) {
     domainMax = dmax;
     domainMin = dmin;
     periodic = true;
@@ -88,6 +88,8 @@ public:
 
   /// Check periodicity
   bool isPeriodic() const { return this->periodic; }
+  /// Check real periodicity, i.e. the maximum == the domain maximum
+  bool isRealPeriodic() const;
 
   /// Check whether x is in this axis
   bool isInBoundary(double x) const;
@@ -100,12 +102,12 @@ public:
   friend class DRRForceGrid;
 
 protected:
-  double min;       // Minimum value
-  double max;       // Maximum value
+  double min;       // Minimum value of the axis
+  double max;       // Maximum value of the axis
   size_t nbins;     // Number of bins
   bool periodic;    // Periodicity
-  double domainMax; // Maybe useless?
-  double domainMin; // Maybe useless?
+  double domainMax; // Maximum value of the CV domain
+  double domainMin; // Minimum value of the CV domain
   friend class boost::serialization::access;
   /// Use boost serialization
   template <typename Archive>
