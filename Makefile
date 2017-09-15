@@ -1,5 +1,9 @@
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(MAKECMDGOALS),fullclean)
  -include Makefile.conf
+endif
+endif
 endif
 
 
