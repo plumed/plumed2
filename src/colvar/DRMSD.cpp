@@ -26,6 +26,7 @@
 #include "reference/DRMSD.h"
 #include "reference/MetricRegister.h"
 #include "core/Atoms.h"
+#include <memory>
 
 using namespace std;
 
@@ -102,11 +103,10 @@ class DRMSD : public Colvar {
   bool pbc_;
   MultiValue myvals;
   ReferenceValuePack mypack;
-  PLMD::DRMSD* drmsd_;
+  std::unique_ptr<PLMD::DRMSD> drmsd_;
 
 public:
   explicit DRMSD(const ActionOptions&);
-  ~DRMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -146,7 +146,7 @@ DRMSD::DRMSD(const ActionOptions&ao):
 
   // store target_ distance
   std::string type; parse("TYPE",type);
-  drmsd_= metricRegister().create<PLMD::DRMSD>( type );
+  drmsd_.reset( metricRegister().create<PLMD::DRMSD>( type ) );
   drmsd_->setBoundsOnDistances( !nopbc, lcutoff, ucutoff );
   drmsd_->set( pdb );
   checkRead();
@@ -163,10 +163,6 @@ DRMSD::DRMSD(const ActionOptions&ao):
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
 
-}
-
-DRMSD::~DRMSD() {
-  delete drmsd_;
 }
 
 // calculator

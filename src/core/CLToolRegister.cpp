@@ -66,13 +66,13 @@ bool CLToolRegister::check(string key) {
   return false;
 }
 
-CLTool* CLToolRegister::create(const CLToolOptions&ao) {
+std::unique_ptr<CLTool> CLToolRegister::create(const CLToolOptions&ao) {
   if(ao.line.size()<1)return NULL;
-  CLTool* cltool;
+  std::unique_ptr<CLTool> cltool;
   if(check(ao.line[0])) {
     CLToolOptions nao( ao,mk[ao.line[0]] );
     cltool=m[ao.line[0]](nao);
-  } else cltool=NULL;
+  }
   return cltool;
 }
 

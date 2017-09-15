@@ -26,6 +26,7 @@
 
 #include <string>
 #include <cmath>
+#include <memory>
 
 using namespace std;
 
@@ -110,13 +111,12 @@ PRINT ARG=cmap FILE=colvar
 class ContactMap : public Colvar {
 private:
   bool pbc, serial, docomp, dosum, docmdist;
-  NeighborList *nl;
+  std::unique_ptr<NeighborList> nl;
   std::vector<SwitchingFunction> sfs;
   vector<double> reference, weight;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ContactMap(const ActionOptions&);
-  ~ContactMap();
 // active methods:
   virtual void calculate();
   void checkFieldsAllowed() {}
@@ -181,7 +181,7 @@ ContactMap::ContactMap(const ActionOptions&ao):
     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact-"+num); componentIsNotPeriodic("contact-"+num);}
   }
   // Create neighbour lists
-  nl= new NeighborList(ga_lista,gb_lista,true,pbc,getPbc());
+  nl.reset(new NeighborList(ga_lista,gb_lista,true,pbc,getPbc()));
 
   // Read in switching functions
   std::string errors; sfs.resize( ga_lista.size() ); unsigned nswitch=0;
@@ -259,10 +259,6 @@ ContactMap::ContactMap(const ActionOptions&ao):
   // Set up if it is just a list of contacts
   requestAtoms(nl->getFullAtomList());
   checkRead();
-}
-
-ContactMap::~ContactMap() {
-  delete nl;
 }
 
 void ContactMap::calculate() {
