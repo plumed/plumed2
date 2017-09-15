@@ -28,6 +28,20 @@ bool DRRAxis::isInBoundary(double x) const {
     return true;
 }
 
+bool DRRAxis::isRealPeriodic() const {
+  if (periodic == true) {
+    if(std::abs(domainMax - max) < binWidth && std::abs(domainMin - min) < binWidth) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  else {
+    return false;
+  }
+}
+
 DRRAxis DRRAxis::merge(const DRRAxis &d1, const DRRAxis &d2) {
   const double newmin = std::min(d1.getMin(), d2.getMin());
   const double newmax = std::max(d1.getMax(), d2.getMax());
@@ -222,7 +236,7 @@ DRRForceGrid::getCountsLogDerivative(const std::vector<double> &pos) const {
       addr - shifts[i] * index1D(dimensions[i], pos[i]) + 0;
     const size_t addr_last = addr_first + shifts[i] * (dimensions[i].nbins - 1);
     if (addr == addr_first) {
-      if (dimensions[i].periodic == true) {
+      if (dimensions[i].isRealPeriodic() == true) {
         const unsigned long int &count_next = samples[addr + shifts[i]];
         const unsigned long int &count_prev = samples[addr_last];
         if (count_next != 0 && count_prev != 0)
@@ -238,7 +252,7 @@ DRRForceGrid::getCountsLogDerivative(const std::vector<double> &pos) const {
             (2.0 * binWidth);
       }
     } else if (addr == addr_last) {
-      if (dimensions[i].periodic == true) {
+      if (dimensions[i].isRealPeriodic() == true) {
         const unsigned long int &count_prev = samples[addr - shifts[i]];
         const unsigned long int &count_next = samples[addr_first];
         if (count_next != 0 && count_prev != 0)
