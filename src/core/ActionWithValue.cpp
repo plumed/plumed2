@@ -216,7 +216,7 @@ void ActionWithValue::addComponent( const std::string& name, const std::vector<u
   }
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
-    plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
+    if( !allowComponentsAndValue() ) plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponent(\"bias\") from your bias.");
     plumed_massert(values[i]->name!=thename,"there is already a value with this name");
@@ -244,7 +244,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name, cons
 }
 
 int ActionWithValue::getComponent( const std::string& name ) const {
-  plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
+  if( !allowComponentsAndValue() ) plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
     if (values[i]->name==thename) return i;
@@ -324,7 +324,7 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
   } else if( mystr==getLabel() + ".*" ){
       // Retrieve all scalar values
       unsigned nargs = args.size();
-      if( !action_to_do_after ) retrieveAllScalarValuesInLoop( args ); 
+      if( !action_to_do_after ){ retrieveAllScalarValuesInLoop( args ); } 
       if( args.size()==nargs && actionRegister().checkForShortcut(getName()) ) {  
           Keywords skeys; actionRegister().getShortcutKeywords( getName(), skeys );
           std::vector<std::string> out_comps( skeys.getAllOutputComponents() );
@@ -343,7 +343,6 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
               ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] );
               if( action ) args.push_back( action->getPntrToValue() );
           }
-          if( args.size()==0 ) myuser->error("could not find any actions created by shortcuts in action");
       } 
       for(unsigned j=0;j<args.size();++j) args[j]->interpretDataRequest( myuser->getLabel(), "" );
   } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {

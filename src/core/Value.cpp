@@ -35,6 +35,7 @@ Value::Value():
   action(NULL),
   value_set(false),
   reset(true),
+  norm(1.0),
   hasForce(false),
   hasDeriv(true),
   shape(std::vector<unsigned>()),
@@ -55,6 +56,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   action(av),
   value_set(false),
   reset(true),
+  norm(1.0),
   hasForce(false),
   name(name),
   hasDeriv(withderiv),
@@ -240,15 +242,17 @@ unsigned Value::getNumberOfValues() const {
 }
 
 double Value::get(const unsigned& ival) const {
-  if( hasDeriv ) return data[ival*(1+action->getNumberOfDerivatives())];
-  plumed_dbg_massert( ival<data.size(), "could not get value from " + name ); return data[ival];
+  if( hasDeriv ) return data[ival*(1+action->getNumberOfDerivatives())] / norm;
+  plumed_dbg_massert( ival<data.size(), "could not get value from " + name ); 
+  if( norm>epsilon ) return data[ival] / norm;
+  return 0.0;
 } 
 
 void Value::print( const std::string& uselab, OFile& ofile ) const {
   plumed_dbg_assert( userdata.count(uselab) );
   if( shape.size()==0 ){
       if( isPeriodic() ){ ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); } 
-      ofile.printField( name, data[0] ); 
+      ofile.printField( name, get(0) ); 
   } else if( userdata.find(uselab)->second[0]<0 ){
       if( isPeriodic() ){ ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
       std::vector<unsigned> indices( shape.size() ); 

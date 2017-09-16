@@ -146,6 +146,8 @@ protected:
 public:
 /// Get the action that does the calculation
   ActionWithValue* getActionThatCalculates();
+/// This allows us to have components and values in special circumstances
+  virtual bool allowComponentsAndValue() const { return false; }
 /// Add a value with a name like label.name
   void addComponent( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Add a value with a name like label.name that has derivatives

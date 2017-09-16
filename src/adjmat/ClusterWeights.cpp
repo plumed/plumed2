@@ -141,7 +141,7 @@ ClusterWeights::ClusterWeights(const ActionOptions&ao):
 void ClusterWeights::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   plumed_assert( getPntrToArgument(0)->valueHasBeenSet() );
   for(unsigned i=0;i<getPntrToArgument(0)->getShape()[0];++i){
-      if( fabs(getPntrToArgument(0)->get(i)+1-clustr)<epsilon ) tflags[i]=1;
+      if( fabs(getPntrToArgument(0)->get(i)-clustr)<epsilon ) tflags[i]=1;
   }
 }
 

@@ -52,6 +52,8 @@ private:
   ActionWithValue* action;
 /// Had the value been set
   bool value_set, reset;
+/// The value of the normalization
+  double norm;
 /// The data for this value
   std::vector<double> data;
 /// The value of the quantity
@@ -97,6 +99,8 @@ public:
   Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss=std::vector<unsigned>());
 /// Set the value of the function
   void set(double);
+/// Set the value of the stored data
+  void set(const unsigned& n, const double& v );
 /// Add something to the value of the function
   void add(double);
 /// Add something to the stored data
@@ -162,6 +166,10 @@ public:
 ///
   unsigned getRank() const ;
 ///
+  double getNorm() const ;
+///
+  void setNorm( const double& nn );
+///
   const std::vector<unsigned>& getShape() const ; 
 ///
   unsigned getSize() const ;
@@ -183,6 +191,11 @@ void Value::applyPeriodicity( const unsigned& ival ) {
     data[ival]=min+difference(min,data[ival]);
     if(data[ival]<min)data[ival]+=max_minus_min;
   }
+}
+
+inline
+void Value::set(const unsigned& n, const double& v ){
+  value_set=true; data[n]=v; applyPeriodicity(n);
 }
 
 inline
@@ -209,7 +222,8 @@ void Value::add(double v) {
 inline
 double Value::get()const {
   plumed_dbg_assert( shape.size()==0 );
-  return data[0];
+  if( norm>epsilon ) return data[0] / norm;
+  return 0.0;
 }
 
 inline
@@ -231,7 +245,7 @@ unsigned Value::getNumberOfDerivatives() const {
 inline
 double Value::getDerivative(const unsigned n) const {
   plumed_dbg_massert(shape.size()==0 && n<data.size()-1,"you are asking for a derivative that is out of bounds");
-  return data[1+n];
+  return data[1+n] / norm;
 }
 
 inline
@@ -299,6 +313,17 @@ inline
 unsigned Value::getRank() const {
   return shape.size();
 }
+
+inline
+double Value::getNorm() const {
+  return norm;
+}
+
+inline
+void Value::setNorm( const double& nn ) {
+  norm = nn;
+}
+
 
 inline
 std::size_t Value::getIndex(const std::vector<unsigned> & indices) const {
