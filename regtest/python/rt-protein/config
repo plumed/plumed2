@@ -1,0 +1,4 @@
+plumed_needs=python
+# this is to test a different name
+arg="./python-script.py"
+extra_files="../../trajectories/trajectory.xyz"

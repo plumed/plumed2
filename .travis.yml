@@ -92,6 +92,10 @@ install:
   - export INCLUDE="$HOME/opt/include:$INCLUDE"
   - export LIBRARY_PATH="$HOME/opt/lib:$LIBRARY_PATH"
   - export LD_LIBRARY_PATH="$HOME/opt/lib:$LD_LIBRARY_PATH"
+  - export PYTHONPATH="$HOME/opt/lib/plumed/python:$PYTHONPATH"
+# Setting the TMPDIR in this way allegedly prevents problems with the compilation of 
+# PLUMED + Python on macos
+  - export TMPDIR="/tmp" 
 # on travis, better dump stack trace in case there is an error
   - export PLUMED_STACK_TRACE=yes
 # build the manual, only if log contains string [makedoc]
@@ -124,6 +128,16 @@ install:
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y doxygen-latex ; fi
 # install lcov
   - if test "$MAKEDOC" == yes ; then ./.travis/install.lcov v1.13 ; fi
+# install numpy and cython for python interface
+  - if test "$TRAVIS_OS_NAME" == "linux" ; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ; fi
+  - if test "$TRAVIS_OS_NAME" == "osx" ; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh ; fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda create -q -n test-environment python=3.6 numpy Cython
+  - source activate test-environment
 # then replace doxygen with the desided version
 # I use 1.8.10 instead of 1.8.11 since it looks like 1.8.11 have troubles with
 # non case sensitive files (it writes capitalized filenames)
