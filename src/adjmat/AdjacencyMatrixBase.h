@@ -39,6 +39,7 @@ private:
   LinkCells linkcells, threecells;
   std::vector<unsigned> ablocks, threeblocks;
   void updateWeightDerivativeIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
+  void setupThirdAtomBlock( const std::vector<AtomNumber>& tc, std::vector<AtomNumber>& t );
 protected:
   Vector getPosition( const unsigned& indno, const MultiValue& myvals ) const ;
   void addAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const ;

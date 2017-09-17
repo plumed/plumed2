@@ -35,6 +35,7 @@ public ActionWithValue,
 public ActionWithArguments
 {
 private:
+  bool usecols;
   unsigned nderivatives;
   std::vector<double> forcesToApply;
 protected:
@@ -68,12 +69,15 @@ bool SymmetryFunctionBase::mustBeTreatedAsDistinctArguments() const {
 
 inline
 unsigned SymmetryFunctionBase::getNumberOfDerivatives() const {
+  if( usecols ) return 0;
   return nderivatives;
 }
 
 inline
 void SymmetryFunctionBase::addToValue( const unsigned& ival, const double& val, MultiValue& myvals ) const {
-  myvals.addValue( getPntrToOutput(ival)->getPositionInStream(), val );
+  unsigned col_stash_index = myvals.getSecondTaskIndex(); if( col_stash_index>=getFullNumberOfTasks() ) col_stash_index -= getFullNumberOfTasks();
+  if( usecols ) myvals.stashMatrixElement( getPntrToOutput(ival)->getPositionInMatrixStash(), col_stash_index, val );
+  else myvals.addValue( getPntrToOutput(ival)->getPositionInStream(), val );
 }
 
 inline

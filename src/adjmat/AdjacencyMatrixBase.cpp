@@ -78,15 +78,15 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   if( keywords.exists("GROUPC") ){
       std::vector<AtomNumber> tc; parseAtomList("GROUPC",tc);
       if( tc.size()==0 ) error("no atoms in GROUPC specified");
-      log.printf("  atoms in GROUPC "); threeblocks.resize( tc.size() ); unsigned base=t.size();
-      for(unsigned i=0;i<tc.size();++i){ log.printf("%d ", tc[i].serial()); t.push_back(tc[i]); threeblocks[i]=base+i; }
-      log.printf("\n");
+      log.printf("  atoms in GROUPC "); setupThirdAtomBlock( tc, t );
   } else if( keywords.exists("BRIDGING_ATOMS") ) {
       std::vector<AtomNumber> tc; parseAtomList("BRIDGING_ATOMS",tc); 
       if( tc.size()==0 ) error("no BRIDGING_ATOMS specified");
-      log.printf("  bridging atoms are "); threeblocks.resize( tc.size() ); unsigned base=t.size();
-      for(unsigned i=0;i<tc.size();++i){ log.printf("%d ", tc[i].serial()); t.push_back(tc[i]); threeblocks[i]=base+i; }
-      log.printf("\n");
+      log.printf("  bridging atoms are "); setupThirdAtomBlock( tc, t ); 
+  } else if( keywords.exists("HYDROGENS") ) {
+      std::vector<AtomNumber> tc; parseAtomList("HYDROGENS",tc);
+      if( tc.size()==0 ) error("no HYDROGEN atoms specified");
+      log.printf("  hydrogen atoms are "); setupThirdAtomBlock( tc, t ); 
   }
   // Request the atoms from the ActionAtomistic
   requestAtoms( t ); parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);
@@ -97,6 +97,12 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
      addComponent( "z", shape ); componentIsNotPeriodic("z");
   }
   log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
+}
+
+void AdjacencyMatrixBase::setupThirdAtomBlock( const std::vector<AtomNumber>& tc, std::vector<AtomNumber>& t ) {
+  threeblocks.resize( tc.size() ); unsigned base=t.size();
+  for(unsigned i=0;i<tc.size();++i){ log.printf("%d ", tc[i].serial()); t.push_back(tc[i]); threeblocks[i]=base+i; }
+  log.printf("\n");
 }
 
 void AdjacencyMatrixBase::setLinkCellCutoff( const double& lcut, double tcut ) {

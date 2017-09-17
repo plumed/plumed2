@@ -41,6 +41,7 @@ Value::Value():
   shape(std::vector<unsigned>()),
   alwaysstore(false),
   storedata(true),
+  columnsums(false),
   bufstart(0),
   streampos(0),
   periodicity(unset),
@@ -63,6 +64,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   shape(ss),
   alwaysstore(false),
   storedata(shape.size()==0),
+  columnsums(false),
   bufstart(0),
   streampos(0),
   periodicity(unset),
@@ -93,6 +95,10 @@ void Value::buildDataStore(){
 
 void Value::alwaysStoreValues(){
   alwaysstore=true; storedata=true;
+}
+
+void Value::buildColumnSums() {
+  columnsums=true; storedata=true;
 }
 
 void Value::interpretDataRequest( const std::string& uselab, const std::string& values ){

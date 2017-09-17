@@ -214,7 +214,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
   clearDependencies();
   bool storing=false; 
   for(unsigned i=0;i<arguments.size();++i){
-      if( arguments[i]->alwaysstore ){ storing=true; break; }
+      if( arguments[i]->alwaysstore || arguments[i]->columnsums ){ storing=true; break; }
   } 
   std::string fullname,name;
   std::vector<ActionWithValue*> f_actions;

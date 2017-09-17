@@ -1,4 +1,4 @@
-#! FIELDS time a1.mean a2.mean a3.mean
+#! FIELDS time a1_mean a2_mean a3_mean
  0.000000   1.1658   1.1658   1.1658
  0.005000   1.1580   1.1580   1.1580
  0.010000   1.1670   1.1670   1.1670

@@ -1,4 +1,4 @@
-#! FIELDS time a4.mean a5.mean a6.mean a7.mean
+#! FIELDS time a4_mean a5_mean a6_mean a7_mean
  0.000000   0.4411   0.4411   0.8811   0.8811
  0.005000   0.4611   0.4611   0.9136   0.9136
  0.010000   0.4632   0.4632   0.9094   0.9094

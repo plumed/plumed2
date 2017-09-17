@@ -79,6 +79,9 @@ void SymmetryFunctionBase::registerKeywords( Keywords& keys ){
   keys.add("numbered","VECTORS","");
   keys.addFlag("ONESHOT",false,"This forces all the elements of the row of the matrix to be computed prior to computing the symmetry function.  "
                                "It should only be ever need to be used for testing.");
+  keys.addFlag("USECOLS",false,"When this flag is present the CVs are calculated by summing over the columns rather than the rows.  You are thus calculating "
+                               "symmetry functions for the atoms in GROUPB rather than symmetry functions for the atoms in GROUPA.  The derivatives are much "
+                               "more expensive when this approach is used");
 }
 
 SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
@@ -87,6 +90,10 @@ ActionWithValue(ao),
 ActionWithArguments(ao),
 done_with_matrix_comput(true)
 {
+  if( keywords.exists("USECOLS") ) {
+      parseFlag("USECOLS",usecols); 
+      if( usecols ) log.printf("  calculating symmetry functions for second group \n");
+  }
   std::vector<std::string> alabels(1); std::vector<Value*> wval; parseArgumentList("WEIGHT",wval);
   if( wval.size()!=1 ) error("keyword WEIGHT should be provided with the label of a single action"); 
   alabels[0]=(wval[0]->getPntrToAction())->getLabel(); (wval[0]->getPntrToAction())->addActionToChain( alabels, this );
@@ -129,7 +136,10 @@ done_with_matrix_comput(true)
       for(unsigned i=0;i<wval.size();++i) wval[i]->buildDataStore(); 
   }
   requestArguments(wval,true); forcesToApply.resize( nderivatives );
-  if( plumed.getAtoms().getAllGroups().count(wval[0]->getPntrToAction()->getLabel()) ){
+  if( getPntrToArgument(0)->getRank()==2 ) {
+      for(unsigned i=0;i<getPntrToArgument(0)->getShape()[0];++i) addTaskToList(i); 
+  }
+  if( !usecols && plumed.getAtoms().getAllGroups().count(wval[0]->getPntrToAction()->getLabel()) ){
      const auto m=plumed.getAtoms().getAllGroups().find(wval[0]->getPntrToAction()->getLabel());
      plumed.getAtoms().insertGroup( getLabel(), m->second ); 
   } 
@@ -138,17 +148,23 @@ done_with_matrix_comput(true)
 void SymmetryFunctionBase::addValueWithDerivatives() {
   std::vector<unsigned> shape;
   if( getPntrToArgument(0)->getRank()==2 ){
-      shape.resize(1); shape[0]=getPntrToArgument(0)->getShape()[0];
+      shape.resize(1); 
+      if( usecols ) shape[0]=getPntrToArgument(0)->getShape()[1];
+      else shape[0]=getPntrToArgument(0)->getShape()[0];
   } 
   ActionWithValue::addValue( shape ); setNotPeriodic();
+  if( usecols ) getPntrToOutput( getNumberOfComponents()-1 )->buildColumnSums();
 }
 
 void SymmetryFunctionBase::addComponentWithDerivatives( const std::string& name ) { 
   std::vector<unsigned> shape;
   if( getPntrToArgument(0)->getRank()==2 ){
-      shape.resize(1); shape[0]=getPntrToArgument(0)->getShape()[0];
+      shape.resize(1); 
+      if( usecols ) shape[0]=getPntrToArgument(0)->getShape()[1];
+      else shape[0]=getPntrToArgument(0)->getShape()[0];
   }
   ActionWithValue::addComponent(name,shape); componentIsNotPeriodic(name); 
+  if( usecols ) getPntrToOutput( getNumberOfComponents()-1 )->buildColumnSums();
 }
 
 void SymmetryFunctionBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {

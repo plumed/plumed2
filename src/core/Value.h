@@ -75,6 +75,8 @@ private:
   bool alwaysstore;
 /// Are we storing the data
   bool storedata;
+/// Are we taking column sums
+  bool columnsums;
 /// Variables for storing data
   unsigned bufstart, streampos, matpos;
 /// Store information on who is using information contained in this value 
@@ -161,6 +163,7 @@ public:
 /// Build the store of data
   void buildDataStore();
   void alwaysStoreValues();
+  void buildColumnSums();
 ///
   void activateTasks( std::vector<unsigned>& taskFlags ) const ;
 ///

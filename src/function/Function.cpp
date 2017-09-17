@@ -217,9 +217,16 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
   } else {
       for(unsigned j=0;j<getNumberOfComponents();++j){ 
           unsigned ostrn = getPntrToOutput(j)->getPositionInStream(); unsigned base=0;
-          for(unsigned i=0;i<getNumberOfArguments();++i){ 
-              myvals.updateIndex( ostrn, base + myvals.getTaskIndex() ); 
-              base += getPntrToArgument(i)->getSize(); 
+          if( getPntrToArgument(j)->getRank()==0 ) {
+              for(unsigned i=0;i<getNumberOfArguments();++i){
+                  myvals.updateIndex( ostrn, base );  
+                  base += getPntrToArgument(i)->getSize();
+              }
+          } else {
+              for(unsigned i=0;i<getNumberOfArguments();++i){ 
+                  myvals.updateIndex( ostrn, base + myvals.getTaskIndex() ); 
+                  base += getPntrToArgument(i)->getSize(); 
+              }
           }
       }
   }

@@ -476,6 +476,8 @@ void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned
      if( values[i]->getRank()==2 ){ 
          if( values[i]->getShape()[1]>ncols ){ ncols = values[i]->getShape()[1]; }
          values[i]->matpos=nmat; nmat++; 
+     } else if( values[i]->getRank()==1 && values[i]->columnsums ) {
+         values[i]->matpos=nmat; nmat++;
      }
      values[i]->streampos=nquants; nquants++; 
   }
@@ -581,6 +583,13 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
                       unsigned jind = myvals.getStashedMatrixIndex(matind,j);
                       plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[i]->getName() );
                       buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
+                  } 
+               // This looks after sums over columns of matrix
+               } else if ( values[i]->getRank()==1 && values[i]->columnsums ) {
+                  unsigned vindex = bufstart; unsigned matind = values[i]->getPositionInMatrixStash();
+                  for(unsigned j=0;j<myvals.getNumberOfStashedMatrixElements(matind);++j) {
+                      unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+                      buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind ); 
                   }
                // This looks after storing in all other cases 
                } else {
