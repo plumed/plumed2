@@ -101,7 +101,7 @@ void ClusteringBase::calculate() {
   for(unsigned i=0; i<cluster_sizes.size(); ++i){
       double this_size = static_cast<double>(cluster_sizes.size()-i);
       for(unsigned j=0;j<cluster_sizes.size(); ++j){
-          if( which_cluster[j]==cluster_sizes[i].second ) getPntrToValue()->add( j, this_size ); 
+          if( which_cluster[j]==cluster_sizes[i].second ) getPntrToValue()->set( j, this_size ); 
       }
   }
 }

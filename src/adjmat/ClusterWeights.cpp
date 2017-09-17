@@ -89,6 +89,7 @@ public:
 PLUMED_REGISTER_ACTION(ClusterWeights,"CLUSTER_WEIGHTS")
 PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_WEIGHTS") 
 PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_PROPERTIES")
+PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_NATOMS")
 
 void ClusterWeights::shortcutKeywords( Keywords& keys ) { 
   keys.add("optional","ARG","calculate the sum of the arguments calculated by this action for the cluster");
@@ -98,11 +99,17 @@ void ClusterWeights::shortcutKeywords( Keywords& keys ) {
 void ClusterWeights::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                                      const std::map<std::string,std::string>& keys,
                                      std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> weights; weights.push_back( lab + ":" ); weights.push_back("CLUSTER_WEIGHTS");
+  std::vector<std::string> weights; 
+  if( words[0]=="CLUSTER_NATOMS" ) weights.push_back( lab + "_weights:" );
+  else weights.push_back( lab + ":" ); 
+  weights.push_back("CLUSTER_WEIGHTS");
   for(unsigned i=1;i<words.size();++i) weights.push_back( words[i] );
   actions.push_back( weights );
   if( words[0]=="CLUSTER_PROPERTIES" ) { 
       multicolvar::MultiColvarBase::expandFunctions( lab, keys.find("ARG")->second, lab, words, keys, actions ); 
+  } else if( words[0]=="CLUSTER_NATOMS" ) {
+      std::vector<std::string> nat_str; nat_str.push_back( lab + ":" ); nat_str.push_back("COMBINE");
+      nat_str.push_back("ARG=" + lab + "_weights"); nat_str.push_back("PERIODIC=NO"); actions.push_back( nat_str ); 
   }
 }
 
@@ -128,7 +135,7 @@ ClusterWeights::ClusterWeights(const ActionOptions&ao):
   requestArguments( clusters, false );
   // Now create the value
   std::vector<unsigned> shape(1); shape[0]=clusters[0]->getShape()[0]; 
-  addValue( shape ); getPntrToOutput(0)->alwaysStoreValues();
+  addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
   // And the tasks
   for(unsigned i=0;i<shape[0];++i) addTaskToList(i);
   // Find out which cluster we want

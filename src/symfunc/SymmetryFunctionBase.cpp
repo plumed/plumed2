@@ -88,7 +88,8 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
 Action(ao),
 ActionWithValue(ao),
 ActionWithArguments(ao),
-done_with_matrix_comput(true)
+done_with_matrix_comput(true),
+usecols(false)
 {
   if( keywords.exists("USECOLS") ) {
       parseFlag("USECOLS",usecols); 
