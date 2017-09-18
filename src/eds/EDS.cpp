@@ -36,7 +36,7 @@ using namespace bias;
 namespace PLMD {
 namespace eds {
 
-//+PLUMEDOC BIAS EDS
+//+PLUMEDOC EDS_BIAS EDS_EDS
 /*
 Add a linear bias on a set of observables.
 
@@ -124,7 +124,6 @@ eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.
 //+ENDPLUMEDOC
 
 class EDS : public Bias {
-
 
 private:
   /*We will get this and store it once, since on-the-fly changing number of CVs will be fatal*/
