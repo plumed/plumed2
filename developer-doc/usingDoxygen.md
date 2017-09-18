@@ -501,5 +501,21 @@ unofficial or unsupported branch (see .travis/pushdoc script).
 
 Bottom line: when you make a commit where you modified the manual and you want the online manual to be updated,
 add [makedoc] in the commit log. After ten minutes or so the manual should be up to date, remember to double check on the web
-and to revert the commit if there are errors!
+and to revert the commit if there are errors! 
 
+It is possible to generate PLUMED manuals for your own personal forks 
+using a similar procedure as described above. 
+For this to work you need to enable Travis CI for your forked repository 
+and define appropriately the environment variables on Travis CI. 
+The github account used to automatically push the generated manuals 
+should be defined using the GIT_BOT variable, 
+preferably this should be a dummy account. A github token
+enabling html access for that account should be defined using the GIT_TOKEN variable. 
+Furthermore, you need to define an email address associated to the account using the GIT_BOT_EMAIL variable. 
+It is better to make all these environment variable hidden such that they are 
+not shown in the public logs on travis-ci.org. 
+To generate a manual for a specific branch you need to create a repository 
+USERNAME/doc-NAMEOFTHEBRANCH and give write access to the account given in 
+GIT_BOT. The generated manuals will be accessible on 
+https://USERNAME.github.io/doc-NAMEOFTHEBRANCH. Note that manuals generated in 
+this way will always be labeled as unofficial and not shown in search engine results.
