@@ -229,15 +229,18 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
     ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
     plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
     addDependency(action);
+    if( storing ) arguments[i]->buildDataStore();
     // Check if we already have this argument in the stream
-    if( arguments[i]->getRank()>0 ){
+    if( arguments[i]->getRank()>0 ) { 
         bool found=false; ActionWithValue* myact = (arguments[i]->getPntrToAction())->getActionThatCalculates();
         for(unsigned k=0;k<f_actions.size();++k){
             if( f_actions[k]==myact ){ found=true; break; }
         }   
-        if( !found ) f_actions.push_back( myact );
+        if( !found ){
+           if( f_actions.size()==0 ) f_actions.push_back( myact );
+           else if( !arguments[i]->storedata ) f_actions.push_back( myact );
+        }
     }
-    if( storing ) arguments[i]->buildDataStore();   
   }
   // This is a way of checking if we are in an ActionWithValue by looking at the keywords -- is there better fix?
   if( firstcall ) {

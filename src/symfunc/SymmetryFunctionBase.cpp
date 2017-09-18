@@ -177,7 +177,7 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
       double weight = myvals.get( getPntrToArgument(0)->getPositionInStream() );
       if( fabs(weight)>epsilon ){
           Vector dir; dir.zero();
-          if( getNumberOfArguments()>1 ){
+          if( getNumberOfArguments()==4 ){
               dir[0] = myvals.get( getPntrToArgument(1)->getPositionInStream() ); 
               dir[1] = myvals.get( getPntrToArgument(2)->getPositionInStream() ); 
               dir[2] = myvals.get( getPntrToArgument(3)->getPositionInStream() );
@@ -207,7 +207,7 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
               std::vector<double>& tmp_w( myvals.getSymfuncTemporyDerivatives(my_w) );
               // Turn off matrix element storing during rerun of calculations
               myvals.setMatrixStashForRerun(); 
-              if( getNumberOfArguments()>1 ) {
+              if( getNumberOfArguments()==4 ) {
                   unsigned my_x = getPntrToArgument(1)->getPositionInStream();
                   std::vector<double>& tmp_x( myvals.getSymfuncTemporyDerivatives(my_x) ); 
                   unsigned my_y = getPntrToArgument(2)->getPositionInStream();

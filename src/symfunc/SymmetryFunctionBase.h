@@ -75,9 +75,10 @@ unsigned SymmetryFunctionBase::getNumberOfDerivatives() const {
 
 inline
 void SymmetryFunctionBase::addToValue( const unsigned& ival, const double& val, MultiValue& myvals ) const {
-  unsigned col_stash_index = myvals.getSecondTaskIndex(); if( col_stash_index>=getFullNumberOfTasks() ) col_stash_index -= getFullNumberOfTasks();
-  if( usecols ) myvals.stashMatrixElement( getPntrToOutput(ival)->getPositionInMatrixStash(), col_stash_index, val );
-  else myvals.addValue( getPntrToOutput(ival)->getPositionInStream(), val );
+  if( usecols ){ 
+     unsigned col_stash_index = myvals.getSecondTaskIndex(); if( col_stash_index>=getFullNumberOfTasks() ) col_stash_index -= getFullNumberOfTasks(); 
+     myvals.stashMatrixElement( getPntrToOutput(ival)->getPositionInMatrixStash(), col_stash_index, val );
+  } else myvals.addValue( getPntrToOutput(ival)->getPositionInStream(), val );
 }
 
 inline
