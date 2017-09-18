@@ -56,7 +56,7 @@ plumedconfig = subprocess.check_output([plumedexe, 'info', '--configuration']).d
 for line in plumedconfig :
    if "CC=" in line : os.environ["CC"] = line.replace("CC=","").replace("\n","")
    if "CXX=" in line : os.environ["CXX"] = line.replace("CXX=","").replace("\n","")
-   if "LDSO=" in line : os.environ["LDSHARED"] = line.replace("LDSO=","").replace("\n","")
+   if "LDSHARED=" in line : os.environ["LDSHARED"] = line.replace("LDSHARED=","").replace("\n","")
 
 print( "Building interface using CC=" + os.environ["CC"] + " , CXX=" + os.environ["CXX"] + " and LDSHARED=" + os.environ["LDSHARED"] )
 
