@@ -203,7 +203,7 @@ endif
 # python installation (rebuild prior to installation so as to discover plumed in path)
 ifneq (,$(findstring __PLUMED_HAS_PYTHON,$(CPPFLAGS)))
 	cp -pr ../../python install 
-	cd install/python && rm -fr *.so plumed.cpp build && python buildPythonInterface.py build_ext -i
+	cd install/python && rm -fr *.so plumed.cpp build && $(python_bin) buildPythonInterface.py build_ext -i
 	cp -pr install/python "$(DESTDIR)$(libdir)/$(program_name)/" 
 endif
 # making everything visible:

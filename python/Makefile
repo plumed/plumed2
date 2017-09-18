@@ -18,7 +18,7 @@ ifneq (,$(findstring __PLUMED_HAS_PYTHON,$(CPPFLAGS)))
 
 all:
 	@echo Building python interface for PLUMED 
-	python buildPythonInterface.py build_ext -i
+	$(python_bin) buildPythonInterface.py build_ext -i
 
 else
 
