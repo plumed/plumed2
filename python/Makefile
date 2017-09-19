@@ -18,7 +18,14 @@ ifdef python_bin
 
 all:
 	@echo Building python interface for PLUMED 
-	$(python_bin) buildPythonInterface.py build_ext -i
+	CC="$(CC)" \
+          LDSHARED="$(LDSHARED)" \
+          CXX="$(CXX)" \
+          program_name=plumed \
+          plumedexe=../src/lib/plumed \
+          include_dir=../src/wrapper \
+          lib_dir=../src/lib \
+          $(python_bin) buildPythonInterface.py build_ext -i
 
 else
 
