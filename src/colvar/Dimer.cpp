@@ -96,13 +96,16 @@ the total number of atoms:
 dim: DIMER TEMP=300 Q=0.5 ALLATOMS DSIGMA=0.002 NOVSITES
 \endplumedfile
 
-The NOVSITES flag is not required if one provides the atom serial of each Dimer. This is
-defined as the atom serial of the first bead of the dimer and is thus a number between 1 and N.
-Along with the ATOMS list also the number N of lines describing the first beads has to be given.
-For example, the Dimer interaction energy of dimers 1,5,7 is:
+The NOVSITES flag is not required if one provides the atom serials of each Dimer. These are
+defined through two atomlists provided __instead__ of the ALLATOMS keyword.
+For example, the Dimer interaction energy of dimers specified by beads (1;23),(5;27),(7;29) is:
 \plumedfile
-dim: DIMER TEMP=300 Q=0.5 NATOMS=N ATOMS=1,5,7 DSIGMA=0.002
+dim: DIMER TEMP=300 Q=0.5 ATOMS1=1,5,7 ATOMS2=23,27,29 DSIGMA=0.002
 \endplumedfile
+
+Note that the ATOMS1,ATOMS2 keywords can support atom groups and
+interval notation as defined in \ref GROUP.
+
 
 In a Replica Exchange simulation the keyword DSIGMA can be used in two ways:
 if a plumed.n.dat file is provided for each replica, then DSIGMA is passed as a single value,
@@ -110,7 +113,7 @@ like in the previous examples, and each replica will read its own DSIGMA value. 
 a unique plumed.dat is given, DSIGMA has to be a list containing a value for each replica.
 For 4 replicas:
 \plumedfile
-dim: DIMER TEMP=300 Q=0.5 NATOMS=N ATOMS=1,5,7 DSIGMA=0.002,0.002,0.004,0.01
+dim: DIMER TEMP=300 Q=0.5 ATOMS1=1,5,7 ATOMS2=23,27,29 DSIGMA=0.002,0.002,0.004,0.01
 \endplumedfile
 
 
@@ -136,12 +139,14 @@ public:
   virtual void calculate();
 protected:
   bool trimer,useall;
-  int myrank, nranks, natoms;
+  int myrank, nranks;
   double qexp,temperature,beta,dsigma;
   vector<double> dsigmas;
 private:
   void consistencyCheck();
-  vector<int> usedatoms;
+  vector<AtomNumber> usedatoms1;
+  vector<AtomNumber> usedatoms2;
+
 };
 
 PLUMED_REGISTER_ACTION(Dimer, "DIMER")
@@ -154,8 +159,8 @@ void Dimer::registerKeywords( Keywords& keys) {
   keys.add("compulsory","DSIGMA","The interaction strength of the dimer bond.");
   keys.add("compulsory", "Q", "The exponent of the dimer potential.");
   keys.add("compulsory", "TEMP", "The temperature (in Kelvin) of the simulation.");
-  keys.add("atoms", "ATOMS", "The list of atoms being considered by this CV. Used if ALLATOMS flag is missing");
-  keys.add("atoms","NATOMS","The number of dimerized atoms. Used in combination with ATOMS list");
+  keys.add("atoms", "ATOMS1", "The list of atoms representing the first bead of each Dimer being considered by this CV. Used if ALLATOMS flag is missing");
+  keys.add("atoms", "ATOMS2", "The list of atoms representing the second bead of each Dimer being considered by this CV. Used if ALLATOMS flag is missing");
   keys.addFlag("ALLATOMS", false, "Use EVERY atom of the system. Overrides ATOMS keyword.");
   keys.addFlag("NOVSITES", false, "If present the configuration is without virtual sites at the centroids.");
 
@@ -193,6 +198,7 @@ Dimer::Dimer(const ActionOptions& ao):
   if(useall)
   {
     // go with every atom in the system but not the virtuals...
+    int natoms;
     if(trimer)
       natoms= 2*getTotAtoms()/3;
     else
@@ -207,27 +213,23 @@ Dimer::Dimer(const ActionOptions& ao):
   }
   else  // serials for the first beads of each dimer are given
   {
-    parseVector("ATOMS",usedatoms);
-    double ntm;
-    parse("NATOMS",ntm);
-    natoms=ntm;
+    parseAtomList("ATOMS1",usedatoms1);
+    parseAtomList("ATOMS2",usedatoms2);
 
-    int isz = usedatoms.size();
+    int isz1 = usedatoms1.size();
 
-    for(unsigned int i=0; i<isz; i++)
+    for(unsigned int i=0; i<isz1; i++)
     {
       AtomNumber ati;
-      ati.setIndex(usedatoms[i]-1);
+      ati.setIndex(usedatoms1[i].index());
       atoms.push_back(ati);
-
     }
 
-    for(unsigned int i=0; i<isz; i++)
+    int isz2 = usedatoms2.size();
+    for(unsigned int i=0; i<isz2; i++)
     {
       AtomNumber atip2;
-      atip2.setIndex(usedatoms[i]+natoms-1);
-      if(usedatoms[i]>natoms)
-        error("The Dimer CV requires that when choosing atoms you refere only to the first beads.");
+      atip2.setIndex(usedatoms2[i].index());
       atoms.push_back(atip2);
     }
 
@@ -237,11 +239,8 @@ Dimer::Dimer(const ActionOptions& ao):
   beta = 1./(kBoltzmann*temperature);
 
   addValueWithDerivatives();  // allocate
-
   requestAtoms(atoms);
-
   setNotPeriodic();
-
 }
 
 void Dimer::calculate()
@@ -302,13 +301,15 @@ These are checked here and PLUMED error handlers are (eventually) called.
 ******************/
 void Dimer::consistencyCheck()
 {
-  if(useall==false && natoms==0)
-    error("Either NATOMS or ATOMS are required to specify the number of dimerized atoms.");
+  if(!useall && usedatoms1.size()!=usedatoms2.size())
+    error("The provided atom lists are of different sizes.");
 
   if(qexp<0.5 || qexp>1)
     warning("Dimer CV is meant to be used with q-exponents between 0.5 and 1. We are not responsible for any black hole. :-)");
+
   if(dsigma<0)
     error("Please use positive sigma values for the Dimer strength constant");
+
   if(temperature<0)
     error("Please, use a positive value for the temperature...");
 
