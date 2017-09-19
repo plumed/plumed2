@@ -42,7 +42,7 @@ for path in os.environ["PATH"].split(os.pathsep):
        plumedexe=exe_file
        break
 
-# Get information on where plumed headers and libraries are installed and the version number
+# Get information on where plumed headers and libraries are installed and the version number
 print( "Plumedexe is " + plumedexe )
 plumedroot = subprocess.check_output([plumedexe, 'info', '--root']).decode("utf-8").strip("\n")
 print( "Creating interface for plumed version in " + plumedroot )
