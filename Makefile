@@ -1,10 +1,14 @@
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(MAKECMDGOALS),fullclean)
  -include Makefile.conf
+endif
+endif
 endif
 
 
 SRCDIRS := src test
-SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports vim astyle
+SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports vim astyle python
 
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
@@ -16,6 +20,7 @@ ifdef GCCDEP
 all:
 	$(MAKE) lib
 	$(MAKE) -C vim
+	$(MAKE) -C python
 
 # target useful for macports
 # it builds the code then the documentation

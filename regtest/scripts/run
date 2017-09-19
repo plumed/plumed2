@@ -138,6 +138,9 @@ case "$type" in
 (plumed)
   $mpi $valgrind $plumed $arg > out 2> err
   ;;
+(python)
+  python $arg > out 2> err
+  ;;
 (*) echo "unknown test type" ; exit 1 ;;
 esac
 

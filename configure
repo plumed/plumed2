@@ -632,6 +632,8 @@ doxygen
 make_doc
 readelf
 LD
+cython
+py
 OPENMP_CXXFLAGS
 EGREP
 GREP
@@ -650,7 +652,7 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
-LDSO
+LDSHARED
 STATIC_LIBS
 SOEXT
 target_alias
@@ -724,6 +726,7 @@ enable_xdrfile
 enable_boost_graph
 enable_boost_serialization
 enable_fftw
+enable_python
 enable_openmp
 '
       ac_precious_vars='build_alias
@@ -731,7 +734,7 @@ host_alias
 target_alias
 SOEXT
 STATIC_LIBS
-LDSO
+LDSHARED
 CXX
 CXXFLAGS
 LDFLAGS
@@ -1395,13 +1398,14 @@ Optional Features:
   --enable-boost_serialization
                           enable search for boost serialization, default: no
   --enable-fftw           enable search for fftw, default: no
+  --enable-python         enable search for python, default: yes
   --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
   SOEXT       extension of dynamic libraries (so/dylib)
   STATIC_LIBS variables that should be linked statically directly to MD code -
               configure will add here -ldl if necessary
-  LDSO        command for linking shared library - configure will use CXX plus
+  LDSHARED    command for linking shared library - configure will use CXX plus
               the proper flags
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
@@ -2957,6 +2961,24 @@ fi
 
 
 
+python=
+# Check whether --enable-python was given.
+if test "${enable_python+set}" = set; then :
+  enableval=$enable_python; case "${enableval}" in
+             (yes) python=true ;;
+             (no)  python=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-python" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) python=true ;;
+             (no)  python=false ;;
+  esac
+
+fi
+
+
+
 
 
 
@@ -4257,7 +4279,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 # log the initial flags
 LD="$CXX"
-LDSO="$CXX"
+LDSHARED="$CXX"
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXX:         $CXX" >&5
 $as_echo "$as_me: Initial CXX:         $CXX" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXXFLAGS:    $CXXFLAGS" >&5
@@ -4274,8 +4296,8 @@ $as_echo "$as_me: Initial LIBS:        $LIBS" >&6;}
 $as_echo "$as_me: Initial STATIC_LIBS: $STATIC_LIBS" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial LD:          $LD" >&5
 $as_echo "$as_me: Initial LD:          $LD" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDSO:        $LDSO" >&5
-$as_echo "$as_me: Initial LDSO:        $LDSO" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDSHARED:    $LDSHARED" >&5
+$as_echo "$as_me: Initial LDSHARED:    $LDSHARED" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial SOEXT:       $SOEXT" >&5
 $as_echo "$as_me: Initial SOEXT:       $SOEXT" >&6;}
 
@@ -7546,6 +7568,89 @@ fi
 
 
 fi
+if test $python == true ; then
+  # Extract the first word of "python", so it can be a program name with args.
+set dummy python; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_py+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$py"; then
+  ac_cv_prog_py="$py" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_py="found"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+py=$ac_cv_prog_py
+if test -n "$py"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $py" >&5
+$as_echo "$py" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  # Extract the first word of "cython", so it can be a program name with args.
+set dummy cython; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_cython+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$cython"; then
+  ac_cv_prog_cython="$cython" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_cython="found"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+cython=$ac_cv_prog_cython
+if test -n "$cython"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cython" >&5
+$as_echo "$cython" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  if test "$py" == found && test "$cython" == found ; then
+     $as_echo "#define __PLUMED_HAS_PYTHON 1" >>confdefs.h
+
+  else
+     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable python" >&5
+$as_echo "$as_me: WARNING: cannot enable python" >&2;}
+  fi
+fi
 
 
 
@@ -8187,10 +8292,10 @@ if test "$shared" == true ; then
 $as_echo "$as_me: *** Special settings for dynamic libraries on OSX ***" >&6;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: Dynamic library extension is 'dylib'" >&5
 $as_echo "$as_me: Dynamic library extension is 'dylib'" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: LDSO needs special flags" >&5
-$as_echo "$as_me: LDSO needs special flags" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: LDSHARED needs special flags" >&5
+$as_echo "$as_me: LDSHARED needs special flags" >&6;}
     SOEXT=dylib
-    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
+    LDSHARED="$LDSHARED -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
     if test "$rpath" = true ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: Switching off rpath on OSX" >&5
 $as_echo "$as_me: Switching off rpath on OSX" >&6;}
@@ -8202,10 +8307,10 @@ $as_echo "$as_me: Switching off rpath on OSX" >&6;}
 $as_echo "$as_me: *** Special settings for dynamic libraries on Linux ***" >&6;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: Dynamic library extension is 'so'" >&5
 $as_echo "$as_me: Dynamic library extension is 'so'" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: LDSO and LDFLAGS need special flags" >&5
-$as_echo "$as_me: LDSO and LDFLAGS need special flags" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: LDSHARED and LDFLAGS need special flags" >&5
+$as_echo "$as_me: LDSHARED and LDFLAGS need special flags" >&6;}
     SOEXT=so
-    LDSO="$LDSO -shared"
+    LDSHARED="$LDSHARED -shared"
 
   save_LDFLAGS="$LDFLAGS"
   LDFLAGS="$LDFLAGS -rdynamic"
@@ -8242,16 +8347,16 @@ fi
 # check linking of runtime library
 if test -n "$SOEXT"
 then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Using LDSO='$LDSO'" >&5
-$as_echo "$as_me: Using LDSO='$LDSO'" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Using LDSHARED='$LDSHARED'" >&5
+$as_echo "$as_me: Using LDSHARED='$LDSHARED'" >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: Using LDFLAGS='$LDFLAGS'" >&5
 $as_echo "$as_me: Using LDFLAGS='$LDFLAGS'" >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether LDSO can create dynamic libraries" >&5
-$as_echo_n "checking whether LDSO can create dynamic libraries... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether LDSHARED can create dynamic libraries" >&5
+$as_echo_n "checking whether LDSHARED can create dynamic libraries... " >&6; }
   rm -f conftest.*
   echo "void f(void){ return;}" > conftest.cpp
   $CXX $CXXFLAGS $CPPFLAGS -c conftest.cpp 1>/dev/null 2>/dev/null
-  $LDSO $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
+  $LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
   if test -f conftest.$SOEXT
   then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
@@ -8304,10 +8409,10 @@ fi
 
 
     if test "$readelf" == found ; then
-      test_LDSO="$LDSO -Wl,-R -Wl,/some/random/dir/"
-      $test_LDSO $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
+      test_LDSHARED="$LDSHARED -Wl,-R -Wl,/some/random/dir/"
+      $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
       if readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
-        LDSO="$LDSO -Wl,-R -Wl,\"$LIBRARY_PATH\""
+        LDSHARED="$LDSHARED -Wl,-R -Wl,\"$LIBRARY_PATH\""
       else
         { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: -R option seems not working, disabling rpath" >&5
 $as_echo "$as_me: WARNING: -R option seems not working, disabling rpath" >&2;}

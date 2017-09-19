@@ -40,6 +40,7 @@
 #include "tools/OpenMP.h"
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
+#include "DataFetchingObject.h"
 #include <cstdlib>
 #include <cstring>
 #include <set>
@@ -87,6 +88,7 @@ PlumedMain::PlumedMain():
 {
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
+  mydatafetcher.reset(DataFetchingObject::create(sizeof(double),*this));
   stopwatch.start();
   stopwatch.pause();
 }
@@ -247,6 +249,21 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       CHECK_INIT(initialized,word);
       atoms.clearFullList();
       break;
+    case cmd_getDataRank:
+      CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
+      if( nw==2 ) DataFetchingObject::get_rank( actionSet, words[1], "", static_cast<long*>(val) );
+      else DataFetchingObject::get_rank( actionSet, words[1], words[2], static_cast<long*>(val) );
+      break;
+    case cmd_getDataShape:
+      CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
+      if( nw==2 ) DataFetchingObject::get_shape( actionSet, words[1], "", static_cast<long*>(val) );
+      else DataFetchingObject::get_shape( actionSet, words[1], words[2], static_cast<long*>(val) );
+      break;
+    case cmd_setMemoryForData:
+      CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
+      if( nw==2 ) mydatafetcher->setData( words[1], "", val );
+      else mydatafetcher->setData( words[1], words[2], val );
+      break;
     case cmd_read:
       CHECK_INIT(initialized,word);
       if(val)readInputFile(static_cast<char*>(val));
@@ -274,6 +291,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       CHECK_NOTINIT(initialized,word);
       CHECK_NOTNULL(val,word);
       atoms.setRealPrecision(*static_cast<int*>(val));
+      mydatafetcher.reset(DataFetchingObject::create(*static_cast<int*>(val),*this));
       break;
     case cmd_setMDLengthUnits:
       CHECK_NOTINIT(initialized,word);
@@ -586,7 +604,7 @@ void PlumedMain::prepareDependencies() {
   }
 
 // for optimization, an "active" flag remains false if no action at all is active
-  active=false;
+  active=mydatafetcher->activate();
   for(unsigned i=0; i<pilots.size(); ++i) {
     if(pilots[i]->onStep()) {
       pilots[i]->activate();
@@ -623,6 +641,7 @@ void PlumedMain::performCalc() {
   justCalculate();
   backwardPropagate();
   update();
+  mydatafetcher->finishDataGrab();
 }
 
 void PlumedMain::waitData() {
@@ -825,6 +844,10 @@ void PlumedMain::runJobsAtEndOfCalculation() {
     p->runFinalJobs();
   }
 }
+
+#ifdef __PLUMED_HAS_PYTHON
+// This is here to stop cppcheck throwing an error
+#endif
 
 }
 

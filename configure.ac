@@ -249,10 +249,11 @@ PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[no])
+PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
-AC_ARG_VAR(LDSO,[command for linking shared library - configure will use CXX plus the proper flags ])
+AC_ARG_VAR(LDSHARED,[command for linking shared library - configure will use CXX plus the proper flags ])
 
 
 # by default use -O flag
@@ -291,7 +292,7 @@ AC_LANG(C++)
 
 # log the initial flags
 LD="$CXX"
-LDSO="$CXX"
+LDSHARED="$CXX"
 AC_MSG_NOTICE([Initial CXX:         $CXX])
 AC_MSG_NOTICE([Initial CXXFLAGS:    $CXXFLAGS])
 AC_MSG_NOTICE([Initial CPPFLAGS:    $CPPFLAGS])
@@ -300,7 +301,7 @@ AC_MSG_NOTICE([Initial LDFLAGS:     $LDFLAGS])
 AC_MSG_NOTICE([Initial LIBS:        $LIBS])
 AC_MSG_NOTICE([Initial STATIC_LIBS: $STATIC_LIBS])
 AC_MSG_NOTICE([Initial LD:          $LD])
-AC_MSG_NOTICE([Initial LDSO:        $LDSO])
+AC_MSG_NOTICE([Initial LDSHARED:    $LDSHARED])
 AC_MSG_NOTICE([Initial SOEXT:       $SOEXT])
 
 # check C++ flags
@@ -585,6 +586,15 @@ fi
 if test $zlib == true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
 fi
+if test $python == true ; then
+  AC_CHECK_PROG([py],[python],[found])
+  AC_CHECK_PROG([cython],[cython],[found])
+  if test "$py" == found && test "$cython" == found ; then
+     AC_DEFINE([__PLUMED_HAS_PYTHON])
+  else 
+     AC_MSG_WARN([cannot enable python])
+  fi
+fi
 
 if test $gsl == true ; then
   found=ko
@@ -659,7 +669,7 @@ AC_DEFINE([_REENTRANT])
 #### Options for dynamic library to work properly ####
 AC_SUBST(SOEXT)
 AC_SUBST(LD)
-AC_SUBST(LDSO)
+AC_SUBST(LDSHARED)
 # these are libraries that should be linked also to MD engines
 AC_SUBST(STATIC_LIBS)
 
@@ -668,9 +678,9 @@ if test "$shared" == true ; then
   (Darwin)
     AC_MSG_NOTICE([*** Special settings for dynamic libraries on OSX ***])
     AC_MSG_NOTICE([Dynamic library extension is 'dylib'])
-    AC_MSG_NOTICE([LDSO needs special flags])
+    AC_MSG_NOTICE([LDSHARED needs special flags])
     SOEXT=dylib
-    LDSO="$LDSO -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
+    LDSHARED="$LDSHARED -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
     if test "$rpath" = true ; then
       AC_MSG_NOTICE([Switching off rpath on OSX])
       rpath=false
@@ -679,9 +689,9 @@ if test "$shared" == true ; then
   (Linux)
     AC_MSG_NOTICE([*** Special settings for dynamic libraries on Linux ***])
     AC_MSG_NOTICE([Dynamic library extension is 'so'])
-    AC_MSG_NOTICE([LDSO and LDFLAGS need special flags])
+    AC_MSG_NOTICE([LDSHARED and LDFLAGS need special flags])
     SOEXT=so
-    LDSO="$LDSO -shared"
+    LDSHARED="$LDSHARED -shared"
     PLUMED_CHECK_LDFLAGS([-rdynamic])
   ;;
   (*)
@@ -692,13 +702,13 @@ fi
 # check linking of runtime library
 if test -n "$SOEXT"
 then
-  AC_MSG_NOTICE([Using LDSO='$LDSO'])
+  AC_MSG_NOTICE([Using LDSHARED='$LDSHARED'])
   AC_MSG_NOTICE([Using LDFLAGS='$LDFLAGS'])
-  AC_MSG_CHECKING([whether LDSO can create dynamic libraries])
+  AC_MSG_CHECKING([whether LDSHARED can create dynamic libraries])
   rm -f conftest.*
   echo "void f(void){ return;}" > conftest.cpp
   $CXX $CXXFLAGS $CPPFLAGS -c conftest.cpp 1>/dev/null 2>/dev/null
-  $LDSO $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
+  $LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
   if test -f conftest.$SOEXT
   then
     AC_MSG_RESULT([yes])
@@ -712,10 +722,10 @@ then
     readelf=""
     AC_CHECK_PROG([readelf],[readelf],[found])
     if test "$readelf" == found ; then
-      test_LDSO="$LDSO -Wl,-R -Wl,/some/random/dir/"
-      $test_LDSO $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
+      test_LDSHARED="$LDSHARED -Wl,-R -Wl,/some/random/dir/"
+      $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
       if readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
-        LDSO="$LDSO -Wl,-R -Wl,\"$LIBRARY_PATH\""
+        LDSHARED="$LDSHARED -Wl,-R -Wl,\"$LIBRARY_PATH\""
       else
         AC_MSG_WARN([-R option seems not working, disabling rpath])
       fi
