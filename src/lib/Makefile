@@ -201,7 +201,7 @@ endif
 	if test -d ../../vim/help ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/help | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
 	if test -f ../../vim/scripts.vim ; then cp ../../vim/scripts.vim  "$(DESTDIR)$(libdir)/$(program_name)/vim/" ; fi
 # python installation (rebuild prior to installation so as to discover plumed in path)
-ifneq (,$(findstring __PLUMED_HAS_PYTHON,$(CPPFLAGS)))
+ifdef python_bin
 	cp -pr ../../python install 
 	cd install/python && rm -fr *.so plumed.cpp build && $(python_bin) buildPythonInterface.py build_ext -i
 	cp -pr install/python "$(DESTDIR)$(libdir)/$(program_name)/" 

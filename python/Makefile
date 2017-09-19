@@ -14,7 +14,7 @@ all:
 
 else
 
-ifneq (,$(findstring __PLUMED_HAS_PYTHON,$(CPPFLAGS)))
+ifdef python_bin
 
 all:
 	@echo Building python interface for PLUMED 
@@ -23,9 +23,7 @@ all:
 else
 
 all:
-	@echo Did not find __PLUMED_HAS_PYTHON
-	@echo $(CPPFLAGS)
-
+	@echo Python support was not configure
 endif
 
 endif
