@@ -22,6 +22,7 @@
 #ifndef __PLUMED_colvar_CoordinationBase_h
 #define __PLUMED_colvar_CoordinationBase_h
 #include "Colvar.h"
+#include <memory>
 
 namespace PLMD {
 
@@ -32,7 +33,7 @@ namespace colvar {
 class CoordinationBase : public Colvar {
   bool pbc;
   bool serial;
-  NeighborList *nl;
+  std::unique_ptr<NeighborList> nl;
   bool invalidateList;
   bool firsttime;
 

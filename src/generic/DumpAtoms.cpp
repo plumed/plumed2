@@ -28,6 +28,7 @@
 #include "core/Atoms.h"
 #include "tools/Units.h"
 #include <cstdio>
+#include <memory>
 #include "core/SetupMolInfo.h"
 #include "core/ActionSet.h"
 
@@ -308,16 +309,13 @@ void DumpAtoms::update() {
     float time=getTime()/plumed.getAtoms().getUnits().getTime();
     float precision=Tools::fastpow(10.0,iprecision);
     for(int i=0; i<3; i++) for(int j=0; j<3; j++) box[i][j]=lenunit*t(i,j);
-    rvec* pos=new rvec [natoms];
-// Notice that code below cannot throw any exception.
-// Thus, this pointer is excepton safe
+    std::unique_ptr<rvec[]> pos(new rvec [natoms]);
     for(int i=0; i<natoms; i++) for(int j=0; j<3; j++) pos[i][j]=lenunit*getPosition(i)(j);
     if(type=="xtc") {
       write_xtc(xd,natoms,step,time,box,&pos[0],precision);
     } else if(type=="trr") {
       write_trr(xd,natoms,step,time,0.0,box,&pos[0],NULL,NULL);
     }
-    delete [] pos;
 #endif
   } else plumed_merror("unknown file type "+type);
 }

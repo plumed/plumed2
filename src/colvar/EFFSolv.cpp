@@ -40,12 +40,11 @@ using namespace std;
 namespace PLMD {
 namespace colvar {
 
-//+PLUMEDOC COLVAR IMPLICIT
+//+PLUMEDOC COLVAR EFFSOLV
 /*
+Calculates EEF1 solvation free energy for a group of atoms.
 
-Calculate EEF1-SB solvation free energy for a group of atoms.
-
-EEF1-SB is a solvent-accessible surface area based model, where the free energy of solvation is computed using a pairwise interaction term for non-hydrogen atoms:
+EEF1 is a solvent-accessible surface area based model, where the free energy of solvation is computed using a pairwise interaction term for non-hydrogen atoms:
 \f[
     \Delta G^\mathrm{solv}_i = \Delta G^\mathrm{ref}_i - \sum_{j \neq i} f_i(r_{ij}) V_j
 \f]
@@ -55,7 +54,7 @@ where \f$\Delta G^\mathrm{solv}_i\f$ is the free energy of solvation, \f$\Delta 
 \f]
 where \f$\Delta G^\mathrm{free}_i\f$ is the solvation free energy of the isolated group, \f$\lambda_i\f$ is the correlation length equal to the width of the first solvation shell and \f$R_i\f$ is the van der Waals radius of atom \f$i\f$.
 
-The output from this collective variable, the free energy of solvation, can be used with the \ref BIASVALUE keyword to provide implicit solvation to a system. All parameters are designed to be used with a modified CHARMM36 force field. It takes only non-hydrogen atoms as input, these can be conveniently specified using the \ref GROUP action with the NDX_GROUP parameter. To speed up the calculation, IMPLICIT internally uses a neighbourlist with a cutoff dependent on the type of atom (maximum of 1.95 nm). This cutoff can be extended further by using the NL_BUFFER keyword.
+The output from this collective variable, the free energy of solvation, can be used with the \ref BIASVALUE keyword to provide implicit solvation to a system. All parameters are designed to be used with a modified CHARMM36 force field. It takes only non-hydrogen atoms as input, these can be conveniently specified using the \ref GROUP action with the NDX_GROUP parameter. To speed up the calculation, EFFSOLV internally uses a neighbourlist with a cutoff dependent on the type of atom (maximum of 1.95 nm). This cutoff can be extended further by using the NL_BUFFER keyword.
 
 \par Examples
 
@@ -67,7 +66,7 @@ WHOLEMOLECULES ENTITY0=1-111
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 
 # We extend the cutoff by 0.2 nm and update the neighbourlist every 10 steps
-solv: IMPLICIT ATOMS=protein-h NL_STRIDE=10 NL_BUFFER=0.2
+solv: EFFSOLV ATOMS=protein-h NL_STRIDE=10 NL_BUFFER=0.2
 
 # Here we actually add our calculated energy back to the potential
 bias: BIASVALUE ARG=solv
@@ -78,7 +77,7 @@ PRINT ARG=solv FILE=SOLV
 */
 //+ENDPLUMEDOC
 
-class Implicit : public Colvar {
+class EFFSolv : public Colvar {
 private:
   bool pbc;
   double buffer;
@@ -95,13 +94,13 @@ private:
 
 public:
   static void registerKeywords(Keywords& keys);
-  explicit Implicit(const ActionOptions&);
+  explicit EFFSolv(const ActionOptions&);
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(Implicit,"IMPLICIT")
+PLUMED_REGISTER_ACTION(EFFSolv,"EFFSOLV")
 
-void Implicit::registerKeywords(Keywords& keys) {
+void EFFSolv::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
@@ -111,7 +110,7 @@ void Implicit::registerKeywords(Keywords& keys) {
   keys.addFlag("TEMP_CORRECTION", false, "Correct free energy of solvation constants for temperatures different from 298.15 K");
 }
 
-Implicit::Implicit(const ActionOptions&ao):
+EFFSolv::EFFSolv(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   buffer(0.1),
@@ -133,8 +132,7 @@ Implicit::Implicit(const ActionOptions&ao):
 
   checkRead();
 
-  log << "  Bibliography " << plumed.cite("Bottaro S, Lindorff-Larsen K, Best R, J. Chem. Theory Comput. 9, 5641 (2013)")
-      << plumed.cite("Lazaridis T, Karplus M, Proteins Struct. Funct. Genet. 35, 133 (1999)"); log << "\n";
+  log << "  Bibliography " << plumed.cite("Lazaridis T, Karplus M, Proteins Struct. Funct. Genet. 35, 133 (1999)"); log << "\n";
 
 
   nl.resize(size);
@@ -147,7 +145,7 @@ Implicit::Implicit(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void Implicit::update_neighb() {
+void EFFSolv::update_neighb() {
   const double lower_c2 = 0.24 * 0.24; // this is the cut-off for bonded atoms
   const unsigned size = getNumberOfAtoms();
   for (unsigned i=0; i<size; ++i) {
@@ -176,7 +174,7 @@ void Implicit::update_neighb() {
   }
 }
 
-void Implicit::calculate() {
+void EFFSolv::calculate() {
   if(pbc) makeWhole();
   if(getExchangeStep()) nl_update = 0;
   if (nl_update == 0) {
@@ -279,7 +277,7 @@ void Implicit::calculate() {
   }
 }
 
-void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter, bool tcorr) {
+void EFFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter, bool tcorr) {
   vector<vector<double> > parameter_temp;
   parameter_temp.resize(atoms.size());
   map<string, vector<double> > valuemap;
@@ -287,6 +285,7 @@ void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<dou
   valuemap = setupValueMap();
   typemap  = setupTypeMap();
   vector<SetupMolInfo*> moldat = plumed.getActionSet().select<SetupMolInfo*>();
+  bool cter=false;
   if (moldat.size() == 1) {
     log << "  MOLINFO DATA found, using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
@@ -297,7 +296,7 @@ void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<dou
       string Atype = typemap[Rname][Aname];
 
       // Check for terminal COOH or COO- (different atomtypes & parameters!)
-      if (moldat[0]->getAtomName(atoms[i]) == "OT1") {
+      if (moldat[0]->getAtomName(atoms[i]) == "OT1" || moldat[0]->getAtomName(atoms[i]) == "OXT") {
         // We create a temporary AtomNumber object to access future atoms
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
@@ -309,8 +308,9 @@ void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<dou
           // COO-
           Atype = "OC";
         }
+        cter = true;
       }
-      if (moldat[0]->getAtomName(atoms[i]) == "OT2") {
+      if (moldat[0]->getAtomName(atoms[i]) == "OT2" || (cter == true && moldat[0]->getAtomName(atoms[i]) == "O")) {
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 1);
@@ -369,9 +369,18 @@ void Implicit::setupConstants(const vector<AtomNumber> &atoms, vector<vector<dou
   for(unsigned i=0; i<atoms.size(); ++i) delta_g_ref += parameter_temp[i][1];
 }
 
-map<string, map<string, string> > Implicit::setupTypeMap()  {
+map<string, map<string, string> > EFFSolv::setupTypeMap()  {
   map<string, map<string, string> > typemap;
   typemap = {
+    { "ACE", {
+        {"CH3", "CT3"},
+        {"HH31","HA3"},
+        {"HH32","HA3"},
+        {"HH33","HA3"},
+        {"C",   "C"  },
+        {"O",   "O"  }
+      }
+    },
     { "ALA", {
         {"N",   "NH1"},
         {"HN",  "H"  },
@@ -711,6 +720,15 @@ map<string, map<string, string> > Implicit::setupTypeMap()  {
         {"O",   "O"  }
       }
     },
+    { "NMA", {
+        {"N",   "NH1"},
+        {"HN",  "H"  },
+        {"CH3", "CT3"},
+        {"HH31","HA3"},
+        {"HH32","HA3"},
+        {"HH33","HA3"},
+      }
+    },
     { "PHE", {
         {"N",   "NH1"},
         {"HN",  "H"  },
@@ -856,7 +874,7 @@ map<string, map<string, string> > Implicit::setupTypeMap()  {
   return typemap;
 }
 
-map<string, vector<double> > Implicit::setupValueMap() {
+map<string, vector<double> > EFFSolv::setupValueMap() {
   // Volume ∆Gref ∆Gfree ∆H ∆Cp λ vdw_radius
   map<string, vector<double> > valuemap;
   valuemap = {

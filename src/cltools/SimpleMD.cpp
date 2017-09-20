@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <cmath>
 #include <vector>
+#include <memory>
 
 using namespace std;
 
@@ -443,10 +444,10 @@ private:
 
     Random random;                 // random numbers stream
 
-    PLMD::Plumed* plumed=NULL;
+    std::unique_ptr<Plumed> plumed;
 
 // Commenting the next line it is possible to switch-off plumed
-    plumed=new PLMD::Plumed;
+    plumed.reset(new PLMD::Plumed);
 
     if(plumed) {
       int s=sizeof(double);
@@ -607,8 +608,6 @@ private:
 
 // close the statistic file if it was open:
     if(write_statistics_fp) fclose(write_statistics_fp);
-
-    if(plumed) delete plumed;
 
     return 0;
   }

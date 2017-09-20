@@ -12,6 +12,7 @@
 !/config
 !/core
 !/crystallization
+!/drr
 !/eds
 !/function
 !/generic
@@ -26,6 +27,7 @@
 !/manyrestraints
 !/molfile
 !/multicolvar
+!/python
 !/pamm
 !/reference
 !/secondarystructure

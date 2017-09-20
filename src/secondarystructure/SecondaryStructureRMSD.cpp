@@ -94,7 +94,7 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
 }
 
 SecondaryStructureRMSD::~SecondaryStructureRMSD() {
-  for(unsigned i=0; i<references.size(); ++i) delete references[i];
+// destructor needed to delete forward declarated objects
 }
 
 void SecondaryStructureRMSD::turnOnDerivatives() {
@@ -168,7 +168,7 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   }
 
   // Set the reference structure
-  references.push_back( metricRegister().create<SingleDomainRMSD>( alignType ) );
+  references.emplace_back( metricRegister().create<SingleDomainRMSD>( alignType ) );
   unsigned nn=references.size()-1;
   std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
   references[nn]->setBoundsOnDistances( true, bondlength );   // We always use pbc

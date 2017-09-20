@@ -29,6 +29,7 @@
 #include <cstdio>
 #include <cmath>
 #include <vector>
+#include <memory>
 
 //+PLUMEDOC TOOLS pesmd
 /*
@@ -183,7 +184,8 @@ public:
     else if( lperiod ) error("invalid dimension for periodic potential must be 1, 2 or 3");
 
     // Create plumed object and initialize
-    PLMD::Plumed* plumed=new PLMD::Plumed; int s=sizeof(double);
+    std::unique_ptr<PLMD::Plumed> plumed(new PLMD::Plumed);
+    int s=sizeof(double);
     plumed->cmd("setRealPrecision",&s);
     if(Communicator::initialized()) plumed->cmd("setMPIComm",&pc.Get_comm());
     plumed->cmd("setNoVirial");
@@ -309,7 +311,6 @@ public:
       if( pc.Get_rank()==0 ) fprintf(fp,"%u %f %f %f \n", istep, istep*tstep, tke, therm_eng );
     }
 
-    delete plumed;
     fclose(fp);
 
     return 0;

@@ -26,6 +26,7 @@
 
 #include <string>
 #include <cmath>
+#include <memory>
 
 using namespace std;
 
@@ -74,11 +75,10 @@ private:
   double           constant, inept;
   vector<double>   rtwo;
   vector<unsigned> nga;
-  NeighborList     *nl;
+  std::unique_ptr<NeighborList> nl;
 public:
   static void registerKeywords( Keywords& keys );
   explicit PRE(const ActionOptions&);
-  ~PRE();
   virtual void calculate();
 };
 
@@ -175,7 +175,7 @@ PRE::PRE(const ActionOptions&ao):
   }
 
   // Create neighbour lists
-  nl= new NeighborList(gb_lista,ga_lista,true,pbc,getPbc());
+  nl.reset( new NeighborList(gb_lista,ga_lista,true,pbc,getPbc()) );
 
   // Ouput details of all contacts
   unsigned index=0;
@@ -211,10 +211,6 @@ PRE::PRE(const ActionOptions&ao):
 
   requestAtoms(nl->getFullAtomList());
   checkRead();
-}
-
-PRE::~PRE() {
-  delete nl;
 }
 
 void PRE::calculate()
