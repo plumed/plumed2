@@ -92,7 +92,6 @@ install:
   - export INCLUDE="$HOME/opt/include:$INCLUDE"
   - export LIBRARY_PATH="$HOME/opt/lib:$LIBRARY_PATH"
   - export LD_LIBRARY_PATH="$HOME/opt/lib:$LD_LIBRARY_PATH"
-  - export PYTHONPATH="$HOME/opt/lib/plumed/python:$PYTHONPATH"
 # Setting the TMPDIR in this way allegedly prevents problems with the compilation of 
 # PLUMED + Python on macos
   - export TMPDIR="/tmp" 

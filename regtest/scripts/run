@@ -139,7 +139,8 @@ case "$type" in
   $mpi $valgrind $plumed $arg > out 2> err
   ;;
 (python)
-  $(plumed config python_bin) $arg > out 2> err
+# make sure the right python module is in the path based on plumed root
+  PYTHONPATH="$root/python:$PYTHONPATH" $($plumed config python_bin) $arg > out 2> err
   ;;
 (*) echo "unknown test type" ; exit 1 ;;
 esac
