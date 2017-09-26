@@ -839,7 +839,7 @@ AC_MSG_NOTICE([**************************])
 AC_SUBST(LD_RO)
 LD_RO=
 if test "$ld_r" == true ; then
-for test_LD_RO in "$CXX -Wl,-r -o" "ld -r -o"
+for test_LD_RO in "$($CXX --print-prog-name=ld) -r -o" "$CXX -Wl,-r -o" "ld -r -o"
 do
   AC_MSG_CHECKING([whether C++ objects can be grouped with $test_LD_RO])
   
