@@ -42,6 +42,7 @@ class PlumedMain;
 Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
   pbc(*new Pbc),
+  md_energy(0.0),
   energy(0.0),
   dataCanBeSet(false),
   collectEnergy(false),
@@ -56,6 +57,7 @@ Atoms::Atoms(PlumedMain&plumed):
   shuffledAtoms(0),
   plumed(plumed),
   naturalUnits(false),
+  MDnaturalUnits(false),
   timestep(0.0),
   forceOnEnergy(0.0),
   zeroallforces(false),
