@@ -102,7 +102,7 @@ void DRRForceGrid::fillTable(const std::vector<std::vector<double>> &in) {
 
 DRRForceGrid::DRRForceGrid()
   : suffix(""), ndims(0), dimensions(0), sampleSize(0), forceSize(0),
-    headers(""), table(0), forces(0), samples(0), endpoints(0), shifts(0) {}
+    headers(""), table(0), forces(0), samples(0), endpoints(0), shifts(0), outputunit(1.0) {}
 
 DRRForceGrid::DRRForceGrid(const std::vector<DRRAxis> &p_dimensions,
                            const std::string &p_suffix, bool initializeTable)
@@ -132,6 +132,7 @@ DRRForceGrid::DRRForceGrid(const std::vector<DRRAxis> &p_dimensions,
   forceSize = sampleSize * ndims;
   forces.resize(forceSize, 0.0);
   samples.resize(sampleSize, 0);
+  outputunit = 1.0;
   // For 1D pmf
   if (ndims == 1) {
     endpoints.resize(dimensions[0].nbins + 1, 0);
@@ -360,7 +361,7 @@ void DRRForceGrid::writeAll(const std::string &filename) const {
     fprintf(pCount, " %lu\n", getCount(pos, true));
     std::vector<double> f = getGradient(pos, true);
     for (size_t j = 0; j < ndims; ++j) {
-      fprintf(pGrad, " %.9f", f[j]);
+      fprintf(pGrad, " %.9f", (f[j] / outputunit));
     }
     fprintf(pGrad, "\n");
   }
