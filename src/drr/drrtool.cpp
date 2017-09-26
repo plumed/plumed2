@@ -46,13 +46,13 @@ namespace drr {
 
 The following command will extract .grad and .count files.
 \verbatim
-plumed drrtool --extract eabf.drrstate
+plumed drr_tool --extract eabf.drrstate
 \endverbatim
 
 The following command will merge windows of two .drrstate file, and output the
 .grad and .count files.
 \verbatim
-plumed drrtool --merge win1.drrstate,win2.drrstate
+plumed drr_tool --merge win1.drrstate,win2.drrstate
 \endverbatim
 
 After getting the .grad and .count file, you can do numerical integration by
@@ -61,6 +61,8 @@ https://github.com/Colvars/colvars/tree/master/colvartools
 \verbatim
 abf_integrate eabf.czar.grad
 \endverbatim
+\note
+The abf_integrate in colvartools is in kcal/mol, so it may be better to use --units kcal/mol when running drr_tool
 
 */
 //+ENDPLUMEDOC
@@ -76,6 +78,7 @@ public:
 
 private:
   bool verbosity;
+  Units units;
   const std::string suffix{".drrstate"};
 };
 
@@ -85,6 +88,7 @@ void drrtool::registerKeywords(Keywords &keys) {
   CLTool::registerKeywords(keys);
   keys.add("optional", "--extract", "Extract drrstate file(s)");
   keys.add("optional", "--merge", "Merge eABF windows");
+  keys.add("compulsory","--units","kj/mol","the units of energy can be kj/mol, kcal/mol, j/mol, eV or the conversion factor from kj/mol");
   keys.addFlag("-v", false, "Verbose output");
 }
 
@@ -96,6 +100,9 @@ drrtool::drrtool(const CLToolOptions &co) : CLTool(co) {
 int drrtool::main(FILE *in, FILE *out, Communicator &pc) {
   parseFlag("-v", verbosity);
   std::vector<std::string> stateFilesToExtract;
+  std::string unitname;
+  parse("--units",unitname);
+  units.setEnergy( unitname );
   bool doextract = parseVector("--extract", stateFilesToExtract);
   if (doextract) {
     extractdrr(stateFilesToExtract);
@@ -124,7 +131,10 @@ void drrtool::extractdrr(const std::vector<std::string> &filename) {
     ia >> step >> fict >> vfict >> vfict_laststep >> ffict >> abfgrid >>
        czarestimator;
     in.close();
+    abfgrid.setOutputUnit(units.getEnergy());
+    czarestimator.setOutputUnit(units.getEnergy());
     if (verbosity) {
+      std::cout << "Output units factor: " << units.getEnergy() << '\n';
       std::cout << "Dumping information of extended variables..." << '\n';
       std::cout << "Step: " << step << '\n';
       for (size_t i = 0; i < fict.size(); ++i) {
@@ -168,6 +178,8 @@ void drrtool::mergewindows(const std::vector<std::string> &filename) {
     CZAR czarestimator;
     ia >> step >> fict >> vfict >> vfict_laststep >> ffict >> abfgrid >>
        czarestimator;
+    abfgrid.setOutputUnit(units.getEnergy());
+    czarestimator.setOutputUnit(units.getEnergy());
     abfs.push_back(abfgrid);
     czars.push_back(czarestimator);
     in.close();
