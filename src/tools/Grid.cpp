@@ -619,10 +619,10 @@ void Grid::writeCubeFile(OFile& ofile, const double& lunit) {
   }
 }
 
-Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile,
-                   const vector<std::string> & gmin,const vector<std::string> & gmax,
-                   const vector<unsigned> & nbin,bool dosparse, bool dospline, bool doder) {
-  Grid* grid=Grid::create(funcl,args,ifile,dosparse,dospline,doder);
+std::unique_ptr<Grid> Grid::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile,
+                                   const vector<std::string> & gmin,const vector<std::string> & gmax,
+                                   const vector<unsigned> & nbin,bool dosparse, bool dospline, bool doder) {
+  std::unique_ptr<Grid> grid=Grid::create(funcl,args,ifile,dosparse,dospline,doder);
   std::vector<unsigned> cbin( grid->getNbin() );
   std::vector<std::string> cmin( grid->getMin() ), cmax( grid->getMax() );
   for(unsigned i=0; i<args.size(); ++i) {
@@ -637,7 +637,7 @@ Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, I
   return grid;
 }
 
-Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile, bool dosparse, bool dospline, bool doder)
+std::unique_ptr<Grid> Grid::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile, bool dosparse, bool dospline, bool doder)
 {
   std::unique_ptr<Grid> grid;
   unsigned nvar=args.size(); bool hasder=false; std::string pstring;
@@ -693,8 +693,7 @@ Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, I
     else {grid->setValue(index,f);}
     ifile.scanField();
   }
-// release pointer here:
-  return grid.release();
+  return grid;
 }
 
 // Sparse version of grid with map

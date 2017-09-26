@@ -42,6 +42,7 @@ class PlumedMain;
 Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
   pbc_fwd(new Pbc),
+  md_energy(0.0),
   energy(0.0),
   dataCanBeSet(false),
   collectEnergy(false),
@@ -54,8 +55,10 @@ Atoms::Atoms(PlumedMain&plumed):
   virialHasBeenSet(false),
   massAndChargeOK(false),
   shuffledAtoms(0),
+  mdatoms(MDAtomsBase::create(sizeof(double))),
   plumed(plumed),
   naturalUnits(false),
+  MDnaturalUnits(false),
   timestep(0.0),
   forceOnEnergy(0.0),
   zeroallforces(false),
@@ -64,7 +67,6 @@ Atoms::Atoms(PlumedMain&plumed):
   atomsNeeded(false),
   ddStep(0)
 {
-  mdatoms.reset(MDAtomsBase::create(sizeof(double)));
 }
 
 Atoms::~Atoms() {
@@ -423,7 +425,7 @@ void Atoms::setAtomsContiguous(int start) {
 }
 
 void Atoms::setRealPrecision(int p) {
-  mdatoms.reset(MDAtomsBase::create(p));
+  mdatoms=MDAtomsBase::create(p);
 }
 
 int Atoms::getRealPrecision()const {
