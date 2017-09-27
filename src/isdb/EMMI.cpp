@@ -153,7 +153,6 @@ private:
   bool first_time_, no_aver_;
   vector < unsigned > nl_;
 // parallel stuff
-  bool serial_;
   unsigned size_;
   unsigned rank_;
 
@@ -209,7 +208,6 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("atoms","ATOMS","atoms for which we calculate the density map, typically all heavy atoms");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
   keys.add("compulsory","TEMP","temperature");
-  keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
   keys.addFlag("ANALYSIS",false,"run in analysis mode");
   keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
@@ -225,7 +223,7 @@ EMMI::EMMI(const ActionOptions&ao):
   inv_sqrt2_(0.707106781186548),
   sqrt2_pi_(0.797884560802865),
   nl_cutoff_(-1.0), nl_stride_(0),
-  first_time_(true), no_aver_(false), serial_(false),
+  first_time_(true), no_aver_(false),
   analysis_(false), nframe_(0.0), pbc_(true)
 {
 
@@ -256,21 +254,17 @@ EMMI::EMMI(const ActionOptions&ao):
   parse("NL_STRIDE",nl_stride_);
   if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
 
-  // serial or parallel
-  parseFlag("SERIAL",serial_);
-  if(serial_) {
-    size_=1; rank_=0;
-  } else {
-    size_=comm.Get_size(); rank_=comm.Get_rank();
-  }
-
   parseFlag("NO_AVER",no_aver_);
   parseFlag("ANALYSIS",analysis_);
 
   checkRead();
 
+  // set parallel stuff
+  size_=comm.Get_size();
+  rank_=comm.Get_rank();
+
   // get number of replicas
-  if(comm.Get_rank()==0) {
+  if(rank_==0) {
     if(no_aver_) {
       nrep_ = 1;
       replica_ = 0;
@@ -289,7 +283,6 @@ EMMI::EMMI(const ActionOptions&ao):
   for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial());
   log.printf("\n");
   log.printf("  GMM data file : %s\n", GMM_file.c_str());
-  if(serial_) log.printf("  serial calculation\n");
   if(no_aver_) log.printf("  without ensemble averaging\n");
   log.printf("  neighbor list overlap cutoff : %lf\n", nl_cutoff_);
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
@@ -729,11 +722,9 @@ void EMMI::calculate_overlap() {
     ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), pre_fact,
                              inv_cov_md_[kaux], ovmd_der_[i]);
   }
-  // if parallel, communicate stuff
-  if(!serial_) {
-    comm.Sum(&ovmd_[0], ovmd_.size());
-    comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
-  }
+  // communicate stuff
+  comm.Sum(&ovmd_[0], ovmd_.size());
+  comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
 }
 
 
@@ -809,13 +800,11 @@ void EMMI::calculate() {
       }
     }
 
-    // if parallel, communicate stuff
-    if(!serial_) {
-      comm.Sum(&atom_der_[0][0],   3*atom_der_.size());
-      comm.Sum(&atom_der_b_[0][0], 3*atom_der_b_.size());
-      comm.Sum(virial);
-      comm.Sum(virialb);
-    }
+    // communicate stuff
+    comm.Sum(&atom_der_[0][0],   3*atom_der_.size());
+    comm.Sum(&atom_der_b_[0][0], 3*atom_der_b_.size());
+    comm.Sum(virial);
+    comm.Sum(virialb);
 
     // set derivatives
     for(unsigned i=0; i<atom_der_.size(); ++i) {
