@@ -334,12 +334,12 @@ EMMI::EMMI(const ActionOptions&ao):
   // clear things that are not needed anymore
   GMM_d_cov_.clear();
 
-  // request the atoms
-  requestAtoms(atoms);
-
   // add components
   addComponentWithDerivatives("score");  componentIsNotPeriodic("score");
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
+
+  // request the atoms
+  requestAtoms(atoms);
 
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   log<<plumed.cite("Hanot, Bonomi, Greenberg, Sali, Nilges, Vendruscolo, Pellarin, bioRxiv doi: 10.1101/113951 (2017)");
