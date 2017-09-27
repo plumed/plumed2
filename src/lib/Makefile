@@ -50,6 +50,13 @@ PLUMED_KERNEL := $(PLUMED_LIBDIR)libplumedKernel.$(SOEXT)
 # plumed library (kernel + wrapper)
 PLUMED_SHARED_OBJ := $(PLUMED_LIBDIR)libplumed.$(SOEXT)
 
+# plumed wrapper library
+ifdef AR_CR
+PLUMED_WRAPPER_LIB := $(PLUMED_LIBDIR)libplumedWrapper.a
+else
+PLUMED_WRAPPER_LIB := 
+endif
+
 # plumed scripts
 PLUMED_SCRIPTS_SH := $(shell cd ../../scripts/ ; ls *.sh 2>/dev/null)
 PLUMED_SCRIPTS := $(PLUMED_SCRIPTS_SH:.sh=)
@@ -194,6 +201,9 @@ ifeq ($(SOEXT),dylib)
 	install_name_tool -id "$(libdir)/lib$(program_name)Kernel.$(SOEXT)" "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
 endif
 endif
+ifdef AR_CR
+	cp install/libplumedWrapper.a "$(DESTDIR)$(libdir)/lib$(program_name)Wrapper.a"
+endif
 # modulefile
 	cp install/modulefile "$(DESTDIR)$(libdir)/$(program_name)/modulefile"
 # vim syntax file
@@ -289,7 +299,7 @@ lib: lib-static lib-shared
 
 lib-static: $(PLUMED_MAIN_STATIC) $(OBJ_WRAPPER) $(PLUMED_LIBDIR)Plumed.inc.static $(PLUMED_LIBDIR)Plumed.cmake.static $(PLUMED_SCRIPTS_EXE)
 
-lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME) \
+lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME) $(PLUMED_WRAPPER_LIB) \
            $(PLUMED_LIBDIR)Plumed.inc $(PLUMED_LIBDIR)Plumed.inc.runtime $(PLUMED_LIBDIR)Plumed.inc.shared \
            $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.cmake.runtime $(PLUMED_LIBDIR)Plumed.cmake.shared
 
@@ -338,6 +348,16 @@ ifeq ($(SOEXT),dylib)
 endif
 endif
 
+ifdef AR_CR
+$(PLUMED_WRAPPER_LIB): $(OBJ_DYNAMIC_WRAPPER)
+ifeq ($(PLUMED_INSTALL),Install)
+	mkdir -p install
+	cd install && $(AR_CR) libplumedWrapper.a $(addprefix ../,$(OBJ_DYNAMIC_WRAPPER))
+else
+	$(AR_CR) $@ $(OBJ_DYNAMIC_WRAPPER)
+endif
+endif
+
 $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(DYNAMIC_LIBS)
 	
@@ -351,7 +371,11 @@ ifeq ($(PLUMED_INSTALL),Install)
 
 $(PLUMED_LIBDIR)Plumed.inc:
 	@echo Building Plumed.inc
+ifdef AR_CR
+	@echo "PLUMED_RUNTIME_LOAD= \"$(libdir)/lib$(program_name)Wrapper.a\" $(LIBS) $(LDFLAGS)" > $@
+else
 	@echo "PLUMED_RUNTIME_LOAD= \"$(libdir)/$(program_name)/obj/Plumed.o\" $(LIBS) $(LDFLAGS)" > $@
+endif
 ifdef LD_RO
 	@echo "PLUMED_STATIC_LOAD= \"$(libdir)/$(program_name)/obj/kernel.o\" \"$(libdir)/$(program_name)/obj/PlumedStatic.o\" $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)" >> $@
 else
@@ -373,7 +397,11 @@ endif
 else
 Plumed.inc:
 	@echo Building Plumed.inc
+ifdef AR_CR
+	@echo "PLUMED_RUNTIME_LOAD=" $(realpath .)/libplumedWrapper.a $(LIBS) $(LDFLAGS) > $@
+else
 	@echo "PLUMED_RUNTIME_LOAD=" $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS) > $@
+endif
 	@echo "PLUMED_STATIC_LOAD=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS) >> $@
 	@echo "PLUMED_SHARED_LOAD=" $(realpath .)/libplumed.$(SOEXT) $(LIBS) $(LDFLAGS) >> $@
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@

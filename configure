@@ -622,6 +622,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 build_dir
 program_name
+AR_CR
 LD_RO
 program_can_run_mpi
 program_can_run
@@ -709,6 +710,7 @@ enable_dependency_tracking
 enable_rpath
 enable_cxx_exceptions
 enable_ld_r
+enable_ar_cr
 enable_mpi
 enable_external_lapack
 enable_external_blas
@@ -1375,6 +1377,8 @@ Optional Features:
   --enable-rpath          enable store rpath, default: no
   --enable-cxx-exceptions enable c++ exceptions, default: yes
   --enable-ld-r           enable group object files, default: yes
+  --enable-ar-cr          enable use ar to build libplumedWrapper.a, default:
+                          yes
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
@@ -2755,6 +2759,24 @@ else
   case "yes" in
              (yes) ld_r=true ;;
              (no)  ld_r=false ;;
+  esac
+
+fi
+
+
+
+ar_cr=
+# Check whether --enable-ar-cr was given.
+if test "${enable_ar_cr+set}" = set; then :
+  enableval=$enable_ar_cr; case "${enableval}" in
+             (yes) ar_cr=true ;;
+             (no)  ar_cr=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-ar-cr" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) ar_cr=true ;;
+             (no)  ar_cr=false ;;
   esac
 
 fi
@@ -8850,6 +8872,49 @@ done
 fi
 
 
+AR_CR=
+if test "$ar_cr" == true ; then
+for test_AR_CR in "$($CXX --print-prog-name=ar) cr" "ar cr"
+do
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether static libraries can be created with $test_AR_CR" >&5
+$as_echo_n "checking whether static libraries can be created with $test_AR_CR... " >&6; }
+
+  rm -f conftest-*
+
+  cat << EOF > conftest-main.cpp
+  void f(void);
+  int main(int argc,char**argv){ f(); return 0; }
+EOF
+  cat << EOF > conftest-f.cpp
+  void g(void);
+  void f(void){ g(); }
+EOF
+  cat << EOF > conftest-g.cpp
+  void g(void){ return; }
+EOF
+
+  $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
+
+  $test_AR_CR conftest-both.a conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+
+  $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.a 1> /dev/null 2> /dev/null
+
+  if test -f conftest.exe
+  then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    AR_CR="$test_AR_CR"
+    break
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+  fi
+done
+
+fi
+
 if test "${static_patch}" == true ; then
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: I will now check if C++ objects can be linked by C/Fortran compilers" >&5
@@ -8954,6 +9019,9 @@ program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
 program_name=$(echo plumed | sed "$program_transform_name_sh")
 
 
+if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/wrapper$//')" ; then
+  as_fn_error $? "$program_name is not a valid program name (should not terminate with Wrapper)" "$LINENO" 5
+fi
 if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/kernel$//')" ; then
   as_fn_error $? "$program_name is not a valid program name (should not terminate with Kernel)" "$LINENO" 5
 fi
