@@ -191,7 +191,8 @@ script:
 
 # TEST:
   - if test "$VALGRIND" == yes ; then OPT=valgrind ; else OPT="" ; fi
-  - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make -C regtest $OPT ; fi
+# --no-print-directory make it more silent
+  - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make --no-print-directory -C regtest $OPT ; fi
 
 # test with gcc6
   - if test "$PLUMED_DOCKER" = yes ; then docker run -v "$PWD/regtest":/home/plumed/regtest -it plumed /bin/bash -c "make -C regtest" ; fi
