@@ -19,10 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "colvar/Colvar.h"
-#include "colvar/ActionRegister.h"
+#include "MetainferenceBase.h"
+#include "core/ActionRegister.h"
 #include "tools/NeighborList.h"
 #include "tools/OpenMP.h"
+#include "tools/Pbc.h"
 
 #include <string>
 #include <cmath>
@@ -41,6 +42,8 @@ are give as numbered GROUPA1, GROUPA2, ...
 The additional parameters needed for the calculation are given as INEPT, the inept
 time, TAUC the correlation time, OMEGA, the larmor frequency and RTWO for the relaxation
 time.
+
+\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
 
@@ -69,26 +72,32 @@ PRINT ARG=HN_pre.* FILE=PRE.dat STRIDE=1
 */
 //+ENDPLUMEDOC
 
-class PRE : public Colvar {
+class PRE :
+  public MetainferenceBase
+{
 private:
   bool             pbc;
-  double           constant, inept;
+  double           constant;
+  double           inept;
   vector<double>   rtwo;
   vector<unsigned> nga;
   NeighborList     *nl;
+  unsigned         tot_size;
 public:
   static void registerKeywords( Keywords& keys );
   explicit PRE(const ActionOptions&);
   ~PRE();
   virtual void calculate();
+  void update();
 };
 
 PLUMED_REGISTER_ACTION(PRE,"PRE")
 
 void PRE::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
+  MetainferenceBase::registerKeywords(keys);
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","INEPT","is the INEPT time (in ms).");
   keys.add("compulsory","TAUC","is the correlation time (in ns) for this electron-nuclear interaction.");
   keys.add("compulsory","OMEGA","is the Larmor frequency of the nuclear spin (in MHz).");
@@ -106,7 +115,7 @@ void PRE::registerKeywords( Keywords& keys ) {
 }
 
 PRE::PRE(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
+  PLUMED_METAINF_INIT(ao),
   pbc(true)
 {
   bool nopbc=!pbc;
@@ -162,6 +171,7 @@ PRE::PRE(const ActionOptions&ao):
 
   bool addexp=false;
   parseFlag("ADDEXP",addexp);
+  if(getDoScore()) addexp=true;
 
   vector<double> exppre;
   if(addexp) {
@@ -190,17 +200,32 @@ PRE::PRE(const ActionOptions&ao):
     }
     log.printf("\n");
   }
+  tot_size = index;
 
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
 
-  for(unsigned i=0; i<nga.size(); i++) {
-    string num; Tools::convert(i,num);
-    addComponentWithDerivatives("pre_"+num);
-    componentIsNotPeriodic("pre_"+num);
-  }
-
-  if(addexp) {
+  if(!getDoScore()) {
+    for(unsigned i=0; i<nga.size(); i++) {
+      string num; Tools::convert(i,num);
+      addComponentWithDerivatives("pre_"+num);
+      componentIsNotPeriodic("pre_"+num);
+    }
+    if(addexp) {
+      for(unsigned i=0; i<nga.size(); i++) {
+        string num; Tools::convert(i,num);
+        addComponent("exp_"+num);
+        componentIsNotPeriodic("exp_"+num);
+        Value* comp=getPntrToComponent("exp_"+num);
+        comp->set(exppre[i]);
+      }
+    }
+  } else {
+    for(unsigned i=0; i<nga.size(); i++) {
+      string num; Tools::convert(i,num);
+      addComponent("pre_"+num);
+      componentIsNotPeriodic("pre_"+num);
+    }
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
       addComponent("exp_"+num);
@@ -211,6 +236,11 @@ PRE::PRE(const ActionOptions&ao):
   }
 
   requestAtoms(nl->getFullAtomList());
+  if(getDoScore()) {
+    setParameters(exppre);
+    Initialise(nga.size());
+  }
+  setDerivatives();
   checkRead();
 }
 
@@ -220,17 +250,21 @@ PRE::~PRE() {
 
 void PRE::calculate()
 {
-// cycle over the number of PRE
+  vector<Vector> deriv(tot_size, Vector{0,0,0});
+  vector<double> fact(nga.size(), 0.);
+
+  // cycle over the number of PRE
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0; i<nga.size(); i++) {
-    vector<Vector> deriv;
     Tensor dervir;
     double pre=0;
     unsigned index=0;
     for(unsigned k=0; k<i; k++) index+=nga[k];
+    const double c_aver=constant/static_cast<double>(nga[i]);
+    string num; Tools::convert(i,num);
+    Value* val=getPntrToComponent("pre_"+num);
     // cycle over equivalent atoms
     for(unsigned j=0; j<nga[i]; j++) {
-      const double c_aver=constant/((double)nga[i]);
       // the first atom is always the same (the paramagnetic group)
       const unsigned i0=nl->getClosePair(index+j).first;
       const unsigned i1=nl->getClosePair(index+j).second;
@@ -246,25 +280,55 @@ void PRE::calculate()
       const double tmpir8=-6.*c_aver/r8;
 
       pre += tmpir6;
-
-      Vector tmpv = -tmpir8*distance;
-      deriv.push_back(tmpv);
-      dervir   +=  Tensor(distance,tmpv);
+      deriv[index+j] = -tmpir8*distance;
+      if(!getDoScore()) dervir   +=  Tensor(distance,deriv[index+j]);
     }
     const double ratio = rtwo[i]*exp(-pre*inept) / (rtwo[i]+pre);
-    const double fact = -ratio*(inept+1./(rtwo[i]+pre));
-
-    Value* val=getPntrToComponent(i);
+    fact[i] = -ratio*(inept+1./(rtwo[i]+pre));
     val->set(ratio);
-    setBoxDerivatives(val, fact*dervir);
-
-    for(unsigned j=0; j<nga[i]; j++) {
-      const unsigned i0=nl->getClosePair(index+j).first;
-      const unsigned i1=nl->getClosePair(index+j).second;
-      setAtomsDerivatives(val, i0,  fact*deriv[j]);
-      setAtomsDerivatives(val, i1, -fact*deriv[j]);
-    }
+    if(!getDoScore()) {
+      setBoxDerivatives(val, fact[i]*dervir);
+      for(unsigned j=0; j<nga[i]; j++) {
+        const unsigned i0=nl->getClosePair(index+j).first;
+        const unsigned i1=nl->getClosePair(index+j).second;
+        setAtomsDerivatives(val, i0,  fact[i]*deriv[index+j]);
+        setAtomsDerivatives(val, i1, -fact[i]*deriv[index+j]);
+      }
+    } else setCalcData(i, ratio);
   }
+
+  if(getDoScore()) {
+    /* Metainference */
+    Tensor dervir;
+    double score = getScore();
+    setScore(score);
+
+    /* calculate final derivatives */
+    Value* val=getPntrToComponent("score");
+    for(unsigned i=0; i<nga.size(); i++) {
+      unsigned index=0;
+      for(unsigned k=0; k<i; k++) index+=nga[k];
+      // cycle over equivalent atoms
+      for(unsigned j=0; j<nga[i]; j++) {
+        const unsigned i0=nl->getClosePair(index+j).first;
+        const unsigned i1=nl->getClosePair(index+j).second;
+
+        Vector distance;
+        if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
+        else    distance=delta(getPosition(i0),getPosition(i1));
+
+        dervir += Tensor(distance,fact[i]*deriv[index+j]*getMetaDer(i));
+        setAtomsDerivatives(val, i0,  fact[i]*deriv[index+j]*getMetaDer(i));
+        setAtomsDerivatives(val, i1, -fact[i]*deriv[index+j]*getMetaDer(i));
+      }
+    }
+    setBoxDerivatives(val, dervir);
+  }
+}
+
+void PRE::update() {
+  // write status file
+  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
 }

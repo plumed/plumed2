@@ -36,7 +36,7 @@ account the agreement with the experimental data considering the multiple source
 \section isdb-1-reference Run a reference simulation
  
 The system we use is the EGAAWAASS peptide used in ref. \cite Lohr:2017gc .
-First of all we will run a simulation in implicit solvent using the EEF1-SB CHARMM36 force field. EEF1-SB includes a correction to the standard backbone torsion potentianl of CHARMM36, an electrostatic interaction with a distance dependent dielectric constant and a simple gaussian form for the solvation energy. The first two terms are implemented in the force field and using table potentials while the latter is implemented as a collective variable in PLUMED, \ref IMPLICIT .
+First of all we will run a simulation in implicit solvent using the EEF1-SB CHARMM36 force field. EEF1-SB includes a correction to the standard backbone torsion potentianl of CHARMM36, an electrostatic interaction with a distance dependent dielectric constant and a simple gaussian form for the solvation energy. The first two terms are implemented in the force field and using table potentials while the latter is implemented as a collective variable in PLUMED, \ref EFFSOLV .
 
 \plumedfile
 # this is optional and tell to VIM that this is a PLUMED file
@@ -47,7 +47,7 @@ WHOLEMOLECULES ENTITY0=1-111
 
 # EEF1SB Implicit solvation
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
-solv: IMPLICIT ATOMS=protein-h NOPBC NL_STRIDE=10 NL_BUFFER=0.1
+solv: EFFSOLV ATOMS=protein-h NOPBC NL_STRIDE=10 NL_BUFFER=0.1
 bias: BIASVALUE ARG=solv
 
 \endplumedfile

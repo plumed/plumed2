@@ -1,4 +1,4 @@
-#! FIELDS time spe.bias spe.MetaDf spe.weight spe.scale spe.acceptScale spe.acceptSigma spe.sigmaMean spe.sigma
+#! FIELDS time spe.bias spe.biasDer spe.weight spe.scale spe.acceptScale spe.acceptSigma spe.sigmaMean spe.sigma
  0.000000 46.490062 0.361697 0.500000 1.000000 1.000000 1.000000 0.001000 0.010000
  0.005000 47.182661 -0.199315 0.500000 1.000000 1.000000 1.000000 0.001000 0.010000
  0.010000 46.729252 0.103056 0.484971 1.000000 1.000000 1.000000 0.001000 0.010000

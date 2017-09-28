@@ -39,7 +39,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC ISDB_COLVAR EM3D
+//+PLUMEDOC ISDB_COLVAR EMMI
 /*
 Calculate the fit of a structure or ensemble of structures with a cryo-EM density map.
 
@@ -55,14 +55,14 @@ Combined with a multi-replica framework (such as the -multi option in GROMACS), 
 the Metainference approach \cite Bonomi:2016ip .
 
 \warning
-To use \ref EM3D, the user should always add a \ref MOLINFO line and specify a pdb file of the system.
+To use \ref EMMI, the user should always add a \ref MOLINFO line and specify a pdb file of the system.
 
 \note
 To enhance sampling in single-structure refinement, one can use a Replica Exchange Method, such as Parallel Tempering.
 In this case, the user should add the NO_AVER flag to the input line.
 
 \note
-\ref EM3D can be used in combination with periodic and non-periodic systems. In the latter case, one should
+\ref EMMI can be used in combination with periodic and non-periodic systems. In the latter case, one should
 add the NOPBC flag to the input line
 
 \par Examples
@@ -93,8 +93,8 @@ MOLINFO STRUCTURE=prot.pdb
 #  all heavy atoms
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 
-# create EM3D score
-gmm: EM3D NOPBC SIGMA_MEAN=0.01 TEMP=300.0 NL_STRIDE=100 NL_CUTOFF=0.01 GMM_FILE=GMM_fit.dat ATOMS=protein-h
+# create EMMI score
+gmm: EMMI NOPBC SIGMA_MEAN=0.01 TEMP=300.0 NL_STRIDE=100 NL_CUTOFF=0.01 GMM_FILE=GMM_fit.dat ATOMS=protein-h
 
 # translate into bias - apply every 2 steps
 emr: BIASVALUE ARG=gmm.scoreb STRIDE=2
@@ -106,7 +106,7 @@ PRINT ARG=emr.* FILE=COLVAR STRIDE=500 FMT=%20.10f
 */
 //+ENDPLUMEDOC
 
-class EM3D : public Colvar {
+class EMMI : public Colvar {
 
 private:
 
@@ -153,7 +153,6 @@ private:
   bool first_time_, no_aver_;
   vector < unsigned > nl_;
 // parallel stuff
-  bool serial_;
   unsigned size_;
   unsigned rank_;
 
@@ -196,20 +195,19 @@ private:
 
 public:
   static void registerKeywords( Keywords& keys );
-  explicit EM3D(const ActionOptions&);
+  explicit EMMI(const ActionOptions&);
 // active methods:
   void prepare();
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(EM3D,"EM3D")
+PLUMED_REGISTER_ACTION(EMMI,"EMMI")
 
-void EM3D::registerKeywords( Keywords& keys ) {
+void EMMI::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","atoms for which we calculate the density map, typically all heavy atoms");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
   keys.add("compulsory","TEMP","temperature");
-  keys.addFlag("SERIAL",false,"perform the calculation in serial - for debug purpose");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
   keys.addFlag("ANALYSIS",false,"run in analysis mode");
   keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
@@ -220,12 +218,12 @@ void EM3D::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("scoreb",  "default","Beta Bayesian score");
 }
 
-EM3D::EM3D(const ActionOptions&ao):
+EMMI::EMMI(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   inv_sqrt2_(0.707106781186548),
   sqrt2_pi_(0.797884560802865),
   nl_cutoff_(-1.0), nl_stride_(0),
-  first_time_(true), no_aver_(false), serial_(false),
+  first_time_(true), no_aver_(false),
   analysis_(false), nframe_(0.0), pbc_(true)
 {
 
@@ -256,21 +254,17 @@ EM3D::EM3D(const ActionOptions&ao):
   parse("NL_STRIDE",nl_stride_);
   if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
 
-  // serial or parallel
-  parseFlag("SERIAL",serial_);
-  if(serial_) {
-    size_=1; rank_=0;
-  } else {
-    size_=comm.Get_size(); rank_=comm.Get_rank();
-  }
-
   parseFlag("NO_AVER",no_aver_);
   parseFlag("ANALYSIS",analysis_);
 
   checkRead();
 
+  // set parallel stuff
+  size_=comm.Get_size();
+  rank_=comm.Get_rank();
+
   // get number of replicas
-  if(comm.Get_rank()==0) {
+  if(rank_==0) {
     if(no_aver_) {
       nrep_ = 1;
       replica_ = 0;
@@ -289,7 +283,6 @@ EM3D::EM3D(const ActionOptions&ao):
   for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial());
   log.printf("\n");
   log.printf("  GMM data file : %s\n", GMM_file.c_str());
-  if(serial_) log.printf("  serial calculation\n");
   if(no_aver_) log.printf("  without ensemble averaging\n");
   log.printf("  neighbor list overlap cutoff : %lf\n", nl_cutoff_);
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
@@ -334,19 +327,19 @@ EM3D::EM3D(const ActionOptions&ao):
   // clear things that are not needed anymore
   GMM_d_cov_.clear();
 
-  // request the atoms
-  requestAtoms(atoms);
-
   // add components
   addComponentWithDerivatives("score");  componentIsNotPeriodic("score");
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
+
+  // request the atoms
+  requestAtoms(atoms);
 
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   log<<plumed.cite("Hanot, Bonomi, Greenberg, Sali, Nilges, Vendruscolo, Pellarin, bioRxiv doi: 10.1101/113951 (2017)");
   log<<"\n";
 }
 
-void EM3D::get_GMM_m(vector<AtomNumber> &atoms)
+void EMMI::get_GMM_m(vector<AtomNumber> &atoms)
 {
   vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
 
@@ -403,7 +396,7 @@ void EM3D::get_GMM_m(vector<AtomNumber> &atoms)
 }
 
 
-void EM3D::check_GMM_d(VectorGeneric<6> &cov, double w)
+void EMMI::check_GMM_d(VectorGeneric<6> &cov, double w)
 {
 
 // check if positive defined, by calculating the 3 leading principal minors
@@ -420,7 +413,7 @@ void EM3D::check_GMM_d(VectorGeneric<6> &cov, double w)
 
 
 // read GMM data file in PLUMED format:
-void EM3D::get_GMM_d(string GMM_file)
+void EMMI::get_GMM_d(string GMM_file)
 {
   int idcomp, beta;
   double w, m0, m1, m2;
@@ -466,13 +459,13 @@ void EM3D::get_GMM_d(string GMM_file)
 // normalize GMM to sum to 1
 // since all the GMM components are individually normalized, we just need to
 // divide each weight for the sum of the weights
-void EM3D::normalize_GMM(vector<double> &w)
+void EMMI::normalize_GMM(vector<double> &w)
 {
   double norm = accumulate(w.begin(), w.end(), 0.0);
   for(unsigned i=0; i<w.size(); ++i) w[i] /= norm;
 }
 
-void EM3D::get_auxiliary_stuff()
+void EMMI::get_auxiliary_stuff()
 {
   VectorGeneric<6> cov, sum, inv_sum;
   // cycle on all atoms types
@@ -511,7 +504,7 @@ void EM3D::get_auxiliary_stuff()
 }
 
 // get prefactors
-double EM3D::get_prefactor_inverse
+double EMMI::get_prefactor_inverse
 (const VectorGeneric<6> &GMM_cov_0, const VectorGeneric<6> &GMM_cov_1,
  double &GMM_w_0, double &GMM_w_1,
  VectorGeneric<6> &sum, VectorGeneric<6> &inv_sum)
@@ -539,7 +532,7 @@ double EM3D::get_prefactor_inverse
   return pre_fact;
 }
 
-double EM3D::get_self_overlap(unsigned id)
+double EMMI::get_self_overlap(unsigned id)
 {
   vector<double> ov;
   VectorGeneric<6> sum, inv_sum;
@@ -577,7 +570,7 @@ double EM3D::get_self_overlap(unsigned id)
 
 // this is to avoid the calculation of millions of exp function
 // when updating the neighbor list using calculate_overlap
-void EM3D::get_cutoff_ov()
+void EMMI::get_cutoff_ov()
 {
   // temporary stuff
   unsigned GMM_d_w_size = GMM_d_w_.size();
@@ -603,7 +596,7 @@ void EM3D::get_cutoff_ov()
 }
 
 // version with derivatives
-double EM3D::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
+double EMMI::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
                          const VectorGeneric<6> &inv_cov_md, Vector &ov_der)
 {
   Vector md;
@@ -624,7 +617,7 @@ double EM3D::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
 }
 
 // fast version without derivatives and cutoff used for neighbor list
-double EM3D::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
+double EMMI::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
                          const VectorGeneric<6> &inv_cov_md)
 
 {
@@ -647,7 +640,7 @@ double EM3D::get_overlap(const Vector &m_m, const Vector &d_m, double &fact_md,
   return ov;
 }
 
-void EM3D::update_neighbor_list()
+void EMMI::update_neighbor_list()
 {
   // temp stuff
   unsigned GMM_d_w_size = GMM_d_w_.size();
@@ -694,14 +687,14 @@ void EM3D::update_neighbor_list()
   ovmd_der_.resize(tot_size);
 }
 
-void EM3D::prepare()
+void EMMI::prepare()
 {
   if(getExchangeStep()) first_time_=true;
 }
 
 
 // overlap calculator
-void EM3D::calculate_overlap() {
+void EMMI::calculate_overlap() {
 
   if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0) {
     update_neighbor_list();
@@ -729,15 +722,13 @@ void EM3D::calculate_overlap() {
     ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), pre_fact,
                              inv_cov_md_[kaux], ovmd_der_[i]);
   }
-  // if parallel, communicate stuff
-  if(!serial_) {
-    comm.Sum(&ovmd_[0], ovmd_.size());
-    comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
-  }
+  // communicate stuff
+  comm.Sum(&ovmd_[0], ovmd_.size());
+  comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
 }
 
 
-void EM3D::calculate() {
+void EMMI::calculate() {
 
 // calculate CV
   calculate_overlap();
@@ -809,13 +800,11 @@ void EM3D::calculate() {
       }
     }
 
-    // if parallel, communicate stuff
-    if(!serial_) {
-      comm.Sum(&atom_der_[0][0],   3*atom_der_.size());
-      comm.Sum(&atom_der_b_[0][0], 3*atom_der_b_.size());
-      comm.Sum(virial);
-      comm.Sum(virialb);
-    }
+    // communicate stuff
+    comm.Sum(&atom_der_[0][0],   3*atom_der_.size());
+    comm.Sum(&atom_der_b_[0][0], 3*atom_der_b_.size());
+    comm.Sum(virial);
+    comm.Sum(virialb);
 
     // set derivatives
     for(unsigned i=0; i<atom_der_.size(); ++i) {

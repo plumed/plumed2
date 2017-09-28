@@ -35,8 +35,8 @@
 #include <iterator>
 #include <sstream>
 
-#include "colvar/Colvar.h"
-#include "colvar/ActionRegister.h"
+#include "MetainferenceBase.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/OpenMP.h"
 #include "tools/Pbc.h"
@@ -58,7 +58,9 @@ can also be stored as components. The two sets of components can then be used to
 either a scoring function as in \cite Robustelli:2010dn \cite Granata:2013dk, using
 the keyword CAMSHIFT or to calculate ensemble averaged chemical shift as in \cite Camilloni:2012je
 \cite Camilloni:2013hs (see \ref ENSEMBLE, \ref STATS and \ref RESTRAINT). Finally they can
-also be used as input for \ref METAINFERENCE, \cite Bonomi:2016ip .
+also be used as input for \ref METAINFERENCE, \cite Bonomi:2016ip . In the current implementation there is
+no need to pass the data to \ref METAINFERENCE because \ref CS2BACKBONE can internally enable Metainference
+using the keywork DOSCORE.
 
 CamShift calculation is relatively heavy because it often uses a large number of atoms, in order
 to make it faster it is currently parallelised with \ref Openmp.
@@ -68,7 +70,7 @@ increase the accuracy of the constraint algorithm due to the increased strain on
 In the case of GROMACS it is safer to use lincs-iter=2 and lincs-order=6.
 
 In general the system for which chemical shifts are calculated must be completly included in
-ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in the folder DATA.
+ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in the folder DATADIR.
 The atoms are made automatically whole unless NOPBC is used, in particular if the system is made of
 by multiple chains it is usually better to use NOPBC and make the molecule whole \ref WHOLEMOLECULES
 selecting an appropriate order.
@@ -104,10 +106,10 @@ protonation of GLU and ASP. Non-standard amino acids and other molecules are not
 they can be named UNK. If multiple chains are present the chain identifier must be in the standard PDB format,
 together with the TER keyword at the end of each chain.
 
-One more standard file is also needed in the folder DATA: camshift.db. This file includes all the CamShift parameters
-and can be found in regtest/basic/rt45/data/ .
+One more standard file is also needed in the folder DATADIR: camshift.db. This file includes all the CamShift parameters
+and can be found in regtest/isdb/rt-cs2backbone/data/ .
 
-All the above files must be in a single folder that must be specified with the keyword DATA.
+All the above files must be in a single folder that must be specified with the keyword DATADIR.
 
 Additional material and examples can be also found in the tutorial \ref belfast-9
 
@@ -119,7 +121,7 @@ in NMR driven Metadynamics \cite Granata:2013dk :
 \plumedfile
 whole: GROUP ATOMS=2612-2514:-1,961-1:-1,2466-962:-1,2513-2467:-1
 WHOLEMOLECULES ENTITY0=whole
-cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATA=../data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
+cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATADIR=../data/ TEMPLATE=template.pdb CAMSHIFT NOPBC
 metad: METAD ARG=cs HEIGHT=0.5 SIGMA=0.1 PACE=200 BIASFACTOR=10
 PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
 \endplumedfile
@@ -127,13 +129,23 @@ PRINT ARG=cs,metad.bias FILE=COLVAR STRIDE=100
 In this second example the chemical shifts are used as replica-averaged restrained as in \cite Camilloni:2012je \cite Camilloni:2013hs.
 
 \plumedfile
-cs: CS2BACKBONE ATOMS=1-174 DATA=data/ NRES=13
+cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ NRES=13
 encs: ENSEMBLE ARG=(cs\.hn_.*),(cs\.nh_.*)
 stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn_.*),(cs\.expnh_.*)
 RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
 
 PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=RESTRAINT STRIDE=100
 
+\endplumedfile
+
+This third example show how to use chemical shifts to calculate a \ref METAINFERENCE score .
+
+\plumedfile
+cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ NRES=13 DOSCORE NDATA=24
+csbias: BIASVALUE ARG=cs
+
+PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=CS.dat STRIDE=1000
+PRINT ARG=cs.score FILE=BIAS STRIDE=100
 \endplumedfile
 
 */
@@ -386,7 +398,7 @@ private:
   }
 };
 
-class CS2Backbone : public Colvar {
+class CS2Backbone : public MetainferenceBase {
   struct Fragment {
     vector<Value*> comp;
     vector<double> exp_cs;
@@ -461,6 +473,7 @@ class CS2Backbone : public Colvar {
 
   CS2BackboneDB    db;
   vector<vector<Fragment> > atom;
+  vector<vector<vector<unsigned> > > index_cs;
   vector<RingInfo> ringInfo;
   vector<unsigned> seg_last;
   vector<unsigned> type;
@@ -493,17 +506,19 @@ public:
 
   explicit CS2Backbone(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-  virtual void calculate();
+  void calculate();
+  void update();
 };
 
 PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
 void CS2Backbone::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
+  MetainferenceBase::registerKeywords( keys );
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
-  keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
+  keys.add("compulsory","DATADIR","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
   keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbour list update.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
@@ -524,7 +539,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ) {
 }
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
+  PLUMED_METAINF_INIT(ao),
   camshift(false),
   pbc(true)
 {
@@ -532,6 +547,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   string stringapdb;
 
   parseFlag("CAMSHIFT",camshift);
+  if(camshift&&getDoScore()) error("It is not possible to use CAMSHIFT together with DOSCORE");
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -541,7 +557,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   parseFlag("NOEXP",noexp);
 
   string stringa_data;
-  parse("DATA",stringa_data);
+  parse("DATADIR",stringa_data);
 
   string stringa_template;
   parse("TEMPLATE",stringa_template);
@@ -637,37 +653,51 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
 
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  checkRead();
 
   log<<"  Bibliography "
-     <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)")
-     <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)")
-     <<plumed.cite("Granata D, Camilloni C, Vendruscolo M, Laio A, Proc. Natl. Acad. Sci. USA 110, 6817 (2013)")<<"\n";
+     <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)");
+  if(camshift) log<<plumed.cite("Granata D, Camilloni C, Vendruscolo M, Laio A, Proc. Natl. Acad. Sci. USA 110, 6817 (2013)");
+  else log<<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)");
+  log<<"\n";
 
   const string str_cs[] = {"ha_","hn_","nh_","ca_","cb_","co_"};
   unsigned index=0;
-  if(camshift) noexp = true;
-  if(!camshift) {
+  if(camshift) {
+    noexp = true;
+    addValueWithDerivatives();
+    setNotPeriodic();
+  } else {
+    if(getDoScore()) {
+      index_cs.resize(atom.size(), vector<vector<unsigned> >());
+      for(unsigned i=0; i<atom.size(); i++) {
+        index_cs[i].resize(atom[i].size(), vector<unsigned>(6));
+      }
+    }
+    unsigned l=0;
     for(unsigned i=0; i<atom.size(); i++) {
       for(unsigned a=0; a<atom[i].size(); a++) {
         unsigned res=index+a;
         std::string num; Tools::convert(res,num);
         for(unsigned at_kind=0; at_kind<6; at_kind++) {
           if(atom[i][a].exp_cs[at_kind]!=0) {
-            addComponentWithDerivatives(str_cs[at_kind]+num);
-            componentIsNotPeriodic(str_cs[at_kind]+num);
-            atom[i][a].comp[at_kind] = getPntrToComponent(str_cs[at_kind]+num);
+            if(getDoScore()) {
+              addComponent(str_cs[at_kind]+num);
+              componentIsNotPeriodic(str_cs[at_kind]+num);
+              atom[i][a].comp[at_kind] = getPntrToComponent(str_cs[at_kind]+num);
+              index_cs[i][a][at_kind]=l;
+              setParameter(atom[i][a].exp_cs[at_kind]);
+              l++;
+            } else {
+              addComponentWithDerivatives(str_cs[at_kind]+num);
+              componentIsNotPeriodic(str_cs[at_kind]+num);
+              atom[i][a].comp[at_kind] = getPntrToComponent(str_cs[at_kind]+num);
+            }
           }
         }
       }
       index += atom[i].size();
     }
-  } else {
-    addValueWithDerivatives();
-    setNotPeriodic();
-    for(unsigned i=0; i<atom.size(); i++) {
-      index += atom[i].size();
-    }
+    if(getDoScore()) Initialise(l);
   }
 
   if(!noexp) {
@@ -690,9 +720,15 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   }
 
   /* temporary check, the idea is that I can remove NRES completely */
+  index=0;
+  for(unsigned i=0; i<atom.size(); i++) {
+    index += atom[i].size();
+  }
   if(index!=numResidues) error("NRES and the number of residues in the PDB do not match!");
 
   requestAtoms(atoms);
+  setDerivatives();
+  checkRead();
 }
 
 void CS2Backbone::remove_problematic(const string &res, const string &nucl) {
@@ -777,6 +813,13 @@ void CS2Backbone::calculate()
   const unsigned chainsize = atom.size();
   const unsigned atleastned = 72+ringInfo.size()*6;
 
+  vector<vector<unsigned> > all_list;
+  vector<vector<Vector> > all_ff;
+  if(getDoScore()) {
+    all_list.resize(getNarg(), vector<unsigned>());
+    all_ff.resize(getNarg(), vector<Vector>());
+  }
+
   // CYCLE OVER MULTIPLE CHAINS
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
   for(unsigned s=0; s<chainsize; s++) {
@@ -822,6 +865,7 @@ void CS2Backbone::calculate()
           vector<Vector> ff;
           ff.reserve(needed_atoms);
           ff.push_back(Vector(0,0,0));
+
 
           //PREV
           const double * CONST_BB2_PREV = db.CONST_BB2_PREV(aa_kind,at_kind);
@@ -1090,34 +1134,65 @@ void CS2Backbone::calculate()
           }
           //END OF DIHE
 
-          Value * comp;
-          double fact = 1.0;
-          if(!camshift) {
-            comp = atom[s][a].comp[at_kind];
+          if(getDoScore()) {
+            setCalcData(index_cs[s][a][at_kind], cs);
+            all_list[index_cs[s][a][at_kind]] = list;
+            all_ff[index_cs[s][a][at_kind]] = ff;
+            Value *comp = atom[s][a].comp[at_kind];
             comp->set(cs);
-            Tensor virial;
-            for(unsigned i=0; i<list.size(); i++) {
-              Vector add = fact*ff[i];
-              setAtomsDerivatives(comp,list[i],add);
-              virial-=Tensor(getPosition(list[i]),add);
-            }
-            setBoxDerivatives(comp,virial);
           } else {
-            comp = getPntrToValue();
-            score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
-            fact = 2.0*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
-            for(unsigned i=0; i<list.size(); i++) omp_deriv[list[i]] += fact*ff[i];
+            if(camshift) {
+              score += (cs - atom[s][a].exp_cs[at_kind])*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
+              double fact = 2.0*(cs - atom[s][a].exp_cs[at_kind])/camshift_sigma2[at_kind];
+              for(unsigned i=0; i<list.size(); i++) omp_deriv[list[i]] += fact*ff[i];
+            } else {
+              Value *comp = atom[s][a].comp[at_kind];
+              comp->set(cs);
+              Tensor virial;
+              for(unsigned i=0; i<list.size(); i++) {
+                setAtomsDerivatives(comp,list[i],ff[i]);
+                virial-=Tensor(getPosition(list[i]),ff[i]);
+              }
+              setBoxDerivatives(comp,virial);
+            }
           }
         }
       }
     }
     #pragma omp critical
-    if(camshift) for(int i=0; i<getPositions().size(); i++) setAtomsDerivatives(i,omp_deriv[i]);
+    if(camshift) for(int i=0; i<getPositions().size(); i++) setAtomsDerivatives(getPntrToValue(),i,omp_deriv[i]);
+  }
+
+  if(getDoScore()) {
+    /* Metainference */
+    double score = getScore();
+    setScore(score);
+
+    /* calculate final derivatives */
+    Value* val=getPntrToComponent("score");
+
+    Tensor virial;
+
+    for(unsigned i=0; i<all_list.size(); i++) {
+      const double fact = getMetaDer(i);
+      for(unsigned j=0; j<all_list[i].size(); j++) {
+        setAtomsDerivatives(val, all_list[i][j],  all_ff[i][j]*fact);
+        virial-=Tensor(getPosition(all_list[i][j]), all_ff[i][j]*fact);
+      }
+    }
+    setBoxDerivatives(val,virial);
   }
 
   // in the case of camshift we calculate the virial at the end
   if(camshift) {
-    setBoxDerivativesNoPbc();
+    Tensor virial;
+    unsigned nat=getNumberOfAtoms();
+    Value* val=getPntrToValue();
+    for(unsigned i=0; i<nat; i++) virial-=Tensor(getPosition(i),
+                                            Vector(val->getDerivative(3*i+0),
+                                                val->getDerivative(3*i+1),
+                                                val->getDerivative(3*i+2)));
+    setBoxDerivatives(val,virial);
     setValue(score);
   }
 
@@ -2117,6 +2192,11 @@ void CS2Backbone::xdist_name_map(string & name) {
   else if ((name == "CG1")|| (name == "OG")||
            (name == "SG") || (name == "OG1")) name = "CG";
   else if ((name == "HA1"))                   name = "HA";
+}
+
+void CS2Backbone::update() {
+  // write status file
+  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
 }

@@ -319,17 +319,17 @@ endif
 $(PLUMED_KERNEL):$(OBJ_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-	cd install && $(LDSO) -o libplumedKernel.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(DYNAMIC_LIBS)
+	cd install && $(LDSHARED) -o libplumedKernel.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(DYNAMIC_LIBS)
 else
-	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
+	$(LDSHARED) -o $@ $^ $(DYNAMIC_LIBS)
 endif
 
 $(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-	cd install && $(LDSO) -o libplumed.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(addprefix ../,$(OBJ_WRAPPER)) $(DYNAMIC_LIBS)
+	cd install && $(LDSHARED) -o libplumed.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(addprefix ../,$(OBJ_WRAPPER)) $(DYNAMIC_LIBS)
 else
-	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
+	$(LDSHARED) -o $@ $^ $(DYNAMIC_LIBS)
 endif
 
 $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)

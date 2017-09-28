@@ -3,6 +3,7 @@ WHOLEMOLECULES ENTITY0=1-111
 
 # xGxAWxASx
 JCOUPLING ...
+    NOPBC
     TYPE=HAN
     ATOMS1=@psi-2
     ATOMS2=@psi-4
@@ -14,6 +15,7 @@ JCOUPLING ...
 
 # xxAAWAASS
 JCOUPLING ...
+    NOPBC
     TYPE=HAHN
     ATOMS1=@psi-2
     ATOMS2=@psi-3
@@ -27,6 +29,7 @@ JCOUPLING ...
 
 # xxxxWxxxx
 JCOUPLING ...
+    NOPBC
     TYPE=CCG
     ATOMS1=67,47,49,52
     LABEL=jccg
@@ -34,6 +37,7 @@ JCOUPLING ...
 
 # xxxxWxxxx
 JCOUPLING ...
+    NOPBC
     TYPE=NCG
     ATOMS1=47,49,52,53
     LABEL=jncg
@@ -41,6 +45,7 @@ JCOUPLING ...
 
 # xGxAWxASx
 JCOUPLING ...
+    NOPBC
     NUMERICAL_DERIVATIVES
     TYPE=HAN
     ATOMS1=@psi-2
@@ -53,6 +58,7 @@ JCOUPLING ...
 
 # xxAAWAASS
 JCOUPLING ...
+    NOPBC
     NUMERICAL_DERIVATIVES
     TYPE=HAHN
     ATOMS1=@psi-2
@@ -67,6 +73,7 @@ JCOUPLING ...
 
 # xxxxWxxxx
 JCOUPLING ...
+    NOPBC
     NUMERICAL_DERIVATIVES
     TYPE=CCG
     ATOMS1=67,47,49,52
@@ -75,6 +82,7 @@ JCOUPLING ...
 
 # xxxxWxxxx
 JCOUPLING ...
+    NOPBC
     NUMERICAL_DERIVATIVES
     TYPE=NCG
     ATOMS1=47,49,52,53
