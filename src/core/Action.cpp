@@ -277,7 +277,5 @@ bool Action::getCPT()const {
   return plumed.getCPT();
 }
 
-
-
 }
 
