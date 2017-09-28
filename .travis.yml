@@ -33,21 +33,25 @@ matrix:
     env: PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
 # then I try serial compiler on UBUNTU precise
   - os: linux
+    if: branch =~ ^test-
     dist: precise
     sudo: required
     env: PLUMED_CC=gcc   PLUMED_CXX=g++
 # test using external blas with internal lapack
   - os: linux
+    if: branch =~ ^test-
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
 # test using docker image.
 # currently it means ubuntu 17, with gcc6
   - sudo: required
+    if: branch =~ ^test-
     services: docker
     env: PLUMED_DOCKER=yes
 # osx serial
   - os: osx
+    if: branch =~ ^test-
     osx_image: xcode7.3
     env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
@@ -56,6 +60,7 @@ matrix:
       - $HOME/.ccache
 # osx parallel
   - os: osx
+    if: branch =~ ^test-
     osx_image: xcode7.3
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
@@ -64,6 +69,7 @@ matrix:
       - $HOME/.ccache
 # osx serial macports
   - os: osx
+    if: branch =~ ^test-
     osx_image: xcode7.3
     env: PLUMED_MACPORTS="plumed"
     cache:
@@ -71,6 +77,7 @@ matrix:
       - $HOME/.macports-ci-ccache
 # osx serial macports debug variant
   - os: osx
+    if: branch =~ ^test-
     osx_image: xcode7.3
     env: PLUMED_MACPORTS="plumed +allmodules"
     cache:
