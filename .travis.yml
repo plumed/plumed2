@@ -4,22 +4,18 @@ matrix:
   include:
 # list of configurations to be attempted:
 # MPI + doc
-# this is the "master" one, it is going to update the manual if log contains [makedoc]
+# this is the "master" one, it is going to update the manual every time
 # Variable PLUMED_ALL_TESTS=yes ensures that all the regtests can be run.
 # If some of them is not enabled, the whole suite will fail.
   - os: linux
     dist: trusty
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
 # the following are with debug flags
   - os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=gcc   PLUMED_CXX=g++    CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-  - os: linux
-    dist: trusty
-    sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
 # cppcheck - takes a lot of time to compile the code, so I place it closer
 # to the beginning of the list
   - os: linux
@@ -30,19 +26,22 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
+    env: PLUMED_CC=mpicc   PLUMED_CXX=mpic++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
 # test using external blas with internal lapack
   - os: linux
+    if: branch =~ ^test-
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
 # test using docker image.
 # currently it means ubuntu 17, with gcc6
   - sudo: required
+    if: branch =~ ^test-
     services: docker
     env: PLUMED_DOCKER=yes
 # osx serial
   - os: osx
+    if: branch =~ ^test-
     osx_image: xcode7.3
     env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
@@ -51,6 +50,7 @@ matrix:
       - $HOME/.ccache
 # osx parallel
   - os: osx
+    if: branch =~ ^test-
     osx_image: xcode7.3
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
@@ -59,6 +59,7 @@ matrix:
       - $HOME/.ccache
 # osx serial macports
   - os: osx
+    if: branch =~ ^test-
     osx_image: xcode7.3
     env: PLUMED_MACPORTS="plumed"
     cache:
@@ -66,6 +67,7 @@ matrix:
       - $HOME/.macports-ci-ccache
 # osx serial macports debug variant
   - os: osx
+    if: branch =~ ^test-
     osx_image: xcode7.3
     env: PLUMED_MACPORTS="plumed +allmodules"
     cache:
@@ -98,10 +100,7 @@ install:
   - export TMPDIR="/tmp" 
 # on travis, better dump stack trace in case there is an error
   - export PLUMED_STACK_TRACE=yes
-# build the manual, only if log contains string [makedoc]
   - export PLUMED_NUM_THREADS=2
-# accept both [makedoc] and [makedocs] as an option
-  - ./.travis/check.log makedoc  || ./.travis/check.log makedocs || MAKEDOC=no
   - ./.travis/check.log valgrind || VALGRIND=no
 # update packages
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then
