@@ -27,14 +27,14 @@
 #include <fstream>
 #include <sstream>
 #include <map>
-
+#include <iostream>
 
 using namespace std;
 
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC ISDB_BIAS COEVOLUTION
+//+PLUMEDOC ISDB_BIAS COEVOLUTION2
 /*
 
 
@@ -42,117 +42,62 @@ namespace isdb {
 //+ENDPLUMEDOC
 
 
-class CoEvolutionRestraint : public bias::Bias
+class CoEvolutionRestraint2 : public bias::Bias
 {
   // slope
   double slope_;
-  // alpha parameters
-  double alpha_p_;
-  double alpha_n_;
-  double Dalpha_p_;
-  double Dalpha_n_;
-  double alpha_p_min_;
-  double alpha_p_max_;
-  double alpha_n_min_;
-  double alpha_n_max_;
-  // alpha prior parameters
-  double alpha_p_mean_;
-  double alpha_p_sig_;
-  double alpha_n_mean_;
-  double alpha_n_sig_;
   // "cutoff", gamma, and P0 parameters;
   vector<double> R0_;
   vector<double> gamma_;
   double P0_;
+  // restraint parameters
+  vector<double> sigma0_;
+  vector<double> sigma1_;
+  vector<double> beta_;
   // temperature in kbt
   double kbt_;
-  // Monte Carlo stuff
-  int MCsteps_;
-  int MCstride_;
-  long int MCfirst_;
-  unsigned int MCaccalpha_p_;
-  unsigned int MCaccalpha_n_;
   // parallel stuff
   unsigned rank_;
   unsigned nrep_;
 
-  void   setup_restraint(double R0, double gamma, string res_file);
-  double getPrior(double a, double amean, double asig);
-  void   doMonteCarlo(double oldE, const vector<double> &fmod, long int step);
-  double getEnergy(double alpha_p, double alpha_n, const vector<double> &fmod);
-  double proposeMove(double x, double xmin, double xmax, double dxmax);
-  bool   doAccept(double oldE, double newE);
+  void get_parameters(double p);
+  void setup_restraint(double R0, double gamma, string res_file);
 
 public:
-  CoEvolutionRestraint(const ActionOptions&);
+  CoEvolutionRestraint2(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
 
-PLUMED_REGISTER_ACTION(CoEvolutionRestraint,"COEVOLUTION")
+PLUMED_REGISTER_ACTION(CoEvolutionRestraint2,"COEVOLUTION2")
 
-void CoEvolutionRestraint::registerKeywords(Keywords& keys) {
+void CoEvolutionRestraint2::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","ALPHA_P0","initial value of the alpha positive parameter");
-  keys.add("compulsory","ALPHA_N0","initial value of the alpha negative parameter");
-  keys.add("compulsory","DALPHA_P","maximum MC move of the alpha positive parameter");
-  keys.add("compulsory","DALPHA_N","maximum MC move of the alpha negative parameter");
-  keys.add("compulsory","ALPHA_P_MEAN","mean value of the alpha positive parameter");
-  keys.add("compulsory","ALPHA_P_SIG", "sigma value of the alpha positive parameter");
-  keys.add("compulsory","ALPHA_N_MEAN","mean value of the alpha negative parameter");
-  keys.add("compulsory","ALPHA_N_SIG", "sigma value of the alpha negative parameter");
   keys.add("optional","R0","forward model parameter R0");
   keys.add("optional","P0","forward model parameter P0");
   keys.add("optional","GAMMA","forward model parameter gamma");
   keys.add("compulsory","RES_FILE","file with residue types for each argument");
   keys.add("optional","SLOPE","add logarithmic slope");
   keys.add("optional","TEMP","temperature in energy units");
-  keys.add("optional","MC_STEPS","number of MC steps");
-  keys.add("optional","MC_STRIDE","MC stride");
-  componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
-  keys.addOutputComponent("alphap",   "default","alpha positive parameter");
-  keys.addOutputComponent("alphan",   "default","alpha negative parameter");
-  keys.addOutputComponent("accalphap","default","MC acceptance alpha positive");
-  keys.addOutputComponent("accalphan","default","MC acceptance alpha negative");
 }
 
-CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
-  PLUMED_BIAS_INIT(ao), slope_(0.0),
-  alpha_p_min_(0.000001), alpha_p_max_(0.5),
-  alpha_n_min_(0.000001), alpha_n_max_(0.5),
-  P0_(1.0), MCsteps_(1), MCstride_(1), MCfirst_(-1),
-  MCaccalpha_p_(0), MCaccalpha_n_(0)
+CoEvolutionRestraint2::CoEvolutionRestraint2(const ActionOptions&ao):
+  PLUMED_BIAS_INIT(ao), slope_(0.0), P0_(1.0)
 {
   // additional slope
   parse("SLOPE", slope_);
 
-  // alpha stuff
-  parse("ALPHA_P0", alpha_p_);
-  parse("ALPHA_N0", alpha_n_);
-  parse("DALPHA_P", Dalpha_p_);
-  parse("DALPHA_N", Dalpha_n_);
-
-  // check values
-  if(alpha_p_<=alpha_p_min_ or alpha_p_>=alpha_p_max_) error("ALPHA_P0 should be strictly between 0.01 and 0.5");
-  if(alpha_n_<=alpha_n_min_ or alpha_n_>=alpha_n_max_) error("ALPHA_N0 should be strictly between 0.0015 and 0.05");
-  if(Dalpha_p_<0. or Dalpha_n_<0) error("DALPHAs should be positive or zero");
-
-  // average and sigma values
-  parse("ALPHA_P_MEAN", alpha_p_mean_);
-  parse("ALPHA_P_SIG",  alpha_p_sig_);
-  parse("ALPHA_N_MEAN", alpha_n_mean_);
-  parse("ALPHA_N_SIG",  alpha_n_sig_);
-
   // forward model parameters
-  double R0 = 0.9;
+  double R0 = 1.0;
   parse("R0", R0);
   if(R0<=0.) error("R0 should be strictly positive");
-  double gamma = 0.9;
+
+  double gamma = 1.0;
   parse("GAMMA", gamma);
   if(gamma<=0.) error("GAMMA should be strictly positive");
+
   parse("P0", P0_);
   if(P0_<=0. or P0_>1.) error("P0 should be strictly positive and lower than 1");
 
@@ -166,54 +111,40 @@ CoEvolutionRestraint::CoEvolutionRestraint(const ActionOptions&ao):
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
 
-  // MC stuff
-  parse("MC_STEPS", MCsteps_);
-  parse("MC_STRIDE",MCstride_);
-
   checkRead();
 
   // setup restraint
   setup_restraint(R0, gamma, res_file);
   if(R0_.size()!=getNumberOfArguments()) error("Check residue pair file");
 
-  // adjust for multiple-time steps
-  MCstride_ *= getStride();
-
-  log.printf("  initial value of alpha_p %f\n",alpha_p_);
-  log.printf("  initial value of alpha_n %f\n",alpha_n_);
-  log.printf("  maximum MC move of the alpha positive parameter %f\n",Dalpha_p_);
-  log.printf("  maximum MC move of the alpha negative parameter %f\n",Dalpha_n_);
-  log.printf("  mean value of the alpha positive parameter %f\n",alpha_p_mean_);
-  log.printf("  sigma value of the alpha positive parameter %f\n",alpha_p_sig_);
-  log.printf("  mean value of the alpha negative parameter %f\n",alpha_n_mean_);
-  log.printf("  sigma value of the alpha negative parameter %f\n",alpha_n_sig_);
   log.printf("  forward model parameter R0 %f\n",R0);
   log.printf("  forward model parameter P0 %f\n",P0_);
   log.printf("  forward model parameter gamma %f\n",gamma);
   log.printf("  temperature of the system in energy unit %f\n",kbt_);
-  log.printf("  number of MC steps %d\n",MCsteps_);
-  log.printf("  do MC every %d steps\n", MCstride_);
-
-  addComponent("alphap");    componentIsNotPeriodic("alphap");
-  addComponent("accalphap"); componentIsNotPeriodic("accalphap");
-  addComponent("alphan");    componentIsNotPeriodic("alphan");
-  addComponent("accalphan"); componentIsNotPeriodic("accalphan");
 
   // initialize parallel stuff
   rank_ = comm.Get_rank();
   nrep_ = comm.Get_size();
-
-  // initialize random seed
-  unsigned iseed;
-  if(rank_ == 0) iseed = time(NULL);
-  else           iseed = 0;
-  comm.Sum(&iseed, 1);
-  // initialize random generator
-  srand (iseed);
-
 }
 
-void  CoEvolutionRestraint::setup_restraint(double R0, double gamma, string res_file)
+void CoEvolutionRestraint2::get_parameters(double p)
+{
+  vector<double> s = {0.078, 0.073, 0.069, 0.067, 0.066, 0.064, 0.063, 0.061, 0.052};
+  vector<double> b = {0.820, 0.779, 0.729, 0.682, 0.637, 0.588, 0.533, 0.475, 0.308};
+
+// find index of p
+  double i = floor( (p - 0.1 - 0.00001) / 0.1 );
+// check boundaries
+  i = max(0.0, min(i, 8.0));
+  unsigned index = static_cast<unsigned> (i);
+
+// add to vectors
+  sigma0_.push_back(1.0);
+  sigma1_.push_back(s[index]);
+  beta_.push_back(b[index]);
+}
+
+void  CoEvolutionRestraint2::setup_restraint(double R0, double gamma, string res_file)
 {
   // reference distance and slope for each pairs of residues
   map< pair<string,string>, pair<double,double> > DREF_;
@@ -292,7 +223,7 @@ void  CoEvolutionRestraint::setup_restraint(double R0, double gamma, string res_
 // open residue pair file
   ifstream rfile;
   rfile.open(res_file);
-  string line, res0, res1;
+  string line, res0, res1, prob;
 // iterator for residue map
   map< pair<string,string>, pair<double,double> >::iterator it;
 // read file
@@ -303,7 +234,7 @@ void  CoEvolutionRestraint::setup_restraint(double R0, double gamma, string res_
       // split line into strings separated by a space
       stringstream ss(line);
       // read residue pair
-      ss >> res0; ss >> res1;
+      ss >> res0; ss >> res1; ss >> prob;
       // find entry in DREF_
       pair<string,string> key1 = make_pair(res0, res1);
       pair<string,string> key2 = make_pair(res1, res0);
@@ -317,140 +248,22 @@ void  CoEvolutionRestraint::setup_restraint(double R0, double gamma, string res_
         R0_.push_back( 0.1 * DREF_[key2].first * R0 );
         gamma_.push_back( 0.1 * DREF_[key2].second * gamma );
       }
+      // get probability
+      double p = atof(prob.c_str());
+      get_parameters(p);
     }
     rfile.close();
   }
   else error("Unable to open residue file");
 }
 
-// calculate Gaussian prior for a single alpha
-double CoEvolutionRestraint::getPrior(double a, double amean, double asig)
-{
-  // calculate sigma
-  double s = sqrt(a*(1.0-a)/asig);
-  // calculate Gaussian prior - excluding 2pi which is constant
-  double prior = 0.5 * ( a - amean ) * ( a - amean ) / s / s + std::log(s);
-  //return prior
-  return kbt_ * prior;
-}
-
-// used to update Bayesian nuisance parameters
-double CoEvolutionRestraint::getEnergy
-(double alpha_p, double alpha_n, const vector<double> &fmod)
-{
-  // calculate energy
-  double ene = 0.0;
-  // cycle on arguments
-  for(unsigned i=rank_; i<getNumberOfArguments(); i=i+nrep_) {
-    // calculate data likelihood
-    double like = alpha_p * fmod[i] + alpha_n * ( 1.0 - fmod[i] );
-    // add to energy
-    ene += -kbt_ * std::log(like);
-  }
-
-  // sum energy
-  comm.Sum(&ene, 1);
-
-  // add Gaussian prior on alpha_p
-  ene += getPrior(alpha_p, alpha_p_mean_, alpha_p_sig_);
-  // add Gaussian prior on alpha_n
-  ene += getPrior(alpha_n, alpha_n_mean_, alpha_n_sig_);
-
-  return ene;
-}
-
-double CoEvolutionRestraint::proposeMove(double x, double xmin, double xmax, double dxmax)
-{
-  double r = static_cast<double>(rand()) / RAND_MAX;
-  double dx = -dxmax + r * 2.0 * dxmax;
-  double x_new = x + dx;
-// check boundaries
-  if(x_new > xmax) {x_new = 2.0 * xmax - x_new;}
-  if(x_new < xmin) {x_new = 2.0 * xmin - x_new;}
-  return x_new;
-}
-
-bool CoEvolutionRestraint::doAccept(double oldE, double newE) {
-  bool accept = false;
-  // calculate delta energy
-  double delta = ( newE - oldE ) / kbt_;
-  // if delta is negative always accept move
-  if( delta < 0.0 ) {
-    accept = true;
-  } else {
-    // otherwise extract random number
-    double s = static_cast<double>(rand()) / RAND_MAX;
-    if( s < exp(-delta) ) { accept = true; }
-  }
-  return accept;
-}
-
-void CoEvolutionRestraint::doMonteCarlo(double oldE, const vector<double> &fmod, long int step)
-{
-// this is needed when restarting simulations
-  if(MCfirst_==-1) MCfirst_=step;
-// calculate number of trials
-  double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
-  double accalpha_p, accalpha_n;
-
-// MOVE:: only one replica is doing the move
-//if(comm.Get_rank()==0 && multi_sim_comm.Get_rank()==0){
-  // cycle on MC steps
-  for(unsigned i=0; i<MCsteps_; ++i) {
-    // 1) propose move in alpha_p
-    double new_alpha_p = proposeMove(alpha_p_, alpha_p_min_, alpha_p_max_, Dalpha_p_);
-    // calculate new energy
-    double newE = getEnergy(new_alpha_p, alpha_n_, fmod);
-    // accept or reject
-    bool accept = doAccept(oldE, newE);
-    if(accept) {
-      alpha_p_ = new_alpha_p;
-      MCaccalpha_p_++;
-      oldE = newE;
-    }
-    // 2) propose move in alpha_n
-    double new_alpha_n = proposeMove(alpha_n_, alpha_n_min_, alpha_n_max_, Dalpha_n_);
-    // calculate new energy
-    newE = getEnergy(alpha_p_, new_alpha_n, fmod);
-    // accept or reject
-    accept = doAccept(oldE, newE);
-    if(accept) {
-      alpha_n_ = new_alpha_n;
-      MCaccalpha_n_++;
-      oldE = newE;
-    }
-  }
-  // calculate acceptances
-  accalpha_p = static_cast<double>(MCaccalpha_p_) / static_cast<double>(MCsteps_) / MCtrials;
-  accalpha_n = static_cast<double>(MCaccalpha_n_) / static_cast<double>(MCsteps_) / MCtrials;
-//} else {
-//  alpha_p_ = 0.0;
-//  alpha_n_ = 0.0;
-//  accalpha_p = 0.0;
-//  accalpha_n = 0.0;
-//}
-// communicate stuff
-//if(comm.Get_rank()==0) {
-//   multi_sim_comm.Sum(&alpha_p_, 1);
-//   multi_sim_comm.Sum(&alpha_n_, 1);
-//   multi_sim_comm.Sum(&accalpha_p, 1);
-//   multi_sim_comm.Sum(&accalpha_n, 1);
-//}
-//comm.Sum(&alpha_p_, 1);
-//comm.Sum(&alpha_n_, 1);
-//comm.Sum(&accalpha_p, 1);
-//comm.Sum(&accalpha_n, 1);
-//
-  getPntrToComponent("accalphap")->set(accalpha_p);
-  getPntrToComponent("accalphan")->set(accalpha_n);
-}
-
-void CoEvolutionRestraint::calculate()
+void CoEvolutionRestraint2::calculate()
 {
   // allocate force vector
   vector<double> force(getNumberOfArguments(), 0.0);
-  // and forward model vector
-  vector<double> fmod(getNumberOfArguments(), 0.0);
+  // constant
+  double sqrt2_ = sqrt(2.0);
+  double sqrtpi_ = sqrt(3.14159265359);
 
   // calculate energy
   double ene = 0.0;
@@ -459,56 +272,49 @@ void CoEvolutionRestraint::calculate()
     // get distance
     double dist = getArgument(i);
     // calculate forward model
-    double p = P0_;
-    if(dist >= R0_[i]) p = P0_ * exp(-0.5*(dist-R0_[i])*(dist-R0_[i])/gamma_[i]/gamma_[i]);
-    // store forward model
-    fmod[i] = p;
-    // calculate data likelihood
-    double like = alpha_p_ * p + alpha_n_ * ( 1.0 - p );
+    double fmod = P0_;
+    if(dist >= R0_[i]) fmod = P0_ * exp(-0.5*(dist-R0_[i])*(dist-R0_[i])/gamma_[i]/gamma_[i]);
+    // define probability - first part
+    double a0 = (1.0 - fmod)/sigma0_[i]/sqrt2_;
+    double b0 = -fmod/sigma0_[i]/sqrt2_;
+    double n0 = sigma0_[i] * ( erf(a0) - erf(b0) );
+    double t0 = exp( -0.5 * (1.0-fmod) * (1.0-fmod) / sigma0_[i] / sigma0_[i] );
+    double p0 = beta_[i] * t0 / n0;
+    // and second part
+    double a1 = (1.0 - fmod)/sigma1_[i]/sqrt2_;
+    double b1 = -fmod/sigma1_[i]/sqrt2_;
+    double n1 = sigma1_[i] * ( erf(a1) - erf(b1) );
+    double t1 = exp( -0.5 * (1.0-fmod) * (1.0-fmod) / sigma1_[i] / sigma1_[i] );
+    double p1 = (1.0 - beta_[i]) * t1 / n1;
     // add to energy
-    ene += -kbt_ * std::log(like);
-    // add slope at high distances
-    if(dist >= R0_[i] + 2.0 * gamma_[i]) {
-      // add to energy
-      ene += kbt_ * slope_ * std::log(dist);
-      // calculate force
-      force[i] = - kbt_ * slope_ / dist;
-    }
-    // second contribution
-    if(dist >= R0_[i]) {
-      double dene_dlike = -kbt_ / like;
-      double dlike_dp   = alpha_p_ - alpha_n_;
-      double dp_ddist   = -p * (dist-R0_[i]) / gamma_[i] / gamma_[i];
-      // apply chain rule
-      force[i] += -dene_dlike * dlike_dp * dp_ddist;
-    }
+    ene += -kbt_ * std::log(p0 + p1);
+    // and now derivatives
+    double dene_dp01 = -kbt_ / (p0 + p1);
+    double tmp00 = -2.0 * exp(-a0*a0) / sqrtpi_ / sigma0_[i] / sqrt2_;
+    double tmp01 = -2.0 * exp(-b0*b0) / sqrtpi_ / sigma0_[i] / sqrt2_;
+    double tmp10 = -2.0 * exp(-a1*a1) / sqrtpi_ / sigma1_[i] / sqrt2_;
+    double tmp11 = -2.0 * exp(-b1*b1) / sqrtpi_ / sigma1_[i] / sqrt2_;
+    double dp0_dfmod = beta_[i]       * (t0*(1.0-fmod)/sigma0_[i]/sigma0_[i]/n0-t0*sigma0_[i]*(tmp00-tmp01)/n0/n0);
+    double dp1_dfmod = (1.0-beta_[i]) * (t1*(1.0-fmod)/sigma1_[i]/sigma1_[i]/n1-t1*sigma1_[i]*(tmp10-tmp11)/n1/n1);
+    double dfmod_dist = 0.0;
+    if(dist >= R0_[i]) dfmod_dist = -fmod * (dist-R0_[i]) / gamma_[i] / gamma_[i];
+    // add to force
+    force[i] += -dene_dp01 * ( dp0_dfmod + dp1_dfmod ) * dfmod_dist;
+    // add slope
+    ene += kbt_ * slope_ * std::log(dist);
+    // calculate force
+    force[i] += - kbt_ * slope_ / dist;
   }
 
   // sum energy, fmod, and derivatives
   comm.Sum(&force[0], force.size());
-  comm.Sum(&fmod[0], fmod.size());
   comm.Sum(&ene, 1);
 
   // apply forces
   for(unsigned i=0; i<force.size(); ++i) setOutputForce(i, force[i]);
 
-  // add Gaussian prior on alpha_p
-  ene += getPrior(alpha_p_, alpha_p_mean_, alpha_p_sig_);
-  // add Gaussian prior on alpha_n
-  ene += getPrior(alpha_n_, alpha_n_mean_, alpha_n_sig_);
-
   // set value of the bias
   setBias(ene);
-  // set values of alpha_p
-  getPntrToComponent("alphap")->set(alpha_p_);
-  // set values of alpha_n
-  getPntrToComponent("alphan")->set(alpha_n_);
-
-  // get time step
-  long int step = getStep();
-  // do MC stuff at the right time step
-  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(ene, fmod, step);
-
 }
 
 
