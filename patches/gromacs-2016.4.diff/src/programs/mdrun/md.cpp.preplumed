@@ -62,7 +62,6 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -120,12 +119,6 @@
 #include "deform.h"
 #include "membed.h"
 #include "repl_ex.h"
-
-/* PLUMED */
-#include "../../../Plumed.h"
-extern int    plumedswitch;
-extern plumed plumedmain;
-/* END PLUMED */
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -291,12 +284,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /* Interactive MD */
     gmx_bool          bIMDstep = FALSE;
-
-    /* PLUMED */
-    int plumedNeedsEnergy=0;
-    int plumedWantsToStop=0;
-    matrix plumed_vir;
-    /* END PLUMED */
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -517,11 +504,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed);
     }
 
-    /* PME tuning is only supported with PME for Coulomb. Is is not supported
-     * with only LJ PME, or for reruns.
-     */
+    /* PME tuning is only supported in the Verlet scheme, with PME for
+     * Coulomb. It is not supported with only LJ PME, or for
+     * reruns. */
     bPMETune = ((Flags & MD_TUNEPME) && EEL_PME(fr->eeltype) && !bRerunMD &&
-                !(Flags & MD_REPRODUCIBLE));
+                !(Flags & MD_REPRODUCIBLE) && ir->cutoff_scheme != ecutsGROUP);
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, fplog, ir, state->box,
@@ -625,11 +612,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             copy_mat(ekind->tcstat[i].ekinh, ekind->tcstat[i].ekinh_old);
         }
     }
-    if (ir->eI != eiVV)
-    {
-        enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
-                                     and there is no previous step */
-    }
 
     /* need to make an initiation call to get the Trotter variables set, as well as other constants for non-trotter
        temperature control */
@@ -637,16 +619,28 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     if (MASTER(cr))
     {
-        if (constr && !ir->bContinuation && ir->eConstrAlg == econtLINCS)
+        if (!ir->bContinuation)
         {
-            fprintf(fplog,
-                    "RMS relative constraint deviation after constraining: %.2e\n",
-                    constr_rmsd(constr));
+            if (constr && ir->eConstrAlg == econtLINCS)
+            {
+                fprintf(fplog,
+                        "RMS relative constraint deviation after constraining: %.2e\n",
+                        constr_rmsd(constr));
+            }
+            if (EI_STATE_VELOCITY(ir->eI))
+            {
+                real temp = enerd->term[F_TEMP];
+                if (ir->eI != eiVV)
+                {
+                    /* Result of Ekin averaged over velocities of -half
+                     * and +half step, while we only have -half step here.
+                     */
+                    temp *= 2;
+                }
+                fprintf(fplog, "Initial temperature: %g K\n", temp);
+            }
         }
-        if (EI_STATE_VELOCITY(ir->eI))
-        {
-            fprintf(fplog, "Initial temperature: %g K\n", enerd->term[F_TEMP]);
-        }
+
         if (bRerunMD)
         {
             fprintf(stderr, "starting md rerun '%s', reading coordinates from"
@@ -687,52 +681,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         fprintf(fplog, "\n");
     }
-
-    /* PLUMED */
-    if(plumedswitch){
-      /* detect plumed API version */
-      int pversion=0;
-      plumed_cmd(plumedmain,"getApiVersion",&pversion);
-      /* setting kbT is only implemented with api>1) */
-      real kbT=ir->opts.ref_t[0]*BOLTZ;
-      if(pversion>1) plumed_cmd(plumedmain,"setKbT",&kbT);
-      if(pversion>2){
-        int res=1;
-        if( (Flags & MD_STARTFROMCPT) ) plumed_cmd(plumedmain,"setRestart",&res);
-      }
-
-      if(cr->ms && cr->ms->nsim>1) {
-        if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
-        if(PAR(cr)){
-          if(DOMAINDECOMP(cr)) {
-            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
-          }else{
-            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
-          }
-        }
-        plumed_cmd(plumedmain,"GREX init",NULL);
-      }
-      if(PAR(cr)){
-        if(DOMAINDECOMP(cr)) {
-          plumed_cmd(plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
-        }
-      }
-      plumed_cmd(plumedmain,"setNatoms",&top_global->natoms);
-      plumed_cmd(plumedmain,"setMDEngine","gromacs");
-      plumed_cmd(plumedmain,"setLog",fplog);
-      real real_delta_t;
-      real_delta_t=ir->delta_t;
-      plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
-      plumed_cmd(plumedmain,"init",NULL);
-
-      if(PAR(cr)){
-        if(DOMAINDECOMP(cr)) {
-          plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
-          plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
-        }
-      }
-    }
-    /* END PLUMED */
 
     walltime_accounting_start(walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
@@ -1043,13 +991,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     do_verbose && !bPMETunePrinting);
                 shouldCheckNumberOfBondedInteractions = true;
                 update_realloc(upd, state->nalloc);
-
-                /* PLUMED */
-                if(plumedswitch){
-                  plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
-                  plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
-                }
-                /* END PLUMED */
             }
         }
 
@@ -1155,49 +1096,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
-
-            /* PLUMED */
-            plumedNeedsEnergy=0;
-            if(plumedswitch){
-              int pversion=0;
-              plumed_cmd(plumedmain,"getApiVersion",&pversion);
-              long int lstep=step; plumed_cmd(plumedmain,"setStepLong",&lstep);
-              plumed_cmd(plumedmain,"setPositions",&state->x[0][0]);
-              plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[0]);
-              plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[0]);
-              plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
-              plumed_cmd(plumedmain,"prepareCalc",NULL);
-              plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
-              int checkp=0; if(bCPT) checkp=1;
-              if(pversion>3) plumed_cmd(plumedmain,"doCheckPoint",&checkp);
-              plumed_cmd(plumedmain,"setForces",&f[0][0]);
-              plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
-              clear_mat(plumed_vir);
-              plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
-            }
-            /* END PLUMED */
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
-            /* PLUMED */
-            if(plumedswitch){
-              if(plumedNeedsEnergy){
-                msmul(force_vir,2.0,plumed_vir);
-                plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
-                plumed_cmd(plumedmain,"performCalc",NULL);
-                msmul(plumed_vir,0.5,force_vir);
-              } else {
-                msmul(plumed_vir,0.5,plumed_vir);
-                m_add(force_vir,plumed_vir,force_vir);
-              }
-              if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
-                 do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
-              if(plumedWantsToStop) ir->nsteps=step_rel+1;
-            }
-            /* END PLUMED */
         }
 
         if (EI_VV(ir->eI) && !startingFromCheckpoint && !bRerunMD)
