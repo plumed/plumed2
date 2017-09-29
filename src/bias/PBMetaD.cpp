@@ -622,7 +622,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           error("The GRID file you want to read: " + gridreadfilenames_[i] + ", cannot be found!");
         }
         string funcl = getLabel() + ".bias";
-        BiasGrid_.reset( Grid::create(funcl, args, gridfile, gmin_t, gmax_t, gbin_t, sparsegrid, spline, true) );
+        BiasGrid_=Grid::create(funcl, args, gridfile, gmin_t, gmax_t, gbin_t, sparsegrid, spline, true);
         gridfile.close();
         if(BiasGrid_->getDimension() != args.size()) {
           error("mismatch between dimensionality of input grid and number of arguments");

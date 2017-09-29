@@ -333,6 +333,9 @@ ifeq ($(PLUMED_INSTALL),Install)
 	cd install && $(LDSHARED) -o libplumedKernel.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(DYNAMIC_LIBS)
 else
 	$(LDSHARED) -o $@ $^ $(DYNAMIC_LIBS)
+ifeq ($(SOEXT),dylib)
+	install_name_tool -id "$(realpath .)/libplumedKernel.$(SOEXT)" libplumedKernel.$(SOEXT)
+endif
 endif
 
 $(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER)
@@ -341,6 +344,9 @@ ifeq ($(PLUMED_INSTALL),Install)
 	cd install && $(LDSHARED) -o libplumed.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(addprefix ../,$(OBJ_WRAPPER)) $(DYNAMIC_LIBS)
 else
 	$(LDSHARED) -o $@ $^ $(DYNAMIC_LIBS)
+ifeq ($(SOEXT),dylib)
+	install_name_tool -id "$(realpath .)/libplumed.$(SOEXT)" $@
+endif
 endif
 
 $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)

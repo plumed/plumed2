@@ -8683,10 +8683,10 @@ $as_echo "$as_me: **************************" >&6;}
 
 LD_RO=
 if test "$ld_r" == true ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ objects can be grouped with ld -r" >&5
-$as_echo_n "checking whether C++ objects can be grouped with ld -r... " >&6; }
-
-  LD_RO="ld -r -o"
+for test_LD_RO in "$($CXX --print-prog-name=ld) -r -o" "$CXX -Wl,-r -o" "ld -r -o"
+do
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ objects can be grouped with $test_LD_RO" >&5
+$as_echo_n "checking whether C++ objects can be grouped with $test_LD_RO... " >&6; }
 
   rm -f conftest-*
 
@@ -8706,7 +8706,7 @@ EOF
   $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
   $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
 
-  $LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+  $test_LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
 
   $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.o 1> /dev/null 2> /dev/null
 
@@ -8714,12 +8714,16 @@ EOF
   then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
+    LD_RO="$test_LD_RO"
+    break
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-    LD_RO=""
   fi
+done
+
 fi
+
 
 if test "${static_patch}" == true ; then
 

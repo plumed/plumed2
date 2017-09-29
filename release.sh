@@ -114,8 +114,7 @@ if ! test "$VALIDATED" ; then
   update_changelog CHANGES/v$shortversion.md $version $shortversion "coming soon"
   echo 
   msg="Travis tests for v$version
-
-[makedoc]"
+"
   echo "Now I will add an empty commit and push the result to origin"
   echo "I will use the following commands:"
   echo "***"
@@ -126,7 +125,7 @@ if ! test "$VALIDATED" ; then
   confirm || exit
   git add CHANGES/v$shortversion.md
   git commit --allow-empty -m "$msg"
-  git push origin v$shortversion
+  git push -f origin v$shortversion:test-v$shortversion
   echo
   echo "Now you should go at this link:"
   echo "  http://travis-ci.org/plumed/plumed2/builds"
@@ -147,8 +146,7 @@ else
   cat VERSION
   echo "***"
   msg="Release v$version
-
-[makedoc]"
+"
   echo "Now I will add it, prepare a release commit, add a tag named v$version"
   echo "push it to origin and create a tgz file"
   echo "I will use the following commands:"

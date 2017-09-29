@@ -195,7 +195,9 @@ public:
                                     const std::vector<DRRAxis> &dB);
   /// Get suffix
   std::string getSuffix() const { return suffix; }
-  // Destructor
+  /// Set unit for .grad output
+  void setOutputUnit(double unit) { outputunit = unit; }
+  /// Destructor
   virtual ~DRRForceGrid() {}
 
 protected:
@@ -227,6 +229,8 @@ protected:
   /// The abf_intergrate program has precision requirement.
   /// I test 9 and it just works.
   static const size_t OUTPUTPRECISION = 9;
+  /// For set different output units
+  double outputunit;
 
   /// Miscellaneous helper functions
   static size_t index1D(const DRRAxis &c, double x);
@@ -270,6 +274,7 @@ protected:
     }
     fillTable(mp);
     headers = ss.str();
+    outputunit = 1.0;
     // For 1D pmf
     if (ndims == 1) {
       endpoints.resize(dimensions[0].nbins + 1, 0);

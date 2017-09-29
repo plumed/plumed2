@@ -285,11 +285,11 @@ MDAtomsTyped<T>::MDAtomsTyped():
   virial(NULL)
 {}
 
-MDAtomsBase* MDAtomsBase::create(unsigned p) {
+std::unique_ptr<MDAtomsBase> MDAtomsBase::create(unsigned p) {
   if(p==sizeof(double)) {
-    return new MDAtomsTyped<double>;
+    return std::unique_ptr<MDAtomsTyped<double>>(new MDAtomsTyped<double>);
   } else if (p==sizeof(float)) {
-    return new MDAtomsTyped<float>;
+    return std::unique_ptr<MDAtomsTyped<float>>(new MDAtomsTyped<float>);
   }
   std::string pp;
   Tools::convert(p,pp);
