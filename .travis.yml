@@ -10,12 +10,16 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes
 # the following are with debug flags
   - os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=gcc   PLUMED_CXX=g++    CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
+  - os: linux
+    dist: trusty
+    sudo: required
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
 # cppcheck - takes a lot of time to compile the code, so I place it closer
 # to the beginning of the list
   - os: linux
