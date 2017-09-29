@@ -102,7 +102,7 @@ void DRRForceGrid::fillTable(const std::vector<std::vector<double>> &in) {
 
 DRRForceGrid::DRRForceGrid()
   : suffix(""), ndims(0), dimensions(0), sampleSize(0), forceSize(0),
-    headers(""), table(0), forces(0), samples(0), endpoints(0), shifts(0) {}
+    headers(""), table(0), forces(0), samples(0), endpoints(0), shifts(0), outputunit(1.0) {}
 
 DRRForceGrid::DRRForceGrid(const std::vector<DRRAxis> &p_dimensions,
                            const std::string &p_suffix, bool initializeTable)
@@ -132,6 +132,7 @@ DRRForceGrid::DRRForceGrid(const std::vector<DRRAxis> &p_dimensions,
   forceSize = sampleSize * ndims;
   forces.resize(forceSize, 0.0);
   samples.resize(sampleSize, 0);
+  outputunit = 1.0;
   // For 1D pmf
   if (ndims == 1) {
     endpoints.resize(dimensions[0].nbins + 1, 0);
@@ -301,24 +302,20 @@ DRRForceGrid::getCountsLogDerivative(const std::vector<double> &pos) const {
 // }
 
 void DRRForceGrid::write1DPMF(std::string filename) const {
-  std::stringstream ssp;
-  std::fstream fspmf;
   filename += suffix + ".pmf";
+  FILE *ppmf;
+  ppmf = fopen(filename.c_str(), "w");
   const double w = dimensions[0].getWidth();
   double pmf = 0;
-  ssp << std::fixed << std::setprecision(OUTPUTPRECISION) << endpoints[0] << ' '
-      << pmf << '\n';
+  fprintf(ppmf, "%.9f %.9f\n", endpoints[0], pmf);
   for (size_t i = 0; i < dimensions[0].nbins; ++i) {
     std::vector<double> pos(1, 0);
     pos[0] = table[0][i];
     const std::vector<double> f = getGradient(pos, true);
-    ssp << endpoints[i + 1];
     pmf += f[0] * w;
-    ssp << ' ' << pmf << '\n';
+    fprintf(ppmf, "%.9f %.9f\n", endpoints[i + 1], pmf);
   }
-  fspmf.open(filename.c_str(), std::ios_base::out);
-  fspmf.write(ssp.str().c_str(), ssp.str().length());
-  fspmf.close();
+  fclose(ppmf);
 }
 
 // Write the gradients to a .count file.
@@ -342,34 +339,36 @@ void DRRForceGrid::write1DPMF(std::string filename) const {
 // }
 
 void DRRForceGrid::writeAll(const std::string &filename) const {
-  std::stringstream ssc, ssg;
-  std::fstream fscount, fsgrad;
   std::string countname = filename + suffix + ".count";
   std::string gradname = filename + suffix + ".grad";
-  ssc << headers << std::left << std::fixed
-      << std::setprecision(OUTPUTPRECISION);
-  ssg << headers << std::left << std::fixed
-      << std::setprecision(OUTPUTPRECISION);
   std::vector<double> pos(ndims, 0);
+  FILE *pGrad, *pCount;
+  pGrad = fopen(gradname.c_str(), "w");
+  pCount = fopen(countname.c_str(), "w");
+  char *buffer1, *buffer2;
+  buffer1 = (char*)malloc((sizeof(double))*sampleSize*ndims);
+  buffer2 = (char*)malloc((sizeof(double))*sampleSize*ndims);
+  setvbuf(pGrad, buffer1, _IOFBF, (sizeof(double))*sampleSize*ndims);
+  setvbuf(pCount, buffer2, _IOFBF, (sizeof(double))*sampleSize*ndims);
+  fwrite(headers.c_str(), sizeof(char), strlen(headers.c_str()), pGrad);
+  fwrite(headers.c_str(), sizeof(char), strlen(headers.c_str()), pCount);
   for (size_t i = 0; i < sampleSize; ++i) {
     for (size_t j = 0; j < ndims; ++j) {
       pos[j] = table[j][i];
-      ssc << ' ' << table[j][i];
-      ssg << ' ' << table[j][i];
+      fprintf(pGrad, " %.9f", table[j][i]);
+      fprintf(pCount, " %.9f", table[j][i]);
     }
-    ssc << ' ' << getCount(pos, true) << '\n';
-    //     ssc << ' ' << samples[i] << '\n';
+    fprintf(pCount, " %lu\n", getCount(pos, true));
     std::vector<double> f = getGradient(pos, true);
-    for (const auto &i : f)
-      ssg << ' ' << i;
-    ssg << '\n';
+    for (size_t j = 0; j < ndims; ++j) {
+      fprintf(pGrad, " %.9f", (f[j] / outputunit));
+    }
+    fprintf(pGrad, "\n");
   }
-  fscount.open(countname.c_str(), std::ios_base::out);
-  fsgrad.open(gradname.c_str(), std::ios_base::out);
-  fscount.write(ssc.str().c_str(), ssc.str().length());
-  fsgrad.write(ssg.str().c_str(), ssg.str().length());
-  fscount.close();
-  fsgrad.close();
+  fclose(pGrad);
+  fclose(pCount);
+  free(buffer1);
+  free(buffer2);
   if (ndims == 1) {
     write1DPMF(filename);
   }

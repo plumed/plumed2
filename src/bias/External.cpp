@@ -136,7 +136,7 @@ External::External(const ActionOptions& ao):
 // read grid
   IFile gridfile; gridfile.open(filename);
   std::string funcl=getLabel() + ".bias";
-  BiasGrid_.reset(Grid::create(funcl,getArguments(),gridfile,sparsegrid,spline,true));
+  BiasGrid_=Grid::create(funcl,getArguments(),gridfile,sparsegrid,spline,true);
   gridfile.close();
   if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {

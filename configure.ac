@@ -11,6 +11,7 @@
 # if one has to update configure.ac
 AC_PREREQ([2.68])
 AC_INIT([PLUMED], [2])
+m4_include([./m4/m4_ax_openmp.m4])
 
 ##################################################################
 # Here we define a few useful macros
@@ -262,7 +263,7 @@ AC_ARG_VAR(PYTHON_BIN,[python executable (e.g. python2.7 or /opt/local/bin/pytho
 # include symbol information (obj files are huge)
 if test -z "$CXXFLAGS"
 then
-  CXXFLAGS=-O
+  CXXFLAGS=-O3
 fi
 
 # this is list if copied from a generated ./configure script
@@ -870,9 +871,9 @@ AC_MSG_NOTICE([**************************])
 AC_SUBST(LD_RO)
 LD_RO=
 if test "$ld_r" == true ; then
-  AC_MSG_CHECKING([whether C++ objects can be grouped with ld -r])
-  
-  LD_RO="ld -r -o"
+for test_LD_RO in "$($CXX --print-prog-name=ld) -r -o" "$CXX -Wl,-r -o" "ld -r -o"
+do
+  AC_MSG_CHECKING([whether C++ objects can be grouped with $test_LD_RO])
   
   rm -f conftest-*
   
@@ -892,18 +893,22 @@ EOF
   $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
   $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
   
-  $LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+  $test_LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
   
   $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.o 1> /dev/null 2> /dev/null
   
   if test -f conftest.exe
   then
     AC_MSG_RESULT([yes])
+    LD_RO="$test_LD_RO"
+    break
   else
     AC_MSG_RESULT([no])
-    LD_RO=""
   fi
+done
+ 
 fi
+
 
 if test "${static_patch}" == true ; then
 

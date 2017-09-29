@@ -67,7 +67,7 @@ mpi="${PLUMED_MPIRUN:-mpirun} -np $mpiprocs"
 
 if ! plumed config -q has mpi
 then
-  echo "NOT_APPLIABLE (MPI NOT INSTALLED)"
+  echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
   exit 0;
 fi
 
@@ -79,7 +79,7 @@ fi
 
 if ((mpiprocs>0)) && [[ "$valgrind" != "env" ]]
 then
-  echo "NOT_APPLIABLE (MPI cannot be used with valgrind)"
+  echo "NOT_APPLICABLE (MPI cannot be used with valgrind)"
   exit 0;
 fi
 
@@ -88,7 +88,7 @@ do
   echo "Checking for $need"
   if ! $plumed config -q has $need
   then
-    echo "NOT_APPLIABLE ($need NOT ENABLED)"
+    echo "NOT_APPLICABLE ($need NOT ENABLED)"
     exit 0;
   fi
 done
@@ -98,7 +98,7 @@ do
   echo "Checking for $module"
   if ! $plumed config -q module $module
   then
-    echo "NOT_APPLIABLE ($module MODULE NOT INSTALLED)"
+    echo "NOT_APPLICABLE ($module MODULE NOT INSTALLED)"
     exit 0;
   fi
 done

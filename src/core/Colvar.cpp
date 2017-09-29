@@ -65,7 +65,7 @@ void Colvar::apply() {
   }
 
   unsigned nt=OpenMP::getNumThreads();
-  if(nt>ncp/(2.*stride)) nt=1;
+  if(nt>ncp/(4*stride)) nt=1;
 
   if(!isEnergy) {
     #pragma omp parallel num_threads(nt)

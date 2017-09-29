@@ -26,6 +26,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <memory>
 
 namespace PLMD {
 
@@ -43,7 +44,7 @@ protected:
 /// A copy of the plumed main object
   PlumedMain & plumed;
 public:
-  static DataFetchingObject* create(unsigned n, PlumedMain& p);
+  static std::unique_ptr<DataFetchingObject> create(unsigned n, PlumedMain& p);
 /// A constructor so that we can create the plumed main object
   explicit DataFetchingObject(PlumedMain&p);
   virtual ~DataFetchingObject() {}
