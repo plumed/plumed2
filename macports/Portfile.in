@@ -50,7 +50,8 @@ configure.args-append \
                --disable-doc \
                --disable-libsearch \
                --disable-static-patch \
-               --disable-mpi 
+               --disable-mpi \
+               --disable-python
 
 # Hardcode path for libplumedKernel.dylib.
 # This allows to patch MD codes using the --runtime option but using as
@@ -80,6 +81,8 @@ variant allmodules description {Enable all optional modules} {
   configure.ldflags-append -lboost_serialization
   depends_lib-append port:boost
 }
+
+@_PYTHON_@
 
 # Link lapack/blas libraries
 pre-configure {

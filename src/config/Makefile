@@ -23,7 +23,7 @@ obj: all
 
 config.txt: ../../Makefile.conf
 	@echo "Updating config.txt file"
-	@ ../maketools/update-config-txt.sh config.txt $(CPPFLAGS)
+	@python_bin="$(python_bin)" ../maketools/update-config-txt.sh config.txt $(CPPFLAGS)
 
 version.h:
 	@echo "Updating version.h"

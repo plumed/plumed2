@@ -130,8 +130,8 @@ case "$type" in
  ;;
 (make)
   $plumed info --configuration > Makefile.conf
-  $plumed --is-installed || ln -s $($plumed info --root)/src plumed
-  cat <($plumed info --configuration) "$($plumed info --root)/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
+  $plumed --is-installed || ln -s "$root/src" plumed
+  cat <($plumed info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
   make exe 1>out 2> err
   $mpi $valgrind ./exe $arg >> out 2>> err
  ;;
@@ -139,7 +139,8 @@ case "$type" in
   $mpi $valgrind $plumed $arg > out 2> err
   ;;
 (python)
-  python $arg > out 2> err
+# make sure the right python module is in the path based on plumed root
+  PYTHONPATH="$root/python:$PYTHONPATH" $($plumed config python_bin) $arg > out 2> err
   ;;
 (*) echo "unknown test type" ; exit 1 ;;
 esac

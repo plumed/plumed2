@@ -101,6 +101,8 @@ echo "# version strings"
 echo "# syntax: version short/long/git number"
 echo "$version"
 echo
+echo "python_bin $python_bin"
+echo
 echo "# list of 'has' options"
 echo "# syntax: has name on/of"
 echo "# if option xx is on then plumed has beeen compiled with -D__PLUMED_HAS_XX"
