@@ -1,6 +1,7 @@
 .DS_Store
 *~
 *.o
+*.a
 *.d
 *.cppdep
 *.cdep
