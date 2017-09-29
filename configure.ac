@@ -235,6 +235,7 @@ PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
 PLUMED_CONFIG_ENABLE([cxx-exceptions],[c++ exceptions],[yes])
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
+PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
@@ -884,6 +885,46 @@ done
  
 fi
 
+AC_SUBST(AR_CR)
+AR_CR=
+if test "$ar_cr" == true ; then
+for test_AR_CR in "$($CXX --print-prog-name=ar) cr" "ar cr"
+do
+  AC_MSG_CHECKING([whether static libraries can be created with $test_AR_CR])
+  
+  rm -f conftest-*
+  
+  cat << EOF > conftest-main.cpp
+  void f(void);
+  int main(int argc,char**argv){ f(); return 0; }
+EOF
+  cat << EOF > conftest-f.cpp
+  void g(void);
+  void f(void){ g(); }
+EOF
+  cat << EOF > conftest-g.cpp
+  void g(void){ return; }
+EOF
+  
+  $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
+  
+  $test_AR_CR conftest-both.a conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+  
+  $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.a 1> /dev/null 2> /dev/null
+  
+  if test -f conftest.exe
+  then
+    AC_MSG_RESULT([yes])
+    AR_CR="$test_AR_CR"
+    break
+  else
+    AC_MSG_RESULT([no])
+  fi
+done
+ 
+fi
 
 if test "${static_patch}" == true ; then
 
@@ -971,6 +1012,9 @@ program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
 program_name=$(echo plumed | sed "$program_transform_name_sh")
 AC_SUBST(program_name)
 
+if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/wrapper$//')" ; then
+  AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with Wrapper)])
+fi
 if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/kernel$//')" ; then
   AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with Kernel)])
 fi
