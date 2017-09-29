@@ -30,7 +30,7 @@
 #include <set>
 #include <stack>
 #include <memory>
-
+#include <map>
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE DEFINITIONS WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -191,6 +191,10 @@ public:
 
 /// Flag to switch on detailed timers
   bool detailedTimers;
+
+/// Generic map string -> double
+/// intended to pass information across Actions
+  std::map<std::string,double> passMap;
 
 /// Add a citation, returning a string containing the reference number, something like "[10]"
   std::string cite(const std::string&);

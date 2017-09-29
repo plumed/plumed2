@@ -11,6 +11,7 @@
 # if one has to update configure.ac
 AC_PREREQ([2.68])
 AC_INIT([PLUMED], [2])
+m4_include([./m4/m4_ax_openmp.m4])
 
 ##################################################################
 # Here we define a few useful macros
@@ -261,7 +262,7 @@ AC_ARG_VAR(LDSHARED,[command for linking shared library - configure will use CXX
 # include symbol information (obj files are huge)
 if test -z "$CXXFLAGS"
 then
-  CXXFLAGS=-O
+  CXXFLAGS=-O3
 fi
 
 # this is list if copied from a generated ./configure script
