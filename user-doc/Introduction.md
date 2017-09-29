@@ -1,6 +1,6 @@
 \mainpage Introduction
 
-PLUMED is a plugin that works with a large number of molecular dynamics codes (\ref codes). 
+PLUMED is a plugin that works with a large number of molecular dynamics codes (\ref codes ). 
 It can be used to analyse features of the dynamics on-the-fly or to perform a wide variety of free energy methods.
 PLUMED can also work as a \ref tools to perform analysis on trajectories saved in most of the
 existing formats. If PLUMED is useful for your work please read and cite \cite plumed2, if you are interested in 
