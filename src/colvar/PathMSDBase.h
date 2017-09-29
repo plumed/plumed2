@@ -75,9 +75,9 @@ class PathMSDBase : public Colvar {
   RMSD rmsdPosClose; //rmsd between the current and the close structure
   bool firstPosClose; //flag indicating the first time we need to calculate the distance between the close and the current structure
   bool computeRefClose; //flag indicating necessity to recompute accurately all distances and rotation matrices between the close structure and reference str
-  Tensor *rotationRefClose; //Tensor[i] saved rotation matrices between the close structure and reference structures
+  std::vector<Tensor> rotationRefClose; //Tensor[i] saved rotation matrices between the close structure and reference structures
   Tensor rotationPosClose; //rotation matrix between the close and the current structure
-  Tensor *drotationPosCloseDrr01; //Tensor[3][3]; //derivation of the rotation matrix w.r.t rr01, necessary for calculation of derivations
+  std::array<std::array<Tensor,3>,3> drotationPosCloseDrr01; //Tensor[3][3]; //derivation of the rotation matrix w.r.t rr01, necessary for calculation of derivations
   std::vector<unsigned> savedIndices; //saved indices of imgVec from previous steps, used for recalculating after neighbourlist update
 protected:
   std::vector<PDB> pdbv;

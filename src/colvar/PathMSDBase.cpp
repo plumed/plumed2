@@ -121,15 +121,12 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   if (debugClose)
     log.printf(" Extensive debug info regarding close structure turned on\n");
 
-  rotationRefClose = new Tensor[nframes];
-  drotationPosCloseDrr01 = new Tensor[9];
+  rotationRefClose.resize(nframes);
   savedIndices = vector<unsigned>(nframes);
 
 }
 
 PathMSDBase::~PathMSDBase() {
-  delete[] rotationRefClose;
-  delete[] drotationPosCloseDrr01;
 }
 
 void PathMSDBase::calculate() {
@@ -157,7 +154,7 @@ void PathMSDBase::calculate() {
   plumed_assert(nframes>0);
   plumed_assert(imgVec.size()>0);
 
-  Tensor* tmp_rotationRefClose = new Tensor[nframes];
+  std::vector<Tensor> tmp_rotationRefClose(nframes);
 
   if (epsilonClose > 0) {
     //compute rmsd between positions and close structure, save rotation matrix, drotation_drr01
@@ -238,12 +235,11 @@ void PathMSDBase::calculate() {
   comm.Sum(tmp_distances);
   comm.Sum(tmp_derivs2);
   if (epsilonClose > 0 && computeRefClose) {
-    comm.Sum(tmp_rotationRefClose, nframes);
+    comm.Sum(tmp_rotationRefClose);
     for (unsigned i=0; i<nframes; i++) {
       rotationRefClose[i] = tmp_rotationRefClose[i];
     }
   }
-  delete [] tmp_rotationRefClose;
 // assign imgVec[i].distance and imgVec[i].distder
   for(unsigned i=0; i<imgVec.size(); i++) {
     imgVec[i].distance=tmp_distances[i];

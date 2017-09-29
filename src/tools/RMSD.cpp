@@ -267,7 +267,7 @@ double RMSD::calc_DDistDRef_Rot_DRotDPos_DRotDRef( const std::vector<Vector>& po
   return ret;
 }
 
-double RMSD::calc_Rot_DRotDRr01( const std::vector<Vector>& positions, Tensor & Rotation, Tensor * DRotDRr01, const bool squared) {
+double RMSD::calc_Rot_DRotDRr01( const std::vector<Vector>& positions, Tensor & Rotation, std::array<std::array<Tensor,3>,3> & DRotDRr01, const bool squared) {
   double ret=0.;
   switch(alignmentMethod) {
   case SIMPLE:
@@ -303,7 +303,7 @@ double RMSD::calc_Rot( const std::vector<Vector>& positions, std::vector<Vector>
   return ret;
 }
 
-double RMSD::calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, Tensor & rotationPosClose, Tensor & rotationRefClose, Tensor * drotationPosCloseDrr01, const bool squared) {
+double RMSD::calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01, const bool squared) {
   double ret=0.;
   switch(alignmentMethod) {
   case SIMPLE:
@@ -531,7 +531,7 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
   rotation[2][1]=2*(-q[0]*q[1]+q[2]*q[3]);
 
 
-  Tensor drotation_drr01[3][3];
+  std::array<std::array<Tensor,3>,3> drotation_drr01;
   if(!alEqDis) {
     drotation_drr01[0][0]=2*q[0]*dq_drr01[0]+2*q[1]*dq_drr01[1]-2*q[2]*dq_drr01[2]-2*q[3]*dq_drr01[3];
     drotation_drr01[1][1]=2*q[0]*dq_drr01[0]-2*q[1]*dq_drr01[1]+2*q[2]*dq_drr01[2]-2*q[3]*dq_drr01[3];
@@ -775,7 +775,7 @@ double RMSD::optimalAlignment_Rot_DRotDRr01(const  std::vector<double>  & align,
     const std::vector<Vector> & positions,
     const std::vector<Vector> & reference,
     Tensor & Rotation,
-    Tensor * DRotDRr01,
+    std::array<std::array<Tensor,3>,3> & DRotDRr01,
     bool squared) const {
   //initialize the data into the structure
   // typically the positions do not have the com neither calculated nor subtracted. This layer takes care of this business
@@ -796,7 +796,7 @@ double RMSD::optimalAlignment_Rot_DRotDRr01(const  std::vector<double>  & align,
   // get the rotation matrix
   Rotation=cd.getRotationMatrixReferenceToPositions();
   //get detivative w.r.t. rr01
-  cd.copyDRotationDRr01(DRotDRr01);
+  DRotDRr01=cd.getDRotationDRr01();
   return dist;
 }
 
@@ -839,7 +839,7 @@ double RMSD::optimalAlignmentWithCloseStructure(const  std::vector<double>  & al
     std::vector<Vector>  & derivatives,
     Tensor & rotationPosClose,
     Tensor & rotationRefClose,
-    Tensor * drotationPosCloseDrr01,
+    std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01,
     bool squared) const {
   //initialize the data into the structure
   // typically the positions do not have the com neither calculated nor subtracted. This layer takes care of this business
@@ -1131,7 +1131,7 @@ double RMSDCoreData::getDistance( bool squared) {
   return dist;
 }
 
-void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor & rotationPosClose, Tensor & rotationRefClose, Tensor * drotationPosCloseDrr01) {
+void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01) {
 
   unsigned natoms = reference.size();
   Tensor ddist_drxy;
@@ -1159,7 +1159,7 @@ void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor &
   if (!alEqDis) {
     for(unsigned i=0; i<3; i++)
       for(unsigned j=0; j<3; j++)
-        ddist_drr01+=ddist_drxy[i][j]*drotationPosCloseDrr01[i*3+j];
+        ddist_drr01+=ddist_drxy[i][j]*drotationPosCloseDrr01[i][j];
   }
   this->alEqDis=alEqDis;
   this->safe=safe;
@@ -1427,17 +1427,10 @@ Tensor RMSDCoreData::getRotationMatrixPositionsToReference() {
   if(!isInitialized)plumed_merror("getRotationMatrixReferenceToPositions needs to initialize the coreData first!");
   return rotation.transpose();
 }
-void RMSDCoreData::copyDRotationDRr01(Tensor * to) {
+
+const std::array<std::array<Tensor,3>,3> &  RMSDCoreData::getDRotationDRr01() const {
   if(!isInitialized)plumed_merror("getDRotationDRr01 needs to initialize the coreData first!");
-  to[0] = drotation_drr01[0][0];
-  to[1] = drotation_drr01[0][1];
-  to[2] = drotation_drr01[0][2];
-  to[3] = drotation_drr01[1][0];
-  to[4] = drotation_drr01[1][1];
-  to[5] = drotation_drr01[1][2];
-  to[6] = drotation_drr01[2][0];
-  to[7] = drotation_drr01[2][1];
-  to[8] = drotation_drr01[2][2];
+  return drotation_drr01;
 }
 
 
