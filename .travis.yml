@@ -128,15 +128,12 @@ install:
 # install lcov
   - if test "$MAKEDOC" == yes ; then ./.travis/install.lcov v1.13 ; fi
 # install numpy and cython for python interface
-  - if test "$TRAVIS_OS_NAME" == "linux" ; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ; fi
-  - if test "$TRAVIS_OS_NAME" == "osx" ; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh ; fi
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  - conda create -q -n test-environment python=3.6 numpy Cython
-  - source activate test-environment
+# only for linux and homebrew (no macports)
+  - if test "$PLUMED_CXX" ; then
+      sudo pip install --upgrade pip ;
+      sudo pip install numpy ;
+      sudo pip install Cython ;
+    fi
 # then replace doxygen with the desided version
 # I use 1.8.10 instead of 1.8.11 since it looks like 1.8.11 have troubles with
 # non case sensitive files (it writes capitalized filenames)
