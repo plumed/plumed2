@@ -185,7 +185,7 @@ For developers:
 - On travis-ci, docs for unofficial or unsupported branches are set not to be indexed by search engines (see \issue{239})
 - Cppcheck on travis-ci has been updated to 1.79.
 
-## Version 2.3.3
+## Version 2.3.3 (coming soon)
 
 For users:
 - Fixed a bug in \ref switchingfunction MATHEVAL, leading to inconsistent results when using OpenMP with multiple threads (see \issue{249}).
