@@ -235,6 +235,7 @@ PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
 PLUMED_CONFIG_ENABLE([cxx-exceptions],[c++ exceptions],[yes])
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
+PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
@@ -255,6 +256,7 @@ PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
 AC_ARG_VAR(LDSHARED,[command for linking shared library - configure will use CXX plus the proper flags ])
+AC_ARG_VAR(PYTHON_BIN,[python executable (e.g. python2.7 or /opt/local/bin/python2.7) - default: search for a python executable])
 
 
 # by default use -O flag
@@ -587,15 +589,6 @@ fi
 if test $zlib == true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
 fi
-if test $python == true ; then
-  AC_CHECK_PROG([py],[python],[found])
-  AC_CHECK_PROG([cython],[cython],[found])
-  if test "$py" == found && test "$cython" == found ; then
-     AC_DEFINE([__PLUMED_HAS_PYTHON])
-  else 
-     AC_MSG_WARN([cannot enable python])
-  fi
-fi
 
 if test $gsl == true ; then
   found=ko
@@ -646,6 +639,37 @@ if test $fftw == true ; then
   PLUMED_CHECK_PACKAGE([fftw3.h],[fftw_execute],[__PLUMED_HAS_FFTW],[fftw3])
 fi
 
+if test $python == true  ; then
+# if PYTHON_BIN is defined, it is expected to be the full path to python
+# Otherwise, search from a list of names:
+  if test -z "$PYTHON_BIN" ; then
+    AC_CHECK_PROGS([PYTHON_BIN],[python])
+  fi
+  if test -n "$PYTHON_BIN"
+  then
+    AC_MSG_NOTICE([Python executable is $PYTHON_BIN])
+    AC_MSG_CHECKING([support for required python modules (distutils, cython, numpy, subprocess, os)])
+testimport="
+from distutils.core import setup
+from distutils.extension import Extension
+from Cython.Build import cythonize
+import numpy
+import subprocess
+import os
+"
+    if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
+       AC_MSG_RESULT([yes])
+       AC_DEFINE([__PLUMED_HAS_PYTHON])
+    else
+       AC_MSG_RESULT([no])
+       AC_MSG_WARN([cannot enable python interface])
+       PYTHON_BIN=
+    fi
+  else
+    AC_MSG_WARN([cannot enable python interface])
+  fi
+fi
+
 # in non-debug mode, add -DNDEBUG
 if test "$debug" == false ; then
   AC_MSG_NOTICE([Release mode, adding -DNDEBUG])
@@ -673,6 +697,8 @@ AC_SUBST(LD)
 AC_SUBST(LDSHARED)
 # these are libraries that should be linked also to MD engines
 AC_SUBST(STATIC_LIBS)
+# python executable
+AC_SUBST(PYTHON_BIN)
 
 if test "$shared" == true ; then
   case `(uname)` in
@@ -884,6 +910,46 @@ done
  
 fi
 
+AC_SUBST(AR_CR)
+AR_CR=
+if test "$ar_cr" == true ; then
+for test_AR_CR in "$($CXX --print-prog-name=ar) cr" "ar cr"
+do
+  AC_MSG_CHECKING([whether static libraries can be created with $test_AR_CR])
+  
+  rm -f conftest-*
+  
+  cat << EOF > conftest-main.cpp
+  void f(void);
+  int main(int argc,char**argv){ f(); return 0; }
+EOF
+  cat << EOF > conftest-f.cpp
+  void g(void);
+  void f(void){ g(); }
+EOF
+  cat << EOF > conftest-g.cpp
+  void g(void){ return; }
+EOF
+  
+  $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
+  
+  $test_AR_CR conftest-both.a conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+  
+  $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.a 1> /dev/null 2> /dev/null
+  
+  if test -f conftest.exe
+  then
+    AC_MSG_RESULT([yes])
+    AR_CR="$test_AR_CR"
+    break
+  else
+    AC_MSG_RESULT([no])
+  fi
+done
+ 
+fi
 
 if test "${static_patch}" == true ; then
 
@@ -971,6 +1037,9 @@ program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
 program_name=$(echo plumed | sed "$program_transform_name_sh")
 AC_SUBST(program_name)
 
+if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/wrapper$//')" ; then
+  AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with Wrapper)])
+fi
 if test "$(echo "$program_name" | tr '[A-Z]' '[a-z]')" != "$(echo "$program_name" | tr '[A-Z]' '[a-z]' | sed 's/kernel$//')" ; then
   AC_MSG_ERROR([$program_name is not a valid program name (should not terminate with Kernel)])
 fi

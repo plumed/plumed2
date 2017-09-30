@@ -622,6 +622,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 build_dir
 program_name
+AR_CR
 LD_RO
 program_can_run_mpi
 program_can_run
@@ -632,8 +633,6 @@ doxygen
 make_doc
 readelf
 LD
-cython
-py
 OPENMP_CXXFLAGS
 EGREP
 GREP
@@ -652,6 +651,7 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
+PYTHON_BIN
 LDSHARED
 STATIC_LIBS
 SOEXT
@@ -711,6 +711,7 @@ enable_dependency_tracking
 enable_rpath
 enable_cxx_exceptions
 enable_ld_r
+enable_ar_cr
 enable_mpi
 enable_external_lapack
 enable_external_blas
@@ -735,6 +736,7 @@ target_alias
 SOEXT
 STATIC_LIBS
 LDSHARED
+PYTHON_BIN
 CXX
 CXXFLAGS
 LDFLAGS
@@ -1377,6 +1379,8 @@ Optional Features:
   --enable-rpath          enable store rpath, default: no
   --enable-cxx-exceptions enable c++ exceptions, default: yes
   --enable-ld-r           enable group object files, default: yes
+  --enable-ar-cr          enable use ar to build libplumedWrapper.a, default:
+                          yes
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
@@ -1407,6 +1411,8 @@ Some influential environment variables:
               configure will add here -ldl if necessary
   LDSHARED    command for linking shared library - configure will use CXX plus
               the proper flags
+  PYTHON_BIN  python executable (e.g. python2.7 or /opt/local/bin/python2.7) -
+              default: search for a python executable
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -2763,6 +2769,24 @@ fi
 
 
 
+ar_cr=
+# Check whether --enable-ar-cr was given.
+if test "${enable_ar_cr+set}" = set; then :
+  enableval=$enable_ar_cr; case "${enableval}" in
+             (yes) ar_cr=true ;;
+             (no)  ar_cr=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-ar-cr" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) ar_cr=true ;;
+             (no)  ar_cr=false ;;
+  esac
+
+fi
+
+
+
 mpi=
 # Check whether --enable-mpi was given.
 if test "${enable_mpi+set}" = set; then :
@@ -3048,6 +3072,7 @@ else
   esac
 
 fi
+
 
 
 
@@ -7640,89 +7665,6 @@ fi
 
 
 fi
-if test $python == true ; then
-  # Extract the first word of "python", so it can be a program name with args.
-set dummy python; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_py+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$py"; then
-  ac_cv_prog_py="$py" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_py="found"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-fi
-fi
-py=$ac_cv_prog_py
-if test -n "$py"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $py" >&5
-$as_echo "$py" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-  # Extract the first word of "cython", so it can be a program name with args.
-set dummy cython; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_cython+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$cython"; then
-  ac_cv_prog_cython="$cython" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_cython="found"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-fi
-fi
-cython=$ac_cv_prog_cython
-if test -n "$cython"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cython" >&5
-$as_echo "$cython" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-  if test "$py" == found && test "$cython" == found ; then
-     $as_echo "#define __PLUMED_HAS_PYTHON 1" >>confdefs.h
-
-  else
-     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable python" >&5
-$as_echo "$as_me: WARNING: cannot enable python" >&2;}
-  fi
-fi
 
 
 
@@ -8322,6 +8264,85 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_FFTW" >&2;}
 
 fi
 
+if test $python == true  ; then
+# if PYTHON_BIN is defined, it is expected to be the full path to python
+# Otherwise, search from a list of names:
+  if test -z "$PYTHON_BIN" ; then
+    for ac_prog in python
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_PYTHON_BIN+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$PYTHON_BIN"; then
+  ac_cv_prog_PYTHON_BIN="$PYTHON_BIN" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_PYTHON_BIN="$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+PYTHON_BIN=$ac_cv_prog_PYTHON_BIN
+if test -n "$PYTHON_BIN"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_BIN" >&5
+$as_echo "$PYTHON_BIN" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$PYTHON_BIN" && break
+done
+
+  fi
+  if test -n "$PYTHON_BIN"
+  then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Python executable is $PYTHON_BIN" >&5
+$as_echo "$as_me: Python executable is $PYTHON_BIN" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (distutils, cython, numpy, subprocess, os)" >&5
+$as_echo_n "checking support for required python modules (distutils, cython, numpy, subprocess, os)... " >&6; }
+testimport="
+from distutils.core import setup
+from distutils.extension import Extension
+from Cython.Build import cythonize
+import numpy
+import subprocess
+import os
+"
+    if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
+       { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+       $as_echo "#define __PLUMED_HAS_PYTHON 1" >>confdefs.h
+
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable python interface" >&5
+$as_echo "$as_me: WARNING: cannot enable python interface" >&2;}
+       PYTHON_BIN=
+    fi
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable python interface" >&5
+$as_echo "$as_me: WARNING: cannot enable python interface" >&2;}
+  fi
+fi
+
 # in non-debug mode, add -DNDEBUG
 if test "$debug" == false ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: Release mode, adding -DNDEBUG" >&5
@@ -8355,6 +8376,8 @@ $as_echo "#define _REENTRANT 1" >>confdefs.h
 
 
 # these are libraries that should be linked also to MD engines
+
+# python executable
 
 
 if test "$shared" == true ; then
@@ -8797,6 +8820,49 @@ done
 fi
 
 
+AR_CR=
+if test "$ar_cr" == true ; then
+for test_AR_CR in "$($CXX --print-prog-name=ar) cr" "ar cr"
+do
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether static libraries can be created with $test_AR_CR" >&5
+$as_echo_n "checking whether static libraries can be created with $test_AR_CR... " >&6; }
+
+  rm -f conftest-*
+
+  cat << EOF > conftest-main.cpp
+  void f(void);
+  int main(int argc,char**argv){ f(); return 0; }
+EOF
+  cat << EOF > conftest-f.cpp
+  void g(void);
+  void f(void){ g(); }
+EOF
+  cat << EOF > conftest-g.cpp
+  void g(void){ return; }
+EOF
+
+  $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
+
+  $test_AR_CR conftest-both.a conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+
+  $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.a 1> /dev/null 2> /dev/null
+
+  if test -f conftest.exe
+  then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    AR_CR="$test_AR_CR"
+    break
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+  fi
+done
+
+fi
+
 if test "${static_patch}" == true ; then
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: I will now check if C++ objects can be linked by C/Fortran compilers" >&5
@@ -8901,6 +8967,9 @@ program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
 program_name=$(echo plumed | sed "$program_transform_name_sh")
 
 
+if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/wrapper$//')" ; then
+  as_fn_error $? "$program_name is not a valid program name (should not terminate with Wrapper)" "$LINENO" 5
+fi
 if test "$(echo "$program_name" | tr 'A-Z' 'a-z')" != "$(echo "$program_name" | tr 'A-Z' 'a-z' | sed 's/kernel$//')" ; then
   as_fn_error $? "$program_name is not a valid program name (should not terminate with Kernel)" "$LINENO" 5
 fi
