@@ -1,0 +1,21 @@
+#! FIELDS idx_phi mask index description
+#! SET time 0.000000
+#! SET iteration  0
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0 1.000000       0  1
+       1 0.000000       1  cos(1*s)
+       2 1.000000       2  sin(1*s)
+       3 1.000000       3  cos(2*s)
+       4 0.100000       4  sin(2*s)
+       5 1.000000       5  cos(3*s)
+       6 0.000000       6  sin(3*s)
+       7 1.000000       7  cos(4*s)
+       8 1.000000       8  sin(4*s)
+       9 0.100000       9  cos(5*s)
+      10 1.000000      10  sin(5*s)
+#!-------------------
+
+

@@ -1,0 +1,220 @@
+#! FIELDS idx_phi ves1.hessian index
+#! SET time 2.000000
+#! SET iteration  11
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+#! SET diagonal_matrix  1
+       0     0.000000       0
+       1     0.004321       1
+       2     0.000174       2
+       3     0.002757       3
+       4     0.014955       4
+       5     0.026144       5
+       6     0.012912       6
+       7     0.035744       7
+       8     0.031797       8
+       9     0.028961       9
+      10     0.072901      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.hessian index
+#! SET time 4.000000
+#! SET iteration  12
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+#! SET diagonal_matrix  1
+       0     0.000000       0
+       1     0.001646       1
+       2     0.000084       2
+       3     0.000903       3
+       4     0.005975       4
+       5     0.011364       5
+       6     0.004002       6
+       7     0.011350       7
+       8     0.015707       8
+       9     0.017153       9
+      10     0.024607      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.hessian index
+#! SET time 6.000000
+#! SET iteration  13
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+#! SET diagonal_matrix  1
+       0     0.000000       0
+       1     0.003165       1
+       2     0.000020       2
+       3     0.002225       3
+       4     0.010092       4
+       5     0.014928       5
+       6     0.012324       6
+       7     0.034555       7
+       8     0.013013       8
+       9     0.005318       9
+      10     0.067375      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.hessian index
+#! SET time 8.000000
+#! SET iteration  14
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+#! SET diagonal_matrix  1
+       0     0.000000       0
+       1     0.000001       1
+       2     0.131983       2
+       3     0.129779       3
+       4     0.000004       4
+       5     0.000018       5
+       6     0.126308       6
+       7     0.121851       7
+       8     0.000061       8
+       9     0.000170       9
+      10     0.116750      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.hessian index
+#! SET time 10.000000
+#! SET iteration  15
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+#! SET diagonal_matrix  1
+       0     0.000000       0
+       1     0.020149       1
+       2     0.101247       2
+       3     0.053419       3
+       4     0.067137       4
+       5     0.109546       5
+       6     0.010676       6
+       7     0.001808       7
+       8     0.118950       8
+       9     0.088959       9
+      10     0.032622      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.hessian index
+#! SET time 12.000000
+#! SET iteration  16
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+#! SET diagonal_matrix  1
+       0     0.000000       0
+       1     0.006414       1
+       2     0.104404       2
+       3     0.085509       3
+       4     0.024046       4
+       5     0.048471       5
+       6     0.059247       6
+       7     0.032100       7
+       8     0.073556       8
+       9     0.093001       9
+      10     0.010761      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.hessian index
+#! SET time 14.000000
+#! SET iteration  17
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+#! SET diagonal_matrix  1
+       0     0.000000       0
+       1     0.001286       1
+       2     0.104763       2
+       3     0.086228       3
+       4     0.009479       4
+       5     0.027013       5
+       6     0.079417       6
+       7     0.075367       7
+       8     0.041209       8
+       9     0.048962       9
+      10     0.056706      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.hessian index
+#! SET time 16.000000
+#! SET iteration  18
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+#! SET diagonal_matrix  1
+       0     0.000000       0
+       1     0.000344       1
+       2     0.113131       2
+       3     0.096361       3
+       4     0.002867       4
+       5     0.011042       5
+       6     0.084005       6
+       7     0.081322       7
+       8     0.024469       8
+       9     0.036026       9
+      10     0.082948      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.hessian index
+#! SET time 18.000000
+#! SET iteration  19
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+#! SET diagonal_matrix  1
+       0     0.000000       0
+       1     0.007705       1
+       2     0.005861       2
+       3     0.003974       3
+       4     0.029930       4
+       5     0.064106       5
+       6     0.001696       6
+       7     0.000143       7
+       8     0.106307       8
+       9     0.151719       9
+      10     0.000545      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.hessian index
+#! SET time 20.000000
+#! SET iteration  20
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+#! SET diagonal_matrix  1
+       0     0.000000       0
+       1     0.011679       1
+       2     0.000280       2
+       3     0.006750       3
+       4     0.039731       4
+       5     0.067212       5
+       6     0.032790       6
+       7     0.089874       7
+       8     0.077064       8
+       9     0.062405       9
+      10     0.177900      10
+#!-------------------
+
+
