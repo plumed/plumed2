@@ -27,3 +27,4 @@ cdef extern from "Plumed.h" :
          pass
      plumed plumed_create()
      void plumed_cmd(plumed p, const char*key, const void*val) except + 
+     void plumed_finalize(plumed p) except +
