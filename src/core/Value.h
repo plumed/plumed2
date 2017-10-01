@@ -141,6 +141,8 @@ public:
   void setDerivative(unsigned i, double d);
 /// Get the derivative with respect to component n
   double getDerivative(const unsigned n) const;
+/// get the derivative of a grid at a point n with resepct to argument j
+  double getGridDerivative(const unsigned& n, const unsigned& j ) const ;
 /// Clear the input force on the variable
   void clearInputForce();
 /// Add some force on this value
@@ -242,6 +244,7 @@ const std::string& Value::getName()const {
 inline
 unsigned Value::getNumberOfDerivatives() const {
   plumed_massert(hasDeriv,"the derivatives array for value " + name + " has zero size" );
+  if( shape.size()>0 ) return shape.size();
   return data.size()-1;
 }
 

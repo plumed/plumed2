@@ -149,6 +149,17 @@ void Function::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   if( !actionInChain() ) tflags.assign(tflags.size(),1);
 }
 
+void Function::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min, 
+                                     std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const { 
+  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
+  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( argn, min, max, nbin, pbc );
+}
+
+void Function::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { 
+  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
+  (getPntrToArgument(0)->getPntrToAction())->getGridPointIndicesAndCoordinates( ind, indices, coords );
+}
+
 void Function::performTask( const unsigned& current, MultiValue& myvals ) const {
   // Get the values of all the arguments
   bool matout=false, matinp=false;

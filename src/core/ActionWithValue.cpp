@@ -150,7 +150,7 @@ void ActionWithValue::clearDerivatives( const bool& force ) {
     #pragma omp for
     for(unsigned i=0; i<values.size(); i++) values[i]->clearDerivatives();
   }
-  if( action_to_do_after ) action_to_do_after->clearDerivatives( true ); 
+  if( action_to_do_after ) action_to_do_after->clearDerivatives( true );
 }
 
 // -- These are the routine for copying the value pointers to other classes -- //
@@ -183,7 +183,6 @@ void ActionWithValue::addValue( const std::vector<unsigned>& shape ) {
 }
 
 void ActionWithValue::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
-  if( shape.size()>0 && shape.size()!=getNumberOfDerivatives() ) plumed_merror("should not be adding non zero rank values with derivatives");
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(new Value(this,getLabel(), true, shape ) );
 }
@@ -379,7 +378,7 @@ void ActionWithValue::selectActiveTasks( std::vector<unsigned>& tflags ){
 void ActionWithValue::runAllTasks() {
 // Skip this if this is done elsewhere 
   if( action_to_do_before ) return;
-  
+
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
@@ -415,8 +414,8 @@ void ActionWithValue::runAllTasks() {
   buffer.assign( buffer.size(), 0.0 );
 
   // Recover the number of derivatives we require
-  unsigned nderivatives = 0;
-  if( !noderiv ) getNumberOfStreamedDerivatives( nderivatives );
+  unsigned nderivatives = 0; bool gridsInStream=checkForGrids();
+  if( !noderiv || gridsInStream ) getNumberOfStreamedDerivatives( nderivatives );
   // Perform all tasks required before main loop
   prepareForTasks();
 
@@ -460,8 +459,24 @@ void ActionWithValue::runAllTasks() {
   if(timers) stopwatch.stop("4 Finishing computations");
 }
 
+bool ActionWithValue::checkForGrids() const {
+  for(unsigned i=0;i<values.size();++i) {
+      if( values[i]->getRank()>0 && values[i]->hasDerivatives() ) return true;
+  }
+  if( action_to_do_after ) return action_to_do_after->checkForGrids();
+  return false;
+}
+
 void ActionWithValue::getNumberOfStreamedDerivatives( unsigned& nderivatives ) const {
-  unsigned nnd = getNumberOfDerivatives(); if( nnd>nderivatives ) nderivatives = nnd;
+  unsigned nnd=0;
+  if( !noderiv ){  
+      nnd = getNumberOfDerivatives(); 
+  } else {
+      for(unsigned i=0;i<values.size();++i) {
+          if( values[i]->getRank()>0 && values[i]->hasDerivatives() ){ nnd = getNumberOfDerivatives(); break; }
+      }
+  }
+  if( nnd>nderivatives ) nderivatives = nnd;
   if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( nderivatives );
 }
 
@@ -574,6 +589,9 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
                        buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
                    }
                }
+          // This looks after grids 
+          } else if( values[i]->hasDerivatives() ) {
+               gatherGridAccumulators( taskCode, myvals, bufstart, buffer );
           } else if( values[i]->storedata ){
                // This looks after storing for matrices 
                if( values[i]->getRank()==2 && !values[i]->hasDeriv ){

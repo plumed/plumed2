@@ -254,6 +254,11 @@ double Value::get(const unsigned& ival) const {
   return 0.0;
 } 
 
+double Value::getGridDerivative(const unsigned& n, const unsigned& j ) const {
+  plumed_dbg_assert( hasDeriv && n*(1+action->getNumberOfDerivatives()) + 1 + j < data.size() );
+  return data[n*(1+action->getNumberOfDerivatives()) + 1 + j] / norm;
+}
+
 void Value::print( const std::string& uselab, OFile& ofile ) const {
   plumed_dbg_assert( userdata.count(uselab) );
   if( shape.size()==0 ){

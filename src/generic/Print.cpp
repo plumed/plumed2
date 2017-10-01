@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionPilot.h"
 #include "core/ActionWithArguments.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
@@ -135,14 +136,13 @@ Print::Print(const ActionOptions&ao):
   lenunit(1.0),
   rotate(0)
 {
-  ofile.link(*this);
   parse("FILE",file);
   if(file.length()>0) {
-    ofile.open(file); 
     std::size_t dot=file.find_first_of(".");
     if( dot!=std::string::npos ) tstyle=file.substr(dot+1); 
-    if( tstyle!="xyz" && tstyle!="ndx" ) tstyle="colvar";
+    if( tstyle!="xyz" && tstyle!="ndx" && tstyle!="grid" ) tstyle="colvar";
     log.printf("  on file %s\n",file.c_str());
+    if( tstyle!="grid" ) { ofile.link(*this); ofile.open(file); }
   } else {
     log.printf("  on plumed log file\n");
     ofile.link(log); 
@@ -221,6 +221,10 @@ Print::Print(const ActionOptions&ao):
       }
       log.printf("\n"); 
       std::vector<Value*> args( getArguments() ); requestAtoms( atoms ); requestArguments( args, false ); 
+  } else if( tstyle=="grid" ) {
+      if( getNumberOfArguments()!=1 ) error("when printing a grid you should only have one argument in input");
+      if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a grid");
+      log.printf("  printing function labelled %s at points on a grid in a PLUMED grid file \n", getPntrToArgument(0)->getName().c_str() );
   } else {
       error("expected output does not exist");
   }
@@ -309,6 +313,43 @@ void Print::update() {
           }
       }
       if( n%15!=0 ) ofile.printf("\n");
+  } else if( tstyle=="grid" ) {
+      OFile ogfile; ogfile.link(*this);
+      ogfile.setBackupString("analysis");
+      ogfile.open( file ); ogfile.addConstantField("normalisation");
+      Value* gval=getPntrToArgument(0); ActionWithValue* act=gval->getPntrToAction();
+      std::vector<unsigned> ind( gval->getRank() ), nbin( gval->getRank() );
+      std::vector<double> xx( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
+      std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
+      act->getInfoForGridHeader( argn, min, max, nbin, pbc );
+      for(unsigned i=0; i<gval->getRank(); ++i) {
+        ogfile.addConstantField("min_" + argn[i] );
+        ogfile.addConstantField("max_" + argn[i] );
+        ogfile.addConstantField("nbins_" + argn[i] );
+        ogfile.addConstantField("periodic_" + argn[i] );
+      }
+
+      for(unsigned i=0; i<gval->getNumberOfValues(); ++i) {
+        // Retrieve and print the grid coordinates
+        act->getGridPointIndicesAndCoordinates( i, ind, xx );
+        if(i>0 && gval->getRank()==2 && ind[gval->getRank()-2]==0) ogfile.printf("\n");
+        ogfile.fmtField(fmt); ogfile.printField("normalisation", gval->getNorm() );
+        for(unsigned j=0; j<gval->getRank(); ++j) {
+          ogfile.printField("min_" + argn[j], min[j] );
+          ogfile.printField("max_" + argn[j], max[j] );
+          ogfile.printField("nbins_" + argn[j], static_cast<int>(nbin[j]) );
+          if( pbc[j] ) ogfile.printField("periodic_" + argn[j], "true" );
+          else         ogfile.printField("periodic_" + argn[j], "false" );
+        }
+        // Print the grid coordinates
+        for(unsigned j=0; j<gval->getRank(); ++j) { ogfile.fmtField(fmt); ogfile.printField(argn[j],xx[j]); }
+        // Print value
+        ogfile.fmtField(fmt); ogfile.printField( gval->getName(), gval->get(i) );
+        // Print the derivatives
+        for(unsigned j=0; j<gval->getRank(); ++j) { ogfile.fmtField(fmt); ogfile.printField( "d" + gval->getName() + "_" + argn[j], gval->getGridDerivative(i,j) ); }
+        ogfile.printField(); 
+      }
+      ogfile.close();
   }
 }
 

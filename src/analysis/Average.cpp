@@ -104,8 +104,12 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
+  void clearDerivatives( const bool& force=false ){}
   unsigned getNumberOfDerivatives() const ;
   bool allowComponentsAndValue() const { return true; }
+  void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+                             std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const ;
+  void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void calculate() {}
   void apply() {}
   void update();
@@ -117,7 +121,7 @@ void Average::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.remove("ARG");
+  ActionWithArguments::registerKeywords( keys ); keys.remove("ARG"); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
   keys.add("compulsory","ARG","the quantity that we are calculating an ensemble average for");
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
@@ -167,7 +171,9 @@ lbound(0.0),pfactor(0.0)
   else error("invalid instruction for NORMALIZATION flag should be true, false, or ndata");
 
   // Create a value
-  addValue( getPntrToArgument(0)->getShape() );
+  if( getPntrToArgument(0)->hasDerivatives() ) addValueWithDerivatives( getPntrToArgument(0)->getShape() );
+  else addValue( getPntrToArgument(0)->getShape() );
+
   if( getPntrToArgument(0)->isPeriodic() ) {
       std::string min, max;
       getPntrToArgument(0)->getDomain( min, max ); setPeriodic( min, max );
@@ -184,6 +190,17 @@ lbound(0.0),pfactor(0.0)
 
 unsigned Average::getNumberOfDerivatives() const {
   return getPntrToArgument(0)->getNumberOfDerivatives();
+}
+
+void Average::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+                                    std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const {
+  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
+  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( argn, min, max, nbin, pbc );
+}
+
+void Average::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
+  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
+  (getPntrToArgument(0)->getPntrToAction())->getGridPointIndicesAndCoordinates( ind, indices, coords );
 }
 
 void Average::update() {
@@ -228,7 +245,16 @@ void Average::update() {
      if( normalization==t ) val->setNorm( val->getNorm() + cweight );
      else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 ); 
      // Now accumulate average 
-     for(unsigned i=0;i<arg0->getNumberOfValues();++i) val->add( i, cweight*arg0->get(i) ); 
+     for(unsigned i=0;i<arg0->getNumberOfValues();++i) {
+         if( arg0->getRank()==0 && arg0->hasDerivatives() ) {
+             for(unsigned j=0;j<val->getNumberOfDerivatives();++j) val->addDerivative( j, cweight*arg0->getDerivative( j ) );
+         } else if( arg0->hasDerivatives() ) {
+             unsigned nder=val->getNumberOfDerivatives(); val->add( i*(1+nder), cweight*arg0->get(i) );
+             for(unsigned j=0;j<nder;++j) val->add( i*(1+nder)+1+j, cweight*arg0->getGridDerivative( i, j ) );
+         } else {
+             val->add( i, cweight*arg0->get(i) );
+         }
+     }
   }
 
   // Clear if required

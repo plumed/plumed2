@@ -111,6 +111,7 @@ private:
   void runTask( const unsigned& index, const unsigned& taskno, MultiValue& myvals ) const ;
   void gatherAccumulators( const unsigned& index, const MultiValue& myvals, std::vector<double>& buf ) const ;
   void finishComputations( const std::vector<double>& buf );
+  bool checkForGrids() const ;
   void getNumberOfStreamedDerivatives( unsigned& nderivatives ) const ;
   void getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const ;
   void setupVirtualAtomStashes( unsigned& nquants );
@@ -212,7 +213,7 @@ public:
 /// Clear the forces on the values
   void clearInputForces();
 /// Clear the derivatives of values wrt parameters
-  void clearDerivatives( const bool& force=false );
+  virtual void clearDerivatives( const bool& force=false );
 /// Calculate the gradients and store them for all the values (need for projections)
   void setGradientsIfNeeded();
 /// Set the value
@@ -238,11 +239,18 @@ public:
 ///
   virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) { plumed_merror( "problem in task list for " + getLabel() ); }
 ///
+  virtual void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min, std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const { plumed_merror( "problem in getting grid data for " + getLabel() ); }
+///
+  virtual void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { plumed_merror("problem in getting grid data for " + getLabel() ); } 
+///
   virtual void selectActiveTasks( std::vector<unsigned>& tflags );
 /// Make sure all tasks required for loop are done before loop starts
   virtual void prepareForTasks();
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
+///
+  virtual void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals, 
+                                       const unsigned& bufstart, std::vector<double>& buffer ) const { plumed_error(); }
 /// This one calculates matrix elements
   virtual bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const { return true; }
 ///
