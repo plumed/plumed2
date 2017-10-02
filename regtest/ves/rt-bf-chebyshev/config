@@ -1,0 +1,4 @@
+plumed_modules=ves
+type=driver
+arg="--plumed plumed.dat --noatoms"
+

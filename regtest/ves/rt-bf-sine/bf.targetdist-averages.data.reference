@@ -1,0 +1,114 @@
+#! FIELDS idx_arg aver.targetdist-0 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1      0.000000       1  sin(1*s)
+       2      0.000000       2  sin(2*s)
+       3      0.000000       3  sin(3*s)
+       4      0.000000       4  sin(4*s)
+       5      0.000000       5  sin(5*s)
+       6      0.000000       6  sin(6*s)
+       7      0.000000       7  sin(7*s)
+       8      0.000000       8  sin(8*s)
+       9      0.000000       9  sin(9*s)
+      10      0.000000      10  sin(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-1 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1     -0.000000       1  sin(1*s)
+       2      0.000000       2  sin(2*s)
+       3      0.000000       3  sin(3*s)
+       4     -0.000000       4  sin(4*s)
+       5      0.000000       5  sin(5*s)
+       6     -0.000000       6  sin(6*s)
+       7      0.000000       7  sin(7*s)
+       8      0.000000       8  sin(8*s)
+       9     -0.000000       9  sin(9*s)
+      10      0.000000      10  sin(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-2 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1     -0.000000       1  sin(1*s)
+       2     -0.000000       2  sin(2*s)
+       3      0.000000       3  sin(3*s)
+       4      0.000000       4  sin(4*s)
+       5      0.000000       5  sin(5*s)
+       6     -0.000000       6  sin(6*s)
+       7      0.000000       7  sin(7*s)
+       8      0.000000       8  sin(8*s)
+       9      0.000000       9  sin(9*s)
+      10      0.000000      10  sin(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-3 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1     -0.925794       1  sin(1*s)
+       2      0.000005       2  sin(2*s)
+       3      0.499588       3  sin(3*s)
+       4      0.000010       4  sin(4*s)
+       5     -0.145501       5  sin(5*s)
+       6      0.000013       6  sin(6*s)
+       7      0.022849       7  sin(7*s)
+       8      0.000015       8  sin(8*s)
+       9     -0.001955       9  sin(9*s)
+      10      0.000016      10  sin(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-4 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1      0.925794       1  sin(1*s)
+       2     -0.000005       2  sin(2*s)
+       3     -0.499588       3  sin(3*s)
+       4     -0.000010       4  sin(4*s)
+       5      0.145501       5  sin(5*s)
+       6     -0.000013       6  sin(6*s)
+       7     -0.022849       7  sin(7*s)
+       8     -0.000015       8  sin(8*s)
+       9      0.001955       9  sin(9*s)
+      10     -0.000016      10  sin(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-5 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1      0.239378       1  sin(1*s)
+       2      0.366968       2  sin(2*s)
+       3      0.352990       3  sin(3*s)
+       4      0.252045       4  sin(4*s)
+       5      0.140482       5  sin(5*s)
+       6      0.062298       6  sin(6*s)
+       7      0.022095       7  sin(7*s)
+       8      0.006236       8  sin(8*s)
+       9      0.001374       9  sin(9*s)
+      10      0.000225      10  sin(10*s)
+#!-------------------
+
+

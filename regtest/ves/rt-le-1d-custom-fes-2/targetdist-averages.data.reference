@@ -1,0 +1,231 @@
+#! FIELDS idx_phi ves1.targetdist_averages index
+#! SET time 0.000000
+#! SET iteration  0
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     1.000000       0
+       1    -0.001433       1
+       2    -0.020020       2
+       3     0.000831       3
+       4     0.010012       4
+       5    -0.000720       5
+       6    -0.006665       6
+       7     0.000681       7
+       8     0.004988       8
+       9    -0.000663       9
+      10    -0.003979      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.targetdist_averages index
+#! SET time 2.000000
+#! SET iteration  1
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     1.000000       0
+       1    -0.001433       1
+       2    -0.020020       2
+       3     0.000831       3
+       4     0.010012       4
+       5    -0.000720       5
+       6    -0.006665       6
+       7     0.000681       7
+       8     0.004988       8
+       9    -0.000663       9
+      10    -0.003979      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.targetdist_averages index
+#! SET time 4.000000
+#! SET iteration  2
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     1.000000       0
+       1     0.003227       1
+       2    -0.042602       2
+       3    -0.018454       3
+       4     0.001336       4
+       5    -0.013743       5
+       6     0.009288       6
+       7     0.013368       7
+       8     0.020768       8
+       9     0.015887       9
+      10    -0.012472      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.targetdist_averages index
+#! SET time 6.000000
+#! SET iteration  3
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     1.000000       0
+       1     0.005846       1
+       2    -0.056508       2
+       3    -0.031632       3
+       4    -0.003902       4
+       5    -0.020929       5
+       6     0.021117       6
+       7     0.023296       7
+       8     0.029451       8
+       9     0.025643       9
+      10    -0.020129      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.targetdist_averages index
+#! SET time 8.000000
+#! SET iteration  4
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     1.000000       0
+       1     0.009091       1
+       2    -0.069956       2
+       3    -0.044050       3
+       4    -0.010244       4
+       5    -0.029318       5
+       6     0.031527       6
+       7     0.030964       7
+       8     0.039252       8
+       9     0.036205       9
+      10    -0.024850      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.targetdist_averages index
+#! SET time 10.000000
+#! SET iteration  5
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     1.000000       0
+       1     0.010327       1
+       2    -0.083128       2
+       3    -0.056606       3
+       4    -0.012688       4
+       5    -0.032167       5
+       6     0.042537       6
+       7     0.039661       7
+       8     0.042309       8
+       9     0.039466       9
+      10    -0.031067      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.targetdist_averages index
+#! SET time 12.000000
+#! SET iteration  6
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     1.000000       0
+       1     0.010760       1
+       2    -0.094911       2
+       3    -0.066465       3
+       4    -0.013800       4
+       5    -0.033872       5
+       6     0.049255       6
+       7     0.043076       7
+       8     0.045044       8
+       9     0.043266       9
+      10    -0.032102      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.targetdist_averages index
+#! SET time 14.000000
+#! SET iteration  7
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     1.000000       0
+       1     0.011225       1
+       2    -0.107148       2
+       3    -0.077130       3
+       4    -0.014933       4
+       5    -0.035395       5
+       6     0.057198       6
+       7     0.047969       7
+       8     0.047124       8
+       9     0.045825       9
+      10    -0.034575      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.targetdist_averages index
+#! SET time 16.000000
+#! SET iteration  8
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     1.000000       0
+       1     0.010451       1
+       2    -0.117496       2
+       3    -0.083569       3
+       4    -0.015820       4
+       5    -0.038387       5
+       6     0.063371       6
+       7     0.054120       7
+       8     0.050330       8
+       9     0.047543       9
+      10    -0.038686      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.targetdist_averages index
+#! SET time 18.000000
+#! SET iteration  9
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     1.000000       0
+       1     0.008961       1
+       2    -0.127056       2
+       3    -0.088464       3
+       4    -0.015857       4
+       5    -0.041340       5
+       6     0.067166       6
+       7     0.058873       7
+       8     0.054552       8
+       9     0.050637       9
+      10    -0.043499      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.targetdist_averages index
+#! SET time 20.000000
+#! SET iteration  10
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     1.000000       0
+       1     0.007920       1
+       2    -0.137596       2
+       3    -0.095272       3
+       4    -0.016214       4
+       5    -0.044005       5
+       6     0.072876       6
+       7     0.065098       7
+       8     0.058165       8
+       9     0.053431       9
+      10    -0.049537      10
+#!-------------------
+
+
