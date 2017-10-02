@@ -70,12 +70,12 @@ add the NOPBC flag to the input line
 In this example, we perform a single-structure refinement based on an experimental cryo-EM map. The map is fit with a GMM, whose
 parameters are listed in the file GMM_fit.dat. This file contains one line per GMM component in the following format:
 
-\plumedfile
+\verbatim
 #! FIELDS Id Weight Mean_0 Mean_1 Mean_2 Cov_00 Cov_01 Cov_02 Cov_11 Cov_12 Cov_22 Beta
      0  2.9993805e+01   6.54628 10.37820 -0.92988  2.078920e-02 1.216254e-03 5.990827e-04 2.556246e-02 8.411835e-03 2.486254e-02  1
      1  2.3468312e+01   6.56095 10.34790 -0.87808  1.879859e-02 6.636049e-03 3.682865e-04 3.194490e-02 1.750524e-03 3.017100e-02  1
      ...
-\endplumedfile
+\endverbatim
 
 To accelerate the computation of the Bayesian score, one can:
 - use neighbor lists, specified by the keywords NL_CUTOFF and NL_STRIDE;
