@@ -11,7 +11,11 @@
 # if one has to update configure.ac
 AC_PREREQ([2.68])
 AC_INIT([PLUMED], [2])
-m4_include([./m4/m4_ax_openmp.m4])
+
+##################################################################
+# In order to add m4 macros, put then in a m4 directory and include them here.
+# E.g.:
+# m4_include([./m4/m4_ax_openmp.m4])
 
 ##################################################################
 # Here we define a few useful macros
