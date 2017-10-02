@@ -40,7 +40,7 @@ using namespace std;
 namespace PLMD {
 namespace colvar {
 
-//+PLUMEDOC COLVAR EFFSOLV
+//+PLUMEDOC COLVAR EEFSOLV
 /*
 Calculates EEF1 solvation free energy for a group of atoms.
 
@@ -54,7 +54,7 @@ where \f$\Delta G^\mathrm{solv}_i\f$ is the free energy of solvation, \f$\Delta 
 \f]
 where \f$\Delta G^\mathrm{free}_i\f$ is the solvation free energy of the isolated group, \f$\lambda_i\f$ is the correlation length equal to the width of the first solvation shell and \f$R_i\f$ is the van der Waals radius of atom \f$i\f$.
 
-The output from this collective variable, the free energy of solvation, can be used with the \ref BIASVALUE keyword to provide implicit solvation to a system. All parameters are designed to be used with a modified CHARMM36 force field. It takes only non-hydrogen atoms as input, these can be conveniently specified using the \ref GROUP action with the NDX_GROUP parameter. To speed up the calculation, EFFSOLV internally uses a neighbourlist with a cutoff dependent on the type of atom (maximum of 1.95 nm). This cutoff can be extended further by using the NL_BUFFER keyword.
+The output from this collective variable, the free energy of solvation, can be used with the \ref BIASVALUE keyword to provide implicit solvation to a system. All parameters are designed to be used with a modified CHARMM36 force field. It takes only non-hydrogen atoms as input, these can be conveniently specified using the \ref GROUP action with the NDX_GROUP parameter. To speed up the calculation, EEFSOLV internally uses a neighbourlist with a cutoff dependent on the type of atom (maximum of 1.95 nm). This cutoff can be extended further by using the NL_BUFFER keyword.
 
 \par Examples
 
@@ -66,7 +66,7 @@ WHOLEMOLECULES ENTITY0=1-111
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 
 # We extend the cutoff by 0.2 nm and update the neighbourlist every 10 steps
-solv: EFFSOLV ATOMS=protein-h NL_STRIDE=10 NL_BUFFER=0.2
+solv: EEFSOLV ATOMS=protein-h NL_STRIDE=10 NL_BUFFER=0.2
 
 # Here we actually add our calculated energy back to the potential
 bias: BIASVALUE ARG=solv
@@ -77,7 +77,7 @@ PRINT ARG=solv FILE=SOLV
 */
 //+ENDPLUMEDOC
 
-class EFFSolv : public Colvar {
+class EEFSolv : public Colvar {
 private:
   bool pbc;
   double buffer;
@@ -94,13 +94,13 @@ private:
 
 public:
   static void registerKeywords(Keywords& keys);
-  explicit EFFSolv(const ActionOptions&);
+  explicit EEFSolv(const ActionOptions&);
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(EFFSolv,"EFFSOLV")
+PLUMED_REGISTER_ACTION(EEFSolv,"EEFSOLV")
 
-void EFFSolv::registerKeywords(Keywords& keys) {
+void EEFSolv::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
@@ -110,7 +110,7 @@ void EFFSolv::registerKeywords(Keywords& keys) {
   keys.addFlag("TEMP_CORRECTION", false, "Correct free energy of solvation constants for temperatures different from 298.15 K");
 }
 
-EFFSolv::EFFSolv(const ActionOptions&ao):
+EEFSolv::EEFSolv(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   buffer(0.1),
@@ -145,7 +145,7 @@ EFFSolv::EFFSolv(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void EFFSolv::update_neighb() {
+void EEFSolv::update_neighb() {
   const double lower_c2 = 0.24 * 0.24; // this is the cut-off for bonded atoms
   const unsigned size = getNumberOfAtoms();
   for (unsigned i=0; i<size; ++i) {
@@ -174,7 +174,7 @@ void EFFSolv::update_neighb() {
   }
 }
 
-void EFFSolv::calculate() {
+void EEFSolv::calculate() {
   if(pbc) makeWhole();
   if(getExchangeStep()) nl_update = 0;
   if (nl_update == 0) {
@@ -277,7 +277,7 @@ void EFFSolv::calculate() {
   }
 }
 
-void EFFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter, bool tcorr) {
+void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter, bool tcorr) {
   vector<vector<double> > parameter_temp;
   parameter_temp.resize(atoms.size());
   map<string, vector<double> > valuemap;
@@ -369,7 +369,7 @@ void EFFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<doub
   for(unsigned i=0; i<atoms.size(); ++i) delta_g_ref += parameter_temp[i][1];
 }
 
-map<string, map<string, string> > EFFSolv::setupTypeMap()  {
+map<string, map<string, string> > EEFSolv::setupTypeMap()  {
   map<string, map<string, string> > typemap;
   typemap = {
     { "ACE", {
@@ -874,7 +874,7 @@ map<string, map<string, string> > EFFSolv::setupTypeMap()  {
   return typemap;
 }
 
-map<string, vector<double> > EFFSolv::setupValueMap() {
+map<string, vector<double> > EEFSolv::setupValueMap() {
   // Volume ∆Gref ∆Gfree ∆H ∆Cp λ vdw_radius
   map<string, vector<double> > valuemap;
   valuemap = {
