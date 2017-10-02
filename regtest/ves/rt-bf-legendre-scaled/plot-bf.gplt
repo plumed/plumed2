@@ -1,0 +1,26 @@
+set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+set output "basisf-legendre-scaled.png"
+
+set xlabel "x"
+set ylabel "P_{n}(x)"
+
+set xr [-1:1]
+set xtics 0.5
+set mxtics 2
+
+set key horizontal  samplen 2
+
+set xzeroaxis 
+
+set yr [-2.25:2.25]
+set ytics -2.0, 1.0, 2.0
+set mytics 2
+
+plot \
+     'bf.values.data.reference' u ($1/4.0):3  w l lw 4 t '1' ,\
+     ''                         u ($1/4.0):4  w l lw 4 t '2' ,\
+     ''                         u ($1/4.0):5  w l lw 4 t '3' ,\
+     ''                         u ($1/4.0):6  w l lw 4 t '4' ,\
+     ''                         u ($1/4.0):7  w l lw 4 t '5' ,\
+     ''                         u ($1/4.0):8  w l lw 4 t '6' 
+

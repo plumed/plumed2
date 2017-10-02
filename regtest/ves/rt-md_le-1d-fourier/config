@@ -1,0 +1,4 @@
+plumed_modules=ves
+type=plumed
+arg="ves_md_linearexpansion input"
+

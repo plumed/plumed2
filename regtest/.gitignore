@@ -20,6 +20,7 @@
 !/molfile_plugin
 !/pamm
 !/isdb
+!/ves
 # These files we just want to ignore completely
 tmp
 report.txt
