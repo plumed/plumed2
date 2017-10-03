@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,13 +70,6 @@
 
 #include "mdrun_main.h"
 #include "runner.h"
-
-/* PLUMED */
-#include "../../../Plumed.h"
-extern int    plumedswitch;
-extern plumed plumedmain; 
-extern void(*plumedcmd)(plumed,const char*,const void*);
-/* END PLUMED */
 
 /*! \brief Return whether either of the command-line parameters that
  *  will trigger a multi-simulation is set */
@@ -263,7 +256,6 @@ int gmx_mdrun(int argc, char *argv[])
         { efLOG, "-rt",     "rottorque", ffOPTWR },
         { efMTX, "-mtx",    "nm",       ffOPTWR },
         { efRND, "-multidir", NULL,      ffOPTRDMULT},
-        { efDAT, "-plumed", "plumed",   ffOPTRD },   /* PLUMED */
         { efDAT, "-membed", "membed",   ffOPTRD },
         { efTOP, "-mp",     "membed",   ffOPTRD },
         { efNDX, "-mn",     "membed",   ffOPTRD },
@@ -378,7 +370,7 @@ int gmx_mdrun(int argc, char *argv[])
         { "-nstlist", FALSE, etINT, {&nstlist},
           "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
         { "-tunepme", FALSE, etBOOL, {&bTunePME},
-          "Optimize PME load between PP/PME ranks or GPU/CPU" },
+          "Optimize PME load between PP/PME ranks or GPU/CPU (only with the Verlet cut-off scheme)" },
         { "-v",       FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy" },
         { "-pforce",  FALSE, etREAL, {&pforce},
@@ -547,31 +539,6 @@ int gmx_mdrun(int argc, char *argv[])
     ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
     ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
-
-    /* PLUMED */
-    plumedswitch=0;
-    if (opt2bSet("-plumed",NFILE,fnm)) plumedswitch=1;
-    if(plumedswitch){
-      plumedcmd=plumed_cmd;
-      int real_precision=sizeof(real);
-      real energyUnits=1.0;
-      real lengthUnits=1.0;
-      real timeUnits=1.0;
-  
-      if(!plumed_installed()){
-        gmx_fatal(FARGS,"Plumed is not available. Check your PLUMED_KERNEL variable.");
-      }
-      plumedmain=plumed_create();
-      plumed_cmd(plumedmain,"setRealPrecision",&real_precision);
-      // this is not necessary for gromacs units:
-      plumed_cmd(plumedmain,"setMDEnergyUnits",&energyUnits);
-      plumed_cmd(plumedmain,"setMDLengthUnits",&lengthUnits);
-      plumed_cmd(plumedmain,"setMDTimeUnits",&timeUnits);
-      //
-      plumed_cmd(plumedmain,"setPlumedDat",ftp2fn(efDAT,NFILE,fnm));
-      plumedswitch=1;
-    }
-    /* END PLUMED */
 
     rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose,
                        nstglobalcomm, ddxyz, dd_rank_order, npme, rdd, rconstr,
