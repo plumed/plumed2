@@ -67,6 +67,7 @@ BEGIN{
   pre=""
   opt_global_check=0
   astyle="astyle"
+  autoconf="autoconf"
   for(i=1;i<ARGC;i++){
     opt=pre ARGV[i]
     pre=""
@@ -84,6 +85,9 @@ BEGIN{
         astyle_options=opt;
         break;
         break;
+      case /--autoconf=.*/:
+        sub("^--autoconf=","",opt);
+        autoconf=opt;
       case /-.*/:
         print "Unknown option " opt; exit(1)
       default:
@@ -198,7 +202,31 @@ BEGINFILE{
     tempfile = tmpdir "/astyle"
     system(astyle " --options=" astyle_options " < " FILENAME " > " tempfile)
     s=system("diff -q " FILENAME " " tempfile ">/dev/null 2>/dev/null")
+# check if astyle has been applied correctly
+# DOC: :astyle:
+# DOC: In order to keep the code readable, we use the astyle program to format
+# DOC: all source files. This error indicates that the reported file has not been
+# DOC: formatted correctly.  It is important that the version of astyle and the options
+# DOC: exactly match the ones we use for testing. To this aim, you should use
+# DOC: a command such as `make astyle` from the plumed root directory.
     if(s!=0) error("astyle","astyle not satisfied")
+    system("rm " tempfile)
+  }
+
+# check if configure.ac is consistent with configure
+  if(filetype=="autoconf"){
+    tempfile = tmpdir "/configure"
+    configurefile = FILENAME
+    sub("\\.ac","",configurefile)
+    system("autoconf " FILENAME " > " tempfile)
+    s=system("diff -q " configurefile " " tempfile ">/dev/null 2>/dev/null")
+# check if autoconf has been applied correctly
+# DOC: :autoconf:
+# DOC: In our git repository we distribute both `./configure` and `./configure.ac` files.
+# DOC: When you modify the latter, the former should be regenerated using `autoconf` and
+# DOC: committed to git. This error indicates that the `./configure.ac` and `./configure` files
+# DOC: in the repository are not consistent.
+    if(s!=0) error("autoconf","autoconf not satisfied")
     system("rm " tempfile)
   }
 
