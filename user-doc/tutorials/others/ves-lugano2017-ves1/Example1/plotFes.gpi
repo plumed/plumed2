@@ -1,0 +1,36 @@
+# Terminal settings
+#set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+#set output "plotFes.png"
+#set border lw 1.5
+
+# Set labels
+set xlabel "Distance (nm)"
+set ylabel "Free energy (kT)"
+
+# Set plot range and tic options
+set yr [-21:10]
+set xtics 5
+set xr [0.23:0.7]
+set xtics 0.1
+
+# Define colors
+set style line 1 lt 1 lw 3 lc rgb "#e41a1c"
+set style line 2 lt 1 lw 3 lc rgb "#377eb8"
+set style line 3 lt 1 lw 3 lc rgb "#4daf4a"
+set style line 4 lt 1 lw 3 lc rgb "#984ea3"
+set style line 5 lt 1 lw 3 lc rgb "#ff7f00"
+set style line 6 lt 1 lw 3 lc rgb "#ffff33"
+set style line 7 lt 1 lw 3 lc rgb "#a65628"
+
+
+set key top right horizontal sample 1.
+
+Offset=5
+
+pl "fes.b1.iter-100.data" u 1:($2/2.494) w l ls 1 title "100 ps", \
+   "fes.b1.iter-300.data" u 1:($2/2.494-1*Offset) w l ls 2 title "300 ps", \
+   "fes.b1.iter-600.data" u 1:($2/2.494-2*Offset) w l ls 3 title "600 ps", \
+   "fes.b1.iter-1000.data" u 1:($2/2.494-3*Offset) w l ls 4 title "1 ns", \
+   "fes.b1.iter-10000.data" u 1:($2/2.494-4*Offset) w l ls 5 title "10 ns"
+
+pause -1

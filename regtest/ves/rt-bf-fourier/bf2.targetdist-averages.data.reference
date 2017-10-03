@@ -1,0 +1,174 @@
+#! FIELDS idx_arg aver.targetdist-0 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  21
+#! SET shape_arg  21
+       0      1.000000       0  1
+       1      0.000000       1  cos(1*s)
+       2      0.000000       2  sin(1*s)
+       3      0.000000       3  cos(2*s)
+       4      0.000000       4  sin(2*s)
+       5      0.000000       5  cos(3*s)
+       6      0.000000       6  sin(3*s)
+       7      0.000000       7  cos(4*s)
+       8      0.000000       8  sin(4*s)
+       9      0.000000       9  cos(5*s)
+      10      0.000000      10  sin(5*s)
+      11      0.000000      11  cos(6*s)
+      12      0.000000      12  sin(6*s)
+      13      0.000000      13  cos(7*s)
+      14      0.000000      14  sin(7*s)
+      15      0.000000      15  cos(8*s)
+      16      0.000000      16  sin(8*s)
+      17      0.000000      17  cos(9*s)
+      18      0.000000      18  sin(9*s)
+      19      0.000000      19  cos(10*s)
+      20      0.000000      20  sin(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-1 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  21
+#! SET shape_arg  21
+       0      1.000000       0  1
+       1     -0.000000       1  cos(1*s)
+       2     -0.000000       2  sin(1*s)
+       3      0.000000       3  cos(2*s)
+       4      0.000000       4  sin(2*s)
+       5      0.000000       5  cos(3*s)
+       6      0.000000       6  sin(3*s)
+       7      0.000000       7  cos(4*s)
+       8     -0.000000       8  sin(4*s)
+       9     -0.000000       9  cos(5*s)
+      10     -0.000000      10  sin(5*s)
+      11      0.000000      11  cos(6*s)
+      12     -0.000000      12  sin(6*s)
+      13     -0.000000      13  cos(7*s)
+      14      0.000000      14  sin(7*s)
+      15     -0.000000      15  cos(8*s)
+      16      0.000000      16  sin(8*s)
+      17      0.000000      17  cos(9*s)
+      18      0.000000      18  sin(9*s)
+      19      0.000000      19  cos(10*s)
+      20     -0.000000      20  sin(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-2 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  21
+#! SET shape_arg  21
+       0      1.000000       0  1
+       1      0.925791       1  cos(1*s)
+       2     -0.000000       2  sin(1*s)
+       3      0.734603       3  cos(2*s)
+       4     -0.000000       4  sin(2*s)
+       5      0.499595       5  cos(3*s)
+       6      0.000000       6  sin(3*s)
+       7      0.291213       7  cos(4*s)
+       8      0.000000       8  sin(4*s)
+       9      0.145489       9  cos(5*s)
+      10      0.000000      10  sin(5*s)
+      11      0.062298      11  cos(6*s)
+      12     -0.000000      12  sin(6*s)
+      13      0.022864      13  cos(7*s)
+      14      0.000000      14  sin(7*s)
+      15      0.007192      15  cos(8*s)
+      16      0.000000      16  sin(8*s)
+      17      0.001939      17  cos(9*s)
+      18      0.000000      18  sin(9*s)
+      19      0.000448      19  cos(10*s)
+      20      0.000000      20  sin(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-3 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  21
+#! SET shape_arg  21
+       0      1.000000       0  1
+       1      0.000028       1  cos(1*s)
+       2     -0.925794       2  sin(1*s)
+       3     -0.734630       3  cos(2*s)
+       4      0.000005       4  sin(2*s)
+       5      0.000026       5  cos(3*s)
+       6      0.499588       6  sin(3*s)
+       7      0.291188       7  cos(4*s)
+       8      0.000010       8  sin(4*s)
+       9      0.000023       9  cos(5*s)
+      10     -0.145501      10  sin(5*s)
+      11     -0.062319      11  cos(6*s)
+      12      0.000013      12  sin(6*s)
+      13      0.000019      13  cos(7*s)
+      14      0.022849      14  sin(7*s)
+      15      0.007174      15  cos(8*s)
+      16      0.000015      16  sin(8*s)
+      17      0.000016      17  cos(9*s)
+      18     -0.001955      18  sin(9*s)
+      19     -0.000462      19  cos(10*s)
+      20      0.000016      20  sin(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-4 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  21
+#! SET shape_arg  21
+       0      1.000000       0  1
+       1      0.000035       1  cos(1*s)
+       2      0.925794       2  sin(1*s)
+       3     -0.734637       3  cos(2*s)
+       4     -0.000005       4  sin(2*s)
+       5      0.000033       5  cos(3*s)
+       6     -0.499588       6  sin(3*s)
+       7      0.291181       7  cos(4*s)
+       8     -0.000010       8  sin(4*s)
+       9      0.000030       9  cos(5*s)
+      10      0.145501      10  sin(5*s)
+      11     -0.062326      11  cos(6*s)
+      12     -0.000013      12  sin(6*s)
+      13      0.000027      13  cos(7*s)
+      14     -0.022849      14  sin(7*s)
+      15      0.007167      15  cos(8*s)
+      16     -0.000015      16  sin(8*s)
+      17      0.000023      17  cos(9*s)
+      18      0.001955      18  sin(9*s)
+      19     -0.000469      19  cos(10*s)
+      20     -0.000016      20  sin(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-5 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  21
+#! SET shape_arg  21
+       0      1.000000       0  1
+       1      0.894309       1  cos(1*s)
+       2      0.239378       2  sin(1*s)
+       3      0.636377       3  cos(2*s)
+       4      0.366968       4  sin(2*s)
+       5      0.353545       5  cos(3*s)
+       6      0.352990       6  sin(3*s)
+       7      0.145870       7  cos(4*s)
+       8      0.252045       8  sin(4*s)
+       9      0.037839       9  cos(5*s)
+      10      0.140482      10  sin(5*s)
+      11      0.000098      11  cos(6*s)
+      12      0.062298      12  sin(6*s)
+      13     -0.005877      13  cos(7*s)
+      14      0.022095      14  sin(7*s)
+      15     -0.003583      15  cos(8*s)
+      16      0.006236      16  sin(8*s)
+      17     -0.001368      17  cos(9*s)
+      18      0.001374      18  sin(9*s)
+      19     -0.000387      19  cos(10*s)
+      20      0.000225      20  sin(10*s)
+#!-------------------
+
+

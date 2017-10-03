@@ -14,18 +14,23 @@ all:
 
 else
 
-ifneq (,$(findstring __PLUMED_HAS_PYTHON,$(CPPFLAGS)))
+ifdef python_bin
 
 all:
 	@echo Building python interface for PLUMED 
-	python buildPythonInterface.py build_ext -i
+	CC="$(CC)" \
+          LDSHARED="$(LDSHARED)" \
+          CXX="$(CXX)" \
+          program_name=plumed \
+          plumedexe=../src/lib/plumed \
+          include_dir=../src/wrapper \
+          lib_dir=../src/lib \
+          $(python_bin) buildPythonInterface.py build_ext -i
 
 else
 
 all:
-	@echo Did not find __PLUMED_HAS_PYTHON
-	@echo $(CPPFLAGS)
-
+	@echo Python support was not configure
 endif
 
 endif

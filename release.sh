@@ -20,14 +20,14 @@ confirm () {
 update_changelog() {
   echo $1 $2 $3
   awk -v version="$2" -v shortversion="$3" -v date="$4" '{
-    if(version == shortversion ".0" && $1=="Version" && $2==shortversion){
-      print "Version " shortversion " (" date ")"
+    if(version == shortversion ".0" && $1=="##" && $2=="Version" && $3==shortversion){
+      print "## Version " shortversion " (" date ")"
       done=1
-    } else if($1=="Version" && $2==version){
-      print "Version " version " (" date ")"
+    } else if($1=="##" && $2=="Version" && $3==version){
+      print "## Version " version " (" date ")"
       done=1
-    } else if(!done && $1=="Unreleased" && $2=="changes"){
-      print "Version " version " (" date ")"
+    } else if(!done && $1=="##" && $2=="Unreleased" && $3=="changes"){
+      print "## Version " version " (" date ")"
     } else print
   }' $1 > $1.tmp
   mv $1.tmp $1
@@ -114,8 +114,7 @@ if ! test "$VALIDATED" ; then
   update_changelog CHANGES/v$shortversion.md $version $shortversion "coming soon"
   echo 
   msg="Travis tests for v$version
-
-[makedoc]"
+"
   echo "Now I will add an empty commit and push the result to origin"
   echo "I will use the following commands:"
   echo "***"
@@ -126,7 +125,7 @@ if ! test "$VALIDATED" ; then
   confirm || exit
   git add CHANGES/v$shortversion.md
   git commit --allow-empty -m "$msg"
-  git push origin v$shortversion
+  git push -f origin v$shortversion:test-v$shortversion
   echo
   echo "Now you should go at this link:"
   echo "  http://travis-ci.org/plumed/plumed2/builds"
@@ -147,8 +146,7 @@ else
   cat VERSION
   echo "***"
   msg="Release v$version
-
-[makedoc]"
+"
   echo "Now I will add it, prepare a release commit, add a tag named v$version"
   echo "push it to origin and create a tgz file"
   echo "I will use the following commands:"

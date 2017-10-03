@@ -1,0 +1,59 @@
+# this is optional and tell to VIM that this is a PLUMED file
+# vim: ft=plumed
+# see comments just below this input file
+MOLINFO MOLTYPE=protein STRUCTURE=egaawaass.pdb
+WHOLEMOLECULES ENTITY0=1-111
+
+# EEF1SB Implicit solvation
+protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
+solv: EEFSOLV ATOMS=protein-h NOPBC NL_STRIDE=10 NL_BUFFER=0.1
+bias: BIASVALUE ARG=solv
+
+# CVs, Psi9, Phi1 are not defined
+psi1: TORSION ATOMS=@psi-1
+psi2: TORSION ATOMS=@psi-2
+psi3: TORSION ATOMS=@psi-3
+psi4: TORSION ATOMS=@psi-4
+psi5: TORSION ATOMS=@psi-5
+psi6: TORSION ATOMS=@psi-6
+psi7: TORSION ATOMS=@psi-7
+psi8: TORSION ATOMS=@psi-8
+
+phi2: TORSION ATOMS=@phi-2
+phi3: TORSION ATOMS=@phi-3
+phi4: TORSION ATOMS=@phi-4
+phi5: TORSION ATOMS=@phi-5
+phi6: TORSION ATOMS=@phi-6
+phi7: TORSION ATOMS=@phi-7
+phi8: TORSION ATOMS=@phi-8
+phi9: TORSION ATOMS=@phi-9
+
+ahc:  ALPHARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.12}
+
+# Bulky Trp residue dihedral
+dihtrp_cacb: TORSION ATOMS=67,47,49,52
+dihtrp_cbcg: TORSION ATOMS=47,49,52,53
+
+protein-ca: GROUP NDX_FILE=index.ndx NDX_GROUP=C-alpha
+gyr: GYRATION TYPE=RADIUS ATOMS=protein-ca NOPBC
+
+# PBMetaD
+PBMETAD ...
+    LABEL=pb
+    ARG=phi2,phi3,phi4,phi5,phi6,phi7,phi8,phi9,psi1,psi2,psi3,psi4,psi5,psi6,psi7,psi8,dihtrp_cacb,dihtrp_cbcg,ahc.lessthan
+    SIGMA=1000 
+    SIGMA_MIN=0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.001
+    SIGMA_MAX=0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.2
+    ADAPTIVE=DIFF
+    HEIGHT=0.5
+    PACE=200
+    BIASFACTOR=40
+    GRID_MIN=-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,-pi,0
+    GRID_MAX=pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,pi,5
+    GRID_WSTRIDE=5000
+    WALKERS_MPI
+... PBMETAD
+
+PRINT FILE=COLVAR ARG=phi2,phi3,phi4,phi5,phi6,phi7,phi8,phi9,psi1,psi2,psi3,psi4,psi5,psi6,psi7,psi8,dihtrp_cacb,dihtrp_cbcg,ahc.lessthan STRIDE=200
+PRINT FILE=ENERGY ARG=bias.bias,pb.bias STRIDE=200
+ENDPLUMED

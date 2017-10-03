@@ -45,8 +45,8 @@ namespace drr {
 
 //+PLUMEDOC BIAS DRR
 /*
-Used to performed extended-system adaptive biasing force(eABF) \cite Lelievre2007
-method on one or more collective variables. This method is also
+Used to performed extended-system adaptive biasing force(eABF) \cite Lelievre2007 method
+on one or more collective variables. This method is also
 called dynamic reference restraining(DRR) \cite Zheng2012 .
 
 For each collective variable \f$\xi_i\f$, a fictitious variable \f$\lambda_i\f$
@@ -83,7 +83,7 @@ It may be slow. I only change the boltzmann constant and output
 precision in it. For new version and issues, please see:
 https://github.com/fhh2626/colvars
 
-After running eABF/DRR, the \ref drrtool utility can be used to extract the gradients and counts files from .drrstate. Naive(ABF) estimator's result is in .abf.grad and .abf.count files and CZAR estimator's result is in .czar.grad and .czar.count files. To get PMF, the abf_integrate(https://github.com/Colvars/colvars/tree/master/colvartools) is useful.
+After running eABF/DRR, the \ref drr_tool utility can be used to extract the gradients and counts files from .drrstate. Naive(ABF) estimator's result is in .abf.grad and .abf.count files and CZAR estimator's result is in .czar.grad and .czar.count files. To get PMF, the abf_integrate(https://github.com/Colvars/colvars/tree/master/colvartools) is useful.
 
 \par Examples
 
