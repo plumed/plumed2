@@ -4,6 +4,7 @@
 #include <vector>
 
 extern "C"{
+  void plumed_f_installed(int*i);
   void plumed_f_ginitialized(int*i);
   void plumed_f_gcreate();
   void plumed_f_gcmd(char* key,void* val);
@@ -12,6 +13,7 @@ extern "C"{
   void plumed_f_create(char*c);
   void plumed_f_cmd(char*c,char* key,void* val);
   void plumed_f_finalize(char*c);
+  void plumed_f_installed_(int*i);
   void plumed_f_ginitialized_(int*i);
   void plumed_f_gcreate_();
   void plumed_f_gcmd_(char* key,void* val);
@@ -20,6 +22,7 @@ extern "C"{
   void plumed_f_create_(char*c);
   void plumed_f_cmd_(char*c,char* key,void* val);
   void plumed_f_finalize_(char*c);
+  void plumed_f_installed__(int*i);
   void plumed_f_ginitialized__(int*i);
   void plumed_f_gcreate__();
   void plumed_f_gcmd__(char* key,void* val);
@@ -28,6 +31,7 @@ extern "C"{
   void plumed_f_create__(char*c);
   void plumed_f_cmd__(char*c,char* key,void* val);
   void plumed_f_finalize__(char*c);
+  void PLUMED_F_INSTALLED(int*);
   void PLUMED_F_GINITIALIZED(int*);
   void PLUMED_F_GCREATE();
   void PLUMED_F_GCMD(char* key,void* val);
@@ -36,6 +40,7 @@ extern "C"{
   void PLUMED_F_CREATE(char*c);
   void PLUMED_F_CMD(char*c,char* key,void* val);
   void PLUMED_F_FINALIZE(char*c);
+  void PLUMED_F_INSTALLED_(int*);
   void PLUMED_F_GINITIALIZED_(int*);
   void PLUMED_F_GCREATE_();
   void PLUMED_F_GCMD_(char* key,void* val);
@@ -44,6 +49,7 @@ extern "C"{
   void PLUMED_F_CREATE_(char*c);
   void PLUMED_F_CMD_(char*c,char* key,void* val);
   void PLUMED_F_FINALIZE_(char*c);
+  void PLUMED_F_INSTALLED__(int*);
   void PLUMED_F_GINITIALIZED__(int*);
   void PLUMED_F_GCREATE__();
   void PLUMED_F_GCMD__(char* key,void* val);
@@ -200,6 +206,8 @@ int main(){
   {
 // Fortran version
     of<<"fortran\n";
+    int inst=0;
+    plumed_f_installed(&inst); if(!inst) return 0;
     char p[32];
     plumed_f_create(p);
     testme(p,plumed_f_cmd);
@@ -222,6 +230,8 @@ int main(){
   {
 // Fortran version _
     of<<"fortran_\n";
+    int inst=0;
+    plumed_f_installed_(&inst); if(!inst) return 0;
     char p[32];
     plumed_f_create_(p);
     testme(p,plumed_f_cmd_);
@@ -244,6 +254,8 @@ int main(){
   {
 // Fortran version __
     of<<"fortran__\n";
+    int inst=0;
+    plumed_f_installed__(&inst); if(!inst) return 0;
     char p[32];
     plumed_f_create__(p);
     testme(p,plumed_f_cmd__);
@@ -266,6 +278,8 @@ int main(){
   {
 // Fortran version
     of<<"FORTRAN\n";
+    int inst=0;
+    PLUMED_F_INSTALLED(&inst); if(!inst) return 0;
     char p[32];
     PLUMED_F_CREATE(p);
     testme(p,PLUMED_F_CMD);
@@ -288,6 +302,8 @@ int main(){
   {
 // Fortran version _
     of<<"FORTRAN_\n";
+    int inst=0;
+    PLUMED_F_INSTALLED_(&inst); if(!inst) return 0;
     char p[32];
     PLUMED_F_CREATE_(p);
     testme(p,PLUMED_F_CMD_);
@@ -310,6 +326,8 @@ int main(){
   {
 // Fortran version __
     of<<"FORTRAN__\n";
+    int inst=0;
+    PLUMED_F_INSTALLED__(&inst); if(!inst) return 0;
     char p[32];
     PLUMED_F_CREATE__(p);
     testme(p,PLUMED_F_CMD__);
