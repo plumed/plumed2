@@ -13,6 +13,8 @@ Options:
                     check if plumed has features words
   module [word1 [word2]..]
                     check if plumed has enables modules words
+  makefile_conf
+                    dumps the Makefile.conf file
 
 Examples:
 
@@ -48,6 +50,10 @@ do
     ;;
   (has) action=has ;;
   (module) action=module ;;
+  (makefile_conf)
+    echo "$configfile" | awk '{if($1=="makefile_conf") { gsub("^makefile_conf ",""); print} }'
+    exit 0
+    ;;
   (*)
     checklist="$checklist $opt"
   esac
