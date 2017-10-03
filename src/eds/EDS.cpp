@@ -510,6 +510,7 @@ void EDS::readInRestart(const bool b_mean) {
       in_restart_.scanField(cv_name + "_coupling",current_coupling_[i]);
       in_restart_.scanField(cv_name + "_maxrange",max_coupling_range_[i]);
       in_restart_.scanField(cv_name + "_maxgrad",max_coupling_grad_[i]);
+      in_restart_.scanField(cv_name + "_accum",coupling_accum_[i]);
       in_restart_.scanField(cv_name + "_mean",means_[i]);
       //unused due to difference between covar/nocovar
       in_restart_.scanField(cv_name + "_std",tmp);
@@ -584,6 +585,7 @@ void EDS::writeOutRestart() {
     out_restart_.printField(cv_name + "_coupling",current_coupling_[i]);
     out_restart_.printField(cv_name + "_maxrange",max_coupling_range_[i]);
     out_restart_.printField(cv_name + "_maxgrad",max_coupling_grad_[i]);
+    out_restart_.printField(cv_name + "_accum",coupling_accum_[i]);
     out_restart_.printField(cv_name + "_mean",means_[i]);
     if(!b_covar_)
       out_restart_.printField(cv_name + "_std",ssds_[i] / (fmax(1, update_calls_ - 1)));
