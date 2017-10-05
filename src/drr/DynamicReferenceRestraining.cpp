@@ -43,7 +43,7 @@ using namespace std;
 namespace PLMD {
 namespace drr {
 
-//+PLUMEDOC BIAS DRR
+//+PLUMEDOC EABFMOD_BIAS DRR
 /*
 Used to performed extended-system adaptive biasing force(eABF) \cite Lelievre2007 method
 on one or more collective variables. This method is also
