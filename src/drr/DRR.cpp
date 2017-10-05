@@ -226,6 +226,72 @@ std::vector<double> DRRForceGrid::getGradient(const std::vector<double> &pos,
   return result;
 }
 
+double DRRForceGrid::getDivergence(const std::vector<double> &pos) const {
+  double div = 0.0;
+  std::vector<double> grad_deriv(ndims, 0.0);
+  if (!isInBoundary(pos)) {
+    return div;
+  }
+  const size_t force_addr = sampleAddress(pos) * ndims;
+  std::vector<double> grad = getGradient(pos);
+  for (size_t i = 0; i < ndims; ++i) {
+    const double binWidth = dimensions[i].getWidth();
+    std::vector<double> first = pos;
+    first[i] = dimensions[i].min + binWidth * 0.5;
+    std::vector<double> last = pos;
+    last[i] = dimensions[i].max - binWidth * 0.5;
+    const size_t force_addr_first = sampleAddress(first) * ndims;
+    const size_t force_addr_last = sampleAddress(last) * ndims;
+    if (force_addr == force_addr_first) {
+      if (dimensions[i].isRealPeriodic() == true) {
+        std::vector<double> next = pos;
+        next[i] += binWidth;
+        const std::vector<double> grad_next = getGradient(next);
+        const std::vector<double> grad_prev = getGradient(last);
+        grad_deriv[i] = (grad_next[i] - grad_prev[i]) / (2.0 * binWidth);
+      }
+      else {
+        std::vector<double> next = pos;
+        next[i] += binWidth;
+        std::vector<double> next_2 = next;
+        next_2[i] += binWidth;
+        const std::vector<double> grad_next = getGradient(next);
+        const std::vector<double> grad_next_2 = getGradient(next_2);
+        grad_deriv[i] = (grad_next_2[i] * -1.0 + grad_next[i] * 4.0 - grad[i] * 3.0) / (2.0 * binWidth);
+      }
+    }
+    else if (force_addr == force_addr_last) {
+      if (dimensions[i].isRealPeriodic() == true) {
+        std::vector<double> prev = pos;
+        prev[i] -= binWidth;
+        const std::vector<double> grad_next = getGradient(first);
+        const std::vector<double> grad_prev = getGradient(prev);
+        grad_deriv[i] = (grad_next[i] - grad_prev[i]) / (2.0 * binWidth);
+      }
+      else {
+        std::vector<double> prev = pos;
+        prev[i] -= binWidth;
+        std::vector<double> prev_2 = prev;
+        prev_2[i] -= binWidth;
+        const std::vector<double> grad_prev = getGradient(prev);
+        const std::vector<double> grad_prev_2 = getGradient(prev_2);
+        grad_deriv[i] = (grad[i] * 3.0 - grad_prev[i] * 4.0 + grad_prev_2[i] * 1.0) / (2.0 * binWidth);
+      }
+    }
+    else {
+      std::vector<double> prev = pos;
+      prev[i] -= binWidth;
+      std::vector<double> next = pos;
+      next[i] += binWidth;
+      const std::vector<double> grad_next = getGradient(next);
+      const std::vector<double> grad_prev = getGradient(prev);
+      grad_deriv[i] = (grad_next[i] - grad_prev[i]) / (2.0 * binWidth);
+    }
+  }
+  div = std::accumulate(std::begin(grad_deriv), std::end(grad_deriv), 0.0);
+  return div;
+}
+
 std::vector<double>
 DRRForceGrid::getCountsLogDerivative(const std::vector<double> &pos) const {
   const size_t addr = sampleAddress(pos);
@@ -372,6 +438,24 @@ void DRRForceGrid::writeAll(const std::string &filename) const {
   if (ndims == 1) {
     write1DPMF(filename);
   }
+}
+
+void DRRForceGrid::writeDivergence(const std::string &filename) const {
+  std::string divname = filename + suffix + ".div";
+  std::vector<double> pos(ndims, 0);
+  FILE *pDiv;
+  pDiv = fopen(divname.c_str(), "w");
+  fwrite(headers.c_str(), sizeof(char), strlen(headers.c_str()), pDiv);
+  for (size_t i = 0; i < sampleSize; ++i) {
+    for (size_t j = 0; j < ndims; ++j) {
+      pos[j] = table[j][i];
+      fprintf(pDiv, " %.9f", table[j][i]);
+    }
+    const double divergence = getDivergence(pos);
+    fprintf(pDiv, " %.9f", (divergence / outputunit));
+    fprintf(pDiv, "\n");
+  }
+  fclose(pDiv);
 }
 
 bool ABF::store_getbias(const std::vector<double> &pos,
