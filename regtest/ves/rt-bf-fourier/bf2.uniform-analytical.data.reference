@@ -1,0 +1,29 @@
+#! FIELDS idx_arg aver.targetdist-0 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  21
+#! SET shape_arg  21
+       0      1.000000       0  1
+       1      0.000000       1  cos(1*s)
+       2      0.000000       2  sin(1*s)
+       3      0.000000       3  cos(2*s)
+       4      0.000000       4  sin(2*s)
+       5      0.000000       5  cos(3*s)
+       6      0.000000       6  sin(3*s)
+       7      0.000000       7  cos(4*s)
+       8      0.000000       8  sin(4*s)
+       9      0.000000       9  cos(5*s)
+      10      0.000000      10  sin(5*s)
+      11      0.000000      11  cos(6*s)
+      12      0.000000      12  sin(6*s)
+      13      0.000000      13  cos(7*s)
+      14      0.000000      14  sin(7*s)
+      15      0.000000      15  cos(8*s)
+      16      0.000000      16  sin(8*s)
+      17      0.000000      17  cos(9*s)
+      18      0.000000      18  sin(9*s)
+      19      0.000000      19  cos(10*s)
+      20      0.000000      20  sin(10*s)
+#!-------------------
+
+

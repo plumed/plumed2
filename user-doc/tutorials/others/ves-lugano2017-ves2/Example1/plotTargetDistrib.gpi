@@ -1,0 +1,33 @@
+# Terminal settings
+#set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+#set output "plotTD.png"
+#set border lw 1.5
+
+# Set labels
+set xlabel "Distance (nm)"
+set ylabel "p(s)"
+
+# Set plot range and tic options
+set xr [0.23:0.8]
+set xtics 0.1
+
+# Define colors
+set style line 1 lt 1 lw 4 lc rgb "#e41a1c"
+set style line 2 lt 1 lw 4 lc rgb "#377eb8"
+set style line 3 lt 1 lw 4 lc rgb "#4daf4a"
+set style line 4 lt 1 lw 4 lc rgb "#984ea3"
+set style line 5 lt 1 lw 4 lc rgb "#ff7f00"
+set style line 6 lt 1 lw 4 lc rgb "#ffff33"
+set style line 7 lt 1 lw 4 lc rgb "#a65628"
+
+
+set key top right horizontal sample 1.
+
+Offset=3
+
+pl "targetdist.b1.iter-0.data" u 1:2 w l ls 1 title "0 ns", \
+   "targetdist.b1.iter-500.data" u 1:($2+1*Offset) w l ls 2 title "0.5 ns", \
+   "targetdist.b1.iter-1000.data" u 1:($2+2*Offset) w l ls 3 title "1 ns", \
+   "targetdist.b1.iter-10000.data" u 1:($2+3*Offset) w l ls 4 title "10 ns"
+
+pause -1

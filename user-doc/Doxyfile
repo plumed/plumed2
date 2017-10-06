@@ -237,8 +237,8 @@ ALIASES                = \
                          "highlight{1}=\htmlonly<span style=\"background-color:yellow\">\endhtmlonly\1\htmlonly</span>\endhtmlonly" \
                          "tarball{1}=<a href=\"tutorial-resources/\1.tar.gz\" style=\"font-weight:bold\" style=\"color:green\" download=\"\1.tar.gz\"> TARBALL </a>" \
                          "plumedfile=\verbatim BEGIN_PLUMED_FILE" \
-                         "endplumedfile=\endverbatim"
-
+                         "endplumedfile=\endverbatim" \
+                         "plumednotmaintained=\warning This branch is not maintained. Users are invited to upgrade to a newer version"
 
 # This tag can be used to specify a number of word-keyword mappings (TCL only).
 # A mapping has the form "name=value". For example adding "class=itcl::class"

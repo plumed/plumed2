@@ -8,8 +8,7 @@ GIT_REPO=$(   echo $TRAVIS_REPO_SLUG | sed "s/^.*\///" )
 
 if [ "$GIT_OWNER" = plumed ] ; then
   if [[ "$TRAVIS_BRANCH" =~ ^v2\.[0-9]+$ ]] ; then
-  # TODO: this should be made automatic by reading the CHANGES/*.txt files:
-    if [ "$TRAVIS_BRANCH" = v2.0 ] || [ "$TRAVIS_BRANCH" = v2.1 ] || [ "$TRAVIS_BRANCH" = v2.2 ] ; then
+    if test -f CHANGES/"$TRAVIS_BRANCH".md && grep -q plumednotmaintained CHANGES/"$TRAVIS_BRANCH".md ; then
       branchtype=unsupported
     else
       branchtype=official

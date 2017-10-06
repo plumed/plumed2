@@ -101,6 +101,8 @@ echo "# version strings"
 echo "# syntax: version short/long/git number"
 echo "$version"
 echo
+echo "python_bin $python_bin"
+echo
 echo "# list of 'has' options"
 echo "# syntax: has name on/of"
 echo "# if option xx is on then plumed has beeen compiled with -D__PLUMED_HAS_XX"
@@ -131,6 +133,10 @@ echo
 echo "# list of modules"
 echo "# syntax: module name on/off (default-on/default-off/always)"
 echo "$modules" | sort
+echo
+echo "# Makefile.conf file"
+echo "# syntax: makefile_conf followed by a single space followed by a line from makefile_conf"
+cat "$makefile_conf" | awk '{printf("makefile_conf %s\n",$0)}'
 
 }> $file~
 
