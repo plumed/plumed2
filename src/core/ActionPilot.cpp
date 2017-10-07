@@ -33,7 +33,7 @@ ActionPilot::ActionPilot(const ActionOptions&ao):
 {
   if( keywords.exists("STRIDE") ) {
     parse("STRIDE",stride);
-    if( !keywords.style("STRIDE","hidden") ) log.printf("  with stride %d\n",stride);
+    if( !keywords.style("STRIDE","hidden") && stride>0 ) log.printf("  with stride %d\n",stride);
   } else {
     stride=0;
   }

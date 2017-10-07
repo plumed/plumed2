@@ -55,13 +55,15 @@ public:
   virtual void calculate();
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min, 
-                             std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const ;
+                             std::vector<std::string>& max, std::vector<unsigned>& nbin, 
+                             std::vector<double>& spacing, std::vector<bool>& pbc ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
   virtual void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const = 0;
   void apply();
   void update();
+  void runFinalJobs();
   unsigned getNumberOfDerivatives() const ;
 };
 

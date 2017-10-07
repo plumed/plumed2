@@ -80,6 +80,7 @@ class Print :
   string file;
   OFile ofile;
   string fmt;
+  bool printAtEnd;
   double lenunit;
 // small internal utility
 /////////////////////////////////////////
@@ -100,6 +101,7 @@ public:
   static void registerKeywords(Keywords& keys);
   void apply() {}
   void update();
+  void runFinalJobs();
   void unlockRequests() { ActionWithArguments::unlockRequests(); ActionAtomistic::unlockRequests(); }
   void lockRequests() { ActionWithArguments::lockRequests(); ActionAtomistic::lockRequests(); }
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ){ plumed_error(); }
@@ -116,7 +118,7 @@ void Print::registerKeywords(Keywords& keys) {
   keys.use("ARG");
   keys.add("atoms","ATOMS","the atoms that you would like to you output - only required if using xyz");
   keys.add("compulsory","UNITS","PLUMED","the length units you would like to use when outputting atoms in you xyz file");
-  keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
+  keys.add("compulsory","STRIDE","0","the frequency with which the quantities of interest should be output");
   keys.add("optional","FILE","the name of the file on which to output these quantities");
   keys.add("optional","FMT","the format that should be used to output real numbers");
   keys.add("optional","LESS_THAN_OR_EQUAL","when printing with arguments that are vectors only print components of vectors have a value less than or equal to this value");
@@ -134,6 +136,7 @@ Print::Print(const ActionOptions&ao):
   ActionAtomistic(ao),
   tstyle("colvar"),
   fmt("%f"),
+  printAtEnd(false),
   lenunit(1.0),
   rotate(0)
 {
@@ -141,15 +144,16 @@ Print::Print(const ActionOptions&ao):
   if(file.length()>0) {
     std::size_t dot=file.find_first_of(".");
     if( dot!=std::string::npos ) tstyle=file.substr(dot+1); 
-    if( tstyle!="xyz" && tstyle!="ndx" && tstyle!="grid" ) tstyle="colvar";
+    if( tstyle!="xyz" && tstyle!="ndx" && tstyle!="grid" && tstyle!="cube" ) tstyle="colvar";
     log.printf("  on file %s\n",file.c_str());
-    if( tstyle!="grid" ) { ofile.link(*this); ofile.open(file); }
+    if( tstyle!="grid" && tstyle!="cube" ) { ofile.link(*this); ofile.open(file); }
   } else {
     log.printf("  on plumed log file\n");
     ofile.link(log); 
   }
   parse("FMT",fmt);
-  fmt=" "+fmt;
+  if( tstyle=="cube" ) fmt=fmt+" ";
+  else fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
   if( tstyle=="colvar" ){
       for(unsigned i=0; i<getNumberOfArguments(); ++i){  // ofile.setupPrintValue( getPntrToArgument(i) );
@@ -159,6 +163,7 @@ Print::Print(const ActionOptions&ao):
               ofile.addConstantField("max_" + getPntrToArgument(i)->getName() );
           }
       }
+      if( getStride()==0 ) { setStride(1); log.printf("  with stride %d\n",getStride()); }
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
@@ -172,6 +177,7 @@ Print::Print(const ActionOptions&ao):
         rotateLast=0;
       }
   } else if( tstyle=="xyz" || tstyle=="ndx" ){
+      if( getStride()==0 ) { setStride(1); log.printf("  with stride %d\n",getStride()); }
       unsigned nper=0; 
       for(unsigned i=0;i<arg_ends.size()-1;++i) {
           unsigned nt=0;
@@ -223,9 +229,19 @@ Print::Print(const ActionOptions&ao):
       log.printf("\n"); 
       std::vector<Value*> args( getArguments() ); requestAtoms( atoms ); requestArguments( args, false ); 
   } else if( tstyle=="grid" ) {
+      if( getStride()==0 ) { 
+          setStride(10000); printAtEnd=true; log.printf("  printing final grid only \n"); 
+      }
       if( getNumberOfArguments()!=1 ) error("when printing a grid you should only have one argument in input");
       if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a grid");
       log.printf("  printing function labelled %s at points on a grid in a PLUMED grid file \n", getPntrToArgument(0)->getName().c_str() );
+  } else if( tstyle=="cube" ) {
+      if( getStride()==0 ) {
+          setStride(10000); printAtEnd=true; log.printf("  printing final grid only \n");
+      }
+      if( getNumberOfArguments()!=1 ) error("when printing a grid you should only have one argument in input");
+      if( getPntrToArgument(0)->getRank()!=3 || !getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a 3D grid");
+      log.printf("  printing function labelled %s at points on a grid in a cube file \n", getPntrToArgument(0)->getName().c_str() );
   } else {
       error("expected output does not exist");
   }
@@ -272,6 +288,7 @@ void Print::update() {
       }
       if( dontprint ) return;  // If everything is an average don't print on first step
   }
+  if( printAtEnd ) return ;
 
   if( tstyle=="colvar" ){
       ofile.fmtField(" %f");
@@ -329,9 +346,9 @@ void Print::update() {
       ogfile.open( file ); ogfile.addConstantField("normalisation");
       Value* gval=getPntrToArgument(0); ActionWithValue* act=gval->getPntrToAction();
       std::vector<unsigned> ind( gval->getRank() ), nbin( gval->getRank() );
-      std::vector<double> xx( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
+      std::vector<double> spacing( gval->getRank() ), xx( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
       std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
-      act->getInfoForGridHeader( argn, min, max, nbin, pbc );
+      act->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc );
       for(unsigned i=0; i<gval->getRank(); ++i) {
         ogfile.addConstantField("min_" + argn[i] );
         ogfile.addConstantField("max_" + argn[i] );
@@ -360,7 +377,48 @@ void Print::update() {
         ogfile.printField(); 
       }
       ogfile.close();
+  } else if( tstyle=="cube" ) {
+      OFile ogfile; ogfile.link(*this);
+      ogfile.setBackupString("analysis");
+      ogfile.open( file ); Value* gval=getPntrToArgument(0); ActionWithValue* act=gval->getPntrToAction();
+      std::vector<unsigned> nbin( 3 ), pp( 3 );
+      std::vector<double> xx( 3 ), spacing( 3 ), extent( 3 ); std::vector<bool> pbc( 3 );
+      std::vector<std::string> argn( 3 ), min( 3 ), max( 3 );
+      act->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc ); 
+      for(unsigned j=0;j<3;++j){ 
+          double mind, maxd; 
+          Tools::convert( min[j], mind ); 
+          Tools::convert( max[j], maxd ); 
+          if( pbc[j] ) extent[j]=maxd-mind; 
+          else extent[j]=maxd-mind+spacing[j];
+      }
+      ogfile.printf("PLUMED CUBE FILE\n");
+      ogfile.printf("OUTER LOOP: X, MIDDLE LOOP: Y, INNER LOOP: Z\n");
+      // Number of atoms followed by position of origin (origin set so that center of grid is in center of cell)
+      std::string ostr = "%d " + fmt + fmt + fmt + "\n"; 
+      ogfile.printf(ostr.c_str(),1,-0.5*extent[0],-0.5*extent[1],-0.5*extent[2] );
+      ogfile.printf(ostr.c_str(),nbin[0],spacing[0],0.0,0.0);  // Number of bins in each direction followed by
+      ogfile.printf(ostr.c_str(),nbin[1],0.0,spacing[1],0.0);  // shape of voxel
+      ogfile.printf(ostr.c_str(),nbin[2],0.0,0.0,spacing[2]);
+      ogfile.printf(ostr.c_str(),1,0.0,0.0,0.0); // Fake atom otherwise VMD doesn't work
+      unsigned ival=0; 
+      for(pp[0]=0; pp[0]<nbin[0]; ++pp[0]) {
+        for(pp[1]=0; pp[1]<nbin[1]; ++pp[1]) {
+          for(pp[2]=0; pp[2]<nbin[2]; ++pp[2]) { 
+              ogfile.printf(fmt.c_str(), gval->get(ival) ); ival++;
+              if(pp[2]%6==5) ogfile.printf("\n");
+          }
+          if( !pbc[2] ) ival++; 
+          ogfile.printf("\n");
+        }
+        if( !pbc[1] ) ival += (1+nbin[2]);
+      }
   }
+}
+
+void Print::runFinalJobs() {
+  if( !printAtEnd ) return ;
+  printAtEnd=false; update();
 }
 
 Print::~Print() {

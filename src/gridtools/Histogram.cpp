@@ -213,7 +213,8 @@ public:
   ~Histogram();
   void prepare();
   void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
-                             std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const ;
+                             std::vector<std::string>& max, std::vector<unsigned>& nbin, 
+                             std::vector<double>& spacing, std::vector<bool>& pbc ) const ;
   void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
   double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const ;
   void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const ;
@@ -357,11 +358,14 @@ void Histogram::prepare() {
 }
 
 void Histogram::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
-                                      std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const {
+                                      std::vector<std::string>& max, std::vector<unsigned>& nbin, 
+                                      std::vector<double>& spacing, std::vector<bool>& pbc ) const {
   std::vector<unsigned> nn( gridobject.getNbin( false ) );
   for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) {
       argn[i] = getPntrToArgument( arg_ends[i] )->getName();
-      min[i]=gridobject.getMin()[i]; max[i]=gridobject.getMax()[i]; nbin[i]=nn[i]; pbc[i]=gridobject.isPeriodic(i); 
+      min[i]=gridobject.getMin()[i]; max[i]=gridobject.getMax()[i]; 
+      nbin[i]=nn[i]; spacing[i]=gridobject.getGridSpacing()[i];
+      pbc[i]=gridobject.isPeriodic(i); 
   } 
 } 
 

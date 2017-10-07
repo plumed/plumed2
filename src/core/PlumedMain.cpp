@@ -853,6 +853,7 @@ void PlumedMain::stop() {
 }
 
 void PlumedMain::runJobsAtEndOfCalculation() {
+  for(const auto & p : actionSet) p->activate();
   for(const auto & p : actionSet) {
     p->runFinalJobs();
   }

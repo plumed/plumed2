@@ -174,14 +174,21 @@ void Function::update() {
   runAllTasks();
 }
 
+void Function::runFinalJobs() {
+  if( !hasAverageAsArgument() ) return;
+  plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
+  runAllTasks();
+}
+
 void Function::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   if( !actionInChain() ) tflags.assign(tflags.size(),1);
 }
 
 void Function::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min, 
-                                     std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const { 
+                                     std::vector<std::string>& max, std::vector<unsigned>& nbin, 
+                                     std::vector<double>& spacing, std::vector<bool>& pbc ) const { 
   plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
-  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( argn, min, max, nbin, pbc );
+  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc );
 }
 
 void Function::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { 

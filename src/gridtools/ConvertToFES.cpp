@@ -93,7 +93,9 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
 }
 
 void ConvertToFES::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  addValue(0, -simtemp*std::log(args[0]), myvals ); addDerivative( 0, 0, -(simtemp/args[0]), myvals ); 
+  addValue(0, -simtemp*std::log(args[0]), myvals ); 
+  if( args[0]>0 ) addDerivative( 0, 0, -(simtemp/args[0]), myvals );
+  else addDerivative( 0, 0, 0, myvals ); 
 }
 
 }

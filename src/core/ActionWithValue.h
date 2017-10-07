@@ -239,7 +239,9 @@ public:
 ///
   virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) { plumed_merror( "problem in task list for " + getLabel() ); }
 ///
-  virtual void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min, std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const { plumed_merror( "problem in getting grid data for " + getLabel() ); }
+  virtual void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min, 
+                                     std::vector<std::string>& max, std::vector<unsigned>& nbin, 
+                                     std::vector<double>& spacing, std::vector<bool>& pbc ) const { plumed_merror( "problem in getting grid data for " + getLabel() ); }
 ///
   virtual void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { plumed_merror("problem in getting grid data for " + getLabel() ); } 
 ///
