@@ -147,7 +147,6 @@ private:
   std::vector<double> c1;
   std::vector<double> c2;
   std::vector<double> mass;
-  std::vector<DRRAxis> delim;
   std::string outputname;
   std::string cptname;
   std::string outputprefix;
@@ -197,6 +196,14 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
            "or GRID_SPACING should be specified)");
   keys.add("optional", "GRID_BIN", "the number of bins for the grid");
   keys.add("optional", "GRID_SPACING", "the approximate grid spacing (to be "
+           "used as an alternative or together "
+           "with GRID_BIN)");
+  keys.add("optional", "ZGRID_MIN", "the lower bounds for the grid (GRID_BIN "
+           "or GRID_SPACING should be specified)");
+  keys.add("optional", "ZGRID_MAX", "the upper bounds for the grid (GRID_BIN "
+           "or GRID_SPACING should be specified)");
+  keys.add("optional", "ZGRID_BIN", "the number of bins for the grid");
+  keys.add("optional", "ZGRID_SPACING", "the approximate grid spacing (to be "
            "used as an alternative or together "
            "with GRID_BIN)");
   keys.add("compulsory", "FULLSAMPLES", "500",
@@ -256,7 +263,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     fictValue(getNumberOfArguments(), NULL),
     vfictValue(getNumberOfArguments(), NULL), c1(getNumberOfArguments(), 0.0),
     c2(getNumberOfArguments(), 0.0), mass(getNumberOfArguments(), 0.0),
-    delim(getNumberOfArguments()), outputname(""), cptname(""),
+    outputname(""), cptname(""),
     outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
     useUIestimator(false), textoutput(false)
@@ -329,17 +336,35 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   }
 
   std::vector<string> gmin(getNumberOfArguments());
+  std::vector<string> zgmin(getNumberOfArguments());
   parseVector("GRID_MIN", gmin);
+  parseVector("ZGRID_MIN", zgmin);
   if (gmin.size() != getNumberOfArguments())
     error("eABF/DRR: not enough values for GRID_MIN");
+  if (zgmin.size() != getNumberOfArguments()) {
+    log << "eABF/DRR: You didn't specify ZGRID_MIN. " << '\n'
+        << "eABF/DRR: The GRID_MIN will be used instead.";
+    zgmin = gmin;
+  }
   std::vector<string> gmax(getNumberOfArguments());
+  std::vector<string> zgmax(getNumberOfArguments());
   parseVector("GRID_MAX", gmax);
+  parseVector("ZGRID_MAX", zgmax);
   if (gmax.size() != getNumberOfArguments())
     error("eABF/DRR: not enough values for GRID_MAX");
+  if (zgmax.size() != getNumberOfArguments()) {
+    log << "eABF/DRR: You didn't specify ZGRID_MAX. " << '\n'
+        << "eABF/DRR: The GRID_MAX will be used instead.";
+    zgmax = gmax;
+  }
   std::vector<unsigned> gbin(getNumberOfArguments());
+  std::vector<unsigned> zgbin(getNumberOfArguments());
   std::vector<double> gspacing(getNumberOfArguments());
+  std::vector<double> zgspacing(getNumberOfArguments());
   parseVector("GRID_BIN", gbin);
+  parseVector("ZGRID_BIN", zgbin);
   parseVector("GRID_SPACING", gspacing);
+  parseVector("ZGRID_SPACING", zgspacing);
   if (gbin.size() != getNumberOfArguments()) {
     log << "eABF/DRR: You didn't specify GRID_BIN. Trying to use GRID_SPACING "
         "instead."
@@ -355,6 +380,24 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         gbin[i] = std::nearbyint((h - l) / gspacing[i]);
         gspacing[i] = (h - l) / gbin[i];
         log << "GRID_BIN[" << i << "] is " << gbin[i] << '\n';
+      }
+    }
+  }
+  if (zgbin.size() != getNumberOfArguments()) {
+    log << "eABF/DRR: You didn't specify ZGRID_BIN. Trying to use ZGRID_SPACING instead." << '\n';
+    if (zgspacing.size() != getNumberOfArguments()) {
+      log << "eABF/DRR: You didn't specify ZGRID_SPACING. Trying to use GRID_SPACING or GRID_BIN instead." << '\n';
+      zgbin = gbin;
+      zgspacing = gspacing;
+    } else {
+      zgbin.resize(getNumberOfArguments());
+      for (size_t i = 0; i < getNumberOfArguments(); ++i) {
+        double l, h;
+        PLMD::Tools::convert(zgmin[i], l);
+        PLMD::Tools::convert(zgmax[i], h);
+        zgbin[i] = std::nearbyint((h - l) / zgspacing[i]);
+        zgspacing[i] = (h - l) / zgbin[i];
+        log << "ZGRID_BIN[" << i << "] is " << zgbin[i] << '\n';
       }
     }
   }
@@ -377,6 +420,8 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   log << "eABF/DRR: The fullsamples is " << fullsamples << '\n';
   log << "eABF/DRR: The kbt(real system) is " << kbt << '\n';
   // Set up the force grid
+  std::vector<DRRAxis> zdelim(getNumberOfArguments());
+  std::vector<DRRAxis> delim(getNumberOfArguments());
   for (unsigned i = 0; i < getNumberOfArguments(); i++) {
     log << "eABF/DRR: The " << i << " dimensional grid minimum is " << gmin[i]
         << '\n';
@@ -384,10 +429,20 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         << '\n';
     log << "eABF/DRR: The " << i << " dimensional grid has " << gbin[i]
         << " bins" << '\n';
+    log << "eABF/DRR: The " << i << " dimensional zgrid minimum is " << zgmin[i]
+        << '\n';
+    log << "eABF/DRR: The " << i << " dimensional zgrid maximum is " << zgmax[i]
+        << '\n';
+    log << "eABF/DRR: The " << i << " dimensional zgrid has " << zgbin[i]
+        << " bins" << '\n';
     double l, h;
     PLMD::Tools::convert(gmin[i], l);
     PLMD::Tools::convert(gmax[i], h);
     delim[i].set(l, h, gbin[i]);
+    double zl,zh;
+    PLMD::Tools::convert(zgmin[i], zl);
+    PLMD::Tools::convert(zgmax[i], zh);
+    zdelim[i].set(zl, zh, zgbin[i]);
   }
   if (kappa.size() != getNumberOfArguments()) {
     kappa.resize(getNumberOfArguments(), 0.0);
@@ -442,6 +497,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       getPntrToArgument(i)->getDomain(c, d);
       componentIsPeriodic(comp, a, b);
       delim[i].setPeriodicity(c, d);
+      zdelim[i].setPeriodicity(c, d);
     } else
       componentIsNotPeriodic(comp);
     fictValue[i] = getPntrToComponent(comp);
@@ -466,7 +522,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     // If you want to use on-the-fly text output for CZAR and naive estimator,
     // you should turn it to true first!
     ABFGrid = ABF(delim, ".abf", textoutput);
-    CZARestimator = CZAR(delim, ".czar", kbt, textoutput);
+    CZARestimator = CZAR(zdelim, ".czar", kbt, textoutput);
     log << "eABF/DRR: The init function of the grid is finished." << '\n';
   }
   if (useUIestimator) {
@@ -475,13 +531,13 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         << '\n';
     log << "eABF/DRR: The UI estimator code is contributed by Haohao Fu."
         << '\n';
-    std::vector<double> lowerboundary(delim.size(), 0);
-    std::vector<double> upperboundary(delim.size(), 0);
-    std::vector<double> width(delim.size(), 0);
-    for (size_t i = 0; i < delim.size(); ++i) {
-      lowerboundary[i] = delim[i].getMin();
-      upperboundary[i] = delim[i].getMax();
-      width[i] = delim[i].getWidth();
+    std::vector<double> lowerboundary(zdelim.size(), 0);
+    std::vector<double> upperboundary(zdelim.size(), 0);
+    std::vector<double> width(zdelim.size(), 0);
+    for (size_t i = 0; i < zdelim.size(); ++i) {
+      lowerboundary[i] = zdelim[i].getMin();
+      upperboundary[i] = zdelim[i].getMax();
+      width[i] = zdelim[i].getWidth();
     }
     std::vector<std::string> input_filename;
     bool uirestart = false;
