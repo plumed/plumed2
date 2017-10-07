@@ -34,7 +34,8 @@ public ActionWithValue,
 public ActionWithArguments
 {
 protected:
-  bool one_kernel_at_a_time;
+  double norm;
+  bool one_kernel_at_a_time, unorm;
   GridCoordinatesObject gridobject;
   void addValueWithDerivatives( const std::vector<unsigned>& shape );
 public:
@@ -42,9 +43,9 @@ public:
   explicit HistogramBase(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
-  virtual void buildSingleKernel( std::vector<unsigned>& tflags, std::vector<double>& args ) = 0;
+  virtual void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args ) = 0;
   virtual double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const = 0;
-  virtual void addKernelToGrid( const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const = 0;
+  virtual void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const = 0;
   void calculate();
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void performTask( const unsigned& current, MultiValue& myvals ) const ;

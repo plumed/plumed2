@@ -27,12 +27,14 @@ namespace gridtools {
 void HistogramBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG"); 
+  keys.addFlag("UNORMALIZED",false,"calculate the unormalized distribution of colvars");
 }
 
 HistogramBase::HistogramBase(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao)
+  ActionWithArguments(ao),
+  one_kernel_at_a_time(false)
 {
   // Check all the values have the right size
   unsigned nvals=0; for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues();
@@ -40,34 +42,35 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
       unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues();
       if( nvals!=tvals ) error("mismatch between numbers of values in input arguments");
   }
+  parseFlag("UNORMALIZED",unorm);
+  if( unorm ) log.printf("  calculating unormalized distribution \n");
+  else log.printf("  calculating normalized distribution \n");
 
   // Now construct the tasks
-  if( actionInChain() ) {
+  if( distinct_arguments.size()>0 ) {
       unsigned nrank = getPntrToArgument(0)->getShape()[0];
       for(unsigned i=1;i<getNumberOfArguments();++i) {
           if( arg_ends[i]!=i ) error("not sure if this sort of reshaping works");
           if( getPntrToArgument(i)->getShape()[0]!=nrank ) error("all arguments should have same shape");
       }
       for(unsigned i=0;i<nrank;++i) addTaskToList(i);
-      if( distinct_arguments.size()>0 ){ 
-          std::vector<std::string> alabels;
-          for(unsigned i=0;i<getNumberOfArguments();++i){
-              bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
-              for(unsigned j=0;j<alabels.size();++j){
-                  if( alabels[j]==mylab ){ found=true; break; }
-              }
-              if( !found ) alabels.push_back( mylab );
+      std::vector<std::string> alabels;
+      for(unsigned i=0;i<getNumberOfArguments();++i){
+          bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
+          for(unsigned j=0;j<alabels.size();++j){
+              if( alabels[j]==mylab ){ found=true; break; }
           }
-
-          bool added=false;
-          for(unsigned i=0;i<getNumberOfArguments();++i){
-              // Add this function to jobs to do in recursive loop in previous action
-              if( getPntrToArgument(i)->getRank()>0 ){
-                  if( (getPntrToArgument(i)->getPntrToAction())->addActionToChain( alabels, this ) ){ added=true; break; }
-              }
-          }
-          plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
+          if( !found ) alabels.push_back( mylab );
       }
+
+      bool added=false;
+      for(unsigned i=0;i<getNumberOfArguments();++i){
+          // Add this function to jobs to do in recursive loop in previous action
+          if( getPntrToArgument(i)->getRank()>0 ){
+              if( (getPntrToArgument(i)->getPntrToAction())->addActionToChain( alabels, this ) ){ added=true; break; }
+          }
+      }
+      plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
   } else {
       bool hasrank = getPntrToArgument(0)->getRank()>0;
       if( hasrank ) { 
@@ -103,11 +106,11 @@ void HistogramBase::calculate(){
 }
 
 void HistogramBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  if( !actionInChain() && !one_kernel_at_a_time ) tflags.assign(tflags.size(),1);
+  if( !one_kernel_at_a_time ){ tflags.assign(tflags.size(),1); norm = static_cast<double>( tflags.size() ); }
   else {
-     std::vector<double> args( arg_ends.size()-1 ); 
+     std::vector<double> args( arg_ends.size()-1 ); double height=1.0;
      for(unsigned i=0;i<arg_ends.size()-1;++i) args[i]=getPntrToArgument(arg_ends[i])->get();
-     buildSingleKernel( tflags, args );
+     buildSingleKernel( tflags, height, args );
   }
 }
 
@@ -145,10 +148,14 @@ void HistogramBase::gatherGridAccumulators( const unsigned& code, const MultiVal
               plumed_assert( amtind==myvals.getStashedMatrixIndex(matind,j) );
               args[k] = myvals.getStashedMatrixElement( amtind, jind );
           }
-          addKernelToGrid( args, bufstart, buffer );
+          double height=1.0; 
+          if( !unorm ) height = 1.0 / norm;
+          addKernelToGrid( height, args, bufstart, buffer );
       }
   } else { 
-      retrieveArguments( myvals, args ); addKernelToGrid( args, bufstart, buffer );
+      retrieveArguments( myvals, args ); 
+      double height=1.0; if( !unorm ) height = 1.0 / norm;
+      addKernelToGrid( height, args, bufstart, buffer );
   }
 }
 

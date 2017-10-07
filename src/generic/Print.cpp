@@ -25,6 +25,7 @@
 #include "core/ActionAtomistic.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/Average.h"
 
 using namespace std;
 
@@ -263,6 +264,15 @@ bool Print::isInTargetRange( const std::vector<double>& argvals ) const {
 }
 
 void Print::update() {
+  if( getStep()==0 ) {
+      bool dontprint=true;
+      for(unsigned i=0;i<getNumberOfArguments();++i) {
+          Average* av = dynamic_cast<Average*>( getPntrToArgument(i)->getPntrToAction() ); 
+          if( !av ){ dontprint=false; break; }
+      }
+      if( dontprint ) return;  // If everything is an average don't print on first step
+  }
+
   if( tstyle=="colvar" ){
       ofile.fmtField(" %f");
       ofile.printField("time",getTime());

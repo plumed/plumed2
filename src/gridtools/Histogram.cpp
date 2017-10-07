@@ -20,6 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "HistogramBase.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
+#include "tools/Pbc.h"
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"
 
@@ -196,8 +199,10 @@ class Histogram : public HistogramBase {
 private:
   KernelFunctions* kernel;
   std::string kerneltype;
+  bool firststep;
   std::vector<unsigned> nbin, nneigh;
-  std::vector<double> min, max, bandwidth;
+  std::vector<std::string> gmin, gmax;
+  std::vector<double> min, max, gspacing, bandwidth;
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -206,11 +211,12 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Histogram(const ActionOptions&ao);
   ~Histogram();
+  void prepare();
   void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const ;
-  void buildSingleKernel( std::vector<unsigned>& tflags, std::vector<double>& args );
+  void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
   double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const ;
-  void addKernelToGrid( const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const ;
+  void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const ;
 };
 
 PLUMED_REGISTER_ACTION(Histogram,"KDE")
@@ -250,8 +256,8 @@ void Histogram::expandShortcut( const std::string& lab, const std::vector<std::s
 
 void Histogram::registerKeywords( Keywords& keys ) {
   HistogramBase::registerKeywords( keys );
-  keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
-  keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
+  keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
+  keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
@@ -263,21 +269,49 @@ Histogram::Histogram(const ActionOptions&ao):
   Action(ao),
   HistogramBase(ao),
   kernel(NULL),
+  firststep(false),
+  gmin( arg_ends.size()-1 ),
+  gmax( arg_ends.size()-1 ),
   bandwidth( arg_ends.size()-1 )
 {
-  std::vector<std::string> gmin( arg_ends.size()-1 ), gmax( arg_ends.size()-1 );
   parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
-  std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
-  std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
+  for(unsigned i=0;i<gmin.size();++i) {
+      if( gmin[i]=="auto" ){ 
+          firststep=true;  // We need to do a preparation step to set the grid from the box size
+          if( gmax[i]!="auto" ) error("if gmin is set from box vectors gmax must also be set in the same way");
+          for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
+              if( getPntrToArgument(j)->getName().find(".")!=std::string::npos ) {
+                   std::size_t dot = getPntrToArgument(j)->getName().find_first_of("."); 
+                   std::string name = getPntrToArgument(j)->getName().substr(dot+1);
+                   if( name!="x" && name!="y" && name!="z" ) {
+                       error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
+                   }
+              } else {
+                   error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
+              }
+          }
+      }
+  }
+  if( firststep && gmin.size()>3 ) error("can only set GRID_MIN and GRID_MAX automatically if components of distance are used in input");
+
+  parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing);
   parse("KERNEL",kerneltype); if( kerneltype!="DISCRETE" ) parseVector("BANDWIDTH",bandwidth); 
   if( nbin.size()!=(arg_ends.size()-1) && gspacing.size()!=(arg_ends.size()-1) ) error("GRID_BIN or GRID_SPACING must be set");
 
   // Create a value
   std::vector<bool> ipbc( gmin.size() ); 
-  for(unsigned i=0;i<arg_ends.size()-1;++i) ipbc[i] = getPntrToArgument( arg_ends[i] )->isPeriodic();
-  gridobject.setup( "flat", ipbc, 0, 0.0 ); gridobject.setBounds( gmin, gmax, nbin, gspacing ); 
-  std::vector<unsigned> shape( gridobject.getNbin(true) ); 
-  addValueWithDerivatives( shape ); checkRead();
+  for(unsigned i=0;i<arg_ends.size()-1;++i){
+      if( getPntrToArgument( arg_ends[i] )->isPeriodic() || gmin[i]=="auto" ) ipbc[i]=true;
+      else ipbc[i]=false;
+  }
+  gridobject.setup( "flat", ipbc, 0, 0.0 ); 
+  
+  // Setup the grid if we are not using automatic bounds
+  if( !firststep ){
+     gridobject.setBounds( gmin, gmax, nbin, gspacing ); 
+     std::vector<unsigned> shape( gridobject.getNbin(true) ); 
+     addValueWithDerivatives( shape ); checkRead();
+  }
 
   // Now setup everything for the kernel
   std::vector<double> point(gmin.size(), 0);
@@ -296,6 +330,32 @@ Histogram::~Histogram() {
   if( kernel ) delete kernel;
 }
 
+void Histogram::prepare() {
+  if( !firststep ) return ;
+
+  std::vector<std::string> bmin(arg_ends.size()-1), bmax(arg_ends.size()-1);
+  for(unsigned i=0;i<arg_ends.size()-1;++i) {
+      if( gmin[i]!="auto" ){ 
+          bmin[i]=gmin[i]; bmax[i]=gmax[i]; 
+      } else {
+          double lcoord, ucoord; Tensor box( plumed.getAtoms().getPbc().getBox() );
+          std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
+          std::string name = getPntrToArgument(i)->getName().substr(dot+1);
+          if( name=="x" ) { lcoord=-0.5*box(0,0); ucoord=0.5*box(0,0); }
+          else if( name=="y" ) { lcoord=-0.5*box(1,1); ucoord=0.5*box(1,1); }
+          else if( name=="z" ) { lcoord=-0.5*box(2,2); ucoord=0.5*box(2,2); }
+          else plumed_error();
+          // And convert to strings for bin and bmax
+          Tools::convert( lcoord, bmin[i] ); Tools::convert( ucoord, bmax[i] );
+      }
+  }  
+  // And setup the grid object
+  gridobject.setBounds( bmin, bmax, nbin, gspacing ); 
+  std::vector<unsigned> shape( gridobject.getNbin(true) ); 
+  addValueWithDerivatives( shape ); checkRead();
+  firststep=false;
+}
+
 void Histogram::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
                                       std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const {
   std::vector<unsigned> nn( gridobject.getNbin( false ) );
@@ -305,12 +365,12 @@ void Histogram::getInfoForGridHeader( std::vector<std::string>& argn, std::vecto
   } 
 } 
 
-void Histogram::buildSingleKernel( std::vector<unsigned>& tflags, std::vector<double>& args ) {
+void Histogram::buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args ) {
   if( kerneltype=="DISCRETE" ) {
       for(unsigned i=0; i<args.size(); ++i) args[i] += 0.5*gridobject.getGridSpacing()[i];
       tflags[ gridobject.getIndex( args ) ] = 1; 
   } else {
-      kernel = new KernelFunctions( args, bandwidth, kerneltype, false, 1.0, true );
+      kernel = new KernelFunctions( args, bandwidth, kerneltype, false, height, true );
       unsigned num_neigh; std::vector<unsigned> neighbors;
       gridobject.getNeighbors( args, nneigh, num_neigh, neighbors ); 
       for(unsigned i=0;i<num_neigh;++i) tflags[ neighbors[i] ] = 1;
@@ -334,7 +394,7 @@ double Histogram::calculateValueOfSingleKernel( const std::vector<double>& args,
   return val;
 }
 
-void Histogram::addKernelToGrid( const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const {
+void Histogram::addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const {
   std::vector<Value*> vv; std::string str_min, str_max; 
   for(unsigned i=0; i<args.size(); ++i) {
       vv.push_back( new Value() );
@@ -343,7 +403,7 @@ void Histogram::addKernelToGrid( const std::vector<double>& args, const unsigned
           vv[i]->setDomain( str_min, str_max );
       } else vv[i]->setNotPeriodic();
   }
-  KernelFunctions* kk = new KernelFunctions( args, bandwidth, kerneltype, false, 1.0, true );
+  KernelFunctions* kk = new KernelFunctions( args, bandwidth, kerneltype, false, height, true );
   std::vector<double> gpoint( args.size() ), der( args.size() );
   unsigned num_neigh; std::vector<unsigned> neighbors; 
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );

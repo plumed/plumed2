@@ -273,7 +273,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
       } else {
           for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore(); }
       }
-  } else if( f_actions.size()==1 ) done_over_stream=true; 
+  } else if( f_actions.size()==1 ) done_over_stream=true;  
 
   if( done_over_stream ) {
       // Get the action where this argument should be applied 

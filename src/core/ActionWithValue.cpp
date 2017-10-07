@@ -488,7 +488,7 @@ void ActionWithValue::setupVirtualAtomStashes( unsigned& nquants ) {
 
 void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const {
   for(unsigned i=0;i<values.size();++i){ 
-     if( values[i]->getRank()==2 ){ 
+     if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ){ 
          if( values[i]->getShape()[1]>ncols ){ ncols = values[i]->getShape()[1]; }
          values[i]->matpos=nmat; nmat++; 
      } else if( values[i]->getRank()==1 && values[i]->columnsums ) {
@@ -521,10 +521,12 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
   if( aa ){
       if( actionInChain() ) { 
           // Now check if the task takes a matrix as input - if it does do it
-          bool do_this_task = ((aa->getPntrToArgument(0))->getRank()==2);
+          bool do_this_task = ((aa->getPntrToArgument(0))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() );
 #ifdef DNDEBUG
           if( do_this_task ){
-              for(unsigned i=1;i<aa->getNumberOfArguments();++i) plumed_dbg_assert( (aa->getPntrToArgument(i))->getRank()==2 ); 
+              for(unsigned i=1;i<aa->getNumberOfArguments();++i){
+                  plumed_dbg_assert( (aa->getPntrToArgument(i))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() ); 
+              }
           }
 #endif
           if( do_this_task && isActive() ){ myvals.vector_call=false; myvals.setTaskIndex(task_index); performTask( current, myvals ); }
@@ -534,7 +536,7 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
   // Check if we need to store stuff
   bool matrix=wasperformed; 
   for(unsigned i=0;i<values.size();++i){
-      if( values[i]->getRank()!=2 ){ matrix=false; break; }
+      if( values[i]->getRank()!=2 || values[i]->hasDerivatives() ){ matrix=false; break; }
   }
   if( matrix ){  
       unsigned col_stash_index = colno; if( colno>=getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
@@ -557,7 +559,7 @@ void ActionWithValue::runTask( const unsigned& task_index, const unsigned& curre
 void ActionWithValue::clearMatrixElements( MultiValue& myvals ) const {
   if( isActive() ) {
       for(unsigned i=0;i<values.size();++i){
-          if( values[i]->getRank()==2 ) myvals.clear( values[i]->getPositionInStream() ); 
+          if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ) myvals.clear( values[i]->getPositionInStream() ); 
       }
   }
   if( action_to_do_after ) action_to_do_after->clearMatrixElements( myvals );
