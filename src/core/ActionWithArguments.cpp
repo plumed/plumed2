@@ -25,6 +25,7 @@
 #include "tools/PDB.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
+#include "Average.h"
 #include <iostream>
 #ifdef __PLUMED_HAS_CREGEX
 #include <cstring>
@@ -214,7 +215,8 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
   clearDependencies();
   bool storing=false; 
   for(unsigned i=0;i<arguments.size();++i){
-      if( arguments[i]->alwaysstore || arguments[i]->columnsums ){ storing=true; break; }
+      Average* av=dynamic_cast<Average*>( arguments[i]->getPntrToAction() );
+      if( av || arguments[i]->alwaysstore || arguments[i]->columnsums ){ storing=true; break; }
   } 
   std::string fullname,name;
   std::vector<ActionWithValue*> f_actions;

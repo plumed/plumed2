@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
+#include "core/Average.h"
 #include "tools/OpenMP.h"
 #include "tools/Communicator.h"
 
@@ -38,34 +39,48 @@ Function::Function(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
+  nderivatives(getNumberOfScalarArguments()),
   forcesToApply(getNumberOfScalarArguments())
 {
-  createTasksFromArguments(); nderivatives = getNumberOfScalarArguments();
-  // Now create the stream of jobs to work through 
-  if( distinct_arguments.size()>0 ){   // getFullNumberOfTasks()>0   // This is for if we have a function that needs to store - needs though GAT
-      std::vector<std::string> alabels;
-      for(unsigned i=0;i<getNumberOfArguments();++i){
-          bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
-          for(unsigned j=0;j<alabels.size();++j){
-              if( alabels[j]==mylab ){ found=true; break; }
-          }
-          if( !found ) alabels.push_back( mylab );
-      }
-      
-      bool added=false;
-      for(unsigned i=0;i<getNumberOfArguments();++i){
-          // Add this function to jobs to do in recursive loop in previous action
-          if( getPntrToArgument(i)->getRank()>0 ){
-              if( (getPntrToArgument(i)->getPntrToAction())->addActionToChain( alabels, this ) ){ added=true; break; } 
-          }
-      }  
-      plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
+  plumed_dbg_assert( getNumberOfArguments()>0 );
+  // Method for if input to function is a function on a grid
+  if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
+       unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
+       for(unsigned j=1;j<getNumberOfArguments();++j) {
+           if( getPntrToArgument(j)->getNumberOfValues()!=npoints || !getPntrToArgument(0)->hasDerivatives() ) error("mismatch in input arguments");
+       }
+       // Now create a task list for the function
+       for(unsigned j=0;j<npoints;++j) addTaskToList(j);
+       // Set the number of derivatives
+       nderivatives = getPntrToArgument(0)->getRank();
+  } else { 
+       createTasksFromArguments(); nderivatives = getNumberOfScalarArguments();
+       // Now create the stream of jobs to work through 
+       if( distinct_arguments.size()>0 ){   // getFullNumberOfTasks()>0   // This is for if we have a function that needs to store - needs though GAT
+           std::vector<std::string> alabels;
+           for(unsigned i=0;i<getNumberOfArguments();++i){
+               bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
+               for(unsigned j=0;j<alabels.size();++j){
+                   if( alabels[j]==mylab ){ found=true; break; }
+               }
+               if( !found ) alabels.push_back( mylab );
+           }
+           
+           bool added=false;
+           for(unsigned i=0;i<getNumberOfArguments();++i){
+               // Add this function to jobs to do in recursive loop in previous action
+               if( getPntrToArgument(i)->getRank()>0 ){
+                   if( (getPntrToArgument(i)->getPntrToAction())->addActionToChain( alabels, this ) ){ added=true; break; } 
+               }
+           }  
+           plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
 
-      // Now make sure we have the derivative size correct
-      nderivatives=0; 
-      for(unsigned i=0;i<distinct_arguments.size();++i) nderivatives += distinct_arguments[i]->getNumberOfDerivatives();
-      // Set forces to apply to correct size
-      forcesToApply.resize( nderivatives );
+           // Now make sure we have the derivative size correct
+           nderivatives=0; 
+           for(unsigned i=0;i<distinct_arguments.size();++i) nderivatives += distinct_arguments[i]->getNumberOfDerivatives();
+           // Set forces to apply to correct size
+           forcesToApply.resize( nderivatives );
+       }
   }
 }
 
@@ -138,11 +153,25 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
   }
 }
 
+bool Function::hasAverageAsArgument() const {
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      Average* av = dynamic_cast<Average*>( getPntrToArgument(i)->getPntrToAction() );
+      if( av ) return true;
+  }
+  return false;
+}
+
 void Function::calculate(){
   // Everything is done elsewhere
-  if( actionInChain() ) return;
+  if( hasAverageAsArgument() && actionInChain() ) return;
   // This is done if we are calculating a function of multiple cvs
   plumed_dbg_assert( getFullNumberOfTasks()>0 ); runAllTasks(); 
+}
+
+void Function::update() {
+  if( !hasAverageAsArgument() ) return;
+  plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 ); 
+  runAllTasks();
 }
 
 void Function::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
@@ -164,10 +193,10 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
   // Get the values of all the arguments
   bool matout=false, matinp=false;
   if( actionInChain() ) {
-      matinp=getPntrToArgument(0)->getRank()==2;
+      matinp=getPntrToArgument(0)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives();
 #ifdef DNDEBUG
       if( matinp ){
-          for(unsigned i=1;i<getNumberOfArguments();++i) plumed_dbg_assert( getPntrToArgument(i)->getRank()==2 );
+          for(unsigned i=1;i<getNumberOfArguments();++i) plumed_dbg_assert( getPntrToArgument(i)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives() );
       }
 #endif
       if( matinp ) {
@@ -182,7 +211,12 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
   // Calculate whatever we are calculating
   if( (matinp && !myvals.inVectorCall()) || !matinp ){
        std::vector<double> args( arg_ends.size()-1 ); retrieveArguments( myvals, args );
-       calculateFunction( args, myvals ); 
+       calculateFunction( args, myvals );
+       // Make sure grid derivatives are updated 
+       if( getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() ) {
+           unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
+           for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) myvals.updateIndex( ostrn, i );
+       } 
   }
   // And update the dynamic list
   if( doNotCalculateDerivatives() ) return ;
@@ -241,6 +275,14 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
           }
       }
   }
+}
+
+void Function::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
+                                       const unsigned& bufstart, std::vector<double>& buffer ) const {
+  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
+  unsigned nder = getPntrToOutput(0)->getRank(), ostr = getPntrToOutput(0)->getPositionInStream();
+  unsigned kp = bufstart + code*(1+nder); buffer[kp] += myvals.get( ostr );
+  for(unsigned i=0;i<nder;++i) buffer[kp + 1 + i] += myvals.getDerivative( ostr, i ); 
 }
 
 void Function::apply()

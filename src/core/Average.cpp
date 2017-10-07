@@ -19,12 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionPilot.h"
-#include "core/ActionWithValue.h"
-#include "core/ActionWithArguments.h"
-#include "core/PlumedMain.h"
-#include "core/ActionSet.h"
-#include "core/ActionRegister.h"
+#include "Average.h"
+#include "PlumedMain.h"
+#include "ActionSet.h"
+#include "ActionRegister.h"
 
 //+PLUMEDOC GRIDCALC AVERAGE
 /*
@@ -90,30 +88,6 @@ PRINT ARG=t1a FILE=colvar STRIDE=100
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace analysis {
-
-class Average : 
-public ActionPilot,
-public ActionWithValue,
-public ActionWithArguments {
-private:
-  enum {t,f,ndata} normalization;
-  bool clearnextstep;
-  unsigned clearstride;
-  double lbound, pfactor;
-public:
-  static void registerKeywords( Keywords& keys );
-  explicit Average( const ActionOptions& );
-  void clearDerivatives( const bool& force=false ){}
-  unsigned getNumberOfDerivatives() const ;
-  bool allowComponentsAndValue() const { return true; }
-  void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
-                             std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const ;
-  void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
-  void calculate() {}
-  void apply() {}
-  void update();
-};
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")
 
@@ -261,5 +235,4 @@ void Average::update() {
   if( (clearstride>0 && getStep()%clearstride==0) ) clearnextstep=true;
 }
 
-}
 }

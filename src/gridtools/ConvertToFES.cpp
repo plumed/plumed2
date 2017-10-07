@@ -22,7 +22,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include "ActionWithInputGrid.h"
+#include "function/Function.h"
 
 //+PLUMEDOC GRIDANALYSIS CONVERT_TO_FES
 /*
@@ -59,72 +59,41 @@ DUMPGRID GRID=ff FILE=fes.dat
 namespace PLMD {
 namespace gridtools {
 
-class ConvertToFES : public ActionWithInputGrid {
+class ConvertToFES : public function::Function {
 private:
   double simtemp;
-  bool activated;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ConvertToFES(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const ;
-  void prepare() { activated=true; }
-  void prepareForAveraging() { ActionWithInputGrid::prepareForAveraging(); activated=false; }
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
-  bool isPeriodic() { return false; }
-  bool onStep() const { return activated; }
-  void runFinalJobs();
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
 
 void ConvertToFES::registerKeywords( Keywords& keys ) {
-  ActionWithInputGrid::registerKeywords( keys );
+  function::Function::registerKeywords( keys ); keys.use("ARG");
   keys.add("optional","TEMP","the temperature at which you are operating");
-  keys.remove("STRIDE"); keys.remove("KERNEL"); keys.remove("BANDWIDTH");
-  keys.remove("LOGWEIGHTS"); keys.remove("CLEAR"); keys.remove("NORMALIZATION");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
   Action(ao),
-  ActionWithInputGrid(ao),
-  activated(false)
+  Function(ao)
 {
-  plumed_assert( ingrid->getNumberOfComponents()==1 );
-
-  // Create a grid
-  createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString() );
-  if( ingrid->noDerivatives() ) mygrid->setNoDerivatives();
-  std::vector<double> fspacing;
-  mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing);
-  setAveragingAction( mygrid, true );
-
   simtemp=0.; parse("TEMP",simtemp);
   if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
   else simtemp=plumed.getAtoms().getKbT();
   if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
 
-  // Now create task list
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) addTaskToList(i);
-  // And activate all tasks
-  deactivateAllTasks();
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) taskFlags[i]=1;
-  lockContributors();
+  // Sanity checks on input to convert to FES
+  if( getNumberOfArguments()!=1 ) error("should only have one argument"); 
+  if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input should be a grid");
+
+  // And value
+  ActionWithValue::addValueWithDerivatives( getPntrToArgument(0)->getShape() );
 }
 
-unsigned ConvertToFES::getNumberOfQuantities() const {
-  if( mygrid->noDerivatives() ) return 2;
-  return 2 + mygrid->getDimension();
-}
-
-void ConvertToFES::compute( const unsigned& current, MultiValue& myvals ) const {
-  double val=getFunctionValue( current ); myvals.setValue(1, -simtemp*std::log(val) );
-  if( !mygrid->noDerivatives() && val>0 ) {
-    for(unsigned i=0; i<mygrid->getDimension(); ++i) myvals.setValue( 2+i, -(simtemp/val)*ingrid->getGridElement(current,i+1) );
-  }
-}
-
-void ConvertToFES::runFinalJobs() {
-  activated=true; update();
+void ConvertToFES::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
+  addValue(0, -simtemp*std::log(args[0]), myvals ); addDerivative( 0, 0, -(simtemp/args[0]), myvals ); 
 }
 
 }

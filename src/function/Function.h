@@ -42,6 +42,7 @@ private:
   unsigned nderivatives;
   std::vector<double> forcesToApply;
   std::vector<unsigned> getShape();
+  bool hasAverageAsArgument() const ;
 protected:
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name );
@@ -57,8 +58,10 @@ public:
                              std::vector<std::string>& max, std::vector<unsigned>& nbin, std::vector<bool>& pbc ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
+  void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
   virtual void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const = 0;
   void apply();
+  void update();
   unsigned getNumberOfDerivatives() const ;
 };
 
@@ -74,7 +77,7 @@ void Function::addValue( const unsigned& ival, const double& val, MultiValue& my
 
 inline
 void Function::addDerivative( const unsigned& ival, const unsigned& jder, const double& der, MultiValue& myvals ) const {
-  if( doNotCalculateDerivatives() ) return ;
+  if( doNotCalculateDerivatives() && !(getPntrToOutput(ival)->getRank()>0 && getPntrToOutput(ival)->hasDerivatives()) ) return ;
 
   if( actionInChain() ){ 
       unsigned istrn = getPntrToArgument(jder)->getPositionInStream();
@@ -84,6 +87,13 @@ void Function::addDerivative( const unsigned& ival, const unsigned& jder, const 
           myvals.addDerivative( ostrn, arg_deriv_starts[jder] + kind, der*myvals.getDerivative( istrn, kind ) );
       }
       return; 
+  }
+  if( getPntrToOutput(ival)->getRank()>0 && getPntrToOutput(ival)->hasDerivatives() ) {
+      unsigned np = myvals.getTaskIndex(), ostrn = getPntrToOutput(ival)->getPositionInStream();
+      for(unsigned i=0;i<getPntrToArgument(jder)->getRank();++i) {
+          myvals.addDerivative( ostrn, i, der*getPntrToArgument(jder)->getGridDerivative( np, i ) ); 
+      }
+      return;
   }
   if( getPntrToArgument(0)->getRank()>0 ) { 
       unsigned base=0; for(unsigned i=0;i<jder;++i) base += getPntrToArgument(i)->getSize();
