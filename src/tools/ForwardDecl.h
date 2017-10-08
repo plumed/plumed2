@@ -36,7 +36,7 @@ class ForwardDecl:
 {
 public:
 // Construction is only possible from a pointer.
-  ForwardDecl(T*);
+  explicit ForwardDecl(T*);
 // Dereference operator is inherited from std::unique_ptr<T>
   using std::unique_ptr<T>::operator *;
 };
