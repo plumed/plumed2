@@ -504,7 +504,7 @@ void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& 
       values[i]->bufstart=bufsize; 
       if( values[i]->getRank()==0 && values[i]->hasDerivatives() ) bufsize += 1 + values[i]->getNumberOfDerivatives();
       else if( values[i]->getRank()==0 ) bufsize += 1;
-      else if( values[i]->storedata ) bufsize += values[i]->getSize(); 
+      else if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ) bufsize += values[i]->getSize(); 
   }
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
@@ -645,7 +645,7 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ){
       for(unsigned i=0;i<values.size();++i){
           unsigned bufstart = values[i]->bufstart; 
           if( values[i]->reset ) values[i]->data.assign( values[i]->data.size(), 0 );
-          if( values[i]->storedata ){
+          if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ){
               for(unsigned j=0;j<values[i]->getSize();++j) values[i]->add( j, buffer[bufstart+j] ); 
           }
           if( !doNotCalculateDerivatives() && values[i]->hasDeriv && values[i]->getRank()==0 ){ 

@@ -33,7 +33,7 @@ void GridCoordinatesObject::setup( const std::string& geom, const std::vector<bo
   else plumed_merror( geom + " is invalid geometry type");
 
   if( gtype==flat ) {
-      bounds_set=false; pbc.resize( ipbc.size() ); for(unsigned i=0;i<ipbc.size();++i) pbc[i]=ipbc[i]; 
+      bounds_set=false; npoints=0; pbc.resize( ipbc.size() ); for(unsigned i=0;i<ipbc.size();++i) pbc[i]=ipbc[i]; 
   } else if( gtype==fibonacci ) {
       bounds_set=true; root5 = sqrt(5);
       npoints = np; golden = ( 1 + sqrt(5) ) / 2.0; igolden = golden - 1;

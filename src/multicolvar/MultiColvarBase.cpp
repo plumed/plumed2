@@ -285,8 +285,10 @@ usepbc(true)
   if( usepbc ) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 
+  std::vector<AtomNumber> origin; if( getName()=="DISTANCE" ) parseAtomList("ORIGIN",origin);
+  if( origin.size()>1 ) error("should only be one atom specified to ORIGIN keyword");
   std::vector<AtomNumber> catoms, all_atoms; parseAtomList( "ATOMS", all_atoms );
-  if( all_atoms.size()>0 ){
+  if( all_atoms.size()>0 && origin.size()==0 ){
       ablocks.resize(all_atoms.size()); 
       log.printf("  Colvar is calculated from atoms : ");
       for(unsigned j=0; j<ablocks.size(); ++j){ ablocks[j].push_back(j); log.printf("%d ",all_atoms[j].serial() ); }
@@ -301,24 +303,35 @@ usepbc(true)
            log.printf("\n"); mygroup.push_back( atoms.addVirtualAtom( this ) );
       }
   } else {
-      std::vector<AtomNumber> t;
-      for(int i=1;; ++i ) {
-        parseAtomList("ATOMS", i, t );
-        if( t.empty() ) break;
+      if( origin.size()==1 ) { 
+           ablocks.resize(2); all_atoms.insert( all_atoms.begin(), origin[0] ); 
+           log.printf("  calculating distances from atom %d \n", origin[0].serial() );
+           log.printf("  atoms : ");
+           for(unsigned i=1;i<all_atoms.size();++i) {
+               ablocks[0].push_back(0); ablocks[1].push_back( i ); 
+               log.printf(" %d", all_atoms[i].serial() );
+           }
+           log.printf("\n");
+      } else {
+           std::vector<AtomNumber> t;
+           for(int i=1;; ++i ) {
+             parseAtomList("ATOMS", i, t );
+             if( t.empty() ) break;
 
-        log.printf("  Colvar %d is calculated from atoms : ", i);
-        for(unsigned j=0; j<t.size(); ++j) log.printf("%d ",t[j].serial() );
-        log.printf("\n");
+             log.printf("  Colvar %d is calculated from atoms : ", i);
+             for(unsigned j=0; j<t.size(); ++j) log.printf("%d ",t[j].serial() );
+             log.printf("\n");
 
-        if( i==1 ) { ablocks.resize(t.size()); }
-        if( t.size()!=ablocks.size() ) {
-          std::string ss; Tools::convert(i,ss);
-          error("ATOMS" + ss + " keyword has the wrong number of atoms");
-        }
-        for(unsigned j=0; j<ablocks.size(); ++j) {
-          ablocks[j].push_back( ablocks.size()*(i-1)+j ); all_atoms.push_back( t[j] );
-        }
-        t.resize(0);
+             if( i==1 ) { ablocks.resize(t.size()); }
+             if( t.size()!=ablocks.size() ) {
+               std::string ss; Tools::convert(i,ss);
+               error("ATOMS" + ss + " keyword has the wrong number of atoms");
+             }
+             for(unsigned j=0; j<ablocks.size(); ++j) {
+               ablocks[j].push_back( ablocks.size()*(i-1)+j ); all_atoms.push_back( t[j] );
+             }
+             t.resize(0);
+           }
       }
       parseAtomList("LOCATION", 1, catoms );
       if( catoms.size()>0 ){

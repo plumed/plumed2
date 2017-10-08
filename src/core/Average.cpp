@@ -112,6 +112,7 @@ Action(ao),
 ActionPilot(ao),
 ActionWithValue(ao),
 ActionWithArguments(ao),
+firststep(true),
 clearnextstep(false),
 lbound(0.0),pfactor(0.0)
 {
@@ -179,6 +180,13 @@ void Average::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vecto
 }
 
 void Average::update() {
+  if( firststep ) {
+      if( getPntrToOutput(0)->getNumberOfValues()!=getPntrToArgument(0)->getNumberOfValues() ) {
+          getPntrToOutput(0)->setShape( getPntrToArgument(0)->getShape() );
+      }
+      firststep=false;
+  }
+
   if( (clearstride!=1 && getStep()==0) || !onStep() ) return;
 
   if( clearnextstep ) {

@@ -186,6 +186,7 @@ void Distance::expandShortcut( const std::string& lab, const std::vector<std::st
 
 void Distance::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
+  keys.add("atoms","ORIGIN","calculate the distance of all the atoms specified using the ATOMS keyword from this point");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
   keys.addOutputComponent("x","COMPONENTS","the x-component of the vector connecting the two atoms");

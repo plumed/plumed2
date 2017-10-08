@@ -61,9 +61,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   hasForce(false),
   name(name),
   hasDeriv(withderiv),
-  shape(ss),
   alwaysstore(false),
-  storedata(shape.size()==0),
   columnsums(false),
   bufstart(0),
   streampos(0),
@@ -73,6 +71,15 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   max_minus_min(0.0),
   inv_max_minus_min(0.0)
 {
+  setShape( ss );
+}
+
+void Value::setShape( const std::vector<unsigned>&ss ) {
+  shape.resize( ss.size() ); 
+  for(unsigned i=0;i<shape.size();++i) shape[i]=ss[i];
+
+  if( ss.size()>0 ) storedata=false; else storedata=true;
+
   data.resize(getSize());
   unsigned fsize=1; for(unsigned i=0;i<shape.size();++i) fsize *= shape[i];
   inputForces.resize( fsize );

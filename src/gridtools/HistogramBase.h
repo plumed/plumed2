@@ -47,7 +47,7 @@ public:
   virtual double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const = 0;
   virtual void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const = 0;
   void calculate();
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
+  virtual void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
   void apply();

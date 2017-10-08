@@ -33,7 +33,7 @@ public ActionWithValue,
 public ActionWithArguments {
 private:
   enum {t,f,ndata} normalization;
-  bool clearnextstep;
+  bool firststep, clearnextstep;
   unsigned clearstride;
   double lbound, pfactor;
 public:

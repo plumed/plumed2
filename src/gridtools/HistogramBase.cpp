@@ -102,7 +102,7 @@ void HistogramBase::calculate(){
   // Everything is done elsewhere
   if( actionInChain() ) return;
   // This is done if we are calculating a function of multiple cvs
-  plumed_dbg_assert( getFullNumberOfTasks()>0 ); runAllTasks(); 
+  runAllTasks(); 
 }
 
 void HistogramBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {

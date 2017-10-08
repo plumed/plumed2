@@ -99,6 +99,8 @@ public:
   Value();
 /// A constructor that is used throughout the code to setup the value poiters
   Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss=std::vector<unsigned>());
+/// Set the shape of the Value
+  void setShape( const std::vector<unsigned>&ss );
 /// Set the value of the function
   void set(double);
 /// Set the value of the stored data

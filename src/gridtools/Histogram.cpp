@@ -208,13 +208,17 @@ public:
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                               const std::map<std::string,std::string>& keys,
                               std::vector<std::vector<std::string> >& actions );
+  static void createAveragingObject( const std::string& lab,
+                                     const std::map<std::string,std::string>& keys,
+                                     std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit Histogram(const ActionOptions&ao);
   ~Histogram();
-  void prepare();
+  void setupNeighborsVector();
   void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin, 
                              std::vector<double>& spacing, std::vector<bool>& pbc ) const ;
+  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
   double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const ;
   void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const ;
@@ -222,11 +226,15 @@ public:
 
 PLUMED_REGISTER_ACTION(Histogram,"KDE")
 PLUMED_REGISTER_SHORTCUT(Histogram,"HISTOGRAM")
+PLUMED_REGISTER_SHORTCUT(Histogram,"MULTICOLVARDENS")
 
 void Histogram::shortcutKeywords( Keywords& keys ){
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
                                     "of 0 implies that all the data will be used and that the grid will never be cleared");
+  keys.add("optional","ATOMS","if you are calculating a atomic density you use this keyword to specify the atoms that are involved");
+  keys.add("optional","ORIGIN","we will use the position of this atom as the origin");
+  keys.add("optional","DIR","the direction in which to calculate the density profile");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
   keys.add("compulsory","NORMALIZATION","true","This controls how the data is normalized it can be set equal to true, false or ndata.  The differences between "
                                                "these options are explained in the manual page for \\ref HISTOGRAM");
@@ -234,25 +242,55 @@ void Histogram::shortcutKeywords( Keywords& keys ){
   keys.add("optional","UPDATE_UNTIL","Only update this action until this time");
 }
 
+void Histogram::createAveragingObject( const std::string& lab, 
+                                       const std::map<std::string,std::string>& keys,
+                                       std::vector<std::vector<std::string> >& actions ) {
+  std::vector<std::string> av_words; av_words.push_back( lab + ":");
+  av_words.push_back("AVERAGE"); av_words.push_back("ARG=" + lab + "_kde" );
+  av_words.push_back("STRIDE=" + keys.find("STRIDE")->second ); 
+  av_words.push_back("CLEAR=" + keys.find("CLEAR")->second );
+  av_words.push_back("NORMALIZATION=" + keys.find("NORMALIZATION")->second );
+  if( keys.count("LOGWEIGHTS") ) av_words.push_back("LOGWEIGHTS=" + keys.find("LOGWEIGHTS")->second );
+  if( keys.count("UPDATE_FROM") ) av_words.push_back("UPDATE_FROM=" + keys.find("UPDATE_FROM")->second );
+  if( keys.count("UPDATE_UNTIL") ) av_words.push_back("UPDATE_UNTIL=" + keys.find("UPDATE_UNTIL")->second ); 
+  actions.push_back( av_words );
+}
+
 void Histogram::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                               const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions ){
+                              std::vector<std::vector<std::string> >& actions ) {
   if( words[0]=="HISTOGRAM" ) {
       // Make the kde object
       std::vector<std::string> hist_words; hist_words.push_back( lab + "_kde:");
       hist_words.push_back("KDE"); for(unsigned i=1;i<words.size();++i) hist_words.push_back( words[i] );
       actions.push_back( hist_words );
       // And the averaging object
-      std::vector<std::string> av_words; av_words.push_back( lab + ":");
-      av_words.push_back("AVERAGE"); av_words.push_back("ARG=" + lab + "_kde" );
-      av_words.push_back("STRIDE=" + keys.find("STRIDE")->second ); 
-      av_words.push_back("CLEAR=" + keys.find("CLEAR")->second );
-      av_words.push_back("NORMALIZATION=" + keys.find("NORMALIZATION")->second );
-      if( keys.count("LOGWEIGHTS") ) av_words.push_back("LOGWEIGHTS=" + keys.find("LOGWEIGHTS")->second );
-      if( keys.count("UPDATE_FROM") ) av_words.push_back("UPDATE_FROM=" + keys.find("UPDATE_FROM")->second );
-      if( keys.count("UPDATE_UNTIL") ) av_words.push_back("UPDATE_UNTIL=" + keys.find("UPDATE_UNTIL")->second );
-      actions.push_back( av_words );
-  }
+      createAveragingObject( lab, keys, actions );
+  } else if( words[0]=="MULTICOLVARDENS" ) {
+      // Create distance action 
+      std::vector<std::string> dist_words; dist_words.push_back( lab + "_dist:" ); dist_words.push_back("DISTANCE");
+      if( keys.count("ATOMS") ) dist_words.push_back("ATOMS=" + keys.find("ATOMS")->second );
+      plumed_massert( keys.count("ORIGIN"), "you must specify the position of the origin" );
+      dist_words.push_back("ORIGIN=" + keys.find("ORIGIN")->second ); dist_words.push_back("COMPONENTS");
+      actions.push_back( dist_words );
+      // Make the kde object
+      std::vector<std::string> hist_words; hist_words.push_back( lab + "_kde:");
+      hist_words.push_back("KDE"); plumed_massert( keys.count("DIR"), "you must specify the direction");
+      std::string dir = keys.find("DIR")->second; 
+      if( dir=="x" ) { hist_words.push_back("ARG1=" + lab + "_dist.x" ); }
+      else if( dir=="y" ) { hist_words.push_back("ARG1=" + lab + "_dist.y" ); }
+      else if( dir=="z" ) { hist_words.push_back("ARG1=" + lab + "_dist.z" ); }
+      else if( dir=="xy" ) { hist_words.push_back("ARG1=" + lab + "_dist.x" ); hist_words.push_back("ARG2=" + lab + "_dist.y" ); }
+      else if( dir=="xz" ) { hist_words.push_back("ARG1=" + lab + "_dist.x" ); hist_words.push_back("ARG2=" + lab + "_dist.z" ); }
+      else if( dir=="yz" ) { hist_words.push_back("ARG1=" + lab + "_dist.y" ); hist_words.push_back("ARG2=" + lab + "_dist.z" ); }
+      else if( dir=="xyz" ) { 
+         hist_words.push_back("ARG1=" + lab + "_dist.x" ); hist_words.push_back("ARG2=" + lab + "_dist.y" ); hist_words.push_back("ARG3=" + lab + "_dist.z" ); 
+      } else plumed_merror("invalid dir specification");
+      for(unsigned i=1;i<words.size();++i) hist_words.push_back( words[i] );
+      actions.push_back( hist_words );
+      // Now make the averaging object
+      createAveragingObject( lab, keys, actions );
+  } 
 }
 
 void Histogram::registerKeywords( Keywords& keys ) {
@@ -277,7 +315,8 @@ Histogram::Histogram(const ActionOptions&ao):
 {
   parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
   for(unsigned i=0;i<gmin.size();++i) {
-      if( gmin[i]=="auto" ){ 
+      if( gmin[i]=="auto" ) {
+          log.printf("  for %dth coordinate min and max are set from cell directions \n", (i+1) );
           firststep=true;  // We need to do a preparation step to set the grid from the box size
           if( gmax[i]!="auto" ) error("if gmin is set from box vectors gmax must also be set in the same way");
           for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
@@ -291,6 +330,8 @@ Histogram::Histogram(const ActionOptions&ao):
                    error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
               }
           }
+      } else {
+          log.printf("  for %dth coordinate min is set to %s and max is set to %s \n", (i+1), gmin[i].c_str(), gmax[i].c_str() ); 
       }
   }
   if( firststep && gmin.size()>3 ) error("can only set GRID_MIN and GRID_MAX automatically if components of distance are used in input");
@@ -300,61 +341,72 @@ Histogram::Histogram(const ActionOptions&ao):
   if( nbin.size()!=(arg_ends.size()-1) && gspacing.size()!=(arg_ends.size()-1) ) error("GRID_BIN or GRID_SPACING must be set");
 
   // Create a value
-  std::vector<bool> ipbc( gmin.size() ); 
+  std::vector<bool> ipbc( arg_ends.size()-1 ); 
   for(unsigned i=0;i<arg_ends.size()-1;++i){
       if( getPntrToArgument( arg_ends[i] )->isPeriodic() || gmin[i]=="auto" ) ipbc[i]=true;
       else ipbc[i]=false;
   }
-  gridobject.setup( "flat", ipbc, 0, 0.0 ); 
+  gridobject.setup( "flat", ipbc, 0, 0.0 ); checkRead();
   
   // Setup the grid if we are not using automatic bounds
   if( !firststep ){
      gridobject.setBounds( gmin, gmax, nbin, gspacing ); 
      std::vector<unsigned> shape( gridobject.getNbin(true) ); 
-     addValueWithDerivatives( shape ); checkRead();
+     addValueWithDerivatives( shape ); setupNeighborsVector(); 
+  } else {
+     std::vector<unsigned> shape(1); shape[0]=1; addValueWithDerivatives( shape ); 
   }
-
-  // Now setup everything for the kernel
-  std::vector<double> point(gmin.size(), 0);
-  if( kerneltype!="DISCRETE" ) {
-      KernelFunctions kernel( point, bandwidth, kerneltype, false, 1.0, true ); 
-      nneigh=kernel.getSupport( gridobject.getGridSpacing() ); 
-      std::vector<double> support( kernel.getContinuousSupport() );
-      for(unsigned i=0; i<gmin.size(); ++i) {
-        double fmax, fmin; Tools::convert( gmin[i], fmin ); Tools::convert( gmax[i], fmax );
-        if( ipbc[i] && 2*support[i]>(fmax-fmin) ) error("bandwidth is too large for periodic grid");
-      }
-  } 
 }
 
 Histogram::~Histogram() {
   if( kernel ) delete kernel;
 }
 
-void Histogram::prepare() {
-  if( !firststep ) return ;
-
-  std::vector<std::string> bmin(arg_ends.size()-1), bmax(arg_ends.size()-1);
-  for(unsigned i=0;i<arg_ends.size()-1;++i) {
-      if( gmin[i]!="auto" ){ 
-          bmin[i]=gmin[i]; bmax[i]=gmax[i]; 
-      } else {
-          double lcoord, ucoord; Tensor box( plumed.getAtoms().getPbc().getBox() );
-          std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
-          std::string name = getPntrToArgument(i)->getName().substr(dot+1);
-          if( name=="x" ) { lcoord=-0.5*box(0,0); ucoord=0.5*box(0,0); }
-          else if( name=="y" ) { lcoord=-0.5*box(1,1); ucoord=0.5*box(1,1); }
-          else if( name=="z" ) { lcoord=-0.5*box(2,2); ucoord=0.5*box(2,2); }
-          else plumed_error();
-          // And convert to strings for bin and bmax
-          Tools::convert( lcoord, bmin[i] ); Tools::convert( ucoord, bmax[i] );
+void Histogram::setupNeighborsVector() {
+  std::vector<double> point(gmin.size(), 0);
+  if( kerneltype!="DISCRETE" ) {
+      KernelFunctions kernel( point, bandwidth, kerneltype, false, 1.0, true );
+      nneigh=kernel.getSupport( gridobject.getGridSpacing() );
+      std::vector<double> support( kernel.getContinuousSupport() );
+      for(unsigned i=0; i<gridobject.getDimension(); ++i) {
+        double fmax, fmin; Tools::convert( gridobject.getMin()[i], fmin ); Tools::convert( gridobject.getMax()[i], fmax );
+        if( gridobject.isPeriodic(i) && 2*support[i]>(fmax-fmin) ) error("bandwidth is too large for periodic grid");
       }
-  }  
-  // And setup the grid object
-  gridobject.setBounds( bmin, bmax, nbin, gspacing ); 
-  std::vector<unsigned> shape( gridobject.getNbin(true) ); 
-  addValueWithDerivatives( shape ); checkRead();
-  firststep=false;
+  }
+}
+
+void Histogram::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
+  if( firststep ) {
+      std::vector<std::string> bmin(arg_ends.size()-1), bmax(arg_ends.size()-1);
+      for(unsigned i=0;i<arg_ends.size()-1;++i) {
+          if( gmin[i]!="auto" ){ 
+              bmin[i]=gmin[i]; bmax[i]=gmax[i]; 
+          } else {
+              double lcoord, ucoord; Tensor box( plumed.getAtoms().getPbc().getBox() );
+              std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
+              std::string name = getPntrToArgument(i)->getName().substr(dot+1);
+              if( name=="x" ) { lcoord=-0.5*box(0,0); ucoord=0.5*box(0,0); }
+              else if( name=="y" ) { lcoord=-0.5*box(1,1); ucoord=0.5*box(1,1); }
+              else if( name=="z" ) { lcoord=-0.5*box(2,2); ucoord=0.5*box(2,2); }
+              else plumed_error();
+              // And convert to strings for bin and bmax
+              Tools::convert( lcoord, bmin[i] ); Tools::convert( ucoord, bmax[i] );
+          }
+      }  
+      // And setup the grid object
+      gridobject.setBounds( bmin, bmax, nbin, gspacing ); 
+      std::vector<unsigned> shape( gridobject.getNbin(true) ); 
+      getPntrToComponent(0)->setShape( shape ); 
+      // And create the tasks
+      if( one_kernel_at_a_time ) {
+          for(unsigned i=0;i<gridobject.getNumberOfPoints();++i) addTaskToList(i);
+      }
+      // And setup the neighbors 
+      setupNeighborsVector();
+      // And never do this again
+      firststep=false;
+  }
+  HistogramBase::buildCurrentTaskList( tflags );
 }
 
 void Histogram::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
