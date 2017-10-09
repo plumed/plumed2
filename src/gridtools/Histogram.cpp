@@ -216,7 +216,7 @@ public:
   ~Histogram();
   void setupNeighborsVector();
   void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
-                             std::vector<std::string>& max, std::vector<unsigned>& nbin, 
+                             std::vector<std::string>& max, std::vector<unsigned>& out_nbin, 
                              std::vector<double>& spacing, std::vector<bool>& pbc ) const ;
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
@@ -354,7 +354,8 @@ Histogram::Histogram(const ActionOptions&ao):
      std::vector<unsigned> shape( gridobject.getNbin(true) ); 
      addValueWithDerivatives( shape ); setupNeighborsVector(); 
   } else {
-     std::vector<unsigned> shape(1); shape[0]=1; addValueWithDerivatives( shape ); 
+     std::vector<unsigned> shape( arg_ends.size()-1, 1 ); 
+     addValueWithDerivatives( shape ); 
   }
 }
 
@@ -410,13 +411,14 @@ void Histogram::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
 }
 
 void Histogram::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
-                                      std::vector<std::string>& max, std::vector<unsigned>& nbin, 
+                                      std::vector<std::string>& max, std::vector<unsigned>& out_nbin, 
                                       std::vector<double>& spacing, std::vector<bool>& pbc ) const {
-  std::vector<unsigned> nn( gridobject.getNbin( false ) );
   for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) {
       argn[i] = getPntrToArgument( arg_ends[i] )->getName();
-      min[i]=gridobject.getMin()[i]; max[i]=gridobject.getMax()[i]; 
-      nbin[i]=nn[i]; spacing[i]=gridobject.getGridSpacing()[i];
+      if( gridobject.getMin().size()>0 ) min[i]=gridobject.getMin()[i]; 
+      if( gridobject.getMax().size()>0 ) max[i]=gridobject.getMax()[i]; 
+      if( nbin.size()>0 ) out_nbin[i]=nbin[i]; 
+      if( gspacing.size()>0 ) spacing[i]=gspacing[i]; 
       pbc[i]=gridobject.isPeriodic(i); 
   } 
 } 

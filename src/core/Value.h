@@ -282,8 +282,7 @@ void Value::clearInputForce() {
 
 inline
 void Value::clearDerivatives() {
-  value_set=false; 
-  std::fill(data.begin()+1, data.end(), 0);
+  value_set=false; if( data.size()>1 ) std::fill(data.begin()+1, data.end(), 0);
 }
 
 inline

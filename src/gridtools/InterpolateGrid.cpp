@@ -52,12 +52,22 @@ namespace PLMD {
 namespace gridtools {
 
 class InterpolateGrid : public ActionWithInputGrid {
+private:
+  std::vector<unsigned> nbin;
+  std::vector<double> gspacing;
+  GridCoordinatesObject gridcoords;
 public:
   static void registerKeywords( Keywords& keys );
   explicit InterpolateGrid(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const ;
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
-  bool isPeriodic() { return false; }
+  void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+                             std::vector<std::string>& max, std::vector<unsigned>& nbin,
+                             std::vector<double>& spacing, std::vector<bool>& pbc ) const ;
+  void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
+  void finishOutputSetup();
+  void buildCurrentTaskList( std::vector<unsigned>& tflags );
+  void performTask( const unsigned& current, MultiValue& myvals ) const ;
+  void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
+                               const unsigned& bufstart, std::vector<double>& buffer ) const ;
 };
 
 PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
@@ -66,45 +76,75 @@ void InterpolateGrid::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.remove("KERNEL"); keys.remove("BANDWIDTH");
 }
 
 InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   Action(ao),
   ActionWithInputGrid(ao)
 {
-  plumed_assert( ingrid->getNumberOfComponents()==1 );
-  if( ingrid->noDerivatives() ) error("cannot interpolate a grid that does not have derivatives");
-  // Create the input from the old string
-  createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString()  );
-
-  std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
-  std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
-  if( nbin.size()!=ingrid->getDimension() && gspacing.size()!=ingrid->getDimension() ) {
-    error("GRID_BIN or GRID_SPACING must be set");
+  parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing);
+  if( nbin.size()!=gridobject.getDimension() && gspacing.size()!=gridobject.getDimension() ) error("GRID_BIN or GRID_SPACING must be set");
+  if( nbin.size()==gridobject.getDimension() ) {
+      log.printf("  number of bins in grid %d", nbin[0]); 
+      for(unsigned i=1;i<nbin.size();++i) log.printf(", %d", nbin[i]);
+      log.printf("\n");
+  } else if( gspacing.size()==gridobject.getDimension() ) {
+      log.printf("  spacing for bins in grid %f", gspacing[0]); 
+      for(unsigned i=1;i<gspacing.size();++i) log.printf(", %d", gspacing[i]);
+      log.printf("\n");
   }
 
   // Need this for creation of tasks
-  mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), nbin, gspacing );
-  setAveragingAction( mygrid, true );
+  std::vector<bool> ipbc( gridobject.getDimension() ); for(unsigned i=0;i<ipbc.size();++i) ipbc[i] = gridobject.isPeriodic(i);
+  gridcoords.setup( "flat", ipbc, 0, 0.0 ); 
 
-  // Now create task list
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) addTaskToList(i);
-  // And activate all tasks
-  deactivateAllTasks();
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) taskFlags[i]=1;
-  lockContributors();
+  // Now add a value
+  std::vector<unsigned> shape( gridobject.getDimension() ); addValueWithDerivatives( shape ); 
+  if( getPntrToArgument(0)->isPeriodic() ) {
+      std::string min, max; getPntrToArgument(0)->getDomain( min, max ); setPeriodic( min, max );
+  } else {
+      setNotPeriodic();
+  } 
 }
 
-unsigned InterpolateGrid::getNumberOfQuantities() const {
-  return 2 + ingrid->getDimension();
+void InterpolateGrid::finishOutputSetup() {
+  gridcoords.setBounds( gridobject.getMin(), gridobject.getMax(), nbin, gspacing ); 
+  getPntrToOutput(0)->setShape( gridcoords.getNbin(true) );
+  for(unsigned i=0;i<gridcoords.getNumberOfPoints();++i) addTaskToList(i);
 }
 
-void InterpolateGrid::compute( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<double> pos( mygrid->getDimension() ); mygrid->getGridPointCoordinates( current, pos );
-  std::vector<double> der( mygrid->getDimension() ); double val = getFunctionValueAndDerivatives( pos, der );
-  myvals.setValue( 0, 1.0 ); myvals.setValue(1, val );
-  for(unsigned i=0; i<mygrid->getDimension(); ++i) myvals.setValue( 2+i, der[i] );
+void InterpolateGrid::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+                                            std::vector<std::string>& max, std::vector<unsigned>& nbin,
+                                            std::vector<double>& spacing, std::vector<bool>& pbc ) const {
+  std::vector<unsigned> nn( gridcoords.getNbin( false ) ); 
+  for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) {
+      argn[i] = getPntrToArgument( arg_ends[i] )->getName();
+      min[i]=gridcoords.getMin()[i]; max[i]=gridcoords.getMax()[i]; 
+      nbin[i]=nn[i]; spacing[i]=gridcoords.getGridSpacing()[i];
+      pbc[i]=gridcoords.isPeriodic(i);
+  }  
+}
+
+void InterpolateGrid::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
+  gridcoords.getGridPointCoordinates( ind, indices, coords );
+}
+
+void InterpolateGrid::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
+  tflags.assign(tflags.size(),1);
+}
+
+void InterpolateGrid::performTask( const unsigned& current, MultiValue& myvals ) const { 
+  std::vector<double> pos( gridcoords.getDimension() ); gridcoords.getGridPointCoordinates( current, pos );
+  std::vector<double> der( gridcoords.getDimension() ); double val = getFunctionValueAndDerivatives( pos, der );
+  unsigned ostrn = getPntrToOutput(0)->getPositionInStream(); myvals.setValue( ostrn, val );
+  for(unsigned i=0; i<gridcoords.getDimension(); ++i) { myvals.addDerivative( ostrn, i, der[i] ); myvals.updateIndex( ostrn, i ); }
+}
+
+void InterpolateGrid::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
+                                              const unsigned& bufstart, std::vector<double>& buffer ) const {
+  unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
+  unsigned istart = bufstart + (1+getNumberOfDerivatives())*code; buffer[istart] += myvals.get( ostrn );
+  for(unsigned i=0;i<gridcoords.getDimension();++i) buffer[istart+1+i] += myvals.getDerivative( ostrn, i ); 
 }
 
 }

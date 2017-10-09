@@ -432,4 +432,12 @@ void ActionWithArguments::setForcesOnArguments( const std::vector<double>& force
   }
 }
 
+bool ActionWithArguments::hasAverageAsArgument() const {
+  for(unsigned i=0;i<arguments.size();++i) {
+      Average* av = dynamic_cast<Average*>( arguments[i]->getPntrToAction() );
+      if( av ) return true;
+  }
+  return false;
+}
+
 }

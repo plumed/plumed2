@@ -79,7 +79,7 @@ void GridCoordinatesObject::setup( const std::string& geom, const std::vector<bo
 }
 
 void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
-                                       const std::vector<unsigned>& binsin, const std::vector<double>& spacing ) {
+                                       const std::vector<unsigned>& binsin, std::vector<double>& spacing ) {
   plumed_dbg_assert( smin.size()==dimension && smax.size()==dimension );
   plumed_assert( gtype==flat && (spacing.size()==dimension || binsin.size()==dimension) );
   str_min.resize( dimension ); str_max.resize( dimension ); nbin.resize( dimension ); 
@@ -102,6 +102,9 @@ void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, con
     if( !pbc[i] ) { max[i] +=dx[i]; nbin[i]+=1; }
     stride[i]=npoints;
     npoints*=nbin[i];
+  }
+  if( spacing.size()!=dimension ){ 
+      spacing.resize(dimension); for(unsigned i=0; i<dimension; ++i) spacing[i]=dx[i]; 
   }
 }
 

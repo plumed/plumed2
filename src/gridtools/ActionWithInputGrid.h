@@ -22,45 +22,48 @@
 #ifndef __PLUMED_gridtools_ActionWithInputGrid_h
 #define __PLUMED_gridtools_ActionWithInputGrid_h
 
-#include "core/ActionPilot.h"
-#include "ActionWithGrid.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
+#include "GridCoordinatesObject.h"
 
 namespace PLMD {
 namespace gridtools {
 
-class ActionWithInputGrid : public ActionWithGrid {
-  friend class DumpGrid;
+class ActionWithInputGrid : 
+public ActionWithValue,
+public ActionWithArguments {
 private:
-  unsigned mycomp;
+  bool firststep;
+  void doTheCalculation();
 protected:
-  GridVessel* ingrid;
+  GridCoordinatesObject gridobject;
   double getFunctionValue( const unsigned& ipoint ) const ;
   double getFunctionValue( const std::vector<unsigned>& ip ) const ;
   double getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputGrid(const ActionOptions&ao);
-  virtual void clearAverage();
-  virtual void prepareForAveraging();
-  virtual bool checkAllActive() const { return true; }
-  virtual void performOperations( const bool& from_update );
-  virtual void apply() {};
+  unsigned getNumberOfDerivatives() const ;
+  virtual void finishOutputSetup() = 0;
+  void calculate();
+  void apply() {};
+  void update();
+  void runFinalJobs();
 };
 
 inline
 double ActionWithInputGrid::getFunctionValue( const unsigned& ipoint ) const {
-  unsigned dim=ingrid->getDimension(); if( ingrid->noderiv ) dim=0;
-  return ingrid->getGridElement( ipoint, mycomp*(1+dim) );
+  return getPntrToArgument(0)->get( ipoint );
 }
 
 inline
 double ActionWithInputGrid::getFunctionValue( const std::vector<unsigned>& ip ) const {
-  return getFunctionValue( ingrid->getIndex(ip) );
+  return getPntrToArgument(0)->get( gridobject.getIndex(ip) );
 }
 
 inline
-double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const {
-  return ingrid->getValueAndDerivatives( x, mycomp, der );
+unsigned ActionWithInputGrid::getNumberOfDerivatives() const {
+  return getPntrToArgument(0)->getShape().size();
 }
 
 }

@@ -42,7 +42,6 @@ private:
   unsigned nderivatives;
   std::vector<double> forcesToApply;
   std::vector<unsigned> getShape();
-  bool hasAverageAsArgument() const ;
 protected:
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name );

@@ -68,7 +68,7 @@ public:
 /// Setup the grid
   void setup( const std::string& geom, const std::vector<bool>& ipbc, const unsigned& np, const double& fib_cutoff );
 /// Set the minimum and maximum of the grid
-  void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax, const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
+  void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax, const std::vector<unsigned>& nbins, std::vector<double>& spacing );
 /// Convert an index into indices
   void convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const ;
 /// Convert a point in space the the correspoinding grid point

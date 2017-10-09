@@ -153,14 +153,6 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
   }
 }
 
-bool Function::hasAverageAsArgument() const {
-  for(unsigned i=0;i<getNumberOfArguments();++i) {
-      Average* av = dynamic_cast<Average*>( getPntrToArgument(i)->getPntrToAction() );
-      if( av ) return true;
-  }
-  return false;
-}
-
 void Function::calculate(){
   // Everything is done elsewhere
   if( hasAverageAsArgument() && actionInChain() ) return;
