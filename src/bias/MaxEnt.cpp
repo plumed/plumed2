@@ -159,7 +159,7 @@ class MaxEnt : public Bias {
   std::vector<bool> done_average;
   int myrep,nrep;
 public:
-  MaxEnt(const ActionOptions&);
+  explicit MaxEnt(const ActionOptions&);
   ~MaxEnt();
   void calculate();
   void update();

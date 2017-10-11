@@ -30,6 +30,7 @@
 #include "AtomValuePack.h"
 #include <vector>
 #include <string>
+#include <limits>
 
 using namespace std;
 
@@ -765,7 +766,7 @@ void MultiColvarBase::calculate() {
   if( !usespecies && ablocks.size()>1 ) {
     // This loop finds the first active atom, which is always checked because
     // of a peculiarity in linkcells
-    unsigned first_active;
+    unsigned first_active=std::numeric_limits<unsigned>::max();
     for(unsigned i=0; i<ablocks[0].size(); ++i) {
       if( !isCurrentlyActive( ablocks[1][i] ) ) continue;
       else {
