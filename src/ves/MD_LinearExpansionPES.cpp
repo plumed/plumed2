@@ -287,13 +287,11 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   //
   parse("dimension",dim);
 
-  bool plumedon=false;
   std::vector<std::string> plumed_inputfiles;
   parseVector("plumed_input",plumed_inputfiles);
   if(plumed_inputfiles.size()!=1 && plumed_inputfiles.size()!=replicas) {
     error("in plumed_input you should either give one file or separate files for each replica.");
   }
-  plumedon=true;
 
   std::vector<Vector> initPos(replicas);
   std::vector<double> initPosTmp;
@@ -319,7 +317,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
 
   plumed_bf = new PLMD::PlumedMain;
   unsigned int nn=1;
-  FILE* file_dummy = fopen("tmp.log","w+");
+  FILE* file_dummy = fopen("/dev/null/","w+");
   plumed_bf->cmd("setNatoms",&nn);
   plumed_bf->cmd("setLog",file_dummy);
   plumed_bf->cmd("init",&nn);
@@ -381,9 +379,9 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   }
   coeffs_pntr->readFromFile(input_coeffs_fname,true,true);
   std::vector<double> coeffs_prefactors(0);
-  double coeffs_prefactor = 1.0;
   parseVector("coeffs_prefactor",coeffs_prefactors);
   if(coeffs_prefactors.size()>0) {
+    double coeffs_prefactor = 1.0;
     if(coeffs_prefactors.size()==1) {
       coeffs_prefactor = coeffs_prefactors[0];
     }
@@ -484,7 +482,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   }
 
 
-  if(plumedon) plumed=new PLMD::PlumedMain;
+  plumed=new PLMD::PlumedMain;
 
 
 
