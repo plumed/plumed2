@@ -1,4 +1,4 @@
-\page VES VES code
+\page VES Variationally Enhanced Sampling (VES code) 
 
 <!-- 
 description: Module that implements enhanced sampling methods based on Variationally Enhanced Sampling
@@ -11,106 +11,25 @@ based on _Variationally Enhanced Sampling_ (VES) \cite Valsson-PRL-2014.
 The VES code is developed by [Omar Valsson](http://www.valsson.info), 
 see the [homepage of the VES code](http://www.ves-code.org) for further information.
 
-The theory of VES is briefly explained \subpage ves_theory "here".
-
 The VES code is an optional module that needes to be enabled when configuring the
 compilation of PLUMED by using the '\-\-enable-modules=ves' 
 (or '\-\-enable-modules=all') flag when running the 'configure' script. 
 
+In the \ref ves_tutorials "tutorials" you can learn how to use the methods 
+implemented in the VES code.
+
 The various components of the VES code module are listed and described in the following sections 
 
-- \subpage ves_tutorials
 - \subpage ves_biases
 - \subpage ves_basisf
 - \subpage ves_targetdist
 - \subpage ves_optimizer
 - \subpage ves_utils
 - \subpage ves_cltools
+- \subpage ves_tutorials
 
 
-\page ves_theory Theory of VES
-
-
-\par Variational Principle
-
-In Variationally Enhanced Sampling \cite Valsson-PRL-2014 an external biasing potential \f$V(\mathbf{s})\f$ that acts in the space spanned by some set of collective variables (CVs) \f$\mathbf{s}=(s_1,s_2,\ldots,s_d)\f$ is constructed by minimizing the following convex functional
-\f[
-\Omega[V] = \frac{1}{\beta} \log
-\frac{\int d\mathbf{s} \, e^{-\beta [F(\mathbf{s}+V(\mathbf{s}))]}}
-{\int d\mathbf{s} \, e^{-\beta F(\mathbf{s})}}
-+ \int d\mathbf{s} \, p(\mathbf{s}) V(\mathbf{s}),
-\f]
-where \f$F(\mathbf{s})\f$ is the free energy surface (FES) associated to the CVs at temperature \f$T\f$
-(and \f$ \beta^{-1}=k_{\mathrm{B}}T \f$) and \f$p(\mathbf{s})\f$ is a so-called target distribution that is assumed to be normalized. It can be shown that the minimum of \f$\Omega[V]\f$ is given by
-\f[
-V(\mathbf{s}) = - F(\mathbf{s}) - \frac{1}{\beta} \log p(\mathbf{s}).
-\f]
-Under the influence of this minimum bias potential the biased equilibrium CV distribution \f$P_{V}(\mathbf{s})\f$ is equal to the target distribution \f$p(\mathbf{s})\f$,
-\f[
-P_{V}(\mathbf{s}) =
-\frac{e^{-\beta\left[F(\mathbf{s})+V(\mathbf{s})\right]}}
-{\int d\mathbf{s}\, e^{-\beta\left[F(\mathbf{s})+V(\mathbf{s})\right]}}
-= p(\mathbf{s}).
-\f]
-The role of the target distribution \f$p(\mathbf{s})\f$ is therefore to determine
-the sampling of the CVs that is achieved when minimizing \f$\Omega[V]\f$.
-
-\par Minimization
-
-The minimization is performed by assuming some given functional form for the bias potential \f$V(\mathbf{s};\boldsymbol{\alpha})\f$ that depends on some set of variational parameters \f$\boldsymbol{\alpha}=(\alpha_{1},\alpha_{2},\ldots,\alpha_{n})\f$. The convex function \f$\Omega(\boldsymbol{\alpha})=\Omega[V(\boldsymbol{\alpha})]\f$ is then minimized through
-a gradient-based optimization technique.
-The elements of the gradient \f$\nabla\Omega(\boldsymbol{\alpha})\f$ are defined as
-\f[
-\frac{\partial \Omega(\boldsymbol{\alpha})}{\partial \alpha_{i}} =
--<\frac{\partial V(\mathbf{s};\boldsymbol{\alpha})}{\partial \alpha_{i}}>_{V\boldsymbol{\alpha})}
-+<\frac{\partial V(\mathbf{s};\boldsymbol{\alpha})}{\partial \alpha_{i}}>_{p},
-\f]
-where the first term is an average obtained in the biased simulation under the influence of the bias \f$V(\mathbf{s};\boldsymbol{\alpha})\f$ and the second term is an average over the target distribution \f$p(\mathbf{s})\f$.
-Similarly the elements of the Hessian \f$H(\boldsymbol{\alpha})\f$ are defined as
-\f[
-\frac{\partial^2 \Omega(\boldsymbol{\alpha})}{\partial \alpha_{i} \partial \alpha_{j}} =
--<\frac{\partial^2 V(\mathbf{s};\boldsymbol{\alpha})}{\partial \alpha_{i} \partial \alpha_{j}}>_{V(\boldsymbol{\alpha})}
-+<\frac{\partial^2 V(\mathbf{s};\boldsymbol{\alpha})}{\partial \alpha_{i} \partial \alpha_{j}}>_{p}
-+ \, \beta \, \mathrm{Cov}\left[
-\frac{\partial V(\mathbf{s};\boldsymbol{\alpha})}{\partial \alpha_{i}},
-\frac{\partial V(\mathbf{s};\boldsymbol{\alpha})}{\partial \alpha_{j}}
-\right]_{V\boldsymbol{\alpha})}
-\f]
-where the covariance
-\f$\mathrm{Cov} \left[a,b\right]_{V(\boldsymbol{\alpha})}=<a\,b>_{V(\boldsymbol{\alpha})} -
-<a>_{V(\boldsymbol{\alpha})} <b>_{V(\boldsymbol{\alpha})} \f$
-is obtained in a biased simulation under the influence of the bias \f$V(\mathbf{s};\boldsymbol{\alpha})\f$.
-
-The gradient (and the Hessian) are inherently noisy as they need to be sampled in a biased simulation.
-Therefore it is generally better to employ stochastic optimization
-methods to perform the minimization of \f$\Omega(\boldsymbol{\alpha})\f$.
-
-\par Linear Expansion
-
-Most general, and normally most convenient, is to consider a linear expansion in some set of basis functions,
-\f[
-V(\mathbf{s};\boldsymbol{\alpha})=\sum_{\mathbf{k}} f_{\mathbf{k}}(\mathbf{s}),
-\f]
-where the basis functions \f$f_{\mathbf{k}}(\mathbf{s})\f$ are for example Fourier series (i.e. plane waves), or a product of some orthogonal polynomials like Legendre or Chebyshev. For such a linear expansion the gradients simplifies to being averages of the basis functions,
-\f[
-\frac{\partial \Omega(\boldsymbol{\alpha})}{\partial \alpha_{\mathbf{k}}} =
--<f_{\mathbf{k}}(\mathbf{s})>_{V\boldsymbol{\alpha})}
-+<f_{\mathbf{k}}(\mathbf{s})>_{p},
-\f]
-while the Hessian is just the covariance of the basis functions,
-\f[
-\frac{\partial^2 \Omega(\boldsymbol{\alpha})}{\partial \alpha_{\mathbf{k}} \partial \alpha_{\mathbf{l}}} =
- \beta \, \mathrm{Cov}\left[
-f_{\mathbf{k}}(\mathbf{s}),
-f_{\mathbf{l}}(\mathbf{s})
-\right]_{V(\boldsymbol{\alpha})}.
-\f]
-
-
-
-
-
-\page ves_biases Bias
+\page ves_biases Biases
 
 The following list contains the biases available in the VES code.
 
