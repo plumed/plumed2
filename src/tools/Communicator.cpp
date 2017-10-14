@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -131,8 +131,6 @@ void Communicator::Abort(int errorcode) {
 #endif
 }
 
-// data should be passed by value to allow conversions
-// cppcheck-suppress passedByValue
 void Communicator::Bcast(Data data,int root) {
 #if defined(__PLUMED_HAS_MPI)
   if(initialized()) MPI_Bcast(data.pointer,data.size,data.type,root,communicator);
@@ -142,8 +140,6 @@ void Communicator::Bcast(Data data,int root) {
 #endif
 }
 
-// data should be passed by value to allow conversions
-// cppcheck-suppress passedByValue
 void Communicator::Sum(Data data) {
 #if defined(__PLUMED_HAS_MPI)
   if(initialized()) MPI_Allreduce(MPI_IN_PLACE,data.pointer,data.size,data.type,MPI_SUM,communicator);
@@ -152,8 +148,6 @@ void Communicator::Sum(Data data) {
 #endif
 }
 
-// data should be passed by value to allow conversions
-// cppcheck-suppress passedByValue
 Communicator::Request Communicator::Isend(ConstData data,int source,int tag) {
   Request req;
 #ifdef __PLUMED_HAS_MPI
@@ -169,8 +163,6 @@ Communicator::Request Communicator::Isend(ConstData data,int source,int tag) {
   return req;
 }
 
-// data should be passed by value to allow conversions
-// cppcheck-suppress passedByValue
 void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const int*displs) {
 #if defined(__PLUMED_HAS_MPI)
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
@@ -189,8 +181,6 @@ void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const i
 #endif
 }
 
-// data should be passed by value to allow conversions
-// cppcheck-suppress passedByValue
 void Communicator::Allgather(ConstData in,Data out) {
 #if defined(__PLUMED_HAS_MPI)
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
@@ -205,8 +195,6 @@ void Communicator::Allgather(ConstData in,Data out) {
 #endif
 }
 
-// data should be passed by value to allow conversions
-// cppcheck-suppress passedByValue
 void Communicator::Recv(Data data,int source,int tag,Status&status) {
 #ifdef __PLUMED_HAS_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");

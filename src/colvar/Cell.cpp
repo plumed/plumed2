@@ -35,6 +35,7 @@ namespace colvar {
 Calculate the components of the simulation cell
 
 \par Examples
+
 The following input tells plumed to print the squared modulo of each of the three lattice vectors
 \plumedfile
 cell: CELL

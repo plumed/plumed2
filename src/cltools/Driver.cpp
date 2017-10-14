@@ -236,6 +236,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("optional","--mc","provides a file with masses and charges as produced with DUMPMASSCHARGE");
   keys.add("optional","--box","comma-separated box dimensions (3 for orthorombic, 9 for generic)");
   keys.add("optional","--natoms","provides number of atoms - only used if file format does not contain number of atoms");
+  keys.add("optional","--initial-step","provides a number for the initial step, default is 0");
   keys.add("optional","--debug-forces","output a file containing the forces due to the bias evaluated using numerical derivatives "
            "and using the analytical derivatives implemented in plumed");
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
@@ -457,7 +458,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
   }
 
-  if( debug_dd && debug_pd ) error("cannot use debug-dd and debug-pd at the same time");
+
+  if(debug_dd && debug_pd) error("cannot use debug-dd and debug-pd at the same time");
   if(debug_pd || debug_dd) {
     if( !Communicator::initialized() ) error("needs mpi for debug-pd");
   }
@@ -467,6 +469,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   p.cmd("setRealPrecision",&rr);
   int checknatoms=-1;
   long int step=0;
+  parse("--initial-step",step);
+
   if(Communicator::initialized()) {
     if(multi) {
       if(intracomm.Get_rank()==0) p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
@@ -687,7 +691,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           }
         }
         if(intracomm.Get_rank()==0) {
-          fprintf(out,"\nDRIVER: Reassigning particle decomposition\n");
+          fprintf(out,"\nDRIVER: Reassigning domain decomposition\n");
         }
         p.cmd("setAtomsNlocal",&dd_nlocal);
         p.cmd("setAtomsGatindex",&dd_gatindex[0]);
@@ -737,7 +741,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         matrix box;
         rvec* pos=new rvec[natoms];
         float prec,lambda;
-        int ret;
+        int ret=exdrOK;
         if(trajectory_fmt=="xdr-xtc") ret=read_xtc(xd,natoms,&localstep,&time,box,pos,&prec);
         if(trajectory_fmt=="xdr-trr") ret=read_trr(xd,natoms,&localstep,&time,&lambda,box,pos,NULL,NULL);
         if(stride==0) step=localstep;
@@ -837,10 +841,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         p.cmd("setMasses",&dd_masses[0]);
         p.cmd("setCharges",&dd_charges[0]);
       } else {
-        p.cmd("setForces",&forces[3*pd_start]);
-        p.cmd("setPositions",&coordinates[3*pd_start]);
-        p.cmd("setMasses",&masses[pd_start]);
-        p.cmd("setCharges",&charges[pd_start]);
+// this is required to avoid troubles when the last domain
+// contains zero atoms
+// Basically, for empty domains we pass null pointers
+#define fix_pd(xx) (pd_nlocal!=0?&xx:NULL)
+        p.cmd("setForces",fix_pd(forces[3*pd_start]));
+        p.cmd("setPositions",fix_pd(coordinates[3*pd_start]));
+        p.cmd("setMasses",fix_pd(masses[pd_start]));
+        p.cmd("setCharges",fix_pd(charges[pd_start]));
       }
       p.cmd("setBox",&cell[0]);
       p.cmd("setVirial",&virial[0]);

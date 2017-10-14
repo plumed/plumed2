@@ -20,14 +20,14 @@ confirm () {
 update_changelog() {
   echo $1 $2 $3
   awk -v version="$2" -v shortversion="$3" -v date="$4" '{
-    if(version == shortversion ".0" && $1=="Version" && $2==shortversion){
-      print "Version " shortversion " (" date ")"
+    if(version == shortversion ".0" && $1=="##" && $2=="Version" && $3==shortversion){
+      print "## Version " shortversion " (" date ")"
       done=1
-    } else if($1=="Version" && $2==version){
-      print "Version " version " (" date ")"
+    } else if($1=="##" && $2=="Version" && $3==version){
+      print "## Version " version " (" date ")"
       done=1
-    } else if(!done && $1=="Unreleased" && $2=="changes"){
-      print "Version " version " (" date ")"
+    } else if(!done && $1=="##" && $2=="Unreleased" && $3=="changes"){
+      print "## Version " version " (" date ")"
     } else print
   }' $1 > $1.tmp
   mv $1.tmp $1
@@ -111,22 +111,21 @@ git checkout v$shortversion
 
 set -e
 if ! test "$VALIDATED" ; then
-  update_changelog CHANGES/v$shortversion.txt $version $shortversion "coming soon"
+  update_changelog CHANGES/v$shortversion.md $version $shortversion "coming soon"
   echo 
   msg="Travis tests for v$version
-
-[makedoc]"
+"
   echo "Now I will add an empty commit and push the result to origin"
   echo "I will use the following commands:"
   echo "***"
-  echo "git add CHANGES/v$shortversion.txt"
+  echo "git add CHANGES/v$shortversion.md"
   echo "git commit --allow-empty -m \"$msg\""
   echo "git push origin v$shortversion"
   echo "***"
   confirm || exit
-  git add CHANGES/v$shortversion.txt
+  git add CHANGES/v$shortversion.md
   git commit --allow-empty -m "$msg"
-  git push origin v$shortversion
+  git push -f origin v$shortversion:test-v$shortversion
   echo
   echo "Now you should go at this link:"
   echo "  http://travis-ci.org/plumed/plumed2/builds"
@@ -136,7 +135,7 @@ if ! test "$VALIDATED" ; then
   echo "  http://plumed.github.io/doc-v$shortversion"
   echo "In case of success, relaunch this script as \"./release.sh --validated\""
 else
-  update_changelog CHANGES/v$shortversion.txt $version $shortversion "$(date '+%b %e, %Y' | sed 's/  / /g')"
+  update_changelog CHANGES/v$shortversion.md $version $shortversion "$(date '+%b %e, %Y' | sed 's/  / /g')"
   {
     grep  \# VERSION 
     echo $version
@@ -147,13 +146,12 @@ else
   cat VERSION
   echo "***"
   msg="Release v$version
-
-[makedoc]"
+"
   echo "Now I will add it, prepare a release commit, add a tag named v$version"
   echo "push it to origin and create a tgz file"
   echo "I will use the following commands:"
   echo "***"
-  echo "git add CHANGES/v$shortversion.txt"
+  echo "git add CHANGES/v$shortversion.md"
   echo "git add VERSION"
   echo "git commit --allow-empty -m \"$msg\""
   echo "git tag v$version"
@@ -161,7 +159,7 @@ else
   echo "git archive -o plumed-$version.tgz --prefix plumed-$version/ v$version"
   echo "***"
   confirm || exit
-  git add CHANGES/v$shortversion.txt
+  git add CHANGES/v$shortversion.md
   git add VERSION
   git commit --allow-empty -m "$msg"
   git tag v$version

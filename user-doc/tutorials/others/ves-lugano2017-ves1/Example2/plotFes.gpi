@@ -1,0 +1,21 @@
+# Terminal settings
+#set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+#set output "plotFES.png"
+#set border lw 1.5
+
+# Set axes labels
+set xlabel "Distance (nm)"
+set ylabel "Free energy (kT)"
+
+# Set range
+set xr [0.2:0.7]
+set yr [0:7]
+
+# Define colors
+set style line 1 lt 1 lw 4 ps 1 pt 5 lc rgb "#e41a1c"
+
+set key bottom left sample 1.
+
+pl "./fes.b1.iter-10000.data" u 1:($2/2.5) w l ls 1 notitle
+
+pause -1

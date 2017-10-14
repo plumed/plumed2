@@ -23,6 +23,9 @@
 #include "OpenMP.h"
 #include "Tools.h"
 #include <cstdlib>
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
 
 namespace PLMD {
 
@@ -37,6 +40,15 @@ unsigned OpenMP::getNumThreads() {
   if(std::getenv("PLUMED_NUM_THREADS")) Tools::convert(std::getenv("PLUMED_NUM_THREADS"),numThreads);
   return numThreads;
 }
+
+unsigned OpenMP::getThreadNum() {
+#if defined(_OPENMP)
+  return omp_get_thread_num();
+#else
+  return 0;
+#endif
+}
+
 
 
 }

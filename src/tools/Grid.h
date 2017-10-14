@@ -127,6 +127,8 @@ public:
   unsigned getDimension() const;
 /// get argument names  of this grid
   std::vector<std::string> getArgNames() const;
+/// get if the grid has derivatives
+  bool hasDerivatives() const {return usederiv_;}
 
 /// methods to handle grid indices
   std::vector<unsigned> getIndices(index_t index) const;
@@ -213,6 +215,8 @@ public:
   void projectOnLowDimension(double &val, std::vector<int> &varHigh, WeightBase* ptr2obj );
 /// set output format
   void setOutputFmt(const std::string & ss) {fmt_=ss;}
+/// reset output format to the default %14.9f format
+  void resetToDefaultOutputFmt() {fmt_="%14.9f";}
 /// Integrate the function calculated on the grid
   double integrate( std::vector<unsigned>& npoints );
 ///

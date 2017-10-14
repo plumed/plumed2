@@ -12,12 +12,15 @@
 !/config
 !/core
 !/crystallization
+!/drr
 !/eds
 !/function
 !/generic
 !/gridtools
 !/imd
+!/isdb
 !/lapack
+!/lepton
 !/lib
 !/main
 !/maketools
@@ -30,6 +33,7 @@
 !/setup
 !/tools
 !/vatom
+!/ves
 !/vesselbase
 !/wrapper
 !/header.sh

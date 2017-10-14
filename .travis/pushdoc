@@ -3,16 +3,22 @@
 set -e
 set -x
 
-if [[ "$TRAVIS_BRANCH" =~ ^v2\.[0-9]+$ ]] ; then
-# TODO: this should be made automatic by reading the CHANGES/*.txt files:
-  if [ "$TRAVIS_BRANCH" = v2.0 ] || [ "$TRAVIS_BRANCH" = v2.1 ] || [ "$TRAVIS_BRANCH" = v2.2 ] ; then
-    branchtype=unsupported
+GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
+GIT_REPO=$(   echo $TRAVIS_REPO_SLUG | sed "s/^.*\///" )
+
+if [ "$GIT_OWNER" = plumed ] ; then
+  if [[ "$TRAVIS_BRANCH" =~ ^v2\.[0-9]+$ ]] ; then
+    if test -f CHANGES/"$TRAVIS_BRANCH".md && grep -q plumednotmaintained CHANGES/"$TRAVIS_BRANCH".md ; then
+      branchtype=unsupported
+    else
+      branchtype=official
+    fi
+  elif [ "$TRAVIS_BRANCH" = master ] ; then
+    branchtype=master
   else
-    branchtype=official
+    branchtype=unofficial
   fi
-elif [ "$TRAVIS_BRANCH" = master ] ; then
-  branchtype=master
-else
+else 
   branchtype=unofficial
 fi
 
@@ -47,34 +53,44 @@ This is an auto redirect page.
 </html>
 EOF
 
+if test -z "${GIT_BOT}"
+then
+  export GIT_BOT=plumedbot
+fi
+
+if test -z "${GIT_BOT_EMAIL}"
+then
+  export GIT_BOT_EMAIL=giovanni.bussi+plumedbot@gmail.com
+fi
+
 git init
-git config user.email "giovanni.bussi+plumedbot@gmail.com"
-git config user.name "plumedbot"
+git config user.email "${GIT_BOT_EMAIL}"
+git config user.name "${GIT_BOT}"
 git checkout -b gh-pages
 # this is not to show the GIT_TOKEN on Travis log
 set +x
-git remote add doc https://plumedbot:$GIT_TOKEN@github.com/plumed/doc-${TRAVIS_BRANCH}.git
+git remote add doc https://${GIT_BOT}:$GIT_TOKEN@github.com/$GIT_OWNER/doc-${TRAVIS_BRANCH}.git
 set -x
 cat > README.md << EOF
 Precompiled manual for PLUMED ${TRAVIS_BRANCH}
 -----------------------------
 
 This repository hosts a precompiled manual for [PLUMED](http://www.plumed.org) ${TRAVIS_BRANCH},
-git revision [$hash](https://github.com/plumed/plumed2/commit/$hash).
+git revision [$hash](https://github.com/${GIT_OWNER}/${GIT_REPO}/commit/$hash).
 
-This manual has been compiled on [travis](http://travis-ci.org/plumed/plumed2) on $(date).
+This manual has been compiled on [travis](http://travis-ci.org/${GIT_OWNER}/${GIT_REPO}) on $(date).
 
-To browse the manual you should go [here](http://plumed.github.io/doc-${TRAVIS_BRANCH}).
+To browse the manual you should go [here](http://${GIT_OWNER}.github.io/doc-${TRAVIS_BRANCH}).
 
 You can also download a full copy of the manual for offline access
-at [this link](http://github.com/plumed/doc-${TRAVIS_BRANCH}/archive/gh-pages.zip).
+at [this link](http://github.com/${GIT_OWNER}/doc-${TRAVIS_BRANCH}/archive/gh-pages.zip).
 
 EOF
 
 case "$branchtype" in
 (official)    echo "This is the manual for an official and supported PLUMED branch." >> README.md ;;
 (unsupported) echo "This is the manual for an official but unsupported PLUMED branch. It will not appear on search engines." >> README.md ;;
-(master)      echo "This is the manual for an the development PLUMED branch." >> README.md ;;
+(master)      echo "This is the manual for the development PLUMED branch." >> README.md ;;
 (unofficial)  echo "This is the manual for an unofficial PLUMED branch. It will not appear on search engines." >> README.md ;;
 esac
 
@@ -99,6 +115,7 @@ set -x
 esac
 
 git add --all .
-git commit -m "Update to plumed/plumed2@$hash"
+# >/dev/null to avoid excessive noise on travis log
+git commit -m "Update to ${GIT_OWNER}/${GIT_REPO}@$hash" >/dev/null
 # -q and 2> is not to show the GIT_TOKEN on Travis log
 git push -q -f doc gh-pages 2> /dev/null 

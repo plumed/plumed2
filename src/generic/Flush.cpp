@@ -40,6 +40,7 @@ storing data for printing in the buffers. Notice that wherever it is written in 
 plumed input file, it will flush all the open files.
 
 \par Examples
+
 A command like this in the input will instruct plumed to flush all the output files every 100 steps
 \plumedfile
 d1: DISTANCE ATOMS=1,10

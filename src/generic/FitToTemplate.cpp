@@ -214,7 +214,11 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
 
 
   // normalize weights
-  double n=0.0; for(unsigned i=0; i<weights.size(); ++i) n+=weights[i]; n=1.0/n;
+  double n=0.0; for(unsigned i=0; i<weights.size(); ++i) n+=weights[i];
+  if(n==0.0) {
+    error("PDB file " + reference + " has zero weights. Please check the occupancy column.");
+  }
+  n=1.0/n;
   for(unsigned i=0; i<weights.size(); ++i) weights[i]*=n;
 
   // normalize weights for rmsd calculation

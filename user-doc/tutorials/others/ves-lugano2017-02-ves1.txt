@@ -1,0 +1,499 @@
+/**
+\page ves-lugano2017-ves1 MARVEL-VES tutorial (Lugano Feb 2017): VES 1
+
+\section ves-lugano2017-ves1-lo Learning Outcomes
+
+Once this tutorial is completed students will learn to:
+
+- Use different target distributions and choose the most appropriate for their
+  problem.
+- Use different basis sets and order of the expansions. Select the appropriate
+  order for their problem.
+- Use the optimization algorithm and choose the parameters.
+- Construct biases in 1 dimension.
+- Assess the convergence of the simulation.
+- Obtain biased and unbiased histograms.
+
+\section ves-lugano2017-ves1-resources Resources
+
+The <a href="tutorial-resources/ves-lugano2017-ves1.tar.gz"
+download="ves-lugano2017-ves1.tar.gz"> tarball </a> for this project contains
+the following folders:
+
+- Example1 : Contains the input file for the first example.
+- Example2 : Contains the input file for the second example.
+
+\section ves-lugano2017-ves1-summary Summary of theory
+
+Variationally enhanced sampling \cite Valsson-PRL-2014 is based on the the following functional of
+the bias potential:
+\f[
+\Omega [V]  =
+\frac{1}{\beta} \log
+\frac
+{\int d\mathbf{s} \, e^{-\beta \left[ F(\mathbf{s}) + V(\mathbf{s})\right]}}
+{\int d\mathbf{s} \, e^{-\beta F(\mathbf{s})}}
++
+\int d\mathbf{s} \, p(\mathbf{s}) V(\mathbf{s}),
+\f]
+where \f$\mathbf{s}\f$ are the CVs to be biased,
+\f$ p(\mathbf{s}) \f$ is a predefined probability distribution that we will refer
+to as the target distribution, and \f$ F(\mathbf{s}) \f$ is the free energy
+surface. This functional can be shown to be convex and to have a minimum at:
+\f[
+V(\mathbf{s}) = -F(\mathbf{s})-{\frac {1}{\beta}} \log {p(\mathbf{s})}.
+\f]
+The last equation states that once that the functional \f$ \Omega [V] \f$ is
+minimized, the bias and the target distribution allow calculating the free
+energy. The target distribution \f$ p(\mathbf{s}) \f$ can be chosen at will and it is
+the distribution of the CVs once that \f$ \Omega [V] \f$ has been minimized.
+
+The variational principle is put to practice by expanding \f$ V(\mathbf{s}) \f$
+in some basis set:
+\f[
+V(\mathbf{s}) = \sum\limits_{i} \alpha_i \, f_i(\mathbf{s}),
+\f]
+where \f$ f_i(\mathbf{s}) \f$ are the basis functions and the \f$
+\boldsymbol\alpha \f$ are the coefficients in the expansion.
+We then need to find the \f$ \boldsymbol\alpha \f$ that minimize \f$ \Omega
+[V] \f$. In principle one could use any optimization algorithm. In practice
+the algorithm that has become the default choice for VES is the so-called
+averaged stochastic gradient descent algorithm \cite Bach-NIPS-2013.
+In this algorithm the \f$ \boldsymbol\alpha \f$ are evolved iteratively
+according to:
+\f[
+\boldsymbol\alpha^{(n+1)} = \boldsymbol\alpha^{(n)}-\mu
+ \left[
+\nabla\Omega(\bar{\boldsymbol\alpha}^{(n)})+
+H(\bar{\boldsymbol\alpha}^{(n)})[\boldsymbol\alpha^{(n)}-\bar{\boldsymbol\alpha}^{(n)}]
+\right]
+\f]
+where \f$\mu\f$ is the step size,
+\f$ \bar{\boldsymbol\alpha}^{(n)} \f$ is the running average of \f$
+\boldsymbol\alpha^{(n)} \f$ at iteration \f$ n \f$, and
+\f$ \nabla\Omega(\bar{\boldsymbol\alpha}^{(n)}) \f$ and
+\f$ H(\bar{\boldsymbol\alpha}^{(n)}) \f$
+ are the gradient and Hessian of \f$ \Omega[V] \f$ evaluated at the running
+average at iteration \f$ n \f$, respectively.
+The behavior of the coefficients will become clear in the examples below.
+
+
+
+\section ves-lugano2017-ves1-instructions Instructions
+
+\subsection ves-lugano2017-ves1-subsection-1 The system
+
+We will consider the same system employed for the metadynamics tutorial.
+
+\subsection ves-lugano2017-ves1-subsection-2 Example 1: First VES simulation
+
+For the first VES simulation we will revisit the problem of the ion pair
+dissociation but replacing the metadynamics bias with a VES bias. The bias
+potential will be constructed on the distance Na-Cl as done before. We will
+still use the upper wall used in the metadynamics tutorial to make the actual
+example as similar as possible to the previous one. We will then see that VES
+has a more natural way to deal with barriers. All files needed for this
+example can be found in the Example1 folder.
+
+Every VES simulation has three key ingredients:
+
+- Basis set
+- Target distribution
+- Optimization algorithm
+
+For the basis set we will choose Legendre polynomials defined in the interval
+[0.23,0.7] nm. Legendre polynomials are a good choice for non-periodic CVs.
+A rule of thumb for choosing the order of the expansion is that an expansion
+of order N can capture features of the FES of approximately L/N where L is the
+length of the interval. In this case, an order of 10 is able to capture
+features of the order of around 0.05 nm. We will see afterwards that the order
+of the expansion is not critical as long as we obtain good sampling at
+convergence. If this is the case, it is possible to obtain finer features of
+the FES through reweighting. The syntax for this basis set in Plumed is:
+\plumedfile
+BF_LEGENDRE ...
+ ORDER=10
+ MINIMUM=0.23
+ MAXIMUM=0.8
+ LABEL=bf1
+... BF_LEGENDRE
+\endplumedfile
+
+We will use a uniform target distribution:
+\f[
+p(\mathbf{s})= 1/C
+\f]
+with \f$ C \f$ a normalization constant. Once that \f$ \Omega [V] \f$ is
+minimized, the bias potential satisfies (up to an arbitrary constant):
+\f[
+V(\mathbf{s}) = - F(\mathbf{s})
+\f]
+This is the same relation that holds for non-tempered metadynamics.
+
+
+The syntax for the bias potential in Plumed is:
+\plumedfile
+td1: TD_UNIFORM
+
+VES_LINEAR_EXPANSION ...
+ ARG=d1
+ BASIS_FUNCTIONS=bf1
+ GRID_BINS=300
+ TARGET_DISTRIBUTION=td1
+ LABEL=b1
+... VES_LINEAR_EXPANSION
+\endplumedfile
+
+Finally we have to choose the optimization algorithm. The standard is the
+averaged stochastic gradient descent. One has to define two parameters: the
+stride and the step size. The stride is the number of steps in which samples
+are collected to calculate the gradient and hessian of \f$ \Omega [V] \f$ and
+the step size is the step by which the coefficients are evolved at every
+optimization steps. Both of this parameters are connected. Increasing the
+stride will have an effect similar to reducing the step size. It has become
+traditional to choose a stride of around 500-2000 steps. It must be noted that we
+are not looking for an accurate estimation of the gradient, since for this we
+would need to sample all the CV space. The step size in the
+optimization has a strong connection with the height of typical barriers in
+the system. The larger the barriers, the larger the step size needed such that
+the bias can grow fast enough to overcome them. For this example we have
+chosen a stride of 500 steps and a step size of 0.5 kJ/mol. The syntax in
+Plumed is:
+\plumedfile
+OPT_AVERAGED_SGD ...
+  BIAS=b1
+  STRIDE=500
+  LABEL=o1
+  STEPSIZE=0.5
+  FES_OUTPUT=100
+  BIAS_OUTPUT=500
+  COEFFS_OUTPUT=10
+... OPT_AVERAGED_SGD
+\endplumedfile
+
+Now that we have set the scene, we can run our simulation using the run.sh
+script in the Example1 folder. The simulation will produce several files:
+
+- COLVAR: Just as in the metadynamics example.
+- coeffs.data : Values of the coefficients \f$ \boldsymbol\alpha \f$ and \f$
+  \bar{\boldsymbol\alpha} \f$  .
+- bias.<bias-name>.iter-<iteration-number> : Bias potential as a function of
+  \f$ \mathbf{s} \f$ at iteration <iteration-number>.
+- fes.<bias-name>.iter-<iteration-number> : FES at iteration <iteration-number>.
+- targetdistribution.<bias-name>.data : Target distribution.
+
+You can first observe how the system moves in
+the CV space in a fashion similar to metadynamics.
+Then we can see the evolution of \f$ \boldsymbol\alpha \f$ and \f$
+ \bar{\boldsymbol\alpha} \f$ . The first lines of the file coeffs.data are:
+
+\verbatim
+#! FIELDS idx_d1 b1.coeffs b1.aux_coeffs index
+#! SET time 0.000000
+#! SET iteration  0
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_d1  11
+       0         0.0000000000000000e+00         0.0000000000000000e+00       0
+       1         0.0000000000000000e+00         0.0000000000000000e+00       1
+       2         0.0000000000000000e+00         0.0000000000000000e+00       2
+       3         0.0000000000000000e+00         0.0000000000000000e+00       3
+       4         0.0000000000000000e+00         0.0000000000000000e+00       4
+       5         0.0000000000000000e+00         0.0000000000000000e+00       5
+       6         0.0000000000000000e+00         0.0000000000000000e+00       6
+       7         0.0000000000000000e+00         0.0000000000000000e+00       7
+       8         0.0000000000000000e+00         0.0000000000000000e+00       8
+       9         0.0000000000000000e+00         0.0000000000000000e+00       9
+      10         0.0000000000000000e+00         0.0000000000000000e+00      10
+#!-------------------
+
+
+
+
+#! FIELDS idx_d1 b1.coeffs b1.aux_coeffs index
+#! SET time 10.000000
+#! SET iteration  10
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_d1  11
+       0         0.0000000000000000e+00         0.0000000000000000e+00       0
+       1         5.1165453234702052e-01         1.1482045941475065e+00       1
+       2        -1.0356798763597277e+00        -1.7365051185667855e+00       2
+       3        -5.1830527698835660e-01        -1.1651638070736938e+00       3
+       4         4.1754103138162207e-01         4.8203393927719917e-01       4
+       5         3.2087945211009694e-01         6.6606116920677805e-01       5
+       6        -1.5499943980403830e-01        -4.7946750842365812e-03       6
+       7        -1.1433825688016251e-01        -1.5099503286093419e-01       7
+       8         9.8787914656136719e-02         1.3156529595420300e-02       8
+       9         4.4467081175713474e-03        -8.7160339645570323e-02       9
+      10        -1.1504176822089783e-01        -1.5789737594248379e-01      10
+#!-------------------
+\endverbatim
+
+The first column are the coefficient indices, the second are the
+\f$ \bar{\boldsymbol\alpha} \f$, and the third are the
+\f$ \boldsymbol\alpha \f$. Each block in the file corresponds to a different
+iteration, in this case iteration 0 and 10. We can plot the evolution of the
+coefficients using the gnuplot script plotCoeffs.gpi . The output should be similar to
+the next figure.
+
+\anchor ves-school-2017-ves1-coeffs1
+\image html ves-lugano2017-ves1_coeffs1.png "Evolution of the instantaneous and averaged coefficients with simulation time"
+
+The \f$ \boldsymbol\alpha \f$ change fast and oscillate around some mean
+value. The \f$ \bar{\boldsymbol\alpha} \f$ evolve smoothly until they stabilize
+around some equilibrium value. It is important to remember that the bias is a
+function of \f$ \bar{\boldsymbol\alpha} \f$ and since these evolve smoothly, so
+will the bias. Once that the \f$ \bar{\boldsymbol\alpha} \f$ have stabilized, the
+simulation can be considered converged.
+
+It is also interesting to observe how the estimation of the FES evolves in time. For this we
+will plot the FES using the files fes.b1.iter-<iteration-number>. There is a
+gnuplot script plotFes.gpi that you can use for this purpose. At variance
+with metadynamics, in this case there is no growing offset in the
+bias and therefore we will have to shift the FES ourselves to distinguish several
+FES at different times in the same plot.
+
+\anchor ves-school-2017-ves1-fesEvolution
+\image html ves-lugano2017-ves1_fesEvolution1.png "Evolution of the estimated free energy"
+
+We can also calculate the height of the barrier as we did in the metadynamics
+tutorial. The files for carrying out this task can be found in the Barrier_calculation
+folder. Remember that the accuracy of this calculation is limited by the fact
+that we have chosen a small order in the basis set expansion. We will discuss
+this aspect in greater detail in the next example.
+
+\subsection ves-lugano2017-ves1-subsection-3 Example 2: Target distributions and basis sets
+
+In this example we will consider other choices of target distributions and we
+will understand the influence of the order of the basis set expansion. The
+files needed for this example are contained in the directory Example2. Instead
+of introducing a barrier as done in the example above, in this case we will
+use a uniform target distribution in the interval [0.23:0.6] nm and decaying to
+zero in the interval [0.6:0.8] nm. The expression is:
+\f[
+p(s)=
+        \begin{cases}
+                \frac{1}{C} \: &  \mathrm{if} \: s<s_0 \\
+                \frac{1}{C} e^{-\frac{(s-s_0)^2}{2\sigma^2}} \: &
+\mathrm{if} \: s>s_0\\
+        \end{cases}
+\f]
+where \f$ s_0=0.6\f$ nm and \f$ \sigma=0.05\f$.
+To define this \f$ p(s) \f$ in Plumed the input is:
+\plumedfile
+td1: TD_UNIFORM MINIMA=0.23 MAXIMA=0.6 SIGMA_MAXIMA=0.05
+
+VES_LINEAR_EXPANSION ...
+ ARG=d1
+ BASIS_FUNCTIONS=bf1
+ LABEL=b1
+ TEMP=300.0
+ GRID_BINS=300
+ TARGET_DISTRIBUTION=td1
+... VES_LINEAR_EXPANSION
+\endplumedfile
+
+We will choose a basis set of order 20 to be able to capture the features of
+the FES with detail. If you are doing this example in a group, each member of
+the group can choose a different order in the expansion, for instance 5, 10,
+20, and 40. The syntax in Plumed is:
+\plumedfile
+BF_LEGENDRE ...
+ ORDER=20
+ MINIMUM=0.23
+ MAXIMUM=0.8
+ LABEL=bf1
+... BF_LEGENDRE
+\endplumedfile
+
+Once that you start running the simulation, a file named targetdist.b1.data
+will be created. This file contains the chosen target distribution. We can
+plot it to confirm that it is what we are looking for. There is a gnuplot script
+plotTargetDistrib.gpi that creates the following plot.
+
+\anchor ves-school-2017-ves1-targetDistrib
+\image html ves-lugano2017-ves1_targetDistrib.png "Target distribution for Example 2"
+
+As the simulation runs, it is useful to control the evolution of the
+coefficients using the gnuplot script plotCoeffs.gpi.
+
+The FES is calculated from the expression:
+\f[
+F(\mathbf{s}) = -V(\mathbf{s})-{\frac {1}{\beta}} \log {p(\mathbf{s})} =
+        \begin{cases}
+                -V(s) \: &  \mathrm{if} \: s<s_0 \\
+                -V(s) + \frac{(s-s_0)^2}{2\beta\sigma^2} \: &
+\mathrm{if} \: s>s_0\\
+        \end{cases}
+\f]
+In other words the bias potential is forced to create the upper barrier that
+we were explicitly introducing in the first example. When the FES is calculated the
+effect of the barrier is "subtracted" through \f$ p(s) \f$ and therefore the
+FES that we calculate does not include the barrier. This can be seen by
+plotting the fes.b1.iter-<iteration-number> files with gnuplot, for instance:
+\verbatim
+pl "./fes.b1.iter-10000.data" u 1:2 w l
+\endverbatim
+This plot should be similar to the next figure.
+
+\anchor ves-school-2017-ves1-fes
+\image html ves-lugano2017-ves1_fes.png "FES for Example 2"
+
+
+Only the interval [0.23:0.7] is plotted since there is little sampling in the
+region [0.7:0.8] due to the small value of \f$ p(s) \f$ in this region. As
+discussed before, if there is no sampling, it is not possible to obtain free
+energies.
+
+When the simulation ends, it is interesting to check if in fact the sampled
+biased distribution is equal to the chosen target distribution. The scripts to
+calculate the sampled biased distribution are located in the directory BiasedDistribution.
+As usual, we will disregard the initial part of the simulation since in this period the bias
+is changing a lot. As done before, we get rid of the first 2 ns of simulation
+using sed:
+\verbatim
+sed '2,10000d' ../COLVAR > COLVAR
+\endverbatim
+Once that the coefficients in the expansion have stabilized
+it is possible to calculate the biased distribution of CVs by constructing a
+histogram with equal weights for all points. This distribution should be equal
+to the target distribution \f$ p(s) \f$. The histogram can be calculated in
+plumed using the following input in the plumed.dat file:
+\plumedfile
+distance: READ FILE=COLVAR  IGNORE_TIME VALUES=d1
+
+HISTOGRAM ...
+  ARG=distance
+  GRID_MIN=0.2
+  GRID_MAX=0.8
+  GRID_BIN=100
+  BANDWIDTH=0.004
+  LABEL=hh1
+... HISTOGRAM
+
+DUMPGRID GRID=hh1 FILE=histo FMT=%24.16e
+\endplumedfile
+and running (or using the run.sh script):
+\verbatim
+plumed --no-mpi driver --plumed plumed.dat --noatoms > plumed.out
+\endverbatim
+The next plot shows that in fact the sampled distribution agrees with the
+target distribution.
+
+\anchor ves-school-2017-ves1-biasedDistrib
+\image html ves-lugano2017-ves1_biasedDistrib.png "Sampled biased distribution of the distance Na-Cl and target distribution"
+
+Once that the coefficients are stabilized it is possible to reweight using the
+standard umbrella sampling formula \cite torrie-valleau . In this case the weight assigned to each
+configuration is:
+\f[
+  w(\mathbf{R}) \propto  e^{\beta V(\mathbf{s})}.
+\f]
+The files needed for this reweighting are contained in the folder
+ReweightDistance. The procedure to the the reweighting and plot the results is
+similar to the ones in the cases above and therefore it is not described in
+detail. The reweighted FES is plotted in the next figure and compared to the
+FES calculated from the formula
+\f$ V(\mathbf{s}) = -F(\mathbf{s})-{\frac {1}{\beta}} \log {p(\mathbf{s})} \f$.
+
+\anchor ves-school-2017-ves1-reweight
+\image html ves-lugano2017-ves1_reweight.png "Comparison of the FES estimated from the bias and p(s), and the reweighted FES"
+
+
+The two curves do not differ much since the order of the expansion was
+relatively large. What happens if you chose a lower or higher order in the expansion?
+
+
+\subsection ves-lugano2017-ves1-subsection-4 Restarting a simulation
+
+In this section we will restart the simulation that we have performed in our
+second example. In directory Example2, cd to the folder Restart. To restart
+the simulation we will need:
+
+- LAMMPS restart file, since it stores the last configuration
+- COLVAR file, since new lines will be appended
+- coeff.data file, containing the iteration number and the values of the
+  coefficients.
+
+Therefore we execute in the command line the following commands:
+\verbatim
+cp ../restart .
+cp ../COLVAR .
+cp ../coeffs.data .
+\endverbatim
+
+In order to restart, the RESTART keyword must be added at the beginning of
+Plumed's input named plumed.restart.dat:
+\verbatim
+RESTART
+
+d1:  DISTANCE ATOMS=319,320
+.
+.
+.
+\endverbatim
+
+Then the simulation can be restarted using the script runRestart.sh .
+Check that the output of the new simulation is appended to the COLVAR file,
+that the starting time of the new simulation is the ending time of the old
+simulation, that CV values are coherent, and that coefficients evolve
+continuously.
+
+\subsection ves-lugano2017-ves1-subsection-5 Gaussian target distribution
+
+As an exercise, you can use a target distribution consisting in a gaussian
+centered at the dissociation barrier. The syntax in Plumed is:
+\plumedfile
+td1: TD_GAUSSIAN CENTER=0.325 SIGMA=0.03
+
+VES_LINEAR_EXPANSION ...
+ ARG=d1
+ BASIS_FUNCTIONS=bf1
+ LABEL=b1
+ TEMP=300.0
+ GRID_BINS=300
+ TARGET_DISTRIBUTION=td1
+... VES_LINEAR_EXPANSION
+\endplumedfile
+
+Gaussian target distributions are useful to focus the sampling on a particular
+region of CV space. This has been used in protein folding problems to focus
+the sampling on the small but relevant folded state \cite Shaffer-PNAS-2016.
+
+\subsection ves-lugano2017-ves1-subsection-6 Optimization algorithm
+
+We suggest an exercise to gain experience in choosing the parameters of the
+optimization algorithm. The averaged stochastic gradient descent algorithm has
+two parameters: the stride and the step size. Normally a stride of around
+500-2000 steps is used. However it is
+not always easy to choose the step size. Luckily, the algorithm is quite
+robust and will work for different step sizes.
+
+Run different simulation using step
+sizes \f$ \mu = 0.001 \f$ and \f$ \mu = 10 \f$ and try to rationalize the
+behavior. Normally, when the step size is too large, the system gets stuck in
+CV space and coefficients oscillate wildly. When the step size is too small,
+the algorithm runs out of "steam" too fast and the simulation converges
+slowly. These two extreme cases should be avoided.
+
+\section ves-lugano2017-ves1-final Final remarks
+
+The purpose of this first tutorial was to introduce the student to VES. At
+this point one can see that VES is a powerful and versatile enhanced sampling
+method. We suggest to explore different possibilities of basis sets and target
+distributions. It is also interesting to experiment with different optimization
+algorithms and parameters of these.
+
+The next tutorial will deal with the use of the well-tempered target
+distribution and the construction of biases on 2 CVs.
+
+*/
+
+link: @subpage ves-lugano2017-ves1
+
+description: Introduction to VES, using different target distributions and basis sets.
+
+additional-files: ves-lugano2017-ves1

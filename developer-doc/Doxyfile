@@ -754,23 +754,23 @@ WARN_LOGFILE           =
 # spaces.
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = ./Intro.txt \
-                         ./mdTemplate.txt \
-                         ./plmdIntro.txt \
-                         ./usingDoxygen.txt \
-                         ./parsing.txt \
-                         ./links-to-user-manual.txt \
-                         ./AddingAColvar.txt \
-                         ./AddingAFunction.txt \
-                         ./AddingACLTool.txt \
-                         ./AddingAMeasure.txt \
-                         ./AddingAMultColvar.txt \
-                         ./InstallationLayout.txt \
-                         ./AddingRegressionTests.txt \
-                         ./HowToContributeToPlumed.txt \
-                         ./intro-git.txt \
-                         ./plumedcheck.txt \
-                         ./CodeFormatting.txt
+INPUT                  = ./Intro.md \
+                         ./mdTemplate.md \
+                         ./plmdIntro.md \
+                         ./usingDoxygen.md \
+                         ./parsing.md \
+                         ./links-to-user-manual.md \
+                         ./AddingAColvar.md \
+                         ./AddingAFunction.md \
+                         ./AddingACLTool.md \
+                         ./AddingAMeasure.md \
+                         ./AddingAMultColvar.md \
+                         ./InstallationLayout.md \
+                         ./AddingRegressionTests.md \
+                         ./HowToContributeToPlumed.md \
+                         ./intro-git.md \
+                         ./plumedcheck.md \
+                         ./CodeFormatting.md
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -1461,7 +1461,7 @@ MATHJAX_FORMAT         = HTML-CSS
 # The default value is: http://cdn.mathjax.org/mathjax/latest.
 # This tag requires that the tag USE_MATHJAX is set to YES.
 
-MATHJAX_RELPATH        = http://cdn.mathjax.org/mathjax/latest
+MATHJAX_RELPATH        = https://cdn.mathjax.org/mathjax/latest
 
 # The MATHJAX_EXTENSIONS tag can be used to specify one or more MathJax
 # extension names that should be enabled during MathJax rendering. For example

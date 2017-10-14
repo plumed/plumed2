@@ -203,7 +203,10 @@ std::string Action::getDocumentation()const {
 void Action::checkRead() {
   if(!line.empty()) {
     std::string msg="cannot understand the following words from the input line : ";
-    for(unsigned i=0; i<line.size(); i++) msg = msg + line[i] + ", ";
+    for(unsigned i=0; i<line.size(); i++) {
+      if(i>0) msg = msg + ", ";
+      msg = msg + line[i];
+    }
     error(msg);
   }
 }
@@ -273,8 +276,6 @@ bool Action::checkUpdate()const {
 bool Action::getCPT()const {
   return plumed.getCPT();
 }
-
-
 
 }
 

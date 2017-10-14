@@ -1,0 +1,3 @@
+mpiprocs=4
+type=driver
+arg="--plumed plumed.dat --timestep 0.005 --mf_pdb template.pdb"

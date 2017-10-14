@@ -116,7 +116,7 @@ public:
     keys.add("optional","max","maximum value the coordinates can take for a periodic domain");
   }
 
-  PesMD( const CLToolOptions& co ) :
+  explicit PesMD( const CLToolOptions& co ) :
     CLTool(co)
   {
     inputdata=ifile;
