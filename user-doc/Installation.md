@@ -38,10 +38,6 @@ in their official distribution. If your favorite MD code is available "PLUMED re
 you will have to compile PLUMED first, then (optionally) install it, then check the MD codes' manual to
 discover how to link it.
 
-If you are using a Mac, notice that we are providing tentative port files to install
-PLUMED with MacPorts. Follow the instructions at [this link](http://github.com/plumed/ports)
-and report feedbacks on the mailing list.
-
 \section SupportedCompilers Supported compilers
 
 As of PLUMED 2.4, we require a compiler that supports C++11. The following compilers
@@ -519,6 +515,69 @@ Notice that other command line tools will be available in the directory `prefix/
 default values this would be `/usr/local/lib/plumed/plumed-*`. These files are not included in the execution path (prefix/bin)
 to avoid clashes, but can be executed also when plumed is cross compiled and the main plumed executable cannot be
 launched.
+
+\section Installation Installing PLUMED with MacPorts
+
+If you are using a Mac, notice that you can take advantage of a MacPorts package.
+Installing a working plumed should be as easy as:
+- Install [MacPorts](https://www.macports.org/)
+- Type `sudo port install plumed`
+
+Notice that plumed comes with many variants that can be inspected with the command
+
+    > sudo port info plumed
+
+Plumed uses variants to support different compilers.
+For instance, you can install plumed with openmpi using
+
+    > sudo port install plumed +openmpi
+
+Using gcc instead of native compilers is recommended so as to
+take advantage of openMP
+
+    > sudo port install plumed +openmpi +gcc7
+
+Variants can be also used to compile with debug flags (`+debug`), to pick a linear algebra library
+(e.g. `+openblas`) and to enable all optional modules (`+allmodules`).
+Notice that the default variant installed with `sudo port install plumed` is shipped as a precompiled
+binary, which is significantly faster to install.
+
+In addition, we provide a developer version (typically: a later version not yet considered as stable)
+under the subport `plumed-devel` that can be installed with
+
+    > sudo port install plumed-devel
+
+`plumed-devel` also supports the same variants as `plumed` in order to customize the compilation.
+`plumed-devel` and `plumed` cannot be installed at the same time.
+
+It is also possible to install a plumed-patched version of gromacs.
+For instance, you can use the following command to install
+gromacs patched with plumed with gcc compiler and openmpi:
+
+    > sudo port install plumed +openmpi +gcc7
+    > sudo port install gromacs-plumed +openmpi +gcc7
+
+In case you want to combine gromacs with the unstable version of plumed, use this instead:
+
+    > sudo port install plumed-devel +openmpi +gcc7
+    > sudo port install gromacs-plumed +openmpi +gcc7
+
+Notice that gromacs should be compiled using the same compiler
+variant as plumed (in this example `+openmpi +gcc7`). In case this is not
+true, compilation will fail.
+
+Also notice that gromacs is patched with plumed in runtime mode
+but that the path of libplumedKernel.dylib in the MacPorts tree
+is hardcoded. As a consequence:
+
+- If gromacs is run with `PLUMED_KERNEL` environment variable unset (or set to empty),
+  then the MacPorts plumed is used.
+
+- If gromacs is run with `PLUMED_KERNEL` environment variable pointing to another instance
+  of the plumed library, the other instance is used.
+
+This is especially useful if you are developing PLUMED since you will be able to install
+gromacs once for all and combine it with your working version of PLUMED.
 
 \section installingonacluster Installing PLUMED on a cluster
 
