@@ -516,7 +516,7 @@ default values this would be `/usr/local/lib/plumed/plumed-*`. These files are n
 to avoid clashes, but can be executed also when plumed is cross compiled and the main plumed executable cannot be
 launched.
 
-\section Installation Installing PLUMED with MacPorts
+\section Installation-macports Installing PLUMED with MacPorts
 
 If you are using a Mac, notice that you can take advantage of a MacPorts package.
 Installing a working plumed should be as easy as:
