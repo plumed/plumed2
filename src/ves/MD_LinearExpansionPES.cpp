@@ -317,7 +317,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
 
   plumed_bf = new PLMD::PlumedMain;
   unsigned int nn=1;
-  FILE* file_dummy = fopen("/dev/null/","w+");
+  FILE* file_dummy = fopen("/dev/null","w+");
   plumed_bf->cmd("setNatoms",&nn);
   plumed_bf->cmd("setLog",file_dummy);
   plumed_bf->cmd("init",&nn);
