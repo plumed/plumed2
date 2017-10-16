@@ -142,8 +142,12 @@ case "$type" in
 # make sure the right python module is in the path based on plumed root
   PYTHONPATH="$root/python:$PYTHONPATH" $($plumed config python_bin) $arg > out 2> err
   ;;
-(*) echo "unknown test type" ; exit 1 ;;
+(*) echo "FAILURE: unknown test type" ; exit 1 ;;
 esac
+exitcode="$?"
+if test $exitcode -ne 0 ; then
+  echo "FAILURE: exit code $exitcode"
+fi
 
 if type -t plumed_regtest_after 1>/dev/null ; then
   plumed_regtest_after
