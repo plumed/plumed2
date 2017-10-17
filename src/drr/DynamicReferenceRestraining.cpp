@@ -572,23 +572,21 @@ void DynamicReferenceRestraining::calculate() {
   }
   if (step_now != 0) {
     if ((step_now % int(outputfreq)) == 0) {
-      if (!textoutput) {
-        save(outputname, step_now);
-      } else {
+      save(outputname, step_now);
+      if (textoutput) {
         ABFGrid.writeAll(outputprefix);
         CZARestimator.writeAll(outputprefix);
       }
     }
     if (historyfreq > 0 && (step_now % int(historyfreq)) == 0) {
-      if (!textoutput) {
-        const std::string filename =
-          outputprefix + "." + std::to_string(step_now) + ".drrstate";
-        save(filename, step_now);
-      } else {
-        const std::string filename =
+      const std::string filename =
+        outputprefix + "." + std::to_string(step_now) + ".drrstate";
+      save(filename, step_now);
+      if (textoutput) {
+        const std::string textfilename =
           outputprefix + "." + std::to_string(step_now);
-        ABFGrid.writeAll(filename);
-        CZARestimator.writeAll(filename);
+        ABFGrid.writeAll(textfilename);
+        CZARestimator.writeAll(textfilename);
       }
     }
     if (getCPT()) {
