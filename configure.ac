@@ -260,6 +260,7 @@ PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[no])
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
 AC_ARG_VAR(LDSHARED,[command for linking shared library - configure will use CXX plus the proper flags ])
+AC_ARG_VAR(MPIEXEC,[command to run mpi programs in tests - default not specified, which means use PLUMED_MPIRUN env var at runtime for backward compatibility])
 
 
 # by default use -O flag
@@ -673,6 +674,8 @@ AC_SUBST(LDSHARED)
 # these are libraries that should be linked also to MD engines
 AC_SUBST(STATIC_LIBS)
 
+AC_SUBST(MPIEXEC)
+
 if test "$shared" == true ; then
   case `(uname)` in
   (Darwin)
@@ -837,6 +840,14 @@ int main(int argc,char*argv[[]]){
   [ program_can_run_mpi=no ; AC_MSG_RESULT([no]) ],
   [ program_can_run_mpi=no ; AC_MSG_RESULT([no (cross compiling)]) ]
 )
+fi
+
+if test $mpi_found == ok ; then
+  if test -n "$MPIEXEC" ; then
+    AC_MSG_NOTICE([Regtest suite will use $MPIEXEC command to run MPI tests])
+  else
+    AC_MSG_NOTICE([Regtest suite will use env var PLUMED_MPIRUN to run MPI tests (default: mpirun)])
+  fi
 fi
 
 #### This further tests are required to allow linking with non c++ compiler

@@ -651,6 +651,7 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
+MPIEXEC
 LDSHARED
 STATIC_LIBS
 SOEXT
@@ -735,6 +736,7 @@ target_alias
 SOEXT
 STATIC_LIBS
 LDSHARED
+MPIEXEC
 CXX
 CXXFLAGS
 LDFLAGS
@@ -1409,6 +1411,9 @@ Some influential environment variables:
               configure will add here -ldl if necessary
   LDSHARED    command for linking shared library - configure will use CXX plus
               the proper flags
+  MPIEXEC     command to run mpi programs in tests - default not specified,
+              which means use PLUMED_MPIRUN env var at runtime for backward
+              compatibility
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -3001,6 +3006,7 @@ else
   esac
 
 fi
+
 
 
 
@@ -8365,6 +8371,8 @@ $as_echo "#define _REENTRANT 1" >>confdefs.h
 # these are libraries that should be linked also to MD engines
 
 
+
+
 if test "$shared" == true ; then
   case `(uname)` in
   (Darwin)
@@ -8753,6 +8761,16 @@ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
   conftest.$ac_objext conftest.beam conftest.$ac_ext
 fi
 
+fi
+
+if test $mpi_found == ok ; then
+  if test -n "$MPIEXEC" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Regtest suite will use $MPIEXEC command to run MPI tests" >&5
+$as_echo "$as_me: Regtest suite will use $MPIEXEC command to run MPI tests" >&6;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Regtest suite will use env var PLUMED_MPIRUN to run MPI tests (default: mpirun)" >&5
+$as_echo "$as_me: Regtest suite will use env var PLUMED_MPIRUN to run MPI tests (default: mpirun)" >&6;}
+  fi
 fi
 
 #### This further tests are required to allow linking with non c++ compiler
