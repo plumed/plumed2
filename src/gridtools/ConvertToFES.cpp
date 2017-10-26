@@ -89,7 +89,7 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input should be a grid");
 
   // And value
-  ActionWithValue::addValueWithDerivatives( getPntrToArgument(0)->getShape() );
+  addValueWithDerivatives();
 }
 
 void ConvertToFES::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {

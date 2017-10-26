@@ -48,8 +48,10 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
   for(unsigned i=1;;++i) {
       if( !parseNumbered("GROUP",i,g_name) ){ break; }
       readgroup=true; args.push_back( convertStringToValue(g_name) );
-      if( args[args.size()-1]->getRank()!=1 ) error("all arguments should be vectors");
-      if( args[args.size()-1]->getShape()[0]!=args[0]->getShape()[0] ) error("all arguments should have same shape");
+      if( args[args.size()-1]->getRank()>1 ) error("all arguments should be vectors");
+      if( args[0]->getRank()==0 ) {
+          if( args[args.size()-1]->getRank()!=0 ) error("all arguments should have same shape"); 
+      } else if( args[args.size()-1]->getShape()[0]!=args[0]->getShape()[0] ) error("all arguments should have same shape");
   }
   if( readgroup ) {
       log.printf("  calculating square vector product matrix \n");
@@ -61,8 +63,10 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
       for(unsigned i=1;;++i) {
           if( !parseNumbered("GROUPA",i,ga_name) ){ break; }
           args.push_back( convertStringToValue(ga_name) );
-          if( args[args.size()-1]->getRank()!=1 ) error("all arguments should be vectors");
-          if( args[args.size()-1]->getShape()[0]!=args[0]->getShape()[0] ) error("all arguments to GROUPA should have same shape");
+          if( args[args.size()-1]->getRank()>1 ) error("all arguments should be vectors");
+          if( args[0]->getRank()==0 ) {
+              if( args[args.size()-1]->getRank()!=0 ) error("all arguments to GROUPA should have same shape");
+          } else if( args[args.size()-1]->getShape()[0]!=args[0]->getShape()[0] ) error("all arguments to GROUPA should have same shape");
           log.printf("  %dth component of vectors in rows of vector product matrix is %s \n", i, ga_name.c_str() );
       }
       log.printf("\n"); ncol_args = args.size();
@@ -70,19 +74,27 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
       for(unsigned i=0;i<ncol_args;++i){ 
           if( !parseNumbered("GROUPB",i+1,gb_name) ) error("every GROUPA must have a matching GROUPB keyword");
           args.push_back( convertStringToValue(gb_name) );
-          if( args[args.size()-1]->getRank()!=1 ) error("all arguments should be vectors");
-          if( args[args.size()-1]->getShape()[0]!=args[ncol_args]->getShape()[0] ) error("all arguments to GROUPB should have same shape");
+          if( args[args.size()-1]->getRank()>1 ) error("all arguments should be vectors");
+          if( args[ncol_args]->getRank()==0 ) {
+              if( args[args.size()-1]->getRank()!=0 ) error("all arguments to GROUPB should have same shape");
+          } else if( args[args.size()-1]->getShape()[0]!=args[ncol_args]->getShape()[0] ) error("all arguments to GROUPB should have same shape");
           log.printf("  %dth component of vectors in columns of vector product matrix is %s\n", i+1, gb_name.c_str() );
       }
   }
   if( args.size()==0 ) error("no arguments were read in use GROUP or GROUPA and GROUPB");
   // Create a list of tasks for this action - n.b. each task calculates one row of the matrix
-  for(unsigned i=0;i<args[0]->getShape()[0];++i) addTaskToList(i);
-  requestArguments( args, false ); std::vector<unsigned> shape(2); 
-  shape[0]=args[0]->getShape()[0]; shape[1]=args[ncol_args]->getShape()[0];
+  std::vector<unsigned> shape(2);
+  if( args[0]->getRank()==0 ) { 
+     addTaskToList(0); shape[0]=shape[1]=1;
+  } else {
+     for(unsigned i=0;i<args[0]->getShape()[0];++i) addTaskToList(i);
+     shape[0]=args[0]->getShape()[0]; shape[1]=args[ncol_args]->getShape()[0];
+  }
+  requestArguments( args, false ); 
   // And create the matrix to hold the dot products 
-  addValue( shape ); 
-  if( ncol_args>0 ) narg_derivatives = (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
+  addValue( shape );
+  if( args[0]->getRank()==0 ) narg_derivatives = getNumberOfArguments(); 
+  else if( ncol_args>0 ) narg_derivatives = (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
   else narg_derivatives = getPntrToArgument(0)->getShape()[0]*getNumberOfArguments(); 
 }
 
@@ -137,7 +149,9 @@ void VectorProductMatrix::updateCentralMatrixIndex( const unsigned& ind, MultiVa
   unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
   unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
   std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
-  unsigned invals = getPntrToArgument(0)->getShape()[0];
+  unsigned invals;
+  if( getPntrToArgument(0)->getRank()==0 ) invals = 1;
+  else invals = getPntrToArgument(0)->getShape()[0];
   for(unsigned i=0;i<nargs;++i){ matrix_indices[nmat_ind] = ind + i*invals; nmat_ind++; }
   if( getNumberOfAtoms()>0 ) {
       matrix_indices[nmat_ind+0]=narg_derivatives + 3*ind+0; 
@@ -158,7 +172,9 @@ void VectorProductMatrix::performTask( const unsigned& current, MultiValue& myva
 
   // Now loop over all atoms in coordination sphere
   unsigned start_n=0; if(  ncol_args>0 ){ start_n = getFullNumberOfTasks(); myvals.setNumberOfIndicesInFirstBlock( start_n ); }
-  for(unsigned i=0;i<getPntrToArgument(ncol_args)->getShape()[0];++i){
+  unsigned size_v = 1; if( getPntrToArgument(ncol_args)->getRank()>0 ) size_v = getPntrToArgument(ncol_args)->getShape()[0];
+
+  for(unsigned i=0;i<size_v;++i){
       // Don't do i==j
       if( ncol_args==0 && myvals.getTaskIndex()==i ) continue;
       // This does everything in the stream that is done with single matrix elements 
@@ -171,10 +187,13 @@ void VectorProductMatrix::performTask( const unsigned& current, MultiValue& myva
 }
 
 bool VectorProductMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
-  unsigned invals, jnvals; invals = jnvals = getPntrToArgument(0)->getShape()[0]; 
+  unsigned invals, jnvals; invals = jnvals = 1; 
+  if( getPntrToArgument(0)->getRank()>0 ) invals = jnvals = getPntrToArgument(0)->getShape()[0];
+
   unsigned jindex=index2, jind_start = 0, nargs=getNumberOfArguments(); 
   if( ncol_args>0 ) { 
-      nargs /= 2; jnvals = getPntrToArgument(ncol_args)->getShape()[0];
+      nargs /= 2; jnvals = 1; 
+      if( getPntrToArgument(ncol_args)->getRank()>0 ) jnvals = getPntrToArgument(ncol_args)->getShape()[0];
       jindex = index2 - getFullNumberOfTasks();
       jind_start = nargs*invals;
   }

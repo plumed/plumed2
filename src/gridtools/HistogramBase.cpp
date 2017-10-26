@@ -27,6 +27,8 @@ namespace gridtools {
 void HistogramBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG"); 
+  keys.add("optional","HEIGHTS","this keyword takes the label of an action that calculates a vector of values.  The elements of this vector "
+                                "are used as weights for the Gaussians.");
   keys.addFlag("UNORMALIZED",false,"calculate the unormalized distribution of colvars");
 }
 
@@ -34,26 +36,46 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
+  heights_index(1),
   one_kernel_at_a_time(false)
 {
   // Check all the values have the right size
   unsigned nvals=0; for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues();
-  for(unsigned i=1;i<arg_ends.size()-1;++i) {
+  for(unsigned i=1;i<arg_ends.size()-heights_index;++i) {
       unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues();
       if( nvals!=tvals ) error("mismatch between numbers of values in input arguments");
   }
+  // Get the heights if need be
+  std::vector<std::string> weight_str; parseVector("HEIGHTS",weight_str);
+  if( weight_str.size()>0 ) {
+      std::vector<Value*> weight_args; interpretArgumentList( weight_str, weight_args ); 
+      heights_index=2; std::vector<Value*> args( getArguments() ); unsigned tvals=0; 
+      log.printf("  quantities used for weights are : %s ", weight_str[0].c_str() );
+      for(unsigned i=1;i<weight_args.size();++i) log.printf(", %s", weight_str[i].c_str() );
+      log.printf("\n");
+
+      for(unsigned i=0;i<weight_args.size();++i) {
+          tvals += weight_args[i]->getNumberOfValues();
+          args.push_back( weight_args[i] ); 
+      }
+      if( nvals!=tvals ) error("mismatch between numbers of values in input arguments and HEIGHTS");
+      arg_ends.push_back( args.size() ); requestArguments( args, true );
+  } 
+
   parseFlag("UNORMALIZED",unorm);
   if( unorm ) log.printf("  calculating unormalized distribution \n");
   else log.printf("  calculating normalized distribution \n");
 
   // Now construct the tasks
   if( distinct_arguments.size()>0 ) {
-      unsigned nrank = getPntrToArgument(0)->getShape()[0];
+      plumed_assert( getNumberOfArguments()>0 ); unsigned ntasks = 1; 
+      if( getPntrToArgument(0)->getRank()>0 ) ntasks = getPntrToArgument(0)->getShape()[0];
       for(unsigned i=1;i<getNumberOfArguments();++i) {
           if( arg_ends[i]!=i ) error("not sure if this sort of reshaping works");
-          if( getPntrToArgument(i)->getShape()[0]!=nrank ) error("all arguments should have same shape");
+          if( getPntrToArgument(0)->getRank()==0 && getPntrToArgument(i)->getRank()!=0 ) error("all arguments should have same shape");
+          else if( getPntrToArgument(i)->getShape()[0]!=ntasks ) error("all arguments should have same shape");
       }
-      for(unsigned i=0;i<nrank;++i) addTaskToList(i);
+      for(unsigned i=0;i<ntasks;++i) addTaskToList(i);
       std::vector<std::string> alabels;
       for(unsigned i=0;i<getNumberOfArguments();++i){
           bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
@@ -91,7 +113,7 @@ void HistogramBase::addValueWithDerivatives( const std::vector<unsigned>& shape 
 }
 
 unsigned HistogramBase::getNumberOfDerivatives() const {
-  return arg_ends.size()-1;
+  return arg_ends.size()-heights_index;
 }
 
 void HistogramBase::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
@@ -108,15 +130,16 @@ void HistogramBase::calculate(){
 void HistogramBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   if( !one_kernel_at_a_time ){ tflags.assign(tflags.size(),1); norm = static_cast<double>( tflags.size() ); }
   else {
-     std::vector<double> args( arg_ends.size()-1 ); double height=1.0;
-     for(unsigned i=0;i<arg_ends.size()-1;++i) args[i]=getPntrToArgument(arg_ends[i])->get();
+     std::vector<double> args( arg_ends.size()-heights_index ); 
+     double height=1.0; if( heights_index==2 ) height = args[args.size()]=getPntrToArgument(arg_ends[args.size()])->get();
+     for(unsigned i=0;i<arg_ends.size()-heights_index;++i) args[i]=getPntrToArgument(arg_ends[i])->get();
      buildSingleKernel( tflags, height, args );
   }
 }
 
 void HistogramBase::performTask( const unsigned& current, MultiValue& myvals ) const {
   if( one_kernel_at_a_time ) { 
-      std::vector<double> args( arg_ends.size()-1 ), der( arg_ends.size()-1 ); 
+      std::vector<double> args( arg_ends.size()-heights_index ), der( arg_ends.size()-heights_index ); 
       unsigned valout = getPntrToOutput(0)->getPositionInStream(); 
       gridobject.getGridPointCoordinates( current, args ); double vv = calculateValueOfSingleKernel( args, der ); 
       myvals.setValue( valout, vv ); 
@@ -129,10 +152,10 @@ void HistogramBase::gatherGridAccumulators( const unsigned& code, const MultiVal
   if( one_kernel_at_a_time ) {
       unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
       unsigned valout = getPntrToOutput(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
-      for(unsigned i=0;i<(arg_ends.size()-1);++i) buffer[istart+1+i] += myvals.getDerivative( valout, i );
+      for(unsigned i=0;i<(arg_ends.size()-heights_index);++i) buffer[istart+1+i] += myvals.getDerivative( valout, i );
       return;
   }
-  std::vector<double> args( arg_ends.size()-1 );
+  std::vector<double> argsh( arg_ends.size()-1 ), args( arg_ends.size()-heights_index );
   if( getPntrToArgument(0)->getRank()==2 ) {
       unsigned matind=getPntrToArgument(0)->getPositionInMatrixStash();
 #ifdef DNDEBUG
@@ -149,12 +172,18 @@ void HistogramBase::gatherGridAccumulators( const unsigned& code, const MultiVal
               args[k] = myvals.getStashedMatrixElement( amtind, jind );
           }
           double height=1.0; 
-          if( !unorm ) height = 1.0 / norm;
+          if( heights_index==2 ) {
+              unsigned amtind = getPntrToArgument( argsh.size()-1 )->getPositionInMatrixStash();
+              height = myvals.getStashedMatrixElement( amtind, jind );
+          }
+          if( !unorm ) height = height / norm;
           addKernelToGrid( height, args, bufstart, buffer );
       }
   } else { 
-      retrieveArguments( myvals, args ); 
-      double height=1.0; if( !unorm ) height = 1.0 / norm;
+      retrieveArguments( myvals, argsh ); 
+      double height=1.0; if( heights_index==2 ) height = argsh[ argsh.size()-1 ];
+      if( !unorm ) height = height / norm;
+      for(unsigned i=0;i<args.size();++i) args[i]=argsh[i];
       addKernelToGrid( height, args, bufstart, buffer );
   }
 }

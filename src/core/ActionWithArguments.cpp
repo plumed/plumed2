@@ -436,6 +436,10 @@ bool ActionWithArguments::hasAverageAsArgument() const {
   for(unsigned i=0;i<arguments.size();++i) {
       Average* av = dynamic_cast<Average*>( arguments[i]->getPntrToAction() );
       if( av ) return true;
+      ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( arguments[i]->getPntrToAction() );
+      if( aa ) {
+          if( aa->hasAverageAsArgument() ) return true;
+      }
   }
   return false;
 }

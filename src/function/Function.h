@@ -39,9 +39,12 @@ class Function:
   public ActionWithArguments
 {
 private:
+  bool firststep;
   unsigned nderivatives;
   std::vector<double> forcesToApply;
+  bool hasGridOutput() const ;
   std::vector<unsigned> getShape();
+  void evaluateAllFunctions();
 protected:
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name );

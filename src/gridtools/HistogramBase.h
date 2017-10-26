@@ -35,6 +35,7 @@ public ActionWithArguments
 {
 protected:
   double norm;
+  unsigned heights_index;
   bool one_kernel_at_a_time, unorm;
   GridCoordinatesObject gridobject;
   void addValueWithDerivatives( const std::vector<unsigned>& shape );

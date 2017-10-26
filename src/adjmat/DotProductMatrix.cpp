@@ -136,8 +136,15 @@ DotProductMatrix::DotProductMatrix(const ActionOptions& ao):
 }
 
 unsigned DotProductMatrix::getNumberOfDerivatives() const  {
-  if( ncol_args>0 ) return (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
-  return getPntrToArgument(0)->getShape()[0]*getNumberOfArguments();
+  if( getPntrToArgument(0)->getRank()==0 ) {
+      if( ncol_args>0 ){
+          if( getPntrToArgument(ncol_args)->getRank()==0 ) return getNumberOfArguments();  
+          else return ( 1 + getPntrToArgument(ncol_args)->getShape()[0] )*getNumberOfArguments() / 2; 
+      } else return getNumberOfArguments();
+  } else {
+      if( ncol_args>0 ) return (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
+      return getPntrToArgument(0)->getShape()[0]*getNumberOfArguments();
+  }
 }
 
 double DotProductMatrix::computeVectorProduct( const unsigned& index1, const unsigned& index2,

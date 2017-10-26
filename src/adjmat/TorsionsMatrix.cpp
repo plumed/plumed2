@@ -165,7 +165,7 @@ TorsionsMatrix::TorsionsMatrix(const ActionOptions& ao):
 }
 
 unsigned TorsionsMatrix::getNumberOfDerivatives() const  {
-  unsigned nat_der = 3*getNumberOfAtoms()+9;
+  unsigned nat_der = 3*getNumberOfAtoms()+9; plumed_assert( getPntrToArgument(0)->getRank()!=0 );
   if( ncol_args>0 ) return nat_der + (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
   return nat_der + getPntrToArgument(0)->getShape()[0]*getNumberOfArguments();
 }

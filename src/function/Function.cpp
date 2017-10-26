@@ -39,6 +39,7 @@ Function::Function(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
+  firststep(true),
   nderivatives(getNumberOfScalarArguments()),
   forcesToApply(getNumberOfScalarArguments())
 {
@@ -54,9 +55,9 @@ Function::Function(const ActionOptions&ao):
        // Set the number of derivatives
        nderivatives = getPntrToArgument(0)->getRank();
   } else { 
-       createTasksFromArguments(); nderivatives = getNumberOfScalarArguments();
+       createTasksFromArguments(); nderivatives = getNumberOfScalarArguments(); firststep=false;
        // Now create the stream of jobs to work through 
-       if( distinct_arguments.size()>0 ){   // getFullNumberOfTasks()>0   // This is for if we have a function that needs to store - needs though GAT
+       if( distinct_arguments.size()>0 ){   // This is for if we have a function that needs to store - needs though GAT
            std::vector<std::string> alabels;
            for(unsigned i=0;i<getNumberOfArguments();++i){
                bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
@@ -96,13 +97,26 @@ std::vector<unsigned> Function::getShape() {
       }
   }
   std::vector<unsigned> shape;
-  if( rank0 || !numberedkeys ){ 
+  if( hasGridOutput() ) {
+     shape.resize( getPntrToArgument(0)->getRank() );
+     for(unsigned i=0;i<shape.size();++i) shape[i] = getPntrToArgument(0)->getShape()[i];
+  } else if( rank0 || !numberedkeys ){ 
      shape.resize(0);
   } else { 
      shape.resize( getPntrToArgument(0)->getRank() );
      for(unsigned i=0;i<shape.size();++i) shape[i]=getPntrToArgument(0)->getShape()[i]; 
   }
   return shape;
+}
+
+bool Function::hasGridOutput() const {
+  bool isgrid = (getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives());
+  if( isgrid ) {
+      for(unsigned i=1;i<isgrid;++i) {
+          if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) error("cannot mix grids with other values types in input to function");
+      }
+  }
+  return isgrid;
 }
 
 void Function::addValueWithDerivatives() {
@@ -118,7 +132,9 @@ void Function::addValueWithDerivatives() {
 
   std::vector<unsigned> shape( getShape() ); 
   if( arg_ends[1]-arg_ends[0]==1 ){
-      if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape ); 
+      if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
+      else if( hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape ); 
+      else if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape ); 
       else if( shape.size()==0 ) ActionWithValue::addValueWithDerivatives( shape );
       else ActionWithValue::addValue( shape ); 
       if(period.size()==1 && period[0]=="NO") setNotPeriodic(); 
@@ -127,8 +143,11 @@ void Function::addValueWithDerivatives() {
       std::string num; 
       for(unsigned i=0;i<arg_ends.size()-1;++i){
           Tools::convert(i+1,num); 
-          if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent( "arg_" + num, shape ); 
-          else ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
+          if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
+          else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
+          else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent( "arg_" + num, shape ); 
+          else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
+          else ActionWithValue::addComponent( "arg_" + num, shape );
           if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg_" + num ); 
           else if(period.size()==2) componentIsPeriodic("arg_" + num, period[0], period[1]);
       } 
@@ -140,36 +159,58 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
 
   std::vector<unsigned> shape( getShape() );
   if( arg_ends[1]-arg_ends[0]==1 ){ 
-      if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent(name,shape); 
+      if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape);
+      else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape );
+      else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent(name,shape); 
       else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives(name,shape); 
       else ActionWithValue::addComponent(name,shape);
   } else { 
       std::string num; 
       for(unsigned i=0;i<arg_ends.size()-1;++i){ 
           Tools::convert(i+1,num);
-          if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent( name + "_arg_" + num, shape ); 
-          else ActionWithValue::addComponentWithDerivatives( name + "_arg_" + num, shape ); 
+          if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name + "_arg_" + num, shape);
+          else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name + "_arg_" + num, shape);
+          else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent( name + "_arg_" + num, shape ); 
+          else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives(name + "_arg_" + num, shape);
+          else ActionWithValue::addComponent( name + "_arg_" + num, shape ); 
       } 
   }
 }
 
+void Function::evaluateAllFunctions() {
+  if( firststep ) {
+      std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+      for(unsigned i=1;i<getNumberOfArguments();++i) {
+          std::vector<unsigned> tshape( getPntrToArgument(i)->getShape() );
+          plumed_assert( tshape.size()==shape.size() );
+          for(unsigned j=0;j<shape.size();++j) plumed_assert( tshape[j]==shape[j] );
+      }
+      unsigned ival = getPntrToOutput(0)->getNumberOfValues();
+      getPntrToOutput(0)->setShape( shape ); firststep=false;
+      if( ival<getPntrToOutput(0)->getNumberOfValues() ) {
+          for(unsigned j=ival;j<getPntrToOutput(0)->getNumberOfValues();++j) addTaskToList(j);
+      }
+  }
+  runAllTasks();
+}
+
 void Function::calculate(){
   // Everything is done elsewhere
-  if( hasAverageAsArgument() && actionInChain() ) return;
+  if( hasAverageAsArgument() || actionInChain() ) return;
   // This is done if we are calculating a function of multiple cvs
-  plumed_dbg_assert( getFullNumberOfTasks()>0 ); runAllTasks(); 
+  evaluateAllFunctions(); 
 }
 
 void Function::update() {
   if( !hasAverageAsArgument() ) return;
   plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 ); 
-  runAllTasks();
+  evaluateAllFunctions();
 }
 
 void Function::runFinalJobs() {
   if( !hasAverageAsArgument() ) return;
   plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
-  runAllTasks();
+  evaluateAllFunctions();
 }
 
 void Function::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
