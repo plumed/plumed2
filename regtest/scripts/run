@@ -63,9 +63,17 @@ cd -
 
 
 if ((mpiprocs>0)); then
-mpi="${PLUMED_MPIRUN:-mpirun} -np $mpiprocs"
+mpi=""
+if $plumed --no-mpi config -q mpiexec
+then
+  mpi="$($plumed --no-mpi config mpiexec)"
+fi
+if test -z "$mpi" ; then
+  mpi="${PLUMED_MPIRUN:-mpirun}"
+fi
+mpi="$mpi -np $mpiprocs"
 
-if ! plumed config -q has mpi
+if ! $plumed config -q has mpi
 then
   echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
   exit 0;
@@ -73,7 +81,7 @@ fi
 
 else
 
-plumed="plumed --no-mpi"
+plumed="$plumed --no-mpi"
 
 fi
 
