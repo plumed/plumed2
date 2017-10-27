@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if test -n "$PLUMED_PREPEND_PATH" ; then
+  PATH="$PLUMED_PREPEND_PATH:$PATH"
+fi
+
 export valgrind=env
 
 for opt in ${*}
@@ -46,7 +50,7 @@ echo "++ Arguments: $arg"
 echo "++ Processors: $mpiprocs"
 
 mpi=env
-plumed=plumed
+plumed="${PLUMED_PROGRAM_NAME:-plumed}"
 
 root=$($plumed --no-mpi info --root)
 
