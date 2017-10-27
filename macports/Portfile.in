@@ -65,6 +65,11 @@ mpi.setup
 # To enable mpi, replace a configure flag
 if {[mpi_variant_isset]} {
   configure.args-replace --disable-mpi --enable-mpi
+  # command should be included in a pre-configure block to access properly the mpi.exec variable
+  pre-configure {
+  # MPIEXEC is stored so that it can be used to perform tests
+    configure.args-append MPIEXEC="${mpi.exec}"
+  }
 }
 
 # Libraries.
