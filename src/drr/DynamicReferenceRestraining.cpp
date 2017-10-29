@@ -210,7 +210,7 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
            "number of samples in a bin prior to application of the ABF");
   keys.add("compulsory", "OUTPUTFREQ", "write results to a file every N steps");
   keys.add("optional", "HISTORYFREQ", "save history to a file every N steps");
-  keys.addFlag("UIESTIMATOR", false,
+  keys.addFlag("UI", false,
                "enable the umbrella integration estimator");
   keys.add("optional", "UIRESTARTPREFIX",
            "specify the restart files for umbrella integration");
@@ -296,7 +296,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       "method carefully!"
       << '\n';
   parseFlag("NOBIAS", nobias);
-  parseFlag("UIESTIMATOR", useUIestimator);
+  parseFlag("UI", useUIestimator);
   parseFlag("TEXTOUTPUT", textoutput);
   parseVector("TAU", tau);
   parseVector("FRICTION", friction);
