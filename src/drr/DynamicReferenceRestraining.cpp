@@ -147,7 +147,6 @@ private:
   std::vector<double> c1;
   std::vector<double> c2;
   std::vector<double> mass;
-  std::vector<DRRAxis> delim;
   std::string outputname;
   std::string cptname;
   std::string outputprefix;
@@ -157,6 +156,7 @@ private:
   double outputfreq;
   double historyfreq;
   bool isRestart;
+  bool useCZARestimator;
   bool useUIestimator;
   bool textoutput;
   ABF ABFGrid;
@@ -199,11 +199,20 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.add("optional", "GRID_SPACING", "the approximate grid spacing (to be "
            "used as an alternative or together "
            "with GRID_BIN)");
+  keys.add("optional", "ZGRID_MIN", "the lower bounds for the grid (GRID_BIN "
+           "or GRID_SPACING should be specified)");
+  keys.add("optional", "ZGRID_MAX", "the upper bounds for the grid (GRID_BIN "
+           "or GRID_SPACING should be specified)");
+  keys.add("optional", "ZGRID_BIN", "the number of bins for the grid");
+  keys.add("optional", "ZGRID_SPACING", "the approximate grid spacing (to be "
+           "used as an alternative or together "
+           "with GRID_BIN)");
   keys.add("compulsory", "FULLSAMPLES", "500",
            "number of samples in a bin prior to application of the ABF");
   keys.add("compulsory", "OUTPUTFREQ", "write results to a file every N steps");
   keys.add("optional", "HISTORYFREQ", "save history to a file every N steps");
-  keys.addFlag("UIESTIMATOR", false,
+  keys.addFlag("NOCZAR", false, "disable the CZAR estimator");
+  keys.addFlag("UI", false,
                "enable the umbrella integration estimator");
   keys.add("optional", "UIRESTARTPREFIX",
            "specify the restart files for umbrella integration");
@@ -256,10 +265,10 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     fictValue(getNumberOfArguments(), NULL),
     vfictValue(getNumberOfArguments(), NULL), c1(getNumberOfArguments(), 0.0),
     c2(getNumberOfArguments(), 0.0), mass(getNumberOfArguments(), 0.0),
-    delim(getNumberOfArguments()), outputname(""), cptname(""),
+    outputname(""), cptname(""),
     outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
-    useUIestimator(false), textoutput(false)
+    useCZARestimator(true), useUIestimator(false), textoutput(false)
 {
   log << "eABF/DRR: You now are using the extended adaptive biasing "
       "force(eABF) method."
@@ -289,8 +298,11 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       "method carefully!"
       << '\n';
   parseFlag("NOBIAS", nobias);
-  parseFlag("UIESTIMATOR", useUIestimator);
+  parseFlag("UI", useUIestimator);
   parseFlag("TEXTOUTPUT", textoutput);
+  bool noCZAR = false;
+  parseFlag("NOCZAR", noCZAR);
+  noCZAR == false ? useCZARestimator = true : useCZARestimator = false;
   parseVector("TAU", tau);
   parseVector("FRICTION", friction);
   parseVector("EXTTEMP", etemp);
@@ -328,27 +340,45 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     }
   }
 
-  std::vector<string> gmin(getNumberOfArguments());
+  std::vector<string> gmin(ndims);
+  std::vector<string> zgmin(ndims);
   parseVector("GRID_MIN", gmin);
-  if (gmin.size() != getNumberOfArguments())
+  parseVector("ZGRID_MIN", zgmin);
+  if (gmin.size() != ndims)
     error("eABF/DRR: not enough values for GRID_MIN");
-  std::vector<string> gmax(getNumberOfArguments());
+  if (zgmin.size() != ndims) {
+    log << "eABF/DRR: You didn't specify ZGRID_MIN. " << '\n'
+        << "eABF/DRR: The GRID_MIN will be used instead.";
+    zgmin = gmin;
+  }
+  std::vector<string> gmax(ndims);
+  std::vector<string> zgmax(ndims);
   parseVector("GRID_MAX", gmax);
-  if (gmax.size() != getNumberOfArguments())
+  parseVector("ZGRID_MAX", zgmax);
+  if (gmax.size() != ndims)
     error("eABF/DRR: not enough values for GRID_MAX");
-  std::vector<unsigned> gbin(getNumberOfArguments());
-  std::vector<double> gspacing(getNumberOfArguments());
+  if (zgmax.size() != ndims) {
+    log << "eABF/DRR: You didn't specify ZGRID_MAX. " << '\n'
+        << "eABF/DRR: The GRID_MAX will be used instead.";
+    zgmax = gmax;
+  }
+  std::vector<unsigned> gbin(ndims);
+  std::vector<unsigned> zgbin(ndims);
+  std::vector<double> gspacing(ndims);
+  std::vector<double> zgspacing(ndims);
   parseVector("GRID_BIN", gbin);
+  parseVector("ZGRID_BIN", zgbin);
   parseVector("GRID_SPACING", gspacing);
-  if (gbin.size() != getNumberOfArguments()) {
+  parseVector("ZGRID_SPACING", zgspacing);
+  if (gbin.size() != ndims) {
     log << "eABF/DRR: You didn't specify GRID_BIN. Trying to use GRID_SPACING "
         "instead."
         << '\n';
-    if (gspacing.size() != getNumberOfArguments()) {
+    if (gspacing.size() != ndims) {
       error("eABF/DRR: not enough values for GRID_BIN");
     } else {
-      gbin.resize(getNumberOfArguments());
-      for (size_t i = 0; i < getNumberOfArguments(); ++i) {
+      gbin.resize(ndims);
+      for (size_t i = 0; i < ndims; ++i) {
         double l, h;
         PLMD::Tools::convert(gmin[i], l);
         PLMD::Tools::convert(gmax[i], h);
@@ -358,17 +388,32 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       }
     }
   }
+  if (zgbin.size() != ndims) {
+    log << "eABF/DRR: You didn't specify ZGRID_BIN. Trying to use ZGRID_SPACING instead." << '\n';
+    if (zgspacing.size() != ndims) {
+      log << "eABF/DRR: You didn't specify ZGRID_SPACING. Trying to use GRID_SPACING or GRID_BIN instead." << '\n';
+      zgbin = gbin;
+      zgspacing = gspacing;
+    } else {
+      zgbin.resize(ndims);
+      for (size_t i = 0; i < ndims; ++i) {
+        double l, h;
+        PLMD::Tools::convert(zgmin[i], l);
+        PLMD::Tools::convert(zgmax[i], h);
+        zgbin[i] = std::nearbyint((h - l) / zgspacing[i]);
+        zgspacing[i] = (h - l) / zgbin[i];
+        log << "ZGRID_BIN[" << i << "] is " << zgbin[i] << '\n';
+      }
+    }
+  }
   checkRead();
 
   // Set up kbt for extended system
   std::vector<double> ekbt(ndims, 0.0);
-  if (etemp.size() != getNumberOfArguments()) {
-    etemp.resize(getNumberOfArguments(), 0.0);
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-      etemp[i] = kbt / plumed.getAtoms().getKBoltzmann();
-    }
+  if (etemp.size() != ndims) {
+    etemp.assign(ndims, kbt / plumed.getAtoms().getKBoltzmann());
   }
-  for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  for (unsigned i = 0; i < ndims; i++) {
     ekbt[i] = etemp[i] * plumed.getAtoms().getKBoltzmann();
     log << "eABF/DRR: The kbt(extended system) of [" << i << "] is " << ekbt[i]
         << '\n';
@@ -377,21 +422,33 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   log << "eABF/DRR: The fullsamples is " << fullsamples << '\n';
   log << "eABF/DRR: The kbt(real system) is " << kbt << '\n';
   // Set up the force grid
-  for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  std::vector<DRRAxis> zdelim(ndims);
+  std::vector<DRRAxis> delim(ndims);
+  for (unsigned i = 0; i < ndims; i++) {
     log << "eABF/DRR: The " << i << " dimensional grid minimum is " << gmin[i]
         << '\n';
     log << "eABF/DRR: The " << i << " dimensional grid maximum is " << gmax[i]
         << '\n';
     log << "eABF/DRR: The " << i << " dimensional grid has " << gbin[i]
         << " bins" << '\n';
+    log << "eABF/DRR: The " << i << " dimensional zgrid minimum is " << zgmin[i]
+        << '\n';
+    log << "eABF/DRR: The " << i << " dimensional zgrid maximum is " << zgmax[i]
+        << '\n';
+    log << "eABF/DRR: The " << i << " dimensional zgrid has " << zgbin[i]
+        << " bins" << '\n';
     double l, h;
     PLMD::Tools::convert(gmin[i], l);
     PLMD::Tools::convert(gmax[i], h);
     delim[i].set(l, h, gbin[i]);
+    double zl,zh;
+    PLMD::Tools::convert(zgmin[i], zl);
+    PLMD::Tools::convert(zgmax[i], zh);
+    zdelim[i].set(zl, zh, zgbin[i]);
   }
-  if (kappa.size() != getNumberOfArguments()) {
-    kappa.resize(getNumberOfArguments(), 0.0);
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  if (kappa.size() != ndims) {
+    kappa.resize(ndims, 0.0);
+    for (unsigned i = 0; i < ndims; i++) {
       if (kappa[i] <= 0) {
         log << "eABF/DRR: The spring force constant kappa[" << i
             << "] is not set." << '\n';
@@ -404,27 +461,27 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     }
   } else {
     log << "eABF/DRR: The kappa have been set manually." << '\n';
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+    for (unsigned i = 0; i < ndims; i++) {
       log << "eABF/DRR: The spring force constant kappa[" << i << "] is "
           << std::fixed << std::setprecision(10) << kappa[i] << '\n';
     }
   }
 
-  if (tau.size() != getNumberOfArguments()) {
-    std::fill(std::begin(tau), std::end(tau), 0.5);
+  if (tau.size() != ndims) {
+    tau.assign(ndims, 0.5);
   }
   for (unsigned i = 0; i < tau.size(); i++) {
     log << "eABF/DRR: relaxation time tau[" << i << "] is " << tau[i] << '\n';
   }
-  if (friction.size() != getNumberOfArguments()) {
-    std::fill(std::begin(friction), std::end(friction), 8.0);
+  if (friction.size() != ndims) {
+    friction.assign(ndims, 8.0);
   }
   for (unsigned i = 0; i < friction.size(); ++i) {
     log << "eABF/DRR: Extended variable [" << i
         << "] has friction: " << friction[i] << '\n';
   }
   dt = getTimeStep();
-  for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
+  for (unsigned i = 0; i < ndims; ++i) {
     mass[i] = kappa[i] * tau[i] * tau[i] / (4 * pi * pi);
     log << "eABF/DRR: Fictitious mass[" << i << "] is " << mass[i] << '\n';
     c1[i] = exp(-0.5 * friction[i] * dt);
@@ -442,6 +499,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       getPntrToArgument(i)->getDomain(c, d);
       componentIsPeriodic(comp, a, b);
       delim[i].setPeriodicity(c, d);
+      zdelim[i].setPeriodicity(c, d);
     } else
       componentIsNotPeriodic(comp);
     fictValue[i] = getPntrToComponent(comp);
@@ -457,8 +515,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     biasforceValue[i] = getPntrToComponent(comp);
   }
 
-  if (outputprefix.length() == 0)
+  if (outputprefix.length() == 0) {
     outputprefix = getLabel();
+  }
   outputname = outputprefix + ".drrstate";
   cptname = outputprefix + ".cpt.drrstate";
 
@@ -466,8 +525,14 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     // If you want to use on-the-fly text output for CZAR and naive estimator,
     // you should turn it to true first!
     ABFGrid = ABF(delim, ".abf", textoutput);
-    CZARestimator = CZAR(delim, ".czar", kbt, textoutput);
+    // Just initialize it even useCZARestimator is off.
+    CZARestimator = CZAR(zdelim, ".czar", kbt, textoutput);
     log << "eABF/DRR: The init function of the grid is finished." << '\n';
+  }
+  if (useCZARestimator) {
+    log << "eABF/DRR: Using corrected z-average restraint estimator of gradients" << '\n';
+    log << "  Bibliography " << plumed.cite("Lesage, Lelièvre, Stoltz and Hénin, "
+                                            "J. Phys. Chem. B 3676, 121 (2017)");
   }
   if (useUIestimator) {
     log << "eABF/DRR: Using umbrella integration(Zheng and Yang's) estimator "
@@ -475,13 +540,16 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         << '\n';
     log << "eABF/DRR: The UI estimator code is contributed by Haohao Fu."
         << '\n';
-    std::vector<double> lowerboundary(delim.size(), 0);
-    std::vector<double> upperboundary(delim.size(), 0);
-    std::vector<double> width(delim.size(), 0);
-    for (size_t i = 0; i < delim.size(); ++i) {
-      lowerboundary[i] = delim[i].getMin();
-      upperboundary[i] = delim[i].getMax();
-      width[i] = delim[i].getWidth();
+    log << plumed.cite(
+          "Fu, Shao, Chipot and Cai, J. Chem. Theory Comput. 3506, 12 (2016)");
+    log << plumed.cite("Zheng and Yang, J. Chem. Theory Comput. 810, 8 (2012)");
+    std::vector<double> lowerboundary(zdelim.size(), 0);
+    std::vector<double> upperboundary(zdelim.size(), 0);
+    std::vector<double> width(zdelim.size(), 0);
+    for (size_t i = 0; i < zdelim.size(); ++i) {
+      lowerboundary[i] = zdelim[i].getMin();
+      upperboundary[i] = zdelim[i].getMax();
+      width[i] = zdelim[i].getWidth();
     }
     std::vector<std::string> input_filename;
     bool uirestart = false;
@@ -495,15 +563,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
                 lowerboundary, upperboundary, width, kappa, getLabel(), int(outputfreq),
                 uirestart, input_filename, kbt / plumed.getAtoms().getKBoltzmann());
   }
-  log << "  Bibliography " << plumed.cite("Lesage, Lelièvre, Stoltz and Hénin, "
-                                          "J. Phys. Chem. B 3676, 121 (2017)");
-  log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)");
-  if (useUIestimator) {
-    log << plumed.cite(
-          "Fu, Shao, Chipot and Cai, J. Chem. Theory Comput. 3506, 12 (2016)");
-    log << plumed.cite("Zheng and Yang, J. Chem. Theory Comput. 810, 8 (2012)");
-  }
-  log << "\n";
+  log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)") << '\n';
 }
 
 void DynamicReferenceRestraining::calculate() {
@@ -516,23 +576,25 @@ void DynamicReferenceRestraining::calculate() {
   }
   if (step_now != 0) {
     if ((step_now % int(outputfreq)) == 0) {
-      if (!textoutput) {
-        save(outputname, step_now);
-      } else {
+      save(outputname, step_now);
+      if (textoutput) {
         ABFGrid.writeAll(outputprefix);
-        CZARestimator.writeAll(outputprefix);
+        if (useCZARestimator) {
+          CZARestimator.writeAll(outputprefix);
+        }
       }
     }
     if (historyfreq > 0 && (step_now % int(historyfreq)) == 0) {
-      if (!textoutput) {
-        const std::string filename =
-          outputprefix + "." + std::to_string(step_now) + ".drrstate";
-        save(filename, step_now);
-      } else {
-        const std::string filename =
+      const std::string filename =
+        outputprefix + "." + std::to_string(step_now) + ".drrstate";
+      save(filename, step_now);
+      if (textoutput) {
+        const std::string textfilename =
           outputprefix + "." + std::to_string(step_now);
-        ABFGrid.writeAll(filename);
-        CZARestimator.writeAll(filename);
+        ABFGrid.writeAll(textfilename);
+        if (useCZARestimator) {
+          CZARestimator.writeAll(textfilename);
+        }
       }
     }
     if (getCPT()) {
@@ -558,7 +620,9 @@ void DynamicReferenceRestraining::calculate() {
   }
   setBias(ene);
   ABFGrid.store_getbias(fict, ffict_measured, fbias, fullsamples);
-  CZARestimator.store(real, ffict_measured);
+  if (useCZARestimator) {
+    CZARestimator.store(real, ffict_measured);
+  }
   if (useUIestimator) {
     eabf_UI.update_output_filename(outputprefix);
     eabf_UI.update(int(step_now), real, fictNoPBC);

@@ -74,6 +74,7 @@ public:
   int main(FILE *in, FILE *out, Communicator &pc);
   void extractdrr(const std::vector<std::string> &filename);
   void mergewindows(const std::vector<std::string> &filename);
+  void calcDivergence(const std::vector<std::string> &filename);
   std::string description() const { return "Extract or merge the drrstate files."; }
 
 private:
@@ -88,6 +89,7 @@ void drrtool::registerKeywords(Keywords &keys) {
   CLTool::registerKeywords(keys);
   keys.add("optional", "--extract", "Extract drrstate file(s)");
   keys.add("optional", "--merge", "Merge eABF windows");
+  keys.add("optional", "--divergence", "Calculate divergence of gradient field (experimental)");
   keys.add("compulsory","--units","kj/mol","the units of energy can be kj/mol, kcal/mol, j/mol, eV or the conversion factor from kj/mol");
   keys.addFlag("-v", false, "Verbose output");
 }
@@ -111,6 +113,11 @@ int drrtool::main(FILE *in, FILE *out, Communicator &pc) {
   bool domerge = parseVector("--merge", stateFilesToMerge);
   if (domerge) {
     mergewindows(stateFilesToMerge);
+  }
+  std::vector<std::string> stateFilesToDivergence;
+  bool dodivergence = parseVector("--divergence", stateFilesToDivergence);
+  if (dodivergence) {
+    calcDivergence(stateFilesToDivergence);
   }
   return 0;
 }
@@ -197,6 +204,44 @@ void drrtool::mergewindows(const std::vector<std::string> &filename) {
   mergename = mergename.substr(0, mergename.size() - 1);
   cmerged.writeAll(mergename);
   amerged.writeAll(mergename);
+}
+
+void drrtool::calcDivergence(const std::vector<std::string> &filename) {
+  #pragma omp parallel for
+  for (size_t j = 0; j < filename.size(); ++j) {
+    std::ifstream in;
+    in.open(filename[j]);
+    boost::archive::binary_iarchive ia(in);
+    long long int step;
+    std::vector<double> fict;
+    std::vector<double> vfict;
+    std::vector<double> vfict_laststep;
+    std::vector<double> ffict;
+    ABF abfgrid;
+    CZAR czarestimator;
+    ia >> step >> fict >> vfict >> vfict_laststep >> ffict >> abfgrid >>
+       czarestimator;
+    in.close();
+    abfgrid.setOutputUnit(units.getEnergy());
+    czarestimator.setOutputUnit(units.getEnergy());
+    if (verbosity) {
+      std::cout << "Output units factor: " << units.getEnergy() << '\n';
+      std::cout << "Dumping information of extended variables..." << '\n';
+      std::cout << "Step: " << step << '\n';
+      for (size_t i = 0; i < fict.size(); ++i) {
+        std::cout << "Dimension[" << i + 1 << "]:\n"
+                  << "  Coordinate: " << fict[i] << '\n'
+                  << "  Velocity: " << vfict[i] << '\n'
+                  << "  Velocity(laststep): " << vfict_laststep[i] << '\n'
+                  << "  Force: " << ffict[i] << '\n';
+      }
+      std::cout << "Dumping counts and gradients from grids..." << '\n';
+    }
+    std::string outputname(filename[j]);
+    outputname = outputname.substr(0, outputname.length() - suffix.length());
+    abfgrid.writeDivergence(outputname);
+    czarestimator.writeDivergence(outputname);
+  }
 }
 
 } // End of namespace
