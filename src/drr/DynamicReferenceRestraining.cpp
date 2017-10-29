@@ -340,45 +340,45 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     }
   }
 
-  std::vector<string> gmin(getNumberOfArguments());
-  std::vector<string> zgmin(getNumberOfArguments());
+  std::vector<string> gmin(ndims);
+  std::vector<string> zgmin(ndims);
   parseVector("GRID_MIN", gmin);
   parseVector("ZGRID_MIN", zgmin);
-  if (gmin.size() != getNumberOfArguments())
+  if (gmin.size() != ndims)
     error("eABF/DRR: not enough values for GRID_MIN");
-  if (zgmin.size() != getNumberOfArguments()) {
+  if (zgmin.size() != ndims) {
     log << "eABF/DRR: You didn't specify ZGRID_MIN. " << '\n'
         << "eABF/DRR: The GRID_MIN will be used instead.";
     zgmin = gmin;
   }
-  std::vector<string> gmax(getNumberOfArguments());
-  std::vector<string> zgmax(getNumberOfArguments());
+  std::vector<string> gmax(ndims);
+  std::vector<string> zgmax(ndims);
   parseVector("GRID_MAX", gmax);
   parseVector("ZGRID_MAX", zgmax);
-  if (gmax.size() != getNumberOfArguments())
+  if (gmax.size() != ndims)
     error("eABF/DRR: not enough values for GRID_MAX");
-  if (zgmax.size() != getNumberOfArguments()) {
+  if (zgmax.size() != ndims) {
     log << "eABF/DRR: You didn't specify ZGRID_MAX. " << '\n'
         << "eABF/DRR: The GRID_MAX will be used instead.";
     zgmax = gmax;
   }
-  std::vector<unsigned> gbin(getNumberOfArguments());
-  std::vector<unsigned> zgbin(getNumberOfArguments());
-  std::vector<double> gspacing(getNumberOfArguments());
-  std::vector<double> zgspacing(getNumberOfArguments());
+  std::vector<unsigned> gbin(ndims);
+  std::vector<unsigned> zgbin(ndims);
+  std::vector<double> gspacing(ndims);
+  std::vector<double> zgspacing(ndims);
   parseVector("GRID_BIN", gbin);
   parseVector("ZGRID_BIN", zgbin);
   parseVector("GRID_SPACING", gspacing);
   parseVector("ZGRID_SPACING", zgspacing);
-  if (gbin.size() != getNumberOfArguments()) {
+  if (gbin.size() != ndims) {
     log << "eABF/DRR: You didn't specify GRID_BIN. Trying to use GRID_SPACING "
         "instead."
         << '\n';
-    if (gspacing.size() != getNumberOfArguments()) {
+    if (gspacing.size() != ndims) {
       error("eABF/DRR: not enough values for GRID_BIN");
     } else {
-      gbin.resize(getNumberOfArguments());
-      for (size_t i = 0; i < getNumberOfArguments(); ++i) {
+      gbin.resize(ndims);
+      for (size_t i = 0; i < ndims; ++i) {
         double l, h;
         PLMD::Tools::convert(gmin[i], l);
         PLMD::Tools::convert(gmax[i], h);
@@ -388,15 +388,15 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       }
     }
   }
-  if (zgbin.size() != getNumberOfArguments()) {
+  if (zgbin.size() != ndims) {
     log << "eABF/DRR: You didn't specify ZGRID_BIN. Trying to use ZGRID_SPACING instead." << '\n';
-    if (zgspacing.size() != getNumberOfArguments()) {
+    if (zgspacing.size() != ndims) {
       log << "eABF/DRR: You didn't specify ZGRID_SPACING. Trying to use GRID_SPACING or GRID_BIN instead." << '\n';
       zgbin = gbin;
       zgspacing = gspacing;
     } else {
-      zgbin.resize(getNumberOfArguments());
-      for (size_t i = 0; i < getNumberOfArguments(); ++i) {
+      zgbin.resize(ndims);
+      for (size_t i = 0; i < ndims; ++i) {
         double l, h;
         PLMD::Tools::convert(zgmin[i], l);
         PLMD::Tools::convert(zgmax[i], h);
@@ -410,13 +410,10 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
 
   // Set up kbt for extended system
   std::vector<double> ekbt(ndims, 0.0);
-  if (etemp.size() != getNumberOfArguments()) {
-    etemp.resize(getNumberOfArguments(), 0.0);
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-      etemp[i] = kbt / plumed.getAtoms().getKBoltzmann();
-    }
+  if (etemp.size() != ndims) {
+    etemp.assign(ndims, kbt / plumed.getAtoms().getKBoltzmann());
   }
-  for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  for (unsigned i = 0; i < ndims; i++) {
     ekbt[i] = etemp[i] * plumed.getAtoms().getKBoltzmann();
     log << "eABF/DRR: The kbt(extended system) of [" << i << "] is " << ekbt[i]
         << '\n';
@@ -425,9 +422,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   log << "eABF/DRR: The fullsamples is " << fullsamples << '\n';
   log << "eABF/DRR: The kbt(real system) is " << kbt << '\n';
   // Set up the force grid
-  std::vector<DRRAxis> zdelim(getNumberOfArguments());
-  std::vector<DRRAxis> delim(getNumberOfArguments());
-  for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  std::vector<DRRAxis> zdelim(ndims);
+  std::vector<DRRAxis> delim(ndims);
+  for (unsigned i = 0; i < ndims; i++) {
     log << "eABF/DRR: The " << i << " dimensional grid minimum is " << gmin[i]
         << '\n';
     log << "eABF/DRR: The " << i << " dimensional grid maximum is " << gmax[i]
@@ -449,9 +446,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     PLMD::Tools::convert(zgmax[i], zh);
     zdelim[i].set(zl, zh, zgbin[i]);
   }
-  if (kappa.size() != getNumberOfArguments()) {
-    kappa.resize(getNumberOfArguments(), 0.0);
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  if (kappa.size() != ndims) {
+    kappa.resize(ndims, 0.0);
+    for (unsigned i = 0; i < ndims; i++) {
       if (kappa[i] <= 0) {
         log << "eABF/DRR: The spring force constant kappa[" << i
             << "] is not set." << '\n';
@@ -464,27 +461,27 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     }
   } else {
     log << "eABF/DRR: The kappa have been set manually." << '\n';
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+    for (unsigned i = 0; i < ndims; i++) {
       log << "eABF/DRR: The spring force constant kappa[" << i << "] is "
           << std::fixed << std::setprecision(10) << kappa[i] << '\n';
     }
   }
 
-  if (tau.size() != getNumberOfArguments()) {
-    std::fill(std::begin(tau), std::end(tau), 0.5);
+  if (tau.size() != ndims) {
+    tau.assign(ndims, 0.5);
   }
   for (unsigned i = 0; i < tau.size(); i++) {
     log << "eABF/DRR: relaxation time tau[" << i << "] is " << tau[i] << '\n';
   }
-  if (friction.size() != getNumberOfArguments()) {
-    std::fill(std::begin(friction), std::end(friction), 8.0);
+  if (friction.size() != ndims) {
+    friction.assign(ndims, 8.0);
   }
   for (unsigned i = 0; i < friction.size(); ++i) {
     log << "eABF/DRR: Extended variable [" << i
         << "] has friction: " << friction[i] << '\n';
   }
   dt = getTimeStep();
-  for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
+  for (unsigned i = 0; i < ndims; ++i) {
     mass[i] = kappa[i] * tau[i] * tau[i] / (4 * pi * pi);
     log << "eABF/DRR: Fictitious mass[" << i << "] is " << mass[i] << '\n';
     c1[i] = exp(-0.5 * friction[i] * dt);
@@ -518,8 +515,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     biasforceValue[i] = getPntrToComponent(comp);
   }
 
-  if (outputprefix.length() == 0)
+  if (outputprefix.length() == 0) {
     outputprefix = getLabel();
+  }
   outputname = outputprefix + ".drrstate";
   cptname = outputprefix + ".cpt.drrstate";
 
@@ -534,7 +532,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   if (useCZARestimator) {
     log << "eABF/DRR: Using corrected z-average restraint estimator of gradients" << '\n';
     log << "  Bibliography " << plumed.cite("Lesage, Lelièvre, Stoltz and Hénin, "
-                                          "J. Phys. Chem. B 3676, 121 (2017)");
+                                            "J. Phys. Chem. B 3676, 121 (2017)");
   }
   if (useUIestimator) {
     log << "eABF/DRR: Using umbrella integration(Zheng and Yang's) estimator "
@@ -542,6 +540,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         << '\n';
     log << "eABF/DRR: The UI estimator code is contributed by Haohao Fu."
         << '\n';
+    log << plumed.cite(
+          "Fu, Shao, Chipot and Cai, J. Chem. Theory Comput. 3506, 12 (2016)");
+    log << plumed.cite("Zheng and Yang, J. Chem. Theory Comput. 810, 8 (2012)");
     std::vector<double> lowerboundary(zdelim.size(), 0);
     std::vector<double> upperboundary(zdelim.size(), 0);
     std::vector<double> width(zdelim.size(), 0);
@@ -562,13 +563,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
                 lowerboundary, upperboundary, width, kappa, getLabel(), int(outputfreq),
                 uirestart, input_filename, kbt / plumed.getAtoms().getKBoltzmann());
   }
-  log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)");
-  if (useUIestimator) {
-    log << plumed.cite(
-          "Fu, Shao, Chipot and Cai, J. Chem. Theory Comput. 3506, 12 (2016)");
-    log << plumed.cite("Zheng and Yang, J. Chem. Theory Comput. 810, 8 (2012)");
-  }
-  log << "\n";
+  log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)") << '\n';
 }
 
 void DynamicReferenceRestraining::calculate() {
