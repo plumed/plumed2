@@ -460,7 +460,7 @@ void DRRForceGrid::writeDivergence(const std::string &filename) const {
 
 bool ABF::store_getbias(const std::vector<double> &pos,
                         const std::vector<double> &f,
-                        std::vector<double> &fbias, double fullsamples) {
+                        std::vector<double> &fbias) {
   if (!isInBoundary(pos)) {
     std::fill(std::begin(fbias), std::end(fbias), 0.0);
     return false;
@@ -468,8 +468,9 @@ bool ABF::store_getbias(const std::vector<double> &pos,
   const size_t baseaddr = sampleAddress(pos);
   unsigned long int &count = samples[baseaddr];
   ++count;
-  double factor = 2 * (static_cast<double>(count)) / fullsamples - 1;
-  factor = factor < 0 ? 0 : factor > 1 ? 1 : factor; // Clamp to [0,1]
+  double factor = 2 * (static_cast<double>(count)) / mFullSamples - 1;
+  // Clamp to [0,maxFactor]
+  factor = factor < 0 ? 0 : factor > mMaxFactor ? mMaxFactor : factor;
   auto it_fa = std::begin(forces) + baseaddr * ndims;
   auto it_fb = std::begin(fbias);
   auto it_f = std::begin(f);

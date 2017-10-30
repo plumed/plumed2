@@ -166,6 +166,7 @@ private:
   ABF ABFGrid;
   CZAR CZARestimator;
   double fullsamples;
+  double maxFactor;
   UIestimator::UIestimator eabf_UI;
   Random rand;
 
@@ -213,6 +214,8 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
            "with ZGRID_BIN)");
   keys.add("compulsory", "FULLSAMPLES", "500",
            "number of samples in a bin prior to application of the ABF");
+  keys.add("compulsory", "MAXFACTOR", "1.0",
+           "maximum scaling factor of biasing force");
   keys.add("compulsory", "OUTPUTFREQ", "write results to a file every N steps");
   keys.add("optional", "HISTORYFREQ", "save history to a file every N steps");
   keys.addFlag("NOCZAR", false, "disable the CZAR estimator");
@@ -314,6 +317,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   double temp = -1.0;
   parse("TEMP", temp);
   parse("FULLSAMPLES", fullsamples);
+  parse("MAXFACTOR", maxFactor);
   parse("OUTPUTFREQ", outputfreq);
   parse("HISTORYFREQ", historyfreq);
   parse("OUTPUTPREFIX", outputprefix);
@@ -414,6 +418,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
 
   // Set up kbt for extended system
   log << "eABF/DRR: The fullsamples is " << fullsamples << '\n';
+  log << "eABF/DRR: The maximum scaling factor is " << maxFactor << '\n';
   log << "eABF/DRR: The kbt(real system) is " << kbt << '\n';
   dt = getTimeStep();
   vector<double> ekbt(ndims, 0.0);
@@ -521,10 +526,14 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   if (!isRestart) {
     // If you want to use on-the-fly text output for CZAR and naive estimator,
     // you should turn it to true first!
-    ABFGrid = ABF(delim, ".abf", textoutput);
+    ABFGrid = ABF(delim, ".abf", fullsamples, maxFactor, textoutput);
     // Just initialize it even useCZARestimator is off.
     CZARestimator = CZAR(zdelim, ".czar", kbt, textoutput);
     log << "eABF/DRR: The init function of the grid is finished." << '\n';
+  } else {
+    // ABF Parametres are not saved in binary files
+    // So manully set them up
+    ABFGrid.setParameters(fullsamples, maxFactor);
   }
   if (useCZARestimator) {
     log << "eABF/DRR: Using corrected z-average restraint estimator of gradients" << '\n';
@@ -618,7 +627,7 @@ void DynamicReferenceRestraining::calculate() {
     vfictValue[i]->set(vfict_laststep[i]);
   }
   setBias(ene);
-  ABFGrid.store_getbias(fict, ffict_measured, fbias, fullsamples);
+  ABFGrid.store_getbias(fict, ffict_measured, fbias);
   if (useCZARestimator) {
     CZARestimator.store(real, ffict_measured);
   }

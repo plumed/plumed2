@@ -300,16 +300,26 @@ class ABF : public DRRForceGrid {
 public:
   ABF() {}
   ABF(const std::vector<DRRAxis> &p_dimensions, const std::string &p_suffix,
+      double fullSamples = 500.0, double maxFactor = 1.0,
       bool initializeTable = true)
-    : DRRForceGrid(p_dimensions, p_suffix, initializeTable) {}
+    : DRRForceGrid(p_dimensions, p_suffix, initializeTable),
+      mFullSamples(fullSamples), mMaxFactor(maxFactor) {}
+  // Provide a setter for ABF parametres (fullsamples, maxfactor)
+  void setParameters(double fullSamples, double maxFactor) {
+    mFullSamples = fullSamples;
+    mMaxFactor = maxFactor;
+  }
   // Store the "instantaneous" spring force of a point and get ABF bias forces.
   bool store_getbias(const std::vector<double> &pos,
-                     const std::vector<double> &f, std::vector<double> &fbias,
-                     double fullsamples);
+                     const std::vector<double> &f,
+                     std::vector<double> &fbias);
   static ABF mergewindow(const ABF &aWA, const ABF &aWB);
   ~ABF() {}
 
 private:
+  // Parametres for calculate bias force
+  double mFullSamples;
+  double mMaxFactor;
   // Boost serialization
   friend class boost::serialization::access;
   template <typename Archive>
