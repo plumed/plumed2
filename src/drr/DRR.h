@@ -173,6 +173,8 @@ public:
   /// CZAR and naive(ABF) have different gradient formulae
   virtual std::vector<double> getGradient(const std::vector<double> &pos,
                                           bool SkipCheck = false) const;
+  /// Calculate divergence of the mean force field (experimental)
+  double getDivergence(const std::vector<double> &pos) const;
   /// Calculate dln(ρ)/dz, useful for CZAR
   /// This function may be moved to CZAR class in the future
   std::vector<double>
@@ -183,8 +185,10 @@ public:
   void write1DPMF(std::string filename) const;
   /// Write count file
 //   void writeCount(std::string filename) const;
-  /// Write necessary output file in one function
+  /// Write necessary output file in one function (.grad and .count)
   void writeAll(const std::string &filename) const;
+  /// Output divergence (.div) (experimental)
+  void writeDivergence(const std::string &filename) const;
   /// Miscellaneous getter functions, useful for merging windows
   std::vector<DRRAxis> getDimensions() const { return this->dimensions; }
   size_t getNumberOfDimension() const { return ndims; }
