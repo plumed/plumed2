@@ -109,6 +109,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then
       brew update > /dev/null ;
       brew install ccache ;
+      export PLUMED_MPIRUN="mpirun --oversubscribe" ;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq ; fi
 # install some package - these are fast, we install them anyway
