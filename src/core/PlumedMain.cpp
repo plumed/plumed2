@@ -276,7 +276,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       break;
     case cmd_getApiVersion:
       CHECK_NOTNULL(val,word);
-      *(static_cast<int*>(val))=4;
+      *(static_cast<int*>(val))=5;
       break;
     // commands which can be used only before initialization:
     case cmd_init:
