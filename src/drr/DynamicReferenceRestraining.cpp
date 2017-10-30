@@ -124,33 +124,36 @@ PRINT STRIDE=10 ARG=dist1,eabf_winall.dist1_fict,eabf_winall.dist1_biasforce FIL
  */
 //+ENDPLUMEDOC
 
+using std::vector;
+using std::string;
+
 class DynamicReferenceRestraining : public Bias {
 private:
   bool firsttime;
   bool nobias;
-  std::vector<double> fictNoPBC;
-  std::vector<double> real;
-  std::vector<double> springlength; // spring lengths
-  std::vector<double> fict;         // coordinates of extended variables
-  std::vector<double> vfict;        // velocities of extended variables
-  std::vector<double> vfict_laststep;
-  std::vector<double> ffict; // forces exerted on extended variables
-  std::vector<double> fbias; // bias forces from eABF
-  std::vector<double> kappa;
-  std::vector<double> tau;
-  std::vector<double> friction;
-  std::vector<double> etemp;
-  std::vector<double> ffict_measured;
-  std::vector<Value *> biasforceValue;
-  std::vector<Value *> fictValue;
-  std::vector<Value *> vfictValue;
-  std::vector<double> c1;
-  std::vector<double> c2;
-  std::vector<double> mass;
-  std::vector<DRRAxis> delim;
-  std::string outputname;
-  std::string cptname;
-  std::string outputprefix;
+  vector<double> fictNoPBC;
+  vector<double> real;
+  vector<double> springlength; // spring lengths
+  vector<double> fict;         // coordinates of extended variables
+  vector<double> vfict;        // velocities of extended variables
+  vector<double> vfict_laststep;
+  vector<double> ffict; // forces exerted on extended variables
+  vector<double> fbias; // bias forces from eABF
+  vector<double> kappa;
+  vector<double> tau;
+  vector<double> friction;
+  vector<double> etemp;
+  vector<double> ffict_measured;
+  vector<Value *> biasforceValue;
+  vector<Value *> fictValue;
+  vector<Value *> vfictValue;
+  vector<double> c1;
+  vector<double> c2;
+  vector<double> mass;
+  vector<DRRAxis> delim;
+  string outputname;
+  string cptname;
+  string outputprefix;
   const size_t ndims;
   double dt;
   double kbt;
@@ -169,9 +172,9 @@ public:
   explicit DynamicReferenceRestraining(const ActionOptions &);
   void calculate();
   void update();
-  void save(const std::string &filename, long long int step);
-  void load(const std::string &filename);
-  void backupFile(const std::string &filename);
+  void save(const string &filename, long long int step);
+  void load(const string &filename);
+  void backupFile(const string &filename);
   static void registerKeywords(Keywords &keys);
   bool is_file_exist(const char *fileName);
 };
@@ -301,9 +304,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   parse("OUTPUTFREQ", outputfreq);
   parse("HISTORYFREQ", historyfreq);
   parse("OUTPUTPREFIX", outputprefix);
-  std::string restartfilename;
+  string restartfilename;
   parse("DRR_RFILE", restartfilename);
-  std::string uirprefix;
+  string uirprefix;
   parse("UIRESTARTPREFIX", uirprefix);
   if (temp >= 0.0)
     kbt = plumed.getAtoms().getKBoltzmann() * temp;
@@ -328,27 +331,27 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     }
   }
 
-  std::vector<string> gmin(getNumberOfArguments());
+  vector<string> gmin(ndims);
   parseVector("GRID_MIN", gmin);
-  if (gmin.size() != getNumberOfArguments())
+  if (gmin.size() != ndims)
     error("eABF/DRR: not enough values for GRID_MIN");
-  std::vector<string> gmax(getNumberOfArguments());
+  vector<string> gmax(ndims);
   parseVector("GRID_MAX", gmax);
-  if (gmax.size() != getNumberOfArguments())
+  if (gmax.size() != ndims)
     error("eABF/DRR: not enough values for GRID_MAX");
-  std::vector<unsigned> gbin(getNumberOfArguments());
-  std::vector<double> gspacing(getNumberOfArguments());
+  vector<unsigned> gbin(ndims);
+  vector<double> gspacing(ndims);
   parseVector("GRID_BIN", gbin);
   parseVector("GRID_SPACING", gspacing);
-  if (gbin.size() != getNumberOfArguments()) {
+  if (gbin.size() != ndims) {
     log << "eABF/DRR: You didn't specify GRID_BIN. Trying to use GRID_SPACING "
         "instead."
         << '\n';
-    if (gspacing.size() != getNumberOfArguments()) {
+    if (gspacing.size() != ndims) {
       error("eABF/DRR: not enough values for GRID_BIN");
     } else {
-      gbin.resize(getNumberOfArguments());
-      for (size_t i = 0; i < getNumberOfArguments(); ++i) {
+      gbin.resize(ndims);
+      for (size_t i = 0; i < ndims; ++i) {
         double l, h;
         PLMD::Tools::convert(gmin[i], l);
         PLMD::Tools::convert(gmax[i], h);
@@ -361,23 +364,29 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   checkRead();
 
   // Set up kbt for extended system
-  std::vector<double> ekbt(ndims, 0.0);
-  if (etemp.size() != getNumberOfArguments()) {
-    etemp.resize(getNumberOfArguments(), 0.0);
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-      etemp[i] = kbt / plumed.getAtoms().getKBoltzmann();
-    }
+  log << "eABF/DRR: The fullsamples is " << fullsamples << '\n';
+  log << "eABF/DRR: The kbt(real system) is " << kbt << '\n';
+  dt = getTimeStep();
+  vector<double> ekbt(ndims, 0.0);
+  if (etemp.size() != ndims) {
+    etemp.assign(ndims, kbt / plumed.getAtoms().getKBoltzmann());
   }
-  for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  if (tau.size() != ndims) {
+    tau.assign(ndims, 0.5);
+  }
+  if (friction.size() != ndims) {
+    friction.assign(ndims, 8.0);
+  }
+  for (size_t i = 0; i < ndims; ++i) {
     ekbt[i] = etemp[i] * plumed.getAtoms().getKBoltzmann();
     log << "eABF/DRR: The kbt(extended system) of [" << i << "] is " << ekbt[i]
         << '\n';
+    log << "eABF/DRR: relaxation time tau [" << i << "] is " << tau[i] << '\n';
+    log << "eABF/DRR: Extended variable [" << i << "] has friction: " << friction[i] << '\n';
   }
 
-  log << "eABF/DRR: The fullsamples is " << fullsamples << '\n';
-  log << "eABF/DRR: The kbt(real system) is " << kbt << '\n';
   // Set up the force grid
-  for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  for (size_t i = 0; i < ndims; ++i) {
     log << "eABF/DRR: The " << i << " dimensional grid minimum is " << gmin[i]
         << '\n';
     log << "eABF/DRR: The " << i << " dimensional grid maximum is " << gmax[i]
@@ -389,9 +398,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     PLMD::Tools::convert(gmax[i], h);
     delim[i].set(l, h, gbin[i]);
   }
-  if (kappa.size() != getNumberOfArguments()) {
-    kappa.resize(getNumberOfArguments(), 0.0);
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  if (kappa.size() != ndims) {
+    kappa.resize(ndims, 0.0);
+    for (size_t i = 0; i < ndims; ++i) {
       if (kappa[i] <= 0) {
         log << "eABF/DRR: The spring force constant kappa[" << i
             << "] is not set." << '\n';
@@ -404,39 +413,25 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     }
   } else {
     log << "eABF/DRR: The kappa have been set manually." << '\n';
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+    for (size_t i = 0; i < ndims; ++i) {
       log << "eABF/DRR: The spring force constant kappa[" << i << "] is "
           << std::fixed << std::setprecision(10) << kappa[i] << '\n';
     }
   }
 
-  if (tau.size() != getNumberOfArguments()) {
-    std::fill(std::begin(tau), std::end(tau), 0.5);
-  }
-  for (unsigned i = 0; i < tau.size(); i++) {
-    log << "eABF/DRR: relaxation time tau[" << i << "] is " << tau[i] << '\n';
-  }
-  if (friction.size() != getNumberOfArguments()) {
-    std::fill(std::begin(friction), std::end(friction), 8.0);
-  }
-  for (unsigned i = 0; i < friction.size(); ++i) {
-    log << "eABF/DRR: Extended variable [" << i
-        << "] has friction: " << friction[i] << '\n';
-  }
-  dt = getTimeStep();
-  for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
+  for (size_t i = 0; i < ndims; ++i) {
     mass[i] = kappa[i] * tau[i] * tau[i] / (4 * pi * pi);
     log << "eABF/DRR: Fictitious mass[" << i << "] is " << mass[i] << '\n';
     c1[i] = exp(-0.5 * friction[i] * dt);
     c2[i] = sqrt(ekbt[i] * (1.0 - c1[i] * c1[i]) / mass[i]);
   }
 
-  for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  for (size_t i = 0; i < ndims; ++i) {
     // Position output
-    std::string comp = getPntrToArgument(i)->getName() + "_fict";
+    string comp = getPntrToArgument(i)->getName() + "_fict";
     addComponentWithDerivatives(comp);
     if (getPntrToArgument(i)->isPeriodic()) {
-      std::string a, b;
+      string a, b;
       double c, d;
       getPntrToArgument(i)->getDomain(a, b);
       getPntrToArgument(i)->getDomain(c, d);
@@ -475,22 +470,23 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         << '\n';
     log << "eABF/DRR: The UI estimator code is contributed by Haohao Fu."
         << '\n';
-    std::vector<double> lowerboundary(delim.size(), 0);
-    std::vector<double> upperboundary(delim.size(), 0);
-    std::vector<double> width(delim.size(), 0);
+    vector<double> lowerboundary(delim.size(), 0);
+    vector<double> upperboundary(delim.size(), 0);
+    vector<double> width(delim.size(), 0);
     for (size_t i = 0; i < delim.size(); ++i) {
       lowerboundary[i] = delim[i].getMin();
       upperboundary[i] = delim[i].getMax();
       width[i] = delim[i].getWidth();
     }
-    std::vector<std::string> input_filename;
+    vector<string> input_filename;
     bool uirestart = false;
     if (isRestart && (uirprefix.length() != 0)) {
       input_filename.push_back(uirprefix);
       uirestart = true;
     }
-    if (isRestart && (uirprefix.length() == 0))
+    if (isRestart && (uirprefix.length() == 0)) {
       input_filename.push_back(getLabel());
+    }
     eabf_UI = UIestimator::UIestimator(
                 lowerboundary, upperboundary, width, kappa, getLabel(), int(outputfreq),
                 uirestart, input_filename, kbt / plumed.getAtoms().getKBoltzmann());
@@ -507,9 +503,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
 }
 
 void DynamicReferenceRestraining::calculate() {
-  const unsigned long step_now = getStep();
+  long long int step_now = getStep();
   if (firsttime) {
-    for (unsigned i = 0; i < ndims; ++i) {
+    for (size_t i = 0; i < ndims; ++i) {
       fict[i] = getArgument(i);
     }
     firsttime = false;
@@ -525,11 +521,11 @@ void DynamicReferenceRestraining::calculate() {
     }
     if (historyfreq > 0 && (step_now % int(historyfreq)) == 0) {
       if (!textoutput) {
-        const std::string filename =
+        const string filename =
           outputprefix + "." + std::to_string(step_now) + ".drrstate";
         save(filename, step_now);
       } else {
-        const std::string filename =
+        const string filename =
           outputprefix + "." + std::to_string(step_now);
         ABFGrid.writeAll(filename);
         CZARestimator.writeAll(filename);
@@ -543,7 +539,7 @@ void DynamicReferenceRestraining::calculate() {
     }
   }
   double ene = 0.0;
-  for (unsigned i = 0; i < ndims; ++i) {
+  for (size_t i = 0; i < ndims; ++i) {
     real[i] = getArgument(i);
     springlength[i] = difference(i, fict[i], real[i]);
     fictNoPBC[i] = real[i] - springlength[i];
@@ -566,7 +562,7 @@ void DynamicReferenceRestraining::calculate() {
 }
 
 void DynamicReferenceRestraining::update() {
-  for (unsigned i = 0; i < ndims; ++i) {
+  for (size_t i = 0; i < ndims; ++i) {
     // consider additional forces on the fictitious particle
     // (e.g. MetaD stuff)
     ffict[i] += fictValue[i]->getForce();
@@ -586,11 +582,10 @@ void DynamicReferenceRestraining::update() {
     vfict[i] += ffict[i] * 0.5 * dt / mass[i];
     // update position (full step)
     fict[i] += vfict[i] * dt;
-    //     }
   }
 }
 
-void DynamicReferenceRestraining::save(const std::string &filename,
+void DynamicReferenceRestraining::save(const string &filename,
                                        long long int step) {
   std::ofstream out;
   out.open(filename.c_str(), std::ios::binary);
@@ -600,7 +595,7 @@ void DynamicReferenceRestraining::save(const std::string &filename,
   out.close();
 }
 
-void DynamicReferenceRestraining::load(const std::string &filename) {
+void DynamicReferenceRestraining::load(const string &filename) {
   std::ifstream in;
   long long int step;
   in.open(filename.c_str(), std::ios::binary);
@@ -613,14 +608,14 @@ void DynamicReferenceRestraining::load(const std::string &filename) {
   backupFile(filename);
 }
 
-void DynamicReferenceRestraining::backupFile(const std::string &filename) {
+void DynamicReferenceRestraining::backupFile(const string &filename) {
   bool isSuccess = false;
-  int i = 0;
+  long int i = 0;
   while (!isSuccess) {
     // If libstdc++ support C++17 we can simplify following code.
-    const std::string bckname = "bck." + filename + "." + std::to_string(i);
+    const string bckname = "bck." + filename + "." + std::to_string(i);
     if (is_file_exist(bckname.c_str())) {
-      i++;
+      ++i;
     } else {
       log << "eABF/DRR: Backup original restart file to " << bckname << '\n';
       std::ifstream src(filename.c_str(), std::ios::binary);
