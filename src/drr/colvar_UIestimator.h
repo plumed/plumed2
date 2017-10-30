@@ -791,7 +791,7 @@ LOOPEND4:
     std::vector<double> position_temp(dimension, 0);
     std::vector<double> grad_temp(dimension, 0);
     int count_temp = 0;
-    for (int i = 0; i < input_filename.size(); i++)
+    for (unsigned int i = 0; i < input_filename.size(); i++)
     {
       int size = 1, size_temp = 0;
 

@@ -4,6 +4,8 @@
 [![Github Releases](https://img.shields.io/github/release/plumed/plumed2.svg)](https://github.com/plumed/plumed2/releases)
 [![Twitter Follow](https://img.shields.io/twitter/follow/plumed_org.svg?style=social&label=Follow)](https://twitter.com/plumed_org)
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/plumed.svg)](https://repology.org/metapackage/plumed)
+
 Branches and releases
 ---------------------
 

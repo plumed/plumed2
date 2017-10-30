@@ -113,7 +113,7 @@ private:
   PammObject mypamm;
 public:
   static void registerKeywords( Keywords& keys );
-  PAMM(const ActionOptions&);
+  explicit PAMM(const ActionOptions&);
 /// We have to overwrite this here
   unsigned getNumberOfQuantities() const ;
 /// Calculate the weight of this object ( average of input weights )

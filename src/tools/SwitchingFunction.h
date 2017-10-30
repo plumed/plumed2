@@ -41,29 +41,35 @@ class Keywords;
 /// performances.
 class SwitchingFunction {
 /// This is to check that switching function has been initialized
-  bool init;
+  bool init=false;
 /// Type of function
-  enum {rational,exponential,gaussian,smap,cubic,tanh,matheval,leptontype,nativeq} type;
+  enum {rational,exponential,gaussian,smap,cubic,tanh,matheval,leptontype,nativeq} type=rational;
 /// Inverse of scaling length.
 /// We store the inverse to avoid a division
-  double invr0;
+  double invr0=0.0;
 /// Minimum distance (before this, function is one)
-  double d0;
+  double d0=0.0;
 /// Maximum distance (after this, function is zero)
-  double dmax;
+  double dmax=0.0;
 /// Exponents for rational function
-  int nn,mm;
+  int nn=6;
+  int mm=0;
 /// Parameters for smap function
-  int a,b;
-  double c,d;
+  int a=0;
+  int b=b;
+  double c=0.0;
+  double d=0.0;
 // nativeq
-  double lambda, beta, ref;
+  double lambda=0.0;
+  double beta=0.0;
+  double ref=0.0;
 /// Square of invr0, useful in calculateSqr()
-  double invr0_2;
+  double invr0_2=0.0;
 /// Square of dmax, useful in calculateSqr()
-  double dmax_2;
+  double dmax_2=0.0;
 /// Parameters for stretching the function to zero at d_max
-  double stretch,shift;
+  double stretch=1.0;
+  double shift=0.0;
 /// Low-level tool to compute rational functions.
 /// It is separated since it is called both by calculate() and calculateSqr()
   double do_rational(double rdist,double&dfunc,int nn,int mm)const;
@@ -77,12 +83,6 @@ class SwitchingFunction {
   std::vector<lepton::CompiledExpression> expression_deriv;
 public:
   static void registerKeywords( Keywords& keys );
-/// Constructor
-  SwitchingFunction();
-/// Copy constructor
-  SwitchingFunction(const SwitchingFunction&);
-/// Assignment operator
-  SwitchingFunction & operator=(const SwitchingFunction&);
 /// Set a "rational" switching function.
 /// Notice that a d_max is set automatically to a value such that
 /// f(d_max)=0.00001.
