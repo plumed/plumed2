@@ -1,0 +1,4 @@
+# vim:ft=plumed
+p: POSITION ATOM=1
+ene: ENERGY 
+PRINT ARG=p.x,p.y,ene FILE=colvar.data FMT=%8.4f

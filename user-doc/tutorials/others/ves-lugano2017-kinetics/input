@@ -1,0 +1,24 @@
+units   metal
+boundary f f p
+atom_style      atomic
+
+read_data       data.start
+mass 1 12.01
+
+timestep 0.001
+velocity      all create 1700.  495920
+
+pair_style airebo 3.0
+pair_coeff      * * CH.airebo C
+
+neighbor 2.0 bin
+neigh_modify every 20 delay 0 check no
+dump 1 all xyz 10 movie.xyz #dump every 10 frames
+
+# MD
+fix      1 all nvt temp 1700. 1700.  0.1
+fix      plumed all plumed plumedfile plumed.dat outfile plumed.out
+fix 2 all momentum 1 linear 1 1 1 angular 
+thermo 100
+run 500000
+

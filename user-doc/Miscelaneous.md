@@ -8,6 +8,8 @@
 - \subpage degub
 - \subpage exchange-patterns
 - \subpage mymodules
+- \subpage special-replica-syntax
+- \subpage parsing-constants
 - \subpage misc
 
 \page comments Comments
@@ -418,6 +420,138 @@ very intensive development of the code of if you are running on a computer with 
 
 Using the \subpage RANDOM_EXCHANGES keyword it is possible to make exchanges betweem randomly
 chosen replicas. This is useful e.g. for bias exchange metadynamics \cite piana.
+
+\page special-replica-syntax Special replica syntax
+
+(this part of the manual is based on \ref trieste-5-replica-special-syntax).
+
+In many cases, we need to run multiple replicas with almost identical PLUMED files.
+These files might be prepared with cut-and-paste, which is very error prone,
+or could be set up with some smart bash or python script. Additionally,
+one can take advantage of the \ref INCLUDE keyword so as to have a shared input
+file with common definitions and specific input files with replica-dependent keywords.
+However, as of PLUMED 2.4, we introduced a simpler manner to manipulate multiple replica
+inputs with tiny differences. Look at the following example:
+
+\plumedfile
+# Compute a distance
+d: DISTANCE ATOMS=1,2
+
+# Apply a restraint.
+RESTRAINT ARG=d AT=@replicas:1.0,1.1,1.2 KAPPA=1.0
+# On replica 0, this means:
+#   RESTRAINT ARG=d AT=1.0 KAPPA=1.0
+# On replica 1, this means:
+#   RESTRAINT ARG=d AT=1.1 KAPPA=1.0
+# On replica 2, this means:
+#   RESTRAINT ARG=d AT=1.2 KAPPA=1.0
+\endplumedfile
+
+If you prepare a single `plumed.dat` file like this one and feeds it to PLUMED while using 3 replicas,
+the 3 replicas will see the very same input except for the `AT` keyword, that sets the position of the restraint.
+Replica 0 will see a restraint centered at 1.0, replica 1 centered at 1.1, and replica 2 centered at 1.2.
+
+The `@replicas:` keyword is not special for \ref RESTRAINT or for the `AT` keyword. Any keyword in PLUMED can accept that syntax.
+For instance, the following single input file can be used to setup a bias exchange metadynamics \cite piana simulations:
+\plumedfile
+# Compute distance between atoms 1 and 2
+d: DISTANCE ATOMS=1,2
+
+# Compute a torsional angle
+t: TORSION ATOMS=30,31,32,33
+
+# Metadynamics.
+METAD ...
+  ARG=@replicas:d,t
+  HEIGHT=1.0
+  PACE=100
+  SIGMA=@replicas:0.1,0.3
+  GRID_MIN=@replicas:0.0,-pi
+  GRID_MAX=@replicas:2.0,+pi
+...
+# On replica 0, this means:
+#  METAD ARG=d HEIGHT=1.0 PACE=100 SIGMA=0.1 GRID_MIN=0.0 GRID_MAX=2.0
+# On replica 1, this means:
+#  METAD ARG=t HEIGHT=1.0 PACE=100 SIGMA=0.3 GRID_MIN=-pi GRID_MAX=+pi
+\endplumedfile
+
+This would be a typical setup for a bias exchange simulation.
+Notice that even though variables `d` and `t` are both read in both replicas,
+`d` is only computed on replica 0 (and `t` is only computed on replica 1).
+This is because variables that are defined but not used are never actually calculated by PLUMED.
+
+If the value that should be provided for each replica is a vector, you should use curly braces as delimiters.
+For instance, if the restraint acts on two variables, you can use the following input:
+
+\plumedfile
+# Compute distance between atoms 1 and 2
+d: DISTANCE ATOMS=10,20
+
+# Compute a torsional angle
+t: TORSION ATOMS=30,31,32,33
+
+# Apply a restraint:
+RESTRAINT ...
+  ARG=d,t
+  AT=@replicas:{{1.0,2.0} {3.0,4.0} {5.0,6.0}}
+  KAPPA=1.0,3.0
+...
+# On replica 0 this means:
+#  RESTRAINT ARG=d AT=1.0,2.0 KAPPA=1.0,3.0
+# On replica 1 this means:
+#  RESTRAINT ARG=d AT=3.0,4.0 KAPPA=1.0,3.0
+# On replica 2 this means:
+#  RESTRAINT ARG=d AT=5.0,6.0 KAPPA=1.0,3.0
+\endplumedfile
+
+Notice the double curly braces. The outer ones are used by PLUMED to know there the argument of the `AT` keyword ends,
+whereas the inner ones are used to group the values corresponding to each replica.
+Also notice that the last example can be split in multiple lines exploiting the fact that
+within multi-line statements (enclosed by pairs of `...`) newlines are replaced with simple spaces:
+\plumedfile
+d: DISTANCE ATOMS=10,20
+t: TORSION ATOMS=30,31,32,33
+RESTRAINT ...
+  ARG=d,t
+# indentation is not required (this is not python!)
+# but makes the input easier to read
+  AT=@replicas:{
+    {1.0,2.0}
+    {3.0,4.0}
+    {5.0,6.0}
+  }
+  KAPPA=1.0
+...
+\endplumedfile
+
+In short, whenever there are keywords that should vary across replicas, you should set them usign the `@replicas:` keyword.
+As mentioned above, you can always use the old syntax with separate input file, and this is recommended when the
+number of keywords that are different is large.
+
+\page parsing-constants Parsing constants
+
+You might have noticed that from time to time constants are specified using strings rather than numbers.
+An example is the following
+
+\plumedfile
+MOLINFO STRUCTURE=AA.pdb  MOLTYPE=rna
+e1: TORSION ATOMS=@epsilon-1
+t: METAD ARG=e1 SIGMA=0.15 PACE=10 HEIGHT=2 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=200
+\endplumedfile
+
+Notice that the boundaries for `GRID_MIN` and `GRID_MAX` are `-pi` and `pi`. Until PLUMED 2.3,
+we used a very dummy parses that could recognize only `pi` as a special string, plus strings such
+as `0.5pi` and `-pi`. However, as of version 2.4, we use the Lepton library in order to parse every constant
+that we read. This means that you can also employ more complicated expressions such as `1+2` or `exp(10)`:
+
+\plumedfile
+MOLINFO STRUCTURE=AA.pdb  MOLTYPE=rna
+e1: TORSION ATOMS=@epsilon-1
+RESTRAINT ARG=e1 AT=1+0.5
+\endplumedfile
+
+Notice that this applies to any quantity read by plumed as a real number, but does not apply
+yet to integer numbers (e.g.: the PACE argument of \ref METAD).
 
 \page misc Frequently used tools
 

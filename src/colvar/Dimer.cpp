@@ -135,7 +135,7 @@ in the standard way for each replica according to the value of DSIGMA.
 class Dimer : public Colvar {
 public:
   static void registerKeywords( Keywords& keys);
-  Dimer(const ActionOptions&);
+  explicit Dimer(const ActionOptions&);
   virtual void calculate();
 protected:
   bool trimer,useall;

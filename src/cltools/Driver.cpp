@@ -533,8 +533,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         if(!fp) {
           string msg="ERROR: Error opening trajectory file "+trajectoryFile;
           fprintf(stderr,"%s\n",msg.c_str());
-// cppcheck detects a false positive here. I suppress it:
-// cppcheck-suppress memleak
           return 1;
         }
       }
@@ -745,7 +743,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         matrix box;
         std::unique_ptr<rvec[]> pos(new rvec[natoms]);
         float prec,lambda;
-        int ret;
+        int ret=exdrOK;
         if(trajectory_fmt=="xdr-xtc") ret=read_xtc(xd,natoms,&localstep,&time,box,pos.get(),&prec);
         if(trajectory_fmt=="xdr-trr") ret=read_trr(xd,natoms,&localstep,&time,&lambda,box,pos.get(),NULL,NULL);
         if(stride==0) step=localstep;

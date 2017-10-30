@@ -35,8 +35,7 @@ cdef class Plumed:
          cdef int pres = 8
          cplumed.plumed_cmd(self.c_plumed, "setRealPrecision", <void*>&pres )  
      def __dealloc__(self): 
-         pass
-         #del self.c_plumed
+         cplumed.plumed_finalize(self.c_plumed)
 
      def cmd_ndarray_real(self, ckey, val):
          cdef double [:] abuffer = val.ravel()

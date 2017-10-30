@@ -168,10 +168,10 @@ public:
 /// Destructor
   virtual ~Action();
 private:
-/// Copy constructor is disabled (private and unimplemented)
-  explicit Action(const Action&a);
-/// Assignment operator is disabled (private and unimplemented)
-  Action& operator=(const Action&a);
+/// Copy constructor is deleted
+  Action(const Action&a) = delete;
+/// Assignment operator is deleted
+  Action& operator=(const Action&a) = delete;
   int replica_index;
 public:
 /// Check if Action was properly read.

@@ -133,6 +133,10 @@ echo
 echo "# list of modules"
 echo "# syntax: module name on/off (default-on/default-off/always)"
 echo "$modules" | sort
+echo
+echo "# Makefile.conf file"
+echo "# syntax: makefile_conf followed by a single space followed by a line from makefile_conf"
+cat "$makefile_conf" | awk '{printf("makefile_conf %s\n",$0)}'
 
 }> $file~
 
