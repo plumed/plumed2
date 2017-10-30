@@ -473,7 +473,8 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   if (useCZARestimator) {
     log << "eABF/DRR: Using corrected z-average restraint estimator of gradients" << '\n';
     log << "  Bibliography " << plumed.cite("Lesage, Lelièvre, Stoltz and Hénin, "
-                                            "J. Phys. Chem. B 3676, 121 (2017)") << '\n';
+                                            "J. Phys. Chem. B 3676, 121 (2017)");
+    log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)") << '\n';
   }
   if (useUIestimator) {
     log << "eABF/DRR: Using umbrella integration(Zheng and Yang's) estimator "
@@ -481,9 +482,10 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         << '\n';
     log << "eABF/DRR: The UI estimator code is contributed by Haohao Fu."
         << '\n';
-    log << plumed.cite(
-          "Fu, Shao, Chipot and Cai, J. Chem. Theory Comput. 3506, 12 (2016)") << '\n';
-    log << plumed.cite("Zheng and Yang, J. Chem. Theory Comput. 810, 8 (2012)") << '\n';
+    log << "  Bibliography " << plumed.cite(
+          "Fu, Shao, Chipot and Cai, J. Chem. Theory Comput. 3506, 12 (2016)");
+    log << plumed.cite("Zheng and Yang, J. Chem. Theory Comput. 810, 8 (2012)");
+    log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)") << '\n';
     vector<double> lowerboundary(delim.size(), 0);
     vector<double> upperboundary(delim.size(), 0);
     vector<double> width(delim.size(), 0);
@@ -505,7 +507,6 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
                 lowerboundary, upperboundary, width, kappa, getLabel(), int(outputfreq),
                 uirestart, input_filename, kbt / plumed.getAtoms().getKBoltzmann());
   }
-  log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)") << "\n";
 }
 
 void DynamicReferenceRestraining::calculate() {
