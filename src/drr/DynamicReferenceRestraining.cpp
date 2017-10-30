@@ -160,6 +160,7 @@ private:
   double outputfreq;
   double historyfreq;
   bool isRestart;
+  bool useCZARestimator;
   bool useUIestimator;
   bool textoutput;
   ABF ABFGrid;
@@ -206,6 +207,7 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
            "number of samples in a bin prior to application of the ABF");
   keys.add("compulsory", "OUTPUTFREQ", "write results to a file every N steps");
   keys.add("optional", "HISTORYFREQ", "save history to a file every N steps");
+  keys.addFlag("NOCZAR", false, "disable the CZAR estimator");
   keys.addFlag("UI", false,
                "enable the umbrella integration estimator");
   keys.add("optional", "UIRESTARTPREFIX",
@@ -262,7 +264,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     delim(getNumberOfArguments()), outputname(""), cptname(""),
     outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
-    useUIestimator(false), textoutput(false)
+    useCZARestimator(true), useUIestimator(false), textoutput(false)
 {
   log << "eABF/DRR: You now are using the extended adaptive biasing "
       "force(eABF) method."
@@ -293,6 +295,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       << '\n';
   parseFlag("NOBIAS", nobias);
   parseFlag("UI", useUIestimator);
+  bool noCZAR = false;
+  parseFlag("NOCZAR", noCZAR);
+  noCZAR == false ? useCZARestimator = true : useCZARestimator = false;
   parseFlag("TEXTOUTPUT", textoutput);
   parseVector("TAU", tau);
   parseVector("FRICTION", friction);
@@ -461,8 +466,14 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     // If you want to use on-the-fly text output for CZAR and naive estimator,
     // you should turn it to true first!
     ABFGrid = ABF(delim, ".abf", textoutput);
+    // Just initialize it even useCZARestimator is off.
     CZARestimator = CZAR(delim, ".czar", kbt, textoutput);
     log << "eABF/DRR: The init function of the grid is finished." << '\n';
+  }
+  if (useCZARestimator) {
+    log << "eABF/DRR: Using corrected z-average restraint estimator of gradients" << '\n';
+    log << "  Bibliography " << plumed.cite("Lesage, Lelièvre, Stoltz and Hénin, "
+                                            "J. Phys. Chem. B 3676, 121 (2017)") << '\n';
   }
   if (useUIestimator) {
     log << "eABF/DRR: Using umbrella integration(Zheng and Yang's) estimator "
@@ -470,6 +481,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         << '\n';
     log << "eABF/DRR: The UI estimator code is contributed by Haohao Fu."
         << '\n';
+    log << plumed.cite(
+          "Fu, Shao, Chipot and Cai, J. Chem. Theory Comput. 3506, 12 (2016)") << '\n';
+    log << plumed.cite("Zheng and Yang, J. Chem. Theory Comput. 810, 8 (2012)") << '\n';
     vector<double> lowerboundary(delim.size(), 0);
     vector<double> upperboundary(delim.size(), 0);
     vector<double> width(delim.size(), 0);
@@ -491,15 +505,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
                 lowerboundary, upperboundary, width, kappa, getLabel(), int(outputfreq),
                 uirestart, input_filename, kbt / plumed.getAtoms().getKBoltzmann());
   }
-  log << "  Bibliography " << plumed.cite("Lesage, Lelièvre, Stoltz and Hénin, "
-                                          "J. Phys. Chem. B 3676, 121 (2017)");
-  log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)");
-  if (useUIestimator) {
-    log << plumed.cite(
-          "Fu, Shao, Chipot and Cai, J. Chem. Theory Comput. 3506, 12 (2016)");
-    log << plumed.cite("Zheng and Yang, J. Chem. Theory Comput. 810, 8 (2012)");
-  }
-  log << "\n";
+  log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)") << "\n";
 }
 
 void DynamicReferenceRestraining::calculate() {
@@ -512,23 +518,25 @@ void DynamicReferenceRestraining::calculate() {
   }
   if (step_now != 0) {
     if ((step_now % int(outputfreq)) == 0) {
-      if (!textoutput) {
-        save(outputname, step_now);
-      } else {
+      save(outputname, step_now);
+      if (textoutput) {
         ABFGrid.writeAll(outputprefix);
-        CZARestimator.writeAll(outputprefix);
+        if (useCZARestimator) {
+          CZARestimator.writeAll(outputprefix);
+        }
       }
     }
     if (historyfreq > 0 && (step_now % int(historyfreq)) == 0) {
-      if (!textoutput) {
-        const string filename =
-          outputprefix + "." + std::to_string(step_now) + ".drrstate";
-        save(filename, step_now);
-      } else {
-        const string filename =
+      const string filename =
+        outputprefix + "." + std::to_string(step_now) + ".drrstate";
+      save(filename, step_now);
+      if (textoutput) {
+        const string textfilename =
           outputprefix + "." + std::to_string(step_now);
-        ABFGrid.writeAll(filename);
-        CZARestimator.writeAll(filename);
+        ABFGrid.writeAll(textfilename);
+        if (useCZARestimator) {
+          CZARestimator.writeAll(textfilename);
+        }
       }
     }
     if (getCPT()) {
@@ -554,7 +562,9 @@ void DynamicReferenceRestraining::calculate() {
   }
   setBias(ene);
   ABFGrid.store_getbias(fict, ffict_measured, fbias, fullsamples);
-  CZARestimator.store(real, ffict_measured);
+  if (useCZARestimator) {
+    CZARestimator.store(real, ffict_measured);
+  }
   if (useUIestimator) {
     eabf_UI.update_output_filename(outputprefix);
     eabf_UI.update(int(step_now), real, fictNoPBC);
