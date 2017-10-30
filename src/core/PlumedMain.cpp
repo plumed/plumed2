@@ -249,16 +249,19 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       CHECK_INIT(initialized,word);
       atoms.clearFullList();
       break;
+    /* ADDED WITH API==6 */
     case cmd_getDataRank:
       CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
       if( nw==2 ) DataFetchingObject::get_rank( actionSet, words[1], "", static_cast<long*>(val) );
       else DataFetchingObject::get_rank( actionSet, words[1], words[2], static_cast<long*>(val) );
       break;
+    /* ADDED WITH API==6 */
     case cmd_getDataShape:
       CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
       if( nw==2 ) DataFetchingObject::get_shape( actionSet, words[1], "", static_cast<long*>(val) );
       else DataFetchingObject::get_shape( actionSet, words[1], words[2], static_cast<long*>(val) );
       break;
+    /* ADDED WITH API==6 */
     case cmd_setMemoryForData:
       CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
       if( nw==2 ) mydatafetcher->setData( words[1], "", val );
@@ -280,7 +283,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       break;
     case cmd_getApiVersion:
       CHECK_NOTNULL(val,word);
-      *(static_cast<int*>(val))=4;
+      *(static_cast<int*>(val))=6;
       break;
     // commands which can be used only before initialization:
     case cmd_init:

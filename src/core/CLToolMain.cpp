@@ -33,9 +33,23 @@
 #include <iostream>
 #include <algorithm>
 #include <memory>
+#include <unordered_map>
 
 using namespace std;
+
+#include "CLToolMainEnum.inc"
+
 namespace PLMD {
+
+const std::unordered_map<std::string, int> & clToolMainWordMap() {
+  static std::unordered_map<std::string, int> word_map;
+  static bool init=false;
+  if(!init) {
+#include "CLToolMainMap.inc"
+  }
+  init=true;
+  return word_map;
+}
 
 CLToolMain::CLToolMain():
   argc(0),
@@ -52,46 +66,69 @@ CLToolMain::~CLToolMain() {
 #define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"CLTool " + word + "\")");
 
 void CLToolMain::cmd(const std::string& word,void*val) {
-  if(false) {
-  } else if(word=="setArgc") {
-    CHECK_NULL(val,word);
-    argc=*static_cast<int*>(val);
-  } else if(word=="setArgv") {
-    CHECK_NULL(val,word);
-    char**v=static_cast<char**>(val);
-    for(int i=0; i<argc; ++i) argv.push_back(string(v[i]));
-  } else if(word=="setArgvLine") {
-    CHECK_NULL(val,word);
-    const char*v=static_cast<char*>(val);
-    argv=Tools::getWords(v);
-  } else if(word=="setIn") {
-    CHECK_NULL(val,word);
-    in=static_cast<FILE*>(val);
-  } else if(word=="setOut") {
-    CHECK_NULL(val,word);
-    out=static_cast<FILE*>(val);
-  } else if(word=="setMPIComm") {
-    comm.Set_comm(val);
-  } else if(word=="setMPIFComm") {
-    comm.Set_fcomm(val);
-  } else if(word=="run") {
-    CHECK_NULL(val,word);
-    argc=argv.size();
-    int n=0; for(int i=0; i<argc; ++i) n+=argv[i].length()+1;
-    std::vector<char> args(n);
-    std::vector<char*> v(argc);
-    char* ptr=&args[0];
-    for(int i=0; i<argc; ++i) {
-      v[i]=ptr;
-      for(unsigned c=0; c<argv[i].length(); ++c) {
-        *ptr=argv[i][c]; ptr++;
-      }
-      *ptr=0; ptr++;
-    }
-    int ret=run(argc,&v[0],in,out,comm);
-    *static_cast<int*>(val)=ret;
+
+  std::vector<std::string> words=Tools::getWords(word);
+  unsigned nw=words.size();
+  if(nw==0) {
+    // do nothing
   } else {
-    plumed_merror("cannot interpret cmd(\"CLTool " + word + "\"). check plumed developers manual to see the available commands.");
+    int iword=-1;
+    char**v;
+    char*vv;
+    const auto it=clToolMainWordMap().find(words[0]);
+    if(it!=clToolMainWordMap().end()) iword=it->second;
+    switch(iword) {
+    case cmd_setArgc:
+      CHECK_NULL(val,word);
+      argc=*static_cast<int*>(val);
+      break;
+    case cmd_setArgv:
+      CHECK_NULL(val,word);
+      v=static_cast<char**>(val);
+      for(int i=0; i<argc; ++i) argv.push_back(string(v[i]));
+      break;
+    case cmd_setArgvLine:
+      CHECK_NULL(val,word);
+      vv=static_cast<char*>(val);
+      argv=Tools::getWords(vv);
+      break;
+    case cmd_setIn:
+      CHECK_NULL(val,word);
+      in=static_cast<FILE*>(val);
+      break;
+    case cmd_setOut:
+      CHECK_NULL(val,word);
+      out=static_cast<FILE*>(val);
+      break;
+    case cmd_setMPIComm:
+      comm.Set_comm(val);
+      break;
+    case cmd_setMPIFComm:
+      comm.Set_fcomm(val);
+      break;
+    case cmd_run:
+      CHECK_NULL(val,word);
+      argc=argv.size();
+      {
+        int n=0; for(int i=0; i<argc; ++i) n+=argv[i].length()+1;
+        std::vector<char> args(n);
+        std::vector<char*> vvv(argc);
+        char* ptr=&args[0];
+        for(int i=0; i<argc; ++i) {
+          vvv[i]=ptr;
+          for(unsigned c=0; c<argv[i].length(); ++c) {
+            *ptr=argv[i][c]; ptr++;
+          }
+          *ptr=0; ptr++;
+        }
+        int ret=run(argc,&vvv[0],in,out,comm);
+        *static_cast<int*>(val)=ret;
+      }
+      break;
+    default:
+      plumed_merror("cannot interpret cmd(\"CLTool " + word + "\"). check plumed developers manual to see the available commands.");
+      break;
+    }
   }
 }
 

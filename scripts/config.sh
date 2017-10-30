@@ -13,6 +13,8 @@ Options:
                     check if plumed has features words
   module [word1 [word2]..]
                     check if plumed has enables modules words
+  makefile_conf
+                    dumps the Makefile.conf file
 
 Examples:
 
@@ -49,6 +51,11 @@ do
   (has) action=has ;;
   (module) action=module ;;
   (python_bin) action=python_bin ;;
+  (mpiexec) action=mpiexec ;;
+  (makefile_conf)
+    echo "$configfile" | awk '{if($1=="makefile_conf") { gsub("^makefile_conf ",""); print} }'
+    exit 0
+    ;;
   (*)
     checklist="$checklist $opt"
   esac
@@ -101,5 +108,15 @@ case $action in
   fi
   exit $retval
 ;;
+(mpiexec)
+  mpi=$(echo "$configfile" | grep -v \# | awk '{ if($1=="mpiexec") print $2 }')
+  if test -n "$mpi" ; then
+    retval=0
+    test "$quiet" = no && echo "$mpi"
+  else
+    retval=1
+    test "$quiet" = no && echo "mpiexec not found"
+  fi
+  exit $retval
 esac
 
