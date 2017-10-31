@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if test -n "$PLUMED_PREPEND_PATH" ; then
+  PATH="$PLUMED_PREPEND_PATH:$PATH"
+fi
+
 export valgrind=env
 
 for opt in ${*}
@@ -46,7 +50,7 @@ echo "++ Arguments: $arg"
 echo "++ Processors: $mpiprocs"
 
 mpi=env
-plumed=plumed
+plumed="${PLUMED_PROGRAM_NAME:-plumed}"
 
 root=$($plumed --no-mpi info --root)
 
@@ -63,9 +67,17 @@ cd -
 
 
 if ((mpiprocs>0)); then
-mpi="${PLUMED_MPIRUN:-mpirun} -np $mpiprocs"
+mpi=""
+if $plumed --no-mpi config -q mpiexec
+then
+  mpi="$($plumed --no-mpi config mpiexec)"
+fi
+if test -z "$mpi" ; then
+  mpi="${PLUMED_MPIRUN:-mpirun}"
+fi
+mpi="$mpi -np $mpiprocs"
 
-if ! plumed config -q has mpi
+if ! $plumed config -q has mpi
 then
   echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
   exit 0;
@@ -73,7 +85,7 @@ fi
 
 else
 
-plumed="plumed --no-mpi"
+plumed="$plumed --no-mpi"
 
 fi
 

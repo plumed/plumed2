@@ -32,3 +32,4 @@ datarootdir=@datarootdir@
 datadir=@datadir@
 docdir=@docdir@
 htmldir=@htmldir@
+mpiexec=@MPIEXEC@

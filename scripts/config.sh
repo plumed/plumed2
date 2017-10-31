@@ -50,6 +50,7 @@ do
     ;;
   (has) action=has ;;
   (module) action=module ;;
+  (mpiexec) action=mpiexec ;;
   (makefile_conf)
     echo "$configfile" | awk '{if($1=="makefile_conf") { gsub("^makefile_conf ",""); print} }'
     exit 0
@@ -95,5 +96,15 @@ case $action in
   git=$(echo "$configfile" | grep -v \# | awk '{ if($1=="version" && $2=="git") print $3 }')
   echo "Version: $long (git: $git)"
  ;;
+(mpiexec)
+  mpi=$(echo "$configfile" | grep -v \# | awk '{ if($1=="mpiexec") print $2 }')
+  if test -n "$mpi" ; then
+    retval=0
+    test "$quiet" = no && echo "$mpi"
+  else
+    retval=1
+    test "$quiet" = no && echo "mpiexec not found"
+  fi
+  exit $retval
 esac
 

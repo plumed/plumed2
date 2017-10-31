@@ -23,7 +23,9 @@ obj: all
 
 config.txt: ../../Makefile.conf
 	@echo "Updating config.txt file"
-	@makefile_conf="$(realpath ../../Makefile.conf)" ../maketools/update-config-txt.sh config.txt $(CPPFLAGS)
+	@makefile_conf="$(realpath ../../Makefile.conf)" \
+         mpiexec="$(mpiexec)" \
+         ../maketools/update-config-txt.sh config.txt $(CPPFLAGS)
 
 version.h:
 	@echo "Updating version.h"
