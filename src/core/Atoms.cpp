@@ -41,7 +41,6 @@ class PlumedMain;
 
 Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
-  pbc_fwd(new Pbc),
   md_energy(0.0),
   energy(0.0),
   dataCanBeSet(false),

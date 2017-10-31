@@ -503,9 +503,13 @@ unique_ptr in advance, you should insert it with the following syntax
 
 Notice that also forward declarations discussed above are a bit simpler
 to implement using C++11 syntax. This can be done using a std::unique_ptr
-or, even better, using the class ForwardDecl, which is similar to
-a std::unique_ptr but only implements the necessary method in order to be
-less error prone.
+or, even better, using the class ForwardDecl, which is a small utility class that
+only implement two methods:
+- A constructor, which takes an arbitrary number of parameters and use them
+  to construct an internally stored `std::unique_ptr`.
+- A `operator *`, which returns a pointer to the object.
+
+An example usage is below:
 
 
 \verbatim
@@ -540,8 +544,8 @@ public:
 using namespace PLMD;
 
 B::B():
-  content1_fwd(*new A),
-  content2_fwd(*new A (argument))
+// constructors that need no argument can be omitted
+  content2_fwd(argument)
 {
 }
 

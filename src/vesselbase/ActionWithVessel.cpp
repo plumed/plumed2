@@ -56,7 +56,6 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   noderiv(true),
   actionIsBridged(false),
   nactive_tasks(0),
-  stopwatch_fwd(new Stopwatch),
   dertime_can_be_off(false),
   dertime(true),
   contributorsAreUnlocked(false),
