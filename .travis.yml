@@ -79,7 +79,7 @@ matrix:
       - $HOME/.macports-ci-ccache
 # osx serial macports debug variant
   - os: osx
-    osx_image: xcode8.2
+    osx_image: xcode8.3
     env: PLUMED_MACPORTS="plumed +allmodules +python27"
     cache:
       directories:
