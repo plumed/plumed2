@@ -32,6 +32,7 @@
 #include <map>
 #include <numeric>
 #include <ctime>
+#include "tools/Random.h"
 
 using namespace std;
 
@@ -127,7 +128,6 @@ private:
   vector<double> ovdd_;
   vector<double> ovmd_ave_;
   vector<double> ov_cut_;
-  vector<double> ovdd_cut_;
 // and derivatives
   vector<Vector> ovmd_der_;
   vector<Vector> atom_der_;
@@ -144,6 +144,7 @@ private:
   vector<double> sigma_min_, sigma_max_;
   vector<double> dsigma_;
   vector<double> sigma0_;
+  double dCOsigma_;
 // list of prefactors for overlap between two components of model and data GMM
 // pre_fact = 1.0 / (2pi)**1.5 / sqrt(det_md) * Wm * Wd
   vector< double > pre_fact_;
@@ -166,8 +167,13 @@ private:
   bool pbc_;
 // Monte Carlo stuff
   int MCstride_;
+  int MCCOstride_;
   long int MCfirst_;
-  unsigned int MCaccept_;
+  unsigned MCaccept_;
+  unsigned MCCOaccept_;
+  double MCCOcut_;
+  vector< vector<unsigned> > MCCOneigh_;
+  Random random_;
   // status stuff
   unsigned int statusstride_;
   string       statusfilename_;
@@ -177,7 +183,17 @@ private:
   bool do_sampling_;
   // prior exponent
   double prior_;
+  // regression
+  unsigned nregres_;
+  double A_, B_;
+  // tabulated exponential
+  double dpcutoff_;
+  double dexp_;
+  unsigned nexp_;
+  vector<double> tab_exp_;
 
+// do regression
+  void doRegression();
 // read and write status
   void read_status();
   void print_status(long int step);
@@ -186,7 +202,9 @@ private:
 // accept or reject
   bool doAccept(double oldE, double newE);
 // do MonteCarlo
-  void doMonteCarlo(long int step);
+  void doMonteCarlo();
+  void doMonteCarloCollective();
+  void prepareCollectiveMC();
 // read error file
   vector<double> read_exp_errors(string errfile);
 // calculate model GMM weights and covariances
@@ -197,8 +215,6 @@ private:
   void check_GMM_d(VectorGeneric<6> &cov, double w);
 // auxiliary method
   void calculate_useful_stuff();
-// get cutoff in overlap
-  void get_cutoff_ov();
 // get pref_fact and inv_cov_md
   double get_prefactor_inverse (const VectorGeneric<6> &GMM_cov_0, const VectorGeneric<6> &GMM_cov_1,
                                 double &GMM_w_0, double &GMM_w_1,
@@ -244,25 +260,33 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","SIGMA_MEAN_C","the (cold) uncertainty in the mean estimate");
   keys.add("optional","SIGMA0","initial value of the uncertainty");
   keys.add("optional","DSIGMA","MC step for uncertainties");
-  keys.add("optional","MC_STRIDE","Monte Carlo stride");
+  keys.add("optional","DCOSIGMA","MC collective step for uncertainties");
+  keys.add("optional","MC_STRIDE",  "Monte Carlo stride");
+  keys.add("optional","MCCO_STRIDE","Monte Carlo stride for collective moves");
+  keys.add("optional","MCCO_CUT","Cutoff for MC collective moves");
   keys.add("optional","ERR_FILE","file with experimental overlaps");
   keys.add("optional","STATUS_FILE","write a file with all the data usefull for restart");
   keys.add("optional","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
   keys.add("optional","PRIOR", "p(sigma)=1/sigma^n, where n = 2*prior-1");
+  keys.add("optional","REGRESSION", "regression stride");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb", "default","Bayesian score");
-  keys.addOutputComponent("acc",    "SAMPLING","MC acceptance");
+  keys.addOutputComponent("acc",   "SAMPLING","MC acceptance");
+  keys.addOutputComponent("accco", "SAMPLING","MC acceptance");
 }
 
 EMMI::EMMI(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   inv_sqrt2_(0.707106781186548),
   sqrt2_pi_(0.797884560802865),
-  nl_cutoff_(-1.0), nl_stride_(0),
   first_time_(true), no_aver_(false),
   analysis_(false), nframe_(0.0), pbc_(true),
-  MCstride_(1), MCfirst_(-1), MCaccept_(0),
-  first_status_(true), do_sampling_(false), prior_(1.0)
+  MCstride_(1), MCCOstride_(1), dCOsigma_(0.0),
+  MCfirst_(-1), MCaccept_(0), MCCOaccept_(0), MCCOcut_(0.),
+  statusstride_(0), first_status_(true),
+  do_sampling_(false), prior_(1.),
+  nregres_(0), A_(0.), B_(1.),
+  dpcutoff_(15.0), nexp_(1000000)
 {
   // marginal or non-marginal version of the score
   parseFlag("SAMPLING",do_sampling_);
@@ -294,6 +318,12 @@ EMMI::EMMI(const ActionOptions&ao):
   parse("DSIGMA", dsigma);
   if(do_sampling_ && dsigma<=0) error("with SAMPLING you must specify a positive DSIGMA");
   parse("MC_STRIDE", MCstride_);
+  // MC collective stuff
+  parse("DCOSIGMA", dCOsigma_);
+  parse("MCCO_STRIDE", MCCOstride_);
+  parse("MCCO_CUT", MCCOcut_);
+  if(do_sampling_ && dCOsigma_>0 && MCCOcut_<=0)
+    error("with collective moves, MCCO_CUT should be strictly positive");
 
   // error file
   string errfile;
@@ -308,6 +338,9 @@ EMMI::EMMI(const ActionOptions&ao):
 
   // prior exponent
   parse("PRIOR",prior_);
+
+  // regression stride
+  parse("REGRESSION",nregres_);
 
   // neighbor list stuff
   parse("NL_CUTOFF",nl_cutoff_);
@@ -357,10 +390,16 @@ EMMI::EMMI(const ActionOptions&ao):
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
   log.printf("  (hot) uncertainty in the mean estimate : %f\n",sigma_mean_h);
   log.printf("  (cold) uncertainty in the mean estimate : %f\n",sigma_mean_c);
+  if(nregres_>0) log.printf("  regression stride : %u\n", nregres_);
   if(do_sampling_) {
     log.printf("  initial value of the uncertainty : %f\n",sigma_ini);
     log.printf("  max MC move in uncertainty : %f\n",dsigma);
     log.printf("  MC stride : %u\n", MCstride_);
+    if(dCOsigma_>0.) {
+      log.printf("  max MC collective move in uncertainty : %f\n",dCOsigma_);
+      log.printf("  MC collective move stride : %u\n", MCCOstride_);
+      log.printf("  cutoff for collective moves : %u\n", MCCOcut_);
+    }
     log.printf("  reading/writing to status file : %s\n",statusfilename_.c_str());
     log.printf("  with stride : %u\n",statusstride_);
     log.printf("  prior exponent : %f\n",prior_);
@@ -380,7 +419,7 @@ EMMI::EMMI(const ActionOptions&ao):
   get_GMM_d(GMM_file);
   log.printf("  number of GMM components : %u\n", static_cast<unsigned>(GMM_d_m_.size()));
 
-  // normalize atom weight map
+  // normalize atom weight map - not really needed with REGRESSION
   double norm_d = accumulate(GMM_d_w_.begin(), GMM_d_w_.end(), 0.0);
   double norm_m = accumulate(GMM_m_w.begin(),  GMM_m_w.end(),  0.0);
   for(unsigned i=0; i<GMM_m_w_.size(); ++i) GMM_m_w_[i] *= norm_d / norm_m;
@@ -427,30 +466,37 @@ EMMI::EMMI(const ActionOptions&ao):
     log.printf("  average relative error : %f\n", s0_ave);
     log.printf("  median relative error  : %f\n", s0_median[s0_median.size()/2]);
   }
+
   // read status file if restarting
   if(do_sampling_ && getRestart()) read_status();
 
   // calculate auxiliary stuff
   calculate_useful_stuff();
 
+  // prepare collective moves
+  if(do_sampling_ && dCOsigma_>0) prepareCollectiveMC();
+
   // prepare data and derivative vectors
   ovmd_.resize(GMM_d_m_.size());
   atom_der_.resize(GMM_m_type_.size());
   if(!do_sampling_) {
-    err_f_.resize(GMM_d_w_.size());
-    exp_f_.resize(GMM_d_w_.size());
+    err_f_.resize(GMM_d_m_.size());
+    exp_f_.resize(GMM_d_m_.size());
   }
 
   // clear things that are no longer needed
   GMM_d_cov_.clear();
-  GMM_d_w_.clear();
-  ovdd_cut_.clear();
 
   // add components
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
   if(do_sampling_) {
-    addComponent("acc"); componentIsNotPeriodic("acc");
+    addComponent("acc");   componentIsNotPeriodic("acc");
+    addComponent("accco"); componentIsNotPeriodic("accco");
   }
+
+  // initialize random seed
+  unsigned iseed = time(NULL);
+  random_.setSeed(-iseed);
 
   // request the atoms
   requestAtoms(atoms);
@@ -458,6 +504,28 @@ EMMI::EMMI(const ActionOptions&ao):
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   log<<plumed.cite("Hanot, Bonomi, Greenberg, Sali, Nilges, Vendruscolo, Pellarin, bioRxiv doi: 10.1101/113951 (2017)");
   log<<"\n";
+}
+
+void EMMI::prepareCollectiveMC()
+{
+// cycle on each GMM and find neighbors
+  for(unsigned i=0; i<GMM_d_m_.size(); ++i) {
+    // list of neighbors for i-th GMM component
+    vector<unsigned> neigh;
+    // position of the i-th GMM component
+    Vector m_i = GMM_d_m_[i];
+    // cycle on all the GMM components
+    for(unsigned j=0; j<GMM_d_m_.size(); ++j) {
+      // position of the j-th GMM component
+      Vector m_j = GMM_d_m_[j];
+      // distance
+      double dist = (m_i-m_j).modulo();
+      // add to list if within cutoff
+      if(dist<MCCOcut_) neigh.push_back(j);
+    }
+    // add to global neighbor list
+    MCCOneigh_.push_back(neigh);
+  }
 }
 
 void EMMI::read_status()
@@ -508,7 +576,7 @@ void EMMI::print_status(long int step)
 
 double EMMI::proposeMove(double x, double xmin, double xmax, double dxmax)
 {
-  double r = static_cast<double>(rand()) / RAND_MAX;
+  double r = random_.RandU01();
   double dx = -dxmax + r * 2.0 * dxmax;
   double x_new = x + dx;
 // check boundaries
@@ -526,23 +594,22 @@ bool EMMI::doAccept(double oldE, double newE) {
     accept = true;
   } else {
     // otherwise extract random number
-    double s = static_cast<double>(rand()) / RAND_MAX;
+    double s = random_.RandU01();
     if( s < exp(-delta) ) { accept = true; }
   }
   return accept;
 }
 
-void EMMI::doMonteCarlo(long int step)
+void EMMI::doMonteCarlo()
 {
 // prepare new sigma vector
   vector<double> new_sigma(sigma_.size(), 0.0);
 // and acceptance
   double MCaccept = 0.0;
-
 // cycle on sigmas - in parallel
   for(unsigned i=rank_; i<sigma_.size(); i+=size_) {
     // store prefactor
-    double pre_fact = 0.5*kbt_*( ovmd_[i]-ovdd_[i] )*( ovmd_[i]-ovdd_[i] );
+    double pre_fact = 0.5*kbt_*( B_*ovmd_[i]+A_*GMM_d_w_[i]-ovdd_[i] )*( B_*ovmd_[i]+A_*GMM_d_w_[i]-ovdd_[i] );
     // old stuff
     double old_s2 = sigma_mean_[i]*sigma_mean_[i]+sigma_[i]*sigma_[i];
     // deviations from data, normalization and prior
@@ -571,6 +638,46 @@ void EMMI::doMonteCarlo(long int step)
   MCaccept_ += MCaccept;
 }
 
+void EMMI::doMonteCarloCollective()
+{
+  // extract a random GMM component
+  unsigned nGMM = static_cast<unsigned>(floor(random_.RandU01()*static_cast<double>(GMM_d_m_.size())));
+  if(nGMM==GMM_d_m_.size()) nGMM=GMM_d_m_.size()-1;
+
+  // propose a move in total rescaling
+  double scale = proposeMove(1.0, 0.0001, 100.0, dCOsigma_);
+
+  // calculate old and new energy
+  double old_ene = 0.0;
+  double new_ene = 0.0;
+  // cycle on neighbors
+  for(unsigned j=0; j<MCCOneigh_[nGMM].size(); ++j) {
+    // index of the neighbor
+    unsigned i = MCCOneigh_[nGMM][j];
+    // store prefactor
+    double pre_fact = 0.5*kbt_*( B_*ovmd_[i]+A_*GMM_d_w_[i]-ovdd_[i] )*( B_*ovmd_[i]+A_*GMM_d_w_[i]-ovdd_[i] );
+    // old inverse s2
+    double old_s2 = sigma_mean_[i]*sigma_mean_[i]+sigma_[i]*sigma_[i];
+    // add to old energy
+    old_ene += pre_fact/old_s2 + kbt_*prior_*std::log(old_s2);
+    // new sigma
+    double new_s = sigma_[i] * scale;
+    // check boundaries
+    if(new_s > sigma_max_[i]) {new_s = 2.0 * sigma_max_[i] - new_s;}
+    if(new_s < sigma_min_[i]) {new_s = 2.0 * sigma_min_[i] - new_s;}
+    // new inverse s2
+    double new_s2 = sigma_mean_[i]*sigma_mean_[i]+new_s*new_s;
+    // add to new energy
+    new_ene += pre_fact/new_s2 + kbt_*prior_*std::log(new_s2);
+  }
+  // accept or reject
+  bool accept = doAccept(old_ene, new_ene);
+  if(accept) {
+    for(unsigned j=0; j<MCCOneigh_[nGMM].size(); ++j) sigma_[MCCOneigh_[nGMM][j]] *= scale;
+    MCCOaccept_++;
+  }
+}
+
 vector<double> EMMI::read_exp_errors(string errfile)
 {
   int nexp, idcomp;
@@ -584,8 +691,9 @@ vector<double> EMMI::read_exp_errors(string errfile)
     ifile->scanField("Nexp", nexp);
     // cycle on GMM components
     while(ifile->scanField("Id",idcomp)) {
-      // cycle on number of experimental errors
+      // this will be the total error
       double err_tot = 0.0;
+      // cycle on number of experimental errors
       for(unsigned i=0; i<nexp; ++i) {
         string ss; Tools::convert(i,ss);
         ifile->scanField("Err"+ss, err);
@@ -593,7 +701,7 @@ vector<double> EMMI::read_exp_errors(string errfile)
       }
       // new line
       ifile->scanField();
-      // calculate root mean squared error
+      // calculate RMSE
       err_tot = sqrt(err_tot/static_cast<double>(nexp));
       // add to global vector
       exp_err.push_back(err_tot);
@@ -727,7 +835,7 @@ void EMMI::get_GMM_d(string GMM_file)
 void EMMI::calculate_useful_stuff()
 {
   VectorGeneric<6> cov, sum, inv_sum;
-  // cycle on all atoms types
+  // cycle on all atoms types (4 for the moment)
   for(unsigned i=0; i<GMM_m_s_.size(); ++i) {
     // the Gaussian in density (real) space is the FT of scattering factor
     // f(r) = A * (pi/B)**1.5 * exp(-pi**2/B*r**2)
@@ -744,7 +852,7 @@ void EMMI::calculate_useful_stuff()
       double det = sum[0]*(sum[3]*sum[5]-sum[4]*sum[4]);
       det -= sum[1]*(sum[1]*sum[5]-sum[4]*sum[2]);
       det += sum[2]*(sum[1]*sum[4]-sum[3]*sum[2]);
-      // calculate prefactor
+      // calculate prefactor - model weights are already normalized
       double pre_fact =  cfact_ / sqrt(det) * GMM_d_w_[j] * GMM_m_w_[i];
       // and its inverse
       inv_sum[0] = (sum[3]*sum[5] - sum[4]*sum[4])/det;
@@ -759,8 +867,11 @@ void EMMI::calculate_useful_stuff()
       inv_cov_md_.push_back(inv_sum);
     }
   }
-  // get cutoff for overlap calculation - avoid millions of exp calculations
-  get_cutoff_ov();
+  // tabulate exponential
+  dexp_ = dpcutoff_ / static_cast<double> (nexp_-1);
+  for(unsigned i=0; i<nexp_; ++i) {
+    tab_exp_.push_back(exp(-static_cast<double>(i) * dexp_));
+  }
 }
 
 // get prefactors
@@ -805,32 +916,8 @@ double EMMI::get_self_overlap(unsigned id)
     // add overlap to ov_tot
     ov_tot += get_overlap(GMM_d_m_[id], GMM_d_m_[i], pre_fact, inv_sum, ov_der);
   }
-// store cutoff
-  ovdd_cut_.push_back(ov_tot * nl_cutoff_);
 // and return it
   return ov_tot;
-}
-
-// this is to avoid the calculation of millions of exp function
-// when updating the neighbor list using calculate_overlap
-void EMMI::get_cutoff_ov()
-{
-  // prepare ov_cut_
-  for(unsigned i=0; i<pre_fact_.size(); ++i) ov_cut_.push_back(0.0);
-  // temp stuff
-  unsigned GMM_d_size = GMM_d_m_.size();
-  unsigned GMM_m_size = GMM_m_type_.size();
-  // cycle on all overlaps
-  unsigned nover = GMM_d_size * GMM_m_size;
-  for(unsigned k=0; k<nover; ++k) {
-    // get data (id) and atom (im) indexes
-    unsigned id = k / GMM_m_size;
-    unsigned im = k % GMM_m_size;
-    // get index in auxiliary lists
-    unsigned kaux = GMM_m_type_[im] * GMM_d_size + id;
-    // store cutoff for exponent of the overlap
-    ov_cut_[kaux] = -2.0 * std::log( ovdd_cut_[id] / pre_fact_[kaux] );
-  }
 }
 
 // get overlap and derivatives
@@ -873,25 +960,58 @@ double EMMI::get_exp_overlap(const Vector &m_m, const Vector &d_m,
 
 void EMMI::update_neighbor_list()
 {
-  // temp stuff
+  // dimension of GMM and atom vectors
   unsigned GMM_d_size = GMM_d_m_.size();
   unsigned GMM_m_size = GMM_m_type_.size();
   // local neighbor list
   vector < unsigned > nl_l;
   // clear old neighbor list
   nl_.clear();
-  // cycle on all overlaps (in parallel)
-  unsigned nover = GMM_d_size * GMM_m_size;
-  for(unsigned k=rank_; k<nover; k=k+size_) {
-    // get data (id) and atom (im) indexes
-    unsigned id = k / GMM_m_size;
-    unsigned im = k % GMM_m_size;
-    // get index in auxiliary lists
-    unsigned kaux = GMM_m_type_[im] * GMM_d_size + id;
-    // calculate exponent of overlap
-    double expov = get_exp_overlap(GMM_d_m_[id], getPosition(im), inv_cov_md_[kaux]);
-    // fill the neighbor list
-    if(expov <= ov_cut_[kaux]) nl_l.push_back(k);
+
+  // cycle on GMM components - in parallel
+  for(unsigned id=rank_; id<GMM_d_size; id+=size_) {
+    // overlap lists and map
+    vector<double> ov_l;
+    map<double, unsigned> ov_m;
+    // total overlap with id
+    double ov_tot = 0.0;
+    // cycle on all atoms
+    for(unsigned im=0; im<GMM_m_size; ++im) {
+      // get index in auxiliary lists
+      unsigned kaux = GMM_m_type_[im] * GMM_d_size + id;
+      // calculate exponent of overlap
+      double expov = get_exp_overlap(GMM_d_m_[id], getPosition(im), inv_cov_md_[kaux]);
+      // get index of 0.5*expov in tabulated exponential
+      unsigned itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
+      // check boundaries and skip atom in case
+      if(itab >= tab_exp_.size()) continue;
+      // in case calculate overlap overlap
+      double ov = pre_fact_[kaux] * tab_exp_[itab];
+      // add to list
+      ov_l.push_back(ov);
+      // and map to retrieve atom index
+      ov_m[ov] = im;
+      // increase ov_tot
+      ov_tot += ov;
+    }
+    // check if zero size -> ov_tot = 0
+    if(ov_l.size()==0) continue;
+    // define cutoff
+    double ov_cut = ov_tot * nl_cutoff_;
+    // sort ov_l in ascending order
+    std::sort(ov_l.begin(), ov_l.end());
+    // integrate ov_l
+    double res = 0.0;
+    for(unsigned i=0; i<ov_l.size(); ++i) {
+      res += ov_l[i];
+      // if exceeding the cutoff for overlap, stop
+      if(res >= ov_cut) break;
+      else ov_m.erase(ov_l[i]);
+    }
+    // now add atoms to neighborlist
+    for(map<double, unsigned>::iterator it=ov_m.begin(); it!=ov_m.end(); ++it)
+      nl_l.push_back(id*GMM_m_size+it->second);
+    // end cycle on GMM components in parallel
   }
   // find total dimension of neighborlist
   vector <int> recvcounts(size_, 0);
@@ -949,6 +1069,33 @@ void EMMI::calculate_overlap() {
   comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
 }
 
+void EMMI::doRegression()
+{
+// first calculate average values
+  double m_ave = 0.0;
+  double d_ave = 0.0;
+  for(unsigned i=0; i<ovmd_.size(); ++i) {
+    m_ave += ovmd_[i] / GMM_d_w_[i];
+    d_ave += ovdd_[i] / GMM_d_w_[i];
+  }
+  m_ave /= static_cast<double>(ovmd_.size());
+  d_ave /= static_cast<double>(ovmd_.size());
+// now calculate linear coefficients
+  double Bn = 0.0;
+  double Bd = 0.0;
+  for(unsigned i=0; i<ovmd_.size(); ++i) {
+    Bn += ( ovmd_[i] / GMM_d_w_[i] - m_ave ) * ( ovdd_[i] / GMM_d_w_[i] - d_ave );
+    Bd += ( ovmd_[i] / GMM_d_w_[i] - m_ave ) * ( ovmd_[i] / GMM_d_w_[i] - m_ave );
+  }
+// reset A_ and B_
+  if(Bd<=0 || Bn<=0 || m_ave<=0) {
+    B_ = 1.;
+    A_ = 0.;
+  } else {
+    B_ = Bn / Bd;
+    A_ = d_ave - B_ * m_ave;
+  }
+}
 
 void EMMI::calculate() {
 
@@ -998,7 +1145,7 @@ void EMMI::calculate() {
 
 void EMMI::calculate_sigma()
 {
-  // non-marginal version
+  // NON-MARGINAL VERSION: SIGMA IS SAMPLED
 
   // rescale factor for ensemble average
   double escale = 1.0 / static_cast<double>(nrep_);
@@ -1025,11 +1172,17 @@ void EMMI::calculate_sigma()
     comm.Sum(&inv_s2[0], ovmd_.size());
   }
 
+  // get time step
+  long int step = getStep();
+
+  // do regression
+  if(nregres_>0 && (first_time_ || getExchangeStep() || step%nregres_==0) ) doRegression();
+
   // calculate score and reweighting score
   double ene = 0.0;
   for(unsigned i=0; i<ovmd_.size(); ++i) {
     // increment energy
-    ene += ( ovmd_[i]-ovdd_[i] ) * ( ovmd_[i]-ovdd_[i] ) * inv_s2[i];
+    ene += ( B_*ovmd_[i]+A_*GMM_d_w_[i]-ovdd_[i] ) * ( B_*ovmd_[i]+A_*GMM_d_w_[i]-ovdd_[i] ) * inv_s2[i];
   }
 
   // multiply by constant factors
@@ -1046,9 +1199,9 @@ void EMMI::calculate_sigma()
     unsigned id = nl_[i] / GMM_m_type_.size();
     unsigned im = nl_[i] % GMM_m_type_.size();
     // derivative
-    double der = kbt_ * ( ovmd_[id]-ovdd_[id] ) * inv_s2[id];
+    double der = kbt_ * ( B_*ovmd_[id]+A_*GMM_d_w_[id]-ovdd_[id] ) * inv_s2[id];
     // chain rule + replica normalization
-    Vector tot_der = der * ovmd_der_[i] * escale;
+    Vector tot_der = der * ovmd_der_[i] * escale * B_;
     // atom's position in GMM cell
     Vector pos;
     if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
@@ -1067,11 +1220,10 @@ void EMMI::calculate_sigma()
   setBoxDerivatives(getPntrToComponent("scoreb"), virial);
   getPntrToComponent("scoreb")->set(ene);
 
-  // get time step
-  long int step = getStep();
-
-  // move sigmas
-  if(step%MCstride_==0) doMonteCarlo(step);
+  // move sigmas individually
+  if(step%MCstride_==0) doMonteCarlo();
+  // and in clusters
+  if(dCOsigma_>0 && step%MCCOstride_==0) doMonteCarloCollective();
 
   // print status
   if(step%statusstride_==0) print_status(step);
@@ -1084,12 +1236,17 @@ void EMMI::calculate_sigma()
   double acc = static_cast<double>(MCaccept_) / MCtrials / static_cast<double>(sigma_.size());
   // set value
   getPntrToComponent("acc")->set(acc);
-
+  // acceptance for collective moves
+  double MCCOtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCCOstride_))+1.0;
+  double acc_co = static_cast<double>(MCCOaccept_) / MCCOtrials;
+  // set value
+  getPntrToComponent("accco")->set(acc_co);
 }
 
 void EMMI::calculate_marginal()
 {
-  // marginal version
+  // MARGINAL VERSION: SIGMA IS *NOT* SAMPLED
+
   // rescale factor for ensemble average
   double escale = 1.0 / static_cast<double>(nrep_);
 
@@ -1104,11 +1261,14 @@ void EMMI::calculate_marginal()
     comm.Sum(&ovmd_[0], ovmd_.size());
   }
 
+// do regression
+  if(nregres_>0 && (first_time_ || getExchangeStep() || getStep()%nregres_==0) ) doRegression();
+
   // calculate score
   double ene = 0.0;
   for(unsigned i=0; i<ovmd_.size(); ++i) {
     // useful quantity
-    double dev = ( ovmd_[i]-ovdd_[i] ) / sigma0_[i];
+    double dev = ( B_*ovmd_[i]+A_*GMM_d_w_[i]-ovdd_[i] ) / sigma0_[i];
     // calculate and store err and exp function
     err_f_[i] = erf ( dev * inv_sqrt2_ );
     exp_f_[i] = exp( - 0.5 * dev * dev );
@@ -1132,9 +1292,9 @@ void EMMI::calculate_marginal()
     // first part of derivative
     double der = -kbt_ / err_f_[id] * sqrt2_pi_ * exp_f_[id] / sigma0_[id];
     // second part
-    der += kbt_ / (ovmd_[id]-ovdd_[id]);
+    der += kbt_ / (B_*ovmd_[id]+A_*GMM_d_w_[id]-ovdd_[id]);
     // chain rule
-    Vector tot_der = der * ovmd_der_[i];
+    Vector tot_der = der * ovmd_der_[i] * B_;
     // atom's position in GMM cell
     Vector pos;
     if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
