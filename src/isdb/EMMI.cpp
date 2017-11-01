@@ -316,7 +316,7 @@ EMMI::EMMI(const ActionOptions&ao):
   // MC stuff
   double dsigma;
   parse("DSIGMA", dsigma);
-  if(do_sampling_ && dsigma<=0) error("with SAMPLING you must specify a positive DSIGMA");
+  if(do_sampling_ && dsigma<0) error("with SAMPLING you must specify a positive DSIGMA");
   parse("MC_STRIDE", MCstride_);
   // MC collective stuff
   parse("DCOSIGMA", dCOsigma_);
