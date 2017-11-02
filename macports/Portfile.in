@@ -82,7 +82,7 @@ depends_lib-append port:libmatheval port:xdrfile port:zlib port:gsl
 # Notice that one of the optional modules (drr) requires boost_serialization
 variant allmodules description {Enable all optional modules} {
   configure.args-append --enable-modules=all --enable-boost-serialization
-  configure.ldflags-append -lboost_serialization
+  configure.ldflags-append -lboost_serialization-mt
   depends_lib-append port:boost
 }
 
