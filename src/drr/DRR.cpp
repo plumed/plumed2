@@ -345,7 +345,7 @@ void DRRForceGrid::write1DPMF(string filename) const {
     vector<double> pos(1, 0);
     pos[0] = table[0][i];
     const vector<double> f = getGradient(pos, true);
-    pmf += f[0] * w;
+    pmf += f[0] * w / outputunit;
     fprintf(ppmf, "%.9f %.9f\n", endpoints[i + 1], pmf);
   }
   fclose(ppmf);
