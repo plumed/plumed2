@@ -2,14 +2,3 @@ type=plumed
 plumed_needs=boost_serialization
 plumed_modules=drr
 arg="drr_tool --extract test.drrstate -v"
-
-# Skip this since it crashes on travis-ci
-# I'm not sure about the reason, could be the boost version of macports
-function plumed_custom_skip(){
-  if [ "$(uname)" == "Darwin" ] ; then
-    return 0
-  else
-    return 1
-  fi
-}
-
