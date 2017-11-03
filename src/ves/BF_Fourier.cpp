@@ -55,7 +55,7 @@ f_{2k}(x)   &= sin(k \cdot \frac{2\pi}{P} x) \\
 f_{2N-1}(x) &= cos(N \cdot \frac{2\pi}{P} x) \\
 f_{2N}(x)   &= sin(N \cdot \frac{2\pi}{P} x) \\
 \f}
-where \f$P=(b-a)\f$ is the periodicity of the interval. 
+where \f$P=(b-a)\f$ is the periodicity of the interval.
 They are orthogonal over the interval \f$[a,b]\f$
 \f[
 \int_{a}^{b} dx \, f_{n}(x)\, f_{m}(x)  =
