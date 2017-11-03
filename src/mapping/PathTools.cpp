@@ -207,14 +207,14 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   std::string istart; parse("--start",istart); FILE* fp2=fopen(istart.c_str(),"r"); PDB mystartpdb;
   if( istart.length()==0 ) error("input is missing use --istart + --iend or --path");
   if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) error("could not read fila " + istart);
-  ReferenceConfiguration* sframe=metricRegister().create<ReferenceConfiguration>( mtype, mystartpdb );
+  std::unique_ptr<ReferenceConfiguration> sframe( metricRegister().create<ReferenceConfiguration>( mtype, mystartpdb ) );
   fclose(fp2);
 
 // Read final frame
   std::string iend; parse("--end",iend); FILE* fp1=fopen(iend.c_str(),"r"); PDB myendpdb;
   if( iend.length()==0 ) error("input is missing using --istart + --iend or --path");
   if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
-  ReferenceConfiguration* eframe=metricRegister().create<ReferenceConfiguration>( mtype, myendpdb );
+  std::unique_ptr<ReferenceConfiguration> eframe( metricRegister().create<ReferenceConfiguration>( mtype, myendpdb ) );
   fclose(fp1);
 
 // Get atoms and arg requests
@@ -286,7 +286,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   for(unsigned i=0; i<final_path.size(); ++i) { final_path[i]->print( ofile, ofmt, 10. ); delete final_path[i]; }
 // Delete the args as we don't need them anymore
   for(unsigned i=0; i<args.size(); ++i) delete args[i];
-  ofile.close(); delete sframe; delete eframe; return 0;
+  ofile.close(); return 0;
 }
 
 } // End of namespace

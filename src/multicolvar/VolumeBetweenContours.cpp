@@ -24,6 +24,7 @@
 #include "tools/KernelFunctions.h"
 #include "tools/SwitchingFunction.h"
 #include "ActionVolume.h"
+#include <memory>
 
 //+PLUMEDOC VOLUMES INENVELOPE
 /*
@@ -63,7 +64,7 @@ namespace multicolvar {
 class VolumeInEnvelope : public ActionVolume {
 private:
   LinkCells mylinks;
-  KernelFunctions* kernel;
+  std::unique_ptr<KernelFunctions> kernel;
   std::vector<Value*> pos;
   std::vector<Vector> ltmp_pos;
   std::vector<unsigned> ltmp_ind;
@@ -104,7 +105,7 @@ VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
 
   std::vector<double> pp(3,0.0), bandwidth(3); parseVector("BANDWIDTH",bandwidth);
   log.printf("  using %s kernel with bandwidths %f %f %f \n",getKernelType().c_str(),bandwidth[0],bandwidth[1],bandwidth[2] );
-  kernel = new KernelFunctions( pp, bandwidth, getKernelType(), "DIAGONAL", 1.0 );
+  kernel.reset( new KernelFunctions( pp, bandwidth, getKernelType(), "DIAGONAL", 1.0 ) );
   for(unsigned i=0; i<3; ++i) { pos.push_back(new Value()); pos[i]->setNotPeriodic(); }
   std::vector<double> csupport( kernel->getContinuousSupport() );
   double maxs = csupport[0];
@@ -115,7 +116,7 @@ VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
 }
 
 VolumeInEnvelope::~VolumeInEnvelope() {
-  delete kernel; for(unsigned j=0; j<3; ++j) delete pos[j];
+  for(unsigned j=0; j<3; ++j) delete pos[j];
 }
 
 void VolumeInEnvelope::setupRegions() {

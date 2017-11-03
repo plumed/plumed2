@@ -13,7 +13,7 @@ SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports vim astyle python
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
      
-.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean all_plus_docs macports codecheck plumedcheck astyle
+.PHONY: all lib clean $(SRCDIRS) doc docclean check installcheck cppcheck distclean all_plus_docs macports codecheck plumedcheck astyle
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
@@ -60,8 +60,15 @@ docs:
 	$(MAKE) doc
 
 # regtests
-check: src test
-	$(MAKE) -C regtest
+# perform tests using non-installed plumed
+check:
+	PLUMED_PREPEND_PATH="$(realpath .)/src/lib" $(MAKE) -C regtest
+	$(MAKE) -C regtest checkfail
+
+# perform tests using the installed version of plumed
+installcheck:
+	PLUMED_PREPEND_PATH="$(bindir)" PLUMED_PROGRAM_NAME="$(program_name)" $(MAKE) -C regtest
+	$(MAKE) -C regtest checkfail
 
 else
 

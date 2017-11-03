@@ -651,6 +651,7 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
+MPIEXEC
 PYTHON_BIN
 LDSHARED
 STATIC_LIBS
@@ -737,6 +738,7 @@ SOEXT
 STATIC_LIBS
 LDSHARED
 PYTHON_BIN
+MPIEXEC
 CXX
 CXXFLAGS
 LDFLAGS
@@ -1413,6 +1415,9 @@ Some influential environment variables:
               the proper flags
   PYTHON_BIN  python executable (e.g. python2.7 or /opt/local/bin/python2.7) -
               default: search for a python executable
+  MPIEXEC     command to run mpi programs in tests - default not specified,
+              which means use PLUMED_MPIRUN env var at runtime for backward
+              compatibility
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -3005,6 +3010,7 @@ else
   esac
 
 fi
+
 
 
 
@@ -8313,6 +8319,8 @@ $as_echo "#define _REENTRANT 1" >>confdefs.h
 # python executable
 
 
+
+
 if test "$shared" == true ; then
   case `(uname)` in
   (Darwin)
@@ -8701,6 +8709,16 @@ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
   conftest.$ac_objext conftest.beam conftest.$ac_ext
 fi
 
+fi
+
+if test $mpi_found == ok ; then
+  if test -n "$MPIEXEC" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Regtest suite will use $MPIEXEC command to run MPI tests" >&5
+$as_echo "$as_me: Regtest suite will use $MPIEXEC command to run MPI tests" >&6;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Regtest suite will use env var PLUMED_MPIRUN to run MPI tests (default: mpirun)" >&5
+$as_echo "$as_me: Regtest suite will use env var PLUMED_MPIRUN to run MPI tests (default: mpirun)" >&6;}
+  fi
 fi
 
 #### This further tests are required to allow linking with non c++ compiler
