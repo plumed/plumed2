@@ -611,6 +611,9 @@ void EMMI::doMonteCarlo()
   // propose a global random shift
   double shift = proposeMove(0.0, -100.0*dsigma_, 100.0*dsigma_, dsigma_);
 
+  // prepare new sigma vector
+  vector<double> new_sigma;
+
   // calculate old and new energy
   double old_ene = 0.0;
   double new_ene = 0.0;
@@ -633,11 +636,13 @@ void EMMI::doMonteCarlo()
     double new_s2 = sigma_mean_[i]*sigma_mean_[i]+new_s*new_s;
     // add to new energy
     new_ene += pre_fact/new_s2 + kbt_*prior_*std::log(new_s2);
+    // store in vector
+    new_sigma.push_back(new_s);
   }
   // accept or reject
   bool accept = doAccept(old_ene, new_ene);
   if(accept) {
-    for(unsigned j=0; j<MCneigh_[nGMM].size(); ++j) sigma_[MCneigh_[nGMM][j]] += shift;
+    for(unsigned j=0; j<MCneigh_[nGMM].size(); ++j) sigma_[MCneigh_[nGMM][j]] = new_sigma[j];
     MCaccept_++;
   }
 }
