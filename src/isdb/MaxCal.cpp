@@ -219,7 +219,7 @@ void CaliberExternal::calculate() {
    };
   } else {
    for(unsigned i=0; i<narg; ++i) {
-    if(getArgument(i)>min[i]) min[i]=mean[i];
+    if(mean[i]>min[i]) min[i]=mean[i];
     else {
      kappa = mult*dnrep/sigma_mean2_[i];
      const double cv=difference(i,min[i],mean[i]); // this gives: getArgument(i) - x0
