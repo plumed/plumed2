@@ -79,7 +79,7 @@ matrix:
       - $HOME/.macports-ci-ccache
 # osx serial macports debug variant
   - os: osx
-    osx_image: xcode8.2
+    osx_image: xcode8.3
     env: PLUMED_MACPORTS="plumed +allmodules +python27"
     cache:
       directories:
@@ -153,7 +153,7 @@ install:
       export COLUMNS=80 ;
       wget https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci ;
       chmod +x ./macports-ci ;
-      ./macports-ci install ;
+      ./macports-ci install --remove-brew ;
       PATH="/opt/local/bin:$PATH" ;
       make macports ;
       ./macports-ci localports macports ;

@@ -382,7 +382,7 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
   return kval;
 }
 
-KernelFunctions* KernelFunctions::read( IFile* ifile, const bool& cholesky, const std::vector<std::string>& valnames ) {
+std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool& cholesky, const std::vector<std::string>& valnames ) {
   double h;
   if( !ifile->scanField("height",h) ) return NULL;;
 
@@ -401,7 +401,7 @@ KernelFunctions* KernelFunctions::read( IFile* ifile, const bool& cholesky, cons
       ifile->scanField("sigma_"+valnames[i],sig[i]);
       if( !cholesky ) sig[i]=sqrt(sig[i]);
     }
-    return new KernelFunctions( cc, sig, ktype, "DIAGONAL", h );
+    return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "DIAGONAL", h ) );
   }
 
   unsigned ncv=valnames.size();
@@ -419,8 +419,8 @@ KernelFunctions* KernelFunctions::read( IFile* ifile, const bool& cholesky, cons
   for(unsigned i=0; i<ncv; i++) {
     for(unsigned j=i; j<ncv; j++) { sig[k]=invmatrix(i,j); k++; }
   }
-  if( sss=="true" ) return new KernelFunctions( cc, sig, ktype, "MULTIVARIATE", h );
-  return new KernelFunctions( cc, sig, ktype, "VON-MISSES", h );
+  if( sss=="true" ) return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "MULTIVARIATE", h ) );
+  return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "VON-MISSES", h ) );
 }
 
 }
