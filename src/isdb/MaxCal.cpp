@@ -47,9 +47,12 @@ public:
 private:
   vector<double> time;
   vector<double> var;
+  vector<double> min;
   double kappa;
   double deltat;
   double mult;
+  bool     firstTime_;
+  bool     adaptive_;
   bool     master;  
   unsigned replica_;
   unsigned nrep_;
@@ -62,25 +65,28 @@ private:
   void replica_averaging(const double fact, vector<double> &mean);
 };
 
-PLUMED_REGISTER_ACTION(CaliberExternal,"CALIBEREXTERNAL")
+PLUMED_REGISTER_ACTION(CaliberExternal,"CALIBER")
 
 void CaliberExternal::registerKeywords( Keywords& keys ) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the CV values in function of time");
   keys.add("compulsory","KAPPA","the array of force constants");
-
+  keys.addFlag("ADAPTIVE",false,"abmd");
   keys.addOutputComponent("x0","default","the instantaneous value of the center of the potential");
 }
 
 CaliberExternal::CaliberExternal(const ActionOptions&ao):
-  PLUMED_BIAS_INIT(ao)
+  PLUMED_BIAS_INIT(ao),
+  firstTime_(true),
+  adaptive_(false)
 {
   string filename;
   double tempT, tempVar;
   parse("KAPPA",mult);
   parse("FILE",filename);
   if( filename.length()==0 ) error("No external variable file was specified");
+  parseFlag("ADAPTIVE",adaptive_);
 
   checkRead();
 
@@ -95,8 +101,8 @@ CaliberExternal::CaliberExternal(const ActionOptions&ao):
   }
   comm.Sum(&nrep_,1);
   comm.Sum(&replica_,1);
-
   const unsigned narg = getNumberOfArguments();
+  min.resize(narg);
   sigma_mean2_.resize(narg,0.00001);
   sigma_mean2_last_.resize(narg);
   for(unsigned j=0; j<narg; j++) sigma_mean2_last_[j].push_back(sigma_mean2_[j]);
@@ -119,6 +125,7 @@ CaliberExternal::CaliberExternal(const ActionOptions&ao):
   addComponent("x0"); componentIsNotPeriodic("x0");
   addComponent("kappa"); componentIsNotPeriodic("kappa");
   addComponent("mean"); componentIsNotPeriodic("mean");
+  addComponent("min"); componentIsNotPeriodic("min");
 }
 
 
@@ -127,7 +134,6 @@ void CaliberExternal::get_sigma_mean(const double fact, const vector<double> &me
 {
   const unsigned narg = getNumberOfArguments();
   const double dnrep    = static_cast<double>(nrep_);
-
   vector<double> sigma_mean2_tmp(sigma_mean2_.size(), 0.);
 
   // remove first entry of the history vector
@@ -195,8 +201,14 @@ void CaliberExternal::calculate() {
   // get kappa
   get_sigma_mean(fact, mean);
 
+  if(firstTime_) {
+    if(adaptive_) for(unsigned i=0; i<narg; ++i) min[i] = mean[i];
+    firstTime_=false;
+  }
+
   double ene=0;
-  for(unsigned i=0; i<narg; ++i) {
+  if(!adaptive_){
+   for(unsigned i=0; i<narg; ++i) {
     kappa = mult*dnrep/sigma_mean2_[i];
     const double cv=difference(i,x0,mean[i]); // this gives: getArgument(i) - x0
     const double f=-kappa*cv*dmean_x[i];
@@ -204,7 +216,22 @@ void CaliberExternal::calculate() {
     ene+=0.5*kappa*cv*cv;
     getPntrToComponent("kappa")->set(kappa);
     getPntrToComponent("mean")->set(mean[i]);
-  };
+   };
+  } else {
+   for(unsigned i=0; i<narg; ++i) {
+    if(getArgument(i)>min[i]) min[i]=mean[i];
+    else {
+     kappa = mult*dnrep/sigma_mean2_[i];
+     const double cv=difference(i,min[i],mean[i]); // this gives: getArgument(i) - x0
+     const double f=-kappa*cv*dmean_x[i];
+     setOutputForce(i,f);
+     ene+=0.5*kappa*cv*cv;
+     getPntrToComponent("kappa")->set(kappa);
+     getPntrToComponent("mean")->set(mean[i]);
+     getPntrToComponent("min")->set(min[i]);
+    }
+   }
+  }
 
   // we will need to add back the calculation of the work
   setBias(ene);
