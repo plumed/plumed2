@@ -494,7 +494,10 @@ EMMI::EMMI(const ActionOptions&ao):
   if(nregres_>0)   { addComponent("scale");   componentIsNotPeriodic("scale");}
 
   // initialize random seed
-  unsigned iseed = time(NULL);
+  unsigned iseed;
+  if(rank_==0) iseed = time(NULL)+replica_;
+  else iseed = 0;
+  comm.Sum(&iseed, 1);
   random_.setSeed(-iseed);
 
   // request the atoms
