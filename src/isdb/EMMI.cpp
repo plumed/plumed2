@@ -1115,20 +1115,22 @@ void EMMI::calculate_sigma()
 
   // calculate average of ovmd_ across replicas
   // and collect sigma contributions from replicas
-  if(!no_aver_ && nrep_>1) {
-    if(rank_==0) {
-      multi_sim_comm.Sum(&ovmd_[0],  ovmd_.size());
-      multi_sim_comm.Sum(&inv_s2[0], inv_s2.size());
-      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
-    } else {
-      for(unsigned i=0; i<ovmd_.size(); ++i) {
-        ovmd_[i]  = 0.0;
-        inv_s2[i] = 0.0;
-      }
-    }
-    comm.Sum(&ovmd_[0],  ovmd_.size());
-    comm.Sum(&inv_s2[0], ovmd_.size());
+  if(!no_aver_ && nrep_>1 && rank_==0) {
+    multi_sim_comm.Sum(&ovmd_[0],  ovmd_.size());
+    multi_sim_comm.Sum(&inv_s2[0], inv_s2.size());
+    // divide model overlap by number of replicas
+    for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
   }
+  // set quantities to zero if not master rank
+  if(rank_!=0) {
+    for(unsigned i=0; i<ovmd_.size(); ++i) {
+      ovmd_[i]  = 0.0;
+      inv_s2[i] = 0.0;
+    }
+  }
+  // communicate
+  comm.Sum(&ovmd_[0],  ovmd_.size());
+  comm.Sum(&inv_s2[0], ovmd_.size());
 
   // get time step
   long int step = getStep();
@@ -1208,7 +1210,7 @@ void EMMI::calculate_marginal()
 
   // calculate average of ovmd_ across replicas
   if(!no_aver_ && nrep_>1) {
-    if(comm.Get_rank()==0) {
+    if(rank_==0) {
       multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
       for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
     } else {
