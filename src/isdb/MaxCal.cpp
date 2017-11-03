@@ -19,17 +19,16 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Bias.h"
-#include "ActionRegister.h"
+#include "bias/Bias.h"
+#include "bias/ActionRegister.h"
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include <fstream>
 
 using namespace std;
 
-
 namespace PLMD {
-namespace bias {
+namespace isdb {
 
 //+PLUMEDOC BIAS CALIBEREXTERNAL
 /*
@@ -40,7 +39,7 @@ Add a time-dependent, harmonic restraint on one or more variables.
 //+ENDPLUMEDOC
 
 
-class CaliberExternal : public Bias {
+class CaliberExternal : public bias::Bias {
 public:
   explicit CaliberExternal(const ActionOptions&);
   void calculate();
