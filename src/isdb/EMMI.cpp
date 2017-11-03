@@ -491,7 +491,7 @@ EMMI::EMMI(const ActionOptions&ao):
   // add components
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
   if(do_sampling_) { addComponent("acc");   componentIsNotPeriodic("acc");}
-  if(nregres>0) { addComponent("scale");   componentIsNotPeriodic("scale");}
+  if(nregres_>0)   { addComponent("scale");   componentIsNotPeriodic("scale");}
 
   // initialize random seed
   unsigned iseed = time(NULL);
