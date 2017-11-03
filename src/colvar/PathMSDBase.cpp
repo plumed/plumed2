@@ -139,7 +139,7 @@ void PathMSDBase::calculate() {
   // resize the list to full
   if(imgVec.empty()) { // this is the signal that means: recalculate all
     imgVec.resize(nframes);
-#pragma simd
+    #pragma omp simd
     for(unsigned i=0; i<nframes; i++) {
       imgVec[i].property=indexvec[i];
       imgVec[i].index=i;
@@ -170,7 +170,6 @@ void PathMSDBase::calculate() {
       // and we need to accurately recalculate for all reference structures
       computeRefClose = true;
       imgVec.resize(nframes);
-#pragma simd
       for(unsigned i=0; i<nframes; i++) {
         imgVec[i].property=indexvec[i];
         imgVec[i].index=i;
@@ -197,7 +196,7 @@ void PathMSDBase::calculate() {
       for(unsigned i=rank; i<imgVec.size(); i+=stride) {
         tmp_distances[i] = msdv[imgVec[i].index].calc_Rot(getPositions(), tmp_derivs, tmp_rotationRefClose[imgVec[i].index], true);
         plumed_assert(tmp_derivs.size()==nat);
-#pragma simd
+        #pragma omp simd
         for(unsigned j=0; j<nat; j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
       }
     }
@@ -206,7 +205,7 @@ void PathMSDBase::calculate() {
       for(unsigned i=rank; i<imgVec.size(); i+=stride) {
         tmp_distances[i] = msdv[imgVec[i].index].calculateWithCloseStructure(getPositions(), tmp_derivs, rotationPosClose, rotationRefClose[imgVec[i].index], drotationPosCloseDrr01, true);
         plumed_assert(tmp_derivs.size()==nat);
-#pragma simd
+        #pragma omp simd
         for(unsigned j=0; j<nat; j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
         if (debugClose) {
           double withclose = tmp_distances[i];
@@ -226,7 +225,7 @@ void PathMSDBase::calculate() {
     for(unsigned i=rank; i<imgVec.size(); i+=stride) {
       tmp_distances[i]=msdv[imgVec[i].index].calculate(getPositions(),tmp_derivs,true);
       plumed_assert(tmp_derivs.size()==nat);
-#pragma simd
+      #pragma omp simd
       for(unsigned j=0; j<nat; j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
     }
   }
@@ -275,17 +274,18 @@ void PathMSDBase::calculate() {
   val_z_path->set(-(1./lambda)*std::log(partition));
   for(unsigned j=0; j<s_path.size(); j++) {
     // clean up
-#pragma simd
+    #pragma omp simd
     for(unsigned i=0; i< derivs_s.size(); i++) {derivs_s[i].zero();}
     // do the derivative
-#pragma simd
     for(const auto & it : imgVec) {
       double expval=it.similarity;
       tmp=lambda*expval*(s_path[j]-it.property[j])/partition;
-#pragma ivdep
+      #pragma omp simd
       for(unsigned i=0; i< derivs_s.size(); i++) { derivs_s[i]+=tmp*it.distder[i] ;}
-#pragma ivdep
-      if(j==0) {for(unsigned i=0; i< derivs_z.size(); i++) { derivs_z[i]+=it.distder[i]*expval/partition;}}
+      if(j==0) {
+        #pragma omp simd
+        for(unsigned i=0; i< derivs_z.size(); i++) { derivs_z[i]+=it.distder[i]*expval/partition;}
+      }
     }
     for(unsigned i=0; i< derivs_s.size(); i++) {
       setAtomsDerivatives (val_s_path[j],i,derivs_s[i]);
