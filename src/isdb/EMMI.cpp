@@ -267,7 +267,7 @@ void EMMI::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb", "default","Bayesian score");
   keys.addOutputComponent("acc",   "SAMPLING","MC acceptance");
-  keys.addOutputComponent("scale",   "REGRESSION","scaling factor");
+  keys.addOutputComponent("scale", "REGRESSION","scaling factor");
 }
 
 EMMI::EMMI(const ActionOptions&ao):
@@ -432,7 +432,7 @@ EMMI::EMMI(const ActionOptions&ao):
   double ov_max = *std::max_element(ovdd_.begin(), ovdd_.end());
 
   // set up dsigma for MC collective moves
-  dsigma_   = dsigma * ov_base;
+  dsigma_ = dsigma * ov_base;
 
   // set sampling parameters
   double s0_ave = 0.0;
@@ -494,7 +494,10 @@ EMMI::EMMI(const ActionOptions&ao):
   if(nregres_>0)   { addComponent("scale");   componentIsNotPeriodic("scale");}
 
   // initialize random seed
-  unsigned iseed = time(NULL);
+  unsigned iseed;
+  if(rank_==0) iseed = time(NULL)+replica_;
+  else iseed = 0;
+  comm.Sum(&iseed, 1);
   random_.setSeed(-iseed);
 
   // request the atoms
@@ -1182,8 +1185,8 @@ void EMMI::calculate_sigma()
   if(step%statusstride_==0) print_status(step);
 
   // calculate acceptance ratio
-  // this is needed when restarting simulations
-  if(dsigma_>0 && step%MCstride_==0) {
+  if(dsigma_>0) {
+    // this is needed when restarting simulations
     if(MCfirst_==-1) MCfirst_=step;
     // acceptance for collective moves
     double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
