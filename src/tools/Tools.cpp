@@ -189,7 +189,7 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
     if(!w.empty()) {
       if(inside && *(w.begin())=="...") {
         inside=false;
-        if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" lines, if present, should be equal to first word of directive");
+        if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" "+w[1]+" line, if present, should be equal to first word of directive: "+words[0]);
         plumed_massert(w.size()<=2,"terminating \"...\" lines cannot consist of more than two words");
         w.clear();
       } else if(*(w.end()-1)=="...") {

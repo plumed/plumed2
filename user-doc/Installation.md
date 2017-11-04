@@ -273,14 +273,23 @@ you need to download the SOURCE of VMD, which contains
 a plugins directory. Adapt build.sh and compile it. At
 the end, you should get the molfile plugins compiled as a static
 library `libmolfile_plugin.a`. Locate said file and `libmolfile_plugin.h`,
-and customize the configure command with something along
-the lines of:
+they should be in a directory called `/pathtovmdplugins/ARCH/molfile`
+(e.g. `/pathtovmdplugins/MACOSXX86_64/molfile`). Also locate file `molfile_plugin.h`,
+which should be in `/pathtovmdplugins/include`.
+Then customize the configure command with something along the lines of:
 
 \verbatim
-./configure LDFLAGS="-ltcl8.5 -L/mypathtomolfilelibrary/ -L/mypathtotcl" CPPFLAGS="-I/mypathtolibmolfile_plugin.h/"
+./configure LDFLAGS="-L/pathtovmdplugins/ARCH/molfile" CPPFLAGS="-I/pathtovmdplugins/include -I/pathtovmdplugins/ARCH/molfile"
 \endverbatim
 
-and rebuild.
+Notice that it might be necessary to add to `LDFLAGS` the path to your TCL interpreter, e.g.
+
+\verbatim
+./configure LDFLAGS="-ltcl8.5 -L/mypathtotcl -L/pathtovmdplugins/ARCH/molfile" \
+            CPPFLAGS="-I/pathtovmdplugins/include -I/pathtovmdplugins/ARCH/molfile"
+\endverbatim
+
+Then, rebuild plumed.
 
 \section CompilingPlumed Compiling PLUMED
 
