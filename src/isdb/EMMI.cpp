@@ -194,8 +194,6 @@ private:
 // read and write status
   void read_status();
   void print_status(long int step);
-// propose move
-  double proposeMove(double x, double xmin, double xmax, double dxmax);
 // accept or reject
   bool doAccept(double oldE, double newE);
 // do MonteCarlo
@@ -449,10 +447,9 @@ EMMI::EMMI(const ActionOptions&ao):
       // add minimum value of sigma
       sigma_min_.push_back(s0_exp);
       // set sigma max
-      sigma_max_.push_back(100.0*ovdd_[i]);
+      sigma_max_.push_back(10.0*ovdd_[i]+s0_exp+dsigma_);
       // initialize sigma
-      double s_ini = 0.2*sigma_ini*ov_base*(2.0+random_.RandU01());
-      sigma_.push_back(std::max(sigma_min_[i], std::min(sigma_max_[i], s_ini)));
+      sigma_.push_back(std::max(sigma_min_[i], std::min(sigma_max_[i], sigma_ini*ov_base)));
     } else {
       // for marginal version
       sigma0_.push_back(sqrt(s0_exp*s0_exp+sigma_mean_[i]*sigma_mean_[i]));
@@ -574,17 +571,6 @@ void EMMI::print_status(long int step)
   statusfile_.printField();
 }
 
-double EMMI::proposeMove(double x, double xmin, double xmax, double dxmax)
-{
-  double r = random_.RandU01();
-  double dx = -dxmax + r * 2.0 * dxmax;
-  double x_new = x + dx;
-// check boundaries
-  if(x_new > xmax) {x_new = 2.0 * xmax - x_new;}
-  if(x_new < xmin) {x_new = 2.0 * xmin - x_new;}
-  return x_new;
-}
-
 bool EMMI::doAccept(double oldE, double newE) {
   bool accept = false;
   // calculate delta energy
@@ -607,7 +593,7 @@ void EMMI::doMonteCarlo()
   if(nGMM==GMM_d_m_.size()) nGMM=GMM_d_m_.size()-1;
 
   // propose a global random shift
-  double shift = proposeMove(0.0, -100.0*dsigma_, 100.0*dsigma_, dsigma_);
+  double shift = dsigma_ * ( 2.0 * random_.RandU01() - 1.0 );
 
   // prepare new sigma vector
   vector<double> new_sigma;
