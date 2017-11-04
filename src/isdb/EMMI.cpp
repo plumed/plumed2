@@ -428,9 +428,6 @@ EMMI::EMMI(const ActionOptions&ao):
   // calculate average overlap across map
   double ov_base = accumulate(ovdd_.begin(), ovdd_.end(), 0.0);
   ov_base /= static_cast<double>(ovdd_.size());
-  // calculate maximum overlap across map
-  double ov_max = *std::max_element(ovdd_.begin(), ovdd_.end());
-
   // set up dsigma for MC collective moves
   dsigma_ = dsigma * ov_base;
 
@@ -452,9 +449,10 @@ EMMI::EMMI(const ActionOptions&ao):
       // add minimum value of sigma
       sigma_min_.push_back(s0_exp);
       // set sigma max
-      sigma_max_.push_back(100.0*ov_max);
+      sigma_max_.push_back(100.0*ovdd_[i]);
       // initialize sigma
-      sigma_.push_back(std::max(sigma_min_[i], std::min(sigma_max_[i], sigma_ini*ov_base)));
+      double s_ini = 0.2*sigma_ini*ov_base*(2.0+random_.RandU01());
+      sigma_.push_back(std::max(sigma_min_[i], std::min(sigma_max_[i], s_ini)));
     } else {
       // for marginal version
       sigma0_.push_back(sqrt(s0_exp*s0_exp+sigma_mean_[i]*sigma_mean_[i]));
