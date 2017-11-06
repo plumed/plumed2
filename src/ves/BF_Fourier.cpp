@@ -49,13 +49,23 @@ f_{2}(x)    &= sin(\frac{2\pi }{P} x) \\
 f_{3}(x)    &= cos(2 \cdot \frac{2\pi}{P} x) \\
 f_{4}(x)    &= sin(2 \cdot \frac{2\pi}{P} x) \\
 & \vdots \\
-f_{2n-1}(x) &= cos(n \cdot \frac{2\pi}{P} x) \\
-f_{2n}(x)   &= sin(n \cdot \frac{2\pi}{P} x) \\
+f_{2k-1}(x) &= cos(k \cdot \frac{2\pi}{P} x) \\
+f_{2k}(x)   &= sin(k \cdot \frac{2\pi}{P} x) \\
 & \vdots \\
 f_{2N-1}(x) &= cos(N \cdot \frac{2\pi}{P} x) \\
 f_{2N}(x)   &= sin(N \cdot \frac{2\pi}{P} x) \\
 \f}
 where \f$P=(b-a)\f$ is the periodicity of the interval.
+They are orthogonal over the interval \f$[a,b]\f$
+\f[
+\int_{a}^{b} dx \, f_{n}(x)\, f_{m}(x)  =
+\begin{cases}
+0 & n \neq m \\
+(b-a) & n = m = 0 \\
+(b-a)/2 & n = m \neq 0
+\end{cases}.
+\f]
+
 
 \par Examples
 
