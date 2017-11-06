@@ -206,7 +206,7 @@ Print::Print(const ActionOptions&ao):
       }
 
       std::vector<AtomNumber> atoms; parseAtomList("ATOMS",atoms); 
-      if( atoms.size()!=nper ) error("number of atoms should match number of colvars");
+      if( atoms.size()!=0 && atoms.size()!=nper ) error("number of atoms should match number of colvars");
       if( tstyle=="xyz" ) {
           std::string unitname; parse("UNITS",unitname);
           if(unitname!="PLUMED") {
@@ -302,33 +302,44 @@ void Print::update() {
       }
       ofile.printField();
   } else if( tstyle=="xyz") {
-      unsigned natoms=0;
-      MultiValue myfvals(0,0); std::vector<double> argvals( arg_ends.size()-1 );
-      for(unsigned i=0; i<getNumberOfAtoms();++i) {
-          myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals ); 
-          if( isInTargetRange( argvals ) ) natoms++;
-      }
-      ofile.printf("%d\n",natoms);
-      const Tensor & t(getPbc().getBox());
-      if(getPbc().isOrthorombic()) {
-        ofile.printf((" "+fmt+" "+fmt+" "+fmt+"\n").c_str(),lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
+      if( getNumberOfAtoms()>0 ) {
+          unsigned natoms=0;
+          MultiValue myfvals(0,0); std::vector<double> argvals( arg_ends.size()-1 );
+          for(unsigned i=0; i<getNumberOfAtoms();++i) {
+              myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals ); 
+              if( isInTargetRange( argvals ) ) natoms++;
+          }
+          ofile.printf("%d\n",natoms);
+          const Tensor & t(getPbc().getBox());
+          if(getPbc().isOrthorombic()) {
+            ofile.printf((" "+fmt+" "+fmt+" "+fmt+"\n").c_str(),lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
+          } else {
+            ofile.printf((" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+"\n").c_str(),
+                           lenunit*t(0,0),lenunit*t(0,1),lenunit*t(0,2),
+                           lenunit*t(1,0),lenunit*t(1,1),lenunit*t(1,2),
+                           lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
+                          );
+          }
+          for(unsigned i=0; i<getNumberOfAtoms();++i) {
+              const char* defname="X"; const char* name=defname;
+              myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals ); 
+              if( isInTargetRange( argvals ) ) {
+                  ofile.printf(("%s "+fmt+" "+fmt+" "+fmt).c_str(),name,lenunit*getPosition(i)[0],lenunit*getPosition(i)[1],lenunit*getPosition(i)[2]);
+                  for(unsigned j=0;j<argvals.size();++j) ofile.printf((" " + fmt).c_str(), argvals[j] );
+                  ofile.printf("\n");
+              } 
+          } 
       } else {
-        ofile.printf((" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+" "+fmt+"\n").c_str(),
-                       lenunit*t(0,0),lenunit*t(0,1),lenunit*t(0,2),
-                       lenunit*t(1,0),lenunit*t(1,1),lenunit*t(1,2),
-                       lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
-                      );
-      }
-      for(unsigned i=0; i<getNumberOfAtoms();++i) {
-          const char* defname="X";
-          const char* name=defname;
-          myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals ); 
-          if( isInTargetRange( argvals ) ) {
-              ofile.printf(("%s "+fmt+" "+fmt+" "+fmt).c_str(),name,lenunit*getPosition(i)[0],lenunit*getPosition(i)[1],lenunit*getPosition(i)[2]);
+          std::vector<unsigned> tasks ( getPntrToArgument(0)->getPntrToAction()->getCurrentTasks() );
+          MultiValue myfvals(0,0); std::vector<double> argvals( arg_ends.size()-1 ); 
+          ofile.printf("%d\n",tasks.size()); ofile.printf("\n");
+          for(unsigned i=0; i<tasks.size();++i) {
+              const char* defname="X"; const char* name=defname; ofile.printf("%s", name);
+              myfvals.setTaskIndex(tasks[i]); retrieveArguments( myfvals, argvals );
               for(unsigned j=0;j<argvals.size();++j) ofile.printf((" " + fmt).c_str(), argvals[j] );
               ofile.printf("\n");
-          } 
-      } 
+          }
+      }
   } else if( tstyle=="ndx" ) {
       unsigned n=0; MultiValue myfvals(0,0); std::vector<double> argvals( arg_ends.size()-1 );
       ofile.printf("[ %s step %d ] \n", getLabel().c_str(), getStep() );
@@ -348,7 +359,7 @@ void Print::update() {
       std::vector<unsigned> ind( gval->getRank() ), nbin( gval->getRank() );
       std::vector<double> spacing( gval->getRank() ), xx( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
       std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
-      act->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc );
+      act->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc, false );
       for(unsigned i=0; i<gval->getRank(); ++i) {
         ogfile.addConstantField("min_" + argn[i] );
         ogfile.addConstantField("max_" + argn[i] );
@@ -384,13 +395,13 @@ void Print::update() {
       std::vector<unsigned> nbin( 3 ), pp( 3 );
       std::vector<double> xx( 3 ), spacing( 3 ), extent( 3 ); std::vector<bool> pbc( 3 );
       std::vector<std::string> argn( 3 ), min( 3 ), max( 3 );
-      act->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc ); 
+      act->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc, true ); 
       for(unsigned j=0;j<3;++j){ 
           double mind, maxd; 
           Tools::convert( min[j], mind ); 
           Tools::convert( max[j], maxd ); 
           if( pbc[j] ) extent[j]=maxd-mind; 
-          else extent[j]=maxd-mind+spacing[j];
+          else { extent[j]=maxd-mind+spacing[j]; nbin[j]++; }
       }
       ogfile.printf("PLUMED CUBE FILE\n");
       ogfile.printf("OUTER LOOP: X, MIDDLE LOOP: Y, INNER LOOP: Z\n");
@@ -401,17 +412,16 @@ void Print::update() {
       ogfile.printf(ostr.c_str(),nbin[1],0.0,spacing[1],0.0);  // shape of voxel
       ogfile.printf(ostr.c_str(),nbin[2],0.0,0.0,spacing[2]);
       ogfile.printf(ostr.c_str(),1,0.0,0.0,0.0); // Fake atom otherwise VMD doesn't work
-      unsigned ival=0; 
       for(pp[0]=0; pp[0]<nbin[0]; ++pp[0]) {
         for(pp[1]=0; pp[1]<nbin[1]; ++pp[1]) {
           for(pp[2]=0; pp[2]<nbin[2]; ++pp[2]) { 
-              ogfile.printf(fmt.c_str(), gval->get(ival) ); ival++;
+              unsigned ival=pp[pp.size()-1]; 
+              for(unsigned i=pp.size()-1; i>0; --i) ival=ival*nbin[i-1]+pp[i-1];
+              ogfile.printf(fmt.c_str(), gval->get(ival) ); 
               if(pp[2]%6==5) ogfile.printf("\n");
           }
-          if( !pbc[2] ) ival++; 
           ogfile.printf("\n");
         }
-        if( !pbc[1] ) ival += (1+nbin[2]);
       }
   }
 }

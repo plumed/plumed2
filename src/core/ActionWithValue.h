@@ -161,6 +161,8 @@ public:
   void addTaskToList( const unsigned& taskCode );
 /// Retrieve all the scalar values calculated in the loop
   void retrieveAllScalarValuesInLoop( std::vector<Value*>& myvals );
+///
+  const std::vector<unsigned>& getCurrentTasks() const ;
 protected:
 /// Get a pointer to the output value
   Value* getPntrToOutput( const unsigned& ind ) const ;
@@ -241,7 +243,9 @@ public:
 ///
   virtual void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min, 
                                      std::vector<std::string>& max, std::vector<unsigned>& nbin, 
-                                     std::vector<double>& spacing, std::vector<bool>& pbc ) const { plumed_merror( "problem in getting grid data for " + getLabel() ); }
+                                     std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const { 
+                                       plumed_merror( "problem in getting grid data for " + getLabel() ); 
+                                     }
 ///
   virtual void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { plumed_merror("problem in getting grid data for " + getLabel() ); } 
 ///
@@ -325,6 +329,11 @@ bool ActionWithValue::runInSerial() const {
 inline
 bool ActionWithValue::actionInChain() const {
   return (action_to_do_before!=NULL);
+}
+
+inline 
+const std::vector<unsigned>& ActionWithValue::getCurrentTasks() const {
+  return indexOfTaskInFullList;
 }
 
 

@@ -78,7 +78,8 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
   shape.resize( ss.size() ); 
   for(unsigned i=0;i<shape.size();++i) shape[i]=ss[i];
 
-  if( ss.size()>0 ) storedata=false; else storedata=true;
+  if( ss.size()>0 && !alwaysstore ) storedata=false; 
+  else storedata=true;
 
   if( shape.size()>0 ) data.resize(getSize());
   else if( hasDeriv ) data.resize( 1 +  action->getNumberOfDerivatives() );

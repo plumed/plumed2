@@ -93,7 +93,7 @@ void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, con
     if( spacing.size()==dimension && binsin.size()==dimension ) {
       double range = max[i] - min[i]; unsigned spc = std::floor( range / spacing[i]);
       // This check ensures that nbins is set correctly if spacing is set the same as the number of bins
-      if( fabs( binsin[i]*spacing[i]-range )>epsilon ) spc += 1;
+      if( fabs( binsin[i]*spacing[i]-range )>0.5*spacing[i] ){ spc += 1; }
       if( spc>binsin[i] ) nbin[i]=spc; else nbin[i]=binsin[i];
     } else if( binsin.size()==dimension ) nbin[i]=binsin[i];
     else if( spacing.size()==dimension ) nbin[i] = std::floor(( max[i] - min[i] ) / spacing[i]) + 1;

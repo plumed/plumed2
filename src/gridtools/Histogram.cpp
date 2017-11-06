@@ -218,7 +218,7 @@ public:
   void setupNeighborsVector();
   void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& out_nbin, 
-                             std::vector<double>& spacing, std::vector<bool>& pbc ) const ;
+                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
   double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const ;
@@ -439,13 +439,26 @@ void Histogram::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
 
 void Histogram::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
                                       std::vector<std::string>& max, std::vector<unsigned>& out_nbin, 
-                                      std::vector<double>& spacing, std::vector<bool>& pbc ) const {
+                                      std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
+  bool isdists=dumpcube; double units=1.0;
+  for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i){
+      if( getPntrToArgument( arg_ends[i] )->getName().find(".")==std::string::npos ){ isdists=false; break; }
+      std::size_t dot = getPntrToArgument( arg_ends[i] )->getName().find(".");
+      std::string name = getPntrToArgument( arg_ends[i] )->getName().substr(dot+1);
+      if( name!="x" && name!="y" && name!="z" ){ isdists=false; break; }
+  }
+  if( isdists ) {
+      if( plumed.getAtoms().usingNaturalUnits() ) units = 1.0/0.5292;
+      else units = plumed.getAtoms().getUnits().getLength()/.05929;
+  }
   for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) {
-      argn[i] = getPntrToArgument( arg_ends[i] )->getName();
-      if( gridobject.getMin().size()>0 ) min[i]=gridobject.getMin()[i]; 
-      if( gridobject.getMax().size()>0 ) max[i]=gridobject.getMax()[i]; 
+      argn[i] = getPntrToArgument( arg_ends[i] )->getName(); double gmin, gmax;
+      if( gridobject.getMin().size()>0 ) {
+          Tools::convert( gridobject.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
+          Tools::convert( gridobject.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );
+      }
       if( nbin.size()>0 ) out_nbin[i]=nbin[i]; 
-      if( gspacing.size()>0 ) spacing[i]=gspacing[i]; 
+      if( gspacing.size()>0 ) spacing[i]=units*gspacing[i]; 
       pbc[i]=gridobject.isPeriodic(i); 
   } 
 } 

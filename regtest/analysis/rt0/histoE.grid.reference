@@ -1,7 +1,7 @@
 #! FIELDS x fE dfE_x
 #! SET normalisation    1.0000
-#! SET min_x 0.0
-#! SET max_x 3.0
+#! SET min_x 0
+#! SET max_x 3
 #! SET nbins_x  100
 #! SET periodic_x false
    0.0000      inf   0.0000

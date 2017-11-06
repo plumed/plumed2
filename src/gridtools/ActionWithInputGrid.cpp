@@ -44,7 +44,7 @@ ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
   unsigned dimension = getPntrToArgument(0)->getRank();
   std::vector<std::string> argn( dimension ), min( dimension ), max( dimension );
   std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
-  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( argn, min, max, nbin, spacing, ipbc );
+  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( argn, min, max, nbin, spacing, ipbc, false );
   gridobject.setup( "flat", ipbc, 0, 0.0 ); 
 }
 
@@ -99,10 +99,11 @@ void ActionWithInputGrid::doTheCalculation() {
       unsigned dimension = getPntrToArgument(0)->getRank();
       std::vector<std::string> argn( dimension ), min( dimension ), max( dimension );
       std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
-      (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( argn, min, max, nbin, spacing, ipbc );
+      (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( argn, min, max, nbin, spacing, ipbc, false );
       gridobject.setBounds( min, max, nbin, spacing ); firststep=false; finishOutputSetup();
   }
   runAllTasks();
+  jobsAfterLoop();
 }
 
 void ActionWithInputGrid::calculate() {

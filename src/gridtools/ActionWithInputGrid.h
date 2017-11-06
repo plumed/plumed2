@@ -45,6 +45,7 @@ public:
   explicit ActionWithInputGrid(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const ;
   virtual void finishOutputSetup() = 0;
+  virtual void jobsAfterLoop(){}
   void calculate();
   void apply() {};
   void update();

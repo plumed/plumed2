@@ -370,9 +370,6 @@ void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
 void ActionWithValue::selectActiveTasks( std::vector<unsigned>& tflags ){
   buildCurrentTaskList( tflags );
   if( action_to_do_after ) action_to_do_after->selectActiveTasks( tflags );
-//  for(unsigned i=0;i<values.size();++i){
-//      if( values[i]->getRank()>0 ) values[i]->activateTasks( tflags );
-//  }
 }
 
 void ActionWithValue::runAllTasks() {

@@ -44,7 +44,7 @@ public:
   bool allowComponentsAndValue() const { return true; }
   void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin, 
-                             std::vector<double>& spacing, std::vector<bool>& pbc ) const ;
+                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void calculate() {}
   void apply() {}

@@ -106,6 +106,8 @@ public:
   void getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ) const ;
 /// Get the spacing between grid points
   const std::vector<double>& getGridSpacing() const ;
+/// Get the stride (the distance between the grid points of an index)
+  const std::vector<unsigned>& getStride() const ;
 };
 
 inline
@@ -139,6 +141,12 @@ inline
 bool GridCoordinatesObject::isPeriodic( const unsigned& i ) const {
   plumed_dbg_assert( gtype==flat );
   return pbc[i];
+}
+
+inline
+const std::vector<unsigned>& GridCoordinatesObject::getStride() const {
+  plumed_dbg_assert( gtype==flat );
+  return stride;
 }
 
 }

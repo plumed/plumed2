@@ -1,0 +1,14 @@
+UNITS NATURAL
+
+fcc: FCCUBIC SPECIES=1-5184 SWITCH={CUBIC D_0=1.2 D_MAX=1.5} ALPHA=27  
+
+PRINT ATOMS=fcc ARG=fcc_n FILE=atoms.xyz FMT=%8.4f 
+
+dens_dist: DISTANCE ORIGIN=1 ATOMS=fcc COMPONENTS 
+dens_numer: KDE HEIGHTS=fcc_n ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=14,14,28 BANDWIDTH=1.0,1.0,1.0
+dens_denom: KDE ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=14,14,28 BANDWIDTH=1.0,1.0,1.0
+dens: MATHEVAL ARG1=dens_numer ARG2=dens_denom FUNC=x/y PERIODIC=NO
+ 
+PRINT ARG=dens FILE=dens.cube FMT=%8.4f
+cont: FIND_CONTOUR ARG=dens CONTOUR=0.42 
+PRINT ARG1=cont.dens_dist.x ARG2=cont.dens_dist.y ARG3=cont.dens_dist.z FILE=surface.xyz FMT=%8.4f

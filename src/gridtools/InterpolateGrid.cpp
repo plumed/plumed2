@@ -61,7 +61,7 @@ public:
   explicit InterpolateGrid(const ActionOptions&ao);
   void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin,
-                             std::vector<double>& spacing, std::vector<bool>& pbc ) const ;
+                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void finishOutputSetup();
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
@@ -115,12 +115,24 @@ void InterpolateGrid::finishOutputSetup() {
 
 void InterpolateGrid::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
                                             std::vector<std::string>& max, std::vector<unsigned>& nbin,
-                                            std::vector<double>& spacing, std::vector<bool>& pbc ) const {
+                                            std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
+  bool isdists=dumpcube; double units=1.0;
+  for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i){
+      if( getPntrToArgument( arg_ends[i] )->getName().find(".")==std::string::npos ){ isdists=false; break; }
+      std::size_t dot = getPntrToArgument( arg_ends[i] )->getName().find(".");
+      std::string name = getPntrToArgument( arg_ends[i] )->getName().substr(dot+1);
+      if( name!="x" && name!="y" && name!="z" ){ isdists=false; break; }
+  }
+  if( isdists ) {
+      if( plumed.getAtoms().usingNaturalUnits() ) units = 1.0/0.5292;
+      else units = plumed.getAtoms().getUnits().getLength()/.05929;
+  }
   std::vector<unsigned> nn( gridcoords.getNbin( false ) ); 
   for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) {
-      argn[i] = getPntrToArgument( arg_ends[i] )->getName();
-      min[i]=gridcoords.getMin()[i]; max[i]=gridcoords.getMax()[i]; 
-      nbin[i]=nn[i]; spacing[i]=gridcoords.getGridSpacing()[i];
+      argn[i] = getPntrToArgument( arg_ends[i] )->getName(); double gmin, gmax;
+      Tools::convert( gridcoords.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
+      Tools::convert( gridcoords.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );
+      nbin[i]=nn[i]; spacing[i]=units*gridcoords.getGridSpacing()[i];
       pbc[i]=gridcoords.isPeriodic(i);
   }  
 }
