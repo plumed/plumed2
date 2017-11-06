@@ -140,8 +140,11 @@ s(r) = FUNC
 
 \attention
 Similarly to the \ref MATHEVAL function, the MATHEVAL switching function
-only works if libmatheval is installed on the system and
-PLUMED has been linked to it
+only works if one of these two conditions is satisfied:
+(a) libmatheval is installed on the system and PLUMED has been linked to it or
+(b) the environment variable `PLUMED_USE_LEPTON` is set equal to `yes` at runtime
+(in this case, the internal lepton library will be used).
+Notice that in version v2.5 the internal lepton library will be used by default.
 Also notice that using MATHEVAL is much slower than using e.g. RATIONAL.
 Thus, the MATHEVAL switching function is useful to perform quick
 tests on switching functions with arbitrary form before proceeding to their

@@ -65,8 +65,11 @@ If you want a function that depends not only on collective variables
 but also on time you can use the \subpage TIME action.
 
 \attention
-The MATHEVAL object only works if libmatheval is installed on the system and
-PLUMED has been linked to it
+The MATHEVAL object only works if one of these conditions is satisfied:
+(a) libmatheval is installed on the system and PLUMED has been linked to it or
+(b) the environment variable `PLUMED_USE_LEPTON` is set equal to `yes` at runtime
+(in this case, the internal lepton library will be used).
+Notice that in version v2.5 the internal lepton library will be used by default.
 
 \par Examples
 
