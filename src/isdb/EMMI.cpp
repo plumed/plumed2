@@ -183,6 +183,7 @@ private:
   // regression
   unsigned nregres_;
   double scale_;
+  bool no_weights_;
   // tabulated exponential
   double dpcutoff_;
   double dexp_;
@@ -191,6 +192,7 @@ private:
 
 // do regression - weighted or not
   void doRegression(const vector<double> &inv_s2);
+  void doRegression();
 // read and write status
   void read_status();
   void print_status(long int step);
@@ -260,7 +262,9 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
   keys.add("optional","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
   keys.add("optional","PRIOR", "p(sigma)=1/sigma^n, where n = 2*prior-1");
-  keys.add("optional","REGRESSION", "regression stride");
+  keys.add("optional","REGRESSION","regression stride");
+  keys.add("optional","SCALE","scale factor");
+  keys.addFlag("NO_WEIGHTS",false, "don't use weigths in regression");
   keys.add("optional","BLUR", "Gaussian blur, with sigmaB=blur/2.0");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb", "default","Bayesian score");
@@ -273,11 +277,13 @@ EMMI::EMMI(const ActionOptions&ao):
   inv_sqrt2_(0.707106781186548),
   sqrt2_pi_(0.797884560802865),
   first_time_(true), no_aver_(false),
-  analysis_(false), nframe_(0.0), pbc_(true),
-  MCstride_(0), MCfirst_(-1), MCaccept_(0), MCcut_(0),
+  analysis_(false), nframe_(0.0),
+  pbc_(true), dsigma_(0),
+  MCstride_(0), MCfirst_(-1),
+  MCaccept_(0), MCcut_(0),
   statusstride_(0), first_status_(true),
   do_sampling_(false), prior_(1.),
-  nregres_(0), scale_(1),
+  nregres_(0), scale_(1.0), no_weights_(false),
   dpcutoff_(15.0), nexp_(1000000)
 {
   // marginal or non-marginal version of the score
@@ -306,13 +312,12 @@ EMMI::EMMI(const ActionOptions&ao):
   if(do_sampling_ && sigma_ini<=0) error("with SAMPLING you must specify a positive SIGMA0");
 
   // MC stuff
-  double dsigma;
-  parse("DSIGMA", dsigma);
-  if(do_sampling_ && dsigma<0) error("you must specify a positive DSIGMA");
+  parse("DSIGMA", dsigma_);
+  if(do_sampling_ && dsigma_<0) error("you must specify a positive DSIGMA");
   parse("MC_STRIDE", MCstride_);
-  if(do_sampling_ && dsigma>0 && MCstride_<=0) error("you must specify a positive MC_STRIDE");
+  if(do_sampling_ && dsigma_>0 && MCstride_<=0) error("you must specify a positive MC_STRIDE");
   parse("MC_CUT", MCcut_);
-  if(do_sampling_ && dsigma>0 && MCcut_<=0) error("you must specify a positive MC_CUT");
+  if(do_sampling_ && dsigma_>0 && MCcut_<=0) error("you must specify a positive MC_CUT");
 
   // error file
   string errfile;
@@ -330,6 +335,8 @@ EMMI::EMMI(const ActionOptions&ao):
 
   // regression stride
   parse("REGRESSION",nregres_);
+  parseFlag("NO_WEIGHTS",no_weights_);
+  parse("SCALE", scale_);
 
   // apply a Gaussian blur to forward model
   double blur = 0.0;
@@ -387,7 +394,7 @@ EMMI::EMMI(const ActionOptions&ao):
   if(nregres_>0) log.printf("  regression stride : %u\n", nregres_);
   if(do_sampling_) {
     log.printf("  initial value of the uncertainty : %f\n",sigma_ini);
-    log.printf("  max MC collective move in uncertainty : %f\n",dsigma);
+    log.printf("  max MC collective move in uncertainty : %f\n",dsigma_);
     log.printf("  MC stride for collective moves : %u\n", MCstride_);
     log.printf("  cutoff for collective moves : %f\n", MCcut_);
     log.printf("  reading/writing to status file : %s\n",statusfilename_.c_str());
@@ -423,11 +430,26 @@ EMMI::EMMI(const ActionOptions&ao):
     double ov = get_self_overlap(i);
     ovdd_.push_back(ov);
   }
-  // calculate average overlap across map
-  double ov_base = accumulate(ovdd_.begin(), ovdd_.end(), 0.0);
-  ov_base /= static_cast<double>(ovdd_.size());
-  // set up dsigma for MC collective moves
-  dsigma_ = dsigma * ov_base;
+
+  // calculate mediam overlap
+  vector<double> ovdd_median = ovdd_;
+  std::sort(ovdd_median.begin(), ovdd_median.end());
+  double ov_base = ovdd_median[ovdd_median.size()/2];
+  // calculate average overlap
+  double ov_ave = accumulate(ovdd_.begin(), ovdd_.end(), 0.0);
+  ov_ave /= static_cast<double>(ovdd_.size());
+  // calculate min and max overlap
+  double ov_min = *min_element(ovdd_.begin(), ovdd_.end());
+  double ov_max = *max_element(ovdd_.begin(), ovdd_.end());
+  // print out statistics
+  log.printf("  overlap statistics\n");
+  log.printf("     median  : %f\n", ov_base);
+  log.printf("     average : %f\n", ov_ave);
+  log.printf("     min     : %f\n", ov_min);
+  log.printf("     max     : %f\n", ov_max);
+
+  // set MC mover
+  dsigma_ *= ov_base;
 
   // set sampling parameters
   double s0_ave = 0.0;
@@ -440,14 +462,14 @@ EMMI::EMMI(const ActionOptions&ao):
     s0_ave += s0_exp/ovdd_[i];
     s0_median.push_back(s0_exp/ovdd_[i]);
     // add sigma_mean contribution
-    if(GMM_d_beta_[i]==1) sigma_mean_.push_back(sigma_mean_h*ov_base);
-    if(GMM_d_beta_[i]==0) sigma_mean_.push_back(sigma_mean_c*ov_base);
+    if(GMM_d_beta_[i]==1) sigma_mean_.push_back(sigma_mean_h*ovdd_[i]);
+    if(GMM_d_beta_[i]==0) sigma_mean_.push_back(sigma_mean_c*ovdd_[i]);
     // for non marginal version
     if(do_sampling_) {
       // add minimum value of sigma
       sigma_min_.push_back(s0_exp);
       // set sigma max
-      sigma_max_.push_back(10.0*ovdd_[i]+s0_exp+dsigma_);
+      sigma_max_.push_back(2.0*ov_max+s0_exp+dsigma_);
       // initialize sigma
       sigma_.push_back(std::max(sigma_min_[i], std::min(sigma_max_[i], sigma_ini*ov_base)));
     } else {
@@ -459,8 +481,11 @@ EMMI::EMMI(const ActionOptions&ao):
   s0_ave /= static_cast<double>(GMM_d_m_.size());
   std::sort(s0_median.begin(), s0_median.end());
   if(errfile.size()>0) {
-    log.printf("  average relative error : %f\n", s0_ave);
-    log.printf("  median relative error  : %f\n", s0_median[s0_median.size()/2]);
+    log.printf("  relative error statistics\n");
+    log.printf("     median  : %f\n", s0_median[s0_median.size()/2]);
+    log.printf("     average : %f\n", s0_ave);
+    log.printf("     min     : %f\n", *min_element(s0_median.begin(), s0_median.end()));
+    log.printf("     max     : %f\n", *max_element(s0_median.begin(), s0_median.end()));
   }
 
   // read status file if restarting
@@ -592,43 +617,59 @@ void EMMI::doMonteCarlo()
   unsigned nGMM = static_cast<unsigned>(floor(random_.RandU01()*static_cast<double>(GMM_d_m_.size())));
   if(nGMM==GMM_d_m_.size()) nGMM=GMM_d_m_.size()-1;
 
-  // propose a global random shift
+  // and propose a global random shift
   double shift = dsigma_ * ( 2.0 * random_.RandU01() - 1.0 );
 
-  // prepare new sigma vector
-  vector<double> new_sigma;
+  // Am I a sampling replica?
+  bool do_sample = false;
+  if(!no_aver_ && rank_==0) do_sample = true;
+  if(no_aver_  && rank_==0 && replica_==0) do_sample = true;
 
-  // calculate old and new energy
-  double old_ene = 0.0;
-  double new_ene = 0.0;
-  // cycle on neighbors
-  for(unsigned j=0; j<MCneigh_[nGMM].size(); ++j) {
-    // index of the neighbor
-    unsigned i = MCneigh_[nGMM][j];
-    // store prefactor
-    double pre_fact = 0.5*kbt_*( scale_*ovmd_[i]-ovdd_[i] )*( scale_*ovmd_[i]-ovdd_[i] );
-    // old inverse s2
-    double old_s2 = sigma_mean_[i]*sigma_mean_[i]+sigma_[i]*sigma_[i];
-    // add to old energy
-    old_ene += pre_fact/old_s2 + kbt_*prior_*std::log(old_s2);
-    // new sigma
-    double new_s = sigma_[i] + shift;
-    // check boundaries
-    if(new_s > sigma_max_[i]) {new_s = 2.0 * sigma_max_[i] - new_s;}
-    if(new_s < sigma_min_[i]) {new_s = 2.0 * sigma_min_[i] - new_s;}
-    // new inverse s2
-    double new_s2 = sigma_mean_[i]*sigma_mean_[i]+new_s*new_s;
-    // add to new energy
-    new_ene += pre_fact/new_s2 + kbt_*prior_*std::log(new_s2);
-    // store in vector
-    new_sigma.push_back(new_s);
+  if(do_sample) {
+    // prepare new sigma vector
+    vector<double> new_sigma;
+    // calculate old and new energy
+    double old_ene = 0.0;
+    double new_ene = 0.0;
+    // cycle on neighbors
+    for(unsigned j=0; j<MCneigh_[nGMM].size(); ++j) {
+      // index of the neighbor
+      unsigned i = MCneigh_[nGMM][j];
+      // store prefactor
+      double pre_fact = 0.5*kbt_*( scale_*ovmd_[i]-ovdd_[i] )*( scale_*ovmd_[i]-ovdd_[i] );
+      // old inverse s2
+      double old_s2 = sigma_mean_[i]*sigma_mean_[i]+sigma_[i]*sigma_[i];
+      // add to old energy
+      old_ene += pre_fact/old_s2 + kbt_*prior_*std::log(old_s2);
+      // new sigma
+      double new_s = sigma_[i] + shift;
+      // check boundaries
+      if(new_s > sigma_max_[i]) {new_s = 2.0 * sigma_max_[i] - new_s;}
+      if(new_s < sigma_min_[i]) {new_s = 2.0 * sigma_min_[i] - new_s;}
+      // new inverse s2
+      double new_s2 = sigma_mean_[i]*sigma_mean_[i]+new_s*new_s;
+      // add to new energy
+      new_ene += pre_fact/new_s2 + kbt_*prior_*std::log(new_s2);
+      // store in vector
+      new_sigma.push_back(new_s);
+    }
+    // accept or reject
+    bool accept = doAccept(old_ene, new_ene);
+    if(accept) {
+      for(unsigned j=0; j<MCneigh_[nGMM].size(); ++j) sigma_[MCneigh_[nGMM][j]] = new_sigma[j];
+      MCaccept_++;
+    }
+  } else {
+    // put stuff to zero
+    for(unsigned i=0; i<sigma_.size(); ++i) sigma_[i] = 0.0;
+    MCaccept_ = 0;
   }
-  // accept or reject
-  bool accept = doAccept(old_ene, new_ene);
-  if(accept) {
-    for(unsigned j=0; j<MCneigh_[nGMM].size(); ++j) sigma_[MCneigh_[nGMM][j]] = new_sigma[j];
-    MCaccept_++;
+  // communication between multi replicas
+  if(no_aver_ && rank_==0) {
+    multi_sim_comm.Sum(&sigma_[0], sigma_.size());
+    multi_sim_comm.Sum(&MCaccept_,  1);
   }
+  // local communication is done later
 }
 
 vector<double> EMMI::read_exp_errors(string errfile)
@@ -1021,8 +1062,10 @@ void EMMI::calculate_overlap() {
                              inv_cov_md_[kaux], ovmd_der_[i]);
   }
   // communicate stuff
-  comm.Sum(&ovmd_[0], ovmd_.size());
-  comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
+  if(size_>1){
+   comm.Sum(&ovmd_[0], ovmd_.size());
+   comm.Sum(&ovmd_der_[0][0], 3*ovmd_der_.size());
+  }
 }
 
 // weighted regression
@@ -1034,6 +1077,24 @@ void EMMI::doRegression(const vector<double> &inv_s2)
   for(unsigned i=0; i<ovmd_.size(); ++i) {
     Bn += ovmd_[i] * ovdd_[i] * inv_s2[i];
     Bd += ovmd_[i] * ovmd_[i] * inv_s2[i];
+  }
+// reset scale_
+  if(Bd<=0 || Bn<=0) {
+    scale_ = 1.;
+  } else {
+    scale_ = Bn / Bd;
+  }
+}
+
+// non-weighted regression
+void EMMI::doRegression()
+{
+// calculate scaling factor
+  double Bn = 0.0;
+  double Bd = 0.0;
+  for(unsigned i=0; i<ovmd_.size(); ++i) {
+    Bn += ovmd_[i] * ovdd_[i];
+    Bd += ovmd_[i] * ovmd_[i];
   }
 // reset scale_
   if(Bd<=0 || Bn<=0) {
@@ -1098,34 +1159,39 @@ void EMMI::calculate_sigma()
   double escale = 1.0 / static_cast<double>(nrep_);
 
   // prepare vector of inv_s2
-  vector<double> inv_s2;
-  for(unsigned i=0; i<ovmd_.size(); ++i)
-    inv_s2.push_back( 1.0 / ( sigma_mean_[i]*sigma_mean_[i]+sigma_[i]*sigma_[i] ) );
+  vector<double> inv_s2(ovmd_.size(), 0.0);
 
-  // calculate average of ovmd_ across replicas
-  // and collect sigma contributions from replicas
-  if(!no_aver_ && nrep_>1 && rank_==0) {
-    multi_sim_comm.Sum(&ovmd_[0],  ovmd_.size());
-    multi_sim_comm.Sum(&inv_s2[0], inv_s2.size());
-    // divide model overlap by number of replicas
-    for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
-  }
-  // set quantities to zero if not master rank
-  if(rank_!=0) {
-    for(unsigned i=0; i<ovmd_.size(); ++i) {
-      ovmd_[i]  = 0.0;
-      inv_s2[i] = 0.0;
+  // if master node (other ranks do not know sigma_)
+  if(rank_==0) {
+    // calculate inverse sigma squared
+    for(unsigned i=0; i<ovmd_.size(); ++i)
+      inv_s2[i] = 1.0 / ( sigma_mean_[i]*sigma_mean_[i]+sigma_[i]*sigma_[i] );
+    // calculate average of ovmd_ across replicas
+    // and sum inverse sigma squared across replicas
+    if(!no_aver_ && nrep_>1) {
+      multi_sim_comm.Sum(&ovmd_[0],  ovmd_.size());
+      multi_sim_comm.Sum(&inv_s2[0], inv_s2.size());
+      // divide model overlap by number of replicas
+      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
     }
+  } else {
+    // set model overlaps to zero
+    for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
   }
-  // communicate
-  comm.Sum(&ovmd_[0],  ovmd_.size());
-  comm.Sum(&inv_s2[0], ovmd_.size());
+  // local communication
+  if(size_>1) {
+    comm.Sum(&ovmd_[0],  ovmd_.size());
+    comm.Sum(&inv_s2[0], ovmd_.size());
+  }
 
   // get time step
   long int step = getStep();
 
   // do regression
-  if(nregres_>0 && (first_time_ || getExchangeStep() || step%nregres_==0) ) doRegression(inv_s2);
+  if(nregres_>0 && step%nregres_==0 && !getExchangeStep()) {
+    if(no_weights_) doRegression();
+    else            doRegression(inv_s2);
+  }
 
   // calculate score and reweighting score
   double ene = 0.0;
@@ -1161,8 +1227,10 @@ void EMMI::calculate_sigma()
   }
 
   // communicate stuff
-  comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
-  comm.Sum(virial);
+  if(size_>1) {
+    comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
+    comm.Sum(virial);
+  }
 
   // set derivatives, virial, and score
   for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
@@ -1170,7 +1238,7 @@ void EMMI::calculate_sigma()
   getPntrToComponent("scoreb")->set(ene);
 
   // do Montecarlo
-  if(dsigma_>0 && step%MCstride_==0) doMonteCarlo();
+  if(dsigma_>0 && step%MCstride_==0 && !getExchangeStep()) doMonteCarlo();
 
   // print status
   if(step%statusstride_==0) print_status(step);
@@ -1208,10 +1276,8 @@ void EMMI::calculate_marginal()
     comm.Sum(&ovmd_[0], ovmd_.size());
   }
 
-  // weight vector
-  vector<double> inv_s2(ovmd_.size(), 1.0);
 // do regression
-  if(nregres_>0 && (first_time_ || getExchangeStep() || getStep()%nregres_==0) ) doRegression(inv_s2);
+  if(nregres_>0 && getStep()%nregres_==0 && !getExchangeStep()) doRegression();
 
   // calculate score
   double ene = 0.0;
@@ -1254,8 +1320,10 @@ void EMMI::calculate_marginal()
   }
 
   // communicate stuff
-  comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
-  comm.Sum(virial);
+  if(size_>1) {
+    comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
+    comm.Sum(virial);
+  }
 
   // set derivatives, virial, and score
   for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
