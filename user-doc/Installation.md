@@ -648,15 +648,9 @@ It will take more time to compile but it will allow you to use a single module. 
 PLUMED version with different optimization levels.
 
 Using modules, it is not necessary to make the PLUMED module explicitly dependent on the used library. Imagine a
-<<<<<<< HEAD
 scenario where you first installed a module `libxdrfile`, then load it while you compile PLUMED. If you
-provide the following option to configure `LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH"`, the PLUMED executable and
-library will remember where libxdrfile is, without the need to load libxdrfile module at runtime.
-=======
-scenario where you first installed a module `libmatheval`, then load it while you compile PLUMED. If you
 provide the following option to configure `--enable-rpath`, the PLUMED executable and
-library will remember where libmatheval is, without the need to load libmatheval module at runtime.
->>>>>>> v2.4
+library will remember where libxdrfile is, without the need to load libxdrfile module at runtime.
 Notice that this trick often does not work for fundamental libraries such as C++ and MPI library. As a consequence,
 usually the PLUMED module should load the compiler and MPI modules.
 
