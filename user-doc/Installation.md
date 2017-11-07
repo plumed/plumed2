@@ -174,17 +174,32 @@ This might be useful when installing PLUMED within package managers such as MacP
 make sure that only desired libraries are linked and thus to avoid to introduce spurious
 dependencies. The only exception to this rule is `-ldl`, which is anyway a system library on Linux.
 
-\warning On Linux you might have problems using the LDFLAGS option. In particular,
-if makefile complaints that it cannot link the file 'src/lib/plumed-shared',
-try to set correctly
-the runtime path by using
-\verbatim
-> ./configure LDFLAGS="-L/opt/local/lib -Wl,-rpath,/opt/local/lib" \
-  CPPFLAGS=-I/opt/local/include LIBS=-lmyxdrfile
-\endverbatim
-Notice that although the file 'src/lib/plumed-shared' is not necessary, being
+\warning On OSX it is common practice to hardcode the full path
+to libraries in the libraries themselves. This means that, after having linked
+a shared library, that specific shared library will be searched in the same
+place (we do the same for the `libplumed.dylib` library, which has an install name hardcoded).
+On the other hand, on Linux it is common pratice not to hardcode the full path.
+This means that if you use the `LDFLAGS` option to specify the path
+to the libraries you want to link to PLUMED (e.g. `./configure LDFLAGS="-L/path"`)
+these libraries might not be found later.
+The visible symptom is that `src/lib/plumed-shared` will not be linked correctly.
+Although the file 'src/lib/plumed-shared' is not necessary, being
 able to produce it means that it will be possible to link PLUMED dynamically
 with MD codes later.
+The easiest solution is to hardcode the library search path in this way:
+\verbatim
+> ./configure LDFLAGS="-L/path -Wl,-rpath,/path"
+\endverbatim
+Notice that as of PLUMED v2.4 it is possible to use the configure option `--enable-rpath`
+to automatically hardcode the path defined in `LIBRARY_PATH`:
+\verbatim
+> ./configure LIBRARY_PATH=/path --enable-rpath
+\endverbatim
+In this way, the search path used at link time (`LIBRARY_PATH`) and the one saved in the `libplumed.so`
+library will be consistent by construction.
+In a typical environment configured using module framework (http://modules.sourceforge.net),
+`LIBRARY_PATH` will be a variable containing the path to all the modules loaded at compilation
+time.
 
 PLUMED needs blas and lapack. These are treated slighty different from
 other libraries. The search is done in the usual way (i.e., first
@@ -633,9 +648,15 @@ It will take more time to compile but it will allow you to use a single module. 
 PLUMED version with different optimization levels.
 
 Using modules, it is not necessary to make the PLUMED module explicitly dependent on the used library. Imagine a
+<<<<<<< HEAD
 scenario where you first installed a module `libxdrfile`, then load it while you compile PLUMED. If you
 provide the following option to configure `LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH"`, the PLUMED executable and
 library will remember where libxdrfile is, without the need to load libxdrfile module at runtime.
+=======
+scenario where you first installed a module `libmatheval`, then load it while you compile PLUMED. If you
+provide the following option to configure `--enable-rpath`, the PLUMED executable and
+library will remember where libmatheval is, without the need to load libmatheval module at runtime.
+>>>>>>> v2.4
 Notice that this trick often does not work for fundamental libraries such as C++ and MPI library. As a consequence,
 usually the PLUMED module should load the compiler and MPI modules.
 
