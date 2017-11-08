@@ -1,9 +1,9 @@
-#! FIELDS dens1a interpol dinterpol_dens1a
+#! FIELDS dens1a_dist.x interpol dinterpol_dens1a_dist.x
 #! SET normalisation    1.0000
-#! SET min_dens1a -2.5
-#! SET max_dens1a 2.5
-#! SET nbins_dens1a  100
-#! SET periodic_dens1a true
+#! SET min_dens1a_dist.x -2.5
+#! SET max_dens1a_dist.x 2.5
+#! SET nbins_dens1a_dist.x  100
+#! SET periodic_dens1a_dist.x true
   -2.5000   1.0000   0.0000
   -2.4500   1.0000   0.0000
   -2.4000   1.0000   0.0000

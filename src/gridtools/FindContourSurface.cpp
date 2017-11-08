@@ -94,6 +94,7 @@ private:
   std::vector<unsigned> ones;
   std::vector<unsigned> gdirs;
   std::vector<double> direction;
+  std::vector<std::string> gnames;
   GridCoordinatesObject gridcoords;
 public:
   static void registerKeywords( Keywords& keys );
@@ -103,8 +104,11 @@ public:
                              std::vector<std::string>& max, std::vector<unsigned>& nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
+  unsigned getNumberOfDerivatives() const ;
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
+  void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
+                               const unsigned& bufstart, std::vector<double>& buffer ) const ;
   void jobsAfterLoop();
 };
 
@@ -129,7 +133,7 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   if( gbuffer>0 ) log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
   checkRead();
 
-  unsigned n=0; gdirs.resize( getPntrToArgument(0)->getRank()-1 );
+  unsigned n=0; gdirs.resize( getPntrToArgument(0)->getRank()-1 ); gnames.resize( getPntrToArgument(0)->getRank()-1 );
   Value* gval=getPntrToArgument(0); std::vector<unsigned> nbin( gval->getRank() );
   std::vector<double> spacing( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
   std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
@@ -139,7 +143,7 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
       dir_n=i;
     } else {
       if( n==gdirs.size() ) error("could not find " + dir + " direction in input grid");
-      gdirs[n]=i; n++;
+      gdirs[n]=i; gnames[n]=argn[i]; n++;
     }
   }
   if( n!=(getPntrToArgument(0)->getRank()-1) ) error("output of grid is not understood");
@@ -165,10 +169,10 @@ void FindContourSurface::finishOutputSetup() {
   std::vector<unsigned> find( gridcoords.getDimension() );
   std::vector<unsigned> ind( gridcoords.getDimension() );
   for(unsigned i=0; i<gridcoords.getNumberOfPoints(); ++i) {
-    find.assign( find.size(), 0 ); gridobject.getIndices( i, ind );
+    find.assign( find.size(), 0 ); gridcoords.getIndices( i, ind );
     for(unsigned j=0; j<gdirs.size(); ++j) find[gdirs[j]]=ind[j];
     // Current will be set equal to the start point for this grid index
-    addTaskToList( gridobject.getIndex(find) );
+    addTaskToList( gridcoords.getIndex(find) );
   }
 
   // Set the direction in which to look for the contour
@@ -181,9 +185,8 @@ void FindContourSurface::getInfoForGridHeader( std::vector<std::string>& argn, s
                                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
   bool isdists=dumpcube; double units=1.0;
   for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i){ 
-      if( getPntrToArgument( arg_ends[i] )->getName().find(".")==std::string::npos ){ isdists=false; break; }
-      std::size_t dot = getPntrToArgument( arg_ends[i] )->getName().find("."); 
-      std::string name = getPntrToArgument( arg_ends[i] )->getName().substr(dot+1);
+      if( gnames[i].find(".")==std::string::npos ){ isdists=false; break; }
+      std::size_t dot = gnames[i].find("."); std::string name = gnames[i].substr(dot+1);
       if( name!="x" && name!="y" && name!="z" ){ isdists=false; break; }
   }
   if( isdists ) {
@@ -192,16 +195,23 @@ void FindContourSurface::getInfoForGridHeader( std::vector<std::string>& argn, s
   }
   std::vector<unsigned> nn( gridcoords.getNbin( false ) );
   for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) {
-      argn[i] = getPntrToArgument( gdirs[i] )->getName(); double gmin, gmax;
-      Tools::convert( gridcoords.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
-      Tools::convert( gridcoords.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );
-      nbin[i]=nn[i]; spacing[i]=units*gridcoords.getGridSpacing()[i];
-      pbc[i]=gridcoords.isPeriodic(i);
+      argn[i] = gnames[i];
+      double gmin, gmax;
+      if( gridobject.getMin().size()>0 ) {
+          Tools::convert( gridcoords.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
+          Tools::convert( gridcoords.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );
+      }
+      if( gridcoords.getGridSpacing().size()>0 ) spacing[i]=units*gridcoords.getGridSpacing()[i];
+      nbin[i]=nn[i]; pbc[i]=gridcoords.isPeriodic(i);
   }  
 } 
 
 void FindContourSurface::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
   gridcoords.getGridPointCoordinates( ind, indices, coords );
+}
+
+unsigned FindContourSurface::getNumberOfDerivatives() const {
+  return gridcoords.getDimension();
 }
 
 void FindContourSurface::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
@@ -281,7 +291,13 @@ void FindContourSurface::performTask( const unsigned& current, MultiValue& myval
     std::string num; Tools::convert( getStep(), num );
     error("On step " + num + " failed to find required grid point");
   }
-  myvals.setValue( 1, minp );
+  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), minp );
+}
+
+void FindContourSurface::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
+                                                 const unsigned& bufstart, std::vector<double>& buffer ) const {
+  unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
+  unsigned valout = getPntrToOutput(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
 }
 
 }
