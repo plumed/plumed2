@@ -183,7 +183,8 @@ script:
 
 # build using macports
   - if test -n "$PLUMED_MACPORTS" ; then
-      sudo port -N install $PLUMED_MACPORTS ;
+      sudo port -N -k install $PLUMED_MACPORTS ;
+      plumed config show
       ./macports-ci ccache --save ;
     fi
 
@@ -193,7 +194,7 @@ script:
 # TEST:
   - if test "$VALGRIND" == yes ; then OPT=valgrind ; else OPT="" ; fi
 # --no-print-directory make it more silent
-  - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make --no-print-directory -C regtest $OPT ; fi
+  - if test "$PLUMED_CXX" ; then make --no-print-directory -C regtest $OPT ; fi
 
 # test with gcc6
   - if test "$PLUMED_DOCKER" = yes ; then docker run -v "$PWD/regtest":/home/plumed/regtest -it plumed /bin/bash -c "make -C regtest" ; fi
@@ -202,7 +203,8 @@ script:
   - if test "$MAKEDOC" == yes ; then make -C regtest copytodoc ; fi
   - if test "$MAKEDOC" == yes ; then make -C developer-doc coverage ; fi
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
-  - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make -C regtest checkfail ; fi
+  - if test "$PLUMED_CXX" ; then make -C regtest checkfail ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then sudo port -N -d test $PLUMED_MACPORTS ; fi
 
 # CPPCHECK:
 # this is required so as to have all the include files inplace:
