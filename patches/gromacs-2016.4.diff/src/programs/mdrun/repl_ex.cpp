@@ -67,6 +67,10 @@ extern int    plumedswitch;
 extern plumed plumedmain;
 /* END PLUMED */
 
+/* PLUMED HREX */
+extern int plumed_hrex;
+/* END PLUMED HREX */
+
 #define PROBABILITYCUTOFF 100
 /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
 
@@ -543,7 +547,9 @@ static void exchange_rvecs(const gmx_multisim_t gmx_unused *ms, int gmx_unused b
     }
 }
 
-static void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
+/* PLUMED HREX */
+void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
+/* END PLUMED HREX */
 {
     /* When t_state changes, this code should be updated. */
     int ngtc, nnhpres;
@@ -623,7 +629,9 @@ static void copy_ints(const int *s, int *d, int n)
 #define scopy_reals(v, n) copy_reals(state->v, state_local->v, n);
 #define scopy_ints(v, n)   copy_ints(state->v, state_local->v, n);
 
-static void copy_state_nonatomdata(t_state *state, t_state *state_local)
+/* PLUMED HREX */
+void copy_state_nonatomdata(t_state *state, t_state *state_local)
+/* END PLUMED HREX */
 {
     /* When t_state changes, this code should be updated. */
     int ngtc, nnhpres;
@@ -866,6 +874,11 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
     {
         fprintf(fplog, "Repl %d <-> %d  dE_term = %10.3e (kT)\n", a, b, delta);
     }
+/* PLUMED HREX */
+/* this is necessary because with plumed HREX the energy contribution is
+   already taken into account */
+    if(plumed_hrex) delta=0.0;
+/* END PLUMED HREX */
     if (re->bNPT)
     {
         /* revist the calculation for 5.0.  Might be some improvements. */
@@ -1488,3 +1501,15 @@ void print_replica_exchange_statistics(FILE *fplog, struct gmx_repl_ex *re)
     /* print the transition matrix */
     print_transition_matrix(fplog, re->nrepl, re->nmoves, re->nattempt);
 }
+
+/* PLUMED HREX */
+int replica_exchange_get_repl(const gmx_repl_ex_t re){
+  return re->repl;
+};
+
+int replica_exchange_get_nrepl(const gmx_repl_ex_t re){
+  return re->nrepl;
+};
+/* END PLUMED HREX */
+
+
