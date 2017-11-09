@@ -30,7 +30,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC BIAS CALIBEREXTERNAL
+//+PLUMEDOC BIAS CALIBER
 /*
 Add a time-dependent, harmonic restraint on one or more variables.
 
@@ -39,9 +39,9 @@ Add a time-dependent, harmonic restraint on one or more variables.
 //+ENDPLUMEDOC
 
 
-class CaliberExternal : public bias::Bias {
+class Caliber : public bias::Bias {
 public:
-  explicit CaliberExternal(const ActionOptions&);
+  explicit Caliber(const ActionOptions&);
   void calculate();
   static void registerKeywords( Keywords& keys );
 private:
@@ -65,9 +65,9 @@ private:
   void replica_averaging(const double fact, vector<double> &mean);
 };
 
-PLUMED_REGISTER_ACTION(CaliberExternal,"CALIBER")
+PLUMED_REGISTER_ACTION(Caliber,"CALIBER")
 
-void CaliberExternal::registerKeywords( Keywords& keys ) {
+void Caliber::registerKeywords( Keywords& keys ) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the CV values in function of time");
@@ -76,7 +76,7 @@ void CaliberExternal::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("x0","default","the instantaneous value of the center of the potential");
 }
 
-CaliberExternal::CaliberExternal(const ActionOptions&ao):
+Caliber::Caliber(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
   firstTime_(true),
   adaptive_(false)
@@ -128,9 +128,7 @@ CaliberExternal::CaliberExternal(const ActionOptions&ao):
   addComponent("min"); componentIsNotPeriodic("min");
 }
 
-
-
-void CaliberExternal::get_sigma_mean(const double fact, const vector<double> &mean)
+void Caliber::get_sigma_mean(const double fact, const vector<double> &mean)
 {
   const unsigned narg = getNumberOfArguments();
   const double dnrep    = static_cast<double>(nrep_);
@@ -165,7 +163,7 @@ void CaliberExternal::get_sigma_mean(const double fact, const vector<double> &me
   sigma_mean2_ = sigma_mean2_tmp;
 }
 
-void CaliberExternal::replica_averaging(const double fact, vector<double> &mean)
+void Caliber::replica_averaging(const double fact, vector<double> &mean)
 {
   const unsigned narg = getNumberOfArguments();
   if(master) {
@@ -176,12 +174,11 @@ void CaliberExternal::replica_averaging(const double fact, vector<double> &mean)
 }
 
 
-void CaliberExternal::calculate() {
+void Caliber::calculate() {
   long int now=getStep();
   double x0, dnow = static_cast<double>(now);
   const unsigned narg = getNumberOfArguments();
   int tindex;
-
 
   tindex = now/static_cast<int>(deltat);
 
@@ -216,10 +213,12 @@ void CaliberExternal::calculate() {
     ene+=0.5*kappa*cv*cv;
     getPntrToComponent("kappa")->set(kappa);
     getPntrToComponent("mean")->set(mean[i]);
-   };
+   } 
   } else {
    for(unsigned i=0; i<narg; ++i) {
     if(mean[i]>min[i]) min[i]=mean[i];
+    if(min[i]<x0) min[i]=x0;
+    if(min[i]>0.955) min[i]=0.955;
     else {
      kappa = mult*dnrep/sigma_mean2_[i];
      const double cv=difference(i,min[i],mean[i]); // this gives: getArgument(i) - x0
