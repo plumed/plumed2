@@ -201,11 +201,6 @@ void Value::applyPeriodicity( const unsigned& ival ) {
 }
 
 inline
-void Value::set(const unsigned& n, const double& v ){
-  value_set=true; data[n]=v; applyPeriodicity(n);
-}
-
-inline
 void Value::set(double v) {
   plumed_dbg_assert( shape.size()==0 );
   value_set=true;

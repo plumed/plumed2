@@ -106,33 +106,34 @@ Vector& AtomValuePack::getPosition( const unsigned& iatom ) {
 
 inline
 void AtomValuePack::setValue( const unsigned& ival, const double& vv ) {
-  myvals.setValue( ival, vv );
+  myvals.setValue( (mycolv->getPntrToOutput(ival))->getPositionInStream(), vv );
 }
 
 inline
 void AtomValuePack::addValue( const unsigned& ival, const double& vv ) {
-  myvals.addValue( ival, vv );
+  myvals.addValue( (mycolv->getPntrToOutput(ival))->getPositionInStream(), vv );
 }
 
 inline
 double AtomValuePack::getValue( const unsigned& ival ) const {
-  return myvals.get( ival );
+  return myvals.get( (mycolv->getPntrToOutput(ival))->getPositionInStream() );
 }
 
 inline
 void AtomValuePack::addAtomsDerivatives( const unsigned& ival, const unsigned& jder, const Vector& der ) {
   if( mycolv->doNotCalculateDerivatives() ) return;
   plumed_dbg_assert( jder<natoms );
-  myvals.addDerivative( ival, 3*indices[jder] + 0, der[0] );
-  myvals.addDerivative( ival, 3*indices[jder] + 1, der[1] );
-  myvals.addDerivative( ival, 3*indices[jder] + 2, der[2] );
+  unsigned jval=(mycolv->getPntrToOutput(ival))->getPositionInStream();
+  myvals.addDerivative( jval, 3*indices[jder] + 0, der[0] );
+  myvals.addDerivative( jval, 3*indices[jder] + 1, der[1] );
+  myvals.addDerivative( jval, 3*indices[jder] + 2, der[2] );
 }
 
 inline
 void AtomValuePack::addBoxDerivatives( const unsigned& ival, const Tensor& vir ) {
   if( mycolv->doNotCalculateDerivatives() ) return;
-  unsigned nvir=3*mycolv->getNumberOfAtoms();
-  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) myvals.addDerivative( ival, nvir + 3*i+j, vir(i,j) );
+  unsigned nvir=3*mycolv->getNumberOfAtoms(), jval=(mycolv->getPntrToOutput(ival))->getPositionInStream();
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) myvals.addDerivative( jval, nvir + 3*i+j, vir(i,j) );
 }
 
 }

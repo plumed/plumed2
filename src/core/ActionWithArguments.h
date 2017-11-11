@@ -43,6 +43,7 @@ This is used in PLMD::Function and PLMD::Bias
 class ActionWithArguments : public virtual Action {
 friend class ActionWithValue;
 private:
+  bool allrankzero;
   std::vector<Value*> arguments;
   bool lockRequestArguments;
   ActionWithValue* getFirstNonStream();

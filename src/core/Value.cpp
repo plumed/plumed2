@@ -259,7 +259,7 @@ unsigned Value::getNumberOfValues() const {
 
 double Value::get(const unsigned& ival) const {
   if( hasDeriv ) return data[ival*(1+action->getNumberOfDerivatives())] / norm;
-  plumed_dbg_massert( ival<data.size(), "could not get value from " + name ); 
+  plumed_dbg_massert( ival<getNumberOfValues(), "could not get value from " + name ); 
   if( norm>epsilon ) return data[ival] / norm;
   return 0.0;
 } 
@@ -308,6 +308,13 @@ unsigned Value::getPositionInMatrixStash() const {
 const std::vector<unsigned>& Value::getShape() const {
   return shape;
 }
+
+void Value::set(const unsigned& n, const double& v ){
+  value_set=true; 
+  if( getRank()==0 ){ plumed_assert( n==0 ); data[n]=v; applyPeriodicity(n); }
+  else if( !hasDeriv ){ data[n]=v; applyPeriodicity(n); }
+  else { data[n*(1+action->getNumberOfDerivatives())] = v; }
+}   
 
 // void Value::setBufferPosition( const unsigned& ibuf ){
 //   bufstart = ibuf;

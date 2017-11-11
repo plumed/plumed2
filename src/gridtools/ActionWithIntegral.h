@@ -37,10 +37,9 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithIntegral(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives();
-  void turnOnDerivatives();
-/// Unless I am mistaken an integral should never be a periodic function
-  bool isPeriodic() { return false; }
+  unsigned getNumberOfDerivatives() const ;
+  void finishOutputSetup();
+  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void apply();
 };
 
@@ -50,8 +49,8 @@ double ActionWithIntegral::getVolume() const {
 }
 
 inline
-unsigned ActionWithIntegral::getNumberOfDerivatives() {
-  return ingrid->getNumberOfPoints();
+unsigned ActionWithIntegral::getNumberOfDerivatives() const {
+  return getPntrToArgument(0)->getNumberOfValues();
 }
 
 }

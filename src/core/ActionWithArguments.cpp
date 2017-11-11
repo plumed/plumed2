@@ -213,12 +213,13 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
   bool firstcall=(arguments.size()==0);
   arguments=arg;
   clearDependencies();
-  bool storing=false; 
+  bool storing=false; allrankzero=true;
   for(unsigned i=0;i<arguments.size();++i){
+      if( arguments[i]->getRank()>0 ) allrankzero=false;
       Average* av=dynamic_cast<Average*>( arguments[i]->getPntrToAction() );
       if( av || arguments[i]->alwaysstore || arguments[i]->columnsums ){ storing=true; break; }
   } 
-  std::string fullname,name;
+  std::string fullname,name; 
   std::vector<ActionWithValue*> f_actions;
   for(unsigned i=0; i<arguments.size(); i++) {
     fullname=arguments[i]->getName();
@@ -311,6 +312,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
   lockRequestArguments(false),
   done_over_stream(false),
+  allrankzero(true),
   numberedkeys(false)
 {
   if( keywords.exists("ARG") && !keywords.exists("DATA") ) {
@@ -333,7 +335,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
          }
          arg_ends.push_back( arg.size() ); log.printf("\n"); 
          if( i==1 ) narg = nargt;
-         else if( narg!=nargt ) error("mismatch between number of arguments specified for different numbered ARG values");
+         else if( narg!=nargt && getName()!="MATHEVAL" ) error("mismatch between number of arguments specified for different numbered ARG values");
       }
     }
     if( keywords.numbered("ARG" ) ) requestArguments(arg,true);
@@ -397,22 +399,25 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
   if( done_over_stream ){
       for(unsigned i=0;i<args.size();++i) {
          if( !arguments[i]->value_set ) args[i]=myvals.get( arguments[i]->streampos );
+         else if( arguments[i]->getRank()==0 ) args[i]=arguments[i]->get();
          else args[i]=arguments[i]->get( myvals.getTaskIndex() );
       }
       return;
   }
-  if( arguments[0]->getRank()>0 ){
-      for(unsigned i=0;i<arg_ends.size()-1;++i){
-          unsigned nt=0, nn=0; 
-          for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j){
-              nt += arguments[j]->getNumberOfValues();
-              if( myvals.getTaskIndex()<nt ) break;
-              nn += arguments[j]->getNumberOfValues();
+  for(unsigned i=0;i<arg_ends.size()-1;++i) {
+      if( arg_ends[i+1]-arg_ends[i]>1 || arguments[ arg_ends[i] ]->getRank()>0 ) {
+          if( allrankzero ) {
+              args[i]=arguments[arg_ends[i] + myvals.getTaskIndex()]->get();
+          } else {
+              unsigned nt=0, nn=0;
+              for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j){
+                  nt += arguments[j]->getNumberOfValues();
+                  if( myvals.getTaskIndex()<nt ) break;
+                  nn += arguments[j]->getNumberOfValues();
+              }
+              args[i]=arguments[i]->get( myvals.getTaskIndex() - nn );
           }
-          args[i]=arguments[i]->get( myvals.getTaskIndex() - nn );
-      }
-  } else {
-      for(unsigned i=0;i<arg_ends.size()-1;++i) args[i]=arguments[arg_ends[i] + myvals.getTaskIndex()]->get(); 
+      } else { args[i] = arguments[arg_ends[i]]->get(); }
   }
 }
 

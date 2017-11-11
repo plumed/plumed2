@@ -38,7 +38,7 @@ class IntegrateGrid : public ActionWithIntegral {
 public:
   static void registerKeywords( Keywords& keys );
   explicit IntegrateGrid(const ActionOptions&ao);
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
+  void performTask( const unsigned& current, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(IntegrateGrid,"INTEGRATE_GRID")
@@ -53,9 +53,12 @@ IntegrateGrid::IntegrateGrid(const ActionOptions&ao):
 {
 }
 
-void IntegrateGrid::compute( const unsigned& current, MultiValue& myvals ) const {
-  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, getVolume()*getFunctionValue( current ) );
-  if( !doNotCalculateDerivatives() ) myvals.addDerivative( 1, current, getVolume() );
+void IntegrateGrid::performTask( const unsigned& current, MultiValue& myvals ) const {
+  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), getVolume()*getFunctionValue( current ) );
+  if( !doNotCalculateDerivatives() ) {
+      myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), current, getVolume() );
+      myvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), current );
+  }
 }
 
 }

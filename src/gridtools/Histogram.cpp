@@ -226,10 +226,12 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(Histogram,"KDE")
+PLUMED_REGISTER_SHORTCUT(Histogram,"KDE")
 PLUMED_REGISTER_SHORTCUT(Histogram,"HISTOGRAM")
 PLUMED_REGISTER_SHORTCUT(Histogram,"MULTICOLVARDENS")
 
 void Histogram::shortcutKeywords( Keywords& keys ){
+  HistogramBase::shortcutKeywords( keys );
   keys.add("compulsory","DATA","the multicolvar which you would like to calculate the density profile for");
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
@@ -275,7 +277,9 @@ void Histogram::createAveragingObject( const std::string& ilab, const std::strin
 void Histogram::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                               const std::map<std::string,std::string>& keys,
                               std::vector<std::vector<std::string> >& actions ) {
-  if( words[0]=="HISTOGRAM" ) {
+  if( words[0]=="KDE" ) { 
+      HistogramBase::resolveNormalizationShortcut( lab, words, keys, actions );
+  } else if( words[0]=="HISTOGRAM" ) {
       // Make the kde object
       std::vector<std::string> hist_words; hist_words.push_back( lab + "_kde:");
       hist_words.push_back("KDE"); for(unsigned i=1;i<words.size();++i) hist_words.push_back( words[i] );

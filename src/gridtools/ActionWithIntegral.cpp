@@ -26,36 +26,38 @@ namespace gridtools {
 
 void ActionWithIntegral::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );
-  keys.remove("KERNEL"); keys.remove("BANDWIDTH");
-  keys.remove("CLEAR"); keys.add("compulsory","CLEAR","1","the frequency with which to clear all the accumulated data.");
 }
 
 ActionWithIntegral::ActionWithIntegral(const ActionOptions&ao):
   Action(ao),
-  ActionWithInputGrid(ao)
+  ActionWithInputGrid(ao),
+  volume(1)
 {
-  plumed_assert( ingrid->getNumberOfComponents()==1 );
-  // Retrieve the volume of the grid (for integration)
-  volume = ingrid->getCellVolume();
-  // Create something that is going to calculate the sum of all the values
-  // at the various grid points - this is going to be the integral
-  std::string fake_input; addVessel( "SUM", fake_input, -1 ); readVesselKeywords();
   // Now create task list - number of tasks is equal to the number of grid points
-  // as we have to evaluate the function at each grid points
-  for(unsigned i=0; i<ingrid->getNumberOfPoints(); ++i) addTaskToList(i);
-  // And activate all tasks
-  deactivateAllTasks();
-  for(unsigned i=0; i<ingrid->getNumberOfPoints(); ++i) taskFlags[i]=1;
-  lockContributors();
+  std::vector<unsigned> shape; addValueWithDerivatives( shape ); setNotPeriodic();
 }
 
-void ActionWithIntegral::turnOnDerivatives() {
-  ActionWithGrid::turnOnDerivatives();
-  forcesToApply.resize( ingrid->getNumberOfPoints() );
+void ActionWithIntegral::finishOutputSetup() { 
+  // Get the information on the grid to be integrated
+  Value* gval=getPntrToArgument(0); std::vector<unsigned> nbin( gval->getRank() );
+  std::vector<double> spacing( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
+  std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
+  gval->getPntrToAction()->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc, false );
+  // Retrieve the volume of the grid (for integration)
+  volume = 1; for(unsigned i=0;i<gval->getRank();++i) volume *= spacing[i];
+  // as we have to evaluate the function at each grid points
+  for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues(); ++i) addTaskToList(i);
+  forcesToApply.resize( getPntrToArgument(0)->getNumberOfValues() );
+}
+
+void ActionWithIntegral::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
+  tflags.assign(tflags.size(),1);
 }
 
 void ActionWithIntegral::apply() {
-  if( getForcesFromVessels( forcesToApply ) ) ingrid->setForce( forcesToApply );
+  if( doNotCalculateDerivatives() ) return;
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned fstart=0;
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, fstart );
 }
 
 }

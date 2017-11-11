@@ -44,16 +44,24 @@ Function::Function(const ActionOptions&ao):
   forcesToApply(getNumberOfScalarArguments())
 {
   plumed_dbg_assert( getNumberOfArguments()>0 );
+  bool gridinput=false; unsigned npoints;
   // Method for if input to function is a function on a grid
-  if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
-       unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
-       for(unsigned j=1;j<getNumberOfArguments();++j) {
-           if( getPntrToArgument(j)->getNumberOfValues()!=npoints || !getPntrToArgument(0)->hasDerivatives() ) error("mismatch in input arguments");
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ){ 
+          gridinput=true; npoints=getPntrToArgument(i)->getNumberOfValues(); 
+          nderivatives = getPntrToArgument(i)->getRank(); break; 
+      }
+  }
+  if( gridinput ) {
+       unsigned nscalars=0;
+       for(unsigned j=0;j<getNumberOfArguments();++j) {
+           if( getPntrToArgument(j)->getRank()!=0 ) {
+               if( getPntrToArgument(j)->getNumberOfValues()!=npoints || !getPntrToArgument(j)->hasDerivatives() ) error("mismatch in input arguments");
+           } else { nscalars++; nderivatives++; }
        }
+       if( nscalars>1 ) error("can only multiply/divide grid by one scalar at a time");
        // Now create a task list for the function
        for(unsigned j=0;j<npoints;++j) addTaskToList(j);
-       // Set the number of derivatives
-       nderivatives = getPntrToArgument(0)->getRank();
   } else { 
        createTasksFromArguments(); nderivatives = getNumberOfScalarArguments(); firststep=false;
        // Now create the stream of jobs to work through 
@@ -86,37 +94,28 @@ Function::Function(const ActionOptions&ao):
 }
 
 std::vector<unsigned> Function::getShape() {
-  bool rank0=false; 
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-      if( getPntrToArgument(i)->getRank()==0 ) rank0=true;
-      if( getPntrToArgument(i)->getRank()!=getPntrToArgument(0)->getRank() ) error("all arguments should have same rank");
-      std::vector<unsigned> shape0( getPntrToArgument(0)->getShape() );
-      std::vector<unsigned> shapei( getPntrToArgument(i)->getShape() );
-      for(unsigned j=0;j<shape0.size();++j){
-          if( shape0[j]!=shapei[j] ) error("all arguments should have same shape");
-      }
-  }
+  unsigned maxrank=0, rmax=0;
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->getRank()>maxrank ){ maxrank=getPntrToArgument(i)->getRank(); rmax=i; }
+  } 
   std::vector<unsigned> shape;
   if( hasGridOutput() ) {
-     shape.resize( getPntrToArgument(0)->getRank() );
-     for(unsigned i=0;i<shape.size();++i) shape[i] = getPntrToArgument(0)->getShape()[i];
-  } else if( rank0 || !numberedkeys ){ 
+     shape.resize( maxrank );
+     for(unsigned i=0;i<shape.size();++i) shape[i] = getPntrToArgument(rmax)->getShape()[i];
+  } else if( maxrank==0 || !numberedkeys ){ 
      shape.resize(0);
   } else { 
-     shape.resize( getPntrToArgument(0)->getRank() );
-     for(unsigned i=0;i<shape.size();++i) shape[i]=getPntrToArgument(0)->getShape()[i]; 
+     shape.resize( maxrank );
+     for(unsigned i=0;i<shape.size();++i) shape[i]=getPntrToArgument(rmax)->getShape()[i]; 
   }
   return shape;
 }
 
 bool Function::hasGridOutput() const {
-  bool isgrid = (getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives());
-  if( isgrid ) {
-      for(unsigned i=1;i<isgrid;++i) {
-          if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) error("cannot mix grids with other values types in input to function");
-      }
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) return true;
   }
-  return isgrid;
+  return false; 
 }
 
 void Function::addValueWithDerivatives() {
@@ -179,12 +178,7 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
 
 void Function::evaluateAllFunctions() {
   if( firststep ) {
-      std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
-      for(unsigned i=1;i<getNumberOfArguments();++i) {
-          std::vector<unsigned> tshape( getPntrToArgument(i)->getShape() );
-          plumed_assert( tshape.size()==shape.size() );
-          for(unsigned j=0;j<shape.size();++j) plumed_assert( tshape[j]==shape[j] );
-      }
+      std::vector<unsigned> shape( getShape() );
       unsigned ival = getPntrToOutput(0)->getNumberOfValues();
       getPntrToOutput(0)->setShape( shape ); firststep=false;
       if( ival<getPntrToOutput(0)->getNumberOfValues() ) {
@@ -255,7 +249,8 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
        // Make sure grid derivatives are updated 
        if( getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() ) {
            unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
-           for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) myvals.updateIndex( ostrn, i );
+           for(unsigned i=0;i<nderivatives;++i) myvals.updateIndex( ostrn, i );
+           return;
        } 
   }
   // And update the dynamic list
@@ -321,8 +316,8 @@ void Function::gatherGridAccumulators( const unsigned& code, const MultiValue& m
                                        const unsigned& bufstart, std::vector<double>& buffer ) const {
   plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
   unsigned nder = getPntrToOutput(0)->getRank(), ostr = getPntrToOutput(0)->getPositionInStream();
-  unsigned kp = bufstart + code*(1+nder); buffer[kp] += myvals.get( ostr );
-  for(unsigned i=0;i<nder;++i) buffer[kp + 1 + i] += myvals.getDerivative( ostr, i ); 
+  unsigned kp = bufstart + code*(1+nderivatives); buffer[kp] += myvals.get( ostr );
+  for(unsigned i=0;i<nderivatives;++i) buffer[kp + 1 + i] += myvals.getDerivative( ostr, i ); 
 }
 
 void Function::apply()

@@ -69,25 +69,27 @@ FOURIER_TRANSFORM STRIDE=1 GRID=density FT_TYPE=complex FOURIER_PARAMETERS=0,-1 
 class FourierTransform : public ActionWithInputGrid {
 private:
   std::string output_type;
+  std::vector<std::string> gname;
   bool real_output, store_norm;
-  std::vector<unsigned> gdirs;
   std::vector<int> fourier_params;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FourierTransform(const ActionOptions&ao);
+  void finishOutputSetup();
+  void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+                             std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
+                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
 #ifndef __PLUMED_HAS_FFTW
-  void performOperations( const bool& from_update ) {}
+  void calculate() {}
 #else
-  void performOperations( const bool& from_update );
+  void calculate();
 #endif
-  void compute( const unsigned&, MultiValue& ) const {}
-  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(FourierTransform,"FOURIER_TRANSFORM")
 
 void FourierTransform::registerKeywords( Keywords& keys ) {
-  ActionWithInputGrid::registerKeywords( keys ); keys.remove("BANDWIDTH"); keys.remove("KERNEL");
+  ActionWithInputGrid::registerKeywords( keys ); 
   keys.add("optional","FT_TYPE","choose what kind of data you want as output on the grid. Possible values are: ABS = compute the complex modulus of Fourier coefficients (DEFAULT); NORM = compute the norm (i.e. ABS^2) of Fourier coefficients; COMPLEX = store the FFTW complex output on the grid (as a vector).");
   keys.add("compulsory","FOURIER_PARAMETERS","default","what kind of normalization is applied to the output and if the Fourier transform in FORWARD or BACKWARD. This keyword takes the form FOURIER_PARAMETERS=A,B, where A and B can be 0, 1 or -1. The default values are A=1 (no normalization at all) and B=1 (forward FFT). Other possible choices for A are: "
            "A=-1: normalize by the number of data, "
@@ -104,7 +106,7 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
 #ifndef __PLUMED_HAS_FFTW
   error("this feature is only available if you compile PLUMED with FFTW");
 #else
-  if( ingrid->getDimension()!=2 ) error("fourier transform currently only works with two dimensional grids");
+  if( getPntrToArgument(0)->getRank()!=2 ) error("fourier transform currently only works with two dimensional grids");
 
   // Get the type of FT
   parse("FT_TYPE",output_type);
@@ -135,69 +137,55 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
     log.printf("  Fourier parameters are A=%i, B=%i \n", fourier_params[0],fourier_params[1]);
   }
 
-
-  // Create the input from the old string
-  std::string vstring;
-  unsigned n=0; gdirs.resize( ingrid->getDimension() );
-  for(unsigned i=0; i<ingrid->getDimension(); ++i) {
-    gdirs[n]=i; n++;
-  }
-
-  plumed_assert( n==ingrid->getDimension() );
-
+  std::vector<unsigned> shape( getPntrToArgument(0)->getRank() );
   if (real_output) {
-    if (!store_norm) vstring="COMPONENTS=" + getLabel() + "_abs";
-    else vstring="COMPONENTS=" + getLabel() + "_norm";
-  } else vstring="COMPONENTS=" + getLabel() + "_real," + getLabel() + "_imag";
-
-  // Set COORDINATES keyword
-  vstring += " COORDINATES=" + ingrid->getComponentName( gdirs[0] );
-  for(unsigned i=1; i<gdirs.size(); ++i) vstring += "," + ingrid->getComponentName( gdirs[i] );
-
-  // Set PBC keyword
-  vstring += " PBC=";
-  if( ingrid->isPeriodic(gdirs[0]) ) vstring+="T"; else vstring+="F";
-  for(unsigned i=1; i<gdirs.size(); ++i) {
-    if( ingrid->isPeriodic(gdirs[i]) ) vstring+=",T"; else vstring+=",F";
+      addValueWithDerivatives( shape );
+  } else {
+      addComponentWithDerivatives( "real", shape );
+      addComponentWithDerivatives( "imag", shape );
   }
 
-
-  // Create a grid on which to store the fourier transform of the input grid
-  createGrid( "grid", vstring );
-  if( ingrid->noDerivatives() ) mygrid->setNoDerivatives();
-  setAveragingAction( mygrid, false );
-
-  checkRead();
+  unsigned dimension = getPntrToArgument(0)->getRank(); gname.resize( dimension);
+  std::vector<std::string> argn( dimension ), min( dimension ), max( dimension );
+  std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
+  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( argn, min, max, nbin, spacing, ipbc, false );
+  for(unsigned i=0;i<argn.size();++i) gname[i] = "k_" + argn[i];
+  gridobject.setup( "flat", ipbc, 0, 0.0 ); checkRead();
 #endif
 }
 
-#ifdef __PLUMED_HAS_FFTW
-void FourierTransform::performOperations( const bool& from_update ) {
-
-  // Spacing of the real grid
-  std::vector<double> g_spacing ( ingrid->getGridSpacing() );
-  // Spacing of the k-grid
-  std::vector<double> ft_spacing;
-  // Extents of the k-grid
-  std::vector<std::string> ft_min( ingrid->getMin() ), ft_max( ingrid->getMax() );
-  // Number of bins in the k-grid (equal to the number of bins in the real grid)
-  std::vector<unsigned> ft_bins ( ingrid->getNbin() );
-
-  for (unsigned i=0; i<ingrid->getDimension(); ++i) {
-    // Check PBC in current grid dimension
-    if( !ingrid->isPeriodic(i) ) ft_bins[i]++;
+void FourierTransform::finishOutputSetup() {
+  std::vector<double> fspacing; std::vector<unsigned> snbins( gridobject.getDimension() );
+  std::vector<std::string> smin( gridobject.getDimension() ), smax( gridobject.getDimension() );
+  for(unsigned i=0; i<gridobject.getDimension(); ++i) {
+    smin[i]=gridobject.getMin()[i]; smax[i]=gridobject.getMax()[i];
     // Compute k-grid extents
     double dmin, dmax;
-    Tools::convert(ft_min[i],dmin); Tools::convert(ft_max[i],dmax);
-    // We want to have the min of k-grid at point (0,0)
-    dmin=0.0;
-    dmax=2.0*pi*ft_bins[i]/( ingrid->getGridExtent(i) );
-    Tools::convert(dmin,ft_min[i]); Tools::convert(dmax,ft_max[i]);
+    Tools::convert(smin[i],dmin); Tools::convert(smax[i],dmax);
+    dmax=2.0*pi*snbins[i]/( dmax - dmin ); dmin=0.0;
+    Tools::convert(dmin,smin[i]); Tools::convert(dmax,smax[i]);
+
+    snbins[i]=gridobject.getNbin(false)[i];
   }
+  gridobject.setBounds( smin, smax, snbins, fspacing );
+  for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->setShape( gridobject.getNbin(true) );
+}
 
-  // This is the actual setup of the k-grid
-  mygrid->setBounds( ft_min, ft_max, ft_bins, ft_spacing); resizeFunctions();
+void FourierTransform::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+                                             std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
+                                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
+  for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) {
+      argn[i] = gname[i];
+      if( gridobject.getMin().size()>0 ) {
+          min[i]=gridobject.getMin()[i]; max[i]=gridobject.getMin()[i];
+      }
+      if( gridobject.getNbin(false).size()>0 ) out_nbin[i]=gridobject.getNbin(false)[i];
+      pbc[i]=gridobject.isPeriodic(i);
+  }
+}
 
+#ifdef __PLUMED_HAS_FFTW
+void FourierTransform::calculate() {
   // *** CHECK CORRECT k-GRID BOUNDARIES ***
   //log<<"Real grid boundaries: \n"
   //    <<"  min_x: "<<mygrid->getMin()[0]<<"  min_y: "<<mygrid->getMin()[1]<<"\n"
@@ -209,7 +197,7 @@ void FourierTransform::performOperations( const bool& from_update ) {
 
 
   // Get the size of the input data arrays (to allocate FFT data)
-  std::vector<unsigned> N_input_data( ingrid->getNbin() );
+  std::vector<unsigned> N_input_data( gridobject.getNbin(true) );
   size_t fft_dimension=1; for(unsigned i=0; i<N_input_data.size(); ++i) fft_dimension*=static_cast<size_t>( N_input_data[i] );
 
   // FFT arrays
@@ -217,10 +205,10 @@ void FourierTransform::performOperations( const bool& from_update ) {
 
 
   // Fill real input with the data on the grid
-  std::vector<unsigned> ind( ingrid->getDimension() );
-  for (unsigned i=0; i<ingrid->getNumberOfPoints(); ++i) {
+  std::vector<unsigned> ind( getPntrToArgument(0)->getRank() );
+  for (unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues(); ++i) {
     // Get point indices
-    ingrid->getIndices(i, ind);
+    gridcoords.getIndices(i, ind);
     // Fill input data in row-major order
     input_data[ind[0]*N_input_data[0]+ind[1]].real( getFunctionValue( i ) );
     input_data[ind[0]*N_input_data[0]+ind[1]].imag( 0.0 );
@@ -239,24 +227,24 @@ void FourierTransform::performOperations( const bool& from_update ) {
   }
 
   // Save FT data to output grid
-  std::vector<unsigned> N_out_data ( mygrid->getNbin() );
-  std::vector<unsigned> out_ind ( mygrid->getDimension() );
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) {
-    mygrid->getIndices( i, out_ind );
+  std::vector<unsigned> N_out_data ( gridobject.getNbin() );
+  std::vector<unsigned> out_ind ( getPntrToArgument(0)->getRank() );
+  for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues(); ++i) {
+    gridcoords.getIndices( i, out_ind );
     if (real_output) {
       double ft_value;
       // Compute abs/norm and fix normalization
       if (!store_norm) ft_value=std::abs( fft_data[out_ind[0]*N_out_data[0]+out_ind[1]] / norm );
       else ft_value=std::norm( fft_data[out_ind[0]*N_out_data[0]+out_ind[1]] / norm );
       // Set the value
-      mygrid->setGridElement( i, 0, ft_value );
+      getPntrToComponent(0, ft_value );
     } else {
       double ft_value_real, ft_value_imag;
       ft_value_real=fft_data[out_ind[0]*N_out_data[0]+out_ind[1]].real() / norm;
       ft_value_imag=fft_data[out_ind[0]*N_out_data[0]+out_ind[1]].imag() / norm;
       // Set values
-      mygrid->setGridElement( i, 0, ft_value_real);
-      mygrid->setGridElement( i, 1, ft_value_imag);
+      getPntrToComponent(0, ft_value_real);
+      getPntrToComponent(1, ft_value_imag);
     }
   }
 

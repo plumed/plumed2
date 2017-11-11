@@ -93,9 +93,13 @@ void Function::addDerivative( const unsigned& ival, const unsigned& jder, const 
       return; 
   }
   if( getPntrToOutput(ival)->getRank()>0 && getPntrToOutput(ival)->hasDerivatives() ) {
-      unsigned np = myvals.getTaskIndex(), ostrn = getPntrToOutput(ival)->getPositionInStream();
-      for(unsigned i=0;i<getPntrToArgument(jder)->getRank();++i) {
-          myvals.addDerivative( ostrn, i, der*getPntrToArgument(jder)->getGridDerivative( np, i ) ); 
+      if( getPntrToArgument(jder)->getRank()==0 ) {
+          myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), getPntrToOutput(ival)->getRank(), der );
+      } else {
+          unsigned np = myvals.getTaskIndex(), ostrn = getPntrToOutput(ival)->getPositionInStream();
+          for(unsigned i=0;i<getPntrToArgument(jder)->getRank();++i) {
+              myvals.addDerivative( ostrn, i, der*getPntrToArgument(jder)->getGridDerivative( np, i ) ); 
+          }
       }
       return;
   }

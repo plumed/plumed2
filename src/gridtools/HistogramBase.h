@@ -40,7 +40,11 @@ protected:
   GridCoordinatesObject gridobject;
   void addValueWithDerivatives( const std::vector<unsigned>& shape );
 public:
+  static void shortcutKeywords( Keywords& keys );
   static void registerKeywords( Keywords& keys );
+  static void resolveNormalizationShortcut( const std::string& lab, const std::vector<std::string>& words,
+                                            const std::map<std::string,std::string>& keys,
+                                            std::vector<std::vector<std::string> >& actions );
   explicit HistogramBase(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;

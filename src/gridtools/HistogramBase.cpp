@@ -24,6 +24,35 @@
 namespace PLMD {
 namespace gridtools {
 
+void HistogramBase::shortcutKeywords( Keywords& keys ) {
+  keys.add("optional","HEIGHTS","this keyword takes the label of an action that calculates a vector of values.  The elements of this vector "
+                                "are used as weights for the Gaussians.");
+  keys.addFlag("UNORMALIZED",false,"calculate the unormalized distribution of colvars");
+}
+
+void HistogramBase::resolveNormalizationShortcut( const std::string& lab, const std::vector<std::string>& words,
+                                                  const std::map<std::string,std::string>& keys,
+                                                  std::vector<std::vector<std::string> >& actions ) {
+  std::vector<std::string> inp;
+  if( keys.count("HEIGHTS") && !keys.count("UNORMALIZED") ) {
+      std::vector<std::string> norm_input; norm_input.push_back( lab + "_hsum:");
+      norm_input.push_back("COMBINE"); norm_input.push_back( "ARG=" + keys.find("HEIGHTS")->second );
+      norm_input.push_back("PERIODIC=NO"); actions.push_back( norm_input );
+      inp.push_back( lab + "_unorm:" ); inp.push_back(words[0]); inp.push_back("UNORMALIZED");
+  } else {
+      inp.push_back( lab + ":" ); inp.push_back(words[0]);
+      if( keys.count("UNORMALIZED") ) inp.push_back("UNORMALIZED");
+  }
+  for(unsigned i=1;i<words.size();++i) inp.push_back( words[i] );
+  if( keys.count("HEIGHTS") ) inp.push_back( "HEIGHTS=" + keys.find("HEIGHTS")->second );
+  actions.push_back( inp );
+  if( keys.count("HEIGHTS") && !keys.count("UNORMALIZED") ) {
+      std::vector<std::string> ninp; ninp.push_back( lab + ":" ); ninp.push_back("MATHEVAL");
+      ninp.push_back("ARG1=" + lab + "_unorm"); ninp.push_back("ARG2=" + lab + "_hsum");
+      ninp.push_back("FUNC=x/y"); ninp.push_back("PERIODIC=NO"); actions.push_back( ninp );
+  }
+}
+
 void HistogramBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG"); 
