@@ -248,6 +248,7 @@ public:
                                      }
 ///
   virtual void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { plumed_merror("problem in getting grid data for " + getLabel() ); } 
+  virtual void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const { plumed_merror("problem in getting grid data for " + getLabel() ); }
 ///
   virtual void selectActiveTasks( std::vector<unsigned>& tflags );
 /// Make sure all tasks required for loop are done before loop starts

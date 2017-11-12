@@ -198,6 +198,19 @@ void GridCoordinatesObject::getGridPointCoordinates( const unsigned& ipoint, std
   }
 }
 
+void GridCoordinatesObject::putCoordinateAtValue( const unsigned& ind, const double& val, std::vector<double>& coords ) const {
+  std::vector<double> point( dimension ); getGridPointCoordinates( ind, point );
+  if( gtype==flat ) {
+    if( coords.size()!=(dimension+1) ) coords.resize( (dimension+1) );
+    for(unsigned i=0;i<dimension;++i) coords[i]=point[i]; coords[point.size()]=val;
+  } else if( gtype==fibonacci ) { 
+    if( coords.size()!=3 ) coords.resize(3); 
+    for(unsigned i=0;i<3;++i) coords[i] = val*point[i];
+  } else {
+    plumed_error();
+  }
+}
+
 void GridCoordinatesObject::getFlatGridCoordinates( const unsigned& ipoint, std::vector<unsigned>& tindices, std::vector<double>& x ) const {
   plumed_dbg_assert( gtype==flat ); getIndices( ipoint, tindices );
   for(unsigned i=0; i<dimension; ++i) x[i] = min[i] + dx[i]*tindices[i];

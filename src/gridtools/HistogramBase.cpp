@@ -149,6 +149,11 @@ void HistogramBase::getGridPointIndicesAndCoordinates( const unsigned& ind, std:
   gridobject.getGridPointCoordinates( ind, indices, coords );
 }
 
+void HistogramBase::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const {
+  if( setlength ) gridobject.putCoordinateAtValue( ind, getPntrToOutput(0)->get(ind), coords );
+  else  gridobject.putCoordinateAtValue( ind, 1.0, coords );
+}
+
 void HistogramBase::calculate(){
   // Everything is done elsewhere
   if( actionInChain() ) return;

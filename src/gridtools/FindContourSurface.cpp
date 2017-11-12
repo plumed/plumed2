@@ -104,6 +104,7 @@ public:
                              std::vector<std::string>& max, std::vector<unsigned>& nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
+  void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
   unsigned getNumberOfDerivatives() const ;
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
@@ -208,6 +209,12 @@ void FindContourSurface::getInfoForGridHeader( std::vector<std::string>& argn, s
 
 void FindContourSurface::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
   gridcoords.getGridPointCoordinates( ind, indices, coords );
+}
+
+void FindContourSurface::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const { 
+  if( coords.size()!=gridobject.getDimension() ) coords.resize( gridobject.getDimension() );
+  std::vector<double> point( gridcoords.getDimension() ); gridcoords.getGridPointCoordinates( ind, point );
+  for(unsigned i=0;i<gdirs.size();++i) coords[gdirs[i]]=point[i]; coords[dir_n] = getPntrToOutput(0)->get(ind);
 }
 
 unsigned FindContourSurface::getNumberOfDerivatives() const {

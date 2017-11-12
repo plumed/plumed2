@@ -60,6 +60,7 @@ public:
                              std::vector<std::string>& max, std::vector<unsigned>& nbin, 
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
+  void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
   virtual void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const = 0;

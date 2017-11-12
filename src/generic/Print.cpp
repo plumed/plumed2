@@ -82,6 +82,7 @@ class Print :
   string fmt;
   bool printAtEnd;
   double lenunit;
+  bool gridinput;
 // small internal utility
 /////////////////////////////////////////
 // these are crazy things just for debug:
@@ -138,6 +139,7 @@ Print::Print(const ActionOptions&ao):
   fmt("%f"),
   printAtEnd(false),
   lenunit(1.0),
+  gridinput(false),
   rotate(0)
 {
   parse("FILE",file);
@@ -177,57 +179,72 @@ Print::Print(const ActionOptions&ao):
         rotateLast=0;
       }
   } else if( tstyle=="xyz" || tstyle=="ndx" ){
-      if( getStride()==0 ) { setStride(1); log.printf("  with stride %d\n",getStride()); }
       unsigned nper=0; 
       for(unsigned i=0;i<arg_ends.size()-1;++i) {
           unsigned nt=0;
           for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j){
+              if( getPntrToArgument(j)->getRank()>0 && getPntrToArgument(j)->hasDerivatives() ){ gridinput=true; }
               if( getPntrToArgument(j)->getRank()!=1 ) error("can only output vectors in xyz/ndx output");
               nt += getPntrToArgument(j)->getNumberOfValues();
           }   
           if( i==0 ){ nper=nt; }
           else if( nt!=nper ) error("mismatched number of values in matrices input in input");
       } 
-      parseVector("LESS_THAN_OR_EQUAL",upper); parseVector("GREATER_THAN_OR_EQUAL",lower); 
-      if( upper.size()!=(arg_ends.size()-1) && upper.size()>0 ) error("wrong number of arguments for LESS_THAN_OR_EQUAL keyword");
-      if( lower.size()!=(arg_ends.size()-1) && lower.size()>0 ) error("wrong number of arguments for GREATER_THAN_OR_EQUAL keyword");
-      if( upper.size()>0 && lower.size()>0 ){
-          log.printf("  only printing positions/indices of atoms that have %f <= %s <= %f ", lower[0], getPntrToArgument(0)->getName().c_str(), upper[0] );
-          for(unsigned i=1;i<upper.size();++i) log.printf("and %f <= %s <= %f ", lower[i], getPntrToArgument(i)->getName().c_str(), upper[i] );
-          log.printf("\n");
-      } else if( upper.size()>0 ) {
-          log.printf("  only printing positions/indices of atoms that have %s <= %f ", getPntrToArgument(0)->getName().c_str(), upper[0] );
-          for(unsigned i=1;i<upper.size();++i) log.printf("and %s <= %f ", getPntrToArgument(i)->getName().c_str(), upper[i] );
-          log.printf("\n");
-      } else if( lower.size()>0 ) {
-          log.printf("  only printing positions/indices of atoms that have %f <= %s ", lower[0], getPntrToArgument(0)->getName().c_str()  );
-          for(unsigned i=1;i<upper.size();++i) log.printf("and %f <= %s ", lower[i], getPntrToArgument(i)->getName().c_str() );
-          log.printf("\n");
-      }
-
-      std::vector<AtomNumber> atoms; parseAtomList("ATOMS",atoms); 
-      if( atoms.size()!=0 && atoms.size()!=nper ) error("number of atoms should match number of colvars");
-      if( tstyle=="xyz" ) {
+      if( gridinput ) {  
+          if( getStride()==0 ) {
+              setStride(10000); printAtEnd=true; log.printf("  printing final grid only \n");
+          }
+          if( tstyle=="ndx" ) error("grids should be printed to xyz, grid or cube files only");
+          if( getNumberOfArguments()!=1 ) error("can only print one grid at a time");
+          log.printf("  converting input grid to a set of coordinates and printing \n"); 
           std::string unitname; parse("UNITS",unitname);
           if(unitname!="PLUMED") {
             Units myunit; myunit.setLength(unitname);
             lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
           }
-          log.printf("  printing xyz file containing poisitions of atoms in columns 1, 2 and 3\n");
-          for(unsigned i=0;i<getNumberOfArguments();++i){
-              log.printf("  column %d contains components of vector %s \n", 4+i, getPntrToArgument(i)->getName().c_str() );
+      } else {
+          if( getStride()==0 ) { setStride(1); log.printf("  with stride %d\n",getStride()); }
+          parseVector("LESS_THAN_OR_EQUAL",upper); parseVector("GREATER_THAN_OR_EQUAL",lower); 
+          if( upper.size()!=(arg_ends.size()-1) && upper.size()>0 ) error("wrong number of arguments for LESS_THAN_OR_EQUAL keyword");
+          if( lower.size()!=(arg_ends.size()-1) && lower.size()>0 ) error("wrong number of arguments for GREATER_THAN_OR_EQUAL keyword");
+          if( upper.size()>0 && lower.size()>0 ){
+              log.printf("  only printing positions/indices of atoms that have %f <= %s <= %f ", lower[0], getPntrToArgument(0)->getName().c_str(), upper[0] );
+              for(unsigned i=1;i<upper.size();++i) log.printf("and %f <= %s <= %f ", lower[i], getPntrToArgument(i)->getName().c_str(), upper[i] );
+              log.printf("\n");
+          } else if( upper.size()>0 ) {
+              log.printf("  only printing positions/indices of atoms that have %s <= %f ", getPntrToArgument(0)->getName().c_str(), upper[0] );
+              for(unsigned i=1;i<upper.size();++i) log.printf("and %s <= %f ", getPntrToArgument(i)->getName().c_str(), upper[i] );
+              log.printf("\n");
+          } else if( lower.size()>0 ) {
+              log.printf("  only printing positions/indices of atoms that have %f <= %s ", lower[0], getPntrToArgument(0)->getName().c_str()  );
+              for(unsigned i=1;i<upper.size();++i) log.printf("and %f <= %s ", lower[i], getPntrToArgument(i)->getName().c_str() );
+              log.printf("\n");
           }
-          log.printf("  atom positions printed are : ");
-      } else if( tstyle=="ndx" ) {
-          log.printf("  printing ndx file containing indices of atoms that have symmetry functions in ranges prescribed above \n");
-          log.printf("  full set of atom indices investigated are : ");
+
+          std::vector<AtomNumber> atoms; parseAtomList("ATOMS",atoms); 
+          if( atoms.size()!=0 && atoms.size()!=nper ) error("number of atoms should match number of colvars");
+          if( tstyle=="xyz" ) {
+              std::string unitname; parse("UNITS",unitname);
+              if(unitname!="PLUMED") {
+                Units myunit; myunit.setLength(unitname);
+                lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+              }
+              log.printf("  printing xyz file containing poisitions of atoms in columns 1, 2 and 3\n");
+              for(unsigned i=0;i<getNumberOfArguments();++i){
+                  log.printf("  column %d contains components of vector %s \n", 4+i, getPntrToArgument(i)->getName().c_str() );
+              }
+              log.printf("  atom positions printed are : ");
+          } else if( tstyle=="ndx" ) {
+              log.printf("  printing ndx file containing indices of atoms that have symmetry functions in ranges prescribed above \n");
+              log.printf("  full set of atom indices investigated are : ");
+          }
+          for(unsigned int i=0; i<atoms.size(); ++i) {
+             if ( (i+1) % 25 == 0 ) log.printf("  \n");
+             log.printf("  %d", atoms[i].serial());
+          }
+          log.printf("\n"); 
+          std::vector<Value*> args( getArguments() ); requestAtoms( atoms ); requestArguments( args, false ); 
       }
-      for(unsigned int i=0; i<atoms.size(); ++i) {
-         if ( (i+1) % 25 == 0 ) log.printf("  \n");
-         log.printf("  %d", atoms[i].serial());
-      }
-      log.printf("\n"); 
-      std::vector<Value*> args( getArguments() ); requestAtoms( atoms ); requestArguments( args, false ); 
   } else if( tstyle=="grid" ) {
       if( getStride()==0 ) { 
           setStride(10000); printAtEnd=true; log.printf("  printing final grid only \n"); 
@@ -328,6 +345,16 @@ void Print::update() {
                   for(unsigned j=0;j<argvals.size();++j) ofile.printf((" " + fmt).c_str(), argvals[j] );
                   ofile.printf("\n");
               } 
+          }
+      } else if( gridinput ) {
+          unsigned ngrid = getPntrToArgument(0)->getNumberOfValues();
+          ActionWithValue* myaction = getPntrToArgument(0)->getPntrToAction();
+          ofile.printf("%d\n",ngrid); ofile.printf("\n"); std::vector<double> pos;
+          for(unsigned i=0;i<ngrid;++i) {
+              const char* defname="X"; const char* name=defname; ofile.printf("%s", name);
+              myaction->getGridPointAsCoordinate( i, true, pos );
+              for(unsigned j=0;j<pos.size();++j) ofile.printf((" " + fmt).c_str(), lenunit*pos[j] );
+              ofile.printf("\n");
           } 
       } else {
           std::vector<unsigned> tasks ( getPntrToArgument(0)->getPntrToAction()->getCurrentTasks() );

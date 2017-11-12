@@ -223,6 +223,16 @@ void Function::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vect
   (getPntrToArgument(0)->getPntrToAction())->getGridPointIndicesAndCoordinates( ind, indices, coords );
 }
 
+void Function::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const {
+  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
+  (getPntrToArgument(0)->getPntrToAction())->getGridPointAsCoordinate( ind, false, coords );
+  if( coords.size()==(getPntrToOutput(0)->getRank()+1) ) coords[getPntrToOutput(0)->getRank()] = getPntrToOutput(0)->get(ind);
+  else if( setlength ) {
+    double val=getPntrToOutput(0)->get(ind);
+    for(unsigned i=0;i<coords.size();++i) coords[i] = val*coords[i];
+  } 
+}
+
 void Function::performTask( const unsigned& current, MultiValue& myvals ) const {
   // Get the values of all the arguments
   bool matout=false, matinp=false;
