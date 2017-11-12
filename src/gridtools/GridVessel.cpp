@@ -120,7 +120,7 @@ void GridVessel::setupFibonacciGrid( const unsigned& np ) {
 
   std::vector<double> icoord( dimension ), jcoord( dimension );
   // Find minimum distance between each pair of points
-  std::vector<unsigned> tindices( dimension ); std::vector<double> mindists( npoints );
+  std::vector<double> mindists( npoints );
   for(unsigned i=0; i<npoints; ++i) {
     getFibonacciCoordinates( i, icoord ); mindists[i] = 0;
     for(unsigned j=0; j<npoints; ++j) {

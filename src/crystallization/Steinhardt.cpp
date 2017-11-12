@@ -76,9 +76,10 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
   std::complex<double> ii( 0.0, 1.0 ), dp_x, dp_y, dp_z;
 
   unsigned ncomp=2*tmom+1;
-  double sw, poly_ass, d2, dlen; std::complex<double> powered;
+  double sw, poly_ass, dlen; std::complex<double> powered;
   for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
     Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+    double d2;
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
          (d2+=distance[2]*distance[2])<rcut2 &&

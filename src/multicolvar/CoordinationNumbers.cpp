@@ -157,9 +157,10 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
 
 double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   // Calculate the coordination number
-  double dfunc, d2, sw, d, raised;
+  double dfunc, sw, d, raised;
   for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
     Vector& distance=myatoms.getPosition(i);
+    double d2;
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
          (d2+=distance[2]*distance[2])<rcut2 &&

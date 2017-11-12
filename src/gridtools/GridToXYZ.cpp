@@ -92,7 +92,7 @@ GridToXYZ::GridToXYZ(const ActionOptions&ao):
 }
 
 void GridToXYZ::printGrid( OFile& ofile ) const {
-  std::vector<double> point( 3 ); double val;
+  std::vector<double> point( 3 );
   ofile.printf("%u\n",ingrid->getNumberOfPoints());
   ofile.printf("Grid converted to xyz file \n");
   for(unsigned i=0; i<ingrid->getNumberOfPoints(); ++i) {

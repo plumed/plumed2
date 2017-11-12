@@ -164,7 +164,7 @@ void PCA::performAnalysis() {
   // Calculate the average displacement from the first frame
   double norm=getWeight(0);
   for(unsigned i=1; i<getNumberOfDataPoints(); ++i) {
-    double d = data[0]->calc( data[i]->getReferencePositions(), getPbc(), getArguments(), data[i]->getReferenceArguments(), mypack, true );
+    data[0]->calc( data[i]->getReferencePositions(), getPbc(), getArguments(), data[i]->getReferenceArguments(), mypack, true );
     // Accumulate average displacement of arguments (Here PBC could do fucked up things - really needs Berry Phase ) GAT
     for(unsigned j=0; j<getNumberOfArguments(); ++j) sarg[j] += 0.5*getWeight(i)*mypack.getArgumentDerivative(j);
     // Accumulate average displacement of position
@@ -183,7 +183,7 @@ void PCA::performAnalysis() {
   Matrix<double> covar( getNumberOfArguments()+3*getNumberOfAtoms(), getNumberOfArguments()+3*getNumberOfAtoms() ); covar=0;
   for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {
     // double d = data[i]->calc( spos, getPbc(), getArguments(), sarg, mypack, true );
-    double d = data[0]->calc( data[i]->getReferencePositions(), getPbc(), getArguments(), data[i]->getReferenceArguments(), mypack, true );
+    data[0]->calc( data[i]->getReferencePositions(), getPbc(), getArguments(), data[i]->getReferenceArguments(), mypack, true );
     for(unsigned jarg=0; jarg<getNumberOfArguments(); ++jarg) {
       // Need sorting for PBC with GAT
       double jarg_d = 0.5*mypack.getArgumentDerivative(jarg) + data[0]->getReferenceArguments()[jarg] - sarg[jarg];
