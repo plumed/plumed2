@@ -70,7 +70,7 @@ protein that are in an alpha helical configuration.
 
 \plumedfile
 MOLINFO STRUCTURE=helix.pdb
-ALPHARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
+hh: ALPHARMSD RESIDUES=all
 \endplumedfile
 
 */
