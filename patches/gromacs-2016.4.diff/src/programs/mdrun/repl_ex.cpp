@@ -993,6 +993,7 @@ test_for_replica_exchange(FILE                 *fplog,
 
     /* PLUMED */
     int plumed_test_exchange_pattern=0;
+    if(plumed_test_exchange_pattern && plumed_hrex) gmx_fatal(FARGS,"hrex not compatible with ad hoc exchange patterns");
     /* END PLUMED */
 
     if (bMultiEx)
