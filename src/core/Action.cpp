@@ -170,6 +170,14 @@ void Action::addDependency(Action*action) {
   after.push_back(action);
 }
 
+bool Action::checkForDependency( Action* action ) {
+  for(unsigned i=0;i<after.size();++i) {
+      if( action==after[i] ){ return true; }
+      if( after[i]->checkForDependency(action) ){ return true; }
+  }
+  return false;
+}
+
 void Action::activate() {
 // preparation step is called only the first time an Action is activated.
 // since it could change its dependences (e.g. in an ActionAtomistic which is

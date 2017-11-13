@@ -458,7 +458,7 @@ void Center::transformFinalValueAndDerivatives( const std::vector<double>& buffe
 
 void Center::apply() {
   Vector & f(atoms.getVatomForces(getIndex())); unsigned start;
-  if( val_weights ) {
+  if( f.modulo2()>epsilon && val_weights ) {
       ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( val_weights->getPntrToAction() );
       ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( val_weights->getPntrToAction() );
       for(unsigned j=0;j<3;++j) { 

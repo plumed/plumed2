@@ -110,11 +110,22 @@ class FindSphericalContour : public ContourFindingBase {
 private:
   unsigned nbins;
   double min, max;
+  GridCoordinatesObject gridcoords;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindSphericalContour(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const { return 2; }
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
+  void finishOutputSetup(){}
+  // Make these two so we can output a two dimensional analogue of the grid one day
+  void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+                             std::vector<std::string>& max, std::vector<unsigned>& nbin,
+                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const { plumed_error(); }
+  void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { plumed_error(); }
+  void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
+  unsigned getNumberOfDerivatives() const ; 
+  void buildCurrentTaskList( std::vector<unsigned>& tflags );
+  void performTask( const unsigned& current, MultiValue& myvals ) const ;
+  void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
+                               const unsigned& bufstart, std::vector<double>& buffer ) const ;
 };
 
 PLUMED_REGISTER_ACTION(FindSphericalContour,"FIND_SPHERICAL_CONTOUR")
@@ -131,7 +142,7 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   Action(ao),
   ContourFindingBase(ao)
 {
-  if( ingrid->getDimension()!=3 ) error("input grid must be three dimensional");
+  if( getPntrToArgument(0)->getRank()!=3 ) error("input grid must be three dimensional");
 
   unsigned npoints; parse("NPOINTS",npoints);
   log.printf("  searching for %u points on dividing surface \n",npoints);
@@ -139,28 +150,38 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   log.printf("  expecting to find dividing surface at radii between %f and %f \n",min,max);
   log.printf("  looking for contour in windows of length %f \n", (max-min)/nbins);
   // Set this here so the same set of grid points are used on every turn
-  std::string vstring = "TYPE=fibonacci COMPONENTS=" + getLabel() + " COORDINATES=x,y,z PBC=F,F,F";
-  createGrid( "grid", vstring ); mygrid->setNoDerivatives();
-  setAveragingAction( mygrid, true ); mygrid->setupFibonacciGrid( npoints );
-
+  std::vector<bool> ipbc( 3, false ); gridcoords.setup( "fibonacci", ipbc, npoints, 0.0 );
+  // Now create a value
+  std::vector<unsigned> shape( 1 ); shape[0]=npoints; addValueWithDerivatives( shape ); setNotPeriodic();
   checkRead();
   // Create a task list
   for(unsigned i=0; i<npoints; ++i) addTaskToList( i );
-  deactivateAllTasks();
-  for(unsigned i=0; i<getFullNumberOfTasks(); ++i) taskFlags[i]=1;
-  lockContributors();
 }
 
-void FindSphericalContour::compute( const unsigned& current, MultiValue& myvals ) const {
+void FindSphericalContour::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const { 
+  if( setlength ) gridcoords.putCoordinateAtValue( ind, getPntrToOutput(0)->get(ind), coords );
+  else  gridcoords.putCoordinateAtValue( ind, 1.0, coords );
+}
+
+unsigned FindSphericalContour::getNumberOfDerivatives() const {
+  return gridcoords.getDimension();
+}
+
+void FindSphericalContour::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
+  tflags.assign(tflags.size(),1);
+}
+
+void FindSphericalContour::performTask( const unsigned& current, MultiValue& myvals ) const {
   // Generate contour point on inner sphere
   std::vector<double> contour_point(3), direction(3), der(3), tmp(3);
   // Retrieve this contour point from grid
-  mygrid->getGridPointCoordinates( current, direction );
+  gridcoords.getGridPointCoordinates( current, direction );
   // Now setup contour point on inner sphere
   for(unsigned j=0; j<3; ++j) {
     contour_point[j] = min*direction[j];
     direction[j] = (max-min)*direction[j] / static_cast<double>(nbins);
   }
+
   bool found=false;
   for(unsigned k=0; k<nbins; ++k) {
     for(unsigned j=0; j<3; ++j) tmp[j] = contour_point[j] + direction[j];
@@ -169,11 +190,17 @@ void FindSphericalContour::compute( const unsigned& current, MultiValue& myvals 
     if( val1*val2<0 ) {
       findContour( direction, contour_point );
       double norm=0; for(unsigned j=0; j<3; ++j) norm += contour_point[j]*contour_point[j];
-      myvals.setValue( 1, sqrt(norm) ); found=true; break;
+      myvals.setValue( getPntrToOutput(0)->getPositionInStream(), sqrt(norm) ); found=true; break;
     }
     for(unsigned j=0; j<3; ++j) contour_point[j] = tmp[j];
   }
   if( !found ) error("range does not bracket the dividing surface");
+}
+
+void FindSphericalContour::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
+                                                   const unsigned& bufstart, std::vector<double>& buffer ) const {
+  unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
+  unsigned valout = getPntrToOutput(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
 }
 
 }

@@ -218,7 +218,9 @@ void HistogramBase::gatherGridAccumulators( const unsigned& code, const MultiVal
       double height=1.0; if( heights_index==2 ) height = argsh[ argsh.size()-1 ];
       if( !unorm ) height = height / norm;
       for(unsigned i=0;i<args.size();++i) args[i]=argsh[i];
-      addKernelToGrid( height, args, bufstart, buffer );
+      if( fabs(height)>epsilon ) {
+          addKernelToGrid( height, args, bufstart, buffer );
+      }
   }
 }
 

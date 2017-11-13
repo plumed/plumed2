@@ -80,6 +80,7 @@ class Print :
   string file;
   OFile ofile;
   string fmt;
+  bool hasorigin;
   bool printAtEnd;
   double lenunit;
   bool gridinput;
@@ -122,6 +123,7 @@ void Print::registerKeywords(Keywords& keys) {
   keys.add("compulsory","STRIDE","0","the frequency with which the quantities of interest should be output");
   keys.add("optional","FILE","the name of the file on which to output these quantities");
   keys.add("optional","FMT","the format that should be used to output real numbers");
+  keys.add("atoms","ORIGIN","You can use this keyword to specify the position of an atom as an origin. The positions output will then be displayed relative to that origin");
   keys.add("optional","LESS_THAN_OR_EQUAL","when printing with arguments that are vectors only print components of vectors have a value less than or equal to this value");
   keys.add("optional","GREATER_THAN_OR_EQUAL","when printing with arguments that are vectors only print components of vectors have a value greater than or equal to this value");
   keys.add("hidden","_ROTATE","some funky thing implemented by GBussi");
@@ -137,6 +139,7 @@ Print::Print(const ActionOptions&ao):
   ActionAtomistic(ao),
   tstyle("colvar"),
   fmt("%f"),
+  hasorigin(false),
   printAtEnd(false),
   lenunit(1.0),
   gridinput(false),
@@ -204,18 +207,36 @@ Print::Print(const ActionOptions&ao):
           }
       } else {
           if( getStride()==0 ) { setStride(1); log.printf("  with stride %d\n",getStride()); }
-          parseVector("LESS_THAN_OR_EQUAL",upper); parseVector("GREATER_THAN_OR_EQUAL",lower); 
-          if( upper.size()!=(arg_ends.size()-1) && upper.size()>0 ) error("wrong number of arguments for LESS_THAN_OR_EQUAL keyword");
-          if( lower.size()!=(arg_ends.size()-1) && lower.size()>0 ) error("wrong number of arguments for GREATER_THAN_OR_EQUAL keyword");
-          if( upper.size()>0 && lower.size()>0 ){
+          std::vector<std::string> str_upper, str_lower; 
+          parseVector("LESS_THAN_OR_EQUAL",str_upper); parseVector("GREATER_THAN_OR_EQUAL",str_lower); 
+          if( str_upper.size()!=(arg_ends.size()-1) && str_upper.size()>0 ) error("wrong number of arguments for LESS_THAN_OR_EQUAL keyword");
+          if( str_lower.size()!=(arg_ends.size()-1) && str_lower.size()>0 ) error("wrong number of arguments for GREATER_THAN_OR_EQUAL keyword");
+          if( str_upper.size()>0 && str_lower.size()>0 ){
+              lower.resize( str_lower.size() ); upper.resize( str_upper.size() );
+              for(unsigned i=0;i<upper.size();++i) {
+                  if( str_lower[i]=="none" ) lower[i] = -std::numeric_limits<double>::max();
+                  else Tools::convert( str_lower[i], lower[i] );
+                  if( str_upper[i]=="none" ) upper[i] = std::numeric_limits<double>::max();
+                  else Tools::convert( str_upper[i], upper[i] );
+              }
               log.printf("  only printing positions/indices of atoms that have %f <= %s <= %f ", lower[0], getPntrToArgument(0)->getName().c_str(), upper[0] );
               for(unsigned i=1;i<upper.size();++i) log.printf("and %f <= %s <= %f ", lower[i], getPntrToArgument(i)->getName().c_str(), upper[i] );
               log.printf("\n");
-          } else if( upper.size()>0 ) {
+          } else if( str_upper.size()>0 ) {
+              upper.resize( str_upper.size() );
+              for(unsigned i=0;i<upper.size();++i) {
+                  if( str_upper[i]=="none" ) upper[i] = std::numeric_limits<double>::max();
+                  else Tools::convert( str_upper[i], upper[i] );
+              }
               log.printf("  only printing positions/indices of atoms that have %s <= %f ", getPntrToArgument(0)->getName().c_str(), upper[0] );
               for(unsigned i=1;i<upper.size();++i) log.printf("and %s <= %f ", getPntrToArgument(i)->getName().c_str(), upper[i] );
               log.printf("\n");
-          } else if( lower.size()>0 ) {
+          } else if( str_lower.size()>0 ) {
+              lower.resize( str_lower.size() ); 
+              for(unsigned i=0;i<lower.size();++i) {
+                  if( str_lower[i]=="none" ) lower[i] = -std::numeric_limits<double>::max();
+                  else Tools::convert( str_lower[i], lower[i] );
+              }
               log.printf("  only printing positions/indices of atoms that have %f <= %s ", lower[0], getPntrToArgument(0)->getName().c_str()  );
               for(unsigned i=1;i<upper.size();++i) log.printf("and %f <= %s ", lower[i], getPntrToArgument(i)->getName().c_str() );
               log.printf("\n");
@@ -223,6 +244,11 @@ Print::Print(const ActionOptions&ao):
 
           std::vector<AtomNumber> atoms; parseAtomList("ATOMS",atoms); 
           if( atoms.size()!=0 && atoms.size()!=nper ) error("number of atoms should match number of colvars");
+          std::vector<AtomNumber> origin; parseAtomList("ORIGIN",origin);
+          if( origin.size()==1 ) {
+              hasorigin=true; log.printf("  printing atom positions relative to atom %d \n", origin[0].serial() ); 
+          } else if( origin.size()>0 ) error("should only specify one atom for origin");
+
           if( tstyle=="xyz" ) {
               std::string unitname; parse("UNITS",unitname);
               if(unitname!="PLUMED") {
@@ -242,8 +268,9 @@ Print::Print(const ActionOptions&ao):
              if ( (i+1) % 25 == 0 ) log.printf("  \n");
              log.printf("  %d", atoms[i].serial());
           }
-          log.printf("\n"); 
+          log.printf("\n"); if( hasorigin ) atoms.push_back( origin[0] );
           std::vector<Value*> args( getArguments() ); requestAtoms( atoms ); requestArguments( args, false ); 
+          if( hasorigin && plumed.getAtoms().isVirtualAtom(origin[0]) ) addDependency(plumed.getAtoms().getVirtualAtomsAction(origin[0]));
       }
   } else if( tstyle=="grid" ) {
       if( getStride()==0 ) { 
@@ -320,9 +347,9 @@ void Print::update() {
       ofile.printField();
   } else if( tstyle=="xyz") {
       if( getNumberOfAtoms()>0 ) {
-          unsigned natoms=0;
+          unsigned natoms=0, ntatoms=getNumberOfAtoms(); if( hasorigin ) ntatoms = ntatoms - 1;
           MultiValue myfvals(0,0); std::vector<double> argvals( arg_ends.size()-1 );
-          for(unsigned i=0; i<getNumberOfAtoms();++i) {
+          for(unsigned i=0; i<ntatoms;++i) {
               myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals ); 
               if( isInTargetRange( argvals ) ) natoms++;
           }
@@ -337,11 +364,16 @@ void Print::update() {
                            lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
                           );
           }
-          for(unsigned i=0; i<getNumberOfAtoms();++i) {
+          for(unsigned i=0; i<ntatoms;++i) {
               const char* defname="X"; const char* name=defname;
               myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals ); 
               if( isInTargetRange( argvals ) ) {
-                  ofile.printf(("%s "+fmt+" "+fmt+" "+fmt).c_str(),name,lenunit*getPosition(i)[0],lenunit*getPosition(i)[1],lenunit*getPosition(i)[2]);
+                  if( hasorigin ) {
+                      Vector fpos=pbcDistance( getPosition(ntatoms), getPosition(i) );
+                      ofile.printf(("%s "+fmt+" "+fmt+" "+fmt).c_str(),name,lenunit*fpos[0],lenunit*fpos[1],lenunit*fpos[2]);
+                  } else {
+                      ofile.printf(("%s "+fmt+" "+fmt+" "+fmt).c_str(),name,lenunit*getPosition(i)[0],lenunit*getPosition(i)[1],lenunit*getPosition(i)[2]);
+                  }
                   for(unsigned j=0;j<argvals.size();++j) ofile.printf((" " + fmt).c_str(), argvals[j] );
                   ofile.printf("\n");
               } 
@@ -363,8 +395,10 @@ void Print::update() {
           for(unsigned i=0; i<tasks.size();++i) {
               const char* defname="X"; const char* name=defname; ofile.printf("%s", name);
               myfvals.setTaskIndex(tasks[i]); retrieveArguments( myfvals, argvals );
-              for(unsigned j=0;j<argvals.size();++j) ofile.printf((" " + fmt).c_str(), argvals[j] );
-              ofile.printf("\n");
+              if( isInTargetRange( argvals ) ) {
+                  for(unsigned j=0;j<argvals.size();++j) ofile.printf((" " + fmt).c_str(), argvals[j] );
+                  ofile.printf("\n");
+              }
           }
       }
   } else if( tstyle=="ndx" ) {

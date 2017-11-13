@@ -213,6 +213,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
   bool firstcall=(arguments.size()==0);
   arguments=arg;
   clearDependencies();
+  distinct_arguments.resize(0);
   bool storing=false; allrankzero=true;
   for(unsigned i=0;i<arguments.size();++i){
       if( arguments[i]->getRank()>0 ) allrankzero=false;
@@ -255,13 +256,14 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
       ActionWithValue* av = dynamic_cast<ActionWithValue*>(this);
       if(!av) return;
   }
-
   if( !allow_streams || storing ){
       done_over_stream=false;
   } else if( f_actions.size()>1 ){
       done_over_stream=true;
       for(unsigned i=1;i<f_actions.size();++i){
           if( f_actions[0]->getFullNumberOfTasks()!=f_actions[i]->getFullNumberOfTasks() ){ done_over_stream=false; break; }
+          // This checks we are not creating cicular recursive loops
+          if( f_actions[0]->checkForDependency(f_actions[i]) ){ done_over_stream=false; break; }
       }
       if( done_over_stream ){
           std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
@@ -403,7 +405,7 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
          else args[i]=arguments[i]->get( myvals.getTaskIndex() );
       }
       return;
-  }
+  } 
   for(unsigned i=0;i<arg_ends.size()-1;++i) {
       if( arg_ends[i+1]-arg_ends[i]>1 || arguments[ arg_ends[i] ]->getRank()>0 ) {
           if( allrankzero ) {
