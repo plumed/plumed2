@@ -71,8 +71,8 @@ The following input calculates the number of six residue segments of
 protein that are in an parallel beta sheet configuration.
 
 \plumedfile
-MOLINFO STRUCTURE=helix.pdb
-PARABETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
+MOLINFO STRUCTURE=beta.pdb
+pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1
 \endplumedfile
 
 */
