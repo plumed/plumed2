@@ -75,6 +75,14 @@ MOLINFO STRUCTURE=beta.pdb
 pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1
 \endplumedfile
 
+Here the same is done use RMSD instead of DRMSD
+
+\plumedfile
+MOLINFO STRUCTURE=helix.pdb
+WHOLEMOLECULES ENTITY0=1-100
+hh: PARABETARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1  STRANDS_CUTOFF=1
+\endplumedfile
+
 */
 //+ENDPLUMEDOC
 
