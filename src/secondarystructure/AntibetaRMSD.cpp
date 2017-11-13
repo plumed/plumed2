@@ -72,9 +72,16 @@ protein that are in an antiparallel beta sheet configuration.
 
 \plumedfile
 MOLINFO STRUCTURE=beta.pdb
-ab: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1 
+ab: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1
 \endplumedfile
 
+Here the same is done use RMSD instead of DRMSD
+
+\plumedfile
+MOLINFO STRUCTURE=helix.pdb
+WHOLEMOLECULES ENTITY0=1-100
+hh: ANTIBETARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1  STRANDS_CUTOFF=1
+\endplumedfile
 */
 //+ENDPLUMEDOC
 
