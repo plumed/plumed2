@@ -56,7 +56,7 @@ Mapping::Mapping(const ActionOptions&ao):
   std::string mtype; parse("TYPE",mtype);
   bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
   // Setup the object that does the mapping
-  mymap = new PointWiseMapping( mtype, skipchecks );
+  mymap.reset( new PointWiseMapping( mtype, skipchecks ) );
 
   // Read the properties we require
   if( keywords.exists("PROPERTY") ) {
@@ -122,10 +122,6 @@ Mapping::Mapping(const ActionOptions&ao):
 void Mapping::turnOnDerivatives() {
   ActionWithValue::turnOnDerivatives();
   needsDerivatives();
-}
-
-Mapping::~Mapping() {
-  delete mymap;
 }
 
 void Mapping::prepare() {

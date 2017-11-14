@@ -90,20 +90,20 @@ do
     (--quiet|-q) quiet=yes ;;
     (*)
       echo "ERROR: Unknown option $prefix_option. Use -h for help."
-      exit
+      exit 1
   esac
 done
 
 if [ -n "$mdroot" ] ; then
   if ! cd "$mdroot" ; then
-    echo "Directory $mdroot does not exist"
-    exit
+    echo "ERROR: Directory $mdroot does not exist"
+    exit 1
   fi
 fi
 
 if [ -n "$multiple_actions" ] ; then
-  echo "Too many actions. -h for help"
-  exit
+  echo "ERROR: Too many actions. -h for help"
+  exit 1
 fi
 
 if [ -z "$action" ] ; then
@@ -117,13 +117,13 @@ if [ -z "$PLUMED_ROOT" ]
 then
   echo "ERROR: I cannot find PLUMED"
   echo "Please set PLUMED_ROOT environment variable or use --root"
-  exit
+  exit 1
 fi
 if [ ! -d "$PLUMED_ROOT/patches/" ]
 then
   echo "ERROR: cannot find $PLUMED_ROOT/patches/ directory"
   echo "Check your PLUMED_ROOT variable or --root option"
-  exit
+  exit 1
 fi
 
 # build MD engines list
@@ -153,7 +153,7 @@ then
   test -n "$quiet" || echo "Creating a new patch"
   if [[ -e "$PLUMED_ROOT"/patches/"$newpatch".diff ]] ; then
       echo "ERROR: patch $newpatch is already defined"
-      exit
+      exit 1
   fi
   touch "$PLUMED_ROOT"/patches/"$newpatch".diff
   test -n "$quiet" || echo "Created file $PLUMED_ROOT/patches/$newpatch.diff"
@@ -204,8 +204,8 @@ fi
 case "$mode" in
 (static|shared|runtime) ;;
 (*)
-  echo "I don't understand mode $mode"
-  exit
+  echo "ERROR: I don't understand mode $mode"
+  exit 1
 esac
 
 
@@ -213,7 +213,7 @@ case "$action" in
   (patch)
     if [ ! -e "$diff" ] ; then
       echo "ERROR: MD engine not supported (or mispelled)"
-      exit
+      exit 1
     fi
     if type -t plumed_preliminary_test 1>/dev/null ; then
       if plumed_preliminary_test || [ "$force" ] ; then
@@ -222,25 +222,25 @@ case "$action" in
         echo "ERROR: Preliminary test not passed."
         echo "It seems that this is not $engine, or you are in the wrong directory"
         echo "If you are sure about what you are doing, use -f"
-      exit
+      exit 1
       fi
     fi
     if [ -L Plumed.h -o -L Plumed.inc ]
     then
       echo "ERROR: you have likely already patched. Revert first (-r)"
-      exit
+      exit 1
     fi
     if [ ! -f "$PLUMED_ROOT/src/lib/Plumed.inc" ]
     then
       echo "ERROR: cannot find $PLUMED_ROOT/src/lib/Plumed.inc file"
       echo "Compile plumed before patching"
-      exit
+      exit 1
     fi
     if [ ! -f "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" ]
     then
       echo "ERROR: cannot find $PLUMED_ROOT/src/lib/Plumed.cmake.$mode file"
       echo "Compile a $mode version of plumed before patching, or change patching mode [static|shared|runtime]"
-      exit
+      exit 1
     fi
     if type -t plumed_before_patch 1>/dev/null ; then
       test -n "$quiet" || echo "Executing plumed_before_patch function"
@@ -307,12 +307,12 @@ case "$action" in
     if [ ! -L Plumed.h -o ! -L Plumed.inc ]
     then
       echo "ERROR: I cannot find Plumed.h and Plumed.inc files. You have likely not patched yet."
-      exit
+      exit 1
     fi
     PREPLUMED=$(find . -name "*.preplumed" | sort)
     if ! test "$PREPLUMED" ; then
       echo "ERROR: I cannot find any .preplumed file. There is nothing to save."
-      exit
+      exit 1
     fi
     if type -t plumed_preliminary_test 1>/dev/null ; then
       if plumed_preliminary_test || [ "$force" ] ; then
@@ -321,7 +321,7 @@ case "$action" in
         echo "ERROR: Preliminary test not passed."
         echo "It seems that this is not $engine, or you are in the wrong directory"
         echo "If you are sure about what you are doing, use -f"
-      exit
+      exit 1
       fi
     fi
     test -n "$quiet" || echo "Saving your changes to $diff"
@@ -378,7 +378,7 @@ EOF
   (revert)
     if [ ! -e "$diff" ] ; then
       echo "ERROR: MD engine not supported (or mispelled)"
-      exit
+      exit 1
     fi
     if type -t plumed_before_revert 1>/dev/null ; then
       test -n "$quiet" || echo "Executing plumed_before_revert function"

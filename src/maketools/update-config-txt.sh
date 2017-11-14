@@ -102,6 +102,7 @@ echo "# syntax: version short/long/git number"
 echo "$version"
 echo
 echo "python_bin $python_bin"
+echo "mpiexec $mpiexec"
 echo
 echo "# list of 'has' options"
 echo "# syntax: has name on/of"

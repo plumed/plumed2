@@ -76,7 +76,7 @@ public:
   /// get the pointer to the grid
   Grid* 	getGridPtr();
   /// get a new histogram point from a file
-  KernelFunctions* readFromPoint(IFile *ifile);
+  std::unique_ptr<KernelFunctions> readFromPoint(IFile *ifile);
   /// get an automatic min/max from the set so to know how to configure the grid
   void getMinMaxBin(std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin);
   /// clear the representation (grid included)

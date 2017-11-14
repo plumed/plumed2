@@ -401,7 +401,7 @@ void Histogram::prepareForAveraging() {
     std::vector<double> point( getNumberOfArguments() );
     for(unsigned i=0; i<point.size(); ++i) point[i]=getArgument(i);
     unsigned num_neigh; std::vector<unsigned> neighbors(1);
-    kernel.reset(myhist->getKernelAndNeighbors( point, num_neigh, neighbors ));
+    kernel=myhist->getKernelAndNeighbors( point, num_neigh, neighbors );
 
     if( num_neigh>1 ) {
       // Activate relevant tasks

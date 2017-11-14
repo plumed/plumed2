@@ -51,6 +51,7 @@ do
   (has) action=has ;;
   (module) action=module ;;
   (python_bin) action=python_bin ;;
+  (mpiexec) action=mpiexec ;;
   (makefile_conf)
     echo "$configfile" | awk '{if($1=="makefile_conf") { gsub("^makefile_conf ",""); print} }'
     exit 0
@@ -107,5 +108,15 @@ case $action in
   fi
   exit $retval
 ;;
+(mpiexec)
+  mpi=$(echo "$configfile" | grep -v \# | awk '{ if($1=="mpiexec") print $2 }')
+  if test -n "$mpi" ; then
+    retval=0
+    test "$quiet" = no && echo "$mpi"
+  else
+    retval=1
+    test "$quiet" = no && echo "mpiexec not found"
+  fi
+  exit $retval
 esac
 

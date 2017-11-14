@@ -657,8 +657,10 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         else           {BiasGrid_.reset( new SparseGrid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true) );}
         std::vector<std::string> actualmin=BiasGrid_->getMin();
         std::vector<std::string> actualmax=BiasGrid_->getMax();
-        if(gmin_t[0]!=actualmin[0]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[0]<<" to fit periodicity\n";
-        if(gmax_t[0]!=actualmax[0]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[0]<<" to fit periodicity\n";
+        std::string is;
+        Tools::convert(i,is);
+        if(gmin_t[0]!=actualmin[0]) error("GRID_MIN["+is+"] must be adjusted to "+actualmin[0]+" to fit periodicity");
+        if(gmax_t[0]!=actualmax[0]) error("GRID_MAX["+is+"] must be adjusted to "+actualmax[0]+" to fit periodicity");
       }
       BiasGrids_.emplace_back(std::move(BiasGrid_));
     }

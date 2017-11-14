@@ -79,7 +79,7 @@ matrix:
       - $HOME/.macports-ci-ccache
 # osx serial macports debug variant
   - os: osx
-    osx_image: xcode8.2
+    osx_image: xcode8.3
     env: PLUMED_MACPORTS="plumed +allmodules +python27"
     cache:
       directories:
@@ -109,6 +109,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then
       brew update > /dev/null ;
       brew install ccache ;
+      export PLUMED_MPIRUN="mpirun --oversubscribe" ;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq ; fi
 # install some package - these are fast, we install them anyway
@@ -152,7 +153,7 @@ install:
       export COLUMNS=80 ;
       wget https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci ;
       chmod +x ./macports-ci ;
-      ./macports-ci install ;
+      ./macports-ci install --remove-brew ;
       PATH="/opt/local/bin:$PATH" ;
       make macports ;
       ./macports-ci localports macports ;
@@ -182,7 +183,8 @@ script:
 
 # build using macports
   - if test -n "$PLUMED_MACPORTS" ; then
-      sudo port -N install $PLUMED_MACPORTS ;
+      sudo port -N -k install $PLUMED_MACPORTS ;
+      plumed config show
       ./macports-ci ccache --save ;
     fi
 
@@ -192,7 +194,7 @@ script:
 # TEST:
   - if test "$VALGRIND" == yes ; then OPT=valgrind ; else OPT="" ; fi
 # --no-print-directory make it more silent
-  - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make --no-print-directory -C regtest $OPT ; fi
+  - if test "$PLUMED_CXX" ; then make --no-print-directory -C regtest $OPT ; fi
 
 # test with gcc6
   - if test "$PLUMED_DOCKER" = yes ; then docker run -v "$PWD/regtest":/home/plumed/regtest -it plumed /bin/bash -c "make -C regtest" ; fi
@@ -201,7 +203,8 @@ script:
   - if test "$MAKEDOC" == yes ; then make -C regtest copytodoc ; fi
   - if test "$MAKEDOC" == yes ; then make -C developer-doc coverage ; fi
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
-  - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make -C regtest checkfail ; fi
+  - if test "$PLUMED_CXX" ; then make -C regtest checkfail ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then sudo port -N -d test $PLUMED_MACPORTS ; fi
 
 # CPPCHECK:
 # this is required so as to have all the include files inplace:
