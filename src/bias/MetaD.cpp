@@ -982,8 +982,10 @@ MetaD::MetaD(const ActionOptions& ao):
     std::vector<std::string> actualmin=BiasGrid_->getMin();
     std::vector<std::string> actualmax=BiasGrid_->getMax();
     for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
-      if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
+      std::string is;
+      Tools::convert(i,is);
+      if(gmin[i]!=actualmin[i]) error("GRID_MIN["+is+"] must be adjusted to "+actualmin[i]+" to fit periodicity");
+      if(gmax[i]!=actualmax[i]) error("GRID_MAX["+is+"] must be adjusted to "+actualmax[i]+" to fit periodicity");
     }
   }
 
