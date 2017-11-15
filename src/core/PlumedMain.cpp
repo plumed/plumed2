@@ -546,12 +546,13 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
     Tools::interpretLabel(interpreted);
     std::unique_ptr<Action> action(actionRegister().create(ActionOptions(*this,interpreted)));
     if(!action) {
-      log<<"ERROR\n";
-      log<<"I cannot understand line:";
-      for(unsigned i=0; i<interpreted.size(); ++i) log<<" "<<interpreted[i];
-      log<<"\n";
+      std::string msg;
+      msg ="ERROR\nI cannot understand line:";
+      for(unsigned i=0; i<interpreted.size(); ++i) msg+=" "+interpreted[i];
+      msg+="\nMaybe a missing space or a typo?";
+      log << msg;
       log.flush();
-      plumed_merror("I cannot understand line " + interpreted[0] + " " + interpreted[1]);
+      plumed_merror(msg);
     };
     action->checkRead();
     actionSet.emplace_back(std::move(action));
@@ -758,17 +759,17 @@ void PlumedMain::update() {
 
 void PlumedMain::load(const std::string& ss) {
   if(DLLoader::installed()) {
-    string s=ss;
+    std::string s=ss;
     size_t n=s.find_last_of(".");
-    string extension="";
-    string base=s;
+    std::string extension="";
+    std::string base=s;
     if(n!=std::string::npos && n<s.length()-1) extension=s.substr(n+1);
     if(n!=std::string::npos && n<s.length())   base=s.substr(0,n);
     if(extension=="cpp") {
 // full path command, including environment setup
 // this will work even if plumed is not in the execution path or if it has been
 // installed with a name different from "plumed"
-      string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+s;
+      std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+s;
       log<<"Executing: "<<cmd;
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
