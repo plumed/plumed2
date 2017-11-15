@@ -123,7 +123,7 @@ Center::Center(const ActionOptions&ao):
     for(unsigned i=0; i<weights.size(); ++i) log.printf(" %f",weights[i]);
     log.printf("\n");
   }
-  if(!nopbc) {
+  if(nopbc) {
     log<<"  PBC will be ignored\n";
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
