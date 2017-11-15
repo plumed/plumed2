@@ -142,7 +142,7 @@ This third example show how to use chemical shifts to calculate a \ref METAINFER
 
 \plumedfile
 cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ NRES=13 DOSCORE NDATA=24
-csbias: BIASVALUE ARG=cs
+csbias: BIASVALUE ARG=cs.score
 
 PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=CS.dat STRIDE=1000
 PRINT ARG=cs.score FILE=BIAS STRIDE=100
