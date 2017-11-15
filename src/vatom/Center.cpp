@@ -131,7 +131,7 @@ Center::Center(const ActionOptions&ao):
       log.printf("\n");
     }
   }
-  if(!nopbc) {
+  if(nopbc) {
     log<<"  PBC will be ignored\n";
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
