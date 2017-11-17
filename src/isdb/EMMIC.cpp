@@ -128,10 +128,10 @@ private:
   vector<double> ovmd_;
   vector<double> ovdd_;
   vector<double> ovmd_ave_;
-  vector<double> ov_cut_;
 // and derivatives
   vector<Vector> ovmd_der_;
   vector<Vector> atom_der_;
+  vector<double> der_GMMid_;
 // constant quantities;
   double cfact_;
 // metainference
@@ -471,9 +471,10 @@ EMMIC::EMMIC(const ActionOptions&ao):
   calculate_useful_stuff(reso);
 
   // prepare data and derivative vectors
-  ovmd_.resize(GMM_d_m_.size());
+  ovmd_.resize(ovdd_.size());
   atom_der_.resize(GMM_m_type_.size());
-
+  der_GMMid_.resize(ovdd_.size());
+  
   // clear things that are no longer needed
   GMM_d_cov_.clear();
 
@@ -500,6 +501,7 @@ EMMIC::EMMIC(const ActionOptions&ao):
 
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   log<<plumed.cite("Hanot, Bonomi, Greenberg, Sali, Nilges, Vendruscolo, Pellarin, bioRxiv doi: 10.1101/113951 (2017)");
+  log<<plumed.cite("Bonomi, Pellarin, Vendruscolo, bioRxiv doi: 10.1101/219972 (2017)");
   log<<"\n";
 }
 
@@ -954,7 +956,7 @@ void EMMIC::update_neighbor_list()
       unsigned itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
       // check boundaries and skip atom in case
       if(itab >= tab_exp_.size()) continue;
-      // in case calculate overlap overlap
+      // in case calculate overlap
       double ov = pre_fact_[kaux] * tab_exp_[itab];
       // add to list
       ov_l.push_back(ov);
@@ -1051,7 +1053,7 @@ void EMMIC::doRegression()
   }
   ovdd_ave /= static_cast<double>(ovdd_.size());
   ovmd_ave /= static_cast<double>(ovmd_.size());
-// calculate scaling and offset
+// calculate scaling, offset and pearson correlation coefficient
   double Bn = 0.0; double Bd = 0.0; double C = 0.0;
   for(unsigned i=0; i<ovmd_.size(); ++i) {
     // add to sum
@@ -1164,10 +1166,7 @@ void EMMIC::calculate_Cauchy()
     anneal_ = get_annealing(step);
     getPntrToComponent("anneal")->set(anneal_);
   }
-
-  // allocate temporary vector to store derivatives
-  vector<double> der_GMMid(ovmd_.size(), 0.0);
-
+ 
   // calculate score and reweighting score
   double ene = 0.0;
   // cycle on all the GMM groups
@@ -1182,7 +1181,7 @@ void EMMIC::calculate_Cauchy()
       // add to score
       eneg += std::log( 1.0 + 0.5 * dev * dev );
       // store derivative for later
-      der_GMMid[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
+      der_GMMid_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
     }
     // add to total score along with normalizations and prior
     ene += kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
@@ -1195,16 +1194,16 @@ void EMMIC::calculate_Cauchy()
   if(!no_aver_ && nrep_>1) {
     // if master node, sum der_GMMid derivatives and ene
     if(rank_==0) {
-      multi_sim_comm.Sum(&der_GMMid[0], der_GMMid.size());
+      multi_sim_comm.Sum(&der_GMMid_[0], der_GMMid_.size());
       multi_sim_comm.Sum(&ene, 1);
     } else {
       // set der_GMMid derivatives and energy to zero
-      for(unsigned i=0; i<der_GMMid.size(); ++i) der_GMMid[i]=0.0;
+      for(unsigned i=0; i<der_GMMid_.size(); ++i) der_GMMid_[i]=0.0;
       ene = 0.0;
     }
     // local communication
     if(size_>1) {
-      comm.Sum(&der_GMMid[0], der_GMMid.size());
+      comm.Sum(&der_GMMid_[0], der_GMMid_.size());
       comm.Sum(&ene, 1);
     }
   }
@@ -1220,7 +1219,7 @@ void EMMIC::calculate_Cauchy()
     unsigned id = nl_[i] / GMM_m_type_.size();
     unsigned im = nl_[i] % GMM_m_type_.size();
     // chain rule + replica normalization
-    Vector tot_der = der_GMMid[id] * ovmd_der_[i] * escale * scale_ / anneal_;
+    Vector tot_der = der_GMMid_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
     // virial
     Vector pos;
     if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
