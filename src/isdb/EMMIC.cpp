@@ -185,6 +185,8 @@ private:
   unsigned nanneal_;
   double   kanneal_;
   double   anneal_;
+  // prior exponent
+  double prior_;
 
 // annealing
   double get_annealing(long int step);
@@ -257,6 +259,7 @@ void EMMIC::registerKeywords( Keywords& keys ) {
   keys.add("optional","ANNEAL", "Length of annealing cycle");
   keys.add("optional","ANNEAL_FACT", "Annealing temperature factor");
   keys.add("optional","TEMP","temperature");
+  keys.add("optional","PRIOR", "exponent of uncertainty prior");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
   keys.addFlag("ANALYSIS",false,"run in analysis mode");
   componentsAreNotOptional(keys);
@@ -275,8 +278,8 @@ EMMIC::EMMIC(const ActionOptions&ao):
   MCstride_(1), MCfirst_(-1), MCaccept_(0),
   statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.0), off_(0.0),
-  dpcutoff_(15.0), nexp_(1000000),
-  nanneal_(0), kanneal_(0.), anneal_(1.)
+  dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
+  kanneal_(0.), anneal_(1.), prior_(1.0)
 {
   bool nopbc=!pbc_;
   parseFlag("NOPBC",nopbc);
@@ -315,6 +318,9 @@ EMMIC::EMMIC(const ActionOptions&ao):
   // convert temp to kbt
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
+
+  // exponent of uncertainty prior
+  parse("PRIOR",prior_);
 
   // simulated annealing stuff
   parse("ANNEAL", nanneal_);
@@ -389,8 +395,13 @@ EMMIC::EMMIC(const ActionOptions&ao):
   log.printf("  with stride : %u\n",statusstride_);
   if(errfile.size()>0) log.printf("  reading experimental errors from file : %s\n", errfile.c_str());
   log.printf("  temperature of the system in energy unit : %f\n",kbt_);
+  log.printf("  prior exponent : %f\n",prior_);
   log.printf("  number of replicas for averaging: %u\n",nrep_);
   log.printf("  id of the replica : %u\n",replica_);
+  if(nanneal_>0) {
+    log.printf("  length of annealing cycle : %u\n",nanneal_);
+    log.printf("  annealing factor : %f\n",kanneal_);
+  }
 
   // set constant quantity before calculating stuff
   cfact_ = 1.0/pow( 2.0*pi, 1.5 );
@@ -586,8 +597,8 @@ void EMMIC::doMonteCarlo()
   }
   // final energy calculation - normalization and prior
   double ng = static_cast<double>(GMM_d_grps_[nGMM].size());
-  old_ene = kbt_ * ( old_ene + (ng+1.0) * std::log(sigma_[nGMM]) );
-  new_ene = kbt_ * ( new_ene + (ng+1.0) * std::log(new_s) );
+  old_ene = kbt_ * ( old_ene + (ng+prior_) * std::log(sigma_[nGMM]) );
+  new_ene = kbt_ * ( new_ene + (ng+prior_) * std::log(new_s) );
 
   // accept or reject
   bool accept = doAccept(old_ene/anneal_, new_ene/anneal_);
@@ -1174,7 +1185,7 @@ void EMMIC::calculate_Cauchy()
       der_GMMid[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
     }
     // add to total score along with normalizations and prior
-    ene += kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[i].size())+1.0) * std::log(sigma_[i]) );
+    ene += kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
   }
 
   // annealing rescale
@@ -1187,7 +1198,7 @@ void EMMIC::calculate_Cauchy()
       multi_sim_comm.Sum(&der_GMMid[0], der_GMMid.size());
       multi_sim_comm.Sum(&ene, 1);
     } else {
-      // set derivative and energy to zero
+      // set der_GMMid derivatives and energy to zero
       for(unsigned i=0; i<der_GMMid.size(); ++i) der_GMMid[i]=0.0;
       ene = 0.0;
     }
