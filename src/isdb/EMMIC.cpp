@@ -1154,6 +1154,9 @@ void EMMIC::calculate_Cauchy()
     getPntrToComponent("anneal")->set(anneal_);
   }
 
+  // allocate temporary vector to store derivatives
+  vector<double> der_GMMid(ovmd_.size(), 0.0);
+
   // calculate score and reweighting score
   double ene = 0.0;
   // cycle on all the GMM groups
@@ -1167,6 +1170,8 @@ void EMMIC::calculate_Cauchy()
       double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] ) / sigma_[i];
       // add to score
       eneg += std::log( 1.0 + 0.5 * dev * dev );
+      // store derivative for later
+      der_GMMid[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
     }
     // add to total score along with normalizations and prior
     ene += kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[i].size())+1.0) * std::log(sigma_[i]) );
@@ -1174,6 +1179,24 @@ void EMMIC::calculate_Cauchy()
 
   // annealing rescale
   ene /= anneal_;
+
+  // in case of ensemble averaging
+  if(!no_aver_ && nrep_>1) {
+    // if master node, sum der_GMMid derivatives and ene
+    if(rank_==0) {
+      multi_sim_comm.Sum(&der_GMMid[0], der_GMMid.size());
+      multi_sim_comm.Sum(&ene, 1);
+    } else {
+      // set derivative and energy to zero
+      for(unsigned i=0; i<der_GMMid.size(); ++i) der_GMMid[i]=0.0;
+      ene = 0.0;
+    }
+    // local communication
+    if(size_>1) {
+      comm.Sum(&der_GMMid[0], der_GMMid.size());
+      comm.Sum(&ene, 1);
+    }
+  }
 
   // clean temporary vector
   for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
@@ -1185,14 +1208,8 @@ void EMMIC::calculate_Cauchy()
     // get indexes of data and model component
     unsigned id = nl_[i] / GMM_m_type_.size();
     unsigned im = nl_[i] % GMM_m_type_.size();
-    // GMM group id
-    int Gid = GMM_d_beta_[id];
-    // calculate deviation
-    double dev = ( scale_*ovmd_[id]+off_-ovdd_[id] ) / sigma_[Gid];
-    // derivative
-    double der = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[Gid];
     // chain rule + replica normalization
-    Vector tot_der = der * ovmd_der_[i] * escale * scale_ / anneal_;
+    Vector tot_der = der_GMMid[id] * ovmd_der_[i] * escale * scale_ / anneal_;
     // virial
     Vector pos;
     if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
@@ -1205,27 +1222,6 @@ void EMMIC::calculate_Cauchy()
   if(size_>1) {
     comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
     comm.Sum(virial);
-  }
-
-  // in case of ensemble averaging
-  if(!no_aver_ && nrep_>1) {
-    // if master node, sum derivatives, virial, and energy
-    if(rank_==0) {
-      multi_sim_comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
-      multi_sim_comm.Sum(virial);
-      multi_sim_comm.Sum(&ene, 1);
-    } else {
-      // set the same quantities to zero
-      for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
-      virial.zero();
-      ene = 0.0;
-    }
-    // local communication
-    if(size_>1) {
-      comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
-      comm.Sum(virial);
-      comm.Sum(&ene, 1);
-    }
   }
 
   // set derivatives, virial, and score
