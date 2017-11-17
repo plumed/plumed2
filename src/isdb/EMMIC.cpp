@@ -131,8 +131,8 @@ private:
 // and derivatives
   vector<Vector> ovmd_der_;
   vector<Vector> atom_der_;
-  vector<double> der_GMMid_;
-// constant quantities;
+  vector<double> GMMid_der_;
+// constants
   double cfact_;
 // metainference
   unsigned nrep_;
@@ -141,7 +141,7 @@ private:
   vector<double> sigma_min_;
   vector<double> sigma_max_;
   vector<double> dsigma_;
-// list of prefactors for overlap between two components of model and data GMM
+// list of prefactors for overlap between two Gaussians
 // pre_fact = 1.0 / (2pi)**1.5 / sqrt(det_md) * Wm * Wd
   vector<double> pre_fact_;
 // inverse of the sum of model and data covariances matrices
@@ -215,10 +215,10 @@ private:
                                 VectorGeneric<6> &sum, VectorGeneric<6> &inv_sum);
 // calculate self overlaps between data GMM components - ovdd_
   double get_self_overlap(unsigned id);
-// calculate overlap between two components
+// calculate overlap between two Gaussians
   double get_overlap(const Vector &m_m, const Vector &d_m, double &pre_fact,
                      const VectorGeneric<6> &inv_cov_md, Vector &ov_der);
-// calculate exp of overlap for neighbor list update
+// calculate exponent of overlap for neighbor list update
   double get_exp_overlap(const Vector &m_m, const Vector &d_m,
                          const VectorGeneric<6> &inv_cov_md);
 // update the neighbor list
@@ -277,9 +277,9 @@ EMMIC::EMMIC(const ActionOptions&ao):
   analysis_(false), nframe_(0.0), pbc_(true),
   MCstride_(1), MCfirst_(-1), MCaccept_(0),
   statusstride_(0), first_status_(true),
-  nregres_(0), scale_(1.0), off_(0.0),
+  nregres_(0), scale_(1.), off_(0.0),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
-  kanneal_(0.), anneal_(1.), prior_(1.0)
+  kanneal_(0.), anneal_(1.), prior_(1.)
 {
   bool nopbc=!pbc_;
   parseFlag("NOPBC",nopbc);
@@ -461,7 +461,7 @@ EMMIC::EMMIC(const ActionOptions&ao):
     // set sigma max
     sigma_max_.push_back(10.0*ovdd_m + sigma_min_[Gid] + dsigma_[Gid]);
     // initialize sigma
-    sigma_.push_back(std::max(sigma_min_[Gid], sigma_ini*ovdd_m));
+    sigma_.push_back(std::max(sigma_min_[Gid],std::min(sigma_ini*ovdd_m,sigma_max_[Gid])));
   }
 
   // read status file if restarting
@@ -473,7 +473,7 @@ EMMIC::EMMIC(const ActionOptions&ao):
   // prepare data and derivative vectors
   ovmd_.resize(ovdd_.size());
   atom_der_.resize(GMM_m_type_.size());
-  der_GMMid_.resize(ovdd_.size());
+  GMMid_der_.resize(ovdd_.size());
   
   // clear things that are no longer needed
   GMM_d_cov_.clear();
@@ -1181,7 +1181,7 @@ void EMMIC::calculate_Cauchy()
       // add to score
       eneg += std::log( 1.0 + 0.5 * dev * dev );
       // store derivative for later
-      der_GMMid_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
+      GMMid_der_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
     }
     // add to total score along with normalizations and prior
     ene += kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
@@ -1194,16 +1194,16 @@ void EMMIC::calculate_Cauchy()
   if(!no_aver_ && nrep_>1) {
     // if master node, sum der_GMMid derivatives and ene
     if(rank_==0) {
-      multi_sim_comm.Sum(&der_GMMid_[0], der_GMMid_.size());
+      multi_sim_comm.Sum(&GMMid_der_[0], GMMid_der_.size());
       multi_sim_comm.Sum(&ene, 1);
     } else {
       // set der_GMMid derivatives and energy to zero
-      for(unsigned i=0; i<der_GMMid_.size(); ++i) der_GMMid_[i]=0.0;
+      for(unsigned i=0; i<GMMid_der_.size(); ++i) GMMid_der_[i]=0.0;
       ene = 0.0;
     }
     // local communication
     if(size_>1) {
-      comm.Sum(&der_GMMid_[0], der_GMMid_.size());
+      comm.Sum(&GMMid_der_[0], GMMid_der_.size());
       comm.Sum(&ene, 1);
     }
   }
@@ -1219,7 +1219,7 @@ void EMMIC::calculate_Cauchy()
     unsigned id = nl_[i] / GMM_m_type_.size();
     unsigned im = nl_[i] % GMM_m_type_.size();
     // chain rule + replica normalization
-    Vector tot_der = der_GMMid_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
+    Vector tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
     // virial
     Vector pos;
     if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
