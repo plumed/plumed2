@@ -96,9 +96,9 @@ is slower (GB)
 class Exception : public std::exception
 {
 /// Stack trace at exception
-  std::string stackString;
+  std::string stackString = trace();
 /// Reported message
-  std::string msg;
+  std::string msg = format("","",0,"");
 /// Create stack trace
   static std::string trace();
 /// Common tool, invoked by all the constructor to build the message string

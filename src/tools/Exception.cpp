@@ -61,22 +61,18 @@ std::string Exception::format(const std::string&msg,const std::string&file,unsig
 }
 
 
-Exception::Exception():
-  stackString(trace()),
-  msg(format("","",0,""))
+Exception::Exception()
 {
   abortIfExceptionsAreDisabled();
 }
 
 Exception::Exception(const std::string&msg):
-  stackString(trace()),
   msg(format(msg,"",0,""))
 {
   abortIfExceptionsAreDisabled();
 }
 
 Exception::Exception(const std::string&msg,const std::string&file,unsigned line,const std::string&function):
-  stackString(trace()),
   msg(format(msg,file,line,function))
 {
   abortIfExceptionsAreDisabled();
