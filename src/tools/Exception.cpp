@@ -63,28 +63,16 @@ std::string Exception::format(const std::string&msg,const std::string&file,unsig
 
 Exception::Exception()
 {
-  abortIfExceptionsAreDisabled();
 }
 
 Exception::Exception(const std::string&msg):
   msg(format(msg,"",0,""))
 {
-  abortIfExceptionsAreDisabled();
 }
 
 Exception::Exception(const std::string&msg,const std::string&file,unsigned line,const std::string&function):
   msg(format(msg,file,line,function))
 {
-  abortIfExceptionsAreDisabled();
-}
-
-void Exception::abortIfExceptionsAreDisabled() {
-#if ! defined(__PLUMED_HAS_EXCEPTIONS)
-  fprintf(stderr,"%s","Exceptions are disabled, aborting now\n");
-  fprintf(stderr,"%s",what());
-  fprintf(stderr,"\n");
-  std::abort();
-#endif
 }
 
 }
