@@ -49,7 +49,7 @@ std::string Exception::trace() {
 std::string Exception::format(const std::string&msg,const std::string&file,unsigned line,const std::string&function) {
   std::string message;
   if(getenv("PLUMED_STACK_TRACE"))message+=trace();
-  message+="\n+++ Internal PLUMED error";
+  message+="\n+++ PLUMED error";
   if(file.length()>0) {
     char cline[1000];
     sprintf(cline,"%u",line);
