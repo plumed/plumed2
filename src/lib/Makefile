@@ -94,7 +94,7 @@ install-build:
 	mkdir -p install/
 	$(MAKE) PLUMED_INSTALL=Install all
 ifdef LD_RO
-	$(MAKE) install/kernel.o
+	$(MAKE) PLUMED_INSTALL=Install install/kernel.o
 endif
 # modulefile
 	@cat modulefile.in | \
@@ -222,7 +222,7 @@ endif
 ifdef LD_RO
 	cp install/kernel.o "$(DESTDIR)$(libdir)/$(program_name)/obj/kernel.o"
 else
-	../maketools/copyobjects "$(DESTDIR)$(libdir)/$(program_name)/obj/k" $(OBJ_KERNEL)
+	../maketools/copyobjects "$(DESTDIR)$(libdir)/$(program_name)/obj/k" $(subst ../config/Config.o,../config/ConfigInstall.o,$(OBJ_KERNEL))
 endif
 	cp $(OBJ_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/PlumedStatic.o"
 	cp $(OBJ_DYNAMIC_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/Plumed.o"
