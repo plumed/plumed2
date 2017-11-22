@@ -56,7 +56,7 @@ class SwitchingFunction {
   int mm=0;
 /// Parameters for smap function
   int a=0;
-  int b=b;
+  int b=0;
   double c=0.0;
   double d=0.0;
 // nativeq
