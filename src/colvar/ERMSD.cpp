@@ -176,7 +176,7 @@ ERMSD::ERMSD(const ActionOptions&ao):
 // shift to count from zero
   for(unsigned i=0; i<pairs_.size(); ++i) pairs_[i]--;
 
-  ermsd.setReference(reference_positions,pairs_,cutoff);
+  ermsd.setReference(reference_positions,pairs_,cutoff/atoms.getUnits().getLength());
 
   requestAtoms(atoms_);
   derivs.resize(natoms);
@@ -204,9 +204,10 @@ void ERMSD::calculate() {
 // Notice that this might have problems when having 2 RNA molecules (hybridization).
 
   ermsdist=ermsd.calculate(getPositions(),fake_pbc,derivs,virial);
-  setValue(ermsdist);
+  const double scale=atoms.getUnits().getLength();
+  setValue(ermsdist*scale);
 
-  for(unsigned i=0; i<derivs.size(); ++i) {setAtomsDerivatives(i,derivs[i]);}
+  for(unsigned i=0; i<derivs.size(); ++i) {setAtomsDerivatives(i,derivs[i]*scale);}
 
   setBoxDerivativesNoPbc();
 
