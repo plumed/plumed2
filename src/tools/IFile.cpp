@@ -48,7 +48,7 @@ size_t IFile::llread(char*ptr,size_t s) {
     if(rr<0)    err=true;
     r=rr;
 #else
-    plumed_merror("trying to use a gz file without zlib being linked");
+    plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
   } else {
     r=fread(ptr,1,s,fp);
@@ -94,7 +94,7 @@ IFile& IFile::advanceField() {
         }
         done=true;
       } else if( !words.empty() ) {
-        plumed_merror(getPath() + " mismatch between number of fields in file and expected number");
+        plumed_merror("file " + getPath() + ": mismatch between number of fields in file and expected number");
       }
     }
   }
@@ -115,7 +115,7 @@ IFile& IFile::open(const std::string&path) {
 #ifdef __PLUMED_HAS_ZLIB
     gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"r");
 #else
-    plumed_merror("trying to use a gz file without zlib being linked");
+    plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
   }
   if(plumed) plumed->insertFile(*this);
@@ -230,7 +230,9 @@ IFile& IFile::getline(std::string &str) {
 unsigned IFile::findField(const std::string&name)const {
   unsigned i;
   for(i=0; i<fields.size(); i++) if(fields[i].name==name) break;
-  if(i>=fields.size()) plumed_merror(name);
+  if(i>=fields.size()) {
+    plumed_merror("file " + getPath() + ": field " + name + " cannot be found");
+  }
   return i;
 }
 

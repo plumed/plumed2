@@ -52,7 +52,7 @@ size_t OFile::llwrite(const char*ptr,size_t s) {
 #ifdef __PLUMED_HAS_ZLIB
       r=gzwrite(gzFile(gzfp),ptr,s);
 #else
-      plumed_merror("trying to use a gz file without zlib being linked");
+      plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
     } else {
       r=fwrite(ptr,1,s,fp);
@@ -298,7 +298,7 @@ OFile& OFile::open(const std::string&path) {
 #ifdef __PLUMED_HAS_ZLIB
       gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"a9");
 #else
-      plumed_merror("trying to use a gz file without zlib being linked");
+      plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
     }
   } else {
@@ -310,7 +310,7 @@ OFile& OFile::open(const std::string&path) {
 #ifdef __PLUMED_HAS_ZLIB
       gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"w9");
 #else
-      plumed_merror("trying to use a gz file without zlib being linked");
+      plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
     }
   }
