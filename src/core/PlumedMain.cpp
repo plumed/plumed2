@@ -102,6 +102,8 @@ PlumedMain::~PlumedMain() {
 
 void PlumedMain::cmd(const std::string & word,void*val) {
 
+  try {
+
   stopwatch.start();
 
   std::vector<std::string> words=Tools::getWords(word);
@@ -463,6 +465,16 @@ void PlumedMain::cmd(const std::string & word,void*val) {
     }
   }
   stopwatch.pause();
+
+  } catch (Exception &e) {
+    if(log.isOpen()) {
+      log<<"\n\n################################################################################\n\n";
+      log<<e.what();
+      log<<"\n\n################################################################################\n\n";
+      log.flush();
+    }
+    throw;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
