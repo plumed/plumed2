@@ -1,0 +1,13 @@
+# this is optional and tell to VIM that this is a PLUMED file
+# vim: ft=plumed
+# see comments just below this input file
+MOLINFO MOLTYPE=protein STRUCTURE=egaawaass.pdb
+WHOLEMOLECULES ENTITY0=1-111
+
+# EEF1SB Implicit solvation
+protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
+solv: EEFSOLV ATOMS=protein-h NOPBC NL_STRIDE=10 NL_BUFFER=0.1
+bias: BIASVALUE ARG=solv
+
+PRINT FILE=ENERGY ARG=bias.bias STRIDE=200
+ENDPLUMED

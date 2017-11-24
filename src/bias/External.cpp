@@ -24,6 +24,7 @@
 #include "tools/Grid.h"
 #include "tools/Exception.h"
 #include "tools/File.h"
+#include <memory>
 
 
 using namespace std;
@@ -96,11 +97,10 @@ the order of arguments in the header of the grid file.
 class External : public Bias {
 
 private:
-  Grid* BiasGrid_;
+  std::unique_ptr<Grid> BiasGrid_;
 
 public:
   explicit External(const ActionOptions&);
-  ~External();
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -115,13 +115,8 @@ void External::registerKeywords(Keywords& keys) {
   keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
 }
 
-External::~External() {
-  delete BiasGrid_;
-}
-
 External::External(const ActionOptions& ao):
-  PLUMED_BIAS_INIT(ao),
-  BiasGrid_(NULL)
+  PLUMED_BIAS_INIT(ao)
 {
   string filename;
   parse("FILE",filename);

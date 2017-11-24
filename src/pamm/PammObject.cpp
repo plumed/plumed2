@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2015 The plumed team
+   Copyright (c) 2015-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PammObject.h"
 #include "tools/IFile.h"
+#include <memory>
 
 namespace PLMD {
 namespace pamm {
@@ -65,10 +66,11 @@ void PammObject::setup( const std::string& filename, const double& reg, const st
 
   ifile.open(filename); ifile.allowIgnoredFields(); kernels.resize(0);
   for(unsigned k=0;; ++k) {
-    KernelFunctions* kk = KernelFunctions::read( &ifile, false, valnames );
+    std::unique_ptr<KernelFunctions> kk = KernelFunctions::read( &ifile, false, valnames );
     if( !kk ) break ;
     kk->normalize( pos );
-    kernels.push_back( kk );
+    kernels.push_back( kk.release() ); // kernels should be changed into a vector<unique_ptr>.
+    // meanwhile, I just release the unique_ptr herelease the unique_ptr here. GB
     ifile.scanField();
   }
   ifile.close();

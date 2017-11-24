@@ -133,7 +133,10 @@ void ReferenceConfiguration::setReferenceConfig( const std::vector<Vector>& pos,
 void ReferenceConfiguration::checkRead() {
   if(!line.empty()) {
     std::string msg="cannot understand the following words from the input line : ";
-    for(unsigned i=0; i<line.size(); i++) msg = msg + line[i] + ", ";
+    for(unsigned i=0; i<line.size(); i++) {
+      if(i>0) msg = msg + ", ";
+      msg = msg + line[i];
+    }
     error(msg);
   }
 }

@@ -36,7 +36,7 @@ using namespace bias;
 namespace PLMD {
 namespace eds {
 
-//+PLUMEDOC BIAS EDS
+//+PLUMEDOC EDSMOD_BIAS EDS
 /*
 Add a linear bias on a set of observables.
 
@@ -64,6 +64,8 @@ It is not possible to set the target value of the observable
 to zero with the default value of \f$s_i\f$ as this will cause a
 divide-by-zero error. Instead, set \f$s_i=1\f$ or modify the CV so the
 desired target value is no longer zero.
+
+Notice that a similar method is available as \ref MAXENT, although with different features and using a different optimization algorithm.
 
 \par Examples
 
@@ -508,6 +510,7 @@ void EDS::readInRestart(const bool b_mean) {
       in_restart_.scanField(cv_name + "_coupling",current_coupling_[i]);
       in_restart_.scanField(cv_name + "_maxrange",max_coupling_range_[i]);
       in_restart_.scanField(cv_name + "_maxgrad",max_coupling_grad_[i]);
+      in_restart_.scanField(cv_name + "_accum",coupling_accum_[i]);
       in_restart_.scanField(cv_name + "_mean",means_[i]);
       //unused due to difference between covar/nocovar
       in_restart_.scanField(cv_name + "_std",tmp);
@@ -582,6 +585,7 @@ void EDS::writeOutRestart() {
     out_restart_.printField(cv_name + "_coupling",current_coupling_[i]);
     out_restart_.printField(cv_name + "_maxrange",max_coupling_range_[i]);
     out_restart_.printField(cv_name + "_maxgrad",max_coupling_grad_[i]);
+    out_restart_.printField(cv_name + "_accum",coupling_accum_[i]);
     out_restart_.printField(cv_name + "_mean",means_[i]);
     if(!b_covar_)
       out_restart_.printField(cv_name + "_std",ssds_[i] / (fmax(1, update_calls_ - 1)));

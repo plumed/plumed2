@@ -25,6 +25,7 @@
 #include "FileBase.h"
 #include <vector>
 #include <sstream>
+#include <memory>
 
 namespace PLMD {
 
@@ -150,9 +151,9 @@ class OFile:
 /// see link(OFile&)
   OFile* linked;
 /// Internal buffer for printf
-  char* buffer_string;
+  std::unique_ptr<char[]> buffer_string;
 /// Internal buffer (generic use)
-  char* buffer;
+  std::unique_ptr<char[]> buffer;
 /// Internal buffer length
   int buflen;
 /// This variables stores the actual buffer length
@@ -192,8 +193,6 @@ class OFile:
 public:
 /// Constructor
   OFile();
-/// Destructor
-  ~OFile();
 /// Allows overloading of link
   using FileBase::link;
 /// Allows overloading of open

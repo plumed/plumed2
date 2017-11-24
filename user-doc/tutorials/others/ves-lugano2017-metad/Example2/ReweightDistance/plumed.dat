@@ -1,0 +1,31 @@
+# vim:ft=plumed
+
+distance:       READ FILE=COLVAR  IGNORE_TIME VALUES=d1
+metad:       READ FILE=COLVAR IGNORE_TIME VALUES=metad.rbias
+uwall:       READ FILE=COLVAR IGNORE_TIME VALUES=uwall.bias
+
+weights1: REWEIGHT_METAD TEMP=300
+weights2: REWEIGHT_BIAS TEMP=300 ARG=metad.rbias,uwall.bias
+
+HISTOGRAM ...
+  ARG=distance
+  GRID_MIN=0.2
+  GRID_MAX=0.8
+  GRID_BIN=100
+  BANDWIDTH=0.002
+  LOGWEIGHTS=weights1
+  LABEL=hh1
+... HISTOGRAM
+
+HISTOGRAM ...
+  ARG=distance
+  GRID_MIN=0.2
+  GRID_MAX=0.8
+  GRID_BIN=100
+  BANDWIDTH=0.002
+  LOGWEIGHTS=weights2
+  LABEL=hh2
+... HISTOGRAM
+
+DUMPGRID GRID=hh1 FILE=histo FMT=%24.16e
+DUMPGRID GRID=hh2 FILE=histo_wall FMT=%24.16e

@@ -79,12 +79,12 @@ double LandmarkSelectionBase::getWeightOfFrame( const unsigned& iframe ) {
   return action->getWeight(iframe);
 }
 double LandmarkSelectionBase::getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe  ) {
-  return distance( action->getPbc(), action->getArguments(), action->data[iframe], action->data[jframe], false );
+  return distance( action->getPbc(), action->getArguments(), action->data[iframe].get(), action->data[jframe].get(), false );
 }
 
 void LandmarkSelectionBase::selectFrame( const unsigned& iframe, MultiReferenceBase* myframes) {
   plumed_assert( myframes->getNumberOfReferenceFrames()<nlandmarks );
-  myframes->copyFrame( action->data[iframe] );
+  myframes->copyFrame( action->data[iframe].get() );
 }
 
 void LandmarkSelectionBase::selectLandmarks( MultiReferenceBase* myframes ) {
@@ -99,9 +99,9 @@ void LandmarkSelectionBase::selectLandmarks( MultiReferenceBase* myframes ) {
     std::vector<double> weights( nlandmarks, 0.0 );
     for(unsigned i=rank; i<action->data.size(); i+=size) {
       unsigned closest=0;
-      double mindist=distance( action->getPbc(), action->getArguments(), action->data[i], myframes->getFrame(0), false );
+      double mindist=distance( action->getPbc(), action->getArguments(), action->data[i].get(), myframes->getFrame(0), false );
       for(unsigned j=1; j<nlandmarks; ++j) {
-        double dist=distance( action->getPbc(), action->getArguments(), action->data[i], myframes->getFrame(j), false );
+        double dist=distance( action->getPbc(), action->getArguments(), action->data[i].get(), myframes->getFrame(j), false );
         if( dist<mindist ) { mindist=dist; closest=j; }
       }
       weights[closest] += getWeightOfFrame(i);

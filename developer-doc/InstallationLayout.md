@@ -101,19 +101,23 @@ with the exception of those called from MD engines.
 Notice that `/usr/local/lib/libplumed.so` described above is equal to the combination of
 `/usr/local/lib/libplumedKernel.so` with a single object file compiled from `buildroot/src/wrapper/PlumedStatic.cpp`
 
+`/usr/local/lib/libplumedWrapper.a`: this is a static library containing exclusively the
+object file compiled from `buildroot/src/wrapper/Plumed.cpp`
+
 To summarize:
 - `bin/plumed` = `buildroot/src/main/main.cpp` + `lib/libplumed.so`
 - `lib/libplumed.so` = `buildroot/src/wrapper/PlumedStatic.cpp` + `lib/libplumedKernel.so`
+- `lib/libplumedWrapper.so` = `buildroot/src/wrapper/Plumed.cpp`
 
 The logic of this subdivision is that it is possible to either link the MD code to `/usr/local/lib/libplumed.so`
-or to link it to a single object file (the one compiled from `buildroot/src/wrapper/Plumed.c`)
+or to link it to a single object file (the one compiled from `buildroot/src/wrapper/Plumed.c` or the installed `libplumedWrapper.a`)
 so as to allow linking at run time an a posteriori chosen plumed library. This is the trick behind the `--runtime` patching procedure.
 
 Notice that the only differences between `buildroot/src/wrapper/PlumedStatic.cpp` and `buildroot/src/wrapper/Plumed.c` are that
 runtime binding is disabled for the first one and that the second one is compiled as plain C.
 This makes it less likely to do mistakes when linking lib/libplumed.so (by unintentionally using a different version
 of plumed), and makes C++ library unnecessary if an external code is only interesting in linking the PLUMED
-wrappers in `buildroot/src/wrapper/Plumed.c`.
+wrappers in `buildroot/src/wrapper/Plumed.c` or in `libplumedWrapper.a`.
 
 We can then dissect more the content of `/usr/local/lib/libplumedKernel.so`.
 This library puts together a large list of object files. The same object files will be located after install

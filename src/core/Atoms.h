@@ -27,10 +27,12 @@
 #include "tools/Units.h"
 #include "tools/Exception.h"
 #include "tools/AtomNumber.h"
+#include "tools/ForwardDecl.h"
 #include <vector>
 #include <set>
 #include <map>
 #include <string>
+#include <memory>
 
 namespace PLMD {
 
@@ -55,7 +57,8 @@ class Atoms
   std::vector<double> charges;
   std::vector<ActionWithVirtualAtom*> virtualAtomsActions;
   Tensor box;
-  Pbc&   pbc;
+  ForwardDecl<Pbc> pbc_fwd;
+  Pbc&   pbc=*pbc_fwd;
   Tensor virial;
 // this is the energy set by each processor:
   double md_energy;
@@ -80,7 +83,7 @@ class Atoms
 
   std::vector<int> fullList;
 
-  MDAtomsBase* mdatoms;
+  std::unique_ptr<MDAtomsBase> mdatoms;
 
   PlumedMain & plumed;
 

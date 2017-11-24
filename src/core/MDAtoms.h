@@ -27,6 +27,7 @@
 #include "tools/AtomNumber.h"
 #include <vector>
 #include <set>
+#include <memory>
 #include "tools/Units.h"
 
 namespace PLMD {
@@ -42,16 +43,14 @@ ordering indexes (to deal with domain decomposition codes) and layout
 The class is abstract, but it is possible to allocate a new pointer with
 create(n), where n is the actual size of MD-reals e.g.
 \verbatim
-  MDAtomsBase mdatoms=MDAtomsBase::create(sizeof(float));
-// ...
-  delete mdatoms;
+  std::unique_ptr<MDAtomsBase> mdatoms=MDAtomsBase::create(sizeof(float));
 \endverbatim
 */
 class MDAtomsBase
 {
 public:
 /// Creates an MDAtomsTyped<T> object such that sizeof(T)==n
-  static MDAtomsBase* create(unsigned n);
+  static std::unique_ptr<MDAtomsBase> create(unsigned n);
 /// Virtual destructor, just to allow inheritance.
   virtual ~MDAtomsBase() {}
 /// Get the size of MD-real

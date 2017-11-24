@@ -4,6 +4,8 @@
 [![Github Releases](https://img.shields.io/github/release/plumed/plumed2.svg)](https://github.com/plumed/plumed2/releases)
 [![Twitter Follow](https://img.shields.io/twitter/follow/plumed_org.svg?style=social&label=Follow)](https://twitter.com/plumed_org)
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/plumed.svg)](https://repology.org/metapackage/plumed)
+
 Branches and releases
 ---------------------
 
@@ -90,7 +92,6 @@ Suggested software (libraries are checked by `./configure` and enabled if availa
 * MPI library to run parallel simulations. It should be the same library used by your MD code.
 * Optimized blas and lapack libraries. They are automatically replaced by an internal version if not available.
 * [VMD molfile plugins](http://www.ks.uiuc.edu/Research/vmd/plugins) to read arbitrary file formats. They are automatically replaced by an internal version supporting a few formats if not available.
-* [Matheval library](http://www.gnu.org/software/libmatheval) to use algebraic collective variables.
 * [Zlib library](http://zlib.net/) to use compressed data files.
 * [Xdrfile library](http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library) to have read/write access to gromacs
   trajectory files.
@@ -103,37 +104,30 @@ Quick compilation instructions
 ------------------------------
 
 Extensive installation instructions are in the [user documentation](http://www.plumed.org/documentation).
-Configure for your system
+Quick instructions:
 
     ./configure --prefix=$HOME/opt
-    
-    
-If necessary, edit `Makefile.conf`. 
-Configure your environment
-
-    source ./sourceme.sh
-    
-Compile plumed
-
     make
-    
-The `plumed` executable should be now in your execution path
-
-    plumed help
-    
-Compile the manuals.
-
-    make doc
+    make doc # optional
 
 User documentation can be found at `user-doc/html/index.html`.
 Developer documentation can be found at `developer-doc/html/index.html`.
 [Pre-compiled documentation](http://www.plumed.org/documentation) is available online, so this is only required
 if you are working with a modified version of the code!
 
-Install PLUMED in `$HOME/opt` (directory should be set during `./configure`):
+In order to run PLUMED without installing it you should type `source sourceme.sh`. However,
+we recomment installing PLUMED. 
+To install it in `$HOME/opt` (directory should be set during `./configure`):
 
     umask 022
     make install
     
+Now you will be able to run plumed using e.g.
+
+    plumed help
+
+If you compiled your own documentation, paths to the installed documentation can be found with command `plumed info --user-doc`.
+
 A sample modulefile with environment variable will be placed in
-`$HOME/opt/lib/plumed/src/lib/modulefile`. If you compiled your own documentation, paths to the installed documentation can be found with command `plumed info --user-doc`.
+`$HOME/opt/lib/plumed/src/lib/modulefile`. This can be useful if you want to
+install multiple PLUMED versions side by side and select them with env modules.

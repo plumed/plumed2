@@ -40,6 +40,7 @@
 #include "tools/OpenMP.h"
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
+#include "DataFetchingObject.h"
 #include <cstdlib>
 #include <cstring>
 #include <set>
@@ -62,23 +63,15 @@ const std::unordered_map<std::string, int> & plumedMainWordMap() {
 }
 
 PlumedMain::PlumedMain():
-  comm(*new Communicator),
-  multi_sim_comm(*new Communicator),
-  dlloader(*new DLLoader),
-  cltool(NULL),
-  stopwatch(*new Stopwatch),
-  grex(NULL),
   initialized(false),
-  log(*new Log),
-  citations(*new Citations),
   step(0),
   active(false),
+  mydatafetcher(DataFetchingObject::create(sizeof(double),*this)),
   endPlumed(false),
-  atoms(*new Atoms(*this)),
-  actionSet(*new ActionSet(*this)),
+  atoms_fwd(*this),
+  actionSet_fwd(*this),
   bias(0.0),
   work(0.0),
-  exchangePatterns(*new(ExchangePatterns)),
   exchangeStep(false),
   restart(false),
   doCheckPoint(false),
@@ -97,17 +90,6 @@ PlumedMain::~PlumedMain() {
   stopwatch.start();
   stopwatch.stop();
   if(initialized) log<<stopwatch;
-  delete &exchangePatterns;
-  delete &actionSet;
-  delete &citations;
-  delete &atoms;
-  delete &log;
-  if(grex)  delete grex;
-  delete &stopwatch;
-  if(cltool) delete cltool;
-  delete &dlloader;
-  delete &comm;
-  delete &multi_sim_comm;
 }
 
 /////////////////////////////////////////////////////////////
@@ -260,6 +242,24 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       CHECK_INIT(initialized,word);
       atoms.clearFullList();
       break;
+    /* ADDED WITH API==6 */
+    case cmd_getDataRank:
+      CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
+      if( nw==2 ) DataFetchingObject::get_rank( actionSet, words[1], "", static_cast<long*>(val) );
+      else DataFetchingObject::get_rank( actionSet, words[1], words[2], static_cast<long*>(val) );
+      break;
+    /* ADDED WITH API==6 */
+    case cmd_getDataShape:
+      CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
+      if( nw==2 ) DataFetchingObject::get_shape( actionSet, words[1], "", static_cast<long*>(val) );
+      else DataFetchingObject::get_shape( actionSet, words[1], words[2], static_cast<long*>(val) );
+      break;
+    /* ADDED WITH API==6 */
+    case cmd_setMemoryForData:
+      CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
+      if( nw==2 ) mydatafetcher->setData( words[1], "", val );
+      else mydatafetcher->setData( words[1], words[2], val );
+      break;
     case cmd_read:
       CHECK_INIT(initialized,word);
       if(val)readInputFile(static_cast<char*>(val));
@@ -276,7 +276,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       break;
     case cmd_getApiVersion:
       CHECK_NOTNULL(val,word);
-      *(static_cast<int*>(val))=4;
+      *(static_cast<int*>(val))=6;
       break;
     // commands which can be used only before initialization:
     case cmd_init:
@@ -287,6 +287,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       CHECK_NOTINIT(initialized,word);
       CHECK_NOTNULL(val,word);
       atoms.setRealPrecision(*static_cast<int*>(val));
+      mydatafetcher=DataFetchingObject::create(*static_cast<int*>(val),*this);
       break;
     case cmd_setMDLengthUnits:
       CHECK_NOTINIT(initialized,word);
@@ -439,7 +440,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       *(static_cast<int*>(val))=(actionRegister().check(words[1]) ? 1:0);
       break;
     case cmd_GREX:
-      if(!grex) grex=new GREX(*this);
+      if(!grex) grex.reset(new GREX(*this));
       plumed_massert(grex,"error allocating grex");
       {
         std::string kk=words[1];
@@ -449,7 +450,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       break;
     case cmd_CLTool:
       CHECK_NOTINIT(initialized,word);
-      if(!cltool) cltool=new CLToolMain;
+      if(!cltool) cltool.reset(new CLToolMain);
       {
         std::string kk=words[1];
         for(unsigned i=2; i<words.size(); i++) kk+=" "+words[i];
@@ -543,17 +544,18 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
   } else {
     std::vector<std::string> interpreted(words);
     Tools::interpretLabel(interpreted);
-    Action* action=actionRegister().create(ActionOptions(*this,interpreted));
+    std::unique_ptr<Action> action(actionRegister().create(ActionOptions(*this,interpreted)));
     if(!action) {
-      log<<"ERROR\n";
-      log<<"I cannot understand line:";
-      for(unsigned i=0; i<interpreted.size(); ++i) log<<" "<<interpreted[i];
-      log<<"\n";
+      std::string msg;
+      msg ="ERROR\nI cannot understand line:";
+      for(unsigned i=0; i<interpreted.size(); ++i) msg+=" "+interpreted[i];
+      msg+="\nMaybe a missing space or a typo?";
+      log << msg;
       log.flush();
-      plumed_merror("I cannot understand line " + interpreted[0] + " " + interpreted[1]);
+      plumed_merror(msg);
     };
     action->checkRead();
-    actionSet.push_back(action);
+    actionSet.emplace_back(std::move(action));
   };
 
   pilots=actionSet.select<ActionPilot*>();
@@ -599,7 +601,7 @@ void PlumedMain::prepareDependencies() {
   }
 
 // for optimization, an "active" flag remains false if no action at all is active
-  active=false;
+  active=mydatafetcher->activate();
   for(unsigned i=0; i<pilots.size(); ++i) {
     if(pilots[i]->onStep()) {
       pilots[i]->activate();
@@ -636,6 +638,7 @@ void PlumedMain::performCalc() {
   justCalculate();
   backwardPropagate();
   update();
+  mydatafetcher->finishDataGrab();
 }
 
 void PlumedMain::waitData() {
@@ -653,7 +656,8 @@ void PlumedMain::justCalculate() {
 
   int iaction=0;
 // calculate the active actions in order (assuming *backward* dependence)
-  for(const auto & p : actionSet) {
+  for(const auto & pp : actionSet) {
+    Action* p(pp.get());
     if(p->isActive()) {
       std::string actionNumberLabel;
       if(detailedTimers) {
@@ -697,7 +701,7 @@ void PlumedMain::backwardPropagate() {
   stopwatch.start("5 Applying (backward loop)");
 // apply them in reverse order
   for(auto pp=actionSet.rbegin(); pp!=actionSet.rend(); ++pp) {
-    const auto & p(*pp);
+    const auto & p(pp->get());
     if(p->isActive()) {
 
       std::string actionNumberLabel;
@@ -755,17 +759,17 @@ void PlumedMain::update() {
 
 void PlumedMain::load(const std::string& ss) {
   if(DLLoader::installed()) {
-    string s=ss;
+    std::string s=ss;
     size_t n=s.find_last_of(".");
-    string extension="";
-    string base=s;
+    std::string extension="";
+    std::string base=s;
     if(n!=std::string::npos && n<s.length()-1) extension=s.substr(n+1);
     if(n!=std::string::npos && n<s.length())   base=s.substr(0,n);
     if(extension=="cpp") {
 // full path command, including environment setup
 // this will work even if plumed is not in the execution path or if it has been
 // installed with a name different from "plumed"
-      string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+s;
+      std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh "+s;
       log<<"Executing: "<<cmd;
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
@@ -837,6 +841,10 @@ void PlumedMain::runJobsAtEndOfCalculation() {
     p->runFinalJobs();
   }
 }
+
+#ifdef __PLUMED_HAS_PYTHON
+// This is here to stop cppcheck throwing an error
+#endif
 
 }
 

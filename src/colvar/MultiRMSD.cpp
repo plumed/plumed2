@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,6 +26,7 @@
 #include "reference/MultiDomainRMSD.h"
 #include "reference/MetricRegister.h"
 #include "core/Atoms.h"
+#include <memory>
 
 
 using namespace std;
@@ -35,14 +36,13 @@ namespace colvar {
 
 class MultiRMSD : public Colvar {
 
-  PLMD::MultiDomainRMSD* rmsd;
+  std::unique_ptr<PLMD::MultiDomainRMSD> rmsd;
   bool squared;
   MultiValue myvals;
   ReferenceValuePack mypack;
 
 public:
   explicit MultiRMSD(const ActionOptions&);
-  ~MultiRMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -176,7 +176,7 @@ MultiRMSD::MultiRMSD(const ActionOptions&ao):
   if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
     error("missing input file " + reference );
 
-  rmsd = metricRegister().create<MultiDomainRMSD>(type,pdb);
+  rmsd.reset( metricRegister().create<MultiDomainRMSD>(type,pdb) );
 
   std::vector<AtomNumber> atoms;
   rmsd->getAtomRequests( atoms );
@@ -190,11 +190,6 @@ MultiRMSD::MultiRMSD(const ActionOptions&ao):
   log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
 }
-
-MultiRMSD::~MultiRMSD() {
-  delete rmsd;
-}
-
 
 // calculator
 void MultiRMSD::calculate() {

@@ -1,4 +1,0 @@
-type=driver
-# this is to test a different name
-arg="--plumed plumed.dat --ixyz trajectory.xyz"
-export PLUMED_USE_LEPTON=yes

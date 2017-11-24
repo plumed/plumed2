@@ -38,10 +38,6 @@ in their official distribution. If your favorite MD code is available "PLUMED re
 you will have to compile PLUMED first, then (optionally) install it, then check the MD codes' manual to
 discover how to link it.
 
-If you are using a Mac, notice that we are providing tentative port files to install
-PLUMED with MacPorts. Follow the instructions at [this link](http://github.com/plumed/ports)
-and report feedbacks on the mailing list.
-
 \section SupportedCompilers Supported compilers
 
 As of PLUMED 2.4, we require a compiler that supports C++11. The following compilers
@@ -86,7 +82,7 @@ Notice that some functionalities of PLUMED depend on external
 libraries which are looked for by configure. You can typically
 avoid looking for a library using the "disable" syntax, e.g.
 \verbatim
-> ./configure --disable-mpi --disable-matheval
+> ./configure --disable-mpi --disable-xdrfile
 \endverbatim
 
 Notice that when mpi search is enabled (by default) compilers
@@ -146,49 +142,64 @@ or not the libraries were properly detected.
 
 If a library is not found during configuration, you can try to use options to modify the
 search path.
-For example if your matheval libraries is in /opt/local (this is where MacPorts put it)
+For example if your xdrfile libraries is in /opt/local (this is where MacPorts put it)
 and configure is not able to find it you can try
 \verbatim
 > ./configure LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include
 \endverbatim
-Notice that PLUMED will first try to link a routine from say matheval
+Notice that PLUMED will first try to link a routine from say xdrfile
 without any additional flag, and then in case of failure will retry adding
-"-lmatheval" to the LIBS options.
-If also this does not work, the matheval library will be
+"-lxdrfile" to the LIBS options.
+If also this does not work, the xdrfile library will be
 disabled and some features will not be available.
 This procedure allows you to use libraries
 with custom names. So, if
-your matheval library is called /opt/local/lib/libmymatheval.so you can 
+your xdrfile library is called /opt/local/lib/libmyxdrfile.so you can 
 link it with
 \verbatim
-> ./configure LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include LIBS=-lmymatheval
+> ./configure LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include LIBS=-lmyxdrfile
 \endverbatim
-In this example, the linker will directly try to link `/opt/local/lib/libmymatheval.so`.
+In this example, the linker will directly try to link `/opt/local/lib/libmyxdrfile.so`.
 This rule is true for all the libraries, so that you will always be able to link
 a specific version of a library by specifying it using the LIBS variable.
 
-Since version 2.3.2, the search for the library functions passing to the linker a flag with the standard library name (in the matheval example,
-it would be `-lmatheval`) can be skipped by using the option `--disable-libsearch`.
+Since version 2.3.2, the search for the library functions passing to the linker a flag with the standard library name (in the xdrfile example,
+it would be `-lxdrfile`) can be skipped by using the option `--disable-libsearch`.
 Notice that in this manner only libraries that are explicitly passed using the `LIBS` option will be linked. For instance
 \verbatim
-> ./configure --disable-libsearch LIBS=-lmatheval
+> ./configure --disable-libsearch LIBS=-lxdrfile
 \endverbatim
-will make sure that only matheval is linked and, for instance, blas and lapack libraries are not.
+will make sure that only xdrfile is linked and, for instance, blas and lapack libraries are not.
 This might be useful when installing PLUMED within package managers such as MacPorts to
 make sure that only desired libraries are linked and thus to avoid to introduce spurious
 dependencies. The only exception to this rule is `-ldl`, which is anyway a system library on Linux.
 
-\warning On Linux you might have problems using the LDFLAGS option. In particular,
-if makefile complaints that it cannot link the file 'src/lib/plumed-shared',
-try to set correctly
-the runtime path by using
-\verbatim
-> ./configure LDFLAGS="-L/opt/local/lib -Wl,-rpath,/opt/local/lib" \
-  CPPFLAGS=-I/opt/local/include LIBS=-lmymatheval
-\endverbatim
-Notice that although the file 'src/lib/plumed-shared' is not necessary, being
+\warning On OSX it is common practice to hardcode the full path
+to libraries in the libraries themselves. This means that, after having linked
+a shared library, that specific shared library will be searched in the same
+place (we do the same for the `libplumed.dylib` library, which has an install name hardcoded).
+On the other hand, on Linux it is common pratice not to hardcode the full path.
+This means that if you use the `LDFLAGS` option to specify the path
+to the libraries you want to link to PLUMED (e.g. `./configure LDFLAGS="-L/path"`)
+these libraries might not be found later.
+The visible symptom is that `src/lib/plumed-shared` will not be linked correctly.
+Although the file 'src/lib/plumed-shared' is not necessary, being
 able to produce it means that it will be possible to link PLUMED dynamically
 with MD codes later.
+The easiest solution is to hardcode the library search path in this way:
+\verbatim
+> ./configure LDFLAGS="-L/path -Wl,-rpath,/path"
+\endverbatim
+Notice that as of PLUMED v2.4 it is possible to use the configure option `--enable-rpath`
+to automatically hardcode the path defined in `LIBRARY_PATH`:
+\verbatim
+> ./configure LIBRARY_PATH=/path --enable-rpath
+\endverbatim
+In this way, the search path used at link time (`LIBRARY_PATH`) and the one saved in the `libplumed.so`
+library will be consistent by construction.
+In a typical environment configured using module framework (http://modules.sourceforge.net),
+`LIBRARY_PATH` will be a variable containing the path to all the modules loaded at compilation
+time.
 
 PLUMED needs blas and lapack. These are treated slighty different from
 other libraries. The search is done in the usual way (i.e., first
@@ -222,7 +233,7 @@ native lapack libraries have problems.
 As a final resort, you can also edit the resulting Makefile.conf file.
 Notable variables in this file include:
 - DYNAMIC_LIB : these are the libraries needed to compile the PLUMED
-library (e.g. -L/path/to/matheval -lmatheval etc). Notice that for the
+library (e.g. -L/path/to/xdrfile -lxdrfile etc). Notice that for the
 PLUMED shared library to be compiled properly these should be dynamic
 libraries. Also notice that PLUMED preferentially requires BLAS and LAPACK library;
 see \ref BlasAndLapack for further info. Notice that the variables 
@@ -231,7 +242,7 @@ variable. This is a bit misleading but is required to keep the configuration
 files compatible with PLUMED 2.0.
 - LIBS : these are the libraries needed when patching an MD code; typically only "-ldl" (needed to have functions for dynamic loading).
 - CPPFLAGS : add here definition needed to enable specific optional functions;
-e.g. use -D__PLUMED_HAS_MATHEVAL to enable the matheval library
+e.g. use -D__PLUMED_HAS_XDRFILE to enable the xdrfile library
 - SOEXT : this gives the extension for shared libraries in your system, typically
 "so" on unix, "dylib" on mac; If your system does not support dynamic libraries or, for some other reason, you would like only static executables you can
 just set this variable to a blank ("SOEXT=").
@@ -277,14 +288,23 @@ you need to download the SOURCE of VMD, which contains
 a plugins directory. Adapt build.sh and compile it. At
 the end, you should get the molfile plugins compiled as a static
 library `libmolfile_plugin.a`. Locate said file and `libmolfile_plugin.h`,
-and customize the configure command with something along
-the lines of:
+they should be in a directory called `/pathtovmdplugins/ARCH/molfile`
+(e.g. `/pathtovmdplugins/MACOSXX86_64/molfile`). Also locate file `molfile_plugin.h`,
+which should be in `/pathtovmdplugins/include`.
+Then customize the configure command with something along the lines of:
 
 \verbatim
-./configure LDFLAGS="-ltcl8.5 -L/mypathtomolfilelibrary/ -L/mypathtotcl" CPPFLAGS="-I/mypathtolibmolfile_plugin.h/"
+./configure LDFLAGS="-L/pathtovmdplugins/ARCH/molfile" CPPFLAGS="-I/pathtovmdplugins/include -I/pathtovmdplugins/ARCH/molfile"
 \endverbatim
 
-and rebuild.
+Notice that it might be necessary to add to `LDFLAGS` the path to your TCL interpreter, e.g.
+
+\verbatim
+./configure LDFLAGS="-ltcl8.5 -L/mypathtotcl -L/pathtovmdplugins/ARCH/molfile" \
+            CPPFLAGS="-I/pathtovmdplugins/include -I/pathtovmdplugins/ARCH/molfile"
+\endverbatim
+
+Then, rebuild plumed.
 
 \section CompilingPlumed Compiling PLUMED
 
@@ -520,6 +540,69 @@ default values this would be `/usr/local/lib/plumed/plumed-*`. These files are n
 to avoid clashes, but can be executed also when plumed is cross compiled and the main plumed executable cannot be
 launched.
 
+\section Installation-macports Installing PLUMED with MacPorts
+
+If you are using a Mac, notice that you can take advantage of a MacPorts package.
+Installing a working plumed should be as easy as:
+- Install [MacPorts](https://www.macports.org/)
+- Type `sudo port install plumed`
+
+Notice that plumed comes with many variants that can be inspected with the command
+
+    > sudo port info plumed
+
+Plumed uses variants to support different compilers.
+For instance, you can install plumed with openmpi using
+
+    > sudo port install plumed +openmpi
+
+Using gcc instead of native compilers is recommended so as to
+take advantage of openMP
+
+    > sudo port install plumed +openmpi +gcc7
+
+Variants can be also used to compile with debug flags (`+debug`), to pick a linear algebra library
+(e.g. `+openblas`) and to enable all optional modules (`+allmodules`).
+Notice that the default variant installed with `sudo port install plumed` is shipped as a precompiled
+binary, which is significantly faster to install.
+
+In addition, we provide a developer version (typically: a later version not yet considered as stable)
+under the subport `plumed-devel` that can be installed with
+
+    > sudo port install plumed-devel
+
+`plumed-devel` also supports the same variants as `plumed` in order to customize the compilation.
+`plumed-devel` and `plumed` cannot be installed at the same time.
+
+It is also possible to install a plumed-patched version of gromacs.
+For instance, you can use the following command to install
+gromacs patched with plumed with gcc compiler and openmpi:
+
+    > sudo port install plumed +openmpi +gcc7
+    > sudo port install gromacs-plumed +openmpi +gcc7
+
+In case you want to combine gromacs with the unstable version of plumed, use this instead:
+
+    > sudo port install plumed-devel +openmpi +gcc7
+    > sudo port install gromacs-plumed +openmpi +gcc7
+
+Notice that gromacs should be compiled using the same compiler
+variant as plumed (in this example `+openmpi +gcc7`). In case this is not
+true, compilation will fail.
+
+Also notice that gromacs is patched with plumed in runtime mode
+but that the path of libplumedKernel.dylib in the MacPorts tree
+is hardcoded. As a consequence:
+
+- If gromacs is run with `PLUMED_KERNEL` environment variable unset (or set to empty),
+  then the MacPorts plumed is used.
+
+- If gromacs is run with `PLUMED_KERNEL` environment variable pointing to another instance
+  of the plumed library, the other instance is used.
+
+This is especially useful if you are developing PLUMED since you will be able to install
+gromacs once for all and combine it with your working version of PLUMED.
+
 \section installingonacluster Installing PLUMED on a cluster
 
 If you are installing PLUMED on a cluster and you want several users to take advantage of it
@@ -529,7 +612,7 @@ First of all, we highly recommend using the module file that PLUMED provides to 
 Just edit it as necessary to make it suitable for your environment.
 
 Notice that PLUMED can take advantage of many additionaly features if specific libraries are available upon
-compiling it. Install libmatheval first and check if PLUMED `./configure` is detecting it. Libmatheval is a must have with PLUMED.
+compiling it.
 If someone uses gromacs, install libxdrfile first and check if PLUMED `./configure` is detecting it.
 PLUMED will be able to write trr/xtc file, simplifying analysis.
 
@@ -537,7 +620,7 @@ Try to patch all MD codes with the `--runtime` option. This will allow independe
   Users will be able to combine any of the installed gromacs/amber/etc versions with any of the installed PLUMED versions.
 Notice that it is sometime claimed that statically linked codes are faster. In our experience, this is not true.
 In case you absolutely need a static executable, be ready to face non trivial linking issues. PLUMED is written in C++,
-thus required the appropriate C++ library to be linked, and might require additional libraries (e.g. libmatheval).
+thus required the appropriate C++ library to be linked, and might require additional libraries (e.g. libxdrfile).
 
 Sometime we make small fixes on the patches. For this reason, keep track of which version of PLUMED you used
 to patch each of the MD code. Perhaps you can call the MD code modules with names such as `gromacs/4.6.7p1`,
@@ -565,9 +648,9 @@ It will take more time to compile but it will allow you to use a single module. 
 PLUMED version with different optimization levels.
 
 Using modules, it is not necessary to make the PLUMED module explicitly dependent on the used library. Imagine a
-scenario where you first installed a module `libmatheval`, then load it while you compile PLUMED. If you
-provide the following option to configure `LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH"`, the PLUMED executable and
-library will remember where libmatheval is, without the need to load libmatheval module at runtime.
+scenario where you first installed a module `libxdrfile`, then load it while you compile PLUMED. If you
+provide the following option to configure `--enable-rpath`, the PLUMED executable and
+library will remember where libxdrfile is, without the need to load libxdrfile module at runtime.
 Notice that this trick often does not work for fundamental libraries such as C++ and MPI library. As a consequence,
 usually the PLUMED module should load the compiler and MPI modules.
 

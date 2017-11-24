@@ -1,0 +1,36 @@
+### TIP4P/Ew and NaCl Potential Parameters ###
+pair_style 	hybrid lj/cut/coul/long 5.0 buck/coul/long 5.0 # This cutoff is too short for a real calculation
+# Load configuration
+read_data       data.nacl
+
+# create groups ###
+
+group hy type 1
+group ox type 2
+group na type 3
+group cl type 4
+
+## set charges - beside manually ###
+set group ox charge -0.830
+set group hy charge 0.415
+set group na charge 1.0
+set group cl charge -1.0
+
+# Water TIP3P
+pair_coeff      1 1 lj/cut/coul/long 0.0 0.0
+pair_coeff      2 2 lj/cut/coul/long 0.102 3.188
+pair_coeff      1 2 lj/cut/coul/long 0.0 0.0
+# Mixed from Pettitt 86
+pair_coeff      2 3 lj/cut/coul/long 0.1338549 2.72
+pair_coeff      1 3 lj/cut/coul/long 0.1338549 1.31
+pair_coeff      2 4 lj/cut/coul/long 0.359825 3.55
+pair_coeff      1 4 lj/cut/coul/long 0.359825 2.14
+# NaCl from Pettitt 86
+pair_coeff	3 4 buck/coul/long 28929.93 0.317 161.2016
+pair_coeff	3 3 buck/coul/long 9772.847 0.317 24.18024 # This is not used
+pair_coeff	4 4 buck/coul/long 80312.94 0.317 1683.981 # This is not used
+bond_style      harmonic
+bond_coeff      1 450 0.9572
+angle_style     harmonic
+angle_coeff     1 55 104.52
+kspace_style    pppm 1e-2 # This value is too large for a real calculation

@@ -350,10 +350,11 @@ void Grid::addKernel( const KernelFunctions& kernel ) {
   plumed_dbg_assert( kernel.ndim()==dimension_ );
   std::vector<unsigned> nneighb=kernel.getSupport( dx_ );
   std::vector<index_t> neighbors=getNeighbors( kernel.getCenter(), nneighb );
-  std::vector<double> xx( dimension_ ); std::vector<Value*> vv( dimension_ );
+  std::vector<double> xx( dimension_ );
+  std::vector<std::unique_ptr<Value>> vv( dimension_ );
   std::string str_min, str_max;
   for(unsigned i=0; i<dimension_; ++i) {
-    vv[i]=new Value();
+    vv[i].reset(new Value());
     if( pbc_[i] ) {
       Tools::convert(min_[i],str_min);
       Tools::convert(max_[i],str_max);
@@ -363,17 +364,22 @@ void Grid::addKernel( const KernelFunctions& kernel ) {
     }
   }
 
+// vv_ptr contains plain pointers obtained from vv.
+// this is the simplest way to replace a unique_ptr here.
+// perhaps the interface of kernel.evaluate() should be changed
+// in order to accept a std::vector<std::unique_ptr<Value>>
+  std::vector<Value*> vv_ptr( dimension_ );
+  for(unsigned i=0; i<dimension_; ++i) vv_ptr[i]=vv[i].get();
+
   std::vector<double> der( dimension_ );
   for(unsigned i=0; i<neighbors.size(); ++i) {
     index_t ineigh=neighbors[i];
     getPoint( ineigh, xx );
     for(unsigned j=0; j<dimension_; ++j) vv[j]->set(xx[j]);
-    double newval = kernel.evaluate( vv, der, usederiv_ );
+    double newval = kernel.evaluate( vv_ptr, der, usederiv_ );
     if( usederiv_ ) addValueAndDerivatives( ineigh, newval, der );
     else addValue( ineigh, newval );
   }
-
-  for(unsigned i=0; i<dimension_; ++i) delete vv[i];
 }
 
 double Grid::getValue(index_t index) const {
@@ -613,10 +619,10 @@ void Grid::writeCubeFile(OFile& ofile, const double& lunit) {
   }
 }
 
-Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile,
-                   const vector<std::string> & gmin,const vector<std::string> & gmax,
-                   const vector<unsigned> & nbin,bool dosparse, bool dospline, bool doder) {
-  Grid* grid=Grid::create(funcl,args,ifile,dosparse,dospline,doder);
+std::unique_ptr<Grid> Grid::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile,
+                                   const vector<std::string> & gmin,const vector<std::string> & gmax,
+                                   const vector<unsigned> & nbin,bool dosparse, bool dospline, bool doder) {
+  std::unique_ptr<Grid> grid=Grid::create(funcl,args,ifile,dosparse,dospline,doder);
   std::vector<unsigned> cbin( grid->getNbin() );
   std::vector<std::string> cmin( grid->getMin() ), cmax( grid->getMax() );
   for(unsigned i=0; i<args.size(); ++i) {
@@ -631,9 +637,9 @@ Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, I
   return grid;
 }
 
-Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile, bool dosparse, bool dospline, bool doder)
+std::unique_ptr<Grid> Grid::create(const std::string& funcl, const std::vector<Value*> & args, IFile& ifile, bool dosparse, bool dospline, bool doder)
 {
-  Grid* grid=NULL;
+  std::unique_ptr<Grid> grid;
   unsigned nvar=args.size(); bool hasder=false; std::string pstring;
   std::vector<int> gbin1(nvar); std::vector<unsigned> gbin(nvar);
   std::vector<std::string> labels(nvar),gmin(nvar),gmax(nvar);
@@ -667,8 +673,8 @@ Grid* Grid::create(const std::string& funcl, const std::vector<Value*> & args, I
     }
   }
 
-  if(!dosparse) {grid=new Grid(funcl,args,gmin,gmax,gbin,dospline,doder);}
-  else {grid=new SparseGrid(funcl,args,gmin,gmax,gbin,dospline,doder);}
+  if(!dosparse) {grid.reset(new Grid(funcl,args,gmin,gmax,gbin,dospline,doder));}
+  else {grid.reset(new SparseGrid(funcl,args,gmin,gmax,gbin,dospline,doder));}
 
   vector<double> xx(nvar),dder(nvar);
   vector<double> dx=grid->getDx();

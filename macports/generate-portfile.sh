@@ -59,6 +59,29 @@ sed "
     }
     print "}"
     print ""
+  } else if($1=="@_PYTHON_@"){
+    ver[0]="26"
+    ver[1]="27"
+    ver[2]="33"
+    ver[3]="34"
+    ver[4]="35"
+    ver[5]="36"
+    nver=6;
+    for(i=0;i<nver;i++){
+# number with dot (e.g. 2.7):
+      verdot= substr(ver[i],1,1)"."substr(ver[i],2,1)
+      printf("%s", "variant python" ver[i] " description {Bindings for python" ver[i] "} ")
+      printf("%s", "conflicts");
+      for(j=0;j<nver;j++) if(i!=j) printf("%s"," python" ver[j]);
+      print " {"
+      print "  depends_lib-append port:python" ver[i];
+      print "  depends_lib-append port:py" ver[i] "-numpy";
+      print "  configure.args-replace --disable-python --enable-python";
+      print "  configure.args-append PYTHON_BIN=${prefix}/bin/python" verdot
+      print "}"
+      print ""
+    }
+
   } else print
 }'  > science/plumed/Portfile
 

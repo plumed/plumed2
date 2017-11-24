@@ -37,10 +37,10 @@ This class just provides things which are common among OFile and IFile
 */
 
 class FileBase {
-/// Copy constructor is disabled (private and unimplemented)
-  explicit FileBase(const FileBase&);
-/// Assignment operator is disabled (private and unimplemented)
-  FileBase& operator=(const FileBase&);
+/// Copy constructor is disabled
+  FileBase(const FileBase&) = delete;
+/// Assignment operator is disabled
+  FileBase& operator=(const FileBase&) = delete;
 protected:
 /// Internal tool.
 /// Base for IFile::Field and OFile::Field

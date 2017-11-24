@@ -1,0 +1,308 @@
+/**
+\page ves-lugano2017-ves2 MARVEL-VES tutorial (Lugano Feb 2017): VES 2
+
+\section ves-lugano2017-ves2-lo Learning Outcomes
+
+Once this tutorial is completed students will learn to:
+
+- Use the well-tempered target distribution and understand its usefulness
+- Construct biases in 1 and 2 dimensions.
+
+\section ves-lugano2017-ves2-resources Resources
+
+The <a href="tutorial-resources/ves-lugano2017-ves2.tar.gz"
+download="ves-lugano2017-ves2.tar.gz"> tarball </a> for this project contains
+the following folders:
+
+- Example1 : Contains the input file for the the first example.
+- Example2 : Contains the input file for the the second example.
+
+\section ves-lugano2017-ves2-sumtheo Summary of theory
+
+One of the most useful target distribution is the well-tempered one.
+The well-tempered target distribution is \cite Valsson-JCTC-2015 :
+\f[
+p(\mathbf{s})=\frac{e^{-(\beta/\gamma) F(\mathbf{s})}}{\int d\mathbf{s} \, e^{- (\beta/\gamma) F(\mathbf{s})}}
+\f]
+where \f$ \gamma \f$ is the so-called bias
+factor. It is possible to show that:
+\f[
+p(\mathbf{s}) =
+\frac{[ P(\mathbf{s}) ]^{1/\gamma}}
+{\int d\mathbf{s}\, [ P(\mathbf{s}) ]^{1/\gamma}}
+
+
+\f]
+where \f$ P(\mathbf{s}) \f$ is the unbiased distribution of CVs. Therefore the
+target distribution is the unbiased distribution with enhanced fluctuations
+and lowered barriers. This is the same distribution as sampled in well-tempered
+metadynamics. The advantages of this distribution are that the features of the
+FES (metastable states) are preserved and that the system is not forced to sample regions of high
+free energy as it would if we had chosen the uniform target distribution. This
+is specially important when biasing 2 CVs and there are large regions of very
+high free energy and therefore they represent unphysical configurations.
+
+There is a caveat though, \f$ p(\mathbf{s}) \f$ depends on \f$
+F(\mathbf{s})\f$ that is the function that we are trying to calculate.
+One way to approach this problem is to calculate \f$ p(\mathbf{s}) \f$
+self-consistently \cite Valsson-JCTC-2015, for instance at iteration \f$ k \f$:
+\f[
+p^{(k+1)}(\mathbf{s})=\frac{e^{-(\beta/\gamma) F^{(k+1)}(\mathbf{s})}}{\int d\mathbf{s} \, e^{-(\beta/\gamma) F^{(k+1)}(\mathbf{s})}}
+\f]
+where:
+\f[
+F^{(k+1)}(\mathbf{s})=-V^{(k)}(\mathbf{s}) - \frac{1}{\beta} \log p^{(k)}(\mathbf{s})
+\f]
+Normally \f$ p^{(0)}(\mathbf{s}) \f$ is taken to be uniform.
+Therefore the target distribution evolves in time until it becomes stationary
+when the simulation has converged. It has been shown that in some cases the
+convergence is faster using the well-tempered target distribution than using
+the uniform \f$ p(\mathbf{s}) \f$ \cite Valsson-JCTC-2015.
+
+\section ves-lugano2017-ves2-instructions Instructions
+
+\subsection ves-lugano2017-ves2-subsection-1 The system
+
+We will consider the same system employed in previous tutorials.
+
+\subsection ves-lugano2017-ves2-subsection-3 Example 1: Enhancing fluctuations
+
+We consider Example 2 of the VES 1 tutorial. In that case we used a uniform
+target distribution that at some value decayed to zero. In this case we will
+use a product of two distributions:
+\f[
+p(s)=\frac{p_{\mathrm{WT}}(s) \, p_{\mathrm{barrier}}(s)}
+{\int ds \, p_{\mathrm{WT}}(s) \, p_{\mathrm{barrier}}(s)}
+\f]
+where \f$ p_{\mathrm{WT}}(s) \f$ is the well-tempered target distribution and:
+\f[
+p_{\mathrm{barrier}}(s)=
+        \begin{cases}
+                \frac{1}{C} \: &  \mathrm{if} \: s<s_0 \\
+                \frac{1}{C} e^{-\frac{(s-s_0)^2}{2\sigma^2}} \: &
+\mathrm{if} \: s>s_0\\
+        \end{cases}
+\f]
+with \f$ C \f$ a normalization factor.
+The files needed for this exercise are in the directory Example1.
+This target distribution can be specified in plumed using:
+\plumedfile
+td_uniform: TD_UNIFORM MINIMA=0.23 MAXIMA=0.6 SIGMA_MAXIMA=0.05 
+td_welltemp: TD_WELLTEMPERED BIASFACTOR=5
+td_combination: TD_PRODUCT_COMBINATION DISTRIBUTIONS=td_uniform,td_welltemp
+
+VES_LINEAR_EXPANSION ...
+ ARG=d1
+ BASIS_FUNCTIONS=bf1
+ LABEL=b1
+ TEMP=300.0
+ GRID_BINS=300
+ TARGET_DISTRIBUTION=td_combination
+... VES_LINEAR_EXPANSION
+\endplumedfile
+As usual, we run the example using the run.sh script.
+As the simulation progresses we can track the evolution of the target
+distribution. At variance with previous simulations where \f$ p(s) \f$ was
+stationary, in this case it evolves in time. The \f$ p(s) \f$ is dumped every
+500 steps in a file named targetdist.b1.iter-<iteration-number>.data.
+You can plot these files manually or using the script plotTargetDistrib.gpi.
+The result should be similar to the following plot where the distribution at
+different times has been shifted to see more clearly the difference.
+
+\anchor ves-school-2017-ves2-targetDistrib
+\image html ves-lugano2017-ves2_targetDistrib.png "Evolution of the target distribution as the simulation progresses"
+
+
+To shed some light on the nature of the well-tempered target distribution, we
+will compare the unbiased and biased distribution of CVs.
+The unbiased distribution of CVs \f$ P(s) \f$ is calculated by constructing a
+histogram of the CVs with weights given by:
+\f[
+  w(\mathbf{R}) \propto  e^{\beta V(\mathbf{s})}.
+\f]
+The biased distribution of CVs \f$ p'(s) \f$ is calculated also by
+constructing a histogram of the CVs but in this case each point is assigned
+equal weights. The prime is added in \f$ p'(s) \f$ to distinguish the biased
+distribution from the target distribution \f$ p(s) \f$. If the simulation has
+converged then \f$ p'(s) = p(s) \f$.
+The files needed for this calculation are located in the Reweight directory.
+Since this simulation converges fast as compared to previous ones, we only
+disregard the first 1 ns of simulation:
+\verbatim
+sed '2,5000d' ../COLVAR > COLVAR
+\endverbatim
+To calculate the biased and unbiased distribution of CVs we use the following
+Plumed's input:
+\plumedfile
+distance:       READ FILE=COLVAR  IGNORE_TIME VALUES=d1
+ves:       READ FILE=COLVAR IGNORE_TIME VALUES=b1.bias
+
+weights: REWEIGHT_BIAS TEMP=300 ARG=ves.bias
+
+HISTOGRAM ...
+  ARG=distance
+  GRID_MIN=0.23
+  GRID_MAX=0.8
+  GRID_BIN=301
+  BANDWIDTH=0.006
+  LABEL=hh1
+... HISTOGRAM
+
+HISTOGRAM ...
+  ARG=distance
+  GRID_MIN=0.23
+  GRID_MAX=0.8
+  GRID_BIN=301
+  BANDWIDTH=0.006
+  LOGWEIGHTS=weights
+  LABEL=hh2
+... HISTOGRAM
+
+DUMPGRID GRID=hh1 FILE=histo_biased FMT=%24.16e
+DUMPGRID GRID=hh2 FILE=histo_unbiased FMT=%24.16e
+\endplumedfile
+If you do not understand what this input does, you might want to read once
+again the previous tutorials.
+The histograms histo_biased and histo_unbiased correspond to \f$ p'(s) \f$ and
+\f$ P(s) \f$ , respectively.
+We are interested in comparing the unbiased distribution of CVs \f$ P(s) \f$
+and the well-tempered distribution \f$ p_{\mathrm{WT}}(s)\f$. We know from the
+equations above that:
+\f[
+ p_{\mathrm{WT}}(s) \propto [ P(\mathbf{s}) ]^{1/\gamma},
+\f]
+and also,
+\f[
+ p_{\mathrm{WT}}(s) \propto p(s)/p_{\mathrm{barrier}}(s) \propto p'(s)/p_{\mathrm{barrier}}(s) .
+\f]
+Therefore we have two ways to calculate the well-tempered target distribution.
+We can compare \f$ P(s) \f$ and the well-tempered target distribution
+calculated in two ways with the following gnuplot lines:
+\verbatim
+biasFactor=5.
+invBiasFactor=1./biasFactor
+pl "./histo_unbiased" u 1:(-log($2)) w l title "P(s)"
+repl "./histo_unbiased" u 1:(-log($2**invBiasFactor)) w l title "[P(s)]^(1/gamma)"
+repl "< paste ./histo_biased ../targetdist.b1.iter-0.data" u 1:(-log($2/$5)) w l title "Sampled p(s)"
+\endverbatim
+There is also a gnuplot script plot.gpi that should do everything for you.
+The output should be similar to the next plot where we plot the negative
+logarithm of the distributions.
+
+\anchor ves-school-2017-ves2-well-tempered
+\image html ves-lugano2017-ves2_well-tempered.png "Unbiased distribution of CVs P(s) and well-tempered distribution calculated in two ways"
+
+Notice that as expected both equations to calculate \f$ p_{\mathrm{WT}}(s)\f$ agree.
+Also the association barrier of \f$ 5 \: k_{\mathrm{B}} T \f$ becomes of \f$ 1 \: k_{\mathrm{B}} T
+\f$ when the well-tempered target distribution is sampled.
+
+The take home message of this tutorial is that when the well-tempered
+target distribution is employed, the biased distribution of CVs preserves
+all the features of the unbiased distribution, but barriers are lowered.
+Equivalently one may say that fluctuations are enhanced.
+
+\subsection ves-lugano2017-ves2-subsection-4 Example 2: Constructing a 2 dimensional bias
+
+In this example we will construct a 2 dimensional bias on the distance Na-Cl
+and the coodrination number of Na with respect to O.
+The files to run this example are included in the Example2 folder.
+Two dimensional biases in VES can be written:
+\f[
+V(s_1,s_2;\boldsymbol\alpha)=\sum\limits_{i_1,i_2} \alpha_{i_1,i_2} \,
+f_{i_1}(s_1)\,  f_{i_2}(s_2) ,
+\f]
+where \f$ f_{i_1}(s_1)\f$ and \f$ f_{i_2}(s_2) \f$ are the basis functions.
+We will choose to expand the bias potential in Legendre polynomials up to
+order 20 in both dimensions.
+\plumedfile
+# CV1
+BF_LEGENDRE ...
+ ORDER=20
+ MINIMUM=0.23
+ MAXIMUM=0.8
+ LABEL=bf1
+... BF_LEGENDRE
+
+# CV2
+BF_LEGENDRE ...
+ ORDER=20
+ MINIMUM=2.5
+ MAXIMUM=7.5
+ LABEL=bf2
+... BF_LEGENDRE
+\endplumedfile
+We have chosen the interval [0.23,0.8] nm for the distance and [2.5,7.5] for
+the coordination number.
+The total number of non-zero coefficients will be 400.
+In the coefficients file the indices \f$i_{1}\f$ and \f$i_{2}\f$
+are given by the first two columns.
+We use the well-tempered target distribution together with a barrier at 0.6 nm
+on the distance Na-Cl.
+\plumedfile
+td_uniform: TD_UNIFORM MINIMA=0.2,2.5 MAXIMA=0.6,7.5 SIGMA_MAXIMA=0.05,0.0
+td_welltemp: TD_WELLTEMPERED BIASFACTOR=5
+td_combination: TD_PRODUCT_COMBINATION DISTRIBUTIONS=td_uniform,td_welltemp
+
+VES_LINEAR_EXPANSION ...
+ ARG=d1,coord
+ BASIS_FUNCTIONS=bf1,bf2
+ LABEL=b1
+ TEMP=300.0
+ GRID_BINS=300,300
+ TARGET_DISTRIBUTION=td_combination
+... VES_LINEAR_EXPANSION
+\endplumedfile
+We can now run the simulation and control its progress.
+Since there are 400 coefficients we choose the largest (in absolute value) to control the
+convergence of the simulation. In this case we have chosen coefficients with
+indices \f$(i_{1},i_{2})\f$ as (1,0), (0,1), (1,1), (2,1), and (0,2).
+You can plot the evolution of the coefficients
+using the gnuplot script plotCoeffs.gpi.
+This plot should look similar to the
+following one. The bias
+therefore converges smoothly as in one dimensional problems.
+
+\anchor ves-school-2017-ves2-2d-coeffs
+\image html ves-lugano2017-ves2_2D-coeffs.png "Evolution of the largest coefficients"
+
+The estimated FES can also be plotted to control the progress of the
+simulation. For instance in gnuplot,
+\verbatim
+set xr [0.23:0.7]
+set yr [3:7]
+set zr [0:6]
+set cbr [0:6]
+set pm3d map
+temp=2.494
+spl "./fes.b1.iter-1000.data" u 1:2:($3/temp) w pm3d notitle
+\endverbatim
+There is a gnuplot script plotFes.gpi that generates the following plot for
+the FES after 10 ns of simulation:
+
+\anchor ves-school-2017-ves2-2d-fes
+\image html ves-lugano2017-ves2_2D-fes.png "FES estimated from the 2D bias after 10 ns"
+
+This FES agrees with that calculated through reweighting in the metadynamics
+tutorial.
+
+As an exercise, you can repeat this simulation using the uniform target
+distribution instead of the well-tempered \f$ p(s) \f$. Compare the
+convergence time of both simulations. Discuss the reasons why the algorithm
+converges faster to the well-tempered target distribution than to the uniform
+one. Does it make sense to sample all the CV space uniformly?
+
+\section ves-lugano2017-ves2-final Final remarks
+
+At this point the student has acquired experience with several
+characteristics of the VES method. There is one tool that has proven to be
+instrumental for many problems and that has not yet been discussed in this
+series of tutorials: the use of multiple walkers.
+This tool will be the subject of another tutorial.
+
+*/
+
+link: @subpage ves-lugano2017-ves2
+
+description: VES, well-tempered target distribution and 2 dimensional biases.
+
+additional-files: ves-lugano2017-ves2

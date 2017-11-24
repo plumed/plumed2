@@ -1,12 +1,5 @@
 \page usingDoxygen Creating plumed documentation
 
-<b> Whenever you make a change to the documentation for PLUMED and you want the
-online version of the manual to be updated, you need to write include the phrase
-[makedoc] in your next commit message.  Doing so ensures that the online manuals are updated the next 
-time you push your commits to master.
-See more in the section \ref updating-web-manuals
-</b>
-
 To create the plumed manual you should go to the <b> user-doc </b> directory and type <b> make </b>. 
 This command works because user documentation for all the PLMD::Action is inside the source code.  If
 you look at the documentation page for any of the actions that are implemented in plumed you will
@@ -485,6 +478,7 @@ Precompiled versions of PLUMED manuals can be found on github at an address such
 is shown as a webpage. In this example, the repository is located at http://github.com/plumed/doc-v2.1 .
 Before version 2.1.1 it was necessary to upload the precompiled manual by hand. Since version 2.1.1, this is done
 from Travis CI automatically whenever a commit containing in its log the tag [makedoc] is pushed into the plumed2 github repository.
+Since version 2.3.3, manual is always updated, and tag [makedoc] is ignored.
 Notice that Travis CI will try to push the manual on a repository named http://github.com/plumed/doc-NAMEOFTHEBRANCH , so that 
 this should work for all the future release branches as long as an appropriate repository is created on the github.com/plumed
 organization.
@@ -492,14 +486,31 @@ We could even easily create repositories to host the documentation of temporary 
 Also notice that these repositories (plumed/doc-xxx) need to give write access to a dummy github account (PlumedBot). A token
 for that user enabling html access is stored in the environment variable GIT_TOKEN which is saved (not visible) on travis-ci.org.
 In this way, any commit made in the plumed repository by one of the developers will have access to the variable and will trigger
-(optionally, when [makedoc] is present) manual build and push. Conversely, pull requests by external users should not be able to
+manual build and push. Conversely, pull requests by external users should not be able to
 access the token and won't update manual changes.
 
 Notice that to solve [this issue](https://github.com/plumed/plumed2/issues/239) as of PLUMED 2.3.2 the script that
 pushes the documentation to travis-ci adds special information to remove from search engine results pages from
 unofficial or unsupported branch (see .travis/pushdoc script).
 
-Bottom line: when you make a commit where you modified the manual and you want the online manual to be updated,
-add [makedoc] in the commit log. After ten minutes or so the manual should be up to date, remember to double check on the web
+Bottom line: manual will always be updated after a commit that can pass the tests.
+Twenty minutes or so after your push the manual should be up to date, remember to double check on the web
 and to revert the commit if there are errors!
+
+It is possible to generate PLUMED manuals for your own personal forks 
+using a similar procedure as described above. 
+For this to work you need to enable Travis CI for your forked repository 
+and define appropriately the environment variables on Travis CI. 
+The github account used to automatically push the generated manuals 
+should be defined using the `GIT_BOT` variable, 
+preferably this should be a dummy account. A github token
+enabling html access for that account should be defined using the `GIT_TOKEN` variable. 
+Furthermore, you need to define an email address associated to the account using the `GIT_BOT_EMAIL` variable. 
+It is better to make all these environment variable hidden such that they are 
+not shown in the public logs on travis-ci.org. 
+To generate a manual for a specific branch you need to create a repository 
+`USERNAME/doc-NAMEOFTHEBRANCH` and give write access to the account given in 
+`GIT_BOT`. The generated manuals will be accessible on 
+https://USERNAME.github.io/doc-NAMEOFTHEBRANCH. Note that manuals generated in 
+this way will always be labeled as unofficial and not shown in search engine results.
 

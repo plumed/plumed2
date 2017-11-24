@@ -1,0 +1,50 @@
+# Terminal settings
+#set term postscript enhanced "Helvetica" 14 eps size 8.6cm,5.cm
+#set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+#set output "plot.png"
+#set border lw 1.5
+
+# Set labels
+set xlabel "Distance (nm)"
+set ylabel "Free energy (kT)"
+
+# Set plot range and tic options
+set yr [0:10]
+set xtics 5
+set xr [0.1:0.75]
+set xtics 0.1
+
+# Define colors
+# Colors from http://colorbrewer2.org
+set style line 1 lt 1 lw 2 lc rgb "#034e7b"
+set style line 2 lt 1 lw 2 lc rgb "#0570b0"
+set style line 3 lt 1 lw 2 lc rgb "#3690c0"
+set style line 4 lt 1 lw 2 lc rgb "#74a9cf"
+set style line 5 lt 1 lw 2 lc rgb "#a6bddb"
+set style line 6 lt 1 lw 2 lc rgb "#d0d1e6"
+set style line 7 lt 1 lw 2 lc rgb "#ece7f2"
+set style line 8 lt 1 lw 1 lc rgb "black"
+set style line 9 lt 1 lw 2 lc rgb "black"
+
+set key bottom left sample 1.
+
+
+
+# Plot
+
+pl "< paste fes.dat negativebias_1.dat" u 1:($2/2.494):(($2-$5)/2.494)  w filledcurves ls 1 fillstyle pattern 3 title "10 ps", \
+ "< paste fes.dat negativebias_1.dat negativebias_3.dat" u 1:(($2-$5)/2.494):(($2-$8)/2.494)  w filledcurves ls 2 fillstyle pattern 3 title "30 ps", \
+ "< paste fes.dat negativebias_3.dat negativebias_5.dat" u 1:(($2-$5)/2.494):(($2-$8)/2.494)  w filledcurves ls 3 fillstyle pattern 3 title "50 ps", \
+ "< paste fes.dat negativebias_5.dat negativebias_7.dat" u 1:(($2-$5)/2.494):(($2-$8)/2.494)  w filledcurves ls 4 fillstyle pattern 3 title "70 ps", \
+ "< paste fes.dat negativebias_7.dat negativebias_10.dat" u 1:(($2-$5)/2.494):(($2-$8)/2.494)  w filledcurves ls 5 fillstyle pattern 3 title "100 ps", \
+ "< paste fes.dat negativebias_10.dat negativebias_20.dat" u 1:(($2-$5)/2.494):(($2-$8)/2.494)  w filledcurves ls 6 fillstyle pattern 3 title "200 ps", \
+ "< paste fes.dat negativebias_1.dat" u 1:(($2-$5)/2.494) w l ls 8 notitle, \
+ "< paste fes.dat negativebias_3.dat" u 1:(($2-$5)/2.494) w l ls 8 notitle, \
+ "< paste fes.dat negativebias_5.dat" u 1:(($2-$5)/2.494) w l ls 8 notitle, \
+ "< paste fes.dat negativebias_7.dat" u 1:(($2-$5)/2.494) w l ls 8 notitle, \
+ "< paste fes.dat negativebias_10.dat" u 1:(($2-$5)/2.494) w l ls 8 notitle, \
+ "< paste fes.dat negativebias_20.dat" u 1:(($2-$5)/2.494) w l ls 8 notitle, \
+ "fes.dat" u 1:($2/2.494) w l ls 9 notitle
+
+# Hold
+pause -1

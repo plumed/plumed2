@@ -50,7 +50,8 @@ configure.args-append \
                --disable-doc \
                --disable-libsearch \
                --disable-static-patch \
-               --disable-mpi 
+               --disable-mpi \
+               --disable-python
 
 # Hardcode path for libplumedKernel.dylib.
 # This allows to patch MD codes using the --runtime option but using as
@@ -65,22 +66,37 @@ mpi.setup
 # To enable mpi, replace a configure flag
 if {[mpi_variant_isset]} {
   configure.args-replace --disable-mpi --enable-mpi
+  # command should be included in a pre-configure block to access properly the mpi.exec variable
+  pre-configure {
+  # MPIEXEC is stored so that it can be used to perform tests
+    configure.args-append MPIEXEC="${mpi.exec}"
+  }
 }
 
 # Libraries.
 # Library names are specified here to make sure that
 # only requested packages are linked.
-configure.ldflags-append -lmatheval -lxdrfile -lz -lgsl
-depends_lib-append port:libmatheval port:xdrfile port:zlib port:gsl
+configure.ldflags-append -lxdrfile -lz -lgsl
+depends_lib-append port:xdrfile port:zlib port:gsl
 
 # This variant enables optional modules in PLUMED.
+# Notice that one of the optional modules (drr) requires boost_serialization
 variant allmodules description {Enable all optional modules} {
-  configure.args-append --enable-modules=all
+  configure.args-append --enable-modules=all --enable-boost-serialization
+  configure.ldflags-append -lboost_serialization-mt
+  depends_lib-append port:boost
 }
+
+@_PYTHON_@
 
 # Link lapack/blas libraries
 pre-configure {
   # commands should be included in a pre-configure block to access tcl variables
   configure.ldflags-append ${linalglib}
 }
+
+# Allow running tests from MacPorts
+test.run yes
+test.target check
+
 

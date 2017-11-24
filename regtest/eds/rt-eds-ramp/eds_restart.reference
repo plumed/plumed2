@@ -1,9 +1,9 @@
-#! FIELDS time d1_center d1_set d1_target d1_coupling d1_maxrange d1_maxgrad d1_mean d1_std
+#! FIELDS time d1_center d1_set d1_target d1_coupling d1_maxrange d1_maxgrad d1_accum d1_mean d1_std
 #! SET adaptive  0
 #! SET update_period  -2
 #! SET seed  0
 #! SET kbt  2.49
- 0.00 1.00 0.50 -3.00 0.50 7.48 0.15 0.00 0.00
- 1.00 1.00 0.50 -3.00 -1.25 7.48 0.15 0.00 0.00
- 2.00 1.00 0.50 -3.00 -3.00 7.48 0.15 0.00 0.00
- 3.00 1.00 0.50 -3.00 -3.00 7.48 0.15 0.00 0.00
+ 0.00 1.00 0.50 -3.00 0.50 7.48 0.15 0.00 0.00 0.00
+ 1.00 1.00 0.50 -3.00 -1.25 7.48 0.15 0.00 0.00 0.00
+ 2.00 1.00 0.50 -3.00 -3.00 7.48 0.15 0.00 0.00 0.00
+ 3.00 1.00 0.50 -3.00 -3.00 7.48 0.15 0.00 0.00 0.00

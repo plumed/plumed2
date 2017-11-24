@@ -56,12 +56,12 @@ bool LandmarkRegister::check(std::string type) {
   return false;
 }
 
-LandmarkSelectionBase* LandmarkRegister::create( const LandmarkSelectionOptions& lo ) {
-  LandmarkSelectionBase* lselect;
+std::unique_ptr<LandmarkSelectionBase> LandmarkRegister::create( const LandmarkSelectionOptions& lo ) {
+  std::unique_ptr<LandmarkSelectionBase> lselect;
   if( check(lo.words[0]) ) {
     lselect=m[lo.words[0]](lo);
     lselect->checkRead();
-  } else lselect=NULL;
+  }
   return lselect;
 }
 

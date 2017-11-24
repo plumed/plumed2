@@ -78,11 +78,11 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
 
   addValueWithDerivatives(); setNotPeriodic();
   if(gb_lista.size()>0) {
-    if(doneigh)  nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut,nl_st);
-    else         nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc());
+    if(doneigh)  nl.reset( new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut,nl_st) );
+    else         nl.reset( new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc()) );
   } else {
-    if(doneigh)  nl= new NeighborList(ga_lista,pbc,getPbc(),nl_cut,nl_st);
-    else         nl= new NeighborList(ga_lista,pbc,getPbc());
+    if(doneigh)  nl.reset( new NeighborList(ga_lista,pbc,getPbc(),nl_cut,nl_st) );
+    else         nl.reset( new NeighborList(ga_lista,pbc,getPbc()) );
   }
 
   requestAtoms(nl->getFullAtomList());
@@ -109,7 +109,7 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
 }
 
 CoordinationBase::~CoordinationBase() {
-  delete nl;
+// destructor required to delete forward declared class
 }
 
 void CoordinationBase::prepare() {
