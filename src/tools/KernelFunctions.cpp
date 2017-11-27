@@ -387,7 +387,7 @@ std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool
   if( !ifile->scanField("height",h) ) return NULL;;
 
   std::string sss; ifile->scanField("multivariate",sss);
-  std::string ktype="gaussian"; if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype); 
+  std::string ktype="gaussian"; if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
   plumed_massert( sss=="false" || sss=="true" || sss=="von-misses", "multivariate flag must be either false, true or von-misses");
 
   // Read the position of the center
