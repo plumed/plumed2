@@ -54,6 +54,15 @@ f_{n}(x) &= cos(n \cdot \frac{2\pi}{P} x) \\
 f_{N}(x)   &= cos(N \cdot \frac{2\pi}{P} x) \\
 \f}
 where \f$P=(b-a)\f$ is the periodicity of the interval.
+They are orthogonal over the interval \f$[a,b]\f$
+\f[
+\int_{a}^{b} dx \, f_{n}(x)\, f_{m}(x)  =
+\begin{cases}
+0 & n \neq m \\
+(b-a) & n = m = 0 \\
+(b-a)/2 & n = m \neq 0
+\end{cases}.
+\f]
 
 \par Examples
 

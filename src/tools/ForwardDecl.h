@@ -23,6 +23,7 @@
 #define __PLUMED_tools_ForwardDecl_h
 
 #include <memory>
+#include <utility>
 
 namespace PLMD {
 
@@ -35,16 +36,19 @@ class ForwardDecl:
   std::unique_ptr<T>
 {
 public:
-// Construction is only possible from a pointer.
-  explicit ForwardDecl(T*);
+// Construction with arbitrary argument.
+  template<typename ...Args>
+  explicit ForwardDecl(Args &&...args);
 // Dereference operator is inherited from std::unique_ptr<T>
   using std::unique_ptr<T>::operator *;
 };
 
 template <class T>
-ForwardDecl<T>::ForwardDecl(T*x):
-  std::unique_ptr<T>(x)
+template<typename ...Args>
+ForwardDecl<T>::ForwardDecl(Args &&...args):
+  std::unique_ptr<T>(new T(std::forward<Args>(args)...))
 {}
+
 
 }
 

@@ -44,7 +44,6 @@ ActionAtomistic::~ActionAtomistic() {
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   Action(ao),
-  pbc_fwd(new(Pbc)),
   lockRequestAtoms(false),
   donotretrieve(false),
   donotforce(false),

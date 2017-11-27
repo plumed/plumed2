@@ -44,8 +44,6 @@ const std::unordered_map<std::string, int> & GREXWordMap() {
 
 GREX::GREX(PlumedMain&p):
   initialized(false),
-  intracomm_fwd(new Communicator),
-  intercomm_fwd(new Communicator),
   plumedMain(p),
   atoms(p.getAtoms()),
   partner(-1), // = unset

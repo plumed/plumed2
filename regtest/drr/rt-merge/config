@@ -1,10 +1,3 @@
-function plumed_custom_skip(){
-  if [ "$(uname)" == "Darwin" ] ; then
-    return 0
-  else
-    return 1
-  fi
-}
 type=plumed
 plumed_needs=boost_serialization
 plumed_modules=drr

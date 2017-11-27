@@ -65,7 +65,7 @@ The following variants are available.
 </tr> <tr>
 <td> gaussian </td> <td> \f$f(r) = \frac{1}{(2 \pi)^{n} \sqrt{|\Sigma^{-1}|}} \exp\left(-0.5 r^2 \right)\f$ </td>
 </tr> <tr>
-<td> truncated-gaussian </td> <td> \f$f(r) = \frac{1}{(2 \pi)^{n} \sqrt{|\Sigma^{-1}|} \left(\frac{\erf(-6.25/sqrt{2}) - \erf(-6.25/sqrt{2})}{2}\right)^n} \exp\left(-0.5 r^2 \right)\f$ </td>
+<td> truncated-gaussian </td> <td> \f$f(r) = \frac{1}{(2 \pi)^{n} \sqrt{|\Sigma^{-1}|} \left(\frac{\mathrm{erf}(-6.25/sqrt{2}) - \mathrm{erf}(-6.25/sqrt{2})}{2}\right)^n} \exp\left(-0.5 r^2 \right)\f$ </td>
 </tr> <tr>
 <td> triangular </td> <td> \f$f(r) = \frac{3}{V} ( 1 - | r | )H(1-|r|) \f$ </td>
 </tr> <tr>
@@ -382,7 +382,7 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
   return kval;
 }
 
-KernelFunctions* KernelFunctions::read( IFile* ifile, const bool& cholesky, const std::vector<std::string>& valnames ) {
+std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool& cholesky, const std::vector<std::string>& valnames ) {
   double h;
   if( !ifile->scanField("height",h) ) return NULL;;
 
@@ -401,7 +401,7 @@ KernelFunctions* KernelFunctions::read( IFile* ifile, const bool& cholesky, cons
       ifile->scanField("sigma_"+valnames[i],sig[i]);
       if( !cholesky ) sig[i]=sqrt(sig[i]);
     }
-    return new KernelFunctions( cc, sig, ktype, "DIAGONAL", h );
+    return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "DIAGONAL", h ) );
   }
 
   unsigned ncv=valnames.size();
@@ -419,8 +419,8 @@ KernelFunctions* KernelFunctions::read( IFile* ifile, const bool& cholesky, cons
   for(unsigned i=0; i<ncv; i++) {
     for(unsigned j=i; j<ncv; j++) { sig[k]=invmatrix(i,j); k++; }
   }
-  if( sss=="true" ) return new KernelFunctions( cc, sig, ktype, "MULTIVARIATE", h );
-  return new KernelFunctions( cc, sig, ktype, "VON-MISSES", h );
+  if( sss=="true" ) return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "MULTIVARIATE", h ) );
+  return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "VON-MISSES", h ) );
 }
 
 }
