@@ -1767,11 +1767,13 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
       }
       center[i]=tmpvalues[i].get();
     }
+    // scan for kerneltype
+    std::string ktype="gaussian";
+    if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
     // scan for multivariate label: record the actual file position so to eventually rewind
     std::string sss;
     ifile->scanField("multivariate",sss);
-    std::string ktype="gaussian";
-    if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
+    if(sss=="true") multivariate=true;
     else if(sss=="false") multivariate=false;
     else plumed_merror("cannot parse multivariate = "+ sss);
     if(multivariate) {

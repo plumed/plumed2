@@ -726,6 +726,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     ofile->open(ifilesnames[mw_id_*hillsfname.size()+i]);
     if(fmt.length()>0) ofile->fmtField(fmt);
     ofile->addConstantField("multivariate");
+    ofile->addConstantField("kerneltype");
     if(doInt_[i]) {
       ofile->addConstantField("lower_int").printField("lower_int",lowI_[i]);
       ofile->addConstantField("upper_int").printField("upper_int",uppI_[i]);
@@ -820,6 +821,7 @@ void PBMetaD::writeGaussian(unsigned iarg, const Gaussian& hill, OFile *ofile)
   ofile->printField("time",getTimeStep()*getStep());
   ofile->printField(getPntrToArgument(iarg),hill.center[0]);
 
+  ofile->printField("kerneltype","gaussian");
   if(hill.multivariate) {
     ofile->printField("multivariate","true");
     double lower = sqrt(1./hill.sigma[0]);
@@ -1165,6 +1167,8 @@ bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile, vector<Value> &tmpvalues,
     std::string sss;
     ifile->scanField("multivariate",sss);
     if(sss=="true") multivariate=true;
+    std::string ktype="gaussian";
+    if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
     else if(sss=="false") multivariate=false;
     else plumed_merror("cannot parse multivariate = "+ sss);
 
