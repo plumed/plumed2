@@ -268,7 +268,6 @@ private:
   unsigned current_value_;
 
   void   readGaussians(unsigned iarg, IFile*);
-  bool   readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n);
   void   writeGaussian(unsigned iarg, const Gaussian&, OFile*);
   void   addGaussian(unsigned iarg, const Gaussian&);
   double getBiasAndDerivatives(unsigned iarg, const vector<double>&, double* der=NULL);
@@ -790,30 +789,6 @@ void PBMetaD::readGaussians(unsigned iarg, IFile *ifile)
     addGaussian(iarg, Gaussian(center,sigma,height,multivariate));
   }
   log.printf("      %d Gaussians read\n",nhills);
-}
-
-bool PBMetaD::readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n)
-{
-  vector<double> center(1);
-  vector<double> sigma(1);
-  double height;
-  unsigned nhills=0;
-  bool multivariate=false;
-  std::vector<Value> tmpvalues;
-  tmpvalues.push_back( Value( this, getPntrToArgument(iarg)->getName(), false ) );
-
-  while(scanOneHill(iarg,ifile,tmpvalues,center,sigma,height,multivariate)) {
-    ;
-    if(welltemp_) {height*=(biasf_-1.0)/biasf_;}
-    addGaussian(iarg, Gaussian(center,sigma,height,multivariate));
-    if(nhills==n) {
-      log.printf("      %u Gaussians read\n",nhills);
-      return true;
-    }
-    nhills++;
-  }
-  log.printf("      %u Gaussians read\n",nhills);
-  return false;
 }
 
 void PBMetaD::writeGaussian(unsigned iarg, const Gaussian& hill, OFile *ofile)

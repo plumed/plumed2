@@ -414,7 +414,6 @@ private:
   void   readTemperingSpecs(TemperingSpecs &t_specs);
   void   logTemperingSpecs(const TemperingSpecs &t_specs);
   void   readGaussians(IFile*);
-  bool   readChunkOfGaussians(IFile *ifile, unsigned n);
   void   writeGaussian(const Gaussian&,OFile&);
   void   addGaussian(const Gaussian&);
   double getHeight(const vector<double>&);
@@ -1234,32 +1233,6 @@ void MetaD::readGaussians(IFile *ifile)
     addGaussian(Gaussian(center,sigma,height,multivariate));
   }
   log.printf("      %d Gaussians read\n",nhills);
-}
-
-bool MetaD::readChunkOfGaussians(IFile *ifile, unsigned n)
-{
-  unsigned ncv=getNumberOfArguments();
-  vector<double> center(ncv);
-  vector<double> sigma(ncv);
-  double height;
-  unsigned nhills=0;
-  bool multivariate=false;
-  std::vector<Value> tmpvalues;
-  for(unsigned j=0; j<getNumberOfArguments(); ++j) tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) );
-
-  while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)) {
-    ;
-// note that for gamma=1 we store directly -F
-    if(welltemp_ && biasf_>1.0) height*=(biasf_-1.0)/biasf_;
-    addGaussian(Gaussian(center,sigma,height,multivariate));
-    if(nhills==n) {
-      log.printf("      %u Gaussians read\n",nhills);
-      return true;
-    }
-    nhills++;
-  }
-  log.printf("      %u Gaussians read\n",nhills);
-  return false;
 }
 
 void MetaD::writeGaussian(const Gaussian& hill, OFile&file)
