@@ -1164,14 +1164,14 @@ bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile, vector<Value> &tmpvalues,
       }
     }
     center[0]=tmpvalues[0].get();
+    std::string ktype="gaussian";
+    if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
+
     std::string sss;
     ifile->scanField("multivariate",sss);
     if(sss=="true") multivariate=true;
-    std::string ktype="gaussian";
-    if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
     else if(sss=="false") multivariate=false;
     else plumed_merror("cannot parse multivariate = "+ sss);
-
     if(multivariate) {
       ifile->scanField("sigma_"+getPntrToArgument(iarg)->getName()+"_"+
                        getPntrToArgument(iarg)->getName(),sigma[0]);
