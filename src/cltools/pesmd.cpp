@@ -229,16 +229,12 @@ public:
     plumed->cmd("calc");
 
 
-//      potential=calc_energy(positions,forces);
     double therm_eng=0;
-
     FILE* fp=fopen("stats.out","w+");
-//     double conserved = potential+1.5*ttt+therm_eng; FILE* fp=fopen("stats.out","w+");
-//     if( pc.Get_rank()==0 ) fprintf(fp,"%d %f %f \n", 0, 0., tke, therm_eng );
 
     for(int istep=0; istep<nsteps; ++istep) {
 
-      if( istep%20==0 && pc.Get_rank()==0 ) printf("Doing step %u\n",istep);
+      if( istep%20==0 && pc.Get_rank()==0 ) printf("Doing step %i\n",istep);
 
       // Langevin thermostat
       double lscale=exp(-0.5*tstep/friction);
@@ -305,7 +301,7 @@ public:
 
       // Print everything
       // conserved = potential+1.5*ttt+therm_eng;
-      if( pc.Get_rank()==0 ) fprintf(fp,"%u %f %f %f \n", istep, istep*tstep, tke, therm_eng );
+      if( pc.Get_rank()==0 ) fprintf(fp,"%i %f %f %f \n", istep, istep*tstep, tke, therm_eng );
     }
 
     fclose(fp);
