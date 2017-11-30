@@ -442,7 +442,7 @@ void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {
   } else if( myvessels.size()>0 ) {
     std::vector<double> cvals( myvessels[0]->getNumberOfQuantities() );
     stashes[0]->retrieveSequentialValue( current, false, cvals );
-    unsigned derbase; double totweight=cvals[0], tnorm = cvals[0]; myvals.setValue( 1, cvals[1] );
+    unsigned derbase=0; double totweight=cvals[0], tnorm = cvals[0]; myvals.setValue( 1, cvals[1] );
     // Get the derivatives as well if we are in apply
     if( in_apply ) {
       // This bit gets the total weight

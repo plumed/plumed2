@@ -249,7 +249,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
   MOLFILE_INIT_ALL
   MOLFILE_REGISTER_ALL(NULL, register_cb)
-  for(int i=0; i<plugins.size(); i++) {
+  for(unsigned i=0; i<plugins.size(); i++) {
     string kk="--mf_"+string(plugins[i]->name);
     string mm=" molfile: the trajectory in "+string(plugins[i]->name)+" format " ;
     //cerr<<"REGISTERING "<<kk<<mm<<endl;
@@ -383,7 +383,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     parse("--itrr",traj_trr);
 #endif
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-    for(int i=0; i<plugins.size(); i++) {
+    for(unsigned i=0; i<plugins.size(); i++) {
       string molfile_key="--mf_"+string(plugins[i]->name);
       string traj_molfile;
       parse(molfile_key,traj_molfile);
@@ -737,7 +737,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         }
         // info on coords
         // the order is xyzxyz...
-        for(unsigned i=0; i<3*natoms; i++) {
+        for(int i=0; i<3*natoms; i++) {
           coordinates[i]=real(ts_in.coords[i]/10.); //convert to nm
           //cerr<<"COOR "<<coordinates[i]<<endl;
         }

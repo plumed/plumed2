@@ -160,9 +160,10 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
 
 void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
 
-  double det; unsigned ncv=ndim();
+  double det=1.;
+  unsigned ncv=ndim();
   if(dtype==diagonal) {
-    det=1; for(unsigned i=0; i<width.size(); ++i) det*=width[i]*width[i];
+    for(unsigned i=0; i<width.size(); ++i) det*=width[i]*width[i];
   } else if(dtype==multi) {
     Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
     Invert(mymatrix,myinv); double logd;
@@ -273,8 +274,8 @@ std::vector<double> KernelFunctions::getContinuousSupport( ) const {
     Invert(mymatrix,myinv);
     Matrix<double> myautovec(ncv,ncv); std::vector<double> myautoval(ncv);
     diagMat(myinv,myautoval,myautovec);
-    double maxautoval; maxautoval=0.;
-    unsigned ind_maxautoval;
+    double maxautoval=0.;
+    unsigned ind_maxautoval=0;
     for (unsigned i=0; i<ncv; i++) {
       if(myautoval[i]>maxautoval) {maxautoval=myautoval[i]; ind_maxautoval=i;}
     }
@@ -340,7 +341,7 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
 
     Matrix<double> mymatrix( getMatrix() );
     for(unsigned i=0; i<mymatrix.nrows(); ++i) {
-      double dp_i, dp_j; derivatives[i]=0;
+      derivatives[i]=0;
       if( pos[i]->isPeriodic() ) {
         r2+=2*( 1 - costmp[i] )*mymatrix(i,i);
       } else {

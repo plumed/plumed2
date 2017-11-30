@@ -195,7 +195,7 @@ void CoordinationBase::calculate()
     }
     #pragma omp critical
     if(nt>1) {
-      for(int i=0; i<getPositions().size(); i++) deriv[i]+=omp_deriv[i];
+      for(unsigned i=0; i<getPositions().size(); i++) deriv[i]+=omp_deriv[i];
       virial+=omp_virial;
     }
   }
