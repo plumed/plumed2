@@ -1085,7 +1085,7 @@ void Metainference::doMonteCarlo(const vector<double> &mean_)
     }
 
     // calculate new energy
-    double new_energy;
+    double new_energy = 0.;
     switch(noise_type_) {
     case GAUSS:
       new_energy = getEnergyGJ(mean_,new_sigma,scale_,offset_);

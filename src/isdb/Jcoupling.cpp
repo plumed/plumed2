@@ -169,7 +169,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
   ncoupl_ = atoms.size()/6;
 
   // Parse J-Coupling type, this will determine the Karplus parameters
-  unsigned jtype_;
+  unsigned jtype_ = CUSTOM;
   string string_type;
   parse("TYPE", string_type);
   if(string_type == "HAN") {
