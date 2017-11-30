@@ -756,7 +756,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         if(ret==exdrENDOFFILE) break;
         if(ret!=exdrOK) break;
         for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) cell[3*i+j]=box[i][j];
-        for(unsigned i=0; i<natoms; i++) for(unsigned j=0; j<3; j++)
+        for(int i=0; i<natoms; i++) for(unsigned j=0; j<3; j++)
             coordinates[3*i+j]=real(pos[i][j]);
 #endif
       } else {
