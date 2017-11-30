@@ -50,11 +50,11 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   neigh_size(-1),
   neigh_stride(-1),
-  nframes(0),
   epsilonClose(-1),
   debugClose(0),
   logClose(0),
-  computeRefClose(false)
+  computeRefClose(false),
+  nframes(0)
 {
   parse("LAMBDA",lambda);
   parse("NEIGH_SIZE",neigh_size);
@@ -84,12 +84,10 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
         if(aaa!=mypdb.getAtomNumbers()) error("frames should contain same atoms in same order");
         log<<"Found PDB: "<<nframes<<" containing  "<<mypdb.getAtomNumbers().size()<<" atoms\n";
         pdbv.push_back(mypdb);
-//            requestAtoms(mypdb.getAtomNumbers()); // is done in non base classes
         derivs_s.resize(mypdb.getAtomNumbers().size());
         derivs_z.resize(mypdb.getAtomNumbers().size());
         mymsd.set(mypdb,"OPTIMAL");
         msdv.push_back(mymsd); // the vector that stores the frames
-        //log<<mypdb;
       } else {break ;}
     }
     fclose (fp);

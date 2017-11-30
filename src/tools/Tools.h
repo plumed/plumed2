@@ -160,7 +160,7 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
     if(rep>=0 && startWith(s,multi)) {
       s=s.substr(multi.length(),s.length());
       std::vector<std::string> words=getWords(s,"\t\n ,");
-      plumed_assert(rep< static_cast<int>(words.size()));
+      plumed_assert(rep<static_cast<int>(words.size()));
       s=words[rep];
     }
     if(!convert(s,v))return false;
