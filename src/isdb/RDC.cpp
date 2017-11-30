@@ -228,10 +228,9 @@ RDC::RDC(const ActionOptions&ao):
 
   const double RDCConst = 0.3356806;
   const double PCSConst = 1.0;
-  bool rdc = true;
 
-  if( getName().find("RDC")!=std::string::npos) { Const *= RDCConst; rdc=true;}
-  else if( getName().find("PCS")!=std::string::npos) { Const *= PCSConst; rdc=false;}
+  if( getName().find("RDC")!=std::string::npos) { Const *= RDCConst; }
+  else if( getName().find("PCS")!=std::string::npos) { Const *= PCSConst; }
 
   // Read in the atoms
   vector<AtomNumber> t, atoms;

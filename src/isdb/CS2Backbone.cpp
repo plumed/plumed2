@@ -771,9 +771,9 @@ void CS2Backbone::read_cs(const string &file, const string &nucl) {
     string tok;
     tok = *iter; ++iter;
     if(tok[0]=='#') { ++iter; continue;}
-    unsigned p = atoi(tok.c_str());
+    int p = atoi(tok.c_str());
     p = p - 1;
-    const unsigned seg = frag_segment(p);
+    const int seg = frag_segment(p);
     p = frag_relitive_index(p,seg);
     if(oldp==-1) oldp=p;
     if(oldseg==-1) oldseg=seg;
@@ -1160,7 +1160,7 @@ void CS2Backbone::calculate()
       }
     }
     #pragma omp critical
-    if(camshift) for(int i=0; i<getPositions().size(); i++) setAtomsDerivatives(getPntrToValue(),i,omp_deriv[i]);
+    if(camshift) for(unsigned i=0; i<getPositions().size(); i++) setAtomsDerivatives(getPntrToValue(),i,omp_deriv[i]);
   }
 
   if(getDoScore()) {
@@ -2145,7 +2145,7 @@ void CS2Backbone::debug_report() {
   printf("\t -------------------------------\n");
   printf("\t Number of segments: %u\n", static_cast<unsigned>(atom.size()));
   printf("\t Segments size:      ");
-  for(unsigned i=0; i<atom.size(); i++) printf("%u ", static_cast<unsigned>(atom[i].size())); printf("\n");
+  for(unsigned i=0; i<atom.size(); i++) {printf("%u ", static_cast<unsigned>(atom[i].size()));} printf("\n");
   printf("\t%8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s \n",
          "Seg","N","AA","Prev","Curr","Next","SC","XD1","XD2","Phi","Psi","Chi1");
   for(unsigned i=0; i<atom.size(); i++) {
@@ -2163,15 +2163,15 @@ void CS2Backbone::debug_report() {
              (unsigned)atom[i][j].psi.size(),
              (unsigned)atom[i][j].chi1.size());
 
-      for(unsigned k=0; k<atom[i][j].prev.size(); k++) printf("%8i ", atom[i][j].prev[k]); printf("\n");
-      for(unsigned k=0; k<atom[i][j].curr.size(); k++) printf("%8i ", atom[i][j].curr[k]); printf("\n");
-      for(unsigned k=0; k<atom[i][j].next.size(); k++) printf("%8i ", atom[i][j].next[k]); printf("\n");
-      for(unsigned k=0; k<atom[i][j].side_chain.size(); k++) printf("%8i ", atom[i][j].side_chain[k]); printf("\n");
-      for(unsigned k=0; k<atom[i][j].xd1.size(); k++) printf("%8i ", atom[i][j].xd1[k]); printf("\n");
-      for(unsigned k=0; k<atom[i][j].xd2.size(); k++) printf("%8i ", atom[i][j].xd2[k]); printf("\n");
-      for(unsigned k=0; k<atom[i][j].phi.size(); k++) printf("%8i ", atom[i][j].phi[k]); printf("\n");
-      for(unsigned k=0; k<atom[i][j].psi.size(); k++) printf("%8i ", atom[i][j].psi[k]); printf("\n");
-      for(unsigned k=0; k<atom[i][j].chi1.size(); k++) printf("%8i ", atom[i][j].chi1[k]); printf("\n");
+      for(unsigned k=0; k<atom[i][j].prev.size(); k++) { printf("%8i ", atom[i][j].prev[k]);} printf("\n");
+      for(unsigned k=0; k<atom[i][j].curr.size(); k++) { printf("%8i ", atom[i][j].curr[k]);} printf("\n");
+      for(unsigned k=0; k<atom[i][j].next.size(); k++) { printf("%8i ", atom[i][j].next[k]);} printf("\n");
+      for(unsigned k=0; k<atom[i][j].side_chain.size(); k++) { printf("%8i ", atom[i][j].side_chain[k]);} printf("\n");
+      for(unsigned k=0; k<atom[i][j].xd1.size(); k++) { printf("%8i ", atom[i][j].xd1[k]);} printf("\n");
+      for(unsigned k=0; k<atom[i][j].xd2.size(); k++) { printf("%8i ", atom[i][j].xd2[k]);} printf("\n");
+      for(unsigned k=0; k<atom[i][j].phi.size(); k++) { printf("%8i ", atom[i][j].phi[k]);} printf("\n");
+      for(unsigned k=0; k<atom[i][j].psi.size(); k++) { printf("%8i ", atom[i][j].psi[k]);} printf("\n");
+      for(unsigned k=0; k<atom[i][j].chi1.size(); k++) { printf("%8i ", atom[i][j].chi1[k]);} printf("\n");
 
     }
   }
@@ -2182,7 +2182,7 @@ void CS2Backbone::debug_report() {
   printf("\t%8s %8s %8s %8s\n", "Num","Type","RType","N.atoms");
   for(unsigned i=0; i<ringInfo.size(); i++) {
     printf("\t%8u %8u %8u \n",i+1,ringInfo[i].rtype,ringInfo[i].numAtoms);
-    for(unsigned j=0; j<ringInfo[i].numAtoms; j++) printf("%8u ", ringInfo[i].atom[j]); printf("\n");
+    for(unsigned j=0; j<ringInfo[i].numAtoms; j++) {printf("%8u ", ringInfo[i].atom[j]);} printf("\n");
   }
 }
 
