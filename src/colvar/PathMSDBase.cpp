@@ -54,7 +54,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   debugClose(0),
   logClose(0),
   computeRefClose(false),
-  nframes(0) 
+  nframes(0)
 {
   parse("LAMBDA",lambda);
   parse("NEIGH_SIZE",neigh_size);
