@@ -202,7 +202,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
       mypdb.setAtomPositions( frames[i]->getReferencePositions() );
       for(unsigned j=0; j<argnames.size(); ++j) mypdb.setArgumentValue( argnames[j], frames[i]->getReferenceArguments()[j] );
       ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
-      mypdb.print( 10, NULL, ofile, ofmt ); 
+      mypdb.print( 10, NULL, ofile, ofmt );
     }
     // Delete the vals as we don't need them
     for(unsigned i=0; i<vals.size(); ++i) delete vals[i];

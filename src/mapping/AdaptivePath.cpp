@@ -133,8 +133,8 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   double halflife; parse("HALFLIFE",halflife);
   if( halflife<0 ) fadefact=1.0;
   else {
-     fadefact = exp( -0.693147180559945 / static_cast<double>(halflife) );
-     log.printf("  weight of contribution to frame halves every %f steps \n",halflife);
+    fadefact = exp( -0.693147180559945 / static_cast<double>(halflife) );
+    log.printf("  weight of contribution to frame halves every %f steps \n",halflife);
   }
 
   // Create the list of tasks (and reset projections of frames)
@@ -234,15 +234,15 @@ void AdaptivePath::update() {
     std::vector<std::unique_ptr<ReferenceConfiguration>>& myconfs=getAllReferenceConfigurations();
     std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
     if( moldat.size()>1 ) error("you should only have one MOLINFO action in your input file");
-    SetupMolInfo* mymoldat=NULL; if( moldat.size()==1 ) mymoldat=moldat[0]; 
+    SetupMolInfo* mymoldat=NULL; if( moldat.size()==1 ) mymoldat=moldat[0];
     std::vector<std::string> argument_names( getNumberOfArguments() );
     for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i] = getPntrToArgument(i)->getName();
-    PDB mypdb; mypdb.setArgumentNames( argument_names ); 
-    for(unsigned i=0; i<myconfs.size(); ++i) { 
-         pathfile.printf("REMARK TYPE=%s\n", myconfs[i]->getName().c_str() );
-         mypdb.setAtomPositions( myconfs[i]->getReferencePositions() ); 
-         for(unsigned j=0; j<getNumberOfArguments(); ++j) mypdb.setArgumentValue( getPntrToArgument(j)->getName(), myconfs[i]->getReferenceArgument(j) );
-         mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, pathfile, ofmt );
+    PDB mypdb; mypdb.setArgumentNames( argument_names );
+    for(unsigned i=0; i<myconfs.size(); ++i) {
+      pathfile.printf("REMARK TYPE=%s\n", myconfs[i]->getName().c_str() );
+      mypdb.setAtomPositions( myconfs[i]->getReferencePositions() );
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) mypdb.setArgumentValue( getPntrToArgument(j)->getName(), myconfs[i]->getReferenceArgument(j) );
+      mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, pathfile, ofmt );
     }
     pathfile.flush();
   }

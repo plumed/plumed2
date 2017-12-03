@@ -161,7 +161,7 @@ void PCA::performAnalysis() {
   ReferenceValuePack mypack( myconf0->getNumberOfReferenceArguments(), myconf0->getNumberOfReferencePositions(), myval );
   for(unsigned i=0; i<myconf0->getNumberOfReferencePositions(); ++i) mypack.setAtomIndex( i, i );
   // Setup some PCA storage
-  myconf0->setupPCAStorage ( mypack ); 
+  myconf0->setupPCAStorage ( mypack );
   std::vector<double> displace( myconf0->getNumberOfReferencePositions() );
   if( myconf0->getNumberOfReferencePositions()>0 ) {
     ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( myconf0 );

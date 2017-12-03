@@ -148,7 +148,7 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   if(type=="GAUSSIAN" || type=="gaussian" ) {
     ktype=gaussian;
   } else if(type=="TRUNCATED-GAUSSIAN" || type=="truncated-gaussian" ) {
-    ktype=truncatedgaussian; 
+    ktype=truncatedgaussian;
   } else if(type=="UNIFORM" || type=="uniform") {
     ktype=uniform;
   } else if(type=="TRIANGULAR" || type=="triangular") {
