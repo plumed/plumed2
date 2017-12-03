@@ -1,0 +1,23 @@
+# Terminal settings
+set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+set output "plotTD.png"
+set border lw 1.5
+
+# Set labels
+set xlabel "Distance (nm)"
+set ylabel "p(s)"
+
+# Set plot range and tic options
+set yr [0:2.5]
+set xtics 0.5
+set xr [0.23:0.8]
+set xtics 0.1
+
+# Define colors
+set style line 1 lt 1 lw 4 lc rgb "#e41a1c"
+
+set key top right horizontal sample 1.
+
+pl "targetdist.b1.data" u 1:2 w l ls 1 notitle
+
+pause -1

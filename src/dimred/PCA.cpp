@@ -161,7 +161,13 @@ void PCA::performAnalysis() {
   ReferenceValuePack mypack( myconf0->getNumberOfReferenceArguments(), myconf0->getNumberOfReferencePositions(), myval );
   for(unsigned i=0; i<myconf0->getNumberOfReferencePositions(); ++i) mypack.setAtomIndex( i, i );
   // Setup some PCA storage
-  myconf0->setupPCAStorage ( mypack );
+  myconf0->setupPCAStorage ( mypack ); 
+  std::vector<double> displace( myconf0->getNumberOfReferencePositions() );
+  if( myconf0->getNumberOfReferencePositions()>0 ) {
+    ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( myconf0 );
+    displace = at->getDisplace();
+  }
+
   // Create some arrays to store the average position
   std::vector<double> sarg( myconf0->getNumberOfReferenceArguments(), 0 );
   std::vector<Vector> spos( myconf0->getNumberOfReferencePositions() );
@@ -176,7 +182,7 @@ void PCA::performAnalysis() {
     // Accumulate average displacement of arguments (Here PBC could do fucked up things - really needs Berry Phase ) GAT
     for(unsigned j=0; j<myconf0->getNumberOfReferenceArguments(); ++j) sarg[j] += 0.5*getWeight(i)*mypack.getArgumentDerivative(j);
     // Accumulate average displacement of position
-    for(unsigned j=0; j<myconf0->getNumberOfReferencePositions(); ++j) spos[j] += getWeight(i)*mypack.getAtomsDisplacementVector()[j];
+    for(unsigned j=0; j<myconf0->getNumberOfReferencePositions(); ++j) spos[j] += getWeight(i)*mypack.getAtomsDisplacementVector()[j] / displace[j];
     norm += getWeight(i);
   }
   // Now normalise the displacements to get the average and add these to the first frame
@@ -201,10 +207,10 @@ void PCA::performAnalysis() {
     }
     for(unsigned jat=0; jat<natoms; ++jat) {
       for(unsigned jc=0; jc<3; ++jc) {
-        double jdisplace = mypack.getAtomsDisplacementVector()[jat][jc] + myconf0->getReferencePositions()[jat][jc] - spos[jat][jc];
+        double jdisplace = mypack.getAtomsDisplacementVector()[jat][jc] / displace[jat] + myconf0->getReferencePositions()[jat][jc] - spos[jat][jc];
         for(unsigned kat=0; kat<natoms; ++kat) {
           for(unsigned kc=0; kc<3; ++kc) {
-            double kdisplace = mypack.getAtomsDisplacementVector()[kat][kc] + myconf0->getReferencePositions()[kat][kc] - spos[kat][kc];
+            double kdisplace = mypack.getAtomsDisplacementVector()[kat][kc] /displace[kat] + myconf0->getReferencePositions()[kat][kc] - spos[kat][kc];
             covar( narg+3*jat + jc, narg+3*kat + kc ) += getWeight(i)*jdisplace*kdisplace;
           }
         }
@@ -263,7 +269,7 @@ void PCA::getProjection( analysis::DataCollectionObject& myidata, std::vector<do
   myref->setupPCAStorage( mypack );
   // And calculate
   myref->calculate( mypdb.getPositions(), getPbc(), getArguments(), mypack, true );
-  for(unsigned i=0; i<nlow; ++i) point[i]=myref->projectDisplacementOnVector( directions[i], mypdb.getPositions(), getArguments(), args, mypack );
+  for(unsigned i=0; i<nlow; ++i) point[i]=myref->projectDisplacementOnVector( directions[i], getArguments(), args, mypack );
 }
 
 }

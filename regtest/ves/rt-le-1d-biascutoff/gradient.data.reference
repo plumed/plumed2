@@ -1,0 +1,210 @@
+#! FIELDS idx_phi ves1.gradient index
+#! SET time 2.000000
+#! SET iteration  1
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     0.000000       0
+       1    -0.219197       1
+       2     0.970366       2
+       3     0.884094       3
+       4     0.421298       4
+       5     0.590820       5
+       6    -0.748809       6
+       7    -0.576392       7
+       8    -0.715341       8
+       9    -0.786645       9
+      10     0.381816      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.gradient index
+#! SET time 4.000000
+#! SET iteration  2
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     0.000000       0
+       1    -0.121966       1
+       2     0.758909       2
+       3     0.808694       3
+       4     0.279723       4
+       5     0.396956       5
+       6    -0.734016       6
+       7    -0.605708       7
+       8    -0.448312       8
+       9    -0.352914       9
+      10     0.435454      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.gradient index
+#! SET time 6.000000
+#! SET iteration  3
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     0.000000       0
+       1    -0.050214       1
+       2     0.016247       2
+       3     0.056676       3
+       4     0.126151       4
+       5     0.242174       5
+       6    -0.095640       6
+       7    -0.101822       7
+       8    -0.394000       8
+       9    -0.558135       9
+      10     0.049915      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.gradient index
+#! SET time 8.000000
+#! SET iteration  4
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     0.000000       0
+       1     0.197529       1
+       2    -0.434955       2
+       3    -0.306762       3
+       4    -0.356542       4
+       5    -0.447376       5
+       6     0.122065       6
+       7    -0.083129       7
+       8     0.455805       8
+       9     0.385695       9
+      10     0.271251      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.gradient index
+#! SET time 10.000000
+#! SET iteration  5
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     0.000000       0
+       1     0.002342       1
+       2    -0.479106       2
+       3    -0.474460       3
+       4    -0.002187       4
+       5     0.000404       5
+       6     0.471375       6
+       7     0.473873       7
+       8    -0.001426       8
+       9     0.006527       9
+      10    -0.482886      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.gradient index
+#! SET time 12.000000
+#! SET iteration  6
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     0.000000       0
+       1     0.125358       1
+       2    -0.201904       2
+       3    -0.133984       3
+       4    -0.219081       4
+       5    -0.257824       5
+       6     0.045597       6
+       7    -0.033143       7
+       8     0.232610       8
+       9     0.151093       9
+      10     0.072287      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.gradient index
+#! SET time 14.000000
+#! SET iteration  7
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     0.000000       0
+       1     0.106187       1
+       2    -0.465412       2
+       3    -0.358200       3
+       4    -0.178184       4
+       5    -0.190164       5
+       6     0.206700       6
+       7     0.044620       7
+       8     0.130863       8
+       9     0.006052       9
+      10     0.093052      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.gradient index
+#! SET time 16.000000
+#! SET iteration  8
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     0.000000       0
+       1     0.126497       1
+       2    -0.459402       2
+       3    -0.343520       3
+       4    -0.218027       4
+       5    -0.247898       5
+       6     0.177598       6
+       7    -0.004514       7
+       8     0.203839       8
+       9     0.090477       9
+      10     0.167471      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.gradient index
+#! SET time 18.000000
+#! SET iteration  9
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     0.000000       0
+       1     0.137015       1
+       2     0.046655       2
+       3     0.133757       3
+       4    -0.241916       4
+       5    -0.290306       5
+       6    -0.253823       6
+       7    -0.374892       7
+       8     0.271942       8
+       9     0.193275       9
+      10     0.463936      10
+#!-------------------
+
+
+#! FIELDS idx_phi ves1.gradient index
+#! SET time 20.000000
+#! SET iteration  10
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     0.000000       0
+       1    -0.061006       1
+       2     0.183894       2
+       3     0.233224       3
+       4     0.139979       4
+       5     0.200352       5
+       6    -0.208709       6
+       7    -0.147516       7
+       8    -0.232740       8
+       9    -0.291676       9
+      10     0.117367      10
+#!-------------------
+
+

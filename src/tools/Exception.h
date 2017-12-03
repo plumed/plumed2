@@ -66,11 +66,8 @@ check is only performed when NDEBUG macro is not defined. They should
 be used when the check is expensive and should be skipped in production
 code.
 
-By default, execution is terminated imediately and a message is printed on stderr.
 
-If PLUMED is compiled with -D__PLUMED_EXCEPTIONS execution will continue
-and the exception will be passed to c++, so that it will be possible
-to intercepted it at a higher level, even outside plumed.
+Exceptions can be caught within plumed or outside it.
 E.g., in an external c++ code using PLUMED as a library, one can type
 \verbatim
   try{
@@ -95,11 +92,14 @@ is slower (GB)
 */
 class Exception : public std::exception
 {
-  std::string msg;
+/// Stack trace at exception
+  std::string stackString = trace();
+/// Reported message
+  std::string msg = format("","",0,"");
+/// Create stack trace
+  static std::string trace();
 /// Common tool, invoked by all the constructor to build the message string
   static std::string format(const std::string&,const std::string&,unsigned,const std::string&);
-/// Method which aborts in case exceptions are disabled
-  void abortIfExceptionsAreDisabled();
 public:
 /// Without message
   Exception();
@@ -107,8 +107,12 @@ public:
   explicit Exception(const std::string&);
 /// With message plus file, line and function (meant to be used through a preprocessor macro)
   Exception(const std::string&,const std::string&,unsigned,const std::string&);
-/// Returns the error message
+/// Returns the error message.
+/// In case the environment variable PLUMED_STACK_TRACE is defined, the error
+/// message will contain the stack trace as well.
   virtual const char* what() const throw() {return msg.c_str();}
+/// Returns the stack trace
+  virtual const char* stack() const throw() {return stackString.c_str();}
 /// Destructor should be defined and should not throw other exceptions
   virtual ~Exception() throw() {}
 };

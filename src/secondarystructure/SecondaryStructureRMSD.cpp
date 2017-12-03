@@ -45,7 +45,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD. "
            "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD. For more details on the "
            "DRMSD method see \\ref DRMSD.");
-  keys.add("compulsory","R_0","The r_0 parameter of the switching function.");
+  keys.add("compulsory","R_0","0.08","The r_0 parameter of the switching function.");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","NN","8","The n parameter of the switching function");
   keys.add("compulsory","MM","12","The m parameter of the switching function");
@@ -60,7 +60,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.use("LESS_THAN"); keys.use("MIN"); keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
   keys.setComponentsIntroduction("By default this Action calculates the number of structural units that are within a certain "
                                  "distance of a idealised secondary structure element. This quantity can then be referenced "
-                                 "elsewhere in the input by using the label of the action. However, thes Action can also be used to "
+                                 "elsewhere in the input by using the label of the action. However, this Action can also be used to "
                                  "calculate the following quantities by using the keywords as described below.  The quantities then "
                                  "calculated can be referened using the label of the action followed by a dot and then the name "
                                  "from the table below.  Please note that you can use the LESS_THAN keyword more than once.  The resulting "
@@ -94,7 +94,7 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
 }
 
 SecondaryStructureRMSD::~SecondaryStructureRMSD() {
-  for(unsigned i=0; i<references.size(); ++i) delete references[i];
+// destructor needed to delete forward declarated objects
 }
 
 void SecondaryStructureRMSD::turnOnDerivatives() {
@@ -112,7 +112,8 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std:
 
   std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );
   if( !verbose_output ) {
-    if(resstrings[0]=="all") {
+    if(resstrings.size()==0) error("residues are not defined, check the keyword RESIDUES");
+    else if(resstrings[0]=="all") {
       log.printf("  examining all possible secondary structure combinations\n");
     } else {
       log.printf("  examining secondary structure in residue positions : %s \n",resstrings[0].c_str() );
@@ -168,7 +169,7 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   }
 
   // Set the reference structure
-  references.push_back( metricRegister().create<SingleDomainRMSD>( alignType ) );
+  references.emplace_back( metricRegister().create<SingleDomainRMSD>( alignType ) );
   unsigned nn=references.size()-1;
   std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
   references[nn]->setBoundsOnDistances( true, bondlength );   // We always use pbc

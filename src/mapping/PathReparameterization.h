@@ -25,12 +25,14 @@
 #include "reference/ReferenceConfiguration.h"
 #include "reference/Direction.h"
 #include "tools/PDB.h"
+#include <memory>
 
-/// \ingroup TOOLBOX
-/// This class can be used to make a set of reference configurations equidistant
 
 namespace PLMD {
 namespace mapping {
+
+/// \ingroup TOOLBOX
+/// This class can be used to make a set of reference configurations equidistant
 
 class PathReparameterization {
 private:
@@ -46,7 +48,7 @@ private:
 /// The underlying value object for the arguments
   const std::vector<Value*>& args;
 /// Reference to path that we are reparameterizing
-  std::vector<ReferenceConfiguration*>& mypath;
+  std::vector<std::unique_ptr<ReferenceConfiguration>>& mypath;
 /// These are the current separations and the total length of the path
   std::vector<double> len, sumlen, sfrac;
 /// Maximum number of cycles in path reparameterization
@@ -58,7 +60,7 @@ private:
 /// Reparameterize the frames of the path between istart and iend and make the spacing equal to target
   void reparameterizePart( const int& istart, const int& iend, const double& target, const double& TOL );
 public:
-  PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<ReferenceConfiguration*>& pp );
+  PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<std::unique_ptr<ReferenceConfiguration>>& pp );
 /// Reparameterize the frames of the path between istart and iend so as to make the spacing constant
   void reparameterize( const int& istart, const int& iend, const double& TOL );
 };

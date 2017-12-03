@@ -1,0 +1,35 @@
+# vim: ft=plumed
+# First load information about the molecule.
+MOLINFO STRUCTURE=ref.pdb
+# Notice that this is special kind of "action" ("setup action")
+# that is only used during setup. It will not be re-executed at each step.
+
+# Define some group that will make the rest of the input more readable
+# Here are the atoms belonging to RNA.
+rna: GROUP ATOMS=1-258
+# This is the Mg ion. A group with atom is also useful!
+mg:  GROUP ATOMS=6580
+# This group should contain all the atoms belonging to water molecules.
+wat: GROUP ATOMS=259-6579
+# Select water oxygens only:
+owat: GROUP ATOMS=259-6579:3
+# Select water hydrogens only:
+hwat: GROUP ATOMS=wat REMOVE=owat
+
+# Compute gyration radius:
+r: GYRATION ATOMS=rna
+# Compute the Chi torsional angle:
+c: TORSION ATOMS=@chi-1
+# Compute coordination of RNA with water oxygens
+co: COORDINATION GROUPA=rna GROUPB=owat R_0=0.25
+# Compute coordination of RNA with water hydrogens
+ch: COORDINATION GROUPA=rna GROUPB=hwat R_0=0.25
+
+# Compute the geometric center of the RNA molecule:
+ce: CENTER ATOMS=rna
+# Compute the distance between the Mg ion and the RNA center:
+d: DISTANCE ATOMS=mg,ce
+
+# Print the collective variables on COLVAR file
+# No STRIDE means "print for every step"
+PRINT ARG=r,c,co,ch,d FILE=COLVAR

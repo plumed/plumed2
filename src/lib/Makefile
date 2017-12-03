@@ -1,3 +1,7 @@
+
+# version number
+VERSION = $(shell if test -f ../../VERSION ; then grep -v \\\# ../../VERSION ; else echo "Unknown" ; fi )
+
 # here we build the list of modules to be linked in plumedKernel
 KERNEL_MODULES := $(addprefix ../,$(shell ../maketools/find_modules.sh))
 
@@ -50,6 +54,13 @@ PLUMED_KERNEL := $(PLUMED_LIBDIR)libplumedKernel.$(SOEXT)
 # plumed library (kernel + wrapper)
 PLUMED_SHARED_OBJ := $(PLUMED_LIBDIR)libplumed.$(SOEXT)
 
+# plumed wrapper library
+ifdef AR_CR
+PLUMED_WRAPPER_LIB := $(PLUMED_LIBDIR)libplumedWrapper.a
+else
+PLUMED_WRAPPER_LIB := 
+endif
+
 # plumed scripts
 PLUMED_SCRIPTS_SH := $(shell cd ../../scripts/ ; ls *.sh 2>/dev/null)
 PLUMED_SCRIPTS := $(PLUMED_SCRIPTS_SH:.sh=)
@@ -83,7 +94,7 @@ install-build:
 	mkdir -p install/
 	$(MAKE) PLUMED_INSTALL=Install all
 ifdef LD_RO
-	$(MAKE) install/kernel.o
+	$(MAKE) PLUMED_INSTALL=Install install/kernel.o
 endif
 # modulefile
 	@cat modulefile.in | \
@@ -93,6 +104,48 @@ endif
            sed "s|@_bindir_@|$(bindir)|" | \
            sed "s|@_includedir_@|$(includedir)|" \
 	   > install/modulefile
+	@cat pkgconfig.in | \
+           sed "s|@_SOEXT_@|$(SOEXT)|" | \
+           sed "s|@_program_name_@|$(program_name)|" | \
+           sed "s|@_libdir_@|$(libdir)|" | \
+           sed "s|@_libs_@||" | \
+           sed "s|@_bindir_@|$(bindir)|" | \
+           sed "s|@_includedir_@|$(includedir)|" | \
+           sed "s|@_prefix_@|$(prefix)|" | \
+           sed "s|@_exec_prefix_@|$(exec_prefix)|" | \
+           sed "s|@_VERSION_@|$(VERSION)|" | \
+           sed "s|@_conflicts_@||" | \
+           sed "s|@_cppflags_@||" | \
+           sed "s|@_extra_@||" \
+	   > install/pkgconfig
+	@cat pkgconfig.in | \
+           sed "s|@_SOEXT_@|$(SOEXT)|" | \
+           sed "s|@_program_name_@|$(program_name)|" | \
+           sed "s|@_libdir_@|$(libdir)|" | \
+           sed "s|@_libs_@||" | \
+           sed "s|@_bindir_@|$(bindir)|" | \
+           sed "s|@_includedir_@|$(includedir)|" | \
+           sed "s|@_prefix_@|$(prefix)|" | \
+           sed "s|@_exec_prefix_@|$(exec_prefix)|" | \
+           sed "s|@_VERSION_@|$(VERSION)|" | \
+           sed "s|@_conflicts_@||" | \
+           sed "s|@_cppflags_@|$(shell ../maketools/purge-d $(CPPFLAGS))|" | \
+           sed "s|@_extra_@| (full version, including internals)|" \
+	   > install/pkgconfigInternals
+	@cat pkgconfig.in | \
+           sed "s|@_SOEXT_@|$(SOEXT)|" | \
+           sed "s|@_program_name_@|$(program_name)Wrapper|" | \
+           sed "s|@_libdir_@|$(libdir)|" | \
+           sed "s|@_libs_@|$(LIBS)|" | \
+           sed "s|@_bindir_@|$(bindir)|" | \
+           sed "s|@_includedir_@|$(includedir)|" | \
+           sed "s|@_prefix_@|$(prefix)|" | \
+           sed "s|@_exec_prefix_@|$(exec_prefix)|" | \
+           sed "s|@_VERSION_@|$(VERSION)|" | \
+           sed "s|@_conflicts_@||" | \
+           sed "s|@_cppflags_@||" | \
+           sed "s|@_extra_@| (wrapper-only version, set PLUMED_KERNEL at runtime) |" \
+	   > install/pkgconfigWrapper
 
 ifdef LD_RO
 install/kernel.o: $(OBJ_KERNEL)
@@ -148,6 +201,7 @@ endif
 	# $(MAKE) uninstall
 	mkdir -p "$(DESTDIR)$(bindir)"
 	mkdir -p "$(DESTDIR)$(libdir)"
+	mkdir -p "$(DESTDIR)$(libdir)/pkgconfig"
 	mkdir -p "$(DESTDIR)$(includedir)/$(program_name)"
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/obj"
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/src/lib"
@@ -168,7 +222,7 @@ endif
 ifdef LD_RO
 	cp install/kernel.o "$(DESTDIR)$(libdir)/$(program_name)/obj/kernel.o"
 else
-	../maketools/copyobjects "$(DESTDIR)$(libdir)/$(program_name)/obj/k" $(OBJ_KERNEL)
+	../maketools/copyobjects "$(DESTDIR)$(libdir)/$(program_name)/obj/k" $(subst ../config/Config.o,../config/ConfigInstall.o,$(OBJ_KERNEL))
 endif
 	cp $(OBJ_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/PlumedStatic.o"
 	cp $(OBJ_DYNAMIC_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/Plumed.o"
@@ -189,13 +243,40 @@ endif
 ifdef SOEXT
 	cp install/libplumed.$(SOEXT) "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	cp install/libplumedKernel.$(SOEXT) "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
+ifeq ($(SOEXT),dylib)
+	install_name_tool -id "$(libdir)/lib$(program_name).$(SOEXT)" "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
+	install_name_tool -id "$(libdir)/lib$(program_name)Kernel.$(SOEXT)" "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
+endif
+endif
+ifdef AR_CR
+	cp install/libplumedWrapper.a "$(DESTDIR)$(libdir)/lib$(program_name)Wrapper.a"
 endif
 # modulefile
 	cp install/modulefile "$(DESTDIR)$(libdir)/$(program_name)/modulefile"
+# pkgconfig files
+	cp install/pkgconfig "$(DESTDIR)$(libdir)/pkgconfig/$(program_name).pc"
+ifdef AR_CR
+	cp install/pkgconfigWrapper "$(DESTDIR)$(libdir)/pkgconfig/$(program_name)Wrapper.pc"
+endif
+	cp install/pkgconfigInternals "$(DESTDIR)$(libdir)/pkgconfig/$(program_name)Internals.pc"
 # vim syntax file
 	if test -d ../../vim/syntax ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/syntax | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
 	if test -d ../../vim/help ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/help | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
 	if test -f ../../vim/scripts.vim ; then cp ../../vim/scripts.vim  "$(DESTDIR)$(libdir)/$(program_name)/vim/" ; fi
+# python installation (rebuild prior to installation so as to discover plumed in path)
+ifdef python_bin
+	cp -pr ../../python install 
+	cd install/python && rm -fr *.so plumed.cpp build && \
+        CC="$(CC)" \
+          LDSHARED="$(LDSHARED)" \
+          CXX="$(CXX)" \
+          plumedexe="../../plumed" \
+          program_name="$(program_name)" \
+          include_dir=../../../wrapper \
+          lib_dir="$(DESTDIR)$(libdir)" \
+          $(python_bin) buildPythonInterface.py build_ext -i
+	cp -pr install/python "$(DESTDIR)$(libdir)/$(program_name)/" 
+endif
 # making everything visible:
 	chmod -R go+rX,go-w "$(DESTDIR)$(libdir)/$(program_name)"
 	chmod -R go+rX,go-w "$(DESTDIR)$(includedir)/$(program_name)"
@@ -211,12 +292,13 @@ endif
 	@echo "Full name      : $(program_name)"
 	@echo
 	@echo "Setup your environment"
-	@echo "- Ensure this is in your execution path : $(bindir)"
-	@echo "- Ensure this is in your include path   : $(includedir)"
+	@echo "- Ensure this is in your execution path         : $(bindir)"
+	@echo "- Ensure this is in your include path           : $(includedir)"
 ifdef SOEXT
-	@echo "- Ensure this is in your library path   : $(libdir)"
+	@echo "- Ensure this is in your library path           : $(libdir)"
+	@echo "- Ensure this is in your PKG_CONFIG_PATH path   : $(libdir)/pkgconfig"
 	@echo "For runtime binding:"
-	@echo "- Set this environment variable         : PLUMED_KERNEL=$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
+	@echo "- Set this environment variable                 : PLUMED_KERNEL=$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
 endif
 	@echo
 	@echo "To create a tcl module that sets all the variables above, use this one as a starting point:"
@@ -229,6 +311,7 @@ endif
 	@echo $(bindir)/$(program_name)
 	@echo $(bindir)/$(program_name)-patch
 	@echo $(bindir)/$(program_name)-config
+	@echo $(libdir)/pkgconfig/$(program_name).pc
 ifdef SOEXT
 	@echo $(libdir)/lib$(program_name).$(SOEXT)
 	@echo $(libdir)/lib$(program_name)Kernel.$(SOEXT)
@@ -239,6 +322,11 @@ endif
 	@if test -d ../../vim/help ; then echo "- Set this environment variable         : PLUMED_VIMPATH=$(libdir)/$(program_name)/vim" ; fi
 	@if test -d ../../vim/help ; then echo "- Add the command 'let &runtimepath.=','.\$$PLUMED_VIMPATH' to your .vimrc file" ; fi
 	@if test -d ../../vim/help ; then echo "From vim, you can use :set syntax=$(program_name) to enable it" ; fi
+	@if test -d ../../python/build ; then echo "A python plugin can be found here: $(libdir)/$(program_name)/python/" ; fi
+	@if test -d ../../python/build ; then echo "To use PLUMED through python either : " ; fi
+	@if test -d ../../python/build ; then echo "- Add $(libdir)/$(program_name)/python/ to your PYTHONPATH" ; fi
+	@if test -d ../../python/build ; then echo "- Execute the command python buildPythonInterface.py install in the plumed2/python directory"; fi
+	@if test -d ../../python/build ; then echo "Plumed can be loaded in a python script using the command import plumed" ; fi
 ifeq ($(program_can_run),no)
 	@echo "WARNING: $(program_name) executable will not run on this machine"
 	@echo "WARNING: to patch an MD code use 'plumed-patch'"
@@ -275,6 +363,7 @@ uninstall:
 	rm -f "$(DESTDIR)$(bindir)/bin/$(program_name)-config"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
+	rm -f "$(DESTDIR)$(libdir)/lib/pkgconfig/$(PLUMED_PROGRAM_NAME).pc"
 
 $(DIRS):
 	$(MAKE) -C $@ obj
@@ -285,7 +374,7 @@ lib: lib-static lib-shared
 
 lib-static: $(PLUMED_MAIN_STATIC) $(OBJ_WRAPPER) $(PLUMED_LIBDIR)Plumed.inc.static $(PLUMED_LIBDIR)Plumed.cmake.static $(PLUMED_SCRIPTS_EXE)
 
-lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME) \
+lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME) $(PLUMED_WRAPPER_LIB) \
            $(PLUMED_LIBDIR)Plumed.inc $(PLUMED_LIBDIR)Plumed.inc.runtime $(PLUMED_LIBDIR)Plumed.inc.shared \
            $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.cmake.runtime $(PLUMED_LIBDIR)Plumed.cmake.shared
 
@@ -315,17 +404,33 @@ endif
 $(PLUMED_KERNEL):$(OBJ_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-	cd install && $(LDSO) -o libplumedKernel.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(DYNAMIC_LIBS)
+	cd install && $(LDSHARED) -o libplumedKernel.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(DYNAMIC_LIBS)
 else
-	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
+	$(LDSHARED) -o $@ $^ $(DYNAMIC_LIBS)
+ifeq ($(SOEXT),dylib)
+	install_name_tool -id "$(realpath .)/libplumedKernel.$(SOEXT)" libplumedKernel.$(SOEXT)
+endif
 endif
 
 $(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-	cd install && $(LDSO) -o libplumed.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(addprefix ../,$(OBJ_WRAPPER)) $(DYNAMIC_LIBS)
+	cd install && $(LDSHARED) -o libplumed.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(addprefix ../,$(OBJ_WRAPPER)) $(DYNAMIC_LIBS)
 else
-	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
+	$(LDSHARED) -o $@ $^ $(DYNAMIC_LIBS)
+ifeq ($(SOEXT),dylib)
+	install_name_tool -id "$(realpath .)/libplumed.$(SOEXT)" $@
+endif
+endif
+
+ifdef AR_CR
+$(PLUMED_WRAPPER_LIB): $(OBJ_DYNAMIC_WRAPPER)
+ifeq ($(PLUMED_INSTALL),Install)
+	mkdir -p install
+	cd install && $(AR_CR) libplumedWrapper.a $(addprefix ../,$(OBJ_DYNAMIC_WRAPPER))
+else
+	$(AR_CR) $@ $(OBJ_DYNAMIC_WRAPPER)
+endif
 endif
 
 $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
@@ -341,7 +446,11 @@ ifeq ($(PLUMED_INSTALL),Install)
 
 $(PLUMED_LIBDIR)Plumed.inc:
 	@echo Building Plumed.inc
+ifdef AR_CR
+	@echo "PLUMED_RUNTIME_LOAD= \"$(libdir)/lib$(program_name)Wrapper.a\" $(LIBS) $(LDFLAGS)" > $@
+else
 	@echo "PLUMED_RUNTIME_LOAD= \"$(libdir)/$(program_name)/obj/Plumed.o\" $(LIBS) $(LDFLAGS)" > $@
+endif
 ifdef LD_RO
 	@echo "PLUMED_STATIC_LOAD= \"$(libdir)/$(program_name)/obj/kernel.o\" \"$(libdir)/$(program_name)/obj/PlumedStatic.o\" $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)" >> $@
 else
@@ -363,7 +472,11 @@ endif
 else
 Plumed.inc:
 	@echo Building Plumed.inc
+ifdef AR_CR
+	@echo "PLUMED_RUNTIME_LOAD=" $(realpath .)/libplumedWrapper.a $(LIBS) $(LDFLAGS) > $@
+else
 	@echo "PLUMED_RUNTIME_LOAD=" $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS) > $@
+endif
 	@echo "PLUMED_STATIC_LOAD=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS) >> $@
 	@echo "PLUMED_SHARED_LOAD=" $(realpath .)/libplumed.$(SOEXT) $(LIBS) $(LDFLAGS) >> $@
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@

@@ -22,15 +22,28 @@
 #include "SwitchingFunction.h"
 #include "Tools.h"
 #include "Keywords.h"
+#include "OpenMP.h"
 #include <vector>
 #include <limits>
 
-#ifdef __PLUMED_HAS_MATHEVAL
-#include <matheval.h>
-#endif
-
 using namespace std;
 namespace PLMD {
+
+static std::map<string, double> leptonConstants= {
+  {"e", std::exp(1.0)},
+  {"log2e", 1.0/std::log(2.0)},
+  {"log10e", 1.0/std::log(10.0)},
+  {"ln2", std::log(2.0)},
+  {"ln10", std::log(10.0)},
+  {"pi", pi},
+  {"pi_2", pi*0.5},
+  {"pi_4", pi*0.25},
+//  {"1_pi", 1.0/pi},
+//  {"2_pi", 2.0/pi},
+//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
+  {"sqrt2", std::sqrt(2.0)},
+  {"sqrt1_2", std::sqrt(0.5)}
+};
 
 //+PLUMEDOC INTERNAL switchingfunction
 /*
@@ -122,10 +135,7 @@ s(r) = FUNC
 </table>
 
 \attention
-Similarly to the \ref MATHEVAL function, the MATHEVAL switching function
-only works if libmatheval is installed on the system and
-PLUMED has been linked to it
-Also notice that using MATHEVAL is much slower than using e.g. RATIONAL.
+Notice that using MATHEVAL is much slower than using e.g. RATIONAL.
 Thus, the MATHEVAL switching function is useful to perform quick
 tests on switching functions with arbitrary form before proceeding to their
 implementation in C++.
@@ -236,26 +246,18 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
-#ifdef __PLUMED_HAS_MATHEVAL
-  else if(name=="MATHEVAL") {
-    type=matheval;
+  else if((name=="MATHEVAL" || name=="CUSTOM")) {
+    type=leptontype;
     std::string func;
     Tools::parse(data,"FUNC",func);
-    evaluator=evaluator_create(const_cast<char*>(func.c_str()));
-    char **check_names;
-    int    check_count;
-    evaluator_get_variables(evaluator,&check_names,&check_count);
-    if(check_count!=1) {
-      errormsg="wrong number of arguments in MATHEVAL switching function";
-      return;
-    }
-    if(std::string(check_names[0])!="x") {
-      errormsg ="argument should be named 'x'";
-      return;
-    }
-    evaluator_deriv=evaluator_derivative(evaluator,const_cast<char*>("x"));
+    lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(leptonConstants);
+    lepton_func=func;
+    expression.resize(OpenMP::getNumThreads());
+    for(auto & e : expression) e=pe.createCompiledExpression();
+    lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate("x").optimize(leptonConstants);
+    expression_deriv.resize(OpenMP::getNumThreads());
+    for(auto & e : expression_deriv) e=ped.createCompiledExpression();
   }
-#endif
   else errormsg="cannot understand switching function type '"+name+"'";
   if( !data.empty() ) {
     errormsg="found the following rogue keywords in switching function input : ";
@@ -288,10 +290,8 @@ std::string SwitchingFunction::description() const {
     ostr<<"cubic";
   } else if(type==tanh) {
     ostr<<"tanh";
-#ifdef __PLUMED_HAS_MATHEVAL
-  } else if(type==matheval) {
-    ostr<<"matheval";
-#endif
+  } else if(type==leptontype) {
+    ostr<<"lepton";
   } else {
     plumed_merror("Unknown switching function type");
   }
@@ -304,10 +304,8 @@ std::string SwitchingFunction::description() const {
     ostr<<" a="<<a<<" b="<<b;
   } else if(type==cubic) {
     ostr<<" dmax="<<dmax;
-#ifdef __PLUMED_HAS_MATHEVAL
-  } else if(type==matheval) {
-    ostr<<" func="<<evaluator_get_string(evaluator);
-#endif
+  } else if(type==leptontype) {
+    ostr<<" func="<<lepton_func;
 
   }
   return ostr.str();
@@ -396,11 +394,18 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       double tmp1=std::tanh(rdist);
       result = 1.0 - tmp1;
       dfunc=-(1-tmp1*tmp1);
-#ifdef __PLUMED_HAS_MATHEVAL
-    } else if(type==matheval) {
-      result=evaluator_evaluate_x(evaluator,rdist);
-      dfunc=evaluator_evaluate_x(evaluator_deriv,rdist);
-#endif
+    } else if(type==leptontype) {
+      const unsigned t=OpenMP::getThreadNum();
+      plumed_assert(t<expression.size());
+      try {
+        const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x")=rdist;
+        const_cast<lepton::CompiledExpression*>(&expression_deriv[t])->getVariableReference("x")=rdist;
+      } catch(PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=0*x
+      }
+      result=expression[t].evaluate();
+      dfunc=expression_deriv[t].evaluate();
     } else plumed_merror("Unknown switching function type");
 // this is for the chain rule:
     dfunc*=invr0;
@@ -415,88 +420,6 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
   return result;
 }
 
-SwitchingFunction::SwitchingFunction():
-  init(false),
-  type(rational),
-  invr0(0.0),
-  d0(0.0),
-  dmax(0.0),
-  nn(6),
-  mm(0),
-  a(0.0),
-  b(0.0),
-  c(0.0),
-  d(0.0),
-  lambda(0.0),
-  beta(0.0),
-  ref(0.0),
-  invr0_2(0.0),
-  dmax_2(0.0),
-  stretch(1.0),
-  shift(0.0),
-  evaluator(NULL),
-  evaluator_deriv(NULL)
-{
-}
-
-SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
-  init(sf.init),
-  type(sf.type),
-  invr0(sf.invr0),
-  d0(sf.d0),
-  dmax(sf.dmax),
-  nn(sf.nn),
-  mm(sf.mm),
-  a(sf.a),
-  b(sf.b),
-  c(sf.c),
-  d(sf.d),
-  lambda(sf.lambda),
-  beta(sf.beta),
-  ref(sf.ref),
-  invr0_2(sf.invr0_2),
-  dmax_2(sf.dmax_2),
-  stretch(sf.stretch),
-  shift(sf.shift),
-  evaluator(NULL),
-  evaluator_deriv(NULL)
-{
-#ifdef __PLUMED_HAS_MATHEVAL
-  if(sf.evaluator) evaluator=evaluator_create(evaluator_get_string(sf.evaluator));
-  if(sf.evaluator_deriv) evaluator_deriv=evaluator_create(evaluator_get_string(sf.evaluator_deriv));
-#endif
-}
-
-SwitchingFunction & SwitchingFunction::operator=(const SwitchingFunction& sf) {
-  if(&sf==this) return *this;
-  init=sf.init;
-  type=sf.type;
-  invr0=sf.invr0;
-  d0=sf.d0;
-  dmax=sf.dmax;
-  nn=sf.nn;
-  mm=sf.mm;
-  a=sf.a;
-  b=sf.b;
-  c=sf.c;
-  d=sf.d;
-  lambda=sf.lambda;
-  beta=sf.beta;
-  ref=sf.ref;
-  invr0_2=sf.invr0_2;
-  dmax_2=sf.dmax_2;
-  stretch=sf.stretch;
-  shift=sf.shift;
-  evaluator=NULL;
-  evaluator_deriv=NULL;
-#ifdef __PLUMED_HAS_MATHEVAL
-  if(sf.evaluator) evaluator=evaluator_create(evaluator_get_string(sf.evaluator));
-  if(sf.evaluator_deriv) evaluator_deriv=evaluator_create(evaluator_get_string(sf.evaluator_deriv));
-#endif
-  return *this;
-}
-
-
 void SwitchingFunction::set(int nn,int mm,double r0,double d0) {
   init=true;
   type=rational;
@@ -508,6 +431,12 @@ void SwitchingFunction::set(int nn,int mm,double r0,double d0) {
   this->d0=d0;
   this->dmax=d0+r0*pow(0.00001,1./(nn-mm));
   this->dmax_2=this->dmax*this->dmax;
+
+  double dummy;
+  double s0=calculate(0.0,dummy);
+  double sd=calculate(dmax,dummy);
+  stretch=1.0/(s0-sd);
+  shift=-sd*stretch;
 }
 
 double SwitchingFunction::get_r0() const {
@@ -524,13 +453,6 @@ double SwitchingFunction::get_dmax() const {
 
 double SwitchingFunction::get_dmax2() const {
   return dmax_2;
-}
-
-SwitchingFunction::~SwitchingFunction() {
-#ifdef __PLUMED_HAS_MATHEVAL
-  if(evaluator) evaluator_destroy(evaluator);
-  if(evaluator_deriv) evaluator_destroy(evaluator_deriv);
-#endif
 }
 
 

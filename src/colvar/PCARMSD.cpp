@@ -26,6 +26,7 @@
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
 #include "tools/Tools.h"
+#include <memory>
 
 using namespace std;
 
@@ -34,14 +35,13 @@ namespace colvar {
 
 class PCARMSD : public Colvar {
 
-  PLMD::RMSD* rmsd;
+  std::unique_ptr<PLMD::RMSD> rmsd;
   bool squared;
   std::vector< std::vector<Vector> > eigenvectors;
   std::vector<PDB> pdbv;
   std::vector<string> pca_names;
 public:
   explicit PCARMSD(const ActionOptions&);
-  ~PCARMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -97,7 +97,7 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   if( !pdb.read(f_average,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
     error("missing input file " + f_average );
 
-  rmsd = new RMSD();
+  rmsd.reset( new RMSD() );
   bool remove_com=true;
   bool normalize_weights=true;
   // here align and displace are a simple vector of ones
@@ -156,11 +156,6 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   turnOnDerivatives();
 
 }
-
-PCARMSD::~PCARMSD() {
-  delete rmsd;
-}
-
 
 // calculator
 void PCARMSD::calculate() {

@@ -56,6 +56,7 @@ Notice that if there are common atoms between GROUPA and GROUPB their interactio
 
 
 \par Examples
+
 \plumedfile
 # this is printing the electrostatic interaction between two groups of atoms
 dh: DHENERGY GROUPA=1-10 GROUPB=11-20 EPSILON=80.0 I=0.1 TEMP=300.0

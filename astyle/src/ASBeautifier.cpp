@@ -1348,7 +1348,7 @@ void ASBeautifier::registerContinuationIndentColon(const string& line, int i, in
 	if (firstChar == (size_t) i)		// firstChar is ':'
 	{
 		size_t firstWord = line.find_first_not_of(" \t", firstChar + 1);
-		if (firstChar != string::npos)
+		if (firstWord != string::npos)
 		{
 			int continuationIndentCount = firstWord + spaceIndentCount + tabIncrementIn;
 			continuationIndentStack->emplace_back(continuationIndentCount);

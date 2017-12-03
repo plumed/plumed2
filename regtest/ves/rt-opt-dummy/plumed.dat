@@ -1,0 +1,45 @@
+# vim:ft=plumed
+
+phi:   TORSION ATOMS=5,7,9,15     NOPBC
+
+bf1: BF_FOURIER ORDER=5 MINIMUM=-pi MAXIMUM=pi
+
+VES_LINEAR_EXPANSION ...
+ ARG=phi
+ BASIS_FUNCTIONS=bf1
+ LABEL=ves1
+ TEMP=300.0
+ GRID_BINS=100
+... VES_LINEAR_EXPANSION
+
+# NOTE: These parameters do not reflect parameters used in real simulations! 
+#       This is only for testing!
+#
+
+OPT_DUMMY ...
+  BIAS=ves1
+  STRIDE=1000
+  LABEL=o1
+  COEFFS_FILE=coeffs.data
+  COEFFS_OUTPUT=1
+  COEFFS_FMT=%12.6f
+  FES_OUTPUT=10
+  BIAS_OUTPUT=10
+  MONITOR_HESSIAN
+  GRADIENT_FILE=gradient.data
+  GRADIENT_OUTPUT=1
+  GRADIENT_FMT=%12.6f
+  HESSIAN_FILE=hessian.data
+  HESSIAN_OUTPUT=1
+  HESSIAN_FMT=%12.6f
+  TARGETDIST_AVERAGES_FMT=%12.6f
+... OPT_DUMMY
+
+PRINT ...
+  STRIDE=500
+  ARG=phi,ves1.bias,o1.*
+  FILE=colvar.data FMT=%6.3f
+... PRINT
+
+ENDPLUMED
+

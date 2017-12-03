@@ -58,9 +58,10 @@ private:
 /// The weights we are going to use for reweighting
   std::vector<Value*> weights;
 /// Are we accumulated the unormalized quantity
-  bool unormalised, activated;
+  bool activated;
 /// An object in which analysis data has been stored
   analysis::AnalysisBase* my_analysis_object;
+  enum {t,f,ndata} normalization;
 protected:
 /// This ensures runAllTasks is used
   bool useRunAllTasks;
@@ -102,6 +103,8 @@ public:
   virtual void finishAveraging() {}
 ///
   void runFinalJobs();
+///
+  bool ignoreNormalization() const ;
 };
 
 inline
@@ -118,7 +121,7 @@ std::vector<Value*> ActionWithAveraging::getArguments() {
 
 inline
 bool ActionWithAveraging::noNormalization() const {
-  return unormalised;
+  return normalization==f;
 }
 
 inline

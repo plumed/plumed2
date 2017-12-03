@@ -24,7 +24,10 @@
 
 #include "tools/Tensor.h"
 #include "tools/Vector.h"
+#include "tools/AtomNumber.h"
 #include <vector>
+#include <set>
+#include <memory>
 #include "tools/Units.h"
 
 namespace PLMD {
@@ -40,16 +43,14 @@ ordering indexes (to deal with domain decomposition codes) and layout
 The class is abstract, but it is possible to allocate a new pointer with
 create(n), where n is the actual size of MD-reals e.g.
 \verbatim
-  MDAtomsBase mdatoms=MDAtomsBase::create(sizeof(float));
-// ...
-  delete mdatoms;
+  std::unique_ptr<MDAtomsBase> mdatoms=MDAtomsBase::create(sizeof(float));
 \endverbatim
 */
 class MDAtomsBase
 {
 public:
 /// Creates an MDAtomsTyped<T> object such that sizeof(T)==n
-  static MDAtomsBase* create(unsigned n);
+  static std::unique_ptr<MDAtomsBase> create(unsigned n);
 /// Virtual destructor, just to allow inheritance.
   virtual ~MDAtomsBase() {}
 /// Get the size of MD-real
@@ -85,6 +86,8 @@ public:
   virtual void getPositions(const std::vector<int>&index,std::vector<Vector>&p)const=0;
 /// Retrieve all atom positions from index i to index j.
   virtual void getPositions(unsigned i,unsigned j,std::vector<Vector>&p)const=0;
+/// Retrieve all atom positions from atom indices and local indices.
+  virtual void getPositions(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,std::vector<Vector>&p)const=0;
 /// Retrieve selected masses.
 /// The operation is done in such a way that m[index[i]] is equal to the mass of atom i
   virtual void getMasses(const std::vector<int>&index,std::vector<double>&m)const=0;
@@ -98,6 +101,9 @@ public:
 /// Increment the force on selected atoms.
 /// The operation is done in such a way that f[index[i]] is added to the force on atom i
   virtual void updateForces(const std::vector<int>&index,const std::vector<Vector>&f)=0;
+/// Increment the force on selected atoms.
+/// The operation is done only for local atoms used in an action
+  virtual void updateForces(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces)=0;
 /// Rescale all the forces, including the virial.
 /// It is applied to all atoms with local index going from 0 to index.size()-1
   virtual void rescaleForces(const std::vector<int>&index,double factor)=0;

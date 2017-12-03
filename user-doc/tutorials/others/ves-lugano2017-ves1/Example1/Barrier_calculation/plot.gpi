@@ -1,0 +1,21 @@
+# Terminal settings
+#set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+#set output "plot.png"
+#set border lw 1.5
+
+# Set labels
+set xlabel "Time (ns)"
+set ylabel "Dissociation barrier (kT)"
+
+# Set plot range and tic options
+set yr [2.5:4.0]
+set ytics 0.5
+
+# Define colors
+set style line 1 lt 1 lw 3 ps 1 pt 5 lc rgb "#e41a1c"
+
+set key bottom left sample 1.
+
+pl "barrier.txt" u ($1/10.):($4/2.494) every 2 w lp ls 1 notitle
+
+pause -1

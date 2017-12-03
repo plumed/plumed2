@@ -29,6 +29,7 @@
 #include "reference/ReferenceConfiguration.h"
 #include <vector>
 #include <map>
+#include <memory>
 
 namespace PLMD {
 
@@ -44,11 +45,12 @@ class Mapping :
 {
   friend class PropertyMap;
   friend class TrigonometricPathVessel;
+  friend class AdaptivePath;
 private:
 //  The derivative wrt to the distance from the frame
   std::vector<double> dfframes;
 /// This holds all the reference information
-  std::vector<ReferenceConfiguration*> myframes;
+  std::vector<std::unique_ptr<ReferenceConfiguration>> myframes;
 /// The forces on each of the derivatives (used in apply)
   std::vector<double> forcesToApply;
 /// The weights of the various configurations
@@ -67,13 +69,12 @@ protected:
 /// Get the value of the weight
   double getWeight( const unsigned& weight ) const ;
 /// Return the vector of refernece configurations
-  std::vector<ReferenceConfiguration*>& getAllReferenceConfigurations();
+  std::vector<std::unique_ptr<ReferenceConfiguration>>& getAllReferenceConfigurations();
 /// Return a pointer to one of the reference configurations
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& ifunc );
 public:
   static void registerKeywords( Keywords& keys );
   explicit Mapping(const ActionOptions&);
-  ~Mapping();
 /// Overload the virtual functions that appear in both ActionAtomistic and ActionWithArguments
   void turnOnDerivatives();
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
@@ -132,7 +133,7 @@ double Mapping::getWeight( const unsigned& current ) const {
 }
 
 inline
-std::vector<ReferenceConfiguration*>& Mapping::getAllReferenceConfigurations() {
+std::vector<std::unique_ptr<ReferenceConfiguration>>& Mapping::getAllReferenceConfigurations() {
   return myframes;
 }
 

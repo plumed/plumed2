@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2013-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -80,16 +80,15 @@ Constant::Constant(const ActionOptions&ao):
   bool noderiv=false;
   parseFlag("NODERIV",noderiv);
   parseVector("VALUES",values);
+  vector<double> value;
+  parseVector("VALUE",value);
+  if(values.size()==0&&value.size()==0) error("One should use either VALUE or VALUES");
+  if(values.size()!=0&&value.size()!=0) error("One should use either VALUE or VALUES");
+  if(value.size()>1) error("VALUE cannot take more than one number");
   if(values.size()==0) {
-    double v;
-    parse("VALUE",v);
-// this checks if v is different from NAN
-    if(v*2!=v || v==0.0) {
-      values.resize(1);
-      values[0]=v;
-    }
+    values.resize(1);
+    values[0]=value[0];
   }
-  if(values.size()==0) error("Either VALUE or VALUES should be used with CONSTANT");
   checkRead();
   if(values.size()==1) {
     if(!noderiv) addValueWithDerivatives();
@@ -116,8 +115,8 @@ void Constant::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
   keys.remove("NUMERICAL_DERIVATIVES");
-  keys.add("compulsory","VALUES","NAN","The values of the constants");
-  keys.add("compulsory","VALUE","NAN","The value of the constant");
+  keys.add("optional","VALUES","The values of the constants");
+  keys.add("optional","VALUE","The value of the constant");
   keys.addFlag("NODERIV",false,"Set to TRUE if you want values without derivatives.");
   keys.addOutputComponent("v","default","the # value");
 }

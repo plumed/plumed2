@@ -175,7 +175,7 @@ private:
   MultiValue myvals;
   ReferenceValuePack mypack;
 /// The position of the reference configuration (the one we align to)
-  ReferenceConfiguration* myref;
+  std::unique_ptr<ReferenceConfiguration> myref;
 /// The eigenvectors we are interested in
   std::vector<Direction> directions;
 /// Stuff for applying forces
@@ -183,7 +183,6 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit PCAVars(const ActionOptions&);
-  ~PCAVars();
   unsigned getNumberOfDerivatives();
   void lockRequests();
   void unlockRequests();
@@ -208,7 +207,6 @@ void PCAVars::registerKeywords( Keywords& keys ) {
                           "reference point.");
   keys.add("compulsory","REFERENCE","a pdb file containing the reference configuration and configurations that define the directions for each eigenvector");
   keys.add("compulsory","TYPE","OPTIMAL","The method we are using for alignment to the reference structure");
-  keys.addFlag("NORMALIZE",false,"calculate the length of the eigenvector input and divide the components by it so as to have a normalised vector");
 }
 
 PCAVars::PCAVars(const ActionOptions& ao):
@@ -239,8 +237,8 @@ PCAVars::PCAVars(const ActionOptions& ao):
     // Fix argument names
     if(do_read) {
       if( nfram==0 ) {
-        myref = metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
-        Direction* tdir = dynamic_cast<Direction*>( myref );
+        myref.reset( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
+        Direction* tdir = dynamic_cast<Direction*>( myref.get() );
         if( tdir ) error("first frame should be reference configuration - not direction of vector");
         if( !myref->pcaIsEnabledForThisReference() ) error("can't do PCA with reference type " + mtype );
         // std::vector<std::string> remarks( mypdb.getRemark() ); std::string rtype;
@@ -255,7 +253,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
   }
   fclose(fp);
 
-  if( nfram<=2 ) error("no eigenvectors were specified");
+  if( nfram<=1 ) error("no eigenvectors were specified");
   log.printf("  found %u eigenvectors in file %s \n",nfram-1,reference.c_str() );
 
   // Finish the setup of the mapping object
@@ -281,7 +279,6 @@ PCAVars::PCAVars(const ActionOptions& ao):
     if( getPntrToArgument(i)->isPeriodic() ) error("cannot use periodic variables in pca projections");
   }
   // Work out if the user wants to normalise the input vector
-  bool nflag; parseFlag("NORMALIZE",nflag);
   checkRead();
 
   // Resize the matrices that will hold our eivenvectors
@@ -296,7 +293,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
   // Now calculate the eigenvectors
   for(unsigned i=0; i<myframes.size(); ++i) {
     // Calculate distance from reference configuration
-    myframes[i]->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), false, nflag, directions[i] );
+    myframes[i]->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), true, directions[i] );
     // Create a component to store the output
     std::string num; Tools::convert( i+1, num );
     addComponentWithDerivatives("eig-"+num); componentIsNotPeriodic("eig-"+num);
@@ -314,10 +311,6 @@ PCAVars::PCAVars(const ActionOptions& ao):
   // Resize all derivative arrays
   forces.resize( nder ); forcesToApply.resize( nder );
   for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
-}
-
-PCAVars::~PCAVars() {
-  delete myref;
 }
 
 unsigned PCAVars::getNumberOfDerivatives() {
@@ -356,8 +349,7 @@ void PCAVars::calculate() {
   // Now calculate projections on pca vectors
   Vector adif, ader; Tensor fvir, tvir;
   for(unsigned i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
-    double proj=myref->projectDisplacementOnVector( directions[i], getPositions(), getArguments(), args, mypack );
-
+    double proj=myref->projectDisplacementOnVector( directions[i], getArguments(), args, mypack );
     // And now accumulate derivatives
     Value* eid=getPntrToComponent(i);
     for(unsigned j=0; j<getNumberOfArguments(); ++j) eid->addDerivative( j, mypack.getArgumentDerivative(j) );

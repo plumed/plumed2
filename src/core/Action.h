@@ -168,10 +168,10 @@ public:
 /// Destructor
   virtual ~Action();
 private:
-/// Copy constructor is disabled (private and unimplemented)
-  explicit Action(const Action&a);
-/// Assignment operator is disabled (private and unimplemented)
-  Action& operator=(const Action&a);
+/// Copy constructor is deleted
+  Action(const Action&a) = delete;
+/// Assignment operator is deleted
+  Action& operator=(const Action&a) = delete;
   int replica_index;
 public:
 /// Check if Action was properly read.
@@ -375,7 +375,8 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
         log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
         this->exit(1);
       } else {
-        for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+        if(t.size()>0) for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+        else t.push_back(val);
       }
     } else if( keywords.style(key,"compulsory") ) {
       error("keyword " + key + " is compulsory for this action");
@@ -424,11 +425,6 @@ bool Action::isOptionOn(const std::string &s)const {
 inline
 bool Action::getRestart()const {
   return restart;
-}
-
-inline
-bool Action::getCPT()const {
-  return doCheckPoint;
 }
 
 }

@@ -3017,6 +3017,8 @@ bool ASFormatter::isPointerOrReference() const
 	//check for rvalue reference
 	if (currentChar == '&' && nextChar == '&')
 	{
+		if (lastWord == "auto")
+			return true;
 		if (previousNonWSChar == '>')
 			return true;
 		string followingText;

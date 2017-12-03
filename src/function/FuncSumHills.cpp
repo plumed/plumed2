@@ -28,6 +28,7 @@
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
 #include <iostream>
+#include <memory>
 
 using namespace std;
 
@@ -54,7 +55,7 @@ There are currently no examples for this keyword.
 
 class FilesHandler {
   vector <string> filenames;
-  vector <IFile*>  ifiles;
+  vector <std::unique_ptr<IFile>>  ifiles;
   Action *action;
   Log *log;
   bool parallelread;
@@ -66,21 +67,16 @@ public:
   bool scanOneHill(BiasRepresentation *br, IFile *ifile );
   void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin);
   void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin, vector<double> &histosigma);
-  ~FilesHandler();
 };
 FilesHandler::FilesHandler(const vector<string> &filenames, const bool &parallelread, Action &action, Log &mylog ):filenames(filenames),log(&mylog),parallelread(parallelread),beingread(0),isopen(false) {
   this->action=&action;
   for(unsigned i=0; i<filenames.size(); i++) {
-    IFile *ifile = new IFile();
+    std::unique_ptr<IFile> ifile(new IFile());
     ifile->link(action);
-    ifiles.push_back(ifile);
     plumed_massert((ifile->FileExist(filenames[i])), "the file "+filenames[i]+" does not exist " );
+    ifiles.emplace_back(std::move(ifile));
   }
 
-}
-
-FilesHandler::~FilesHandler() {
-  for(unsigned i=0; i<ifiles.size(); i++) delete ifiles[i];
 }
 
 // note that the FileHandler is completely transparent respect to the biasrepresentation
@@ -95,7 +91,7 @@ bool FilesHandler::readBunch(BiasRepresentation *br, int stride = -1) {
     // read one by one hills
     // is the type defined? if not, assume it is a gaussian
     IFile *ff;
-    ff=ifiles[beingread];
+    ff=ifiles[beingread].get();
     if(!isopen) {
       (*log)<<"  opening file "<<filenames[beingread]<<"\n";
       ff->open(filenames[beingread]); isopen=true;
@@ -119,7 +115,7 @@ bool FilesHandler::readBunch(BiasRepresentation *br, int stride = -1) {
         (*log)<<"  now total "<<br->getNumberOfKernels()<<" kernels \n";
         beingread++;
         if(beingread<ifiles.size()) {
-          ff=ifiles[beingread]; ff->open(filenames[beingread]);
+          ff=ifiles[beingread].get(); ff->open(filenames[beingread]);
           (*log)<<"  opening file "<<filenames[beingread]<<"\n";
           isopen=true;
         } else {
@@ -196,11 +192,10 @@ class FuncSumHills :
   double uppI_;
   double beta;
   string outhills,outhisto,fmt;
-  BiasRepresentation *biasrep;
-  BiasRepresentation *historep;
+  std::unique_ptr<BiasRepresentation> biasrep;
+  std::unique_ptr<BiasRepresentation> historep;
 public:
   explicit FuncSumHills(const ActionOptions&);
-  ~FuncSumHills();
   void calculate(); // this probably is not needed
   bool checkFilesAreExisting(const vector<string> & hills );
   static void registerKeywords(Keywords& keys);
@@ -248,9 +243,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
   lowI_(-1.),
   uppI_(-1.),
   beta(-1.),
-  fmt("%14.9f"),
-  biasrep(NULL),
-  historep(NULL)
+  fmt("%14.9f")
 {
 
   // format
@@ -466,7 +459,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     // check if the files exists
     if(integratehills) {
       checkFilesAreExisting(hillsFiles);
-      biasrep=new BiasRepresentation(tmphillsvalues,comm, gmin, gmax, gbin, doInt, lowI_, uppI_);
+      biasrep.reset(new BiasRepresentation(tmphillsvalues,comm, gmin, gmax, gbin, doInt, lowI_, uppI_));
       if(negativebias) {
         biasrep->setRescaledToBias(true);
         log<<"  required the -bias instead of the free energy \n";
@@ -489,7 +482,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     // the list of the collective variable one want to consider
     if(integratehisto) {
       checkFilesAreExisting(histoFiles);
-      historep=new BiasRepresentation(tmphistovalues,comm,gmin,gmax,gbin,histoSigma);
+      historep.reset(new BiasRepresentation(tmphistovalues,comm,gmin,gmax,gbin,histoSigma));
     }
 
     // decide how to source hills ( serial/parallel )
@@ -499,14 +492,11 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     // of hills (i.e. a list of hills and the associated grid)
 
     // decide how to source colvars ( serial parallel )
-    FilesHandler *hillsHandler;
-    FilesHandler *histoHandler;
+    std::unique_ptr<FilesHandler> hillsHandler;
+    std::unique_ptr<FilesHandler> histoHandler;
 
-    hillsHandler=NULL;
-    histoHandler=NULL;
-
-    if(integratehills)	hillsHandler=new FilesHandler(hillsFiles,parallelread,*this, log);
-    if(integratehisto)	histoHandler=new FilesHandler(histoFiles,parallelread,*this, log);
+    if(integratehills)	hillsHandler.reset(new FilesHandler(hillsFiles,parallelread,*this, log));
+    if(integratehisto)	histoHandler.reset(new FilesHandler(histoFiles,parallelread,*this, log));
 
     Stopwatch sw;
 
@@ -519,13 +509,13 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
       if(  integratehills  && ibias  ) {
         if(nohistory) {biasrep->clear(); log<<"  clearing history before reading a new block\n";};
         log<<"  reading hills: \n";
-        ibias=hillsHandler->readBunch(biasrep,initstride) ; log<<"\n";
+        ibias=hillsHandler->readBunch(biasrep.get(),initstride) ; log<<"\n";
       }
 
       if(  integratehisto  && ihisto ) {
         if(nohistory) {historep->clear(); log<<"  clearing history before reading a new block\n";};
         log<<"  reading histogram: \n";
-        ihisto=histoHandler->readBunch(historep,initstride) ;  log<<"\n";
+        ihisto=histoHandler->readBunch(historep.get(),initstride) ;  log<<"\n";
       }
 
       // dump: need to project?
@@ -640,19 +630,13 @@ void FuncSumHills::calculate() {
   plumed_merror("You should have never got here: this stuff is not yet implemented!");
 }
 
-FuncSumHills::~FuncSumHills() {
-  if(historep) delete historep;
-  if(biasrep) delete biasrep;
-}
-
 bool FuncSumHills::checkFilesAreExisting(const vector<string> & hills ) {
   plumed_massert(hills.size()!=0,"the number of  files provided should be at least one" );
-  IFile *ifile = new IFile();
+  std::unique_ptr<IFile> ifile(new IFile());
   ifile->link(*this);
   for(unsigned i=0; i< hills.size(); i++) {
     plumed_massert(ifile->FileExist(hills[i]),"missing file "+hills[i]);
   }
-  delete ifile;
   return true;
 
 }

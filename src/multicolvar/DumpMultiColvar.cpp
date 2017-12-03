@@ -45,6 +45,7 @@ namespace multicolvar {
 Dump atom positions and multicolvar on a file.
 
 \par Examples
+
 In this examples we calculate the distances between the  atoms of the first and the second
 group and we write them in the file MULTICOLVAR.xyz. For each couple it writes the
 coordinates of their geometric center and their distance.

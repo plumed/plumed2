@@ -70,12 +70,14 @@ public:
   }
   void getBox(Tensor &)const;
   void getPositions(const vector<int>&index,vector<Vector>&positions)const;
+  void getPositions(const std::set<AtomNumber>&index,const vector<unsigned>&i,vector<Vector>&positions)const;
   void getPositions(unsigned j,unsigned k,vector<Vector>&positions)const;
   void getLocalPositions(std::vector<Vector>&p)const;
   void getMasses(const vector<int>&index,vector<double>&)const;
   void getCharges(const vector<int>&index,vector<double>&)const;
   void updateVirial(const Tensor&)const;
   void updateForces(const vector<int>&index,const vector<Vector>&);
+  void updateForces(const std::set<AtomNumber>&index,const vector<unsigned>&i,const vector<Vector>&forces);
   void rescaleForces(const vector<int>&index,double factor);
   unsigned  getRealPrecision()const;
 };
@@ -109,6 +111,18 @@ void MDAtomsTyped<T>::getPositions(const vector<int>&index,vector<Vector>&positi
     positions[index[i]][0]=px[stride*i]*scalep;
     positions[index[i]][1]=py[stride*i]*scalep;
     positions[index[i]][2]=pz[stride*i]*scalep;
+  }
+}
+
+template <class T>
+void MDAtomsTyped<T>::getPositions(const std::set<AtomNumber>&index,const vector<unsigned>&i, vector<Vector>&positions)const {
+// cannot be parallelized with omp because access to positions is not ordered
+  unsigned k=0;
+  for(const auto & p : index) {
+    positions[p.index()][0]=px[stride*i[k]]*scalep;
+    positions[p.index()][1]=py[stride*i[k]]*scalep;
+    positions[p.index()][2]=pz[stride*i[k]]*scalep;
+    k++;
   }
 }
 
@@ -149,6 +163,17 @@ void MDAtomsTyped<T>::getCharges(const vector<int>&index,vector<double>&charges)
 template <class T>
 void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const {
   if(this->virial) for(int i=0; i<3; i++)for(int j=0; j<3; j++) this->virial[3*i+j]+=T(virial(i,j)*scalev);
+}
+
+template <class T>
+void MDAtomsTyped<T>::updateForces(const std::set<AtomNumber>&index,const vector<unsigned>&i,const vector<Vector>&forces) {
+  unsigned k=0;
+  for(const auto & p : index) {
+    fx[stride*i[k]]+=scalef*T(forces[p.index()][0]);
+    fy[stride*i[k]]+=scalef*T(forces[p.index()][1]);
+    fz[stride*i[k]]+=scalef*T(forces[p.index()][2]);
+    k++;
+  }
 }
 
 template <class T>
@@ -260,11 +285,11 @@ MDAtomsTyped<T>::MDAtomsTyped():
   virial(NULL)
 {}
 
-MDAtomsBase* MDAtomsBase::create(unsigned p) {
+std::unique_ptr<MDAtomsBase> MDAtomsBase::create(unsigned p) {
   if(p==sizeof(double)) {
-    return new MDAtomsTyped<double>;
+    return std::unique_ptr<MDAtomsTyped<double>>(new MDAtomsTyped<double>);
   } else if (p==sizeof(float)) {
-    return new MDAtomsTyped<float>;
+    return std::unique_ptr<MDAtomsTyped<float>>(new MDAtomsTyped<float>);
   }
   std::string pp;
   Tools::convert(p,pp);

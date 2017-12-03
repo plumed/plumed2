@@ -73,6 +73,14 @@ eRMSD = \sqrt{\frac{1}{N} \sum_{j,k} \vert \vec{G}(\tilde{\vec{r}}_{jk}^{\alpha}
 
 Using the default cutoff, two structures with eRMSD of 0.7 or lower can be considered as significantly similar. A full description of the eRMSD can be found in \cite bott14
 
+ERMSD is computed using the position of three atoms on the 6-membered ring of each involved nucleobase. The atoms should be:
+- C2,C4,C6 for pyrimdines
+- C2,C6,C4 for purines
+
+The different order for purines and pyrimidines is fundamental and allows you to compute ERMSD between structures with different
+sequences as well! Notice that the simplest way to avoid mistakes in choosing these atoms is to use the `@lcs-#` strings
+as shown in the examples (see also \ref MOLINFO).
+
 \warning Notice that the ERMSD implemented here is not integrated with the other metrics in plumed. As a consequence, it is not (yet) possible
 to e.g. build path collective variables using ERMSD
 
@@ -85,6 +93,7 @@ Calculate the eRMSD from reference structure reference.pdb using the default cut
 considering residues 1,2,3,4,5,6.
 
 \plumedfile
+MOLINFO STRUCTURE=reference.pdb
 eRMSD1: ERMSD REFERENCE=reference.pdb ATOMS=@lcs-1,@lcs-2,@lcs-3,@lcs-4,@lcs-5,@lcs-6
 \endplumedfile
 
@@ -167,7 +176,7 @@ ERMSD::ERMSD(const ActionOptions&ao):
 // shift to count from zero
   for(unsigned i=0; i<pairs_.size(); ++i) pairs_[i]--;
 
-  ermsd.setReference(reference_positions,pairs_,cutoff);
+  ermsd.setReference(reference_positions,pairs_,cutoff/atoms.getUnits().getLength());
 
   requestAtoms(atoms_);
   derivs.resize(natoms);
@@ -195,9 +204,10 @@ void ERMSD::calculate() {
 // Notice that this might have problems when having 2 RNA molecules (hybridization).
 
   ermsdist=ermsd.calculate(getPositions(),fake_pbc,derivs,virial);
-  setValue(ermsdist);
+  const double scale=atoms.getUnits().getLength();
+  setValue(ermsdist*scale);
 
-  for(unsigned i=0; i<derivs.size(); ++i) {setAtomsDerivatives(i,derivs[i]);}
+  for(unsigned i=0; i<derivs.size(); ++i) {setAtomsDerivatives(i,derivs[i]*scale);}
 
   setBoxDerivativesNoPbc();
 

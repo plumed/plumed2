@@ -10,14 +10,18 @@
 !/crystallization
 !/dimred
 !/eds
+!/drr
 !/mapping
 !/multicolvar
+!/python
 !/secondarystructure
 !/trajectories
 !/scripts
 !/manyrestraints
 !/molfile_plugin
-!/metainference
+!/pamm
+!/isdb
+!/ves
 # These files we just want to ignore completely
 tmp
 report.txt

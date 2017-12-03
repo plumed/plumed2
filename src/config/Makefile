@@ -23,7 +23,10 @@ obj: all
 
 config.txt: ../../Makefile.conf
 	@echo "Updating config.txt file"
-	@ ../maketools/update-config-txt.sh config.txt $(CPPFLAGS)
+	@makefile_conf="$(realpath ../../Makefile.conf)" \
+         python_bin="$(python_bin)" \
+         mpiexec="$(mpiexec)" \
+         ../maketools/update-config-txt.sh config.txt $(CPPFLAGS)
 
 version.h:
 	@echo "Updating version.h"
@@ -67,7 +70,7 @@ Makefile.conf.xxd: ../../Makefile.conf
 compile_options.sh:
 	@echo Building compile_options.sh, a sourceable bash script with some compilation options
 	@echo "compile='"$(CXX) -c -I'"$$PLUMED_INCLUDEDIR/$$PLUMED_PROGRAM_NAME"'/ $(CPPFLAGS) $(CXXFLAGS) -o"'" > $@
-	@echo "link='"$(LDSO) $(DYNAMIC_LIBS) -o"'" >> $@
+	@echo "link='"$(LDSHARED) $(DYNAMIC_LIBS) -o"'" >> $@
 	@echo "soext='"$(SOEXT)"'" >> $@
 
 .PHONY: clean

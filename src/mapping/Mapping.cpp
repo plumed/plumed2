@@ -91,7 +91,7 @@ Mapping::Mapping(const ActionOptions&ao):
     // Fix argument names
     expandArgKeywordInPDB( mypdb );
     // And read the frame
-    myframes.push_back( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
+    myframes.emplace_back( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
     if( !mypdb.getArgumentValue( "WEIGHT", ww ) ) ww=1.0;
     weights.push_back( ww ); wnorm+=ww; nfram++;
   }
@@ -126,10 +126,6 @@ void Mapping::turnOnDerivatives() {
   needsDerivatives();
 }
 
-Mapping::~Mapping() {
-  for(unsigned i=0; i<myframes.size(); ++i) delete myframes[i];
-}
-
 double Mapping::getLambda() {
   plumed_merror("lambda is not defined in this mapping type");
 }
@@ -150,7 +146,7 @@ void Mapping::finishPackSetup( const unsigned& ifunc, ReferenceValuePack& mypack
   unsigned nat2=myframes[ifunc]->getNumberOfReferencePositions();
   if( mypack.getNumberOfAtoms()!=nat2 || mypack.getNumberOfArguments()!=nargs2 ) mypack.resize( nargs2, nat2 );
   if( nat2>0 ) {
-    ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myframes[ifunc] ); plumed_dbg_assert( myat2 );
+    ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myframes[ifunc].get() ); plumed_dbg_assert( myat2 );
     for(unsigned i=0; i<nat2; ++i) mypack.setAtomIndex( i, myat2->getAtomIndex(i) );
   }
 }
@@ -170,7 +166,7 @@ double Mapping::calculateDistanceFunction( const unsigned& ifunc, ReferenceValue
 }
 
 ReferenceConfiguration* Mapping::getReferenceConfiguration( const unsigned& ifunc ) {
-  return myframes[ifunc];
+  return myframes[ifunc].get();
 }
 
 void Mapping::calculateNumericalDerivatives( ActionWithValue* a ) {

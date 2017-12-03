@@ -146,14 +146,14 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   if( ifilename.length()>0 ) {
     fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
     FILE* fp=fopen(ifilename.c_str(),"r");
-    bool do_read=true; std::vector<ReferenceConfiguration*> frames;
+    bool do_read=true; std::vector<std::unique_ptr<ReferenceConfiguration>> frames;
     while (do_read) {
       PDB mypdb;
       // Read the pdb file
       do_read=mypdb.readFromFilepointer(fp,false,0.1);
       if( do_read ) {
         ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
-        frames.push_back( mymsd );
+        frames.emplace_back( mymsd );
       }
     }
     std::vector<unsigned> fixed; parseVector("--fixed",fixed);
@@ -202,7 +202,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
       mypdb.setAtomPositions( frames[i]->getReferencePositions() );
       for(unsigned j=0; j<argnames.size(); ++j) mypdb.setArgumentValue( argnames[j], frames[i]->getReferenceArguments()[j] );
       ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
-      mypdb.print( 10, NULL, ofile, ofmt ); delete frames[i];
+      mypdb.print( 10, NULL, ofile, ofmt ); 
     }
     // Delete the vals as we don't need them
     for(unsigned i=0; i<vals.size(); ++i) delete vals[i];
@@ -214,14 +214,14 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   std::string istart; parse("--start",istart); FILE* fp2=fopen(istart.c_str(),"r"); PDB mystartpdb;
   if( istart.length()==0 ) error("input is missing use --istart + --iend or --path");
   if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) error("could not read fila " + istart);
-  ReferenceConfiguration* sframe=metricRegister().create<ReferenceConfiguration>( mtype, mystartpdb );
+  std::unique_ptr<ReferenceConfiguration> sframe( metricRegister().create<ReferenceConfiguration>( mtype, mystartpdb ) );
   fclose(fp2);
 
 // Read final frame
   std::string iend; parse("--end",iend); FILE* fp1=fopen(iend.c_str(),"r"); PDB myendpdb;
   if( iend.length()==0 ) error("input is missing using --istart + --iend or --path");
   if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
-  ReferenceConfiguration* eframe=metricRegister().create<ReferenceConfiguration>( mtype, myendpdb );
+  std::unique_ptr<ReferenceConfiguration> eframe( metricRegister().create<ReferenceConfiguration>( mtype, myendpdb ) );
   fclose(fp1);
 // Get atoms and arg requests
   std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;
@@ -252,7 +252,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   PDB mypdb; mypdb.setAtomNumbers( sframe->getAbsoluteIndexes() ); mypdb.addBlockEnd( sframe->getAbsoluteIndexes().size() );
   if( sframe->getArgumentNames().size()>0 ) mypdb.setArgumentNames( sframe->getArgumentNames() );
   Direction mydir(ReferenceConfigurationOptions("DIRECTION")); sframe->setupPCAStorage( mypack ); mydir.read( mypdb ); mydir.zeroDirection();
-  sframe->extractDisplacementVector( eframe->getReferencePositions(), args, eframe->getReferenceArguments(), false, false, mydir );
+  sframe->extractDisplacementVector( eframe->getReferencePositions(), args, eframe->getReferenceArguments(), false, mydir );
 
 // Now create frames
   OFile ofile; ofile.open(ofilename); unsigned nframes=0;
@@ -292,7 +292,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 
 // Delete the args as we don't need them anymore
   for(unsigned i=0; i<args.size(); ++i) delete args[i];
-  ofile.close(); delete sframe; delete eframe; return 0;
+  ofile.close(); return 0;
 }
 
 } // End of namespace

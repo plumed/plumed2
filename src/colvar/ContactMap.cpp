@@ -26,6 +26,7 @@
 
 #include <string>
 #include <cmath>
+#include <memory>
 
 using namespace std;
 
@@ -35,9 +36,13 @@ namespace colvar {
 //+PLUMEDOC COLVAR CONTACTMAP
 /*
 Calculate the distances between a number of pairs of atoms and transform each distance by a switching function.
+
 The transformed distance can be compared with a reference value in order to calculate the squared distance
 between two contact maps. Each distance can also be weighted for a given value. CONTACTMAP can be used together
 with \ref FUNCPATHMSD to define a path in the contactmap space.
+
+The individual contact map distances related to each contact can be accessed as components
+named `cm.contact-1`, `cm.contact-2`, etc, assuming that the label of the CONTACTMAP is `cm`.
 
 \par Examples
 
@@ -106,13 +111,12 @@ PRINT ARG=cmap FILE=colvar
 class ContactMap : public Colvar {
 private:
   bool pbc, serial, docomp, dosum, docmdist;
-  NeighborList *nl;
+  std::unique_ptr<NeighborList> nl;
   std::vector<SwitchingFunction> sfs;
   vector<double> reference, weight;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ContactMap(const ActionOptions&);
-  ~ContactMap();
 // active methods:
   virtual void calculate();
   void checkFieldsAllowed() {}
@@ -177,7 +181,7 @@ ContactMap::ContactMap(const ActionOptions&ao):
     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact-"+num); componentIsNotPeriodic("contact-"+num);}
   }
   // Create neighbour lists
-  nl= new NeighborList(ga_lista,gb_lista,true,pbc,getPbc());
+  nl.reset(new NeighborList(ga_lista,gb_lista,true,pbc,getPbc()));
 
   // Read in switching functions
   std::string errors; sfs.resize( ga_lista.size() ); unsigned nswitch=0;
@@ -255,10 +259,6 @@ ContactMap::ContactMap(const ActionOptions&ao):
   // Set up if it is just a list of contacts
   requestAtoms(nl->getFullAtomList());
   checkRead();
-}
-
-ContactMap::~ContactMap() {
-  delete nl;
 }
 
 void ContactMap::calculate() {

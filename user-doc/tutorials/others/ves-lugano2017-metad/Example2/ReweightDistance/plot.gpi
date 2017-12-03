@@ -1,0 +1,26 @@
+# Terminal settings
+#set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+#set output "plot.png"
+#set border lw 1.5
+
+# Set axes labels
+set xlabel "Distance (nm)"
+set ylabel "Free energy (kT)"
+
+# Set range
+set xr [0.2:0.7]
+set yr [-1:6]
+
+set style line 1 lt 1 lw 2 ps 1 pt 5 lc rgb "black"
+set style line 2 lt 1 lw 2 ps 1 pt 7 lc rgb "red"
+set style line 3 lt 1 lw 2 ps 1 pt 9 lc rgb "blue"
+
+set key bottom left sample 1.
+
+everyValue=1
+
+pl "../fes-mintozero/fes_77.dat" u 1:($2/2.494) w l ls 1 title "sum hills", \
+ "./histo" u 1:(-log($2)+2.15) every everyValue w p ls 2 title "Reweight", \
+ "./histo_wall" u 1:(-log($2)+1.3) every everyValue  w p ls 3 title "Reweight w/ wall bias"
+
+pause -1

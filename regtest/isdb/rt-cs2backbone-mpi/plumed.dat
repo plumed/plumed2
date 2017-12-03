@@ -1,0 +1,12 @@
+cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATADIR=../data/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOPBC 
+
+ens: ENSEMBLE ARG=(cs\.ca_.*),(cs\.cb_.*),(cs\.hn_.*),(cs\.nh_.*)
+
+st: STATS ARG=(cs\.ca_.*),(cs\.cb_.*),(cs\.hn_.*),(cs\.nh_.*) PARARG=(cs\.expca_.*),(cs\.expcb_.*),(cs\.exphn_.*),(cs\.expnh_.*)
+ste: STATS ARG=ens.* PARARG=(cs\.expca_.*),(cs\.expcb_.*),(cs\.exphn_.*),(cs\.expnh_.*)
+
+RESTRAINT ARG=st.sqdevsum,ste.corr AT=0,1 KAPPA=0,0 SLOPE=1,1
+
+DUMPFORCES ARG=(cs\.ca_.*),(cs\.cb_.*),(cs\.hn_.*),(cs\.nh_.*) FILE=forces
+
+PRINT ARG=st.*,ste.* STRIDE=1 FILE=colvar FMT=%8.4f

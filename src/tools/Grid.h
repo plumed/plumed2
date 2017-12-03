@@ -26,6 +26,7 @@
 #include <string>
 #include <map>
 #include <cmath>
+#include <memory>
 
 namespace PLMD {
 
@@ -129,6 +130,8 @@ public:
   unsigned getDimension() const;
 /// get argument names  of this grid
   std::vector<std::string> getArgNames() const;
+/// get if the grid has derivatives
+  bool hasDerivatives() const {return usederiv_;}
 
 /// methods to handle grid indices
   void getIndices(index_t index, std::vector<unsigned>& rindex) const;
@@ -149,16 +152,19 @@ public:
   std::vector<index_t> getNeighbors(index_t index,const std::vector<unsigned> & neigh) const;
   std::vector<index_t> getNeighbors(const std::vector<unsigned> & indices,const std::vector<unsigned> & neigh) const;
   std::vector<index_t> getNeighbors(const std::vector<double> & x,const std::vector<unsigned> & neigh) const;
+/// get nearest neighbors (those separated by exactly one lattice unit)
+  std::vector<index_t> getNearestNeighbors(const index_t index) const;
+  std::vector<index_t> getNearestNeighbors(const std::vector<unsigned> &indices) const;
 
 /// write header for grid file
   void writeHeader(OFile& file);
 
 /// read grid from file
-  static Grid* create(const std::string&,const std::vector<Value*>&,IFile&,bool,bool,bool);
+  static std::unique_ptr<Grid> create(const std::string&,const std::vector<Value*>&,IFile&,bool,bool,bool);
 /// read grid from file and check boundaries are what is expected from input
-  static Grid* create(const std::string&,const std::vector<Value*>&, IFile&,
-                      const std::vector<std::string>&,const std::vector<std::string>&,
-                      const std::vector<unsigned>&,bool,bool,bool);
+  static std::unique_ptr<Grid> create(const std::string&,const std::vector<Value*>&, IFile&,
+                                      const std::vector<std::string>&,const std::vector<std::string>&,
+                                      const std::vector<unsigned>&,bool,bool,bool);
 /// get grid size
   virtual index_t getSize() const;
 /// get grid value
@@ -214,10 +220,15 @@ public:
   void projectOnLowDimension(double &val, std::vector<int> &varHigh, WeightBase* ptr2obj );
 /// set output format
   void setOutputFmt(const std::string & ss) {fmt_=ss;}
+/// reset output format to the default %14.9f format
+  void resetToDefaultOutputFmt() {fmt_="%14.9f";}
 /// Integrate the function calculated on the grid
   double integrate( std::vector<unsigned>& npoints );
 ///
   void mpiSumValuesAndDerivatives( Communicator& comm );
+/// Find the maximum over paths of the minimum value of the gridded function along the paths
+/// for all paths of neighboring grid lattice points from a source point to a sink point.
+  virtual double findMaximalPathMinimum(const std::vector<double> &source, const std::vector<double> &sink);
 };
 
 

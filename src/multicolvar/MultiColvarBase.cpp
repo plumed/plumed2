@@ -30,6 +30,7 @@
 #include "AtomValuePack.h"
 #include <vector>
 #include <string>
+#include <limits>
 
 using namespace std;
 
@@ -69,6 +70,7 @@ void MultiColvarBase::registerKeywords( Keywords& keys ) {
                "using the label of another multicolvar");
   keys.reserve("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see "
                "the documentation for that keyword");
+  keys.add("hidden","ALL_INPUT_SAME_TYPE","remove this keyword to remove certain checks in the input on the sanity of your input file.  See code for details");
 }
 
 MultiColvarBase::MultiColvarBase(const ActionOptions&ao):
@@ -139,9 +141,9 @@ bool MultiColvarBase::parseMultiColvarAtomList(const std::string& key, const int
     // Check all base multicolvars are of same type
     if( i==0 ) {
       mname = mycolv->getName();
-      if( mycolv->isPeriodic() ) error("multicolvar functions don't work with this multicolvar");
+      if( keywords.exists("ALL_INPUT_SAME_TYPE") && mycolv->isPeriodic() ) error("multicolvar functions don't work with this multicolvar");
     } else {
-      if( mname!=mycolv->getName() ) error("All input multicolvars must be of same type");
+      if( keywords.exists("ALL_INPUT_SAME_TYPE") && mname!=mycolv->getName() ) error("All input multicolvars must be of same type");
     }
     // And track which variable stores each colvar
     for(unsigned j=0; j<mycolv->getFullNumberOfTasks(); ++j) atom_lab.push_back( std::pair<unsigned,unsigned>( mybasemulticolvars.size()+1, j ) );
@@ -465,9 +467,7 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
     for(unsigned j=0; j<tmp_atoms.size(); ++j) all_atoms.push_back( tmp_atoms[j] );
   }
   // Copy atom lists from input
-  if( !usespecies ) {
-    for(unsigned i=0; i<atoms.size(); ++i) all_atoms.push_back( atoms[i] );
-  }
+  for(unsigned i=0; i<atoms.size(); ++i) all_atoms.push_back( atoms[i] );
 
   // Now make sure we get all the atom positions
   ActionAtomistic::requestAtoms( all_atoms );
@@ -497,8 +497,14 @@ void MultiColvarBase::turnOnDerivatives() {
 void MultiColvarBase::setLinkCellCutoff( const double& lcut, double tcut ) {
   plumed_assert( usespecies || ablocks.size()<4 );
   if( tcut<0 ) tcut=lcut;
-  linkcells.setCutoff( lcut );
-  threecells.setCutoff( tcut );
+
+  if( !linkcells.enabled() ) {
+    linkcells.setCutoff( lcut );
+    threecells.setCutoff( tcut );
+  } else {
+    if( lcut>linkcells.getCutoff() ) linkcells.setCutoff( lcut );
+    if( tcut>threecells.getCutoff() ) threecells.setCutoff( tcut );
+  }
 }
 
 double MultiColvarBase::getLinkCellCutoff()  const {
@@ -558,6 +564,7 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
   plumed_assert( !usespecies );
   if( nblock==0 || !linkcells.enabled() ) return ;
   deactivateAllTasks();
+  std::vector<unsigned> requiredlinkcells;
 
   if( !uselinkforthree && nactive_atoms>0 ) {
     // Get some parallel info
@@ -570,7 +577,7 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
     for(unsigned i=rank; i<ablocks[0].size(); i+=stride) {
       if( !isCurrentlyActive( ablocks[0][i] ) ) continue;
       unsigned natomsper=1; linked_atoms[0]=my_always_active;  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
-      linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
+      linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), requiredlinkcells, natomsper, linked_atoms );
       for(unsigned j=0; j<natomsper; ++j) {
         for(unsigned k=bookeeping(i,linked_atoms[j]).first; k<bookeeping(i,linked_atoms[j]).second; ++k) taskFlags[k]=1;
       }
@@ -614,14 +621,14 @@ void MultiColvarBase::setupNonUseSpeciesLinkCells( const unsigned& my_always_act
     for(unsigned i=rank; i<ablocks[0].size(); i+=stride) {
       if( !isCurrentlyActive( ablocks[0][i] ) ) continue;
       unsigned natomsper=1; linked_atoms[0]=my_always_active;  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
-      linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
+      linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), requiredlinkcells, natomsper, linked_atoms );
       if( allthirdblockintasks ) {
         for(unsigned j=0; j<natomsper; ++j) {
           for(unsigned k=bookeeping(i,linked_atoms[j]).first; k<bookeeping(i,linked_atoms[j]).second; ++k) taskFlags[k]=1;
         }
       } else {
         unsigned ntatomsper=1; tlinked_atoms[0]=lttmp_ind[0];
-        threecells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), ntatomsper, tlinked_atoms );
+        threecells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), requiredlinkcells, ntatomsper, tlinked_atoms );
         for(unsigned j=0; j<natomsper; ++j) {
           for(unsigned k=0; k<ntatomsper; ++k) taskFlags[bookeeping(i,linked_atoms[j]).first+tlinked_atoms[k]]=1;
         }
@@ -649,14 +656,14 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
     myatoms.setNumberOfAtoms( 1 ); myatoms.setAtom( 0, taskCode ); return true;
   } else if( usespecies ) {
     std::vector<unsigned> task_atoms(1); task_atoms[0]=taskCode;
-    unsigned natomsper=myatoms.setupAtomsFromLinkCells( task_atoms, getLinkCellPosition(task_atoms), linkcells );
+    unsigned natomsper=myatoms.setupAtomsFromLinkCells( task_atoms, getPositionOfAtomForLinkCells( taskCode ), linkcells );
     return natomsper>1;
   } else if( matsums ) {
     myatoms.setNumberOfAtoms( getNumberOfAtoms() );
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) myatoms.setAtom( i, i );
   } else if( allthirdblockintasks ) {
     plumed_dbg_assert( ablocks.size()==3 ); std::vector<unsigned> atoms(2); decodeIndexToAtoms( taskCode, atoms );
-    myatoms.setupAtomsFromLinkCells( atoms, getLinkCellPosition(atoms), threecells );
+    myatoms.setupAtomsFromLinkCells( atoms, getPositionOfAtomForLinkCells( atoms[0] ), threecells );
   } else if( nblock>0 ) {
     std::vector<unsigned> atoms( ablocks.size() );
     decodeIndexToAtoms( taskCode, atoms ); myatoms.setNumberOfAtoms( ablocks.size() );
@@ -759,7 +766,7 @@ void MultiColvarBase::calculate() {
   if( !usespecies && ablocks.size()>1 ) {
     // This loop finds the first active atom, which is always checked because
     // of a peculiarity in linkcells
-    unsigned first_active;
+    unsigned first_active=std::numeric_limits<unsigned>::max();
     for(unsigned i=0; i<ablocks[0].size(); ++i) {
       if( !isCurrentlyActive( ablocks[1][i] ) ) continue;
       else {
@@ -799,7 +806,6 @@ void MultiColvarBase::mergeInputDerivatives( const unsigned& ival, const unsigne
   // Get start of indices for this atom
   unsigned basen=0; for(unsigned i=0; i<mmc; ++i) basen+=mybasemulticolvars[i]->getNumberOfDerivatives() - 9;
   plumed_dbg_assert( basen%3==0 ); // Check the number of atoms is consistent with input derivatives
-
   unsigned virbas = myvals.getNumberOfDerivatives()-9;
   for(unsigned j=0; j<myder.getNumberActive(); ++j) {
     unsigned jder=myder.getActiveIndex(j);

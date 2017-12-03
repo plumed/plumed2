@@ -35,6 +35,7 @@ namespace colvar {
 Calculate the volume of the simulation box.
 
 \par Examples
+
 The following input tells plumed to print the volume of the system
 \plumedfile
 vol: VOLUME

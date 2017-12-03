@@ -1,0 +1,51 @@
+echo both
+
+# Define temperature parameters
+variable	temperature equal 300.0 # Simulation temperature in Kelvin
+variable	tempDamp equal 100.0 # Relaxation time of themostat - 0.1 ps
+
+# Define pressure parameters
+variable	pressure equal 1.0 # Pressure in bars
+variable	pressureDamp equal 500.0 # Relaxation time of the barostat 0.5 ps
+
+# Define random seed
+variable	seed equal 74582 
+
+# Simulation setup
+units		real	
+atom_style	full
+variable	out_freq equal 100 # Thermo output frequency
+variable	out_freq2 equal 100 # Dump output frequency
+neigh_modify    delay 10 every 1 # Neighbor list setup
+include		in.restart.nacl # Load initial configuration
+timestep	2.0 # Timestep 2 fs
+thermo          ${out_freq}
+thermo_style 	custom step temp pe ke etotal press lx ly lz xy xz yz
+restart 	${out_freq} restart restart2
+
+# Write trajectory to file
+dump           	myDump all dcd ${out_freq2} out.restart.dcd
+dump_modify    	myDump unwrap yes
+
+# Restart simulation
+
+
+fix             1 all temp/csvr ${temperature} ${temperature} ${tempDamp} ${seed} # Bussi's thermostat
+fix 		2 all momentum 10000 linear 1 1 1 # Set total linear momentum to zero every 10000 steps
+fix             3 all plumed plumedfile plumed.restart.dat outfile plumed.restart.out # Use plumed
+fix             4 all shake 0.0001 20 100000 t 1 2 # Shake algorithm
+fix             5 all nph iso ${pressure} ${pressure} ${pressureDamp} # Isotropic barostat
+
+velocity        all create ${temperature} ${seed} dist gaussian
+
+run             5000000 # 10 ns
+
+unfix           1
+unfix           2
+unfix           3
+unfix           4
+unfix           5
+
+# Write final configuration
+write_data	data.restart.final
+

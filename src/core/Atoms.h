@@ -27,10 +27,12 @@
 #include "tools/Units.h"
 #include "tools/Exception.h"
 #include "tools/AtomNumber.h"
+#include "tools/ForwardDecl.h"
 #include <vector>
 #include <set>
 #include <map>
 #include <string>
+#include <memory>
 
 namespace PLMD {
 
@@ -47,13 +49,16 @@ class Atoms
   friend class ActionAtomistic;
   friend class ActionWithVirtualAtom;
   int natoms;
+  std::set<AtomNumber> unique;
+  std::vector<unsigned> uniq_index;
   std::vector<Vector> positions;
   std::vector<Vector> forces;
   std::vector<double> masses;
   std::vector<double> charges;
   std::vector<ActionWithVirtualAtom*> virtualAtomsActions;
   Tensor box;
-  Pbc&   pbc;
+  ForwardDecl<Pbc> pbc_fwd;
+  Pbc&   pbc=*pbc_fwd;
   Tensor virial;
 // this is the energy set by each processor:
   double md_energy;
@@ -78,7 +83,7 @@ class Atoms
 
   std::vector<int> fullList;
 
-  MDAtomsBase* mdatoms;
+  std::unique_ptr<MDAtomsBase> mdatoms;
 
   PlumedMain & plumed;
 
@@ -98,7 +103,7 @@ class Atoms
 
   double kbT;
 
-  std::vector<const ActionAtomistic*> actions;
+  std::vector<ActionAtomistic*> actions;
   std::vector<int>    gatindex;
 
   bool asyncSent;
@@ -191,8 +196,8 @@ public:
   void getFullList(int**);
   void clearFullList();
 
-  void add(const ActionAtomistic*);
-  void remove(const ActionAtomistic*);
+  void add(ActionAtomistic*);
+  void remove(ActionAtomistic*);
 
   double getEnergy()const {plumed_assert(collectEnergy && energyHasBeenSet); return energy;}
 

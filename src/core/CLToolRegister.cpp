@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -66,13 +66,13 @@ bool CLToolRegister::check(string key) {
   return false;
 }
 
-CLTool* CLToolRegister::create(const CLToolOptions&ao) {
+std::unique_ptr<CLTool> CLToolRegister::create(const CLToolOptions&ao) {
   if(ao.line.size()<1)return NULL;
-  CLTool* cltool;
+  std::unique_ptr<CLTool> cltool;
   if(check(ao.line[0])) {
     CLToolOptions nao( ao,mk[ao.line[0]] );
     cltool=m[ao.line[0]](nao);
-  } else cltool=NULL;
+  }
   return cltool;
 }
 
