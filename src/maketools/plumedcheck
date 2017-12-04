@@ -14,7 +14,7 @@
 # DOC: In case you think you have a valid reason for a code not passing the check
 # DOC: to be merged, please contact the developers.
 
-TEMP=$(mktemp)
+TEMP=$(mktemp -t plumed.XXXXXX)
 
 cat > $TEMP << \EOF
 
@@ -144,7 +144,7 @@ BEGIN{
   core_modules["reference"]=1
 
 # create tmp dir for future usage
-  "mktemp -d" | getline tmpdir
+  "mktemp -dt plumed.XXXXXX" | getline tmpdir
 }
 
 # for each input file
