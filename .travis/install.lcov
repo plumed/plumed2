@@ -3,7 +3,7 @@
 set -e
 set -x
 
-cd "$(mktemp -d)"
+cd "$(mktemp -dt plumed.XXXXXX)"
 
 git clone https://github.com/linux-test-project/lcov.git
 
