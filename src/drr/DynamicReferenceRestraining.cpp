@@ -321,8 +321,8 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   parse("OUTPUTFREQ", outputfreq);
   parse("HISTORYFREQ", historyfreq);
   parse("OUTPUTPREFIX", outputprefix);
-  string restartfilename;
-  parse("DRR_RFILE", restartfilename);
+  string restart_prefix;
+  parse("DRR_RFILE", restart_prefix);
   string uirprefix;
   parse("UIRESTARTPREFIX", uirprefix);
   if (temp >= 0.0)
@@ -336,10 +336,10 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         << '\n';
   }
   if (getRestart()) {
-    if (restartfilename.length() != 0) {
+    if (restart_prefix.length() != 0) {
       isRestart = true;
       firsttime = false;
-      load(restartfilename);
+      load(restart_prefix);
     } else {
       log << "eABF/DRR: You don't specify the file for restarting." << '\n';
       log << "eABF/DRR: So I assume you are splitting windows." << '\n';
@@ -521,8 +521,14 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     biasforceValue[i] = getPntrToComponent(comp);
   }
 
-  if (outputprefix.length() == 0)
+  if (outputprefix.length() == 0) {
     outputprefix = getLabel();
+  }
+  // Support multiple replica
+  string replica_suffix = plumed.getSuffix();
+  if (replica_suffix.empty() == false) {
+    outputprefix = outputprefix + "." + replica_suffix;
+  }
   outputname = outputprefix + ".drrstate";
   cptname = outputprefix + ".cpt.drrstate";
 
@@ -569,10 +575,10 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       uirestart = true;
     }
     if (isRestart && (uirprefix.length() == 0)) {
-      input_filename.push_back(getLabel());
+      input_filename.push_back(outputprefix);
     }
     eabf_UI = UIestimator::UIestimator(
-                lowerboundary, upperboundary, width, kappa, getLabel(), int(outputfreq),
+                lowerboundary, upperboundary, width, kappa, outputprefix, int(outputfreq),
                 uirestart, input_filename, kbt / plumed.getAtoms().getKBoltzmann());
   }
 }
@@ -674,7 +680,14 @@ void DynamicReferenceRestraining::save(const string &filename,
   out.close();
 }
 
-void DynamicReferenceRestraining::load(const string &filename) {
+void DynamicReferenceRestraining::load(const string &rfile_prefix) {
+  string replica_suffix = plumed.getSuffix();
+  string filename;
+  if (replica_suffix.empty() == true) {
+    filename = rfile_prefix + ".drrstate";
+  } else {
+    filename = rfile_prefix + "." + replica_suffix + ".drrstate";
+  }
   std::ifstream in;
   long long int step;
   in.open(filename.c_str(), std::ios::binary);
