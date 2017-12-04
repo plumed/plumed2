@@ -419,6 +419,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   // Set up kbt for extended system
   log << "eABF/DRR: The fullsamples is " << fullsamples << '\n';
   log << "eABF/DRR: The maximum scaling factor is " << maxFactor << '\n';
+  if (maxFactor > 1.0) {
+    log << "eABF/DRR: Warning! The maximum scaling factor larger than 1.0 is not recommended!" << '\n';
+  }
   log << "eABF/DRR: The kbt(real system) is " << kbt << '\n';
   dt = getTimeStep();
   vector<double> ekbt(ndims, 0.0);
