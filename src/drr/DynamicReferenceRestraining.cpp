@@ -527,7 +527,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   // Support multiple replica
   string replica_suffix = plumed.getSuffix();
   if (replica_suffix.empty() == false) {
-    outputprefix = outputprefix + "." + replica_suffix;
+    outputprefix = outputprefix + replica_suffix;
   }
   outputname = outputprefix + ".drrstate";
   cptname = outputprefix + ".cpt.drrstate";
