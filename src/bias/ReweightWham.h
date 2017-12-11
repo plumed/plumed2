@@ -30,9 +30,9 @@ namespace bias {
 class ReweightWham : public ReweightBase {
 private:
   double thresh;
+  unsigned nreplicas;
   unsigned maxiter;
   bool weightsCalculated;
-  std::vector<unsigned> wlists;
   std::vector<double> stored_biases;
   std::vector<double> final_weights;
 public:

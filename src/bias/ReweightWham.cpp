@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ReweightWham.h"
 #include "core/ActionRegister.h"
+#include "tools/Communicator.h"
 
 //+PLUMEDOC REWEIGHTING REWEIGHT_WHAM
 /*
@@ -36,7 +37,8 @@ namespace bias {
 PLUMED_REGISTER_ACTION(ReweightWham,"REWEIGHT_WHAM")
 
 void ReweightWham::registerKeywords(Keywords& keys ) {
-  ReweightBase::registerKeywords( keys ); keys.use("ARG");
+  ReweightBase::registerKeywords( keys ); keys.remove("ARG");
+  keys.add("compulsory","ARG","*.bias","the biases that must be taken into account when reweighting");
   keys.add("compulsory","MAXITER","1000","maximum number of iterations for WHAM algorithm");
   keys.add("compulsory","WHAMTOL","1e-10","threshold for convergence of WHAM algorithm");
 }
@@ -46,31 +48,20 @@ ReweightWham::ReweightWham(const ActionOptions&ao):
   ReweightBase(ao),
   weightsCalculated(false)
 {
-  std::vector<Value*> targ, fagr;
-  unsigned nbias = 0; wlists.push_back( 0 );
-  for(unsigned i=1;; i++) {
-    if( !parseArgumentList("ARG",i,targ ) ) break;
-    log.printf("  bias number %d involves :");
-    for(unsigned j=0; j<targ.size(); ++j) {
-      log.printf("%s ",targ[j]->getName().c_str() );
-      fagr.push_back( targ[j] );
-    }
-    log.printf("\n"); targ.resize(0);
-    wlists.push_back( fagr.size() );
-    nbias++;
-  }
-  plumed_assert( wlists.size()==(nbias+1) ); requestArguments( fagr );
   parse("MAXITER",maxiter); parse("WHAMTOL",thresh);
+  if(comm.Get_rank()==0) nreplicas=multi_sim_comm.Get_size();
+  comm.Bcast(nreplicas,0);
 }
 
 double ReweightWham::getLogWeight() {
   if( getStep()==0 ) return 1.0;  // This is here as first step is ignored in all analyses
   weightsCalculated=false;
-  for(unsigned i=0; i<wlists.size()-1; ++i) {
-    double total_bias=0;
-    for(unsigned j=wlists[i]; j<wlists[i+1]; ++j) total_bias+=getArgument(j);
-    stored_biases.push_back( total_bias );
-  }
+  double bias=0.0; for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgument(i);
+
+  std::vector<double> biases(nreplicas,0.0);
+  if(comm.Get_rank()==0) multi_sim_comm.Allgather(bias,biases);
+  comm.Bcast(biases,0);
+  for(unsigned i=0; i<biases.size(); i++) stored_biases.push_back( biases[i] );
   return 1.0;
 }
 
@@ -79,17 +70,17 @@ void ReweightWham::clearData() {
 }
 
 void ReweightWham::calculateWeights( const unsigned& nframes ) {
-  if( stored_biases.size()!=(wlists.size()-1)*nframes ) error("wrong number of weights stored");
+  if( stored_biases.size()!=nreplicas*nframes ) error("wrong number of weights stored");
   // Get the minimum value of the bias
   double minv = *min_element(std::begin(stored_biases), std::end(stored_biases));
   // Resize final weights array
-  plumed_assert( stored_biases.size()%(wlists.size()-1)==0 );
-  final_weights.resize( stored_biases.size() / (wlists.size()-1), 1.0 );
+  plumed_assert( stored_biases.size()%nreplicas==0 );
+  final_weights.resize( stored_biases.size() / nreplicas, 1.0 );
   // Offset and exponential of the bias
   std::vector<double> expv( stored_biases.size() );
   for(unsigned i=0; i<expv.size(); ++i) expv[i] = exp( (-stored_biases[i]+minv) / simtemp );
   // Initialize Z
-  std::vector<double> Z( wlists.size()-1, 1.0 ), oldZ( wlists.size()-1 );
+  std::vector<double> Z( nreplicas, 1.0 ), oldZ( nreplicas );
   // Now the iterative loop to calculate the WHAM weights
   for(unsigned iter=0; iter<maxiter; ++iter) {
     // Store Z
