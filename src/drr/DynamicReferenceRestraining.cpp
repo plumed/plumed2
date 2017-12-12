@@ -144,9 +144,15 @@ private:
   vector<double> friction;
   vector<double> etemp;
   vector<double> ffict_measured;
+  vector<double> force_external;
+  vector<double> fict_external;
   vector<Value *> biasforceValue;
+  vector<Value *> springforceValue;
   vector<Value *> fictValue;
   vector<Value *> vfictValue;
+  vector<Value *> fictNoPBCValue;
+  vector<Value *> externalForceValue;
+  vector<Value *> externalFictValue;
   vector<double> c1;
   vector<double> c2;
   vector<double> mass;
@@ -163,6 +169,8 @@ private:
   bool useCZARestimator;
   bool useUIestimator;
   bool textoutput;
+  bool withExternalForce;
+  bool withExternalFict;
   ABF ABFGrid;
   CZAR CZARestimator;
   double fullsamples;
@@ -212,6 +220,10 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.add("optional", "ZGRID_SPACING", "the approximate grid spacing (to be "
            "used as an alternative or together "
            "with ZGRID_BIN)");
+  keys.add("optional", "EXTERNAL_FORCE", "use forces from other action instead"
+           " of internal spring force, this disable the extended system!");
+  keys.add("optional", "EXTERNAL_FICT", "position of external fictitious "
+           "particles, useful for UIESTIMATOR");
   keys.add("compulsory", "FULLSAMPLES", "500",
            "number of samples in a bin prior to application of the ABF");
   keys.add("compulsory", "MAXFACTOR", "1.0",
@@ -255,6 +267,9 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.addOutputComponent(
     "_biasforce", "default",
     "The bias force from eABF/DRR of the fictitious particle.");
+  keys.addOutputComponent("_springforce", "default", "Spring force between real CVs and extended CVs");
+  keys.addOutputComponent("_fictNoPBC", "default", 
+                          "the positions of fictitious particles (without PBC).");
 }
 
 DynamicReferenceRestraining::DynamicReferenceRestraining(
@@ -269,13 +284,19 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     friction(getNumberOfArguments(), 0.0), etemp(getNumberOfArguments(), 0.0),
     ffict_measured(getNumberOfArguments(), 0.0),
     biasforceValue(getNumberOfArguments(), NULL),
+    springforceValue(getNumberOfArguments(), NULL),
     fictValue(getNumberOfArguments(), NULL),
-    vfictValue(getNumberOfArguments(), NULL), c1(getNumberOfArguments(), 0.0),
+    vfictValue(getNumberOfArguments(), NULL), 
+    fictNoPBCValue(getNumberOfArguments(), NULL),
+    externalForceValue(getNumberOfArguments(), NULL),
+    externalFictValue(getNumberOfArguments(), NULL),
+    c1(getNumberOfArguments(), 0.0),
     c2(getNumberOfArguments(), 0.0), mass(getNumberOfArguments(), 0.0),
     delim(getNumberOfArguments()), outputname(""), cptname(""),
     outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
-    useCZARestimator(true), useUIestimator(false), textoutput(false)
+    useCZARestimator(true), useUIestimator(false), textoutput(false),
+    withExternalForce(false), withExternalFict(false)
 {
   log << "eABF/DRR: You now are using the extended adaptive biasing "
       "force(eABF) method."
@@ -308,7 +329,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   parseFlag("UI", useUIestimator);
   bool noCZAR = false;
   parseFlag("NOCZAR", noCZAR);
-  noCZAR == false ? useCZARestimator = true : useCZARestimator = false;
+//   noCZAR == false ? useCZARestimator = true : useCZARestimator = false;
   parseFlag("TEXTOUTPUT", textoutput);
   parseVector("TAU", tau);
   parseVector("FRICTION", friction);
@@ -325,6 +346,24 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   parse("DRR_RFILE", restart_prefix);
   string uirprefix;
   parse("UIRESTARTPREFIX", uirprefix);
+  parseArgumentList("EXTERNAL_FORCE", externalForceValue);
+  parseArgumentList("EXTERNAL_FICT", externalFictValue);
+  if (externalForceValue.empty()) {
+    withExternalForce = false;
+  } else if (externalForceValue.size() != ndims) {
+    error("eABF/DRR: Number of forces doesn't match ARGS!");
+  } else {
+    withExternalForce = true;
+  }
+  if (withExternalForce && useUIestimator) {
+    if (externalFictValue.empty()) {
+      error("eABF/DRR: No external fictitious particles specified. UI estimator needs it.");
+    } else if(externalFictValue.size() != ndims) {
+      error("eABF/DRR: Number of fictitious particles doesn't match ARGS!");
+    } else {
+      withExternalFict = true;
+    }
+  }
   if (temp >= 0.0)
     kbt = plumed.getAtoms().getKBoltzmann() * temp;
   else
@@ -519,6 +558,16 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     addComponent(comp);
     componentIsNotPeriodic(comp);
     biasforceValue[i] = getPntrToComponent(comp);
+    // Spring force output, useful for perform egABF and other analysis
+    comp = getPntrToArgument(i)->getName() + "_springforce";
+    addComponent(comp);
+    componentIsNotPeriodic(comp);
+    springforceValue[i] = getPntrToComponent(comp);
+    // Position output, no pbc-aware
+    comp = getPntrToArgument(i)->getName() + "_fictNoPBC";
+    addComponent(comp);
+    componentIsNotPeriodic(comp);
+    fictNoPBCValue[i] = getPntrToComponent(comp);
   }
 
   if (outputprefix.length() == 0) {
@@ -621,22 +670,39 @@ void DynamicReferenceRestraining::calculate() {
       save(cptname, step_now);
     }
   }
-  double ene = 0.0;
-  for (size_t i = 0; i < ndims; ++i) {
-    real[i] = getArgument(i);
-    springlength[i] = difference(i, fict[i], real[i]);
-    fictNoPBC[i] = real[i] - springlength[i];
-    double f = -kappa[i] * springlength[i];
-    ffict_measured[i] = -f;
-    ene += 0.5 * kappa[i] * springlength[i] * springlength[i];
-    setOutputForce(i, f);
-    ffict[i] = -f;
-    fict[i] = fictValue[i]->bringBackInPbc(fict[i]);
-    fictValue[i]->set(fict[i]);
-    vfictValue[i]->set(vfict_laststep[i]);
+  if (withExternalForce == false) {
+    double ene = 0.0;
+    for (size_t i = 0; i < ndims; ++i) {
+      real[i] = getArgument(i);
+      springlength[i] = difference(i, fict[i], real[i]);
+      fictNoPBC[i] = real[i] - springlength[i];
+      double f = -kappa[i] * springlength[i];
+      ffict_measured[i] = -f;
+      ene += 0.5 * kappa[i] * springlength[i] * springlength[i];
+      setOutputForce(i, f);
+      ffict[i] = -f;
+      fict[i] = fictValue[i]->bringBackInPbc(fict[i]);
+      fictValue[i]->set(fict[i]);
+      vfictValue[i]->set(vfict_laststep[i]);
+      springforceValue[i]->set(ffict_measured[i]);
+    }
+    setBias(ene);
+    ABFGrid.store_getbias(fict, ffict_measured, fbias);
+  } else {
+    for (size_t i = 0; i < ndims; ++i) {
+      real[i] = getArgument(i);
+      ffict_measured[i] = externalForceValue[i]->get();
+      if (withExternalFict) {
+        fictNoPBC[i] = externalFictValue[i]->get();
+      }
+    }
+    ABFGrid.store_getbias(real, ffict_measured, fbias);
+    if (!nobias) {
+      for (size_t i = 0; i < ndims; ++i) {
+        setOutputForce(i, fbias[i]);
+      }
+    }
   }
-  setBias(ene);
-  ABFGrid.store_getbias(fict, ffict_measured, fbias);
   if (useCZARestimator) {
     CZARestimator.store(real, ffict_measured);
   }
@@ -647,26 +713,28 @@ void DynamicReferenceRestraining::calculate() {
 }
 
 void DynamicReferenceRestraining::update() {
-  for (size_t i = 0; i < ndims; ++i) {
-    // consider additional forces on the fictitious particle
-    // (e.g. MetaD stuff)
-    ffict[i] += fictValue[i]->getForce();
-    if (!nobias) {
-      ffict[i] += fbias[i];
+  if (withExternalForce == false) {
+    for (size_t i = 0; i < ndims; ++i) {
+      // consider additional forces on the fictitious particle
+      // (e.g. MetaD stuff)
+      ffict[i] += fictValue[i]->getForce();
+      if (!nobias) {
+        ffict[i] += fbias[i];
+      }
+      biasforceValue[i]->set(fbias[i]);
+      // update velocity (half step)
+      vfict[i] += ffict[i] * 0.5 * dt / mass[i];
+      // thermostat (half step)
+      vfict[i] = c1[i] * vfict[i] + c2[i] * rand.Gaussian();
+      // save full step velocity to be dumped at next step
+      vfict_laststep[i] = vfict[i];
+      // thermostat (half step)
+      vfict[i] = c1[i] * vfict[i] + c2[i] * rand.Gaussian();
+      // update velocity (half step)
+      vfict[i] += ffict[i] * 0.5 * dt / mass[i];
+      // update position (full step)
+      fict[i] += vfict[i] * dt;
     }
-    biasforceValue[i]->set(fbias[i]);
-    // update velocity (half step)
-    vfict[i] += ffict[i] * 0.5 * dt / mass[i];
-    // thermostat (half step)
-    vfict[i] = c1[i] * vfict[i] + c2[i] * rand.Gaussian();
-    // save full step velocity to be dumped at next step
-    vfict_laststep[i] = vfict[i];
-    // thermostat (half step)
-    vfict[i] = c1[i] * vfict[i] + c2[i] * rand.Gaussian();
-    // update velocity (half step)
-    vfict[i] += ffict[i] * 0.5 * dt / mass[i];
-    // update position (full step)
-    fict[i] += vfict[i] * dt;
   }
 }
 
