@@ -27,10 +27,8 @@
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
-#include "core/PlumedMain.h"
 #include "core/SetupMolInfo.h"
 #include "tools/Communicator.h"
-#include "tools/OpenMP.h"
 #include "tools/Pbc.h"
 
 #include <string>
@@ -277,6 +275,7 @@ SAXS::SAXS(const ActionOptions&ao):
     log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978).");
     log<<plumed.cite("Brown, Fox, Maslen, O'Keefe, Willis, International Tables for Crystallography C, 554–595 (International Union of Crystallography, 2006).");
   }
+  log<< plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 
   requestAtoms(atoms);

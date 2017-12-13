@@ -37,8 +37,6 @@
 
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "tools/OpenMP.h"
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
 #include "tools/Torsion.h"
@@ -658,6 +656,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
      <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)");
   if(camshift) log<<plumed.cite("Granata D, Camilloni C, Vendruscolo M, Laio A, Proc. Natl. Acad. Sci. USA 110, 6817 (2013)");
   else log<<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)");
+  log<<plumed.cite("Bonomi M, Camilloni C, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 
   const string str_cs[] = {"ha_","hn_","nh_","ca_","cb_","co_"};
