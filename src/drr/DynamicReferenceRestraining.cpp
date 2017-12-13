@@ -268,7 +268,7 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
     "_biasforce", "default",
     "The bias force from eABF/DRR of the fictitious particle.");
   keys.addOutputComponent("_springforce", "default", "Spring force between real CVs and extended CVs");
-  keys.addOutputComponent("_fictNoPBC", "default", 
+  keys.addOutputComponent("_fictNoPBC", "default",
                           "the positions of fictitious particles (without PBC).");
 }
 
@@ -286,7 +286,7 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     biasforceValue(getNumberOfArguments(), NULL),
     springforceValue(getNumberOfArguments(), NULL),
     fictValue(getNumberOfArguments(), NULL),
-    vfictValue(getNumberOfArguments(), NULL), 
+    vfictValue(getNumberOfArguments(), NULL),
     fictNoPBCValue(getNumberOfArguments(), NULL),
     externalForceValue(getNumberOfArguments(), NULL),
     externalFictValue(getNumberOfArguments(), NULL),
