@@ -25,7 +25,9 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithArguments.h"
+#include "core/PlumedMain.h"
 #include "tools/Random.h"
+#include "tools/OpenMP.h"
 
 #define PLUMED_METAINF_INIT(ao) Action(ao),MetainferenceBase(ao)
 

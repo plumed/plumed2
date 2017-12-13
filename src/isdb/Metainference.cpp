@@ -752,6 +752,7 @@ Metainference::Metainference(const ActionOptions&ao):
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   if(do_reweight_) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
   if(do_optsigmamean_>0) log<<plumed.cite("Loehr, Jussupow, Camilloni, J. Chem. Phys. 146, 165102 (2017)");
+  log<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 }
 
