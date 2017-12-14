@@ -206,7 +206,8 @@ For developers:
 ## Version 2.3.4 (coming soon)
 
 For users:
-- GROMACS patch updated to gromacs-2016.4
+- GROMACS patch updated to gromacs-2016.4. This patch was also fixed in order to properly work with \ref ENERGY (see \issue{316})
+  and to implement `-hrex` option (see \issue{197}).
 - Solved a bug in \ref ERMSD leading to incorrect results when using non-default length units (e.g. with `UNITS LENGTH=A`).
 
 For developers:
