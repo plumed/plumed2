@@ -83,7 +83,7 @@ OFile::OFile():
   actual_buffer_length=0;
   buffer.reset(new char [buflen]);
 // these are set to zero to avoid valgrind errors
-  for(unsigned i=0; i<buflen; ++i) buffer[i]=0;
+  for(int i=0; i<buflen; ++i) buffer[i]=0;
   buffer_string.reset(new char [1000]);
 // these are set to zero to avoid valgrind errors
   for(unsigned i=0; i<1000; ++i) buffer_string[i]=0;

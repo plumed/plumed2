@@ -30,8 +30,8 @@ dirs=$(
   done
 )
 
-file1=$(mktemp)
-file2=$(mktemp)
+file1=$(mktemp -t plumed.XXXXXX)
+file2=$(mktemp -t plumed.XXXXXX)
 
 for dir in $dirs
 do

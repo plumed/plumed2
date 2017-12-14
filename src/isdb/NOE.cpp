@@ -22,7 +22,6 @@
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
 #include "tools/NeighborList.h"
-#include "tools/OpenMP.h"
 #include "tools/Pbc.h"
 
 #include <string>
@@ -164,6 +163,8 @@ NOE::NOE(const ActionOptions&ao):
 
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
+
+  log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
 
   if(!getDoScore()) {
     for(unsigned i=0; i<nga.size(); i++) {

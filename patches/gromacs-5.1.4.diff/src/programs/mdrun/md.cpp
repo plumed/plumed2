@@ -1055,7 +1055,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
 /* PLUMED HREX */
         gmx_bool bHREX;
-        bHREX= repl_ex_nst > 0 && (step>0) && !bLastStep && do_per_step(step,repl_ex_nst) && plumed_hrex;
+        bHREX = bDoReplEx && plumed_hrex;
 
         if(plumedswitch) if(bHREX){
           gmx_enerdata_t *hrex_enerd;
@@ -1249,6 +1249,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               if(pversion>3) plumed_cmd(plumedmain,"doCheckPoint",&checkp);
               plumed_cmd(plumedmain,"setForces",&f[0][0]);
               plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+              if(plumedNeedsEnergy) force_flags |= (GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL);
               clear_mat(plumed_vir);
               plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
             }
@@ -1270,11 +1271,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 msmul(plumed_vir,0.5,plumed_vir);
                 m_add(force_vir,plumed_vir,force_vir);
               }
-              if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
-                 do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
+              if(bDoReplEx) plumed_cmd(plumedmain,"GREX savePositions",NULL);
               if(plumedWantsToStop) ir->nsteps=step_rel+1;
-              if(bHREX)
-                 plumed_cmd(plumedmain,"GREX cacheLocalUNow",&enerd->term[F_EPOT]);
+              if(bHREX) plumed_cmd(plumedmain,"GREX cacheLocalUNow",&enerd->term[F_EPOT]);
             }
             /* END PLUMED */
         }

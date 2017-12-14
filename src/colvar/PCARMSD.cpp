@@ -208,7 +208,7 @@ void PCARMSD::calculate() {
     }
   }
 
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) setBoxDerivativesNoPbc( getPntrToComponent(i) );
+  for(int i=0; i<getNumberOfComponents(); ++i) setBoxDerivativesNoPbc( getPntrToComponent(i) );
 
 }
 

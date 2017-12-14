@@ -181,7 +181,7 @@ FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
   log.printf("  Consistency check completed! Your path cvs look good!\n");
   // do some neighbor printout
   if(neigh_stride>0. || neigh_size>0) {
-    if(neigh_size>getNumberOfArguments()) {
+    if(neigh_size>static_cast<int>(getNumberOfArguments())) {
       log.printf(" List size required ( %d ) is too large: resizing to the maximum number of arg required: %d  \n",neigh_size,getNumberOfArguments());
       neigh_size=getNumberOfArguments();
     }
@@ -255,7 +255,7 @@ void FuncPathMSD::prepare() {
       // resize the effective list
       neighpair.resize(neigh_size);
       log.printf("  NEIGH LIST NOW INCLUDE INDEXES: ");
-      for(int i=0; i<neigh_size; ++i)log.printf(" %f ",indexmap[neighpair[i].first]); log.printf(" \n");
+      for(int i=0; i<neigh_size; ++i) {log.printf(" %f ",indexmap[neighpair[i].first]);} log.printf(" \n");
     } else {
       if( int(getStep())%int(neigh_stride/getTimeStep())==0 ) {
         log.printf(" Time %f : recalculating full neighlist \n",getStep()*getTimeStep());

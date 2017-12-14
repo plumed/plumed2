@@ -280,10 +280,10 @@ vector<Grid::index_t> Grid::getNeighbors
     for(unsigned i=0; i<dimension_; ++i) {
       int i0=small_indices[i]-nneigh[i]+indices[i];
       if(!pbc_[i] && i0<0)         continue;
-      if(!pbc_[i] && i0>=nbin_[i]) continue;
+      if(!pbc_[i] && i0>=static_cast<int>(nbin_[i])) continue;
       if( pbc_[i] && i0<0)         i0=nbin_[i]-(-i0)%nbin_[i];
-      if( pbc_[i] && i0>=nbin_[i]) i0%=nbin_[i];
-      tmp_indices[ll]=((unsigned)i0);
+      if( pbc_[i] && i0>=static_cast<int>(nbin_[i])) i0%=nbin_[i];
+      tmp_indices[ll]=static_cast<unsigned>(i0);
       ll++;
     }
     tmp_indices.resize(ll);
