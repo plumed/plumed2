@@ -121,6 +121,54 @@ lwall: LOWER_WALLS ARG=eabf_winall.dist1_fict AT=1.2 KAPPA=418.4
 PRINT STRIDE=10 ARG=dist1,eabf_winall.dist1_fict,eabf_winall.dist1_biasforce FILE=COLVAR
 \endplumedfile
 
+It's also possible to run extended generalized adaptive biasing force (egABF) described in \cite Zhao2017 .
+An egABF example:
+\plumedfile
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+DRR ...
+LABEL=gabf_phi
+ARG=phi
+FULLSAMPLES=500
+GRID_MIN=-pi
+GRID_MAX=pi
+GRID_BIN=180
+FRICTION=8.0
+TAU=0.5
+OUTPUTFREQ=50000
+HISTORYFREQ=500000
+... DRR
+
+DRR ...
+LABEL=gabf_psi
+ARG=psi
+FULLSAMPLES=500
+GRID_MIN=-pi
+GRID_MAX=pi
+GRID_BIN=180
+FRICTION=8.0
+TAU=0.5
+OUTPUTFREQ=50000
+HISTORYFREQ=500000
+... DRR
+
+DRR ...
+LABEL=gabf_2d
+ARG=phi,psi
+EXTERNAL_FORCE=gabf_phi.phi_springforce,gabf_psi.psi_springforce
+EXTERNAL_FICT=gabf_phi.phi_fictNoPBC,gabf_psi.psi_fictNoPBC
+GRID_MIN=-pi,-pi
+GRID_MAX=pi,pi
+GRID_BIN=180,180
+NOBIAS
+OUTPUTFREQ=50000
+HISTORYFREQ=500000
+... DRR
+
+PRINT STRIDE=10 ARG=phi,psi FILE=COLVAR
+\endplumedfile
+
  */
 //+ENDPLUMEDOC
 
@@ -685,6 +733,7 @@ void DynamicReferenceRestraining::calculate() {
       fictValue[i]->set(fict[i]);
       vfictValue[i]->set(vfict_laststep[i]);
       springforceValue[i]->set(ffict_measured[i]);
+      fictNoPBCValue[i]->set(fictNoPBC[i]);
     }
     setBias(ene);
     ABFGrid.store_getbias(fict, ffict_measured, fbias);
@@ -695,6 +744,8 @@ void DynamicReferenceRestraining::calculate() {
       if (withExternalFict) {
         fictNoPBC[i] = externalFictValue[i]->get();
       }
+      springforceValue[i]->set(ffict_measured[i]);
+      fictNoPBCValue[i]->set(fictNoPBC[i]);
     }
     ABFGrid.store_getbias(real, ffict_measured, fbias);
     if (!nobias) {
