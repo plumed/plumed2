@@ -275,7 +275,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
       log.printf("  the reweight factor c(t) will be updated very %u coefficent iterations\n",ustride_reweightfactor_);
     }
   }
-  
+
   if(keywords.exists("MONITOR_INSTANTANEOUS_GRADIENT")) {
     parseFlag("MONITOR_INSTANTANEOUS_GRADIENT",monitor_instantaneous_gradient_);
   }
@@ -717,7 +717,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
     if(monitor_instantaneous_gradient_) {
       addComponent("gradrms"); componentIsNotPeriodic("gradrms");
       log.printf(" ");
-      addComponent("gradmax"); componentIsNotPeriodic("gradmax");      
+      addComponent("gradmax"); componentIsNotPeriodic("gradmax");
     }
     if(aver_gradient_pntrs_.size()>0) {
       log.printf(" ");
