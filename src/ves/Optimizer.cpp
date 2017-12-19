@@ -849,7 +849,7 @@ void Optimizer::registerKeywords( Keywords& keys ) {
   keys.addFlag("MONITOR_INSTANTANEOUS_GRADIENT",false,"if the instantaneous gradient should be monitored.");
   //
   keys.reserveFlag("MONITOR_AVERAGE_GRADIENT",false,"if the averaged gradient should be monitored.");
-  keys.reserve("optional","MONITOR_AVERAGES_EXP_DECAY","use an exponentially decaying averaging with a given time constant when monitoring the averaged gradient");
+  keys.reserve("optional","MONITOR_AVERAGES_GRADIENT_EXP_DECAY","use an exponentially decaying averaging with a given time constant when monitoring the averaged gradient");
   //
   keys.reserve("optional","TARGETDIST_STRIDE","stride for updating a target distribution that is iteratively updated during the optimization. Note that the value is given in terms of coefficent iterations.");
   keys.reserve("optional","TARGETDIST_OUTPUT","how often the dynamic target distribution(s) should be written out to file. Note that the value is given in terms of coefficent iterations.");
@@ -913,9 +913,9 @@ void Optimizer::useRestartKeywords(Keywords& keys) {
 }
 
 
-void Optimizer::useMonitorAveragesKeywords(Keywords& keys) {
+void Optimizer::useMonitorAverageGradientKeywords(Keywords& keys) {
   keys.use("MONITOR_AVERAGE_GRADIENT");
-  keys.use("MONITOR_AVERAGES_EXP_DECAY");
+  keys.use("MONITOR_AVERAGES_GRADIENT_EXP_DECAY");
   keys.addOutputComponent("avergradrms","MONITOR_AVERAGE_GRADIENT","the root mean square value of the averaged coefficent gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
   keys.addOutputComponent("avergradmax","MONITOR_AVERAGE_GRADIENT","the largest absolute value of the averaged coefficent gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
 }

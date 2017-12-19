@@ -163,7 +163,7 @@ public:
   static void useDynamicStepSizeKeywords(Keywords&);
   static void useMaskKeywords(Keywords&);
   static void useRestartKeywords(Keywords&);
-  static void useMonitorAveragesKeywords(Keywords&);
+  static void useMonitorAverageGradientKeywords(Keywords&);
   static void useDynamicTargetDistributionKeywords(Keywords&);
   static void useReweightFactorKeywords(Keywords&);
   //
