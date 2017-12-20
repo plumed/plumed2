@@ -285,7 +285,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
     parseFlag("MONITOR_AVERAGE_GRADIENT",monitor_aver_gradient);
     if(monitor_aver_gradient) {
       unsigned int averaging_exp_decay=0;
-      parse("MONITOR_AVERAGES_EXP_DECAY",averaging_exp_decay);
+      parse("MONITOR_AVERAGES_GRADIENT_EXP_DECAY",averaging_exp_decay);
       aver_gradient_pntrs_.clear();
       for(unsigned int i=0; i<ncoeffssets_; i++) {
         CoeffsVector* aver_gradient_tmp = new CoeffsVector(*gradient_pntrs_[i]);
