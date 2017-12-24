@@ -87,7 +87,8 @@ void MultiBias::addBiasDerivative( const unsigned& jder, const double& der, Mult
       return;
   }
   if( getPntrToArgument(0)->getRank()>0 ){ plumed_error(); return; }
-  myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), arg_ends[jder] + myvals.getTaskIndex(), der );
+  if( arg_ends.size()>0 ) myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), arg_ends[jder] + myvals.getTaskIndex(), der );
+  else myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), jder, der );
 }
 
 }

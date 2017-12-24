@@ -111,14 +111,22 @@ void Value::buildColumnSums() {
   columnsums=true; storedata=true;
 }
 
-void Value::interpretDataRequest( const std::string& uselab, const std::string& values ){
+void Value::interpretDataRequest( const std::string& uselab, unsigned& nargs, std::vector<Value*>& args, const std::string& values ){
+  bool found=false;
+  if( shape.size()>0 ) {
+      for(unsigned i=0;i<args.size();++i){ 
+          if( this==args[i] ){ found=true; break; }
+      }
+  }
+  if( !found ){ args.push_back(this); }
+
   if( userdata.count(uselab) ){
-      if( values=="" ){ return; }
-      if( userdata[uselab][0]<0 ) plumed_merror("cannot mix use of specific items from value and all items in a single action");
+      if( values=="" ){ nargs++; return; }
+      if( userdata[uselab][0].first<0 ) plumed_merror("cannot mix use of specific items from value and all items in a single action");
   } else {
-      userdata.insert( std::pair<std::string,std::vector<int> >(uselab,std::vector<int>()) );
+      userdata.insert( std::pair<std::string,std::vector<std::pair<int,int> > >(uselab,std::vector<std::pair<int,int> >()) );
       if( values=="*" ){ plumed_merror("invalid use of wildcard"); return; }
-      else if( values=="" ){ userdata[uselab].push_back(-1); return; }
+      else if( values=="" ){ userdata[uselab].push_back(std::pair<int,int>(-1,nargs) ); nargs++; return; }
   }
   // Retrieve the indices of the point from the string requesting the index
   std::vector<unsigned> indices( shape.size() ); std::string indstr=values;
@@ -128,7 +136,7 @@ void Value::interpretDataRequest( const std::string& uselab, const std::string& 
       indices[i] -= 1; indstr=indstr.substr(dot+1);
   }
   Tools::convert( indstr, indices[indices.size()-1] );
-  userdata[uselab].push_back( getIndex(indices) );
+  userdata[uselab].push_back( std::pair<int,int>(getIndex(indices),nargs) ); nargs++;
 }
 
 // void Value::addStreamIndex( const int& newi ){
@@ -247,19 +255,23 @@ void Value::activateTasks( std::vector<unsigned>& taskFlags ) const {
 }
 
 unsigned Value::getSize() const {
-  unsigned size=getNumberOfValues(); 
+  unsigned size=getNumberOfValues( name ); 
   if( shape.size()>0 && hasDeriv ) return size*( 1 + action->getNumberOfDerivatives() );
   return size;
 }
 
-unsigned Value::getNumberOfValues() const {
-  unsigned size=1; for(unsigned i=0;i<shape.size();++i) size *= shape[i];
-  return size;
+unsigned Value::getNumberOfValues( const std::string& alab ) const {
+  if( usingAllVals(alab) ) {
+     unsigned size=1; for(unsigned i=0;i<shape.size();++i) size *= shape[i];
+     return size;
+  } else {
+      return userdata.find(alab)->second.size();
+  }
 }
 
 double Value::get(const unsigned& ival) const {
   if( hasDeriv ) return data[ival*(1+action->getNumberOfDerivatives())] / norm;
-  plumed_dbg_massert( ival<getNumberOfValues(), "could not get value from " + name ); 
+  plumed_dbg_massert( ival<getNumberOfValues( action->getLabel() ), "could not get value from " + name ); 
   if( norm>epsilon ) return data[ival] / norm;
   return 0.0;
 } 
@@ -274,7 +286,7 @@ void Value::print( const std::string& uselab, OFile& ofile ) const {
   if( shape.size()==0 ){
       if( isPeriodic() ){ ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); } 
       ofile.printField( name, get(0) ); 
-  } else if( userdata.find(uselab)->second[0]<0 ){
+  } else if( userdata.find(uselab)->second[0].first<0 ){
       if( isPeriodic() ){ ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
       std::vector<unsigned> indices( shape.size() ); 
       for(unsigned i=0;i<action->getFullNumberOfTasks();++i){
@@ -286,9 +298,9 @@ void Value::print( const std::string& uselab, OFile& ofile ) const {
       if( isPeriodic() ){ ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
       std::vector<unsigned> indices( shape.size() ); 
       for(unsigned i=0;i<userdata.find(uselab)->second.size();++i){ 
-         convertIndexToindices( userdata.find(uselab)->second[i], indices ); std::string num, fname = name;
+         convertIndexToindices( userdata.find(uselab)->second[i].first, indices ); std::string num, fname = name;
          for(unsigned i=0;i<shape.size();++i){ Tools::convert( indices[i]+1, num ); fname += "." + num; }
-         ofile.printField( fname, get( userdata.find(uselab)->second[i] ) );
+         ofile.printField( fname, get( userdata.find(uselab)->second[i].first ) );
       }
   }
 }
@@ -314,7 +326,27 @@ void Value::set(const unsigned& n, const double& v ){
   if( getRank()==0 ){ plumed_assert( n==0 ); data[n]=v; applyPeriodicity(n); }
   else if( !hasDeriv ){ data[n]=v; applyPeriodicity(n); }
   else { data[n*(1+action->getNumberOfDerivatives())] = v; }
+}
+
+bool Value::usingAllVals( const std::string& alabel ) const {
+  if( !userdata.count(alabel) ) return true;
+  if( userdata.find(alabel)->second.size()==0 ) return true;
+  if( userdata.find(alabel)->second[0].first<0 ) return true;
+  return false;
+}
+
+double Value::getRequiredValue(  const std::string& alabel, const unsigned& num  ) const {
+  if( usingAllVals(alabel) ) return get(num);
+  return get( userdata.find(alabel)->second[num].first );
 }   
+
+void Value::getRequiredValue(  const std::string& alabel, const unsigned& num, std::vector<double>& args ) const { 
+  if( usingAllVals(alabel) ) {
+      args[userdata.find(alabel)->second[0].second+num] = getRequiredValue( alabel, num );
+  } else {
+      args[userdata.find(alabel)->second[num].second] = getRequiredValue( alabel, num );
+  }
+}
 
 // void Value::setBufferPosition( const unsigned& ibuf ){
 //   bufstart = ibuf;

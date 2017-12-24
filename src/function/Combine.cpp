@@ -111,7 +111,7 @@ Combine::Combine(const ActionOptions&ao):
   powers(getNumberOfArguments(),1.0)
 {
   if( !numberedkeys ) {
-     if( getPntrToArgument(0)->getRank()>0 && arg_ends.size()!=2 ) error("should only specify one non-scalar argument in input to ARG keyword");
+     if( getPntrToArgument(0)->getRank()>0 && getNumberOfArguments()>1 ) error("should only specify one non-scalar argument in input to ARG keyword");
  
      coefficients.resize( getNumberOfScalarArguments() ); parseVector("COEFFICIENTS",coefficients);
      if(coefficients.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))

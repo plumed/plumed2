@@ -109,7 +109,8 @@ void Function::addDerivative( const unsigned& ival, const unsigned& jder, const 
       myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), base + myvals.getTaskIndex(), der ); 
       return; 
   }
-  myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), arg_ends[jder] + myvals.getTaskIndex(), der ); 
+  if( arg_ends.size()>0 ) myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), arg_ends[jder] + myvals.getTaskIndex(), der ); 
+  else myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), jder, der );
 }
 
 }

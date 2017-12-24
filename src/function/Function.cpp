@@ -44,51 +44,70 @@ Function::Function(const ActionOptions&ao):
   forcesToApply(getNumberOfScalarArguments())
 {
   plumed_dbg_assert( getNumberOfArguments()>0 );
-  bool gridinput=false; unsigned npoints;
+  bool gridinput=false; unsigned npoints=0;
   // Method for if input to function is a function on a grid
   for(unsigned i=0;i<getNumberOfArguments();++i) {
       if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ){ 
-          gridinput=true; npoints=getPntrToArgument(i)->getNumberOfValues(); 
+          gridinput=true; npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() ); 
           nderivatives = getPntrToArgument(i)->getRank(); break; 
       }
   }
   if( gridinput ) {
-       unsigned nscalars=0;
+       unsigned nscalars=0; 
+       if( arg_ends.size()==0 && getNumberOfArguments()==1 ){ arg_ends.push_back(0); arg_ends.push_back(1); }
        for(unsigned j=0;j<getNumberOfArguments();++j) {
            if( getPntrToArgument(j)->getRank()!=0 ) {
-               if( getPntrToArgument(j)->getNumberOfValues()!=npoints || !getPntrToArgument(j)->hasDerivatives() ) error("mismatch in input arguments");
+               if( getPntrToArgument(j)->getNumberOfValues( getLabel() )!=npoints || !getPntrToArgument(j)->hasDerivatives() ) error("mismatch in input arguments");
            } else { nscalars++; nderivatives++; }
        }
        if( nscalars>1 ) error("can only multiply/divide grid by one scalar at a time");
        // Now create a task list for the function
        for(unsigned j=0;j<npoints;++j) addTaskToList(j);
   } else { 
-       createTasksFromArguments(); nderivatives = getNumberOfScalarArguments(); firststep=false;
-       // Now create the stream of jobs to work through 
-       if( distinct_arguments.size()>0 ){   // This is for if we have a function that needs to store - needs though GAT
-           std::vector<std::string> alabels;
-           for(unsigned i=0;i<getNumberOfArguments();++i){
-               bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
-               for(unsigned j=0;j<alabels.size();++j){
-                   if( alabels[j]==mylab ){ found=true; break; }
+       bool hasscalar=false, hasrank=false; nderivatives = getNumberOfScalarArguments(); firststep=false;
+       for(unsigned i=0;i<getNumberOfArguments();++i) {
+           if( getPntrToArgument(i)->getRank()==0 ) hasscalar=true;
+           else hasrank=true;
+       }
+       if( hasscalar && hasrank ) {
+           unsigned nscalars=0, nranks=0;
+           for(unsigned i=0;i<getNumberOfArguments();++i) {
+               if( getPntrToArgument(i)->getRank()==0 ) nscalars++;
+               else {
+                  nranks++; npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
                }
-               if( !found ) alabels.push_back( mylab );
            }
-           
-           bool added=false;
-           for(unsigned i=0;i<getNumberOfArguments();++i){
-               // Add this function to jobs to do in recursive loop in previous action
-               if( getPntrToArgument(i)->getRank()>0 ){
-                   if( (getPntrToArgument(i)->getPntrToAction())->addActionToChain( alabels, this ) ){ added=true; break; } 
+           if( nscalars>1 ) error("can only multiply/divide grid by one scalar at a time");
+           // Now create a task list for the function
+           for(unsigned j=0;j<npoints;++j) addTaskToList(j);
+       } else {
+           createTasksFromArguments(); 
+           // Now create the stream of jobs to work through 
+           if( distinct_arguments.size()>0 ){   // This is for if we have a function that needs to store - needs though GAT
+               std::vector<std::string> alabels;
+               for(unsigned i=0;i<getNumberOfArguments();++i){
+                   bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
+                   for(unsigned j=0;j<alabels.size();++j){
+                       if( alabels[j]==mylab ){ found=true; break; }
+                   }
+                   if( !found ) alabels.push_back( mylab );
                }
-           }  
-           plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
+               
+               bool added=false;
+               for(unsigned i=0;i<getNumberOfArguments();++i){
+                   // Add this function to jobs to do in recursive loop in previous action
+                   if( getPntrToArgument(i)->getRank()>0 ){
+                       if( (getPntrToArgument(i)->getPntrToAction())->addActionToChain( alabels, this ) ){ added=true; break; } 
+                   }
+               }  
+               plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
 
-           // Now make sure we have the derivative size correct
-           nderivatives=0; 
-           for(unsigned i=0;i<distinct_arguments.size();++i) nderivatives += distinct_arguments[i]->getNumberOfDerivatives();
-           // Set forces to apply to correct size
-           forcesToApply.resize( nderivatives );
+               // Now make sure we have the derivative size correct
+               nderivatives=0; 
+               for(unsigned i=0;i<distinct_arguments.size();++i) nderivatives += distinct_arguments[i]->getNumberOfDerivatives();
+               // Set forces to apply to correct size
+               forcesToApply.resize( nderivatives );
+           }
        }
   }
 }
@@ -130,13 +149,21 @@ void Function::addValueWithDerivatives() {
   } else { period.resize(1); period[0]="NO"; }
 
   std::vector<unsigned> shape( getShape() ); 
-  if( arg_ends[1]-arg_ends[0]==1 ){
+  if( arg_ends.size()==0 ) {
       if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
       else if( hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape ); 
       else if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape ); 
       else if( shape.size()==0 ) ActionWithValue::addValueWithDerivatives( shape );
       else ActionWithValue::addValue( shape ); 
       if(period.size()==1 && period[0]=="NO") setNotPeriodic(); 
+      else if(period.size()==2) setPeriodic(period[0],period[1]);
+  } else if( arg_ends[1]-arg_ends[0]==1 ) {
+      if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
+      else if( hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
+      else if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape ); 
+      else if( shape.size()==0 ) ActionWithValue::addValueWithDerivatives( shape );
+      else ActionWithValue::addValue( shape );
+      if(period.size()==1 && period[0]=="NO") setNotPeriodic();
       else if(period.size()==2) setPeriodic(period[0],period[1]);
   } else {
       std::string num; 
@@ -157,11 +184,17 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
 
   std::vector<unsigned> shape( getShape() );
-  if( arg_ends[1]-arg_ends[0]==1 ){ 
+  if( arg_ends.size()==0 ){ 
       if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape);
       else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape );
       else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent(name,shape); 
       else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives(name,shape); 
+      else ActionWithValue::addComponent(name,shape);
+  } else if( arg_ends[1]-arg_ends[0]==1 ) {
+      if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape);
+      else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape );
+      else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent(name,shape);
+      else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives(name,shape);
       else ActionWithValue::addComponent(name,shape);
   } else { 
       std::string num; 
@@ -179,10 +212,10 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
 void Function::evaluateAllFunctions() {
   if( firststep ) {
       std::vector<unsigned> shape( getShape() );
-      unsigned ival = getPntrToOutput(0)->getNumberOfValues();
+      unsigned ival = getPntrToOutput(0)->getNumberOfValues( getLabel() );
       getPntrToOutput(0)->setShape( shape ); firststep=false;
-      if( ival<getPntrToOutput(0)->getNumberOfValues() ) {
-          for(unsigned j=ival;j<getPntrToOutput(0)->getNumberOfValues();++j) addTaskToList(j);
+      if( ival<getPntrToOutput(0)->getNumberOfValues( getLabel() ) ) {
+          for(unsigned j=ival;j<getPntrToOutput(0)->getNumberOfValues( getLabel() );++j) addTaskToList(j);
       }
   }
   runAllTasks();
@@ -254,7 +287,7 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
   }
   // Calculate whatever we are calculating
   if( (matinp && !myvals.inVectorCall()) || !matinp ){
-       std::vector<double> args( arg_ends.size()-1 ); retrieveArguments( myvals, args );
+       std::vector<double> args( getNumberOfArgumentsPerTask() ); retrieveArguments( myvals, args );
        calculateFunction( args, myvals );
        // Make sure grid derivatives are updated 
        if( getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() ) {

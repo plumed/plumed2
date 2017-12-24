@@ -69,10 +69,15 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
   one_kernel_at_a_time(false)
 {
   // Check all the values have the right size
-  unsigned nvals=0; for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues();
-  for(unsigned i=1;i<arg_ends.size()-heights_index;++i) {
-      unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues();
-      if( nvals!=tvals ) error("mismatch between numbers of values in input arguments");
+  unsigned nvals = 1; 
+  if( arg_ends.size()>0 ) { 
+      nvals=0; for(unsigned i=arg_ends[0];i<arg_ends[1];++i) nvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      for(unsigned i=1;i<arg_ends.size()-1;++i) {
+          unsigned tvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+          if( nvals!=tvals ) error("mismatch between numbers of values in input arguments");
+      }
+  } else {
+      arg_ends.push_back(0); for(unsigned i=0;i<getNumberOfArguments();++i) arg_ends.push_back(i+1);
   }
   // Get the heights if need be
   std::vector<std::string> weight_str; parseVector("HEIGHTS",weight_str);
@@ -84,7 +89,7 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
       log.printf("\n");
 
       for(unsigned i=0;i<weight_args.size();++i) {
-          tvals += weight_args[i]->getNumberOfValues();
+          tvals += weight_args[i]->getNumberOfValues( getLabel() );
           args.push_back( weight_args[i] ); 
       }
       if( nvals!=tvals ) error("mismatch between numbers of values in input arguments and HEIGHTS");
@@ -164,16 +169,16 @@ void HistogramBase::calculate(){
 void HistogramBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   if( !one_kernel_at_a_time ){ tflags.assign(tflags.size(),1); norm = static_cast<double>( tflags.size() ); }
   else {
-     std::vector<double> args( arg_ends.size()-heights_index ); 
-     double height=1.0; if( heights_index==2 ) height = args[args.size()]=getPntrToArgument(arg_ends[args.size()])->get();
-     for(unsigned i=0;i<arg_ends.size()-heights_index;++i) args[i]=getPntrToArgument(arg_ends[i])->get();
+     std::vector<double> args( getNumberOfDerivatives() ); 
+     double height=1.0; if( heights_index==2 ) height = getPntrToArgument(arg_ends[args.size()])->get(); 
+     for(unsigned i=0;i<args.size();++i) args[i]=getPntrToArgument(i)->get();
      buildSingleKernel( tflags, height, args );
   }
 }
 
 void HistogramBase::performTask( const unsigned& current, MultiValue& myvals ) const {
   if( one_kernel_at_a_time ) { 
-      std::vector<double> args( arg_ends.size()-heights_index ), der( arg_ends.size()-heights_index ); 
+      std::vector<double> args( getNumberOfDerivatives() ), der( getNumberOfDerivatives() ); 
       unsigned valout = getPntrToOutput(0)->getPositionInStream(); 
       gridobject.getGridPointCoordinates( current, args ); double vv = calculateValueOfSingleKernel( args, der ); 
       myvals.setValue( valout, vv ); 
@@ -186,10 +191,10 @@ void HistogramBase::gatherGridAccumulators( const unsigned& code, const MultiVal
   if( one_kernel_at_a_time ) {
       unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
       unsigned valout = getPntrToOutput(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
-      for(unsigned i=0;i<(arg_ends.size()-heights_index);++i) buffer[istart+1+i] += myvals.getDerivative( valout, i );
+      for(unsigned i=0;i<getNumberOfDerivatives();++i) buffer[istart+1+i] += myvals.getDerivative( valout, i );
       return;
   }
-  std::vector<double> argsh( arg_ends.size()-1 ), args( arg_ends.size()-heights_index );
+  std::vector<double> argsh( arg_ends.size()-1 ), args( getNumberOfDerivatives() );
   if( getPntrToArgument(0)->getRank()==2 ) {
       unsigned matind=getPntrToArgument(0)->getPositionInMatrixStash();
 #ifdef DNDEBUG

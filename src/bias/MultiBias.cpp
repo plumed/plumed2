@@ -96,7 +96,7 @@ void MultiBias::calculate(){
 
 void MultiBias::performTask( const unsigned& current, MultiValue& myvals ) const {
   // Get the values of all the arguments
-  std::vector<double> args( arg_ends.size()-1 ); retrieveArguments( myvals, args );
+  std::vector<double> args( getNumberOfArgumentsPerTask() ); retrieveArguments( myvals, args );
   // Calculate whatever we are calculating
   calculateBias( args, myvals );
   if( actionInChain() ) {

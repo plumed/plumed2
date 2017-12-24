@@ -65,7 +65,7 @@ Highest::Highest(const ActionOptions&ao):
 {
   if( !numberedkeys ){ 
      if( getPntrToArgument(0)->getRank()>0 ) {
-         if( arg_ends.size()!=2 ) error("should only use one non-scalar argument in input for ARG keyword");
+         if( getNumberOfArguments()>1 ) error("should only use one non-scalar argument in input for ARG keyword");
      }
      for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore(); 
   }
@@ -92,18 +92,18 @@ void Highest::transformFinalValueAndDerivatives( const std::vector<double>& buf 
   unsigned hind = 0, pves = 0; unsigned aind=0; double highest = getPntrToArgument(0)->get(0);
   for(unsigned i=0;i<getNumberOfArguments();++i){
       Value* myarg = getPntrToArgument(i); 
-      for(unsigned j=0;j<myarg->getNumberOfValues(); ++j ){
+      for(unsigned j=0;j<myarg->getNumberOfValues( getLabel() ); ++j ){
           if( myarg->get(j)>highest ){ aind=i; highest=myarg->get(j); hind = pves + j; }
       }
-      pves += myarg->getNumberOfValues();
+      pves += myarg->getNumberOfValues( getLabel() );
   }
   Value* val0 = getPntrToComponent(0); val0->set( highest );
   if( !doNotCalculateDerivatives() ){ 
       unsigned nn=0, nm=0;
       for(unsigned i=0;i<getNumberOfArguments();++i){
-          nn += getPntrToArgument(i)->getNumberOfValues();
+          nn += getPntrToArgument(i)->getNumberOfValues( getLabel() );
           if( hind<nn ){ break; }
-          nm += getPntrToArgument(i)->getNumberOfValues();
+          nm += getPntrToArgument(i)->getNumberOfValues( getLabel() );
       }
       tvals.clearAll(); (getPntrToArgument(aind)->getPntrToAction())->rerunTask( hind - nm, tvals );
       unsigned istrn = getPntrToArgument(aind)->getPositionInStream();

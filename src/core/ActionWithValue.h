@@ -160,7 +160,7 @@ public:
 ///
   void addTaskToList( const unsigned& taskCode );
 /// Retrieve all the scalar values calculated in the loop
-  void retrieveAllScalarValuesInLoop( std::vector<Value*>& myvals );
+  void retrieveAllScalarValuesInLoop( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
 ///
   const std::vector<unsigned>& getCurrentTasks() const ;
 protected:
@@ -230,7 +230,7 @@ public:
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
 /// Interpret the data label and get arguments 
-  void interpretDataLabel( const std::string& mystr, Action* myuser, std::vector<Value*>& args );
+  void interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args );
 ///
   unsigned getFullNumberOfTasks() const ;
 /// Reperform one of the tasks

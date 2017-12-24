@@ -121,7 +121,7 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   bool rankOneOutput = getPntrToArgument(0)->getRank()>0;
   if( getPntrToArgument(0)->getRank()>1 ) error("input arguments should be rank 0 or rank 1");
   if( rankOneOutput && getNumberOfArguments()>1 ) error("cannot calculate path for more than one one vector at a time");
-  if( arg_ends[1]-arg_ends[0]!=1 ) error("makes no sense to use ARG1, ARG2... with this action use single ARG keyword");
+  if( arg_ends.size()>0 ) error("makes no sense to use ARG1, ARG2... with this action use single ARG keyword");
 
   unsigned maxargs=0, maxatoms=0; std::vector<AtomNumber> myatoms; std::vector<std::string> myargs;
   for(unsigned i=0;i<getNumberOfArguments();++i){

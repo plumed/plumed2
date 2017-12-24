@@ -206,7 +206,7 @@ void FourierTransform::calculate() {
 
   // Fill real input with the data on the grid
   std::vector<unsigned> ind( getPntrToArgument(0)->getRank() );
-  for (unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues(); ++i) {
+  for (unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues( getLabel() ); ++i) {
     // Get point indices
     gridcoords.getIndices(i, ind);
     // Fill input data in row-major order
@@ -229,7 +229,7 @@ void FourierTransform::calculate() {
   // Save FT data to output grid
   std::vector<unsigned> N_out_data ( gridobject.getNbin() );
   std::vector<unsigned> out_ind ( getPntrToArgument(0)->getRank() );
-  for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues(); ++i) {
+  for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues( getLabel() ); ++i) {
     gridcoords.getIndices( i, out_ind );
     if (real_output) {
       double ft_value;

@@ -71,6 +71,8 @@ public:
   Value* getPntrToArgument( const unsigned n ) const ;
 /// Returns the number of arguments
   virtual unsigned getNumberOfArguments() const ;
+/// Get the number of arguments in each task
+  unsigned getNumberOfArgumentsPerTask() const ;
 /// Takes the difference taking into account pbc for arg i
   double difference(int, double, double) const;
 /// Takes one value and brings it back into the pbc of argument i
@@ -111,7 +113,7 @@ Value* ActionWithArguments::getPntrToArgument( const unsigned n ) const {
 inline
 unsigned ActionWithArguments::getNumberOfScalarArguments() const {
   unsigned nscalars=0; 
-  for(unsigned i=0;i<arguments.size();++i) nscalars += arguments[i]->getNumberOfValues();
+  for(unsigned i=0;i<arguments.size();++i) nscalars += arguments[i]->getNumberOfValues( getLabel() );
   return nscalars;
 }
 
@@ -119,9 +121,9 @@ inline
 double ActionWithArguments::getArgumentScalar(const unsigned n) const {
   unsigned nt = 0, nn = 0, j=0;
   for(unsigned i=0;i<arguments.size();++i){
-     nt += arguments[i]->getNumberOfValues();
+     nt += arguments[i]->getNumberOfValues( getLabel() );
      if( n<nt ){ j=i; break ; }
-     nn += arguments[i]->getNumberOfValues();
+     nn += arguments[i]->getNumberOfValues( getLabel() );
   }
   return arguments[j]->get( n - nn );
 }
@@ -133,6 +135,7 @@ unsigned ActionWithArguments::getNumberOfArguments()const {
 
 inline
 double ActionWithArguments::difference(int i,double d1,double d2)const {
+  plumed_dbg_massert( i<arguments.size(), "problem for difference in " + getLabel() );
   return arguments[i]->difference(d1,d2);
 }
 

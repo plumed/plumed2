@@ -347,21 +347,39 @@ Histogram::Histogram(const ActionOptions&ao):
           log.printf("  for %dth coordinate min and max are set from cell directions \n", (i+1) );
           firststep=true;  // We need to do a preparation step to set the grid from the box size
           if( gmax[i]!="auto" ) error("if gmin is set from box vectors gmax must also be set in the same way");
-          for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-              if ( getPntrToArgument(j)->isPeriodic() ) {
-                   if( gmin[i]=="auto" ) getPntrToArgument(j)->getDomain( gmin[i], gmax[i] );
-                   else {
-                       std::string str_min, str_max; getPntrToArgument(j)->getDomain( str_min, str_max );
-                       if( str_min!=gmin[i] || str_max!=gmax[i] ) error("all periodic arguments should have the same domain");
-                   } 
-              } else if( getPntrToArgument(j)->getName().find(".")!=std::string::npos ) {
-                   std::size_t dot = getPntrToArgument(j)->getName().find_first_of("."); 
-                   std::string name = getPntrToArgument(j)->getName().substr(dot+1);
-                   if( name!="x" && name!="y" && name!="z" ) {
-                       error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
-                   }
+          if( arg_ends.size()==0 ) {
+              if( getPntrToArgument(i)->isPeriodic() ) {
+                  if( gmin[i]=="auto" ) getPntrToArgument(i)->getDomain( gmin[i], gmax[i] );
+                  else {
+                     std::string str_min, str_max; getPntrToArgument(i)->getDomain( str_min, str_max );
+                     if( str_min!=gmin[i] || str_max!=gmax[i] ) error("all periodic arguments should have the same domain");
+                  }
+              } else if( getPntrToArgument(i)->getName().find(".")!=std::string::npos ) {
+                  std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
+                  std::string name = getPntrToArgument(i)->getName().substr(dot+1);
+                  if( name!="x" && name!="y" && name!="z" ) {
+                      error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
+                  }
               } else {
-                   error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
+                  error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
+              }
+          } else {
+              for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
+                  if ( getPntrToArgument(j)->isPeriodic() ) {
+                       if( gmin[i]=="auto" ) getPntrToArgument(j)->getDomain( gmin[i], gmax[i] );
+                       else {
+                           std::string str_min, str_max; getPntrToArgument(j)->getDomain( str_min, str_max );
+                           if( str_min!=gmin[i] || str_max!=gmax[i] ) error("all periodic arguments should have the same domain");
+                       } 
+                  } else if( getPntrToArgument(j)->getName().find(".")!=std::string::npos ) {
+                       std::size_t dot = getPntrToArgument(j)->getName().find_first_of("."); 
+                       std::string name = getPntrToArgument(j)->getName().substr(dot+1);
+                       if( name!="x" && name!="y" && name!="z" ) {
+                           error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
+                       }
+                  } else {
+                       error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
+                  }
               }
           }
       } else {
@@ -377,7 +395,8 @@ Histogram::Histogram(const ActionOptions&ao):
   // Create a value
   std::vector<bool> ipbc( getNumberOfDerivatives() ); 
   for(unsigned i=0;i<getNumberOfDerivatives();++i){
-      if( getPntrToArgument( arg_ends[i] )->isPeriodic() || gmin[i]=="auto" ) ipbc[i]=true;
+      unsigned k=i; if( arg_ends.size()>0 ) k=arg_ends[i];
+      if( getPntrToArgument( k )->isPeriodic() || gmin[i]=="auto" ) ipbc[i]=true;
       else ipbc[i]=false;
   }
   gridobject.setup( "flat", ipbc, 0, 0.0 ); checkRead();
@@ -446,9 +465,10 @@ void Histogram::getInfoForGridHeader( std::vector<std::string>& argn, std::vecto
                                       std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
   bool isdists=dumpcube; double units=1.0;
   for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i){
-      if( getPntrToArgument( arg_ends[i] )->getName().find(".")==std::string::npos ){ isdists=false; break; }
-      std::size_t dot = getPntrToArgument( arg_ends[i] )->getName().find(".");
-      std::string name = getPntrToArgument( arg_ends[i] )->getName().substr(dot+1);
+      unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
+      if( getPntrToArgument( k )->getName().find(".")==std::string::npos ){ isdists=false; break; }
+      std::size_t dot = getPntrToArgument( k )->getName().find(".");
+      std::string name = getPntrToArgument( k )->getName().substr(dot+1);
       if( name!="x" && name!="y" && name!="z" ){ isdists=false; break; }
   }
   if( isdists ) {
@@ -456,7 +476,8 @@ void Histogram::getInfoForGridHeader( std::vector<std::string>& argn, std::vecto
       else units = plumed.getAtoms().getUnits().getLength()/.05929;
   }
   for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) {
-      argn[i] = getPntrToArgument( arg_ends[i] )->getName(); double gmin, gmax;
+      unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
+      argn[i] = getPntrToArgument( k )->getName(); double gmin, gmax;
       if( gridobject.getMin().size()>0 ) {
           Tools::convert( gridobject.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
           Tools::convert( gridobject.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );

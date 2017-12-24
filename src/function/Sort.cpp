@@ -79,21 +79,22 @@ Sort::Sort(const ActionOptions&ao):
   Action(ao),
   Function(ao)
 {
+  unsigned k=0; 
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    string s;
-    Tools::convert(i+1,s);
-    if(getPntrToArgument(i)->isPeriodic())
-      error("Cannot sort periodic values (check argument "+s+")");
-    addComponentWithDerivatives(s+"th");
-    getPntrToComponent(i)->setNotPeriodic();
+    if(getPntrToArgument(i)->isPeriodic()) error("Cannot sort periodic values (check argument "+ getPntrToArgument(i)->getName() +")");
+    for(unsigned j=0;j<getPntrToArgument(i)->getNumberOfValues(getLabel());++j) {
+        string s; Tools::convert(k+1,s); 
+        addComponentWithDerivatives(s+"th");
+        getPntrToComponent(k)->setNotPeriodic(); k++;
+    }
   }
   checkRead();
 
 }
 
 void Sort::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  vector<pair<double,int> > vals(getNumberOfArguments());
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+  vector<pair<double,int> > vals(getNumberOfScalarArguments());
+  for(unsigned i=0; i<getNumberOfScalarArguments(); ++i) {
     vals[i].first=args[i];
 // In this manner I remember from which argument the component depends:
     vals[i].second=i;

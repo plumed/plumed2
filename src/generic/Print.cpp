@@ -26,6 +26,8 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Average.h"
+#include "core/SetupMolInfo.h"
+#include "core/ActionSet.h"
 
 using namespace std;
 
@@ -83,6 +85,7 @@ class Print :
   bool hasorigin;
   bool printAtEnd;
   double lenunit;
+  std::vector<std::string> names;
   bool gridinput;
 // small internal utility
 /////////////////////////////////////////
@@ -182,13 +185,14 @@ Print::Print(const ActionOptions&ao):
         rotateLast=0;
       }
   } else if( tstyle=="xyz" || tstyle=="ndx" ){
-      unsigned nper=0; 
+      if( arg_ends.size()==0 ) { arg_ends.push_back(0); arg_ends.push_back( getNumberOfArguments() ); }
+      unsigned nper=getNumberOfArgumentsPerTask();
       for(unsigned i=0;i<arg_ends.size()-1;++i) {
           unsigned nt=0;
           for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j){
               if( getPntrToArgument(j)->getRank()>0 && getPntrToArgument(j)->hasDerivatives() ){ gridinput=true; }
               if( getPntrToArgument(j)->getRank()!=1 ) error("can only output vectors in xyz/ndx output");
-              nt += getPntrToArgument(j)->getNumberOfValues();
+              nt += getPntrToArgument(j)->getNumberOfValues( getLabel() );
           }   
           if( i==0 ){ nper=nt; }
           else if( nt!=nper ) error("mismatched number of values in matrices input in input");
@@ -209,8 +213,8 @@ Print::Print(const ActionOptions&ao):
           if( getStride()==0 ) { setStride(1); log.printf("  with stride %d\n",getStride()); }
           std::vector<std::string> str_upper, str_lower; 
           parseVector("LESS_THAN_OR_EQUAL",str_upper); parseVector("GREATER_THAN_OR_EQUAL",str_lower); 
-          if( str_upper.size()!=(arg_ends.size()-1) && str_upper.size()>0 ) error("wrong number of arguments for LESS_THAN_OR_EQUAL keyword");
-          if( str_lower.size()!=(arg_ends.size()-1) && str_lower.size()>0 ) error("wrong number of arguments for GREATER_THAN_OR_EQUAL keyword");
+          if( str_upper.size()!=getNumberOfArgumentsPerTask() && str_upper.size()>0 ) error("wrong number of arguments for LESS_THAN_OR_EQUAL keyword");
+          if( str_lower.size()!=getNumberOfArgumentsPerTask() && str_lower.size()>0 ) error("wrong number of arguments for GREATER_THAN_OR_EQUAL keyword");
           if( str_upper.size()>0 && str_lower.size()>0 ){
               lower.resize( str_lower.size() ); upper.resize( str_upper.size() );
               for(unsigned i=0;i<upper.size();++i) {
@@ -258,6 +262,11 @@ Print::Print(const ActionOptions&ao):
               log.printf("  printing xyz file containing poisitions of atoms in columns 1, 2 and 3\n");
               for(unsigned i=0;i<getNumberOfArguments();++i){
                   log.printf("  column %d contains components of vector %s \n", 4+i, getPntrToArgument(i)->getName().c_str() );
+              }
+              std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+              if( moldat.size()==1 ) {
+                  names.resize(atoms.size());
+                  for(unsigned i=0; i<atoms.size(); i++) names[i]=moldat[0]->getAtomName(atoms[i]);
               }
               log.printf("  atom positions printed are : ");
           } else if( tstyle=="ndx" ) {
@@ -348,7 +357,7 @@ void Print::update() {
   } else if( tstyle=="xyz") {
       if( getNumberOfAtoms()>0 ) {
           unsigned natoms=0, ntatoms=getNumberOfAtoms(); if( hasorigin ) ntatoms = ntatoms - 1;
-          MultiValue myfvals(0,0); std::vector<double> argvals( arg_ends.size()-1 );
+          MultiValue myfvals(0,0); std::vector<double> argvals( getNumberOfArgumentsPerTask() );
           for(unsigned i=0; i<ntatoms;++i) {
               myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals ); 
               if( isInTargetRange( argvals ) ) natoms++;
@@ -366,6 +375,7 @@ void Print::update() {
           }
           for(unsigned i=0; i<ntatoms;++i) {
               const char* defname="X"; const char* name=defname;
+              if(names.size()>0) if(names[i].length()>0) name=names[i].c_str();
               myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals ); 
               if( isInTargetRange( argvals ) ) {
                   if( hasorigin ) {
@@ -379,7 +389,7 @@ void Print::update() {
               } 
           }
       } else if( gridinput ) {
-          unsigned ngrid = getPntrToArgument(0)->getNumberOfValues();
+          unsigned ngrid = getPntrToArgument(0)->getNumberOfValues( getLabel() );
           ActionWithValue* myaction = getPntrToArgument(0)->getPntrToAction();
           ofile.printf("%d\n",ngrid); ofile.printf("\n"); std::vector<double> pos;
           for(unsigned i=0;i<ngrid;++i) {
@@ -390,7 +400,7 @@ void Print::update() {
           } 
       } else {
           std::vector<unsigned> tasks ( getPntrToArgument(0)->getPntrToAction()->getCurrentTasks() );
-          MultiValue myfvals(0,0); std::vector<double> argvals( arg_ends.size()-1 ); 
+          MultiValue myfvals(0,0); std::vector<double> argvals( getNumberOfArgumentsPerTask() ); 
           ofile.printf("%d\n",tasks.size()); ofile.printf("\n");
           for(unsigned i=0; i<tasks.size();++i) {
               const char* defname="X"; const char* name=defname; ofile.printf("%s", name);
@@ -402,7 +412,7 @@ void Print::update() {
           }
       }
   } else if( tstyle=="ndx" ) {
-      unsigned n=0; MultiValue myfvals(0,0); std::vector<double> argvals( arg_ends.size()-1 );
+      unsigned n=0; MultiValue myfvals(0,0); std::vector<double> argvals( getNumberOfArgumentsPerTask() );
       ofile.printf("[ %s step %d ] \n", getLabel().c_str(), getStep() );
       for(unsigned i=0; i<getNumberOfAtoms();++i) {
           myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals );
@@ -428,7 +438,7 @@ void Print::update() {
         ogfile.addConstantField("periodic_" + argn[i] );
       }
 
-      for(unsigned i=0; i<gval->getNumberOfValues(); ++i) {
+      for(unsigned i=0; i<gval->getNumberOfValues( getLabel() ); ++i) {
         // Retrieve and print the grid coordinates
         act->getGridPointIndicesAndCoordinates( i, ind, xx );
         if(i>0 && gval->getRank()==2 && ind[gval->getRank()-2]==0) ogfile.printf("\n");

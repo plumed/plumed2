@@ -100,6 +100,17 @@ std::vector<std::vector<std::string> > ActionRegister::expandShortcuts( const un
                      if( !found ) break ;
                      keymap.insert(pair<std::string,std::string>(keyname + istr,t));
                  }
+                 for(unsigned i=1;; ++i){
+                     std::string istr; Tools::convert( i, istr ); bool foundall=true; 
+                     for(unsigned j=1;j<=i;++j) {
+                         std::string jstr; Tools::convert( j, jstr );
+                         bool found=Tools::parse(words,keyname + jstr + istr,t,replica_index);
+                         if( j==1 && !found ){ foundall=false; break ; }
+                         else if( !found ) plumed_merror("input suggests reading in matrix of numbered keywords but numbers are missing");
+                         keymap.insert(pair<std::string,std::string>(keyname + jstr + istr,t));
+                     }
+                     if( !foundall ) break; 
+                 }
               }
           } else if( keys.style( keyname, "flag") ){
               bool found=false; Tools::parseFlag(words,keyname,found);

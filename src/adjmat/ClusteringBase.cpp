@@ -60,7 +60,7 @@ void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matr
 
   // And set up the adjacency list
   Value* mat = getPntrToArgument(0); unsigned nrows = mat->getShape()[0];
-  for(unsigned i=0; i<mat->getNumberOfValues(); ++i) {
+  for(unsigned i=0; i<mat->getNumberOfValues(getLabel()); ++i) {
     // Check if atoms are connected
     if( mat->get(i)<epsilon ) continue ;
 
@@ -76,10 +76,10 @@ void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matr
 
 void ClusteringBase::retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list ) {
   nedge=0; std::vector<double> myvals( getNumberOfComponents() );
-  if( getPntrToArgument(0)->getNumberOfValues()>edge_list.size() ) error("adjacency lists are not large enough, increase maxconnections");
+  if( getPntrToArgument(0)->getNumberOfValues(getLabel())>edge_list.size() ) error("adjacency lists are not large enough, increase maxconnections");
 
   Value* mat = getPntrToArgument(0); unsigned nrows = mat->getShape()[0];
-  for(unsigned i=0; i<mat->getNumberOfValues(); ++i) {
+  for(unsigned i=0; i<mat->getNumberOfValues(getLabel()); ++i) {
     // Check if atoms are connected
     if( mat->get(i)<epsilon ) continue ;
      

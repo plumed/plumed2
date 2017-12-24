@@ -99,7 +99,7 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
 }
 
 Value* VectorProductMatrix::convertStringToValue( const std::string& name ) {
-  std::size_t dot=name.find_first_of("."); std::vector<Value*> args;
+  std::size_t dot=name.find_first_of("."); unsigned nargs=0; std::vector<Value*> args;
   if( dot!=std::string::npos ) {
       ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( name.substr(0,dot) );
       if( !action ){
@@ -107,7 +107,7 @@ Value* VectorProductMatrix::convertStringToValue( const std::string& name ) {
           str+=plumed.getActionSet().getLabelList()+")";
           error("cannot find action named " + name + str);
       }
-      action->interpretDataLabel( name, this, args );
+      action->interpretDataLabel( name, this, nargs, args );
   } else {
       ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( name );
       if( !action ){
@@ -115,7 +115,7 @@ Value* VectorProductMatrix::convertStringToValue( const std::string& name ) {
           str+=plumed.getActionSet().getLabelList()+")";
           error("cannot find action named " + name + str);
       }
-      action->interpretDataLabel( name, this, args );
+      action->interpretDataLabel( name, this, nargs, args );
   }
   plumed_assert( args.size()==1 );
   return args[0];

@@ -195,7 +195,7 @@ Center::Center(const ActionOptions&ao):
           weight_charge=true;
           log<<"  computing the center of charge of atoms:\n";
       } else {
-          std::size_t dot=str_weights[0].find_first_of("."); std::vector<Value*> args;
+          std::size_t dot=str_weights[0].find_first_of("."); unsigned nargs=0; std::vector<Value*> args;
           if( dot!=std::string::npos ) {
               ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( str_weights[0].substr(0,dot) );
               if( !action ){ 
@@ -203,7 +203,7 @@ Center::Center(const ActionOptions&ao):
                   str+=plumed.getActionSet().getLabelList()+")";
                   error("cannot find action named " + str_weights[0] +str);
               } 
-              action->interpretDataLabel( str_weights[0], this, args );
+              action->interpretDataLabel( str_weights[0], this, nargs, args );
           } else {
               ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( str_weights[0] );
               if( !action ){
@@ -211,7 +211,7 @@ Center::Center(const ActionOptions&ao):
                   str+=plumed.getActionSet().getLabelList()+")";
                   error("cannot find action named " + str_weights[0] +str);
               }
-              action->interpretDataLabel( str_weights[0], this, args ); 
+              action->interpretDataLabel( str_weights[0], this, nargs, args ); 
           } 
           if( args.size()!=1 ) error("should only have one value as input to WEIGHT");
           if( args[0]->getRank()!=1 || args[0]->getShape()[0]!=atoms.size() ) error("value input for WEIGHTS has wrong shape"); 

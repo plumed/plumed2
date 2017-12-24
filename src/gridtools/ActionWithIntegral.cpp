@@ -46,8 +46,9 @@ void ActionWithIntegral::finishOutputSetup() {
   // Retrieve the volume of the grid (for integration)
   volume = 1; for(unsigned i=0;i<gval->getRank();++i) volume *= spacing[i];
   // as we have to evaluate the function at each grid points
-  for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues(); ++i) addTaskToList(i);
-  forcesToApply.resize( getPntrToArgument(0)->getNumberOfValues() );
+  for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues( getLabel() ); ++i) addTaskToList(i);
+  plumed_assert( arg_ends.size()==0 ); arg_ends.push_back(0); arg_ends.push_back(1); 
+  forcesToApply.resize( getPntrToArgument(0)->getNumberOfValues( getLabel() ) );
 }
 
 void ActionWithIntegral::buildCurrentTaskList( std::vector<unsigned>& tflags ) {

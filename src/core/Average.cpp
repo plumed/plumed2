@@ -191,7 +191,7 @@ void Average::getGridPointAsCoordinate( const unsigned& ind, const bool& setleng
 
 void Average::update() {
   if( firststep ) {
-      if( getPntrToOutput(0)->getNumberOfValues()!=getPntrToArgument(0)->getNumberOfValues() ) {
+      if( getPntrToOutput(0)->getNumberOfValues( getLabel() )!=getPntrToArgument(0)->getNumberOfValues( getLabel() ) ) {
           getPntrToOutput(0)->setShape( getPntrToArgument(0)->getShape() );
       }
       firststep=false;
@@ -228,7 +228,7 @@ void Average::update() {
      if( normalization==t ){ valsin->setNorm( valsin->getNorm() + cweight ); valcos->setNorm( valcos->getNorm() + cweight ); }
      else if( normalization==ndata ){ valsin->setNorm( valsin->getNorm() + 1.0 ); valcos->setNorm( valcos->getNorm() + 1.0 ); }
      // Now calcualte average
-     for(unsigned i=0;i<arg0->getNumberOfValues();++i) {
+     for(unsigned i=0;i<arg0->getNumberOfValues( getLabel() );++i) {
          double tval = ( arg0->get(i) - lbound ) / pfactor;
          valsin->add( i, cweight*sin(tval) ); valcos->add( i, cweight*cos(tval) );
          val->set( i, lbound + pfactor*atan2( valsin->get(i), valcos->get(i)) );
@@ -238,7 +238,7 @@ void Average::update() {
      if( normalization==t ) val->setNorm( val->getNorm() + cweight );
      else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 ); 
      // Now accumulate average 
-     for(unsigned i=0;i<arg0->getNumberOfValues();++i) {
+     for(unsigned i=0;i<arg0->getNumberOfValues( getLabel() );++i) {
          if( arg0->getRank()==0 && arg0->hasDerivatives() ) {
              for(unsigned j=0;j<val->getNumberOfDerivatives();++j) val->addDerivative( j, cweight*arg0->getDerivative( j ) );
          } else if( arg0->hasDerivatives() ) {

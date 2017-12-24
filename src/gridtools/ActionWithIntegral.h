@@ -50,7 +50,7 @@ double ActionWithIntegral::getVolume() const {
 
 inline
 unsigned ActionWithIntegral::getNumberOfDerivatives() const {
-  return getPntrToArgument(0)->getNumberOfValues();
+  return getPntrToArgument(0)->getNumberOfValues( getLabel() );
 }
 
 }

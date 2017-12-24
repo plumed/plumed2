@@ -312,18 +312,18 @@ Value* ActionWithValue::getPntrToComponent( int n ) {
   return values[n].get();
 }
 
-void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myuser, std::vector<Value*>& args ){
+void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args ){
   // Check for streams
   unsigned nstr=0; for(unsigned i=0;i<values.size();++i){ if( values[i]->getRank()>0 ) nstr++; }
 
   if( mystr=="" || mystr==getLabel() ){
       // Retrieve value with name of action
       if( values[0]->name!=getLabel() ) myuser->error("action " + getLabel() + " does not have a value");
-      args.push_back( values[0] ); values[0]->interpretDataRequest( myuser->getLabel(), "" ); 
+      // args.push_back( values[0] ); 
+      values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, "" ); 
   } else if( mystr==getLabel() + ".*" ){
       // Retrieve all scalar values
-      unsigned nargs = args.size();
-      if( !action_to_do_after ){ retrieveAllScalarValuesInLoop( args ); } 
+      if( !action_to_do_after ) retrieveAllScalarValuesInLoop( myuser->getLabel(), nargs, args );  
       if( args.size()==nargs && actionRegister().checkForShortcut(getName()) ) {  
           Keywords skeys; actionRegister().getShortcutKeywords( getName(), skeys );
           std::vector<std::string> out_comps( skeys.getAllOutputComponents() );
@@ -335,29 +335,27 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
                           std::string numstr; Tools::convert( j, numstr );
                           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] + numstr );
                           if( !action ) break;
-                          args.push_back( action->getPntrToValue() ); 
+                          (action->getPntrToValue())->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
                       }
                   }
               } 
               ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] );
-              if( action ) args.push_back( action->getPntrToValue() );
+              if( action ) (action->getPntrToValue())->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
           }
       } 
-      for(unsigned j=0;j<args.size();++j) args[j]->interpretDataRequest( myuser->getLabel(), "" );
   } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
       // Retrieve value with specific name
-      args.push_back( copyOutput( mystr ) ); copyOutput( mystr )->interpretDataRequest( myuser->getLabel(), "" ); 
+      copyOutput( mystr )->interpretDataRequest( myuser->getLabel(), nargs, args, "" ); 
   } else {
       std::size_t dot1 = mystr.find_first_of('.'); std::string thelab = mystr.substr(0,dot1); 
       plumed_assert( thelab==getLabel() ); std::string rest = mystr.substr(dot1+1); 
       if( rest.find_first_of('.')==std::string::npos ){
          plumed_assert( values.size()==1 ); plumed_assert( values[0]->getRank()>0 && values[0]->getName()==getLabel() );
-         args.push_back( values[0] ); values[0]->interpretDataRequest( myuser->getLabel(), rest ); 
+         values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, rest ); 
       } else {
          std::size_t dot2 = rest.find_first_of('.'); std::string thecomp = rest.substr(0,dot2);
          if( !exists( thelab + "." + thecomp ) ) myuser->error("could not find component with label " + thelab + "." + thecomp );
-         args.push_back( copyOutput( thelab + "." + thecomp ) ); 
-         getPntrToComponent( thecomp )->interpretDataRequest( myuser->getLabel(), rest.substr(dot2+1) );
+         getPntrToComponent( thecomp )->interpretDataRequest( myuser->getLabel(), nargs, args, rest.substr(dot2+1) );
       }
   }
 }
@@ -624,17 +622,17 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
   if( action_to_do_after ) action_to_do_after->gatherAccumulators( taskCode, myvals, buffer );
 }
 
-void ActionWithValue::retrieveAllScalarValuesInLoop( std::vector<Value*>& myvals ){
+void ActionWithValue::retrieveAllScalarValuesInLoop( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ){
   for(unsigned i=0;i<values.size();++i){
       if( values[i]->getRank()==0 ){
           bool found=false;
           for(unsigned j=0;j<myvals.size();++j){
               if( values[i]->getName()==myvals[j]->getName() ){ found=true; break; }
           }
-          if( !found ) myvals.push_back( values[i] );
+          if( !found ) values[i]->interpretDataRequest( ulab, nargs, myvals, "" ); 
       }
   }
-  if( action_to_do_after ) action_to_do_after->retrieveAllScalarValuesInLoop( myvals );
+  if( action_to_do_after ) action_to_do_after->retrieveAllScalarValuesInLoop( ulab, nargs, myvals );
 }
 
 void ActionWithValue::finishComputations( const std::vector<double>& buffer ){

@@ -80,7 +80,7 @@ private:
 /// Variables for storing data
   unsigned bufstart, streampos, matpos;
 /// Store information on who is using information contained in this value 
-  std::map<std::string,std::vector<int> > userdata; 
+  std::map<std::string,std::vector<std::pair<int,int> > > userdata; 
 /// Is this quantity periodic
   enum {unset,periodic,notperiodic} periodicity;
 /// Various quantities that describe the domain of this value
@@ -93,7 +93,7 @@ private:
 // bring value within PBCs
   void applyPeriodicity( const unsigned& ival );
 /// Add information on who is using this action
-  void interpretDataRequest( const std::string& uselab, const std::string& values );
+  void interpretDataRequest( const std::string& uselab, unsigned& nargs, std::vector<Value*>& args, const std::string& values );
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
@@ -132,7 +132,7 @@ public:
 /// Get the number of derivatives that this particular value has
   unsigned getNumberOfDerivatives() const;
 /// Get the size of this value
-  unsigned getNumberOfValues() const ;
+  unsigned getNumberOfValues( const std::string& actlab ) const ;
 /// Set the number of derivatives
   void resizeDerivatives(int n);
 /// Set all the derivatives to zero
@@ -190,6 +190,12 @@ public:
   void convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const ;
 ///
   void print( const std::string& alabel, OFile& ofile ) const ;
+///
+  bool usingAllVals( const std::string& alabel ) const ;
+///
+  double getRequiredValue(  const std::string& alabel, const unsigned& num  ) const ;
+///
+  void getRequiredValue( const std::string& alabel, const unsigned& num, std::vector<double>& args ) const ;
 };
 
 inline
