@@ -324,7 +324,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
 
     if(!arg.empty()) {
       log.printf("  with arguments"); arg_ends.resize(0); numberedkeys=false;
-      for(unsigned i=0; i<arg.size(); i++) log.printf(" %s",arg[i]->getName().c_str()); 
+      for(unsigned i=0; i<arg.size(); i++) log.printf("%s",arg[i]->getOutputDescription( getLabel() ).c_str()); 
       log.printf("\n");
     } else if( keywords.numbered("ARG") ) {
       unsigned narg=0; arg_ends.push_back(0); numberedkeys=true;
@@ -333,7 +333,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
          if( argn.size()==0 ) break;
          unsigned nargt=0; log.printf("  %dth set of arguments",i);
          for(unsigned j=0;j<argn.size();++j){
-             log.printf(" %s",argn[j]->getName().c_str());
+             log.printf(" %s",argn[j]->getOutputDescription( getLabel() ).c_str());
              arg.push_back( argn[j] ); nargt += argn[j]->getNumberOfValues( getLabel() );
          }
          arg_ends.push_back( arg.size() ); log.printf("\n"); 

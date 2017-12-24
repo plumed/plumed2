@@ -348,6 +348,23 @@ void Value::getRequiredValue(  const std::string& alabel, const unsigned& num, s
   }
 }
 
+std::string Value::getOutputDescription( const std::string& alabel ) const {
+  if( getRank()==0 ) return " " + name;
+
+  if( usingAllVals(alabel) ) {
+     if( hasDerivatives() ) return " grid labelled " + name;
+     if( getRank()==1 ) return " vector labelled " + name;
+     if( getRank()==2 ) return " matrix labelled " + name;
+  } else {
+     // N.B. Output for rank 2 values in this case is not very transparent. 
+     std::string num, datp; 
+     for(unsigned i=0;i<userdata.find(alabel)->second.size();++i){
+         Tools::convert( userdata.find(alabel)->second[i].first+1, num ); datp += " " + name + "." + num;
+     }
+     return datp;
+  }
+}
+
 // void Value::setBufferPosition( const unsigned& ibuf ){
 //   bufstart = ibuf;
 // }

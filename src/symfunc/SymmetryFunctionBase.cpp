@@ -98,7 +98,7 @@ usecols(false)
   std::vector<std::string> alabels(1); std::vector<Value*> wval; parseArgumentList("WEIGHT",wval);
   if( wval.size()!=1 ) error("keyword WEIGHT should be provided with the label of a single action"); 
   alabels[0]=(wval[0]->getPntrToAction())->getLabel(); (wval[0]->getPntrToAction())->addActionToChain( alabels, this );
-  log.printf("  using bond weights from %s \n",wval[0]->getName().c_str() );
+  log.printf("  using bond weights from matrix labelled %s \n",wval[0]->getName().c_str() );
   nderivatives=(wval[0]->getPntrToAction())->getNumberOfDerivatives(); 
 
   if( keywords.exists("VECTORS") ) {
@@ -119,7 +119,7 @@ usecols(false)
           }
           alabels[0]=(vecs[0]->getPntrToAction())->getLabel(); (vecs[0]->getPntrToAction())->addActionToChain( alabels, this ); wval.push_back(vecs[0]); 
           std::string dir="x"; if( i==2 ) dir="y"; else dir="z";
-          log.printf("  %s direction of bond read from %s \n",dir.c_str(),vecs[0]->getName().c_str() );
+          log.printf("  %s direction of bond read from matrix labelled %s \n",dir.c_str(),vecs[0]->getName().c_str() );
       }
   }
   if( keywords.exists("ONESHOT") ) {

@@ -196,6 +196,8 @@ public:
   double getRequiredValue(  const std::string& alabel, const unsigned& num  ) const ;
 ///
   void getRequiredValue( const std::string& alabel, const unsigned& num, std::vector<double>& args ) const ;
+///
+  std::string getOutputDescription( const std::string& alabel ) const ;
 };
 
 inline

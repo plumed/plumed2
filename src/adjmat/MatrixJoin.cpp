@@ -68,7 +68,7 @@ ActionWithValue(ao)
           if( argn.size()>1 ) error("should only be one argument to each matrix keyword");
           if( argn[0]->getRank()!=2 ) error("input arguments for this action should be matrices");
           arglist.push_back( argn[0] ); nt_cols++;
-          log.printf("  %d %d component of composeed matrix is %s \n", i, j, argn[0]->getName().c_str() );
+          log.printf("  %d %d component of composed matrix is %s \n", i, j, argn[0]->getName().c_str() );
       }
       if( arglist.size()==size_b4 ) break;
       if( i==1 ) ncols=nt_cols;

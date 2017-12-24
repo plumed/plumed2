@@ -217,7 +217,7 @@ Center::Center(const ActionOptions&ao):
           if( args[0]->getRank()!=1 || args[0]->getShape()[0]!=atoms.size() ) error("value input for WEIGHTS has wrong shape"); 
           val_weights = args[0]; std::vector<std::string> empty(1); empty[0] = (val_weights->getPntrToAction())->getLabel();
           (val_weights->getPntrToAction())->addActionToChain( empty, this );
-          log.printf("  atoms are weighted by values in %s \n",val_weights->getName().c_str() );
+          log.printf("  atoms are weighted by values in vector labelled %s \n",val_weights->getName().c_str() );
       }
   } else {
       log<<" with weights:";
