@@ -271,7 +271,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
           for(unsigned i=1;i<f_actions.size();++i) { 
               if( !f_actions[0]->do_not_add_to_chain ) f_actions[0]->addActionToChain( empty, f_actions[i] ); 
               else {
-                 for(unsigned j=0;j<arguments.size();++j) plumed_assert( arguments[j]->storedata );
+                 for(unsigned j=0;j<arguments.size();++j) plumed_massert( arguments[j]->storedata, "not storing data for " + arguments[j]->getName() );
               }
           }
       } else {

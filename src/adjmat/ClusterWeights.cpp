@@ -93,6 +93,7 @@ PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_WEIGHTS")
 PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_PROPERTIES")
 PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_NATOMS")
 PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_WITHSURFACE")
+PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_DIAMETER")
 
 void ClusterWeights::shortcutKeywords( Keywords& keys ) { 
   keys.add("optional","ARG","calculate the sum of the arguments calculated by this action for the cluster");
@@ -103,13 +104,15 @@ void ClusterWeights::shortcutKeywords( Keywords& keys ) {
 void ClusterWeights::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                                      const std::map<std::string,std::string>& keys,
                                      std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> weights; 
-  if( words[0]=="CLUSTER_NATOMS" ) weights.push_back( lab + "_weights:" );
-  else if( words[0]=="CLUSTER_WITHSURFACE" ) weights.push_back( lab + "_wnosurf:");
-  else weights.push_back( lab + ":" ); 
-  weights.push_back("CLUSTER_WEIGHTS");
-  for(unsigned i=1;i<words.size();++i) weights.push_back( words[i] );
-  actions.push_back( weights );
+  if( words[0]!="CLUSTER_DIAMETER" ) {
+      std::vector<std::string> weights; 
+      if( words[0]=="CLUSTER_NATOMS" ) weights.push_back( lab + "_weights:" );
+      else if( words[0]=="CLUSTER_WITHSURFACE" ) weights.push_back( lab + "_wnosurf:");
+      else weights.push_back( lab + ":" ); 
+      weights.push_back("CLUSTER_WEIGHTS");
+      for(unsigned i=1;i<words.size();++i) weights.push_back( words[i] );
+      actions.push_back( weights );
+  }
   if( words[0]=="CLUSTER_PROPERTIES" ) { 
       multicolvar::MultiColvarBase::expandFunctions( lab, keys.find("ARG")->second, lab, words, keys, actions ); 
   } else if( words[0]=="CLUSTER_NATOMS" ) {
@@ -135,6 +138,20 @@ void ClusterWeights::expandShortcut( const std::string& lab, const std::vector<s
       std::vector<std::string> fweights; fweights.push_back( lab + ":" ); fweights.push_back("CLUSTER_WEIGHTS");
       fweights.push_back("CLUSTERS=" + lab + "_clust"); fweights.push_back("CLUSTER=1");
       actions.push_back( fweights );
+  } else if( words[0]=="CLUSTER_DIAMETER" ) {
+      // Distance matrix
+      std::vector<std::string> distance_mat; distance_mat.push_back( lab + "_dmat:" ); distance_mat.push_back("DISTANCE_MATRIX");
+      distance_mat.push_back("GROUP=" + keys.find("ARG")->second ); actions.push_back( distance_mat );
+      // Matrix of bonds in cluster
+      std::vector<std::string> bonds_mat; bonds_mat.push_back( lab + "_bmat:"); bonds_mat.push_back("DOTPRODUCT_MATRIX");
+      bonds_mat.push_back("GROUP1=" + keys.find("ARG")->second ); actions.push_back( bonds_mat );
+      // Product of matrices
+      std::vector<std::string> dcls_mat; dcls_mat.push_back( lab + "_dcls:"); dcls_mat.push_back("MATHEVAL");
+      dcls_mat.push_back("ARG1=" + lab + "_dmat.w" ); dcls_mat.push_back("ARG2=" + lab + "_bmat"); 
+      dcls_mat.push_back("FUNC=x*y"); dcls_mat.push_back("PERIODIC=NO"); actions.push_back( dcls_mat );
+      // And take the highest value
+      std::vector<std::string> maxrad; maxrad.push_back( lab + ":"); maxrad.push_back("HIGHEST");
+      maxrad.push_back("ARG=" + lab + "_dcls"); actions.push_back( maxrad );
   }
 }
 
