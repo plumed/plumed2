@@ -140,10 +140,15 @@ private:
   std::vector<double> coupling_rate_;
   std::vector<double> coupling_accum_;
   std::vector<double> means_;
+  std::vector<double> differences_;
+  std::vector<double> alpha_vector_;
+  std::vector<double> alpha_vector_2_;
   std::vector<double> ssds_;
   std::vector<double> step_size_;
   std::vector<Value*> out_coupling_;
   Matrix<double> covar_;
+  Matrix<double> covar2_;
+  Matrix<double> lm_inv_;
   std::string in_restart_name_;
   std::string out_restart_name_;
   std::string fmt_;
@@ -158,6 +163,7 @@ private:
   bool b_restart_;
   bool b_write_restart_;
   bool b_hard_c_range_;
+  bool b_lm_;
   int seed_;
   int update_period_;
   int avg_coupling_count_;
@@ -165,6 +171,7 @@ private:
   double kbt_;
   double c_range_increase_f_;
   double multi_prop_;
+  double lm_mixing_par_;
   Random rand_;
   Value* value_force2_;
 
@@ -175,6 +182,7 @@ private:
   /*write output restart*/
   void writeOutRestart();
   void update_statistics();
+  void calc_lm_step_size();
   void calc_covar_step_size();
   void calc_ssd_step_size();
   void reset_statistics();
@@ -211,6 +219,10 @@ void EDS::registerKeywords(Keywords& keys) {
   keys.add("optional","MULTI_PROP","What proportion of dimensions to update at each step. "
            "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
            "If not set, default is 1 / N, where N is the number of CVs. ");
+
+  keys.addFlag("LM",false,"Use Levenberg-Marquadt algorithm along with simulatneous keyword. Otherwise use gradient descent.");
+  keys.addFlag("LM_MIXING","1","Initial mixing parameter when using Levenberg-Marquadt minimization.");
+
   keys.add("optional","RESTART_FMT","the format that should be used to output real numbers in EDS restarts");
   keys.add("optional","OUT_RESTART","Output file for all information needed to continue EDS simulation. "
            "If you have the RESTART directive set (global or for EDS), this file will be appended to. "
@@ -255,6 +267,7 @@ EDS::EDS(const ActionOptions&ao):
   b_restart_(false),
   b_write_restart_(false),
   b_hard_c_range_(false),
+  b_lm_(false),
   seed_(0),
   update_period_(0),
   avg_coupling_count_(1),
@@ -262,6 +275,7 @@ EDS::EDS(const ActionOptions&ao):
   kbt_(0.0),
   c_range_increase_f_(1.25),
   multi_prop_(-1.0),
+  lm_mixing_par_(0.1),
   value_force2_(NULL)
 {
   double temp=-1.0;
@@ -288,9 +302,11 @@ EDS::EDS(const ActionOptions&ao):
   parse("TEMP",temp);
   parse("SEED",seed_);
   parse("MULTI_PROP",multi_prop_);
+  parse("LM_MIXING",lm_mixing_par_);
   parse("RESTART_FMT", fmt_);
   fmt_ = " " + fmt_;//add space since parse strips them
   parse("OUT_RESTART",out_restart_name_);
+  parseFlag("LM",b_lm_);
   parseFlag("RAMP",b_ramp_);
   parseFlag("FREEZE",b_freeze_);
   parseFlag("MEAN",b_mean);
@@ -348,7 +364,18 @@ EDS::EDS(const ActionOptions&ao):
   log.printf("\n");
 
 
-  if(b_covar_) {
+  if (b_lm_) {
+    log.printf("  EDS will perform Levenberg-Marquardt minimization with mixing parameter = %f\n",lm_mixing_par_);
+    differences_.resize(ncvs_);
+    alpha_vector_.resize(ncvs_);
+    alpha_vector_2_.resize(ncvs_);
+    covar_.resize(ncvs_, ncvs_);
+    covar2_.resize(ncvs_, ncvs_);
+    lm_inv_.resize(ncvs_, ncvs_);
+    covar2_*=0;lm_inv_*=0;
+    if(multi_prop_ != 1) log.printf("     WARNING - doing LM minimization but MULTI_PROP!=1\n");
+  }
+  else if(b_covar_) {
     log.printf("  EDS will utilize covariance matrix for update steps\n");
     covar_.resize(ncvs_, ncvs_);
   } else {
@@ -587,7 +614,7 @@ void EDS::writeOutRestart() {
     out_restart_.printField(cv_name + "_maxgrad",max_coupling_grad_[i]);
     out_restart_.printField(cv_name + "_accum",coupling_accum_[i]);
     out_restart_.printField(cv_name + "_mean",means_[i]);
-    if(!b_covar_)
+    if(!b_covar_ && !b_lm_)
       out_restart_.printField(cv_name + "_std",ssds_[i] / (fmax(1, update_calls_ - 1)));
     else
       out_restart_.printField(cv_name + "_std",covar_(i,i) / (fmax(1, update_calls_ - 1)));
@@ -710,10 +737,10 @@ void EDS::update_statistics()  {
   for(unsigned int i = 0; i < ncvs_; ++i)  {
     deltas[i] = difference(i,means_[i],getArgument(i));
     means_[i] += deltas[i]/fmax(1,update_calls_);
-    if(!b_covar_)
+    if(!b_covar_ && !b_lm_)
       ssds_[i] += deltas[i]*difference(i,means_[i],getArgument(i));
   }
-  if(b_covar_) {
+  if(b_covar_ || b_lm_) {
     for(unsigned int i = 0; i < ncvs_; ++i) {
       for(unsigned int j = i; j < ncvs_; ++j) {
         s = (update_calls_ - 1) * deltas[i] * deltas[j] / update_calls_ / update_calls_ - covar_(i,j) / update_calls_;
@@ -728,13 +755,34 @@ void EDS::update_statistics()  {
 void EDS::reset_statistics() {
   for(unsigned int i = 0; i < ncvs_; ++i)  {
     means_[i] = 0;
-    if(!b_covar_)
+    if(!b_covar_ && !b_lm_)
       ssds_[i] = 0;
   }
-  if(b_covar_)
+  if(b_covar_ || b_lm_)
     for(unsigned int i = 0; i < ncvs_; ++i)
       for(unsigned int j = 0; j < ncvs_; ++j)
         covar_(i,j) = 0;
+}
+
+void EDS::calc_lm_step_size() {
+  //calulcate step size
+  //uses scale here, which by default is center
+  
+  mult(covar_,covar_,covar2_);
+  for(unsigned int i = 0; i< ncvs_; ++i) {
+      differences_[i] = difference(i, center_[i], means_[i]);
+      covar2_[i][i]+=lm_mixing_par_*covar2_[i][i];
+  }
+
+// "step_size_vec" = 2*inv(covar*covar+ lambda diag(covar*covar))*covar*(mean-center)
+  mult(covar_,differences_,alpha_vector_);
+  Invert(covar2_,lm_inv_);
+  mult(lm_inv_,alpha_vector_,alpha_vector_2_);
+  
+  for(unsigned int i = 0; i< ncvs_; ++i) {
+    step_size_[i] = 2 * alpha_vector_2_[i] / kbt_ / scale_[i];
+  }
+
 }
 
 void EDS::calc_covar_step_size() {
@@ -760,7 +808,13 @@ void EDS::calc_ssd_step_size() {
 
 void EDS::update_bias()
 {
-  if(b_covar_)
+  log.flush();
+  if (b_lm_)
+    {
+    log.flush();
+    calc_lm_step_size();
+  }
+  else if(b_covar_)
     calc_covar_step_size();
   else
     calc_ssd_step_size();
