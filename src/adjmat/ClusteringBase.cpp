@@ -20,6 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ClusteringBase.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 
 namespace PLMD {
 namespace adjmat {
@@ -52,6 +54,9 @@ ClusteringBase::ClusteringBase(const ActionOptions&ao):
   addValue( shape ); getPntrToOutput(0)->alwaysStoreValues();
   // Resize local variables 
   which_cluster.resize( mat[0]->getShape()[0] ); cluster_sizes.resize( mat[0]->getShape()[0] );
+  // Create a group for this action
+  const auto m=plumed.getAtoms().getAllGroups().find(mat[0]->getPntrToAction()->getLabel());
+  plumed.getAtoms().insertGroup( getLabel(), m->second );
 }
 
 void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ) {

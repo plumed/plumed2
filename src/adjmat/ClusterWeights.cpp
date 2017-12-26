@@ -22,6 +22,8 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "ClusteringBase.h"
 
@@ -90,9 +92,11 @@ PLUMED_REGISTER_ACTION(ClusterWeights,"CLUSTER_WEIGHTS")
 PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_WEIGHTS") 
 PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_PROPERTIES")
 PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_NATOMS")
+PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_WITHSURFACE")
 
 void ClusterWeights::shortcutKeywords( Keywords& keys ) { 
   keys.add("optional","ARG","calculate the sum of the arguments calculated by this action for the cluster");
+  keys.add("optional","RCUT_SURF","");
   multicolvar::MultiColvarBase::shortcutKeywords( keys );
 }
 
@@ -101,6 +105,7 @@ void ClusterWeights::expandShortcut( const std::string& lab, const std::vector<s
                                      std::vector<std::vector<std::string> >& actions ) {
   std::vector<std::string> weights; 
   if( words[0]=="CLUSTER_NATOMS" ) weights.push_back( lab + "_weights:" );
+  else if( words[0]=="CLUSTER_WITHSURFACE" ) weights.push_back( lab + "_wnosurf:");
   else weights.push_back( lab + ":" ); 
   weights.push_back("CLUSTER_WEIGHTS");
   for(unsigned i=1;i<words.size();++i) weights.push_back( words[i] );
@@ -110,6 +115,26 @@ void ClusterWeights::expandShortcut( const std::string& lab, const std::vector<s
   } else if( words[0]=="CLUSTER_NATOMS" ) {
       std::vector<std::string> nat_str; nat_str.push_back( lab + ":" ); nat_str.push_back("COMBINE");
       nat_str.push_back("ARG=" + lab + "_weights"); nat_str.push_back("PERIODIC=NO"); actions.push_back( nat_str ); 
+  } else if( words[0]=="CLUSTER_WITHSURFACE" ) {
+      // Contact matrix 
+      std::vector<std::string> contact_mat; contact_mat.push_back( lab + "_cmat:"); contact_mat.push_back("CONTACT_MATRIX"); 
+      contact_mat.push_back("GROUP=" + lab + "_wnosurf"); contact_mat.push_back("SWITCH=" + keys.find("RCUT_SURF")->second );
+      actions.push_back( contact_mat );
+      // Matrix of products of cluster weights
+      std::vector<std::string> cweight_mat; cweight_mat.push_back( lab + "_cwmat:"); cweight_mat.push_back("CUSTOM_MATRIX");
+      cweight_mat.push_back("GROUP1=" + lab + "_wnosurf"); cweight_mat.push_back("FUNC=max");
+      actions.push_back( cweight_mat );
+      // Product of matrices 
+      std::vector<std::string> prod_mat; prod_mat.push_back( lab + "_pmat:"); prod_mat.push_back("MATHEVAL");
+      prod_mat.push_back("ARG1=" + lab + "_cmat.w"); prod_mat.push_back("ARG2=" + lab + "_cwmat"); prod_mat.push_back("FUNC=x*y");
+      prod_mat.push_back("PERIODIC=NO"); actions.push_back( prod_mat );
+      // Clusters
+      std::vector<std::string> cluste; cluste.push_back( lab + "_clust:" ); cluste.push_back("DFSCLUSTERING");
+      cluste.push_back("MATRIX=" + lab + "_pmat"); actions.push_back( cluste );
+      // Final weights
+      std::vector<std::string> fweights; fweights.push_back( lab + ":" ); fweights.push_back("CLUSTER_WEIGHTS");
+      fweights.push_back("CLUSTERS=" + lab + "_clust"); fweights.push_back("CLUSTER=1");
+      actions.push_back( fweights );
   }
 }
 
@@ -143,6 +168,9 @@ ClusterWeights::ClusterWeights(const ActionOptions&ao):
   if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
   if( clustr>clusters[0]->getShape()[0] ) error("cluster selected is invalid - too few atoms in system");
   log.printf("  atoms in %dth largest cluster calculated by %s are equal to one \n",clustr, cc->getLabel().c_str() );
+  // Create a group for this action so we can associate atoms to these weights easily
+  const auto m=plumed.getAtoms().getAllGroups().find(clusters[0]->getPntrToAction()->getLabel());
+  plumed.getAtoms().insertGroup( getLabel(), m->second );
 }
 
 void ClusterWeights::buildCurrentTaskList( std::vector<unsigned>& tflags ) {

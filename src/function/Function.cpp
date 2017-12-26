@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
 #include "core/Average.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 #include "tools/OpenMP.h"
 #include "tools/Communicator.h"
 
@@ -109,6 +111,25 @@ Function::Function(const ActionOptions&ao):
                forcesToApply.resize( nderivatives );
            }
        }
+  }
+  // This creates a group of atoms that have these weights -- not entirely foolproof and could be improved GAT
+  bool checkforrank=false;
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->getRank()>0 && !getPntrToArgument(i)->hasDerivatives() ){ checkforrank=true; break; }
+  }
+  if( checkforrank ) {
+      std::string myat_group="none";
+      for(unsigned i=0;i<getNumberOfArguments();++i) {
+          if( getPntrToArgument(i)->getRank()>0 && !getPntrToArgument(i)->hasDerivatives() ) {
+              if( plumed.getAtoms().getAllGroups().count(getPntrToArgument(i)->getPntrToAction()->getLabel()) ) {
+                  myat_group = getPntrToArgument(i)->getPntrToAction()->getLabel(); break;
+              } 
+          }
+      }
+      if( myat_group!="none" ) {
+          const auto m=plumed.getAtoms().getAllGroups().find(myat_group ); 
+          plumed.getAtoms().insertGroup( getLabel(), m->second );
+      }
   }
 }
 
