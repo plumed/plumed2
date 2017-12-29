@@ -286,6 +286,7 @@ void GridCoordinatesObject::getNeighbors( const std::vector<unsigned>& indices, 
   unsigned num_neigh=1; std::vector<unsigned> small_bin( dimension );
   for(unsigned i=0; i<dimension; ++i) {
     small_bin[i]=(2*nneigh[i]+1);
+    if( pbc[i] && small_bin[i]>nbin[i] ) small_bin[i]=nbin[i];
     num_neigh *=small_bin[i];
   }
   if( neighbors.size()!=num_neigh ) neighbors.resize( num_neigh );
