@@ -468,6 +468,31 @@ void LinearBasisSetExpansion::getBasisSetValues(const std::vector<double>& args_
 }
 
 
+double LinearBasisSetExpansion::getBasisSetValue(const std::vector<double>& args_values, const size_t index, std::vector<BasisFunctions*>& basisf_pntrs_in, CoeffsVector* coeffs_pntr_in) {
+  unsigned int nargs = args_values.size();
+  plumed_assert(coeffs_pntr_in->numberOfDimensions()==nargs);
+  plumed_assert(basisf_pntrs_in.size()==nargs);
+
+  std::vector<double> args_values_trsfrm(nargs);
+  std::vector< std::vector <double> > bf_values;
+  //
+  for(unsigned int k=0; k<nargs; k++) {
+    std::vector<double> tmp_val(basisf_pntrs_in[k]->getNumberOfBasisFunctions());
+    std::vector<double> tmp_der(tmp_val.size());
+    bool inside=true;
+    basisf_pntrs_in[k]->getAllValues(args_values[k],args_values_trsfrm[k],inside,tmp_val,tmp_der);
+    bf_values.push_back(tmp_val);
+  }
+  //
+  std::vector<unsigned int> indices=coeffs_pntr_in->getIndices(index);
+  double bf_value=1.0;
+  for(unsigned int k=0; k<nargs; k++) {
+    bf_value*=bf_values[k][indices[k]];
+  }
+  return bf_value;
+}
+
+
 void LinearBasisSetExpansion::setupUniformTargetDistribution() {
   std::vector< std::vector <double> > bf_integrals(0);
   std::vector<double> targetdist_averages(ncoeffs_,0.0);
