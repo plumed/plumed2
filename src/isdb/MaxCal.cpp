@@ -51,8 +51,6 @@ private:
   double kappa;
   double deltat;
   double mult;
-  bool     firstTime_;
-  bool     adaptive_;
   bool     master;  
   unsigned replica_;
   unsigned nrep_;
@@ -72,21 +70,17 @@ void Caliber::registerKeywords( Keywords& keys ) {
   keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the CV values in function of time");
   keys.add("compulsory","KAPPA","the array of force constants");
-  keys.addFlag("ADAPTIVE",false,"abmd");
   keys.addOutputComponent("x0","default","the instantaneous value of the center of the potential");
 }
 
 Caliber::Caliber(const ActionOptions&ao):
-  PLUMED_BIAS_INIT(ao),
-  firstTime_(true),
-  adaptive_(false)
+  PLUMED_BIAS_INIT(ao)
 {
   string filename;
   double tempT, tempVar;
   parse("KAPPA",mult);
   parse("FILE",filename);
   if( filename.length()==0 ) error("No external variable file was specified");
-  parseFlag("ADAPTIVE",adaptive_);
 
   checkRead();
 
@@ -198,14 +192,8 @@ void Caliber::calculate() {
   // get kappa
   get_sigma_mean(fact, mean);
 
-  if(firstTime_) {
-    if(adaptive_) for(unsigned i=0; i<narg; ++i) min[i] = mean[i];
-    firstTime_=false;
-  }
-
   double ene=0;
-  if(!adaptive_){
-   for(unsigned i=0; i<narg; ++i) {
+  for(unsigned i=0; i<narg; ++i) {
     kappa = mult*dnrep/sigma_mean2_[i];
     const double cv=difference(i,x0,mean[i]); // this gives: getArgument(i) - x0
     const double f=-kappa*cv*dmean_x[i];
@@ -213,24 +201,7 @@ void Caliber::calculate() {
     ene+=0.5*kappa*cv*cv;
     getPntrToComponent("kappa")->set(kappa);
     getPntrToComponent("mean")->set(mean[i]);
-   } 
-  } else {
-   for(unsigned i=0; i<narg; ++i) {
-    if(mean[i]>min[i]) min[i]=mean[i];
-    if(min[i]<x0) min[i]=x0;
-    if(min[i]>0.955) min[i]=0.955;
-    else {
-     kappa = mult*dnrep/sigma_mean2_[i];
-     const double cv=difference(i,min[i],mean[i]); // this gives: getArgument(i) - x0
-     const double f=-kappa*cv*dmean_x[i];
-     setOutputForce(i,f);
-     ene+=0.5*kappa*cv*cv;
-     getPntrToComponent("kappa")->set(kappa);
-     getPntrToComponent("mean")->set(mean[i]);
-     getPntrToComponent("min")->set(min[i]);
-    }
-   }
-  }
+  } 
 
   // we will need to add back the calculation of the work
   setBias(ene);
