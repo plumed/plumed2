@@ -584,7 +584,7 @@ void LinearBasisSetExpansion::calculateTargetDistAveragesFromGrid(const Grid* ta
   }
   mycomm_.Sum(targetdist_averages);
   // the overall constant;
-  targetdist_averages[0] = 1.0;
+  targetdist_averages[0] = getBasisSetConstant();
   TargetDistAverages() = targetdist_averages;
 }
 

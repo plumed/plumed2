@@ -5,7 +5,7 @@
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
 #! SET shape_phi2  11
-       0     1.000000       0
+       0     0.707107       0
        1     0.000000       1
        2     0.000158       2
        3     0.000000       3
@@ -26,7 +26,7 @@
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
 #! SET shape_phi2  11
-       0     1.000000       0
+       0     0.707107       0
        1     0.000000       1
        2     0.000158       2
        3     0.000000       3
@@ -47,7 +47,7 @@
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
 #! SET shape_phi2  11
-       0     1.000000       0
+       0     0.707107       0
        1    -0.010957       1
        2    -0.007183       2
        3     0.017448       3
@@ -68,7 +68,7 @@
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
 #! SET shape_phi2  11
-       0     1.000000       0
+       0     0.707107       0
        1    -0.018174       1
        2    -0.011409       2
        3     0.028417       3
@@ -89,7 +89,7 @@
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
 #! SET shape_phi2  11
-       0     1.000000       0
+       0     0.707107       0
        1    -0.024920       1
        2    -0.015816       2
        3     0.038892       3
@@ -110,7 +110,7 @@
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
 #! SET shape_phi2  11
-       0     1.000000       0
+       0     0.707107       0
        1    -0.032483       1
        2    -0.018824       2
        3     0.049009       3
@@ -131,7 +131,7 @@
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
 #! SET shape_phi2  11
-       0     1.000000       0
+       0     0.707107       0
        1    -0.039826       1
        2    -0.020793       2
        3     0.057620       3
@@ -152,7 +152,7 @@
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
 #! SET shape_phi2  11
-       0     1.000000       0
+       0     0.707107       0
        1    -0.047374       1
        2    -0.022909       2
        3     0.066673       3
@@ -173,7 +173,7 @@
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
 #! SET shape_phi2  11
-       0     1.000000       0
+       0     0.707107       0
        1    -0.055220       1
        2    -0.022762       2
        3     0.070536       3
@@ -194,7 +194,7 @@
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
 #! SET shape_phi2  11
-       0     1.000000       0
+       0     0.707107       0
        1    -0.062946       1
        2    -0.021857       2
        3     0.073433       3
@@ -215,7 +215,7 @@
 #! SET ndimensions  1
 #! SET ncoeffs_total  11
 #! SET shape_phi2  11
-       0     1.000000       0
+       0     0.707107       0
        1    -0.070771       1
        2    -0.021659       2
        3     0.077894       3
