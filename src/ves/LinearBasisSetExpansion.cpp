@@ -577,7 +577,7 @@ void LinearBasisSetExpansion::calculateTargetDistAveragesFromGrid(const Grid* ta
   for(Grid::index_t l=rank; l<targetdist_grid_pntr->getSize(); l+=stride) {
     std::vector<double> args_values = targetdist_grid_pntr->getPoint(l);
     std::vector<double> basisset_values(ncoeffs_);
-    // parallelization done over the grid -> should NOT use parallel in getBasisSetValues!! 
+    // parallelization done over the grid -> should NOT use parallel in getBasisSetValues!!
     getBasisSetValues(args_values,basisset_values,false);
     double weight = integration_weights[l]*targetdist_grid_pntr->getValue(l);
     for(unsigned int i=0; i<ncoeffs_; i++) {
