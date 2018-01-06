@@ -98,6 +98,7 @@ class Print :
   vector<Value*> rotateArguments;
   vector<double> lower, upper;
 /////////////////////////////////////////
+  double dot_connection_cutoff;
   bool isInTargetRange( const std::vector<double>& argvals ) const ;
 public:
   void calculate() {}
@@ -124,6 +125,7 @@ void Print::registerKeywords(Keywords& keys) {
   keys.add("atoms","ATOMS","the atoms that you would like to you output - only required if using xyz");
   keys.add("compulsory","UNITS","PLUMED","the length units you would like to use when outputting atoms in you xyz file");
   keys.add("compulsory","STRIDE","0","the frequency with which the quantities of interest should be output");
+  keys.add("compulsory","CONNECTION_TOL","epsilson","if value of matrix element between i and j is greater than this value they are not connected");
   keys.add("optional","FILE","the name of the file on which to output these quantities");
   keys.add("optional","FMT","the format that should be used to output real numbers");
   keys.add("atoms","ORIGIN","You can use this keyword to specify the position of an atom as an origin. The positions output will then be displayed relative to that origin");
@@ -146,13 +148,14 @@ Print::Print(const ActionOptions&ao):
   printAtEnd(false),
   lenunit(1.0),
   gridinput(false),
-  rotate(0)
+  rotate(0),
+  dot_connection_cutoff(0.)
 {
   parse("FILE",file);
   if(file.length()>0) {
     std::size_t dot=file.find_first_of(".");
     if( dot!=std::string::npos ) tstyle=file.substr(dot+1); 
-    if( tstyle!="xyz" && tstyle!="ndx" && tstyle!="grid" && tstyle!="cube" ) tstyle="colvar";
+    if( tstyle!="xyz" && tstyle!="ndx" && tstyle!="grid" && tstyle!="cube" && tstyle!="dot" ) tstyle="colvar";
     log.printf("  on file %s\n",file.c_str());
     if( tstyle!="grid" && tstyle!="cube" ) { ofile.link(*this); ofile.open(file); }
   } else {
@@ -295,6 +298,18 @@ Print::Print(const ActionOptions&ao):
       if( getNumberOfArguments()!=1 ) error("when printing a grid you should only have one argument in input");
       if( getPntrToArgument(0)->getRank()!=3 || !getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a 3D grid");
       log.printf("  printing function labelled %s at points on a grid in a cube file \n", getPntrToArgument(0)->getName().c_str() );
+  } else if( tstyle=="dot" ) {
+      if( getNumberOfArguments()!=1 ) error("when printing a matrix to do a dot file you should only have one argument in input"); 
+      if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a matrix");
+      if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("should not print non square matrices to dot file");
+      if( getStride()==0 ) {
+          setStride(10000); printAtEnd=true; log.printf("  printing final matrix only \n");
+      }
+      log.printf("  printing matrix labelled %s to a dot file \n", getPntrToArgument(0)->getName().c_str() );
+      std::string ctol; parse("CONNECTION_TOL",ctol);
+      if( ctol=="epsilon" ) dot_connection_cutoff = epsilon;
+      else Tools::convert( ctol, dot_connection_cutoff );
+      log.printf("  elements in graph are shown connected if matrix element is greater than %f \n", dot_connection_cutoff );
   } else {
       error("expected output does not exist");
   }
@@ -494,6 +509,23 @@ void Print::update() {
           ogfile.printf("\n");
         }
       }
+      ogfile.close();
+  } else if( tstyle=="dot" ) {
+      OFile ogfile; ogfile.link(*this);
+      ogfile.setBackupString("analysis");
+      ogfile.open( file ); Value* gval=getPntrToArgument(0); 
+      ogfile.printf("graph %s { \n", gval->getName().c_str() );
+      // Print all nodes
+      for(unsigned i=0;i<gval->getShape()[0];++i) ogfile.printf("%u [label=\"%u\"];\n",i,i);
+      // Now print connections
+      unsigned nrows = gval->getShape()[0];
+      for(unsigned i=1;i<nrows;++i) {
+          for(unsigned j=0;j<i;++j) {
+              if( fabs(gval->get(i*nrows+j)-gval->get(j*nrows+i))>epsilon ) error("to print undirected graph matrix should be symmetric");
+              if( gval->get(i*nrows+j)>dot_connection_cutoff )  ogfile.printf("%u -- %u \n", i, j );
+          }
+      }
+      ogfile.printf("} \n"); ogfile.close();
   }
 }
 
