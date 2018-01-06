@@ -87,6 +87,10 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
       std::vector<AtomNumber> tc; parseAtomList("HYDROGENS",tc);
       if( tc.size()==0 ) error("no HYDROGEN atoms specified");
       log.printf("  hydrogen atoms are "); setupThirdAtomBlock( tc, t ); 
+  } else if( keywords.exists("ATOMS") ) {
+      std::vector<AtomNumber> tc; parseAtomList("ATOMS",tc);
+      if( tc.size()==0 ) error("no ATOMS atoms specified");
+      log.printf("  atoms for background density are "); setupThirdAtomBlock( tc, t );
   }
   // Request the atoms from the ActionAtomistic
   requestAtoms( t ); parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);

@@ -51,6 +51,8 @@ void SymmetryFunctionBase::shortcutKeywords( Keywords& keys ) {
 void SymmetryFunctionBase::expandMatrix( const bool& components, const std::string& lab, const std::vector<std::string>& words,
                                          const std::map<std::string,std::string>& keys,
                                          std::vector<std::vector<std::string> >& actions ){
+  if( !keys.count("SPECIES") && !keys.count("SPECIESA") ) return;
+
   std::vector<std::string> matinp; matinp.push_back( lab + "_mat:" ); matinp.push_back("CONTACT_MATRIX");
   if( keys.count("SPECIES") ) {
       matinp.push_back("GROUP=" + keys.find("SPECIES")->second ); 
