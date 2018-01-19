@@ -55,12 +55,13 @@ eRMSD measures the distance between structures by considering only the relative 
 
 2. Calculate all pairwise distance vectors \f$ \vec{r}_{i,j} \f$ among base centers.
 
-3. Rescale distance vectors as \f$ \tilde{\vec{r}}_{i,j} = (r_x/a,r_y/a,r_z/b) \f$, where \f$ a=b=5 \AA, c= 3 \AA\f$. This rescaling has the effect of weghting more deviations on the z-axis with respect to the x/y directions.
+3. Rescale distance vectors as \f$ \tilde{\vec{r}}_{i,j} = (r_x/a,r_y/a,r_z/b) \f$, where  a=b=5 \AA, c= 3 \AA. This rescaling has the effect of weghting more deviations on the z-axis with respect to the x/y directions.
 
 4. Calculate the G vectors
 
 \f[
-\vec{G}(\tilde{\vec{r}}) = (\sin(\gamma \tilde{r}) \tilde{r}_x/\tilde{r},\sin(\gamma \tilde{r}) \tilde{r}_y/\tilde{r},\sin(\gamma \tilde{r}) \tilde{r}_z/\tilde{r}, 1+\cos(\gamma \tilde{r})) \times \Theta(\tilde{r}_{cutoff}-\tilde{r})
+\vec{G}(\tilde{\vec{r}}) = (\sin(\gamma \tilde{r}) \tilde{r}_x/\tilde{r},\sin(\gamma \tilde{r}) \tilde{r}_y/\tilde{r},\sin(\gamma \tilde{r}) \tilde{r}_z/\tilde{r}, 1+\cos(\gamma \tilde{r})) \times
+\frac{\Theta(\tilde{r}_{cutoff}-\tilde{r})}{\gamma}
 \f]
 
 Here, \f$ \gamma = \pi/\tilde{r}_{cutoff}\f$ and \f$ \Theta \f$ is the Heaviside step function. The default cutoff is set to 2.4.
