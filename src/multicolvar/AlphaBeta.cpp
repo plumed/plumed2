@@ -132,7 +132,7 @@ AlphaBeta::AlphaBeta(const ActionOptions&ao):
   setupMultiColvarBase( all_atoms );
   // Resize target
   target.resize( getFullNumberOfTasks() );
-  // Resize coeff 
+  // Resize coeff
   coefficient.resize( getFullNumberOfTasks(), 1.0);
   // Setup central atom indices
   std::vector<bool> catom_ind(4, false);
