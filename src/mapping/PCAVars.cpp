@@ -307,7 +307,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
 
   // Resize all derivative arrays
   forces.resize( nder ); forcesToApply.resize( nder );
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
+  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
 }
 
 unsigned PCAVars::getNumberOfDerivatives() {
@@ -345,7 +345,7 @@ void PCAVars::calculate() {
 
   // Now calculate projections on pca vectors
   Vector adif, ader; Tensor fvir, tvir;
-  for(unsigned i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
+  for(int i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
     double proj=myref->projectDisplacementOnVector( directions[i], getArguments(), args, mypack );
     // And now accumulate derivatives
     Value* eid=getPntrToComponent(i);
@@ -401,11 +401,11 @@ void PCAVars::calculateNumericalDerivatives( ActionWithValue* a ) {
   }
   if( getNumberOfAtoms()>0 ) {
     Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
     }
     calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
     }
   }
@@ -414,7 +414,7 @@ void PCAVars::calculateNumericalDerivatives( ActionWithValue* a ) {
 void PCAVars::apply() {
 
   bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+  for(int i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->applyForce( forces ) ) {
       wasforced=true;
       for(unsigned i=0; i<forces.size(); ++i) forcesToApply[i]+=forces[i];

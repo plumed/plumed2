@@ -95,6 +95,8 @@ Select::Select(const ActionOptions&ao):
   checkRead();
 
   log.printf("  select based on %s\n",selector_.c_str());
+  log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
+
 }
 
 void Select::calculate()

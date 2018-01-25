@@ -237,7 +237,6 @@ PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
-PLUMED_CONFIG_ENABLE([cxx-exceptions],[c++ exceptions],[yes])
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
@@ -685,11 +684,6 @@ fi
 if test "$debug_glibcxx" == true ; then
   AC_MSG_NOTICE([Check boundaries, adding -D_GLIBCXX_DEBUG])
   AC_DEFINE([_GLIBCXX_DEBUG])
-fi
-
-if test "$cxx_exceptions" == true ; then
-  AC_MSG_NOTICE([Enabling c++ exceptions -D__PLUMED_HAS_EXCEPTIONS])
-  AC_DEFINE([__PLUMED_HAS_EXCEPTIONS])
 fi
 
 # this is necessary in many MPI implementations

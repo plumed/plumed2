@@ -81,7 +81,7 @@ Vector VolumeGradientBase::getPosition( int iatom ) const {
 // This is for numerical derivatives of quantity wrt to the local atoms
   Vector tmp_p = ActionAtomistic::getPosition(iatom);
   if( bridgeVariable<3*getNumberOfAtoms() ) {
-    if( bridgeVariable>=3*iatom && bridgeVariable<(iatom+1)*3 ) tmp_p[bridgeVariable%3]+=sqrt(epsilon);
+    if( static_cast<int>(bridgeVariable)>=3*iatom && static_cast<int>(bridgeVariable)<(iatom+1)*3 ) tmp_p[bridgeVariable%3]+=sqrt(epsilon);
   }
 // This makes sure that numerical derivatives of virial are calculated correctly
   tmp_p = ActionAtomistic::getPbc().realToScaled( tmp_p );

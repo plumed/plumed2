@@ -141,7 +141,7 @@ install:
 # then replace doxygen with the desided version
 # I use 1.8.10 instead of 1.8.11 since it looks like 1.8.11 have troubles with
 # non case sensitive files (it writes capitalized filenames)
-  - if test "$MAKEDOC" == yes ; then ./.travis/install.doxygen Release_1_8_13 ; fi
+  - if test "$MAKEDOC" == yes ; then ./.travis/install.doxygen Release_1_8_14 ; fi
   - if test "$VALGRIND" == yes ; then sudo apt-get install -y valgrind           ; fi
   - if test "$LAPACK" == yes ; then sudo apt-get -y install libatlas-base-dev      ; fi
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
@@ -153,7 +153,7 @@ install:
       export COLUMNS=80 ;
       wget https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci ;
       chmod +x ./macports-ci ;
-      ./macports-ci install --remove-brew ;
+      ./macports-ci install ;
       PATH="/opt/local/bin:$PATH" ;
       make macports ;
       ./macports-ci localports macports ;
