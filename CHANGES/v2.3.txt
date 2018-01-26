@@ -222,6 +222,7 @@ For developers:
 
 For developers:
 - Doxygen on travis-ci has been updated to 1.8.14
+- `make clean` now correctly removes the `src/lib/plumed` executable.
 
 
 */
