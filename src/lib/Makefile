@@ -537,8 +537,7 @@ endif
 .PHONY: clean dirslinks
 clean:
 	rm -f $(CLEANLIST)
-	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
-	rm -f Plumed.inc* plumed-* Plumed.cmake*
+	rm -f plumed Plumed.inc* plumed-* Plumed.cmake*
 # this is not necessary, I leave it here to remove spurious plumed.vim files generated with
 # the first version of plumed.vim syntax file:
 	rm -f plumed.vim
