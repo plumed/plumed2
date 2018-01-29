@@ -1653,6 +1653,11 @@ void MetaD::update() {
         comm.Barrier();
       }
 
+      if (flying && ) {
+        si = mw_id_ + 1;
+      } else {
+        si = 0;
+      }
       for(unsigned i=0; i<mpi_nw_; i++) {
         // actually add hills one by one
         std::vector<double> cv_now(cv.size());
