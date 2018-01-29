@@ -552,14 +552,18 @@ Notice that plumed comes with many variants that can be inspected with the comma
     > sudo port info plumed
 
 Plumed uses variants to support different compilers.
-For instance, you can install plumed with openmpi using
+For instance, you can install plumed with mpich using
 
-    > sudo port install plumed +openmpi
+    > sudo port install plumed +mpich
 
-Using gcc instead of native compilers is recommended so as to
+Using more recent clang instead of native compilers is recommended so as to
 take advantage of openMP
 
-    > sudo port install plumed +openmpi +gcc7
+    > sudo port install plumed +mpich +clang50
+
+Notice that support for c++11 with gcc compilers is someway problematic within MacPorts
+due to impossibility to use the system c++ library. For this reason, only clang compilers are supported
+(see also [this discussion](https://github.com/macports/macports-ports/pull/1252)).
 
 Variants can be also used to compile with debug flags (`+debug`), to pick a linear algebra library
 (e.g. `+openblas`) and to enable all optional modules (`+allmodules`).
@@ -576,18 +580,18 @@ under the subport `plumed-devel` that can be installed with
 
 It is also possible to install a plumed-patched version of gromacs.
 For instance, you can use the following command to install
-gromacs patched with plumed with gcc compiler and openmpi:
+gromacs patched with plumed with clang-5.0 compiler and mpich:
 
-    > sudo port install plumed +openmpi +gcc7
-    > sudo port install gromacs-plumed +openmpi +gcc7
+    > sudo port install plumed +mpich +clang50
+    > sudo port install gromacs-plumed +mpich +clang50
 
 In case you want to combine gromacs with the unstable version of plumed, use this instead:
 
-    > sudo port install plumed-devel +openmpi +gcc7
-    > sudo port install gromacs-plumed +openmpi +gcc7
+    > sudo port install plumed-devel +mpich +clang50
+    > sudo port install gromacs-plumed +mpich +clang50
 
 Notice that gromacs should be compiled using the same compiler
-variant as plumed (in this example `+openmpi +gcc7`). In case this is not
+variant as plumed (in this example `+mpich +clang50`). In case this is not
 true, compilation will fail.
 
 Also notice that gromacs is patched with plumed in runtime mode
