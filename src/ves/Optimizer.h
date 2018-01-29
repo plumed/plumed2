@@ -67,6 +67,8 @@ private:
   bool diagonal_hessian_;
   bool hessian_covariance_from_averages_;
   //
+  bool monitor_instantaneous_gradient_;
+  //
   bool use_mwalkers_mpi_;
   bool mwalkers_mpi_single_files_;
   //
@@ -161,7 +163,7 @@ public:
   static void useDynamicStepSizeKeywords(Keywords&);
   static void useMaskKeywords(Keywords&);
   static void useRestartKeywords(Keywords&);
-  static void useMonitorAveragesKeywords(Keywords&);
+  static void useMonitorAverageGradientKeywords(Keywords&);
   static void useDynamicTargetDistributionKeywords(Keywords&);
   static void useReweightFactorKeywords(Keywords&);
   //
