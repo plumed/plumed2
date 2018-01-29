@@ -1654,7 +1654,7 @@ void MetaD::update() {
       }
        
       unsigned si;
-      if (flying && re->type == ereTEMP) {
+      if (flying && grex) {
         si = mw_id_ + 1;
       } else {
         si = 0;
