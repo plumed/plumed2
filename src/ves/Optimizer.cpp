@@ -846,9 +846,9 @@ void Optimizer::registerKeywords( Keywords& keys ) {
   //
   keys.reserveFlag("START_OPTIMIZATION_AFRESH",false,"if the iterations should be started afresh when a restart has been triggered by the RESTART keyword or the MD code.");
   //
-  keys.addFlag("MONITOR_INSTANTANEOUS_GRADIENT",false,"if the instantaneous gradient should be monitored.");
+  keys.addFlag("MONITOR_INSTANTANEOUS_GRADIENT",false,"if quantities related to the instantaneous gradient should be outputted.");
   //
-  keys.reserveFlag("MONITOR_AVERAGE_GRADIENT",false,"if the averaged gradient should be monitored.");
+  keys.reserveFlag("MONITOR_AVERAGE_GRADIENT",false,"if the averaged gradient should be monitored and quantities related to it should be outputted.");
   keys.reserve("optional","MONITOR_AVERAGES_GRADIENT_EXP_DECAY","use an exponentially decaying averaging with a given time constant when monitoring the averaged gradient");
   //
   keys.reserve("optional","TARGETDIST_STRIDE","stride for updating a target distribution that is iteratively updated during the optimization. Note that the value is given in terms of coefficent iterations.");
