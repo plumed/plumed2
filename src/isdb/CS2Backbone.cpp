@@ -1367,15 +1367,15 @@ void CS2Backbone::init_backbone(const PDB &pdb) {
       unsigned f_idx = f-res_offset;
       string AN = pdb.getAtomName(allatoms[a]);
       string RES = pdb.getResidueName(allatoms[a]);
-      if(AN=="N")                  N_ [f_idx] = atm_index;
-      else if(AN=="H" ||AN=="HN" ) H_ [f_idx] = atm_index;
-      else if(AN=="HA"||AN=="HA1") HA_[f_idx] = atm_index;
-      else if(AN=="CA"           ) CA_[f_idx] = atm_index;
-      else if(AN=="CB"           ) CB_[f_idx] = atm_index;
-      else if(AN=="C"            ) C_ [f_idx] = atm_index;
-      else if(AN=="O"            ) O_ [f_idx] = atm_index;
+      if(AN=="N") N_[f_idx] = atm_index;
+      else if(AN=="H" ||AN=="HN" ) H_[f_idx] = atm_index;
+      else if(AN=="HA"||AN=="HA1"||AN=="HA3") HA_[f_idx] = atm_index;
+      else if(AN=="CA") CA_[f_idx] = atm_index;
+      else if(AN=="CB") CB_[f_idx] = atm_index;
+      else if(AN=="C" ) C_ [f_idx] = atm_index;
+      else if(AN=="O" ) O_ [f_idx] = atm_index;
       else if(AN=="CD"&&RES=="PRO") H_[f_idx] = atm_index;
-      if(is_chi1_cx(RES,AN))       CX_[f_idx] = atm_index;
+      if(is_chi1_cx(RES,AN)) CX_[f_idx] = atm_index;
     }
     old_size+=allatoms.size();
 
@@ -2190,7 +2190,7 @@ void CS2Backbone::xdist_name_map(string & name) {
   else if ((name == "HN") || (name == "HT1") || (name == "H1")) name = "H";
   else if ((name == "CG1")|| (name == "OG")||
            (name == "SG") || (name == "OG1")) name = "CG";
-  else if ((name == "HA1"))                   name = "HA";
+  else if ((name == "HA1")|| (name == "HA3")) name = "HA";
 }
 
 void CS2Backbone::update() {
