@@ -1652,8 +1652,9 @@ void MetaD::update() {
         hills_.clear();
         comm.Barrier();
       }
-
-      if (flying && ) {
+       
+      unsigned si;
+      if (flying && re->type == ereTEMP) {
         si = mw_id_ + 1;
       } else {
         si = 0;
