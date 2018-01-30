@@ -101,6 +101,8 @@ echo "# version strings"
 echo "# syntax: version short/long/git number"
 echo "$version"
 echo
+echo "# command to lauch mpi processes"
+echo "# syntax: mpiexec command"
 echo "mpiexec $mpiexec"
 echo
 echo "# list of 'has' options"
