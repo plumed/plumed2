@@ -1655,14 +1655,13 @@ void MetaD::update() {
         hills_.clear();
         comm.Barrier();
       }
-       
-      unsigned si;
+
+      unsigned si = 0;
       if (flying_pt) {
         si = mw_id_ + 1;
-      } else {
-        si = 0;
       }
-      for(unsigned i=0; i<mpi_nw_; i++) {
+
+      for(unsigned i=si; i<mpi_nw_; i++) {
         // actually add hills one by one
         std::vector<double> cv_now(cv.size());
         std::vector<double> sigma_now(thissigma.size());
