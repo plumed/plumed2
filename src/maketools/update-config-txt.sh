@@ -108,6 +108,7 @@ echo "python_bin $python_bin"
 echo
 echo "# command to lauch mpi processes"
 echo "# syntax: mpiexec command"
+echo "# empty string means that mpiexec was not chosen at configure time"
 echo "mpiexec $mpiexec"
 echo
 echo "# list of 'has' options"
