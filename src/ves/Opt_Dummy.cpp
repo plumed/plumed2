@@ -90,6 +90,7 @@ void Opt_Dummy::registerKeywords(Keywords& keys) {
   //
   Optimizer::useMultipleWalkersKeywords(keys);
   Optimizer::useHessianKeywords(keys);
+  Optimizer::useMonitorAverageGradientKeywords(keys);
   keys.addFlag("MONITOR_HESSIAN",false,"also monitor the Hessian");
 }
 

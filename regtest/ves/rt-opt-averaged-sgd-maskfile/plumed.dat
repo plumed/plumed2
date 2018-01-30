@@ -33,7 +33,7 @@ OPT_AVERAGED_SGD ...
 
 PRINT ...
   STRIDE=500
-  ARG=phi,ves1.bias,o1.*
+  ARG=phi,ves1.bias
   FILE=colvar.data FMT=%6.3f
 ... PRINT
 
