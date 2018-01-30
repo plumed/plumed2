@@ -27,6 +27,7 @@
 #include "core/Atoms.h"
 #include "tools/Exception.h"
 #include "core/FlexibleBin.h"
+#include "core/GREX.h"
 #include "tools/Matrix.h"
 #include "tools/Random.h"
 #include <string>
