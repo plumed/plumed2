@@ -101,7 +101,13 @@ echo "# version strings"
 echo "# syntax: version short/long/git number"
 echo "$version"
 echo
+echo "# python executable"
+echo "# syntax: python_bin executable"
+echo "# empty string means that python has not been configured"
 echo "python_bin $python_bin"
+echo
+echo "# command to lauch mpi processes"
+echo "# syntax: mpiexec command"
 echo "mpiexec $mpiexec"
 echo
 echo "# list of 'has' options"
