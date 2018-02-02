@@ -229,7 +229,12 @@ endif
 # also copy .h files into include/ dir
 	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C "$(DESTDIR)$(includedir)/$(program_name)/"
 # install executable
+# for OSX we can use the dynamically linked executable
+ifeq ($(SOEXT),dylib)
+	cp install/plumed-shared "$(DESTDIR)$(bindir)/$(program_name)"
+else
 	cp install/plumed "$(DESTDIR)$(bindir)/$(program_name)"
+endif
 # patch file for cross compiling
 	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-patch"
 # config file for cross compiling
