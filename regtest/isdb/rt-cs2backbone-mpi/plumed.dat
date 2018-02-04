@@ -1,4 +1,4 @@
-cs: CS2BACKBONE ATOMS=1-2612 NRES=176 DATADIR=../data/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOPBC 
+cs: CS2BACKBONE ATOMS=1-2612 DATADIR=../data/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOPBC 
 
 ens: ENSEMBLE ARG=(cs\.ca_.*),(cs\.cb_.*),(cs\.hn_.*),(cs\.nh_.*)
 
