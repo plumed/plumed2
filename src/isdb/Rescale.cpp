@@ -288,6 +288,9 @@ Rescale::Rescale(const ActionOptions&ao):
   log.printf("  do MC every %d steps\n", MCstride_);
   log.printf("\n");
 
+  log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
+
+
   // add components
   addComponent("igamma");   componentIsNotPeriodic("igamma");
   addComponent("accgamma"); componentIsNotPeriodic("accgamma");

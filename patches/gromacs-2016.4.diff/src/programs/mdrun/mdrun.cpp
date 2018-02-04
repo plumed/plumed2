@@ -78,6 +78,10 @@ extern plumed plumedmain;
 extern void(*plumedcmd)(plumed,const char*,const void*);
 /* END PLUMED */
 
+/* PLUMED HREX */
+int plumed_hrex;
+/* END PLUMED HREX */
+
 /*! \brief Return whether either of the command-line parameters that
  *  will trigger a multi-simulation is set */
 static bool is_multisim_option_set(int argc, const char *const argv[])
@@ -403,6 +407,8 @@ int gmx_mdrun(int argc, char *argv[])
           "Number of random exchanges to carry out each exchange interval (N^3 is one suggestion).  -nex zero or not specified gives neighbor replica exchange." },
         { "-reseed",  FALSE, etINT, {&repl_ex_seed},
           "Seed for replica exchange, -1 is generate a seed" },
+        { "-hrex",  FALSE, etBOOL, {&plumed_hrex},
+          "Enable hamiltonian replica exchange" },
         { "-imdport",    FALSE, etINT, {&imdport},
           "HIDDENIMD listening port" },
         { "-imdwait",  FALSE, etBOOL, {&bIMDwait},
@@ -571,6 +577,15 @@ int gmx_mdrun(int argc, char *argv[])
       plumed_cmd(plumedmain,"setPlumedDat",ftp2fn(efDAT,NFILE,fnm));
       plumedswitch=1;
     }
+    /* PLUMED HREX*/
+    if(getenv("PLUMED_HREX")) plumed_hrex=1;
+    if(plumed_hrex){
+      if(!plumedswitch)  gmx_fatal(FARGS,"-hrex (or PLUMED_HREX) requires -plumed");
+      if(repl_ex_nst==0) gmx_fatal(FARGS,"-hrex (or PLUMED_HREX) replica exchange");
+      if(repl_ex_nex!=0) gmx_fatal(FARGS,"-hrex (or PLUMED_HREX) not compatible with -nex");
+    }
+    /* END PLUMED HREX */
+
     /* END PLUMED */
 
     rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose,

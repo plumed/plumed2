@@ -54,8 +54,7 @@ const std::unordered_map<std::string, int> & clToolMainWordMap() {
 CLToolMain::CLToolMain():
   argc(0),
   in(stdin),
-  out(stdout),
-  comm_fwd(new Communicator)
+  out(stdout)
 {
 }
 

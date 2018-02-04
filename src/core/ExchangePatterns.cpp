@@ -28,8 +28,7 @@ namespace PLMD {
 
 ExchangePatterns::ExchangePatterns():
   PatternFlag(NONE),
-  NumberOfReplicas(1),
-  random_fwd(new Random)
+  NumberOfReplicas(1)
 {}
 
 ExchangePatterns::~ExchangePatterns() {

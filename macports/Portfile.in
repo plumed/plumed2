@@ -95,3 +95,8 @@ pre-configure {
   configure.ldflags-append ${linalglib}
 }
 
+# Allow running tests from MacPorts
+test.run yes
+test.target check
+
+

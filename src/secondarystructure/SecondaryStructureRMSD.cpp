@@ -45,7 +45,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD. "
            "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD. For more details on the "
            "DRMSD method see \\ref DRMSD.");
-  keys.add("compulsory","R_0","The r_0 parameter of the switching function.");
+  keys.add("compulsory","R_0","0.08","The r_0 parameter of the switching function.");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","NN","8","The n parameter of the switching function");
   keys.add("compulsory","MM","12","The m parameter of the switching function");
@@ -112,7 +112,8 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std:
 
   std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );
   if( !verbose_output ) {
-    if(resstrings[0]=="all") {
+    if(resstrings.size()==0) error("residues are not defined, check the keyword RESIDUES");
+    else if(resstrings[0]=="all") {
       log.printf("  examining all possible secondary structure combinations\n");
     } else {
       log.printf("  examining secondary structure in residue positions : %s \n",resstrings[0].c_str() );

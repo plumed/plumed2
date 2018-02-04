@@ -94,7 +94,7 @@ install-build:
 	mkdir -p install/
 	$(MAKE) PLUMED_INSTALL=Install all
 ifdef LD_RO
-	$(MAKE) install/kernel.o
+	$(MAKE) PLUMED_INSTALL=Install install/kernel.o
 endif
 # modulefile
 	@cat modulefile.in | \
@@ -222,14 +222,19 @@ endif
 ifdef LD_RO
 	cp install/kernel.o "$(DESTDIR)$(libdir)/$(program_name)/obj/kernel.o"
 else
-	../maketools/copyobjects "$(DESTDIR)$(libdir)/$(program_name)/obj/k" $(OBJ_KERNEL)
+	../maketools/copyobjects "$(DESTDIR)$(libdir)/$(program_name)/obj/k" $(subst ../config/Config.o,../config/ConfigInstall.o,$(OBJ_KERNEL))
 endif
 	cp $(OBJ_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/PlumedStatic.o"
 	cp $(OBJ_DYNAMIC_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/Plumed.o"
 # also copy .h files into include/ dir
 	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C "$(DESTDIR)$(includedir)/$(program_name)/"
 # install executable
+# for OSX we can use the dynamically linked executable
+ifeq ($(SOEXT),dylib)
+	cp install/plumed-shared "$(DESTDIR)$(bindir)/$(program_name)"
+else
 	cp install/plumed "$(DESTDIR)$(bindir)/$(program_name)"
+endif
 # patch file for cross compiling
 	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-patch"
 # config file for cross compiling
@@ -243,10 +248,6 @@ endif
 ifdef SOEXT
 	cp install/libplumed.$(SOEXT) "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	cp install/libplumedKernel.$(SOEXT) "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
-ifeq ($(SOEXT),dylib)
-	install_name_tool -id "$(libdir)/lib$(program_name).$(SOEXT)" "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
-	install_name_tool -id "$(libdir)/lib$(program_name)Kernel.$(SOEXT)" "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
-endif
 endif
 ifdef AR_CR
 	cp install/libplumedWrapper.a "$(DESTDIR)$(libdir)/lib$(program_name)Wrapper.a"
@@ -405,21 +406,32 @@ $(PLUMED_KERNEL):$(OBJ_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
 	cd install && $(LDSHARED) -o libplumedKernel.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(DYNAMIC_LIBS)
+ifeq ($(SOEXT),dylib)
+	install_name_tool -id "$(libdir)/lib$(program_name)Kernel.$(SOEXT)" $@
+endif
 else
 	$(LDSHARED) -o $@ $^ $(DYNAMIC_LIBS)
 ifeq ($(SOEXT),dylib)
-	install_name_tool -id "$(realpath .)/libplumedKernel.$(SOEXT)" libplumedKernel.$(SOEXT)
+	install_name_tool -id "$(realpath .)/libplumedKernel.$(SOEXT)" $@
 endif
 endif
 
-$(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER)
+# dependence on PLUMED_KERNEL is required for build on OSX to work correctly:
+$(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-	cd install && $(LDSHARED) -o libplumed.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(addprefix ../,$(OBJ_WRAPPER)) $(DYNAMIC_LIBS)
-else
-	$(LDSHARED) -o $@ $^ $(DYNAMIC_LIBS)
 ifeq ($(SOEXT),dylib)
+	cd install && $(LDSHARED) -o libplumed.$(SOEXT) libplumedKernel.dylib $(addprefix ../,$(OBJ_WRAPPER)) $(LIBS)
+	install_name_tool -id "$(libdir)/lib$(program_name).$(SOEXT)" $@
+else
+	cd install && $(LDSHARED) -o libplumed.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(addprefix ../,$(OBJ_WRAPPER)) $(DYNAMIC_LIBS)
+endif
+else
+ifeq ($(SOEXT),dylib)
+	$(LDSHARED) -o $@ $(OBJ_WRAPPER) libplumedKernel.dylib $(LIBS)
 	install_name_tool -id "$(realpath .)/libplumed.$(SOEXT)" $@
+else
+	$(LDSHARED) -o $@ $(OBJ_KERNEL) $(OBJ_WRAPPER) $(DYNAMIC_LIBS)
 endif
 endif
 
@@ -537,8 +549,7 @@ endif
 .PHONY: clean dirslinks
 clean:
 	rm -f $(CLEANLIST)
-	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
-	rm -f Plumed.inc* plumed-* Plumed.cmake*
+	rm -f plumed Plumed.inc* plumed-* Plumed.cmake*
 # this is not necessary, I leave it here to remove spurious plumed.vim files generated with
 # the first version of plumed.vim syntax file:
 	rm -f plumed.vim

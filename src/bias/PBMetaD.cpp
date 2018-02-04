@@ -268,7 +268,6 @@ private:
   unsigned current_value_;
 
   void   readGaussians(unsigned iarg, IFile*);
-  bool   readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n);
   void   writeGaussian(unsigned iarg, const Gaussian&, OFile*);
   void   addGaussian(unsigned iarg, const Gaussian&);
   double getBiasAndDerivatives(unsigned iarg, const vector<double>&, double* der=NULL);
@@ -657,8 +656,10 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         else           {BiasGrid_.reset( new SparseGrid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true) );}
         std::vector<std::string> actualmin=BiasGrid_->getMin();
         std::vector<std::string> actualmax=BiasGrid_->getMax();
-        if(gmin_t[0]!=actualmin[0]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[0]<<" to fit periodicity\n";
-        if(gmax_t[0]!=actualmax[0]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[0]<<" to fit periodicity\n";
+        std::string is;
+        Tools::convert(i,is);
+        if(gmin_t[0]!=actualmin[0]) error("GRID_MIN["+is+"] must be adjusted to "+actualmin[0]+" to fit periodicity");
+        if(gmax_t[0]!=actualmax[0]) error("GRID_MAX["+is+"] must be adjusted to "+actualmax[0]+" to fit periodicity");
       }
       BiasGrids_.emplace_back(std::move(BiasGrid_));
     }
@@ -724,6 +725,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     ofile->open(ifilesnames[mw_id_*hillsfname.size()+i]);
     if(fmt.length()>0) ofile->fmtField(fmt);
     ofile->addConstantField("multivariate");
+    ofile->addConstantField("kerneltype");
     if(doInt_[i]) {
       ofile->addConstantField("lower_int").printField("lower_int",lowI_[i]);
       ofile->addConstantField("upper_int").printField("upper_int",uppI_[i]);
@@ -789,35 +791,12 @@ void PBMetaD::readGaussians(unsigned iarg, IFile *ifile)
   log.printf("      %d Gaussians read\n",nhills);
 }
 
-bool PBMetaD::readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n)
-{
-  vector<double> center(1);
-  vector<double> sigma(1);
-  double height;
-  unsigned nhills=0;
-  bool multivariate=false;
-  std::vector<Value> tmpvalues;
-  tmpvalues.push_back( Value( this, getPntrToArgument(iarg)->getName(), false ) );
-
-  while(scanOneHill(iarg,ifile,tmpvalues,center,sigma,height,multivariate)) {
-    ;
-    if(welltemp_) {height*=(biasf_-1.0)/biasf_;}
-    addGaussian(iarg, Gaussian(center,sigma,height,multivariate));
-    if(nhills==n) {
-      log.printf("      %u Gaussians read\n",nhills);
-      return true;
-    }
-    nhills++;
-  }
-  log.printf("      %u Gaussians read\n",nhills);
-  return false;
-}
-
 void PBMetaD::writeGaussian(unsigned iarg, const Gaussian& hill, OFile *ofile)
 {
   ofile->printField("time",getTimeStep()*getStep());
   ofile->printField(getPntrToArgument(iarg),hill.center[0]);
 
+  ofile->printField("kerneltype","gaussian");
   if(hill.multivariate) {
     ofile->printField("multivariate","true");
     double lower = sqrt(1./hill.sigma[0]);
@@ -1160,12 +1139,14 @@ bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile, vector<Value> &tmpvalues,
       }
     }
     center[0]=tmpvalues[0].get();
+    std::string ktype="gaussian";
+    if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
+
     std::string sss;
     ifile->scanField("multivariate",sss);
     if(sss=="true") multivariate=true;
     else if(sss=="false") multivariate=false;
     else plumed_merror("cannot parse multivariate = "+ sss);
-
     if(multivariate) {
       ifile->scanField("sigma_"+getPntrToArgument(iarg)->getName()+"_"+
                        getPntrToArgument(iarg)->getName(),sigma[0]);

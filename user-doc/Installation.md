@@ -174,17 +174,32 @@ This might be useful when installing PLUMED within package managers such as MacP
 make sure that only desired libraries are linked and thus to avoid to introduce spurious
 dependencies. The only exception to this rule is `-ldl`, which is anyway a system library on Linux.
 
-\warning On Linux you might have problems using the LDFLAGS option. In particular,
-if makefile complaints that it cannot link the file 'src/lib/plumed-shared',
-try to set correctly
-the runtime path by using
-\verbatim
-> ./configure LDFLAGS="-L/opt/local/lib -Wl,-rpath,/opt/local/lib" \
-  CPPFLAGS=-I/opt/local/include LIBS=-lmyxdrfile
-\endverbatim
-Notice that although the file 'src/lib/plumed-shared' is not necessary, being
+\warning On OSX it is common practice to hardcode the full path
+to libraries in the libraries themselves. This means that, after having linked
+a shared library, that specific shared library will be searched in the same
+place (we do the same for the `libplumed.dylib` library, which has an install name hardcoded).
+On the other hand, on Linux it is common pratice not to hardcode the full path.
+This means that if you use the `LDFLAGS` option to specify the path
+to the libraries you want to link to PLUMED (e.g. `./configure LDFLAGS="-L/path"`)
+these libraries might not be found later.
+The visible symptom is that `src/lib/plumed-shared` will not be linked correctly.
+Although the file 'src/lib/plumed-shared' is not necessary, being
 able to produce it means that it will be possible to link PLUMED dynamically
 with MD codes later.
+The easiest solution is to hardcode the library search path in this way:
+\verbatim
+> ./configure LDFLAGS="-L/path -Wl,-rpath,/path"
+\endverbatim
+Notice that as of PLUMED v2.4 it is possible to use the configure option `--enable-rpath`
+to automatically hardcode the path defined in `LIBRARY_PATH`:
+\verbatim
+> ./configure LIBRARY_PATH=/path --enable-rpath
+\endverbatim
+In this way, the search path used at link time (`LIBRARY_PATH`) and the one saved in the `libplumed.so`
+library will be consistent by construction.
+In a typical environment configured using module framework (http://modules.sourceforge.net),
+`LIBRARY_PATH` will be a variable containing the path to all the modules loaded at compilation
+time.
 
 PLUMED needs blas and lapack. These are treated slighty different from
 other libraries. The search is done in the usual way (i.e., first
@@ -537,14 +552,18 @@ Notice that plumed comes with many variants that can be inspected with the comma
     > sudo port info plumed
 
 Plumed uses variants to support different compilers.
-For instance, you can install plumed with openmpi using
+For instance, you can install plumed with mpich using
 
-    > sudo port install plumed +openmpi
+    > sudo port install plumed +mpich
 
-Using gcc instead of native compilers is recommended so as to
+Using more recent clang instead of native compilers is recommended so as to
 take advantage of openMP
 
-    > sudo port install plumed +openmpi +gcc7
+    > sudo port install plumed +mpich +clang50
+
+Notice that support for c++11 with gcc compilers is someway problematic within MacPorts
+due to impossibility to use the system c++ library. For this reason, only clang compilers are supported
+(see also [this discussion](https://github.com/macports/macports-ports/pull/1252)).
 
 Variants can be also used to compile with debug flags (`+debug`), to pick a linear algebra library
 (e.g. `+openblas`) and to enable all optional modules (`+allmodules`).
@@ -561,18 +580,18 @@ under the subport `plumed-devel` that can be installed with
 
 It is also possible to install a plumed-patched version of gromacs.
 For instance, you can use the following command to install
-gromacs patched with plumed with gcc compiler and openmpi:
+gromacs patched with plumed with clang-5.0 compiler and mpich:
 
-    > sudo port install plumed +openmpi +gcc7
-    > sudo port install gromacs-plumed +openmpi +gcc7
+    > sudo port install plumed +mpich +clang50
+    > sudo port install gromacs-plumed +mpich +clang50
 
 In case you want to combine gromacs with the unstable version of plumed, use this instead:
 
-    > sudo port install plumed-devel +openmpi +gcc7
-    > sudo port install gromacs-plumed +openmpi +gcc7
+    > sudo port install plumed-devel +mpich +clang50
+    > sudo port install gromacs-plumed +mpich +clang50
 
 Notice that gromacs should be compiled using the same compiler
-variant as plumed (in this example `+openmpi +gcc7`). In case this is not
+variant as plumed (in this example `+mpich +clang50`). In case this is not
 true, compilation will fail.
 
 Also notice that gromacs is patched with plumed in runtime mode
@@ -634,7 +653,7 @@ PLUMED version with different optimization levels.
 
 Using modules, it is not necessary to make the PLUMED module explicitly dependent on the used library. Imagine a
 scenario where you first installed a module `libxdrfile`, then load it while you compile PLUMED. If you
-provide the following option to configure `LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH"`, the PLUMED executable and
+provide the following option to configure `--enable-rpath`, the PLUMED executable and
 library will remember where libxdrfile is, without the need to load libxdrfile module at runtime.
 Notice that this trick often does not work for fundamental libraries such as C++ and MPI library. As a consequence,
 usually the PLUMED module should load the compiler and MPI modules.

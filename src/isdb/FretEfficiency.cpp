@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "colvar/Colvar.h"
 #include "colvar/ActionRegister.h"
+#include "core/PlumedMain.h"
 #include "tools/Pbc.h"
 
 #include <string>
@@ -118,6 +119,8 @@ FretEfficiency::FretEfficiency(const ActionOptions&ao):
 
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
+
+  log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
 
   addValueWithDerivatives();
   setNotPeriodic();

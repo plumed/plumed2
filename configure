@@ -710,7 +710,6 @@ enable_debug_glibcxx
 enable_shared
 enable_dependency_tracking
 enable_rpath
-enable_cxx_exceptions
 enable_ld_r
 enable_ar_cr
 enable_mpi
@@ -1379,7 +1378,6 @@ Optional Features:
   --enable-dependency-tracking
                           enable dependency tracking, default: yes
   --enable-rpath          enable store rpath, default: no
-  --enable-cxx-exceptions enable c++ exceptions, default: yes
   --enable-ld-r           enable group object files, default: yes
   --enable-ar-cr          enable use ar to build libplumedWrapper.a, default:
                           yes
@@ -2665,24 +2663,6 @@ else
   case "no" in
              (yes) rpath=true ;;
              (no)  rpath=false ;;
-  esac
-
-fi
-
-
-
-cxx_exceptions=
-# Check whether --enable-cxx-exceptions was given.
-if test "${enable_cxx_exceptions+set}" = set; then :
-  enableval=$enable_cxx_exceptions; case "${enableval}" in
-             (yes) cxx_exceptions=true ;;
-             (no)  cxx_exceptions=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-cxx-exceptions" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) cxx_exceptions=true ;;
-             (no)  cxx_exceptions=false ;;
   esac
 
 fi
@@ -8295,13 +8275,6 @@ if test "$debug_glibcxx" == true ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: Check boundaries, adding -D_GLIBCXX_DEBUG" >&5
 $as_echo "$as_me: Check boundaries, adding -D_GLIBCXX_DEBUG" >&6;}
   $as_echo "#define _GLIBCXX_DEBUG 1" >>confdefs.h
-
-fi
-
-if test "$cxx_exceptions" == true ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling c++ exceptions -D__PLUMED_HAS_EXCEPTIONS" >&5
-$as_echo "$as_me: Enabling c++ exceptions -D__PLUMED_HAS_EXCEPTIONS" >&6;}
-  $as_echo "#define __PLUMED_HAS_EXCEPTIONS 1" >>confdefs.h
 
 fi
 
