@@ -416,14 +416,22 @@ class CS2Backbone : public MetainferenceBase {
     vector<int> xd2;   // additional couple of atoms
     vector<unsigned> box_nb;  // non-bonded atoms
 
-    ChemicalShift() {
-      exp_cs = 0.;
-      res_type_prev = res_type_curr = res_type_next = 0;
-      res_kind = 0;
-      res_name = "";
-      nucleus = "";
-      res_num = -1;
-      ipos = -1;
+    ChemicalShift():
+      exp_cs(0.),
+      comp(NULL),
+      res_kind(0),
+      atm_kind(0),
+      res_type_prev(0),
+      res_type_curr(0),
+      res_type_next(0),
+      res_name(NULL),
+      nucleus(NULL),
+      has_chi1(true),
+      csatoms(0),
+      totcsatoms(0),
+      res_num(0),
+      ipos(0)
+    {
       xd1.reserve(26);
       xd2.reserve(26);
       box_nb.reserve(150);
@@ -513,6 +521,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ) {
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
+  max_cs_atoms(0),
   camshift(false),
   pbc(true),
   serial(false)
@@ -977,7 +986,6 @@ void CS2Backbone::calculate()
                    CONSTAANEXT[myfrag->res_type_next];
 
     const unsigned ipos = myfrag->ipos;
-    cs_derivs[kdx+0] = Vector(0,0,0);
     cs_atoms[kdx+0] = ipos;
     unsigned atom_counter = 1;
 
@@ -1262,11 +1270,11 @@ void CS2Backbone::calculate()
       comm.Sum(&all_shifts[0], chemicalshifts.size());
     }
     for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
-      const unsigned kdx=cs*max_cs_atoms;
       Value *comp = chemicalshifts[cs].comp;
       comp->set(all_shifts[cs]);
       if(getDoScore()) setCalcData(cs, all_shifts[cs]);
       else {
+        const unsigned kdx=cs*max_cs_atoms;
         Tensor virial;
         for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) {
           setAtomsDerivatives(comp,cs_atoms[kdx+i],cs_derivs[kdx+i]);
