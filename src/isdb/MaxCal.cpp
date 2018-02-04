@@ -51,7 +51,7 @@ private:
   double kappa;
   double deltat;
   double mult;
-  bool     master;  
+  bool     master;
   unsigned replica_;
   unsigned nrep_;
   vector<double> sigma_mean2_;
@@ -201,7 +201,7 @@ void Caliber::calculate() {
     ene+=0.5*kappa*cv*cv;
     getPntrToComponent("kappa")->set(kappa);
     getPntrToComponent("mean")->set(mean[i]);
-  } 
+  }
 
   // we will need to add back the calculation of the work
   setBias(ene);
