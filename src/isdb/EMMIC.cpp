@@ -474,7 +474,7 @@ EMMIC::EMMIC(const ActionOptions&ao):
   ovmd_.resize(ovdd_.size());
   atom_der_.resize(GMM_m_type_.size());
   GMMid_der_.resize(ovdd_.size());
-  
+
   // clear things that are no longer needed
   GMM_d_cov_.clear();
 
@@ -1166,7 +1166,7 @@ void EMMIC::calculate_Cauchy()
     anneal_ = get_annealing(step);
     getPntrToComponent("anneal")->set(anneal_);
   }
- 
+
   // calculate score and reweighting score
   double ene = 0.0;
   // cycle on all the GMM groups
