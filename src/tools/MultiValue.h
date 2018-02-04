@@ -181,7 +181,8 @@ void MultiValue::setDerivative( const unsigned& ival, const unsigned& jder, cons
 
 inline
 double MultiValue::getDerivative( const unsigned& ival, const unsigned& jder ) const {
-  plumed_dbg_assert( ival<values.size() && jder<nderivatives && hasderiv[nderivatives*ival+jder] );
+  plumed_dbg_assert( ival<values.size() && jder<nderivatives );
+  if( !hasderiv[nderivatives*ival+jder] ) return 0.0;
   return derivatives[nderivatives*ival+jder];
 }
 

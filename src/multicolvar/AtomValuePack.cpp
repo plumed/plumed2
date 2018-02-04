@@ -31,9 +31,9 @@ AtomValuePack::AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv ):
   indices( vals.getIndices() ),
   myatoms( vals.getFirstAtomVector() )
 {
-  if( indices.size()!=mcolv->getNumberOfAtoms() ) {
-    indices.resize( mcolv->getNumberOfAtoms() );
-    myatoms.resize( mcolv->getNumberOfAtoms() );
+  if( indices.size()!=mcolv->getNumberOfAtomsInEachCV() ) {
+    indices.resize( mcolv->getNumberOfAtomsInEachCV() );
+    myatoms.resize( mcolv->getNumberOfAtomsInEachCV() );
   }
 }
 
@@ -51,6 +51,12 @@ void AtomValuePack::updateUsingIndices() {
 #endif  
 
   for(unsigned i=0; i<natoms; ++i) {
+    // Check for duplicated indices during update to avoid double counting
+    bool newi=true;
+    for(unsigned j=0;j<i;++j) {
+        if( indices[j]==indices[i] ){ newi=false; break; }
+    } 
+    if( !newi ) continue;
     unsigned base=3*indices[i]; // indices[i];
     for(unsigned j=0;j<mycolv->getNumberOfComponents();++j){
          myvals.updateIndex( (mycolv->getPntrToOutput(j))->getPositionInStream(), base );
@@ -67,9 +73,17 @@ void AtomValuePack::updateUsingIndices() {
 void AtomValuePack::setBoxDerivativesNoPbc(const unsigned& ival) {
   if( mycolv->doNotCalculateDerivatives() ) return;
   Tensor virial; 
-  for(unsigned i=0; i<natoms; i++) virial-=Tensor(getPosition(i), Vector(myvals.getDerivative(ival,3*indices[i]+0),
-                                                                         myvals.getDerivative(ival,3*indices[i]+1), 
-                                                                         myvals.getDerivative(ival,3*indices[i]+2)));
+  for(unsigned i=0; i<natoms; i++) {
+       // Check for duplicated indices during update to avoid double counting
+       bool newi=true;
+       for(unsigned j=0;j<i;++j) {
+           if( indices[j]==indices[i] ){ newi=false; break; }
+       }
+       if( !newi ) continue;
+       virial-=Tensor(getPosition(i), Vector(myvals.getDerivative(ival,3*indices[i]+0),
+                                             myvals.getDerivative(ival,3*indices[i]+1), 
+                                             myvals.getDerivative(ival,3*indices[i]+2)));
+  }
   addBoxDerivatives(ival,virial);
 }
 
