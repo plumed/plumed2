@@ -34,3 +34,4 @@ docdir=@docdir@
 htmldir=@htmldir@
 python_bin=@PYTHON_BIN@
 mpiexec=@MPIEXEC@
+make_static_archive=@make_static_archive@

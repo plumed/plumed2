@@ -96,6 +96,9 @@ install-build:
 ifdef LD_RO
 	$(MAKE) PLUMED_INSTALL=Install install/kernel.o
 endif
+ifeq ($(make_static_archive),yes)
+	$(MAKE) PLUMED_INSTALL=Install install/libplumed.a
+endif
 # modulefile
 	@cat modulefile.in | \
            sed "s|@_SOEXT_@|$(SOEXT)|" | \
@@ -108,7 +111,8 @@ endif
            sed "s|@_SOEXT_@|$(SOEXT)|" | \
            sed "s|@_program_name_@|$(program_name)|" | \
            sed "s|@_libdir_@|$(libdir)|" | \
-           sed "s|@_libs_@||" | \
+           sed "s|@_libs_@|$(LIBS) $(DYNAMIC_LIBS)|" | \
+           sed "s|@_private_libs_@||" | \
            sed "s|@_bindir_@|$(bindir)|" | \
            sed "s|@_includedir_@|$(includedir)|" | \
            sed "s|@_prefix_@|$(prefix)|" | \
@@ -123,6 +127,7 @@ endif
            sed "s|@_program_name_@|$(program_name)|" | \
            sed "s|@_libdir_@|$(libdir)|" | \
            sed "s|@_libs_@||" | \
+           sed "s|@_private_libs_@|$(LIBS) $(DYNAMIC_LIBS)|" | \
            sed "s|@_bindir_@|$(bindir)|" | \
            sed "s|@_includedir_@|$(includedir)|" | \
            sed "s|@_prefix_@|$(prefix)|" | \
@@ -137,6 +142,7 @@ endif
            sed "s|@_program_name_@|$(program_name)Wrapper|" | \
            sed "s|@_libdir_@|$(libdir)|" | \
            sed "s|@_libs_@|$(LIBS)|" | \
+           sed "s|@_private_libs_@||" | \
            sed "s|@_bindir_@|$(bindir)|" | \
            sed "s|@_includedir_@|$(includedir)|" | \
            sed "s|@_prefix_@|$(prefix)|" | \
@@ -150,6 +156,12 @@ endif
 ifdef LD_RO
 install/kernel.o: $(OBJ_KERNEL)
 	$(LD_RO) install/kernel.o $(OBJ_KERNEL)
+endif
+
+ifeq ($(make_static_archive),yes)
+install/libplumed.a: install/kernel.o $(OBJ_WRAPPER)
+	rm -f $@
+	$(AR_CR) $@ $^
 endif
 
 # standard target (according to GNU doc)
@@ -219,13 +231,16 @@ endif
 	cp ../config/compile_options.sh "$(DESTDIR)$(libdir)/$(program_name)/src/config/compile_options.sh"
 # copy config.txt file (we leave it in src/colvar/ for backward compatibility)
 	cp ../config/config.txt "$(DESTDIR)$(libdir)/$(program_name)/src/config/config.txt"
+ifeq ($(make_static_archive),yes)
+	cp install/libplumed.a "$(DESTDIR)$(libdir)/lib$(program_name).a"
+else
+	cp $(OBJ_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/PlumedStatic.o"
 ifdef LD_RO
 	cp install/kernel.o "$(DESTDIR)$(libdir)/$(program_name)/obj/kernel.o"
 else
 	../maketools/copyobjects "$(DESTDIR)$(libdir)/$(program_name)/obj/k" $(subst ../config/Config.o,../config/ConfigInstall.o,$(OBJ_KERNEL))
 endif
-	cp $(OBJ_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/PlumedStatic.o"
-	cp $(OBJ_DYNAMIC_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/Plumed.o"
+endif
 # also copy .h files into include/ dir
 	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C "$(DESTDIR)$(includedir)/$(program_name)/"
 # install executable
@@ -251,6 +266,8 @@ ifdef SOEXT
 endif
 ifdef AR_CR
 	cp install/libplumedWrapper.a "$(DESTDIR)$(libdir)/lib$(program_name)Wrapper.a"
+else
+	cp $(OBJ_DYNAMIC_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/Plumed.o"
 endif
 # modulefile
 	cp install/modulefile "$(DESTDIR)$(libdir)/$(program_name)/modulefile"
@@ -463,22 +480,30 @@ ifdef AR_CR
 else
 	@echo "PLUMED_RUNTIME_LOAD= \"$(libdir)/$(program_name)/obj/Plumed.o\" $(LIBS) $(LDFLAGS)" > $@
 endif
+ifeq ($(make_static_archive),yes)
+	@echo "PLUMED_STATIC_LOAD= \"$(libdir)/lib$(program_name).a\" $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)" >> $@
+else
 ifdef LD_RO
 	@echo "PLUMED_STATIC_LOAD= \"$(libdir)/$(program_name)/obj/kernel.o\" \"$(libdir)/$(program_name)/obj/PlumedStatic.o\" $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)" >> $@
 else
 # single quote required to preserve double quote in resulting file
 	@echo "PLUMED_STATIC_LOAD= '$(shell ../maketools/listobjects "$(libdir)/$(program_name)/obj/k" $(OBJ_KERNEL))' \"$(libdir)/$(program_name)/obj/PlumedStatic.o\" $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)" >> $@
 endif
+endif
 	@echo "PLUMED_SHARED_LOAD= \"$(libdir)/lib$(program_name).$(SOEXT)\" $(LIBS) $(LDFLAGS)" >> $@
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
 # in principle all objects are replaced at the same time
 # however, to keep compatibility with the include files generated in plumed 2.0 and 2.1,
 # I put all the objects (or shared objects) here
+ifeq ($(make_static_archive),yes)
+	@echo "PLUMED_STATIC_DEPENDENCIES= \"$(libdir)/lib$(program_name).a\"" >> $@
+else
 ifdef LD_RO
 	@echo "PLUMED_STATIC_DEPENDENCIES= \"$(libdir)/$(program_name)/obj/kernel.o\" \"$(libdir)/$(program_name)/obj/PlumedStatic.o\"" >> $@
 else
 # single quote required to preserve double quote in resulting file
 	@echo "PLUMED_STATIC_DEPENDENCIES= '$(shell ../maketools/listobjects "$(libdir)/$(program_name)/obj/k" $(OBJ_KERNEL))' \"$(libdir)/$(program_name)/obj/PlumedStatic.o\"" >> $@
+endif
 endif
 	@echo "PLUMED_SHARED_DEPENDENCIES= \"$(libdir)/lib$(program_name).$(SOEXT)\""  >> $@
 else
