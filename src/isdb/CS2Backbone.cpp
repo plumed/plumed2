@@ -139,7 +139,7 @@ PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=RESTRAINT STRIDE=100
 This third example show how to use chemical shifts to calculate a \ref METAINFERENCE score .
 
 \plumedfile
-cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ DOSCORE NDATA=24
+cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ DOSCORE
 csbias: BIASVALUE ARG=cs.score
 
 PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=CS.dat STRIDE=1000
@@ -207,7 +207,7 @@ public:
   void parse(const string &file, const double dscale) {
     ifstream in;
     in.open(file.c_str());
-    if(!in) plumed_merror("Unable to open CS2Backbone DB file " +file);
+    if(!in) plumed_merror("Unable to open DB file: " + file);
 
     unsigned c_kind = 0;
     unsigned c_atom = 0;
@@ -362,7 +362,7 @@ public:
       if(ok) continue;
 
       if(tok.size()) {
-        string str_err = "CS2Backbone DB WARNING: unrecognized token: " + tok[0];
+        string str_err = "DB WARNING: unrecognized token: " + tok[0];
         plumed_merror(str_err);
       }
     }
@@ -530,7 +530,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   parseAtomList("ATOMS",used_atoms);
 
   parseFlag("CAMSHIFT",camshift);
-  if(camshift&&getDoScore()) error("It is not possible to use CAMSHIFT together with DOSCORE");
+  if(camshift&&getDoScore()) plumed_merror("It is not possible to use CAMSHIFT and DOSCORE at the same time");
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -564,7 +564,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   db.parse(stringadb,scale);
 
   PDB pdb;
-  if( !pdb.read(stringapdb,plumed.getAtoms().usingNaturalUnits(),1./scale) ) error("missing input file " + stringapdb);
+  if( !pdb.read(stringapdb,plumed.getAtoms().usingNaturalUnits(),1./scale) ) plumed_merror("missing input file " + stringapdb);
 
   // first of all we build the list of chemical shifts we want to predict
   log.printf("  Reading experimental data ...\n"); log.flush();
@@ -641,7 +641,7 @@ void CS2Backbone::init_cs(const string &file, const string &nucl, const PDB &pdb
 
   ifstream in;
   in.open(file.c_str());
-  if(!in) error("CS2Backbone: Unable to open " + file);
+  if(!in) plumed_merror("Unable to open " + file);
   istream_iterator<string> iter(in), end;
   unsigned begin=0;
 
@@ -661,6 +661,11 @@ void CS2Backbone::init_cs(const string &file, const string &nucl, const PDB &pdb
     ++iter;
     double cs = atof(tok.c_str());
     if(cs==0) continue;
+
+    unsigned fres, lres;
+    string errmsg;
+    pdb.getResidueRange(chains[ichain], fres, lres, errmsg);
+    if(resnum==fres||resnum==lres) plumed_merror("First and Last residue of each chain should be annotated as # in " + file + " Remember that residue numbers should match");
 
     // check in the PDB for the chain/residue/atom and enable the chemical shift
     string RES = pdb.getResidueName(resnum, chains[ichain]);
@@ -823,12 +828,12 @@ void CS2Backbone::init_types(const PDB &pdb) {
       else if (atom_type == 'H') t = D_H;
       else if (atom_type == 'N') t = D_N;
       else if (atom_type == 'S') t = D_S;
-      else plumed_merror("CS2Backbone:init_type: unknown atom type!\n");
+      else plumed_merror("Unknown atom type: " + atom_name);
     } else {
       if (atom_type == 'C') t = D_C2;
       else if (atom_type == 'O') t = D_O2;
       else if (atom_type == 'N') t = D_N2;
-      else plumed_merror("CS2Backbone:init_type: unknown atom type!\n");
+      else plumed_merror("Unknown atom type: " + atom_name);
     }
     type.push_back(t);
   }
@@ -928,7 +933,7 @@ void CS2Backbone::init_rings(const PDB &pdb)
         ri.rtype = RingInfo::R_HIS;
         ringInfo.push_back(ri);
       } else {
-        plumed_merror("Unkwown Ring Fragment");
+        plumed_merror("Unknown Ring Fragment: " + frg);
       }
     }
   }
@@ -1428,7 +1433,7 @@ CS2Backbone::aa_t CS2Backbone::frag2enum(const string &aa) {
   else if (aa == "TYR") type = TYR;
   else if (aa == "VAL") type = VAL;
   else if (aa == "UNK") type = UNK;
-  else plumed_merror("CS2Backbone: Error converting string " + aa + " into amino acid index: not a valid 3-letter code");
+  else plumed_merror("Error converting string " + aa + " into amino acid index: not a valid 3-letter code");
   return type;
 }
 
@@ -1741,7 +1746,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s) {
     sc.push_back( "2HG2" );
     sc.push_back( "3HG2" );
     return sc;
-  } else plumed_merror("CS2Backbone: side_chain_atoms unknown");
+  } else plumed_merror("Sidechain atoms unknown: " + s);
 }
 
 bool CS2Backbone::isSP2(const string & resType, const string & atomName) {
