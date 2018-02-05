@@ -54,8 +54,7 @@ SetupMolInfo::~SetupMolInfo() {
 SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
   Action(ao),
   ActionSetup(ao),
-  ActionAtomistic(ao),
-  pdb_fwd(new(PDB))
+  ActionAtomistic(ao)
 {
   // Read what is contained in the pdb file
   parse("MOLTYPE",mytype);

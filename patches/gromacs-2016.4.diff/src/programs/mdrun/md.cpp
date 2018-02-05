@@ -127,6 +127,10 @@ extern int    plumedswitch;
 extern plumed plumedmain;
 /* END PLUMED */
 
+/* PLUMED HREX */
+extern int plumed_hrex;
+/* END PLUMED HREX */
+
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
@@ -727,8 +731,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
       plumed_cmd(plumedmain,"setNatoms",&top_global->natoms);
       plumed_cmd(plumedmain,"setMDEngine","gromacs");
       plumed_cmd(plumedmain,"setLog",fplog);
-      real real_delta_t;
-      real_delta_t=ir->delta_t;
+      real real_delta_t=ir->delta_t;
       plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
       plumed_cmd(plumedmain,"init",NULL);
 
@@ -1087,6 +1090,91 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         clear_mat(force_vir);
 
+        /* PLUMED HREX */
+        gmx_bool bHREX = bDoReplEx && plumed_hrex;
+
+        if (plumedswitch && bHREX) {
+          gmx_enerdata_t *hrex_enerd;
+          snew(hrex_enerd, 1);
+          init_enerdata(top_global->groups.grps[egcENER].nr,ir->fepvals->n_lambda,hrex_enerd);
+          int repl  = -1;
+          int nrepl = -1;
+          if (MASTER(cr)){
+            repl  = replica_exchange_get_repl(repl_ex);
+            nrepl = replica_exchange_get_nrepl(repl_ex);
+          }
+
+          if (DOMAINDECOMP(cr)) {
+            dd_collect_state(cr->dd,state,state_global);
+          } else {
+            copy_state_nonatomdata(state, state_global);
+          }
+
+          if(MASTER(cr)){
+            if(repl%2==step/repl_ex_nst%2){
+              if(repl-1>=0) exchange_state(cr->ms,repl-1,state_global);
+            }else{
+              if(repl+1<nrepl) exchange_state(cr->ms,repl+1,state_global);
+            }
+          }
+          if (!DOMAINDECOMP(cr)) {
+            copy_state_nonatomdata(state_global, state);
+          }
+          if(PAR(cr)){
+            if (DOMAINDECOMP(cr)) {
+              dd_partition_system(fplog,step,cr,TRUE,1,
+                                  state_global,top_global,ir,
+                                  state,&f,mdatoms,top,fr,vsite,constr,
+                                  nrnb,wcycle,FALSE);
+            }
+          }
+          do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
+                   state->box, state->x, &state->hist,
+                   f, force_vir, mdatoms, hrex_enerd, fcd,
+                   state->lambda, graph,
+                   fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
+                   GMX_FORCE_STATECHANGED |
+                   GMX_FORCE_DYNAMICBOX |
+                   GMX_FORCE_ALLFORCES |
+                   GMX_FORCE_VIRIAL |
+                   GMX_FORCE_ENERGY |
+                   GMX_FORCE_DHDL |
+                   GMX_FORCE_NS);
+
+          plumed_cmd(plumedmain,"GREX cacheLocalUSwap",&hrex_enerd->term[F_EPOT]);
+          sfree(hrex_enerd);
+
+          /* exchange back */
+          if (DOMAINDECOMP(cr)) {
+            dd_collect_state(cr->dd,state,state_global);
+          } else {
+            copy_state_nonatomdata(state, state_global);
+          }
+
+          if(MASTER(cr)){
+            if(repl%2==step/repl_ex_nst%2){
+              if(repl-1>=0) exchange_state(cr->ms,repl-1,state_global);
+            }else{
+              if(repl+1<nrepl) exchange_state(cr->ms,repl+1,state_global);
+            }
+          }
+
+          if (!DOMAINDECOMP(cr)) {
+            copy_state_nonatomdata(state_global, state);
+          }
+          if(PAR(cr)){
+            if (DOMAINDECOMP(cr)) {
+              dd_partition_system(fplog,step,cr,TRUE,1,
+                                  state_global,top_global,ir,
+                                  state,&f,mdatoms,top,fr,vsite,constr,
+                                  nrnb,wcycle,FALSE);
+              plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
+              plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
+            }
+          }
+        }
+        /* END PLUMED HREX */
+
         /* We write a checkpoint at this MD step when:
          * either at an NS step when we signalled through gs,
          * or at the last step (but not when we do not want confout),
@@ -1179,6 +1267,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               if(pversion>3) plumed_cmd(plumedmain,"doCheckPoint",&checkp);
               plumed_cmd(plumedmain,"setForces",&f[0][0]);
               plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+              if(plumedNeedsEnergy) force_flags |= GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL;
               clear_mat(plumed_vir);
               plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
             }
@@ -1200,9 +1289,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 msmul(plumed_vir,0.5,plumed_vir);
                 m_add(force_vir,plumed_vir,force_vir);
               }
-              if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
-                 do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
+              if(bDoReplEx) plumed_cmd(plumedmain,"GREX savePositions",NULL);
               if(plumedWantsToStop) ir->nsteps=step_rel+1;
+              if(bHREX) plumed_cmd(plumedmain,"GREX cacheLocalUNow",&enerd->term[F_EPOT]);
             }
             /* END PLUMED */
         }

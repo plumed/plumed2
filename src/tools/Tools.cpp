@@ -189,7 +189,7 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
     if(!w.empty()) {
       if(inside && *(w.begin())=="...") {
         inside=false;
-        if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" lines, if present, should be equal to first word of directive");
+        if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" "+w[1]+" line, if present, should be equal to first word of directive: "+words[0]);
         plumed_massert(w.size()<=2,"terminating \"...\" lines cannot consist of more than two words");
         w.clear();
       } else if(*(w.end()-1)=="...") {
@@ -252,7 +252,7 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep) {
       if(rep>=0 && startWith(s,multi)) {
         s=s.substr(multi.length(),s.length());
         std::vector<std::string> words=getWords(s,"\t\n ,");
-        plumed_massert(rep<words.size(),"Number of fields in " + s + " not consistent with number of replicas");
+        plumed_massert(rep<static_cast<int>(words.size()),"Number of fields in " + s + " not consistent with number of replicas");
         s=words[rep];
       }
       return true;

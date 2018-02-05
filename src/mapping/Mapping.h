@@ -28,6 +28,7 @@
 #include "vesselbase/ActionWithVessel.h"
 #include "reference/PointWiseMapping.h"
 #include <vector>
+#include <memory>
 
 namespace PLMD {
 
@@ -46,7 +47,7 @@ private:
 //  The derivative wrt to the distance from the frame
   std::vector<double> dfframes;
 /// This holds all the reference information
-  PointWiseMapping* mymap;
+  std::unique_ptr<PointWiseMapping> mymap;
 /// The forces on each of the derivatives (used in apply)
   std::vector<double> forcesToApply;
 protected:
@@ -69,7 +70,6 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Mapping(const ActionOptions&);
-  ~Mapping();
 /// Overload the virtual functions that appear in both ActionAtomistic and ActionWithArguments
   void turnOnDerivatives();
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );

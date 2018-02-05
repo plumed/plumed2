@@ -755,7 +755,7 @@ void VesBias::updateReweightFactor() {
     double value = calculateReweightFactor();
     getPntrToComponent("rct")->set(value);
   }
-};
+}
 
 
 double VesBias::calculateReweightFactor() const {
