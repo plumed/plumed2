@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
-#include "AtomValuePack.h"
 #include "core/ActionRegister.h"
 #include "tools/Angle.h"
 
@@ -92,7 +91,7 @@ public:
                               std::vector<std::vector<std::string> >& actions );
   explicit Angle(const ActionOptions&);
 // active methods:
-  virtual void compute( const unsigned& index, AtomValuePack& myatoms ) const;
+  virtual void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const;
   static void registerKeywords( Keywords& keys );
 };
 
@@ -200,36 +199,22 @@ Angle::Angle(const ActionOptions&ao):
   Action(ao),
   MultiColvarBase(ao)
 {
-  if(getNumberOfAtomsInEachCV()==3 ) {
-     std::vector<std::vector<unsigned> > tblocks( 4 );
-     for(unsigned i=0;i<getFullNumberOfTasks();++i) {
-         tblocks[0].push_back(ablocks[0][i]);  
-         tblocks[1].push_back(ablocks[1][i]);
-         tblocks[2].push_back(ablocks[1][i]);
-         tblocks[3].push_back(ablocks[2][i]); 
-     }
-     ablocks.resize(0); ablocks.resize(4);
-     for(unsigned i=0;i<getFullNumberOfTasks();++i) {
-         for(unsigned j=0;j<4;++j) ablocks[j].push_back(tblocks[j][i]); 
-     }
-  }
+  if(getNumberOfAtomsInEachCV()==3 ) useFourAtomsForEachCV();
   if( getNumberOfAtomsInEachCV()!=4 ) error("Number of specified atoms should be 3 or 4");
   addValueWithDerivatives(); setNotPeriodic();
 }
 
 // calculator
-void Angle::compute( const unsigned& index, AtomValuePack& myatoms ) const {
-  Vector dij,dik;
-  dij=delta(myatoms.getPosition(2),myatoms.getPosition(3));
-  dik=delta(myatoms.getPosition(1),myatoms.getPosition(0));
+void Angle::compute( const std::vector<Vector>& pos, MultiValue& myvals ) const {
+  Vector dij,dik; dij=delta(pos[2],pos[3]); dik=delta(pos[1],pos[0]);
   Vector ddij,ddik; PLMD::Angle a;
   double angle=a.compute(dij,dik,ddij,ddik);
-  myatoms.addAtomsDerivatives(0,0,ddik);
-  myatoms.addAtomsDerivatives(0,1,-ddik);
-  myatoms.addAtomsDerivatives(0,2,-ddij);
-  myatoms.addAtomsDerivatives(0,3,ddij);
-  myatoms.setBoxDerivativesNoPbc(0);
-  myatoms.setValue(0,angle);
+  addAtomsDerivatives(0,0,ddik,myvals);
+  addAtomsDerivatives(0,1,-ddik,myvals);
+  addAtomsDerivatives(0,2,-ddij,myvals);
+  addAtomsDerivatives(0,3,ddij,myvals);
+  setBoxDerivativesNoPbc(0,pos,myvals);
+  setValue(0,angle,myvals);
 }
 
 }

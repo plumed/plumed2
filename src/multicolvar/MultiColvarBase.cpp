@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
-#include "AtomValuePack.h"
 
 namespace PLMD {
 namespace multicolvar {
@@ -386,6 +385,18 @@ void MultiColvarBase::addComponent( const std::string& name ){
   ActionWithValue::addComponent( name, shape );
 }
 
+void MultiColvarBase::useFourAtomsForEachCV() {
+  std::vector<std::vector<unsigned> > tblocks( 4 );
+  for(unsigned i=0;i<getFullNumberOfTasks();++i) {
+      tblocks[0].push_back(ablocks[0][i]); tblocks[1].push_back(ablocks[1][i]);
+      tblocks[2].push_back(ablocks[1][i]); tblocks[3].push_back(ablocks[2][i]);
+  }
+  ablocks.resize(0); ablocks.resize(4);
+  for(unsigned i=0;i<getFullNumberOfTasks();++i) {
+      for(unsigned j=0;j<4;++j) ablocks[j].push_back(tblocks[j][i]);
+  }
+}
+
 Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) const {
   if(usepbc) { return pbcDistance( vec1, vec2 ); }
   else { return delta( vec1, vec2 ); }
@@ -407,11 +418,17 @@ void MultiColvarBase::calculate(){
       unsigned rank=comm.Get_rank();
       if( runInSerial() ) { stride=1; rank=0; }
       std::vector<Vector> catomp( getFullNumberOfTasks() ); 
-      double normaliz = 1. / static_cast<double>( ablocks.size() );
       for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
-          catomp[i].zero(); 
-          for(unsigned j=0;j<ablocks.size();++j) catomp[i] += getPosition( ablocks[j][i] );
-          catomp[i] *= normaliz;
+          catomp[i].zero(); double wsum = 0.0;
+          for(unsigned j=0;j<ablocks.size();++j) {
+             bool newi=true;
+             for(unsigned k=0;k<j;++k) {
+                 if( ablocks[j][i]==ablocks[k][i] ){ newi=false; break; }
+             }
+             if( !newi ) continue;
+             wsum += 1.0; catomp[i] += getPosition( ablocks[j][i] );
+          }
+          double normaliz = 1 / wsum; catomp[i] *= normaliz;
       }
       if( !runInSerial() ) comm.Sum( catomp );
       for(unsigned i=0;i<getFullNumberOfTasks();++i) atoms.setVatomPosition( mygroup[i], catomp[i] );
@@ -420,15 +437,57 @@ void MultiColvarBase::calculate(){
 }
 
 void MultiColvarBase::performTask( const unsigned& task_index, MultiValue& myvals ) const {
-  // Set the atoms pack up for the calculation 
-  AtomValuePack myatoms( myvals, this ); myatoms.setNumberOfAtoms( ablocks.size() );
-  for(unsigned i=0; i<ablocks.size(); ++i) myatoms.setAtom( i, ablocks[i][task_index] );
+  // Set the positions for this particular CV
+  std::vector<Vector> & fpositions( myvals.getFirstAtomVector() );
+  if( fpositions.size()!=ablocks.size() ) fpositions.resize( ablocks.size() );
+  for(unsigned i=0;i<ablocks.size();++i) fpositions[i] = getPosition( ablocks[i][task_index] );
   // If we are using pbc make whole
-  if(usepbc) myatoms.makeWhole();
+  if( usepbc ) {
+      for(unsigned j=0; j<fpositions.size()-1; ++j) {
+        const Vector & first (fpositions[j]); Vector & second (fpositions[j+1]);
+        second=first+pbcDistance(first,second);
+      }
+  }
   // And compute
-  compute( task_index, myatoms ); 
+  compute( fpositions, myvals ); 
   // Now update the active derivatives
-  if( !doNotCalculateDerivatives() ) myatoms.updateUsingIndices();
+  if( !doNotCalculateDerivatives() ) { 
+       for(unsigned i=0; i<ablocks.size(); ++i) {
+         // Check for duplicated indices during update to avoid double counting
+         bool newi=true;
+         for(unsigned j=0;j<i;++j) {
+             if( ablocks[j][task_index]==ablocks[i][task_index] ){ newi=false; break; }
+         } 
+         if( !newi ) continue;
+         unsigned base=3*ablocks[i][task_index]; 
+         for(unsigned j=0;j<getNumberOfComponents();++j){
+              myvals.updateIndex( getPntrToOutput(j)->getPositionInStream(), base );
+              myvals.updateIndex( getPntrToOutput(j)->getPositionInStream(), base + 1 );
+              myvals.updateIndex( getPntrToOutput(j)->getPositionInStream(), base + 2 );
+         }
+       }
+       unsigned nvir=3*getNumberOfAtoms();
+       for(unsigned j=0;j<getNumberOfComponents();++j){
+           for(unsigned i=0; i<9; ++i) myvals.updateIndex( getPntrToOutput(j)->getPositionInStream(), nvir + i );
+       }
+  }
+}
+
+void MultiColvarBase::setBoxDerivativesNoPbc( const unsigned& ival, const std::vector<Vector>& fpositions, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() ) return;
+  Tensor virial; unsigned itask = myvals.getTaskIndex();
+  for(unsigned i=0; i<ablocks.size(); i++) {
+       // Check for duplicated indices during update to avoid double counting
+       bool newi=true;
+       for(unsigned j=0;j<i;++j) {
+           if( ablocks[j][itask]==ablocks[i][itask] ){ newi=false; break; }
+       }
+       if( !newi ) continue;
+       virial-=Tensor( fpositions[i], Vector(myvals.getDerivative(ival,3*ablocks[i][itask]+0),
+                                             myvals.getDerivative(ival,3*ablocks[i][itask]+1),
+                                             myvals.getDerivative(ival,3*ablocks[i][itask]+2)));
+  }
+  addBoxDerivatives(ival,virial,myvals);
 }
 
 void MultiColvarBase::apply(){
@@ -438,7 +497,6 @@ void MultiColvarBase::apply(){
   
   // Virtual atom forces
   if( catom_indices.size()==0 ) {
-      Tensor deriv; deriv = (1./static_cast<double>( ablocks.size() ))*Tensor::identity();
       unsigned stride=comm.Get_size();
       unsigned rank=comm.Get_rank();
       if( runInSerial() ) { stride=1; rank=0; }
@@ -448,7 +506,23 @@ void MultiColvarBase::apply(){
       for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
           Vector & f(atoms.getVatomForces(mygroup[i]));  
           //printf("FORCES %s %d %f %f %f \n",getLabel().c_str(), i,f[0],f[1],f[2]);
-          for(unsigned j=0;j<ablocks.size();++j) vatom_forces[ablocks[j][i]] += matmul( deriv, f );
+          double wsum=0.0; 
+          for(unsigned j=0;j<ablocks.size();++j) {
+             bool newi=true;
+             for(unsigned k=0;k<j;++k) {
+                 if( ablocks[j][i]==ablocks[k][i] ){ newi=false; break; }
+             }
+             if( !newi ) continue;
+             wsum += 1.0;
+          }
+          for(unsigned j=0;j<ablocks.size();++j) {
+             bool newi=true;
+             for(unsigned k=0;k<j;++k) {
+                 if( ablocks[j][i]==ablocks[k][i] ){ newi=false; break; }
+             }
+             if( !newi ) continue; 
+             vatom_forces[ablocks[j][i]] += matmul( (1./wsum)*Tensor::identity(), f );
+          }
       }       
       if( !runInSerial() ) comm.Sum( vatom_forces ); 
       // Add the final forces to the atoms

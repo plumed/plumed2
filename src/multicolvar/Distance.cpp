@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
-#include "AtomValuePack.h"
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 
@@ -122,7 +121,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Distance(const ActionOptions&);
 // active methods:
-  void compute( const unsigned& index, AtomValuePack& myatoms ) const ; 
+  void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const ; 
 };
 
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
@@ -226,45 +225,45 @@ Distance::Distance(const ActionOptions&ao):
 
 
 // calculator
-void Distance::compute( const unsigned& index, AtomValuePack& myatoms ) const {
+void Distance::compute( const std::vector<Vector>& pos, MultiValue& myvals ) const {
 
-  Vector distance=delta(myatoms.getPosition(0),myatoms.getPosition(1));
+  Vector distance=delta(pos[0],pos[1]);
   const double value=distance.modulo();
   const double invvalue=1.0/value;
 
   if(components) {
-    myatoms.addAtomsDerivatives(0,0,Vector(-1,0,0));
-    myatoms.addAtomsDerivatives(0,1,Vector(+1,0,0));
-    myatoms.setBoxDerivativesNoPbc( 0 );
-    myatoms.setValue( 0, distance[0] );
+    addAtomsDerivatives(0,0,Vector(-1,0,0),myvals);
+    addAtomsDerivatives(0,1,Vector(+1,0,0),myvals);
+    setBoxDerivativesNoPbc( 0, pos, myvals);
+    setValue( 0, distance[0], myvals );
 
-    myatoms.addAtomsDerivatives(1,0,Vector(0,-1,0));
-    myatoms.addAtomsDerivatives(1,1,Vector(0,+1,0));
-    myatoms.setBoxDerivativesNoPbc( 1 );
-    myatoms.setValue( 1, distance[1] );
+    addAtomsDerivatives(1,0,Vector(0,-1,0),myvals);
+    addAtomsDerivatives(1,1,Vector(0,+1,0),myvals);
+    setBoxDerivativesNoPbc( 1, pos, myvals);
+    setValue( 1, distance[1], myvals );
 
-    myatoms.addAtomsDerivatives(2,0,Vector(0,0,-1));
-    myatoms.addAtomsDerivatives(2,1,Vector(0,0,+1));
-    myatoms.setBoxDerivativesNoPbc(2);
-    myatoms.setValue( 2, distance[2] );
+    addAtomsDerivatives(2,0,Vector(0,0,-1),myvals);
+    addAtomsDerivatives(2,1,Vector(0,0,+1),myvals);
+    setBoxDerivativesNoPbc( 2, pos, myvals );
+    setValue( 2, distance[2], myvals );
   } else if(scaled_components) {
     Vector d=getPbc().realToScaled(distance);
-    myatoms.addAtomsDerivatives(0,0,matmul(getPbc().getInvBox(),Vector(-1,0,0)));
-    myatoms.addAtomsDerivatives(0,1,matmul(getPbc().getInvBox(),Vector(+1,0,0)));
-    myatoms.setValue(0,Tools::pbc(d[0]));
+    addAtomsDerivatives(0,0,matmul(getPbc().getInvBox(),Vector(-1,0,0)),myvals);
+    addAtomsDerivatives(0,1,matmul(getPbc().getInvBox(),Vector(+1,0,0)),myvals);
+    setValue(0,Tools::pbc(d[0]),myvals);
 
-    myatoms.addAtomsDerivatives(1,0,matmul(getPbc().getInvBox(),Vector(0,-1,0)));
-    myatoms.addAtomsDerivatives(1,1,matmul(getPbc().getInvBox(),Vector(0,+1,0)));
-    myatoms.setValue(1,Tools::pbc(d[1]));
+    addAtomsDerivatives(1,0,matmul(getPbc().getInvBox(),Vector(0,-1,0)),myvals);
+    addAtomsDerivatives(1,1,matmul(getPbc().getInvBox(),Vector(0,+1,0)),myvals);
+    setValue(1,Tools::pbc(d[1]),myvals);
 
-    myatoms.addAtomsDerivatives(2,0,matmul(getPbc().getInvBox(),Vector(0,0,-1)));
-    myatoms.addAtomsDerivatives(2,1,matmul(getPbc().getInvBox(),Vector(0,0,+1)));
-    myatoms.setValue(2,Tools::pbc(d[2]));
+    addAtomsDerivatives(2,0,matmul(getPbc().getInvBox(),Vector(0,0,-1)),myvals);
+    addAtomsDerivatives(2,1,matmul(getPbc().getInvBox(),Vector(0,0,+1)),myvals);
+    setValue(2,Tools::pbc(d[2]),myvals);
   } else {
-    myatoms.addAtomsDerivatives(0,0,-invvalue*distance);
-    myatoms.addAtomsDerivatives(0,1,invvalue*distance);
-    myatoms.setBoxDerivativesNoPbc(0);
-    myatoms.setValue(0,value);
+    addAtomsDerivatives(0,0,-invvalue*distance,myvals);
+    addAtomsDerivatives(0,1,invvalue*distance,myvals);
+    setBoxDerivativesNoPbc(0,pos,myvals);
+    setValue(0,value,myvals);
   }
 
 }

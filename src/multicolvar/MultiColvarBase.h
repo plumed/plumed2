@@ -29,14 +29,10 @@
 namespace PLMD {
 namespace multicolvar {
 
-class AtomValuePack;
-
 class MultiColvarBase :
   public ActionAtomistic,
   public ActionWithValue
 {
-  friend class AtomValuePack;
-  friend class Angle;
 private:
 /// Use periodic boundary conditions
   bool usepbc;
@@ -59,8 +55,18 @@ protected:
   void addComponentWithDerivatives( const std::string& name );
 /// Get the number of atoms involved in each CV
   unsigned getNumberOfAtomsInEachCV() const ;
+/// This is used in angles and planes to make three atoms in input into four during execution
+  void useFourAtomsForEachCV();
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
+/// Set the value of the colvar
+  void setValue( const unsigned&, const double& , MultiValue& ) const ; 
+/// Add some atom derivatives
+  void addAtomsDerivatives( const unsigned& ival, const unsigned& jder, const Vector& der, MultiValue& myvals ) const ;
+/// Add some box derivatives 
+  void addBoxDerivatives( const unsigned& ival, const Tensor& vir, MultiValue& myvals ) const ;
+/// Calculate the box derivatives using the virial formula
+  void setBoxDerivativesNoPbc( const unsigned& ival, const std::vector<Vector>& fpositions, MultiValue& myvals ) const ;
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandFunctions( const std::string& labout, const std::string& argin,
@@ -82,7 +88,7 @@ public:
 /// Perform one of the tasks
   void performTask( const unsigned&, MultiValue& ) const ;
 /// Compute the value of the CV
-  virtual void compute( const unsigned& index, AtomValuePack& myatoms ) const = 0 ;
+  virtual void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const = 0 ;
 /// Apply the forces from this action
   virtual void apply();
 /// The number of virtual atoms that are calculated by this action
@@ -103,6 +109,27 @@ inline
 unsigned MultiColvarBase::getNumberOfAtomsInEachCV() const {
   return ablocks.size();
 }
+
+inline
+void MultiColvarBase::setValue( const unsigned& ival, const double& vv, MultiValue& myvals ) const {
+  myvals.setValue( getPntrToOutput(ival)->getPositionInStream(), vv );
+} 
+
+inline
+void MultiColvarBase::addAtomsDerivatives( const unsigned& ival, const unsigned& jder, const Vector& der, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() ) return;
+  unsigned itask=myvals.getTaskIndex(), jval=getPntrToOutput(ival)->getPositionInStream();
+  myvals.addDerivative( jval, 3*ablocks[jder][itask] + 0, der[0] );
+  myvals.addDerivative( jval, 3*ablocks[jder][itask] + 1, der[1] );
+  myvals.addDerivative( jval, 3*ablocks[jder][itask] + 2, der[2] );
+} 
+
+inline
+void MultiColvarBase::addBoxDerivatives( const unsigned& ival, const Tensor& vir, MultiValue& myvals ) const {
+  if( doNotCalculateDerivatives() ) return;
+  unsigned nvir=3*getNumberOfAtoms(), jval=getPntrToOutput(ival)->getPositionInStream();
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) myvals.addDerivative( jval, nvir + 3*i+j, vir(i,j) );
+} 
 
 }
 }

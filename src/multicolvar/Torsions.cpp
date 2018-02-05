@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
-#include "AtomValuePack.h"
 #include "tools/Torsion.h"
 #include "core/ActionRegister.h"
 
@@ -80,7 +79,7 @@ public:
                               std::vector<std::vector<std::string> >& actions  );
   static void registerKeywords( Keywords& keys );
   explicit Torsion(const ActionOptions&);
-  void compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(Torsion,"TORSIONS")
@@ -138,21 +137,21 @@ Torsion::Torsion(const ActionOptions&ao):
   addValueWithDerivatives(); setNotPeriodic(); checkRead();
 }
 
-void Torsion::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  const Vector d0=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
-  const Vector d1=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
-  const Vector d2=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
+void Torsion::compute( const std::vector<Vector>& pos, MultiValue& myvals ) const {
+  const Vector d0=getSeparation(pos[1],pos[0]);
+  const Vector d1=getSeparation(pos[2],pos[1]);
+  const Vector d2=getSeparation(pos[3],pos[2]);
 
   Vector dd0,dd1,dd2; PLMD::Torsion t;
   double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
 
-  myatoms.addAtomsDerivatives(0, 0, dd0);
-  myatoms.addAtomsDerivatives(0, 1, dd1-dd0);
-  myatoms.addAtomsDerivatives(0, 2, dd2-dd1);
-  myatoms.addAtomsDerivatives(0, 3, -dd2);
+  addAtomsDerivatives(0, 0, dd0, myvals);
+  addAtomsDerivatives(0, 1, dd1-dd0, myvals);
+  addAtomsDerivatives(0, 2, dd2-dd1, myvals);
+  addAtomsDerivatives(0, 3, -dd2, myvals);
 
-  myatoms.addBoxDerivatives (0, -(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
-  myatoms.setValue( 0, value );
+  addBoxDerivatives (0, -(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)), myvals);
+  setValue( 0, value, myvals );
 }
 
 }

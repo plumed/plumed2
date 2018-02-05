@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
-#include "AtomValuePack.h"
 #include "tools/Torsion.h"
 #include "core/ActionRegister.h"
 
@@ -90,7 +89,7 @@ public:
                               std::vector<std::vector<std::string> >& actions  );
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
-  void compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
@@ -118,18 +117,18 @@ DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
   addValueWithDerivatives(); setNotPeriodic(); checkRead();
 }
 
-void DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  const Vector d10=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
-  const Vector d11=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
-  const Vector d12=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
+void DihedralCorrelation::compute( const std::vector<Vector>& pos, MultiValue& myvals ) const {
+  const Vector d10=getSeparation(pos[1],pos[0]);
+  const Vector d11=getSeparation(pos[2],pos[1]);
+  const Vector d12=getSeparation(pos[3],pos[2]);
 
   Vector dd10,dd11,dd12;
   PLMD::Torsion t1;
   const double phi1  = t1.compute(d10,d11,d12,dd10,dd11,dd12);
 
-  const Vector d20=getSeparation(myatoms.getPosition(5),myatoms.getPosition(4));
-  const Vector d21=getSeparation(myatoms.getPosition(6),myatoms.getPosition(5));
-  const Vector d22=getSeparation(myatoms.getPosition(7),myatoms.getPosition(6));
+  const Vector d20=getSeparation(pos[5],pos[4]);
+  const Vector d21=getSeparation(pos[6],pos[5]);
+  const Vector d22=getSeparation(pos[7],pos[6]);
 
   Vector dd20,dd21,dd22;
   PLMD::Torsion t2;
@@ -144,22 +143,22 @@ void DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myatom
   dd11 *= dval;
   dd12 *= dval;
   // And add
-  myatoms.addAtomsDerivatives(0, 0, dd10 );
-  myatoms.addAtomsDerivatives(0, 1, dd11-dd10 );
-  myatoms.addAtomsDerivatives(0, 2, dd12-dd11 );
-  myatoms.addAtomsDerivatives(0, 3, -dd12 );
-  myatoms.addBoxDerivatives  (0, -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)));
+  addAtomsDerivatives(0, 0, dd10, myvals );
+  addAtomsDerivatives(0, 1, dd11-dd10, myvals );
+  addAtomsDerivatives(0, 2, dd12-dd11, myvals );
+  addAtomsDerivatives(0, 3, -dd12, myvals );
+  addBoxDerivatives  (0, -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)), myvals);
   // Derivative wrt phi2
   dd20 *= -dval;
   dd21 *= -dval;
   dd22 *= -dval;
   // And add
-  myatoms.addAtomsDerivatives(0, 4, dd20 );
-  myatoms.addAtomsDerivatives(0, 5, dd21-dd20 );
-  myatoms.addAtomsDerivatives(0, 6, dd22-dd21 );
-  myatoms.addAtomsDerivatives(0, 7, -dd22 );
-  myatoms.addBoxDerivatives(0, -(extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)));
-  myatoms.setValue( 0, value );
+  addAtomsDerivatives(0, 4, dd20, myvals );
+  addAtomsDerivatives(0, 5, dd21-dd20, myvals);
+  addAtomsDerivatives(0, 6, dd22-dd21, myvals);
+  addAtomsDerivatives(0, 7, -dd22, myvals);
+  addBoxDerivatives(0, -(extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)), myvals);
+  setValue( 0, value, myvals );
 }
 
 }
