@@ -60,6 +60,7 @@ on the position) is computed on the geometric center of the group.
 class Dipole : public Colvar {
   vector<AtomNumber> ga_lista;
   bool components;
+  bool nopbc;
 public:
   explicit Dipole(const ActionOptions&);
   virtual void calculate();
@@ -75,7 +76,6 @@ void Dipole::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("x","COMPONENTS","the x-component of the dipole");
   keys.addOutputComponent("y","COMPONENTS","the y-component of the dipole");
   keys.addOutputComponent("z","COMPONENTS","the z-component of the dipole");
-  keys.remove("NOPBC");
 }
 
 Dipole::Dipole(const ActionOptions&ao):
@@ -84,6 +84,7 @@ Dipole::Dipole(const ActionOptions&ao):
 {
   parseAtomList("GROUP",ga_lista);
   parseFlag("COMPONENTS",components);
+  parseFlag("NOPBC",nopbc);
   checkRead();
   if(components) {
     addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
@@ -98,12 +99,16 @@ Dipole::Dipole(const ActionOptions&ao):
     log.printf("  %d", ga_lista[i].serial());
   }
   log.printf("  \n");
+  if(nopbc) log.printf("  without periodic boundary conditions\n");
+  else      log.printf("  using periodic boundary conditions\n");
+
   requestAtoms(ga_lista);
 }
 
 // calculator
 void Dipole::calculate()
 {
+  if(!nopbc) makeWhole();
   double ctot=0.;
   unsigned N=getNumberOfAtoms();
   vector<double> charges(N);

@@ -36,7 +36,6 @@ namespace colvar {
 
 void PathMSDBase::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
-  keys.remove("NOPBC");
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
   keys.add("compulsory","REFERENCE","the pdb is needed to provide the various milestones");
   keys.add("optional","NEIGH_SIZE","size of the neighbor list");
@@ -48,6 +47,7 @@ void PathMSDBase::registerKeywords(Keywords& keys) {
 
 PathMSDBase::PathMSDBase(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
+  nopbc(false),
   neigh_size(-1),
   neigh_stride(-1),
   epsilonClose(-1),
@@ -63,6 +63,8 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   parse("EPSILON", epsilonClose);
   parse("LOG-CLOSE", logClose);
   parse("DEBUG-CLOSE", debugClose);
+  parseFlag("NOPBC",nopbc);
+
 
   // open the file
   FILE* fp=fopen(reference.c_str(),"r");
@@ -122,6 +124,9 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   rotationRefClose.resize(nframes);
   savedIndices = vector<unsigned>(nframes);
 
+  if(nopbc) log.printf("  without periodic boundary conditions\n");
+  else      log.printf("  using periodic boundary conditions\n");
+
 }
 
 PathMSDBase::~PathMSDBase() {
@@ -132,6 +137,8 @@ void PathMSDBase::calculate() {
   if(neigh_size>0 && getExchangeStep()) error("Neighbor lists for this collective variable are not compatible with replica exchange, sorry for that!");
 
   //log.printf("NOW CALCULATE! \n");
+
+  if(!nopbc) makeWhole();
 
 
   // resize the list to full

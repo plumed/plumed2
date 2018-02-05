@@ -58,6 +58,8 @@ class PathMSDBase : public Colvar {
     }
   };
 
+  bool nopbc;
+
   double lambda;
   int neigh_size;
   int neigh_stride;

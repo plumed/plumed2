@@ -39,6 +39,7 @@ class RMSD : public Colvar {
   ReferenceValuePack mypack;
   std::unique_ptr<PLMD::RMSDBase> rmsd;
   bool squared;
+  bool nopbc;
 
 public:
   explicit RMSD(const ActionOptions&);
@@ -153,11 +154,14 @@ void RMSD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
   keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
-  keys.remove("NOPBC");
 }
 
 RMSD::RMSD(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),myvals(1,0), mypack(0,0,myvals),squared(false)
+  PLUMED_COLVAR_INIT(ao),
+  myvals(1,0),
+  mypack(0,0,myvals),
+  squared(false),
+  nopbc(false)
 {
   string reference;
   parse("REFERENCE",reference);
@@ -165,6 +169,7 @@ RMSD::RMSD(const ActionOptions&ao):
   type.assign("SIMPLE");
   parse("TYPE",type);
   parseFlag("SQUARED",squared);
+  parseFlag("NOPBC",nopbc);
 
   checkRead();
 
@@ -191,11 +196,14 @@ RMSD::RMSD(const ActionOptions&ao):
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
   log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
+  if(nopbc) log.printf("  without periodic boundary conditions\n");
+  else      log.printf("  using periodic boundary conditions\n");
 }
 
 
 // calculator
 void RMSD::calculate() {
+  if(!nopbc) makeWhole();
   double r=rmsd->calculate( getPositions(), mypack, squared );
 
   setValue(r);
