@@ -978,7 +978,12 @@ void CS2Backbone::calculate()
 
   double score = 0.;
 
+  unsigned nt=OpenMP::getNumThreads();
+  if(nt*stride*10>chemicalshifts.size()) nt=chemicalshifts.size()/stride/10;
+  if(nt==0) nt=1;
+
   // a single loop over all chemical shifts
+  #pragma omp parallel for reduction(+:score) num_threads(nt)
   for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
     const unsigned kdx=cs*max_cs_atoms;
     const ChemicalShift *myfrag = &chemicalshifts[cs];
@@ -1302,6 +1307,7 @@ void CS2Backbone::calculate()
   /* Metainference */
   if(getDoScore()) {
     score = getScore();
+    #pragma omp parallel for num_threads(nt)
     for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
       const unsigned kdx=cs*max_cs_atoms;
       const double fact = getMetaDer(cs);
@@ -1343,7 +1349,6 @@ void CS2Backbone::calculate()
 void CS2Backbone::update_neighb() {
   max_cs_atoms=0;
   // cycle over chemical shifts
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
     const unsigned boxsize = getNumberOfAtoms();
     chemicalshifts[cs].box_nb.clear();
