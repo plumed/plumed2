@@ -396,25 +396,25 @@ private:
 
 class CS2Backbone : public MetainferenceBase {
   struct ChemicalShift {
-    double exp_cs;  // a reference chemical shifts
-    Value *comp;  // a pointer to the component
-    unsigned res_kind;  // residue type (STD/GLY/PRO)
-    unsigned atm_kind;  // nuclues (HA/CA/CB/CO/NH/HN)
-    unsigned res_type_prev;  // previuos residue (ALA/VAL/..)
-    unsigned res_type_curr;  // current residue (ALA/VAL/..)
-    unsigned res_type_next;  // next residue (ALA/VAL/..)
-    string res_name;
-    string nucleus;
-    bool has_chi1;
-    unsigned csatoms;
-    unsigned totcsatoms;
-    unsigned res_num;
-    unsigned ipos; // index of the atom for which we are calculating the chemical shifts
-    vector<unsigned> bb;
-    vector<unsigned> side_chain;  // atoms for the current sidechain
-    vector<int> xd1;   // additional couple of atoms
-    vector<int> xd2;   // additional couple of atoms
-    vector<unsigned> box_nb;  // non-bonded atoms
+    double exp_cs;              // a reference chemical shifts
+    Value *comp;                // a pointer to the component
+    unsigned res_kind;          // residue type (STD/GLY/PRO)
+    unsigned atm_kind;          // nuclues (HA/CA/CB/CO/NH/HN)
+    unsigned res_type_prev;     // previuos residue (ALA/VAL/..)
+    unsigned res_type_curr;     // current residue (ALA/VAL/..)
+    unsigned res_type_next;     // next residue (ALA/VAL/..)
+    string res_name;            // residue name
+    string nucleus;             // chemical shift
+    bool has_chi1;              // does we have a chi1
+    unsigned csatoms;           // fixed number of atoms used
+    unsigned totcsatoms;        // number of atoms used
+    unsigned res_num;           // residue number
+    unsigned ipos;              // index of the atom for which we are calculating the chemical shifts
+    vector<unsigned> bb;        // atoms for the previous, current and next backbone
+    vector<unsigned> side_chain;// atoms for the current sidechain
+    vector<int> xd1;            // additional couple of atoms
+    vector<int> xd2;            // additional couple of atoms
+    vector<unsigned> box_nb;    // non-bonded atoms
 
     ChemicalShift():
       exp_cs(0.),
@@ -445,18 +445,20 @@ class CS2Backbone : public MetainferenceBase {
     unsigned numAtoms; // number of ring members (5 or 6)
     Vector position;   // center of ring coordinates
     Vector normVect;   // ring plane normal vector
-    Vector n1, n2;     // two atom plane normal vectors used to compute ring plane normal
-    Vector g[6];       // vector of the vectors used to calculate n1,n2
+    Vector g[6];       // vector of the vectors used for normVect
     double lengthN2;   // square of length of normVect
     double lengthNV;   // length of normVect
     RingInfo():
-      rtype(0),numAtoms(0),
-      lengthN2(NAN),lengthNV(NAN)
-    {for(unsigned i=0; i<6; i++) atom[i]=0;}
+      rtype(0),
+      numAtoms(0),
+      lengthN2(NAN),
+      lengthNV(NAN)
+    {
+      for(unsigned i=0; i<6; i++) atom[i]=0;
+    }
   };
 
   enum aa_t {ALA, ARG, ASN, ASP, CYS, GLN, GLU, GLY, HIS, ILE, LEU, LYS, MET, PHE, PRO, SER, THR, TRP, TYR, VAL, UNK};
-  enum atom_t {D_C, D_H, D_N, D_O, D_S, D_C2, D_N2, D_O2};
   enum sequence_t {Np, CAp, HAp, Cp, Op, Nc, Hc, CAc, HAc, Cc, Oc, Nn, Hn, CAn, HAn, Cn, CBc, CGc};
 
   CS2BackboneDB    db;
@@ -813,6 +815,7 @@ void CS2Backbone::init_cs(const string &file, const string &nucl, const PDB &pdb
 
 // this assigns an atom-type to each atom of the pdb
 void CS2Backbone::init_types(const PDB &pdb) {
+  enum atom_t {D_C, D_H, D_N, D_O, D_S, D_C2, D_N2, D_O2};
   vector<AtomNumber> aa = pdb.getAtomNumbers();
   for(unsigned i=0; i<aa.size(); i++) {
     unsigned frag = pdb.getResidueNumber(aa[i]);
@@ -1162,10 +1165,10 @@ void CS2Backbone::calculate()
 
       shift += cc*u*idL3;
 
-      const double fUU    = -6*dn*inL2;
+      const double fUU    = -6.*dn*inL2;
       const double fUQ    = fUU/dL;
       const Vector gradUQ = fUQ*(dL2*n - dn*d);
-      const Vector gradVQ = (3*dL*u)*d;
+      const Vector gradVQ = (3.*dL*u)*d;
 
       const double fact   = cc*idL3*idL3;
       cs_derivs[kdx+0] += fact*(gradUQ - gradVQ);
@@ -1262,9 +1265,14 @@ void CS2Backbone::calculate()
     if(camshift) {
       score += (all_shifts[cs] - chemicalshifts[cs].exp_cs)*(all_shifts[cs] - chemicalshifts[cs].exp_cs)/camshift_sigma2[chemicalshifts[cs].atm_kind];
       double fact = 2.0*(all_shifts[cs] - chemicalshifts[cs].exp_cs)/camshift_sigma2[chemicalshifts[cs].atm_kind];
-      for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) aa_derivs[cs_atoms[kdx+i]] += cs_derivs[kdx+i]*fact;
+      for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) {
+        aa_derivs[cs_atoms[kdx+i]] += cs_derivs[kdx+i]*fact;
+      }
     }
   }
+
+  ++box_count;
+  if(box_count == box_nupdate) box_count = 0;
 
   if(!camshift) {
     if(!serial) {
@@ -1280,12 +1288,12 @@ void CS2Backbone::calculate()
       if(getDoScore()) setCalcData(cs, all_shifts[cs]);
       else {
         const unsigned kdx=cs*max_cs_atoms;
-        Tensor virial;
+        Tensor csvirial;
         for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) {
           setAtomsDerivatives(comp,cs_atoms[kdx+i],cs_derivs[kdx+i]);
-          virial-=Tensor(getPosition(cs_atoms[kdx+i]),cs_derivs[kdx+i]);
+          csvirial-=Tensor(getPosition(cs_atoms[kdx+i]),cs_derivs[kdx+i]);
         }
-        setBoxDerivatives(comp,virial);
+        setBoxDerivatives(comp,csvirial);
       }
     }
     if(!getDoScore()) return;
@@ -1308,6 +1316,15 @@ void CS2Backbone::calculate()
     if(camshift) comm.Sum(&score, 1);
   }
 
+  Tensor virial;
+  for(unsigned i=rank; i<getNumberOfAtoms(); i+=stride) {
+    virial += Tensor(getPosition(i), aa_derivs[i]);
+  }
+
+  if(!serial) {
+    comm.Sum(&virial[0][0], 9);
+  }
+
   /* calculate final derivatives */
   Value* val;
   if(getDoScore()) {
@@ -1318,16 +1335,9 @@ void CS2Backbone::calculate()
     setValue(score);
   }
 
-  Tensor virial;
   /* at this point we cycle over all atoms */
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    setAtomsDerivatives(val, i,  aa_derivs[i]);
-    virial-=Tensor(getPosition(i), aa_derivs[i]);
-  }
-  setBoxDerivatives(val,virial);
-
-  ++box_count;
-  if(box_count == box_nupdate) box_count = 0;
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives(val, i,  aa_derivs[i]);
+  setBoxDerivatives(val,-virial);
 }
 
 void CS2Backbone::update_neighb() {
@@ -1361,7 +1371,7 @@ void CS2Backbone::compute_ring_parameters() {
       ringInfo[i].g[3] = delta(getPosition(ringInfo[i].atom[1]),getPosition(ringInfo[i].atom[5]));
       ringInfo[i].g[4] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
       ringInfo[i].g[5] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[1]));
-      vector<Vector> a(size);
+      vector<Vector> a(6);
       a[0] = getPosition(ringInfo[i].atom[0]);
       // ring center
       Vector midP = a[0];
@@ -1369,15 +1379,11 @@ void CS2Backbone::compute_ring_parameters() {
         a[j] = getPosition(ringInfo[i].atom[j]);
         midP += a[j];
       }
-      midP /= (double) size;
-      ringInfo[i].position = midP;
-      // compute normal vector to plane containing first three atoms in array
-      ringInfo[i].n1 = crossProduct(delta(a[0],a[4]), delta(a[0],a[2]));
-      // compute normal vector to plane containing last three atoms in array
-      // NB: third atom of five-membered ring used for both computations above
-      ringInfo[i].n2 = crossProduct(delta(a[3],a[1]), delta(a[3],a[5]));
-      // ring plane normal vector is average of n1 and n2
-      ringInfo[i].normVect = 0.5*(ringInfo[i].n1 + ringInfo[i].n2);
+      ringInfo[i].position = midP/6.;
+      // compute normal vector to plane
+      Vector n1 = crossProduct(delta(a[0],a[4]), delta(a[0],a[2]));
+      Vector n2 = crossProduct(delta(a[3],a[1]), delta(a[3],a[5]));
+      ringInfo[i].normVect = 0.5*(n1 + n2);
     }  else {
       ringInfo[i].g[0] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[2]));
       ringInfo[i].g[1] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[3]));
@@ -1387,12 +1393,9 @@ void CS2Backbone::compute_ring_parameters() {
         a[j] = getPosition(ringInfo[i].atom[j]);
       }
       // ring center
-      Vector midP = (a[0]+a[2]+a[3])/3.;
-      ringInfo[i].position = midP;
-      // compute normal vector to plane containing first three atoms in array
-      ringInfo[i].n1 = crossProduct(delta(a[0],a[3]), delta(a[0],a[2]));
-      // ring plane normal vector is average of n1 and n2
-      ringInfo[i].normVect = ringInfo[i].n1;
+      ringInfo[i].position = (a[0]+a[2]+a[3])/3.;
+      // ring plane normal vector
+      ringInfo[i].normVect = crossProduct(delta(a[0],a[3]), delta(a[0],a[2]));
 
     }
     // calculate squared length and length of normal vector
