@@ -216,7 +216,6 @@ void NOE::calculate()
     double noe=0;
     unsigned index=0;
     for(unsigned k=0; k<i; k++) index+=nga[k];
-    const double c_aver=1./static_cast<double>(nga[i]);
     string num; Tools::convert(i,num);
     Value* val=getPntrToComponent("noe_"+num);
     // cycle over equivalent atoms
@@ -231,11 +230,9 @@ void NOE::calculate()
       const double ir2=1./distance.modulo2();
       const double ir6=ir2*ir2*ir2;
       const double ir8=6*ir6*ir2;
-      const double tmpir6=c_aver*ir6;
-      const double tmpir8=c_aver*ir8;
 
-      noe += tmpir6;
-      deriv[index+j] = tmpir8*distance;
+      noe += ir6;
+      deriv[index+j] = ir8*distance;
       if(!getDoScore()) {
         dervir += Tensor(distance, deriv[index+j]);
         setAtomsDerivatives(val, i0,  deriv[index+j]);
