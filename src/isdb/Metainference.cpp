@@ -801,7 +801,7 @@ double Metainference::getEnergySP(const vector<double> &mean, const vector<doubl
   }
   // add one single Jeffrey's prior and one normalisation per data point
   ene += 0.5*std::log(sss) + static_cast<double>(narg)*0.5*std::log(0.5*M_PI*M_PI/ss2);
-  if(doscale_)  ene += 0.5*std::log(sss);
+  if(doscale_ || doregres_zero_) ene += 0.5*std::log(sss);
   if(dooffset_) ene += 0.5*std::log(sss);
   return kbt_ * ene;
 }
@@ -821,7 +821,7 @@ double Metainference::getEnergySPE(const vector<double> &mean, const vector<doub
       const double dev = scale*mean[i]-parameters[i]+offset;
       const double a2  = 0.5*dev*dev + ss2;
       ene += 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2/(1.0-exp(-a2/sm2)));
-      if(doscale_)  ene += 0.5*std::log(sss);
+      if(doscale_ || doregres_zero_)  ene += 0.5*std::log(sss);
       if(dooffset_) ene += 0.5*std::log(sss);
     }
   }
@@ -849,7 +849,7 @@ double Metainference::getEnergyMIGEN(const vector<double> &mean, const vector<do
       const double normm         = -0.5*std::log(0.5/M_PI*inv_sm2);
       const double jeffreys      = -0.5*std::log(2.*inv_sb2);
       ene += 0.5*devb*devb*inv_sb2 + 0.5*devm*devm*inv_sm2 + normb + normm + jeffreys;
-      if(doscale_)  ene += jeffreys;
+      if(doscale_ || doregres_zero_)  ene += jeffreys;
       if(dooffset_) ene += jeffreys;
     }
   }
@@ -876,7 +876,7 @@ double Metainference::getEnergyGJ(const vector<double> &mean, const vector<doubl
   const double jeffreys = -0.5*std::log(2.*inv_sss);
   // add Jeffrey's prior in case one sigma for all data points + one normalisation per datapoint
   ene += jeffreys + static_cast<double>(narg)*normalisation;
-  if(doscale_)  ene += jeffreys;
+  if(doscale_ || doregres_zero_)  ene += jeffreys;
   if(dooffset_) ene += jeffreys;
 
   return kbt_ * ene;
@@ -899,7 +899,7 @@ double Metainference::getEnergyGJE(const vector<double> &mean, const vector<doub
       const double normalisation = -0.5*std::log(0.5/M_PI*inv_s2);
       const double jeffreys      = -0.5*std::log(2.*inv_sss);
       ene += 0.5*dev*dev*inv_s2 + normalisation + jeffreys;
-      if(doscale_)  ene += jeffreys;
+      if(doscale_ || doregres_zero_)  ene += jeffreys;
       if(dooffset_) ene += jeffreys;
     }
   }
