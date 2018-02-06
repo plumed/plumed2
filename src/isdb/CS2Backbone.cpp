@@ -658,7 +658,9 @@ void CS2Backbone::init_cs(const string &file, const string &nucl, const PDB &pdb
       } else begin=1;
       continue;
     }
-    int resnum = atoi(tok.c_str());
+    int ro = atoi(tok.c_str());
+    if(ro<0) plumed_merror("Residue numbers should be positive\n");
+    unsigned resnum = static_cast<unsigned> (ro);
     tok = *iter;
     ++iter;
     double cs = atof(tok.c_str());
@@ -976,303 +978,292 @@ void CS2Backbone::calculate()
     rank   = 0;
   }
 
-  double score = 0.;
-
   unsigned nt=OpenMP::getNumThreads();
   if(nt*stride*10>chemicalshifts.size()) nt=chemicalshifts.size()/stride/10;
   if(nt==0) nt=1;
 
   // a single loop over all chemical shifts
-  #pragma omp parallel for reduction(+:score) num_threads(nt)
-  for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
-    const unsigned kdx=cs*max_cs_atoms;
-    const ChemicalShift *myfrag = &chemicalshifts[cs];
-    const unsigned aa_kind = myfrag->res_kind;
-    const unsigned at_kind = myfrag->atm_kind;
-    // Common constant and AATYPE
-    const double * CONSTAACURR = db.CONSTAACURR(aa_kind,at_kind);
-    const double * CONSTAANEXT = db.CONSTAANEXT(aa_kind,at_kind);
-    const double * CONSTAAPREV = db.CONSTAAPREV(aa_kind,at_kind);
+  #pragma omp parallel num_threads(nt)
+  {
+    #pragma omp for
+    for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
+      const unsigned kdx=cs*max_cs_atoms;
+      const ChemicalShift *myfrag = &chemicalshifts[cs];
+      const unsigned aa_kind = myfrag->res_kind;
+      const unsigned at_kind = myfrag->atm_kind;
 
-    double shift = CONSTAAPREV[myfrag->res_type_prev] +
-                   CONSTAACURR[myfrag->res_type_curr] +
-                   CONSTAANEXT[myfrag->res_type_next];
+      double shift = db.CONSTAAPREV(aa_kind,at_kind)[myfrag->res_type_prev] +
+                     db.CONSTAACURR(aa_kind,at_kind)[myfrag->res_type_curr] +
+                     db.CONSTAANEXT(aa_kind,at_kind)[myfrag->res_type_next];
 
-    const unsigned ipos = myfrag->ipos;
-    cs_atoms[kdx+0] = ipos;
-    unsigned atom_counter = 1;
+      const unsigned ipos = myfrag->ipos;
+      cs_atoms[kdx+0] = ipos;
+      unsigned atom_counter = 1;
 
-    //BACKBONE (PREV CURR NEXT)
-    const double * CONST_BB2 = db.CONST_BB2(aa_kind,at_kind);
-    const unsigned bbsize = 16;
-    for(unsigned q=0; q<bbsize; q++) {
-      const double cb2q = CONST_BB2[q];
-      if(cb2q==0.) continue;
-      const unsigned jpos = myfrag->bb[q];
-      if(ipos==jpos) continue;
-      const Vector distance = delta(getPosition(jpos),getPosition(ipos));
-      const double d = distance.modulo();
-      const double fact = cb2q/d;
+      //BACKBONE (PREV CURR NEXT)
+      const double * CONST_BB2 = db.CONST_BB2(aa_kind,at_kind);
+      const unsigned bbsize = 16;
+      for(unsigned q=0; q<bbsize; q++) {
+        const double cb2q = CONST_BB2[q];
+        if(cb2q==0.) continue;
+        const unsigned jpos = myfrag->bb[q];
+        if(ipos==jpos) continue;
+        const Vector distance = delta(getPosition(jpos),getPosition(ipos));
+        const double d = distance.modulo();
+        const double fact = cb2q/d;
 
-      shift += cb2q*d;
-      const Vector der = fact*distance;
-
-      cs_derivs[kdx+0] += der;
-      cs_derivs[kdx+q+atom_counter] = -der;
-      cs_atoms[kdx+q+atom_counter] = jpos;
-    }
-
-    atom_counter += bbsize;
-
-    //DIHEDRAL ANGLES
-    const double *CO_DA = db.CO_DA(aa_kind,at_kind);
-    //Phi
-    {
-      const Vector d0 = delta(getPosition(myfrag->bb[Nc]), getPosition(myfrag->bb[Cp]));
-      const Vector d1 = delta(getPosition(myfrag->bb[CAc]), getPosition(myfrag->bb[Nc]));
-      const Vector d2 = delta(getPosition(myfrag->bb[Cc]), getPosition(myfrag->bb[CAc]));
-      Torsion t;
-      Vector dd0, dd1, dd2;
-      const double t_phi = t.compute(d0,d1,d2,dd0,dd1,dd2);
-      const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,0);
-      const double val1 = 3.*t_phi+PARS_DA[3];
-      const double val2 = t_phi+PARS_DA[4];
-      shift += CO_DA[0]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
-      const double fact = -CO_DA[0]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
-
-      cs_derivs[kdx+Cp+1] += fact*dd0;
-      cs_derivs[kdx+Nc+1] += fact*(dd1-dd0);
-      cs_derivs[kdx+CAc+1]+= fact*(dd2-dd1);
-      cs_derivs[kdx+Cc+1] += -fact*dd2;
-      cs_atoms[kdx+Cp+1] = myfrag->bb[Cp];
-      cs_atoms[kdx+Nc+1] = myfrag->bb[Nc];
-      cs_atoms[kdx+CAc+1]= myfrag->bb[CAc];
-      cs_atoms[kdx+Cc+1] = myfrag->bb[Cc];
-    }
-
-    //Psi
-    {
-      const Vector d0 = delta(getPosition(myfrag->bb[CAc]), getPosition(myfrag->bb[Nc]));
-      const Vector d1 = delta(getPosition(myfrag->bb[Cc]), getPosition(myfrag->bb[CAc]));
-      const Vector d2 = delta(getPosition(myfrag->bb[Nn]), getPosition(myfrag->bb[Cc]));
-      Torsion t;
-      Vector dd0, dd1, dd2;
-      const double t_psi = t.compute(d0,d1,d2,dd0,dd1,dd2);
-      const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,1);
-      const double val1 = 3.*t_psi+PARS_DA[3];
-      const double val2 = t_psi+PARS_DA[4];
-      shift += CO_DA[1]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
-      const double fact = -CO_DA[1]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
-
-      cs_derivs[kdx+Nc+1] += fact*dd0;
-      cs_derivs[kdx+CAc+1] += fact*(dd1-dd0);
-      cs_derivs[kdx+Cc+1] += fact*(dd2-dd1);
-      cs_derivs[kdx+Nn+1] += -fact*dd2;
-      cs_atoms[kdx+Nc+1] = myfrag->bb[Nc];
-      cs_atoms[kdx+CAc+1]= myfrag->bb[CAc];
-      cs_atoms[kdx+Cc+1] = myfrag->bb[Cc];
-      cs_atoms[kdx+Nn+1] = myfrag->bb[Nn];
-    }
-
-    //Chi
-    if(myfrag->has_chi1) {
-      const Vector d0 = delta(getPosition(myfrag->bb[CAc]), getPosition(myfrag->bb[Nc]));
-      const Vector d1 = delta(getPosition(myfrag->bb[CBc]), getPosition(myfrag->bb[CAc]));
-      const Vector d2 = delta(getPosition(myfrag->bb[CGc]), getPosition(myfrag->bb[CBc]));
-      Torsion t;
-      Vector dd0, dd1, dd2;
-      const double t_chi1 = t.compute(d0,d1,d2,dd0,dd1,dd2);
-      const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,2);
-      const double val1 = 3.*t_chi1+PARS_DA[3];
-      const double val2 = t_chi1+PARS_DA[4];
-      shift += CO_DA[2]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
-      const double fact = -CO_DA[2]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
-
-      cs_derivs[kdx+Nc+1] += fact*dd0;
-      cs_derivs[kdx+CAc+1] += fact*(dd1-dd0);
-      cs_derivs[kdx+CBc+1] += fact*(dd2-dd1);
-      cs_derivs[kdx+CGc+1] += -fact*dd2;
-      cs_atoms[kdx+Nc+1]  = myfrag->bb[Nc];
-      cs_atoms[kdx+CAc+1] = myfrag->bb[CAc];
-      cs_atoms[kdx+CBc+1] = myfrag->bb[CBc];
-      cs_atoms[kdx+CGc+1] = myfrag->bb[CGc];
-
-      atom_counter += 2;
-    }
-    //END OF DIHE
-
-    //SIDE CHAIN
-    const double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind,myfrag->res_type_curr);
-    const unsigned sidsize = myfrag->side_chain.size();
-    for(unsigned q=0; q<sidsize; q++) {
-      const double cs2q = CONST_SC2[q];
-      if(cs2q==0.) continue;
-      const unsigned jpos = myfrag->side_chain[q];
-      if(ipos==jpos) continue;
-      const Vector distance = delta(getPosition(jpos),getPosition(ipos));
-      const double d = distance.modulo();
-      const double fact = cs2q/d;
-
-      shift += cs2q*d;
-      const Vector der = fact*distance;
-      cs_derivs[kdx+0] += der;
-      cs_derivs[kdx+q+atom_counter] = -der;
-      cs_atoms[kdx+q+atom_counter] = jpos;
-    }
-
-    atom_counter += sidsize;
-
-    //EXTRA DIST
-    const double * CONST_XD  = db.CONST_XD(aa_kind,at_kind);
-    const unsigned xdsize=myfrag->xd1.size();
-    for(unsigned q=0; q<xdsize; q++) {
-      const double cxdq = CONST_XD[q];
-      if(cxdq==0.) continue;
-      if(myfrag->xd1[q]==-1||myfrag->xd2[q]==-1) continue;
-      const Vector distance = delta(getPosition(myfrag->xd1[q]),getPosition(myfrag->xd2[q]));
-      const double d = distance.modulo();
-      const double fact = cxdq/d;
-
-      shift += cxdq*d;
-      const Vector der = fact*distance;
-      cs_derivs[kdx+2*q+atom_counter  ] = der;
-      cs_derivs[kdx+2*q+atom_counter+1] = -der;
-      cs_atoms[kdx+2*q+atom_counter] = myfrag->xd2[q];
-      cs_atoms[kdx+2*q+atom_counter+1] = myfrag->xd1[q];
-    }
-
-    atom_counter += 2*xdsize;
-
-    //RINGS
-    const double *rc = db.CO_RING(aa_kind,at_kind);
-    const unsigned rsize = ringInfo.size();
-    // cycle over the list of rings
-    for(unsigned q=0; q<rsize; q++) {
-      // compute angle from ring middle point to current atom position
-      // get distance vector from query atom to ring center and normal vector to ring plane
-      const Vector n   = ringInfo[q].normVect;
-      const double nL  = ringInfo[q].lengthNV;
-      const double inL2 = ringInfo[q].lengthN2;
-
-      const Vector d = delta(ringInfo[q].position, getPosition(ipos));
-      const double dL2 = d.modulo2();
-      double dL  = sqrt(dL2);
-      const double idL3 = 1./(dL2*dL);
-
-      const double dn    = dotProduct(d,n);
-      const double dn2   = dn*dn;
-      const double dLnL  = dL*nL;
-      const double dL_nL = dL/nL;
-
-      const double ang2 = dn2*inL2/dL2;
-      const double u    = 1.-3.*ang2;
-      const double cc   = rc[ringInfo[q].rtype];
-
-      shift += cc*u*idL3;
-
-      const double fUU    = -6.*dn*inL2;
-      const double fUQ    = fUU/dL;
-      const Vector gradUQ = fUQ*(dL2*n - dn*d);
-      const Vector gradVQ = (3.*dL*u)*d;
-
-      const double fact   = cc*idL3*idL3;
-      cs_derivs[kdx+0] += fact*(gradUQ - gradVQ);
-
-      const double fU       = fUU/nL;
-      double OneOverN = 1./6.;
-      if(ringInfo[q].numAtoms==5) OneOverN=1./3.;
-      const Vector factor2  = OneOverN*n;
-      const Vector factor4  = (OneOverN/dL_nL)*d;
-
-      const Vector gradV    = -OneOverN*gradVQ;
-
-      if(ringInfo[q].numAtoms==6) {
-        // update forces on ring atoms
-        for(unsigned at=0; at<6; at++) {
-          const Vector ab = crossProduct(d,ringInfo[q].g[at]);
-          const Vector c  = crossProduct(n,ringInfo[q].g[at]);
-          const Vector factor3 = 0.5*dL_nL*c;
-          const Vector factor1 = 0.5*ab;
-          const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
-          cs_derivs[kdx+at+atom_counter] = fact*(gradU - gradV);
-          cs_atoms[kdx+at+atom_counter] = ringInfo[q].atom[at];
-        }
-        atom_counter += 6;
-      }  else {
-        for(unsigned at=0; at<3; at++) {
-          const Vector ab = crossProduct(d,ringInfo[q].g[at]);
-          const Vector c  = crossProduct(n,ringInfo[q].g[at]);
-          const Vector factor3 = dL_nL*c;
-          const Vector factor1 = ab;
-          const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
-          cs_derivs[kdx+at+atom_counter] = fact*(gradU - gradV);
-        }
-        cs_atoms[kdx+atom_counter] = ringInfo[q].atom[0];
-        cs_atoms[kdx+atom_counter+1] = ringInfo[q].atom[2];
-        cs_atoms[kdx+atom_counter+2] = ringInfo[q].atom[3];
-        atom_counter += 3;
-      }
-    }
-    //END OF RINGS
-
-    //NON BOND
-    const double * CONST_CO_SPHERE3 = db.CO_SPHERE(aa_kind,at_kind,0);
-    const double * CONST_CO_SPHERE  = db.CO_SPHERE(aa_kind,at_kind,1);
-    const unsigned boxsize = myfrag->box_nb.size();
-    for(unsigned q=0; q<boxsize; q++) {
-      const unsigned jpos = myfrag->box_nb[q];
-      const Vector distance = delta(getPosition(jpos),getPosition(ipos));
-      const double d2 = distance.modulo2();
-
-      if(d2<cutOffDist2) {
-        double factor1  = sqrt(d2);
-        double dfactor1 = 1./factor1;
-        double factor3  = dfactor1*dfactor1*dfactor1;
-        double dfactor3 = -3.*factor3*dfactor1*dfactor1;
-
-        if(d2>cutOnDist2) {
-          const double af = cutOffDist2 - d2;
-          const double bf = cutOffDist2 - 3.*cutOnDist2 + 2.*d2;
-          const double cf = invswitch*af;
-          const double df = cf*af*bf;
-          factor1 *= df;
-          factor3 *= df;
-
-          const double d4  = d2*d2;
-          const double af1 = 15.*cutOnDist2*d2;
-          const double bf1 = -14.*d4;
-          const double cf1 = -3.*cutOffDist2*cutOnDist2 + cutOffDist2*d2;
-          const double df1 = af1+bf1+cf1;
-          dfactor1 *= cf*(cutOffDist4+df1);
-
-          const double af3 = +2.*cutOffDist2*cutOnDist2;
-          const double bf3 = d2*(cutOffDist2+cutOnDist2);
-          const double cf3 = -2.*d4;
-          const double df3 = (af3+bf3+cf3)*d2;
-          dfactor3 *= invswitch*(cutMixed+df3);
-        }
-
-        const unsigned t = type[jpos];
-        shift += factor1*CONST_CO_SPHERE[t] + factor3*CONST_CO_SPHERE3[t] ;
-        const double fact = dfactor1*CONST_CO_SPHERE[t]+dfactor3*CONST_CO_SPHERE3[t];
-        const Vector der  = fact*distance;
+        shift += cb2q*d;
+        const Vector der = fact*distance;
 
         cs_derivs[kdx+0] += der;
         cs_derivs[kdx+q+atom_counter] = -der;
         cs_atoms[kdx+q+atom_counter] = jpos;
       }
-    }
-    //END NON BOND
 
-    atom_counter += boxsize;
-    all_shifts[cs] = shift;
+      atom_counter += bbsize;
 
-    if(camshift) {
-      score += (all_shifts[cs] - chemicalshifts[cs].exp_cs)*(all_shifts[cs] - chemicalshifts[cs].exp_cs)/camshift_sigma2[chemicalshifts[cs].atm_kind];
-      double fact = 2.0*(all_shifts[cs] - chemicalshifts[cs].exp_cs)/camshift_sigma2[chemicalshifts[cs].atm_kind];
-      for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) {
-        aa_derivs[cs_atoms[kdx+i]] += cs_derivs[kdx+i]*fact;
+      //DIHEDRAL ANGLES
+      const double *CO_DA = db.CO_DA(aa_kind,at_kind);
+      //Phi
+      {
+        const Vector d0 = delta(getPosition(myfrag->bb[Nc]), getPosition(myfrag->bb[Cp]));
+        const Vector d1 = delta(getPosition(myfrag->bb[CAc]), getPosition(myfrag->bb[Nc]));
+        const Vector d2 = delta(getPosition(myfrag->bb[Cc]), getPosition(myfrag->bb[CAc]));
+        Torsion t;
+        Vector dd0, dd1, dd2;
+        const double t_phi = t.compute(d0,d1,d2,dd0,dd1,dd2);
+        const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,0);
+        const double val1 = 3.*t_phi+PARS_DA[3];
+        const double val2 = t_phi+PARS_DA[4];
+        shift += CO_DA[0]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
+        const double fact = -CO_DA[0]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
+
+        cs_derivs[kdx+Cp+1] += fact*dd0;
+        cs_derivs[kdx+Nc+1] += fact*(dd1-dd0);
+        cs_derivs[kdx+CAc+1]+= fact*(dd2-dd1);
+        cs_derivs[kdx+Cc+1] += -fact*dd2;
+        cs_atoms[kdx+Cp+1] = myfrag->bb[Cp];
+        cs_atoms[kdx+Nc+1] = myfrag->bb[Nc];
+        cs_atoms[kdx+CAc+1]= myfrag->bb[CAc];
+        cs_atoms[kdx+Cc+1] = myfrag->bb[Cc];
       }
+
+      //Psi
+      {
+        const Vector d0 = delta(getPosition(myfrag->bb[CAc]), getPosition(myfrag->bb[Nc]));
+        const Vector d1 = delta(getPosition(myfrag->bb[Cc]), getPosition(myfrag->bb[CAc]));
+        const Vector d2 = delta(getPosition(myfrag->bb[Nn]), getPosition(myfrag->bb[Cc]));
+        Torsion t;
+        Vector dd0, dd1, dd2;
+        const double t_psi = t.compute(d0,d1,d2,dd0,dd1,dd2);
+        const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,1);
+        const double val1 = 3.*t_psi+PARS_DA[3];
+        const double val2 = t_psi+PARS_DA[4];
+        shift += CO_DA[1]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
+        const double fact = -CO_DA[1]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
+
+        cs_derivs[kdx+Nc+1] += fact*dd0;
+        cs_derivs[kdx+CAc+1] += fact*(dd1-dd0);
+        cs_derivs[kdx+Cc+1] += fact*(dd2-dd1);
+        cs_derivs[kdx+Nn+1] += -fact*dd2;
+        cs_atoms[kdx+Nc+1] = myfrag->bb[Nc];
+        cs_atoms[kdx+CAc+1]= myfrag->bb[CAc];
+        cs_atoms[kdx+Cc+1] = myfrag->bb[Cc];
+        cs_atoms[kdx+Nn+1] = myfrag->bb[Nn];
+      }
+
+      //Chi
+      if(myfrag->has_chi1) {
+        const Vector d0 = delta(getPosition(myfrag->bb[CAc]), getPosition(myfrag->bb[Nc]));
+        const Vector d1 = delta(getPosition(myfrag->bb[CBc]), getPosition(myfrag->bb[CAc]));
+        const Vector d2 = delta(getPosition(myfrag->bb[CGc]), getPosition(myfrag->bb[CBc]));
+        Torsion t;
+        Vector dd0, dd1, dd2;
+        const double t_chi1 = t.compute(d0,d1,d2,dd0,dd1,dd2);
+        const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,2);
+        const double val1 = 3.*t_chi1+PARS_DA[3];
+        const double val2 = t_chi1+PARS_DA[4];
+        shift += CO_DA[2]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
+        const double fact = -CO_DA[2]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
+
+        cs_derivs[kdx+Nc+1] += fact*dd0;
+        cs_derivs[kdx+CAc+1] += fact*(dd1-dd0);
+        cs_derivs[kdx+CBc+1] += fact*(dd2-dd1);
+        cs_derivs[kdx+CGc+1] += -fact*dd2;
+        cs_atoms[kdx+Nc+1]  = myfrag->bb[Nc];
+        cs_atoms[kdx+CAc+1] = myfrag->bb[CAc];
+        cs_atoms[kdx+CBc+1] = myfrag->bb[CBc];
+        cs_atoms[kdx+CGc+1] = myfrag->bb[CGc];
+
+        atom_counter += 2;
+      }
+      //END OF DIHE
+
+      //SIDE CHAIN
+      const double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind,myfrag->res_type_curr);
+      const unsigned sidsize = myfrag->side_chain.size();
+      for(unsigned q=0; q<sidsize; q++) {
+        const double cs2q = CONST_SC2[q];
+        if(cs2q==0.) continue;
+        const unsigned jpos = myfrag->side_chain[q];
+        if(ipos==jpos) continue;
+        const Vector distance = delta(getPosition(jpos),getPosition(ipos));
+        const double d = distance.modulo();
+        const double fact = cs2q/d;
+
+        shift += cs2q*d;
+        const Vector der = fact*distance;
+        cs_derivs[kdx+0] += der;
+        cs_derivs[kdx+q+atom_counter] = -der;
+        cs_atoms[kdx+q+atom_counter] = jpos;
+      }
+
+      atom_counter += sidsize;
+
+      //EXTRA DIST
+      const double * CONST_XD  = db.CONST_XD(aa_kind,at_kind);
+      const unsigned xdsize=myfrag->xd1.size();
+      for(unsigned q=0; q<xdsize; q++) {
+        const double cxdq = CONST_XD[q];
+        if(cxdq==0.) continue;
+        if(myfrag->xd1[q]==-1||myfrag->xd2[q]==-1) continue;
+        const Vector distance = delta(getPosition(myfrag->xd1[q]),getPosition(myfrag->xd2[q]));
+        const double d = distance.modulo();
+        const double fact = cxdq/d;
+
+        shift += cxdq*d;
+        const Vector der = fact*distance;
+        cs_derivs[kdx+2*q+atom_counter  ] = der;
+        cs_derivs[kdx+2*q+atom_counter+1] = -der;
+        cs_atoms[kdx+2*q+atom_counter] = myfrag->xd2[q];
+        cs_atoms[kdx+2*q+atom_counter+1] = myfrag->xd1[q];
+      }
+
+      atom_counter += 2*xdsize;
+
+      //RINGS
+      const double *rc = db.CO_RING(aa_kind,at_kind);
+      const unsigned rsize = ringInfo.size();
+      // cycle over the list of rings
+      for(unsigned q=0; q<rsize; q++) {
+        // compute angle from ring middle point to current atom position
+        // get distance vector from query atom to ring center and normal vector to ring plane
+        const Vector n   = ringInfo[q].normVect;
+        const double nL  = ringInfo[q].lengthNV;
+        const double inL2 = ringInfo[q].lengthN2;
+
+        const Vector d = delta(ringInfo[q].position, getPosition(ipos));
+        const double dL2 = d.modulo2();
+        double dL  = sqrt(dL2);
+        const double idL3 = 1./(dL2*dL);
+
+        const double dn    = dotProduct(d,n);
+        const double dn2   = dn*dn;
+        const double dLnL  = dL*nL;
+        const double dL_nL = dL/nL;
+
+        const double ang2 = dn2*inL2/dL2;
+        const double u    = 1.-3.*ang2;
+        const double cc   = rc[ringInfo[q].rtype];
+
+        shift += cc*u*idL3;
+
+        const double fUU    = -6.*dn*inL2;
+        const double fUQ    = fUU/dL;
+        const Vector gradUQ = fUQ*(dL2*n - dn*d);
+        const Vector gradVQ = (3.*dL*u)*d;
+
+        const double fact   = cc*idL3*idL3;
+        cs_derivs[kdx+0] += fact*(gradUQ - gradVQ);
+
+        const double fU       = fUU/nL;
+        double OneOverN = 1./6.;
+        if(ringInfo[q].numAtoms==5) OneOverN=1./3.;
+        const Vector factor2  = OneOverN*n;
+        const Vector factor4  = (OneOverN/dL_nL)*d;
+
+        const Vector gradV    = -OneOverN*gradVQ;
+
+        if(ringInfo[q].numAtoms==6) {
+          // update forces on ring atoms
+          for(unsigned at=0; at<6; at++) {
+            const Vector ab = crossProduct(d,ringInfo[q].g[at]);
+            const Vector c  = crossProduct(n,ringInfo[q].g[at]);
+            const Vector factor3 = 0.5*dL_nL*c;
+            const Vector factor1 = 0.5*ab;
+            const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
+            cs_derivs[kdx+at+atom_counter] = fact*(gradU - gradV);
+            cs_atoms[kdx+at+atom_counter] = ringInfo[q].atom[at];
+          }
+          atom_counter += 6;
+        }  else {
+          for(unsigned at=0; at<3; at++) {
+            const Vector ab = crossProduct(d,ringInfo[q].g[at]);
+            const Vector c  = crossProduct(n,ringInfo[q].g[at]);
+            const Vector factor3 = dL_nL*c;
+            const Vector factor1 = ab;
+            const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
+            cs_derivs[kdx+at+atom_counter] = fact*(gradU - gradV);
+          }
+          cs_atoms[kdx+atom_counter] = ringInfo[q].atom[0];
+          cs_atoms[kdx+atom_counter+1] = ringInfo[q].atom[2];
+          cs_atoms[kdx+atom_counter+2] = ringInfo[q].atom[3];
+          atom_counter += 3;
+        }
+      }
+      //END OF RINGS
+
+      //NON BOND
+      const double * CONST_CO_SPHERE3 = db.CO_SPHERE(aa_kind,at_kind,0);
+      const double * CONST_CO_SPHERE  = db.CO_SPHERE(aa_kind,at_kind,1);
+      const unsigned boxsize = myfrag->box_nb.size();
+      for(unsigned q=0; q<boxsize; q++) {
+        const unsigned jpos = myfrag->box_nb[q];
+        const Vector distance = delta(getPosition(jpos),getPosition(ipos));
+        const double d2 = distance.modulo2();
+
+        if(d2<cutOffDist2) {
+          double factor1  = sqrt(d2);
+          double dfactor1 = 1./factor1;
+          double factor3  = dfactor1*dfactor1*dfactor1;
+          double dfactor3 = -3.*factor3*dfactor1*dfactor1;
+
+          if(d2>cutOnDist2) {
+            const double af = cutOffDist2 - d2;
+            const double bf = cutOffDist2 - 3.*cutOnDist2 + 2.*d2;
+            const double cf = invswitch*af;
+            const double df = cf*af*bf;
+            factor1 *= df;
+            factor3 *= df;
+
+            const double d4  = d2*d2;
+            const double af1 = 15.*cutOnDist2*d2;
+            const double bf1 = -14.*d4;
+            const double cf1 = -3.*cutOffDist2*cutOnDist2 + cutOffDist2*d2;
+            const double df1 = af1+bf1+cf1;
+            dfactor1 *= cf*(cutOffDist4+df1);
+
+            const double af3 = +2.*cutOffDist2*cutOnDist2;
+            const double bf3 = d2*(cutOffDist2+cutOnDist2);
+            const double cf3 = -2.*d4;
+            const double df3 = (af3+bf3+cf3)*d2;
+            dfactor3 *= invswitch*(cutMixed+df3);
+          }
+
+          const unsigned t = type[jpos];
+          shift += factor1*CONST_CO_SPHERE[t] + factor3*CONST_CO_SPHERE3[t] ;
+          const double fact = dfactor1*CONST_CO_SPHERE[t]+dfactor3*CONST_CO_SPHERE3[t];
+          const Vector der  = fact*distance;
+
+          cs_derivs[kdx+0] += der;
+          cs_derivs[kdx+q+atom_counter] = -der;
+          cs_atoms[kdx+q+atom_counter] = jpos;
+        }
+      }
+      //END NON BOND
+
+      atom_counter += boxsize;
+      all_shifts[cs] = shift;
     }
   }
 
@@ -1304,13 +1295,26 @@ void CS2Backbone::calculate()
     if(!getDoScore()) return;
   }
 
+  double score = 0.;
+
   /* Metainference */
   if(getDoScore()) {
     score = getScore();
-    #pragma omp parallel for num_threads(nt)
     for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
       const unsigned kdx=cs*max_cs_atoms;
       const double fact = getMetaDer(cs);
+      for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) {
+        aa_derivs[cs_atoms[kdx+i]] += cs_derivs[kdx+i]*fact;
+      }
+    }
+  }
+
+  /* camshift */
+  if(camshift) {
+    for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
+      const unsigned kdx=cs*max_cs_atoms;
+      score += (all_shifts[cs] - chemicalshifts[cs].exp_cs)*(all_shifts[cs] - chemicalshifts[cs].exp_cs)/camshift_sigma2[chemicalshifts[cs].atm_kind];
+      double fact = 2.0*(all_shifts[cs] - chemicalshifts[cs].exp_cs)/camshift_sigma2[chemicalshifts[cs].atm_kind];
       for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) {
         aa_derivs[cs_atoms[kdx+i]] += cs_derivs[kdx+i]*fact;
       }
