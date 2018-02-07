@@ -58,6 +58,7 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
 // Terminal groups
     else if(residuename=="ACE") return true;
     else if(residuename=="NME") return true;
+    else if(residuename=="NH2") return true;
 // Alternative residue names in common force fiels
     else if(residuename=="GLH") return true; // neutral GLU
     else if(residuename=="ASH") return true; // neutral ASP
@@ -141,7 +142,7 @@ void MolDataClass::getBackboneForResidue( const std::string& type, const unsigne
     } else if( residuename=="ACE") {
       atoms.resize(1);
       atoms[0]=mypdb.getNamedAtomFromResidue("C",residuenum);
-    } else if( residuename=="NME") {
+    } else if( residuename=="NME"||residuename=="NH2") {
       atoms.resize(1);
       atoms[0]=mypdb.getNamedAtomFromResidue("N",residuenum);
     } else {
@@ -170,6 +171,7 @@ bool MolDataClass::isTerminalGroup( const std::string& type, const std::string& 
   if( type=="protein" ) {
     if( residuename=="ACE" ) return true;
     else if( residuename=="NME" ) return true;
+    else if( residuename=="NH2" ) return true;
     else return false;
   } else {
     plumed_merror(type + " is not a valid molecule type");

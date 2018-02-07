@@ -139,7 +139,7 @@ PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=RESTRAINT STRIDE=100
 This third example show how to use chemical shifts to calculate a \ref METAINFERENCE score .
 
 \plumedfile
-cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ DOSCORE NDATA=24
+cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ DOSCORE
 csbias: BIASVALUE ARG=cs.score
 
 PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=CS.dat STRIDE=1000
@@ -207,7 +207,7 @@ public:
   void parse(const string &file, const double dscale) {
     ifstream in;
     in.open(file.c_str());
-    if(!in) plumed_merror("Unable to open CS2Backbone DB file " +file);
+    if(!in) plumed_merror("Unable to open DB file: " + file);
 
     unsigned c_kind = 0;
     unsigned c_atom = 0;
@@ -362,7 +362,7 @@ public:
       if(ok) continue;
 
       if(tok.size()) {
-        string str_err = "CS2Backbone DB WARNING: unrecognized token: " + tok[0];
+        string str_err = "DB WARNING: unrecognized token: " + tok[0];
         plumed_merror(str_err);
       }
     }
@@ -396,25 +396,25 @@ private:
 
 class CS2Backbone : public MetainferenceBase {
   struct ChemicalShift {
-    double exp_cs;  // a reference chemical shifts
-    Value *comp;  // a pointer to the component
-    unsigned res_kind;  // residue type (STD/GLY/PRO)
-    unsigned atm_kind;  // nuclues (HA/CA/CB/CO/NH/HN)
-    unsigned res_type_prev;  // previuos residue (ALA/VAL/..)
-    unsigned res_type_curr;  // current residue (ALA/VAL/..)
-    unsigned res_type_next;  // next residue (ALA/VAL/..)
-    string res_name;
-    string nucleus;
-    bool has_chi1;
-    unsigned csatoms;
-    unsigned totcsatoms;
-    unsigned res_num;
-    unsigned ipos; // index of the atom for which we are calculating the chemical shifts
-    vector<unsigned> bb;
-    vector<unsigned> side_chain;  // atoms for the current sidechain
-    vector<int> xd1;   // additional couple of atoms
-    vector<int> xd2;   // additional couple of atoms
-    vector<unsigned> box_nb;  // non-bonded atoms
+    double exp_cs;              // a reference chemical shifts
+    Value *comp;                // a pointer to the component
+    unsigned res_kind;          // residue type (STD/GLY/PRO)
+    unsigned atm_kind;          // nuclues (HA/CA/CB/CO/NH/HN)
+    unsigned res_type_prev;     // previuos residue (ALA/VAL/..)
+    unsigned res_type_curr;     // current residue (ALA/VAL/..)
+    unsigned res_type_next;     // next residue (ALA/VAL/..)
+    string res_name;            // residue name
+    string nucleus;             // chemical shift
+    bool has_chi1;              // does we have a chi1
+    unsigned csatoms;           // fixed number of atoms used
+    unsigned totcsatoms;        // number of atoms used
+    unsigned res_num;           // residue number
+    unsigned ipos;              // index of the atom for which we are calculating the chemical shifts
+    vector<unsigned> bb;        // atoms for the previous, current and next backbone
+    vector<unsigned> side_chain;// atoms for the current sidechain
+    vector<int> xd1;            // additional couple of atoms
+    vector<int> xd2;            // additional couple of atoms
+    vector<unsigned> box_nb;    // non-bonded atoms
 
     ChemicalShift():
       exp_cs(0.),
@@ -445,18 +445,20 @@ class CS2Backbone : public MetainferenceBase {
     unsigned numAtoms; // number of ring members (5 or 6)
     Vector position;   // center of ring coordinates
     Vector normVect;   // ring plane normal vector
-    Vector n1, n2;     // two atom plane normal vectors used to compute ring plane normal
-    Vector g[6];       // vector of the vectors used to calculate n1,n2
+    Vector g[6];       // vector of the vectors used for normVect
     double lengthN2;   // square of length of normVect
     double lengthNV;   // length of normVect
     RingInfo():
-      rtype(0),numAtoms(0),
-      lengthN2(NAN),lengthNV(NAN)
-    {for(unsigned i=0; i<6; i++) atom[i]=0;}
+      rtype(0),
+      numAtoms(0),
+      lengthN2(NAN),
+      lengthNV(NAN)
+    {
+      for(unsigned i=0; i<6; i++) atom[i]=0;
+    }
   };
 
   enum aa_t {ALA, ARG, ASN, ASP, CYS, GLN, GLU, GLY, HIS, ILE, LEU, LYS, MET, PHE, PRO, SER, THR, TRP, TYR, VAL, UNK};
-  enum atom_t {D_C, D_H, D_N, D_O, D_S, D_C2, D_N2, D_O2};
   enum sequence_t {Np, CAp, HAp, Cp, Op, Nc, Hc, CAc, HAc, Cc, Oc, Nn, Hn, CAn, HAn, Cn, CBc, CGc};
 
   CS2BackboneDB    db;
@@ -530,7 +532,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   parseAtomList("ATOMS",used_atoms);
 
   parseFlag("CAMSHIFT",camshift);
-  if(camshift&&getDoScore()) error("It is not possible to use CAMSHIFT together with DOSCORE");
+  if(camshift&&getDoScore()) plumed_merror("It is not possible to use CAMSHIFT and DOSCORE at the same time");
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -564,7 +566,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   db.parse(stringadb,scale);
 
   PDB pdb;
-  if( !pdb.read(stringapdb,plumed.getAtoms().usingNaturalUnits(),1./scale) ) error("missing input file " + stringapdb);
+  if( !pdb.read(stringapdb,plumed.getAtoms().usingNaturalUnits(),1./scale) ) plumed_merror("missing input file " + stringapdb);
 
   // first of all we build the list of chemical shifts we want to predict
   log.printf("  Reading experimental data ...\n"); log.flush();
@@ -641,7 +643,7 @@ void CS2Backbone::init_cs(const string &file, const string &nucl, const PDB &pdb
 
   ifstream in;
   in.open(file.c_str());
-  if(!in) error("CS2Backbone: Unable to open " + file);
+  if(!in) plumed_merror("Unable to open " + file);
   istream_iterator<string> iter(in), end;
   unsigned begin=0;
 
@@ -656,11 +658,18 @@ void CS2Backbone::init_cs(const string &file, const string &nucl, const PDB &pdb
       } else begin=1;
       continue;
     }
-    int resnum = atoi(tok.c_str());
+    int ro = atoi(tok.c_str());
+    if(ro<0) plumed_merror("Residue numbers should be positive\n");
+    unsigned resnum = static_cast<unsigned> (ro);
     tok = *iter;
     ++iter;
     double cs = atof(tok.c_str());
     if(cs==0) continue;
+
+    unsigned fres, lres;
+    string errmsg;
+    pdb.getResidueRange(chains[ichain], fres, lres, errmsg);
+    if(resnum==fres||resnum==lres) plumed_merror("First and Last residue of each chain should be annotated as # in " + file + " Remember that residue numbers should match");
 
     // check in the PDB for the chain/residue/atom and enable the chemical shift
     string RES = pdb.getResidueName(resnum, chains[ichain]);
@@ -808,6 +817,7 @@ void CS2Backbone::init_cs(const string &file, const string &nucl, const PDB &pdb
 
 // this assigns an atom-type to each atom of the pdb
 void CS2Backbone::init_types(const PDB &pdb) {
+  enum atom_t {D_C, D_H, D_N, D_O, D_S, D_C2, D_N2, D_O2};
   vector<AtomNumber> aa = pdb.getAtomNumbers();
   for(unsigned i=0; i<aa.size(); i++) {
     unsigned frag = pdb.getResidueNumber(aa[i]);
@@ -823,12 +833,12 @@ void CS2Backbone::init_types(const PDB &pdb) {
       else if (atom_type == 'H') t = D_H;
       else if (atom_type == 'N') t = D_N;
       else if (atom_type == 'S') t = D_S;
-      else plumed_merror("CS2Backbone:init_type: unknown atom type!\n");
+      else plumed_merror("Unknown atom type: " + atom_name);
     } else {
       if (atom_type == 'C') t = D_C2;
       else if (atom_type == 'O') t = D_O2;
       else if (atom_type == 'N') t = D_N2;
-      else plumed_merror("CS2Backbone:init_type: unknown atom type!\n");
+      else plumed_merror("Unknown atom type: " + atom_name);
     }
     type.push_back(t);
   }
@@ -928,7 +938,7 @@ void CS2Backbone::init_rings(const PDB &pdb)
         ri.rtype = RingInfo::R_HIS;
         ringInfo.push_back(ri);
       } else {
-        plumed_merror("Unkwown Ring Fragment");
+        plumed_merror("Unknown Ring Fragment: " + frg);
       }
     }
   }
@@ -968,298 +978,297 @@ void CS2Backbone::calculate()
     rank   = 0;
   }
 
-  double score = 0.;
+  unsigned nt=OpenMP::getNumThreads();
+  if(nt*stride*10>chemicalshifts.size()) nt=chemicalshifts.size()/stride/10;
+  if(nt==0) nt=1;
 
   // a single loop over all chemical shifts
-  for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
-    const unsigned kdx=cs*max_cs_atoms;
-    const ChemicalShift *myfrag = &chemicalshifts[cs];
-    const unsigned aa_kind = myfrag->res_kind;
-    const unsigned at_kind = myfrag->atm_kind;
-    // Common constant and AATYPE
-    const double * CONSTAACURR = db.CONSTAACURR(aa_kind,at_kind);
-    const double * CONSTAANEXT = db.CONSTAANEXT(aa_kind,at_kind);
-    const double * CONSTAAPREV = db.CONSTAAPREV(aa_kind,at_kind);
+  #pragma omp parallel num_threads(nt)
+  {
+    #pragma omp for
+    for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
+      const unsigned kdx=cs*max_cs_atoms;
+      const ChemicalShift *myfrag = &chemicalshifts[cs];
+      const unsigned aa_kind = myfrag->res_kind;
+      const unsigned at_kind = myfrag->atm_kind;
 
-    double shift = CONSTAAPREV[myfrag->res_type_prev] +
-                   CONSTAACURR[myfrag->res_type_curr] +
-                   CONSTAANEXT[myfrag->res_type_next];
+      double shift = db.CONSTAAPREV(aa_kind,at_kind)[myfrag->res_type_prev] +
+                     db.CONSTAACURR(aa_kind,at_kind)[myfrag->res_type_curr] +
+                     db.CONSTAANEXT(aa_kind,at_kind)[myfrag->res_type_next];
 
-    const unsigned ipos = myfrag->ipos;
-    cs_atoms[kdx+0] = ipos;
-    unsigned atom_counter = 1;
+      const unsigned ipos = myfrag->ipos;
+      cs_atoms[kdx+0] = ipos;
+      unsigned atom_counter = 1;
 
-    //BACKBONE (PREV CURR NEXT)
-    const double * CONST_BB2 = db.CONST_BB2(aa_kind,at_kind);
-    const unsigned bbsize = 16;
-    for(unsigned q=0; q<bbsize; q++) {
-      const double cb2q = CONST_BB2[q];
-      if(cb2q==0.) continue;
-      const unsigned jpos = myfrag->bb[q];
-      if(ipos==jpos) continue;
-      const Vector distance = delta(getPosition(jpos),getPosition(ipos));
-      const double d = distance.modulo();
-      const double fact = cb2q/d;
+      //BACKBONE (PREV CURR NEXT)
+      const double * CONST_BB2 = db.CONST_BB2(aa_kind,at_kind);
+      const unsigned bbsize = 16;
+      for(unsigned q=0; q<bbsize; q++) {
+        const double cb2q = CONST_BB2[q];
+        if(cb2q==0.) continue;
+        const unsigned jpos = myfrag->bb[q];
+        if(ipos==jpos) continue;
+        const Vector distance = delta(getPosition(jpos),getPosition(ipos));
+        const double d = distance.modulo();
+        const double fact = cb2q/d;
 
-      shift += cb2q*d;
-      const Vector der = fact*distance;
-
-      cs_derivs[kdx+0] += der;
-      cs_derivs[kdx+q+atom_counter] = -der;
-      cs_atoms[kdx+q+atom_counter] = jpos;
-    }
-
-    atom_counter += bbsize;
-
-    //DIHEDRAL ANGLES
-    const double *CO_DA = db.CO_DA(aa_kind,at_kind);
-    //Phi
-    {
-      const Vector d0 = delta(getPosition(myfrag->bb[Nc]), getPosition(myfrag->bb[Cp]));
-      const Vector d1 = delta(getPosition(myfrag->bb[CAc]), getPosition(myfrag->bb[Nc]));
-      const Vector d2 = delta(getPosition(myfrag->bb[Cc]), getPosition(myfrag->bb[CAc]));
-      Torsion t;
-      Vector dd0, dd1, dd2;
-      const double t_phi = t.compute(d0,d1,d2,dd0,dd1,dd2);
-      const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,0);
-      const double val1 = 3.*t_phi+PARS_DA[3];
-      const double val2 = t_phi+PARS_DA[4];
-      shift += CO_DA[0]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
-      const double fact = -CO_DA[0]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
-
-      cs_derivs[kdx+Cp+1] += fact*dd0;
-      cs_derivs[kdx+Nc+1] += fact*(dd1-dd0);
-      cs_derivs[kdx+CAc+1]+= fact*(dd2-dd1);
-      cs_derivs[kdx+Cc+1] += -fact*dd2;
-      cs_atoms[kdx+Cp+1] = myfrag->bb[Cp];
-      cs_atoms[kdx+Nc+1] = myfrag->bb[Nc];
-      cs_atoms[kdx+CAc+1]= myfrag->bb[CAc];
-      cs_atoms[kdx+Cc+1] = myfrag->bb[Cc];
-    }
-
-    //Psi
-    {
-      const Vector d0 = delta(getPosition(myfrag->bb[CAc]), getPosition(myfrag->bb[Nc]));
-      const Vector d1 = delta(getPosition(myfrag->bb[Cc]), getPosition(myfrag->bb[CAc]));
-      const Vector d2 = delta(getPosition(myfrag->bb[Nn]), getPosition(myfrag->bb[Cc]));
-      Torsion t;
-      Vector dd0, dd1, dd2;
-      const double t_psi = t.compute(d0,d1,d2,dd0,dd1,dd2);
-      const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,1);
-      const double val1 = 3.*t_psi+PARS_DA[3];
-      const double val2 = t_psi+PARS_DA[4];
-      shift += CO_DA[1]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
-      const double fact = -CO_DA[1]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
-
-      cs_derivs[kdx+Nc+1] += fact*dd0;
-      cs_derivs[kdx+CAc+1] += fact*(dd1-dd0);
-      cs_derivs[kdx+Cc+1] += fact*(dd2-dd1);
-      cs_derivs[kdx+Nn+1] += -fact*dd2;
-      cs_atoms[kdx+Nc+1] = myfrag->bb[Nc];
-      cs_atoms[kdx+CAc+1]= myfrag->bb[CAc];
-      cs_atoms[kdx+Cc+1] = myfrag->bb[Cc];
-      cs_atoms[kdx+Nn+1] = myfrag->bb[Nn];
-    }
-
-    //Chi
-    if(myfrag->has_chi1) {
-      const Vector d0 = delta(getPosition(myfrag->bb[CAc]), getPosition(myfrag->bb[Nc]));
-      const Vector d1 = delta(getPosition(myfrag->bb[CBc]), getPosition(myfrag->bb[CAc]));
-      const Vector d2 = delta(getPosition(myfrag->bb[CGc]), getPosition(myfrag->bb[CBc]));
-      Torsion t;
-      Vector dd0, dd1, dd2;
-      const double t_chi1 = t.compute(d0,d1,d2,dd0,dd1,dd2);
-      const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,2);
-      const double val1 = 3.*t_chi1+PARS_DA[3];
-      const double val2 = t_chi1+PARS_DA[4];
-      shift += CO_DA[2]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
-      const double fact = -CO_DA[2]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
-
-      cs_derivs[kdx+Nc+1] += fact*dd0;
-      cs_derivs[kdx+CAc+1] += fact*(dd1-dd0);
-      cs_derivs[kdx+CBc+1] += fact*(dd2-dd1);
-      cs_derivs[kdx+CGc+1] += -fact*dd2;
-      cs_atoms[kdx+Nc+1]  = myfrag->bb[Nc];
-      cs_atoms[kdx+CAc+1] = myfrag->bb[CAc];
-      cs_atoms[kdx+CBc+1] = myfrag->bb[CBc];
-      cs_atoms[kdx+CGc+1] = myfrag->bb[CGc];
-
-      atom_counter += 2;
-    }
-    //END OF DIHE
-
-    //SIDE CHAIN
-    const double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind,myfrag->res_type_curr);
-    const unsigned sidsize = myfrag->side_chain.size();
-    for(unsigned q=0; q<sidsize; q++) {
-      const double cs2q = CONST_SC2[q];
-      if(cs2q==0.) continue;
-      const unsigned jpos = myfrag->side_chain[q];
-      if(ipos==jpos) continue;
-      const Vector distance = delta(getPosition(jpos),getPosition(ipos));
-      const double d = distance.modulo();
-      const double fact = cs2q/d;
-
-      shift += cs2q*d;
-      const Vector der = fact*distance;
-      cs_derivs[kdx+0] += der;
-      cs_derivs[kdx+q+atom_counter] = -der;
-      cs_atoms[kdx+q+atom_counter] = jpos;
-    }
-
-    atom_counter += sidsize;
-
-    //EXTRA DIST
-    const double * CONST_XD  = db.CONST_XD(aa_kind,at_kind);
-    const unsigned xdsize=myfrag->xd1.size();
-    for(unsigned q=0; q<xdsize; q++) {
-      const double cxdq = CONST_XD[q];
-      if(cxdq==0.) continue;
-      if(myfrag->xd1[q]==-1||myfrag->xd2[q]==-1) continue;
-      const Vector distance = delta(getPosition(myfrag->xd1[q]),getPosition(myfrag->xd2[q]));
-      const double d = distance.modulo();
-      const double fact = cxdq/d;
-
-      shift += cxdq*d;
-      const Vector der = fact*distance;
-      cs_derivs[kdx+2*q+atom_counter  ] = der;
-      cs_derivs[kdx+2*q+atom_counter+1] = -der;
-      cs_atoms[kdx+2*q+atom_counter] = myfrag->xd2[q];
-      cs_atoms[kdx+2*q+atom_counter+1] = myfrag->xd1[q];
-    }
-
-    atom_counter += 2*xdsize;
-
-    //RINGS
-    const double *rc = db.CO_RING(aa_kind,at_kind);
-    const unsigned rsize = ringInfo.size();
-    // cycle over the list of rings
-    for(unsigned q=0; q<rsize; q++) {
-      // compute angle from ring middle point to current atom position
-      // get distance vector from query atom to ring center and normal vector to ring plane
-      const Vector n   = ringInfo[q].normVect;
-      const double nL  = ringInfo[q].lengthNV;
-      const double inL2 = ringInfo[q].lengthN2;
-
-      const Vector d = delta(ringInfo[q].position, getPosition(ipos));
-      const double dL2 = d.modulo2();
-      double dL  = sqrt(dL2);
-      const double idL3 = 1./(dL2*dL);
-
-      const double dn    = dotProduct(d,n);
-      const double dn2   = dn*dn;
-      const double dLnL  = dL*nL;
-      const double dL_nL = dL/nL;
-
-      const double ang2 = dn2*inL2/dL2;
-      const double u    = 1.-3.*ang2;
-      const double cc   = rc[ringInfo[q].rtype];
-
-      shift += cc*u*idL3;
-
-      const double fUU    = -6*dn*inL2;
-      const double fUQ    = fUU/dL;
-      const Vector gradUQ = fUQ*(dL2*n - dn*d);
-      const Vector gradVQ = (3*dL*u)*d;
-
-      const double fact   = cc*idL3*idL3;
-      cs_derivs[kdx+0] += fact*(gradUQ - gradVQ);
-
-      const double fU       = fUU/nL;
-      double OneOverN = 1./6.;
-      if(ringInfo[q].numAtoms==5) OneOverN=1./3.;
-      const Vector factor2  = OneOverN*n;
-      const Vector factor4  = (OneOverN/dL_nL)*d;
-
-      const Vector gradV    = -OneOverN*gradVQ;
-
-      if(ringInfo[q].numAtoms==6) {
-        // update forces on ring atoms
-        for(unsigned at=0; at<6; at++) {
-          const Vector ab = crossProduct(d,ringInfo[q].g[at]);
-          const Vector c  = crossProduct(n,ringInfo[q].g[at]);
-          const Vector factor3 = 0.5*dL_nL*c;
-          const Vector factor1 = 0.5*ab;
-          const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
-          cs_derivs[kdx+at+atom_counter] = fact*(gradU - gradV);
-          cs_atoms[kdx+at+atom_counter] = ringInfo[q].atom[at];
-        }
-        atom_counter += 6;
-      }  else {
-        for(unsigned at=0; at<3; at++) {
-          const Vector ab = crossProduct(d,ringInfo[q].g[at]);
-          const Vector c  = crossProduct(n,ringInfo[q].g[at]);
-          const Vector factor3 = dL_nL*c;
-          const Vector factor1 = ab;
-          const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
-          cs_derivs[kdx+at+atom_counter] = fact*(gradU - gradV);
-        }
-        cs_atoms[kdx+atom_counter] = ringInfo[q].atom[0];
-        cs_atoms[kdx+atom_counter+1] = ringInfo[q].atom[2];
-        cs_atoms[kdx+atom_counter+2] = ringInfo[q].atom[3];
-        atom_counter += 3;
-      }
-    }
-    //END OF RINGS
-
-    //NON BOND
-    const double * CONST_CO_SPHERE3 = db.CO_SPHERE(aa_kind,at_kind,0);
-    const double * CONST_CO_SPHERE  = db.CO_SPHERE(aa_kind,at_kind,1);
-    const unsigned boxsize = myfrag->box_nb.size();
-    for(unsigned q=0; q<boxsize; q++) {
-      const unsigned jpos = myfrag->box_nb[q];
-      const Vector distance = delta(getPosition(jpos),getPosition(ipos));
-      const double d2 = distance.modulo2();
-
-      if(d2<cutOffDist2) {
-        double factor1  = sqrt(d2);
-        double dfactor1 = 1./factor1;
-        double factor3  = dfactor1*dfactor1*dfactor1;
-        double dfactor3 = -3.*factor3*dfactor1*dfactor1;
-
-        if(d2>cutOnDist2) {
-          const double af = cutOffDist2 - d2;
-          const double bf = cutOffDist2 - 3.*cutOnDist2 + 2.*d2;
-          const double cf = invswitch*af;
-          const double df = cf*af*bf;
-          factor1 *= df;
-          factor3 *= df;
-
-          const double d4  = d2*d2;
-          const double af1 = 15.*cutOnDist2*d2;
-          const double bf1 = -14.*d4;
-          const double cf1 = -3.*cutOffDist2*cutOnDist2 + cutOffDist2*d2;
-          const double df1 = af1+bf1+cf1;
-          dfactor1 *= cf*(cutOffDist4+df1);
-
-          const double af3 = +2.*cutOffDist2*cutOnDist2;
-          const double bf3 = d2*(cutOffDist2+cutOnDist2);
-          const double cf3 = -2.*d4;
-          const double df3 = (af3+bf3+cf3)*d2;
-          dfactor3 *= invswitch*(cutMixed+df3);
-        }
-
-        const unsigned t = type[jpos];
-        shift += factor1*CONST_CO_SPHERE[t] + factor3*CONST_CO_SPHERE3[t] ;
-        const double fact = dfactor1*CONST_CO_SPHERE[t]+dfactor3*CONST_CO_SPHERE3[t];
-        const Vector der  = fact*distance;
+        shift += cb2q*d;
+        const Vector der = fact*distance;
 
         cs_derivs[kdx+0] += der;
         cs_derivs[kdx+q+atom_counter] = -der;
         cs_atoms[kdx+q+atom_counter] = jpos;
       }
-    }
-    //END NON BOND
 
-    atom_counter += boxsize;
-    all_shifts[cs] = shift;
+      atom_counter += bbsize;
 
-    if(camshift) {
-      score += (all_shifts[cs] - chemicalshifts[cs].exp_cs)*(all_shifts[cs] - chemicalshifts[cs].exp_cs)/camshift_sigma2[chemicalshifts[cs].atm_kind];
-      double fact = 2.0*(all_shifts[cs] - chemicalshifts[cs].exp_cs)/camshift_sigma2[chemicalshifts[cs].atm_kind];
-      for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) aa_derivs[cs_atoms[kdx+i]] += cs_derivs[kdx+i]*fact;
+      //DIHEDRAL ANGLES
+      const double *CO_DA = db.CO_DA(aa_kind,at_kind);
+      //Phi
+      {
+        const Vector d0 = delta(getPosition(myfrag->bb[Nc]), getPosition(myfrag->bb[Cp]));
+        const Vector d1 = delta(getPosition(myfrag->bb[CAc]), getPosition(myfrag->bb[Nc]));
+        const Vector d2 = delta(getPosition(myfrag->bb[Cc]), getPosition(myfrag->bb[CAc]));
+        Torsion t;
+        Vector dd0, dd1, dd2;
+        const double t_phi = t.compute(d0,d1,d2,dd0,dd1,dd2);
+        const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,0);
+        const double val1 = 3.*t_phi+PARS_DA[3];
+        const double val2 = t_phi+PARS_DA[4];
+        shift += CO_DA[0]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
+        const double fact = -CO_DA[0]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
+
+        cs_derivs[kdx+Cp+1] += fact*dd0;
+        cs_derivs[kdx+Nc+1] += fact*(dd1-dd0);
+        cs_derivs[kdx+CAc+1]+= fact*(dd2-dd1);
+        cs_derivs[kdx+Cc+1] += -fact*dd2;
+        cs_atoms[kdx+Cp+1] = myfrag->bb[Cp];
+        cs_atoms[kdx+Nc+1] = myfrag->bb[Nc];
+        cs_atoms[kdx+CAc+1]= myfrag->bb[CAc];
+        cs_atoms[kdx+Cc+1] = myfrag->bb[Cc];
+      }
+
+      //Psi
+      {
+        const Vector d0 = delta(getPosition(myfrag->bb[CAc]), getPosition(myfrag->bb[Nc]));
+        const Vector d1 = delta(getPosition(myfrag->bb[Cc]), getPosition(myfrag->bb[CAc]));
+        const Vector d2 = delta(getPosition(myfrag->bb[Nn]), getPosition(myfrag->bb[Cc]));
+        Torsion t;
+        Vector dd0, dd1, dd2;
+        const double t_psi = t.compute(d0,d1,d2,dd0,dd1,dd2);
+        const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,1);
+        const double val1 = 3.*t_psi+PARS_DA[3];
+        const double val2 = t_psi+PARS_DA[4];
+        shift += CO_DA[1]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
+        const double fact = -CO_DA[1]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
+
+        cs_derivs[kdx+Nc+1] += fact*dd0;
+        cs_derivs[kdx+CAc+1] += fact*(dd1-dd0);
+        cs_derivs[kdx+Cc+1] += fact*(dd2-dd1);
+        cs_derivs[kdx+Nn+1] += -fact*dd2;
+        cs_atoms[kdx+Nc+1] = myfrag->bb[Nc];
+        cs_atoms[kdx+CAc+1]= myfrag->bb[CAc];
+        cs_atoms[kdx+Cc+1] = myfrag->bb[Cc];
+        cs_atoms[kdx+Nn+1] = myfrag->bb[Nn];
+      }
+
+      //Chi
+      if(myfrag->has_chi1) {
+        const Vector d0 = delta(getPosition(myfrag->bb[CAc]), getPosition(myfrag->bb[Nc]));
+        const Vector d1 = delta(getPosition(myfrag->bb[CBc]), getPosition(myfrag->bb[CAc]));
+        const Vector d2 = delta(getPosition(myfrag->bb[CGc]), getPosition(myfrag->bb[CBc]));
+        Torsion t;
+        Vector dd0, dd1, dd2;
+        const double t_chi1 = t.compute(d0,d1,d2,dd0,dd1,dd2);
+        const double *PARS_DA = db.PARS_DA(aa_kind,at_kind,2);
+        const double val1 = 3.*t_chi1+PARS_DA[3];
+        const double val2 = t_chi1+PARS_DA[4];
+        shift += CO_DA[2]*(PARS_DA[0]*cos(val1)+PARS_DA[1]*cos(val2)+PARS_DA[2]);
+        const double fact = -CO_DA[2]*(+3.*PARS_DA[0]*sin(val1)+PARS_DA[1]*sin(val2));
+
+        cs_derivs[kdx+Nc+1] += fact*dd0;
+        cs_derivs[kdx+CAc+1] += fact*(dd1-dd0);
+        cs_derivs[kdx+CBc+1] += fact*(dd2-dd1);
+        cs_derivs[kdx+CGc+1] += -fact*dd2;
+        cs_atoms[kdx+Nc+1]  = myfrag->bb[Nc];
+        cs_atoms[kdx+CAc+1] = myfrag->bb[CAc];
+        cs_atoms[kdx+CBc+1] = myfrag->bb[CBc];
+        cs_atoms[kdx+CGc+1] = myfrag->bb[CGc];
+
+        atom_counter += 2;
+      }
+      //END OF DIHE
+
+      //SIDE CHAIN
+      const double * CONST_SC2 = db.CONST_SC2(aa_kind,at_kind,myfrag->res_type_curr);
+      const unsigned sidsize = myfrag->side_chain.size();
+      for(unsigned q=0; q<sidsize; q++) {
+        const double cs2q = CONST_SC2[q];
+        if(cs2q==0.) continue;
+        const unsigned jpos = myfrag->side_chain[q];
+        if(ipos==jpos) continue;
+        const Vector distance = delta(getPosition(jpos),getPosition(ipos));
+        const double d = distance.modulo();
+        const double fact = cs2q/d;
+
+        shift += cs2q*d;
+        const Vector der = fact*distance;
+        cs_derivs[kdx+0] += der;
+        cs_derivs[kdx+q+atom_counter] = -der;
+        cs_atoms[kdx+q+atom_counter] = jpos;
+      }
+
+      atom_counter += sidsize;
+
+      //EXTRA DIST
+      const double * CONST_XD  = db.CONST_XD(aa_kind,at_kind);
+      const unsigned xdsize=myfrag->xd1.size();
+      for(unsigned q=0; q<xdsize; q++) {
+        const double cxdq = CONST_XD[q];
+        if(cxdq==0.) continue;
+        if(myfrag->xd1[q]==-1||myfrag->xd2[q]==-1) continue;
+        const Vector distance = delta(getPosition(myfrag->xd1[q]),getPosition(myfrag->xd2[q]));
+        const double d = distance.modulo();
+        const double fact = cxdq/d;
+
+        shift += cxdq*d;
+        const Vector der = fact*distance;
+        cs_derivs[kdx+2*q+atom_counter  ] = der;
+        cs_derivs[kdx+2*q+atom_counter+1] = -der;
+        cs_atoms[kdx+2*q+atom_counter] = myfrag->xd2[q];
+        cs_atoms[kdx+2*q+atom_counter+1] = myfrag->xd1[q];
+      }
+
+      atom_counter += 2*xdsize;
+
+      //RINGS
+      const double *rc = db.CO_RING(aa_kind,at_kind);
+      const unsigned rsize = ringInfo.size();
+      // cycle over the list of rings
+      for(unsigned q=0; q<rsize; q++) {
+        // compute angle from ring middle point to current atom position
+        // get distance vector from query atom to ring center and normal vector to ring plane
+        const Vector n   = ringInfo[q].normVect;
+        const double nL  = ringInfo[q].lengthNV;
+        const double inL2 = ringInfo[q].lengthN2;
+
+        const Vector d = delta(ringInfo[q].position, getPosition(ipos));
+        const double dL2 = d.modulo2();
+        double dL  = sqrt(dL2);
+        const double idL3 = 1./(dL2*dL);
+
+        const double dn    = dotProduct(d,n);
+        const double dn2   = dn*dn;
+        const double dLnL  = dL*nL;
+        const double dL_nL = dL/nL;
+
+        const double ang2 = dn2*inL2/dL2;
+        const double u    = 1.-3.*ang2;
+        const double cc   = rc[ringInfo[q].rtype];
+
+        shift += cc*u*idL3;
+
+        const double fUU    = -6.*dn*inL2;
+        const double fUQ    = fUU/dL;
+        const Vector gradUQ = fUQ*(dL2*n - dn*d);
+        const Vector gradVQ = (3.*dL*u)*d;
+
+        const double fact   = cc*idL3*idL3;
+        cs_derivs[kdx+0] += fact*(gradUQ - gradVQ);
+
+        const double fU       = fUU/nL;
+        double OneOverN = 1./6.;
+        if(ringInfo[q].numAtoms==5) OneOverN=1./3.;
+        const Vector factor2  = OneOverN*n;
+        const Vector factor4  = (OneOverN/dL_nL)*d;
+
+        const Vector gradV    = -OneOverN*gradVQ;
+
+        if(ringInfo[q].numAtoms==6) {
+          // update forces on ring atoms
+          for(unsigned at=0; at<6; at++) {
+            const Vector ab = crossProduct(d,ringInfo[q].g[at]);
+            const Vector c  = crossProduct(n,ringInfo[q].g[at]);
+            const Vector factor3 = 0.5*dL_nL*c;
+            const Vector factor1 = 0.5*ab;
+            const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
+            cs_derivs[kdx+at+atom_counter] = fact*(gradU - gradV);
+            cs_atoms[kdx+at+atom_counter] = ringInfo[q].atom[at];
+          }
+          atom_counter += 6;
+        }  else {
+          for(unsigned at=0; at<3; at++) {
+            const Vector ab = crossProduct(d,ringInfo[q].g[at]);
+            const Vector c  = crossProduct(n,ringInfo[q].g[at]);
+            const Vector factor3 = dL_nL*c;
+            const Vector factor1 = ab;
+            const Vector gradU   = fU*( dLnL*(factor1 - factor2) -dn*(factor3 - factor4) );
+            cs_derivs[kdx+at+atom_counter] = fact*(gradU - gradV);
+          }
+          cs_atoms[kdx+atom_counter] = ringInfo[q].atom[0];
+          cs_atoms[kdx+atom_counter+1] = ringInfo[q].atom[2];
+          cs_atoms[kdx+atom_counter+2] = ringInfo[q].atom[3];
+          atom_counter += 3;
+        }
+      }
+      //END OF RINGS
+
+      //NON BOND
+      const double * CONST_CO_SPHERE3 = db.CO_SPHERE(aa_kind,at_kind,0);
+      const double * CONST_CO_SPHERE  = db.CO_SPHERE(aa_kind,at_kind,1);
+      const unsigned boxsize = myfrag->box_nb.size();
+      for(unsigned q=0; q<boxsize; q++) {
+        const unsigned jpos = myfrag->box_nb[q];
+        const Vector distance = delta(getPosition(jpos),getPosition(ipos));
+        const double d2 = distance.modulo2();
+
+        if(d2<cutOffDist2) {
+          double factor1  = sqrt(d2);
+          double dfactor1 = 1./factor1;
+          double factor3  = dfactor1*dfactor1*dfactor1;
+          double dfactor3 = -3.*factor3*dfactor1*dfactor1;
+
+          if(d2>cutOnDist2) {
+            const double af = cutOffDist2 - d2;
+            const double bf = cutOffDist2 - 3.*cutOnDist2 + 2.*d2;
+            const double cf = invswitch*af;
+            const double df = cf*af*bf;
+            factor1 *= df;
+            factor3 *= df;
+
+            const double d4  = d2*d2;
+            const double af1 = 15.*cutOnDist2*d2;
+            const double bf1 = -14.*d4;
+            const double cf1 = -3.*cutOffDist2*cutOnDist2 + cutOffDist2*d2;
+            const double df1 = af1+bf1+cf1;
+            dfactor1 *= cf*(cutOffDist4+df1);
+
+            const double af3 = +2.*cutOffDist2*cutOnDist2;
+            const double bf3 = d2*(cutOffDist2+cutOnDist2);
+            const double cf3 = -2.*d4;
+            const double df3 = (af3+bf3+cf3)*d2;
+            dfactor3 *= invswitch*(cutMixed+df3);
+          }
+
+          const unsigned t = type[jpos];
+          shift += factor1*CONST_CO_SPHERE[t] + factor3*CONST_CO_SPHERE3[t] ;
+          const double fact = dfactor1*CONST_CO_SPHERE[t]+dfactor3*CONST_CO_SPHERE3[t];
+          const Vector der  = fact*distance;
+
+          cs_derivs[kdx+0] += der;
+          cs_derivs[kdx+q+atom_counter] = -der;
+          cs_atoms[kdx+q+atom_counter] = jpos;
+        }
+      }
+      //END NON BOND
+
+      atom_counter += boxsize;
+      all_shifts[cs] = shift;
     }
   }
+
+  ++box_count;
+  if(box_count == box_nupdate) box_count = 0;
 
   if(!camshift) {
     if(!serial) {
@@ -1275,16 +1284,18 @@ void CS2Backbone::calculate()
       if(getDoScore()) setCalcData(cs, all_shifts[cs]);
       else {
         const unsigned kdx=cs*max_cs_atoms;
-        Tensor virial;
+        Tensor csvirial;
         for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) {
           setAtomsDerivatives(comp,cs_atoms[kdx+i],cs_derivs[kdx+i]);
-          virial-=Tensor(getPosition(cs_atoms[kdx+i]),cs_derivs[kdx+i]);
+          csvirial-=Tensor(getPosition(cs_atoms[kdx+i]),cs_derivs[kdx+i]);
         }
-        setBoxDerivatives(comp,virial);
+        setBoxDerivatives(comp,csvirial);
       }
     }
     if(!getDoScore()) return;
   }
+
+  double score = 0.;
 
   /* Metainference */
   if(getDoScore()) {
@@ -1298,9 +1309,30 @@ void CS2Backbone::calculate()
     }
   }
 
+  /* camshift */
+  if(camshift) {
+    for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
+      const unsigned kdx=cs*max_cs_atoms;
+      score += (all_shifts[cs] - chemicalshifts[cs].exp_cs)*(all_shifts[cs] - chemicalshifts[cs].exp_cs)/camshift_sigma2[chemicalshifts[cs].atm_kind];
+      double fact = 2.0*(all_shifts[cs] - chemicalshifts[cs].exp_cs)/camshift_sigma2[chemicalshifts[cs].atm_kind];
+      for(unsigned i=0; i<chemicalshifts[cs].totcsatoms; i++) {
+        aa_derivs[cs_atoms[kdx+i]] += cs_derivs[kdx+i]*fact;
+      }
+    }
+  }
+
   if(!serial) {
     comm.Sum(&aa_derivs[0][0], 3*aa_derivs.size());
     if(camshift) comm.Sum(&score, 1);
+  }
+
+  Tensor virial;
+  for(unsigned i=rank; i<getNumberOfAtoms(); i+=stride) {
+    virial += Tensor(getPosition(i), aa_derivs[i]);
+  }
+
+  if(!serial) {
+    comm.Sum(&virial[0][0], 9);
   }
 
   /* calculate final derivatives */
@@ -1313,22 +1345,14 @@ void CS2Backbone::calculate()
     setValue(score);
   }
 
-  Tensor virial;
   /* at this point we cycle over all atoms */
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    setAtomsDerivatives(val, i,  aa_derivs[i]);
-    virial-=Tensor(getPosition(i), aa_derivs[i]);
-  }
-  setBoxDerivatives(val,virial);
-
-  ++box_count;
-  if(box_count == box_nupdate) box_count = 0;
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives(val, i,  aa_derivs[i]);
+  setBoxDerivatives(val,-virial);
 }
 
 void CS2Backbone::update_neighb() {
   max_cs_atoms=0;
   // cycle over chemical shifts
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
     const unsigned boxsize = getNumberOfAtoms();
     chemicalshifts[cs].box_nb.clear();
@@ -1356,7 +1380,7 @@ void CS2Backbone::compute_ring_parameters() {
       ringInfo[i].g[3] = delta(getPosition(ringInfo[i].atom[1]),getPosition(ringInfo[i].atom[5]));
       ringInfo[i].g[4] = delta(getPosition(ringInfo[i].atom[2]),getPosition(ringInfo[i].atom[0]));
       ringInfo[i].g[5] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[1]));
-      vector<Vector> a(size);
+      vector<Vector> a(6);
       a[0] = getPosition(ringInfo[i].atom[0]);
       // ring center
       Vector midP = a[0];
@@ -1364,15 +1388,11 @@ void CS2Backbone::compute_ring_parameters() {
         a[j] = getPosition(ringInfo[i].atom[j]);
         midP += a[j];
       }
-      midP /= (double) size;
-      ringInfo[i].position = midP;
-      // compute normal vector to plane containing first three atoms in array
-      ringInfo[i].n1 = crossProduct(delta(a[0],a[4]), delta(a[0],a[2]));
-      // compute normal vector to plane containing last three atoms in array
-      // NB: third atom of five-membered ring used for both computations above
-      ringInfo[i].n2 = crossProduct(delta(a[3],a[1]), delta(a[3],a[5]));
-      // ring plane normal vector is average of n1 and n2
-      ringInfo[i].normVect = 0.5*(ringInfo[i].n1 + ringInfo[i].n2);
+      ringInfo[i].position = midP/6.;
+      // compute normal vector to plane
+      Vector n1 = crossProduct(delta(a[0],a[4]), delta(a[0],a[2]));
+      Vector n2 = crossProduct(delta(a[3],a[1]), delta(a[3],a[5]));
+      ringInfo[i].normVect = 0.5*(n1 + n2);
     }  else {
       ringInfo[i].g[0] = delta(getPosition(ringInfo[i].atom[3]),getPosition(ringInfo[i].atom[2]));
       ringInfo[i].g[1] = delta(getPosition(ringInfo[i].atom[0]),getPosition(ringInfo[i].atom[3]));
@@ -1382,12 +1402,9 @@ void CS2Backbone::compute_ring_parameters() {
         a[j] = getPosition(ringInfo[i].atom[j]);
       }
       // ring center
-      Vector midP = (a[0]+a[2]+a[3])/3.;
-      ringInfo[i].position = midP;
-      // compute normal vector to plane containing first three atoms in array
-      ringInfo[i].n1 = crossProduct(delta(a[0],a[3]), delta(a[0],a[2]));
-      // ring plane normal vector is average of n1 and n2
-      ringInfo[i].normVect = ringInfo[i].n1;
+      ringInfo[i].position = (a[0]+a[2]+a[3])/3.;
+      // ring plane normal vector
+      ringInfo[i].normVect = crossProduct(delta(a[0],a[3]), delta(a[0],a[2]));
 
     }
     // calculate squared length and length of normal vector
@@ -1428,7 +1445,7 @@ CS2Backbone::aa_t CS2Backbone::frag2enum(const string &aa) {
   else if (aa == "TYR") type = TYR;
   else if (aa == "VAL") type = VAL;
   else if (aa == "UNK") type = UNK;
-  else plumed_merror("CS2Backbone: Error converting string " + aa + " into amino acid index: not a valid 3-letter code");
+  else plumed_merror("Error converting string " + aa + " into amino acid index: not a valid 3-letter code");
   return type;
 }
 
@@ -1741,7 +1758,7 @@ vector<string> CS2Backbone::side_chain_atoms(const string &s) {
     sc.push_back( "2HG2" );
     sc.push_back( "3HG2" );
     return sc;
-  } else plumed_merror("CS2Backbone: side_chain_atoms unknown");
+  } else plumed_merror("Sidechain atoms unknown: " + s);
 }
 
 bool CS2Backbone::isSP2(const string & resType, const string & atomName) {
