@@ -57,6 +57,7 @@ public:
   void cmd(const std::string&key,void*val=NULL);
   void calculate();
   void savePositions();
+  int bflyingpt;
 };
 
 }

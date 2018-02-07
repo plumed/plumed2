@@ -51,7 +51,8 @@ GREX::GREX(PlumedMain&p):
   foreignDeltaBias(0),
   localUNow(0),
   localUSwap(0),
-  myreplica(-1) // = unset
+  myreplica(-1), // = unset
+  bflyingpt(0)  // Flying Gaussian with parallel tempering
 {
   p.setSuffix(".NA");
 }
@@ -142,6 +143,12 @@ void GREX::cmd(const string&key,void*val) {
         localUNow=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
         intracomm.Sum(localUNow);
       }
+      break;
+    case cmd_isFlyingPT:
+      CHECK_INIT(initialized,key);
+      CHECK_NOTNULL(val,key);
+      if(intracomm.Get_rank()!=0) return;
+      intracomm.Bcast(bflyingpt,0);
       break;
     case cmd_cacheLocalUSwap:
       CHECK_INIT(initialized,key);

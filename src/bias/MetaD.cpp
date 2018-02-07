@@ -36,6 +36,7 @@
 #include <limits>
 #include <ctime>
 #include <memory>
+#include "core/GREX.h"
 
 #define DP2CUTOFF 6.25
 
@@ -892,6 +893,7 @@ MetaD::MetaD(const ActionOptions& ao):
 
   if(flying_pt) {
     flying = true;
+    PLMD::GREX::bflyingpt = 1;
   }
   if(flying) {
     if(!walkers_mpi) error("Flying Gaussian method must be used with MPI version of multiple walkers");
