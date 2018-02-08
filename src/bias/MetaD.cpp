@@ -893,7 +893,7 @@ MetaD::MetaD(const ActionOptions& ao):
 
   if(flying_pt) {
     flying = true;
-    PLMD::GREX::bflyingpt = 1;
+    plumed.setFlyingPT(true);
   }
   if(flying) {
     if(!walkers_mpi) error("Flying Gaussian method must be used with MPI version of multiple walkers");
