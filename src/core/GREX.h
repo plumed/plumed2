@@ -51,13 +51,14 @@ class GREX:
   std::vector<double> allDeltaBias;
   std::string buffer;
   int myreplica;
+  int bflyingpt;
 public:
   explicit GREX(PlumedMain&);
   ~GREX();
   void cmd(const std::string&key,void*val=NULL);
   void calculate();
   void savePositions();
-  int bflyingpt;
+  void setFlyingPT(bool b);
 };
 
 }
