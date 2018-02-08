@@ -227,5 +227,5 @@ void GREX::calculate() {
 void GREX::setFlyingPT(bool b) {
   bflyingpt = b;
 }
-   
+
 }
