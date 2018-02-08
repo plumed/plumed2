@@ -23,6 +23,7 @@
 #define __PLUMED_core_PlumedMain_h
 
 #include "WithCmd.h"
+#include "GREX.h"
 #include "tools/ForwardDecl.h"
 #include <cstdio>
 #include <string>
@@ -355,6 +356,8 @@ public:
   void setExchangeStep(bool f);
 /// Get exchangeStep flag
   bool getExchangeStep()const;
+/// Set flying gaussian with parallel tempering for GREX
+  void setFlyingPT(bool b);
 /// Stop the calculation cleanly (both the MD code and plumed)
   void stop();
 /// Enforce active flag.
@@ -418,6 +421,14 @@ void PlumedMain::setExchangeStep(bool s) {
 inline
 bool PlumedMain::getExchangeStep()const {
   return exchangeStep;
+}
+
+inline 
+void PlumedMain::setFlyingPT(bool b) {
+  if (grex) {
+    auto g = static_cast<PLMD::GREX*>(grex.release());
+    g->setFlyingPT(b);
+  }
 }
 
 inline
