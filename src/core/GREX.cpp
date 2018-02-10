@@ -51,8 +51,7 @@ GREX::GREX(PlumedMain&p):
   foreignDeltaBias(0),
   localUNow(0),
   localUSwap(0),
-  myreplica(-1), // = unset
-  bflying(0)
+  myreplica(-1) // = unset
 {
   p.setSuffix(".NA");
 }
