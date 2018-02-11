@@ -69,7 +69,7 @@ OrientationSphere::OrientationSphere(const ActionOptions&ao):
 }
 
 double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-  double d2, sw, value=0, denom=0, dfunc; Vector ddistance;
+  double sw, value=0, denom=0, dfunc; Vector ddistance;
   unsigned ncomponents=getBaseMultiColvar(0)->getNumberOfQuantities();
   std::vector<double> catom_orient( ncomponents ), this_orient( ncomponents );
   std::vector<double> this_der( ncomponents ), catom_der( ncomponents );
@@ -79,6 +79,7 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
 
   for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
     Vector& distance=myatoms.getPosition(i);
+    double d2;
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
          (d2+=distance[2]*distance[2])<rcut2 &&

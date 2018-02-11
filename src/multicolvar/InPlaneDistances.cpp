@@ -100,8 +100,8 @@ InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
   checkRead();
 
 // Now check if we can use link cells
-  bool use_link=false; double rcut;
   if( getNumberOfVessels()>0 ) {
+    bool use_link=false; double rcut;
     vesselbase::LessThan* lt=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(0) );
     if( lt ) {
       use_link=true; rcut=lt->getCutoff();

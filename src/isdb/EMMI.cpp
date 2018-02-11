@@ -416,15 +416,16 @@ void EMMI::check_GMM_d(VectorGeneric<6> &cov, double w)
 // read GMM data file in PLUMED format:
 void EMMI::get_GMM_d(string GMM_file)
 {
-  int idcomp, beta;
-  double w, m0, m1, m2;
   VectorGeneric<6> cov;
 
 // open file
   IFile *ifile = new IFile();
   if(ifile->FileExist(GMM_file)) {
     ifile->open(GMM_file);
+    int idcomp;
     while(ifile->scanField("Id",idcomp)) {
+      int beta;
+      double w, m0, m1, m2;
       ifile->scanField("Weight",w);
       ifile->scanField("Mean_0",m0);
       ifile->scanField("Mean_1",m1);

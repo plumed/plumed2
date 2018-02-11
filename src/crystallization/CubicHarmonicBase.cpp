@@ -100,10 +100,10 @@ double CubicHarmonicBase::compute( const unsigned& tindex, multicolvar::AtomValu
   // Calculate the coordination number
   Vector myder, rotateder, fder; unsigned nat=myatoms.getNumberOfAtoms();
 
-  double d2;
   for(unsigned i=1; i<nat; ++i) {
     Vector& distance=myatoms.getPosition(i);
 
+    double d2;
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
          (d2+=distance[2]*distance[2])<rcut2 &&
