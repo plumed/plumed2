@@ -1097,10 +1097,10 @@ test_for_replica_exchange(FILE                 *fplog,
             if(re->repl==a) partner=b;
             if(re->repl==b) partner=a;
           }
+          plumed_cmd(plumedmain,"GREX getFlying",&flying);
           plumed_cmd(plumedmain,"GREX setPartner",&partner);
           plumed_cmd(plumedmain,"GREX calculate",NULL);
           plumed_cmd(plumedmain,"GREX shareAllDeltaBias",NULL);
-          plumed_cmd(plumedmain,"GREX getFlying",&flying);
         }
         /* END PLUMED */
         for (i = 1; i < re->nrepl; i++)
