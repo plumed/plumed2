@@ -425,10 +425,11 @@ bool PlumedMain::getExchangeStep()const {
 
 inline
 void PlumedMain::setFlyingPT(bool b) {
-  if (grex) {
-    auto g = static_cast<PLMD::GREX*>(grex.release());
-    g->setFlyingPT(b);
-  }
+  //if (grex) {
+    //auto g = static_cast<PLMD::GREX*>(grex.release());
+    //g->setFlyingPT(b);
+    setFlyingPT(b);
+  //}
 }
 
 inline
