@@ -66,14 +66,13 @@ bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vec
 void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg) {
   for(unsigned i=0; i<c.size(); i++) {
     // is a regex? then just interpret it. The signal is ()
-    std::size_t found1 = c[i].find("(");
-    if(found1!=std::string::npos) {
-      std::size_t found2=c[i].find(")",found1+1,1); // find it again
-      if(found2!=std::string::npos) {
+    if(!c[i].compare(0,1,"(")) {
+      unsigned l=c[i].length();
+      if(!c[i].compare(l-1,1,")")) {
         // start regex parsing
 #ifdef __PLUMED_HAS_CREGEX
         // take the string enclosed in quotes and put in round brackets
-        std::string myregex=c[i].substr(found1,found2-found1+1);
+        std::string myregex=c[i];
         log.printf("  Evaluating regexp for this action: %s \n",myregex.c_str());
         int errcode;
         regex_t *preg = (regex_t*)malloc(sizeof(regex_t)); // pointer to the regular expression
