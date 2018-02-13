@@ -1121,8 +1121,10 @@ test_for_replica_exchange(FILE                 *fplog,
                   if(flying) {
                       // in flying Gaussian with parallel tempering only warmer replicas bias cooler ones
                       dplumed=bdb*(re->beta[a]-re->beta[b]);
+                      fprintf(stderr,"ano\n");
                   } else {
                       dplumed=adb*re->beta[a]+bdb*re->beta[b];
+                      fprintf(stderr,"ne\n");
                   }
                   delta+=dplumed;
                   if (bPrint)

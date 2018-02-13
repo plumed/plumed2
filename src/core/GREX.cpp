@@ -123,11 +123,6 @@ void GREX::cmd(const string&key,void*val) {
       CHECK_INIT(initialized,key);
       savePositions();
       break;
-    case cmd_setFlying:
-      CHECK_INIT(initialized,key);
-      setFlyingPT(static_cast<bool*>(val));
-      savePositions();
-      break;
     case cmd_getFlying:
       CHECK_INIT(initialized,key);
       if(intracomm.Get_rank()!=0) return;
