@@ -125,8 +125,8 @@ void GREX::cmd(const string&key,void*val) {
       break;
     case cmd_getFlying:
       CHECK_INIT(initialized,key);
-      if(intracomm.Get_rank()!=0) return;
-      intracomm.Bcast(bflyingpt,0);
+      CHECK_NOTNULL(val,key);
+      *static_cast<int*>(val)=bflyingpt;
       break;
     case cmd_calculate:
       CHECK_INIT(initialized,key);
@@ -230,7 +230,9 @@ void GREX::calculate() {
   intracomm.Bcast(foreignDeltaBias,0);
 }
 
-void GREX::setFlyingPT(bool b) {
+// in flying gaussian with parallel tempering only warmer replicas bias
+// cooler ones
+void GREX::setFlyingPT(int b) {
   bflyingpt = b;
 }
 

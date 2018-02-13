@@ -891,9 +891,10 @@ MetaD::MetaD(const ActionOptions& ao):
     }
   }
 
+  plumed.setFlyingPT(0);
   if(flying_pt) {
     flying = true;
-    plumed.setFlyingPT(true);
+    plumed.setFlyingPT(1);
   }
   if(flying) {
     if(!walkers_mpi) error("Flying Gaussian method must be used with MPI version of multiple walkers");

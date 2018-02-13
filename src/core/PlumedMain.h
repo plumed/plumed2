@@ -357,7 +357,7 @@ public:
 /// Get exchangeStep flag
   bool getExchangeStep()const;
 /// Set flying gaussian with parallel tempering for GREX
-  void setFlyingPT(bool b);
+  void setFlyingPT(int b);
 /// Stop the calculation cleanly (both the MD code and plumed)
   void stop();
 /// Enforce active flag.
@@ -424,7 +424,7 @@ bool PlumedMain::getExchangeStep()const {
 }
 
 inline
-void PlumedMain::setFlyingPT(bool b) {
+void PlumedMain::setFlyingPT(int b) {
   if (grex) {
     auto g = static_cast<PLMD::GREX*>(grex.get());
     g->setFlyingPT(b);

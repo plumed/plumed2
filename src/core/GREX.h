@@ -58,7 +58,7 @@ public:
   void cmd(const std::string&key,void*val=NULL);
   void calculate();
   void savePositions();
-  void setFlyingPT(bool b);
+  void setFlyingPT(int b);
 };
 
 }
