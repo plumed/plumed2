@@ -898,7 +898,7 @@ MetaD::MetaD(const ActionOptions& ao):
   }
   if(flying) {
     if(!walkers_mpi) error("Flying Gaussian method must be used with MPI version of multiple walkers");
-    log.printf("  Flying Gaussian method with %d walkers active\n",mw_n_);
+    log.printf("  Flying Gaussian method with %d walkers active\n",mpi_nw_);
   }
   if(flying_pt) {
     log.printf("  with parallel tempering on\n");
@@ -1667,7 +1667,7 @@ void MetaD::update() {
 
       unsigned si = 0;
       if (flying_pt) {
-        si = mw_id_ + 1;
+        si = mpi_mw_ + 1;
       }
 
       for(unsigned i=si; i<mpi_nw_; i++) {

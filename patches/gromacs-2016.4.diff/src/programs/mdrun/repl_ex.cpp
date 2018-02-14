@@ -993,7 +993,7 @@ test_for_replica_exchange(FILE                 *fplog,
 
     /* PLUMED */
     int plumed_test_exchange_pattern=0;
-    int flying = 0; // flying Gaussian with parallel tempering
+    int isflying = 0; // flying Gaussian with parallel tempering
     if(plumed_test_exchange_pattern && plumed_hrex) gmx_fatal(FARGS,"hrex not compatible with ad hoc exchange patterns");
     /* END PLUMED */
 
@@ -1098,7 +1098,7 @@ test_for_replica_exchange(FILE                 *fplog,
             if(re->repl==b) partner=a;
           }
           // in flying Gaussian with parallel tempering only warmer replicas bias cooler ones
-          plumed_cmd(plumedmain,"GREX getFlying",&flying);
+          plumed_cmd(plumedmain,"GREX getFlying",&isflying);
 
           plumed_cmd(plumedmain,"GREX setPartner",&partner);
           plumed_cmd(plumedmain,"GREX calculate",NULL);
@@ -1120,7 +1120,7 @@ test_for_replica_exchange(FILE                 *fplog,
                   char buf[300];
                   sprintf(buf,"GREX getDeltaBias %d",a); plumed_cmd(plumedmain,buf,&adb);
                   sprintf(buf,"GREX getDeltaBias %d",b); plumed_cmd(plumedmain,buf,&bdb);
-                  if(flying) {
+                  if(isflying) {
                       // in flying Gaussian with parallel tempering only warmer replicas bias cooler ones
                       dplumed=bdb*(re->beta[a]-re->beta[b]);
                   } else {
