@@ -3014,6 +3014,13 @@ fi
 # (e.g. MPI) have been checked.
 compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
 
+# on OSX, prefer clang++
+case `(uname)` in
+  (Darwin)
+    compilers="clang++ $compilers"
+  ;;
+esac
+
 # if searching for MPI, try first mpi-like compilers
 if test $mpi == true ; then
 compilers="mpic++ mpicxx mpiicpc openmpic++ openmpicxx $compilers"

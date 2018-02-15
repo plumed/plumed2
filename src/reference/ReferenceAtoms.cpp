@@ -99,9 +99,8 @@ void ReferenceAtoms::singleDomainRequests( std::vector<AtomNumber>& numbers, boo
       if( numbers.size()!=indices.size() ) error("mismatched numbers of atoms in pdb frames");
     }
 
-    bool found;
     for(unsigned i=0; i<indices.size(); ++i) {
-      found=false;
+      bool found=false;
       if(!disable_checks) {
         if( indices[i]!=numbers[i] ) error("found mismatched reference atoms in pdb frames");
         atom_der_index[i]=i;

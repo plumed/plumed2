@@ -80,7 +80,7 @@ double ActionWithInputMatrix::retrieveConnectionValue( const unsigned& i, const 
   if( !mymatrix->matrixElementIsActive( i, j ) ) return 0;
   unsigned myelem = mymatrix->getStoreIndexFromMatrixIndices( i, j );
 
-  unsigned vi; double df;
+  // unsigned vi; double df;
   mymatrix->retrieveValueWithIndex( myelem, false, vals );
   return vals[0]*vals[1];       // (mymatrix->function)->transformStoredValues( vals, vi, df );
 }
