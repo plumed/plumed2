@@ -27,7 +27,7 @@
 #include <iostream>
 #ifdef __PLUMED_HAS_CREGEX
 #include <cstring>
-#include "regex.h"
+#include <regex.h>
 #endif
 
 using namespace std;
