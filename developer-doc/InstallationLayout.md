@@ -107,7 +107,7 @@ object file compiled from `buildroot/src/wrapper/Plumed.cpp`
 To summarize:
 - `bin/plumed` = `buildroot/src/main/main.cpp` + `lib/libplumed.so`
 - `lib/libplumed.so` = `buildroot/src/wrapper/PlumedStatic.cpp` + `lib/libplumedKernel.so`
-- `lib/libplumedWrapper.so` = `buildroot/src/wrapper/Plumed.cpp`
+- `lib/libplumedWrapper.a` = `buildroot/src/wrapper/Plumed.cpp`
 
 The logic of this subdivision is that it is possible to either link the MD code to `/usr/local/lib/libplumed.so`
 or to link it to a single object file (the one compiled from `buildroot/src/wrapper/Plumed.c` or the installed `libplumedWrapper.a`)
