@@ -162,6 +162,8 @@ install:
 script:
 # make sure all modules are enabled
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=all"
+# disable tracking dependencies, to build faster
+  - CONFIG_FLAGS="$CONFIG_FLAGS --disable-dependency-tracking"
 # we enable fftw, which is off by default
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-fftw"
 # enable boost_serialization to test drr module
