@@ -64,7 +64,10 @@ MultiBias::MultiBias(const ActionOptions&ao):
 
       // Now make sure we have the derivative size correct
       nderivatives=0;
-      for(unsigned i=0;i<distinct_arguments.size();++i) nderivatives += distinct_arguments[i]->getNumberOfDerivatives();
+      for(unsigned i=0;i<distinct_arguments.size();++i) {
+          if( distinct_arguments[i].second==0 ) nderivatives += distinct_arguments[i].first->getNumberOfDerivatives();
+          else nderivatives += distinct_arguments[i].first->getFullNumberOfTasks();
+      }
       // Set forces to apply to correct size
       forcesToApply.resize( nderivatives );
   }
@@ -117,7 +120,7 @@ void MultiBias::performTask( const unsigned& current, MultiValue& myvals ) const
       if( (matinp && matout) || !matinp ) {
            unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
            for(unsigned i=0;i<distinct_arguments.size();++i){
-               unsigned istrn = (distinct_arguments[i]->copyOutput(0))->getPositionInStream();
+               unsigned istrn = (distinct_arguments[i].first->copyOutput(0))->getPositionInStream();
                for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
                    unsigned kind = myvals.getActiveIndex(istrn,k);
                    myvals.updateIndex( ostrn, arg_deriv_starts[i] + kind );

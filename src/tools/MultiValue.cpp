@@ -48,6 +48,7 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder, const unsig
   symfunc_index(0),
   symfunc_tmp_derivs(nvals)
 {
+  for(unsigned i=0;i<nmat;++i) mat_indices[i].resize( nder );
 }
 
 void MultiValue::resize( const unsigned& nvals, const unsigned& nder, const unsigned& ncols, const unsigned& nmat ) {
@@ -55,6 +56,7 @@ void MultiValue::resize( const unsigned& nvals, const unsigned& nder, const unsi
   hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder); 
   nmatrix_cols=ncols; matrix_element_nind.resize(nmat); matrix_element_indices.resize(ncols*nmat); 
   matrix_element_stash.resize(ncols*nmat); nindices=0; mat_nindices.resize(nmat,0); mat_indices.resize(nmat);
+  for(unsigned i=0;i<nmat;++i) mat_indices[i].resize( nder );
   symfunc_tmp_derivs.resize( nvals ); atLeastOneSet=false;
 }
 

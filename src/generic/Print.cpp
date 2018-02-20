@@ -168,7 +168,7 @@ Print::Print(const ActionOptions&ao):
   log.printf("  with format %s\n",fmt.c_str());
   if( tstyle=="colvar" ){
       for(unsigned i=0; i<getNumberOfArguments(); ++i){  // ofile.setupPrintValue( getPntrToArgument(i) );
-          getPntrToArgument(i)->buildDataStore();
+          getPntrToArgument(i)->buildDataStore( getLabel() );
           if( getPntrToArgument(i)->isPeriodic() ){ 
               ofile.addConstantField("min_" + getPntrToArgument(i)->getName() );
               ofile.addConstantField("max_" + getPntrToArgument(i)->getName() );

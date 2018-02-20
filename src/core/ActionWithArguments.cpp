@@ -234,7 +234,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
     ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
     plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
     addDependency(action);
-    if( storing ) arguments[i]->buildDataStore();
+    if( storing ) arguments[i]->buildDataStore( getLabel() ); 
     // Check if we already have this argument in the stream
     if( arguments[i]->getRank()>0 ) { 
         bool found=false; ActionWithValue* myact = (arguments[i]->getPntrToAction())->getActionThatCalculates();
@@ -250,7 +250,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
   // This is a way of checking if we are in an ActionWithValue by looking at the keywords -- is there better fix?
   if( firstcall ) {
       if( !keywords.exists("SERIAL") ){
-          for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore(); }
+          for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore( getLabel() ); }
           return;
       }
   } else {
@@ -275,38 +275,55 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
               }
           }
       } else {
-          for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore(); }
+          for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore( getLabel() );  } 
       }
   } else if( f_actions.size()==1 ) done_over_stream=true;  
 
   if( done_over_stream ) {
       // Get the action where this argument should be applied 
       ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( arguments[0]->getPntrToAction() );
-      if( !aa || aa->mustBeTreatedAsDistinctArguments() ) distinct_arguments.push_back( arguments[0]->getPntrToAction() );
-      else distinct_arguments.push_back( aa->getFirstNonStream() );
+      bool distinct_but_stored=false;
+      for(unsigned i=0;i<arguments[0]->store_data_for.size();++i) {
+          if( arguments[0]->store_data_for[i]==getLabel() ){ distinct_but_stored=true; arguments[0]->args_in_stream=true; break; }
+      }
+      if( !aa || aa->mustBeTreatedAsDistinctArguments() ) {
+          if( !distinct_but_stored ) distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(arguments[0]->getPntrToAction(),0) );
+          else distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(arguments[0]->getPntrToAction(),1) );
+      } else {
+          if( !distinct_but_stored ) distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(aa->getFirstNonStream(),0) );
+          else distinct_arguments.push_back(std::pair<ActionWithValue*,unsigned>(aa->getFirstNonStream(),1) );
+      }
       // Build vector with locations to keep derivatives of arguments 
       arg_deriv_starts.clear(); arg_deriv_starts.resize(0);
-      arg_deriv_starts.push_back(0); unsigned nder = distinct_arguments[0]->getNumberOfDerivatives();
+      arg_deriv_starts.push_back(0); unsigned nder = distinct_arguments[0].first->getNumberOfDerivatives();
       
       for(unsigned i=1;i<getNumberOfArguments();++i){
           // Work out what action applies forces
           ActionWithValue* myval; ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( arguments[i]->getPntrToAction() );
           if( !aa || aa->mustBeTreatedAsDistinctArguments() ) myval = arguments[i]->getPntrToAction(); 
           else myval = aa->getFirstNonStream();
+
+          // Determine whether or not we need to set args_in_stream for thei arg   
+          distinct_but_stored=false;
+          for(unsigned j=0;j<arguments[i]->store_data_for.size();++j) {
+              if( arguments[i]->store_data_for[j]==getLabel() ){ distinct_but_stored=true; arguments[i]->args_in_stream=true; break; }
+          } 
           
           // Check we haven't already dealt with this argument
           int argno=-1;;
           for(unsigned j=0;j<distinct_arguments.size();++j){
-             if( myval==distinct_arguments[j] ){ argno=j; break; }
+             if( myval==distinct_arguments[j].first ){ argno=j; break; }
           }  
           if( argno>=0 ){
               arg_deriv_starts.push_back( arg_deriv_starts[argno] );
           } else {
-              arg_deriv_starts.push_back( nder ); distinct_arguments.push_back( myval ); nder += myval->getNumberOfDerivatives();
-          }   
+              arg_deriv_starts.push_back( nder ); nder += myval->getNumberOfDerivatives(); 
+              if( !distinct_but_stored ) distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(myval,0) ); 
+              else distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(myval,1) );
+          }
       }
   } else {
-      for(unsigned i=0;i<getNumberOfArguments();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore(); } 
+      for(unsigned i=0;i<getNumberOfArguments();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore( getLabel() ); } 
   }
 
 }
@@ -440,11 +457,23 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
 void ActionWithArguments::setForcesOnArguments( const std::vector<double>& forces, unsigned& start ) {
   if( done_over_stream ){
       for(unsigned i=0;i<distinct_arguments.size();++i){
-          plumed_dbg_massert( start<forces.size(), "not enough forces have been saved in " + getLabel() );
-          ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( distinct_arguments[i] );
-          if( aarg ) aarg->setForcesOnArguments( forces, start ); 
-          ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( distinct_arguments[i] );
-          if( aat ) aat->setForcesOnAtoms( forces, start );
+          if( distinct_arguments[i].second==0 ) {
+              plumed_dbg_massert( start<forces.size(), "not enough forces have been saved in " + getLabel() );
+              ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( distinct_arguments[i].first );
+              if( aarg ) aarg->setForcesOnArguments( forces, start ); 
+              ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( distinct_arguments[i].first );
+              if( aat ) aat->setForcesOnAtoms( forces, start );
+          } else {
+              for(unsigned j=0;j<arguments.size();++j) {
+                  if( !arguments[j]->args_in_stream ) continue ;
+                  if( arguments[j]->getPntrToAction()==distinct_arguments[i].first ) {
+                      for(unsigned k=0;k<arguments[j]->getNumberOfValues( getLabel() );++k) { 
+                          plumed_dbg_assert( start<forces.size() );
+                          arguments[j]->addForce( k, forces[start] ); start++; 
+                      }
+                  }
+              }
+          }
       } 
   } else {
       for(unsigned i=0;i<arguments.size();++i) {
@@ -471,6 +500,25 @@ unsigned ActionWithArguments::getNumberOfArgumentsPerTask() const {
   unsigned ntasks = 0; 
   for(unsigned i=0;i<arguments.size();++i) ntasks += arguments[i]->getNumberOfValues( getLabel() );
   return ntasks;
+}
+
+void ActionWithArguments::getNumberOfStashedInputArguments( unsigned& nquants ) const {
+  const ActionWithValue* av = dynamic_cast<const ActionWithValue*>( this ); plumed_assert( av );
+  for(unsigned i=0;i<arguments.size();++i) {
+      if( arguments[i]->args_in_stream ) {
+          arguments[i]->argstreampos=nquants; nquants++;
+      }
+  }
+}
+
+void ActionWithArguments::getStashedInputArguments( const unsigned& task_index, MultiValue& myvals ) const {
+  for(unsigned i=0;i<arguments.size();++i) {
+      if( arguments[i]->args_in_stream ) {
+           unsigned istrn = arguments[i]->argstreampos;
+           myvals.setValue( istrn, arguments[i]->get( task_index ) );
+           myvals.addDerivative( istrn, task_index, 1.0 );
+      }
+  }
 }
 
 }

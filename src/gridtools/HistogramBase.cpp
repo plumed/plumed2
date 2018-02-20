@@ -130,7 +130,7 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
   } else {
       bool hasrank = getPntrToArgument(0)->getRank()>0;
       if( hasrank ) { 
-          for(unsigned i=0;i<getNumberOfArguments();++i){ getPntrToArgument(i)->buildDataStore(); plumed_assert( getPntrToArgument(i)->getRank()>0 ); }
+          for(unsigned i=0;i<getNumberOfArguments();++i){ getPntrToArgument(i)->buildDataStore( getLabel() ); plumed_assert( getPntrToArgument(i)->getRank()>0 ); }
           for(unsigned i=0;i<nvals;++i) addTaskToList(i);
       } else {
           one_kernel_at_a_time=true; for(unsigned i=0;i<arg_ends.size();++i){ if( arg_ends[i]!=i ){ one_kernel_at_a_time=false; break; } }

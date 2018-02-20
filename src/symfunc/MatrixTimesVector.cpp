@@ -92,7 +92,9 @@ public:
                               std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit MatrixTimesVector(const ActionOptions&);
+  unsigned getNumberOfDerivatives() const ;
   void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const ;
+  void updateDerivativeIndices( MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(MatrixTimesVector,"MATRIX_VECTOR_PRODUCT")
@@ -159,9 +161,14 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
   std::vector<Value*> vecs; parseArgumentList("VECTOR",vecs);
   if( vecs.size()!=1 ) error("keyword VECTOR shoudl only be provided with the label of a singl action");
   if( vecs[0]->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("shape of input vector should match second dimension of input WEIGHT matrix");
-  vecs[0]->buildDataStore(); log.printf("  calculating product of input weight matrix with vector of weights labelled %s \n",vecs[0]->getName().c_str() );
+  vecs[0]->buildDataStore( getLabel() ); 
+  log.printf("  calculating product of input weight matrix with vector of weights labelled %s \n",vecs[0]->getName().c_str() );
   std::vector<Value*> args( getArguments() ); args.push_back( vecs[0] ); 
   requestArguments( args, true ); addValueWithDerivatives();
+}
+
+unsigned MatrixTimesVector::getNumberOfDerivatives() const {
+  return SymmetryFunctionBase::getNumberOfDerivatives() + getPntrToArgument(1)->getShape()[0];
 }
 
 void MatrixTimesVector::compute( const double& val, const Vector& dir, MultiValue& myvals ) const {
@@ -169,7 +176,17 @@ void MatrixTimesVector::compute( const double& val, const Vector& dir, MultiValu
   double func = getPntrToArgument(1)->get(tindex); addToValue( 0, val*func, myvals ); 
   if( doNotCalculateDerivatives() ) return;  
   addWeightDerivative( 0, func, myvals ); 
-  myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), arg_deriv_starts[1] + tindex, func );
+  myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), arg_deriv_starts[1] + tindex, val );
+}
+
+void MatrixTimesVector::updateDerivativeIndices( MultiValue& myvals ) const {
+  SymmetryFunctionBase::updateDerivativeIndices( myvals );
+  for(unsigned i=arg_deriv_starts[1];i<getNumberOfDerivatives();++i) {
+      for(unsigned j=0;j<getNumberOfComponents();++j){
+           unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+           myvals.updateIndex( ostrn, i );
+      } 
+  }
 }
 
 }

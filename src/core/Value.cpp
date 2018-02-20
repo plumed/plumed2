@@ -44,6 +44,8 @@ Value::Value():
   columnsums(false),
   bufstart(0),
   streampos(0),
+  args_in_stream(false),
+  argstreampos(-1),
   periodicity(unset),
   min(0.0),
   max(0.0),
@@ -65,6 +67,8 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   columnsums(false),
   bufstart(0),
   streampos(0),
+  args_in_stream(false),
+  argstreampos(-1),
   periodicity(unset),
   min(0.0),
   max(0.0),
@@ -99,7 +103,12 @@ void Value::setupPeriodicity() {
   }
 }
 
-void Value::buildDataStore(){
+void Value::buildDataStore( const std::string& actlabel ){
+  bool found=false;
+  for(unsigned i=0;i<store_data_for.size();++i){
+      if( actlabel==store_data_for[i] ) found=true;
+  }   
+  if( !found ) store_data_for.push_back( actlabel );
   storedata=true;
 }
 
@@ -355,14 +364,13 @@ std::string Value::getOutputDescription( const std::string& alabel ) const {
      if( hasDerivatives() ) return " grid labelled " + name;
      if( getRank()==1 ) return " vector labelled " + name;
      if( getRank()==2 ) return " matrix labelled " + name;
-  } else {
-     // N.B. Output for rank 2 values in this case is not very transparent. 
-     std::string num, datp; 
-     for(unsigned i=0;i<userdata.find(alabel)->second.size();++i){
-         Tools::convert( userdata.find(alabel)->second[i].first+1, num ); datp += " " + name + "." + num;
-     }
-     return datp;
+  } 
+  // N.B. Output for rank 2 values in this case is not very transparent. 
+  std::string num, datp; 
+  for(unsigned i=0;i<userdata.find(alabel)->second.size();++i){
+      Tools::convert( userdata.find(alabel)->second[i].first+1, num ); datp += " " + name + "." + num;
   }
+  return datp;
 }
 
 // void Value::setBufferPosition( const unsigned& ibuf ){

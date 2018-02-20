@@ -138,7 +138,7 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
     pdisplacements[i].setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names ); wsum.push_back( 0.0 );
   }
   // Make sure we collect all the data
-  squared = true; getPntrToComponent(0)->buildDataStore();
+  squared = true; getPntrToComponent(0)->buildDataStore( getLabel() );
 
   // Information for write out
   std::string wfilename; parse("WFILE",wfilename);

@@ -67,7 +67,7 @@ Highest::Highest(const ActionOptions&ao):
      if( getPntrToArgument(0)->getRank()>0 ) {
          if( getNumberOfArguments()>1 ) error("should only use one non-scalar argument in input for ARG keyword");
      }
-     for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore(); 
+     for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore( getLabel() ); 
   }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     string s; Tools::convert(i+1,s);

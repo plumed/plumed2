@@ -136,7 +136,8 @@ usecols(false)
   // If we are doing the calculation as we compute matrix elements we must store all matrix elements
   // in rows.  Actually we store whole matrix because I don't want to make more complicated options 
   if( !done_with_matrix_comput ) {
-      for(unsigned i=0;i<wval.size();++i) wval[i]->buildDataStore(); 
+      // The -mat here is added to prevent this behaving like a proper stored value when updating forces
+      for(unsigned i=0;i<wval.size();++i) wval[i]->buildDataStore( getLabel() + "-mat" ); 
   }
   requestArguments(wval,true); forcesToApply.resize( nderivatives );
   if( getPntrToArgument(0)->getRank()==2 ) {
@@ -280,19 +281,21 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
               myvals.setMatrixStashForNormalRun();
           }
       }
-      if( !doNotCalculateDerivatives() ) {
-          // Update derivatives for indices
-          unsigned istrn = getPntrToArgument(0)->getPositionInMatrixStash();
-          std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( istrn ) );
-          for(unsigned i=0;i<myvals.getNumberOfMatrixIndices(istrn);++i) {
-              for(unsigned j=0;j<getNumberOfComponents();++j){
-                  unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
-                  myvals.updateIndex( ostrn, mat_indices[i] );
-              }
-          }
-      }
+      // Update derivatives for indices
+      if( !doNotCalculateDerivatives() ) updateDerivativeIndices( myvals );
   }
 } 
+
+void SymmetryFunctionBase::updateDerivativeIndices( MultiValue& myvals ) const {
+   unsigned istrn = getPntrToArgument(0)->getPositionInMatrixStash();
+   std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( istrn ) );
+   for(unsigned i=0;i<myvals.getNumberOfMatrixIndices(istrn);++i) {
+       for(unsigned j=0;j<getNumberOfComponents();++j){
+           unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+           myvals.updateIndex( ostrn, mat_indices[i] );
+       }
+   }
+}
 
 void SymmetryFunctionBase::computeSymmetryFunction( const unsigned& current, MultiValue& myvals ) const { 
   Vector dir;
@@ -320,6 +323,7 @@ void SymmetryFunctionBase::computeSymmetryFunction( const unsigned& current, Mul
 
 void SymmetryFunctionBase::apply() {
   if( doNotCalculateDerivatives() ) return;
+  if( forcesToApply.size()!=getNumberOfDerivatives() ) forcesToApply.resize( getNumberOfDerivatives() );
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
   if( getForcesFromValues( forcesToApply ) ){ setForcesOnArguments( forcesToApply, mm ); } 
 }

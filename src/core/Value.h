@@ -75,10 +75,14 @@ private:
   bool alwaysstore;
 /// Are we storing the data
   bool storedata;
+  std::vector<std::string> store_data_for;
 /// Are we taking column sums
   bool columnsums;
 /// Variables for storing data
   unsigned bufstart, streampos, matpos;
+/// Variables for storing data
+  bool args_in_stream;
+  int argstreampos;
 /// Store information on who is using information contained in this value 
   std::map<std::string,std::vector<std::pair<int,int> > > userdata; 
 /// Is this quantity periodic
@@ -165,7 +169,7 @@ public:
   void setGradients();
   static double projection(const Value&,const Value&);
 /// Build the store of data
-  void buildDataStore();
+  void buildDataStore( const std::string& actlabel );
   void alwaysStoreValues();
   void buildColumnSums();
 ///

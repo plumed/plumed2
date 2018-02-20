@@ -109,6 +109,8 @@ private:
   int getComponent( const std::string& name ) const;
 ///  Run the task
   void runTask( const unsigned& index, const unsigned& taskno, MultiValue& myvals ) const ;
+/// Retrieve the forces for a particualr task
+  void getForcesForTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals, const std::vector<Value*>& vals, std::vector<double>& forces ) const ;
   void gatherAccumulators( const unsigned& index, const MultiValue& myvals, std::vector<double>& buf ) const ;
   void finishComputations( const std::vector<double>& buf );
   bool checkForGrids() const ;
@@ -144,6 +146,8 @@ protected:
   void runAllTasks();  
 /// Run all calculations in serial
   bool runInSerial() const ;
+/// Apply the forces due to a specific task
+  void applyForcesForTask( const unsigned& itask, const std::vector<Value*>& vals, MultiValue& myvals, std::vector<double>& forces ) const ;
 public:
 /// Get the action that does the calculation
   ActionWithValue* getActionThatCalculates();
@@ -237,6 +241,9 @@ public:
   void rerunTask( const unsigned& task_index, MultiValue& myvals ) const ;
 /// Run a task for a matrix element
   void runTask( const std::string& controller, const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
+/// Get forces for a matrix element
+  void getForcesForTask( const std::string& controller, const unsigned& task_index, const unsigned& current,
+                         const unsigned colno, MultiValue& myvals, const std::vector<Value*>& vals, std::vector<double>& forces ) const ;
   void clearMatrixElements( MultiValue& myvals ) const ;
 ///
   virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) { plumed_merror( "problem in task list for " + getLabel() ); }
@@ -255,6 +262,11 @@ public:
   virtual void prepareForTasks();
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
+///
+  virtual void performForces( const unsigned& current, MultiValue& myvals, const std::vector<Value*>& vals, std::vector<double>& forces ) const ;
+///
+  virtual void performForces( const std::string& controller, const unsigned& index1, const unsigned& index2, 
+                              MultiValue& myvals, const std::vector<Value*>& vals, std::vector<double>& forces ) const {} ;
 ///
   virtual void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals, 
                                        const unsigned& bufstart, std::vector<double>& buffer ) const { plumed_error(); }

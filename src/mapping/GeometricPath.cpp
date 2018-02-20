@@ -116,7 +116,7 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   mypack3( 0, 0, mydpack3 )
 {
   // Ensure that values are stored in base calculation and that PLUMED doesn't try to calculate this in the stream
-  plumed_assert( !actionInChain() ); getPntrToArgument(0)->buildDataStore();
+  plumed_assert( !actionInChain() ); getPntrToArgument(0)->buildDataStore( getLabel() );
   // Some sanity checks
   bool rankOneOutput = getPntrToArgument(0)->getRank()>0;
   if( getPntrToArgument(0)->getRank()>1 ) error("input arguments should be rank 0 or rank 1");

@@ -482,6 +482,9 @@ void ActionWithValue::setupVirtualAtomStashes( unsigned& nquants ) {
 }
 
 void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const {
+  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( aa ) aa->getNumberOfStashedInputArguments( nquants );
+
   for(unsigned i=0;i<values.size();++i){ 
      if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ){ 
          if( values[i]->getShape()[1]>ncols ){ ncols = values[i]->getShape()[1]; }
@@ -707,21 +710,8 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
         #pragma omp for nowait
         for(unsigned i=rank;i<nactive_tasks;i+=stride){
             unsigned itask = av->indexOfTaskInFullList[i]; 
-            av->runTask( itask, av->partialTaskList[i], myvals );
-            for(unsigned k=0;k<values.size();++k){
-                unsigned sspos = values[k]->streampos; double fforce = values[k]->getForce(itask);
-                if( nt>1 ) {
-                   for(unsigned j=0;j<myvals.getNumberActive(sspos);++j){
-                        unsigned jder=myvals.getActiveIndex(sspos, j);
-                        omp_forces[jder] += fforce*myvals.getDerivative( sspos, jder );
-                    }
-                } else {
-                    for(unsigned j=0;j<myvals.getNumberActive(sspos);++j){
-                        unsigned jder=myvals.getActiveIndex(sspos, j);
-                        forces[jder] += fforce*myvals.getDerivative( sspos, jder );
-                    }
-                }
-            }
+            if( nt>1 ) av->getForcesForTask( itask, av->partialTaskList[i], myvals, values, omp_forces );
+            else av->getForcesForTask( itask, av->partialTaskList[i], myvals, values, forces );
             myvals.clearAll();
         }
         #pragma omp critical
@@ -732,5 +722,60 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
    }
    return at_least_one_forced;
 }
+
+void ActionWithValue::getForcesForTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals,
+                                        const std::vector<Value*>& vals, std::vector<double>& forces ) const {
+   if( isActive() ) {
+       myvals.setTaskIndex(task_index); myvals.vector_call=true; performForces( current, myvals, vals, forces );
+   }
+   if( action_to_do_after ) action_to_do_after->getForcesForTask( task_index, current, myvals, vals, forces );
+}
+
+void ActionWithValue::performForces( const unsigned& current, MultiValue& myvals, const std::vector<Value*>& vals, std::vector<double>& forces ) const {
+   performTask( current, myvals ); applyForcesForTask( myvals.getTaskIndex(), vals, myvals, forces );
+}
+
+void ActionWithValue::applyForcesForTask( const unsigned& itask, const std::vector<Value*>& vals,
+                                          MultiValue& myvals, std::vector<double>& forces ) const {
+   for(unsigned k=0;k<values.size();++k) {
+       if( values[k]->hasForce && values[k]->getPntrToAction()==this ) {
+           unsigned sspos = values[k]->streampos; double fforce = values[k]->getForce(itask);
+           for(unsigned j=0;j<myvals.getNumberActive(sspos);++j) {
+               unsigned jder=myvals.getActiveIndex(sspos, j); forces[jder] += fforce*myvals.getDerivative( sspos, jder );
+           }
+       }
+   }
+}
+
+void ActionWithValue::getForcesForTask( const std::string& controller, const unsigned& task_index, const unsigned& current,
+                                        const unsigned colno, MultiValue& myvals, const std::vector<Value*>& vals,
+                                        std::vector<double>& forces ) const {
+  // Do matrix element task
+  unsigned col_stash_index = colno; if( colno>=getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
+  unsigned itask = getFullNumberOfTasks()*myvals.getTaskIndex() + col_stash_index;
+  myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno );
+  if( isActive() ) performForces( controller, current, colno, myvals, vals, forces );
+  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( aa ){     
+      if( actionInChain() ) {
+          // Now check if the task takes a matrix as input - if it does do it
+          bool do_this_task = ((aa->getPntrToArgument(0))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() );
+#ifdef DNDEBUG          
+          if( do_this_task ){
+              for(unsigned i=1;i<aa->getNumberOfArguments();++i){
+                  plumed_dbg_assert( (aa->getPntrToArgument(i))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() );
+              }         
+          }             
+#endif              
+          if( do_this_task && isActive() ){
+              myvals.vector_call=false; myvals.setTaskIndex(task_index); 
+              performForces( current, myvals, vals, forces );
+          }
+      }
+  }
+  // Now continue on with the stream
+  if( action_to_do_after ) action_to_do_after->getForcesForTask( controller, task_index, current, colno, myvals, vals, forces );
+}
+
 
 }

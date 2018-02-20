@@ -50,7 +50,7 @@ private:
   bool done_over_stream;
 protected:
   bool numberedkeys;
-  std::vector<ActionWithValue*> distinct_arguments;
+  std::vector< std::pair<ActionWithValue*,unsigned> > distinct_arguments;
   std::vector<unsigned> arg_ends, arg_deriv_starts;
 /// This changes the arg keyword in the pdb file
   void expandArgKeywordInPDB( PDB& pdb );
@@ -102,6 +102,10 @@ public:
   void retrieveArguments( const MultiValue& myvals, std::vector<double>& args ) const ;
 /// This tells us which arguments must be treated as distinct in functions
   virtual bool mustBeTreatedAsDistinctArguments() const ;
+/// Get the number of quantities that must be stored in input
+  void getNumberOfStashedInputArguments( unsigned& nquants ) const ;
+/// Get the set of input arguments that have been stored for later use
+  void getStashedInputArguments( const unsigned& task_index, MultiValue& myvals ) const ;
 };
 
 

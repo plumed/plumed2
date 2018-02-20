@@ -213,7 +213,7 @@ bool VectorProductMatrix::performTask( const std::string& controller, const unsi
 
   unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
   std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
-  if( matrix_indices.size()<getNumberOfDerivatives() ) matrix_indices.resize( getNumberOfDerivatives() );
+  plumed_dbg_assert( matrix_indices.size()>=getNumberOfDerivatives() );
   unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat ); 
   for(unsigned i=0;i<nargs;++i) {
       plumed_dbg_assert( index1 + i*invals<getNumberOfDerivatives() );

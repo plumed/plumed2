@@ -37,9 +37,12 @@ class AdjacencyMatrixBase :
 private:
   bool nopbc, components;
   LinkCells linkcells, threecells;
+  std::vector<double> forcesToApply;
   std::vector<unsigned> ablocks, threeblocks;
   void updateWeightDerivativeIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   void setupThirdAtomBlock( const std::vector<AtomNumber>& tc, std::vector<AtomNumber>& t );
+  void setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const ;
+  void updateMatrixIndices( const std::vector<unsigned> & indices, MultiValue& myvals ) const ;
 protected:
   Vector getPosition( const unsigned& indno, const MultiValue& myvals ) const ;
   void addAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const ;
@@ -54,7 +57,10 @@ public:
   void calculate();
   void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
   bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
+  void performForces( const std::string& controller, const unsigned& index1, const unsigned& index2, 
+                      MultiValue& myvals, const std::vector<Value*>& vals, std::vector<double>& forces ) const ; 
   virtual double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const = 0;
+  void performForces( const unsigned& it, MultiValue& myvals, const std::vector<Value*>& invals, std::vector<double>& ff ) const ;
   void apply();
 };
 

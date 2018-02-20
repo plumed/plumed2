@@ -66,7 +66,7 @@ ActionWithArguments(ao)
    std::vector<std::string> alabels(1); alabels[0]=(getPntrToArgument(0)->getPntrToAction())->getLabel(); 
    (getPntrToArgument(0)->getPntrToAction())->addActionToChain( alabels, this );
    // Now create a value
-   std::vector<unsigned> shape(2); getPntrToArgument(0)->buildDataStore();
+   std::vector<unsigned> shape(2); getPntrToArgument(0)->buildDataStore( getLabel() );
    shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(0)->getShape()[1];
    for(unsigned i=0;i<shape[0];++i) addTaskToList( i );
    addValue( shape );
