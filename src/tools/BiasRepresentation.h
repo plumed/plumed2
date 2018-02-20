@@ -34,7 +34,7 @@ class IFile;
 class KernelFunctions;
 class Communicator;
 
-//+PLUMEDOC INTERNAL biasrepresentation 
+//+PLUMEDOC INTERNAL biasrepresentation
 /*
 
 */
