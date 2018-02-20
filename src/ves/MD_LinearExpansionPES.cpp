@@ -35,6 +35,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
+#include "core/Value.h"
 
 #include <string>
 #include <cstdio>
