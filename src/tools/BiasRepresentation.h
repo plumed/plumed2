@@ -23,14 +23,18 @@
 #define __PLUMED_tools_BiasRepresentation_h
 
 #include "Exception.h"
-#include "KernelFunctions.h"
-#include "File.h"
-#include "Grid.h"
 #include <memory>
+#include <vector>
 
 namespace PLMD {
 
-//+PLUMEDOC INTERNAL biasrepresentation
+class Value;
+class Grid;
+class IFile;
+class KernelFunctions;
+class Communicator;
+
+//+PLUMEDOC INTERNAL biasrepresentation 
 /*
 
 */

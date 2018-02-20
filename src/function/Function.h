@@ -24,7 +24,6 @@
 
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
-#include "tools/Communicator.h"
 
 namespace PLMD {
 namespace function {

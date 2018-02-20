@@ -27,7 +27,6 @@
 
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
-#include "tools/Tools.h"
 
 namespace PLMD {
 namespace colvar {

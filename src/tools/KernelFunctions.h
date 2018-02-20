@@ -22,7 +22,6 @@
 #ifndef __PLUMED_tools_KernelFunctions_h
 #define __PLUMED_tools_KernelFunctions_h
 
-#include "Tools.h"
 #include "Matrix.h"
 #include "core/Value.h"
 #include <vector>
