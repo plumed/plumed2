@@ -111,8 +111,8 @@ endif
            sed "s|@_SOEXT_@|$(SOEXT)|" | \
            sed "s|@_program_name_@|$(program_name)|" | \
            sed "s|@_libdir_@|$(libdir)|" | \
-           sed "s|@_libs_@|$(LIBS) $(DYNAMIC_LIBS)|" | \
-           sed "s|@_private_libs_@||" | \
+           sed "s|@_libs_@||" | \
+           sed "s|@_private_libs_@|$(LIBS) $(DYNAMIC_LIBS)|" | \
            sed "s|@_bindir_@|$(bindir)|" | \
            sed "s|@_includedir_@|$(includedir)|" | \
            sed "s|@_prefix_@|$(prefix)|" | \
