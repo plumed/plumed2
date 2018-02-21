@@ -85,6 +85,10 @@ ifneq ($(PLUMED_INSTALL),Install)
 	$(MAKE) install-build
 endif
 
+# on Mac, for pkgconfigInternals should also link -lplumedKernel
+ifeq ($(SOEXT),dylib)
+  LIBS_PLUMED_KERNEL=-l$(program_name)Kernel
+endif
 
 dirs:
 	@echo "*** Compiling all directories ***"
@@ -126,7 +130,7 @@ endif
            sed "s|@_SOEXT_@|$(SOEXT)|" | \
            sed "s|@_program_name_@|$(program_name)|" | \
            sed "s|@_libdir_@|$(libdir)|" | \
-           sed "s|@_libs_@||" | \
+           sed "s|@_libs_@|$(LIBS_PLUMED_KERNEL)|" | \
            sed "s|@_private_libs_@|$(LIBS) $(DYNAMIC_LIBS)|" | \
            sed "s|@_bindir_@|$(bindir)|" | \
            sed "s|@_includedir_@|$(includedir)|" | \
