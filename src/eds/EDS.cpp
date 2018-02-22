@@ -208,8 +208,8 @@ void EDS::registerKeywords(Keywords& keys) {
            "CENTER_ARG is for calculated centers, e.g. from a CV or analysis. ");
 
   keys.add("optional","PERIOD","Steps over which to adjust bias for adaptive or ramping");
-
   keys.add("compulsory","RANGE","3.0","The largest magnitude of the force constant which one expects (in kBT) for each CV based");
+  keys.add("compulsory","INCREASE_FACTOR","1.25","Factor by which to increase RANGE, which is the max prefactor for increasing coefficients in a step.");
   keys.add("compulsory","SEED","0","Seed for random order of changing bias");
   keys.add("compulsory","INIT","0","Starting value for coupling constant");
   keys.add("compulsory","FIXED","0","Fixed target values for coupling constant. Non-adaptive.");
@@ -299,6 +299,7 @@ EDS::EDS(const ActionOptions&ao):
   parseVector("FIXED",target_coupling_);
   parseVector("INIT",set_coupling_);
   parse("PERIOD",update_period_);
+  parse("INCREASE_FACTOR",c_range_increase_f_);
   parse("TEMP",temp);
   parse("SEED",seed_);
   parse("MULTI_PROP",multi_prop_);
@@ -821,25 +822,32 @@ void EDS::update_bias()
 
   for(unsigned int i = 0; i< ncvs_; ++i) {
 
-    //check if the step_size exceeds maximum possible gradient
-    step_size_[i] = copysign(fmin(fabs(step_size_[i]), max_coupling_grad_[i]), step_size_[i]);
-
-    //reset means/vars
-    reset_statistics();
-
     //multidimesional stochastic step
     if(ncvs_ == 1 || (rand_.RandU01() < (multi_prop_) ) ) {
+
+      double proposed_coupling_accum = coupling_accum_[i] + step_size_[i] * step_size_[i];
+      double proposed_coupling_prefactor = max_coupling_range_[i]/sqrt(proposed_coupling_accum);
+      double proposed_coupling_change = proposed_coupling_prefactor*step_size_[i];
+
+      //check if update to coupling exceeds maximum possible gradient
+      double coupling_change = copysign(fmin(fabs(proposed_coupling_change), max_coupling_grad_[i]), proposed_coupling_change);
+
+      step_size_[i] = coupling_change/proposed_coupling_prefactor;
       coupling_accum_[i] += step_size_[i] * step_size_[i];
 
       //equation 5 in White and Voth, JCTC 2014
       //no negative sign because it's in step_size
-      set_coupling_[i] += max_coupling_range_[i]/sqrt(coupling_accum_[i])*step_size_[i];
+      set_coupling_[i] += coupling_change;
       coupling_rate_[i] = (set_coupling_[i]-current_coupling_[i])/update_period_;
 
     } else {
       //do not change the bias
       coupling_rate_[i] = 0;
     }
+
+    //reset means/vars
+    reset_statistics();
+
   }
 }
 
