@@ -271,10 +271,10 @@ bool AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
 }
 
 void AdjacencyMatrixBase::performForces( const std::string& controller, const unsigned& index1, const unsigned& index2, 
-                                        MultiValue& myvals, const std::vector<Value*>& vals, std::vector<double>& forces ) const { 
+                                        MultiValue& myvals, const std::vector<Value*>& invals, std::vector<double>& forces ) const { 
   performTask( controller, index1, index2, myvals ); 
   unsigned col_stash_index = index2; if( index2>=getFullNumberOfTasks() ) col_stash_index = index2 - getFullNumberOfTasks();
-  unsigned itask = getFullNumberOfTasks()*index1 + col_stash_index; applyForcesForTask( itask, vals, myvals, forces );
+  unsigned itask = getFullNumberOfTasks()*index1 + col_stash_index; applyForcesForTask( itask, invals, myvals, forces );
 }
 
 void AdjacencyMatrixBase::apply() {

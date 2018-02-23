@@ -724,22 +724,22 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
 }
 
 void ActionWithValue::getForcesForTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals,
-                                        const std::vector<Value*>& vals, std::vector<double>& forces ) const {
+                                        const std::vector<Value*>& invals, std::vector<double>& forces ) const {
    if( isActive() ) {
-       myvals.setTaskIndex(task_index); myvals.vector_call=true; performForces( current, myvals, vals, forces );
+       myvals.setTaskIndex(task_index); myvals.vector_call=true; performForces( current, myvals, invals, forces );
    }
-   if( action_to_do_after ) action_to_do_after->getForcesForTask( task_index, current, myvals, vals, forces );
+   if( action_to_do_after ) action_to_do_after->getForcesForTask( task_index, current, myvals, invals, forces );
 }
 
-void ActionWithValue::performForces( const unsigned& current, MultiValue& myvals, const std::vector<Value*>& vals, std::vector<double>& forces ) const {
-   performTask( current, myvals ); applyForcesForTask( myvals.getTaskIndex(), vals, myvals, forces );
+void ActionWithValue::performForces( const unsigned& current, MultiValue& myvals, const std::vector<Value*>& invals, std::vector<double>& forces ) const {
+   performTask( current, myvals ); applyForcesForTask( myvals.getTaskIndex(), invals, myvals, forces );
 }
 
-void ActionWithValue::applyForcesForTask( const unsigned& itask, const std::vector<Value*>& vals,
+void ActionWithValue::applyForcesForTask( const unsigned& itask, const std::vector<Value*>& invals,
                                           MultiValue& myvals, std::vector<double>& forces ) const {
-   for(unsigned k=0;k<values.size();++k) {
-       if( values[k]->hasForce && values[k]->getPntrToAction()==this ) {
-           unsigned sspos = values[k]->streampos; double fforce = values[k]->getForce(itask);
+   for(unsigned k=0;k<invals.size();++k) {
+       if( invals[k]->hasForce && invals[k]->getPntrToAction()==this ) {
+           unsigned sspos = invals[k]->streampos; double fforce = invals[k]->getForce(itask);
            for(unsigned j=0;j<myvals.getNumberActive(sspos);++j) {
                unsigned jder=myvals.getActiveIndex(sspos, j); forces[jder] += fforce*myvals.getDerivative( sspos, jder );
            }
@@ -748,13 +748,13 @@ void ActionWithValue::applyForcesForTask( const unsigned& itask, const std::vect
 }
 
 void ActionWithValue::getForcesForTask( const std::string& controller, const unsigned& task_index, const unsigned& current,
-                                        const unsigned colno, MultiValue& myvals, const std::vector<Value*>& vals,
+                                        const unsigned colno, MultiValue& myvals, const std::vector<Value*>& invals,
                                         std::vector<double>& forces ) const {
   // Do matrix element task
   unsigned col_stash_index = colno; if( colno>=getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
   unsigned itask = getFullNumberOfTasks()*myvals.getTaskIndex() + col_stash_index;
   myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno );
-  if( isActive() ) performForces( controller, current, colno, myvals, vals, forces );
+  if( isActive() ) performForces( controller, current, colno, myvals, invals, forces );
   const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
   if( aa ){     
       if( actionInChain() ) {
@@ -769,12 +769,12 @@ void ActionWithValue::getForcesForTask( const std::string& controller, const uns
 #endif              
           if( do_this_task && isActive() ){
               myvals.vector_call=false; myvals.setTaskIndex(task_index); 
-              performForces( current, myvals, vals, forces );
+              performForces( current, myvals, invals, forces );
           }
       }
   }
   // Now continue on with the stream
-  if( action_to_do_after ) action_to_do_after->getForcesForTask( controller, task_index, current, colno, myvals, vals, forces );
+  if( action_to_do_after ) action_to_do_after->getForcesForTask( controller, task_index, current, colno, myvals, invals, forces );
 }
 
 
