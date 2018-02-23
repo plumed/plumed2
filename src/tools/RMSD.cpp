@@ -1110,11 +1110,11 @@ double RMSDCoreData::getDistance( bool squared) {
 
   if(!isInitialized)plumed_merror("getDistance cannot calculate the distance without being initialized first by doCoreCalc ");
 
-  if(safe || !alEqDis) dist=0.0;
-  else
-    dist=eigenvals[0]+rr00+rr11;
+  double localDist=0.0;
   const unsigned n=static_cast<unsigned int>(reference.size());
-  double localDist = 0;
+  if(safe || !alEqDis) localDist=0.0;
+  else
+    localDist=eigenvals[0]+rr00+rr11;
   #pragma omp simd reduction(+:localDist)
   for(unsigned iat=0; iat<n; iat++) {
     if(alEqDis) {
