@@ -98,6 +98,7 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(MatrixTimesVector,"MATRIX_VECTOR_PRODUCT")
+PLUMED_REGISTER_SHORTCUT(MatrixTimesVector,"LOCAL_AVERAGE")
 PLUMED_REGISTER_SHORTCUT(MatrixTimesVector,"LOCAL_AVERAGE_Q6")
 
 void MatrixTimesVector::shortcutKeywords( Keywords& keys ) {
@@ -145,6 +146,16 @@ void MatrixTimesVector::expandShortcut( const std::string& lab, const std::vecto
       std::vector<std::string> mcomb; mcomb.push_back( lab + ":"); mcomb.push_back("MATHEVAL");
       mcomb.push_back("ARG1=" + lab + "_2"); mcomb.push_back("FUNC=sqrt(x)"); mcomb.push_back("PERIODIC=NO");
       actions.push_back( mcomb );  
+  } else if( words[0].find("LOCAL_AVERAGE")!=std::string::npos ) {
+      std::vector<std::string> realdata; realdata.push_back( lab + "_prod:");
+      realdata.push_back("MATRIX_VECTOR_PRODUCT"); realdata.push_back("WEIGHT=" + lab + "_mat.w");
+      realdata.push_back("VECTOR=" + keys.find("SPECIES")->second );
+      actions.push_back( realdata );
+      std::vector<std::string> realmath; realmath.push_back( lab + ":");
+      realmath.push_back("MATHEVAL"); realmath.push_back("ARG1=" + lab + "_prod");
+      realmath.push_back("ARG2=" + keys.find("SPECIES")->second );
+      realmath.push_back("ARG3=" + lab + "_coord"); realmath.push_back("FUNC=(x+y)/(1+z)");
+      realmath.push_back("PERIODIC=NO"); actions.push_back( realmath );
   }
   multicolvar::MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
 }
