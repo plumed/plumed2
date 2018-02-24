@@ -28,9 +28,10 @@
 #include <vector>
 #include <set>
 #include <memory>
-#include "tools/Units.h"
 
 namespace PLMD {
+
+class Units;
 
 /**
 Class containing interface to MDAtomsTyped

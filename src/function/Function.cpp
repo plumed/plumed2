@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
 #include "tools/OpenMP.h"
+#include "tools/Communicator.h"
 
 using namespace std;
 namespace PLMD {

@@ -1854,7 +1854,7 @@ double MetaD::getTransitionBarrierBias() {
     // starting well. With this choice the searches will terminate in one step until
     // transitionwell_[1] is sampled.
   } else {
-    double least_transition_bias, curr_transition_bias;
+    double least_transition_bias;
     vector<double> sink = transitionwells_[0];
     vector<double> source = transitionwells_[1];
     least_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
@@ -1863,7 +1863,7 @@ double MetaD::getTransitionBarrierBias() {
         break;
       }
       source = transitionwells_[i];
-      curr_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
+      double curr_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
       least_transition_bias = fmin(curr_transition_bias, least_transition_bias);
     }
     return least_transition_bias;

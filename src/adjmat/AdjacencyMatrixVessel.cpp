@@ -85,7 +85,6 @@ void AdjacencyMatrixVessel::getMatrixIndices( const unsigned& code, unsigned& i,
 }
 
 void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix ) {
-  unsigned vin; double df;
   myactive_elements.deactivateAll(); std::vector<double> vals( getNumberOfComponents() );
   for(unsigned i=0; i<getNumberOfStoredValues(); ++i) {
     retrieveSequentialValue( i, false, vals );

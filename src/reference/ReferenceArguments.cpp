@@ -109,11 +109,11 @@ void ReferenceArguments::getArgumentRequests( std::vector<std::string>& argout, 
       if( arg_names.size()!=argout.size() ) error("mismatched numbers of arguments in pdb frames");
     }
     for(unsigned i=0; i<arg_names.size(); ++i) {
-      bool found=false;
       if(!disable_checks) {
         if( argout[i]!=arg_names[i] ) error("found mismatched arguments in pdb frames");
         arg_der_index[i]=i;
       } else {
+        bool found=false;
         for(unsigned j=0; j<arg_names.size(); ++j) {
           if( argout[j]==arg_names[i] ) { found=true; arg_der_index[i]=j; break; }
         }

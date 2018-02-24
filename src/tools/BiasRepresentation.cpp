@@ -23,6 +23,10 @@
 #include "core/Value.h"
 #include "Communicator.h"
 #include <iostream>
+#include "KernelFunctions.h"
+#include "File.h"
+#include "Grid.h"
+
 
 namespace PLMD {
 

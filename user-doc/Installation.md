@@ -504,9 +504,10 @@ Particularly interesting options include:
   and the MD code, leaving to the user the possibility to combine different versions at will. 
   We also recommend to use the provided modulefile (see above) to properly set the runtime environment.
 
-Notice that it is not currently possible to link PLUMED as a static library (something like 'libplumed.a').
-The reason for this is that PLUMED heavily relies on C++ static constructors that do not behave well in static libraries.
-For this reason, to produce a static executable with an MD code + PLUMED we link PLUMED as a collection of object files.
+Notice that with PLUMED version <2.5 there was no possibility to link PLUMED as a static library (something like 'libplumed.a').
+However, starting with PLUMED 2.5, the `./configure` script will try to set up the system so that a `libplumed.a` file is produced.
+Patching an MD code with `--static` with try to link against this static library.
+Creation of the `libplumed.a` library can be avoided with `./configure --disable-static-archive`.
 
 If your MD code is not supported, you may want to implement an interface for
 it. Refer to the <a href="../../developer-doc/html/index.html"> developer
