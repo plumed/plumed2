@@ -77,6 +77,11 @@ As a general rule, put it at the top of the input file. Also, unless you
 know exactly what you are doing, leave the default stride (1), so that
 this action is performed at every MD step.
 
+\warning
+The molecule used for alignment should be whole.
+In case it is broken by the host MD code, please use \ref WHOLEMOLECULES to reconstruct it before \ref FIT_TO_TEMPLATE .
+
+
 \par Examples
 
 Align the atomic position to a template then print them.
