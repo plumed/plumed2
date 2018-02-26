@@ -45,6 +45,10 @@ zzz=-\frac{1}{\lambda}\log(\sum_i  \exp(-\lambda D_i(x)))
 where the parameters \f$X_i\f$  and  \f$Y_i\f$ are provided in the input pdb (allv.pdb in this case) and
  \f$D_i(x)\f$  is the MSD after optimal alignment calculated on the pdb frames you input (see Kearsley).
 
+\warning
+The molecule used for \ref PROPERTYMAP calculation should be whole (both atoms used in alignment and in displacement calculation).
+In case it is broken by the host MD code, please use \ref WHOLEMOLECULES to reconstruct it before \ref PROPERTYMAP calculation.
+
 \par Examples
 
 \plumedfile
