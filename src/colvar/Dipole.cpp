@@ -34,6 +34,11 @@ namespace colvar {
 /*
 Calculate the dipole moment for a group of atoms.
 
+\warning
+The atoms used for \ref DIPOLE calculation should be from a whole molecule.
+In case the molecule is broken by the host MD code, please use \ref WHOLEMOLECULES to reconstruct it before \ref DIPOLE calculation.
+
+
 \par Examples
 
 The following tells plumed to calculate the dipole of the group of atoms containing
