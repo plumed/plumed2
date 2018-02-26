@@ -37,6 +37,10 @@ This variable computes the progress along a given set of frames that is provided
 in input ("sss" component) and the distance from them ("zzz" component).
 (see below).
 
+\warning
+The molecule used for \ref PATHMSD calculation should be whole (both atoms used in alignment and in displacement calculation).
+In case it is broken by the host MD code, please use \ref WHOLEMOLECULES to reconstruct it before \ref PATHMSD calculation.
+
 \par Examples
 
 Here below is a case where you have defined three frames and you want to
