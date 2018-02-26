@@ -57,6 +57,9 @@ save_originals=
 quiet=
 mdroot=
 
+# default value:
+plumed_ignore_mpi=no
+
 for option
 do
 
@@ -281,11 +284,13 @@ case "$action" in
       echo "by the PLUMED_KERNEL environment variable"
     fi
 
-    echo ""
-    if grep -q "D__PLUMED_HAS_MPI=1" "$PLUMED_ROOT"/src/config/compile_options.sh ; then
-      echo "PLUMED is compiled with MPI support so you can configure $engine with MPI" 
-    else
-      echo "PLUMED is compiled WITHOUT MPI support so you CANNOT configure $engine with MPI"
+    if [ "$plumed_ignore_mpi" = no ] ; then
+      echo ""
+      if grep -q "D__PLUMED_HAS_MPI=1" "$PLUMED_ROOT"/src/config/compile_options.sh ; then
+        echo "PLUMED is compiled with MPI support so you can configure $engine with MPI" 
+      else
+        echo "PLUMED is compiled WITHOUT MPI support so you CANNOT configure $engine with MPI"
+      fi
     fi
 
     
