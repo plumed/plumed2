@@ -34,10 +34,16 @@ namespace colvar {
 /*
 Calculate the dipole moment for a group of atoms.
 
-\warning
-The atoms used for \ref DIPOLE calculation should be from a whole molecule.
-In case the molecule is broken by the host MD code, please use \ref WHOLEMOLECULES to reconstruct it before \ref DIPOLE calculation.
+When running with periodic boundary conditions, the atoms should be
+in the proper periodic image. This is done automatically since PLUMED 2.5,
+by considering the ordered list of atoms and rebuilding PBCs with a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED.
 
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
 
 \par Examples
 
