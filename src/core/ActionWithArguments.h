@@ -104,8 +104,8 @@ public:
   virtual bool mustBeTreatedAsDistinctArguments() const ;
 /// Get the number of quantities that must be stored in input
   void getNumberOfStashedInputArguments( unsigned& nquants ) const ;
-/// Get the set of input arguments that have been stored for later use
-  void getStashedInputArguments( const unsigned& task_index, MultiValue& myvals ) const ;
+/// This gets the position of the argument in the stream
+  unsigned getArgumentPositionInStream( const unsigned& jder, MultiValue& myvals ) const ;
 };
 
 

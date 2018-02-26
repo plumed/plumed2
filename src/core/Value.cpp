@@ -44,8 +44,6 @@ Value::Value():
   columnsums(false),
   bufstart(0),
   streampos(0),
-  args_in_stream(false),
-  argstreampos(-1),
   periodicity(unset),
   min(0.0),
   max(0.0),
@@ -67,8 +65,6 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   columnsums(false),
   bufstart(0),
   streampos(0),
-  args_in_stream(false),
-  argstreampos(-1),
   periodicity(unset),
   min(0.0),
   max(0.0),
@@ -106,9 +102,9 @@ void Value::setupPeriodicity() {
 void Value::buildDataStore( const std::string& actlabel ){
   bool found=false;
   for(unsigned i=0;i<store_data_for.size();++i){
-      if( actlabel==store_data_for[i] ) found=true;
+      if( actlabel==store_data_for[i].first ) found=true;
   }   
-  if( !found ) store_data_for.push_back( actlabel );
+  if( !found ) store_data_for.push_back( std::pair<std::string,int>(actlabel,-1) );
   storedata=true;
 }
 

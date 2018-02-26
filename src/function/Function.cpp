@@ -326,7 +326,13 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
       if( (matinp && matout && !myvals.inVectorCall()) || !matinp ) {
            unsigned der_start=0;
            for(unsigned i=0;i<distinct_arguments.size();++i){
-               unsigned istrn = (distinct_arguments[i].first->copyOutput(0))->getPositionInStream();
+               unsigned istrn, jvalind;
+               for(unsigned j=0;j<getNumberOfArguments();++j) {
+                   if( getPntrToArgument(j)->getPntrToAction()==distinct_arguments[i].first ){ 
+                       istrn = getArgumentPositionInStream(j,myvals); 
+                       jvalind = j; break; 
+                   }
+               }
                for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
                    unsigned kind = myvals.getActiveIndex(istrn,k);
                    for(unsigned j=0;j<getNumberOfComponents();++j){
@@ -334,7 +340,8 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
                        myvals.updateIndex( ostrn, der_start + kind );
                    }
                }
-               der_start += distinct_arguments[i].first->getNumberOfDerivatives();
+               if( distinct_arguments[i].second==0 ) der_start += distinct_arguments[i].first->getNumberOfDerivatives();
+               else der_start += getPntrToArgument(jvalind)->getNumberOfValues(getLabel());
            }
       } else if( (matinp && matout && myvals.inVectorCall()) ) {
            unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();

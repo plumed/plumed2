@@ -78,7 +78,7 @@ inline
 void MultiBias::addBiasDerivative( const unsigned& jder, const double& der, MultiValue& myvals ) const {
   plumed_dbg_assert( jder<getNumberOfArguments() );
   if( actionInChain() ){
-      unsigned istrn = getPntrToArgument(jder)->getPositionInStream();
+      unsigned istrn = getArgumentPositionInStream(jder, myvals); 
       unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
       for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
           unsigned kind=myvals.getActiveIndex(istrn,k);

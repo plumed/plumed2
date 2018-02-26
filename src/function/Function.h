@@ -85,10 +85,10 @@ void Function::addDerivative( const unsigned& ival, const unsigned& jder, const 
   if( doNotCalculateDerivatives() && !(getPntrToOutput(ival)->getRank()>0 && getPntrToOutput(ival)->hasDerivatives()) ) return ;
 
   if( actionInChain() ){ 
-      unsigned istrn = getPntrToArgument(jder)->getPositionInStream();
+      unsigned istrn = getArgumentPositionInStream(jder, myvals);
       unsigned ostrn = getPntrToOutput(ival)->getPositionInStream();
       for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){ 
-          unsigned kind=myvals.getActiveIndex(istrn,k); 
+          unsigned kind=myvals.getActiveIndex(istrn,k);
           myvals.addDerivative( ostrn, arg_deriv_starts[jder] + kind, der*myvals.getDerivative( istrn, kind ) );
       }
       return; 
