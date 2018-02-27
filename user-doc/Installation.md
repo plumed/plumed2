@@ -341,18 +341,27 @@ or compile the manual. This is not a problem.
 
 You can also check if PLUMED is correctly compiled by performing our regression tests.
 Be warned that some of them fail because of the different numerical accuracy on different machines.
+As of version 2.4, in order to test the `plumed` executable that you just compiled
+(prior to installing it) you can use the following command
+\verbatim
+> make check
+\endverbatim
+On the other hand, in order to test the `plumed` executable that you just installed (see \ref InstallingPlumed)
+you should type
+\verbatim
+> make installcheck
+\endverbatim
+In addition, similarly to previous versions of PLUMED, you can test the `plumed` executable
+that is in your current path with
 \verbatim
 > cd regtest
 > make
 \endverbatim 
-Notice that regtests are performed using the "plumed" executable that is currenty in the path.
 You can check the exact version they will use by using the command
 \verbatim
 > which plumed
 \endverbatim
-This means that if you do not source "sourceme.sh", the tests will fails. This does not mean 
-that plumed is not working it just means that you haven't told them shell where to find plumed!
-As a related note, you can easily run the test suite using a different version of PLUMED
+Thus, you can easily run the test suite using a different version of PLUMED
 (maybe an earlier version that you already installed), just making sure that it can be 
 found in the path. Clearly, if you test a given
 version of PLUMED with a test suite from a different version you can expect two
