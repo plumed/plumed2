@@ -107,7 +107,6 @@ install:
   - ./.travis/check.log valgrind || VALGRIND=no
 # update packages
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then
-      CONFIG_FLAGS="$CONFIG_FLAGS --disable-static-patch";
       brew update > /dev/null ;
       brew install ccache ;
       export PLUMED_MPIRUN="mpirun --oversubscribe" ;
