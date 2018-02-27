@@ -181,6 +181,7 @@ private:
   std::vector<Direction> directions;
 /// Stuff for applying forces
   std::vector<double> forces, forcesToApply;
+  bool nopbc;
 public:
   static void registerKeywords( Keywords& keys );
   explicit PCAVars(const ActionOptions&);
@@ -208,6 +209,7 @@ void PCAVars::registerKeywords( Keywords& keys ) {
                           "reference point.");
   keys.add("compulsory","REFERENCE","a pdb file containing the reference configuration and configurations that define the directions for each eigenvector");
   keys.add("compulsory","TYPE","OPTIMAL","The method we are using for alignment to the reference structure");
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
 PCAVars::PCAVars(const ActionOptions& ao):
@@ -216,11 +218,14 @@ PCAVars::PCAVars(const ActionOptions& ao):
   ActionAtomistic(ao),
   ActionWithArguments(ao),
   myvals(1,0),
-  mypack(0,0,myvals)
+  mypack(0,0,myvals),
+  nopbc(false)
 {
 
   // What type of distance are we calculating
   std::string mtype; parse("TYPE",mtype);
+
+  parseFlag("NOPBC",nopbc);
 
   // Open reference file
   std::string reference; parse("REFERENCE",reference);
@@ -281,6 +286,9 @@ PCAVars::PCAVars(const ActionOptions& ao):
   // Work out if the user wants to normalise the input vector
   checkRead();
 
+  if(nopbc) log.printf("  without periodic boundary conditions\n");
+  else      log.printf("  using periodic boundary conditions\n");
+
   // Resize the matrices that will hold our eivenvectors
   for(unsigned i=1; i<nfram; ++i) {
     directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")));
@@ -328,6 +336,9 @@ void PCAVars::unlockRequests() {
 }
 
 void PCAVars::calculate() {
+
+  if(!nopbc) makeWhole();
+
   // Clear the reference value pack
   mypack.clear();
   // Calculate distance between instaneous configuration and reference
