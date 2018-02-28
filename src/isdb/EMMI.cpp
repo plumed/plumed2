@@ -39,7 +39,7 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC ISDB_COLVAR EMMIC
+//+PLUMEDOC ISDB_COLVAR EMMI
 /*
 Calculate the fit of a structure or ensemble of structures with a cryo-EM density map.
 
@@ -55,14 +55,14 @@ Combined with a multi-replica framework (such as the -multi option in GROMACS), 
 the Metainference approach \cite Bonomi:2016ip .
 
 \warning
-To use \ref EMMIC, the user should always add a \ref MOLINFO line and specify a pdb file of the system.
+To use \ref EMMI, the user should always add a \ref MOLINFO line and specify a pdb file of the system.
 
 \note
 To enhance sampling in single-structure refinement, one can use a Replica Exchange Method, such as Parallel Tempering.
 In this case, the user should add the NO_AVER flag to the input line.
 
 \note
-\ref EMMIC can be used in combination with periodic and non-periodic systems. In the latter case, one should
+\ref EMMI can be used in combination with periodic and non-periodic systems. In the latter case, one should
 add the NOPBC flag to the input line
 
 \par Examples
@@ -93,8 +93,8 @@ MOLINFO STRUCTURE=prot.pdb
 #  all heavy atoms
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 
-# create EMMIC score
-gmm: EMMIC NOPBC SIGMA_MIN=0.01 TEMP=300.0 NL_STRIDE=100 NL_CUTOFF=0.01 GMM_FILE=GMM_fit.dat ATOMS=protein-h
+# create EMMI score
+gmm: EMMI NOPBC SIGMA_MIN=0.01 TEMP=300.0 NL_STRIDE=100 NL_CUTOFF=0.01 GMM_FILE=GMM_fit.dat ATOMS=protein-h
 
 # translate into bias - apply every 2 steps
 emr: BIASVALUE ARG=gmm.scoreb STRIDE=2
@@ -106,7 +106,7 @@ PRINT ARG=emr.* FILE=COLVAR STRIDE=500 FMT=%20.10f
 */
 //+ENDPLUMEDOC
 
-class EMMIC : public Colvar {
+class EMMI : public Colvar {
 
 private:
 
@@ -231,15 +231,15 @@ private:
 
 public:
   static void registerKeywords( Keywords& keys );
-  explicit EMMIC(const ActionOptions&);
+  explicit EMMI(const ActionOptions&);
 // active methods:
   void prepare();
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(EMMIC,"EMMIC")
+PLUMED_REGISTER_ACTION(EMMI,"EMMI")
 
-void EMMIC::registerKeywords( Keywords& keys ) {
+void EMMI::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","atoms for which we calculate the density map, typically all heavy atoms");
   keys.add("compulsory","GMM_FILE","file with the parameters of the GMM components");
@@ -271,7 +271,7 @@ void EMMIC::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("anneal","ANNEAL","annealing factor");
 }
 
-EMMIC::EMMIC(const ActionOptions&ao):
+EMMI::EMMI(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   first_time_(true), no_aver_(false),
   analysis_(false), nframe_(0.0), pbc_(true),
@@ -505,7 +505,7 @@ EMMIC::EMMIC(const ActionOptions&ao):
   log<<"\n";
 }
 
-void EMMIC::read_status()
+void EMMI::read_status()
 {
   double MDtime;
 // open file
@@ -530,7 +530,7 @@ void EMMIC::read_status()
   delete ifile;
 }
 
-void EMMIC::print_status(long int step)
+void EMMI::print_status(long int step)
 {
 // if first time open the file
   if(first_status_) {
@@ -552,7 +552,7 @@ void EMMIC::print_status(long int step)
   statusfile_.printField();
 }
 
-bool EMMIC::doAccept(double oldE, double newE) {
+bool EMMI::doAccept(double oldE, double newE) {
   bool accept = false;
   // calculate delta energy
   double delta = ( newE - oldE ) / kbt_;
@@ -567,7 +567,7 @@ bool EMMIC::doAccept(double oldE, double newE) {
   return accept;
 }
 
-void EMMIC::doMonteCarlo()
+void EMMI::doMonteCarlo()
 {
   // extract random GMM group
   unsigned nGMM = static_cast<unsigned>(floor(random_.RandU01()*static_cast<double>(GMM_d_grps_.size())));
@@ -619,7 +619,7 @@ void EMMIC::doMonteCarlo()
   }
 }
 
-vector<double> EMMIC::read_exp_errors(string errfile)
+vector<double> EMMI::read_exp_errors(string errfile)
 {
   int nexp, idcomp;
   double err;
@@ -655,7 +655,7 @@ vector<double> EMMIC::read_exp_errors(string errfile)
   return exp_err;
 }
 
-vector<double> EMMIC::get_GMM_m(vector<AtomNumber> &atoms)
+vector<double> EMMI::get_GMM_m(vector<AtomNumber> &atoms)
 {
   // list of weights - one per atom
   vector<double> GMM_m_w;
@@ -714,7 +714,7 @@ vector<double> EMMIC::get_GMM_m(vector<AtomNumber> &atoms)
   return GMM_m_w;
 }
 
-void EMMIC::check_GMM_d(VectorGeneric<6> &cov, double w)
+void EMMI::check_GMM_d(VectorGeneric<6> &cov, double w)
 {
 
 // check if positive defined, by calculating the 3 leading principal minors
@@ -730,7 +730,7 @@ void EMMIC::check_GMM_d(VectorGeneric<6> &cov, double w)
 }
 
 // read GMM data file in PLUMED format:
-void EMMIC::get_GMM_d(string GMM_file)
+void EMMI::get_GMM_d(string GMM_file)
 {
   int idcomp, beta;
   double w, m0, m1, m2;
@@ -783,7 +783,7 @@ void EMMIC::get_GMM_d(string GMM_file)
   }
 }
 
-void EMMIC::calculate_useful_stuff(double reso)
+void EMMI::calculate_useful_stuff(double reso)
 {
   // calculate effective resolution
   double ave_s2 = 0.0;
@@ -846,7 +846,7 @@ void EMMIC::calculate_useful_stuff(double reso)
 }
 
 // get prefactors
-double EMMIC::get_prefactor_inverse
+double EMMI::get_prefactor_inverse
 (const VectorGeneric<6> &GMM_cov_0, const VectorGeneric<6> &GMM_cov_1,
  double &GMM_w_0, double &GMM_w_1,
  VectorGeneric<6> &sum, VectorGeneric<6> &inv_sum)
@@ -874,7 +874,7 @@ double EMMIC::get_prefactor_inverse
   return pre_fact;
 }
 
-double EMMIC::get_self_overlap(unsigned id)
+double EMMI::get_self_overlap(unsigned id)
 {
   double ov_tot = 0.0;
   VectorGeneric<6> sum, inv_sum;
@@ -892,7 +892,7 @@ double EMMIC::get_self_overlap(unsigned id)
 }
 
 // get overlap and derivatives
-double EMMIC::get_overlap(const Vector &m_m, const Vector &d_m, double &pre_fact,
+double EMMI::get_overlap(const Vector &m_m, const Vector &d_m, double &pre_fact,
                           const VectorGeneric<6> &inv_cov_md, Vector &ov_der)
 {
   Vector md;
@@ -913,7 +913,7 @@ double EMMIC::get_overlap(const Vector &m_m, const Vector &d_m, double &pre_fact
 }
 
 // get the exponent of the overlap
-double EMMIC::get_exp_overlap(const Vector &m_m, const Vector &d_m,
+double EMMI::get_exp_overlap(const Vector &m_m, const Vector &d_m,
                               const VectorGeneric<6> &inv_cov_md)
 {
   Vector md;
@@ -929,7 +929,7 @@ double EMMIC::get_exp_overlap(const Vector &m_m, const Vector &d_m,
   return ov;
 }
 
-void EMMIC::update_neighbor_list()
+void EMMI::update_neighbor_list()
 {
   // dimension of GMM and atom vectors
   unsigned GMM_d_size = GMM_d_m_.size();
@@ -1005,13 +1005,13 @@ void EMMIC::update_neighbor_list()
   ovmd_der_.resize(tot_size);
 }
 
-void EMMIC::prepare()
+void EMMI::prepare()
 {
   if(getExchangeStep()) first_time_=true;
 }
 
 // overlap calculator
-void EMMIC::calculate_overlap() {
+void EMMI::calculate_overlap() {
 
   if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0) {
     update_neighbor_list();
@@ -1042,7 +1042,7 @@ void EMMIC::calculate_overlap() {
   }
 }
 
-void EMMIC::doRegression()
+void EMMI::doRegression()
 {
 // calculate averages
   double ovdd_ave = 0.0;
@@ -1073,7 +1073,7 @@ void EMMIC::doRegression()
   }
 }
 
-void EMMIC::calculate()
+void EMMI::calculate()
 {
 
 // calculate CV
@@ -1118,7 +1118,7 @@ void EMMIC::calculate()
 
 }
 
-double EMMIC::get_annealing(long int step)
+double EMMI::get_annealing(long int step)
 {
 // default no annealing
   double fact = 1.0;
@@ -1134,7 +1134,7 @@ double EMMIC::get_annealing(long int step)
   return fact;
 }
 
-void EMMIC::calculate_Cauchy()
+void EMMI::calculate_Cauchy()
 {
   // NOTE: all ranks and replicas know local ovmd and sigma at this point
 
