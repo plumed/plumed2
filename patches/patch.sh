@@ -228,7 +228,7 @@ case "$action" in
       exit 1
       fi
     fi
-    if [ -L Plumed.h -o -L Plumed.inc ]
+    if [ -L Plumed.h -o -L Plumed.inc -o -L Plumed.cmake ]
     then
       echo "ERROR: you have likely already patched. Revert first (-r)"
       exit 1
@@ -249,10 +249,10 @@ case "$action" in
       test -n "$quiet" || echo "Executing plumed_before_patch function"
       plumed_before_patch
     fi
-    test -n "$quiet" || echo "Linking Plumed.h and Plumed.inc ($mode mode)"
-    ln -s "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h" Plumed.h
-    ln -s "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
-    ln -s "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
+    test -n "$quiet" || echo "Linking Plumed.h, Plumed.inc, and Plumed.cmake ($mode mode)"
+    ln -fs "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h" Plumed.h
+    ln -fs "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
+    ln -fs "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
 
     if [ -d "$diff" ]; then
       test -n "$quiet" || echo "Patching with on-the-fly diff from stored originals"
@@ -309,9 +309,9 @@ case "$action" in
     fi
   ;;
   (save)
-    if [ ! -L Plumed.h -o ! -L Plumed.inc ]
+    if [ ! -L Plumed.h -o ! -L Plumed.inc -o ! -L Plumed.cmake ]
     then
-      echo "ERROR: I cannot find Plumed.h and Plumed.inc files. You have likely not patched yet."
+      echo "ERROR: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
       exit 1
     fi
     PREPLUMED=$(find . -name "*.preplumed" | sort)
@@ -389,11 +389,11 @@ EOF
       test -n "$quiet" || echo "Executing plumed_before_revert function"
       plumed_before_revert
     fi
-    if [ ! -L Plumed.h -o ! -L Plumed.inc ]
+    if [ ! -L Plumed.h -o ! -L Plumed.inc -o ! -L Plumed.cmake ]
     then
-      echo "WARNING: I cannot find Plumed.h and Plumed.inc files. You have likely not patched yet."
+      echo "WARNING: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
     else
-    test -n "$quiet" || echo "Removing Plumed.h and Plumed.inc"
+    test -n "$quiet" || echo "Removing Plumed.h, Plumed.inc, and Plumed.cmake"
       rm Plumed.h Plumed.inc Plumed.cmake
     fi
     PREPLUMED=$(find . -name "*.preplumed")
