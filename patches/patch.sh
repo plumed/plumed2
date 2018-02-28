@@ -230,8 +230,14 @@ case "$action" in
     fi
     if [ -L Plumed.h -o -L Plumed.inc -o -L Plumed.cmake ]
     then
-      echo "ERROR: you have likely already patched. Revert first (-r)"
-      exit 1
+      if ( type -t plumed_before_revert 1>/dev/null || type -t plumed_after_revert 1>/dev/null) && ( type -t plumed_before_patch 1>/dev/null || type -t plumed_after_patch 1>/dev/null)
+      then
+        echo "ERROR: you have likely already patched, and your patch seems to need to be reverted."
+        echo "Revert first (-r)"
+        exit 1
+      else
+        echo "WARNING: you have likely already patched. Assuming that you can patch multiple times and continuing"
+      fi
     fi
     if [ ! -f "$PLUMED_ROOT/src/lib/Plumed.inc" ]
     then
@@ -261,7 +267,7 @@ case "$action" in
         file="${bckfile%.preplumed}"
         if test -e "$file" ; then
           diff -U 5 "$diff/$bckfile" "$diff/$file" --label="$bckfile" --label="$file" |
-          patch -u -l -b -F 5 --suffix=.preplumed "$file"
+          patch -u -l -b -F 5 -N --suffix=.preplumed "$file"
         else
           echo "ERROR: File $file is missing"
         fi
@@ -364,7 +370,7 @@ case "$action" in
           cp "$file" "$diff/$file"
           cp "$bckfile" "$diff/$bckfile"
         else
-          echo "patch -u -l -b -F 5 --suffix=.preplumed \"${file}\" << \\EOF_EOF" >> "$diff"
+          echo "patch -u -l -b -F 5 -N --suffix=.preplumed \"${file}\" << \\EOF_EOF" >> "$diff"
           diff -U 5 "${bckfile}" "$file" --label="$bckfile" --label="$file" >> "$diff"
           echo "EOF_EOF"                                                   >> "$diff"
         fi
