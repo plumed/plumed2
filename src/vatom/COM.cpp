@@ -115,7 +115,7 @@ void COM::calculate() {
   double mass(0.0);
   if( first ) {
     for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-      if(isnan(getMass(i))) {
+      if(std::isnan(getMass(i))) {
         error(
           "You are trying to compute a COM but masses are not known.\n"
           "        If you are using plumed driver, please use the --mc option"
