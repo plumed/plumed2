@@ -1062,7 +1062,7 @@ void EMMI::doRegression()
     C  += ( ovdd_[i] - ovdd_ave ) * ( ovdd_[i] - ovdd_ave );
   }
 // reset scale_
-  if(Bd<=0 || Bn<=0) {
+  if(Bd<=0.) {
     scale_ = 1.;
     off_ = 0.;
     corr_ = 1.0;
@@ -1167,7 +1167,7 @@ void EMMI::calculate_Cauchy()
     getPntrToComponent("anneal")->set(anneal_);
   }
 
-  // calculate score and reweighting score
+  // calculate score
   double ene = 0.0;
   // cycle on all the GMM groups
   for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
