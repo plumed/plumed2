@@ -76,6 +76,15 @@ void TransposeMatrix::calculate() {
 
 void TransposeMatrix::apply() {
   if( doNotCalculateDerivatives() ) return;
+
+  if( getPntrToOutput(0)->forcesWereAdded() ) {
+      unsigned k = 0; std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
+      for(unsigned i=0;i<shape[0];++i) {
+          for(unsigned j=0;j<shape[1];++j) {
+              getPntrToArgument(0)->addForce( j*shape[1] + i, getPntrToOutput(0)->getForce(k) ); k++;
+          }
+      }
+  }
 }
 
 }

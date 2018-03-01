@@ -152,6 +152,8 @@ public:
   void  addForce(const unsigned& iforce, double f);
 /// Get the value of the force on this colvar
   double getForce( const unsigned& iforce ) const ;
+/// Check if forces have been added on this value
+  bool forcesWereAdded() const ;
 /// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
   bool applyForce( std::vector<double>& forces ) const ;
 /// Calculate the difference between two values of this function: d2 -d1
@@ -300,6 +302,11 @@ inline
 double Value::getForce( const unsigned& iforce ) const {
   plumed_dbg_assert( iforce<inputForces.size() );
   return inputForces[iforce];
+}
+
+inline
+bool Value::forcesWereAdded() const {
+  return hasForce;
 }
 
 /// d2-d1

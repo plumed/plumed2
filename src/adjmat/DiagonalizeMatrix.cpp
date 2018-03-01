@@ -36,6 +36,7 @@ private:
   Matrix<double> mymatrix;
   std::vector<double> eigvals;
   Matrix<double> eigvecs;
+  std::vector<double> forcesToApply;
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -169,6 +170,7 @@ ActionWithValue(ao)
   eigvecs.resize( eigvecs_shape[0], eigvecs_shape[1] );
   // Now request the arguments to make sure we store things we need
   std::vector<Value*> args( getArguments() ); requestArguments(args, false );
+  forcesToApply.resize( evec_shape[0]*evec_shape[0] ); 
 }
 
 void DiagonalizeMatrix::calculate() {
@@ -187,10 +189,26 @@ void DiagonalizeMatrix::calculate() {
       Value* evec_out = getPntrToOutput(2*i+1); unsigned vreq = mymatrix.ncols()-desired_vectors[i];
       for(unsigned j=0;j<mymatrix.ncols();++j) evec_out->set( j, eigvecs( vreq, j ) ); 
   }
+
+  if( !doNotCalculateDerivatives() ) {
+      for(unsigned i=0;i<mymatrix.nrows();++i) {
+          for(unsigned j=0;j<mymatrix.ncols();++j) {
+              unsigned nplace = i*mymatrix.nrows()+j; 
+              for(unsigned k=0;k<desired_vectors.size();++k){
+                  unsigned ncol = mymatrix.ncols()-desired_vectors[k];
+                  getPntrToOutput(2*k)->addDerivative( nplace, eigvecs(ncol,i)*eigvecs(ncol,j) );
+              }
+          }
+      }
+  }
 }
 
 void DiagonalizeMatrix::apply() {
   if( doNotCalculateDerivatives() ) return;
+
+  // Forces on eigenvalues
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, ss );
 }
 
 }

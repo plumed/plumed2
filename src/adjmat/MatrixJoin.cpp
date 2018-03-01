@@ -91,7 +91,7 @@ ActionWithValue(ao)
   }
   addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
   // Now request the arguments to make sure we store things we need
-  requestArguments(arglist, false );
+  requestArguments(arglist, false ); 
 }
 
 void MatrixJoin::calculate() {
@@ -107,6 +107,17 @@ void MatrixJoin::calculate() {
 
 void MatrixJoin::apply() {
   if( doNotCalculateDerivatives() ) return;
+
+  if( getPntrToOutput(0)->forcesWereAdded() ) {
+      unsigned ncols = getPntrToOutput(0)->getShape()[1];
+      for(unsigned k=0;k<getNumberOfArguments();++k) {
+          Value* argn = getPntrToArgument(k); unsigned nn=0;
+          for(unsigned i=0;i<argn->getShape()[0];++i) {
+              for(unsigned j=0;j<argn->getShape()[1];++j){ argn->addForce( nn, getPntrToOutput(0)->getForce(ncols*(row_starts[k]+i)+col_starts[k]+j) ); nn++; } 
+          }
+      }
+  }
+
 }
 
 }
