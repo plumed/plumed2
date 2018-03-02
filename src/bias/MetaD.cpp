@@ -925,7 +925,7 @@ MetaD::MetaD(const ActionOptions& ao):
   if(targetfilename_.length()>0) {
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
     log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
-    log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, submitted (2016)");
+    log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, J. Chem. Theory Comput. 12, 2790 (2016)");
   }
   log<<"\n";
 }

@@ -165,7 +165,7 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
     if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
   }
 
-  log<<"Bibliography "<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, submitted (2014)")<<"\n";
+  log<<"Bibliography "<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
 
   //construct biases from ActionWithValue with a component named bias
   vector<ActionWithValue*> tmpActions=plumed.getActionSet().select<ActionWithValue*>();

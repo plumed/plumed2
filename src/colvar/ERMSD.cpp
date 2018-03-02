@@ -187,7 +187,7 @@ ERMSD::ERMSD(const ActionOptions&ao):
 
   log<<"  Bibliography "
      <<plumed.cite("Bottaro, Di Palma, and Bussi, Nucleic Acids Res. 42, 13306 (2014)")
-     <<plumed.cite("Bottaro, Banas, Sponer, and Bussi, submitted (2016)")<<"\n";
+     <<plumed.cite("Bottaro, Banas, Sponer, and Bussi, J. Phys. Chem. Lett. 7, 4032 (2016)")<<"\n";
 
 }
 
