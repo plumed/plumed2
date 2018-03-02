@@ -458,12 +458,16 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
       unsigned nt=0, nn=0;
       for(unsigned i=0;i<arg_ends.size()-1;++i) {
           unsigned nt=0, nn=0, k=arg_ends[i];
-          for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-              nt += arguments[j]->getNumberOfValues( getLabel() );
-              if( myvals.getTaskIndex()<nt ){ k=j; break; }
-              nn += arguments[j]->getNumberOfValues( getLabel() ); k++;
+          if( arg_ends[i+1]==(k+1) && arguments[k]->getRank()==0 ) {
+              args[i] = arguments[k]->get();
+          } else {
+              for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
+                  nt += arguments[j]->getNumberOfValues( getLabel() );
+                  if( myvals.getTaskIndex()<nt ){ k=j; break; }
+                  nn += arguments[j]->getNumberOfValues( getLabel() ); k++;
+              }
+              args[i] = arguments[k]->getRequiredValue( getLabel(), myvals.getTaskIndex() - nn );
           }
-          args[i] = arguments[k]->getRequiredValue( getLabel(), myvals.getTaskIndex() - nn );
       }
   }
 }

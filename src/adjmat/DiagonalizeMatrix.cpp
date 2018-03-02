@@ -163,6 +163,8 @@ ActionWithValue(ao)
       Tools::convert( desired_vectors[i], num );
       addComponentWithDerivatives( "vals-" + num, eval_shape ); componentIsNotPeriodic( "vals-" + num ); 
       addComponent( "vecs-" + num, evec_shape ); componentIsNotPeriodic( "vecs-" + num );
+      // Make sure eigenvalues are always stored
+      getPntrToComponent( 2*i+1 )->alwaysStoreValues();
   }
 
   std::vector<unsigned> eigvecs_shape(2); eigvecs_shape[0]=eigvecs_shape[1]=getPntrToArgument(0)->getShape()[0];
@@ -187,7 +189,7 @@ void DiagonalizeMatrix::calculate() {
   for(unsigned i=0;i<desired_vectors.size();++i){
       getPntrToOutput(2*i)->set( eigvals[ mymatrix.ncols()-desired_vectors[i]] );
       Value* evec_out = getPntrToOutput(2*i+1); unsigned vreq = mymatrix.ncols()-desired_vectors[i];
-      for(unsigned j=0;j<mymatrix.ncols();++j) evec_out->set( j, eigvecs( vreq, j ) ); 
+      for(unsigned j=0;j<mymatrix.ncols();++j) evec_out->set( j, eigvecs( vreq, j ) );
   }
 
   if( !doNotCalculateDerivatives() ) {
@@ -209,6 +211,36 @@ void DiagonalizeMatrix::apply() {
   // Forces on eigenvalues
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
   if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, ss );
+
+  // Check for forces on eigenvectors
+  bool eigvec_forces=false;
+  for(unsigned i=0;i<desired_vectors.size();++i) {
+      if( getPntrToOutput(2*i+1)->forcesWereAdded() ){ eigvec_forces=true; break; }
+  } 
+  if( !eigvec_forces ) return;
+
+  // Forces on eigenvectors
+  unsigned nn=0;
+  for(unsigned j=0;j<mymatrix.nrows();++j) {
+      for(unsigned k=0;k<mymatrix.ncols();++k) {
+          double tmp1=0; 
+          for(unsigned i=0;i<desired_vectors.size();++i){ 
+              if( !getPntrToOutput(2*i+1)->forcesWereAdded() ) continue;
+
+              unsigned ncol = mymatrix.ncols()-desired_vectors[i]; 
+              for(unsigned n=0;n<mymatrix.nrows();++n) { 
+                  double tmp2 = 0;
+                  for(unsigned m=0;m<mymatrix.nrows();++m) {
+                      if( m==ncol ) continue;
+                      tmp2 += eigvecs(m,n)*eigvecs(m,j)*eigvecs(ncol,k) / (eigvals[ncol]-eigvals[m]);
+                  }
+                  tmp1 += getPntrToOutput(2*i+1)->getForce(n) * tmp2;
+              }
+          }
+          getPntrToArgument(0)->addForce( nn, tmp1 ); nn++;
+      }
+  }
+
 }
 
 }

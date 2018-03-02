@@ -166,7 +166,7 @@ bool Value::applyForce( std::vector<double>& forces ) const {
          for(unsigned j=0;j<N;++j) forces[j] += inputForces[i]*data[ i*(1+N) ];
       }
   } else if( shape.size()>0 ) {
-      plumed_merror("should not be using apply forces with vectors");
+      return false;
   }
   return true;
 }
