@@ -499,7 +499,12 @@ void ActionWithArguments::setForcesOnArguments( const std::vector<double>& force
       } 
   } else {
       for(unsigned i=0;i<arguments.size();++i) {
-          for(unsigned j=0;j<arguments[i]->getNumberOfValues( getLabel() );++j) { arguments[i]->addForce( j, forces[start] ); start++; }
+          if( arguments[i]->usingAllVals( getLabel() ) ) {
+              for(unsigned j=0;j<arguments[i]->getNumberOfValues( getLabel() );++j) { arguments[i]->addForce( j, forces[start] ); start++; }
+          } else {
+              std::vector<std::pair<int,int> > & indices( arguments[i]->userdata.find( getLabel() )->second );
+              for(unsigned j=0;j<arguments[i]->getNumberOfValues( getLabel() );++j) { arguments[i]->addForce( indices[j].first, forces[start] ); start++; }
+          }
       }
   }
 }

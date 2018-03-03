@@ -229,7 +229,7 @@ void Average::update() {
      else if( normalization==ndata ){ valsin->setNorm( valsin->getNorm() + 1.0 ); valcos->setNorm( valcos->getNorm() + 1.0 ); }
      // Now calcualte average
      for(unsigned i=0;i<arg0->getNumberOfValues( getLabel() );++i) {
-         double tval = ( arg0->get(i) - lbound ) / pfactor;
+         double tval = ( arg0->getRequiredValue( getLabel(), i) - lbound ) / pfactor;
          valsin->add( i, cweight*sin(tval) ); valcos->add( i, cweight*cos(tval) );
          val->set( i, lbound + pfactor*atan2( valsin->get(i), valcos->get(i)) );
      }
@@ -242,10 +242,10 @@ void Average::update() {
          if( arg0->getRank()==0 && arg0->hasDerivatives() ) {
              for(unsigned j=0;j<val->getNumberOfDerivatives();++j) val->addDerivative( j, cweight*arg0->getDerivative( j ) );
          } else if( arg0->hasDerivatives() ) {
-             unsigned nder=val->getNumberOfDerivatives(); val->add( i*(1+nder), cweight*arg0->get(i) );
+             unsigned nder=val->getNumberOfDerivatives(); val->add( i*(1+nder), cweight*arg0->getRequiredValue(getLabel(), i) );
              for(unsigned j=0;j<nder;++j) val->add( i*(1+nder)+1+j, cweight*arg0->getGridDerivative( i, j ) );
          } else {
-             val->add( i, cweight*arg0->get(i) );
+             val->add( i, cweight*arg0->getRequiredValue(getLabel(), i) );
          }
      }
   }
