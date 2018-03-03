@@ -369,18 +369,23 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
            }
       }
   } else {
-      for(unsigned j=0;j<getNumberOfComponents();++j){ 
-          unsigned ostrn = getPntrToOutput(j)->getPositionInStream(); unsigned base=0;
-          if( getPntrToArgument(j)->getRank()==0 ) {
-              for(unsigned i=0;i<getNumberOfArguments();++i){
-                  myvals.updateIndex( ostrn, base );  
-                  base += getPntrToArgument(i)->getSize();
+      if( arg_ends.size()>0 ) {
+          unsigned base=0;
+          for(unsigned i=0;i<arg_ends.size()-1;++i) {
+              for(unsigned j=0;j<getNumberOfComponents();++j){
+                  unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+                  if( arg_ends[i+1]==(arg_ends[i]+1) && getPntrToArgument(arg_ends[i])->getRank()==0 ) {
+                      myvals.updateIndex( ostrn, base );  
+                  } else { 
+                      myvals.updateIndex( ostrn, base + myvals.getTaskIndex() );
+                  }
               }
-          } else {
-              for(unsigned i=0;i<getNumberOfArguments();++i){ 
-                  myvals.updateIndex( ostrn, base + myvals.getTaskIndex() ); 
-                  base += getPntrToArgument(i)->getSize(); 
-              }
+              for(unsigned k=arg_ends[i];k<arg_ends[i+1];++k) base += getPntrToArgument(k)->getSize();
+          } 
+      } else {
+          for(unsigned j=0;j<getNumberOfComponents();++j){
+              unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+              for(unsigned i=0;i<nderivatives;++i) myvals.updateIndex( ostrn, i ); 
           }
       }
   }

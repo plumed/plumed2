@@ -457,10 +457,11 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
   } else {
       unsigned nt=0, nn=0;
       for(unsigned i=0;i<arg_ends.size()-1;++i) {
-          unsigned nt=0, nn=0, k=arg_ends[i];
+          unsigned k=arg_ends[i];
           if( arg_ends[i+1]==(k+1) && arguments[k]->getRank()==0 ) {
               args[i] = arguments[k]->get();
           } else {
+              unsigned nt=0, nn=0;
               for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
                   nt += arguments[j]->getNumberOfValues( getLabel() );
                   if( myvals.getTaskIndex()<nt ){ k=j; break; }
