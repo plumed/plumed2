@@ -260,7 +260,7 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","SIGMA0","initial value of the uncertainty");
   keys.add("optional","DSIGMA","MC step for uncertainties");
   keys.add("optional","MC_STRIDE", "Monte Carlo stride");
-  keys.add("optional","ERR_FILE","file with experimental overlaps");
+  keys.add("optional","ERR_FILE","file with experimental or GMM fit errors");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
   keys.add("optional","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
   keys.add("optional","REGRESSION","regression stride");
