@@ -134,6 +134,7 @@ private:
   vector<double> GMMid_der_;
 // constants
   double cfact_;
+  double inv_sqrt2_, sqrt2_pi_;
 // metainference
   unsigned nrep_;
   unsigned replica_;
@@ -187,6 +188,11 @@ private:
   double   anneal_;
   // prior exponent
   double prior_;
+  // noise type
+  unsigned noise_;
+  // total score and virial;
+  double ene_;
+  Tensor virial_;
 
 // annealing
   double get_annealing(long int step);
@@ -225,9 +231,12 @@ private:
   void update_neighbor_list();
 // calculate overlap
   void calculate_overlap();
-// Cauchy-scoring
-  void calculate_Cauchy();
-
+// Gaussian noise
+  void calculate_Gauss();
+// Outliers noise
+  void calculate_Outliers();
+// Marginal noise
+  void calculate_Marginal();
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -246,13 +255,14 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
   keys.add("compulsory","SIGMA_MIN","minimum uncertainty");
-  keys.add("compulsory","SIGMA0","initial value of the uncertainty");
-  keys.add("compulsory","DSIGMA","MC step for uncertainties");
   keys.add("compulsory","RESOLUTION", "Cryo-EM map resolution");
+  keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS, OUTLIERS, MARGINAL)");
+  keys.add("optional","SIGMA0","initial value of the uncertainty");
+  keys.add("optional","DSIGMA","MC step for uncertainties");
   keys.add("optional","MC_STRIDE", "Monte Carlo stride");
   keys.add("optional","ERR_FILE","file with experimental overlaps");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
-  keys.add("compulsory","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
+  keys.add("optional","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
   keys.add("optional","REGRESSION","regression stride");
   keys.add("optional","SCALE","scale factor");
   keys.add("optional","OFFSET","offset");
@@ -264,7 +274,7 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.addFlag("ANALYSIS",false,"run in analysis mode");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
-  keys.addOutputComponent("acc",   "default","MC acceptance");
+  keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance");
   keys.addOutputComponent("scale", "REGRESSION","scaling factor");
   keys.addOutputComponent("offset","REGRESSION","offset");
   keys.addOutputComponent("corr",  "REGRESSION","Pearson's correlation coefficient");
@@ -273,6 +283,8 @@ void EMMI::registerKeywords( Keywords& keys ) {
 
 EMMI::EMMI(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
+  inv_sqrt2_(0.707106781186548),
+  sqrt2_pi_(0.797884560802865),
   first_time_(true), no_aver_(false),
   analysis_(false), nframe_(0.0), pbc_(true),
   MCstride_(1), MCfirst_(-1), MCaccept_(0),
@@ -281,32 +293,50 @@ EMMI::EMMI(const ActionOptions&ao):
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
   kanneal_(0.), anneal_(1.), prior_(1.)
 {
+  // periodic boundary conditions
   bool nopbc=!pbc_;
   parseFlag("NOPBC",nopbc);
   pbc_=!nopbc;
 
+  // list of atoms
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS", atoms);
 
+  // file with data GMM
   string GMM_file;
   parse("GMM_FILE", GMM_file);
 
-  // uncertainty in the mean estimate
+  // type of data noise
+  string noise;
+  parse("NOISETYPE",noise);
+  if      (noise=="GAUSS")   noise_ = 0;
+  else if(noise=="OUTLIERS") noise_ = 1;
+  else if(noise=="MARGINAL") noise_ = 2;
+  else error("Unknown noise type!");
+
+  // minimum value for error
   double sigma_min;
   parse("SIGMA_MIN", sigma_min);
   if(sigma_min<0) error("SIGMA_MIN should be greater or equal to zero");
 
-  // initial value of the uncertainty
-  double sigma_ini;
-  parse("SIGMA0", sigma_ini);
-  if(sigma_ini<=0) error("you must specify a positive SIGMA0");
-
-  // MC stuff
-  double dsigma;
-  parse("DSIGMA", dsigma);
-  if(dsigma<0) error("you must specify a positive DSIGMA");
-  parse("MC_STRIDE", MCstride_);
-  if(dsigma>0 && MCstride_<=0) error("you must specify a positive MC_STRIDE");
+  // the following parameters must be specified with noise type 0 and 1
+  double sigma_ini, dsigma;
+  if(noise_!=2) {
+    // initial value of the uncertainty
+    parse("SIGMA0", sigma_ini);
+    if(sigma_ini<=0) error("you must specify a positive SIGMA0");
+    // MC parameters
+    parse("DSIGMA", dsigma);
+    if(dsigma<0) error("you must specify a positive DSIGMA");
+    parse("MC_STRIDE", MCstride_);
+    if(dsigma>0 && MCstride_<=0) error("you must specify a positive MC_STRIDE");
+    // status file parameters
+    parse("WRITE_STRIDE", statusstride_);
+    if(statusstride_<=0) error("you must specify a positive WRITE_STRIDE");
+    parse("STATUS_FILE",  statusfilename_);
+    if(statusfilename_=="") statusfilename_ = "MISTATUS"+getLabel();
+    else                    statusfilename_ = statusfilename_+getLabel();
+  }
 
   // error file
   string errfile;
@@ -348,14 +378,6 @@ EMMI::EMMI(const ActionOptions&ao):
   parseFlag("NO_AVER",no_aver_);
   parseFlag("ANALYSIS",analysis_);
 
-  // writing status file
-  parse("WRITE_STRIDE", statusstride_);
-  if(statusstride_<=0) error("you must specify a positive WRITE_STRIDE");
-
-  parse("STATUS_FILE",  statusfilename_);
-  if(statusfilename_=="") statusfilename_ = "MISTATUS"+getLabel();
-  else                    statusfilename_ = statusfilename_+getLabel();
-
   checkRead();
 
   // set parallel stuff
@@ -382,17 +404,20 @@ EMMI::EMMI(const ActionOptions&ao):
   log.printf("\n");
   log.printf("  GMM data file : %s\n", GMM_file.c_str());
   if(no_aver_) log.printf("  without ensemble averaging\n");
+  log.printf("  type of data noise : %s\n", noise.c_str());
   log.printf("  neighbor list cutoff : %lf\n", nl_cutoff_);
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
   log.printf("  minimum uncertainty : %f\n",sigma_min);
   if(nregres_>0) log.printf("  regression stride : %u\n", nregres_);
   log.printf("  scale factor : %lf\n",scale_);
   log.printf("  constant offset : %lf\n",off_);
-  log.printf("  initial value of the uncertainty : %f\n",sigma_ini);
-  log.printf("  max MC move in uncertainty : %f\n",dsigma);
-  log.printf("  MC stride : %u\n", MCstride_);
-  log.printf("  reading/writing to status file : %s\n",statusfilename_.c_str());
-  log.printf("  with stride : %u\n",statusstride_);
+  if(noise_!=2) {
+    log.printf("  initial value of the uncertainty : %f\n",sigma_ini);
+    log.printf("  max MC move in uncertainty : %f\n",dsigma);
+    log.printf("  MC stride : %u\n", MCstride_);
+    log.printf("  reading/writing to status file : %s\n",statusfilename_.c_str());
+    log.printf("  with stride : %u\n",statusstride_);
+  }
   if(errfile.size()>0) log.printf("  reading experimental errors from file : %s\n", errfile.c_str());
   log.printf("  temperature of the system in energy unit : %f\n",kbt_);
   log.printf("  prior exponent : %f\n",prior_);
@@ -416,9 +441,10 @@ EMMI::EMMI(const ActionOptions&ao):
   // normalize atom weight map - not really needed with REGRESSION
   double norm_d = accumulate(GMM_d_w_.begin(), GMM_d_w_.end(), 0.0);
   double norm_m = accumulate(GMM_m_w.begin(),  GMM_m_w.end(),  0.0);
+  // renormalization
   for(unsigned i=0; i<GMM_m_w_.size(); ++i) GMM_m_w_[i] *= norm_d / norm_m;
 
-  // read experimental overlaps
+  // read experimental errors
   vector<double> exp_err;
   if(errfile.size()>0) exp_err = read_exp_errors(errfile);
 
@@ -454,18 +480,21 @@ EMMI::EMMI(const ActionOptions&ao):
     log.printf("     # of members : %u\n", GMM_d_grps_[Gid].size());
     log.printf("     median overlap : %lf\n", ovdd_m);
     log.printf("     median error : %lf\n", err_m);
-    // set dsigma
-    dsigma_.push_back(dsigma * ovdd_m);
     // add minimum value of sigma for this group of GMMs
     sigma_min_.push_back(sqrt(err_m*err_m+sigma_min*ovdd_m*sigma_min*ovdd_m));
-    // set sigma max
-    sigma_max_.push_back(10.0*ovdd_m + sigma_min_[Gid] + dsigma_[Gid]);
-    // initialize sigma
-    sigma_.push_back(std::max(sigma_min_[Gid],std::min(sigma_ini*ovdd_m,sigma_max_[Gid])));
+    // these are only needed with Gaussian and Outliers noise models
+    if(noise_!=2) {
+      // set dsigma
+      dsigma_.push_back(dsigma * ovdd_m);
+      // set sigma max
+      sigma_max_.push_back(10.0*ovdd_m + sigma_min_[Gid] + dsigma_[Gid]);
+      // initialize sigma
+      sigma_.push_back(std::max(sigma_min_[Gid],std::min(sigma_ini*ovdd_m,sigma_max_[Gid])));
+    }
   }
 
   // read status file if restarting
-  if(getRestart()) read_status();
+  if(getRestart() && noise_!=2) read_status();
 
   // calculate auxiliary stuff
   calculate_useful_stuff(reso);
@@ -480,13 +509,14 @@ EMMI::EMMI(const ActionOptions&ao):
 
   // add components
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
-  addComponent("acc"); componentIsNotPeriodic("acc");
+  if(noise_!=2) {addComponent("acc"); componentIsNotPeriodic("acc");}
 
   if(nregres_>0) {
     addComponent("scale");  componentIsNotPeriodic("scale");
     addComponent("offset"); componentIsNotPeriodic("offset");
     addComponent("corr");   componentIsNotPeriodic("corr");
   }
+
   if(nanneal_>0) {addComponent("anneal"); componentIsNotPeriodic("anneal");}
 
   // initialize random seed
@@ -499,9 +529,11 @@ EMMI::EMMI(const ActionOptions&ao):
   // request the atoms
   requestAtoms(atoms);
 
-  log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
+  // print bibliography
+  log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<plumed.cite("Hanot, Bonomi, Greenberg, Sali, Nilges, Vendruscolo, Pellarin, bioRxiv doi: 10.1101/113951 (2017)");
   log<<plumed.cite("Bonomi, Pellarin, Vendruscolo, bioRxiv doi: 10.1101/219972 (2017)");
+  if(!no_aver_ && nrep_>1)log<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   log<<"\n";
 }
 
@@ -588,19 +620,39 @@ void EMMI::doMonteCarlo()
   // cycle on GMM group and calculate old and new energy
   double old_ene = 0.0;
   double new_ene = 0.0;
-  for(unsigned i=0; i<GMM_d_grps_[nGMM].size(); ++i) {
-    // id GMM component
-    int GMMid = GMM_d_grps_[nGMM][i];
-    // calculate deviation
-    double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] );
-    // add to energies
-    old_ene += std::log( 1.0 + 0.5 * dev * dev * old_inv_s2);
-    new_ene += std::log( 1.0 + 0.5 * dev * dev * new_inv_s2);
-  }
-  // final energy calculation - normalization and prior
   double ng = static_cast<double>(GMM_d_grps_[nGMM].size());
-  old_ene = kbt_ * ( old_ene + (ng+prior_) * std::log(sigma_[nGMM]) );
-  new_ene = kbt_ * ( new_ene + (ng+prior_) * std::log(new_s) );
+
+  // in case of Gaussian noise
+  if(noise_==0) {
+    double chi2 = 0.0;
+    for(unsigned i=0; i<GMM_d_grps_[nGMM].size(); ++i) {
+      // id GMM component
+      int GMMid = GMM_d_grps_[nGMM][i];
+      // deviation
+      double dev = ( scale_*ovmd_[GMMid]+off_*GMM_d_w_[GMMid]-ovdd_[GMMid] );
+      // add to chi2
+      chi2 += dev * dev;
+    }
+    // final energy calculation: add normalization and prior
+    old_ene = 0.5 * kbt_ * ( chi2 * old_inv_s2 - (ng+prior_) * std::log(old_inv_s2) );
+    new_ene = 0.5 * kbt_ * ( chi2 * new_inv_s2 - (ng+prior_) * std::log(new_inv_s2) );
+  }
+
+  // in case of Outliers noise
+  if(noise_==1) {
+    for(unsigned i=0; i<GMM_d_grps_[nGMM].size(); ++i) {
+      // id GMM component
+      int GMMid = GMM_d_grps_[nGMM][i];
+      // calculate deviation
+      double dev = ( scale_*ovmd_[GMMid]+off_*GMM_d_w_[GMMid]-ovdd_[GMMid] );
+      // add to energies
+      old_ene += std::log( 1.0 + 0.5 * dev * dev * old_inv_s2);
+      new_ene += std::log( 1.0 + 0.5 * dev * dev * new_inv_s2);
+    }
+    // final energy calculation: add normalization and prior
+    old_ene = kbt_ * ( old_ene + (ng+prior_) * std::log(sigma_[nGMM]) );
+    new_ene = kbt_ * ( new_ene + (ng+prior_) * std::log(new_s) );
+  }
 
   // accept or reject
   bool accept = doAccept(old_ene/anneal_, new_ene/anneal_);
@@ -893,7 +945,7 @@ double EMMI::get_self_overlap(unsigned id)
 
 // get overlap and derivatives
 double EMMI::get_overlap(const Vector &m_m, const Vector &d_m, double &pre_fact,
-                          const VectorGeneric<6> &inv_cov_md, Vector &ov_der)
+                         const VectorGeneric<6> &inv_cov_md, Vector &ov_der)
 {
   Vector md;
   // calculate vector difference m_m-d_m with/without pbc
@@ -914,7 +966,7 @@ double EMMI::get_overlap(const Vector &m_m, const Vector &d_m, double &pre_fact,
 
 // get the exponent of the overlap
 double EMMI::get_exp_overlap(const Vector &m_m, const Vector &d_m,
-                              const VectorGeneric<6> &inv_cov_md)
+                             const VectorGeneric<6> &inv_cov_md)
 {
   Vector md;
   // calculate vector difference m_m-d_m with/without pbc
@@ -1048,12 +1100,44 @@ void EMMI::doRegression()
   double ovdd_ave = 0.0;
   double ovmd_ave = 0.0;
   for(unsigned i=0; i<ovdd_.size(); ++i) {
+    ovdd_ave += ovdd_[i] / GMM_d_w_[i];
+    ovmd_ave += ovmd_[i] / GMM_d_w_[i];
+  }
+  ovdd_ave /= static_cast<double>(ovdd_.size());
+  ovmd_ave /= static_cast<double>(ovmd_.size());
+// calculate scaling, offset and pearson correlation coefficient
+  double Bn = 0.0; double Bd = 0.0; double C = 0.0;
+  for(unsigned i=0; i<ovmd_.size(); ++i) {
+    // add to sum
+    Bn += ( ovmd_[i] / GMM_d_w_[i] - ovmd_ave ) * ( ovdd_[i] / GMM_d_w_[i] - ovdd_ave );
+    Bd += ( ovmd_[i] / GMM_d_w_[i] - ovmd_ave ) * ( ovmd_[i] / GMM_d_w_[i] - ovmd_ave );
+    C  += ( ovdd_[i] / GMM_d_w_[i] - ovdd_ave ) * ( ovdd_[i] / GMM_d_w_[i] - ovdd_ave );
+  }
+// reset scale_
+  if(Bd<=0.) {
+    scale_ = 1.;
+    off_ = 0.;
+    corr_ = 1.0;
+  } else {
+    scale_ = Bn / Bd;
+    off_ = ovdd_ave - scale_*ovmd_ave;
+    corr_ = Bn / sqrt(Bd) / sqrt(C);
+  }
+}
+
+/*
+void EMMI::doRegression()
+{
+// calculate averages
+  double ovdd_ave = 0.0;
+  double ovmd_ave = 0.0;
+  for(unsigned i=0; i<ovdd_.size(); ++i) {
     ovdd_ave += ovdd_[i];
     ovmd_ave += ovmd_[i];
   }
   ovdd_ave /= static_cast<double>(ovdd_.size());
   ovmd_ave /= static_cast<double>(ovmd_.size());
-// calculate scaling, offset and pearson correlation coefficient
+// calculate scaling and offset
   double Bn = 0.0; double Bd = 0.0; double C = 0.0;
   for(unsigned i=0; i<ovmd_.size(); ++i) {
     // add to sum
@@ -1072,6 +1156,23 @@ void EMMI::doRegression()
     corr_ = Bn / sqrt(Bd) / sqrt(C);
   }
 }
+*/
+
+double EMMI::get_annealing(long int step)
+{
+// default no annealing
+  double fact = 1.0;
+// position in annealing cycle
+  unsigned nc = step%(4*nanneal_);
+// useful doubles
+  double ncd = static_cast<double>(nc);
+  double nn  = static_cast<double>(nanneal_);
+// set fact
+  if(nc>=nanneal_   && nc<2*nanneal_) fact = (kanneal_-1.0) / nn * ( ncd - nn ) + 1.0;
+  if(nc>=2*nanneal_ && nc<3*nanneal_) fact = kanneal_;
+  if(nc>=3*nanneal_)                  fact = (1.0-kanneal_) / nn * ( ncd - 3.0*nn) + kanneal_;
+  return fact;
+}
 
 void EMMI::calculate()
 {
@@ -1081,8 +1182,122 @@ void EMMI::calculate()
 
   if(!analysis_) {
 
-    // BIASING MODE
-    calculate_Cauchy();
+    // rescale factor for ensemble average
+    double escale = 1.0 / static_cast<double>(nrep_);
+
+    // in case of ensemble averaging, calculate average overlap
+    if(!no_aver_ && nrep_>1) {
+      // if master node, calculate average across replicas
+      if(rank_==0) {
+        multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
+        for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
+      } else {
+        for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
+      }
+      // local communication
+      if(size_>1) comm.Sum(&ovmd_[0], ovmd_.size());
+    }
+
+    // get time step
+    long int step = getStep();
+
+    // do regression
+    if(nregres_>0) {
+      if(step%nregres_==0 && !getExchangeStep()) doRegression();
+      // print scale
+      getPntrToComponent("scale")->set(scale_);
+      getPntrToComponent("offset")->set(off_);
+      getPntrToComponent("corr")->set(corr_);
+    }
+
+    // clear energy and virial
+    ene_ = 0.0;
+    virial_.zero();
+
+    // Gaussian noise
+    if(noise_==0) calculate_Gauss();
+
+    // Outliers noise
+    if(noise_==1) calculate_Outliers();
+
+    // Marginal noise
+    if(noise_==2) calculate_Marginal();
+
+    // get annealing rescale factor
+    if(nanneal_>0) {
+      anneal_ = get_annealing(step);
+      getPntrToComponent("anneal")->set(anneal_);
+    }
+
+    // annealing rescale
+    ene_ /= anneal_;
+
+    // in case of ensemble averaging
+    if(!no_aver_ && nrep_>1) {
+      // if master node, sum der_GMMid derivatives and ene
+      if(rank_==0) {
+        multi_sim_comm.Sum(&GMMid_der_[0], GMMid_der_.size());
+        multi_sim_comm.Sum(&ene_, 1);
+      } else {
+        // set der_GMMid derivatives and energy to zero
+        for(unsigned i=0; i<GMMid_der_.size(); ++i) GMMid_der_[i]=0.0;
+        ene_ = 0.0;
+      }
+      // local communication
+      if(size_>1) {
+        comm.Sum(&GMMid_der_[0], GMMid_der_.size());
+        comm.Sum(&ene_, 1);
+      }
+    }
+
+    // clean temporary vector
+    for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
+
+    // get derivatives of bias with respect to atoms
+    for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
+      // get indexes of data and model component
+      unsigned id = nl_[i] / GMM_m_type_.size();
+      unsigned im = nl_[i] % GMM_m_type_.size();
+      // chain rule + replica normalization
+      Vector tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
+      Vector pos;
+      if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
+      else     pos = getPosition(im);
+      // increment derivatives and virial
+      atom_der_[im] += tot_der;
+      virial_ += Tensor(pos, -tot_der);
+    }
+
+    // communicate local derivatives and virial
+    if(size_>1) {
+      comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
+      comm.Sum(virial_);
+    }
+
+    // set derivatives, virial, and score
+    for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
+    setBoxDerivatives(getPntrToComponent("scoreb"), virial_);
+    getPntrToComponent("scoreb")->set(ene_);
+
+    // This part is needed only for Gaussian and Outliers noise models
+    if(noise_!=2) {
+
+      // do Montecarlo
+      if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep()) doMonteCarlo();
+
+      // print status
+      if(step%statusstride_==0) print_status(step);
+
+      // calculate acceptance ratio
+      // this is needed when restarting simulations
+      if(MCfirst_==-1) MCfirst_=step;
+      // acceptance
+      double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
+      double acc = static_cast<double>(MCaccept_) / MCtrials;
+      // set value
+      getPntrToComponent("acc")->set(acc);
+
+    }
 
   } else {
 
@@ -1118,57 +1333,29 @@ void EMMI::calculate()
 
 }
 
-double EMMI::get_annealing(long int step)
+void EMMI::calculate_Gauss()
 {
-// default no annealing
-  double fact = 1.0;
-// position in annealing cycle
-  unsigned nc = step%(4*nanneal_);
-// useful doubles
-  double ncd = static_cast<double>(nc);
-  double nn  = static_cast<double>(nanneal_);
-// set fact
-  if(nc>=nanneal_   && nc<2*nanneal_) fact = (kanneal_-1.0) / nn * ( ncd - nn ) + 1.0;
-  if(nc>=2*nanneal_ && nc<3*nanneal_) fact = kanneal_;
-  if(nc>=3*nanneal_)                  fact = (1.0-kanneal_) / nn * ( ncd - 3.0*nn) + kanneal_;
-  return fact;
+  // cycle on all the GMM groups
+  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+    double eneg = 0.0;
+    // cycle on all the members of the group
+    for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
+      // id of the GMM component
+      int GMMid = GMM_d_grps_[i][j];
+      // calculate deviation
+      double dev = ( scale_*ovmd_[GMMid]+off_*GMM_d_w_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
+      // add to group energy
+      eneg += 0.5 * dev * dev;
+      // store derivative for later
+      GMMid_der_[GMMid] = kbt_ * dev / sigma_[i];
+    }
+    // add to total energy along with normalizations and prior
+    ene_ += kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
+  }
 }
 
-void EMMI::calculate_Cauchy()
+void EMMI::calculate_Outliers()
 {
-  // NOTE: all ranks and replicas know local ovmd and sigma at this point
-
-  // rescale factor for ensemble average
-  double escale = 1.0 / static_cast<double>(nrep_);
-
-  // in case of ensemble averaging
-  if(!no_aver_ && nrep_>1) {
-    // if master node, calculate average across replicas
-    if(rank_==0) {
-      multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
-      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
-    } else {
-      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
-    }
-    // local communication
-    if(size_>1) comm.Sum(&ovmd_[0], ovmd_.size());
-    // NOTE: all ranks and replicas know average ovmd and sigma at this point
-  }
-
-  // get time step
-  long int step = getStep();
-
-  // do regression
-  if(nregres_>0 && step%nregres_==0 && !getExchangeStep()) doRegression();
-
-  // get annealing rescale factor
-  if(nanneal_>0) {
-    anneal_ = get_annealing(step);
-    getPntrToComponent("anneal")->set(anneal_);
-  }
-
-  // calculate score
-  double ene = 0.0;
   // cycle on all the GMM groups
   for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
     // cycle on all the members of the group
@@ -1177,88 +1364,34 @@ void EMMI::calculate_Cauchy()
       // id of the GMM component
       int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] ) / sigma_[i];
-      // add to score
+      double dev = ( scale_*ovmd_[GMMid]+off_*GMM_d_w_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
+      // add to group energy
       eneg += std::log( 1.0 + 0.5 * dev * dev );
       // store derivative for later
       GMMid_der_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
     }
-    // add to total score along with normalizations and prior
-    ene += kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
+    // add to total energy along with normalizations and prior
+    ene_ += kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
   }
+}
 
-  // annealing rescale
-  ene /= anneal_;
-
-  // in case of ensemble averaging
-  if(!no_aver_ && nrep_>1) {
-    // if master node, sum der_GMMid derivatives and ene
-    if(rank_==0) {
-      multi_sim_comm.Sum(&GMMid_der_[0], GMMid_der_.size());
-      multi_sim_comm.Sum(&ene, 1);
-    } else {
-      // set der_GMMid derivatives and energy to zero
-      for(unsigned i=0; i<GMMid_der_.size(); ++i) GMMid_der_[i]=0.0;
-      ene = 0.0;
+void EMMI::calculate_Marginal()
+{
+  // cycle on all the GMM groups
+  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+    // cycle on all the members of the group
+    for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
+      // id of the GMM component
+      int GMMid = GMM_d_grps_[i][j];
+      // calculate deviation
+      double dev = ( scale_*ovmd_[GMMid]+off_*GMM_d_w_[GMMid]-ovdd_[GMMid] );
+      // calculate errf
+      double errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
+      // add to group energy
+      ene_ += -kbt_ * std::log ( 0.5 / dev * errf ) ;
+      // store derivative for later
+      GMMid_der_[GMMid] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
     }
-    // local communication
-    if(size_>1) {
-      comm.Sum(&GMMid_der_[0], GMMid_der_.size());
-      comm.Sum(&ene, 1);
-    }
-  }
-
-  // clean temporary vector
-  for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
-
-  // virial
-  Tensor virial;
-  // get derivatives of bias with respect to atoms
-  for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
-    // get indexes of data and model component
-    unsigned id = nl_[i] / GMM_m_type_.size();
-    unsigned im = nl_[i] % GMM_m_type_.size();
-    // chain rule + replica normalization
-    Vector tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
-    // virial
-    Vector pos;
-    if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
-    else     pos = getPosition(im);
-    // increment derivatives and virial
-    atom_der_[im] += tot_der;
-    virial += Tensor(pos, -tot_der);
-  }
-  // communicate local derivatives and virial
-  if(size_>1) {
-    comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
-    comm.Sum(virial);
-  }
-
-  // set derivatives, virial, and score
-  for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
-  setBoxDerivatives(getPntrToComponent("scoreb"), virial);
-  getPntrToComponent("scoreb")->set(ene);
-
-  // do Montecarlo
-  if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep()) doMonteCarlo();
-
-  // print status
-  if(step%statusstride_==0) print_status(step);
-
-  // calculate acceptance ratio
-  // this is needed when restarting simulations
-  if(MCfirst_==-1) MCfirst_=step;
-  // acceptance
-  double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
-  double acc = static_cast<double>(MCaccept_) / MCtrials;
-  // set value
-  getPntrToComponent("acc")->set(acc);
-
-  // print scale
-  if(nregres_>0) {
-    getPntrToComponent("scale")->set(scale_);
-    getPntrToComponent("offset")->set(off_);
-    getPntrToComponent("corr")->set(corr_);
   }
 }
 
