@@ -206,6 +206,10 @@ private:
   std::vector<unsigned> nbin, nneigh;
   std::vector<std::string> gmin, gmax;
   std::vector<double> min, max, gspacing, bandwidth;
+  void setupHistogramBeads( std::vector<HistogramBead>& bead ) const ;
+  double evaluateBeadValue( std::vector<HistogramBead>& bead, const std::vector<double>& gpoint, const std::vector<double>& args,
+                            const double& height, std::vector<double>& der ) const ;
+  KernelFunctions* setupValuesAndKernel( const std::vector<double>& args, const double& height, std::vector<Value*>& vv ) const ;
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -226,6 +230,7 @@ public:
   void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
   double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const ;
   void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const ;
+  void addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const ;
 };
 
 PLUMED_REGISTER_ACTION(Histogram,"KDE")
@@ -545,44 +550,83 @@ double Histogram::calculateValueOfSingleKernel( const std::vector<double>& args,
   }
 }
 
+void Histogram::setupHistogramBeads( std::vector<HistogramBead>& bead ) const {
+  std::size_t dd = kerneltype.find("-bin");
+  std::string ktype=kerneltype.substr(0,dd);
+  for(unsigned j=0;j<bead.size();++j) {
+      bead[j].setKernelType( ktype );
+      if( gridobject.isPeriodic(j) ) {
+         double lcoord,  ucoord; Tools::convert( gmin[j], lcoord );
+         Tools::convert( gmax[j], ucoord ); bead[j].isPeriodic( lcoord, ucoord );
+      } else bead[j].isNotPeriodic();
+  }
+}
+
+double Histogram::evaluateBeadValue( std::vector<HistogramBead>& bead, const std::vector<double>& gpoint, const std::vector<double>& args, 
+                                     const double& height, std::vector<double>& der ) const {
+  double val=height; 
+  for(unsigned j=0;j<args.size();++j) {
+      bead[j].set( gpoint[j], gpoint[j]+gridobject.getGridSpacing()[j], bandwidth[j] );
+      double contr = bead[j].calculateWithCutoff( args[j], der[j] ); 
+      val = val*contr; der[j] = der[j] / contr;
+  }
+  return val;
+}
+
+KernelFunctions* Histogram::setupValuesAndKernel( const std::vector<double>& args, const double& height, std::vector<Value*>& vv ) const {
+  for(unsigned i=0; i<args.size(); ++i) {
+      vv.push_back( new Value() ); 
+      if( gridobject.isPeriodic(i) ) vv[i]->setDomain( gmin[i], gmax[i] );
+      else vv[i]->setNotPeriodic();
+  }
+  return new KernelFunctions( args, bandwidth, kerneltype, false, height, true );
+}
+
 void Histogram::addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const {
   unsigned num_neigh; std::vector<unsigned> neighbors;
   std::vector<double> gpoint( args.size() ), der( args.size() );
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
   if( kerneltype.find("bin")!=std::string::npos ) {
-      std::vector<HistogramBead> bead( args.size() ); std::size_t dd = kerneltype.find("-bin"); 
-      std::string ktype=kerneltype.substr(0,dd);
-      for(unsigned j=0;j<args.size();++j) {
-          bead[j].setKernelType( ktype ); 
-          if( gridobject.isPeriodic(j) ) { 
-             double lcoord,  ucoord; Tools::convert( gmin[j], lcoord );
-             Tools::convert( gmax[j], ucoord ); bead[j].isPeriodic( lcoord, ucoord );
-          } else bead[j].isNotPeriodic();
-      }
+      std::vector<HistogramBead> bead( args.size() ); setupHistogramBeads( bead ); 
       for(unsigned i=0;i<num_neigh;++i) {
-          double val=height; gridobject.getGridPointCoordinates( neighbors[i], gpoint );
-          for(unsigned j=0;j<args.size();++j) {
-              bead[j].set( gpoint[j], gpoint[j]+gridobject.getGridSpacing()[j], bandwidth[j] );
-              double contr = bead[j].calculateWithCutoff( args[j], der[j] );
-              val = val*contr; der[j] = der[j] / contr;
-          }  
+          gridobject.getGridPointCoordinates( neighbors[i], gpoint );
+          double val = evaluateBeadValue( bead, gpoint, args, height, der );
           buffer[ bufstart + neighbors[i]*(1+der.size()) ] += val;
           for(unsigned j=0; j<der.size(); ++j) buffer[ bufstart + neighbors[i]*(1+der.size()) + 1 + j ] += val*der[j]; 
       } 
   } else {
-      std::vector<Value*> vv; 
-      for(unsigned i=0; i<args.size(); ++i) {
-          vv.push_back( new Value() );
-          if( gridobject.isPeriodic(i) ) vv[i]->setDomain( gmin[i], gmax[i] );
-          else vv[i]->setNotPeriodic();
-      }
-      KernelFunctions* kk = new KernelFunctions( args, bandwidth, kerneltype, false, height, true );
+      std::vector<Value*> vv; KernelFunctions* kk = setupValuesAndKernel( args, height, vv );
       for(unsigned i=0;i<num_neigh;++i) {
           gridobject.getGridPointCoordinates( neighbors[i], gpoint );
           for(unsigned j=0; j<der.size(); ++j) vv[j]->set( gpoint[j] );
           buffer[ bufstart + neighbors[i]*(1+der.size()) ] += kk->evaluate( vv, der, true );
           for(unsigned j=0; j<der.size(); ++j) buffer[ bufstart + neighbors[i]*(1+der.size()) + 1 + j ] += der[j];
       } 
+      delete kk; for(unsigned i=0; i<der.size(); ++i) delete vv[i];
+  }
+}
+
+void Histogram::addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const { 
+  unsigned num_neigh; std::vector<unsigned> neighbors;
+  std::vector<double> gpoint( args.size() ), der( args.size() );
+  gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
+  if( kerneltype.find("bin")!=std::string::npos ) {
+      std::vector<HistogramBead> bead( args.size() ); setupHistogramBeads( bead );
+      for(unsigned i=0;i<num_neigh;++i) {
+          gridobject.getGridPointCoordinates( neighbors[i], gpoint );
+          double val = evaluateBeadValue( bead, gpoint, args, height, der ); double fforce = getPntrToOutput(0)->getForce( neighbors[i] );
+          if( heights_index==2 ) forces[ args.size()*getFullNumberOfTasks() + itask ] += val*fforce / height;
+          unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += der[j]*fforce; n += getFullNumberOfTasks(); }  
+      }
+  } else {
+      std::vector<Value*> vv; KernelFunctions* kk = setupValuesAndKernel( args, height, vv );
+      for(unsigned i=0;i<num_neigh;++i) {
+          gridobject.getGridPointCoordinates( neighbors[i], gpoint );
+          for(unsigned j=0; j<der.size(); ++j) vv[j]->set( gpoint[j] );
+          double val = kk->evaluate( vv, der, true ); double fforce = getPntrToOutput(0)->getForce( neighbors[i] );
+          if( heights_index==2 ) forces[ args.size()*getFullNumberOfTasks() + itask ] += val*fforce / height;
+          unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += -der[j]*fforce; n += getFullNumberOfTasks(); }
+      }
       delete kk; for(unsigned i=0; i<der.size(); ++i) delete vv[i];
   }
 }

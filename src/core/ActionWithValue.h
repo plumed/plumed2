@@ -146,8 +146,6 @@ protected:
   void runAllTasks();  
 /// Run all calculations in serial
   bool runInSerial() const ;
-/// Apply the forces due to a specific task
-  void applyForcesForTask( const unsigned& itask, const std::vector<Value*>& vals, MultiValue& myvals, std::vector<double>& forces ) const ;
 public:
 /// Get the action that does the calculation
   ActionWithValue* getActionThatCalculates();
@@ -276,6 +274,8 @@ public:
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act );
 ///
   virtual void transformFinalValueAndDerivatives( const std::vector<double>& buf  ){};
+/// Apply the forces due to a specific task
+  virtual void applyForcesForTask( const unsigned& itask, const std::vector<Value*>& vals, MultiValue& myvals, std::vector<double>& forces ) const ;
 /// Retrieve the forces acting on all values
   bool getForcesFromValues( std::vector<double>& forces );
 };

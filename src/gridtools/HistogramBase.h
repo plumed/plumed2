@@ -33,6 +33,9 @@ class HistogramBase :
 public ActionWithValue,
 public ActionWithArguments
 {
+private:
+  std::vector<double> forcesToApply;
+  void retrieveArgumentsAndHeight( const MultiValue& myvals, std::vector<double>& args, double& height ) const ;
 protected:
   double norm;
   unsigned heights_index;
@@ -57,6 +60,8 @@ public:
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
   void apply();
+  void applyForcesForTask( const unsigned& itask, const std::vector<Value*>& invals, MultiValue& myvals, std::vector<double>& forces ) const ;
+  virtual void addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const = 0;
 };
 
 } 

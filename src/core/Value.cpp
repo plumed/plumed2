@@ -161,10 +161,7 @@ bool Value::applyForce( std::vector<double>& forces ) const {
   if( shape.size()==0 && hasDeriv ){
       for(unsigned i=0;i<forces.size();++i) forces[i] += inputForces[0]*data[1 + i];
   } else if( hasDeriv ){
-      const unsigned N=action->getNumberOfDerivatives();
-      for(unsigned i=0;i<inputForces.size();++i){
-         for(unsigned j=0;j<N;++j) forces[j] += inputForces[i]*data[ i*(1+N) ];
-      }
+      plumed_merror("Cannot apply forces to grids in this way"); return false;
   } else if( shape.size()>0 ) {
       return false;
   }

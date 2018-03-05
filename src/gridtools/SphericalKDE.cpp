@@ -57,6 +57,7 @@ public:
   void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
   double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const ;
   void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const ;
+  void addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const ;
 };
 
 PLUMED_REGISTER_ACTION(SphericalKDE,"SPHERICAL_KDE")
@@ -135,6 +136,20 @@ void SphericalKDE::addKernelToGrid( const double& height, const std::vector<doub
       buffer[ bufstart + neighbors[i]*(1+der.size()) ] += newval;
       for(unsigned j=0; j<der.size(); ++j) buffer[ bufstart + neighbors[i]*(1+der.size()) + 1 + j ] += von_misses_concentration*newval*gpoint[j];
   } 
+}
+
+void SphericalKDE::addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, 
+                                    const double& height, std::vector<double>& forces ) const {
+  std::vector<double> gpoint( args.size() ), der( args.size() );
+  unsigned num_neigh; std::vector<unsigned> neighbors, nneigh;
+  gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
+  for(unsigned i=0;i<num_neigh;++i) {
+      gridobject.getGridPointCoordinates( neighbors[i], gpoint );
+      double dot=0; for(unsigned j=0; j<der.size(); ++j) dot += args[j]*gpoint[j];
+      double fforce = getPntrToOutput(0)->getForce( neighbors[i] ); double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
+      if( heights_index==2  ) forces[ args.size()*getFullNumberOfTasks() + itask ] += newval*fforce;
+      unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += von_misses_concentration*newval*gpoint[j]*fforce; n += getFullNumberOfTasks(); }
+  }
 }
 
 }

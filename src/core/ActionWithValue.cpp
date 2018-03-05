@@ -673,7 +673,7 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
    }
 #endif
    bool at_least_one_forced=false;
-   if( type==1 || type==2 ) { 
+   if( type==1 ) { 
        for(unsigned i=0;i<values.size();++i){
            if( values[i]->applyForce( forces ) ) at_least_one_forced=true;
        }

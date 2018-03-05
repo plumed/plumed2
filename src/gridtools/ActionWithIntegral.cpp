@@ -34,7 +34,8 @@ ActionWithIntegral::ActionWithIntegral(const ActionOptions&ao):
   volume(1)
 {
   // Now create task list - number of tasks is equal to the number of grid points
-  std::vector<unsigned> shape; addValueWithDerivatives( shape ); setNotPeriodic();
+  done_over_stream=false; std::vector<unsigned> shape; 
+  addValueWithDerivatives( shape ); setNotPeriodic();
 }
 
 void ActionWithIntegral::finishOutputSetup() { 

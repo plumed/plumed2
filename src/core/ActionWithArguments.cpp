@@ -344,10 +344,10 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
 
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
-  lockRequestArguments(false),
-  done_over_stream(false),
   allrankzero(true),
-  numberedkeys(false)
+  lockRequestArguments(false),
+  numberedkeys(false),
+  done_over_stream(false)
 {
   if( keywords.exists("ARG") && !keywords.exists("DATA") ) {
     vector<Value*> arg;

@@ -100,43 +100,19 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
   if( unorm ) log.printf("  calculating unormalized distribution \n");
   else log.printf("  calculating normalized distribution \n");
 
-  // Now construct the tasks
-  if( distinct_arguments.size()>0 ) {
-      plumed_assert( getNumberOfArguments()>0 ); unsigned ntasks = 1; 
-      if( getPntrToArgument(0)->getRank()>0 ) ntasks = getPntrToArgument(0)->getShape()[0];
-      for(unsigned i=1;i<getNumberOfArguments();++i) {
-          if( arg_ends[i]!=i ) error("not sure if this sort of reshaping works");
-          if( getPntrToArgument(0)->getRank()==0 && getPntrToArgument(i)->getRank()!=0 ) error("all arguments should have same shape");
-          else if( getPntrToArgument(i)->getShape()[0]!=ntasks ) error("all arguments should have same shape");
-      }
-      for(unsigned i=0;i<ntasks;++i) addTaskToList(i);
-      std::vector<std::string> alabels;
-      for(unsigned i=0;i<getNumberOfArguments();++i){
-          bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
-          for(unsigned j=0;j<alabels.size();++j){
-              if( alabels[j]==mylab ){ found=true; break; }
-          }
-          if( !found ) alabels.push_back( mylab );
-      }
-
-      bool added=false;
-      for(unsigned i=0;i<getNumberOfArguments();++i){
-          // Add this function to jobs to do in recursive loop in previous action
-          if( getPntrToArgument(i)->getRank()>0 ){
-              if( (getPntrToArgument(i)->getPntrToAction())->addActionToChain( alabels, this ) ){ added=true; break; }
-          }
-      }
-      plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
+  bool hasrank = getPntrToArgument(0)->getRank()>0; done_over_stream = false;
+  if( hasrank ) { 
+      for(unsigned i=0;i<getNumberOfArguments();++i){ getPntrToArgument(i)->buildDataStore( getLabel() ); plumed_assert( getPntrToArgument(i)->getRank()>0 ); }
+      for(unsigned i=0;i<nvals;++i) addTaskToList(i);
   } else {
-      bool hasrank = getPntrToArgument(0)->getRank()>0;
-      if( hasrank ) { 
-          for(unsigned i=0;i<getNumberOfArguments();++i){ getPntrToArgument(i)->buildDataStore( getLabel() ); plumed_assert( getPntrToArgument(i)->getRank()>0 ); }
-          for(unsigned i=0;i<nvals;++i) addTaskToList(i);
-      } else {
-          one_kernel_at_a_time=true; for(unsigned i=0;i<arg_ends.size();++i){ if( arg_ends[i]!=i ){ one_kernel_at_a_time=false; break; } }
-          if( !one_kernel_at_a_time ) for(unsigned i=0;i<nvals;++i) addTaskToList(i);
-      }
+      one_kernel_at_a_time=true; for(unsigned i=0;i<arg_ends.size();++i){ if( arg_ends[i]!=i ){ one_kernel_at_a_time=false; break; } }
+      if( !one_kernel_at_a_time ) for(unsigned i=0;i<nvals;++i) addTaskToList(i);
   }
+
+  // Resize the forces vector
+  unsigned nvals_t=0;
+  for(unsigned i=0;i<getNumberOfArguments();++i) nvals_t += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+  forcesToApply.resize( nvals_t );
 }
 
 void HistogramBase::addValueWithDerivatives( const std::vector<unsigned>& shape ){ 
@@ -186,6 +162,13 @@ void HistogramBase::performTask( const unsigned& current, MultiValue& myvals ) c
   }
 }
 
+void HistogramBase::retrieveArgumentsAndHeight( const MultiValue& myvals, std::vector<double>& args, double& height ) const {
+  std::vector<double> argsh( arg_ends.size()-1 ); retrieveArguments( myvals, argsh );
+  height=1.0; if( heights_index==2 ) height = argsh[ argsh.size()-1 ];
+  if( !unorm ) height = height / norm;
+  for(unsigned i=0;i<args.size();++i) args[i]=argsh[i];
+}
+
 void HistogramBase::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
                                             const unsigned& bufstart, std::vector<double>& buffer ) const {
   if( one_kernel_at_a_time ) {
@@ -194,42 +177,40 @@ void HistogramBase::gatherGridAccumulators( const unsigned& code, const MultiVal
       for(unsigned i=0;i<getNumberOfDerivatives();++i) buffer[istart+1+i] += myvals.getDerivative( valout, i );
       return;
   }
-  std::vector<double> argsh( arg_ends.size()-1 ), args( getNumberOfDerivatives() );
-  if( getPntrToArgument(0)->getRank()==2 ) {
-      unsigned matind=getPntrToArgument(0)->getPositionInMatrixStash();
-#ifdef DNDEBUG
-      for(unsigned k=0;k<args.size();++k){
-           unsigned amtind = getPntrToArgument(k)->getPositionInMatrixStash();
-           plumed_dbg_assert( myvals.getNumberOfStashedMatrixElements(amtind)==myvals.getNumberOfStashedMatrixElements(matind) ); 
-      }
-#endif      
-      for(unsigned j=0;j<myvals.getNumberOfStashedMatrixElements(matind);++j){
-          unsigned jind = myvals.getStashedMatrixIndex(matind,j); 
-          for(unsigned k=0;k<args.size();++k){
-              unsigned amtind = getPntrToArgument(k)->getPositionInMatrixStash();
-              plumed_assert( amtind==myvals.getStashedMatrixIndex(matind,j) );
-              args[k] = myvals.getStashedMatrixElement( amtind, jind );
+
+  // Add the kernel to the grid
+  std::vector<double> args( getNumberOfDerivatives() ); double height;
+  retrieveArgumentsAndHeight( myvals, args, height );
+  if( fabs(height)>epsilon ) addKernelToGrid( height, args, bufstart, buffer );
+}
+
+void HistogramBase::apply() { 
+  // Everything is done elsewhere
+  if( doNotCalculateDerivatives() ) return;
+  // And add forces
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, ss );
+}
+
+void HistogramBase::applyForcesForTask( const unsigned& itask, const std::vector<Value*>& invals,
+                                        MultiValue& myvals, std::vector<double>& forces ) const {
+  if( one_kernel_at_a_time ) {
+      for(unsigned k=0;k<invals.size();++k) {
+          if( invals[k]->forcesWereAdded() && invals[k]->getPntrToAction()==this ) {
+              unsigned valout = getPntrToOutput(0)->getPositionInStream(); double fforce = invals[k]->getForce( itask );
+              for(unsigned i=0;i<getNumberOfDerivatives();++i) forces[i] += fforce*myvals.getDerivative( valout, i );
           }
-          double height=1.0; 
-          if( heights_index==2 ) {
-              unsigned amtind = getPntrToArgument( argsh.size()-1 )->getPositionInMatrixStash();
-              height = myvals.getStashedMatrixElement( amtind, jind );
-          }
-          if( !unorm ) height = height / norm;
-          addKernelToGrid( height, args, bufstart, buffer );
       }
-  } else { 
-      retrieveArguments( myvals, argsh ); 
-      double height=1.0; if( heights_index==2 ) height = argsh[ argsh.size()-1 ];
-      if( !unorm ) height = height / norm;
-      for(unsigned i=0;i<args.size();++i) args[i]=argsh[i];
-      if( fabs(height)>epsilon ) {
-          addKernelToGrid( height, args, bufstart, buffer );
+      return;
+  } 
+  std::vector<double> args( getNumberOfDerivatives() ); double height;
+  retrieveArgumentsAndHeight( myvals, args, height );
+  if( fabs(height)>epsilon ) {
+      for(unsigned k=0;k<invals.size();++k) {
+          if( invals[k]->forcesWereAdded() && invals[k]->getPntrToAction()==this ) addKernelForces( heights_index, itask, args, height, forces );
       }
   }
 }
-
-void HistogramBase::apply() { }
 
 }
 }
