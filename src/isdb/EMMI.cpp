@@ -629,7 +629,7 @@ void EMMI::doMonteCarlo()
       // id GMM component
       int GMMid = GMM_d_grps_[nGMM][i];
       // deviation
-      double dev = ( scale_*ovmd_[GMMid]+off_*GMM_d_w_[GMMid]-ovdd_[GMMid] );
+      double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] );
       // add to chi2
       chi2 += dev * dev;
     }
@@ -644,7 +644,7 @@ void EMMI::doMonteCarlo()
       // id GMM component
       int GMMid = GMM_d_grps_[nGMM][i];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]+off_*GMM_d_w_[GMMid]-ovdd_[GMMid] );
+      double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] );
       // add to energies
       old_ene += std::log( 1.0 + 0.5 * dev * dev * old_inv_s2);
       new_ene += std::log( 1.0 + 0.5 * dev * dev * new_inv_s2);
@@ -1100,38 +1100,6 @@ void EMMI::doRegression()
   double ovdd_ave = 0.0;
   double ovmd_ave = 0.0;
   for(unsigned i=0; i<ovdd_.size(); ++i) {
-    ovdd_ave += ovdd_[i] / GMM_d_w_[i];
-    ovmd_ave += ovmd_[i] / GMM_d_w_[i];
-  }
-  ovdd_ave /= static_cast<double>(ovdd_.size());
-  ovmd_ave /= static_cast<double>(ovmd_.size());
-// calculate scaling, offset and pearson correlation coefficient
-  double Bn = 0.0; double Bd = 0.0; double C = 0.0;
-  for(unsigned i=0; i<ovmd_.size(); ++i) {
-    // add to sum
-    Bn += ( ovmd_[i] / GMM_d_w_[i] - ovmd_ave ) * ( ovdd_[i] / GMM_d_w_[i] - ovdd_ave );
-    Bd += ( ovmd_[i] / GMM_d_w_[i] - ovmd_ave ) * ( ovmd_[i] / GMM_d_w_[i] - ovmd_ave );
-    C  += ( ovdd_[i] / GMM_d_w_[i] - ovdd_ave ) * ( ovdd_[i] / GMM_d_w_[i] - ovdd_ave );
-  }
-// reset scale_
-  if(Bd<=0.) {
-    scale_ = 1.;
-    off_ = 0.;
-    corr_ = 1.0;
-  } else {
-    scale_ = Bn / Bd;
-    off_ = ovdd_ave - scale_*ovmd_ave;
-    corr_ = Bn / sqrt(Bd) / sqrt(C);
-  }
-}
-
-/*
-void EMMI::doRegression()
-{
-// calculate averages
-  double ovdd_ave = 0.0;
-  double ovmd_ave = 0.0;
-  for(unsigned i=0; i<ovdd_.size(); ++i) {
     ovdd_ave += ovdd_[i];
     ovmd_ave += ovmd_[i];
   }
@@ -1156,7 +1124,6 @@ void EMMI::doRegression()
     corr_ = Bn / sqrt(Bd) / sqrt(C);
   }
 }
-*/
 
 double EMMI::get_annealing(long int step)
 {
@@ -1343,7 +1310,7 @@ void EMMI::calculate_Gauss()
       // id of the GMM component
       int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]+off_*GMM_d_w_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
+      double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
       eneg += 0.5 * dev * dev;
       // store derivative for later
@@ -1364,7 +1331,7 @@ void EMMI::calculate_Outliers()
       // id of the GMM component
       int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]+off_*GMM_d_w_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
+      double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
       eneg += std::log( 1.0 + 0.5 * dev * dev );
       // store derivative for later
@@ -1384,7 +1351,7 @@ void EMMI::calculate_Marginal()
       // id of the GMM component
       int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]+off_*GMM_d_w_[GMMid]-ovdd_[GMMid] );
+      double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] );
       // calculate errf
       double errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
       // add to group energy
