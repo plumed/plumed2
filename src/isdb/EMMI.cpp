@@ -194,6 +194,8 @@ private:
   double ene_;
   Tensor virial_;
 
+// get median of vector
+  double get_median(vector<double> &v);
 // annealing
   double get_annealing(long int step);
 // do regression
@@ -472,10 +474,8 @@ EMMI::EMMI(const ActionOptions&ao):
       ovdd.push_back(ovdd_[GMMid]);
     }
     // calculate median quantities
-    std::sort(ovdd.begin(), ovdd.end());
-    double ovdd_m = ovdd[ovdd.size()/2];
-    std::sort(err.begin(), err.end());
-    double err_m = err[err.size()/2];
+    double ovdd_m = get_median(ovdd);
+    double err_m  = get_median(err);
     // print out statistics
     log.printf("     # of members : %u\n", GMM_d_grps_[Gid].size());
     log.printf("     median overlap : %lf\n", ovdd_m);
@@ -535,6 +535,25 @@ EMMI::EMMI(const ActionOptions&ao):
   log<<plumed.cite("Bonomi, Pellarin, Vendruscolo, bioRxiv doi: 10.1101/219972 (2017)");
   if(!no_aver_ && nrep_>1)log<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   log<<"\n";
+}
+
+double EMMI::get_median(vector<double> &v)
+{
+// dimension of vector
+  unsigned size = v.size();
+// in case of only one entry
+  if (size==1) {
+    return v[0];
+  } else {
+    // reorder vector
+    sort(v.begin(), v.end());
+    // odd or even?
+    if (size%2==0) {
+      return (v[size/2-1]+v[size/2])/2;
+    } else {
+      return v[size/2];
+    }
+  }
 }
 
 void EMMI::read_status()
