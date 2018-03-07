@@ -549,7 +549,7 @@ double EMMI::get_median(vector<double> &v)
     sort(v.begin(), v.end());
     // odd or even?
     if (size%2==0) {
-      return (v[size/2-1]+v[size/2])/2;
+      return (v[size/2-1]+v[size/2])/2.0;
     } else {
       return v[size/2];
     }
