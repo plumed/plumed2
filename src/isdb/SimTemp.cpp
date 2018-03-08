@@ -428,8 +428,7 @@ void SimTemp::calculate()
     double sum_ene = 0.0;
     for(unsigned i=0; i<args.size(); ++i) sum_ene += args[i];
     // update average
-    if(count_[ig]>0) ave_ene_[ig] = count_[ig] / ( count_[ig] + 1.0 ) * ( ave_ene_[ig] + sum_ene / count_[ig] );
-    else             ave_ene_[ig] = sum_ene;
+    ave_ene_[ig] = count_[ig] / ( count_[ig] + 1.0 ) *  ave_ene_[ig] + sum_ene / ( count_[ig] + 1.0 );
     // and increase counter
     count_[ig] += 1.0;
     // update ST weights
