@@ -46,11 +46,12 @@ private:
 /// Logical to check if any derivatives were set
   bool atLeastOneSet;
 /// This allows us to store matrix elements
-  unsigned nmatrix_cols;
+  unsigned nmatrix_cols, nmat_force;
   bool rerunning_matrix;
   std::vector<unsigned> matrix_element_nind;
   std::vector<unsigned> matrix_element_indices;
   std::vector<double> matrix_element_stash;
+  std::vector<double> matrix_force_stash;
 /// This is a fudge to save on vector resizing in MultiColvar
   bool vector_call;
   unsigned nindices, nfblock, nsplit;
@@ -62,7 +63,7 @@ private:
   unsigned symfunc_index;
   std::vector<std::vector<double> > symfunc_tmp_derivs;
 public:
-  MultiValue( const unsigned& nvals, const unsigned& nder, const unsigned ncols=0, const unsigned nmat=0 );
+  MultiValue( const unsigned& nvals, const unsigned& nder, const unsigned ncols=0, const unsigned nmat=0, const unsigned nfder=0 );
   void resize( const unsigned&, const unsigned&, const unsigned& , const unsigned& );
 /// Set the task index prior to the loop
   void setTaskIndex( const unsigned& tindex );
@@ -125,6 +126,12 @@ public:
   unsigned getStashedMatrixIndex( const unsigned& imat, const unsigned& jind ) const ;
 ///
   double getStashedMatrixElement( const unsigned& imat, const unsigned& jind ) const ;
+///
+  void addMatrixForce( const unsigned& imat, const unsigned& jind, const double& f );
+///
+  double getStashedMatrixForce( const unsigned& imat, const unsigned& jind ) const ;
+///
+  void clearStoredForces();
 ///
   void setMatrixStashForRerun();
 ///
@@ -304,6 +311,21 @@ void MultiValue::stashMatrixElement( const unsigned& imat, const unsigned& jind,
   plumed_dbg_assert( imat<matrix_element_nind.size() && jind<nmatrix_cols );
   matrix_element_indices[imat*nmatrix_cols + matrix_element_nind[imat]] = jind; 
   matrix_element_nind[imat]++; matrix_element_stash[imat*nmatrix_cols + jind] = val;
+}
+
+inline
+void MultiValue::addMatrixForce( const unsigned& imat, const unsigned& jind, const double& f ) {
+  matrix_force_stash[imat*nmat_force + jind]+=f;
+}
+
+inline
+double MultiValue::getStashedMatrixForce( const unsigned& imat, const unsigned& jind ) const {
+  return matrix_force_stash[imat*nmat_force + jind];
+}
+
+inline
+void MultiValue::clearStoredForces() {
+  std::fill(matrix_force_stash.begin(),matrix_force_stash.end(),0);
 }
 
 inline

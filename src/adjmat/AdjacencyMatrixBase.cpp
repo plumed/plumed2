@@ -270,35 +270,10 @@ bool AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
   return true;
 }
 
-void AdjacencyMatrixBase::performForces( const std::string& controller, const unsigned& index1, const unsigned& index2, 
-                                        MultiValue& myvals, const std::vector<Value*>& invals, std::vector<double>& forces ) const { 
-  performTask( controller, index1, index2, myvals ); 
-  unsigned col_stash_index = index2; if( index2>=getFullNumberOfTasks() ) col_stash_index = index2 - getFullNumberOfTasks();
-  unsigned itask = getFullNumberOfTasks()*index1 + col_stash_index; applyForcesForTask( itask, invals, myvals, forces );
-}
-
 void AdjacencyMatrixBase::apply() {
   if( doNotCalculateDerivatives() ) return;
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
   if( getForcesFromValues( forcesToApply ) ) setForcesOnAtoms( forcesToApply, mm );
-}
-
-void AdjacencyMatrixBase::performForces( const unsigned& it, MultiValue& myvals, const std::vector<Value*>& invals, std::vector<double>& ff ) const {
-
-  // Need all setup stuff here to create task list
-  std::vector<unsigned> & indices( myvals.getIndices() ); 
-  std::vector<Vector> & atoms( myvals.getFirstAtomVector() );
-  setupForTask( it, myvals, indices, atoms );
-
-  // Now loop over all atoms in coordination sphere
-  unsigned ntwo_atoms = myvals.getSplitIndex();
-  for(unsigned i=1;i<ntwo_atoms;++i){
-      // This does everything in the stream that is done with single matrix elements 
-      getForcesForTask( getLabel(), myvals.getTaskIndex(), it, indices[i], myvals, invals, ff );
-      // Now clear only elements that are not accumulated over whole row
-      clearMatrixElements( myvals );
-  }
-  updateMatrixIndices( indices, myvals );
 }
 
 }

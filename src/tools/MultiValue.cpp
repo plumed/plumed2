@@ -24,7 +24,7 @@
 
 namespace PLMD {
 
-MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder, const unsigned ncols, const unsigned nmat  ):
+MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder, const unsigned ncols, const unsigned nmat, const unsigned nfder ):
   task_index(0),
   values(nvals),
   nderivatives(nder),
@@ -34,10 +34,12 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder, const unsig
   active_list(nvals*nder),
   atLeastOneSet(false),
   nmatrix_cols(ncols),
+  nmat_force(nfder),
   rerunning_matrix(false),
   matrix_element_nind(nmat),
   matrix_element_indices(ncols*nmat),
   matrix_element_stash(ncols*nmat),
+  matrix_force_stash(nfder*nmat),
   vector_call(false),
   nindices(0),
   nfblock(0),

@@ -110,8 +110,8 @@ private:
 ///  Run the task
   void runTask( const unsigned& index, const unsigned& taskno, MultiValue& myvals ) const ;
 /// Retrieve the forces for a particualr task
-  void getForcesForTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals, const std::vector<Value*>& vals, std::vector<double>& forces ) const ;
   void gatherAccumulators( const unsigned& index, const MultiValue& myvals, std::vector<double>& buf ) const ;
+  void clearAllForcesInChain();
   void finishComputations( const std::vector<double>& buf );
   bool checkForGrids() const ;
   void getNumberOfStreamedDerivatives( unsigned& nderivatives ) const ;
@@ -239,9 +239,6 @@ public:
   void rerunTask( const unsigned& task_index, MultiValue& myvals ) const ;
 /// Run a task for a matrix element
   void runTask( const std::string& controller, const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
-/// Get forces for a matrix element
-  void getForcesForTask( const std::string& controller, const unsigned& task_index, const unsigned& current,
-                         const unsigned colno, MultiValue& myvals, const std::vector<Value*>& vals, std::vector<double>& forces ) const ;
   void clearMatrixElements( MultiValue& myvals ) const ;
 ///
   virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) { plumed_merror( "problem in task list for " + getLabel() ); }
@@ -261,21 +258,16 @@ public:
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 ///
-  virtual void performForces( const unsigned& current, MultiValue& myvals, const std::vector<Value*>& vals, std::vector<double>& forces ) const ;
-///
-  virtual void performForces( const std::string& controller, const unsigned& index1, const unsigned& index2, 
-                              MultiValue& myvals, const std::vector<Value*>& vals, std::vector<double>& forces ) const {} ;
-///
   virtual void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals, 
                                        const unsigned& bufstart, std::vector<double>& buffer ) const { plumed_error(); }
 /// This one calculates matrix elements
   virtual bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const { return true; }
 ///
+  virtual void gatherForces( const unsigned& task_index, const MultiValue& myvals, std::vector<double>& forces ) const ; 
+///
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act );
 ///
   virtual void transformFinalValueAndDerivatives( const std::vector<double>& buf  ){};
-/// Apply the forces due to a specific task
-  virtual void applyForcesForTask( const unsigned& itask, const std::vector<Value*>& vals, MultiValue& myvals, std::vector<double>& forces ) const ;
 /// Retrieve the forces acting on all values
   bool getForcesFromValues( std::vector<double>& forces );
 };

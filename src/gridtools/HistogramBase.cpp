@@ -192,23 +192,18 @@ void HistogramBase::apply() {
   if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, ss );
 }
 
-void HistogramBase::applyForcesForTask( const unsigned& itask, const std::vector<Value*>& invals,
-                                        MultiValue& myvals, std::vector<double>& forces ) const {
+void HistogramBase::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
   if( one_kernel_at_a_time ) {
-      for(unsigned k=0;k<invals.size();++k) {
-          if( invals[k]->forcesWereAdded() && invals[k]->getPntrToAction()==this ) {
-              unsigned valout = getPntrToOutput(0)->getPositionInStream(); double fforce = invals[k]->getForce( itask );
-              for(unsigned i=0;i<getNumberOfDerivatives();++i) forces[i] += fforce*myvals.getDerivative( valout, i );
-          }
+      if( getPntrToOutput(0)->forcesWereAdded() ) {
+          unsigned valout = getPntrToOutput(0)->getPositionInStream(); double fforce = getPntrToOutput(0)->getForce( itask );
+          for(unsigned i=0;i<getNumberOfDerivatives();++i) forces[i] += fforce*myvals.getDerivative( valout, i );
       }
       return;
   } 
   std::vector<double> args( getNumberOfDerivatives() ); double height;
   retrieveArgumentsAndHeight( myvals, args, height );
   if( fabs(height)>epsilon ) {
-      for(unsigned k=0;k<invals.size();++k) {
-          if( invals[k]->forcesWereAdded() && invals[k]->getPntrToAction()==this ) addKernelForces( heights_index, itask, args, height, forces );
-      }
+      if( getPntrToOutput(0)->forcesWereAdded() ) addKernelForces( heights_index, itask, args, height, forces );
   }
 }
 

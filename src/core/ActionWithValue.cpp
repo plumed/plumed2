@@ -108,7 +108,7 @@ void ActionWithValue::getAllActionLabelsInChain( std::vector<std::string>& mylab
   if( action_to_do_after ) action_to_do_after->getAllActionLabelsInChain( mylabels );
 }
 
-bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act ){
+bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act ) {
   if( action_to_do_after ){ bool state=action_to_do_after->addActionToChain( alabels, act ); return state; }
 
   // Check action is not already in chain
@@ -536,10 +536,16 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
   for(unsigned i=0;i<values.size();++i){
       if( values[i]->getRank()!=2 || values[i]->hasDerivatives() ){ matrix=false; break; }
   }
-  if( matrix ){  
+  if( matrix ) {  
       unsigned col_stash_index = colno; if( colno>=getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
       for(unsigned i=0;i<values.size();++i){
-          if( values[i]->storedata ) myvals.stashMatrixElement( values[i]->getPositionInMatrixStash(), col_stash_index, myvals.get( values[i]->getPositionInStream() ) );
+          if( values[i]->hasForce ) { 
+              unsigned sind = values[i]->streampos, matindex = values[i]->getPositionInMatrixStash();
+              double fforce = values[i]->getForce( myvals.getTaskIndex()*getFullNumberOfTasks() + col_stash_index );
+              for(unsigned j=0;j<myvals.getNumberActive(sind);++j) {
+                  unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
+              }
+          } else if( values[i]->storedata ) myvals.stashMatrixElement( values[i]->getPositionInMatrixStash(), col_stash_index, myvals.get( values[i]->getPositionInStream() ) );
       }
   }
   
@@ -681,7 +687,7 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
       // Check if there are any forces
       for(unsigned i=0;i<values.size();++i){
           if( values[i]->hasForce ) at_least_one_forced=true;
-      }
+      } 
       if( !at_least_one_forced ) return false;
 
       // Get the action that calculates these quantitites
@@ -704,78 +710,56 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
       {
         std::vector<double> omp_forces;
         if( nt>1 ) omp_forces.resize( forces.size(), 0.0 );
-        MultiValue myvals( nquants, nderiv, ncols, nmatrices );
+        MultiValue myvals( nquants, nderiv, ncols, nmatrices, forces.size() );
         myvals.clearAll();
 
         #pragma omp for nowait
         for(unsigned i=rank;i<nactive_tasks;i+=stride){
             unsigned itask = av->indexOfTaskInFullList[i]; 
-            if( nt>1 ) av->getForcesForTask( itask, av->partialTaskList[i], myvals, values, omp_forces );
-            else av->getForcesForTask( itask, av->partialTaskList[i], myvals, values, forces );
-            myvals.clearAll();
+            av->runTask( itask, av->partialTaskList[i], myvals );
+
+            // Now get the forces 
+            if( nt>1 ) av->gatherForces( itask, myvals, omp_forces );
+            else av->gatherForces( itask, myvals, forces );
+
+            myvals.clearAll(); 
+            myvals.clearStoredForces();
         }
         #pragma omp critical
         if(nt>1) for(unsigned i=0; i<forces.size(); ++i) forces[i]+=omp_forces[i]; 
       }
       // MPI Gather on forces
       if( !serial ) comm.Sum( forces );
+      // And clear all the forces that have been added in one shot
+      av->clearAllForcesInChain();
    }
+
    return at_least_one_forced;
 }
 
-void ActionWithValue::getForcesForTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals,
-                                        const std::vector<Value*>& invals, std::vector<double>& forces ) const {
-   if( isActive() ) {
-       myvals.setTaskIndex(task_index); myvals.vector_call=true; performForces( current, myvals, invals, forces );
+void ActionWithValue::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
+   bool hasforce=false; 
+   for(unsigned i=0;i<values.size();++i) {
+       if( values[i]->hasForce ) { hasforce=true; break; }
    }
-   if( action_to_do_after ) action_to_do_after->getForcesForTask( task_index, current, myvals, invals, forces );
-}
-
-void ActionWithValue::performForces( const unsigned& current, MultiValue& myvals, const std::vector<Value*>& invals, std::vector<double>& forces ) const {
-   performTask( current, myvals ); applyForcesForTask( myvals.getTaskIndex(), invals, myvals, forces );
-}
-
-void ActionWithValue::applyForcesForTask( const unsigned& itask, const std::vector<Value*>& invals,
-                                          MultiValue& myvals, std::vector<double>& forces ) const {
-   for(unsigned k=0;k<invals.size();++k) {
-       if( invals[k]->hasForce && invals[k]->getPntrToAction()==this ) {
-           unsigned sspos = invals[k]->streampos; double fforce = invals[k]->getForce(itask);
-           for(unsigned j=0;j<myvals.getNumberActive(sspos);++j) {
-               unsigned jder=myvals.getActiveIndex(sspos, j); forces[jder] += fforce*myvals.getDerivative( sspos, jder );
+   if( hasforce && isActive() ) {  
+       for(unsigned k=0;k<values.size();++k) {
+           if( values[k]->hasForce && values[k]->getRank()==2 && !values[k]->hasDeriv ) {
+               unsigned matind = values[k]->getPositionInMatrixStash();
+               for(unsigned j=0;j<forces.size();++j) forces[j] += myvals.getStashedMatrixForce( matind, j ); 
+           } else if( values[k]->hasForce ) {
+               unsigned sspos = values[k]->streampos; double fforce = values[k]->getForce(itask);
+               for(unsigned j=0;j<myvals.getNumberActive(sspos);++j) {
+                   unsigned jder=myvals.getActiveIndex(sspos, j); forces[jder] += fforce*myvals.getDerivative( sspos, jder );
+               }
            }
        }
    }
+   if( action_to_do_after ) action_to_do_after->gatherForces( itask, myvals, forces );
 }
 
-void ActionWithValue::getForcesForTask( const std::string& controller, const unsigned& task_index, const unsigned& current,
-                                        const unsigned colno, MultiValue& myvals, const std::vector<Value*>& invals,
-                                        std::vector<double>& forces ) const {
-  // Do matrix element task
-  unsigned col_stash_index = colno; if( colno>=getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
-  unsigned itask = getFullNumberOfTasks()*myvals.getTaskIndex() + col_stash_index;
-  myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno );
-  if( isActive() ) performForces( controller, current, colno, myvals, invals, forces );
-  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
-  if( aa ){     
-      if( actionInChain() ) {
-          // Now check if the task takes a matrix as input - if it does do it
-          bool do_this_task = ((aa->getPntrToArgument(0))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() );
-#ifdef DNDEBUG          
-          if( do_this_task ){
-              for(unsigned i=1;i<aa->getNumberOfArguments();++i){
-                  plumed_dbg_assert( (aa->getPntrToArgument(i))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() );
-              }         
-          }             
-#endif              
-          if( do_this_task && isActive() ){
-              myvals.vector_call=false; myvals.setTaskIndex(task_index); 
-              performForces( current, myvals, invals, forces );
-          }
-      }
-  }
-  // Now continue on with the stream
-  if( action_to_do_after ) action_to_do_after->getForcesForTask( controller, task_index, current, colno, myvals, invals, forces );
+void ActionWithValue::clearAllForcesInChain() {
+   clearInputForces(); if( action_to_do_after ) action_to_do_after->clearAllForcesInChain(); 
 }
-
 
 }

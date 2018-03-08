@@ -59,6 +59,8 @@ protected:
   unsigned getNumberOfScalarArguments() const ;
 /// Is an average used as an argument of this function
   bool hasAverageAsArgument() const ;
+/// This is used to create a chain of actions that can be used to calculate a function/multibias
+  unsigned setupActionInChain() ;
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;

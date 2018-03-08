@@ -44,30 +44,8 @@ MultiBias::MultiBias(const ActionOptions&ao):
 {
   createTasksFromArguments(); nderivatives = getNumberOfArguments();
   if( distinct_arguments.size()>0 ){
-      std::vector<std::string> alabels;
-      for(unsigned i=0;i<getNumberOfArguments();++i){
-          bool found=false; std::string mylab = (getPntrToArgument(i)->getPntrToAction())->getLabel();
-          for(unsigned j=0;j<alabels.size();++j){
-              if( alabels[j]==mylab ){ found=true; break; }
-          }
-          if( !found ) alabels.push_back( mylab );
-      }
-
-      bool added=false;
-      for(unsigned i=0;i<getNumberOfArguments();++i){
-          // Add this function to jobs to do in recursive loop in previous action
-          if( getPntrToArgument(i)->getRank()>0 ){
-              if( (getPntrToArgument(i)->getPntrToAction())->addActionToChain( alabels, this ) ){ added=true; }
-          }
-      } 
-      plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
-
-      // Now make sure we have the derivative size correct
-      nderivatives=0;
-      for(unsigned i=0;i<distinct_arguments.size();++i) {
-          if( distinct_arguments[i].second==0 ) nderivatives += distinct_arguments[i].first->getNumberOfDerivatives();
-          else nderivatives += distinct_arguments[i].first->getFullNumberOfTasks();
-      }
+      // Create the chain of actions that will calculate the function
+      nderivatives = setupActionInChain();
       // Set forces to apply to correct size
       forcesToApply.resize( nderivatives );
   }

@@ -274,15 +274,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
           // This checks we are not creating cicular recursive loops
           if( f_actions[0]->checkForDependency(f_actions[i]) ){ done_over_stream=false; break; }
       }
-      if( done_over_stream ){
-          std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
-          for(unsigned i=1;i<f_actions.size();++i) { 
-              if( !f_actions[0]->do_not_add_to_chain ) f_actions[0]->addActionToChain( empty, f_actions[i] ); 
-              else {
-                 for(unsigned j=0;j<arguments.size();++j) plumed_massert( arguments[j]->storedata, "not storing data for " + arguments[j]->getName() );
-              }
-          }
-      } else {
+      if( !done_over_stream ) {
           for(unsigned i=0;i<arg.size();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore( getLabel() );  } 
       }
   } else if( f_actions.size()==1 ) done_over_stream=true;  
@@ -340,6 +332,50 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
       for(unsigned i=0;i<getNumberOfArguments();++i){ if( arg[i]->getRank()>0 ) arg[i]->buildDataStore( getLabel() ); } 
   }
 
+}
+
+unsigned ActionWithArguments::setupActionInChain() {
+  plumed_assert( done_over_stream );
+  std::vector<std::string> alabels; std::vector<ActionWithValue*> f_actions;
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+      bool found=false; std::string mylab = (arguments[i]->getPntrToAction())->getLabel();
+      for(unsigned j=0;j<alabels.size();++j){
+          if( alabels[j]==mylab ){ found=true; break; }
+      }
+      if( !found ) alabels.push_back( mylab );
+
+      found=false; ActionWithValue* myact = (arguments[i]->getPntrToAction())->getActionThatCalculates();
+      for(unsigned j=0;j<f_actions.size();++j) {
+          if( f_actions[j]==myact ){ found=true; break; }
+      }
+      if( !found ) {
+         if( f_actions.size()==0 || !arguments[i]->storedata ) f_actions.push_back( myact );
+      }
+  }
+
+  // Now make sure that everything we need is in the chain
+  std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
+  for(unsigned i=1;i<f_actions.size();++i) { 
+      if( !f_actions[0]->do_not_add_to_chain ) f_actions[0]->addActionToChain( empty, f_actions[i] );
+  }
+
+  // Now add this argument to the chain
+  bool added=false; ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );  
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+      // Add this function to jobs to do in recursive loop in previous action
+      if( arguments[i]->getRank()>0 ){
+          if( (arguments[i]->getPntrToAction())->addActionToChain( alabels, av ) ){ added=true; break; }
+      }
+  } 
+  plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
+
+  // Now make sure we have the derivative size correct
+  unsigned nderivatives=0;
+  for(unsigned i=0;i<distinct_arguments.size();++i) {
+      if( distinct_arguments[i].second==0 ) nderivatives += distinct_arguments[i].first->getNumberOfDerivatives();
+      else nderivatives += distinct_arguments[i].first->getFullNumberOfTasks();
+  }
+  return nderivatives;
 }
 
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
