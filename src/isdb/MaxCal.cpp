@@ -34,6 +34,9 @@ namespace isdb {
 /*
 Add a time-dependent, harmonic restraint on one or more variables.
 
+\par Examples
+
+In the following example
 
 */
 //+ENDPLUMEDOC
