@@ -32,11 +32,14 @@
 #include "tools/Communicator.h"
 #include "tools/Pbc.h"
 
-#include <gsl/gsl_sf_bessel.h>
-#include <gsl/gsl_sf_legendre.h>
 #include <string>
 #include <cmath>
 #include <map>
+
+#ifdef __PLUMED_HAS_GSL
+#include <gsl/gsl_sf_bessel.h>
+#include <gsl/gsl_sf_legendre.h>
+#endif
 
 #ifndef M_PI
 #define M_PI           3.14159265358979323846
@@ -389,6 +392,7 @@ void SAXS::calculate() {
 }
 
 void SAXS::fcalculate() {
+#ifdef __PLUMED_HAS_GSL
   if(pbc) makeWhole();
 
   const unsigned size = getNumberOfAtoms();
@@ -546,11 +550,13 @@ void SAXS::fcalculate() {
     setBoxDerivatives(val, -deriv_box);
     val->set(sum[k]);
   }
+#endif
 }
 
 
 void SAXS::setup_midl(vector<double> &r_polar, vector<Vector2d> &qRnm, int &algorithm, unsigned &p2, vector<unsigned> &trunc)
 {
+#ifdef __PLUMED_HAS_GSL
   const unsigned size = getNumberOfAtoms();
   const unsigned numq = q_list.size();
 
@@ -612,6 +618,12 @@ void SAXS::setup_midl(vector<double> &r_polar, vector<Vector2d> &qRnm, int &algo
       }
     }
   }
+#endif
+}
+
+void SAXS::update() {
+  // write status file
+  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
 //partial derivatives of the spherical basis functions
@@ -637,11 +649,6 @@ Vector2d SAXS::dZHarmonics(unsigned p2, unsigned k, unsigned int i, int n, int m
   return dRdc;
 }
 
-void SAXS::update() {
-  // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
-}
-
 //coefficients for partial derivatives of the spherical basis functions
 void SAXS::cal_coeff() {
   avals.resize(100*100);
@@ -656,7 +663,6 @@ void SAXS::cal_coeff() {
     }
   }
 }
-
 
 void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter)
 {
