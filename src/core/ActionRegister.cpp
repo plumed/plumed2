@@ -68,7 +68,7 @@ bool ActionRegister::check(string key) {
   return false;
 }
 
-Action* ActionRegister::create(const ActionOptions&ao) {
+std::unique_ptr<Action> ActionRegister::create(const ActionOptions&ao) {
   if(ao.line.size()<1)return NULL;
   // Create a copy of the manual locally. The manual is
   // then added to the ActionOptions. This allows us to
@@ -76,13 +76,13 @@ Action* ActionRegister::create(const ActionOptions&ao) {
   // the action have been documented. In addition, we can
   // generate the documentation when the user makes an error
   // in the input.
-  Action* action;
+  std::unique_ptr<Action> action;
   if( check(ao.line[0]) ) {
     Keywords keys; mk[ao.line[0]](keys);
     ActionOptions nao( ao,keys );
     action=m[ao.line[0]](nao);
     keys.destroyData();
-  } else action=NULL;
+  }
   return action;
 }
 

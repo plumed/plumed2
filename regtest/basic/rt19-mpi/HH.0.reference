@@ -1,4 +1,5 @@
 #! FIELDS time rmsd0 sigma_rmsd0 height biasf
+#! SET kerneltype gaussian
 #! SET multivariate false
                    0.05      1.502409238626139                      1                    0.1                      1
                     0.1      1.503459263811322                      1                    0.1                      1
@@ -6,6 +7,7 @@
                     0.2      1.495752022063682                      1                    0.1                      1
 #! FIELDS time rmsd0 sigma_rmsd0 height biasf
 #! SET multivariate false
+#! SET kerneltype gaussian
   0.050000  1.502409  1.000000  0.100000 -1.000000
   0.100000  1.503459  1.000000  0.100000 -1.000000
   0.150000  1.501751  1.000000  0.100000 -1.000000

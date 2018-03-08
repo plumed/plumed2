@@ -40,6 +40,7 @@ void Histogram::registerKeywords( Keywords& keys ) {
   HistogramBead::registerKeywords( keys );
   keys.add("compulsory","NBINS","The number of equal width bins you want to divide the range into");
   keys.addFlag("NORM",false,"calculate the fraction of values rather than the number");
+  keys.add("compulsory","COMPONENT","1","the component of the vector for which to calculate this quantity");
 }
 
 void Histogram::reserveKeyword( Keywords& keys ) {
@@ -52,6 +53,8 @@ Histogram::Histogram( const VesselOptions& da ):
 {
   bool norm; parseFlag("NORM",norm); std::string normstr="";
   if(norm) normstr=" NORM";
+  std::string compstr; parse("COMPONENT",compstr);
+  normstr+=" COMPONENT=" + compstr;
   std::vector<std::string> bins; HistogramBead::generateBins( getAllInput(), bins );
   for(unsigned i=0; i<bins.size(); ++i) addVessel("BETWEEN",bins[i] + normstr);
 }

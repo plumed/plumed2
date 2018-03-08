@@ -26,10 +26,6 @@
 #include <vector>
 #include <limits>
 
-#ifdef __PLUMED_HAS_MATHEVAL
-#include <matheval.h>
-#endif
-
 using namespace std;
 namespace PLMD {
 
@@ -139,10 +135,7 @@ s(r) = FUNC
 </table>
 
 \attention
-Similarly to the \ref MATHEVAL function, the MATHEVAL switching function
-only works if libmatheval is installed on the system and
-PLUMED has been linked to it
-Also notice that using MATHEVAL is much slower than using e.g. RATIONAL.
+Notice that using MATHEVAL is much slower than using e.g. RATIONAL.
 Thus, the MATHEVAL switching function is useful to perform quick
 tests on switching functions with arbitrary form before proceeding to their
 implementation in C++.
@@ -253,7 +246,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
-  else if((name=="MATHEVAL" || name=="CUSTOM") && std::getenv("PLUMED_USE_LEPTON")) {
+  else if((name=="MATHEVAL" || name=="CUSTOM")) {
     type=leptontype;
     std::string func;
     Tools::parse(data,"FUNC",func);
@@ -265,34 +258,6 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     expression_deriv.resize(OpenMP::getNumThreads());
     for(auto & e : expression_deriv) e=ped.createCompiledExpression();
   }
-#ifdef __PLUMED_HAS_MATHEVAL
-  else if(name=="MATHEVAL" || name=="CUSTOM") {
-    type=matheval;
-    std::string func;
-    Tools::parse(data,"FUNC",func);
-    const unsigned nt=OpenMP::getNumThreads();
-    plumed_assert(nt>0);
-    evaluator.resize(nt);
-    for(unsigned i=0; i<nt; i++) {
-      evaluator[i]=evaluator_create(const_cast<char*>(func.c_str()));
-    }
-    char **check_names;
-    int    check_count;
-    evaluator_get_variables(evaluator[0],&check_names,&check_count);
-    if(check_count!=1) {
-      errormsg="wrong number of arguments in MATHEVAL switching function";
-      return;
-    }
-    if(std::string(check_names[0])!="x") {
-      errormsg ="argument should be named 'x'";
-      return;
-    }
-    evaluator_deriv.resize(nt);
-    for(unsigned i=0; i<nt; i++) {
-      evaluator_deriv[i]=evaluator_derivative(evaluator[i],const_cast<char*>("x"));
-    }
-  }
-#endif
   else errormsg="cannot understand switching function type '"+name+"'";
   if( !data.empty() ) {
     errormsg="found the following rogue keywords in switching function input : ";
@@ -327,10 +292,6 @@ std::string SwitchingFunction::description() const {
     ostr<<"tanh";
   } else if(type==leptontype) {
     ostr<<"lepton";
-#ifdef __PLUMED_HAS_MATHEVAL
-  } else if(type==matheval) {
-    ostr<<"matheval";
-#endif
   } else {
     plumed_merror("Unknown switching function type");
   }
@@ -345,10 +306,6 @@ std::string SwitchingFunction::description() const {
     ostr<<" dmax="<<dmax;
   } else if(type==leptontype) {
     ostr<<" func="<<lepton_func;
-#ifdef __PLUMED_HAS_MATHEVAL
-  } else if(type==matheval) {
-    ostr<<" func="<<evaluator_get_string(evaluator[0]);
-#endif
 
   }
   return ostr.str();
@@ -449,12 +406,6 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       }
       result=expression[t].evaluate();
       dfunc=expression_deriv[t].evaluate();
-#ifdef __PLUMED_HAS_MATHEVAL
-    } else if(type==matheval) {
-      const unsigned it=OpenMP::getThreadNum();
-      result=evaluator_evaluate_x(evaluator[it],rdist);
-      dfunc=evaluator_evaluate_x(evaluator_deriv[it],rdist);
-#endif
     } else plumed_merror("Unknown switching function type");
 // this is for the chain rule:
     dfunc*=invr0;
@@ -468,98 +419,6 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
 
   return result;
 }
-
-SwitchingFunction::SwitchingFunction():
-  init(false),
-  type(rational),
-  invr0(0.0),
-  d0(0.0),
-  dmax(0.0),
-  nn(6),
-  mm(0),
-  a(0.0),
-  b(0.0),
-  c(0.0),
-  d(0.0),
-  lambda(0.0),
-  beta(0.0),
-  ref(0.0),
-  invr0_2(0.0),
-  dmax_2(0.0),
-  stretch(1.0),
-  shift(0.0)
-{
-}
-
-SwitchingFunction::SwitchingFunction(const SwitchingFunction&sf):
-  init(sf.init),
-  type(sf.type),
-  invr0(sf.invr0),
-  d0(sf.d0),
-  dmax(sf.dmax),
-  nn(sf.nn),
-  mm(sf.mm),
-  a(sf.a),
-  b(sf.b),
-  c(sf.c),
-  d(sf.d),
-  lambda(sf.lambda),
-  beta(sf.beta),
-  ref(sf.ref),
-  invr0_2(sf.invr0_2),
-  dmax_2(sf.dmax_2),
-  stretch(sf.stretch),
-  shift(sf.shift)
-{
-#ifdef __PLUMED_HAS_MATHEVAL
-  if(sf.evaluator.size()>0) {
-    const unsigned nt=OpenMP::getNumThreads();
-    plumed_assert(nt>0);
-    evaluator.resize(nt);
-    evaluator_deriv.resize(nt);
-    for(unsigned i=0; i<nt; i++) {
-      evaluator[i]=evaluator_create(evaluator_get_string(sf.evaluator[0]));
-      evaluator_deriv[i]=evaluator_create(evaluator_get_string(sf.evaluator_deriv[0]));
-    }
-  }
-#endif
-}
-
-SwitchingFunction & SwitchingFunction::operator=(const SwitchingFunction& sf) {
-  if(&sf==this) return *this;
-  init=sf.init;
-  type=sf.type;
-  invr0=sf.invr0;
-  d0=sf.d0;
-  dmax=sf.dmax;
-  nn=sf.nn;
-  mm=sf.mm;
-  a=sf.a;
-  b=sf.b;
-  c=sf.c;
-  d=sf.d;
-  lambda=sf.lambda;
-  beta=sf.beta;
-  ref=sf.ref;
-  invr0_2=sf.invr0_2;
-  dmax_2=sf.dmax_2;
-  stretch=sf.stretch;
-  shift=sf.shift;
-#ifdef __PLUMED_HAS_MATHEVAL
-  if(sf.evaluator.size()>0) {
-    const unsigned nt=OpenMP::getNumThreads();
-    plumed_assert(nt>0);
-    evaluator.resize(nt);
-    evaluator_deriv.resize(nt);
-    for(unsigned i=0; i<nt; i++) {
-      evaluator[i]=evaluator_create(evaluator_get_string(sf.evaluator[0]));
-      evaluator_deriv[i]=evaluator_create(evaluator_get_string(sf.evaluator_deriv[0]));
-    }
-  }
-#endif
-  return *this;
-}
-
 
 void SwitchingFunction::set(int nn,int mm,double r0,double d0) {
   init=true;
@@ -594,13 +453,6 @@ double SwitchingFunction::get_dmax() const {
 
 double SwitchingFunction::get_dmax2() const {
   return dmax_2;
-}
-
-SwitchingFunction::~SwitchingFunction() {
-#ifdef __PLUMED_HAS_MATHEVAL
-  for(unsigned i=0; i<evaluator.size(); i++) evaluator_destroy(evaluator[i]);
-  for(unsigned i=0; i<evaluator_deriv.size(); i++) evaluator_destroy(evaluator_deriv[i]);
-#endif
 }
 
 

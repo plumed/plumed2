@@ -31,11 +31,12 @@ ActionSet::ActionSet(PlumedMain&p):
 
 ActionSet::~ActionSet()
 {
-  for(int i=size()-1; i>=0; i--) delete (*this)[i];
+// required in order to deallocate in reverse order:
+  for(int i=size()-1; i>=0; i--) (*this)[i].reset();
 }
 
 void ActionSet::clearDelete() {
-  for(int i=size()-1; i>=0; i--) delete (*this)[i];
+  for(int i=size()-1; i>=0; i--) (*this)[i].reset();
   clear();
 }
 
@@ -43,7 +44,7 @@ void ActionSet::clearDelete() {
 std::string ActionSet::getLabelList() const {
   std::string outlist;
   for(const auto & p : (*this)) {
-    outlist+=dynamic_cast<Action*>(p)->getLabel()+" ";
+    outlist+=dynamic_cast<Action*>(p.get())->getLabel()+" ";
   };
   return  outlist;
 }
@@ -51,7 +52,7 @@ std::string ActionSet::getLabelList() const {
 std::vector<std::string> ActionSet::getLabelVector() const {
   std::vector<std::string> outlist;
   for(const auto & p : (*this)) {
-    outlist.push_back(dynamic_cast<Action*>(p)->getLabel());
+    outlist.push_back(dynamic_cast<Action*>(p.get())->getLabel());
   };
   return  outlist;
 }

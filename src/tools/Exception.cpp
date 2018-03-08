@@ -49,7 +49,7 @@ std::string Exception::trace() {
 std::string Exception::format(const std::string&msg,const std::string&file,unsigned line,const std::string&function) {
   std::string message;
   if(getenv("PLUMED_STACK_TRACE"))message+=trace();
-  message+="\n+++ Internal PLUMED error";
+  message+="\n+++ PLUMED error";
   if(file.length()>0) {
     char cline[1000];
     sprintf(cline,"%u",line);
@@ -61,34 +61,18 @@ std::string Exception::format(const std::string&msg,const std::string&file,unsig
 }
 
 
-Exception::Exception():
-  stackString(trace()),
-  msg(format("","",0,""))
+Exception::Exception()
 {
-  abortIfExceptionsAreDisabled();
 }
 
 Exception::Exception(const std::string&msg):
-  stackString(trace()),
   msg(format(msg,"",0,""))
 {
-  abortIfExceptionsAreDisabled();
 }
 
 Exception::Exception(const std::string&msg,const std::string&file,unsigned line,const std::string&function):
-  stackString(trace()),
   msg(format(msg,file,line,function))
 {
-  abortIfExceptionsAreDisabled();
-}
-
-void Exception::abortIfExceptionsAreDisabled() {
-#if ! defined(__PLUMED_HAS_EXCEPTIONS)
-  fprintf(stderr,"%s","Exceptions are disabled, aborting now\n");
-  fprintf(stderr,"%s",what());
-  fprintf(stderr,"\n");
-  std::abort();
-#endif
 }
 
 }

@@ -40,10 +40,10 @@ namespace PLMD {
 class DLLoader {
   std::stack<void*> handles;
   std::string lastError;
-/// Private copy constructor
-  DLLoader(const DLLoader&);
-/// Private assignment
-  DLLoader&operator=(const DLLoader&);
+/// Deleted copy constructor
+  DLLoader(const DLLoader&) = delete;
+/// Deleted assignment
+  DLLoader&operator=(const DLLoader&) = delete;
 public:
 /// Default constructor
   DLLoader();

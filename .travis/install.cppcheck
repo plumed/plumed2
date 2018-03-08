@@ -3,7 +3,7 @@
 set -e
 set -x
 
-cd "$(mktemp -d)"
+cd "$(mktemp -dt plumed.XXXXXX)"
 
 git clone https://github.com/danmar/cppcheck.git
 cd cppcheck
@@ -16,8 +16,13 @@ else
   version=$(git tag | tail -n 1)
 fi
 
+# pick native architecture
+native="$($CC -march=native -Q --help=target | grep march= | awk '{print $2}')"
+# this is required so that when running the job on a different architecture ccache understand
+# the object file should not be recycled
+
 git checkout $version
-make -j 4 install CFGDIR="$HOME/opt/share/cppcheck/" CXXFLAGS="-O2 -march=native -mtune=native -Wunreachable-code" PREFIX="$HOME/opt"
+make -j 4 install CFGDIR="$HOME/opt/share/cppcheck/" CXXFLAGS="-O2 -march="$native" -mtune="$native" -Wunreachable-code" PREFIX="$HOME/opt"
 cd ../
 
 cppcheck --version

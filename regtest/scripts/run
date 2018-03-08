@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if test -n "$PLUMED_PREPEND_PATH" ; then
+  PATH="$PLUMED_PREPEND_PATH:$PATH"
+fi
+
 export valgrind=env
 
 for opt in ${*}
@@ -46,7 +50,7 @@ echo "++ Arguments: $arg"
 echo "++ Processors: $mpiprocs"
 
 mpi=env
-plumed=plumed
+plumed="${PLUMED_PROGRAM_NAME:-plumed}"
 
 root=$($plumed --no-mpi info --root)
 
@@ -63,23 +67,31 @@ cd -
 
 
 if ((mpiprocs>0)); then
-mpi="${PLUMED_MPIRUN:-mpirun} -np $mpiprocs"
-
-if ! plumed config -q has mpi
+mpi=""
+if $plumed --no-mpi config -q mpiexec
 then
-  echo "NOT_APPLIABLE (MPI NOT INSTALLED)"
+  mpi="$($plumed --no-mpi config mpiexec)"
+fi
+if test -z "$mpi" ; then
+  mpi="${PLUMED_MPIRUN:-mpirun}"
+fi
+mpi="$mpi -np $mpiprocs"
+
+if ! $plumed config -q has mpi
+then
+  echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
   exit 0;
 fi
 
 else
 
-plumed="plumed --no-mpi"
+plumed="$plumed --no-mpi"
 
 fi
 
 if ((mpiprocs>0)) && [[ "$valgrind" != "env" ]]
 then
-  echo "NOT_APPLIABLE (MPI cannot be used with valgrind)"
+  echo "NOT_APPLICABLE (MPI cannot be used with valgrind)"
   exit 0;
 fi
 
@@ -88,7 +100,7 @@ do
   echo "Checking for $need"
   if ! $plumed config -q has $need
   then
-    echo "NOT_APPLIABLE ($need NOT ENABLED)"
+    echo "NOT_APPLICABLE ($need NOT ENABLED)"
     exit 0;
   fi
 done
@@ -98,7 +110,7 @@ do
   echo "Checking for $module"
   if ! $plumed config -q module $module
   then
-    echo "NOT_APPLIABLE ($module MODULE NOT INSTALLED)"
+    echo "NOT_APPLICABLE ($module MODULE NOT INSTALLED)"
     exit 0;
   fi
 done
@@ -130,16 +142,24 @@ case "$type" in
  ;;
 (make)
   $plumed info --configuration > Makefile.conf
-  $plumed --is-installed || ln -s $($plumed info --root)/src plumed
-  cat <($plumed info --configuration) "$($plumed info --root)/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
+  $plumed --is-installed || ln -s "$root/src" plumed
+  cat <($plumed info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
   make exe 1>out 2> err
   $mpi $valgrind ./exe $arg >> out 2>> err
  ;;
 (plumed)
   $mpi $valgrind $plumed $arg > out 2> err
   ;;
-(*) echo "unknown test type" ; exit 1 ;;
+(python)
+# make sure the right python module is in the path based on plumed root
+  PYTHONPATH="$root/python:$PYTHONPATH" $($plumed config python_bin) $arg > out 2> err
+  ;;
+(*) echo "FAILURE: unknown test type" ; exit 1 ;;
 esac
+exitcode="$?"
+if test $exitcode -ne 0 ; then
+  echo "FAILURE: exit code $exitcode"
+fi
 
 if type -t plumed_regtest_after 1>/dev/null ; then
   plumed_regtest_after

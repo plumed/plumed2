@@ -26,7 +26,7 @@ namespace vesselbase {
 
 void ValueVessel::registerKeywords( Keywords& keys ) {
   Vessel::registerKeywords( keys );
-  keys.add("compulsory","COMPONENT","1","The component we are using in the functions");
+  keys.add("compulsory","COMPONENT","1","the component of the vector for which to calculate this quantity");
 }
 
 ValueVessel::ValueVessel( const VesselOptions& da ):
@@ -57,7 +57,8 @@ ValueVessel::~ValueVessel() {
 
 std::string ValueVessel::description() {
   if( final_value->getName()==getAction()->getLabel() ) return "value " + getAction()->getLabel() + " contains " + value_descriptor();
-  return "value " + getAction()->getLabel() + "." + getLabel() + " contains " + value_descriptor();
+  std::string compstr; Tools::convert(mycomp,compstr);
+  return "value " + getAction()->getLabel() + "." + getLabel() + " is obtained by taking the " + compstr + "th component and finding " + value_descriptor();
 }
 
 bool ValueVessel::applyForce( std::vector<double>& forces ) {

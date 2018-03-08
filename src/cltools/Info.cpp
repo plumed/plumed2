@@ -72,6 +72,7 @@ void Info::registerKeywords( Keywords& keys ) {
   keys.addFlag("--version",false,"print the version number");
   keys.addFlag("--long-version",false,"print the version number (long version)");
   keys.addFlag("--git-version",false,"print the version number (git version, if available)");
+  keys.addFlag("--include-dir",false,"print the location of the include dir");
 }
 
 Info::Info(const CLToolOptions& co ):
@@ -89,8 +90,10 @@ int Info::main(FILE* in, FILE*out,Communicator& pc) {
   bool printversion; parseFlag("--version",printversion);
   bool printlongversion; parseFlag("--long-version",printlongversion);
   bool printgitversion; parseFlag("--git-version",printgitversion);
+  bool printincludedir; parseFlag("--include-dir",printincludedir);
   if(printroot) fprintf(out,"%s\n",config::getPlumedRoot().c_str());
   if(printconfiguration) fprintf(out,"%s",config::getMakefile().c_str());
+  if(printincludedir) fprintf(out,"%s\n",config::getPlumedIncludedir().c_str());
   if(printuserdoc) {
     std::string userdoc=config::getPlumedHtmldir()+"/user-doc/html/index.html";
     FILE *ff=std::fopen(userdoc.c_str(),"r");

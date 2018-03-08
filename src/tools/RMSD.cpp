@@ -67,10 +67,12 @@ void RMSD::setType(const string & mytype) {
 
 void RMSD::clear() {
   reference.clear();
+  reference_center.zero();
   reference_center_is_calculated=false;
   reference_center_is_removed=false;
   align.clear();
   displace.clear();
+  positions_center.zero();
   positions_center_is_calculated=false;
   positions_center_is_removed=false;
 }
@@ -95,10 +97,15 @@ void RMSD::setReference(const vector<Vector> & reference) {
   plumed_massert(displace.empty(),"you should first clear() an RMSD object, then set a new reference");
   align.resize(n,1.0/n);
   displace.resize(n,1.0/n);
+  #pragma omp simd
   for(unsigned i=0; i<n; i++) reference_center+=this->reference[i]*align[i];
+  #pragma omp simd
   for(unsigned i=0; i<n; i++) this->reference[i]-=reference_center;
   reference_center_is_calculated=true;
   reference_center_is_removed=true;
+}
+std::vector<Vector> RMSD::getReference() {
+  return reference;
 }
 ///
 /// the alignment weights are here normalized to 1 and  the center of the reference is removed accordingly
@@ -109,8 +116,10 @@ void RMSD::setAlign(const vector<double> & align, bool normalize_weights, bool r
   this->align=align;
   if(normalize_weights) {
     double w=0.0;
+    #pragma omp simd
     for(unsigned i=0; i<n; i++) w+=this->align[i];
     double inv=1.0/w;
+    #pragma omp simd
     for(unsigned i=0; i<n; i++) this->align[i]*=inv;
   }
   // recalculate the center anyway
@@ -129,6 +138,9 @@ void RMSD::setAlign(const vector<double> & align, bool normalize_weights, bool r
     reference_center_is_removed=false;
   }
 }
+std::vector<double> RMSD::getAlign() {
+  return align;
+}
 ///
 /// here the weigth for normalized weighths are normalized and set
 ///
@@ -137,9 +149,16 @@ void RMSD::setDisplace(const vector<double> & displace, bool normalize_weights) 
   plumed_massert(this->displace.size()==displace.size(),"mismatch in dimension of align/displace arrays");
   this->displace=displace;
   double w=0.0;
+  #pragma omp simd
   for(unsigned i=0; i<n; i++) w+=this->displace[i];
   double inv=1.0/w;
-  if(normalize_weights) {for(unsigned i=0; i<n; i++) this->displace[i]*=inv;}
+  if(normalize_weights) {
+    #pragma omp simd
+    for(unsigned i=0; i<n; i++) this->displace[i]*=inv;
+  }
+}
+std::vector<double> RMSD::getDisplace() {
+  return displace;
 }
 ///
 /// This is the main workhorse for rmsd that decides to use specific optimal alignment versions
@@ -245,6 +264,60 @@ double RMSD::calc_DDistDRef_Rot_DRotDPos_DRotDRef( const std::vector<Vector>& po
   case OPTIMAL:
     if(align==displace) ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<true,true>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef, squared);
     else                ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<true,false>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef, squared);
+    break;
+  }
+  return ret;
+}
+
+double RMSD::calc_Rot_DRotDRr01( const std::vector<Vector>& positions, Tensor & Rotation, std::array<std::array<Tensor,3>,3> & DRotDRr01, const bool squared) {
+  double ret=0.;
+  switch(alignmentMethod) {
+  case SIMPLE:
+    plumed_merror("derivative of the refreence frame not implemented for SIMPLE alignmentMethod \n");
+    break;
+  case OPTIMAL_FAST:
+    if(align==displace) ret=optimalAlignment_Rot_DRotDRr01<false,true>(align,displace,positions,reference, Rotation, DRotDRr01,   squared);
+    else                ret=optimalAlignment_Rot_DRotDRr01<false,false>(align,displace,positions,reference, Rotation, DRotDRr01,  squared);
+    break;
+  case OPTIMAL:
+    if(align==displace) ret=optimalAlignment_Rot_DRotDRr01<true,true>(align,displace,positions,reference, Rotation, DRotDRr01, squared);
+    else                ret=optimalAlignment_Rot_DRotDRr01<true,false>(align,displace,positions,reference, Rotation, DRotDRr01, squared);
+    break;
+  }
+  return ret;
+}
+
+double RMSD::calc_Rot( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, Tensor & Rotation, const bool squared) {
+  double ret=0.;
+  switch(alignmentMethod) {
+  case SIMPLE:
+    plumed_merror("derivative of the refreence frame not implemented for SIMPLE alignmentMethod \n");
+    break;
+  case OPTIMAL_FAST:
+    if(align==displace) ret=optimalAlignment_Rot<false,true>(align,displace,positions,reference,derivatives, Rotation, squared);
+    else                ret=optimalAlignment_Rot<false,false>(align,displace,positions,reference,derivatives, Rotation, squared);
+    break;
+  case OPTIMAL:
+    if(align==displace) ret=optimalAlignment_Rot<true,true>(align,displace,positions,reference,derivatives, Rotation, squared);
+    else                ret=optimalAlignment_Rot<true,false>(align,displace,positions,reference,derivatives, Rotation, squared);
+    break;
+  }
+  return ret;
+}
+
+double RMSD::calculateWithCloseStructure( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01, const bool squared) {
+  double ret=0.;
+  switch(alignmentMethod) {
+  case SIMPLE:
+    plumed_merror("derivative of the refreence frame not implemented for SIMPLE alignmentMethod \n");
+    break;
+  case OPTIMAL_FAST:
+    if(align==displace) ret=optimalAlignmentWithCloseStructure<false,true>(align,displace,positions,reference,derivatives, rotationPosClose, rotationRefClose, drotationPosCloseDrr01, squared);
+    else                ret=optimalAlignmentWithCloseStructure<false,false>(align,displace,positions,reference,derivatives, rotationPosClose, rotationRefClose, drotationPosCloseDrr01, squared);
+    break;
+  case OPTIMAL:
+    if(align==displace) ret=optimalAlignmentWithCloseStructure<true,true>(align,displace,positions,reference,derivatives, rotationPosClose, rotationRefClose, drotationPosCloseDrr01, squared);
+    else                ret=optimalAlignmentWithCloseStructure<true,false>(align,displace,positions,reference,derivatives, rotationPosClose, rotationRefClose, drotationPosCloseDrr01, squared);
     break;
   }
   return ret;
@@ -460,7 +533,7 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
   rotation[2][1]=2*(-q[0]*q[1]+q[2]*q[3]);
 
 
-  Tensor drotation_drr01[3][3];
+  std::array<std::array<Tensor,3>,3> drotation_drr01;
   if(!alEqDis) {
     drotation_drr01[0][0]=2*q[0]*dq_drr01[0]+2*q[1]*dq_drr01[1]-2*q[2]*dq_drr01[2]-2*q[3]*dq_drr01[3];
     drotation_drr01[1][1]=2*q[0]*dq_drr01[0]-2*q[1]*dq_drr01[1]+2*q[2]*dq_drr01[2]-2*q[3]*dq_drr01[3];
@@ -699,6 +772,100 @@ double RMSD::optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef(const  std::vector
 }
 
 template <bool safe,bool alEqDis>
+double RMSD::optimalAlignment_Rot_DRotDRr01(const  std::vector<double>  & align,
+    const  std::vector<double>  & displace,
+    const std::vector<Vector> & positions,
+    const std::vector<Vector> & reference,
+    Tensor & Rotation,
+    std::array<std::array<Tensor,3>,3> & DRotDRr01,
+    bool squared) const {
+  //initialize the data into the structure
+  // typically the positions do not have the com neither calculated nor subtracted. This layer takes care of this business
+  RMSDCoreData cd(align,displace,positions,reference);
+  // transfer the settings for the center to let the CoreCalc deal with it
+  cd.setPositionsCenterIsRemoved(positions_center_is_removed);
+  if(positions_center_is_calculated) {cd.setPositionsCenter(positions_center);}
+  else {cd.calcPositionsCenter();};
+
+  cd.setReferenceCenterIsRemoved(reference_center_is_removed);
+  if(!reference_center_is_calculated) {cd.calcReferenceCenter();}
+  else {cd.setReferenceCenter(reference_center);}
+
+  // Perform the diagonalization and all the needed stuff
+  cd.doCoreCalc(safe,alEqDis);
+  // make the core calc distance
+  double dist=cd.getDistance(squared);
+  // get the rotation matrix
+  Rotation=cd.getRotationMatrixReferenceToPositions();
+  //get detivative w.r.t. rr01
+  DRotDRr01=cd.getDRotationDRr01();
+  return dist;
+}
+
+template <bool safe,bool alEqDis>
+double RMSD::optimalAlignment_Rot(const  std::vector<double>  & align,
+                                  const  std::vector<double>  & displace,
+                                  const std::vector<Vector> & positions,
+                                  const std::vector<Vector> & reference,
+                                  std::vector<Vector>  & derivatives,
+                                  Tensor & Rotation,
+                                  bool squared) const {
+  //initialize the data into the structure
+  // typically the positions do not have the com neither calculated nor subtracted. This layer takes care of this business
+  RMSDCoreData cd(align,displace,positions,reference);
+  // transfer the settings for the center to let the CoreCalc deal with it
+  cd.setPositionsCenterIsRemoved(positions_center_is_removed);
+  if(positions_center_is_calculated) {cd.setPositionsCenter(positions_center);}
+  else {cd.calcPositionsCenter();};
+
+  cd.setReferenceCenterIsRemoved(reference_center_is_removed);
+  if(!reference_center_is_calculated) {cd.calcReferenceCenter();}
+  else {cd.setReferenceCenter(reference_center);}
+
+  // Perform the diagonalization and all the needed stuff
+  cd.doCoreCalc(safe,alEqDis);
+  // make the core calc distance
+  double dist=cd.getDistance(squared);
+  //  make the derivatives by using pieces calculated in coreCalc (probably the best is just to copy the vector...)
+  derivatives=cd.getDDistanceDPositions();
+  // get the rotation matrix
+  Rotation=cd.getRotationMatrixReferenceToPositions();
+  return dist;
+}
+
+template <bool safe,bool alEqDis>
+double RMSD::optimalAlignmentWithCloseStructure(const  std::vector<double>  & align,
+    const  std::vector<double>  & displace,
+    const std::vector<Vector> & positions,
+    const std::vector<Vector> & reference,
+    std::vector<Vector>  & derivatives,
+    Tensor & rotationPosClose,
+    Tensor & rotationRefClose,
+    std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01,
+    bool squared) const {
+  //initialize the data into the structure
+  // typically the positions do not have the com neither calculated nor subtracted. This layer takes care of this business
+  RMSDCoreData cd(align,displace,positions,reference);
+  // transfer the settings for the center to let the CoreCalc deal with it
+  cd.setPositionsCenterIsRemoved(positions_center_is_removed);
+  if(positions_center_is_calculated) {cd.setPositionsCenter(positions_center);}
+  else {cd.calcPositionsCenter();};
+
+  cd.setReferenceCenterIsRemoved(reference_center_is_removed);
+  if(!reference_center_is_calculated) {cd.calcReferenceCenter();}
+  else {cd.setReferenceCenter(reference_center);}
+
+  // instead of diagonalization, approximate with saved rotation matrix
+  cd.doCoreCalcWithCloseStructure(safe,alEqDis, rotationPosClose, rotationRefClose, drotationPosCloseDrr01);
+  // make the core calc distance
+  double dist=cd.getDistance(squared);
+  //  make the derivatives by using pieces calculated in coreCalc (probably the best is just to copy the vector...)
+  derivatives=cd.getDDistanceDPositions();
+  return dist;
+}
+
+
+template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment_PCA(const  std::vector<double>  & align,
                                   const  std::vector<double>  & displace,
                                   const std::vector<Vector> & positions,
@@ -806,6 +973,7 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
   Vector cp; cp.zero(); if(!cpositions_is_removed)cp=cpositions;
   Vector cr; cr.zero(); if(!creference_is_removed)cr=creference;
 // second expensive loop: compute second moments wrt centers
+  #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     double w=align[iat];
     rr00+=dotProduct(positions[iat]-cp,positions[iat]-cp)*w;
@@ -916,14 +1084,16 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
 
   // calculate rotation matrix derivatives and components distances needed for components only when align!=displacement
   if(!alEqDis)ddist_drotation.zero();
+  #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     // components differences: this is useful externally
     d[iat]=positions[iat]-cp - matmul(rotation,reference[iat]-cr);
     //cerr<<"D "<<iat<<" "<<d[iat][0]<<" "<<d[iat][1]<<" "<<d[iat][2]<<"\n";
-
-    // ddist_drotation if needed
-    if(!alEqDis or !only_rotation) ddist_drotation+=-2*displace[iat]*extProduct(d[iat],reference[iat]-cr);
   }
+  // ddist_drotation if needed
+  if(!alEqDis or !only_rotation)
+    for (unsigned iat=0; iat<n; iat++)
+      ddist_drotation+=-2*displace[iat]*extProduct(d[iat],reference[iat]-cr);
 
   if(!alEqDis or !only_rotation) {
     ddist_drr01.zero();
@@ -939,25 +1109,64 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
 double RMSDCoreData::getDistance( bool squared) {
 
   if(!isInitialized)plumed_merror("getDistance cannot calculate the distance without being initialized first by doCoreCalc ");
-  dist=eigenvals[0]+rr00+rr11;
 
   if(safe || !alEqDis) dist=0.0;
+  else
+    dist=eigenvals[0]+rr00+rr11;
   const unsigned n=static_cast<unsigned int>(reference.size());
+  double localDist = 0;
+  #pragma omp simd reduction(+:localDist)
   for(unsigned iat=0; iat<n; iat++) {
     if(alEqDis) {
-      if(safe) dist+=align[iat]*modulo2(d[iat]);
+      if(safe) localDist+=align[iat]*modulo2(d[iat]);
     } else {
-      dist+=displace[iat]*modulo2(d[iat]);
+      localDist+=displace[iat]*modulo2(d[iat]);
     }
   }
   if(!squared) {
-    dist=sqrt(dist);
+    dist=sqrt(localDist);
     distanceIsMSD=false;
   } else {
+    dist=localDist;
     distanceIsMSD=true;
   }
   hasDistance=true;
   return dist;
+}
+
+void RMSDCoreData::doCoreCalcWithCloseStructure(bool safe,bool alEqDis, Tensor & rotationPosClose, Tensor & rotationRefClose, std::array<std::array<Tensor,3>,3> & drotationPosCloseDrr01) {
+
+  unsigned natoms = reference.size();
+  Tensor ddist_drxy;
+  ddist_drr01.zero();
+  d.resize(natoms);
+
+  // center of mass managing: must subtract the center from the position or not?
+  Vector cp; cp.zero(); if(!cpositions_is_removed)cp=cpositions;
+  Vector cr; cr.zero(); if(!creference_is_removed)cr=creference;
+  //distance = \sum_{n=0}^{N} w_n(x_n-cpos-R_{XY} R_{AY} a_n)^2
+
+  Tensor rotation = matmul(rotationPosClose, rotationRefClose);
+
+  #pragma omp simd
+  for (unsigned iat=0; iat<natoms; iat++) {
+    d[iat] = positions[iat] - cp - matmul(rotation, reference[iat]-cr);
+  }
+  if (!alEqDis) {
+    for (unsigned iat=0; iat<natoms; iat++) {
+      //dist = \sum w_i(x_i - cpos - R_xy * R_ay * a_i)
+      ddist_drxy += -2*displace[iat]*extProduct(matmul(d[iat], rotationRefClose), reference[iat]-cr);
+    }
+  }
+
+  if (!alEqDis) {
+    for(unsigned i=0; i<3; i++)
+      for(unsigned j=0; j<3; j++)
+        ddist_drr01+=ddist_drxy[i][j]*drotationPosCloseDrr01[i][j];
+  }
+  this->alEqDis=alEqDis;
+  this->safe=safe;
+  isInitialized=true;
 }
 
 std::vector<Vector> RMSDCoreData::getDDistanceDPositions() {
@@ -972,6 +1181,7 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions() {
   if(!isInitialized)plumed_merror("getDPositionsDerivatives needs to initialize the coreData first!");
   Vector csum;
   Vector tmp1,tmp2;
+  #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     if(alEqDis) {
 // there is no need for derivatives of rotation and shift here as it is by construction zero
@@ -990,7 +1200,9 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions() {
     }
   }
 
-  if(!alEqDis)  for(unsigned iat=0; iat<n; iat++) {derivatives[iat]= prefactor*(derivatives[iat]+(ddist_dcpositions-csum)*align[iat]); }
+  if(!alEqDis)
+    #pragma omp simd
+    for(unsigned iat=0; iat<n; iat++) {derivatives[iat]= prefactor*(derivatives[iat]+(ddist_dcpositions-csum)*align[iat]); }
 
   return derivatives;
 }
@@ -1012,6 +1224,7 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference() {
   Tensor t_ddist_drr01=ddist_drr01.transpose();
 
 // third expensive loop: derivatives
+  #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     if(alEqDis) {
 // there is no need for derivatives of rotation and shift here as it is by construction zero
@@ -1031,7 +1244,9 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference() {
     }
   }
 
-  if(!alEqDis)  for(unsigned iat=0; iat<n; iat++) {derivatives[iat]= prefactor*(derivatives[iat]+(ddist_dcreference-csum)*align[iat]);}
+  if(!alEqDis)
+    #pragma omp simd
+    for(unsigned iat=0; iat<n; iat++) {derivatives[iat]= prefactor*(derivatives[iat]+(ddist_dcreference-csum)*align[iat]);}
 
   return derivatives;
 }
@@ -1217,6 +1432,12 @@ Tensor RMSDCoreData::getRotationMatrixPositionsToReference() {
   if(!isInitialized)plumed_merror("getRotationMatrixReferenceToPositions needs to initialize the coreData first!");
   return rotation.transpose();
 }
+
+const std::array<std::array<Tensor,3>,3> &  RMSDCoreData::getDRotationDRr01() const {
+  if(!isInitialized)plumed_merror("getDRotationDRr01 needs to initialize the coreData first!");
+  return drotation_drr01;
+}
+
 
 
 template double RMSD::optimalAlignment<true,true>(const  std::vector<double>  & align,

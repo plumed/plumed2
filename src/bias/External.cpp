@@ -24,6 +24,7 @@
 #include "tools/Grid.h"
 #include "tools/Exception.h"
 #include "tools/File.h"
+#include <memory>
 
 
 using namespace std;
@@ -96,11 +97,11 @@ the order of arguments in the header of the grid file.
 class External : public Bias {
 
 private:
-  Grid* BiasGrid_;
+  std::unique_ptr<Grid> BiasGrid_;
+  double scale_;
 
 public:
   explicit External(const ActionOptions&);
-  ~External();
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -113,15 +114,11 @@ void External::registerKeywords(Keywords& keys) {
   keys.add("compulsory","FILE","the name of the file containing the external potential.");
   keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
   keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
-}
-
-External::~External() {
-  delete BiasGrid_;
+  keys.add("compulsory","SCALE","1.0","a factor that multiplies the external potential, usefull to invert free energies");
 }
 
 External::External(const ActionOptions& ao):
-  PLUMED_BIAS_INIT(ao),
-  BiasGrid_(NULL)
+  PLUMED_BIAS_INIT(ao)
 {
   string filename;
   parse("FILE",filename);
@@ -131,10 +128,12 @@ External::External(const ActionOptions& ao):
   bool nospline=false;
   parseFlag("NOSPLINE",nospline);
   bool spline=!nospline;
+  parse("SCALE",scale_);
 
   checkRead();
 
   log.printf("  External potential from file %s\n",filename.c_str());
+  log.printf("  Multiplied by %lf\n",scale_);
   if(spline) {log.printf("  External potential uses spline interpolation\n");}
   if(sparsegrid) {log.printf("  External potential uses sparse grid\n");}
 
@@ -156,12 +155,12 @@ void External::calculate()
 
   for(unsigned i=0; i<ncv; ++i) {cv[i]=getArgument(i);}
 
-  double ene=BiasGrid_->getValueAndDerivatives(cv,der);
+  double ene=scale_*BiasGrid_->getValueAndDerivatives(cv,der);
 
   setBias(ene);
 
   for(unsigned i=0; i<ncv; ++i) {
-    const double f=-der[i];
+    const double f=-scale_*der[i];
     setOutputForce(i,f);
   }
 }

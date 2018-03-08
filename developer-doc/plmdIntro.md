@@ -427,6 +427,139 @@ even more convenient to use range-based loops:
 \endverbatim
 Notice that now `p` is a constant reference, so it is not anymore necessary to use the `*` operator.
 
+\subsection cxx11features-smart-pointers Using smart pointers
+
+There are many resources on the web about this topic. Have a look at <a href="https://mbevin.wordpress.com/2012/11/18/smart-pointers/"> this link </a> for a
+concise introduction.
+
+Smart pointers can be most of the time used in place of regular pointers so as to better manage memory.
+In PLUMED you can find many times sections of code such as
+\verbatim
+  object* obj;
+  if(...) obj=new type1;
+  else obj=new type2;
+
+  ...
+
+  obj->method();
+
+  ..
+
+  delete obj;
+\endverbatim
+Here we use a pointer to allow dynamic polymorphism.
+
+In this case, the object pointed by `obj` is not transfered anywhere else.
+In other words, you can think that the `obj` pointer owns the object itself.
+You can replace it with a `std::unique_ptr` as follows:
+\verbatim
+  std::unique_ptr<object> obj;
+  if(...) obj.reset(new type1);
+  else obj.reset(new type2);
+
+  ...
+  
+  obj->method();
+
+  ..
+\endverbatim
+
+Notice that instead of assigning it with `=` you should assign it with `reset()`. This is because
+the `std::unique_ptr` cannot be copied and so does not understand the assignment operator.
+More importantly, notice that the delete command has disappeared. Indeed, when `obj` goes
+out of scope, the pointee is automatically deleted.
+
+You can also use vectors of pointers. Consider the following example
+\verbatim
+  std::vector<object*> objs;
+  for(unsigned i=0;i<10;i++) objs.push_back(new object);
+
+  ...
+
+  for(unsigned i=0;i<10;i++) delete objs[i];
+\endverbatim
+This can be replaced with
+\verbatim
+  std::vector<std::unique_ptr<object>> objs;
+  for(unsigned i=0;i<10;i++) objs.emplace_back(new object);
+
+  ...
+\endverbatim
+
+Notice that instead of using `push_back()` we used `emplace_back()`. The reason is that the latter move
+the pointer instead of copying it. More importantly, notice that the delete command has disappeared.
+When the vector is cleared, also the contained objects are deleted.
+
+Notice that `emplace_back` needs to be fed with a so-called rvalue. In case you created the
+unique_ptr in advance, you should insert it with the following syntax
+\verbatim
+  std::vector<std::unique_ptr<object>> objs;
+  std::unique_ptr<object> to_insert;
+  to_insert.reset(new object);
+  objs.emplace_back(std::move(to_insert));
+\endverbatim
+
+\subsection cxx11features-forward Forward declarations using C++11
+
+Notice that also forward declarations discussed above are a bit simpler
+to implement using C++11 syntax. This can be done using a std::unique_ptr
+or, even better, using the class ForwardDecl, which is a small utility class that
+only implement two methods:
+- A constructor, which takes an arbitrary number of parameters and use them
+  to construct an internally stored `std::unique_ptr`.
+- A `operator *`, which returns a pointer to the object.
+
+An example usage is below:
+
+
+\verbatim
+/////////////////////////////////////////////
+// This is file B-good.h
+#include "tools/ForwardDecl.h"
+
+namespace PLMD{
+
+// this command just instructs the compiler that A is a class:
+class A;
+// no inclusion of A.h is required!
+
+class B{
+  ForwardDecl<A> content_fwd;
+  A& content1=*content1_fwd;
+  ForwardDecl<A> content_fwd;
+  A& content2=*content2_fwd;
+public:
+  B();
+  ~B();
+};
+
+}
+
+/////////////////////////////////////////////
+// Using B-good.h enforces to add something in B-good.cpp
+
+#include "A.h"
+#include "B-good.h"
+
+using namespace PLMD;
+
+B::B():
+// constructors that need no argument can be omitted
+  content2_fwd(argument)
+{
+}
+
+B::~B(){
+// empty destructor
+}
+
+\endverbatim
+
+Notice that it is necessary to add a destructor, even though it is empty.
+The reason is that if the compiler tries to construct an inline destructor for this class
+it will not be able to create it (the class is not completely defined in `B.h`.
+However, the advantage is that objects are deallocated in the correct order as if they were
+normal members of class B, that is the inverse of the initialization order.
 
 \section conc Conclusion
 

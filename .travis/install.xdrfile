@@ -3,7 +3,7 @@
 set -e
 set -x
 
-cd "$(mktemp -d)"
+cd "$(mktemp -dt plumed.XXXXXX)"
 
 echo "installing xdrfile library"
 # wget ftp://ftp.gromacs.org/pub/contrib/xdrfile-1.1.4.tar.gz

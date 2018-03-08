@@ -11,7 +11,7 @@ COPY plumed2.tgz /root/
 
 # install libraries and plumed
 RUN buildDeps="git" \
- && runtimeDeps="gawk libmatheval1 libopenblas-base libgomp1 make openssh-client openmpi-bin vim zlib1g git g++ libmatheval-dev libopenblas-dev libopenmpi-dev xxd zlib1g-dev" \
+ && runtimeDeps="gawk libopenblas-base libgomp1 make openssh-client openmpi-bin vim zlib1g git g++ libopenblas-dev libopenmpi-dev xxd zlib1g-dev" \
  && apt-get -yq update \
  && apt-get -yq upgrade \
  && apt -yq install $buildDeps $runtimeDeps --no-install-recommends \

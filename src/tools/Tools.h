@@ -132,6 +132,8 @@ public:
   static std::string extension(const std::string&);
 /// Fast int power
   static double fastpow(double base,int exp);
+/// Modified 0th-order Bessel function of the first kind
+  static double bessel0(const double& val);
 /// Check if a string full starts with string start.
 /// Same as full.find(start)==0
   static bool startWith(const std::string & full,const std::string &start);
@@ -149,7 +151,6 @@ template <class T>
 bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val,int rep) {
   std::string s;
   if(!getKey(line,key+"=",s,rep)) return false;
-//  if(s.length()==0) return true;
   val.clear();
   std::vector<std::string> words=getWords(s,"\t\n ,");
   for(unsigned i=0; i<words.size(); ++i) {
@@ -159,7 +160,7 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
     if(rep>=0 && startWith(s,multi)) {
       s=s.substr(multi.length(),s.length());
       std::vector<std::string> words=getWords(s,"\t\n ,");
-      plumed_assert(rep<words.size());
+      plumed_assert(rep<static_cast<int>(words.size()));
       s=words[rep];
     }
     if(!convert(s,v))return false;

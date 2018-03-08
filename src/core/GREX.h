@@ -23,6 +23,7 @@
 #define __PLUMED_core_GREX_h
 
 #include "WithCmd.h"
+#include "tools/ForwardDecl.h"
 #include <string>
 #include <vector>
 
@@ -36,8 +37,10 @@ class GREX:
   public WithCmd
 {
   bool initialized;
-  Communicator& intracomm;
-  Communicator& intercomm;
+  ForwardDecl<Communicator> intracomm_fwd;
+  Communicator& intracomm=*intracomm_fwd;
+  ForwardDecl<Communicator> intercomm_fwd;
+  Communicator& intercomm=*intercomm_fwd;
   PlumedMain& plumedMain;
   Atoms&      atoms;
   int partner;

@@ -25,6 +25,7 @@
 #include <vector>
 #include <string>
 #include "WithCmd.h"
+#include "tools/ForwardDecl.h"
 
 
 namespace PLMD {
@@ -83,7 +84,8 @@ class CLToolMain:
   std::vector<std::string> argv;
   FILE*in;
   FILE*out;
-  Communicator&comm;
+  ForwardDecl<Communicator> comm_fwd;
+  Communicator&comm=*comm_fwd;
   static int run(int argc, char **argv,FILE*in,FILE*out,Communicator&pc);
 public:
   CLToolMain();

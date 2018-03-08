@@ -30,6 +30,8 @@ dirs=$(
   done
 )
 
+file1=$(mktemp -t plumed.XXXXXX)
+file2=$(mktemp -t plumed.XXXXXX)
 
 for dir in $dirs
 do
@@ -38,22 +40,24 @@ do
   if [ -n "$html" ] ; then
     fullname='<a href="'"$file"'">'"$file"'</a>'
   fi
-  if grep -q NOT_APPLIABLE $file ; then
+  if grep -q NOT_APPLICABLE $file ; then
     ((notapp++))
-    echo + test $dir NOT APPLIABLE
-    echo + check file $fullname for more information
+    echo + test $dir NOT APPLICABLE >> $file1
+    echo + check file $fullname for more information >> $file1
   elif grep -q FAILURE $file ; then
     ((nerror++))
-    echo + ERROR in test $dir
-    echo + check file $fullname for more information
+    echo + ERROR in test $dir >> $file2
+    echo + check file $fullname for more information >> $file2
   else
     ((nok++))
   fi
 done
+cat $file1
+cat $file2
 
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Final report:"
-echo "+ $((nok+nerror)) tests performed, $notapp tests not appliable"
+echo "+ $((nok+nerror)) tests performed, $notapp tests not applicable"
 echo "+ $nerror errors found"
 if ((nerror==0)) ; then
 echo "+ Well done!!"
@@ -68,7 +72,7 @@ fi
 
 if [ "$PLUMED_ALL_TESTS" = yes ] ; then
   if (($notapp>0)) ; then
-    echo "+ You are running with PLUMED_ALL_TESTS=yes and some tests are not appliable"
+    echo "+ You are running with PLUMED_ALL_TESTS=yes and some tests are not applicable"
     echo "+ This is likely happening on the first job under TRAVIS-CI"
     echo "+ Please check that all modules have been properly enabled!"
     if [ -n "$fail" ] ; then

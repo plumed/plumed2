@@ -1,0 +1,169 @@
+# vim:ft=plumed
+
+arg1: READ FILE=arg.in VALUES=arg IGNORE_TIME
+
+# should be the same as TD_GAUSSIAN CENTER1=-1.5 SIGMA1=0.8
+t1: TD_CUSTOM  FUNCTION=exp(-0.5*((s1+1.5)/0.8)^2)
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=-4.0
+ GRID_MAX=+4.0
+ GRID_BINS=200
+ TARGET_DISTRIBUTION=t1
+ TARGETDIST_FILE=targetdist-1.data
+ LOG_TARGETDIST_FILE=targetdist-1.log.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION
+
+
+
+# should be the same as TD_GAUSSIAN  CENTER1=-1.5,+1.5 SIGMA1=0.8,0.3  CENTER2=+1.5,-1.5 SIGMA2=0.3,0.8  WEIGHTS=1.0,4.0
+t2: TD_CUSTOM  FUNCTION=1.0*exp(-0.5*((s1+1.5)/0.8)^2)*exp(-0.5*((s2-1.5)/0.3)^2)+4.0*exp(-0.5*((s1-1.5)/0.3)^2)*exp(-0.5*((s2+1.5)/0.8)^2)
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=-4.0,-4.0
+ GRID_MAX=+4.0,+4.0
+ GRID_BINS=100,100
+ TARGET_DISTRIBUTION=t2
+ TARGETDIST_FILE=targetdist-2.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION
+
+
+
+t3: TD_CUSTOM  FUNCTION=sin(2*s1)+cos(3*s1)  SHIFT_TO_ZERO
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=-pi
+ GRID_MAX=+pi
+ GRID_BINS=200
+ TARGET_DISTRIBUTION=t3
+ TARGETDIST_FILE=targetdist-3.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION
+
+
+t4: TD_CUSTOM  FUNCTION=sin(2*s1)*cos(3*s2)+cos(3*s1)*sin(2*s2)  SHIFT_TO_ZERO
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=-pi,-pi
+ GRID_MAX=+pi,+pi
+ GRID_BINS=100,100
+ TARGET_DISTRIBUTION=t4
+ TARGETDIST_FILE=targetdist-4.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION
+
+
+
+# Shifted Maxwell-Boltzmann 
+# https://en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution
+t5: TD_CUSTOM  FUNCTION=(s1+20)^2*exp(-(s1+20)^2/(2*10.0^2))
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=-20
+ GRID_MAX=+50
+ GRID_BINS=200
+ TARGET_DISTRIBUTION=t5
+ TARGETDIST_FILE=targetdist-5.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION
+
+
+
+t5b: TD_CUSTOM  FUNCTION=(s1+20)^2*exp(-(s1+20)^2/(2*10.0^2))
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=-20,-20
+ GRID_MAX=+50,+20
+ GRID_BINS=100,100
+ TARGET_DISTRIBUTION=t5b
+ TARGETDIST_FILE=targetdist-5b.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION
+
+
+
+# Generalized Normal, or exponential power distribution, or generalized error distribution
+# https://en.wikipedia.org/wiki/Generalized_normal_distribution
+# beta=4.0
+t6: TD_CUSTOM  FUNCTION=exp(-(abs(s1-20.0)/5.0)^4.0)
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=0.0
+ GRID_MAX=+40.0
+ GRID_BINS=200
+ TARGET_DISTRIBUTION=t6
+ TARGETDIST_FILE=targetdist-6.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION
+
+
+
+t6a: TD_CUSTOM  FUNCTION=exp(-(abs(s2-20.0)/5.0)^4.0)
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=-10,0.0
+ GRID_MAX=10,+40.0
+ GRID_BINS=50,100
+ TARGET_DISTRIBUTION=t6a
+ TARGETDIST_FILE=targetdist-6a.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION
+
+t6b: TD_CUSTOM  FUNCTION=exp(-(abs(s1-20.0)/5.0)^4.0)+exp(-(abs(s1+20.0)/5.0)^4.0)
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=-40.0
+ GRID_MAX=+40.0
+ GRID_BINS=200
+ TARGET_DISTRIBUTION=t6b
+ TARGETDIST_FILE=targetdist-6b.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION
+
+t6c: TD_CUSTOM  FUNCTION=1.0*exp(-(abs(s1-20.0)/5.0)^4.0)+4.0*exp(-(abs(s1+20.0)/5.0)^4.0)
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=-40.0
+ GRID_MAX=+40.0
+ GRID_BINS=200
+ TARGET_DISTRIBUTION=t6c                  
+ TARGETDIST_FILE=targetdist-6c.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION
+
+
+
+# Generalized Normal, or exponential power distribution, or generalized error distribution
+# https://en.wikipedia.org/wiki/Generalized_normal_distribution
+# beta=1.5
+t7: TD_CUSTOM  FUNCTION=exp(-(abs(s1-20.0)/5.0)^1.5)
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=0.0
+ GRID_MAX=+40.0
+ GRID_BINS=200
+ TARGET_DISTRIBUTION=t7                      
+ TARGETDIST_FILE=targetdist-7.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION
+
+
+
+# Frechet distribution
+# https://en.wikipedia.org/wiki/Frechet_distribution
+# a=3.0 s=10.0 m=-20.0001
+t8: TD_CUSTOM  FUNCTION=(3.0/10.0)*((s1+20.0001)/10.0)^(-1.0-3.0)*exp(-((s1+20.0001)/10.0)^(-3.0))
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=-20.0
+ GRID_MAX=+50.0
+ GRID_BINS=200
+ TARGET_DISTRIBUTION=t8
+ TARGETDIST_FILE=targetdist-8.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION
+
+
+
+# Frechet distribution
+# https://en.wikipedia.org/wiki/Frechet_distribution
+# a=3.0 s=3.0 m=-20.0001
+t9: TD_CUSTOM  FUNCTION=(3.0/3.0)*((s1+20.0001)/3.0)^(-1.0-3.0)*exp(-((s1+20.0001)/3.0)^(-3.0))
+VES_OUTPUT_TARGET_DISTRIBUTION ...
+ GRID_MIN=-20.0
+ GRID_MAX=+0.0
+ GRID_BINS=200
+ TARGET_DISTRIBUTION=t9
+ TARGETDIST_FILE=targetdist-9.data
+ FMT_GRIDS=%11.6f
+... VES_OUTPUT_TARGET_DISTRIBUTION

@@ -48,7 +48,7 @@ namespace bias {
 
 //+PLUMEDOC BIAS MAXENT
 /*
-Add a linear biasing potential on one or more variables f_{i}\left(\boldsymbol{x}\right) satisfying the maximum entropy principle as proposed in Ref. \cite cesari2016maxent .
+Add a linear biasing potential on one or more variables \f$f_{i}\left(\boldsymbol{x}\right)\f$ satisfying the maximum entropy principle as proposed in Ref. \cite cesari2016maxent .
 
 \warning
     Notice that syntax is still under revision and might change
@@ -159,7 +159,7 @@ class MaxEnt : public Bias {
   std::vector<bool> done_average;
   int myrep,nrep;
 public:
-  MaxEnt(const ActionOptions&);
+  explicit MaxEnt(const ActionOptions&);
   ~MaxEnt();
   void calculate();
   void update();

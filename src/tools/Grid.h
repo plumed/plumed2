@@ -26,6 +26,7 @@
 #include <string>
 #include <map>
 #include <cmath>
+#include <memory>
 
 namespace PLMD {
 
@@ -155,11 +156,11 @@ public:
   void writeHeader(OFile& file);
 
 /// read grid from file
-  static Grid* create(const std::string&,const std::vector<Value*>&,IFile&,bool,bool,bool);
+  static std::unique_ptr<Grid> create(const std::string&,const std::vector<Value*>&,IFile&,bool,bool,bool);
 /// read grid from file and check boundaries are what is expected from input
-  static Grid* create(const std::string&,const std::vector<Value*>&, IFile&,
-                      const std::vector<std::string>&,const std::vector<std::string>&,
-                      const std::vector<unsigned>&,bool,bool,bool);
+  static std::unique_ptr<Grid> create(const std::string&,const std::vector<Value*>&, IFile&,
+                                      const std::vector<std::string>&,const std::vector<std::string>&,
+                                      const std::vector<unsigned>&,bool,bool,bool);
 /// get grid size
   virtual index_t getSize() const;
 /// get grid value
@@ -215,6 +216,8 @@ public:
   void projectOnLowDimension(double &val, std::vector<int> &varHigh, WeightBase* ptr2obj );
 /// set output format
   void setOutputFmt(const std::string & ss) {fmt_=ss;}
+/// reset output format to the default %14.9f format
+  void resetToDefaultOutputFmt() {fmt_="%14.9f";}
 /// Integrate the function calculated on the grid
   double integrate( std::vector<unsigned>& npoints );
 ///
