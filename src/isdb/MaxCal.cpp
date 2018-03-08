@@ -77,7 +77,9 @@ void Caliber::registerKeywords( Keywords& keys ) {
 }
 
 Caliber::Caliber(const ActionOptions&ao):
-  PLUMED_BIAS_INIT(ao)
+  PLUMED_BIAS_INIT(ao),
+  kappa(0),
+  mult(0)
 {
   string filename;
   double tempT, tempVar;
