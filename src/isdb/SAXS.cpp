@@ -500,9 +500,9 @@ void SAXS::bessel_calculate() {
       for(int n=0; n<trunc[k]-1; n++) {
         for(int m=0; m<(2*n)+1; m++) {
           int t = 3*(n * n + m);
-          a[t]   += FF_value[k][i] * dXHarmonics(p2, k,i,n,m,qRnm);
-          a[t+1] += FF_value[k][i] * dYHarmonics(p2, k,i,n,m,qRnm);
-          a[t+2] += FF_value[k][i] * dZHarmonics(p2, k,i,n,m,qRnm);
+          a[t]   += FF_value[k][i] * dXHarmonics(p2,k,i,n,m,qRnm);
+          a[t+1] += FF_value[k][i] * dYHarmonics(p2,k,i,n,m,qRnm);
+          a[t+2] += FF_value[k][i] * dZHarmonics(p2,k,i,n,m,qRnm);
         }
       }
     }
@@ -619,6 +619,7 @@ void SAXS::setup_midl(vector<double> &r_polar, vector<Vector2d> &qRnm, int &algo
   if(maxdist<max[2]) maxdist = max[2];
   unsigned truncation=5+static_cast<unsigned>(maxdist*q_list[numq-1]+0.5*pow((12-log10(maxdist*q_list[numq-1])),2/3)*pow(maxdist*q_list[numq-1],1/3));
   if(truncation<10) truncation=10;
+  if(truncation>99) truncation=99;
   p2=truncation*truncation;
   //dynamically set the truncation according to the scattering wavenumber.
   for(int k=numq-1; k>=0; k--) {
