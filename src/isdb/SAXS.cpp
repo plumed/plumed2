@@ -105,6 +105,7 @@ class SAXS :
 private:
   bool                     pbc;
   bool                     serial;
+  bool                     bessel;
   vector<double>           q_list;
   vector<double>           FF_rank;
   vector<vector<double> >  FF_value;
@@ -113,7 +114,7 @@ private:
 
   void getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter);
   void calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho);
-  void fcalculate();
+  void bessel_calculate();
   void setup_midl(vector<double> &r_polar, vector<Vector2d> &qRnm, int &algorithm, unsigned &p2, vector<unsigned> &trunc);
   Vector2d dXHarmonics(unsigned p2, unsigned k, unsigned int i, int n, int m, vector<Vector2d> &decRnm);
   Vector2d dYHarmonics(unsigned p2, unsigned k, unsigned int i, int n, int m, vector<Vector2d> &decRnm);
@@ -135,6 +136,7 @@ void SAXS::registerKeywords(Keywords& keys) {
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
+  keys.addFlag("BESSEL",false,"Perform the calculation using the adaptive spherical harmonic approximation");
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
@@ -151,13 +153,17 @@ void SAXS::registerKeywords(Keywords& keys) {
 SAXS::SAXS(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
   pbc(true),
-  serial(false)
+  serial(false),
+  bessel(false)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   const unsigned size = atoms.size();
 
   parseFlag("SERIAL",serial);
+
+  parseFlag("BESSEL",bessel);
+  if(bessel) cal_coeff();
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -295,7 +301,6 @@ SAXS::SAXS(const ActionOptions&ao):
   }
   log<< plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
-  cal_coeff();
 
   requestAtoms(atoms);
   if(getDoScore()) {
@@ -308,8 +313,10 @@ SAXS::SAXS(const ActionOptions&ao):
 
 void SAXS::calculate() {
 
-  //fcalculate();
-  //return;
+  if(bessel) {
+    bessel_calculate();
+    return;
+  }
 
   if(pbc) makeWhole();
 
@@ -325,17 +332,30 @@ void SAXS::calculate() {
 
   vector<Vector> deriv(numq*size);
   vector<double> sum(numq,0);
+  vector<Vector> c_dist(size*size);
+  vector<double> m_dist(size*size);
+
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for (unsigned i=rank; i<size-1; i+=stride) {
+    const Vector posi=getPosition(i);
+    for (unsigned j=i+1; j<size ; j++) {
+      c_dist[i*size+j] = delta(posi,getPosition(j));
+      m_dist[i*size+j] = c_dist[i*size+j].modulo();
+    }
+  }
 
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (unsigned k=0; k<numq; k++) {
     const unsigned kdx=k*size;
     for (unsigned i=rank; i<size-1; i+=stride) {
       const double FF=2.*FF_value[k][i];
-      const Vector posi=getPosition(i);
+      //const Vector posi=getPosition(i);
       Vector dsum;
       for (unsigned j=i+1; j<size ; j++) {
-        const Vector c_distances = delta(posi,getPosition(j));
-        const double m_distances = c_distances.modulo();
+        //const Vector c_distances = delta(posi,getPosition(j));
+        //const double m_distances = c_distances.modulo();
+        const Vector c_distances = c_dist[i*size+j];
+        const double m_distances = m_dist[i*size+j];
         const double qdist       = q_list[k]*m_distances;
         const double FFF = FF*FF_value[k][j];
         const double tsq = FFF*sin(qdist)/qdist;
@@ -391,7 +411,7 @@ void SAXS::calculate() {
   }
 }
 
-void SAXS::fcalculate() {
+void SAXS::bessel_calculate() {
 #ifdef __PLUMED_HAS_GSL
   if(pbc) makeWhole();
 
