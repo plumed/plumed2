@@ -116,7 +116,7 @@ private:
   void getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter);
   void calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho);
   void bessel_calculate(vector<Vector> &deriv, vector<double> &sum, vector<Vector2d> &qRnm, const vector<double> &r_polar,
-                            const vector<unsigned> &trunc, const int algorithm, const unsigned p2);
+                        const vector<unsigned> &trunc, const int algorithm, const unsigned p2);
   void setup_midl(vector<double> &r_polar, vector<Vector2d> &qRnm, int &algorithm, unsigned &p2, vector<unsigned> &trunc);
   Vector2d dXHarmonics(const unsigned p2, const unsigned k, const unsigned i, const int n, const int m, const vector<Vector2d> &decRnm);
   Vector2d dYHarmonics(const unsigned p2, const unsigned k, const unsigned i, const int n, const int m, const vector<Vector2d> &decRnm);
@@ -320,7 +320,7 @@ SAXS::SAXS(const ActionOptions&ao):
   checkRead();
 }
 
-void SAXS::calculate() 
+void SAXS::calculate()
 {
   if(pbc) makeWhole();
 
@@ -364,7 +364,7 @@ void SAXS::calculate()
         m_dist[i*size+j] = c_dist[i*size+j].modulo();
       }
     }
- 
+
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())
     for (unsigned k=(algorithm+1); k<numq; k++) {
       const unsigned kdx=k*size;
@@ -448,7 +448,7 @@ void SAXS::calculate()
 }
 
 void SAXS::bessel_calculate(vector<Vector> &deriv, vector<double> &sum, vector<Vector2d> &qRnm, const vector<double> &r_polar,
-                            const vector<unsigned> &trunc, const int algorithm, const unsigned p2) 
+                            const vector<unsigned> &trunc, const int algorithm, const unsigned p2)
 {
 #ifdef __PLUMED_HAS_GSL
   const unsigned size = getNumberOfAtoms();
@@ -461,7 +461,6 @@ void SAXS::bessel_calculate(vector<Vector> &deriv, vector<double> &sum, vector<V
   }
 
   //calculation via Middleman method
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned k=0; k<algorithm+1; k++) {
     const unsigned kN  = k * size;
     const unsigned p22 = trunc[k]*trunc[k];
