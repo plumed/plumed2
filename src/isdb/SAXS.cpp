@@ -462,6 +462,7 @@ void SAXS::bessel_calculate() {
   }
 
   //calculation via Middleman method
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(int k=algorithm; k>=0; k--) {
     const unsigned kN  = k * size;
     const unsigned p22 = trunc[k]*trunc[k];
