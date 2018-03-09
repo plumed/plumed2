@@ -55,7 +55,7 @@ Function::Function(const ActionOptions&ao):
       }
   }
   if( gridinput ) {
-       unsigned nscalars=0; 
+       unsigned nscalars=0; done_over_stream=false;
        if( arg_ends.size()==0 && getNumberOfArguments()==1 ){ arg_ends.push_back(0); arg_ends.push_back(1); }
        for(unsigned j=0;j<getNumberOfArguments();++j) {
            if( getPntrToArgument(j)->getRank()!=0 ) {
@@ -381,42 +381,38 @@ void Function::apply()
 {
   // Everything is done elsewhere
   if( doNotCalculateDerivatives() ) return;
-  // And add forces
-  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, ss ); 
 
-//   const unsigned noa=getNumberOfArguments();
-//   const unsigned ncp=getNumberOfComponents();
-//   const unsigned cgs=comm.Get_size();
-// 
-//   vector<double> f(noa,0.0);
-// 
-//   unsigned stride=1;
-//   unsigned rank=0;
-//   if(ncp>4*cgs) {
-//     stride=comm.Get_size();
-//     rank=comm.Get_rank();
-//   }
-// 
-//   unsigned at_least_one_forced=0;
-//   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(f)
-//   {
-//     vector<double> omp_f(noa,0.0);
-//     vector<double> forces(noa);
-//     #pragma omp for reduction( + : at_least_one_forced)
-//     for(unsigned i=rank; i<ncp; i+=stride) {
-//       if(getPntrToComponent(i)->applyForce(forces)) {
-//         at_least_one_forced+=1;
-//         for(unsigned j=0; j<noa; j++) omp_f[j]+=forces[j];
-//       }
-//     }
-//     #pragma omp critical
-//     for(unsigned j=0; j<noa; j++) f[j]+=omp_f[j];
-//   }
-// 
-//   if(noa>0&&ncp>4*cgs) { comm.Sum(&f[0],noa); comm.Sum(at_least_one_forced); }
+  // Forces for grid functions
+  if( getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() ) {
+      // Check for force
+      if( !getPntrToOutput(0)->forcesWereAdded() ) return ;
+      plumed_dbg_assert( getNumberOfArguments()==2 || getNumberOfArguments()==1 );
 
-//  if(at_least_one_forced>0) for(unsigned i=0; i<noa; ++i) getPntrToArgument(i)->addForce(f[i]);
+      // Work out how to deal with arguments
+      unsigned val_a=1, grid_a=0; 
+      if( getPntrToArgument(0)->getRank()==0 ) { val_a=0; grid_a=1; }
+
+      if( getNumberOfArguments()==1 ) {
+          for(unsigned i=0;i<getFullNumberOfTasks();++i) {
+              double fforce = getPntrToOutput(0)->getForce(i);
+              double vval = getPntrToOutput(0)->getGridDerivative( i, 0 ) / getPntrToArgument(grid_a)->getGridDerivative( i, 0 );
+              getPntrToArgument(grid_a)->addForce( i, fforce*vval );
+          }
+      } else {
+          double totv=0;
+          for(unsigned i=0;i<getFullNumberOfTasks();++i) {
+              double fforce = getPntrToOutput(0)->getForce(i);
+              double vval = getPntrToOutput(0)->getGridDerivative( i, 0 ) / getPntrToArgument(grid_a)->getGridDerivative( i, 0 ); 
+              getPntrToArgument(grid_a)->addForce( i, fforce*vval );
+              totv += fforce*getPntrToOutput(0)->getGridDerivative( i, nderivatives-1 );
+          }
+          getPntrToArgument(val_a)->addForce( 0, totv );
+      }
+  } else { 
+      // And add forces
+      std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
+      if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, ss ); 
+  }
 }
 
 }

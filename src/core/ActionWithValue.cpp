@@ -667,14 +667,14 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
    else if( values[0]->hasDeriv ) type=2;
    else plumed_assert( values[0]->shape.size()>0 );
 
-#ifdef DNDEBUG
+#ifndef DNDEBUG
    if( type==0 ) {
        for(unsigned i=0;i<values.size();++i) plumed_dbg_assert( values[i]->shape.size()>0 && !values[i]->hasDeriv );
-   } else if( type==1 ) {
+   } else if( type==1 && getName()!="DIAGONALIZE" ) {
        for(unsigned i=0;i<values.size();++i) plumed_dbg_assert( values[i]->shape.size()==0 ); 
    } else if( type==2 ) {
        for(unsigned i=0;i<values.size();++i) plumed_dbg_assert( values[i]->shape.size()>0 && values[i]->hasDeriv );
-   } else {
+   } else if( getName()!="DIAGONALIZE" ) {
        plumed_merror("value type not defined");
    }
 #endif
@@ -747,7 +747,7 @@ void ActionWithValue::gatherForces( const unsigned& itask, const MultiValue& myv
            if( values[k]->hasForce && values[k]->getRank()==2 && !values[k]->hasDeriv ) {
                unsigned matind = values[k]->getPositionInMatrixStash();
                for(unsigned j=0;j<forces.size();++j) forces[j] += myvals.getStashedMatrixForce( matind, j ); 
-           } else if( values[k]->hasForce ) {
+           } else if( values[k]->getRank()>0 && values[k]->hasForce ) {
                unsigned sspos = values[k]->streampos; double fforce = values[k]->getForce(itask);
                for(unsigned j=0;j<myvals.getNumberActive(sspos);++j) {
                    unsigned jder=myvals.getActiveIndex(sspos, j); forces[jder] += fforce*myvals.getDerivative( sspos, jder );
