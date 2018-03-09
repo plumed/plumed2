@@ -430,6 +430,7 @@ void SAXS::bessel_calculate() {
   int algorithm=0;
   unsigned p2=0;
   vector<unsigned> trunc(numq);
+
   setup_midl(r_polar, qRnm, algorithm, p2, trunc);
 
   vector<Vector> deriv(numq*size);
@@ -544,20 +545,22 @@ void SAXS::bessel_calculate() {
     comm.Sum(&deriv[0][0], 3*deriv.size());
   }
 
-  //output (box)derivatives and scattering profile
-  for(int k=0; k<=algorithm; k++) {
+  // bessel method
+  for(unsigned k=0; k<=algorithm; k++) {
     Tensor         deriv_box;
     const unsigned kN     = k * size;
     Value*         val    = getPntrToComponent(k);
     for(unsigned i=0; i<size; i++) {
-      setAtomsDerivatives(val, i, 8 * M_PI * q_list[k] * deriv[kN+i]);
-      deriv_box          += Tensor(getPosition(i),deriv[kN+i]);
+      deriv[kN+i] *= 8.*M_PI*q_list[k];
+      setAtomsDerivatives(val, i, deriv[kN+i]);
+      deriv_box += Tensor(getPosition(i),deriv[kN+i]);
     }
-    sum[k] = 4 * M_PI*sum[k];
-    setBoxDerivatives(val, -8 * M_PI* q_list[k]*deriv_box);
+    sum[k] *= 4.*M_PI;
+    setBoxDerivatives(val, -deriv_box);
     val->set(sum[k]);
   }
 
+  // direct method
   for(unsigned k=algorithm+1; k<numq; k++) {
     Tensor         deriv_box;
     const unsigned kN     = k * size;
@@ -620,6 +623,7 @@ void SAXS::setup_midl(vector<double> &r_polar, vector<Vector2d> &qRnm, int &algo
   for(int k=numq-1; k>=0; k--) {
     trunc[k]=5+static_cast<unsigned>(1.2*maxdist*q_list[k]+0.5*pow((12-log10(maxdist*q_list[k])),2/3)*pow(maxdist*q_list[k],1/3));
     if(truncation<trunc[k]) trunc[k] = truncation;
+    if(trunc[k]<10) trunc[k] = 10;
     if(4*trunc[k]<static_cast<unsigned>(sqrt(2*size)) && algorithm==0) algorithm=k;
   }
 
@@ -648,24 +652,24 @@ void SAXS::update() {
 
 //partial derivatives of the spherical basis functions
 Vector2d SAXS::dXHarmonics(unsigned p2, unsigned k, unsigned int i, int n, int m, vector<Vector2d> &qRnm) {
-  Vector2d                              dRdc =     (bvals[n*(n+4)-m+1] * qRnm[p2*i+n*(n+2)+m+3] + bvals[n*(n+2)+m+1] * qRnm[p2*i+n*(n+2)+m+1]);
-  if((abs(m-n-1)<=(n-1))&&((n-1)>=0))   dRdc-=      bvals[n*(n+2)-m]   * qRnm[p2*i+n*(n-2)+m-1];
-  if((abs(m-n+1)<=(n-1))&&((n-1)>=0))   dRdc-=      bvals[n*n+m]       * qRnm[p2*i+n*n-2*n+m+1];
+  Vector2d                            dRdc = (bvals[n*(n+4)-m+1] * qRnm[p2*i+n*(n+2)+m+3] + bvals[n*(n+2)+m+1] * qRnm[p2*i+n*(n+2)+m+1]);
+  if((abs(m-n-1)<=(n-1))&&((n-1)>=0)) dRdc-= bvals[n*(n+2)-m] * qRnm[p2*i+n*(n-2)+m-1];
+  if((abs(m-n+1)<=(n-1))&&((n-1)>=0)) dRdc-= bvals[n*n+m] * qRnm[p2*i+n*n-2*n+m+1];
   return dRdc;
 }
 
 
 Vector2d SAXS::dYHarmonics(unsigned p2, unsigned k, unsigned int i, int n, int m, vector<Vector2d> &qRnm) {
-  Vector2d                              dRdc =     (bvals[n*(n+4)-m+1] * qRnm[p2*i+n*(n+2)+m+3] - bvals[n*(n+2)+m+1] * qRnm[p2*i+n*(n+2)+m+1]);
-  if((abs(m-n-1)<=(n-1))&&((n-1)>=0))   dRdc+=      bvals[n*(n+2)-m]   * qRnm[p2*i+n*(n-2)+m-1];
-  if((abs(m-n+1)<=(n-1))&&((n-1)>=0))   dRdc-=      bvals[n*n+m]       * qRnm[p2*i+n*(n-2)+m+1];
+  Vector2d                            dRdc = (bvals[n*(n+4)-m+1] * qRnm[p2*i+n*(n+2)+m+3] - bvals[n*(n+2)+m+1] * qRnm[p2*i+n*(n+2)+m+1]);
+  if((abs(m-n-1)<=(n-1))&&((n-1)>=0)) dRdc+= bvals[n*(n+2)-m] * qRnm[p2*i+n*(n-2)+m-1];
+  if((abs(m-n+1)<=(n-1))&&((n-1)>=0)) dRdc-= bvals[n*n+m] * qRnm[p2*i+n*(n-2)+m+1];
   return dRdc;
 }
 
 
 Vector2d SAXS::dZHarmonics(unsigned p2, unsigned k, unsigned int i, int n, int m, vector<Vector2d> &qRnm) {
-  Vector2d                              dRdc = -1 * avals[n*n+m]       * qRnm[p2*i+n*(n+2)+m+2];
-  if((abs(m-n)<=(n-1))&&((n-1)>=0))     dRdc+=      avals[n*(n-2)+m]   * qRnm[p2*i+n*(n-2)+m];
+  Vector2d                          dRdc = -avals[n*n+m]*qRnm[p2*i+n*(n+2)+m+2];
+  if((abs(m-n)<=(n-1))&&((n-1)>=0)) dRdc+= avals[n*(n-2)+m]*qRnm[p2*i+n*(n-2)+m];
   return dRdc;
 }
 
