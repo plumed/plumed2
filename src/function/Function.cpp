@@ -51,7 +51,7 @@ Function::Function(const ActionOptions&ao):
   for(unsigned i=0;i<getNumberOfArguments();++i) {
       if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ){ 
           gridinput=true; npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() ); 
-          nderivatives = getPntrToArgument(i)->getRank(); break; 
+          nderivatives = getPntrToArgument(i)->getRank() + getNumberOfArguments(); break; 
       }
   }
   if( gridinput ) {
@@ -60,7 +60,7 @@ Function::Function(const ActionOptions&ao):
        for(unsigned j=0;j<getNumberOfArguments();++j) {
            if( getPntrToArgument(j)->getRank()!=0 ) {
                if( getPntrToArgument(j)->getNumberOfValues( getLabel() )!=npoints || !getPntrToArgument(j)->hasDerivatives() ) error("mismatch in input arguments");
-           } else { nscalars++; nderivatives++; }
+           } else { nscalars++; }
        }
        if( nscalars>1 ) error("can only multiply/divide grid by one scalar at a time");
        // Now create a task list for the function
@@ -386,28 +386,26 @@ void Function::apply()
   if( getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() ) {
       // Check for force
       if( !getPntrToOutput(0)->forcesWereAdded() ) return ;
-      plumed_dbg_assert( getNumberOfArguments()==2 || getNumberOfArguments()==1 );
 
       // Work out how to deal with arguments
-      unsigned val_a=1, grid_a=0; 
-      if( getPntrToArgument(0)->getRank()==0 ) { val_a=0; grid_a=1; }
-
-      if( getNumberOfArguments()==1 ) {
-          for(unsigned i=0;i<getFullNumberOfTasks();++i) {
-              double fforce = getPntrToOutput(0)->getForce(i);
-              double vval = getPntrToOutput(0)->getGridDerivative( i, 0 ) / getPntrToArgument(grid_a)->getGridDerivative( i, 0 );
-              getPntrToArgument(grid_a)->addForce( i, fforce*vval );
-          }
-      } else {
-          double totv=0;
-          for(unsigned i=0;i<getFullNumberOfTasks();++i) {
-              double fforce = getPntrToOutput(0)->getForce(i);
-              double vval = getPntrToOutput(0)->getGridDerivative( i, 0 ) / getPntrToArgument(grid_a)->getGridDerivative( i, 0 ); 
-              getPntrToArgument(grid_a)->addForce( i, fforce*vval );
-              totv += fforce*getPntrToOutput(0)->getGridDerivative( i, nderivatives-1 );
-          }
-          getPntrToArgument(val_a)->addForce( 0, totv );
+      int val_a=-1; 
+      for(unsigned i=0;i<getNumberOfArguments();++i) {
+          if( getPntrToArgument(i)->getRank()==0 ) { val_a=i; }
       }
+
+      double totv=0;
+      for(unsigned i=0;i<getFullNumberOfTasks();++i) {
+          for(unsigned j=0;j<getNumberOfArguments();++j) {
+              double fforce = getPntrToOutput(0)->getForce(i);
+              if( j==val_a ) {
+                  totv += fforce*getPntrToOutput(0)->getGridDerivative( i, getPntrToOutput(0)->getRank()+j );
+              } else {
+                  double vval = getPntrToOutput(0)->getGridDerivative( i, getPntrToOutput(0)->getRank()+j  ); 
+                  getPntrToArgument(j)->addForce( i, fforce*vval );
+              }
+          }
+      }
+      if( val_a>-1 ) getPntrToArgument(val_a)->addForce( 0, totv );
   } else { 
       // And add forces
       std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
