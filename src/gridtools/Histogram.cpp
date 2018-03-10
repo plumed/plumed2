@@ -564,11 +564,14 @@ void Histogram::setupHistogramBeads( std::vector<HistogramBead>& bead ) const {
 
 double Histogram::evaluateBeadValue( std::vector<HistogramBead>& bead, const std::vector<double>& gpoint, const std::vector<double>& args, 
                                      const double& height, std::vector<double>& der ) const {
-  double val=height; 
+  double val=height; std::vector<double> contr( args.size() );
   for(unsigned j=0;j<args.size();++j) {
       bead[j].set( gpoint[j], gpoint[j]+gridobject.getGridSpacing()[j], bandwidth[j] );
-      double contr = bead[j].calculateWithCutoff( args[j], der[j] ); 
-      val = val*contr; der[j] = der[j] / contr;
+      contr[j] = bead[j].calculateWithCutoff( args[j], der[j] ); 
+      val = val*contr[j]; 
+  }
+  for(unsigned j=0;j<args.size();++j) {
+      if( fabs(contr[j])>epsilon ) der[j] *= val / contr[j];
   }
   return val;
 }

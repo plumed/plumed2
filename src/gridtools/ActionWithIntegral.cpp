@@ -45,6 +45,8 @@ void ActionWithIntegral::finishOutputSetup() {
   for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues( getLabel() ); ++i) addTaskToList(i);
   plumed_assert( arg_ends.size()==0 ); arg_ends.push_back(0); arg_ends.push_back(1); 
   forcesToApply.resize( getPntrToArgument(0)->getNumberOfValues( getLabel() ) );
+  // Turn on derivatives to resize derivatives in values now that we know the size
+  if( !doNotCalculateDerivatives() ) turnOnDerivatives();
 }
 
 void ActionWithIntegral::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
