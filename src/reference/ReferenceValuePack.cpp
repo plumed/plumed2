@@ -43,7 +43,7 @@ void ReferenceValuePack::resize( const unsigned& nargs, const unsigned& natoms )
 void ReferenceValuePack::updateDynamicLists() {
   plumed_dbg_assert( myvals.getNumberActive(oind)==0 );
   if( myvals.getNumberOfDerivatives()==0 ) return;
-  for(unsigned i=0; i<numberOfArgs; ++i) myvals.updateIndex( oind, i );   
+  for(unsigned i=0; i<numberOfArgs; ++i) myvals.updateIndex( oind, i );
   for(unsigned i=0; i<atom_indices.size(); ++i) {
     unsigned nbase = numberOfArgs + 3*atom_indices[i];
     if( atom_indices[i]<myvals.getNumberOfDerivatives() ) {

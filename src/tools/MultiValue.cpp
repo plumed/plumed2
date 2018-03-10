@@ -50,23 +50,23 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder, const unsig
   symfunc_index(0),
   symfunc_tmp_derivs(nvals)
 {
-  for(unsigned i=0;i<nmat;++i) mat_indices[i].resize( nder );
+  for(unsigned i=0; i<nmat; ++i) mat_indices[i].resize( nder );
 }
 
 void MultiValue::resize( const unsigned& nvals, const unsigned& nder, const unsigned& ncols, const unsigned& nmat ) {
   values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
-  hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder); 
-  nmatrix_cols=ncols; matrix_element_nind.resize(nmat); matrix_element_indices.resize(ncols*nmat); 
+  hasderiv.resize(nvals*nder,false); nactive.resize(nvals); active_list.resize(nvals*nder);
+  nmatrix_cols=ncols; matrix_element_nind.resize(nmat); matrix_element_indices.resize(ncols*nmat);
   matrix_element_stash.resize(ncols*nmat); nindices=0; mat_nindices.resize(nmat,0); mat_indices.resize(nmat);
-  for(unsigned i=0;i<nmat;++i) mat_indices[i].resize( nder );
+  for(unsigned i=0; i<nmat; ++i) mat_indices[i].resize( nder );
   symfunc_tmp_derivs.resize( nvals ); atLeastOneSet=false;
 }
 
 void MultiValue::clearAll() {
   for(unsigned i=0; i<values.size(); ++i) values[i]=0;
   // Clear matrix indices
-  for(unsigned i=0;i<mat_nindices.size();++i) mat_nindices[i]=0;
-  for(unsigned i=0;i<matrix_element_nind.size();++i) matrix_element_nind[i]=0;
+  for(unsigned i=0; i<mat_nindices.size(); ++i) mat_nindices[i]=0;
+  for(unsigned i=0; i<matrix_element_nind.size(); ++i) matrix_element_nind[i]=0;
   if( !atLeastOneSet ) return;
   for(unsigned i=0; i<values.size(); ++i) clear(i);
   atLeastOneSet=false;
@@ -76,18 +76,18 @@ void MultiValue::clear( const unsigned& ival ) {
   values[ival]=0;
   if( !atLeastOneSet ) return;
   unsigned base=ival*nderivatives;
-  for(unsigned i=0; i<nactive[ival]; ++i){
-     unsigned k = base+active_list[base+i]; derivatives[k]=0.; hasderiv[k]=false; 
+  for(unsigned i=0; i<nactive[ival]; ++i) {
+    unsigned k = base+active_list[base+i]; derivatives[k]=0.; hasderiv[k]=false;
   }
   nactive[ival]=0;
 #ifndef NDEBUG
-  for(unsigned i=0; i<nderivatives;++i){ 
-     if( hasderiv[base+i] ){ 
-         std::string num1, num2; 
-         Tools::convert(ival,num1); Tools::convert(i,num2); 
-         plumed_merror("FAILING TO CLEAR VALUE " + num1 + " DERIVATIVE " + num2 + " IS PROBLEMATIC");
-     }
-  }   
+  for(unsigned i=0; i<nderivatives; ++i) {
+    if( hasderiv[base+i] ) {
+      std::string num1, num2;
+      Tools::convert(ival,num1); Tools::convert(i,num2);
+      plumed_merror("FAILING TO CLEAR VALUE " + num1 + " DERIVATIVE " + num2 + " IS PROBLEMATIC");
+    }
+  }
 #endif
 }
 

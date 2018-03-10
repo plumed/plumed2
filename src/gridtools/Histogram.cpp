@@ -201,7 +201,7 @@ private:
   KernelFunctions* kernel;
   std::string kerneltype;
   bool firststep;
-  double cheight; 
+  double cheight;
   std::vector<double> cval;
   std::vector<unsigned> nbin, nneigh;
   std::vector<std::string> gmin, gmax;
@@ -224,7 +224,7 @@ public:
   ~Histogram();
   void setupNeighborsVector();
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                             std::vector<std::string>& max, std::vector<unsigned>& out_nbin, 
+                             std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
@@ -238,25 +238,25 @@ PLUMED_REGISTER_SHORTCUT(Histogram,"KDE")
 PLUMED_REGISTER_SHORTCUT(Histogram,"HISTOGRAM")
 PLUMED_REGISTER_SHORTCUT(Histogram,"MULTICOLVARDENS")
 
-void Histogram::shortcutKeywords( Keywords& keys ){
+void Histogram::shortcutKeywords( Keywords& keys ) {
   HistogramBase::shortcutKeywords( keys );
   keys.add("compulsory","DATA","the multicolvar which you would like to calculate the density profile for");
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
-                                    "of 0 implies that all the data will be used and that the grid will never be cleared");
+           "of 0 implies that all the data will be used and that the grid will never be cleared");
   keys.add("optional","ATOMS","if you are calculating a atomic density you use this keyword to specify the atoms that are involved");
   keys.add("optional","ORIGIN","we will use the position of this atom as the origin");
   keys.add("optional","DIR","the direction in which to calculate the density profile");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
   keys.add("compulsory","NORMALIZATION","true","This controls how the data is normalized it can be set equal to true, false or ndata.  The differences between "
-                                               "these options are explained in the manual page for \\ref HISTOGRAM");
+           "these options are explained in the manual page for \\ref HISTOGRAM");
   keys.add("optional","UPDATE_FROM","Only update this action from this time");
   keys.add("optional","UPDATE_UNTIL","Only update this action until this time");
 }
 
 void Histogram::setupDirectionFlag( const std::string& lab, const std::map<std::string,std::string>& keys, std::vector<std::string>& input ) {
   plumed_massert( keys.count("DIR"), "you must specify the direction");
-  std::string dir = keys.find("DIR")->second; 
+  std::string dir = keys.find("DIR")->second;
   if( dir=="x" ) { input.push_back("ARG1=" + lab + "_dist.x" ); }
   else if( dir=="y" ) { input.push_back("ARG1=" + lab + "_dist.y" ); }
   else if( dir=="z" ) { input.push_back("ARG1=" + lab + "_dist.z" ); }
@@ -264,69 +264,69 @@ void Histogram::setupDirectionFlag( const std::string& lab, const std::map<std::
   else if( dir=="xz" ) { input.push_back("ARG1=" + lab + "_dist.x" ); input.push_back("ARG2=" + lab + "_dist.z" ); }
   else if( dir=="yz" ) { input.push_back("ARG1=" + lab + "_dist.y" ); input.push_back("ARG2=" + lab + "_dist.z" ); }
   else if( dir=="xyz" ) {
-     input.push_back("ARG1=" + lab + "_dist.x" ); input.push_back("ARG2=" + lab + "_dist.y" ); input.push_back("ARG3=" + lab + "_dist.z" );
+    input.push_back("ARG1=" + lab + "_dist.x" ); input.push_back("ARG2=" + lab + "_dist.y" ); input.push_back("ARG3=" + lab + "_dist.z" );
   } else plumed_merror("invalid dir specification");
 }
 
-void Histogram::createAveragingObject( const std::string& ilab, const std::string& olab, 
+void Histogram::createAveragingObject( const std::string& ilab, const std::string& olab,
                                        const std::map<std::string,std::string>& keys,
                                        std::vector<std::vector<std::string> >& actions ) {
   std::vector<std::string> av_words; av_words.push_back( olab + ":");
   av_words.push_back("AVERAGE"); av_words.push_back("ARG=" + ilab );
-  av_words.push_back("STRIDE=" + keys.find("STRIDE")->second ); 
+  av_words.push_back("STRIDE=" + keys.find("STRIDE")->second );
   av_words.push_back("CLEAR=" + keys.find("CLEAR")->second );
   av_words.push_back("NORMALIZATION=" + keys.find("NORMALIZATION")->second );
   if( keys.count("LOGWEIGHTS") ) av_words.push_back("LOGWEIGHTS=" + keys.find("LOGWEIGHTS")->second );
   if( keys.count("UPDATE_FROM") ) av_words.push_back("UPDATE_FROM=" + keys.find("UPDATE_FROM")->second );
-  if( keys.count("UPDATE_UNTIL") ) av_words.push_back("UPDATE_UNTIL=" + keys.find("UPDATE_UNTIL")->second ); 
+  if( keys.count("UPDATE_UNTIL") ) av_words.push_back("UPDATE_UNTIL=" + keys.find("UPDATE_UNTIL")->second );
   actions.push_back( av_words );
 }
 
 void Histogram::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions ) {
-  if( words[0]=="KDE" ) { 
-      HistogramBase::resolveNormalizationShortcut( lab, words, keys, actions );
+                                const std::map<std::string,std::string>& keys,
+                                std::vector<std::vector<std::string> >& actions ) {
+  if( words[0]=="KDE" ) {
+    HistogramBase::resolveNormalizationShortcut( lab, words, keys, actions );
   } else if( words[0]=="HISTOGRAM" ) {
-      // Make the kde object
-      std::vector<std::string> hist_words; hist_words.push_back( lab + "_kde:");
-      hist_words.push_back("KDE"); for(unsigned i=1;i<words.size();++i) hist_words.push_back( words[i] );
-      actions.push_back( hist_words );
-      // And the averaging object
-      createAveragingObject( lab + "_kde", lab, keys, actions );
+    // Make the kde object
+    std::vector<std::string> hist_words; hist_words.push_back( lab + "_kde:");
+    hist_words.push_back("KDE"); for(unsigned i=1; i<words.size(); ++i) hist_words.push_back( words[i] );
+    actions.push_back( hist_words );
+    // And the averaging object
+    createAveragingObject( lab + "_kde", lab, keys, actions );
   } else if( words[0]=="MULTICOLVARDENS" ) {
-      // Create distance action 
-      bool hasheights; std::vector<std::string> dist_words; dist_words.push_back( lab + "_dist:" ); dist_words.push_back("DISTANCE");
-      if( keys.count("ATOMS") ){ hasheights=false; dist_words.push_back("ATOMS=" + keys.find("ATOMS")->second ); }
-      else { hasheights=true; dist_words.push_back("ATOMS=" + keys.find("DATA")->second ); }
-      plumed_massert( keys.count("ORIGIN"), "you must specify the position of the origin" );
-      dist_words.push_back("ORIGIN=" + keys.find("ORIGIN")->second ); dist_words.push_back("COMPONENTS");
-      actions.push_back( dist_words );
-      // Make the kde object for the numerator if needed
-      if( hasheights ) {
-          std::vector<std::string> numer_words; numer_words.push_back( lab + "_inumer:");
-          numer_words.push_back("KDE"); numer_words.push_back("HEIGHTS=" + keys.find("DATA")->second ); 
-          setupDirectionFlag( lab, keys, numer_words ); 
-          for(unsigned i=1;i<words.size();++i) numer_words.push_back( words[i] );
-          actions.push_back( numer_words ); 
-          createAveragingObject( lab + "_inumer", lab + "_numer", keys, actions );
-      }
-      // Make the kde object
-      std::vector<std::string> hist_words; hist_words.push_back( lab + "_kde:" );
-      hist_words.push_back("KDE"); setupDirectionFlag( lab, keys, hist_words ); 
-      for(unsigned i=1;i<words.size();++i) hist_words.push_back( words[i] );
-      actions.push_back( hist_words ); 
-      // Make the division object if it is required
-      if( hasheights ) {
-          createAveragingObject( lab + "_kde", lab + "_denom", keys, actions );
-          std::vector<std::string> quotient_words; quotient_words.push_back( lab + ":");
-          quotient_words.push_back("MATHEVAL"); quotient_words.push_back("ARG1=" + lab + "_numer");
-          quotient_words.push_back("ARG2=" + lab + "_denom"); quotient_words.push_back("FUNC=x/y");
-          quotient_words.push_back("PERIODIC=NO"); actions.push_back( quotient_words );
-      } else {
-          createAveragingObject( lab + "_kde", lab, keys, actions );
-      }
-  } 
+    // Create distance action
+    bool hasheights; std::vector<std::string> dist_words; dist_words.push_back( lab + "_dist:" ); dist_words.push_back("DISTANCE");
+    if( keys.count("ATOMS") ) { hasheights=false; dist_words.push_back("ATOMS=" + keys.find("ATOMS")->second ); }
+    else { hasheights=true; dist_words.push_back("ATOMS=" + keys.find("DATA")->second ); }
+    plumed_massert( keys.count("ORIGIN"), "you must specify the position of the origin" );
+    dist_words.push_back("ORIGIN=" + keys.find("ORIGIN")->second ); dist_words.push_back("COMPONENTS");
+    actions.push_back( dist_words );
+    // Make the kde object for the numerator if needed
+    if( hasheights ) {
+      std::vector<std::string> numer_words; numer_words.push_back( lab + "_inumer:");
+      numer_words.push_back("KDE"); numer_words.push_back("HEIGHTS=" + keys.find("DATA")->second );
+      setupDirectionFlag( lab, keys, numer_words );
+      for(unsigned i=1; i<words.size(); ++i) numer_words.push_back( words[i] );
+      actions.push_back( numer_words );
+      createAveragingObject( lab + "_inumer", lab + "_numer", keys, actions );
+    }
+    // Make the kde object
+    std::vector<std::string> hist_words; hist_words.push_back( lab + "_kde:" );
+    hist_words.push_back("KDE"); setupDirectionFlag( lab, keys, hist_words );
+    for(unsigned i=1; i<words.size(); ++i) hist_words.push_back( words[i] );
+    actions.push_back( hist_words );
+    // Make the division object if it is required
+    if( hasheights ) {
+      createAveragingObject( lab + "_kde", lab + "_denom", keys, actions );
+      std::vector<std::string> quotient_words; quotient_words.push_back( lab + ":");
+      quotient_words.push_back("MATHEVAL"); quotient_words.push_back("ARG1=" + lab + "_numer");
+      quotient_words.push_back("ARG2=" + lab + "_denom"); quotient_words.push_back("FUNC=x/y");
+      quotient_words.push_back("PERIODIC=NO"); actions.push_back( quotient_words );
+    } else {
+      createAveragingObject( lab + "_kde", lab, keys, actions );
+    }
+  }
 }
 
 void Histogram::registerKeywords( Keywords& keys ) {
@@ -350,74 +350,74 @@ Histogram::Histogram(const ActionOptions&ao):
   bandwidth( getNumberOfDerivatives() )
 {
   parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax);
-  for(unsigned i=0;i<gmin.size();++i) {
-      if( gmin[i]=="auto" ) {
-          log.printf("  for %dth coordinate min and max are set from cell directions \n", (i+1) );
-          firststep=true;  // We need to do a preparation step to set the grid from the box size
-          if( gmax[i]!="auto" ) error("if gmin is set from box vectors gmax must also be set in the same way");
-          if( arg_ends.size()==0 ) {
-              if( getPntrToArgument(i)->isPeriodic() ) {
-                  if( gmin[i]=="auto" ) getPntrToArgument(i)->getDomain( gmin[i], gmax[i] );
-                  else {
-                     std::string str_min, str_max; getPntrToArgument(i)->getDomain( str_min, str_max );
-                     if( str_min!=gmin[i] || str_max!=gmax[i] ) error("all periodic arguments should have the same domain");
-                  }
-              } else if( getPntrToArgument(i)->getName().find(".")!=std::string::npos ) {
-                  std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
-                  std::string name = getPntrToArgument(i)->getName().substr(dot+1);
-                  if( name!="x" && name!="y" && name!="z" ) {
-                      error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
-                  }
-              } else {
-                  error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
-              }
-          } else {
-              for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-                  if ( getPntrToArgument(j)->isPeriodic() ) {
-                       if( gmin[i]=="auto" ) getPntrToArgument(j)->getDomain( gmin[i], gmax[i] );
-                       else {
-                           std::string str_min, str_max; getPntrToArgument(j)->getDomain( str_min, str_max );
-                           if( str_min!=gmin[i] || str_max!=gmax[i] ) error("all periodic arguments should have the same domain");
-                       } 
-                  } else if( getPntrToArgument(j)->getName().find(".")!=std::string::npos ) {
-                       std::size_t dot = getPntrToArgument(j)->getName().find_first_of("."); 
-                       std::string name = getPntrToArgument(j)->getName().substr(dot+1);
-                       if( name!="x" && name!="y" && name!="z" ) {
-                           error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
-                       }
-                  } else {
-                       error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
-                  }
-              }
+  for(unsigned i=0; i<gmin.size(); ++i) {
+    if( gmin[i]=="auto" ) {
+      log.printf("  for %dth coordinate min and max are set from cell directions \n", (i+1) );
+      firststep=true;  // We need to do a preparation step to set the grid from the box size
+      if( gmax[i]!="auto" ) error("if gmin is set from box vectors gmax must also be set in the same way");
+      if( arg_ends.size()==0 ) {
+        if( getPntrToArgument(i)->isPeriodic() ) {
+          if( gmin[i]=="auto" ) getPntrToArgument(i)->getDomain( gmin[i], gmax[i] );
+          else {
+            std::string str_min, str_max; getPntrToArgument(i)->getDomain( str_min, str_max );
+            if( str_min!=gmin[i] || str_max!=gmax[i] ) error("all periodic arguments should have the same domain");
           }
+        } else if( getPntrToArgument(i)->getName().find(".")!=std::string::npos ) {
+          std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
+          std::string name = getPntrToArgument(i)->getName().substr(dot+1);
+          if( name!="x" && name!="y" && name!="z" ) {
+            error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
+          }
+        } else {
+          error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
+        }
       } else {
-          log.printf("  for %dth coordinate min is set to %s and max is set to %s \n", (i+1), gmin[i].c_str(), gmax[i].c_str() ); 
+        for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
+          if ( getPntrToArgument(j)->isPeriodic() ) {
+            if( gmin[i]=="auto" ) getPntrToArgument(j)->getDomain( gmin[i], gmax[i] );
+            else {
+              std::string str_min, str_max; getPntrToArgument(j)->getDomain( str_min, str_max );
+              if( str_min!=gmin[i] || str_max!=gmax[i] ) error("all periodic arguments should have the same domain");
+            }
+          } else if( getPntrToArgument(j)->getName().find(".")!=std::string::npos ) {
+            std::size_t dot = getPntrToArgument(j)->getName().find_first_of(".");
+            std::string name = getPntrToArgument(j)->getName().substr(dot+1);
+            if( name!="x" && name!="y" && name!="z" ) {
+              error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
+            }
+          } else {
+            error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
+          }
+        }
       }
+    } else {
+      log.printf("  for %dth coordinate min is set to %s and max is set to %s \n", (i+1), gmin[i].c_str(), gmax[i].c_str() );
+    }
   }
   if( firststep && gmin.size()>3 ) error("can only set GRID_MIN and GRID_MAX automatically if components of distance are used in input");
 
   parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing);
-  parse("KERNEL",kerneltype); if( kerneltype!="DISCRETE" ) parseVector("BANDWIDTH",bandwidth); 
+  parse("KERNEL",kerneltype); if( kerneltype!="DISCRETE" ) parseVector("BANDWIDTH",bandwidth);
   if( nbin.size()!=getNumberOfDerivatives() && gspacing.size()!=getNumberOfDerivatives() ) error("GRID_BIN or GRID_SPACING must be set");
-  if( kerneltype.find("-bin")!=std::string::npos ) cval.resize( gmin.size() ); 
-  
+  if( kerneltype.find("-bin")!=std::string::npos ) cval.resize( gmin.size() );
+
   // Create a value
-  std::vector<bool> ipbc( getNumberOfDerivatives() ); 
-  for(unsigned i=0;i<getNumberOfDerivatives();++i){
-      unsigned k=i; if( arg_ends.size()>0 ) k=arg_ends[i];
-      if( getPntrToArgument( k )->isPeriodic() || gmin[i]=="auto" ) ipbc[i]=true;
-      else ipbc[i]=false; 
+  std::vector<bool> ipbc( getNumberOfDerivatives() );
+  for(unsigned i=0; i<getNumberOfDerivatives(); ++i) {
+    unsigned k=i; if( arg_ends.size()>0 ) k=arg_ends[i];
+    if( getPntrToArgument( k )->isPeriodic() || gmin[i]=="auto" ) ipbc[i]=true;
+    else ipbc[i]=false;
   }
   gridobject.setup( "flat", ipbc, 0, 0.0 ); checkRead();
-  
+
   // Setup the grid if we are not using automatic bounds
-  if( !firststep ){
-     gridobject.setBounds( gmin, gmax, nbin, gspacing ); 
-     std::vector<unsigned> shape( gridobject.getNbin(true) ); 
-     addValueWithDerivatives( shape ); setupNeighborsVector(); 
+  if( !firststep ) {
+    gridobject.setBounds( gmin, gmax, nbin, gspacing );
+    std::vector<unsigned> shape( gridobject.getNbin(true) );
+    addValueWithDerivatives( shape ); setupNeighborsVector();
   } else {
-     std::vector<unsigned> shape( getNumberOfDerivatives(), 1 ); 
-     addValueWithDerivatives( shape ); 
+    std::vector<unsigned> shape( getNumberOfDerivatives(), 1 );
+    addValueWithDerivatives( shape );
   }
 }
 
@@ -427,160 +427,160 @@ Histogram::~Histogram() {
 
 void Histogram::setupNeighborsVector() {
   if( kerneltype!="DISCRETE" ) {
-      std::vector<double> point(gmin.size(), 0), support(gmin.size(),0); 
-      if( kerneltype.find("bin")!=std::string::npos ) {
-          std::size_t dd = kerneltype.find("-bin"); nneigh.resize( gmin.size() ); 
-          HistogramBead bead; bead.setKernelType( kerneltype.substr(0,dd) );
-          for(unsigned i=0;i<point.size();++i) {
-              bead.set( 0, gridobject.getGridSpacing()[i], bandwidth[i] );
-              support[i] = bead.getCutoff(); nneigh[i] = static_cast<unsigned>( ceil( support[i]/gridobject.getGridSpacing()[i] ));
-          }
-      } else {
-          KernelFunctions kernel( point, bandwidth, kerneltype, false, 1.0, true );
-          nneigh=kernel.getSupport( gridobject.getGridSpacing() );
-          for(unsigned i=0;i<support.size();++i) support[i] = kernel.getContinuousSupport()[i];
+    std::vector<double> point(gmin.size(), 0), support(gmin.size(),0);
+    if( kerneltype.find("bin")!=std::string::npos ) {
+      std::size_t dd = kerneltype.find("-bin"); nneigh.resize( gmin.size() );
+      HistogramBead bead; bead.setKernelType( kerneltype.substr(0,dd) );
+      for(unsigned i=0; i<point.size(); ++i) {
+        bead.set( 0, gridobject.getGridSpacing()[i], bandwidth[i] );
+        support[i] = bead.getCutoff(); nneigh[i] = static_cast<unsigned>( ceil( support[i]/gridobject.getGridSpacing()[i] ));
       }
-      for(unsigned i=0; i<gridobject.getDimension(); ++i) {
-        double fmax, fmin; Tools::convert( gridobject.getMin()[i], fmin ); Tools::convert( gridobject.getMax()[i], fmax );
-        if( gridobject.isPeriodic(i) && 2*support[i]>(fmax-fmin) ) error("bandwidth is too large for periodic grid");
-      }
+    } else {
+      KernelFunctions kernel( point, bandwidth, kerneltype, false, 1.0, true );
+      nneigh=kernel.getSupport( gridobject.getGridSpacing() );
+      for(unsigned i=0; i<support.size(); ++i) support[i] = kernel.getContinuousSupport()[i];
+    }
+    for(unsigned i=0; i<gridobject.getDimension(); ++i) {
+      double fmax, fmin; Tools::convert( gridobject.getMin()[i], fmin ); Tools::convert( gridobject.getMax()[i], fmax );
+      if( gridobject.isPeriodic(i) && 2*support[i]>(fmax-fmin) ) error("bandwidth is too large for periodic grid");
+    }
   }
 }
 
 void Histogram::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   if( firststep ) {
-      for(unsigned i=0;i<getNumberOfDerivatives();++i) {
-          if( gmin[i]=="auto" ){ 
-              double lcoord, ucoord; Tensor box( plumed.getAtoms().getPbc().getBox() );
-              std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
-              std::string name = getPntrToArgument(i)->getName().substr(dot+1);
-              if( name=="x" ) { lcoord=-0.5*box(0,0); ucoord=0.5*box(0,0); }
-              else if( name=="y" ) { lcoord=-0.5*box(1,1); ucoord=0.5*box(1,1); }
-              else if( name=="z" ) { lcoord=-0.5*box(2,2); ucoord=0.5*box(2,2); }
-              else plumed_error();
-              // And convert to strings for bin and bmax
-              Tools::convert( lcoord, gmin[i] ); Tools::convert( ucoord, gmax[i] );
-          }
-      }  
-      // And setup the grid object
-      gridobject.setBounds( gmin, gmax, nbin, gspacing ); 
-      std::vector<unsigned> shape( gridobject.getNbin(true) ); 
-      getPntrToComponent(0)->setShape( shape ); 
-      // And create the tasks
-      if( one_kernel_at_a_time ) {
-          for(unsigned i=0;i<gridobject.getNumberOfPoints();++i) addTaskToList(i);
+    for(unsigned i=0; i<getNumberOfDerivatives(); ++i) {
+      if( gmin[i]=="auto" ) {
+        double lcoord, ucoord; Tensor box( plumed.getAtoms().getPbc().getBox() );
+        std::size_t dot = getPntrToArgument(i)->getName().find_first_of(".");
+        std::string name = getPntrToArgument(i)->getName().substr(dot+1);
+        if( name=="x" ) { lcoord=-0.5*box(0,0); ucoord=0.5*box(0,0); }
+        else if( name=="y" ) { lcoord=-0.5*box(1,1); ucoord=0.5*box(1,1); }
+        else if( name=="z" ) { lcoord=-0.5*box(2,2); ucoord=0.5*box(2,2); }
+        else plumed_error();
+        // And convert to strings for bin and bmax
+        Tools::convert( lcoord, gmin[i] ); Tools::convert( ucoord, gmax[i] );
       }
-      // And setup the neighbors 
-      setupNeighborsVector();
-      // And never do this again
-      firststep=false;
+    }
+    // And setup the grid object
+    gridobject.setBounds( gmin, gmax, nbin, gspacing );
+    std::vector<unsigned> shape( gridobject.getNbin(true) );
+    getPntrToComponent(0)->setShape( shape );
+    // And create the tasks
+    if( one_kernel_at_a_time ) {
+      for(unsigned i=0; i<gridobject.getNumberOfPoints(); ++i) addTaskToList(i);
+    }
+    // And setup the neighbors
+    setupNeighborsVector();
+    // And never do this again
+    firststep=false;
   }
   HistogramBase::buildCurrentTaskList( tflags );
 }
 
 void Histogram::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                                      std::vector<std::string>& max, std::vector<unsigned>& out_nbin, 
+                                      std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
                                       std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
   bool isdists=dumpcube; double units=1.0; gtype="flat";
-  for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i){
-      unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
-      if( getPntrToArgument( k )->getName().find(".")==std::string::npos ){ isdists=false; break; }
-      std::size_t dot = getPntrToArgument( k )->getName().find(".");
-      std::string name = getPntrToArgument( k )->getName().substr(dot+1);
-      if( name!="x" && name!="y" && name!="z" ){ isdists=false; break; }
+  for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
+    unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
+    if( getPntrToArgument( k )->getName().find(".")==std::string::npos ) { isdists=false; break; }
+    std::size_t dot = getPntrToArgument( k )->getName().find(".");
+    std::string name = getPntrToArgument( k )->getName().substr(dot+1);
+    if( name!="x" && name!="y" && name!="z" ) { isdists=false; break; }
   }
   if( isdists ) {
-      if( plumed.getAtoms().usingNaturalUnits() ) units = 1.0/0.5292;
-      else units = plumed.getAtoms().getUnits().getLength()/.05929;
+    if( plumed.getAtoms().usingNaturalUnits() ) units = 1.0/0.5292;
+    else units = plumed.getAtoms().getUnits().getLength()/.05929;
   }
-  for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) {
-      unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
-      argn[i] = getPntrToArgument( k )->getName(); double gmin, gmax;
-      if( gridobject.getMin().size()>0 ) {
-          Tools::convert( gridobject.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
-          Tools::convert( gridobject.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );
-      }
-      if( nbin.size()>0 ) out_nbin[i]=nbin[i]; 
-      if( gspacing.size()>0 ) spacing[i]=units*gspacing[i]; 
-      pbc[i]=gridobject.isPeriodic(i); 
-  } 
-} 
+  for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
+    unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
+    argn[i] = getPntrToArgument( k )->getName(); double gmin, gmax;
+    if( gridobject.getMin().size()>0 ) {
+      Tools::convert( gridobject.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
+      Tools::convert( gridobject.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );
+    }
+    if( nbin.size()>0 ) out_nbin[i]=nbin[i];
+    if( gspacing.size()>0 ) spacing[i]=units*gspacing[i];
+    pbc[i]=gridobject.isPeriodic(i);
+  }
+}
 
 void Histogram::buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args ) {
   if( kerneltype=="DISCRETE" ) {
-      for(unsigned i=0; i<args.size(); ++i) args[i] += 0.5*gridobject.getGridSpacing()[i];
-      tflags[ gridobject.getIndex( args ) ] = 1; return;
+    for(unsigned i=0; i<args.size(); ++i) args[i] += 0.5*gridobject.getGridSpacing()[i];
+    tflags[ gridobject.getIndex( args ) ] = 1; return;
   } else if( kerneltype.find("bin")!=std::string::npos ) {
-      cheight = height; for(unsigned i=0; i<args.size(); ++i) cval[i] = args[i];
+    cheight = height; for(unsigned i=0; i<args.size(); ++i) cval[i] = args[i];
   } else {
-      kernel = new KernelFunctions( args, bandwidth, kerneltype, false, height, true );
+    kernel = new KernelFunctions( args, bandwidth, kerneltype, false, height, true );
   }
   unsigned num_neigh; std::vector<unsigned> neighbors;
-  gridobject.getNeighbors( args, nneigh, num_neigh, neighbors ); 
-  for(unsigned i=0;i<num_neigh;++i) tflags[ neighbors[i] ] = 1;
+  gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
+  for(unsigned i=0; i<num_neigh; ++i) tflags[ neighbors[i] ] = 1;
 }
 
 double Histogram::calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const {
   if( kerneltype=="DISCRETE" ) return 1.0;
 
-  if( kerneltype.find("bin")!=std::string::npos ) { 
-      double val=cheight; std::size_t dd = kerneltype.find("-bin"); 
-      HistogramBead bead; bead.setKernelType( kerneltype.substr(0,dd) );
-      for(unsigned j=0;j<args.size();++j) {
-          if( gridobject.isPeriodic(j) ) { 
-             double lcoord,  ucoord; Tools::convert( gmin[j], lcoord ); 
-             Tools::convert( gmax[j], ucoord ); bead.isPeriodic( lcoord, ucoord );
-          } else bead.isNotPeriodic();
-          bead.set( args[j], args[j]+gridobject.getGridSpacing()[j], bandwidth[j] );
-          double contr = bead.calculateWithCutoff( cval[j], der[j] );
-          val = val*contr; der[j] = der[j] / contr;
-      }
-      for(unsigned j=0;j<args.size();++j) der[j] *= val; return val;
+  if( kerneltype.find("bin")!=std::string::npos ) {
+    double val=cheight; std::size_t dd = kerneltype.find("-bin");
+    HistogramBead bead; bead.setKernelType( kerneltype.substr(0,dd) );
+    for(unsigned j=0; j<args.size(); ++j) {
+      if( gridobject.isPeriodic(j) ) {
+        double lcoord,  ucoord; Tools::convert( gmin[j], lcoord );
+        Tools::convert( gmax[j], ucoord ); bead.isPeriodic( lcoord, ucoord );
+      } else bead.isNotPeriodic();
+      bead.set( args[j], args[j]+gridobject.getGridSpacing()[j], bandwidth[j] );
+      double contr = bead.calculateWithCutoff( cval[j], der[j] );
+      val = val*contr; der[j] = der[j] / contr;
+    }
+    for(unsigned j=0; j<args.size(); ++j) der[j] *= val; return val;
   } else {
-      std::vector<Value*> vv; 
-      for(unsigned i=0; i<der.size(); ++i) {
-          vv.push_back( new Value() );
-          if( gridobject.isPeriodic(i) ) vv[i]->setDomain( gmin[i], gmax[i] );
-          else vv[i]->setNotPeriodic();
-          vv[i]->set( args[i] );
-      }
-      double val = kernel->evaluate( vv, der, true );
-      for(unsigned i=0; i<der.size(); ++i) delete vv[i]; 
-      return val;
+    std::vector<Value*> vv;
+    for(unsigned i=0; i<der.size(); ++i) {
+      vv.push_back( new Value() );
+      if( gridobject.isPeriodic(i) ) vv[i]->setDomain( gmin[i], gmax[i] );
+      else vv[i]->setNotPeriodic();
+      vv[i]->set( args[i] );
+    }
+    double val = kernel->evaluate( vv, der, true );
+    for(unsigned i=0; i<der.size(); ++i) delete vv[i];
+    return val;
   }
 }
 
 void Histogram::setupHistogramBeads( std::vector<HistogramBead>& bead ) const {
   std::size_t dd = kerneltype.find("-bin");
   std::string ktype=kerneltype.substr(0,dd);
-  for(unsigned j=0;j<bead.size();++j) {
-      bead[j].setKernelType( ktype );
-      if( gridobject.isPeriodic(j) ) {
-         double lcoord,  ucoord; Tools::convert( gmin[j], lcoord );
-         Tools::convert( gmax[j], ucoord ); bead[j].isPeriodic( lcoord, ucoord );
-      } else bead[j].isNotPeriodic();
+  for(unsigned j=0; j<bead.size(); ++j) {
+    bead[j].setKernelType( ktype );
+    if( gridobject.isPeriodic(j) ) {
+      double lcoord,  ucoord; Tools::convert( gmin[j], lcoord );
+      Tools::convert( gmax[j], ucoord ); bead[j].isPeriodic( lcoord, ucoord );
+    } else bead[j].isNotPeriodic();
   }
 }
 
-double Histogram::evaluateBeadValue( std::vector<HistogramBead>& bead, const std::vector<double>& gpoint, const std::vector<double>& args, 
+double Histogram::evaluateBeadValue( std::vector<HistogramBead>& bead, const std::vector<double>& gpoint, const std::vector<double>& args,
                                      const double& height, std::vector<double>& der ) const {
   double val=height; std::vector<double> contr( args.size() );
-  for(unsigned j=0;j<args.size();++j) {
-      bead[j].set( gpoint[j], gpoint[j]+gridobject.getGridSpacing()[j], bandwidth[j] );
-      contr[j] = bead[j].calculateWithCutoff( args[j], der[j] ); 
-      val = val*contr[j]; 
+  for(unsigned j=0; j<args.size(); ++j) {
+    bead[j].set( gpoint[j], gpoint[j]+gridobject.getGridSpacing()[j], bandwidth[j] );
+    contr[j] = bead[j].calculateWithCutoff( args[j], der[j] );
+    val = val*contr[j];
   }
-  for(unsigned j=0;j<args.size();++j) {
-      if( fabs(contr[j])>epsilon ) der[j] *= val / contr[j];
+  for(unsigned j=0; j<args.size(); ++j) {
+    if( fabs(contr[j])>epsilon ) der[j] *= val / contr[j];
   }
   return val;
 }
 
 KernelFunctions* Histogram::setupValuesAndKernel( const std::vector<double>& args, const double& height, std::vector<Value*>& vv ) const {
   for(unsigned i=0; i<args.size(); ++i) {
-      vv.push_back( new Value() ); 
-      if( gridobject.isPeriodic(i) ) vv[i]->setDomain( gmin[i], gmax[i] );
-      else vv[i]->setNotPeriodic();
+    vv.push_back( new Value() );
+    if( gridobject.isPeriodic(i) ) vv[i]->setDomain( gmin[i], gmax[i] );
+    else vv[i]->setNotPeriodic();
   }
   return new KernelFunctions( args, bandwidth, kerneltype, false, height, true );
 }
@@ -590,47 +590,47 @@ void Histogram::addKernelToGrid( const double& height, const std::vector<double>
   std::vector<double> gpoint( args.size() ), der( args.size() );
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
   if( kerneltype.find("bin")!=std::string::npos ) {
-      std::vector<HistogramBead> bead( args.size() ); setupHistogramBeads( bead ); 
-      for(unsigned i=0;i<num_neigh;++i) {
-          gridobject.getGridPointCoordinates( neighbors[i], gpoint );
-          double val = evaluateBeadValue( bead, gpoint, args, height, der );
-          buffer[ bufstart + neighbors[i]*(1+der.size()) ] += val;
-          for(unsigned j=0; j<der.size(); ++j) buffer[ bufstart + neighbors[i]*(1+der.size()) + 1 + j ] += val*der[j]; 
-      } 
+    std::vector<HistogramBead> bead( args.size() ); setupHistogramBeads( bead );
+    for(unsigned i=0; i<num_neigh; ++i) {
+      gridobject.getGridPointCoordinates( neighbors[i], gpoint );
+      double val = evaluateBeadValue( bead, gpoint, args, height, der );
+      buffer[ bufstart + neighbors[i]*(1+der.size()) ] += val;
+      for(unsigned j=0; j<der.size(); ++j) buffer[ bufstart + neighbors[i]*(1+der.size()) + 1 + j ] += val*der[j];
+    }
   } else {
-      std::vector<Value*> vv; KernelFunctions* kk = setupValuesAndKernel( args, height, vv );
-      for(unsigned i=0;i<num_neigh;++i) {
-          gridobject.getGridPointCoordinates( neighbors[i], gpoint );
-          for(unsigned j=0; j<der.size(); ++j) vv[j]->set( gpoint[j] );
-          buffer[ bufstart + neighbors[i]*(1+der.size()) ] += kk->evaluate( vv, der, true );
-          for(unsigned j=0; j<der.size(); ++j) buffer[ bufstart + neighbors[i]*(1+der.size()) + 1 + j ] += der[j];
-      } 
-      delete kk; for(unsigned i=0; i<der.size(); ++i) delete vv[i];
+    std::vector<Value*> vv; KernelFunctions* kk = setupValuesAndKernel( args, height, vv );
+    for(unsigned i=0; i<num_neigh; ++i) {
+      gridobject.getGridPointCoordinates( neighbors[i], gpoint );
+      for(unsigned j=0; j<der.size(); ++j) vv[j]->set( gpoint[j] );
+      buffer[ bufstart + neighbors[i]*(1+der.size()) ] += kk->evaluate( vv, der, true );
+      for(unsigned j=0; j<der.size(); ++j) buffer[ bufstart + neighbors[i]*(1+der.size()) + 1 + j ] += der[j];
+    }
+    delete kk; for(unsigned i=0; i<der.size(); ++i) delete vv[i];
   }
 }
 
-void Histogram::addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const { 
+void Histogram::addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const {
   unsigned num_neigh; std::vector<unsigned> neighbors;
   std::vector<double> gpoint( args.size() ), der( args.size() );
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
   if( kerneltype.find("bin")!=std::string::npos ) {
-      std::vector<HistogramBead> bead( args.size() ); setupHistogramBeads( bead );
-      for(unsigned i=0;i<num_neigh;++i) {
-          gridobject.getGridPointCoordinates( neighbors[i], gpoint );
-          double val = evaluateBeadValue( bead, gpoint, args, height, der ); double fforce = getPntrToOutput(0)->getForce( neighbors[i] );
-          if( heights_index==2 ) forces[ args.size()*getFullNumberOfTasks() + itask ] += val*fforce / height;
-          unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += der[j]*fforce; n += getFullNumberOfTasks(); }  
-      }
+    std::vector<HistogramBead> bead( args.size() ); setupHistogramBeads( bead );
+    for(unsigned i=0; i<num_neigh; ++i) {
+      gridobject.getGridPointCoordinates( neighbors[i], gpoint );
+      double val = evaluateBeadValue( bead, gpoint, args, height, der ); double fforce = getPntrToOutput(0)->getForce( neighbors[i] );
+      if( heights_index==2 ) forces[ args.size()*getFullNumberOfTasks() + itask ] += val*fforce / height;
+      unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += der[j]*fforce; n += getFullNumberOfTasks(); }
+    }
   } else {
-      std::vector<Value*> vv; KernelFunctions* kk = setupValuesAndKernel( args, height, vv );
-      for(unsigned i=0;i<num_neigh;++i) {
-          gridobject.getGridPointCoordinates( neighbors[i], gpoint );
-          for(unsigned j=0; j<der.size(); ++j) vv[j]->set( gpoint[j] );
-          double val = kk->evaluate( vv, der, true ); double fforce = getPntrToOutput(0)->getForce( neighbors[i] );
-          if( heights_index==2 ) forces[ args.size()*getFullNumberOfTasks() + itask ] += val*fforce / height;
-          unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += -der[j]*fforce; n += getFullNumberOfTasks(); }
-      }
-      delete kk; for(unsigned i=0; i<der.size(); ++i) delete vv[i];
+    std::vector<Value*> vv; KernelFunctions* kk = setupValuesAndKernel( args, height, vv );
+    for(unsigned i=0; i<num_neigh; ++i) {
+      gridobject.getGridPointCoordinates( neighbors[i], gpoint );
+      for(unsigned j=0; j<der.size(); ++j) vv[j]->set( gpoint[j] );
+      double val = kk->evaluate( vv, der, true ); double fforce = getPntrToOutput(0)->getForce( neighbors[i] );
+      if( heights_index==2 ) forces[ args.size()*getFullNumberOfTasks() + itask ] += val*fforce / height;
+      unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += -der[j]*fforce; n += getFullNumberOfTasks(); }
+    }
+    delete kk; for(unsigned i=0; i<der.size(); ++i) delete vv[i];
   }
 }
 

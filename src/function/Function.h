@@ -56,8 +56,8 @@ public:
   virtual ~Function() {}
   virtual void calculate();
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
-  void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min, 
-                             std::vector<std::string>& max, std::vector<unsigned>& nbin, 
+  void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
+                             std::vector<std::string>& max, std::vector<unsigned>& nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
@@ -77,45 +77,45 @@ unsigned Function::getNumberOfDerivatives() const {
 
 inline
 void Function::addValue( const unsigned& ival, const double& val, MultiValue& myvals ) const {
-  myvals.addValue( getPntrToOutput(ival)->getPositionInStream(), val ); 
+  myvals.addValue( getPntrToOutput(ival)->getPositionInStream(), val );
 }
 
 inline
 void Function::addDerivative( const unsigned& ival, const unsigned& jder, const double& der, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() && !(getPntrToOutput(ival)->getRank()>0 && getPntrToOutput(ival)->hasDerivatives()) ) return ;
 
-  if( actionInChain() ){ 
-      unsigned istrn = getArgumentPositionInStream(jder, myvals);
-      unsigned ostrn = getPntrToOutput(ival)->getPositionInStream();
-      for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){ 
-          unsigned kind=myvals.getActiveIndex(istrn,k);
-          myvals.addDerivative( ostrn, arg_deriv_starts[jder] + kind, der*myvals.getDerivative( istrn, kind ) );
-      }
-      return; 
+  if( actionInChain() ) {
+    unsigned istrn = getArgumentPositionInStream(jder, myvals);
+    unsigned ostrn = getPntrToOutput(ival)->getPositionInStream();
+    for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+      unsigned kind=myvals.getActiveIndex(istrn,k);
+      myvals.addDerivative( ostrn, arg_deriv_starts[jder] + kind, der*myvals.getDerivative( istrn, kind ) );
+    }
+    return;
   }
   if( getPntrToOutput(ival)->getRank()>0 && getPntrToOutput(ival)->hasDerivatives() ) {
-      if( getPntrToArgument(jder)->getRank()==0 ) {
-          myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), getPntrToOutput(ival)->getRank()+jder, der );
-      } else {
-          unsigned np = myvals.getTaskIndex(), ostrn = getPntrToOutput(ival)->getPositionInStream();
-          myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), getPntrToOutput(ival)->getRank()+jder, der );
-          for(unsigned i=0;i<getPntrToArgument(jder)->getRank();++i) {
-              myvals.addDerivative( ostrn, i, der*getPntrToArgument(jder)->getGridDerivative( np, i ) ); 
-          }
+    if( getPntrToArgument(jder)->getRank()==0 ) {
+      myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), getPntrToOutput(ival)->getRank()+jder, der );
+    } else {
+      unsigned np = myvals.getTaskIndex(), ostrn = getPntrToOutput(ival)->getPositionInStream();
+      myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), getPntrToOutput(ival)->getRank()+jder, der );
+      for(unsigned i=0; i<getPntrToArgument(jder)->getRank(); ++i) {
+        myvals.addDerivative( ostrn, i, der*getPntrToArgument(jder)->getGridDerivative( np, i ) );
       }
-      return;
+    }
+    return;
   }
   if( arg_ends.size()>0 ) {
-      unsigned base=0; 
-      for(unsigned i=0;i<jder;++i) {
-          for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) base += getPntrToArgument(j)->getSize();
-      }
-      if( arg_ends[jder+1]==(arg_ends[jder]+1) && getPntrToArgument(arg_ends[jder])->getRank()==0 ) {
-          myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), base, der );
-      } else {
-          myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), base + myvals.getTaskIndex(), der ); 
-      }
-      return; 
+    unsigned base=0;
+    for(unsigned i=0; i<jder; ++i) {
+      for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) base += getPntrToArgument(j)->getSize();
+    }
+    if( arg_ends[jder+1]==(arg_ends[jder]+1) && getPntrToArgument(arg_ends[jder])->getRank()==0 ) {
+      myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), base, der );
+    } else {
+      myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), base + myvals.getTaskIndex(), der );
+    }
+    return;
   }
   myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), jder, der );
 }

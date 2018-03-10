@@ -63,11 +63,11 @@ Highest::Highest(const ActionOptions&ao):
   Function(ao),
   tvals(0,0)
 {
-  if( !numberedkeys ){ 
-     if( getPntrToArgument(0)->getRank()>0 ) {
-         if( getNumberOfArguments()>1 ) error("should only use one non-scalar argument in input for ARG keyword");
-     }
-     for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore( getLabel() ); 
+  if( !numberedkeys ) {
+    if( getPntrToArgument(0)->getRank()>0 ) {
+      if( getNumberOfArguments()>1 ) error("should only use one non-scalar argument in input for ARG keyword");
+    }
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore( getLabel() );
   }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     string s; Tools::convert(i+1,s);
@@ -77,12 +77,12 @@ Highest::Highest(const ActionOptions&ao):
 }
 
 void Highest::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  if( args.size()>1 ){
-      double highest = args[0]; unsigned highind = 0;
-      for(unsigned i=1; i<args.size(); ++i) {
-        if( args[i]>highest ){ highest = args[i]; highind = 0; } 
-      }
-      addValue( 0, highest, myvals ); addDerivative( 0, highind, 1.0, myvals );
+  if( args.size()>1 ) {
+    double highest = args[0]; unsigned highind = 0;
+    for(unsigned i=1; i<args.size(); ++i) {
+      if( args[i]>highest ) { highest = args[i]; highind = 0; }
+    }
+    addValue( 0, highest, myvals ); addDerivative( 0, highind, 1.0, myvals );
   }
 }
 
@@ -90,26 +90,26 @@ void Highest::transformFinalValueAndDerivatives( const std::vector<double>& buf 
   if( !actionInChain() || getNumberOfArguments()>1 ) return;
 
   unsigned hind = 0, pves = 0; unsigned aind=0; double highest = getPntrToArgument(0)->get(0);
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-      Value* myarg = getPntrToArgument(i); 
-      for(unsigned j=0;j<myarg->getNumberOfValues( getLabel() ); ++j ){
-          if( myarg->get(j)>highest ){ aind=i; highest=myarg->get(j); hind = pves + j; }
-      }
-      pves += myarg->getNumberOfValues( getLabel() );
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    Value* myarg = getPntrToArgument(i);
+    for(unsigned j=0; j<myarg->getNumberOfValues( getLabel() ); ++j ) {
+      if( myarg->get(j)>highest ) { aind=i; highest=myarg->get(j); hind = pves + j; }
+    }
+    pves += myarg->getNumberOfValues( getLabel() );
   }
   Value* val0 = getPntrToComponent(0); val0->set( highest );
-  if( !doNotCalculateDerivatives() ){ 
-      unsigned nn=0, nm=0;
-      for(unsigned i=0;i<getNumberOfArguments();++i){
-          nn += getPntrToArgument(i)->getNumberOfValues( getLabel() );
-          if( hind<nn ){ break; }
-          nm += getPntrToArgument(i)->getNumberOfValues( getLabel() );
-      }
-      tvals.clearAll(); (getPntrToArgument(aind)->getPntrToAction())->rerunTask( hind - nm, tvals );
-      unsigned istrn = getPntrToArgument(aind)->getPositionInStream();
-      for(unsigned i=0;i<tvals.getNumberActive(istrn);++i){
-          unsigned ider = tvals.getActiveIndex(istrn,i); val0->addDerivative( ider, tvals.getDerivative( istrn, ider ) );
-      }
+  if( !doNotCalculateDerivatives() ) {
+    unsigned nn=0, nm=0;
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      nn += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      if( hind<nn ) { break; }
+      nm += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+    }
+    tvals.clearAll(); (getPntrToArgument(aind)->getPntrToAction())->rerunTask( hind - nm, tvals );
+    unsigned istrn = getPntrToArgument(aind)->getPositionInStream();
+    for(unsigned i=0; i<tvals.getNumberActive(istrn); ++i) {
+      unsigned ider = tvals.getActiveIndex(istrn,i); val0->addDerivative( ider, tvals.getDerivative( istrn, ider ) );
+    }
   }
 }
 

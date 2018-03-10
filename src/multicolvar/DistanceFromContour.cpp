@@ -69,10 +69,10 @@ dc: DISTANCE_FROM_CONTOUR DATA=dens ATOM=1 BANDWIDTH=0.5,0.5,0.5 DIR=z CONTOUR=0
 namespace PLMD {
 namespace multicolvar {
 
-class DistanceFromContour : 
-public ActionWithValue,
-public ActionAtomistic,
-public ActionWithArguments
+class DistanceFromContour :
+  public ActionWithValue,
+  public ActionAtomistic,
+  public ActionWithArguments
 {
 private:
   unsigned dir;
@@ -107,7 +107,7 @@ public:
 PLUMED_REGISTER_ACTION(DistanceFromContour,"DISTANCE_FROM_CONTOUR")
 
 void DistanceFromContour::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys ); 
+  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.addOutputComponent("dist1","default","the distance between the reference atom and the nearest contour");
@@ -145,7 +145,7 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
 {
   if( getNumberOfArguments()>1 ) error("should only use one argument for this action");
   if( getNumberOfArguments()==1 ) {
-      if( getPntrToArgument(0)->getRank()!=1 ) error("ARG for distance from contour should be rank one");
+    if( getPntrToArgument(0)->getRank()!=1 ) error("ARG for distance from contour should be rank one");
   }
   // Read in the multicolvar/atoms
   std::vector<AtomNumber> atoms; parseAtomList("POSITIONS",atoms);
@@ -154,17 +154,17 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
 
   log.printf("  calculating distance between atom %d and contour \n", origin[0].serial() );
   log.printf("  contour is in field constructed from positions of atoms : ");
-  for(unsigned i=0;i<atoms.size();++i) log.printf("%d ",atoms[i].serial() );
+  for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial() );
   if( getNumberOfArguments()==1 ) {
-      if( getPntrToArgument(0)->getShape()[0]!=atoms.size() ) error("mismatch between number of atoms and size of vector specified using ARG keyword");
-      log.printf("\n  and weights from %s \n", getPntrToArgument(0)->getName().c_str() );
+    if( getPntrToArgument(0)->getShape()[0]!=atoms.size() ) error("mismatch between number of atoms and size of vector specified using ARG keyword");
+    log.printf("\n  and weights from %s \n", getPntrToArgument(0)->getName().c_str() );
   } else {
-      log.printf("\n  all weights are set equal to one \n");
-  } 
+    log.printf("\n  all weights are set equal to one \n");
+  }
   // Request everything we need
   active_list.resize( atoms.size(), 0 ); atom_deriv.resize( atoms.size() );
   std::vector<Value*> args( getArguments() ); atoms.push_back( origin[0] );
-  requestAtoms( atoms ); requestArguments( args, false );  
+  requestAtoms( atoms ); requestArguments( args, false );
 
   // Get the direction
   std::string ldir; parse("DIR",ldir );
@@ -176,8 +176,8 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
   // Read in details of phase field construction
   parseVector("BANDWIDTH",bw); parse("KERNEL",kerneltype); parse("CONTOUR",contour);
   log.printf("  constructing phase field using %s kernels with bandwidth (%f, %f, %f) \n",kerneltype.c_str(), bw[0], bw[1], bw[2] );
-  // Read in the tolerance for the pbc parameter 
-  std::vector<AtomNumber> all_atoms; parse("TOLERANCE",pbc_param); 
+  // Read in the tolerance for the pbc parameter
+  std::vector<AtomNumber> all_atoms; parse("TOLERANCE",pbc_param);
 
   // And a cutoff
   std::vector<double> pp( bw.size(),0 );
@@ -233,7 +233,7 @@ void DistanceFromContour::calculate() {
         (d2+=distance[perp_dirs[1]]*distance[perp_dirs[1]])<rcut2 ) {
       d2+=distance[dir]*distance[dir];
       if( d2<mindist && fabs(distance[dir])>epsilon ) { pos2[dir]=distance[dir]; mindist = d2; }
-      active_list[nactive]=j; nactive++; 
+      active_list[nactive]=j; nactive++;
     }
   }
   // pos1 position of the nanoparticle, in the first time
@@ -295,48 +295,48 @@ void DistanceFromContour::calculate() {
   getPntrToComponent("qdist")->set( root2[dir]*root1[dir] );
 
   // Now calculate the derivatives
-   if( !doNotCalculateDerivatives() ) {
-       evaluateDerivatives( root1, root2[dir] ); evaluateDerivatives( root2, root1[dir] );
+  if( !doNotCalculateDerivatives() ) {
+    evaluateDerivatives( root1, root2[dir] ); evaluateDerivatives( root2, root1[dir] );
   }
 }
 
 void DistanceFromContour::evaluateDerivatives( const Vector root1, const double& root2 ) {
   if( getNumberOfArguments()>0 ) plumed_merror("derivatives for phase field distance from contour have not been implemented yet");
   for(unsigned j=0; j<3; ++j) pval[j]->set( root1[j] );
- 
+
   Vector origind; origind.zero(); Tensor vir; vir.zero();
-  double sumd = 0; std::vector<double> pp(3), ddd(3,0); 
-  for(unsigned i=0;i<nactive;++i) {
-      Vector distance = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(active_list[i]) );
-      for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
-  
-      // Now create the kernel and evaluate
-      KernelFunctions kernel( pp, bw, kerneltype, false, 1.0, true );
-      double newval = kernel.evaluate( pval, ddd, true );
-      if( getNumberOfArguments()==1 ) { 
-      } else {
-         sumd += ddd[dir];
-         for(unsigned j=0;j<3;++j) atom_deriv[i][j] = -ddd[j];
-         origind += -atom_deriv[i]; vir -= Tensor(atom_deriv[i],distance);
-      }
+  double sumd = 0; std::vector<double> pp(3), ddd(3,0);
+  for(unsigned i=0; i<nactive; ++i) {
+    Vector distance = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(active_list[i]) );
+    for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
+
+    // Now create the kernel and evaluate
+    KernelFunctions kernel( pp, bw, kerneltype, false, 1.0, true );
+    double newval = kernel.evaluate( pval, ddd, true );
+    if( getNumberOfArguments()==1 ) {
+    } else {
+      sumd += ddd[dir];
+      for(unsigned j=0; j<3; ++j) atom_deriv[i][j] = -ddd[j];
+      origind += -atom_deriv[i]; vir -= Tensor(atom_deriv[i],distance);
+    }
   }
 
   // Add derivatives to atoms involved
   Value* val=getPntrToComponent("qdist"); double prefactor =  root2 / sumd;
-  for(unsigned i=0;i<nactive;++i) { 
-      val->addDerivative( 3*active_list[i] + 0, -prefactor*atom_deriv[i][0] );
-      val->addDerivative( 3*active_list[i] + 1, -prefactor*atom_deriv[i][1] );
-      val->addDerivative( 3*active_list[i] + 2, -prefactor*atom_deriv[i][2] );
+  for(unsigned i=0; i<nactive; ++i) {
+    val->addDerivative( 3*active_list[i] + 0, -prefactor*atom_deriv[i][0] );
+    val->addDerivative( 3*active_list[i] + 1, -prefactor*atom_deriv[i][1] );
+    val->addDerivative( 3*active_list[i] + 2, -prefactor*atom_deriv[i][2] );
   }
 
   // Add derivatives to atoms at origin
   unsigned nbase = 3*(getNumberOfAtoms()-1);
   val->addDerivative( nbase, -prefactor*origind[0] ); nbase++;
   val->addDerivative( nbase, -prefactor*origind[1] ); nbase++;
-  val->addDerivative( nbase, -prefactor*origind[2] ); nbase++; 
+  val->addDerivative( nbase, -prefactor*origind[2] ); nbase++;
 
   // Add derivatives to virial
-  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j){ val->addDerivative( nbase, -prefactor*vir(i,j) ); nbase++; }
+  for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) { val->addDerivative( nbase, -prefactor*vir(i,j) ); nbase++; }
 }
 
 double DistanceFromContour::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) {
@@ -346,18 +346,18 @@ double DistanceFromContour::getDifferenceFromContour( const std::vector<double>&
     Tools::convert( +0.5*getBox()(j,j), max );
     pval[j]->setDomain( min, max ); pval[j]->set( x[j] );
   }
-  double sumk = 0, sumd = 0; std::vector<double> pp(3), ddd(3,0);  
-  for(unsigned i=0;i<nactive;++i) {
-      Vector distance = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(active_list[i]) );
-      for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
+  double sumk = 0, sumd = 0; std::vector<double> pp(3), ddd(3,0);
+  for(unsigned i=0; i<nactive; ++i) {
+    Vector distance = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(active_list[i]) );
+    for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
 
-      // Now create the kernel and evaluate
-      KernelFunctions kernel( pp, bw, kerneltype, false, 1.0, true );
-      double newval = kernel.evaluate( pval, ddd, true ); 
-      if( getNumberOfArguments()==1 ) { 
-          sumk += getPntrToArgument(0)->get(active_list[i])*newval;
-          sumd += newval;
-      } else sumk += newval;
+    // Now create the kernel and evaluate
+    KernelFunctions kernel( pp, bw, kerneltype, false, 1.0, true );
+    double newval = kernel.evaluate( pval, ddd, true );
+    if( getNumberOfArguments()==1 ) {
+      sumk += getPntrToArgument(0)->get(active_list[i])*newval;
+      sumd += newval;
+    } else sumk += newval;
   }
   if( getNumberOfArguments()==0 ) return sumk - contour;
   return (sumk/sumd) - contour;
@@ -371,20 +371,20 @@ void DistanceFromContour::apply() {
 
   std::fill(forcesToApply.begin(),forcesToApply.end(),0);
   if(getPntrToComponent(3)->applyForce(forcesToApply)) {
-     for(unsigned j=0; j<nat; ++j) {
-       f[j][0]+=forcesToApply[3*j+0];
-       f[j][1]+=forcesToApply[3*j+1];
-       f[j][2]+=forcesToApply[3*j+2];
-     }
-     v(0,0)+=forcesToApply[3*nat+0];
-     v(0,1)+=forcesToApply[3*nat+1];
-     v(0,2)+=forcesToApply[3*nat+2];
-     v(1,0)+=forcesToApply[3*nat+3];
-     v(1,1)+=forcesToApply[3*nat+4];
-     v(1,2)+=forcesToApply[3*nat+5];
-     v(2,0)+=forcesToApply[3*nat+6];
-     v(2,1)+=forcesToApply[3*nat+7];
-     v(2,2)+=forcesToApply[3*nat+8];
+    for(unsigned j=0; j<nat; ++j) {
+      f[j][0]+=forcesToApply[3*j+0];
+      f[j][1]+=forcesToApply[3*j+1];
+      f[j][2]+=forcesToApply[3*j+2];
+    }
+    v(0,0)+=forcesToApply[3*nat+0];
+    v(0,1)+=forcesToApply[3*nat+1];
+    v(0,2)+=forcesToApply[3*nat+2];
+    v(1,0)+=forcesToApply[3*nat+3];
+    v(1,1)+=forcesToApply[3*nat+4];
+    v(1,2)+=forcesToApply[3*nat+5];
+    v(2,0)+=forcesToApply[3*nat+6];
+    v(2,1)+=forcesToApply[3*nat+7];
+    v(2,2)+=forcesToApply[3*nat+8];
   }
 }
 

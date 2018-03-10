@@ -26,55 +26,55 @@
 namespace PLMD {
 namespace gridtools {
 
-void GridCoordinatesObject::setup( const std::string& geom, const std::vector<bool>& ipbc, 
+void GridCoordinatesObject::setup( const std::string& geom, const std::vector<bool>& ipbc,
                                    const unsigned& np, const double& fib_cutoff ) {
-  if( geom=="flat" ){ gtype=flat; dimension = ipbc.size(); }
-  else if( geom=="fibonacci" ){ gtype=fibonacci; dimension = 3; }
+  if( geom=="flat" ) { gtype=flat; dimension = ipbc.size(); }
+  else if( geom=="fibonacci" ) { gtype=fibonacci; dimension = 3; }
   else plumed_merror( geom + " is invalid geometry type");
 
   if( gtype==flat ) {
-      bounds_set=false; npoints=0; pbc.resize( ipbc.size() ); for(unsigned i=0;i<ipbc.size();++i) pbc[i]=ipbc[i]; 
+    bounds_set=false; npoints=0; pbc.resize( ipbc.size() ); for(unsigned i=0; i<ipbc.size(); ++i) pbc[i]=ipbc[i];
   } else if( gtype==fibonacci ) {
-      bounds_set=true; root5 = sqrt(5);
-      npoints = np; golden = ( 1 + sqrt(5) ) / 2.0; igolden = golden - 1;
-      fib_increment = 2*pi*igolden; log_golden2 = std::log( golden*golden );
-      fib_offset = 2 / static_cast<double>( npoints );
-      fib_shift = fib_offset/2 - 1;
+    bounds_set=true; root5 = sqrt(5);
+    npoints = np; golden = ( 1 + sqrt(5) ) / 2.0; igolden = golden - 1;
+    fib_increment = 2*pi*igolden; log_golden2 = std::log( golden*golden );
+    fib_offset = 2 / static_cast<double>( npoints );
+    fib_shift = fib_offset/2 - 1;
 
-      std::vector<double> icoord( dimension ), jcoord( dimension );
-      // Find minimum distance between each pair of points
-      std::vector<unsigned> tindices( dimension ); std::vector<double> mindists( npoints );
-      for(unsigned i=0; i<npoints; ++i) {
-        getFibonacciCoordinates( i, icoord ); mindists[i] = 0;
-        for(unsigned j=0; j<npoints; ++j) {
-          if( i==j ) continue ; // Points are not neighbors to themselves
-          getFibonacciCoordinates( j, jcoord );
-          // Calculate the dot product
-          double dot=0; for(unsigned k=0; k<dimension; ++k) dot += icoord[k]*jcoord[k];
-          if( dot>mindists[i] ) mindists[i]=dot;
-        }
+    std::vector<double> icoord( dimension ), jcoord( dimension );
+    // Find minimum distance between each pair of points
+    std::vector<unsigned> tindices( dimension ); std::vector<double> mindists( npoints );
+    for(unsigned i=0; i<npoints; ++i) {
+      getFibonacciCoordinates( i, icoord ); mindists[i] = 0;
+      for(unsigned j=0; j<npoints; ++j) {
+        if( i==j ) continue ; // Points are not neighbors to themselves
+        getFibonacciCoordinates( j, jcoord );
+        // Calculate the dot product
+        double dot=0; for(unsigned k=0; k<dimension; ++k) dot += icoord[k]*jcoord[k];
+        if( dot>mindists[i] ) mindists[i]=dot;
       }
-      // And now take minimum of dot products
-      double min=mindists[0];
-      for(unsigned i=1; i<npoints; ++i) {
-        if( mindists[i]<min ) min=mindists[i];
-      }
-      double final_cutoff;
-      if( fib_cutoff<-1 ) final_cutoff=-1;
-      else final_cutoff = cos( acos( fib_cutoff ) + acos( min ) );
+    }
+    // And now take minimum of dot products
+    double min=mindists[0];
+    for(unsigned i=1; i<npoints; ++i) {
+      if( mindists[i]<min ) min=mindists[i];
+    }
+    double final_cutoff;
+    if( fib_cutoff<-1 ) final_cutoff=-1;
+    else final_cutoff = cos( acos( fib_cutoff ) + acos( min ) );
 
-      // And now construct the neighbor list
-      fib_nlist.resize( npoints );
-      for(unsigned i=0; i<npoints; ++i) {
-        getFibonacciCoordinates( i, icoord );
-        for(unsigned j=0; j<npoints; ++j) {
-          if( i==j ) continue ; // Points are not neighbors to themselves
-          getFibonacciCoordinates( j, jcoord );
-          // Calculate the dot product
-          double dot=0; for(unsigned k=0; k<dimension; ++k) dot += icoord[k]*jcoord[k];
-          if( dot>final_cutoff ) { fib_nlist[i].push_back(j); }
-        }
+    // And now construct the neighbor list
+    fib_nlist.resize( npoints );
+    for(unsigned i=0; i<npoints; ++i) {
+      getFibonacciCoordinates( i, icoord );
+      for(unsigned j=0; j<npoints; ++j) {
+        if( i==j ) continue ; // Points are not neighbors to themselves
+        getFibonacciCoordinates( j, jcoord );
+        // Calculate the dot product
+        double dot=0; for(unsigned k=0; k<dimension; ++k) dot += icoord[k]*jcoord[k];
+        if( dot>final_cutoff ) { fib_nlist[i].push_back(j); }
       }
+    }
   } else plumed_error();
 }
 
@@ -82,7 +82,7 @@ void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, con
                                        const std::vector<unsigned>& binsin, std::vector<double>& spacing ) {
   plumed_dbg_assert( smin.size()==dimension && smax.size()==dimension );
   plumed_assert( gtype==flat && (spacing.size()==dimension || binsin.size()==dimension) );
-  str_min.resize( dimension ); str_max.resize( dimension ); nbin.resize( dimension ); 
+  str_min.resize( dimension ); str_max.resize( dimension ); nbin.resize( dimension );
   min.resize( dimension ); max.resize( dimension ); dx.resize( dimension ); stride.resize( dimension );
 
   npoints=1; bounds_set=true;
@@ -93,19 +93,19 @@ void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, con
     if( spacing.size()==dimension && binsin.size()==dimension ) {
       double range = max[i] - min[i]; unsigned spc = std::floor( range / spacing[i]); dx[i]=spacing[i];
       // This check ensures that nbins is set correctly if spacing is set the same as the number of bins
-      if( fabs( binsin[i]*spacing[i]-range )>0.5*spacing[i] ){ spc += 1; }
+      if( fabs( binsin[i]*spacing[i]-range )>0.5*spacing[i] ) { spc += 1; }
       if( spc>binsin[i] ) nbin[i]=spc; else nbin[i]=binsin[i];
-    } else if( binsin.size()==dimension ) { 
-       nbin[i]=binsin[i]; dx[i] = ( max[i] - min[i] ) / static_cast<double>( nbin[i] );
+    } else if( binsin.size()==dimension ) {
+      nbin[i]=binsin[i]; dx[i] = ( max[i] - min[i] ) / static_cast<double>( nbin[i] );
     } else if( spacing.size()==dimension ) {
-       nbin[i] = std::floor(( max[i] - min[i] ) / spacing[i]) + 1; dx[i]=spacing[i];
+      nbin[i] = std::floor(( max[i] - min[i] ) / spacing[i]) + 1; dx[i]=spacing[i];
     } else plumed_error();
     if( !pbc[i] ) { max[i] +=dx[i]; nbin[i]+=1; }
     stride[i]=npoints;
     npoints*=nbin[i];
   }
-  if( spacing.size()!=dimension ){ 
-      spacing.resize(dimension); for(unsigned i=0; i<dimension; ++i) spacing[i]=dx[i];
+  if( spacing.size()!=dimension ) {
+    spacing.resize(dimension); for(unsigned i=0; i<dimension; ++i) spacing[i]=dx[i];
   }
 }
 
@@ -203,10 +203,10 @@ void GridCoordinatesObject::putCoordinateAtValue( const unsigned& ind, const dou
   std::vector<double> point( dimension ); getGridPointCoordinates( ind, point );
   if( gtype==flat ) {
     if( coords.size()!=(dimension+1) ) coords.resize( (dimension+1) );
-    for(unsigned i=0;i<dimension;++i) coords[i]=point[i]; coords[point.size()]=val;
-  } else if( gtype==fibonacci ) { 
-    if( coords.size()!=3 ) coords.resize(3); 
-    for(unsigned i=0;i<3;++i) coords[i] = val*point[i];
+    for(unsigned i=0; i<dimension; ++i) coords[i]=point[i]; coords[point.size()]=val;
+  } else if( gtype==fibonacci ) {
+    if( coords.size()!=3 ) coords.resize(3);
+    for(unsigned i=0; i<3; ++i) coords[i] = val*point[i];
   } else {
     plumed_error();
   }
@@ -262,7 +262,7 @@ std::vector<unsigned> GridCoordinatesObject::getNbin( const bool& shape ) const 
 }
 
 void GridCoordinatesObject::getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
-                                         unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const {
+    unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const {
   plumed_dbg_assert( bounds_set );
 
   if( gtype == flat ) {
@@ -281,7 +281,7 @@ void GridCoordinatesObject::getNeighbors( const std::vector<double>& pp, const s
 }
 
 void GridCoordinatesObject::getNeighbors( const std::vector<unsigned>& indices, const std::vector<unsigned>& nneigh,
-                                          unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const {
+    unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const {
   plumed_dbg_assert( gtype==flat && bounds_set && nneigh.size()==dimension );
 
   unsigned num_neigh=1; std::vector<unsigned> small_bin( dimension );

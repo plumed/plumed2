@@ -98,7 +98,7 @@ void Tetrahedral::expandShortcut( const std::string& lab, const std::vector<std:
   SymmetryFunctionBase::expandMatrix( true, lab, words, keys, actions );
   std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("TETRAHEDRAL");
   input.push_back("WEIGHT=" + lab + "_mat.w" ); input.push_back("VECTORS1=" + lab + "_mat.x" );
-  input.push_back("VECTORS2=" + lab + "_mat.y" ); input.push_back("VECTORS3=" + lab + "_mat.z" ); 
+  input.push_back("VECTORS2=" + lab + "_mat.y" ); input.push_back("VECTORS3=" + lab + "_mat.z" );
   actions.push_back( input );
   // Input for denominator (coord)
   std::vector<std::string> d_input; d_input.push_back(lab + "_denom:"); d_input.push_back("COORDINATIONNUMBER");
@@ -149,9 +149,9 @@ void Tetrahedral::compute( const double& val, const Vector& distance, MultiValue
   myder[2] = (tt1-(distance[2]*t1))  + (-tt2-(distance[2]*t2))  + (-tt3-(distance[2]*t3))  + (tt4-(distance[2]*t4));
 
   // Accumulate derivatives
-  addToValue( 0, val*tmp, myvals ); 
+  addToValue( 0, val*tmp, myvals );
   addWeightDerivative( 0, tmp, myvals );
-  addVectorDerivatives( 0, val*myder, myvals ); 
+  addVectorDerivatives( 0, val*myder, myvals );
 }
 
 }

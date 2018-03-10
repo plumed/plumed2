@@ -96,33 +96,33 @@ void Torsion::expandShortcut( const std::string& lab, const std::vector<std::str
                               const std::map<std::string,std::string>& keys,
                               std::vector<std::vector<std::string> >& actions  ) {
   if( words[0]=="ALPHABETA" ) {
-      // Calculate angles
-      std::vector<std::string> mc_line; mc_line.push_back(lab + "_torsions:"); mc_line.push_back("TORSIONS");
-      for(unsigned i=1;i<words.size();++i) mc_line.push_back(words[i]);
-      actions.push_back( mc_line );
+    // Calculate angles
+    std::vector<std::string> mc_line; mc_line.push_back(lab + "_torsions:"); mc_line.push_back("TORSIONS");
+    for(unsigned i=1; i<words.size(); ++i) mc_line.push_back(words[i]);
+    actions.push_back( mc_line );
 
-      // Caculate difference from reference using combine
-      std::string pstr; std::vector<std::string> cc_line; 
-      cc_line.push_back( lab + "_comb:"); cc_line.push_back("COMBINE");
-      cc_line.push_back("PARAMETERS=" + keys.find("REFERENCE")->second );
-      cc_line.push_back("ARG1=" + lab + "_torsions"); cc_line.push_back("PERIODIC=NO");
-      actions.push_back( cc_line );
+    // Caculate difference from reference using combine
+    std::string pstr; std::vector<std::string> cc_line;
+    cc_line.push_back( lab + "_comb:"); cc_line.push_back("COMBINE");
+    cc_line.push_back("PARAMETERS=" + keys.find("REFERENCE")->second );
+    cc_line.push_back("ARG1=" + lab + "_torsions"); cc_line.push_back("PERIODIC=NO");
+    actions.push_back( cc_line );
 
-      // Now matheval for cosine bit
-      std::vector<std::string> mm_line; mm_line.push_back( lab + "_cos:"); mm_line.push_back("MATHEVAL");
-      mm_line.push_back("ARG1=" + lab + "_comb"); mm_line.push_back("FUNC=0.5+0.5*cos(x)"); mm_line.push_back("PERIODIC=NO");
-      actions.push_back( mm_line );
+    // Now matheval for cosine bit
+    std::vector<std::string> mm_line; mm_line.push_back( lab + "_cos:"); mm_line.push_back("MATHEVAL");
+    mm_line.push_back("ARG1=" + lab + "_comb"); mm_line.push_back("FUNC=0.5+0.5*cos(x)"); mm_line.push_back("PERIODIC=NO");
+    actions.push_back( mm_line );
 
-      // And combine to get final value
-      std::vector<std::string> ff_line; ff_line.push_back( lab + ":" ); ff_line.push_back("COMBINE");
-      ff_line.push_back("ARG=" + lab + "_cos"); ff_line.push_back("PERIODIC=NO");
-      actions.push_back( ff_line );
+    // And combine to get final value
+    std::vector<std::string> ff_line; ff_line.push_back( lab + ":" ); ff_line.push_back("COMBINE");
+    ff_line.push_back("ARG=" + lab + "_cos"); ff_line.push_back("PERIODIC=NO");
+    actions.push_back( ff_line );
   } else {
-      plumed_assert( words[0]=="TORSIONS" ); std::vector<std::string> mc_line; 
-      mc_line.push_back(lab + ":"); mc_line.push_back("TORSIONS");
-      for(unsigned i=1;i<words.size();++i) mc_line.push_back(words[i]);
-      actions.push_back( mc_line );
-      MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
+    plumed_assert( words[0]=="TORSIONS" ); std::vector<std::string> mc_line;
+    mc_line.push_back(lab + ":"); mc_line.push_back("TORSIONS");
+    for(unsigned i=1; i<words.size(); ++i) mc_line.push_back(words[i]);
+    actions.push_back( mc_line );
+    MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
   }
 }
 

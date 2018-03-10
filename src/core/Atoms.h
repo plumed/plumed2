@@ -180,9 +180,9 @@ public:
   void setVirial(void*);
   void setPositions(void*);
   void setPositions(void*,int);
-  void setVatomPosition( const AtomNumber& , const Vector& );
+  void setVatomPosition( const AtomNumber&, const Vector& );
   Vector getVatomPosition( const AtomNumber& ) const ;
-  void setVatomMass( const AtomNumber& , const double& );
+  void setVatomMass( const AtomNumber&, const double& );
   void setVatomCharge( const AtomNumber&, const double& );
   Vector & getVatomForces( const AtomNumber& );
   void setForces(void*);

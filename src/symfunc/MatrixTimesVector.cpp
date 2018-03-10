@@ -103,7 +103,7 @@ PLUMED_REGISTER_SHORTCUT(MatrixTimesVector,"LOCAL_AVERAGE_Q6")
 
 void MatrixTimesVector::shortcutKeywords( Keywords& keys ) {
   SymmetryFunctionBase::shortcutKeywords( keys );
-} 
+}
 
 void MatrixTimesVector::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                                         const std::map<std::string,std::string>& keys,
@@ -112,50 +112,50 @@ void MatrixTimesVector::expandShortcut( const std::string& lab, const std::vecto
   std::vector<std::string> coord; coord.push_back( lab + "_coord:"); coord.push_back("COORDINATIONNUMBER");
   coord.push_back("WEIGHT=" + lab + "_mat.w"); actions.push_back( coord );
   if( words[0].find("LOCAL_AVERAGE_Q")!=std::string::npos ) {
-      int l; Tools::convert( words[0].substr(15), l );
-      for(int i=-l;i<=l;++i) {
-          std::string num; Tools::convert( i, num );
-          std::vector<std::string> realdata; realdata.push_back( lab + "_prod-rmn-[" + num + "]:");
-          realdata.push_back("MATRIX_VECTOR_PRODUCT"); realdata.push_back("WEIGHT=" + lab + "_mat.w");
-          realdata.push_back("VECTOR=" + keys.find("SPECIES")->second + "_rmn-[" + num + "]"); 
-          actions.push_back( realdata );
-          std::vector<std::string> realmath; realmath.push_back( lab + "_av-rmn-[" + num + "]:");
-          realmath.push_back("MATHEVAL"); realmath.push_back("ARG1=" + lab + "_prod-rmn-[" + num + "]");
-          realmath.push_back("ARG2=" + keys.find("SPECIES")->second + "_rmn-[" + num + "]");
-          realmath.push_back("ARG3=" + lab + "_coord"); realmath.push_back("FUNC=(x+y)/(1+z)"); 
-          realmath.push_back("PERIODIC=NO"); actions.push_back( realmath );
-          std::vector<std::string> imagdata; imagdata.push_back( lab + "_prod-imn-[" + num + "]:");
-          imagdata.push_back("MATRIX_VECTOR_PRODUCT"); imagdata.push_back("WEIGHT=" + lab + "_mat.w");
-          imagdata.push_back("VECTOR=" + keys.find("SPECIES")->second + "_imn-[" + num + "]");
-          actions.push_back( imagdata );
-          std::vector<std::string> imagmath; imagmath.push_back( lab + "_av-imn-[" + num + "]:");
-          imagmath.push_back("MATHEVAL"); imagmath.push_back("ARG1=" + lab + "_prod-imn-[" + num + "]");
-          imagmath.push_back("ARG2=" + keys.find("SPECIES")->second + "_imn-[" + num + "]");
-          imagmath.push_back("ARG3=" + lab + "_coord"); imagmath.push_back("FUNC=(x+y)/(1+z)"); 
-          imagmath.push_back("PERIODIC=NO"); actions.push_back( imagmath );
-      }
-      std::vector<std::string> comb; comb.push_back( lab + "_2:" ); comb.push_back("COMBINE");
-      unsigned k=0; std::string powstr="POWERS=2";
-      for(int i=-l;i<=l;++i) {
-          std::string num, anum; Tools::convert(i,num);
-          k++; Tools::convert(k,anum); comb.push_back("ARG" + anum + "=" + lab + "_av-rmn-[" + num + "]" );
-          k++; Tools::convert(k,anum); comb.push_back("ARG" + anum + "=" + lab + "_av-imn-[" + num + "]" );
-          if( i==-l ) powstr += ",2"; else powstr += ",2,2";
-      }
-      comb.push_back(powstr); comb.push_back("PERIODIC=NO"); actions.push_back( comb );
-      std::vector<std::string> mcomb; mcomb.push_back( lab + ":"); mcomb.push_back("MATHEVAL");
-      mcomb.push_back("ARG1=" + lab + "_2"); mcomb.push_back("FUNC=sqrt(x)"); mcomb.push_back("PERIODIC=NO");
-      actions.push_back( mcomb );  
-  } else if( words[0].find("LOCAL_AVERAGE")!=std::string::npos ) {
-      std::vector<std::string> realdata; realdata.push_back( lab + "_prod:");
+    int l; Tools::convert( words[0].substr(15), l );
+    for(int i=-l; i<=l; ++i) {
+      std::string num; Tools::convert( i, num );
+      std::vector<std::string> realdata; realdata.push_back( lab + "_prod-rmn-[" + num + "]:");
       realdata.push_back("MATRIX_VECTOR_PRODUCT"); realdata.push_back("WEIGHT=" + lab + "_mat.w");
-      realdata.push_back("VECTOR=" + keys.find("SPECIES")->second );
+      realdata.push_back("VECTOR=" + keys.find("SPECIES")->second + "_rmn-[" + num + "]");
       actions.push_back( realdata );
-      std::vector<std::string> realmath; realmath.push_back( lab + ":");
-      realmath.push_back("MATHEVAL"); realmath.push_back("ARG1=" + lab + "_prod");
-      realmath.push_back("ARG2=" + keys.find("SPECIES")->second );
+      std::vector<std::string> realmath; realmath.push_back( lab + "_av-rmn-[" + num + "]:");
+      realmath.push_back("MATHEVAL"); realmath.push_back("ARG1=" + lab + "_prod-rmn-[" + num + "]");
+      realmath.push_back("ARG2=" + keys.find("SPECIES")->second + "_rmn-[" + num + "]");
       realmath.push_back("ARG3=" + lab + "_coord"); realmath.push_back("FUNC=(x+y)/(1+z)");
       realmath.push_back("PERIODIC=NO"); actions.push_back( realmath );
+      std::vector<std::string> imagdata; imagdata.push_back( lab + "_prod-imn-[" + num + "]:");
+      imagdata.push_back("MATRIX_VECTOR_PRODUCT"); imagdata.push_back("WEIGHT=" + lab + "_mat.w");
+      imagdata.push_back("VECTOR=" + keys.find("SPECIES")->second + "_imn-[" + num + "]");
+      actions.push_back( imagdata );
+      std::vector<std::string> imagmath; imagmath.push_back( lab + "_av-imn-[" + num + "]:");
+      imagmath.push_back("MATHEVAL"); imagmath.push_back("ARG1=" + lab + "_prod-imn-[" + num + "]");
+      imagmath.push_back("ARG2=" + keys.find("SPECIES")->second + "_imn-[" + num + "]");
+      imagmath.push_back("ARG3=" + lab + "_coord"); imagmath.push_back("FUNC=(x+y)/(1+z)");
+      imagmath.push_back("PERIODIC=NO"); actions.push_back( imagmath );
+    }
+    std::vector<std::string> comb; comb.push_back( lab + "_2:" ); comb.push_back("COMBINE");
+    unsigned k=0; std::string powstr="POWERS=2";
+    for(int i=-l; i<=l; ++i) {
+      std::string num, anum; Tools::convert(i,num);
+      k++; Tools::convert(k,anum); comb.push_back("ARG" + anum + "=" + lab + "_av-rmn-[" + num + "]" );
+      k++; Tools::convert(k,anum); comb.push_back("ARG" + anum + "=" + lab + "_av-imn-[" + num + "]" );
+      if( i==-l ) powstr += ",2"; else powstr += ",2,2";
+    }
+    comb.push_back(powstr); comb.push_back("PERIODIC=NO"); actions.push_back( comb );
+    std::vector<std::string> mcomb; mcomb.push_back( lab + ":"); mcomb.push_back("MATHEVAL");
+    mcomb.push_back("ARG1=" + lab + "_2"); mcomb.push_back("FUNC=sqrt(x)"); mcomb.push_back("PERIODIC=NO");
+    actions.push_back( mcomb );
+  } else if( words[0].find("LOCAL_AVERAGE")!=std::string::npos ) {
+    std::vector<std::string> realdata; realdata.push_back( lab + "_prod:");
+    realdata.push_back("MATRIX_VECTOR_PRODUCT"); realdata.push_back("WEIGHT=" + lab + "_mat.w");
+    realdata.push_back("VECTOR=" + keys.find("SPECIES")->second );
+    actions.push_back( realdata );
+    std::vector<std::string> realmath; realmath.push_back( lab + ":");
+    realmath.push_back("MATHEVAL"); realmath.push_back("ARG1=" + lab + "_prod");
+    realmath.push_back("ARG2=" + keys.find("SPECIES")->second );
+    realmath.push_back("ARG3=" + lab + "_coord"); realmath.push_back("FUNC=(x+y)/(1+z)");
+    realmath.push_back("PERIODIC=NO"); actions.push_back( realmath );
   }
   multicolvar::MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
 }
@@ -172,9 +172,9 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
   std::vector<Value*> vecs; parseArgumentList("VECTOR",vecs);
   if( vecs.size()!=1 ) error("keyword VECTOR shoudl only be provided with the label of a singl action");
   if( vecs[0]->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("shape of input vector should match second dimension of input WEIGHT matrix");
-  vecs[0]->buildDataStore( getLabel() ); 
+  vecs[0]->buildDataStore( getLabel() );
   log.printf("  calculating product of input weight matrix with vector of weights labelled %s \n",vecs[0]->getName().c_str() );
-  std::vector<Value*> args( getArguments() ); args.push_back( vecs[0] ); 
+  std::vector<Value*> args( getArguments() ); args.push_back( vecs[0] );
   requestArguments( args, true ); addValueWithDerivatives();
 }
 
@@ -184,19 +184,19 @@ unsigned MatrixTimesVector::getNumberOfDerivatives() const {
 
 void MatrixTimesVector::compute( const double& val, const Vector& dir, MultiValue& myvals ) const {
   unsigned tindex = myvals.getSecondTaskIndex(); if( tindex>=getFullNumberOfTasks() ) tindex -= getFullNumberOfTasks();
-  double func = getPntrToArgument(1)->get(tindex); addToValue( 0, val*func, myvals ); 
-  if( doNotCalculateDerivatives() ) return;  
-  addWeightDerivative( 0, func, myvals ); 
+  double func = getPntrToArgument(1)->get(tindex); addToValue( 0, val*func, myvals );
+  if( doNotCalculateDerivatives() ) return;
+  addWeightDerivative( 0, func, myvals );
   myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), arg_deriv_starts[1] + tindex, val );
 }
 
 void MatrixTimesVector::updateDerivativeIndices( MultiValue& myvals ) const {
   SymmetryFunctionBase::updateDerivativeIndices( myvals );
-  for(unsigned i=arg_deriv_starts[1];i<getNumberOfDerivatives();++i) {
-      for(unsigned j=0;j<getNumberOfComponents();++j){
-           unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
-           myvals.updateIndex( ostrn, i );
-      } 
+  for(unsigned i=arg_deriv_starts[1]; i<getNumberOfDerivatives(); ++i) {
+    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+      unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+      myvals.updateIndex( ostrn, i );
+    }
   }
 }
 

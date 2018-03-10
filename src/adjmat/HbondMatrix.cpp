@@ -139,20 +139,20 @@ double HbondMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, con
 
   double value=0;
   for(unsigned i=0; i<natoms; ++i) {
-      Vector ohd=getPosition(i,myvals); double ohd_l=ohd.modulo2();
-      double ohd_df, ohd_sw=distanceOHSwitch.calculateSqr( ohd_l, ohd_df );
-  
-      Angle a; Vector ood_adf, ohd_adf; double angle=a.compute( ood, ohd, ood_adf, ohd_adf );
-      double angle_df, angle_sw=angleSwitch.calculate( angle, angle_df );
-      value += ood_sw*ohd_sw*angle_sw;
+    Vector ohd=getPosition(i,myvals); double ohd_l=ohd.modulo2();
+    double ohd_df, ohd_sw=distanceOHSwitch.calculateSqr( ohd_l, ohd_df );
 
-      if( !doNotCalculateDerivatives() ) { 
-          addAtomDerivatives( 0, angle_sw*ohd_sw*(-ood_df)*ood + angle_sw*ood_sw*(-ohd_df)*ohd + ood_sw*ohd_sw*angle_df*angle*(-ood_adf-ohd_adf), myvals );
-          addAtomDerivatives( 1, angle_sw*ohd_sw*(+ood_df)*ood + ood_sw*ohd_sw*angle_df*angle*ood_adf, myvals );
-          addThirdAtomDerivatives( i, angle_sw*ood_sw*(+ohd_df)*ohd + ood_sw*ohd_sw*angle_df*angle*ohd_adf, myvals );
-          addBoxDerivatives( angle_sw*ohd_sw*(-ood_df)*Tensor(ood,ood) + angle_sw*ood_sw*(-ohd_df)*Tensor(ohd,ohd) -
-                                      ood_sw*ohd_sw*angle_df*angle*(Tensor(ood,ood_adf)+Tensor(ohd,ohd_adf)), myvals );   
-      }
+    Angle a; Vector ood_adf, ohd_adf; double angle=a.compute( ood, ohd, ood_adf, ohd_adf );
+    double angle_df, angle_sw=angleSwitch.calculate( angle, angle_df );
+    value += ood_sw*ohd_sw*angle_sw;
+
+    if( !doNotCalculateDerivatives() ) {
+      addAtomDerivatives( 0, angle_sw*ohd_sw*(-ood_df)*ood + angle_sw*ood_sw*(-ohd_df)*ohd + ood_sw*ohd_sw*angle_df*angle*(-ood_adf-ohd_adf), myvals );
+      addAtomDerivatives( 1, angle_sw*ohd_sw*(+ood_df)*ood + ood_sw*ohd_sw*angle_df*angle*ood_adf, myvals );
+      addThirdAtomDerivatives( i, angle_sw*ood_sw*(+ohd_df)*ohd + ood_sw*ohd_sw*angle_df*angle*ohd_adf, myvals );
+      addBoxDerivatives( angle_sw*ohd_sw*(-ood_df)*Tensor(ood,ood) + angle_sw*ood_sw*(-ohd_df)*Tensor(ohd,ohd) -
+                         ood_sw*ohd_sw*angle_df*angle*(Tensor(ood,ood_adf)+Tensor(ohd,ohd_adf)), myvals );
+    }
   }
   return value;
 }

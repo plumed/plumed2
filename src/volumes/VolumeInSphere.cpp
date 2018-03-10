@@ -88,13 +88,13 @@ public:
 PLUMED_REGISTER_ACTION(VolumeInSphere,"INSPHERE")
 PLUMED_REGISTER_SHORTCUT(VolumeInSphere,"INSPHERE")
 
-void VolumeInSphere::shortcutKeywords( Keywords& keys ){
+void VolumeInSphere::shortcutKeywords( Keywords& keys ) {
   ActionVolume::shortcutKeywords( keys );
 }
 
 void VolumeInSphere::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions ){
+                                     const std::map<std::string,std::string>& keys,
+                                     std::vector<std::vector<std::string> >& actions ) {
   ActionVolume::expandShortcut( lab, words, keys, actions );
 }
 

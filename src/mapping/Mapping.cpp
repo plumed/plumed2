@@ -48,33 +48,33 @@ void Mapping::shortcutKeywords( Keywords& keys ) {
 
 void Mapping::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                               const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions ){
+                              std::vector<std::vector<std::string> >& actions ) {
   std::vector<std::string> thisact; thisact.push_back( lab + ":" );
   thisact.push_back( "EUCLIDEAN_DISSIMILARITIES_VECTOR" );
-  for(unsigned i=1;i<words.size();++i) thisact.push_back( words[i] );
-  if( words[0]=="DRMSD" ){
-      if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second );
-      else thisact.push_back( "TYPE=DRMSD");
+  for(unsigned i=1; i<words.size(); ++i) thisact.push_back( words[i] );
+  if( words[0]=="DRMSD" ) {
+    if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second );
+    else thisact.push_back( "TYPE=DRMSD");
 
-      if( keys.find("LOWER_CUTOFF")!=keys.end() ) thisact.push_back( keys.find("LOWER_CUTOFF")->first + "=" + keys.find("LOWER_CUTOFF")->second );
-      else plumed_merror("LOWER_CUTOFF must be specified in DRMSD actions");
+    if( keys.find("LOWER_CUTOFF")!=keys.end() ) thisact.push_back( keys.find("LOWER_CUTOFF")->first + "=" + keys.find("LOWER_CUTOFF")->second );
+    else plumed_merror("LOWER_CUTOFF must be specified in DRMSD actions");
 
-      if( keys.find("UPPER_CUTOFF")!=keys.end() ) thisact.push_back( keys.find("UPPER_CUTOFF")->first + "=" + keys.find("UPPER_CUTOFF")->second );
-      else plumed_merror("UPPER_CUTOFF must be specified in DRMSD actions");
+    if( keys.find("UPPER_CUTOFF")!=keys.end() ) thisact.push_back( keys.find("UPPER_CUTOFF")->first + "=" + keys.find("UPPER_CUTOFF")->second );
+    else plumed_merror("UPPER_CUTOFF must be specified in DRMSD actions");
 
-      if( keys.find("NOPBC")!=keys.end() ) thisact.push_back("NOPBC");
-  } else if( words[0]=="MULTI-RMSD" ){
-      if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second ); 
-      else thisact.push_back( "TYPE=MULTI-SIMPLE"); 
-  } else if( words[0]=="TARGET" ){
-      if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second );
-      else thisact.push_back( "TYPE=EUCLIDEAN" );
-  } else if( words[0]=="RMSD" ){
-      if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second ); 
-      else thisact.push_back( "TYPE=SIMPLE" );
+    if( keys.find("NOPBC")!=keys.end() ) thisact.push_back("NOPBC");
+  } else if( words[0]=="MULTI-RMSD" ) {
+    if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second );
+    else thisact.push_back( "TYPE=MULTI-SIMPLE");
+  } else if( words[0]=="TARGET" ) {
+    if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second );
+    else thisact.push_back( "TYPE=EUCLIDEAN" );
+  } else if( words[0]=="RMSD" ) {
+    if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second );
+    else thisact.push_back( "TYPE=SIMPLE" );
   } else {
-      plumed_assert( words[0]=="EUCLIDEAN_DISSIMILARITIES_VECTOR" );
-      actions.push_back( words ); return;
+    plumed_assert( words[0]=="EUCLIDEAN_DISSIMILARITIES_VECTOR" );
+    actions.push_back( words ); return;
   }
   actions.push_back( thisact );
 }
@@ -105,14 +105,14 @@ Mapping::Mapping(const ActionOptions&ao):
   std::string mtype; parse("TYPE",mtype);
   bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
 
-  // Read stuff for DRMSD 
+  // Read stuff for DRMSD
   double lcutoff=0; parse("LOWER_CUTOFF",lcutoff);
   double ucutoff=std::numeric_limits<double>::max(); parse("UPPER_CUTOFF",ucutoff);
   bool nopbc; parseFlag("NOPBC",nopbc); std::vector<std::string> drmsd_remarks;
-  if( nopbc || lcutoff>0 || ucutoff<std::numeric_limits<double>::max() ){
-      std::string lstr; Tools::convert( lcutoff, lstr ); drmsd_remarks.push_back( "LOWER_CUTOFF=" + lstr );
-      std::string ustr; Tools::convert( ucutoff, ustr ); drmsd_remarks.push_back( "UPPER_CUTOFF=" + ustr );
-      if( nopbc ) drmsd_remarks.push_back( "NOPBC" );
+  if( nopbc || lcutoff>0 || ucutoff<std::numeric_limits<double>::max() ) {
+    std::string lstr; Tools::convert( lcutoff, lstr ); drmsd_remarks.push_back( "LOWER_CUTOFF=" + lstr );
+    std::string ustr; Tools::convert( ucutoff, ustr ); drmsd_remarks.push_back( "UPPER_CUTOFF=" + ustr );
+    if( nopbc ) drmsd_remarks.push_back( "NOPBC" );
   }
 
   // Open reference file
@@ -121,7 +121,7 @@ Mapping::Mapping(const ActionOptions&ao):
   if(!fp) error("could not open reference file " + reference );
 
   // Read all reference configurations
-  bool do_read=true; 
+  bool do_read=true;
   while (do_read) {
     // Read the pdb file
     PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
@@ -141,9 +141,9 @@ Mapping::Mapping(const ActionOptions&ao):
   if(myframes.size()==0 ) error("no reference configurations were specified");
   log.printf("  calculating distance from reference configurations using %s metric \n", mtype.c_str() );
   log.printf("  found %u configurations in file %s\n",myframes.size(),reference.c_str() );
-  std::vector<unsigned> shape; 
-  if( myframes.size()>1 ){ shape.resize(1); shape[0]=myframes.size(); addValue( shape ); }
-  else addValueWithDerivatives( shape ); 
+  std::vector<unsigned> shape;
+  if( myframes.size()>1 ) { shape.resize(1); shape[0]=myframes.size(); addValue( shape ); }
+  else addValueWithDerivatives( shape );
   setNotPeriodic();
 
   // Finish the setup of the mapping object
@@ -164,8 +164,8 @@ void Mapping::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
   tflags.assign(tflags.size(),1);
 }
 
-void Mapping::calculate(){
-  plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 ); 
+void Mapping::calculate() {
+  plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
   runAllTasks();
 }
 
@@ -174,20 +174,20 @@ double Mapping::calculateDistanceFromReference( const unsigned& current, Referen
   if( !doNotCalculateDerivatives() && getNumberOfAtoms()>0 && !mypack.virialWasSet() ) {
     Tensor tvir; tvir.zero();
     for(unsigned i=0; i<mypack.getNumberOfAtoms(); ++i) tvir +=-1.0*Tensor( getPosition( mypack.getAtomIndex(i) ), mypack.getAtomDerivative(i) );
-    mypack.addBoxDerivatives( tvir ); 
+    mypack.addBoxDerivatives( tvir );
   }
   return dd;
 }
 
-double Mapping::calculateDistanceBetweenReferenceAndThisPoint( const unsigned& current, const std::vector<Vector>& pos, 
-                                                               const std::vector<double>& args, ReferenceValuePack& mypack ) const {
+double Mapping::calculateDistanceBetweenReferenceAndThisPoint( const unsigned& current, const std::vector<Vector>& pos,
+    const std::vector<double>& args, ReferenceValuePack& mypack ) const {
   double dd = myframes[current]->calc( pos, getPbc(), getArguments(), args, mypack, squared );
   if( !doNotCalculateDerivatives() && getNumberOfAtoms()>0 && !mypack.virialWasSet() ) {
     Tensor tvir; tvir.zero();
     for(unsigned i=0; i<mypack.getNumberOfAtoms(); ++i) tvir +=-1.0*Tensor( getPosition( mypack.getAtomIndex(i) ), mypack.getAtomDerivative(i) );
     mypack.addBoxDerivatives( tvir );
-  } 
-  return dd;  
+  }
+  return dd;
 }
 
 void Mapping::performTask( const unsigned& current, MultiValue& myvals ) const {
@@ -243,9 +243,9 @@ void Mapping::calculateNumericalDerivatives( ActionWithValue* a ) {
 void Mapping::apply() {
   if( doNotCalculateDerivatives() ) return;
   std::fill(forcesToApply.begin(),forcesToApply.end(),0);
-  if( getForcesFromValues( forcesToApply ) ){
-      unsigned mm=0; setForcesOnArguments( forcesToApply, mm );
-      setForcesOnAtoms( forcesToApply, mm  );
+  if( getForcesFromValues( forcesToApply ) ) {
+    unsigned mm=0; setForcesOnArguments( forcesToApply, mm );
+    setForcesOnAtoms( forcesToApply, mm  );
   }
 }
 

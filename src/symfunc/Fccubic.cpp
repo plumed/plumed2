@@ -98,8 +98,8 @@ void Fccubic::expandShortcut( const std::string& lab, const std::vector<std::str
   SymmetryFunctionBase::expandMatrix( true, lab, words, keys, actions );
   std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("FCCUBIC");
   input.push_back("WEIGHT=" + lab + "_mat.w" ); input.push_back("VECTORS1=" + lab + "_mat.x" );
-  input.push_back("VECTORS2=" + lab + "_mat.y" ); input.push_back("VECTORS3=" + lab + "_mat.z" ); 
-  for(unsigned i=1;i<words.size();++i) input.push_back(words[i]);
+  input.push_back("VECTORS2=" + lab + "_mat.y" ); input.push_back("VECTORS3=" + lab + "_mat.z" );
+  for(unsigned i=1; i<words.size(); ++i) input.push_back(words[i]);
   actions.push_back( input );
   // Input for denominator (coord)
   std::vector<std::string> d_input; d_input.push_back(lab + "_denom:"); d_input.push_back("COORDINATIONNUMBER");
@@ -153,11 +153,11 @@ void Fccubic::compute( const double& val, const Vector& distance, MultiValue& my
   myder[0]=4*a1*distance[0]*(t0-t3);
   myder[1]=4*a1*distance[1]*(t1-t3);
   myder[2]=4*a1*distance[2]*(t2-t3);
-  
+
   // Accumulate derivatives
   addToValue( 0, val*(a1*tmp+b1), myvals );
   addWeightDerivative( 0, a1*tmp+b1, myvals );
-  addVectorDerivatives( 0, val*myder, myvals ); 
+  addVectorDerivatives( 0, val*myder, myvals );
 }
 
 }

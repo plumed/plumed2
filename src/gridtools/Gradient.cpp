@@ -25,7 +25,7 @@
 namespace PLMD {
 namespace gridtools {
 
-class Gradient : public ActionWithIntegral { 
+class Gradient : public ActionWithIntegral {
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -57,45 +57,45 @@ void Gradient::expandShortcut( const std::string& lab, const std::vector<std::st
   dist_vec.push_back("COMPONENTS"); actions.push_back( dist_vec ); std::string dir = keys.find("DIR")->second;
   // Now constrcut the histograms
   if( dir=="x" || dir=="xy" || dir=="xz" || dir=="xyz" ) {
-      std::vector<std::string> xhisto; xhisto.push_back( lab + "_xhisto:"); xhisto.push_back("KDE");
-      xhisto.push_back("ARG1=" + lab + "_dist.x"); xhisto.push_back("GRID_BIN=" + keys.find("NBINS")->second );
-      xhisto.push_back("KERNEL=" + keys.find("KERNEL")->second ); xhisto.push_back("BANDWIDTH=" + keys.find("SIGMA")->second );
-      xhisto.push_back("UNORMALIZED"); actions.push_back( xhisto );
-      std::vector<std::string> xgrad; if( dir=="x" ) xgrad.push_back( lab + ":" ); else xgrad.push_back( lab + "_xgrad:" ); 
-      xgrad.push_back("GRADIENT"); xgrad.push_back("ARG=" + lab + "_xhisto"); actions.push_back( xgrad );
-  } 
+    std::vector<std::string> xhisto; xhisto.push_back( lab + "_xhisto:"); xhisto.push_back("KDE");
+    xhisto.push_back("ARG1=" + lab + "_dist.x"); xhisto.push_back("GRID_BIN=" + keys.find("NBINS")->second );
+    xhisto.push_back("KERNEL=" + keys.find("KERNEL")->second ); xhisto.push_back("BANDWIDTH=" + keys.find("SIGMA")->second );
+    xhisto.push_back("UNORMALIZED"); actions.push_back( xhisto );
+    std::vector<std::string> xgrad; if( dir=="x" ) xgrad.push_back( lab + ":" ); else xgrad.push_back( lab + "_xgrad:" );
+    xgrad.push_back("GRADIENT"); xgrad.push_back("ARG=" + lab + "_xhisto"); actions.push_back( xgrad );
+  }
   if( dir=="y" || dir=="xy" || dir=="yz" || dir=="xyz" ) {
-      std::vector<std::string> xhisto; xhisto.push_back( lab + "_yhisto:"); xhisto.push_back("KDE");
-      xhisto.push_back("ARG1=" + lab + "_dist.y"); xhisto.push_back("GRID_BIN=" + keys.find("NBINS")->second );
-      xhisto.push_back("KERNEL=" + keys.find("KERNEL")->second ); xhisto.push_back("BANDWIDTH=" + keys.find("SIGMA")->second );
-      xhisto.push_back("UNORMALIZED"); actions.push_back( xhisto );
-      std::vector<std::string> xgrad; if( dir=="y" ) xgrad.push_back( lab + ":" ); else xgrad.push_back( lab + "_ygrad:" );
-      xgrad.push_back("GRADIENT"); xgrad.push_back("ARG=" + lab + "_yhisto"); actions.push_back( xgrad );
-  } 
+    std::vector<std::string> xhisto; xhisto.push_back( lab + "_yhisto:"); xhisto.push_back("KDE");
+    xhisto.push_back("ARG1=" + lab + "_dist.y"); xhisto.push_back("GRID_BIN=" + keys.find("NBINS")->second );
+    xhisto.push_back("KERNEL=" + keys.find("KERNEL")->second ); xhisto.push_back("BANDWIDTH=" + keys.find("SIGMA")->second );
+    xhisto.push_back("UNORMALIZED"); actions.push_back( xhisto );
+    std::vector<std::string> xgrad; if( dir=="y" ) xgrad.push_back( lab + ":" ); else xgrad.push_back( lab + "_ygrad:" );
+    xgrad.push_back("GRADIENT"); xgrad.push_back("ARG=" + lab + "_yhisto"); actions.push_back( xgrad );
+  }
   if( dir=="z" || dir=="yz" || dir=="xz" || dir=="xyz" ) {
-      std::vector<std::string> xhisto; xhisto.push_back( lab + "_zhisto:"); xhisto.push_back("KDE");
-      xhisto.push_back("ARG1=" + lab + "_dist.z"); xhisto.push_back("GRID_BIN=" + keys.find("NBINS")->second );
-      xhisto.push_back("KERNEL=" + keys.find("KERNEL")->second ); xhisto.push_back("BANDWIDTH=" + keys.find("SIGMA")->second );
-      xhisto.push_back("UNORMALIZED"); actions.push_back( xhisto );
-      std::vector<std::string> xgrad; if( dir=="z" ) xgrad.push_back( lab + ":" ); else xgrad.push_back( lab + "_zgrad:" );
-      xgrad.push_back("GRADIENT"); xgrad.push_back("ARG=" + lab + "_zhisto"); actions.push_back( xgrad );
-  } 
+    std::vector<std::string> xhisto; xhisto.push_back( lab + "_zhisto:"); xhisto.push_back("KDE");
+    xhisto.push_back("ARG1=" + lab + "_dist.z"); xhisto.push_back("GRID_BIN=" + keys.find("NBINS")->second );
+    xhisto.push_back("KERNEL=" + keys.find("KERNEL")->second ); xhisto.push_back("BANDWIDTH=" + keys.find("SIGMA")->second );
+    xhisto.push_back("UNORMALIZED"); actions.push_back( xhisto );
+    std::vector<std::string> xgrad; if( dir=="z" ) xgrad.push_back( lab + ":" ); else xgrad.push_back( lab + "_zgrad:" );
+    xgrad.push_back("GRADIENT"); xgrad.push_back("ARG=" + lab + "_zhisto"); actions.push_back( xgrad );
+  }
   if( dir=="xy" ) {
-      std::vector<std::string> combi; combi.push_back( lab + ":" ); combi.push_back("COMBINE"); 
-      combi.push_back("ARG=" + lab + "_xgrad," + lab + "_ygrad"); combi.push_back("PERIODIC=NO");
-      actions.push_back( combi ); 
+    std::vector<std::string> combi; combi.push_back( lab + ":" ); combi.push_back("COMBINE");
+    combi.push_back("ARG=" + lab + "_xgrad," + lab + "_ygrad"); combi.push_back("PERIODIC=NO");
+    actions.push_back( combi );
   } else if( dir=="xz" ) {
-      std::vector<std::string> combi; combi.push_back( lab + ":" ); combi.push_back("COMBINE"); 
-      combi.push_back("ARG=" + lab + "_xgrad," + lab + "_zgrad"); combi.push_back("PERIODIC=NO");
-      actions.push_back( combi );
+    std::vector<std::string> combi; combi.push_back( lab + ":" ); combi.push_back("COMBINE");
+    combi.push_back("ARG=" + lab + "_xgrad," + lab + "_zgrad"); combi.push_back("PERIODIC=NO");
+    actions.push_back( combi );
   } else if( dir=="yz" ) {
-      std::vector<std::string> combi; combi.push_back( lab + ":" ); combi.push_back("COMBINE"); 
-      combi.push_back("ARG=" + lab + "_ygrad," + lab + "_zgrad"); combi.push_back("PERIODIC=NO");
-      actions.push_back( combi );
+    std::vector<std::string> combi; combi.push_back( lab + ":" ); combi.push_back("COMBINE");
+    combi.push_back("ARG=" + lab + "_ygrad," + lab + "_zgrad"); combi.push_back("PERIODIC=NO");
+    actions.push_back( combi );
   } else if( dir=="xyz" ) {
-      std::vector<std::string> combi; combi.push_back( lab + ":" ); combi.push_back("COMBINE"); 
-      combi.push_back("ARG=" + lab + "_xgrad," + lab + "_ygrad," + lab + "_zgrad"); combi.push_back("PERIODIC=NO");
-      actions.push_back( combi );
+    std::vector<std::string> combi; combi.push_back( lab + ":" ); combi.push_back("COMBINE");
+    combi.push_back("ARG=" + lab + "_xgrad," + lab + "_ygrad," + lab + "_zgrad"); combi.push_back("PERIODIC=NO");
+    actions.push_back( combi );
   }
 }
 
@@ -104,8 +104,8 @@ void Gradient::registerKeywords( Keywords& keys ) {
 }
 
 Gradient::Gradient(const ActionOptions&ao):
-Action(ao),
-ActionWithIntegral(ao)
+  Action(ao),
+  ActionWithIntegral(ao)
 {
   if( gridobject.getDimension()!=1 ) error("gradient should only be used on one dimensional grids");
 }
@@ -113,16 +113,16 @@ ActionWithIntegral(ao)
 void Gradient::performTask( const unsigned& current, MultiValue& myvals ) const {
   unsigned jval=0; double diff=0;
   if ( gridobject.isPeriodic(0) && current==gridobject.getNbin(false)[0]-1 ) {
-       diff = getFunctionValue(current) - getFunctionValue(0); jval = 0;
+    diff = getFunctionValue(current) - getFunctionValue(0); jval = 0;
   } else if( current<gridobject.getNbin(false)[0] ) {
-       diff = getFunctionValue(current) - getFunctionValue(current+1); jval = current + 1;
+    diff = getFunctionValue(current) - getFunctionValue(current+1); jval = current + 1;
   }
-  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), diff*diff );  
-  if( !doNotCalculateDerivatives() ) { 
-      myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), current, 2.0*diff );
-      myvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), current );
-      myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), jval, -2.0*diff );
-      myvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), jval ); 
+  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), diff*diff );
+  if( !doNotCalculateDerivatives() ) {
+    myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), current, 2.0*diff );
+    myvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), current );
+    myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), jval, -2.0*diff );
+    myvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), jval );
   }
 }
 

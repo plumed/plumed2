@@ -30,9 +30,9 @@
 namespace PLMD {
 namespace adjmat {
 
-class AdjacencyMatrixBase : 
+class AdjacencyMatrixBase :
   public ActionAtomistic,
-  public ActionWithValue 
+  public ActionWithValue
 {
 private:
   bool nopbc, components;
@@ -67,15 +67,15 @@ unsigned AdjacencyMatrixBase::getNumberOfDerivatives() const  {
 }
 
 inline
-Vector AdjacencyMatrixBase::getPosition( const unsigned& indno, const MultiValue& myvals ) const { 
-  unsigned index = myvals.getIndices()[ indno + myvals.getSplitIndex() ]; 
+Vector AdjacencyMatrixBase::getPosition( const unsigned& indno, const MultiValue& myvals ) const {
+  unsigned index = myvals.getIndices()[ indno + myvals.getSplitIndex() ];
   return myvals.getAtomVector()[index];
 }
 
 inline
 void AdjacencyMatrixBase::addAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return;
-  plumed_dbg_assert( indno<2 ); unsigned index = myvals.getTaskIndex(); 
+  plumed_dbg_assert( indno<2 ); unsigned index = myvals.getTaskIndex();
   if( indno==1 ) index = myvals.getSecondTaskIndex();
   unsigned w_index = getPntrToOutput(0)->getPositionInStream();
   myvals.addDerivative( w_index, 3*index+0, der[0] );

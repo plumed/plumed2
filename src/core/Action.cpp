@@ -164,16 +164,16 @@ void Action::parseFlag(const std::string&key,bool & t) {
 
 void Action::addDependency(Action*action) {
   bool found=false;
-  for(unsigned i=0;i<after.size();++i){
-      if( after[i]->getLabel()==action->getLabel() ){ found=true; return; }
+  for(unsigned i=0; i<after.size(); ++i) {
+    if( after[i]->getLabel()==action->getLabel() ) { found=true; return; }
   }
   after.push_back(action);
 }
 
 bool Action::checkForDependency( Action* action ) {
-  for(unsigned i=0;i<after.size();++i) {
-      if( action==after[i] ){ return true; }
-      if( after[i]->checkForDependency(action) ){ return true; }
+  for(unsigned i=0; i<after.size(); ++i) {
+    if( action==after[i] ) { return true; }
+    if( after[i]->checkForDependency(action) ) { return true; }
   }
   return false;
 }

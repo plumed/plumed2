@@ -41,7 +41,7 @@ This is used in PLMD::Function and PLMD::Bias
 */
 
 class ActionWithArguments : public virtual Action {
-friend class ActionWithValue;
+  friend class ActionWithValue;
 private:
   bool allrankzero;
   std::vector<Value*> arguments;
@@ -117,18 +117,18 @@ Value* ActionWithArguments::getPntrToArgument( const unsigned n ) const {
 
 inline
 unsigned ActionWithArguments::getNumberOfScalarArguments() const {
-  unsigned nscalars=0; 
-  for(unsigned i=0;i<arguments.size();++i) nscalars += arguments[i]->getNumberOfValues( getLabel() );
+  unsigned nscalars=0;
+  for(unsigned i=0; i<arguments.size(); ++i) nscalars += arguments[i]->getNumberOfValues( getLabel() );
   return nscalars;
 }
 
 inline
 double ActionWithArguments::getArgumentScalar(const unsigned n) const {
   unsigned nt = 0, nn = 0, j=0;
-  for(unsigned i=0;i<arguments.size();++i){
-     nt += arguments[i]->getNumberOfValues( getLabel() );
-     if( n<nt ){ j=i; break ; }
-     nn += arguments[i]->getNumberOfValues( getLabel() );
+  for(unsigned i=0; i<arguments.size(); ++i) {
+    nt += arguments[i]->getNumberOfValues( getLabel() );
+    if( n<nt ) { j=i; break ; }
+    nn += arguments[i]->getNumberOfValues( getLabel() );
   }
   return arguments[j]->get( n - nn );
 }
@@ -166,7 +166,7 @@ const std::vector<Value*> & ActionWithArguments::getArguments() const {
 
 inline
 bool ActionWithArguments::mustBeTreatedAsDistinctArguments() const {
- return (done_over_stream || getNumberOfArguments()>1);
+  return (done_over_stream || getNumberOfArguments()>1);
 }
 
 }

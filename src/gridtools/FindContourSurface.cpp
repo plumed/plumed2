@@ -150,8 +150,8 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   }
   if( n!=(getPntrToArgument(0)->getRank()-1) ) error("output of grid is not understood");
 
-  std::vector<bool> ipbc( gridobject.getDimension()-1 ); 
-  for(unsigned i=0;i<gdirs.size();++i) ipbc[i] = gridobject.isPeriodic(gdirs[i]);
+  std::vector<bool> ipbc( gridobject.getDimension()-1 );
+  for(unsigned i=0; i<gdirs.size(); ++i) ipbc[i] = gridobject.isPeriodic(gdirs[i]);
   gridcoords.setup( "flat", ipbc, 0, 0.0 );
 
   // Now add a value
@@ -183,39 +183,39 @@ void FindContourSurface::finishOutputSetup() {
 }
 
 void FindContourSurface::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                                            std::vector<std::string>& max, std::vector<unsigned>& nbin,
-                                            std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
+    std::vector<std::string>& max, std::vector<unsigned>& nbin,
+    std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
   bool isdists=dumpcube; double units=1.0; gtype="flat";
-  for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i){ 
-      if( gnames[i].find(".")==std::string::npos ){ isdists=false; break; }
-      std::size_t dot = gnames[i].find("."); std::string name = gnames[i].substr(dot+1);
-      if( name!="x" && name!="y" && name!="z" ){ isdists=false; break; }
+  for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
+    if( gnames[i].find(".")==std::string::npos ) { isdists=false; break; }
+    std::size_t dot = gnames[i].find("."); std::string name = gnames[i].substr(dot+1);
+    if( name!="x" && name!="y" && name!="z" ) { isdists=false; break; }
   }
   if( isdists ) {
-      if( plumed.getAtoms().usingNaturalUnits() ) units = 1.0/0.5292;
-      else units = plumed.getAtoms().getUnits().getLength()/.05929;
+    if( plumed.getAtoms().usingNaturalUnits() ) units = 1.0/0.5292;
+    else units = plumed.getAtoms().getUnits().getLength()/.05929;
   }
   std::vector<unsigned> nn( gridcoords.getNbin( false ) );
-  for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) {
-      argn[i] = gnames[i];
-      double gmin, gmax;
-      if( gridobject.getMin().size()>0 ) {
-          Tools::convert( gridcoords.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
-          Tools::convert( gridcoords.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );
-      }
-      if( gridcoords.getGridSpacing().size()>0 ) spacing[i]=units*gridcoords.getGridSpacing()[i];
-      nbin[i]=nn[i]; pbc[i]=gridcoords.isPeriodic(i);
-  }  
-} 
+  for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
+    argn[i] = gnames[i];
+    double gmin, gmax;
+    if( gridobject.getMin().size()>0 ) {
+      Tools::convert( gridcoords.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
+      Tools::convert( gridcoords.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );
+    }
+    if( gridcoords.getGridSpacing().size()>0 ) spacing[i]=units*gridcoords.getGridSpacing()[i];
+    nbin[i]=nn[i]; pbc[i]=gridcoords.isPeriodic(i);
+  }
+}
 
 void FindContourSurface::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
   gridcoords.getGridPointCoordinates( ind, indices, coords );
 }
 
-void FindContourSurface::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const { 
+void FindContourSurface::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const {
   if( coords.size()!=gridobject.getDimension() ) coords.resize( gridobject.getDimension() );
   std::vector<double> point( gridcoords.getDimension() ); gridcoords.getGridPointCoordinates( ind, point );
-  for(unsigned i=0;i<gdirs.size();++i) coords[gdirs[i]]=point[i]; coords[dir_n] = getPntrToOutput(0)->get(ind);
+  for(unsigned i=0; i<gdirs.size(); ++i) coords[gdirs[i]]=point[i]; coords[dir_n] = getPntrToOutput(0)->get(ind);
 }
 
 unsigned FindContourSurface::getNumberOfDerivatives() const {
@@ -303,7 +303,7 @@ void FindContourSurface::performTask( const unsigned& current, MultiValue& myval
 }
 
 void FindContourSurface::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-                                                 const unsigned& bufstart, std::vector<double>& buffer ) const {
+    const unsigned& bufstart, std::vector<double>& buffer ) const {
   unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
   unsigned valout = getPntrToOutput(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
 }

@@ -85,13 +85,13 @@ public:
 PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE")
 PLUMED_REGISTER_SHORTCUT(VolumeInEnvelope,"INENVELOPE")
 
-void VolumeInEnvelope::shortcutKeywords( Keywords& keys ){
+void VolumeInEnvelope::shortcutKeywords( Keywords& keys ) {
   ActionVolume::shortcutKeywords( keys );
 }
 
 void VolumeInEnvelope::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions ){
+                                       const std::map<std::string,std::string>& keys,
+                                       std::vector<std::vector<std::string> >& actions ) {
   ActionVolume::expandShortcut( lab, words, keys, actions );
 }
 

@@ -27,8 +27,8 @@ namespace PLMD {
 namespace gridtools {
 
 void ActionWithInputGrid::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); 
-  ActionWithValue::registerKeywords( keys ); 
+  Action::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.use("ARG");
 }
 
@@ -45,7 +45,7 @@ ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
   std::vector<std::string> argn( dimension ), min( dimension ), max( dimension ); std::string gtype;
   std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
   (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
-  if( gtype=="flat" ) gridobject.setup( "flat", ipbc, 0, 0.0 ); 
+  if( gtype=="flat" ) gridobject.setup( "flat", ipbc, 0, 0.0 );
   else if( gtype=="fibonacci" ) gridobject.setup( "fibonacci", ipbc, nbin[0], spacing[0] );
   else plumed_merror("unknown grid type");
 }
@@ -60,15 +60,15 @@ double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<do
   std::vector<double> dder(dimension);
 
   std::vector<unsigned> nindices(dimension);
-  std::vector<unsigned> indices(dimension); gridobject.getIndices( x, indices ); 
+  std::vector<unsigned> indices(dimension); gridobject.getIndices( x, indices );
   std::vector<unsigned> neigh; gridobject.getSplineNeighbors( gridobject.getIndex(indices), neigh );
   std::vector<double> xfloor(dimension); gridobject.getGridPointCoordinates( gridobject.getIndex(x), nindices, xfloor );
 
   // loop over neighbors
   for(unsigned int ipoint=0; ipoint<neigh.size(); ++ipoint) {
-    double grid=getFunctionValue( neigh[ipoint] ); 
+    double grid=getFunctionValue( neigh[ipoint] );
     for(unsigned j=0; j<dimension; ++j) dder[j] = getPntrToArgument(0)->getGridDerivative( neigh[ipoint], j );
-    
+
     gridobject.getIndices( neigh[ipoint], nindices );
     double ff=1.0;
     for(unsigned j=0; j<dimension; ++j) {
@@ -98,14 +98,14 @@ double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<do
 
 void ActionWithInputGrid::doTheCalculation() {
   if( firststep ) {
-      if( gridobject.getGridType()=="flat" ) {
-          unsigned dimension = getPntrToArgument(0)->getRank();
-          std::vector<std::string> argn( dimension ), min( dimension ), max( dimension ); std::string gtype;
-          std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
-          (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
-          gridobject.setBounds( min, max, nbin, spacing ); 
-      }
-      firststep=false; finishOutputSetup();
+    if( gridobject.getGridType()=="flat" ) {
+      unsigned dimension = getPntrToArgument(0)->getRank();
+      std::vector<std::string> argn( dimension ), min( dimension ), max( dimension ); std::string gtype;
+      std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
+      (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
+      gridobject.setBounds( min, max, nbin, spacing );
+    }
+    firststep=false; finishOutputSetup();
   }
   runAllTasks();
   jobsAfterLoop();

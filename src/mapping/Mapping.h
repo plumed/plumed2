@@ -15,7 +15,7 @@
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU Lesser General Public License for more details.
-  
+
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -36,13 +36,13 @@ class Mapping :
   public ActionWithArguments,
   public ActionWithValue
 {
-friend class GeometricPath;
+  friend class GeometricPath;
 private:
 /// The forces on each of the derivatives (used in apply)
   std::vector<double> forcesToApply;
 protected:
 /// Are we calculating squared distances
-  bool squared; 
+  bool squared;
 /// This holds all the reference information
   std::vector<ReferenceConfiguration*> myframes;
 public:
@@ -70,7 +70,7 @@ public:
   double calculateDistanceFromReference( const unsigned& current, ReferenceValuePack& mypack ) const ;
 /// Calculate the distance between the reference configuration and this particular point
   double calculateDistanceBetweenReferenceAndThisPoint( const unsigned& current, const std::vector<Vector>& pos,
-                                                        const std::vector<double>& args, ReferenceValuePack& mypack ) const ;
+      const std::vector<double>& args, ReferenceValuePack& mypack ) const ;
 /// Project the displacement of a pack on a vector
   double projectDisplacementOnVector( const unsigned & iframe, const Direction& dir, ReferenceValuePack& mypack ) const ;
 /// Extract the vector connecting this point and the reference point

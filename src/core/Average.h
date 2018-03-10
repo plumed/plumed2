@@ -28,9 +28,9 @@
 namespace PLMD {
 
 class Average :
-public ActionPilot,
-public ActionWithValue,
-public ActionWithArguments {
+  public ActionPilot,
+  public ActionWithValue,
+  public ActionWithArguments {
 private:
   enum {t,f,ndata} normalization;
   bool firststep, clearnextstep;
@@ -39,11 +39,11 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
-  void clearDerivatives( const bool& force=false ){}
+  void clearDerivatives( const bool& force=false ) {}
   unsigned getNumberOfDerivatives() const ;
   bool allowComponentsAndValue() const { return true; }
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                             std::vector<std::string>& max, std::vector<unsigned>& nbin, 
+                             std::vector<std::string>& max, std::vector<unsigned>& nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;

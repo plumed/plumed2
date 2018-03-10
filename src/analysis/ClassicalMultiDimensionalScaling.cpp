@@ -236,7 +236,7 @@ void ClassicalMultiDimensionalScaling::analyzeLandmarks() {
   // Output the embedding in plumed format
   if( efilename!="dont output") {
     OFile afile; afile.link(*this); afile.setBackupString("analysis");
-    afile.open( efilename.c_str() ); 
+    afile.open( efilename.c_str() );
     std::string descr2, descr="DESCRIPTION: results from classical mds analysis performed at time " + getOutputFormat() +"\n";
     afile.printf(descr.c_str(), getTime() );
     if(getOutputFormat().find("-")!=std::string::npos) {
@@ -249,9 +249,9 @@ void ClassicalMultiDimensionalScaling::analyzeLandmarks() {
       descr2="%s=%-" + getOutputFormat().substr(psign+1);
     }
     for(unsigned i=0; i<data.size(); ++i) {
-        afile.printf(descr.c_str(), data[i]->getWeight(), propnames[0].c_str(), projections(i,0) );
-        for(unsigned j=1; j<propnames.size(); ++j) afile.printf(descr2.c_str(), propnames[j].c_str(), projections(i,j));
-        afile.printf("\n"); data[i]->print( afile, getOutputFormat(), atoms.getUnits().getLength()/0.1 );
+      afile.printf(descr.c_str(), data[i]->getWeight(), propnames[0].c_str(), projections(i,0) );
+      for(unsigned j=1; j<propnames.size(); ++j) afile.printf(descr2.c_str(), propnames[j].c_str(), projections(i,j));
+      afile.printf("\n"); data[i]->print( afile, getOutputFormat(), atoms.getUnits().getLength()/0.1 );
     }
     afile.close();
   }

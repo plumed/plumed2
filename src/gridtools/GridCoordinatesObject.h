@@ -85,7 +85,7 @@ public:
   void getGridPointCoordinates( const unsigned&, std::vector<double>& ) const ;
   void getGridPointCoordinates( const unsigned&, std::vector<unsigned>&, std::vector<double>& ) const ;
 /// Create a coordinate that has this value of the grid
-  void putCoordinateAtValue( const unsigned& , const double& , std::vector<double>& ) const ;
+  void putCoordinateAtValue( const unsigned&, const double&, std::vector<double>& ) const ;
 /// Get the dimensionality of the function
   unsigned getDimension() const ;
 /// Is the grid periodic in the ith direction

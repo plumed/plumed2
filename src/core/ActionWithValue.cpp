@@ -75,11 +75,11 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
 {
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
   if(numericalDerivatives) log.printf("  using numerical derivatives\n");
-  if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial); 
+  if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
   else serial=true;
-  if( keywords.exists("TIMINGS") ){
-      parseFlag("TIMINGS",timers);
-      if( timers ){ stopwatch.start(); stopwatch.pause(); }
+  if( keywords.exists("TIMINGS") ) {
+    parseFlag("TIMINGS",timers);
+    if( timers ) { stopwatch.start(); stopwatch.pause(); }
   }
 }
 
@@ -94,45 +94,45 @@ ActionWithValue::~ActionWithValue() {
 
 ActionWithValue* ActionWithValue::getActionThatCalculates() {
   // Return this if we have no dependencies
-  if( !action_to_do_before ) return this; 
+  if( !action_to_do_before ) return this;
   // Recursively go through actiosn before
   return action_to_do_before->getActionThatCalculates();
 }
 
 void ActionWithValue::getAllActionLabelsInChain( std::vector<std::string>& mylabels ) const {
   bool found = false ;
-  for(unsigned i=0;i<mylabels.size();++i){
-      if( getLabel()==mylabels[i] ){ found=true; }
+  for(unsigned i=0; i<mylabels.size(); ++i) {
+    if( getLabel()==mylabels[i] ) { found=true; }
   }
   if( !found ) mylabels.push_back( getLabel() );
   if( action_to_do_after ) action_to_do_after->getAllActionLabelsInChain( mylabels );
 }
 
 bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act ) {
-  if( action_to_do_after ){ bool state=action_to_do_after->addActionToChain( alabels, act ); return state; }
+  if( action_to_do_after ) { bool state=action_to_do_after->addActionToChain( alabels, act ); return state; }
 
   // Check action is not already in chain
   std::vector<std::string> mylabels; getActionThatCalculates()->getAllActionLabelsInChain( mylabels );
-  for(unsigned i=0;i<mylabels.size();++i){
-      if( act->getLabel()==mylabels[i] ) return true; 
+  for(unsigned i=0; i<mylabels.size(); ++i) {
+    if( act->getLabel()==mylabels[i] ) return true;
   }
 
   // Check that everything that is required has been calculated
-  for(unsigned i=0;i<alabels.size();++i){
-      bool found=false;
-      for(unsigned j=0;j<mylabels.size();++j){
-          if( alabels[i]==mylabels[j] ){ found=true; break; }
-      } 
-      if( !found ){
-          ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( alabels[i] );
-          bool storingall=true;
-          for(unsigned j=0;j<av->getNumberOfComponents();++j){
-              if( !(av->getPntrToOutput(j))->storedata ) storingall=false;
-          }
-          if( !storingall ) return false; 
+  for(unsigned i=0; i<alabels.size(); ++i) {
+    bool found=false;
+    for(unsigned j=0; j<mylabels.size(); ++j) {
+      if( alabels[i]==mylabels[j] ) { found=true; break; }
+    }
+    if( !found ) {
+      ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( alabels[i] );
+      bool storingall=true;
+      for(unsigned j=0; j<av->getNumberOfComponents(); ++j) {
+        if( !(av->getPntrToOutput(j))->storedata ) storingall=false;
       }
+      if( !storingall ) return false;
+    }
   }
-  action_to_do_after=act; act->addDependency( this ); act->action_to_do_before=this; 
+  action_to_do_after=act; act->addDependency( this ); act->action_to_do_before=this;
   return true;
 }
 
@@ -141,10 +141,10 @@ void ActionWithValue::clearInputForces() {
 }
 
 void ActionWithValue::clearDerivatives( const bool& force ) {
-  // This ensures we do not clear derivatives calculated in a chain until the next time the first 
+  // This ensures we do not clear derivatives calculated in a chain until the next time the first
   // action in the chain is called
   if( !force && action_to_do_before ) return ;
-  unsigned nt = OpenMP::getGoodNumThreads(values); 
+  unsigned nt = OpenMP::getGoodNumThreads(values);
   #pragma omp parallel num_threads(nt)
   {
     #pragma omp for
@@ -302,7 +302,7 @@ Value* ActionWithValue::getPntrToOutput( const unsigned& ind ) const {
   return values[ind];
 }
 
-Value* ActionWithValue::getPntrToComponent( const std::string& name ){
+Value* ActionWithValue::getPntrToComponent( const std::string& name ) {
   int kk=getComponent(name);
   return values[kk].get();
 }
@@ -312,51 +312,51 @@ Value* ActionWithValue::getPntrToComponent( int n ) {
   return values[n].get();
 }
 
-void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args ){
+void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args ) {
   // Check for streams
-  unsigned nstr=0; for(unsigned i=0;i<values.size();++i){ if( values[i]->getRank()>0 ) nstr++; }
+  unsigned nstr=0; for(unsigned i=0; i<values.size(); ++i) { if( values[i]->getRank()>0 ) nstr++; }
 
-  if( mystr=="" || mystr==getLabel() ){
-      // Retrieve value with name of action
-      if( values[0]->name!=getLabel() ) myuser->error("action " + getLabel() + " does not have a value");
-      // args.push_back( values[0] ); 
-      values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, "" ); 
-  } else if( mystr==getLabel() + ".*" ){
-      // Retrieve all scalar values
-      if( !action_to_do_after ) retrieveAllScalarValuesInLoop( myuser->getLabel(), nargs, args );  
-      if( args.size()==nargs && actionRegister().checkForShortcut(getName()) ) {  
-          Keywords skeys; actionRegister().getShortcutKeywords( getName(), skeys );
-          std::vector<std::string> out_comps( skeys.getAllOutputComponents() );
-          for(unsigned i=0;i<out_comps.size();++i){
-              std::string keyname; bool donumtest = skeys.getKeywordForThisOutput( out_comps[i], keyname );
-              if( donumtest ) {
-                  if( skeys.numbered( keyname ) ){
-                      for(unsigned j=1;;++j){
-                          std::string numstr; Tools::convert( j, numstr );
-                          ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] + numstr );
-                          if( !action ) break;
-                          (action->getPntrToValue())->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
-                      }
-                  }
-              } 
-              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] );
-              if( action ) (action->getPntrToValue())->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
+  if( mystr=="" || mystr==getLabel() ) {
+    // Retrieve value with name of action
+    if( values[0]->name!=getLabel() ) myuser->error("action " + getLabel() + " does not have a value");
+    // args.push_back( values[0] );
+    values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
+  } else if( mystr==getLabel() + ".*" ) {
+    // Retrieve all scalar values
+    if( !action_to_do_after ) retrieveAllScalarValuesInLoop( myuser->getLabel(), nargs, args );
+    if( args.size()==nargs && actionRegister().checkForShortcut(getName()) ) {
+      Keywords skeys; actionRegister().getShortcutKeywords( getName(), skeys );
+      std::vector<std::string> out_comps( skeys.getAllOutputComponents() );
+      for(unsigned i=0; i<out_comps.size(); ++i) {
+        std::string keyname; bool donumtest = skeys.getKeywordForThisOutput( out_comps[i], keyname );
+        if( donumtest ) {
+          if( skeys.numbered( keyname ) ) {
+            for(unsigned j=1;; ++j) {
+              std::string numstr; Tools::convert( j, numstr );
+              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] + numstr );
+              if( !action ) break;
+              (action->getPntrToValue())->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
+            }
           }
-      } 
-  } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
-      // Retrieve value with specific name
-      copyOutput( mystr )->interpretDataRequest( myuser->getLabel(), nargs, args, "" ); 
-  } else {
-      std::size_t dot1 = mystr.find_first_of('.'); std::string thelab = mystr.substr(0,dot1); 
-      plumed_assert( thelab==getLabel() ); std::string rest = mystr.substr(dot1+1); 
-      if( rest.find_first_of('.')==std::string::npos ){
-         plumed_assert( values.size()==1 ); plumed_assert( values[0]->getRank()>0 && values[0]->getName()==getLabel() );
-         values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, rest ); 
-      } else {
-         std::size_t dot2 = rest.find_first_of('.'); std::string thecomp = rest.substr(0,dot2);
-         if( !exists( thelab + "." + thecomp ) ) myuser->error("could not find component with label " + thelab + "." + thecomp );
-         getPntrToComponent( thecomp )->interpretDataRequest( myuser->getLabel(), nargs, args, rest.substr(dot2+1) );
+        }
+        ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] );
+        if( action ) (action->getPntrToValue())->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
       }
+    }
+  } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
+    // Retrieve value with specific name
+    copyOutput( mystr )->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
+  } else {
+    std::size_t dot1 = mystr.find_first_of('.'); std::string thelab = mystr.substr(0,dot1);
+    plumed_assert( thelab==getLabel() ); std::string rest = mystr.substr(dot1+1);
+    if( rest.find_first_of('.')==std::string::npos ) {
+      plumed_assert( values.size()==1 ); plumed_assert( values[0]->getRank()>0 && values[0]->getName()==getLabel() );
+      values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, rest );
+    } else {
+      std::size_t dot2 = rest.find_first_of('.'); std::string thecomp = rest.substr(0,dot2);
+      if( !exists( thelab + "." + thecomp ) ) myuser->error("could not find component with label " + thelab + "." + thecomp );
+      getPntrToComponent( thecomp )->interpretDataRequest( myuser->getLabel(), nargs, args, rest.substr(dot2+1) );
+    }
   }
 }
 
@@ -365,20 +365,20 @@ void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
   plumed_assert( fullTaskList.size()==taskFlags.size() );
 }
 
-void ActionWithValue::selectActiveTasks( std::vector<unsigned>& tflags ){
+void ActionWithValue::selectActiveTasks( std::vector<unsigned>& tflags ) {
   buildCurrentTaskList( tflags );
   if( action_to_do_after ) action_to_do_after->selectActiveTasks( tflags );
 }
 
 void ActionWithValue::runAllTasks() {
-// Skip this if this is done elsewhere 
+// Skip this if this is done elsewhere
   if( action_to_do_before ) return;
 
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
 
-  // Build the list of active tasks 
+  // Build the list of active tasks
   taskFlags.assign(taskFlags.size(),0); selectActiveTasks( taskFlags ); nactive_tasks = 0;
   for(unsigned i=0; i<fullTaskList.size(); ++i) {
     if( taskFlags[i]>0 ) nactive_tasks++;
@@ -399,7 +399,7 @@ void ActionWithValue::runAllTasks() {
   }
 
   // Get the total number of streamed quantities that we need
-  unsigned nquantities = 0, ncols=0, nmatrices=0; 
+  unsigned nquantities = 0, ncols=0, nmatrices=0;
   getNumberOfStreamedQuantities( nquantities, ncols, nmatrices );
   setupVirtualAtomStashes( nquantities );
   // Get size for buffer
@@ -455,8 +455,8 @@ void ActionWithValue::runAllTasks() {
 }
 
 bool ActionWithValue::checkForGrids() const {
-  for(unsigned i=0;i<values.size();++i) {
-      if( values[i]->getRank()>0 && values[i]->hasDerivatives() ) return true;
+  for(unsigned i=0; i<values.size(); ++i) {
+    if( values[i]->getRank()>0 && values[i]->hasDerivatives() ) return true;
   }
   if( action_to_do_after ) return action_to_do_after->checkForGrids();
   return false;
@@ -464,12 +464,12 @@ bool ActionWithValue::checkForGrids() const {
 
 void ActionWithValue::getNumberOfStreamedDerivatives( unsigned& nderivatives ) const {
   unsigned nnd=0;
-  if( !noderiv ){  
-      nnd = getNumberOfDerivatives(); 
+  if( !noderiv ) {
+    nnd = getNumberOfDerivatives();
   } else {
-      for(unsigned i=0;i<values.size();++i) {
-          if( values[i]->getRank()>0 && values[i]->hasDerivatives() ){ nnd = getNumberOfDerivatives(); break; }
-      }
+    for(unsigned i=0; i<values.size(); ++i) {
+      if( values[i]->getRank()>0 && values[i]->hasDerivatives() ) { nnd = getNumberOfDerivatives(); break; }
+    }
   }
   if( nnd>nderivatives ) nderivatives = nnd;
   if( action_to_do_after ) action_to_do_after->getNumberOfStreamedDerivatives( nderivatives );
@@ -485,281 +485,281 @@ void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned
   const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
   if( aa ) aa->getNumberOfStashedInputArguments( nquants );
 
-  for(unsigned i=0;i<values.size();++i){ 
-     if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ){ 
-         if( values[i]->getShape()[1]>ncols ){ ncols = values[i]->getShape()[1]; }
-         values[i]->matpos=nmat; nmat++; 
-     } else if( values[i]->getRank()==1 && values[i]->columnsums ) {
-         values[i]->matpos=nmat; nmat++;
-     }
-     values[i]->streampos=nquants; nquants++; 
+  for(unsigned i=0; i<values.size(); ++i) {
+    if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ) {
+      if( values[i]->getShape()[1]>ncols ) { ncols = values[i]->getShape()[1]; }
+      values[i]->matpos=nmat; nmat++;
+    } else if( values[i]->getRank()==1 && values[i]->columnsums ) {
+      values[i]->matpos=nmat; nmat++;
+    }
+    values[i]->streampos=nquants; nquants++;
   }
   if( action_to_do_after ) action_to_do_after->getNumberOfStreamedQuantities( nquants, ncols, nmat );
 }
 
-void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ){
-  for(unsigned i=0;i<values.size();++i){
-      values[i]->bufstart=bufsize; 
-      if( values[i]->getRank()==0 && values[i]->hasDerivatives() ) bufsize += 1 + values[i]->getNumberOfDerivatives();
-      else if( values[i]->getRank()==0 ) bufsize += 1;
-      else if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ) bufsize += values[i]->getSize(); 
+void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ) {
+  for(unsigned i=0; i<values.size(); ++i) {
+    values[i]->bufstart=bufsize;
+    if( values[i]->getRank()==0 && values[i]->hasDerivatives() ) bufsize += 1 + values[i]->getNumberOfDerivatives();
+    else if( values[i]->getRank()==0 ) bufsize += 1;
+    else if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ) bufsize += values[i]->getSize();
   }
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
 }
 
-void ActionWithValue::prepareForTasks(){
+void ActionWithValue::prepareForTasks() {
   if( action_to_do_after ) action_to_do_after->prepareForTasks();
 }
 
 void ActionWithValue::runTask( const std::string& controller, const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {
   // Do matrix element task
-  bool wasperformed=false; myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno ); 
+  bool wasperformed=false; myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno );
   if( isActive() ) wasperformed=performTask( controller, current, colno, myvals );
   const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
-  if( aa ){
-      if( actionInChain() ) { 
-          // Now check if the task takes a matrix as input - if it does do it
-          bool do_this_task = ((aa->getPntrToArgument(0))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() );
+  if( aa ) {
+    if( actionInChain() ) {
+      // Now check if the task takes a matrix as input - if it does do it
+      bool do_this_task = ((aa->getPntrToArgument(0))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() );
 #ifdef DNDEBUG
-          if( do_this_task ){
-              for(unsigned i=1;i<aa->getNumberOfArguments();++i){
-                  plumed_dbg_assert( (aa->getPntrToArgument(i))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() ); 
-              }
-          }
-#endif
-          if( do_this_task && isActive() ){ myvals.vector_call=false; myvals.setTaskIndex(task_index); performTask( current, myvals ); }
+      if( do_this_task ) {
+        for(unsigned i=1; i<aa->getNumberOfArguments(); ++i) {
+          plumed_dbg_assert( (aa->getPntrToArgument(i))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() );
+        }
       }
+#endif
+      if( do_this_task && isActive() ) { myvals.vector_call=false; myvals.setTaskIndex(task_index); performTask( current, myvals ); }
+    }
   }
 
   // Check if we need to store stuff
-  bool matrix=wasperformed; 
-  for(unsigned i=0;i<values.size();++i){
-      if( values[i]->getRank()!=2 || values[i]->hasDerivatives() ){ matrix=false; break; }
+  bool matrix=wasperformed;
+  for(unsigned i=0; i<values.size(); ++i) {
+    if( values[i]->getRank()!=2 || values[i]->hasDerivatives() ) { matrix=false; break; }
   }
-  if( matrix ) {  
-      unsigned col_stash_index = colno; if( colno>=getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
-      for(unsigned i=0;i<values.size();++i){
-          if( values[i]->hasForce ) { 
-              unsigned sind = values[i]->streampos, matindex = values[i]->getPositionInMatrixStash();
-              double fforce = values[i]->getForce( myvals.getTaskIndex()*getFullNumberOfTasks() + col_stash_index );
-              for(unsigned j=0;j<myvals.getNumberActive(sind);++j) {
-                  unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
-              }
-          } else if( values[i]->storedata ) myvals.stashMatrixElement( values[i]->getPositionInMatrixStash(), col_stash_index, myvals.get( values[i]->getPositionInStream() ) );
-      }
+  if( matrix ) {
+    unsigned col_stash_index = colno; if( colno>=getFullNumberOfTasks() ) col_stash_index = colno - getFullNumberOfTasks();
+    for(unsigned i=0; i<values.size(); ++i) {
+      if( values[i]->hasForce ) {
+        unsigned sind = values[i]->streampos, matindex = values[i]->getPositionInMatrixStash();
+        double fforce = values[i]->getForce( myvals.getTaskIndex()*getFullNumberOfTasks() + col_stash_index );
+        for(unsigned j=0; j<myvals.getNumberActive(sind); ++j) {
+          unsigned kindex = myvals.getActiveIndex(sind,j); myvals.addMatrixForce( matindex, kindex, fforce*myvals.getDerivative(sind,kindex ) );
+        }
+      } else if( values[i]->storedata ) myvals.stashMatrixElement( values[i]->getPositionInMatrixStash(), col_stash_index, myvals.get( values[i]->getPositionInStream() ) );
+    }
   }
-  
+
   // Now continue on with the stream
   if( action_to_do_after ) action_to_do_after->runTask( controller, task_index, current, colno, myvals );
 }
 
 void ActionWithValue::runTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
   if( isActive() ) {
-      myvals.setTaskIndex(task_index); myvals.vector_call=true; performTask( current, myvals ); 
-  } 
+    myvals.setTaskIndex(task_index); myvals.vector_call=true; performTask( current, myvals );
+  }
   if( action_to_do_after ) action_to_do_after->runTask( task_index, current, myvals );
 }
 
 void ActionWithValue::clearMatrixElements( MultiValue& myvals ) const {
   if( isActive() ) {
-      for(unsigned i=0;i<values.size();++i){
-          if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ) myvals.clear( values[i]->getPositionInStream() ); 
-      }
+    for(unsigned i=0; i<values.size(); ++i) {
+      if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ) myvals.clear( values[i]->getPositionInStream() );
+    }
   }
   if( action_to_do_after ) action_to_do_after->clearMatrixElements( myvals );
 }
 
 void ActionWithValue::rerunTask( const unsigned& task_index, MultiValue& myvals ) const {
   if( !action_to_do_before ) {
-      unsigned ncol=0, nmat=0, nquantities = 0; getNumberOfStreamedQuantities( nquantities, ncol, nmat ); 
-      unsigned nderivatives = 0; getNumberOfStreamedDerivatives( nderivatives );
-      if( myvals.getNumberOfValues()!=nquantities || myvals.getNumberOfDerivatives()!=nderivatives ) myvals.resize( nquantities, nderivatives, ncol, nmat );
-      runTask( task_index, fullTaskList[task_index], myvals ); return;
+    unsigned ncol=0, nmat=0, nquantities = 0; getNumberOfStreamedQuantities( nquantities, ncol, nmat );
+    unsigned nderivatives = 0; getNumberOfStreamedDerivatives( nderivatives );
+    if( myvals.getNumberOfValues()!=nquantities || myvals.getNumberOfDerivatives()!=nderivatives ) myvals.resize( nquantities, nderivatives, ncol, nmat );
+    runTask( task_index, fullTaskList[task_index], myvals ); return;
   }
   action_to_do_before->rerunTask( task_index, myvals );
-  
+
 }
 
 void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const {
   if( isActive() ) {
-      for(unsigned i=0;i<values.size();++i){
-          unsigned sind = values[i]->streampos, bufstart = values[i]->bufstart; 
-          if( values[i]->getRank()==0 ){
-               plumed_dbg_massert( bufstart<buffer.size(), "problem in " + getLabel() );
-               buffer[bufstart] += myvals.get(sind);
-               if( values[i]->hasDerivatives() ){
-                   unsigned ndmax = (values[i]->getPntrToAction())->getNumberOfDerivatives();
-                   for(unsigned k=0;k<myvals.getNumberActive(sind);++k){
-                       unsigned kindex = myvals.getActiveIndex(sind,k);
-                       plumed_dbg_massert( bufstart+1+kindex<buffer.size(), "problem in " + getLabel()  );
-                       buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
-                   }
-               }
-          // This looks after grids 
-          } else if( values[i]->hasDerivatives() ) {
-               gatherGridAccumulators( taskCode, myvals, bufstart, buffer );
-          } else if( values[i]->storedata ){
-               // This looks after storing for matrices 
-               if( values[i]->getRank()==2 && !values[i]->hasDeriv ){
-                  unsigned ncols = values[i]->getShape()[1];
-                  unsigned vindex = bufstart + taskCode*ncols; unsigned matind = values[i]->getPositionInMatrixStash();
-                  for(unsigned j=0;j<myvals.getNumberOfStashedMatrixElements(matind);++j){
-                      unsigned jind = myvals.getStashedMatrixIndex(matind,j);
-                      plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[i]->getName() );
-                      buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
-                  } 
-               // This looks after sums over columns of matrix
-               } else if ( values[i]->getRank()==1 && values[i]->columnsums ) {
-                  unsigned vindex = bufstart; unsigned matind = values[i]->getPositionInMatrixStash();
-                  for(unsigned j=0;j<myvals.getNumberOfStashedMatrixElements(matind);++j) {
-                      unsigned jind = myvals.getStashedMatrixIndex(matind,j);
-                      buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind ); 
-                  }
-               // This looks after storing in all other cases 
-               } else {
-                  unsigned nspace=1; if( values[i]->hasDeriv ) nspace=(1 + values[i]->getNumberOfDerivatives() );
-                  unsigned vindex = bufstart + taskCode*nspace; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() ); 
-                  buffer[vindex] += myvals.get(sind);
-               }
-          } 
+    for(unsigned i=0; i<values.size(); ++i) {
+      unsigned sind = values[i]->streampos, bufstart = values[i]->bufstart;
+      if( values[i]->getRank()==0 ) {
+        plumed_dbg_massert( bufstart<buffer.size(), "problem in " + getLabel() );
+        buffer[bufstart] += myvals.get(sind);
+        if( values[i]->hasDerivatives() ) {
+          unsigned ndmax = (values[i]->getPntrToAction())->getNumberOfDerivatives();
+          for(unsigned k=0; k<myvals.getNumberActive(sind); ++k) {
+            unsigned kindex = myvals.getActiveIndex(sind,k);
+            plumed_dbg_massert( bufstart+1+kindex<buffer.size(), "problem in " + getLabel()  );
+            buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
+          }
+        }
+        // This looks after grids
+      } else if( values[i]->hasDerivatives() ) {
+        gatherGridAccumulators( taskCode, myvals, bufstart, buffer );
+      } else if( values[i]->storedata ) {
+        // This looks after storing for matrices
+        if( values[i]->getRank()==2 && !values[i]->hasDeriv ) {
+          unsigned ncols = values[i]->getShape()[1];
+          unsigned vindex = bufstart + taskCode*ncols; unsigned matind = values[i]->getPositionInMatrixStash();
+          for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
+            unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+            plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[i]->getName() );
+            buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
+          }
+          // This looks after sums over columns of matrix
+        } else if ( values[i]->getRank()==1 && values[i]->columnsums ) {
+          unsigned vindex = bufstart; unsigned matind = values[i]->getPositionInMatrixStash();
+          for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
+            unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+            buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
+          }
+          // This looks after storing in all other cases
+        } else {
+          unsigned nspace=1; if( values[i]->hasDeriv ) nspace=(1 + values[i]->getNumberOfDerivatives() );
+          unsigned vindex = bufstart + taskCode*nspace; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() );
+          buffer[vindex] += myvals.get(sind);
+        }
       }
-      // Special method for dealing with centers
-      const ActionWithVirtualAtom* av = dynamic_cast<const ActionWithVirtualAtom*>( this );
-      if( av ) av->gatherForVirtualAtom( myvals, buffer );
+    }
+    // Special method for dealing with centers
+    const ActionWithVirtualAtom* av = dynamic_cast<const ActionWithVirtualAtom*>( this );
+    if( av ) av->gatherForVirtualAtom( myvals, buffer );
   }
 
   if( action_to_do_after ) action_to_do_after->gatherAccumulators( taskCode, myvals, buffer );
 }
 
-void ActionWithValue::retrieveAllScalarValuesInLoop( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ){
-  for(unsigned i=0;i<values.size();++i){
-      if( values[i]->getRank()==0 ){
-          bool found=false;
-          for(unsigned j=0;j<myvals.size();++j){
-              if( values[i]->getName()==myvals[j]->getName() ){ found=true; break; }
-          }
-          if( !found ) values[i]->interpretDataRequest( ulab, nargs, myvals, "" ); 
+void ActionWithValue::retrieveAllScalarValuesInLoop( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
+  for(unsigned i=0; i<values.size(); ++i) {
+    if( values[i]->getRank()==0 ) {
+      bool found=false;
+      for(unsigned j=0; j<myvals.size(); ++j) {
+        if( values[i]->getName()==myvals[j]->getName() ) { found=true; break; }
       }
+      if( !found ) values[i]->interpretDataRequest( ulab, nargs, myvals, "" );
+    }
   }
   if( action_to_do_after ) action_to_do_after->retrieveAllScalarValuesInLoop( ulab, nargs, myvals );
 }
 
-void ActionWithValue::finishComputations( const std::vector<double>& buffer ){
+void ActionWithValue::finishComputations( const std::vector<double>& buffer ) {
   if( isActive() ) {
-      for(unsigned i=0;i<values.size();++i){
-          unsigned bufstart = values[i]->bufstart; 
-          if( values[i]->reset ) values[i]->data.assign( values[i]->data.size(), 0 );
-          if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ){
-              for(unsigned j=0;j<values[i]->getSize();++j) values[i]->add( j, buffer[bufstart+j] ); 
-          }
-          if( !doNotCalculateDerivatives() && values[i]->hasDeriv && values[i]->getRank()==0 ){ 
-              for(unsigned j=0;j<values[i]->getNumberOfDerivatives();++j) values[i]->setDerivative( j, buffer[bufstart+1+j] );
-          }
+    for(unsigned i=0; i<values.size(); ++i) {
+      unsigned bufstart = values[i]->bufstart;
+      if( values[i]->reset ) values[i]->data.assign( values[i]->data.size(), 0 );
+      if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ) {
+        for(unsigned j=0; j<values[i]->getSize(); ++j) values[i]->add( j, buffer[bufstart+j] );
       }
-      transformFinalValueAndDerivatives( buffer );
+      if( !doNotCalculateDerivatives() && values[i]->hasDeriv && values[i]->getRank()==0 ) {
+        for(unsigned j=0; j<values[i]->getNumberOfDerivatives(); ++j) values[i]->setDerivative( j, buffer[bufstart+1+j] );
+      }
+    }
+    transformFinalValueAndDerivatives( buffer );
   }
   if( action_to_do_after ) action_to_do_after->finishComputations( buffer );
 }
 
 bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
-   unsigned type=0;
-   if( values[0]->shape.size()==0 && values[0]->hasDeriv ) type=1;
-   else if( values[0]->hasDeriv ) type=2;
-   else plumed_assert( values[0]->shape.size()>0 );
+  unsigned type=0;
+  if( values[0]->shape.size()==0 && values[0]->hasDeriv ) type=1;
+  else if( values[0]->hasDeriv ) type=2;
+  else plumed_assert( values[0]->shape.size()>0 );
 
 #ifndef DNDEBUG
-   if( type==0 ) {
-       for(unsigned i=0;i<values.size();++i) plumed_dbg_assert( values[i]->shape.size()>0 && !values[i]->hasDeriv );
-   } else if( type==1 && getName()!="DIAGONALIZE" ) {
-       for(unsigned i=0;i<values.size();++i) plumed_dbg_assert( values[i]->shape.size()==0 ); 
-   } else if( type==2 ) {
-       for(unsigned i=0;i<values.size();++i) plumed_dbg_assert( values[i]->shape.size()>0 && values[i]->hasDeriv );
-   } else if( getName()!="DIAGONALIZE" ) {
-       plumed_merror("value type not defined");
-   }
+  if( type==0 ) {
+    for(unsigned i=0; i<values.size(); ++i) plumed_dbg_assert( values[i]->shape.size()>0 && !values[i]->hasDeriv );
+  } else if( type==1 && getName()!="DIAGONALIZE" ) {
+    for(unsigned i=0; i<values.size(); ++i) plumed_dbg_assert( values[i]->shape.size()==0 );
+  } else if( type==2 ) {
+    for(unsigned i=0; i<values.size(); ++i) plumed_dbg_assert( values[i]->shape.size()>0 && values[i]->hasDeriv );
+  } else if( getName()!="DIAGONALIZE" ) {
+    plumed_merror("value type not defined");
+  }
 #endif
-   bool at_least_one_forced=false;
-   if( type==1 ) { 
-       for(unsigned i=0;i<values.size();++i){
-           if( values[i]->applyForce( forces ) ) at_least_one_forced=true;
-       }
-   } else {
-      // Check if there are any forces
-      for(unsigned i=0;i<values.size();++i){
-          if( values[i]->hasForce ) at_least_one_forced=true;
-      } 
-      if( !at_least_one_forced ) return false;
+  bool at_least_one_forced=false;
+  if( type==1 ) {
+    for(unsigned i=0; i<values.size(); ++i) {
+      if( values[i]->applyForce( forces ) ) at_least_one_forced=true;
+    }
+  } else {
+    // Check if there are any forces
+    for(unsigned i=0; i<values.size(); ++i) {
+      if( values[i]->hasForce ) at_least_one_forced=true;
+    }
+    if( !at_least_one_forced ) return false;
 
-      // Get the action that calculates these quantitites
-      ActionWithValue* av = getActionThatCalculates();
-      nactive_tasks = av->nactive_tasks;
-      // Setup MPI parallel loop
-      unsigned stride=comm.Get_size();
-      unsigned rank=comm.Get_rank();
-      if(serial) { stride=1; rank=0; }
+    // Get the action that calculates these quantitites
+    ActionWithValue* av = getActionThatCalculates();
+    nactive_tasks = av->nactive_tasks;
+    // Setup MPI parallel loop
+    unsigned stride=comm.Get_size();
+    unsigned rank=comm.Get_rank();
+    if(serial) { stride=1; rank=0; }
 
-      // Get number of threads for OpenMP
-      unsigned nt=OpenMP::getNumThreads();
-      if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
-      if( nt==0 || no_openmp ) nt=1;
+    // Get number of threads for OpenMP
+    unsigned nt=OpenMP::getNumThreads();
+    if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
+    if( nt==0 || no_openmp ) nt=1;
 
-      // Now determine how big the multivalue needs to be
-      unsigned nderiv=0; av->getNumberOfStreamedDerivatives( nderiv );
-      unsigned nquants=0, ncols=0, nmatrices=0; av->getNumberOfStreamedQuantities( nquants, ncols, nmatrices );
-      #pragma omp parallel num_threads(nt)
-      {
-        std::vector<double> omp_forces;
-        if( nt>1 ) omp_forces.resize( forces.size(), 0.0 );
-        MultiValue myvals( nquants, nderiv, ncols, nmatrices, forces.size() );
+    // Now determine how big the multivalue needs to be
+    unsigned nderiv=0; av->getNumberOfStreamedDerivatives( nderiv );
+    unsigned nquants=0, ncols=0, nmatrices=0; av->getNumberOfStreamedQuantities( nquants, ncols, nmatrices );
+    #pragma omp parallel num_threads(nt)
+    {
+      std::vector<double> omp_forces;
+      if( nt>1 ) omp_forces.resize( forces.size(), 0.0 );
+      MultiValue myvals( nquants, nderiv, ncols, nmatrices, forces.size() );
+      myvals.clearAll();
+
+      #pragma omp for nowait
+      for(unsigned i=rank; i<nactive_tasks; i+=stride) {
+        unsigned itask = av->indexOfTaskInFullList[i];
+        av->runTask( itask, av->partialTaskList[i], myvals );
+
+        // Now get the forces
+        if( nt>1 ) av->gatherForces( itask, myvals, omp_forces );
+        else av->gatherForces( itask, myvals, forces );
+
         myvals.clearAll();
-
-        #pragma omp for nowait
-        for(unsigned i=rank;i<nactive_tasks;i+=stride){
-            unsigned itask = av->indexOfTaskInFullList[i]; 
-            av->runTask( itask, av->partialTaskList[i], myvals );
-
-            // Now get the forces 
-            if( nt>1 ) av->gatherForces( itask, myvals, omp_forces );
-            else av->gatherForces( itask, myvals, forces );
-
-            myvals.clearAll(); 
-            myvals.clearStoredForces();
-        }
-        #pragma omp critical
-        if(nt>1) for(unsigned i=0; i<forces.size(); ++i) forces[i]+=omp_forces[i]; 
+        myvals.clearStoredForces();
       }
-      // MPI Gather on forces
-      if( !serial ) comm.Sum( forces );
-      // And clear all the forces that have been added in one shot
-      av->clearAllForcesInChain();
-   }
+      #pragma omp critical
+      if(nt>1) for(unsigned i=0; i<forces.size(); ++i) forces[i]+=omp_forces[i];
+    }
+    // MPI Gather on forces
+    if( !serial ) comm.Sum( forces );
+    // And clear all the forces that have been added in one shot
+    av->clearAllForcesInChain();
+  }
 
-   return at_least_one_forced;
+  return at_least_one_forced;
 }
 
 void ActionWithValue::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {
-   bool hasforce=false; 
-   for(unsigned i=0;i<values.size();++i) {
-       if( values[i]->hasForce ) { hasforce=true; break; }
-   }
-   if( hasforce && isActive() ) {  
-       for(unsigned k=0;k<values.size();++k) {
-           if( values[k]->hasForce && values[k]->getRank()==2 && !values[k]->hasDeriv ) {
-               unsigned matind = values[k]->getPositionInMatrixStash();
-               for(unsigned j=0;j<forces.size();++j) forces[j] += myvals.getStashedMatrixForce( matind, j ); 
-           } else if( values[k]->getRank()>0 && values[k]->hasForce ) {
-               unsigned sspos = values[k]->streampos; double fforce = values[k]->getForce(itask);
-               for(unsigned j=0;j<myvals.getNumberActive(sspos);++j) {
-                   unsigned jder=myvals.getActiveIndex(sspos, j); forces[jder] += fforce*myvals.getDerivative( sspos, jder );
-               }
-           }
-       }
-   }
-   if( action_to_do_after ) action_to_do_after->gatherForces( itask, myvals, forces );
+  bool hasforce=false;
+  for(unsigned i=0; i<values.size(); ++i) {
+    if( values[i]->hasForce ) { hasforce=true; break; }
+  }
+  if( hasforce && isActive() ) {
+    for(unsigned k=0; k<values.size(); ++k) {
+      if( values[k]->hasForce && values[k]->getRank()==2 && !values[k]->hasDeriv ) {
+        unsigned matind = values[k]->getPositionInMatrixStash();
+        for(unsigned j=0; j<forces.size(); ++j) forces[j] += myvals.getStashedMatrixForce( matind, j );
+      } else if( values[k]->getRank()>0 && values[k]->hasForce ) {
+        unsigned sspos = values[k]->streampos; double fforce = values[k]->getForce(itask);
+        for(unsigned j=0; j<myvals.getNumberActive(sspos); ++j) {
+          unsigned jder=myvals.getActiveIndex(sspos, j); forces[jder] += fforce*myvals.getDerivative( sspos, jder );
+        }
+      }
+    }
+  }
+  if( action_to_do_after ) action_to_do_after->gatherForces( itask, myvals, forces );
 }
 
 void ActionWithValue::clearAllForcesInChain() {
-   clearInputForces(); if( action_to_do_after ) action_to_do_after->clearAllForcesInChain(); 
+  clearInputForces(); if( action_to_do_after ) action_to_do_after->clearAllForcesInChain();
 }
 
 }

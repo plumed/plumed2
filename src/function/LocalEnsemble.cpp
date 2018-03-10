@@ -100,10 +100,10 @@ LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
   log.printf("  averaging over %u replicas.\n", arg_ends[1]-arg_ends[0]);
 }
 
-void LocalEnsemble::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const 
+void LocalEnsemble::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const
 {
   const double fact = 1.0/static_cast<double>( arg_ends[1] - arg_ends[0] );
-  for(unsigned i=0;i<args.size();++i){ addValue( i, fact*args[i], myvals ); addDerivative( i, i, fact, myvals ); }
+  for(unsigned i=0; i<args.size(); ++i) { addValue( i, fact*args[i], myvals ); addDerivative( i, i, fact, myvals ); }
 }
 
 }

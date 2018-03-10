@@ -77,7 +77,7 @@ public:
 /// Remove a shortcut
   void removeShortcut(std::string key);
 /// Check if an action has a shortcut associated with it
-  bool checkForShortcut(std::string action); 
+  bool checkForShortcut(std::string action);
 /// And expand any shortcuts in action input
   std::vector<std::vector<std::string> > expandShortcuts( const unsigned& replica_index, std::vector<std::string>& words );
 /// Create an Action of the type indicated in the options

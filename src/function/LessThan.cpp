@@ -55,7 +55,7 @@ PLUMED_REGISTER_ACTION(LessThan,"LESS_THAN")
 
 void LessThan::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  keys.use("ARG"); 
+  keys.use("ARG");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
@@ -69,8 +69,8 @@ LessThan::LessThan(const ActionOptions&ao):
   Action(ao),
   Function(ao)
 {
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-     if( getPntrToArgument(i)->isPeriodic() ) error("cannot use this function on periodic functions");
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->isPeriodic() ) error("cannot use this function on periodic functions");
   }
 
   string sw,errors;

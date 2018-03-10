@@ -46,8 +46,8 @@ AltMin::AltMin( const ActionOptions& ao ) :
   Action(ao),
   Function(ao)
 {
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-     if( getPntrToArgument(i)->isPeriodic() ) error("MIN is not a meaningful option for periodic variables");
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->isPeriodic() ) error("MIN is not a meaningful option for periodic variables");
   }
   parse("BETA",beta);
   log.printf("  value of beta is %f \n",beta);
@@ -55,36 +55,36 @@ AltMin::AltMin( const ActionOptions& ao ) :
 }
 
 void AltMin::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  if( args.size()==1 ){
-      plumed_dbg_assert( actionInChain() );
-      double val=exp(-beta*args[0]); 
-      // Numerator 
-      addValue( 0, val, myvals ); addDerivative( 0, 0, -beta*val, myvals );
+  if( args.size()==1 ) {
+    plumed_dbg_assert( actionInChain() );
+    double val=exp(-beta*args[0]);
+    // Numerator
+    addValue( 0, val, myvals ); addDerivative( 0, 0, -beta*val, myvals );
   } else {
-      double s=0; std::vector<double> mind( args.size() );
-      for(unsigned i=0;i<args.size();++i){
-          double val = exp(-beta*args[i]); s += val; mind[i] = -beta*val;
+    double s=0; std::vector<double> mind( args.size() );
+    for(unsigned i=0; i<args.size(); ++i) {
+      double val = exp(-beta*args[i]); s += val; mind[i] = -beta*val;
+    }
+    double fval = - std::log( s ) / beta; addValue( 0, fval, myvals );
+    if( !doNotCalculateDerivatives() ) {
+      double pref = -1.0 / (beta*s);
+      for(unsigned i=0; i<args.size(); ++i) {
+        // Derivatives of min
+        addDerivative( 0, i, pref*mind[i], myvals );
       }
-      double fval = - std::log( s ) / beta; addValue( 0, fval, myvals ); 
-      if( !doNotCalculateDerivatives() ){
-          double pref = -1.0 / (beta*s);
-          for(unsigned i=0;i<args.size();++i){
-              // Derivatives of min
-              addDerivative( 0, i, pref*mind[i], myvals );
-          }
-      }
-  }  
+    }
+  }
 }
 
 void AltMin::transformFinalValueAndDerivatives( const std::vector<double>& buf ) {
   if( !actionInChain() || getNumberOfArguments()>1 ) return;
-  Value* val0 = getPntrToComponent(0); double val = val0->get(); 
+  Value* val0 = getPntrToComponent(0); double val = val0->get();
   double fval = -std::log( val ) / beta; val0->set( fval );
-  if( !doNotCalculateDerivatives() ){
-      double pref = -1.0 /(beta*val);
-      for(unsigned j=0;j<val0->getNumberOfDerivatives();++j){ 
-          val0->setDerivative( j, pref*val0->getDerivative(j) );
-      }
+  if( !doNotCalculateDerivatives() ) {
+    double pref = -1.0 /(beta*val);
+    for(unsigned j=0; j<val0->getNumberOfDerivatives(); ++j) {
+      val0->setDerivative( j, pref*val0->getDerivative(j) );
+    }
   }
 }
 

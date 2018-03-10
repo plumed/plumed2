@@ -35,7 +35,7 @@ namespace PLMD {
 namespace analysis {
 
 void Analysis::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); 
+  Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
@@ -49,7 +49,7 @@ void Analysis::registerKeywords( Keywords& keys ) {
   keys.add("hidden","REUSE_DATA_FROM","eventually this will allow you to analyse the same set of data multiple times");
   keys.add("hidden","IGNORE_REWEIGHTING","this allows you to ignore any reweighting factors");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
-  keys.use("RESTART"); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL"); 
+  keys.use("RESTART"); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
 }
 
 Analysis::Analysis(const ActionOptions&ao):
@@ -208,9 +208,9 @@ void Analysis::accumulate() {
   // This is used when we have a full quota of data from the first run
   if( freq>0 && idata==logweights.size() ) return;
   // Get the arguments ready to transfer to reference configuration
-  for(unsigned i=0; i<getNumberOfScalarArguments()-weights.size(); ++i){
-     plumed_dbg_assert( i<current_args.size() );
-     current_args[i]=getArgumentScalar(i);
+  for(unsigned i=0; i<getNumberOfScalarArguments()-weights.size(); ++i) {
+    plumed_dbg_assert( i<current_args.size() );
+    current_args[i]=getArgumentScalar(i);
   }
 
   double lweight=0; for(unsigned i=0; i<weights.size(); ++i) lweight+=weights[i]->get();

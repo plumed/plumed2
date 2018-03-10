@@ -153,7 +153,7 @@ Stats::Stats(const ActionOptions&ao):
   checkRead();
 }
 
-void Stats::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const 
+void Stats::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const
 {
   if(sqdonly) {
 
@@ -171,7 +171,7 @@ void Stats::calculateFunction( const std::vector<double>& args, MultiValue& myva
         addDerivative( 0, i, 2*dev, myvals );
       }
     }
-    if(!components) addValue( 0, nsqd, myvals ); 
+    if(!components) addValue( 0, nsqd, myvals );
 
   } else {
 
@@ -202,10 +202,10 @@ void Stats::calculateFunction( const std::vector<double>& args, MultiValue& myva
     const double slope = num * idev2x;
     const double inter = (scy - slope * scx)/ns;
 
-    addValue(0, nsqd, myvals ); 
-    addValue(1, correlation, myvals ); 
-    addValue(2, slope, myvals ); 
-    addValue(3, inter, myvals ); 
+    addValue(0, nsqd, myvals );
+    addValue(1, correlation, myvals );
+    addValue(2, slope, myvals );
+    addValue(3, inter, myvals );
 
     /* derivatives */
     for(unsigned i=0; i<parameters.size(); ++i) {

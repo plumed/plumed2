@@ -47,7 +47,7 @@ public:
                               std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit CoordinationNumberMoments(const ActionOptions&);
-  void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const ; 
+  void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(CoordinationNumberMoments,"COORDINATION_MOMENTS")
@@ -55,22 +55,22 @@ PLUMED_REGISTER_SHORTCUT(CoordinationNumberMoments,"COORDINATION_MOMENTS")
 
 void CoordinationNumberMoments::shortcutKeywords( Keywords& keys ) {
   SymmetryFunctionBase::shortcutKeywords( keys );
-} 
+}
 
 void CoordinationNumberMoments::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                          const std::map<std::string,std::string>& keys,
-                                          std::vector<std::vector<std::string> >& actions ) {
+    const std::map<std::string,std::string>& keys,
+    std::vector<std::vector<std::string> >& actions ) {
   SymmetryFunctionBase::expandMatrix( true, lab, words, keys, actions );
   std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("COORDINATION_MOMENTS");
   input.push_back("WEIGHT=" + lab + "_mat.w" ); input.push_back("VECTORS1=" + lab + "_mat.x" );
   input.push_back("VECTORS2=" + lab + "_mat.y" ); input.push_back("VECTORS3=" + lab + "_mat.z" );
-  for(unsigned i=1;i<words.size();++i) input.push_back(words[i]); 
-  actions.push_back( input ); 
+  for(unsigned i=1; i<words.size(); ++i) input.push_back(words[i]);
+  actions.push_back( input );
   multicolvar::MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
 }
 
 void CoordinationNumberMoments::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::registerKeywords( keys ); 
+  SymmetryFunctionBase::registerKeywords( keys );
   keys.add("compulsory","R_POWER","the power to which you want to raise the distance");
 }
 

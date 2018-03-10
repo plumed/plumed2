@@ -111,31 +111,31 @@ Combine::Combine(const ActionOptions&ao):
   powers(getNumberOfArguments(),1.0)
 {
   if( !numberedkeys ) {
-     if( getPntrToArgument(0)->getRank()>0 && getNumberOfArguments()>1 ) error("should only specify one non-scalar argument in input to ARG keyword");
- 
-     coefficients.resize( getNumberOfScalarArguments() ); parseVector("COEFFICIENTS",coefficients);
-     if(coefficients.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
-       error("Size of COEFFICIENTS array should be the same as number for arguments");
-  
-     parameters.resize(getNumberOfScalarArguments()); parseVector("PARAMETERS",parameters);
-     if(parameters.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
-       error("Size of PARAMETERS array should be the same as number for arguments");
-  
-     powers.resize(getNumberOfScalarArguments()); parseVector("POWERS",powers);
-     if(powers.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
-       error("Size of POWERS array should be the same as number for arguments");
+    if( getPntrToArgument(0)->getRank()>0 && getNumberOfArguments()>1 ) error("should only specify one non-scalar argument in input to ARG keyword");
+
+    coefficients.resize( getNumberOfScalarArguments() ); parseVector("COEFFICIENTS",coefficients);
+    if(coefficients.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
+      error("Size of COEFFICIENTS array should be the same as number for arguments");
+
+    parameters.resize(getNumberOfScalarArguments()); parseVector("PARAMETERS",parameters);
+    if(parameters.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
+      error("Size of PARAMETERS array should be the same as number for arguments");
+
+    powers.resize(getNumberOfScalarArguments()); parseVector("POWERS",powers);
+    if(powers.size()!=static_cast<unsigned>(getNumberOfScalarArguments()))
+      error("Size of POWERS array should be the same as number for arguments");
   } else {
-     parseVector("COEFFICIENTS",coefficients);
-     if(coefficients.size()!=static_cast<unsigned>(getNumberOfArguments()))
-       error("Size of COEFFICIENTS array should be the same as number for arguments");
+    parseVector("COEFFICIENTS",coefficients);
+    if(coefficients.size()!=static_cast<unsigned>(getNumberOfArguments()))
+      error("Size of COEFFICIENTS array should be the same as number for arguments");
 
-     parseVector("PARAMETERS",parameters);
-     if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments()))
-       error("Size of PARAMETERS array should be the same as number for arguments");
+    parseVector("PARAMETERS",parameters);
+    if(parameters.size()!=static_cast<unsigned>(getNumberOfArguments()))
+      error("Size of PARAMETERS array should be the same as number for arguments");
 
-     parseVector("POWERS",powers);
-     if(powers.size()!=static_cast<unsigned>(getNumberOfArguments()))
-       error("Size of POWERS array should be the same as number for arguments");
+    parseVector("POWERS",powers);
+    if(powers.size()!=static_cast<unsigned>(getNumberOfArguments()))
+      error("Size of POWERS array should be the same as number for arguments");
   }
   parseFlag("NORMALIZE",normalize);
 
@@ -149,53 +149,53 @@ Combine::Combine(const ActionOptions&ao):
   checkRead();
 
   bool allsame=true; double coeff=coefficients[0];
-  for(unsigned i=1;i<coefficients.size(); i++){
-      if( coefficients[i]!=coeff ){ allsame=false; break; }
+  for(unsigned i=1; i<coefficients.size(); i++) {
+    if( coefficients[i]!=coeff ) { allsame=false; break; }
   }
-  if( allsame ){
-      log.printf("  with all coefficients equal to %f\n",coeff);
+  if( allsame ) {
+    log.printf("  with all coefficients equal to %f\n",coeff);
   } else {
-      log.printf("  with coefficients:");
-      for(unsigned i=0; i<coefficients.size(); i++) log.printf(" %f",coefficients[i]);
-      log.printf("\n");
+    log.printf("  with coefficients:");
+    for(unsigned i=0; i<coefficients.size(); i++) log.printf(" %f",coefficients[i]);
+    log.printf("\n");
   }
   allsame=true; double param=parameters[0];
-  for(unsigned i=1;i<parameters.size(); i++){
-      if( parameters[i]!=param ){ allsame=false; break; }
+  for(unsigned i=1; i<parameters.size(); i++) {
+    if( parameters[i]!=param ) { allsame=false; break; }
   }
-  if( allsame ){
-      log.printf("  with all parameters equal to %f\n",param);
+  if( allsame ) {
+    log.printf("  with all parameters equal to %f\n",param);
   } else {
-      log.printf("  with parameters:");
-      for(unsigned i=0; i<parameters.size(); i++) log.printf(" %f",parameters[i]);
-      log.printf("\n");
+    log.printf("  with parameters:");
+    for(unsigned i=0; i<parameters.size(); i++) log.printf(" %f",parameters[i]);
+    log.printf("\n");
   }
   allsame=true; double power=powers[0];
-  for(unsigned i=1;i<powers.size(); i++){
-      if( powers[i]!=power ){ allsame=false; break; }
+  for(unsigned i=1; i<powers.size(); i++) {
+    if( powers[i]!=power ) { allsame=false; break; }
   }
-  if( allsame ){
-      log.printf("  with all powers equal to %f\n",power);
+  if( allsame ) {
+    log.printf("  with all powers equal to %f\n",power);
   } else {
-      log.printf("  and powers:");
-      for(unsigned i=0; i<powers.size(); i++) log.printf(" %f",powers[i]);
-      log.printf("\n");
+    log.printf("  and powers:");
+    for(unsigned i=0; i<powers.size(); i++) log.printf(" %f",powers[i]);
+    log.printf("\n");
   }
 }
 
 void Combine::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   double combine=0.0;
   if( args.size()==1 && !numberedkeys ) {
-      unsigned ind = myvals.getTaskIndex(); plumed_dbg_assert( ind<parameters.size() );
-      double cv = getPntrToArgument(0)->difference( parameters[ind], args[0] );
-      combine = coefficients[ind]*pow(cv,powers[ind]); 
-      addDerivative( 0, 0, coefficients[ind]*powers[ind]*pow(cv,powers[ind]-1.0), myvals ); 
+    unsigned ind = myvals.getTaskIndex(); plumed_dbg_assert( ind<parameters.size() );
+    double cv = getPntrToArgument(0)->difference( parameters[ind], args[0] );
+    combine = coefficients[ind]*pow(cv,powers[ind]);
+    addDerivative( 0, 0, coefficients[ind]*powers[ind]*pow(cv,powers[ind]-1.0), myvals );
   } else {
-      for(unsigned i=0; i<coefficients.size(); ++i) {
-        double cv = difference(i,parameters[i],args[i]);   
-        combine+=coefficients[i]*pow(cv,powers[i]);
-        addDerivative(0, i, coefficients[i]*powers[i]*pow(cv,powers[i]-1.0), myvals );
-      };
+    for(unsigned i=0; i<coefficients.size(); ++i) {
+      double cv = difference(i,parameters[i],args[i]);
+      combine+=coefficients[i]*pow(cv,powers[i]);
+      addDerivative(0, i, coefficients[i]*powers[i]*pow(cv,powers[i]-1.0), myvals );
+    };
   }
   addValue( 0, combine, myvals );
 }

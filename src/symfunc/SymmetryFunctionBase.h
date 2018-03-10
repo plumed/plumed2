@@ -30,9 +30,9 @@
 namespace PLMD {
 namespace symfunc {
 
-class SymmetryFunctionBase : 
-public ActionWithValue,
-public ActionWithArguments
+class SymmetryFunctionBase :
+  public ActionWithValue,
+  public ActionWithArguments
 {
 private:
   bool usecols;
@@ -48,13 +48,13 @@ protected:
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandMatrix( const bool& components, const std::string& lab, const std::vector<std::string>& words,
-                                         const std::map<std::string,std::string>& keys,
-                                         std::vector<std::vector<std::string> >& actions );
+                            const std::map<std::string,std::string>& keys,
+                            std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
-  explicit SymmetryFunctionBase(const ActionOptions&); 
-  bool mustBeTreatedAsDistinctArguments() const ; 
+  explicit SymmetryFunctionBase(const ActionOptions&);
+  bool mustBeTreatedAsDistinctArguments() const ;
   virtual unsigned getNumberOfDerivatives() const ;
-  void calculate(){} 
+  void calculate() {}
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   virtual void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const = 0;
   virtual void updateDerivativeIndices( MultiValue& myvals ) const ;
@@ -76,9 +76,9 @@ unsigned SymmetryFunctionBase::getNumberOfDerivatives() const {
 
 inline
 void SymmetryFunctionBase::addToValue( const unsigned& ival, const double& val, MultiValue& myvals ) const {
-  if( usecols ){ 
-     unsigned col_stash_index = myvals.getSecondTaskIndex(); if( col_stash_index>=getFullNumberOfTasks() ) col_stash_index -= getFullNumberOfTasks(); 
-     myvals.stashMatrixElement( getPntrToOutput(ival)->getPositionInMatrixStash(), col_stash_index, val );
+  if( usecols ) {
+    unsigned col_stash_index = myvals.getSecondTaskIndex(); if( col_stash_index>=getFullNumberOfTasks() ) col_stash_index -= getFullNumberOfTasks();
+    myvals.stashMatrixElement( getPntrToOutput(ival)->getPositionInMatrixStash(), col_stash_index, val );
   } else myvals.addValue( getPntrToOutput(ival)->getPositionInStream(), val );
 }
 
@@ -86,16 +86,16 @@ inline
 void SymmetryFunctionBase::addWeightDerivative( const unsigned& ival, const double& dval, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return;
   if( done_with_matrix_comput ) {
-      unsigned ostrn = getPntrToOutput(ival)->getPositionInStream();
-      unsigned my_weight = getPntrToArgument(0)->getPositionInStream(); 
-      for(unsigned k=0;k<myvals.getNumberActive(my_weight);++k){
-          unsigned kind=myvals.getActiveIndex(my_weight,k); 
-          myvals.addDerivative( ostrn, arg_deriv_starts[0] + kind, dval*myvals.getDerivative( my_weight, kind ) );
-      }
+    unsigned ostrn = getPntrToOutput(ival)->getPositionInStream();
+    unsigned my_weight = getPntrToArgument(0)->getPositionInStream();
+    for(unsigned k=0; k<myvals.getNumberActive(my_weight); ++k) {
+      unsigned kind=myvals.getActiveIndex(my_weight,k);
+      myvals.addDerivative( ostrn, arg_deriv_starts[0] + kind, dval*myvals.getDerivative( my_weight, kind ) );
+    }
   } else {
-      unsigned index = ival*getPntrToArgument(0)->getShape()[1]+myvals.getSymfuncTemporyIndex();
-      unsigned my_w = getPntrToArgument(0)->getPositionInStream();
-      std::vector<double>& tmp_w( myvals.getSymfuncTemporyDerivatives(my_w) ); tmp_w[index]+=dval;
+    unsigned index = ival*getPntrToArgument(0)->getShape()[1]+myvals.getSymfuncTemporyIndex();
+    unsigned my_w = getPntrToArgument(0)->getPositionInStream();
+    std::vector<double>& tmp_w( myvals.getSymfuncTemporyDerivatives(my_w) ); tmp_w[index]+=dval;
   }
 }
 
@@ -103,30 +103,30 @@ inline
 void SymmetryFunctionBase::addVectorDerivatives( const unsigned& ival, const Vector& dvec, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return;
   if( done_with_matrix_comput ) {
-      unsigned ostrn = getPntrToOutput(ival)->getPositionInStream(); 
-      unsigned my_x = getPntrToArgument(1)->getPositionInStream();
-      for(unsigned k=0;k<myvals.getNumberActive(my_x);++k){
-          unsigned kind=myvals.getActiveIndex(my_x,k);
-          myvals.addDerivative( ostrn, arg_deriv_starts[1] + kind, dvec[0]*myvals.getDerivative( my_x, kind ) );
-      }
-      unsigned my_y = getPntrToArgument(2)->getPositionInStream();
-      for(unsigned k=0;k<myvals.getNumberActive(my_y);++k){
-          unsigned kind=myvals.getActiveIndex(my_y,k);
-          myvals.addDerivative( ostrn, arg_deriv_starts[2] + kind, dvec[1]*myvals.getDerivative( my_y, kind ) );
-      }
-      unsigned my_z = getPntrToArgument(3)->getPositionInStream();
-      for(unsigned k=0;k<myvals.getNumberActive(my_z);++k){
-          unsigned kind=myvals.getActiveIndex(my_z,k);
-          myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, dvec[2]*myvals.getDerivative( my_z, kind ) );
-      }
+    unsigned ostrn = getPntrToOutput(ival)->getPositionInStream();
+    unsigned my_x = getPntrToArgument(1)->getPositionInStream();
+    for(unsigned k=0; k<myvals.getNumberActive(my_x); ++k) {
+      unsigned kind=myvals.getActiveIndex(my_x,k);
+      myvals.addDerivative( ostrn, arg_deriv_starts[1] + kind, dvec[0]*myvals.getDerivative( my_x, kind ) );
+    }
+    unsigned my_y = getPntrToArgument(2)->getPositionInStream();
+    for(unsigned k=0; k<myvals.getNumberActive(my_y); ++k) {
+      unsigned kind=myvals.getActiveIndex(my_y,k);
+      myvals.addDerivative( ostrn, arg_deriv_starts[2] + kind, dvec[1]*myvals.getDerivative( my_y, kind ) );
+    }
+    unsigned my_z = getPntrToArgument(3)->getPositionInStream();
+    for(unsigned k=0; k<myvals.getNumberActive(my_z); ++k) {
+      unsigned kind=myvals.getActiveIndex(my_z,k);
+      myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, dvec[2]*myvals.getDerivative( my_z, kind ) );
+    }
   } else {
-      unsigned index = ival*getPntrToArgument(0)->getShape()[1]+myvals.getSymfuncTemporyIndex();
-      unsigned my_x = getPntrToArgument(1)->getPositionInStream();
-      std::vector<double>& tmp_x( myvals.getSymfuncTemporyDerivatives(my_x) ); tmp_x[index]+=dvec[0]; 
-      unsigned my_y = getPntrToArgument(2)->getPositionInStream();
-      std::vector<double>& tmp_y( myvals.getSymfuncTemporyDerivatives(my_y) ); tmp_y[index]+=dvec[1]; 
-      unsigned my_z = getPntrToArgument(3)->getPositionInStream();
-      std::vector<double>& tmp_z( myvals.getSymfuncTemporyDerivatives(my_z) ); tmp_z[index]+=dvec[2]; 
+    unsigned index = ival*getPntrToArgument(0)->getShape()[1]+myvals.getSymfuncTemporyIndex();
+    unsigned my_x = getPntrToArgument(1)->getPositionInStream();
+    std::vector<double>& tmp_x( myvals.getSymfuncTemporyDerivatives(my_x) ); tmp_x[index]+=dvec[0];
+    unsigned my_y = getPntrToArgument(2)->getPositionInStream();
+    std::vector<double>& tmp_y( myvals.getSymfuncTemporyDerivatives(my_y) ); tmp_y[index]+=dvec[1];
+    unsigned my_z = getPntrToArgument(3)->getPositionInStream();
+    std::vector<double>& tmp_z( myvals.getSymfuncTemporyDerivatives(my_z) ); tmp_z[index]+=dvec[2];
   }
 }
 

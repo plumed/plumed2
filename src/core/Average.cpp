@@ -99,22 +99,22 @@ void Average::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ARG","the quantity that we are calculating an ensemble average for");
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
-                                    "of 0 implies that all the data will be used and that the grid will never be cleared");
+           "of 0 implies that all the data will be used and that the grid will never be cleared");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
   keys.add("compulsory","NORMALIZATION","true","This controls how the data is normalized it can be set equal to true, false or ndata.  The differences between "
-                                               "these options are explained in the manual page for \\ref HISTOGRAM");
+           "these options are explained in the manual page for \\ref HISTOGRAM");
   keys.addOutputComponent("sin","default","this value is only added when the input argument is periodic.  These tempory values are required as with periodic arguments we need to use Berry phase averages.");
   keys.addOutputComponent("cos","default","this value is only added when the input argument is periodic.  These tempory values are required as With periodic arguments we need to use Berry phase averages.");
 }
 
 Average::Average( const ActionOptions& ao):
-Action(ao),
-ActionPilot(ao),
-ActionWithValue(ao),
-ActionWithArguments(ao),
-firststep(true),
-clearnextstep(false),
-lbound(0.0),pfactor(0.0)
+  Action(ao),
+  ActionPilot(ao),
+  ActionWithValue(ao),
+  ActionWithArguments(ao),
+  firststep(true),
+  clearnextstep(false),
+  lbound(0.0),pfactor(0.0)
 {
   if( getNumberOfArguments()!=1 ) error("number of arguments to average should equal one");
 
@@ -130,14 +130,14 @@ lbound(0.0),pfactor(0.0)
   if( wwstr.size()>0 ) log.printf("\n");
   else log.printf("  weights are all equal to one\n");
   requestArguments( arg, false );
- 
+
   // Read in clear instructions
   parse("CLEAR",clearstride);
   if( clearstride>0 ) {
     if( clearstride%getStride()!=0 ) error("CLEAR parameter must be a multiple of STRIDE");
     log.printf("  clearing average every %u steps \n",clearstride);
   }
-  
+
   // Now read in the instructions for the normalization
   std::string normstr; parse("NORMALIZATION",normstr);
   if( normstr=="true" ) normalization=t;
@@ -150,16 +150,16 @@ lbound(0.0),pfactor(0.0)
   else addValue( getPntrToArgument(0)->getShape() );
 
   if( getPntrToArgument(0)->isPeriodic() ) {
-      std::string min, max;
-      getPntrToArgument(0)->getDomain( min, max ); setPeriodic( min, max );
-      Tools::convert( min, lbound ); double ubound; Tools::convert( max, ubound );
-      pfactor = ( ubound - lbound ) / (2*pi); 
-      addComponent( "sin", getPntrToArgument(0)->getShape() ); componentIsNotPeriodic( "sin" );
-      addComponent( "cos", getPntrToArgument(0)->getShape() ); componentIsNotPeriodic( "cos" );
-      if( normalization!=f ){ getPntrToOutput(1)->setNorm(0.0); getPntrToOutput(2)->setNorm(0.0); }
+    std::string min, max;
+    getPntrToArgument(0)->getDomain( min, max ); setPeriodic( min, max );
+    Tools::convert( min, lbound ); double ubound; Tools::convert( max, ubound );
+    pfactor = ( ubound - lbound ) / (2*pi);
+    addComponent( "sin", getPntrToArgument(0)->getShape() ); componentIsNotPeriodic( "sin" );
+    addComponent( "cos", getPntrToArgument(0)->getShape() ); componentIsNotPeriodic( "cos" );
+    if( normalization!=f ) { getPntrToOutput(1)->setNorm(0.0); getPntrToOutput(2)->setNorm(0.0); }
   } else {
-      setNotPeriodic();
-      if( normalization!=f ) getPntrToOutput(0)->setNorm(0.0);
+    setNotPeriodic();
+    if( normalization!=f ) getPntrToOutput(0)->setNorm(0.0);
   }
 }
 
@@ -168,7 +168,7 @@ unsigned Average::getNumberOfDerivatives() const {
 }
 
 void Average::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                                    std::vector<std::string>& max, std::vector<unsigned>& nbin, 
+                                    std::vector<std::string>& max, std::vector<unsigned>& nbin,
                                     std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
   plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
   (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, dumpcube );
@@ -185,31 +185,31 @@ void Average::getGridPointAsCoordinate( const unsigned& ind, const bool& setleng
   if( coords.size()==(getPntrToOutput(0)->getRank()+1) ) coords[getPntrToOutput(0)->getRank()] = getPntrToOutput(0)->get(ind);
   else if( setlength ) {
     double val=getPntrToOutput(0)->get(ind);
-    for(unsigned i=0;i<coords.size();++i) coords[i] = val*coords[i];
-  } 
+    for(unsigned i=0; i<coords.size(); ++i) coords[i] = val*coords[i];
+  }
 }
 
 void Average::update() {
   if( firststep ) {
-      if( getPntrToOutput(0)->getNumberOfValues( getLabel() )!=getPntrToArgument(0)->getNumberOfValues( getLabel() ) ) {
-          getPntrToOutput(0)->setShape( getPntrToArgument(0)->getShape() );
-      }
-      firststep=false;
+    if( getPntrToOutput(0)->getNumberOfValues( getLabel() )!=getPntrToArgument(0)->getNumberOfValues( getLabel() ) ) {
+      getPntrToOutput(0)->setShape( getPntrToArgument(0)->getShape() );
+    }
+    firststep=false;
   }
 
   if( (clearstride!=1 && getStep()==0) || !onStep() ) return;
 
   if( clearnextstep ) {
-      getPntrToOutput(0)->clearDerivatives();
-      if( normalization!=f ){
-         if( getPntrToArgument(0)->isPeriodic() ) {
-             getPntrToOutput(1)->setNorm(0.0);
-             getPntrToOutput(2)->setNorm(0.0);
-         } else {
-             getPntrToOutput(0)->setNorm(0.0);
-         }
+    getPntrToOutput(0)->clearDerivatives();
+    if( normalization!=f ) {
+      if( getPntrToArgument(0)->isPeriodic() ) {
+        getPntrToOutput(1)->setNorm(0.0);
+        getPntrToOutput(2)->setNorm(0.0);
+      } else {
+        getPntrToOutput(0)->setNorm(0.0);
       }
-      clearnextstep=false;
+    }
+    clearnextstep=false;
   }
 
   // Get weight information
@@ -217,37 +217,37 @@ void Average::update() {
   if ( getNumberOfArguments()>1 ) {
     double sum=0; for(unsigned i=1; i<getNumberOfArguments(); ++i) sum+=getPntrToArgument(i)->get();
     cweight = exp( sum );
-  } 
+  }
 
   // Accumulate normalization
   Value* arg0=getPntrToArgument(0); Value* val=getPntrToOutput(0);
 
   if( arg0->isPeriodic() ) {
-     Value* valsin=getPntrToOutput(1); Value* valcos=getPntrToOutput(2); 
-     // Accumulate normalization
-     if( normalization==t ){ valsin->setNorm( valsin->getNorm() + cweight ); valcos->setNorm( valcos->getNorm() + cweight ); }
-     else if( normalization==ndata ){ valsin->setNorm( valsin->getNorm() + 1.0 ); valcos->setNorm( valcos->getNorm() + 1.0 ); }
-     // Now calcualte average
-     for(unsigned i=0;i<arg0->getNumberOfValues( getLabel() );++i) {
-         double tval = ( arg0->getRequiredValue( getLabel(), i) - lbound ) / pfactor;
-         valsin->add( i, cweight*sin(tval) ); valcos->add( i, cweight*cos(tval) );
-         val->set( i, lbound + pfactor*atan2( valsin->get(i), valcos->get(i)) );
-     }
+    Value* valsin=getPntrToOutput(1); Value* valcos=getPntrToOutput(2);
+    // Accumulate normalization
+    if( normalization==t ) { valsin->setNorm( valsin->getNorm() + cweight ); valcos->setNorm( valcos->getNorm() + cweight ); }
+    else if( normalization==ndata ) { valsin->setNorm( valsin->getNorm() + 1.0 ); valcos->setNorm( valcos->getNorm() + 1.0 ); }
+    // Now calcualte average
+    for(unsigned i=0; i<arg0->getNumberOfValues( getLabel() ); ++i) {
+      double tval = ( arg0->getRequiredValue( getLabel(), i) - lbound ) / pfactor;
+      valsin->add( i, cweight*sin(tval) ); valcos->add( i, cweight*cos(tval) );
+      val->set( i, lbound + pfactor*atan2( valsin->get(i), valcos->get(i)) );
+    }
   } else {
-     // Accumulate normalization
-     if( normalization==t ) val->setNorm( val->getNorm() + cweight );
-     else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 ); 
-     // Now accumulate average 
-     for(unsigned i=0;i<arg0->getNumberOfValues( getLabel() );++i) {
-         if( arg0->getRank()==0 && arg0->hasDerivatives() ) {
-             for(unsigned j=0;j<val->getNumberOfDerivatives();++j) val->addDerivative( j, cweight*arg0->getDerivative( j ) );
-         } else if( arg0->hasDerivatives() ) {
-             unsigned nder=val->getNumberOfDerivatives(); val->add( i*(1+nder), cweight*arg0->getRequiredValue(getLabel(), i) );
-             for(unsigned j=0;j<nder;++j) val->add( i*(1+nder)+1+j, cweight*arg0->getGridDerivative( i, j ) );
-         } else {
-             val->add( i, cweight*arg0->getRequiredValue(getLabel(), i) );
-         }
-     }
+    // Accumulate normalization
+    if( normalization==t ) val->setNorm( val->getNorm() + cweight );
+    else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 );
+    // Now accumulate average
+    for(unsigned i=0; i<arg0->getNumberOfValues( getLabel() ); ++i) {
+      if( arg0->getRank()==0 && arg0->hasDerivatives() ) {
+        for(unsigned j=0; j<val->getNumberOfDerivatives(); ++j) val->addDerivative( j, cweight*arg0->getDerivative( j ) );
+      } else if( arg0->hasDerivatives() ) {
+        unsigned nder=val->getNumberOfDerivatives(); val->add( i*(1+nder), cweight*arg0->getRequiredValue(getLabel(), i) );
+        for(unsigned j=0; j<nder; ++j) val->add( i*(1+nder)+1+j, cweight*arg0->getGridDerivative( i, j ) );
+      } else {
+        val->add( i, cweight*arg0->getRequiredValue(getLabel(), i) );
+      }
+    }
   }
 
   // Clear if required

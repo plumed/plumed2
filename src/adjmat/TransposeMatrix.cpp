@@ -27,8 +27,8 @@ namespace PLMD {
 namespace adjmat {
 
 class TransposeMatrix :
-public ActionWithArguments,
-public ActionWithValue
+  public ActionWithArguments,
+  public ActionWithValue
 {
 public:
   static void registerKeywords( Keywords& keys );
@@ -52,9 +52,9 @@ void TransposeMatrix::registerKeywords( Keywords& keys ) {
 }
 
 TransposeMatrix::TransposeMatrix(const ActionOptions& ao):
-Action(ao),
-ActionWithArguments(ao),
-ActionWithValue(ao)
+  Action(ao),
+  ActionWithArguments(ao),
+  ActionWithValue(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
   if( getPntrToArgument(0)->getRank()!=2 ) error("input argument for this action should be a matrix");
@@ -66,11 +66,11 @@ ActionWithValue(ao)
 
 void TransposeMatrix::calculate() {
   // Retrieve the matrix from input
-  unsigned k = 0; std::vector<unsigned> shape( getPntrToOutput(0)->getShape() ); 
-  for(unsigned i=0;i<shape[0];++i) {
-      for(unsigned j=0;j<shape[1];++j) {
-          getPntrToOutput(0)->set( j*shape[1] + i, getPntrToArgument(0)->get( k ) ); k++;
-      }
+  unsigned k = 0; std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
+  for(unsigned i=0; i<shape[0]; ++i) {
+    for(unsigned j=0; j<shape[1]; ++j) {
+      getPntrToOutput(0)->set( j*shape[1] + i, getPntrToArgument(0)->get( k ) ); k++;
+    }
   }
 }
 
@@ -78,12 +78,12 @@ void TransposeMatrix::apply() {
   if( doNotCalculateDerivatives() ) return;
 
   if( getPntrToOutput(0)->forcesWereAdded() ) {
-      unsigned k = 0; std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
-      for(unsigned i=0;i<shape[0];++i) {
-          for(unsigned j=0;j<shape[1];++j) {
-              getPntrToArgument(0)->addForce( j*shape[1] + i, getPntrToOutput(0)->getForce(k) ); k++;
-          }
+    unsigned k = 0; std::vector<unsigned> shape( getPntrToOutput(0)->getShape() );
+    for(unsigned i=0; i<shape[0]; ++i) {
+      for(unsigned j=0; j<shape[1]; ++j) {
+        getPntrToArgument(0)->addForce( j*shape[1] + i, getPntrToOutput(0)->getForce(k) ); k++;
       }
+    }
   }
 }
 

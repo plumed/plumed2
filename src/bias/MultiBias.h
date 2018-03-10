@@ -65,28 +65,28 @@ unsigned MultiBias::getNumberOfDerivatives() const {
 
 inline
 void MultiBias::setBias( const double& bb, MultiValue& myvals ) const {
-  myvals.addValue( getPntrToOutput(0)->getPositionInStream(), bb ); 
+  myvals.addValue( getPntrToOutput(0)->getPositionInStream(), bb );
 }
 
 inline
 void MultiBias::setNonBiasComponent( const unsigned& ival, const double val, MultiValue& myvals ) const {
-  plumed_dbg_assert( ival+1<getNumberOfComponents() ); 
-  myvals.addValue( getPntrToOutput(ival+1)->getPositionInStream(), val ); 
+  plumed_dbg_assert( ival+1<getNumberOfComponents() );
+  myvals.addValue( getPntrToOutput(ival+1)->getPositionInStream(), val );
 }
 
 inline
 void MultiBias::addBiasDerivative( const unsigned& jder, const double& der, MultiValue& myvals ) const {
   plumed_dbg_assert( jder<getNumberOfArguments() );
-  if( actionInChain() ){
-      unsigned istrn = getArgumentPositionInStream(jder, myvals); 
-      unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
-      for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
-          unsigned kind=myvals.getActiveIndex(istrn,k);
-          myvals.addDerivative( ostrn, arg_deriv_starts[jder] + kind, der*myvals.getDerivative( istrn, kind ) );
-      }
-      return;
+  if( actionInChain() ) {
+    unsigned istrn = getArgumentPositionInStream(jder, myvals);
+    unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
+    for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+      unsigned kind=myvals.getActiveIndex(istrn,k);
+      myvals.addDerivative( ostrn, arg_deriv_starts[jder] + kind, der*myvals.getDerivative( istrn, kind ) );
+    }
+    return;
   }
-  if( getPntrToArgument(0)->getRank()>0 ){ plumed_error(); return; }
+  if( getPntrToArgument(0)->getRank()>0 ) { plumed_error(); return; }
   if( arg_ends.size()>0 ) myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), arg_ends[jder] + myvals.getTaskIndex(), der );
   else myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), jder, der );
 }

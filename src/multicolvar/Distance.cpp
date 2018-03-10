@@ -121,7 +121,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Distance(const ActionOptions&);
 // active methods:
-  void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const ; 
+  void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
@@ -138,47 +138,47 @@ PLUMED_REGISTER_SHORTCUT(Distance,"ZXTORSIONS")
 PLUMED_REGISTER_SHORTCUT(Distance,"ZYTORSIONS")
 
 
-void Distance::shortcutKeywords( Keywords& keys ){
+void Distance::shortcutKeywords( Keywords& keys ) {
   MultiColvarBase::shortcutKeywords( keys );
 }
 void Distance::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions ){
-  std::vector<std::string> mc_line; mc_line.push_back( lab + ":" ); 
+                               const std::map<std::string,std::string>& keys,
+                               std::vector<std::vector<std::string> >& actions ) {
+  std::vector<std::string> mc_line; mc_line.push_back( lab + ":" );
   mc_line.push_back("DISTANCE");
-  for(unsigned i=1;i<words.size();++i) mc_line.push_back(words[i]);
+  for(unsigned i=1; i<words.size(); ++i) mc_line.push_back(words[i]);
   if( words[0].find("ANGLES")!=std::string::npos || words[0].find("TORSIONS")!=std::string::npos ) mc_line.push_back("COMPONENTS");
   actions.push_back( mc_line );
 
   // Now do stuff to compute ANGLE from axis
   std::string ilab = lab;
   if( words[0].find("ANGLES")!=std::string::npos ) {
-      // Normalize the vector
-      std::vector<std::string> norm_input; norm_input.push_back( lab + "_norm:");
-      norm_input.push_back("NORMALIZE"); norm_input.push_back("ARG1=" + lab + ".x"); 
-      norm_input.push_back("ARG2=" + lab + ".y"); norm_input.push_back("ARG3=" + lab + ".z");
-      actions.push_back( norm_input );
-      // Now compute the angles with matheval
-      std::vector<std::string> ang_input; ang_input.push_back( lab + "_ang:"); ilab = lab + "_ang";
-      ang_input.push_back("MATHEVAL"); ang_input.push_back("FUNC=acos(x)"); ang_input.push_back("PERIODIC=NO");
-      if( words[0]=="XANGLES" ) ang_input.push_back("ARG1=" + lab + "_norm.x");
-      else if( words[0]=="YANGLES" ) ang_input.push_back("ARG1=" + lab + "_norm.y");
-      else if( words[0]=="ZANGLES" ) ang_input.push_back("ARG1=" + lab + "_norm.z");
-      actions.push_back( ang_input );
+    // Normalize the vector
+    std::vector<std::string> norm_input; norm_input.push_back( lab + "_norm:");
+    norm_input.push_back("NORMALIZE"); norm_input.push_back("ARG1=" + lab + ".x");
+    norm_input.push_back("ARG2=" + lab + ".y"); norm_input.push_back("ARG3=" + lab + ".z");
+    actions.push_back( norm_input );
+    // Now compute the angles with matheval
+    std::vector<std::string> ang_input; ang_input.push_back( lab + "_ang:"); ilab = lab + "_ang";
+    ang_input.push_back("MATHEVAL"); ang_input.push_back("FUNC=acos(x)"); ang_input.push_back("PERIODIC=NO");
+    if( words[0]=="XANGLES" ) ang_input.push_back("ARG1=" + lab + "_norm.x");
+    else if( words[0]=="YANGLES" ) ang_input.push_back("ARG1=" + lab + "_norm.y");
+    else if( words[0]=="ZANGLES" ) ang_input.push_back("ARG1=" + lab + "_norm.z");
+    actions.push_back( ang_input );
   }
   // Now do stuff to compute TORSIONS from axis
   if( words[0].find("TORSIONS")!=std::string::npos ) {
-      // Compute the torsions
-      std::vector<std::string> tor_input; tor_input.push_back( lab + "_tor:"); tor_input.push_back("AXIS_TORSION"); 
-      tor_input.push_back("ARG1=" + lab + ".x"); tor_input.push_back("ARG2=" + lab + ".y"); tor_input.push_back("ARG3=" + lab + ".z");
-      if( words[0].find("XY")!=std::string::npos ){ tor_input.push_back("VECTOR=0,1,0"); tor_input.push_back("ROTOR=1,0,0"); }
-      else if( words[0].find("XZ")!=std::string::npos ){ tor_input.push_back("VECTOR=0,0,1"); tor_input.push_back("ROTOR=1,0,0"); }
-      else if( words[0].find("YX")!=std::string::npos ){ tor_input.push_back("VECTOR=1,0,0"); tor_input.push_back("ROTOR=0,1,0"); }
-      else if( words[0].find("YZ")!=std::string::npos ){ tor_input.push_back("VECTOR=0,0,1"); tor_input.push_back("ROTOR=0,1,0"); }
-      else if( words[0].find("ZX")!=std::string::npos ){ tor_input.push_back("VECTOR=1,0,0"); tor_input.push_back("ROTOR=0,0,1"); }
-      else if( words[0].find("ZY")!=std::string::npos ){ tor_input.push_back("VECTOR=0,1,0"); tor_input.push_back("ROTOR=0,0,1"); }
-      else plumed_merror("invalid shortcut input");
-      actions.push_back( tor_input ); ilab = lab + "_tor";
+    // Compute the torsions
+    std::vector<std::string> tor_input; tor_input.push_back( lab + "_tor:"); tor_input.push_back("AXIS_TORSION");
+    tor_input.push_back("ARG1=" + lab + ".x"); tor_input.push_back("ARG2=" + lab + ".y"); tor_input.push_back("ARG3=" + lab + ".z");
+    if( words[0].find("XY")!=std::string::npos ) { tor_input.push_back("VECTOR=0,1,0"); tor_input.push_back("ROTOR=1,0,0"); }
+    else if( words[0].find("XZ")!=std::string::npos ) { tor_input.push_back("VECTOR=0,0,1"); tor_input.push_back("ROTOR=1,0,0"); }
+    else if( words[0].find("YX")!=std::string::npos ) { tor_input.push_back("VECTOR=1,0,0"); tor_input.push_back("ROTOR=0,1,0"); }
+    else if( words[0].find("YZ")!=std::string::npos ) { tor_input.push_back("VECTOR=0,0,1"); tor_input.push_back("ROTOR=0,1,0"); }
+    else if( words[0].find("ZX")!=std::string::npos ) { tor_input.push_back("VECTOR=1,0,0"); tor_input.push_back("ROTOR=0,0,1"); }
+    else if( words[0].find("ZY")!=std::string::npos ) { tor_input.push_back("VECTOR=0,1,0"); tor_input.push_back("ROTOR=0,0,1"); }
+    else plumed_merror("invalid shortcut input");
+    actions.push_back( tor_input ); ilab = lab + "_tor";
   }
   MultiColvarBase::expandFunctions( lab, ilab, "", words, keys, actions );
 }

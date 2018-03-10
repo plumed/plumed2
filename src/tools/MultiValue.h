@@ -29,7 +29,7 @@
 namespace PLMD {
 
 class MultiValue {
-friend class ActionWithValue;
+  friend class ActionWithValue;
 private:
 /// The index of the task we are currently performing
   unsigned task_index, task2_index;
@@ -64,7 +64,7 @@ private:
   std::vector<std::vector<double> > symfunc_tmp_derivs;
 public:
   MultiValue( const unsigned& nvals, const unsigned& nder, const unsigned ncols=0, const unsigned nmat=0, const unsigned nfder=0 );
-  void resize( const unsigned&, const unsigned&, const unsigned& , const unsigned& );
+  void resize( const unsigned&, const unsigned&, const unsigned&, const unsigned& );
 /// Set the task index prior to the loop
   void setTaskIndex( const unsigned& tindex );
 /// Get the task index
@@ -84,7 +84,7 @@ public:
   const std::vector<unsigned>& getIndices() const ;
 /// Tempory matrix indices
   void setNumberOfMatrixIndices( const unsigned& nmat, const unsigned& nind );
-  unsigned getNumberOfMatrixIndices( const unsigned& nmat ) const ; 
+  unsigned getNumberOfMatrixIndices( const unsigned& nmat ) const ;
   std::vector<unsigned>& getMatrixIndices( const unsigned& nmat );
   std::vector<Vector>& getFirstAtomVector();
   const std::vector<Vector>& getAtomVector() const ;
@@ -113,12 +113,12 @@ public:
   void clear( const unsigned& );
 ///
   void clearActiveMembers( const unsigned& vv );
-  void updateIndex( const unsigned& , const unsigned& );
+  void updateIndex( const unsigned&, const unsigned& );
 ///
   unsigned getNumberActive( const unsigned& ) const ;
 ///
-  unsigned getActiveIndex( const unsigned& , const unsigned& ) const ;
-/// 
+  unsigned getActiveIndex( const unsigned&, const unsigned& ) const ;
+///
   void stashMatrixElement( const unsigned& imat, const unsigned& jind, const double& val );
 ///
   unsigned getNumberOfStashedMatrixElements( const unsigned& imat ) const ;
@@ -153,7 +153,7 @@ unsigned MultiValue::getNumberOfValues() const {
 
 inline
 unsigned MultiValue::getNumberOfDerivatives() const {
-  return nderivatives; 
+  return nderivatives;
 }
 
 inline
@@ -197,19 +197,19 @@ inline
 void MultiValue::updateIndex( const unsigned& ival, const unsigned& jder ) {
   plumed_dbg_assert( ival<values.size() && jder<nderivatives );
 #ifdef DNDEBUG
-  for(unsigned i=0;i<nactive[ival];++i) plumed_dbg_assert( active_list[nderivatives*ival+nactive[ival]]!=jder ); 
+  for(unsigned i=0; i<nactive[ival]; ++i) plumed_dbg_assert( active_list[nderivatives*ival+nactive[ival]]!=jder );
 #endif
-  if( hasderiv[nderivatives*ival+jder] ){ 
-      plumed_dbg_assert( nactive[ival]<nderivatives); 
-      active_list[nderivatives*ival+nactive[ival]]=jder; 
-      nactive[ival]++; 
-  } 
+  if( hasderiv[nderivatives*ival+jder] ) {
+    plumed_dbg_assert( nactive[ival]<nderivatives);
+    active_list[nderivatives*ival+nactive[ival]]=jder;
+    nactive[ival]++;
+  }
 }
 
 inline
 unsigned MultiValue::getNumberActive( const unsigned& ival ) const {
   plumed_dbg_assert( ival<nactive.size() );
-  return nactive[ival]; 
+  return nactive[ival];
 }
 
 inline
@@ -233,10 +233,10 @@ void MultiValue::setNumberOfIndicesInFirstBlock( const unsigned& nat ) {
   nfblock = nat;
 }
 
-inline    
+inline
 unsigned MultiValue::getNumberOfIndicesInFirstBlock() const {
   return nfblock;
-} 
+}
 
 inline
 void MultiValue::setNumberOfIndices( const unsigned& nat ) {
@@ -256,7 +256,7 @@ std::vector<unsigned>& MultiValue::getIndices() {
 inline
 const std::vector<unsigned>& MultiValue::getIndices() const {
   return indices;
-} 
+}
 
 inline
 std::vector<Vector>& MultiValue::getFirstAtomVector() {
@@ -266,7 +266,7 @@ std::vector<Vector>& MultiValue::getFirstAtomVector() {
 inline
 const std::vector<Vector>& MultiValue::getAtomVector() const {
   return tmp_atoms[0];
-} 
+}
 
 inline
 std::vector<Vector>& MultiValue::getSecondAtomVector() {
@@ -309,7 +309,7 @@ inline
 void MultiValue::stashMatrixElement( const unsigned& imat, const unsigned& jind, const double& val ) {
   if( rerunning_matrix ) return;
   plumed_dbg_assert( imat<matrix_element_nind.size() && jind<nmatrix_cols );
-  matrix_element_indices[imat*nmatrix_cols + matrix_element_nind[imat]] = jind; 
+  matrix_element_indices[imat*nmatrix_cols + matrix_element_nind[imat]] = jind;
   matrix_element_nind[imat]++; matrix_element_stash[imat*nmatrix_cols + jind] = val;
 }
 
@@ -359,8 +359,8 @@ void MultiValue::clearActiveMembers( const unsigned& ival ) {
 }
 
 inline
-void MultiValue::setNumberOfMatrixIndices( const unsigned& nmat, const unsigned& nind ){
-  plumed_dbg_assert( nmat<mat_nindices.size() && nind<=mat_indices[nmat].size() ); 
+void MultiValue::setNumberOfMatrixIndices( const unsigned& nmat, const unsigned& nind ) {
+  plumed_dbg_assert( nmat<mat_nindices.size() && nind<=mat_indices[nmat].size() );
   mat_nindices[nmat]=nind;
 }
 
@@ -371,7 +371,7 @@ unsigned MultiValue::getNumberOfMatrixIndices( const unsigned& nmat ) const {
 
 inline
 std::vector<unsigned>& MultiValue::getMatrixIndices( const unsigned& nmat ) {
-  plumed_dbg_assert( nmat<mat_nindices.size() ); return mat_indices[nmat]; 
+  plumed_dbg_assert( nmat<mat_nindices.size() ); return mat_indices[nmat];
 }
 
 

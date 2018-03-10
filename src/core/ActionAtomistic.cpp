@@ -101,7 +101,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
     plumed_massert(a,"only Actions with a value can be differentiated");
   }
 
-  unsigned nargs=0; std::vector<Value*> myvals; 
+  unsigned nargs=0; std::vector<Value*> myvals;
   a->retrieveAllScalarValuesInLoop( getLabel(), nargs, myvals );
   const int natoms=getNumberOfAtoms();
   std::vector<Vector> value(myvals.size()*natoms);
@@ -115,7 +115,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
       a->calculate();
       positions[i][k]=savedPositions[i][k];
       for(int j=0; j<myvals.size(); j++) {
-        value[j*natoms+i][k]=myvals[j]->get(); 
+        value[j*natoms+i][k]=myvals[j]->get();
       }
     }
   Tensor box(pbc.getBox());
@@ -129,7 +129,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
       box(i,k)=arg0;
       pbc.setBox(box);
       for(int j=0; j<natoms; j++) positions[j]=savedPositions[j];
-      for(int j=0; j<myvals.size(); j++) valuebox[j](i,k)=myvals[j]->get(); 
+      for(int j=0; j<myvals.size(); j++) valuebox[j](i,k)=myvals[j]->get();
     }
 
   a->calculate();

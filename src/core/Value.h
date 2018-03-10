@@ -80,8 +80,8 @@ private:
   bool columnsums;
 /// Variables for storing data
   unsigned bufstart, streampos, matpos;
-/// Store information on who is using information contained in this value 
-  std::map<std::string,std::vector<std::pair<int,int> > > userdata; 
+/// Store information on who is using information contained in this value
+  std::map<std::string,std::vector<std::pair<int,int> > > userdata;
 /// Is this quantity periodic
   enum {unset,periodic,notperiodic} periodicity;
 /// Various quantities that describe the domain of this value
@@ -180,7 +180,7 @@ public:
 ///
   void setNorm( const double& nn );
 ///
-  const std::vector<unsigned>& getShape() const ; 
+  const std::vector<unsigned>& getShape() const ;
 ///
   unsigned getSize() const ;
 ///
@@ -219,8 +219,8 @@ void Value::set(double v) {
   applyPeriodicity(0);
 }
 
-inline 
-void Value::add(const unsigned& n, const double& v ){
+inline
+void Value::add(const unsigned& n, const double& v ) {
   value_set=true; data[n]+=v; applyPeriodicity(n);
 }
 
@@ -347,7 +347,7 @@ inline
 std::size_t Value::getIndex(const std::vector<unsigned> & indices) const {
   plumed_dbg_assert( indices.size()==shape.size() );
 #ifndef DNDEBUG
-  for(unsigned i=0;i<indices.size();++i) plumed_dbg_assert( indices[i]<shape[i] );
+  for(unsigned i=0; i<indices.size(); ++i) plumed_dbg_assert( indices[i]<shape[i] );
 #endif
   std::size_t index=indices[shape.size()-1];
   for(unsigned i=shape.size()-1; i>0 ; --i ) index=index*shape[i-1]+indices[i-1];
@@ -360,7 +360,7 @@ void Value::convertIndexToindices(const std::size_t& index, std::vector<unsigned
   for(unsigned i=1; i<shape.size()-1; ++i) {
     kk=(kk-indices[i-1])/shape[i-1];
     indices[i]=kk%shape[i];
-  } 
+  }
   if(shape.size()>=2) indices[shape.size()-1]=(kk-indices[shape.size()-2])/shape[shape.size()-2];
 }
 

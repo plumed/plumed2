@@ -148,7 +148,7 @@ void LWalls::calculateBias( const std::vector<double>& args, MultiValue& myvals 
     }
     addBiasDerivative( i, -f, myvals );
   }
-  setBias( ene, myvals ); 
+  setBias( ene, myvals );
   setNonBiasComponent( 0, totf2, myvals );
 }
 

@@ -499,14 +499,14 @@ void Atoms::resizeVectors(unsigned n) {
   charges.resize(n);
 }
 
-AtomNumber Atoms::addVirtualAtom(ActionAtomistic*a){
-  bool found=false; 
-  for( const auto & p : virtualAtomsActions ){
-      if( a==p ){ found=true; }
+AtomNumber Atoms::addVirtualAtom(ActionAtomistic*a) {
+  bool found=false;
+  for( const auto & p : virtualAtomsActions ) {
+    if( a==p ) { found=true; }
   }
   if( !found ) virtualAtomsActions.push_back( a );
 
-  unsigned n=positions.size(); resizeVectors(n+1); 
+  unsigned n=positions.size(); resizeVectors(n+1);
   return AtomNumber::index(n);
 }
 
@@ -572,12 +572,12 @@ void Atoms::getLocalMDForces(std::vector<Vector>& localForces) {
 }
 
 ActionAtomistic* Atoms::getVirtualAtomsAction(AtomNumber i)const {
-   unsigned va_action_ind=0, nn=0, va_index = i.index() - getNatoms();
-   for(unsigned i=0;i<virtualAtomsActions.size();++i) {
-       nn += virtualAtomsActions[i]->getNumberOfVirtualAtoms();
-       if( va_index<nn ){ va_action_ind = i; break; }
-   }
-   return virtualAtomsActions[va_action_ind];
+  unsigned va_action_ind=0, nn=0, va_index = i.index() - getNatoms();
+  for(unsigned i=0; i<virtualAtomsActions.size(); ++i) {
+    nn += virtualAtomsActions[i]->getNumberOfVirtualAtoms();
+    if( va_index<nn ) { va_action_ind = i; break; }
+  }
+  return virtualAtomsActions[va_action_ind];
 }
 
 }

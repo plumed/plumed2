@@ -43,11 +43,11 @@ MultiBias::MultiBias(const ActionOptions&ao):
   forcesToApply(getNumberOfScalarArguments(),0.0)
 {
   createTasksFromArguments(); nderivatives = getNumberOfArguments();
-  if( distinct_arguments.size()>0 ){
-      // Create the chain of actions that will calculate the function
-      nderivatives = setupActionInChain();
-      // Set forces to apply to correct size
-      forcesToApply.resize( nderivatives );
+  if( distinct_arguments.size()>0 ) {
+    // Create the chain of actions that will calculate the function
+    nderivatives = setupActionInChain();
+    // Set forces to apply to correct size
+    forcesToApply.resize( nderivatives );
   }
 
   // Notice bias is always an object with zero rank
@@ -68,7 +68,7 @@ void MultiBias::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   if( !actionInChain() ) tflags.assign(tflags.size(),1);
 }
 
-void MultiBias::calculate(){
+void MultiBias::calculate() {
   // Everything is done elsewhere
   if( actionInChain() ) return;
   // This is done if we are calculating a function of multiple cvs
@@ -81,51 +81,51 @@ void MultiBias::performTask( const unsigned& current, MultiValue& myvals ) const
   // Calculate whatever we are calculating
   calculateBias( args, myvals );
   if( actionInChain() ) {
-      bool matout=false, matinp=getPntrToArgument(0)->getRank()==2;
+    bool matout=false, matinp=getPntrToArgument(0)->getRank()==2;
 #ifdef DNDEBUG
-      if( matinp ){
-          for(unsigned i=1;i<getNumberOfArguments();++i) plumed_dbg_assert( getPntrToArgument(i)->getRank()==2 );
+    if( matinp ) {
+      for(unsigned i=1; i<getNumberOfArguments(); ++i) plumed_dbg_assert( getPntrToArgument(i)->getRank()==2 );
+    }
+#endif
+    if( matinp ) {
+      matout=getPntrToOutput(0)->getRank()==2;
+#ifdef DNDEBUG
+      if( matout ) {
+        for(unsigned i=1; i<getNumberOfComponents(); ++i) plumed_dbg_assert( getPntrToOutput(i)->getRank()==2 );
       }
 #endif
-      if( matinp ) {
-          matout=getPntrToOutput(0)->getRank()==2;
-#ifdef DNDEBUG
-          if( matout ){
-              for(unsigned i=1;i<getNumberOfComponents();++i) plumed_dbg_assert( getPntrToOutput(i)->getRank()==2 );
-          }
-#endif
-      }
-      if( (matinp && matout) || !matinp ) {
-           unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
-           for(unsigned i=0;i<distinct_arguments.size();++i){
-               unsigned istrn = (distinct_arguments[i].first->copyOutput(0))->getPositionInStream();
-               for(unsigned k=0;k<myvals.getNumberActive(istrn);++k){
-                   unsigned kind = myvals.getActiveIndex(istrn,k);
-                   myvals.updateIndex( ostrn, arg_deriv_starts[i] + kind );
-               }
-           }
-      } else if( myvals.inVectorCall() ) {
-          // This requires further thought to make it future proof
-          std::vector<unsigned> & indices( myvals.getIndices() );
-          unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
-          myvals.clearActiveMembers( ostrn );
-          for(unsigned i=0;i<myvals.getNumberOfIndices();++i) {
-              myvals.updateIndex( ostrn, 3*indices[i]+0 ); myvals.updateIndex( ostrn, 3*indices[i]+1 ); myvals.updateIndex( ostrn, 3*indices[i]+2 );
-          }
-          unsigned nbase = nderivatives - 9;
-          for(unsigned i=0;i<9;++i) myvals.updateIndex( ostrn, nbase + i );
-      }
-  } else {
+    }
+    if( (matinp && matout) || !matinp ) {
       unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
-      for(unsigned i=0;i<getNumberOfArguments();++i) myvals.updateIndex( ostrn, i );
+      for(unsigned i=0; i<distinct_arguments.size(); ++i) {
+        unsigned istrn = (distinct_arguments[i].first->copyOutput(0))->getPositionInStream();
+        for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+          unsigned kind = myvals.getActiveIndex(istrn,k);
+          myvals.updateIndex( ostrn, arg_deriv_starts[i] + kind );
+        }
+      }
+    } else if( myvals.inVectorCall() ) {
+      // This requires further thought to make it future proof
+      std::vector<unsigned> & indices( myvals.getIndices() );
+      unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
+      myvals.clearActiveMembers( ostrn );
+      for(unsigned i=0; i<myvals.getNumberOfIndices(); ++i) {
+        myvals.updateIndex( ostrn, 3*indices[i]+0 ); myvals.updateIndex( ostrn, 3*indices[i]+1 ); myvals.updateIndex( ostrn, 3*indices[i]+2 );
+      }
+      unsigned nbase = nderivatives - 9;
+      for(unsigned i=0; i<9; ++i) myvals.updateIndex( ostrn, nbase + i );
+    }
+  } else {
+    unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) myvals.updateIndex( ostrn, i );
   }
 }
 
 void MultiBias::apply() {
   // Add forces due to this bias
   if( onStep()) {
-      double gstr = static_cast<double>(getStride()); 
-      getPntrToComponent(0)->addForce(0, -1.0*gstr );
+    double gstr = static_cast<double>(getStride());
+    getPntrToComponent(0)->addForce(0, -1.0*gstr );
   }
   // And add all the forces from here and elsewhere
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;

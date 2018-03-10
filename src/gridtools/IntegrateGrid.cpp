@@ -56,8 +56,8 @@ IntegrateGrid::IntegrateGrid(const ActionOptions&ao):
 void IntegrateGrid::performTask( const unsigned& current, MultiValue& myvals ) const {
   myvals.setValue( getPntrToOutput(0)->getPositionInStream(), getVolume()*getFunctionValue( current ) );
   if( !doNotCalculateDerivatives() ) {
-      myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), current, getVolume() );
-      myvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), current );
+    myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), current, getVolume() );
+    myvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), current );
   }
 }
 

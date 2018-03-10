@@ -54,7 +54,7 @@ public:
 PLUMED_REGISTER_ACTION(Between,"BETWEEN")
 
 void Between::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys); keys.use("ARG"); 
+  Function::registerKeywords(keys); keys.use("ARG");
   keys.add("compulsory","LOWER","the lower boundary for this particular bin");
   keys.add("compulsory","UPPER","the upper boundary for this particular bin");
   keys.add("compulsory","SMEAR","0.5","the ammount to smear the Gaussian for each value in the distribution");
@@ -70,18 +70,18 @@ Between::Between(const ActionOptions&ao):
   std::string str_min, str_max, tstr_min, tstr_max;
   bool isPeriodic = getPntrToArgument(0)->isPeriodic();
   if( isPeriodic ) getPntrToArgument(0)->getDomain( str_min, str_max );
-  for(unsigned i=1;i<getNumberOfArguments();++i){
-      if( isPeriodic ){
-          if( !getPntrToArgument(i)->isPeriodic() ) error("cannot mix periodic and non periodic arguments");
-          getPntrToArgument(i)->getDomain( tstr_min, tstr_max ); 
-          if( tstr_min!=str_min || tstr_max!=str_max ) error("cannot mix periodic arguments with different domains");
-      }
+  for(unsigned i=1; i<getNumberOfArguments(); ++i) {
+    if( isPeriodic ) {
+      if( !getPntrToArgument(i)->isPeriodic() ) error("cannot mix periodic and non periodic arguments");
+      getPntrToArgument(i)->getDomain( tstr_min, tstr_max );
+      if( tstr_min!=str_min || tstr_max!=str_max ) error("cannot mix periodic arguments with different domains");
+    }
   }
   std::string hinput; parse("SWITCH",hinput);
   if(hinput.length()==0) {
-     std::string low, up, sme;
-     parse("LOWER",low); parse("UPPER",up); parse("SMEAR",sme);
-     hinput = "GAUSSIAN LOWER=" + low + " UPPER=" + up + " SMEAR=" + sme;
+    std::string low, up, sme;
+    parse("LOWER",low); parse("UPPER",up); parse("SMEAR",sme);
+    hinput = "GAUSSIAN LOWER=" + low + " UPPER=" + up + " SMEAR=" + sme;
   }
   std::string errors; hist.set( hinput, errors );
   if( errors.size()!=0 ) error( errors );
@@ -99,7 +99,7 @@ Between::Between(const ActionOptions&ao):
 }
 
 void Between::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  plumed_dbg_assert( args.size()==1 ); double dv, f = hist.calculate(args[0], dv);  
+  plumed_dbg_assert( args.size()==1 ); double dv, f = hist.calculate(args[0], dv);
   addValue( 0, f, myvals ); addDerivative( 0, 0, dv, myvals );
 }
 

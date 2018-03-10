@@ -114,14 +114,14 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindSphericalContour(const ActionOptions&ao);
-  void finishOutputSetup(){}
+  void finishOutputSetup() {}
   // Make these two so we can output a two dimensional analogue of the grid one day
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { plumed_error(); }
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
-  unsigned getNumberOfDerivatives() const ; 
+  unsigned getNumberOfDerivatives() const ;
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
@@ -158,12 +158,12 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
 }
 
 void FindSphericalContour::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                             std::vector<std::string>& max, std::vector<unsigned>& nbin,
-                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
+    std::vector<std::string>& max, std::vector<unsigned>& nbin,
+    std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
   gtype="fibonacci"; nbin[0] = npoints; spacing[0]=0.0;
 }
 
-void FindSphericalContour::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const { 
+void FindSphericalContour::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const {
   if( setlength ) gridcoords.putCoordinateAtValue( ind, getPntrToOutput(0)->get(ind), coords );
   else  gridcoords.putCoordinateAtValue( ind, 1.0, coords );
 }
@@ -203,7 +203,7 @@ void FindSphericalContour::performTask( const unsigned& current, MultiValue& myv
 }
 
 void FindSphericalContour::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-                                                   const unsigned& bufstart, std::vector<double>& buffer ) const {
+    const unsigned& bufstart, std::vector<double>& buffer ) const {
   unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
   unsigned valout = getPntrToOutput(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
 }

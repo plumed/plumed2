@@ -33,25 +33,25 @@ namespace secondarystructure {
 
 void SecondaryStructureRMSD::shortcutKeywords( Keywords& keys ) {
   keys.add("compulsory","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
-                                    "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a \\ref switchingfunction.");
+           "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a \\ref switchingfunction.");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function.");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","NN","8","The n parameter of the switching function");
   keys.add("compulsory","MM","12","The m parameter of the switching function");
 }
 
-void SecondaryStructureRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words, 
-                                             const std::map<std::string,std::string>& keys, 
-                                             std::vector<std::vector<std::string> >& actions ){
-  std::vector<std::string> lt_line; lt_line.push_back( lab + "_lt:" ); 
-  lt_line.push_back("LESS_THAN"); lt_line.push_back( "ARG1=" + lab ); 
-  if( keys.count("LESS_THAN") ){
-      lt_line.push_back("SWITCH=" + keys.find("LESS_THAN")->second );
+void SecondaryStructureRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+    const std::map<std::string,std::string>& keys,
+    std::vector<std::vector<std::string> >& actions ) {
+  std::vector<std::string> lt_line; lt_line.push_back( lab + "_lt:" );
+  lt_line.push_back("LESS_THAN"); lt_line.push_back( "ARG1=" + lab );
+  if( keys.count("LESS_THAN") ) {
+    lt_line.push_back("SWITCH=" + keys.find("LESS_THAN")->second );
   } else {
-      for(const auto & p : keys ) lt_line.push_back( p.first + "=" + p.second ); 
+    for(const auto & p : keys ) lt_line.push_back( p.first + "=" + p.second );
   }
   actions.push_back( lt_line );
-  std::vector<std::string> sum_line; sum_line.push_back( lab + "_lessthan:" ); 
+  std::vector<std::string> sum_line; sum_line.push_back( lab + "_lessthan:" );
   sum_line.push_back("COMBINE"); sum_line.push_back("ARG=" + lab + "_lt" );
   sum_line.push_back("PERIODIC=NO"); actions.push_back( sum_line );
 }
@@ -166,28 +166,28 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   references[nn]->setReferenceAtoms( structure, align, displace );
 }
 
-void SecondaryStructureRMSD::setupValues(){
+void SecondaryStructureRMSD::setupValues() {
   plumed_assert( references.size()>0 );
   std::vector<unsigned> shape(1); shape[0]=getFullNumberOfTasks();
-  if( references.size()==1 ){ addValue( shape ); setNotPeriodic(); }
+  if( references.size()==1 ) { addValue( shape ); setNotPeriodic(); }
   else {
-      std::string num;
-      for(unsigned i=0;i<references.size();++i){ 
-         Tools::convert( i+1, num ); addComponent( "struct-" + num, shape ); 
-         componentIsNotPeriodic( "struct-" + num );
-      }
+    std::string num;
+    for(unsigned i=0; i<references.size(); ++i) {
+      Tools::convert( i+1, num ); addComponent( "struct-" + num, shape );
+      componentIsNotPeriodic( "struct-" + num );
+    }
   }
 }
 
 void SecondaryStructureRMSD::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   if( s_cutoff2>0 ) {
-      for(unsigned i=0;i<tflags.size();++i){
-          Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(i,align_atom_1) ), 
-                                       ActionAtomistic::getPosition( getAtomIndex(i,align_atom_2) ) );
-          if( distance.modulo2()<s_cutoff2 ) tflags[i]=1;
-      }
+    for(unsigned i=0; i<tflags.size(); ++i) {
+      Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(i,align_atom_1) ),
+                                   ActionAtomistic::getPosition( getAtomIndex(i,align_atom_2) ) );
+      if( distance.modulo2()<s_cutoff2 ) tflags[i]=1;
+    }
   } else {
-      tflags.assign(tflags.size(),1);
+    tflags.assign(tflags.size(),1);
   }
 }
 
@@ -226,7 +226,7 @@ void SecondaryStructureRMSD::performTask( const unsigned& current, MultiValue& m
 
     if( !doNotCalculateDerivatives() && !mypack.virialWasSet() ) {
       Tensor vir; const unsigned cacs = colvar_atoms[current].size();
-      for(unsigned i=0; i<cacs; ++i)  vir+=(-1.0*Tensor( pos[i], mypack.getAtomDerivative(i) )); 
+      for(unsigned i=0; i<cacs; ++i)  vir+=(-1.0*Tensor( pos[i], mypack.getAtomDerivative(i) ));
       mypack.addBoxDerivatives( vir );
     }
   }

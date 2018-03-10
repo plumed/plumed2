@@ -93,17 +93,17 @@ PLUMED_REGISTER_SHORTCUT(CoordinationNumbers,"COORDINATIONNUMBER")
 
 void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
   SymmetryFunctionBase::shortcutKeywords( keys );
-} 
+}
 
 void CoordinationNumbers::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                          const std::map<std::string,std::string>& keys,
-                                          std::vector<std::vector<std::string> >& actions ) {
+    const std::map<std::string,std::string>& keys,
+    std::vector<std::vector<std::string> >& actions ) {
   SymmetryFunctionBase::expandMatrix( false, lab, words, keys, actions );
   std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("COORDINATIONNUMBER");
   if( keys.count("SPECIES") || keys.count("SPECIESA") ) {
-      input.push_back("WEIGHT=" + lab + "_mat.w" ); 
+    input.push_back("WEIGHT=" + lab + "_mat.w" );
   } else {
-      for(unsigned i=1;i<words.size();++i) input.push_back( words[i] );
+    for(unsigned i=1; i<words.size(); ++i) input.push_back( words[i] );
   }
   actions.push_back( input );
   multicolvar::MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
@@ -121,7 +121,7 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
 }
 
 void CoordinationNumbers::compute( const double& val, const Vector& dir, MultiValue& myvals ) const {
-  addToValue( 0, val, myvals ); addWeightDerivative( 0, 1.0, myvals ); 
+  addToValue( 0, val, myvals ); addWeightDerivative( 0, 1.0, myvals );
 }
 
 }

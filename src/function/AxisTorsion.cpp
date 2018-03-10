@@ -65,12 +65,12 @@ AxisTorsion::AxisTorsion(const ActionOptions&ao):
   Function(ao)
 {
   if( getNumberOfArguments()!=3) error("three arguments should be specified in input");
-  std::vector<double> ax; parseVector("VECTOR",ax); 
+  std::vector<double> ax; parseVector("VECTOR",ax);
   if( ax.size()!=3 ) error("axis should be three dimensional");
   std::vector<double> dir; parseVector("ROTOR",dir);
   if( dir.size()!=3 ) error("rotor should be three dimensional");
-  for(unsigned i=0;i<3;++i){ rot[i]=dir[i]; axis[i]=ax[i]; }
-  log.printf("  calculating torsional angle from vector (%f, %f, %f) around axis in direction (%f, %f, %f) \n",ax[0],ax[1],ax[2],dir[0],dir[1],dir[2]); 
+  for(unsigned i=0; i<3; ++i) { rot[i]=dir[i]; axis[i]=ax[i]; }
+  log.printf("  calculating torsional angle from vector (%f, %f, %f) around axis in direction (%f, %f, %f) \n",ax[0],ax[1],ax[2],dir[0],dir[1],dir[2]);
   addValueWithDerivatives(); setPeriodic( "-pi", "pi" );
   checkRead();
 }
@@ -79,8 +79,8 @@ void AxisTorsion::calculateFunction( const std::vector<double>& args, MultiValue
   Torsion t; Vector dir, dd0, dd1, dd2; plumed_dbg_assert( args.size()==3 );
   dir[0]=args[0]; dir[1]=args[1]; dir[2]=args[2];
   double angle = t.compute( dir, rot, axis, dd0, dd1, dd2 );
-  for(unsigned i=0;i<3;++i) addDerivative( 0, i, dd0[i], myvals );
-  addValue( 0, angle, myvals ); 
+  for(unsigned i=0; i<3; ++i) addDerivative( 0, i, dd0[i], myvals );
+  addValue( 0, angle, myvals );
 }
 
 }

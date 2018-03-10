@@ -91,15 +91,15 @@ ContactMatrix::ContactMatrix( const ActionOptions& ao ):
   AdjacencyMatrixBase(ao)
 {
   std::string errors, input; parse("SWITCH",input);
-     if( input.length()>0 ) {
-     switchingFunction.set( input, errors ); 
-     if( errors.length()!=0 ) error("problem reading switching function description " + errors);
+  if( input.length()>0 ) {
+    switchingFunction.set( input, errors );
+    if( errors.length()!=0 ) error("problem reading switching function description " + errors);
   } else {
-     double r_0=-1.0, d_0; int nn, mm;
-     parse("NN",nn); parse("MM",mm);
-     parse("R_0",r_0); parse("D_0",d_0);
-     if( r_0<0.0 ) error("you must set a value for R_0");
-     switchingFunction.set(nn,mm,r_0,d_0);
+    double r_0=-1.0, d_0; int nn, mm;
+    parse("NN",nn); parse("MM",mm);
+    parse("R_0",r_0); parse("D_0",d_0);
+    if( r_0<0.0 ) error("you must set a value for R_0");
+    switchingFunction.set(nn,mm,r_0,d_0);
   }
   // And set the link cell cutoff
   log.printf("  switching function cutoff is %s \n",switchingFunction.description().c_str() );
@@ -109,7 +109,7 @@ ContactMatrix::ContactMatrix( const ActionOptions& ao ):
 double ContactMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
   Vector distance = pos2; double mod2 = distance.modulo2();
   if( mod2<epsilon ) return 0.0;  // Atoms can't be bonded to themselves
-  double dfunc, val = switchingFunction.calculateSqr( mod2, dfunc ); 
+  double dfunc, val = switchingFunction.calculateSqr( mod2, dfunc );
   addAtomDerivatives( 0, (-dfunc)*distance, myvals );
   addAtomDerivatives( 1, (+dfunc)*distance, myvals );
   addBoxDerivatives( (-dfunc)*Tensor(distance,distance), myvals );

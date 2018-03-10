@@ -57,11 +57,11 @@ PLUMED_REGISTER_ACTION(Moments,"MOMENTS")
 void Moments::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","the list of argument from which you would like to calculate moments."); 
+  keys.add("compulsory","ARG","the list of argument from which you would like to calculate moments.");
   keys.add("compulsory","POWERS","calculate the central moments of the distribution of collective variables. "
-               "The \\f$m\\f$th central moment of a distribution is calculated using \\f$\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m \\f$, where \\f$\\overline{s}\\f$ is "
-               "the average for the distribution. The POWERS keyword takes a lists of integers as input or a range. Each integer is a value of \\f$m\\f$. The final "
-               "calculated values can be referenced using moment-\\f$m\\f$.");
+           "The \\f$m\\f$th central moment of a distribution is calculated using \\f$\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m \\f$, where \\f$\\overline{s}\\f$ is "
+           "the average for the distribution. The POWERS keyword takes a lists of integers as input or a range. Each integer is a value of \\f$m\\f$. The final "
+           "calculated values can be referenced using moment-\\f$m\\f$.");
   keys.addOutputComponent("moment","default","the central moments of the distribution of values. The second central moment "
                           "would be referenced elsewhere in the input file using "
                           "<em>label</em>.moment-2, the third as <em>label</em>.moment-3, etc.");
@@ -73,26 +73,26 @@ Moments::Moments(const ActionOptions&ao):
   isperiodic(getPntrToArgument(0)->isPeriodic())
 {
   if( isperiodic ) {
-      std::string str_min, str_max; getPntrToArgument(0)->getDomain( str_min, str_max );
-      for(unsigned i=1;i<getNumberOfArguments();++i) {
-          if( !getPntrToArgument(i)->isPeriodic() ) error("cannot mix periodic and non periodic variables when calculating moments");
-          std::string str_min2, str_max2; getPntrToArgument(0)->getDomain( str_min2, str_max2);
-          if( str_min!=str_min2 || str_max!=str_max2 ) error("all input arguments should have same domain when calculating moments");
-      } 
-      Tools::convert(str_min,min); Tools::convert(str_max,max); pfactor = 2*pi / ( max-min );
+    std::string str_min, str_max; getPntrToArgument(0)->getDomain( str_min, str_max );
+    for(unsigned i=1; i<getNumberOfArguments(); ++i) {
+      if( !getPntrToArgument(i)->isPeriodic() ) error("cannot mix periodic and non periodic variables when calculating moments");
+      std::string str_min2, str_max2; getPntrToArgument(0)->getDomain( str_min2, str_max2);
+      if( str_min!=str_min2 || str_max!=str_max2 ) error("all input arguments should have same domain when calculating moments");
+    }
+    Tools::convert(str_min,min); Tools::convert(str_max,max); pfactor = 2*pi / ( max-min );
   } else {
-      for(unsigned i=1;i<getNumberOfArguments();++i) {
-          if( getPntrToArgument(i)->isPeriodic() ) error("cannot mix periodic and non periodic variables when calculating moments");
-      }
+    for(unsigned i=1; i<getNumberOfArguments(); ++i) {
+      if( getPntrToArgument(i)->isPeriodic() ) error("cannot mix periodic and non periodic variables when calculating moments");
+    }
   }
 
   parseVector("POWERS",powers);
-  for(unsigned i=0;i<powers.size();++i) { 
-      if( powers[i]<2 ) error("first central moment is zero do you really need to calculate that");
-      log.printf("  computing %dth central moment of distribution of input cvs \n", powers[i]);
-      std::string pwstr; Tools::convert( powers[i], pwstr );
-      addComponentWithDerivatives( "moment-" + pwstr );
-      componentIsNotPeriodic( "moment-" + pwstr );
+  for(unsigned i=0; i<powers.size(); ++i) {
+    if( powers[i]<2 ) error("first central moment is zero do you really need to calculate that");
+    log.printf("  computing %dth central moment of distribution of input cvs \n", powers[i]);
+    std::string pwstr; Tools::convert( powers[i], pwstr );
+    addComponentWithDerivatives( "moment-" + pwstr );
+    componentIsNotPeriodic( "moment-" + pwstr );
   }
   checkRead();
 }
@@ -105,8 +105,8 @@ void Moments::calculate() {
     mean = 0.5 + atan2( inorm*sinsum, inorm*cossum ) / (2*pi);
     mean = min + (max-min)*mean;
   } else {
-    for(unsigned i=0; i<getNumberOfScalarArguments(); ++i) mean+=getArgumentScalar(i); 
-    mean *= inorm; 
+    for(unsigned i=0; i<getNumberOfScalarArguments(); ++i) mean+=getArgumentScalar(i);
+    mean *= inorm;
   }
 
   Value* arg0 = getPntrToArgument(0);
@@ -114,17 +114,17 @@ void Moments::calculate() {
     double dev1=0;
     if( !doNotCalculateDerivatives() ) {
       for(unsigned i=0; i<getNumberOfScalarArguments(); ++i) dev1+=pow( arg0->difference( mean, getArgumentScalar(i) ), powers[npow] - 1 );
-      dev1*=inorm; 
+      dev1*=inorm;
     }
     double moment=0; Value* myval = getPntrToComponent(npow); double prefactor = powers[npow]*inorm;
     for(unsigned i=0; i<getNumberOfScalarArguments(); ++i) {
       double tmp=arg0->difference( mean, getArgumentScalar(i) );
       moment+=pow( tmp, powers[npow] );
       if( !doNotCalculateDerivatives() ) {
-          myval->addDerivative( i, prefactor*(pow( tmp, powers[npow] - 1 ) - dev1) );
+        myval->addDerivative( i, prefactor*(pow( tmp, powers[npow] - 1 ) - dev1) );
       }
     }
-    myval->set( inorm*moment ); 
+    myval->set( inorm*moment );
   }
 }
 

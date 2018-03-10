@@ -126,7 +126,7 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 </tr> <tr>
 <td> COSINE </td> <td>
 \f$
-s(r) = 0.5\left[ \cos\left( \pi \frac{ r - d_0 }{ r_0 } \right) + 1 \right] \qquad d_{max} = d_0 + r_0 
+s(r) = 0.5\left[ \cos\left( \pi \frac{ r - d_0 }{ r_0 } \right) + 1 \right] \qquad d_{max} = d_0 + r_0
 \f$
 </td> <td>
 {COSINE R_0=\f$r_0\f$ D_0=\f$d_0\f$}
@@ -134,7 +134,7 @@ s(r) = 0.5\left[ \cos\left( \pi \frac{ r - d_0 }{ r_0 } \right) + 1 \right] \qqu
 </tr> <tr>
 <td> TANH3 </td> <td>
 \f$
-s(r) = \tanh^3\left( 1 - \frac{ r - d_0}{r_0} \right) \qquad d_{max} = d_0 + r_0 
+s(r) = \tanh^3\left( 1 - \frac{ r - d_0}{r_0} \right) \qquad d_{max} = d_0 + r_0
 \f$
 </td> <td>
 {TANH3 R_0=\f$r_0\f$ D_0=\f$d_0\f$}

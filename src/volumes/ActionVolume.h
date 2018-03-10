@@ -36,7 +36,7 @@ box. You can use this to calculate the number of atoms inside that part or the a
 coordination number inside that part of the cell.
 */
 
-class ActionVolume : 
+class ActionVolume :
   public ActionAtomistic,
   public ActionWithValue
 {

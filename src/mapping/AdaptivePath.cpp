@@ -97,7 +97,7 @@ public:
 PLUMED_REGISTER_ACTION(AdaptivePath,"ADAPTIVE_PATH")
 
 void AdaptivePath::registerKeywords( Keywords& keys ) {
-  Mapping::registerKeywords( keys ); keys.remove("SQUARED"); 
+  Mapping::registerKeywords( keys ); keys.remove("SQUARED");
   keys.add("compulsory","FIXED","the positions in the list of input frames of the two path nodes whose positions remain fixed during the path optimization");
   keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50% in the average. This option may increase convergence by allowing to \"forget\" the memory of a bad initial guess path. The default is to set this to infinity");
   keys.add("compulsory","UPDATE","the frequency with which the path should be updated");
@@ -156,9 +156,9 @@ void AdaptivePath::update() {
 
   double v1v1 = getPntrToComponent(0)->get(0); unsigned iclose1 = 0;
   double v3v3 = getPntrToComponent(0)->get(1); unsigned iclose2 = 1;
-  if( v1v1>v3v3 ){
-      double tmp=v1v1; v1v1=v3v3; v3v3=tmp;
-      iclose1 = 1; iclose2 = 0;
+  if( v1v1>v3v3 ) {
+    double tmp=v1v1; v1v1=v3v3; v3v3=tmp;
+    iclose1 = 1; iclose2 = 0;
   }
   for(unsigned i=2; i<myframes.size(); ++i) {
     double ndist=getPntrToComponent(0)->get(i);
@@ -175,7 +175,7 @@ void AdaptivePath::update() {
   int iclose3 = iclose1 + isign; double v2v2;
 
   //  Create some holders for stuff
-  MultiValue mydpack1(1,0), mydpack2(1,0); 
+  MultiValue mydpack1(1,0), mydpack2(1,0);
   ReferenceValuePack mypack1( getNumberOfArguments(), getNumberOfAtoms(), mydpack1 ); myframes[0]->setupPCAStorage( mypack1 );
   ReferenceValuePack mypack2( getNumberOfArguments(), getNumberOfAtoms(), mydpack2 );
   mypack1.clear(); calculateDistanceFromReference( iclose1, mypack1 );
@@ -187,9 +187,9 @@ void AdaptivePath::update() {
     extractDisplacementVector( iclose1, myframes[iclose3]->getReferencePositions(), myframes[iclose3]->getReferenceArguments(), displacement );
   }
   if( getNumberOfAtoms()>0 ) {
-      ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( myframes[iclose1] );
-      const std::vector<double> & displace( at->getDisplace() );
-      for(unsigned i=0; i<getNumberOfAtoms(); ++i) mypack1.getAtomsDisplacementVector()[i] /= displace[i];
+    ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( myframes[iclose1] );
+    const std::vector<double> & displace( at->getDisplace() );
+    for(unsigned i=0; i<getNumberOfAtoms(); ++i) mypack1.getAtomsDisplacementVector()[i] /= displace[i];
   }
   // Calculate the dot product of v1 with v2
   double v1v2 = projectDisplacementOnVector( iclose1, displacement, mypack1 );
@@ -204,8 +204,8 @@ void AdaptivePath::update() {
   // Add projections to dispalcement accumulators
   //ReferenceConfiguration* myref = getReferenceConfiguration( mypathv->iclose1 );
   // myframes[iclose1]->
-  std::vector<double> cargs( getNumberOfScalarArguments() ); 
-  for(unsigned i=0;i<getNumberOfScalarArguments();++i) cargs[i]=getArgumentScalar(i);
+  std::vector<double> cargs( getNumberOfScalarArguments() );
+  for(unsigned i=0; i<getNumberOfScalarArguments(); ++i) cargs[i]=getArgumentScalar(i);
   extractDisplacementVector( iclose1, getPositions(), cargs, displacement );
   extractDisplacementVector( iclose2, myframes[iclose1]->getReferencePositions(), myframes[iclose1]->getReferenceArguments(), displacement2 );
 //   myref->extractDisplacementVector( getPositions(), getArguments(), mypathv->cargs, false, displacement );

@@ -99,18 +99,18 @@ public:
 PLUMED_REGISTER_ACTION(ParabetaRMSD,"PARABETARMSD")
 PLUMED_REGISTER_SHORTCUT(ParabetaRMSD,"PARABETARMSD")
 
-void ParabetaRMSD::shortcutKeywords( Keywords& keys ){
+void ParabetaRMSD::shortcutKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::shortcutKeywords( keys );
   keys.addOutputComponent("_low_lessthan","default","the number of residues that have an rmsd less than a threshold");
 }
 
 void ParabetaRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                                    const std::map<std::string,std::string>& keys,
-                                   std::vector<std::vector<std::string> >& actions ){
+                                   std::vector<std::vector<std::string> >& actions ) {
   std::vector<std::string> ss_line; ss_line.push_back( lab + ":" );
-  for(unsigned i=0;i<words.size();++i) ss_line.push_back(words[i]);
+  for(unsigned i=0; i<words.size(); ++i) ss_line.push_back(words[i]);
   actions.push_back( ss_line );
-  std::vector<std::string> lowest_line; lowest_line.push_back( lab + "_low:"); lowest_line.push_back("LOWEST"); 
+  std::vector<std::string> lowest_line; lowest_line.push_back( lab + "_low:"); lowest_line.push_back("LOWEST");
   lowest_line.push_back("ARG1=" + lab + ".struct-1"); lowest_line.push_back("ARG2=" + lab + ".struct-2");
   actions.push_back( lowest_line ); SecondaryStructureRMSD::expandShortcut( lab + "_low", words, keys, actions );
 }
@@ -123,8 +123,8 @@ void ParabetaRMSD::registerKeywords( Keywords& keys ) {
            "only sheet-like configurations involving a single chain are counted");
   keys.use("STRANDS_CUTOFF");
   keys.addOutputComponent("struct","default","there are two structure for a parallel beta sheet in the PDB database.  As such two numbers are calculated "
-                                             "for each segment of secondary structure.  These two numbers give a measure of dissimilarity between the "
-                                             "instantaneous structure of the segment and the two reference structures in the PDB database.");
+                          "for each segment of secondary structure.  These two numbers give a measure of dissimilarity between the "
+                          "instantaneous structure of the segment and the two reference structures in the PDB database.");
 }
 
 ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):

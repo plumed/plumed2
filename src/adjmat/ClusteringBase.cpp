@@ -48,11 +48,11 @@ ClusteringBase::ClusteringBase(const ActionOptions&ao):
   log.printf("  finding clusters in matrix labelled %s \n", mat[0]->getName().c_str() );
   // Request the argument
   requestArguments(mat, false); checkRead();
-  // Now create a value - this holds the data on which cluster each guy is in 
-  std::vector<unsigned> shape(1); shape[0]=mat[0]->getShape()[0]; 
+  // Now create a value - this holds the data on which cluster each guy is in
+  std::vector<unsigned> shape(1); shape[0]=mat[0]->getShape()[0];
   // Build the store here to make sure that next action has all data
   addValue( shape ); getPntrToOutput(0)->alwaysStoreValues();
-  // Resize local variables 
+  // Resize local variables
   which_cluster.resize( mat[0]->getShape()[0] ); cluster_sizes.resize( mat[0]->getShape()[0] );
   // Create a group for this action
   const auto m=plumed.getAtoms().getAllGroups().find(mat[0]->getPntrToAction()->getLabel());
@@ -87,7 +87,7 @@ void ClusteringBase::retrieveEdgeList( unsigned& nedge, std::vector<std::pair<un
   for(unsigned i=0; i<mat->getNumberOfValues(getLabel()); ++i) {
     // Check if atoms are connected
     if( mat->get(i)<epsilon ) continue ;
-     
+
     unsigned j = std::floor( i / nrows ); unsigned k = i%nrows;
     if( k>j ) continue ;  // Ensures each connection is only stored once
 
@@ -103,11 +103,11 @@ void ClusteringBase::calculate() {
   // Order the clusters in the system by size (this returns ascending order )
   std::sort( cluster_sizes.begin(), cluster_sizes.end() );
   // Set the elements of the value to the cluster identies
-  for(unsigned i=0; i<cluster_sizes.size(); ++i){
-      double this_size = static_cast<double>(cluster_sizes.size()-i);
-      for(unsigned j=0;j<cluster_sizes.size(); ++j){
-          if( which_cluster[j]==cluster_sizes[i].second ) getPntrToValue()->set( j, this_size ); 
-      }
+  for(unsigned i=0; i<cluster_sizes.size(); ++i) {
+    double this_size = static_cast<double>(cluster_sizes.size()-i);
+    for(unsigned j=0; j<cluster_sizes.size(); ++j) {
+      if( which_cluster[j]==cluster_sizes[i].second ) getPntrToValue()->set( j, this_size );
+    }
   }
 }
 

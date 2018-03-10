@@ -188,7 +188,7 @@ class Matheval :
 public:
   explicit Matheval(const ActionOptions&);
   ~Matheval();
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const; 
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -269,15 +269,15 @@ Matheval::Matheval(const ActionOptions&ao):
 }
 
 void Matheval::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  bool allzero=(fabs(args[0])<epsilon); 
+  bool allzero=(fabs(args[0])<epsilon);
   if( allzero ) {
-      for(unsigned i=1;i<args.size();++i) {
-          if( fabs(args[i])>epsilon ) { allzero=false; break; }
-      }
-      if( allzero ) {
-         addValue(0, 0.0, myvals ); for(unsigned i=0; i<getNumberOfArguments(); i++) addDerivative(0, i, 0.0, myvals ); 
-         return;
-      }
+    for(unsigned i=1; i<args.size(); ++i) {
+      if( fabs(args[i])>epsilon ) { allzero=false; break; }
+    }
+    if( allzero ) {
+      addValue(0, 0.0, myvals ); for(unsigned i=0; i<getNumberOfArguments(); i++) addDerivative(0, i, 0.0, myvals );
+      return;
+    }
   }
 
   for(unsigned i=0; i<getNumberOfArguments(); i++) {

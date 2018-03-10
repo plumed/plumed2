@@ -38,12 +38,12 @@ public:
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                               const std::map<std::string,std::string>& keys,
                               std::vector<std::vector<std::string> >& actions );
-  static void createVectorNormInput( const std::string& ilab, const std::string& olab, 
+  static void createVectorNormInput( const std::string& ilab, const std::string& olab,
                                      const std::string& vlab, std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit Plane(const ActionOptions&);
 // active methods:
-  void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const ; 
+  void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(Plane,"PLANES")
@@ -54,46 +54,46 @@ void Plane::shortcutKeywords( Keywords& keys ) {
   keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");
   keys.addOutputComponent("_vsum","VSUM","the norm of the mean vector");
-} 
+}
 
 void Plane::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                             const std::map<std::string,std::string>& keys,
                             std::vector<std::vector<std::string> >& actions ) {
   std::vector<std::string> pl_input; pl_input.push_back( lab + ":" );
-  pl_input.push_back("PLANES"); for(unsigned i=1;i<words.size();++i) pl_input.push_back( words[i] );
+  pl_input.push_back("PLANES"); for(unsigned i=1; i<words.size(); ++i) pl_input.push_back( words[i] );
   actions.push_back( pl_input );
   if( keys.count("VMEAN") ) {
-      std::vector<std::string> x_input; x_input.push_back(lab + "_xs:"); 
-      x_input.push_back("COMBINE"); x_input.push_back("ARG=" + lab + ".x");
-      x_input.push_back("NORMALIZE"); x_input.push_back("PERIODIC=NO");
-      actions.push_back(x_input);
-      std::vector<std::string> y_input; y_input.push_back(lab + "_ys:"); 
-      y_input.push_back("COMBINE"); y_input.push_back("ARG=" + lab + ".y");
-      y_input.push_back("NORMALIZE"); y_input.push_back("PERIODIC=NO");
-      actions.push_back(y_input);
-      std::vector<std::string> z_input; z_input.push_back(lab + "_zs:"); 
-      z_input.push_back("COMBINE"); z_input.push_back("ARG=" + lab + ".z");
-      z_input.push_back("NORMALIZE"); z_input.push_back("PERIODIC=NO");
-      actions.push_back(z_input);
-      // Now calculate the total length of the vector
-      createVectorNormInput( lab, lab + "_vmean", "s", actions );
-  }  
+    std::vector<std::string> x_input; x_input.push_back(lab + "_xs:");
+    x_input.push_back("COMBINE"); x_input.push_back("ARG=" + lab + ".x");
+    x_input.push_back("NORMALIZE"); x_input.push_back("PERIODIC=NO");
+    actions.push_back(x_input);
+    std::vector<std::string> y_input; y_input.push_back(lab + "_ys:");
+    y_input.push_back("COMBINE"); y_input.push_back("ARG=" + lab + ".y");
+    y_input.push_back("NORMALIZE"); y_input.push_back("PERIODIC=NO");
+    actions.push_back(y_input);
+    std::vector<std::string> z_input; z_input.push_back(lab + "_zs:");
+    z_input.push_back("COMBINE"); z_input.push_back("ARG=" + lab + ".z");
+    z_input.push_back("NORMALIZE"); z_input.push_back("PERIODIC=NO");
+    actions.push_back(z_input);
+    // Now calculate the total length of the vector
+    createVectorNormInput( lab, lab + "_vmean", "s", actions );
+  }
   if( keys.count("VSUM") ) {
-      std::vector<std::string> x_input; x_input.push_back(lab + "_xz:"); 
-      x_input.push_back("COMBINE"); x_input.push_back("ARG=" + lab + ".x");
-      x_input.push_back("PERIODIC=NO"); actions.push_back(x_input);
-      std::vector<std::string> y_input; y_input.push_back(lab + "_yz:");
-      y_input.push_back("COMBINE"); y_input.push_back("ARG=" + lab + ".y");
-      y_input.push_back("PERIODIC=NO"); actions.push_back(y_input);
-      std::vector<std::string> z_input; z_input.push_back(lab + "_zz:");
-      z_input.push_back("COMBINE"); z_input.push_back("ARG=" + lab + ".z");
-      z_input.push_back("PERIODIC=NO"); actions.push_back(z_input);
-      // Now calculate the total length of the vector
-      createVectorNormInput( lab, lab + "_vsum", "z", actions );
+    std::vector<std::string> x_input; x_input.push_back(lab + "_xz:");
+    x_input.push_back("COMBINE"); x_input.push_back("ARG=" + lab + ".x");
+    x_input.push_back("PERIODIC=NO"); actions.push_back(x_input);
+    std::vector<std::string> y_input; y_input.push_back(lab + "_yz:");
+    y_input.push_back("COMBINE"); y_input.push_back("ARG=" + lab + ".y");
+    y_input.push_back("PERIODIC=NO"); actions.push_back(y_input);
+    std::vector<std::string> z_input; z_input.push_back(lab + "_zz:");
+    z_input.push_back("COMBINE"); z_input.push_back("ARG=" + lab + ".z");
+    z_input.push_back("PERIODIC=NO"); actions.push_back(z_input);
+    // Now calculate the total length of the vector
+    createVectorNormInput( lab, lab + "_vsum", "z", actions );
   }
 }
 
-void Plane::createVectorNormInput( const std::string& ilab, const std::string& olab, 
+void Plane::createVectorNormInput( const std::string& ilab, const std::string& olab,
                                    const std::string& vlab, std::vector<std::vector<std::string> >& actions ) {
   std::vector<std::string> norm_input; norm_input.push_back(olab + "2:");
   norm_input.push_back("COMBINE"); std::string powstr="POWERS=2";
@@ -130,7 +130,7 @@ Plane::Plane(const ActionOptions&ao):
 // calculator
 void Plane::compute( const std::vector<Vector>& pos, MultiValue& myvals  ) const {
 
-  Vector d1=delta( pos[1], pos[0] ); 
+  Vector d1=delta( pos[1], pos[0] );
   Vector d2=delta( pos[2], pos[3] );
   Vector cp = crossProduct( d1, d2 );
 

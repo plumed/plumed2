@@ -88,13 +88,13 @@ public:
 PLUMED_REGISTER_ACTION(VolumeAround,"AROUND")
 PLUMED_REGISTER_SHORTCUT(VolumeAround,"AROUND")
 
-void VolumeAround::shortcutKeywords( Keywords& keys ){
+void VolumeAround::shortcutKeywords( Keywords& keys ) {
   ActionVolume::shortcutKeywords( keys );
 }
 
 void VolumeAround::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions ){
+                                   const std::map<std::string,std::string>& keys,
+                                   std::vector<std::vector<std::string> >& actions ) {
   ActionVolume::expandShortcut( lab, words, keys, actions );
 }
 

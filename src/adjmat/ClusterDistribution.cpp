@@ -66,9 +66,9 @@ PRINT ARG=nclust.* FILE=colvar
 namespace PLMD {
 namespace adjmat {
 
-class ClusterDistribution : 
-public ActionWithArguments,
-public ActionWithValue {
+class ClusterDistribution :
+  public ActionWithArguments,
+  public ActionWithValue {
 private:
 /// The cluster we are looking for
   unsigned clustr;
@@ -100,10 +100,10 @@ void ClusterDistribution::shortcutKeywords( Keywords& keys ) {
 }
 
 void ClusterDistribution::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                          const std::map<std::string,std::string>& keys,
-                                          std::vector<std::vector<std::string> >& actions ) {
+    const std::map<std::string,std::string>& keys,
+    std::vector<std::vector<std::string> >& actions ) {
   std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("CLUSTER_DISTRIBUTION");
-  for(unsigned i=1;i<words.size();++i) input.push_back(words[i]);
+  for(unsigned i=1; i<words.size(); ++i) input.push_back(words[i]);
   actions.push_back( input );
   // Now expand any multicolvar stuff
   multicolvar::MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
@@ -111,7 +111,7 @@ void ClusterDistribution::expandShortcut( const std::string& lab, const std::vec
 
 void ClusterDistribution::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); 
+  ActionWithArguments::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
   keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
   keys.add("optional","WEIGHTS","use the vector of values calculated by this action as weights rather than giving each atom a unit weight");
@@ -129,22 +129,22 @@ ClusterDistribution::ClusterDistribution(const ActionOptions&ao):
   if( !cc ) error("input to CLUSTERS keyword should be a clustering action");
   std::vector<Value*> weights; parseArgumentList("WEIGHTS",weights);
   if( weights.size()==0 ) {
-      log.printf("  using unit weights in cluster distribution \n");
+    log.printf("  using unit weights in cluster distribution \n");
   } else if( weights.size()==1 ) {
-      if( weights[0]->getRank()!=1 ) error("input weights has wrong shape");
-      if( weights[0]->getShape()[0]!=clusters[0]->getShape()[0] ) error("mismatch between number of weights and number of atoms");
-      log.printf("  using weights from action with label %s in cluster distribution \n", weights[0]->getName().c_str() );
-      clusters.push_back( weights[0] );
+    if( weights[0]->getRank()!=1 ) error("input weights has wrong shape");
+    if( weights[0]->getShape()[0]!=clusters[0]->getShape()[0] ) error("mismatch between number of weights and number of atoms");
+    log.printf("  using weights from action with label %s in cluster distribution \n", weights[0]->getName().c_str() );
+    clusters.push_back( weights[0] );
   } else {
-      error("should have only one argument for weights \n");
+    error("should have only one argument for weights \n");
   }
   // Request the arguments
   requestArguments( clusters, false );
   // Now create the value
-  std::vector<unsigned> shape(1); shape[0]=clusters[0]->getShape()[0]; 
-  addValue( shape ); setNotPeriodic(); 
+  std::vector<unsigned> shape(1); shape[0]=clusters[0]->getShape()[0];
+  addValue( shape ); setNotPeriodic();
   // And the tasks
-  for(unsigned i=0;i<shape[0];++i) addTaskToList(i);
+  for(unsigned i=0; i<shape[0]; ++i) addTaskToList(i);
   // Create a group for this action so we can associate atoms to these weights easily
   const auto m=plumed.getAtoms().getAllGroups().find(clusters[0]->getPntrToAction()->getLabel());
   plumed.getAtoms().insertGroup( getLabel(), m->second );
@@ -154,11 +154,11 @@ void ClusterDistribution::buildCurrentTaskList( std::vector<unsigned>& tflags ) 
   plumed_assert( getPntrToArgument(0)->valueHasBeenSet() );
   if( getNumberOfArguments()>1 ) plumed_assert( getPntrToArgument(1)->valueHasBeenSet() );
   double csize = getPntrToArgument(0)->get(0);
-  for(unsigned i=1;i<getPntrToArgument(0)->getShape()[0];++i) {
-      if( getPntrToArgument(0)->get(i)>csize ) csize = getPntrToArgument(0)->get(i);
+  for(unsigned i=1; i<getPntrToArgument(0)->getShape()[0]; ++i) {
+    if( getPntrToArgument(0)->get(i)>csize ) csize = getPntrToArgument(0)->get(i);
   }
   unsigned ntasks = static_cast<unsigned>( csize );
-  for(unsigned i=0;i<ntasks;++i) tflags[i]=1;
+  for(unsigned i=0; i<ntasks; ++i) tflags[i]=1;
 }
 
 unsigned ClusterDistribution::getNumberOfDerivatives() const {
@@ -170,11 +170,11 @@ void ClusterDistribution::calculate() {
 }
 
 void ClusterDistribution::performTask( const unsigned& current, MultiValue& myvals ) const {
-  for(unsigned i=0;i<getPntrToArgument(0)->getShape()[0];++i) {
-      if( fabs(getPntrToArgument(0)->get(i)-current)<epsilon ) {
-          if( getNumberOfArguments()==2 ) myvals.addValue( getPntrToOutput(0)->getPositionInStream(), getPntrToArgument(1)->get(i) ); 
-          else myvals.addValue( getPntrToOutput(0)->getPositionInStream(), 1.0 );
-      }
+  for(unsigned i=0; i<getPntrToArgument(0)->getShape()[0]; ++i) {
+    if( fabs(getPntrToArgument(0)->get(i)-current)<epsilon ) {
+      if( getNumberOfArguments()==2 ) myvals.addValue( getPntrToOutput(0)->getPositionInStream(), getPntrToArgument(1)->get(i) );
+      else myvals.addValue( getPntrToOutput(0)->getPositionInStream(), 1.0 );
+    }
   }
 }
 

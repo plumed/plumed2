@@ -34,16 +34,16 @@ ActionWithIntegral::ActionWithIntegral(const ActionOptions&ao):
   volume(1)
 {
   // Now create task list - number of tasks is equal to the number of grid points
-  done_over_stream=false; std::vector<unsigned> shape; 
+  done_over_stream=false; std::vector<unsigned> shape;
   addValueWithDerivatives( shape ); setNotPeriodic();
 }
 
-void ActionWithIntegral::finishOutputSetup() { 
+void ActionWithIntegral::finishOutputSetup() {
   // Retrieve the volume of the grid (for integration)
   volume = gridobject.getCellVolume();
   // as we have to evaluate the function at each grid points
   for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues( getLabel() ); ++i) addTaskToList(i);
-  plumed_assert( arg_ends.size()==0 ); arg_ends.push_back(0); arg_ends.push_back(1); 
+  plumed_assert( arg_ends.size()==0 ); arg_ends.push_back(0); arg_ends.push_back(1);
   forcesToApply.resize( getPntrToArgument(0)->getNumberOfValues( getLabel() ) );
   // Turn on derivatives to resize derivatives in values now that we know the size
   if( !doNotCalculateDerivatives() ) turnOnDerivatives();

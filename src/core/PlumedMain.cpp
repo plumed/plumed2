@@ -559,11 +559,11 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
     std::vector<std::vector<std::string> > act_info( actionRegister().expandShortcuts( multi_sim_comm.Get_rank(), interpreted ) );
     for(unsigned i=0;i<act_info.size();++i){
         Tools::interpretLabel( act_info[i] );
-        std::unique_ptr<Action> action(actionRegister().create(ActionOptions(*this,interpreted)));
+        std::unique_ptr<Action> action(actionRegister().create(ActionOptions(*this,act_info[i])));
         if(!action) {
           std::string msg;
           msg ="ERROR\nI cannot understand line:";
-          for(unsigned i=0; i<interpreted.size(); ++i) msg+=" "+interpreted[i];
+          for(unsigned j=0; j<act_info[i].size(); ++j) msg+=" "+act_info[i][j];
           msg+="\nMaybe a missing space or a typo?";
           log << msg;
           log.flush();

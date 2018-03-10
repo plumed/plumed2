@@ -97,18 +97,18 @@ public:
 PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")
 PLUMED_REGISTER_SHORTCUT(AlphaRMSD,"ALPHARMSD")
 
-void AlphaRMSD::shortcutKeywords( Keywords& keys ){
+void AlphaRMSD::shortcutKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::shortcutKeywords( keys );
   keys.addOutputComponent("_lessthan","default","the number of residues that have an rmsd less than a threshold");
 }
 
 void AlphaRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                                 const std::map<std::string,std::string>& keys,
-                                std::vector<std::vector<std::string> >& actions ){
+                                std::vector<std::vector<std::string> >& actions ) {
   std::vector<std::string> ss_line; ss_line.push_back( lab + ":" );
-  for(unsigned i=0;i<words.size();++i) ss_line.push_back(words[i]);
+  for(unsigned i=0; i<words.size(); ++i) ss_line.push_back(words[i]);
   actions.push_back( ss_line );
-  SecondaryStructureRMSD::expandShortcut( lab, words, keys, actions ); 
+  SecondaryStructureRMSD::expandShortcut( lab, words, keys, actions );
 }
 
 void AlphaRMSD::registerKeywords( Keywords& keys ) {

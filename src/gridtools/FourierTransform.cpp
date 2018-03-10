@@ -89,7 +89,7 @@ public:
 PLUMED_REGISTER_ACTION(FourierTransform,"FOURIER_TRANSFORM")
 
 void FourierTransform::registerKeywords( Keywords& keys ) {
-  ActionWithInputGrid::registerKeywords( keys ); 
+  ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","FT_TYPE","choose what kind of data you want as output on the grid. Possible values are: ABS = compute the complex modulus of Fourier coefficients (DEFAULT); NORM = compute the norm (i.e. ABS^2) of Fourier coefficients; COMPLEX = store the FFTW complex output on the grid (as a vector).");
   keys.add("compulsory","FOURIER_PARAMETERS","default","what kind of normalization is applied to the output and if the Fourier transform in FORWARD or BACKWARD. This keyword takes the form FOURIER_PARAMETERS=A,B, where A and B can be 0, 1 or -1. The default values are A=1 (no normalization at all) and B=1 (forward FFT). Other possible choices for A are: "
            "A=-1: normalize by the number of data, "
@@ -139,10 +139,10 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
 
   std::vector<unsigned> shape( getPntrToArgument(0)->getRank() );
   if (real_output) {
-      addValueWithDerivatives( shape );
+    addValueWithDerivatives( shape );
   } else {
-      addComponentWithDerivatives( "real", shape );
-      addComponentWithDerivatives( "imag", shape );
+    addComponentWithDerivatives( "real", shape );
+    addComponentWithDerivatives( "imag", shape );
   }
 
   unsigned dimension = getPntrToArgument(0)->getRank(); gname.resize( dimension);
@@ -150,7 +150,7 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
   std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
   (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
   if( gtype=="fibonacci" ) error("cannot fourier transform fibonacci grids");
-  for(unsigned i=0;i<argn.size();++i) gname[i] = "k_" + argn[i];
+  for(unsigned i=0; i<argn.size(); ++i) gname[i] = "k_" + argn[i];
   gridobject.setup( "flat", ipbc, 0, 0.0 ); checkRead();
 #endif
 }
@@ -169,20 +169,20 @@ void FourierTransform::finishOutputSetup() {
     snbins[i]=gridobject.getNbin(false)[i];
   }
   gridobject.setBounds( smin, smax, snbins, fspacing );
-  for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->setShape( gridobject.getNbin(true) );
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->setShape( gridobject.getNbin(true) );
 }
 
 void FourierTransform::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                                             std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
-                                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
+    std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
+    std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
   gtype="flat";
-  for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) {
-      argn[i] = gname[i];
-      if( gridobject.getMin().size()>0 ) {
-          min[i]=gridobject.getMin()[i]; max[i]=gridobject.getMin()[i];
-      }
-      if( gridobject.getNbin(false).size()>0 ) out_nbin[i]=gridobject.getNbin(false)[i];
-      pbc[i]=gridobject.isPeriodic(i);
+  for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
+    argn[i] = gname[i];
+    if( gridobject.getMin().size()>0 ) {
+      min[i]=gridobject.getMin()[i]; max[i]=gridobject.getMin()[i];
+    }
+    if( gridobject.getNbin(false).size()>0 ) out_nbin[i]=gridobject.getNbin(false)[i];
+    pbc[i]=gridobject.isPeriodic(i);
   }
 }
 

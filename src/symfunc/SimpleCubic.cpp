@@ -94,14 +94,14 @@ void SimpleCubic::expandShortcut( const std::string& lab, const std::vector<std:
   SymmetryFunctionBase::expandMatrix( true, lab, words, keys, actions );
   // Input for simple cubic action
   std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("SIMPLECUBIC");
-  input.push_back("WEIGHT=" + lab + "_mat.w" ); input.push_back("VECTORS1=" + lab + "_mat.x" ); 
-  input.push_back("VECTORS2=" + lab + "_mat.y" ); input.push_back("VECTORS3=" + lab + "_mat.z" ); 
+  input.push_back("WEIGHT=" + lab + "_mat.w" ); input.push_back("VECTORS1=" + lab + "_mat.x" );
+  input.push_back("VECTORS2=" + lab + "_mat.y" ); input.push_back("VECTORS3=" + lab + "_mat.z" );
   actions.push_back( input );
   // Input for denominator (coord)
   std::vector<std::string> d_input; d_input.push_back(lab + "_denom:"); d_input.push_back("COORDINATIONNUMBER");
   d_input.push_back("WEIGHT=" + lab + "_mat.w"); actions.push_back( d_input );
   // Input for matheval action
-  std::vector<std::string> me_input; me_input.push_back(lab + "_n:"); me_input.push_back("MATHEVAL"); 
+  std::vector<std::string> me_input; me_input.push_back(lab + "_n:"); me_input.push_back("MATHEVAL");
   me_input.push_back("ARG1=" + lab); me_input.push_back("ARG2=" + lab + "_denom"); me_input.push_back("FUNC=x/y");
   me_input.push_back("PERIODIC=NO"); actions.push_back(me_input);
   multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_n", "", words, keys, actions );
@@ -137,15 +137,15 @@ void SimpleCubic::compute( const double& val, const Vector& dir, MultiValue& myv
 
   double t1=(x2+y2+z2), t2=t1*t1, t3=(x4+y4+z4)/(t1*t2);
 
-  Vector myder; 
+  Vector myder;
   myder[0] = 4*x3/t2-4*dir[0]*t3;
   myder[1] = 4*y3/t2-4*dir[1]*t3;
   myder[2] = 4*z3/t2-4*dir[2]*t3;
-  
+
   // Accumulate derivatives
   addToValue( 0, val*tmp, myvals );
-  addWeightDerivative( 0, tmp, myvals ); 
-  addVectorDerivatives( 0, val*myder, myvals ); 
+  addWeightDerivative( 0, tmp, myvals );
+  addVectorDerivatives( 0, val*myder, myvals );
 }
 
 }

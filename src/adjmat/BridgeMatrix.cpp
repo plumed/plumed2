@@ -81,12 +81,12 @@ void BridgeMatrix::shortcutKeywords( Keywords& keys ) {
 }
 
 void BridgeMatrix::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                  const std::map<std::string,std::string>& keys,
-                                  std::vector<std::vector<std::string> >& actions ) {
-  // Make the matrix object 
+                                   const std::map<std::string,std::string>& keys,
+                                   std::vector<std::vector<std::string> >& actions ) {
+  // Make the matrix object
   std::vector<std::string> mat_input; mat_input.push_back( lab + "_mat:" );
-  mat_input.push_back("BRIDGE_MATRIX"); 
-  for(unsigned i=1;i<words.size();++i) mat_input.push_back( words[i] );
+  mat_input.push_back("BRIDGE_MATRIX");
+  for(unsigned i=1; i<words.size(); ++i) mat_input.push_back( words[i] );
   actions.push_back( mat_input );
 
   // Make the rest of the combine object
@@ -144,9 +144,9 @@ double BridgeMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, co
   double tot=0;
   for(unsigned i=0; i<natoms; ++i) {
     Vector dij= getPosition(i,myvals); double dijm = dij.modulo2();
-    double dw1, w1=sf1.calculateSqr( dijm, dw1 ); if( dijm<epsilon ){ w1=0.0; dw1=0.0; }
+    double dw1, w1=sf1.calculateSqr( dijm, dw1 ); if( dijm<epsilon ) { w1=0.0; dw1=0.0; }
     Vector dik=pbcDistance( getPosition(i,myvals), pos2 ); double dikm=dik.modulo2();
-    double dw2, w2=sf2.calculateSqr( dikm, dw2 ); if( dikm<epsilon ){ w2=0.0; dw2=0.0; }
+    double dw2, w2=sf2.calculateSqr( dikm, dw2 ); if( dikm<epsilon ) { w2=0.0; dw2=0.0; }
 
     tot += w1*w2;
     // And finish the calculation

@@ -29,15 +29,15 @@
 namespace PLMD {
 namespace adjmat {
 
-class ClusteringBase : 
-public ActionWithArguments,
-public ActionWithValue 
+class ClusteringBase :
+  public ActionWithArguments,
+  public ActionWithValue
 {
 protected:
 /// Vector that stores the sizes of the current set of clusters
   std::vector< std::pair<unsigned,unsigned> > cluster_sizes;
 /// Used to identify the cluster we are working on
-  int number_of_cluster;  
+  int number_of_cluster;
 /// Vector that identifies the cluster each atom belongs to
   std::vector<unsigned> which_cluster;
 /// Get the number of nodes
@@ -45,7 +45,7 @@ protected:
 /// Get the neighbour list based on the adjacency matrix
   void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
 /// Retrieve the list of edges in the adjacency matrix/graph
-  void retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list );  
+  void retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list );
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );

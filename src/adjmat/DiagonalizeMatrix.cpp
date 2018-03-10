@@ -28,8 +28,8 @@ namespace PLMD {
 namespace adjmat {
 
 class DiagonalizeMatrix :
-public ActionWithArguments,
-public ActionWithValue
+  public ActionWithArguments,
+  public ActionWithValue
 {
 private:
   std::vector<unsigned> desired_vectors;
@@ -58,69 +58,69 @@ PLUMED_REGISTER_SHORTCUT(DiagonalizeMatrix,"SPRINT")
 
 void DiagonalizeMatrix::shortcutKeywords( Keywords& keys ) {
   keys.add("numbered","GROUP","specifies the list of atoms that should be assumed indistinguishable");
-  keys.add("numbered","SWITCH","specify the switching function to use between two sets of indistinguishable atoms"); 
+  keys.add("numbered","SWITCH","specify the switching function to use between two sets of indistinguishable atoms");
 }
 
 void DiagonalizeMatrix::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                                         const std::map<std::string,std::string>& keys,
                                         std::vector<std::vector<std::string> >& actions ) {
   if( words[0].find("SPRINT")!=std::string::npos ) {
-      unsigned nrows = 0; std::vector<unsigned> nin_group; unsigned ntot_atoms=0;
-      for(unsigned i=0;;++i) {
-          std::string num; Tools::convert(i+1, num );
-          if( !keys.count("GROUP" + num) ) break;
-          std::vector<std::string> cmap_words; cmap_words.push_back( lab + "_mat" + num +  num + ":" );
-          cmap_words.push_back("CONTACT_MATRIX"); cmap_words.push_back("GROUP=" + keys.find("GROUP" + num)->second );  
-          cmap_words.push_back("SWITCH=" + keys.find("SWITCH" + num + num )->second ); 
-          actions.push_back( cmap_words );
-          // Get number of atoms in each group
-          std::vector<std::string> words=Tools::getWords(keys.find("GROUP" + num)->second,"\t\n ,"); 
-          Tools::interpretRanges(words); nin_group.push_back( words.size() ); ntot_atoms += words.size();
-          for(unsigned j=0;j<nrows;++j) {
-              std::string jnum; Tools::convert( j+1, jnum );
-              std::vector<std::string> cmap_inter; cmap_inter.push_back( lab + "_mat" + jnum +  num + ":" ); 
-              cmap_inter.push_back("CONTACT_MATRIX"); cmap_inter.push_back("GROUPA=" + keys.find("GROUP" + jnum)->second ); 
-              cmap_inter.push_back("GROUPB=" + keys.find("GROUP" + num)->second ); 
-              cmap_inter.push_back("SWITCH=" + keys.find("SWITCH" + jnum + num)->second ); 
-              actions.push_back( cmap_inter );
-              std::vector<std::string> tmat_inter; tmat_inter.push_back( lab + "_mat" + num +  jnum + ":" );
-              tmat_inter.push_back("TRANSPOSE"); tmat_inter.push_back("ARG=" + lab + "_mat" + jnum +  num + ".w");
-              actions.push_back( tmat_inter );
-          }
-          nrows++; 
+    unsigned nrows = 0; std::vector<unsigned> nin_group; unsigned ntot_atoms=0;
+    for(unsigned i=0;; ++i) {
+      std::string num; Tools::convert(i+1, num );
+      if( !keys.count("GROUP" + num) ) break;
+      std::vector<std::string> cmap_words; cmap_words.push_back( lab + "_mat" + num +  num + ":" );
+      cmap_words.push_back("CONTACT_MATRIX"); cmap_words.push_back("GROUP=" + keys.find("GROUP" + num)->second );
+      cmap_words.push_back("SWITCH=" + keys.find("SWITCH" + num + num )->second );
+      actions.push_back( cmap_words );
+      // Get number of atoms in each group
+      std::vector<std::string> words=Tools::getWords(keys.find("GROUP" + num)->second,"\t\n ,");
+      Tools::interpretRanges(words); nin_group.push_back( words.size() ); ntot_atoms += words.size();
+      for(unsigned j=0; j<nrows; ++j) {
+        std::string jnum; Tools::convert( j+1, jnum );
+        std::vector<std::string> cmap_inter; cmap_inter.push_back( lab + "_mat" + jnum +  num + ":" );
+        cmap_inter.push_back("CONTACT_MATRIX"); cmap_inter.push_back("GROUPA=" + keys.find("GROUP" + jnum)->second );
+        cmap_inter.push_back("GROUPB=" + keys.find("GROUP" + num)->second );
+        cmap_inter.push_back("SWITCH=" + keys.find("SWITCH" + jnum + num)->second );
+        actions.push_back( cmap_inter );
+        std::vector<std::string> tmat_inter; tmat_inter.push_back( lab + "_mat" + num +  jnum + ":" );
+        tmat_inter.push_back("TRANSPOSE"); tmat_inter.push_back("ARG=" + lab + "_mat" + jnum +  num + ".w");
+        actions.push_back( tmat_inter );
       }
-      std::vector<std::string> join_matrices; 
-      join_matrices.push_back( lab + "_jmat:"); join_matrices.push_back("COMBINE_MATRICES");
-      for(unsigned i=0;i<nrows;++i){
-          std::string inum; Tools::convert(i+1,inum);
-          for(unsigned j=0;j<nrows;++j){ 
-              std::string jnum; Tools::convert(j+1,jnum);
-              if( i>j ) join_matrices.push_back("MATRIX" + inum + jnum + "=" + lab + "_mat" + inum +  jnum );
-              else join_matrices.push_back("MATRIX" + inum + jnum + "=" + lab + "_mat" + inum +  jnum + ".w"); 
-          }
+      nrows++;
+    }
+    std::vector<std::string> join_matrices;
+    join_matrices.push_back( lab + "_jmat:"); join_matrices.push_back("COMBINE_MATRICES");
+    for(unsigned i=0; i<nrows; ++i) {
+      std::string inum; Tools::convert(i+1,inum);
+      for(unsigned j=0; j<nrows; ++j) {
+        std::string jnum; Tools::convert(j+1,jnum);
+        if( i>j ) join_matrices.push_back("MATRIX" + inum + jnum + "=" + lab + "_mat" + inum +  jnum );
+        else join_matrices.push_back("MATRIX" + inum + jnum + "=" + lab + "_mat" + inum +  jnum + ".w");
       }
-      actions.push_back( join_matrices );
-      // Diagonalization
-      std::vector<std::string> diag_mat; diag_mat.push_back( lab + "_diag:"); diag_mat.push_back("DIAGONALIZE"); 
-      diag_mat.push_back("ARG=" + lab + "_jmat"); diag_mat.push_back("VECTORS=1"); 
-      actions.push_back( diag_mat );
-      // Compute sprint coordinates as product of eigenvalue and eigenvector times square root of number of atoms in all groups
-      std::vector<std::string> math_act; math_act.push_back( lab + "_sp:"); math_act.push_back("MATHEVAL");
-      math_act.push_back("ARG1=" + lab + "_diag.vals-1"); math_act.push_back("ARG2=" + lab + "_diag.vecs-1");
-      std::string str_natoms; Tools::convert( ntot_atoms, str_natoms ); 
-      math_act.push_back("FUNC=sqrt(" + str_natoms + ")*x*y"); 
-      math_act.push_back("PERIODIC=NO"); actions.push_back( math_act );
-      // Sort sprint coordinates for each group of atoms
-      unsigned k=0;
-      for(unsigned j=0;j<nin_group.size();++j) {
-          std::vector<std::string> sort_act; std::string jnum, knum; Tools::convert( j+1, jnum ); 
-          sort_act.push_back( lab + jnum + ":"); sort_act.push_back("SORT"); 
-          Tools::convert( k, knum ); std::string argstr="ARG=" + lab + "_sp." + knum; k++;
-          for(unsigned n=1;n<nin_group[j];++n){ 
-              Tools::convert( k, knum ); argstr += "," + lab + "_sp." + knum; k++; 
-          }
-          sort_act.push_back( argstr ); actions.push_back( sort_act );
+    }
+    actions.push_back( join_matrices );
+    // Diagonalization
+    std::vector<std::string> diag_mat; diag_mat.push_back( lab + "_diag:"); diag_mat.push_back("DIAGONALIZE");
+    diag_mat.push_back("ARG=" + lab + "_jmat"); diag_mat.push_back("VECTORS=1");
+    actions.push_back( diag_mat );
+    // Compute sprint coordinates as product of eigenvalue and eigenvector times square root of number of atoms in all groups
+    std::vector<std::string> math_act; math_act.push_back( lab + "_sp:"); math_act.push_back("MATHEVAL");
+    math_act.push_back("ARG1=" + lab + "_diag.vals-1"); math_act.push_back("ARG2=" + lab + "_diag.vecs-1");
+    std::string str_natoms; Tools::convert( ntot_atoms, str_natoms );
+    math_act.push_back("FUNC=sqrt(" + str_natoms + ")*x*y");
+    math_act.push_back("PERIODIC=NO"); actions.push_back( math_act );
+    // Sort sprint coordinates for each group of atoms
+    unsigned k=0;
+    for(unsigned j=0; j<nin_group.size(); ++j) {
+      std::vector<std::string> sort_act; std::string jnum, knum; Tools::convert( j+1, jnum );
+      sort_act.push_back( lab + jnum + ":"); sort_act.push_back("SORT");
+      Tools::convert( k, knum ); std::string argstr="ARG=" + lab + "_sp." + knum; k++;
+      for(unsigned n=1; n<nin_group[j]; ++n) {
+        Tools::convert( k, knum ); argstr += "," + lab + "_sp." + knum; k++;
       }
+      sort_act.push_back( argstr ); actions.push_back( sort_act );
+    }
   }
 }
 
@@ -134,9 +134,9 @@ void DiagonalizeMatrix::registerKeywords( Keywords& keys ) {
 }
 
 DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
-Action(ao),
-ActionWithArguments(ao),
-ActionWithValue(ao)
+  Action(ao),
+  ActionWithArguments(ao),
+  ActionWithValue(ao)
 {
   if( getNumberOfArguments()!=1 ) error("should only be one argument for this action");
   if( getPntrToArgument(0)->getRank()!=2 ) error("input argument for this action should be a matrix");
@@ -144,64 +144,64 @@ ActionWithValue(ao)
 
   std::vector<std::string> eigv; parseVector("VECTORS",eigv);
   if( eigv.size()>1 ) {
-      Tools::interpretRanges(eigv); desired_vectors.resize( eigv.size() );
-      for(unsigned i=0;i<eigv.size();++i) Tools::convert( eigv[i], desired_vectors[i] );
+    Tools::interpretRanges(eigv); desired_vectors.resize( eigv.size() );
+    for(unsigned i=0; i<eigv.size(); ++i) Tools::convert( eigv[i], desired_vectors[i] );
   } else  {
-      if( eigv.size()==0 ) error("missing input to VECTORS keyword");
-      unsigned ivec; 
-      if( Tools::convert( eigv[0], ivec ) ) {
-          desired_vectors.resize(1); desired_vectors[0]=ivec;
-      } else if( eigv[0]=="all") {
-          desired_vectors.resize( getPntrToArgument(0)->getShape()[0] );
-          for(unsigned i=0;i<eigv.size();++i) desired_vectors[i] = i + 1; 
-      } else error("input to VECTOR keyword should be list of numbers or all");
+    if( eigv.size()==0 ) error("missing input to VECTORS keyword");
+    unsigned ivec;
+    if( Tools::convert( eigv[0], ivec ) ) {
+      desired_vectors.resize(1); desired_vectors[0]=ivec;
+    } else if( eigv[0]=="all") {
+      desired_vectors.resize( getPntrToArgument(0)->getShape()[0] );
+      for(unsigned i=0; i<eigv.size(); ++i) desired_vectors[i] = i + 1;
+    } else error("input to VECTOR keyword should be list of numbers or all");
   }
 
-  std::string num; std::vector<unsigned> eval_shape(0); 
+  std::string num; std::vector<unsigned> eval_shape(0);
   std::vector<unsigned> evec_shape(1); evec_shape[0] = getPntrToArgument(0)->getShape()[0];
-  for(unsigned i=0;i<desired_vectors.size();++i) {
-      Tools::convert( desired_vectors[i], num );
-      addComponentWithDerivatives( "vals-" + num, eval_shape ); componentIsNotPeriodic( "vals-" + num ); 
-      addComponent( "vecs-" + num, evec_shape ); componentIsNotPeriodic( "vecs-" + num );
-      // Make sure eigenvalues are always stored
-      getPntrToComponent( 2*i+1 )->alwaysStoreValues();
+  for(unsigned i=0; i<desired_vectors.size(); ++i) {
+    Tools::convert( desired_vectors[i], num );
+    addComponentWithDerivatives( "vals-" + num, eval_shape ); componentIsNotPeriodic( "vals-" + num );
+    addComponent( "vecs-" + num, evec_shape ); componentIsNotPeriodic( "vecs-" + num );
+    // Make sure eigenvalues are always stored
+    getPntrToComponent( 2*i+1 )->alwaysStoreValues();
   }
 
   std::vector<unsigned> eigvecs_shape(2); eigvecs_shape[0]=eigvecs_shape[1]=getPntrToArgument(0)->getShape()[0];
-  mymatrix.resize( eigvecs_shape[0], eigvecs_shape[1] ); eigvals.resize( eigvecs_shape[0] ); 
+  mymatrix.resize( eigvecs_shape[0], eigvecs_shape[1] ); eigvals.resize( eigvecs_shape[0] );
   eigvecs.resize( eigvecs_shape[0], eigvecs_shape[1] );
   // Now request the arguments to make sure we store things we need
   std::vector<Value*> args( getArguments() ); requestArguments(args, false );
-  forcesToApply.resize( evec_shape[0]*evec_shape[0] ); 
+  forcesToApply.resize( evec_shape[0]*evec_shape[0] );
 }
 
 void DiagonalizeMatrix::calculate() {
   // Retrieve the matrix from input
   unsigned k = 0;
-  for(unsigned i=0;i<mymatrix.nrows();++i) {
-      for(unsigned j=0;j<mymatrix.ncols();++j) {
-          mymatrix(i,j) = getPntrToArgument(0)->get( k ); k++;
-      }
+  for(unsigned i=0; i<mymatrix.nrows(); ++i) {
+    for(unsigned j=0; j<mymatrix.ncols(); ++j) {
+      mymatrix(i,j) = getPntrToArgument(0)->get( k ); k++;
+    }
   }
   // Now diagonalize the matrix
   diagMat( mymatrix, eigvals, eigvecs );
   // And set the eigenvalues and eigenvectors
-  for(unsigned i=0;i<desired_vectors.size();++i){
-      getPntrToOutput(2*i)->set( eigvals[ mymatrix.ncols()-desired_vectors[i]] );
-      Value* evec_out = getPntrToOutput(2*i+1); unsigned vreq = mymatrix.ncols()-desired_vectors[i];
-      for(unsigned j=0;j<mymatrix.ncols();++j) evec_out->set( j, eigvecs( vreq, j ) );
+  for(unsigned i=0; i<desired_vectors.size(); ++i) {
+    getPntrToOutput(2*i)->set( eigvals[ mymatrix.ncols()-desired_vectors[i]] );
+    Value* evec_out = getPntrToOutput(2*i+1); unsigned vreq = mymatrix.ncols()-desired_vectors[i];
+    for(unsigned j=0; j<mymatrix.ncols(); ++j) evec_out->set( j, eigvecs( vreq, j ) );
   }
 
   if( !doNotCalculateDerivatives() ) {
-      for(unsigned i=0;i<mymatrix.nrows();++i) {
-          for(unsigned j=0;j<mymatrix.ncols();++j) {
-              unsigned nplace = i*mymatrix.nrows()+j; 
-              for(unsigned k=0;k<desired_vectors.size();++k){
-                  unsigned ncol = mymatrix.ncols()-desired_vectors[k];
-                  getPntrToOutput(2*k)->addDerivative( nplace, eigvecs(ncol,i)*eigvecs(ncol,j) );
-              }
-          }
+    for(unsigned i=0; i<mymatrix.nrows(); ++i) {
+      for(unsigned j=0; j<mymatrix.ncols(); ++j) {
+        unsigned nplace = i*mymatrix.nrows()+j;
+        for(unsigned k=0; k<desired_vectors.size(); ++k) {
+          unsigned ncol = mymatrix.ncols()-desired_vectors[k];
+          getPntrToOutput(2*k)->addDerivative( nplace, eigvecs(ncol,i)*eigvecs(ncol,j) );
+        }
       }
+    }
   }
 }
 
@@ -214,31 +214,31 @@ void DiagonalizeMatrix::apply() {
 
   // Check for forces on eigenvectors
   bool eigvec_forces=false;
-  for(unsigned i=0;i<desired_vectors.size();++i) {
-      if( getPntrToOutput(2*i+1)->forcesWereAdded() ){ eigvec_forces=true; break; }
-  } 
+  for(unsigned i=0; i<desired_vectors.size(); ++i) {
+    if( getPntrToOutput(2*i+1)->forcesWereAdded() ) { eigvec_forces=true; break; }
+  }
   if( !eigvec_forces ) return;
 
   // Forces on eigenvectors
   unsigned nn=0;
-  for(unsigned j=0;j<mymatrix.nrows();++j) {
-      for(unsigned k=0;k<mymatrix.ncols();++k) {
-          double tmp1=0; 
-          for(unsigned i=0;i<desired_vectors.size();++i){ 
-              if( !getPntrToOutput(2*i+1)->forcesWereAdded() ) continue;
+  for(unsigned j=0; j<mymatrix.nrows(); ++j) {
+    for(unsigned k=0; k<mymatrix.ncols(); ++k) {
+      double tmp1=0;
+      for(unsigned i=0; i<desired_vectors.size(); ++i) {
+        if( !getPntrToOutput(2*i+1)->forcesWereAdded() ) continue;
 
-              unsigned ncol = mymatrix.ncols()-desired_vectors[i]; 
-              for(unsigned n=0;n<mymatrix.nrows();++n) { 
-                  double tmp2 = 0;
-                  for(unsigned m=0;m<mymatrix.nrows();++m) {
-                      if( m==ncol ) continue;
-                      tmp2 += eigvecs(m,n)*eigvecs(m,j)*eigvecs(ncol,k) / (eigvals[ncol]-eigvals[m]);
-                  }
-                  tmp1 += getPntrToOutput(2*i+1)->getForce(n) * tmp2;
-              }
+        unsigned ncol = mymatrix.ncols()-desired_vectors[i];
+        for(unsigned n=0; n<mymatrix.nrows(); ++n) {
+          double tmp2 = 0;
+          for(unsigned m=0; m<mymatrix.nrows(); ++m) {
+            if( m==ncol ) continue;
+            tmp2 += eigvecs(m,n)*eigvecs(m,j)*eigvecs(ncol,k) / (eigvals[ncol]-eigvals[m]);
           }
-          getPntrToArgument(0)->addForce( nn, tmp1 ); nn++;
+          tmp1 += getPntrToOutput(2*i+1)->getForce(n) * tmp2;
+        }
       }
+      getPntrToArgument(0)->addForce( nn, tmp1 ); nn++;
+    }
   }
 
 }

@@ -41,10 +41,10 @@ is information as to how to go about implementing a new analysis method.
 
 */
 
-class Analysis : 
-public ActionAtomistic,
-public ActionWithArguments,
-public ActionPilot {
+class Analysis :
+  public ActionAtomistic,
+  public ActionWithArguments,
+  public ActionPilot {
 private:
 /// Are we treating each block of data separately
   bool nomemory;
@@ -82,7 +82,7 @@ private:
   std::string metricname;
 /// The checkpoint file
   OFile rfile;
-/// The weights to use 
+/// The weights to use
   std::vector<Value*> weights;
 /// Read in data from a file
   void readDataFromFile( const std::string& filename );

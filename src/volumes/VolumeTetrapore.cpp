@@ -140,13 +140,13 @@ public:
 PLUMED_REGISTER_ACTION(VolumeTetrapore,"TETRAHEDRALPORE")
 PLUMED_REGISTER_SHORTCUT(VolumeTetrapore,"TETRAHEDRALPORE")
 
-void VolumeTetrapore::shortcutKeywords( Keywords& keys ){
+void VolumeTetrapore::shortcutKeywords( Keywords& keys ) {
   ActionVolume::shortcutKeywords( keys );
 }
 
 void VolumeTetrapore::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions ){
+                                      const std::map<std::string,std::string>& keys,
+                                      std::vector<std::vector<std::string> >& actions ) {
   ActionVolume::expandShortcut( lab, words, keys, actions );
 }
 

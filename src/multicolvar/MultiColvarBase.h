@@ -60,10 +60,10 @@ protected:
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// Set the value of the colvar
-  void setValue( const unsigned&, const double& , MultiValue& ) const ; 
+  void setValue( const unsigned&, const double&, MultiValue& ) const ;
 /// Add some atom derivatives
   void addAtomsDerivatives( const unsigned& ival, const unsigned& jder, const Vector& der, MultiValue& myvals ) const ;
-/// Add some box derivatives 
+/// Add some box derivatives
   void addBoxDerivatives( const unsigned& ival, const Tensor& vir, MultiValue& myvals ) const ;
 /// Calculate the box derivatives using the virial formula
   void setBoxDerivativesNoPbc( const unsigned& ival, const std::vector<Vector>& fpositions, MultiValue& myvals ) const ;
@@ -76,7 +76,7 @@ public:
                                std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarBase(const ActionOptions&);
-  ~MultiColvarBase(); 
+  ~MultiColvarBase();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() const ;
 /// Prepare to run the calculation and get all atoms if required
@@ -113,7 +113,7 @@ unsigned MultiColvarBase::getNumberOfAtomsInEachCV() const {
 inline
 void MultiColvarBase::setValue( const unsigned& ival, const double& vv, MultiValue& myvals ) const {
   myvals.setValue( getPntrToOutput(ival)->getPositionInStream(), vv );
-} 
+}
 
 inline
 void MultiColvarBase::addAtomsDerivatives( const unsigned& ival, const unsigned& jder, const Vector& der, MultiValue& myvals ) const {
@@ -122,14 +122,14 @@ void MultiColvarBase::addAtomsDerivatives( const unsigned& ival, const unsigned&
   myvals.addDerivative( jval, 3*ablocks[jder][itask] + 0, der[0] );
   myvals.addDerivative( jval, 3*ablocks[jder][itask] + 1, der[1] );
   myvals.addDerivative( jval, 3*ablocks[jder][itask] + 2, der[2] );
-} 
+}
 
 inline
 void MultiColvarBase::addBoxDerivatives( const unsigned& ival, const Tensor& vir, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return;
   unsigned nvir=3*getNumberOfAtoms(), jval=getPntrToOutput(ival)->getPositionInStream();
   for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) myvals.addDerivative( jval, nvir + 3*i+j, vir(i,j) );
-} 
+}
 
 }
 }

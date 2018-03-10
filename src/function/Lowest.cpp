@@ -63,11 +63,11 @@ Lowest::Lowest(const ActionOptions&ao):
   Function(ao),
   tvals(0,0)
 {
-  if( !numberedkeys ){ 
-     if( getPntrToArgument(0)->getRank()>0 ) {
-         if( getNumberOfArguments()>1 ) error("should only use one non-scalar argument in input for ARG keyword");
-     }
-     for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore( getLabel() ); 
+  if( !numberedkeys ) {
+    if( getPntrToArgument(0)->getRank()>0 ) {
+      if( getNumberOfArguments()>1 ) error("should only use one non-scalar argument in input for ARG keyword");
+    }
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToArgument(i)->buildDataStore( getLabel() );
   }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     string s; Tools::convert(i+1,s);
@@ -77,39 +77,39 @@ Lowest::Lowest(const ActionOptions&ao):
 }
 
 void Lowest::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  if( args.size()>1 ){
-      double lowest = args[0]; unsigned lowind = 0;
-      for(unsigned i=1; i<args.size(); ++i) {
-        if( args[i]<lowest ){ lowest = args[i]; lowind = 0; } 
-      }
-      addValue( 0, lowest, myvals ); addDerivative( 0, lowind, 1.0, myvals );
+  if( args.size()>1 ) {
+    double lowest = args[0]; unsigned lowind = 0;
+    for(unsigned i=1; i<args.size(); ++i) {
+      if( args[i]<lowest ) { lowest = args[i]; lowind = 0; }
+    }
+    addValue( 0, lowest, myvals ); addDerivative( 0, lowind, 1.0, myvals );
   }
 }
 
 void Lowest::transformFinalValueAndDerivatives( const std::vector<double>& buf ) {
   if( !actionInChain() || getNumberOfArguments()>1 ) return;
 
-  unsigned lind = 0, pves = 0; unsigned aind=0; double lowest = getPntrToArgument(0)->get(0); 
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-      Value* myarg = getPntrToArgument(i); 
-      for(unsigned j=0;j<myarg->getNumberOfValues( getLabel() ); ++j ){
-          if( myarg->get(j)<lowest ){ aind=i; lowest=myarg->get(j); lind = pves + j; }
-      }
-      pves += myarg->getNumberOfValues( getLabel() );
+  unsigned lind = 0, pves = 0; unsigned aind=0; double lowest = getPntrToArgument(0)->get(0);
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    Value* myarg = getPntrToArgument(i);
+    for(unsigned j=0; j<myarg->getNumberOfValues( getLabel() ); ++j ) {
+      if( myarg->get(j)<lowest ) { aind=i; lowest=myarg->get(j); lind = pves + j; }
+    }
+    pves += myarg->getNumberOfValues( getLabel() );
   }
   Value* val0 = getPntrToComponent(0); val0->set( lowest );
-  if( !doNotCalculateDerivatives() ){
-      unsigned nn=0, nm=0;
-      for(unsigned i=0;i<getNumberOfArguments();++i){
-          nn += getPntrToArgument(i)->getNumberOfValues( getLabel() );
-          if( lind<nn ){ break; }
-          nm += getPntrToArgument(i)->getNumberOfValues( getLabel() );
-      }
-      tvals.clearAll(); (getPntrToArgument(aind)->getPntrToAction())->rerunTask( lind - nm, tvals );
-      unsigned istrn = getPntrToArgument(aind)->getPositionInStream();
-      for(unsigned i=0;i<tvals.getNumberActive(istrn);++i){
-          unsigned ider = tvals.getActiveIndex(istrn,i); val0->addDerivative( ider, tvals.getDerivative( istrn, ider ) );
-      }
+  if( !doNotCalculateDerivatives() ) {
+    unsigned nn=0, nm=0;
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      nn += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      if( lind<nn ) { break; }
+      nm += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+    }
+    tvals.clearAll(); (getPntrToArgument(aind)->getPntrToAction())->rerunTask( lind - nm, tvals );
+    unsigned istrn = getPntrToArgument(aind)->getPositionInStream();
+    for(unsigned i=0; i<tvals.getNumberActive(istrn); ++i) {
+      unsigned ider = tvals.getActiveIndex(istrn,i); val0->addDerivative( ider, tvals.getDerivative( istrn, ider ) );
+    }
   }
 }
 

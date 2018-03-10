@@ -502,7 +502,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
   fpos_t pos; bool between_ters=true;
   while(file_is_alive) {
     file_is_alive = Tools::getline(fp,line);
-    if( !file_is_alive ) break;   
+    if( !file_is_alive ) break;
     //cerr<<line<<"\n";
     fgetpos (fp,&pos);
     while(line.length()<80) line.push_back(' ');

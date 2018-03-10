@@ -70,7 +70,7 @@ class ActionWithArguments;
 class ActionWithValue :
   public virtual Action
 {
-friend class ActionWithArguments;
+  friend class ActionWithArguments;
 private:
 /// An array containing the values for this action
   std::vector<std::unique_ptr<Value>> values;
@@ -133,7 +133,7 @@ public:
   virtual void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
 protected:
 ///
-  bool actionInChain() const ; 
+  bool actionInChain() const ;
 /// Get a pointer to the default value
   Value* getPntrToValue();
 /// Set the default value (the one without name)
@@ -142,8 +142,8 @@ protected:
 
 ///
   unsigned getTaskCode( const unsigned& ii ) const ;
-/// Run all the tasks in the list  
-  void runAllTasks();  
+/// Run all the tasks in the list
+  void runAllTasks();
 /// Run all calculations in serial
   bool runInSerial() const ;
 public:
@@ -231,7 +231,7 @@ public:
   virtual unsigned getNumberOfDerivatives() const = 0;
 /// Activate the calculation of derivatives
   virtual void turnOnDerivatives();
-/// Interpret the data label and get arguments 
+/// Interpret the data label and get arguments
   void interpretDataLabel( const std::string& mystr, Action* myuser, unsigned& nargs, std::vector<Value*>& args );
 ///
   unsigned getFullNumberOfTasks() const ;
@@ -243,13 +243,13 @@ public:
 ///
   virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) { plumed_merror( "problem in task list for " + getLabel() ); }
 ///
-  virtual void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min, 
-                                     std::vector<std::string>& max, std::vector<unsigned>& nbin, 
-                                     std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const { 
-                                       plumed_merror( "problem in getting grid data for " + getLabel() ); 
-                                     }
+  virtual void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
+                                     std::vector<std::string>& max, std::vector<unsigned>& nbin,
+                                     std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
+    plumed_merror( "problem in getting grid data for " + getLabel() );
+  }
 ///
-  virtual void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { plumed_merror("problem in getting grid data for " + getLabel() ); } 
+  virtual void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { plumed_merror("problem in getting grid data for " + getLabel() ); }
   virtual void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const { plumed_merror("problem in getting grid data for " + getLabel() ); }
 ///
   virtual void selectActiveTasks( std::vector<unsigned>& tflags );
@@ -258,16 +258,16 @@ public:
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 ///
-  virtual void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals, 
+  virtual void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
                                        const unsigned& bufstart, std::vector<double>& buffer ) const { plumed_error(); }
 /// This one calculates matrix elements
   virtual bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const { return true; }
 ///
-  virtual void gatherForces( const unsigned& task_index, const MultiValue& myvals, std::vector<double>& forces ) const ; 
+  virtual void gatherForces( const unsigned& task_index, const MultiValue& myvals, std::vector<double>& forces ) const ;
 ///
   bool addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act );
 ///
-  virtual void transformFinalValueAndDerivatives( const std::vector<double>& buf  ){};
+  virtual void transformFinalValueAndDerivatives( const std::vector<double>& buf  ) {};
 /// Retrieve the forces acting on all values
   bool getForcesFromValues( std::vector<double>& forces );
 };
@@ -336,7 +336,7 @@ bool ActionWithValue::actionInChain() const {
   return (action_to_do_before!=NULL);
 }
 
-inline 
+inline
 const std::vector<unsigned>& ActionWithValue::getCurrentTasks() const {
   return indexOfTaskInFullList;
 }

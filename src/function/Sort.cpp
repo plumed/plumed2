@@ -79,13 +79,13 @@ Sort::Sort(const ActionOptions&ao):
   Action(ao),
   Function(ao)
 {
-  unsigned k=0; 
+  unsigned k=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if(getPntrToArgument(i)->isPeriodic()) error("Cannot sort periodic values (check argument "+ getPntrToArgument(i)->getName() +")");
-    for(unsigned j=0;j<getPntrToArgument(i)->getNumberOfValues(getLabel());++j) {
-        string s; Tools::convert(k+1,s); 
-        addComponentWithDerivatives(s+"th");
-        getPntrToComponent(k)->setNotPeriodic(); k++;
+    for(unsigned j=0; j<getPntrToArgument(i)->getNumberOfValues(getLabel()); ++j) {
+      string s; Tools::convert(k+1,s);
+      addComponentWithDerivatives(s+"th");
+      getPntrToComponent(k)->setNotPeriodic(); k++;
     }
   }
   checkRead();

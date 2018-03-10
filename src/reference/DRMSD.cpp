@@ -92,10 +92,10 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceVal
     const double der = diff / len;
 
     drmsd += diff * diff;
-    if( !myder.noDerivatives() ){ 
-        myder.addAtomDerivatives( i, -der * distance );
-        myder.addAtomDerivatives( j,  der * distance );
-        myder.addBoxDerivatives( - der * Tensor(distance,distance) );
+    if( !myder.noDerivatives() ) {
+      myder.addAtomDerivatives( i, -der * distance );
+      myder.addAtomDerivatives( j,  der * distance );
+      myder.addBoxDerivatives( - der * Tensor(distance,distance) );
     }
   }
 
@@ -110,9 +110,9 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceVal
     idrmsd = inpairs / drmsd ;
   }
 
-  if( !myder.noDerivatives() ){
-      myder.updateDynamicLists(); 
-      myder.scaleAllDerivatives( idrmsd );
+  if( !myder.noDerivatives() ) {
+    myder.updateDynamicLists();
+    myder.scaleAllDerivatives( idrmsd );
   }
   return drmsd;
 }

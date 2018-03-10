@@ -83,7 +83,7 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 class DihedralCorrelation : public MultiColvarBase {
 private:
 public:
-  static void shortcutKeywords( Keywords& keys ){ keys.add("hidden","ALWAYS_EXPAND",""); }
+  static void shortcutKeywords( Keywords& keys ) { keys.add("hidden","ALWAYS_EXPAND",""); }
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                               const std::map<std::string,std::string>& keys,
                               std::vector<std::vector<std::string> >& actions  );
@@ -96,11 +96,11 @@ PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
 PLUMED_REGISTER_SHORTCUT(DihedralCorrelation,"DIHCOR")
 
 void DihedralCorrelation::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                          const std::map<std::string,std::string>& keys,
-                                          std::vector<std::vector<std::string> >& actions ){
+    const std::map<std::string,std::string>& keys,
+    std::vector<std::vector<std::string> >& actions ) {
   std::vector<std::string> mc_line; mc_line.push_back( lab + "_data:" );
   mc_line.push_back("DIHCOR");
-  for(unsigned i=1;i<words.size();++i) mc_line.push_back(words[i]);
+  for(unsigned i=1; i<words.size(); ++i) mc_line.push_back(words[i]);
   actions.push_back( mc_line );
   std::vector<std::string> input; input.push_back( lab + ":" ); input.push_back("COMBINE");
   input.push_back("ARG=" + lab +"_data" ); input.push_back("PERIODIC=NO"); actions.push_back( input );

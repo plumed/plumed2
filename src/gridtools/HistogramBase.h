@@ -29,9 +29,9 @@
 namespace PLMD {
 namespace gridtools {
 
-class HistogramBase : 
-public ActionWithValue,
-public ActionWithArguments
+class HistogramBase :
+  public ActionWithValue,
+  public ActionWithArguments
 {
 private:
   std::vector<double> forcesToApply;
@@ -46,8 +46,8 @@ public:
   static void shortcutKeywords( Keywords& keys );
   static void registerKeywords( Keywords& keys );
   static void resolveNormalizationShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                            const std::map<std::string,std::string>& keys,
-                                            std::vector<std::vector<std::string> >& actions );
+      const std::map<std::string,std::string>& keys,
+      std::vector<std::vector<std::string> >& actions );
   explicit HistogramBase(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
@@ -64,6 +64,6 @@ public:
   virtual void addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const = 0;
 };
 
-} 
+}
 }
 #endif

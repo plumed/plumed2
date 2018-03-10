@@ -190,8 +190,8 @@ double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> 
     }
   }
   if(!squared) {
-    r=sqrt(r); 
-    if( myder.noDerivatives() ) return r; 
+    r=sqrt(r);
+    if( myder.noDerivatives() ) return r;
     double ir=1.0/(2.0*r); for(unsigned i=0; i<arg_ders.size(); ++i) myder.setArgumentDerivatives( i, arg_ders[i]*ir );
   } else {
     if( myder.noDerivatives() ) return r;
