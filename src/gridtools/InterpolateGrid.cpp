@@ -59,7 +59,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit InterpolateGrid(const ActionOptions&ao);
-  void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+  void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
@@ -113,11 +113,11 @@ void InterpolateGrid::finishOutputSetup() {
   for(unsigned i=0;i<gridcoords.getNumberOfPoints();++i) addTaskToList(i);
 }
 
-void InterpolateGrid::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+void InterpolateGrid::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                             std::vector<std::string>& max, std::vector<unsigned>& nbin,
                                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-  getPntrToArgument(0)->getPntrToAction()->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc, dumpcube );
-  bool isdists=dumpcube; double units=1.0;
+  getPntrToArgument(0)->getPntrToAction()->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, dumpcube );
+  bool isdists=dumpcube; double units=1.0; gtype="flat";
   for(unsigned i=0;i<argn.size();++i){
       if( argn[i].find(".")==std::string::npos ){ isdists=false; break; }
       std::size_t dot = argn[i].find("."); std::string name = argn[i].substr(dot+1);

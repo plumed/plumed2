@@ -442,10 +442,11 @@ void Print::update() {
       ogfile.setBackupString("analysis");
       ogfile.open( file ); ogfile.addConstantField("normalisation");
       Value* gval=getPntrToArgument(0); ActionWithValue* act=gval->getPntrToAction();
-      std::vector<unsigned> ind( gval->getRank() ), nbin( gval->getRank() );
+      std::vector<unsigned> ind( gval->getRank() ), nbin( gval->getRank() ); std::string gtype;
       std::vector<double> spacing( gval->getRank() ), xx( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
       std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
-      act->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc, false );
+      act->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, false );
+      if( gtype=="fibonacci" ) error("cannot print fibonacci grids out to grid files");
       for(unsigned i=0; i<gval->getRank(); ++i) {
         ogfile.addConstantField("min_" + argn[i] );
         ogfile.addConstantField("max_" + argn[i] );
@@ -480,8 +481,9 @@ void Print::update() {
       ogfile.open( file ); Value* gval=getPntrToArgument(0); ActionWithValue* act=gval->getPntrToAction();
       std::vector<unsigned> nbin( 3 ), pp( 3 );
       std::vector<double> xx( 3 ), spacing( 3 ), extent( 3 ); std::vector<bool> pbc( 3 );
-      std::vector<std::string> argn( 3 ), min( 3 ), max( 3 );
-      act->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc, true ); 
+      std::vector<std::string> argn( 3 ), min( 3 ), max( 3 ); std::string gtype;
+      act->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, true );
+      if( gtype=="fibonacci" ) error("cannot print fibonacci grids out to cube files"); 
       for(unsigned j=0;j<3;++j){ 
           double mind, maxd; 
           Tools::convert( min[j], mind ); 

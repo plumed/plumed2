@@ -39,13 +39,8 @@ ActionWithIntegral::ActionWithIntegral(const ActionOptions&ao):
 }
 
 void ActionWithIntegral::finishOutputSetup() { 
-  // Get the information on the grid to be integrated
-  Value* gval=getPntrToArgument(0); std::vector<unsigned> nbin( gval->getRank() );
-  std::vector<double> spacing( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
-  std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
-  gval->getPntrToAction()->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc, false );
   // Retrieve the volume of the grid (for integration)
-  volume = 1; for(unsigned i=0;i<gval->getRank();++i) volume *= spacing[i];
+  volume = gridobject.getCellVolume();
   // as we have to evaluate the function at each grid points
   for(unsigned i=0; i<getPntrToArgument(0)->getNumberOfValues( getLabel() ); ++i) addTaskToList(i);
   plumed_assert( arg_ends.size()==0 ); arg_ends.push_back(0); arg_ends.push_back(1); 

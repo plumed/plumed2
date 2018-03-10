@@ -108,7 +108,7 @@ namespace gridtools {
 
 class FindSphericalContour : public ContourFindingBase {
 private:
-  unsigned nbins;
+  unsigned nbins, npoints;
   double min, max;
   GridCoordinatesObject gridcoords;
 public:
@@ -116,9 +116,9 @@ public:
   explicit FindSphericalContour(const ActionOptions&ao);
   void finishOutputSetup(){}
   // Make these two so we can output a two dimensional analogue of the grid one day
-  void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+  void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin,
-                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const { plumed_error(); }
+                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { plumed_error(); }
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
   unsigned getNumberOfDerivatives() const ; 
@@ -144,8 +144,7 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
 {
   if( getPntrToArgument(0)->getRank()!=3 ) error("input grid must be three dimensional");
 
-  unsigned npoints; parse("NPOINTS",npoints);
-  log.printf("  searching for %u points on dividing surface \n",npoints);
+  parse("NPOINTS",npoints); log.printf("  searching for %u points on dividing surface \n",npoints);
   parse("INNER_RADIUS",min); parse("OUTER_RADIUS",max); parse("NBINS",nbins);
   log.printf("  expecting to find dividing surface at radii between %f and %f \n",min,max);
   log.printf("  looking for contour in windows of length %f \n", (max-min)/nbins);
@@ -156,6 +155,12 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   checkRead();
   // Create a task list
   for(unsigned i=0; i<npoints; ++i) addTaskToList( i );
+}
+
+void FindSphericalContour::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
+                             std::vector<std::string>& max, std::vector<unsigned>& nbin,
+                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
+  gtype="fibonacci"; nbin[0] = npoints; spacing[0]=0.0;
 }
 
 void FindSphericalContour::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const { 

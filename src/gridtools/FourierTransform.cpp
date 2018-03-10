@@ -76,7 +76,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FourierTransform(const ActionOptions&ao);
   void finishOutputSetup();
-  void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+  void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
 #ifndef __PLUMED_HAS_FFTW
@@ -146,9 +146,10 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
   }
 
   unsigned dimension = getPntrToArgument(0)->getRank(); gname.resize( dimension);
-  std::vector<std::string> argn( dimension ), min( dimension ), max( dimension );
+  std::vector<std::string> argn( dimension ), min( dimension ), max( dimension ); std::string gtype;
   std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
-  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( argn, min, max, nbin, spacing, ipbc, false );
+  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
+  if( gtype=="fibonacci" ) error("cannot fourier transform fibonacci grids");
   for(unsigned i=0;i<argn.size();++i) gname[i] = "k_" + argn[i];
   gridobject.setup( "flat", ipbc, 0, 0.0 ); checkRead();
 #endif
@@ -171,9 +172,10 @@ void FourierTransform::finishOutputSetup() {
   for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->setShape( gridobject.getNbin(true) );
 }
 
-void FourierTransform::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+void FourierTransform::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                              std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
                                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
+  gtype="flat";
   for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i) {
       argn[i] = gname[i];
       if( gridobject.getMin().size()>0 ) {

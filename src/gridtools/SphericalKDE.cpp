@@ -41,6 +41,7 @@ class SphericalKDE : public HistogramBase {
 private:
   double hh;
   std::vector<double> center;
+  unsigned nbins;
   double von_misses_norm;
   double von_misses_concentration;
 public:
@@ -51,7 +52,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit SphericalKDE(const ActionOptions&ao);
   void setupNeighborsVector();
-  void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+  void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& out_nbin, 
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
@@ -87,8 +88,7 @@ SphericalKDE::SphericalKDE(const ActionOptions&ao):
 {
   if( getNumberOfDerivatives()!=3 ) error("should have three coordinates in input to this action"); 
 
-  unsigned nbins; parse("GRID_BIN",nbins);
-  log.printf("  setting number of bins to %d \n", nbins );
+  parse("GRID_BIN",nbins); log.printf("  setting number of bins to %d \n", nbins );
   parse("CONCENTRATION",von_misses_concentration);
   von_misses_norm = von_misses_concentration / ( 4*pi*sinh( von_misses_concentration ) );
   log.printf("  setting concentration parameter to %f \n", von_misses_concentration );
@@ -105,10 +105,10 @@ SphericalKDE::SphericalKDE(const ActionOptions&ao):
 
 void SphericalKDE::setupNeighborsVector() { }
 
-void SphericalKDE::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+void SphericalKDE::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                          std::vector<std::string>& max, std::vector<unsigned>& out_nbin, 
                                          std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-  error("cannot print spherical grids in this way");
+  gtype="fibonacci"; out_nbin[0] = nbins; spacing[0] = von_misses_concentration;
 } 
 
 void SphericalKDE::buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args ) {

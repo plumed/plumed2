@@ -42,7 +42,7 @@ public:
   void clearDerivatives( const bool& force=false ){}
   unsigned getNumberOfDerivatives() const ;
   bool allowComponentsAndValue() const { return true; }
-  void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+  void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin, 
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;

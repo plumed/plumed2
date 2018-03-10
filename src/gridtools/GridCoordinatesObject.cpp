@@ -91,20 +91,21 @@ void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, con
     Tools::convert( str_min[i], min[i] );
     Tools::convert( str_max[i], max[i] );
     if( spacing.size()==dimension && binsin.size()==dimension ) {
-      double range = max[i] - min[i]; unsigned spc = std::floor( range / spacing[i]);
+      double range = max[i] - min[i]; unsigned spc = std::floor( range / spacing[i]); dx[i]=spacing[i];
       // This check ensures that nbins is set correctly if spacing is set the same as the number of bins
       if( fabs( binsin[i]*spacing[i]-range )>0.5*spacing[i] ){ spc += 1; }
       if( spc>binsin[i] ) nbin[i]=spc; else nbin[i]=binsin[i];
-    } else if( binsin.size()==dimension ) nbin[i]=binsin[i];
-    else if( spacing.size()==dimension ) nbin[i] = std::floor(( max[i] - min[i] ) / spacing[i]) + 1;
-    else plumed_error();
-    dx[i] = ( max[i] - min[i] ) / static_cast<double>( nbin[i] );
+    } else if( binsin.size()==dimension ) { 
+       nbin[i]=binsin[i]; dx[i] = ( max[i] - min[i] ) / static_cast<double>( nbin[i] );
+    } else if( spacing.size()==dimension ) {
+       nbin[i] = std::floor(( max[i] - min[i] ) / spacing[i]) + 1; dx[i]=spacing[i];
+    } else plumed_error();
     if( !pbc[i] ) { max[i] +=dx[i]; nbin[i]+=1; }
     stride[i]=npoints;
     npoints*=nbin[i];
   }
   if( spacing.size()!=dimension ){ 
-      spacing.resize(dimension); for(unsigned i=0; i<dimension; ++i) spacing[i]=dx[i]; 
+      spacing.resize(dimension); for(unsigned i=0; i<dimension; ++i) spacing[i]=dx[i];
   }
 }
 

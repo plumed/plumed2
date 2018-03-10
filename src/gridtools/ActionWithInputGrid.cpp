@@ -42,14 +42,16 @@ ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
   if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input to this action should be a grid");
 
   unsigned dimension = getPntrToArgument(0)->getRank();
-  std::vector<std::string> argn( dimension ), min( dimension ), max( dimension );
+  std::vector<std::string> argn( dimension ), min( dimension ), max( dimension ); std::string gtype;
   std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
-  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( argn, min, max, nbin, spacing, ipbc, false );
-  gridobject.setup( "flat", ipbc, 0, 0.0 ); 
+  (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
+  if( gtype=="flat" ) gridobject.setup( "flat", ipbc, 0, 0.0 ); 
+  else if( gtype=="fibonacci" ) gridobject.setup( "fibonacci", ipbc, nbin[0], spacing[0] );
+  else plumed_merror("unknown grid type");
 }
 
 double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const {
-  unsigned dimension = gridobject.getDimension();
+  plumed_dbg_assert( gridobject.getGridType()=="flat" ); unsigned dimension = gridobject.getDimension();
 
   double X,X2,X3,value=0; der.assign(der.size(),0.0);
   std::vector<double> fd(dimension);
@@ -96,11 +98,14 @@ double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<do
 
 void ActionWithInputGrid::doTheCalculation() {
   if( firststep ) {
-      unsigned dimension = getPntrToArgument(0)->getRank();
-      std::vector<std::string> argn( dimension ), min( dimension ), max( dimension );
-      std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
-      (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( argn, min, max, nbin, spacing, ipbc, false );
-      gridobject.setBounds( min, max, nbin, spacing ); firststep=false; finishOutputSetup();
+      if( gridobject.getGridType()=="flat" ) {
+          unsigned dimension = getPntrToArgument(0)->getRank();
+          std::vector<std::string> argn( dimension ), min( dimension ), max( dimension ); std::string gtype;
+          std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
+          (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
+          gridobject.setBounds( min, max, nbin, spacing ); 
+      }
+      firststep=false; finishOutputSetup();
   }
   runAllTasks();
   jobsAfterLoop();

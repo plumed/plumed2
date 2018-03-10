@@ -110,6 +110,8 @@ public:
   const std::vector<double>& getGridSpacing() const ;
 /// Get the stride (the distance between the grid points of an index)
   const std::vector<unsigned>& getStride() const ;
+/// Get the type of the grid
+  std::string getGridType() const ;
 };
 
 inline
@@ -149,6 +151,13 @@ inline
 const std::vector<unsigned>& GridCoordinatesObject::getStride() const {
   plumed_dbg_assert( gtype==flat );
   return stride;
+}
+
+inline
+std::string GridCoordinatesObject::getGridType() const {
+  if( gtype==flat ) return "flat";
+  else if( gtype==fibonacci ) return "fibonacci";
+  return "";
 }
 
 }

@@ -121,10 +121,10 @@ FindContour::FindContour(const ActionOptions&ao):
   if( gbuffer>0 ) log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
   checkRead(); 
 
-  Value* gval=getPntrToArgument(0); std::vector<unsigned> nbin( gval->getRank() );
+  Value* gval=getPntrToArgument(0); std::vector<unsigned> nbin( gval->getRank() ); std::string gtype;
   std::vector<double> spacing( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
   std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
-  gval->getPntrToAction()->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc, false );
+  gval->getPntrToAction()->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, false );
 
   std::vector<unsigned> shape(1); shape[0]=0;
   for(unsigned i=0; i<gval->getRank();++i ){

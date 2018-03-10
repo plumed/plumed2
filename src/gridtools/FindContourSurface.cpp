@@ -100,7 +100,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FindContourSurface(const ActionOptions&ao);
   void finishOutputSetup();
-  void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+  void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
@@ -135,10 +135,11 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   checkRead();
 
   unsigned n=0; gdirs.resize( getPntrToArgument(0)->getRank()-1 ); gnames.resize( getPntrToArgument(0)->getRank()-1 );
-  Value* gval=getPntrToArgument(0); std::vector<unsigned> nbin( gval->getRank() );
+  Value* gval=getPntrToArgument(0); std::vector<unsigned> nbin( gval->getRank() ); std::string gtype;
   std::vector<double> spacing( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
   std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
-  gval->getPntrToAction()->getInfoForGridHeader( argn, min, max, nbin, spacing, pbc, false );
+  gval->getPntrToAction()->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, false );
+  if( gtype=="fibonacci") error("cannot search for contours in fibonacci grids");
   for(unsigned i=0; i<getPntrToArgument(0)->getRank(); ++i) {
     if( argn[i]==dir ) {
       dir_n=i;
@@ -181,10 +182,10 @@ void FindContourSurface::finishOutputSetup() {
   direction[dir_n] = 0.999999999*gridobject.getGridSpacing()[dir_n];
 }
 
-void FindContourSurface::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+void FindContourSurface::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                             std::vector<std::string>& max, std::vector<unsigned>& nbin,
                                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-  bool isdists=dumpcube; double units=1.0;
+  bool isdists=dumpcube; double units=1.0; gtype="flat";
   for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i){ 
       if( gnames[i].find(".")==std::string::npos ){ isdists=false; break; }
       std::size_t dot = gnames[i].find("."); std::string name = gnames[i].substr(dot+1);

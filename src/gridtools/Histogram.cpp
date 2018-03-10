@@ -223,7 +223,7 @@ public:
   explicit Histogram(const ActionOptions&ao);
   ~Histogram();
   void setupNeighborsVector();
-  void getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+  void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& out_nbin, 
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void buildCurrentTaskList( std::vector<unsigned>& tflags );
@@ -478,10 +478,10 @@ void Histogram::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   HistogramBase::buildCurrentTaskList( tflags );
 }
 
-void Histogram::getInfoForGridHeader( std::vector<std::string>& argn, std::vector<std::string>& min,
+void Histogram::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                       std::vector<std::string>& max, std::vector<unsigned>& out_nbin, 
                                       std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-  bool isdists=dumpcube; double units=1.0;
+  bool isdists=dumpcube; double units=1.0; gtype="flat";
   for(unsigned i=0;i<getPntrToOutput(0)->getRank();++i){
       unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
       if( getPntrToArgument( k )->getName().find(".")==std::string::npos ){ isdists=false; break; }
