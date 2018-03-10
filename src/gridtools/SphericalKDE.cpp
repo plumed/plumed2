@@ -147,7 +147,7 @@ void SphericalKDE::addKernelForces( const unsigned& heights_index, const unsigne
       gridobject.getGridPointCoordinates( neighbors[i], gpoint );
       double dot=0; for(unsigned j=0; j<der.size(); ++j) dot += args[j]*gpoint[j];
       double fforce = getPntrToOutput(0)->getForce( neighbors[i] ); double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
-      if( heights_index==2  ) forces[ args.size()*getFullNumberOfTasks() + itask ] += newval*fforce;
+      if( heights_index==2  ) forces[ args.size()*getFullNumberOfTasks() + itask ] += newval*fforce / height;
       unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += von_misses_concentration*newval*gpoint[j]*fforce; n += getFullNumberOfTasks(); }
   }
 }
