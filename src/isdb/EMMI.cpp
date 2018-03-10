@@ -209,6 +209,8 @@ private:
   void doMonteCarlo();
 // read error file
   vector<double> read_exp_errors(string errfile);
+// read experimental overlaps
+  vector<double> read_exp_overlaps(string ovfile);
 // calculate model GMM weights and covariances
   vector<double> get_GMM_m(vector<AtomNumber> &atoms);
 // read data GMM file
@@ -263,6 +265,8 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","DSIGMA","MC step for uncertainties");
   keys.add("optional","MC_STRIDE", "Monte Carlo stride");
   keys.add("optional","ERR_FILE","file with experimental or GMM fit errors");
+  keys.add("optional","OV_FILE","file with experimental overlaps");
+  keys.add("optional","NORM_DENSITY","integral of the experimental density");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
   keys.add("optional","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
   keys.add("optional","REGRESSION","regression stride");
@@ -344,6 +348,14 @@ EMMI::EMMI(const ActionOptions&ao):
   string errfile;
   parse("ERR_FILE", errfile);
 
+  // file with experimental overlaps
+  string ovfile;
+  parse("OV_FILE", ovfile);
+
+  // integral of the experimetal density
+  double norm_d = 0.0;
+  parse("NORM_DENSITY", norm_d);
+
   // temperature
   double temp=0.0;
   parse("TEMP",temp);
@@ -421,6 +433,7 @@ EMMI::EMMI(const ActionOptions&ao):
     log.printf("  with stride : %u\n",statusstride_);
   }
   if(errfile.size()>0) log.printf("  reading experimental errors from file : %s\n", errfile.c_str());
+  if(ovfile.size()>0)  log.printf("  reading experimental overlaps from file : %s\n", ovfile.c_str());
   log.printf("  temperature of the system in energy unit : %f\n",kbt_);
   log.printf("  prior exponent : %f\n",prior_);
   log.printf("  number of replicas for averaging: %u\n",nrep_);
@@ -441,7 +454,7 @@ EMMI::EMMI(const ActionOptions&ao):
   log.printf("  number of GMM components : %u\n", static_cast<unsigned>(GMM_d_m_.size()));
 
   // normalize atom weight map - not really needed with REGRESSION
-  double norm_d = accumulate(GMM_d_w_.begin(), GMM_d_w_.end(), 0.0);
+  if(norm_d <= 0.0) norm_d = accumulate(GMM_d_w_.begin(), GMM_d_w_.end(), 0.0);
   double norm_m = accumulate(GMM_m_w.begin(),  GMM_m_w.end(),  0.0);
   // renormalization
   for(unsigned i=0; i<GMM_m_w_.size(); ++i) GMM_m_w_[i] *= norm_d / norm_m;
@@ -451,9 +464,13 @@ EMMI::EMMI(const ActionOptions&ao):
   if(errfile.size()>0) exp_err = read_exp_errors(errfile);
 
   // get self overlaps between data GMM components
-  for(unsigned i=0; i<GMM_d_m_.size(); ++i) {
-    double ov = get_self_overlap(i);
-    ovdd_.push_back(ov);
+  if(ovfile.size()>0) {
+    ovdd_ = read_exp_overlaps(ovfile);
+  } else {
+    for(unsigned i=0; i<GMM_d_m_.size(); ++i) {
+      double ov = get_self_overlap(i);
+      ovdd_.push_back(ov);
+    }
   }
 
   log.printf("  number of GMM groups : %u\n", static_cast<unsigned>(GMM_d_grps_.size()));
@@ -724,6 +741,31 @@ vector<double> EMMI::read_exp_errors(string errfile)
     error("Cannot find ERR_FILE "+errfile+"\n");
   }
   return exp_err;
+}
+
+vector<double> EMMI::read_exp_overlaps(string ovfile)
+{
+  int idcomp;
+  double ov;
+  vector<double> ovdd;
+// open file
+  IFile *ifile = new IFile();
+  if(ifile->FileExist(ovfile)) {
+    ifile->open(ovfile);
+    // cycle on GMM components
+    while(ifile->scanField("Id",idcomp)) {
+      // read experimental overlap
+      ifile->scanField("Overlap", ov);
+      // add to ovdd
+      ovdd.push_back(ov);
+      // new line
+      ifile->scanField();
+    }
+    ifile->close();
+  } else {
+    error("Cannot find OV_FILE "+ovfile+"\n");
+  }
+  return ovdd;
 }
 
 vector<double> EMMI::get_GMM_m(vector<AtomNumber> &atoms)
