@@ -191,7 +191,7 @@ public:
   void apply() {};
   void calculate() {};
   void update();
-  unsigned int getNumberOfDerivatives() {return 0;}
+  unsigned int getNumberOfDerivatives() const {return 0;}
   //
   bool fixedStepSize() const {return fixed_stepsize_;}
   bool dynamicStepSize() const {return !fixed_stepsize_;}

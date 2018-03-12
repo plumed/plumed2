@@ -198,7 +198,6 @@ class FuncSumHills :
   std::unique_ptr<BiasRepresentation> historep;
 public:
   explicit FuncSumHills(const ActionOptions&);
-  ~FuncSumHills();
   void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ; // this probably is not needed
   bool checkFilesAreExisting(const vector<string> & hills );
   static void registerKeywords(Keywords& keys);

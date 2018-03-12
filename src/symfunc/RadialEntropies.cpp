@@ -69,7 +69,8 @@ RadialEntropy::RadialEntropy(const ActionOptions&ao):
 {
   std::string ktype; parse("KERNEL",ktype); double bw; parse("BANDWIDTH",bw);
   std::vector<double> zero(1,0), bandw(1); bandw[0]=bw;
-  mykernel.push_back( KernelFunctions( zero, bandw, ktype, false, 1.0, true ) );
+  mykernel.push_back( KernelFunctions( zero, bandw, ktype, "DIAGONAL", 1.0 ) );
+  std::vector<Value*> fvals; mykernel[0].normalize( fvals );
   log.printf("  construcing rdf using %s kernels with bandwidth %f \n", ktype.c_str(), bw );
   parse("UPPER_LIMIT",int_max); parse("NBINS",nbins);
   log.printf("  computing entropy by integrating from 0 to %f using %d integration bins \n",int_max, nbins );

@@ -365,13 +365,6 @@ void Value::convertIndexToindices(const std::size_t& index, std::vector<unsigned
 }
 
 inline
-bool Value::printAllValues( const std::string& alabel ) const {
-  plumed_dbg_assert( userdata.count(alabel) );
-  if( userdata.find(alabel)->second[0]>-2 ) return true;
-  return false;
-}
-
-inline
 double Value::getMaxMinusMin()const {
   plumed_dbg_assert( periodicity==periodic );
   return max_minus_min;

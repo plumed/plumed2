@@ -187,7 +187,7 @@ void AdaptivePath::update() {
     extractDisplacementVector( iclose1, myframes[iclose3]->getReferencePositions(), myframes[iclose3]->getReferenceArguments(), displacement );
   }
   if( getNumberOfAtoms()>0 ) {
-    ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( myframes[iclose1] );
+    ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( myframes[iclose1].get() );
     const std::vector<double> & displace( at->getDisplace() );
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) mypack1.getAtomsDisplacementVector()[i] /= displace[i];
   }

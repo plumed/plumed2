@@ -104,7 +104,6 @@ class SAXS :
 {
 private:
   bool                     pbc;
-  bool                     serial;
   bool                     bessel;
   bool                     force_bessel;
   vector<double>           q_list;
@@ -137,7 +136,6 @@ void SAXS::registerKeywords(Keywords& keys) {
   useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addFlag("BESSEL",false,"Perform the calculation using the adaptive spherical harmonic approximation");
   keys.addFlag("FORCE_BESSEL",false,"Perform the calculation using the adaptive spherical harmonic approximation, without adaptive algorithm, usefull for debug only");
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
@@ -156,15 +154,12 @@ void SAXS::registerKeywords(Keywords& keys) {
 SAXS::SAXS(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
   pbc(true),
-  serial(false),
   bessel(false),
   force_bessel(false)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   const unsigned size = atoms.size();
-
-  parseFlag("SERIAL",serial);
 
   parseFlag("BESSEL",bessel);
   parseFlag("FORCE_BESSEL",force_bessel);
@@ -329,7 +324,7 @@ void SAXS::calculate()
 
   unsigned stride = comm.Get_size();
   unsigned rank   = comm.Get_rank();
-  if(serial) {
+  if(runInSerial()) {
     stride = 1;
     rank   = 0;
   }
@@ -392,7 +387,7 @@ void SAXS::calculate()
     }
   }
 
-  if(!serial) {
+  if(!runInSerial()) {
     comm.Sum(&deriv[0][0], 3*deriv.size());
     comm.Sum(&sum[0], numq);
   }
@@ -455,7 +450,7 @@ void SAXS::bessel_calculate(vector<Vector> &deriv, vector<double> &sum, vector<V
 
   unsigned stride = comm.Get_size();
   unsigned rank   = comm.Get_rank();
-  if(serial) {
+  if(runInSerial()) {
     stride = 1;
     rank   = 0;
   }
@@ -504,7 +499,7 @@ void SAXS::bessel_calculate(vector<Vector> &deriv, vector<double> &sum, vector<V
         }
       }
     }
-    if(!serial) {
+    if(!runInSerial()) {
       comm.Sum(&Bnm[0][0],2*p22);
       comm.Sum(&a[0][0],  6*p22);
     }
@@ -549,7 +544,7 @@ void SAXS::setup_midl(vector<double> &r_polar, vector<Vector2d> &qRnm, int &algo
 
   unsigned stride = comm.Get_size();
   unsigned rank   = comm.Get_rank();
-  if(serial) {
+  if(runInSerial()) {
     stride = 1;
     rank   = 0;
   }

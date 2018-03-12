@@ -131,11 +131,8 @@ void UWalls::calculateBias( const std::vector<double>& args, MultiValue& myvals 
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     double f = 0.0;
     const double cv=difference(i,at[i],args[i]);
-    const double k=kappa[i];
-    const double exponent=exp[i];
     const double epsilon=eps[i];
     const double off=offset[i];
-    const double epsilon=eps[i];
     const double uscale = (cv+off)/epsilon;
     if( uscale > 0.) {
       const double k=kappa[i];

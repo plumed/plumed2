@@ -26,6 +26,7 @@
 #include "Value.h"
 #include "tools/Exception.h"
 #include "tools/MultiValue.h"
+#include "tools/ForwardDecl.h"
 #include <vector>
 #include <memory>
 

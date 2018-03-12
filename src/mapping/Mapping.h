@@ -38,13 +38,15 @@ class Mapping :
 {
   friend class GeometricPath;
 private:
+/// Are we using periodic boundary conditions
+  bool nopbc;
 /// The forces on each of the derivatives (used in apply)
   std::vector<double> forcesToApply;
 protected:
 /// Are we calculating squared distances
   bool squared;
 /// This holds all the reference information
-  std::vector<ReferenceConfiguration*> myframes;
+  std::vector<std::unique_ptr<ReferenceConfiguration>> myframes;
 public:
   static void registerKeywords( Keywords& keys );
   static void shortcutKeywords( Keywords& keys );
@@ -52,7 +54,6 @@ public:
                               const std::map<std::string,std::string>& keys,
                               std::vector<std::vector<std::string> >& actions );
   explicit Mapping(const ActionOptions&);
-  ~Mapping();
 /// Overload the virtual functions that appear in both ActionAtomistic and ActionWithArguments
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   bool mustBeTreatedAsDistinctArguments() const ;
@@ -88,7 +89,7 @@ bool Mapping::mustBeTreatedAsDistinctArguments() const {
 
 inline
 ReferenceConfiguration* Mapping::getReferenceConfiguration( const unsigned& iframe ) const {
-  plumed_dbg_assert( iframe<myframes.size() ); return myframes[iframe];
+  plumed_dbg_assert( iframe<myframes.size() ); return myframes[iframe].get();
 }
 
 inline

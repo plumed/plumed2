@@ -179,15 +179,12 @@ progression (S) and distance (Z) variables \cite perez2015atp.
 class Matheval :
   public Function
 {
-  lepton::CompiledExpression expression;
-  std::vector<lepton::CompiledExpression> expression_deriv;
+  mutable lepton::CompiledExpression expression;
+  mutable std::vector<lepton::CompiledExpression> expression_deriv;
   vector<string> var;
   string func;
-  //vector<double> values;
-  //vector<char*> names;
 public:
   explicit Matheval(const ActionOptions&);
-  ~Matheval();
   void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const;
   static void registerKeywords(Keywords& keys);
 };
@@ -230,7 +227,7 @@ void Matheval::registerKeywords(Keywords& keys) {
 Matheval::Matheval(const ActionOptions&ao):
   Action(ao),
   Function(ao),
-  evaluator_deriv(getNumberOfArguments())
+  expression_deriv(getNumberOfArguments())
 {
   parseVector("VAR",var);
   if(var.size()==0) {

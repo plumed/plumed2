@@ -472,7 +472,6 @@ class CS2Backbone : public MetainferenceBase {
   unsigned         box_count;
   bool             camshift;
   bool             pbc;
-  bool             serial;
 
   void init_cs(const string &file, const string &k, const PDB &pdb);
   void update_neighb();
@@ -500,7 +499,6 @@ void CS2Backbone::registerKeywords( Keywords& keys ) {
   useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATADIR","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
@@ -525,8 +523,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
   max_cs_atoms(0),
   camshift(false),
-  pbc(true),
-  serial(false)
+  pbc(true)
 {
   vector<AtomNumber> used_atoms;
   parseAtomList("ATOMS",used_atoms);
@@ -537,8 +534,6 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
-
-  parseFlag("SERIAL",serial);
 
   bool noexp=false;
   parseFlag("NOEXP",noexp);
@@ -975,7 +970,7 @@ void CS2Backbone::calculate()
 
   unsigned stride = comm.Get_size();
   unsigned rank   = comm.Get_rank();
-  if(serial) {
+  if(runInSerial()) {
     stride = 1;
     rank   = 0;
   }
@@ -1273,7 +1268,7 @@ void CS2Backbone::calculate()
   if(box_count == box_nupdate) box_count = 0;
 
   if(!camshift) {
-    if(!serial) {
+    if(!runInSerial()) {
       if(!getDoScore()) {
         comm.Sum(&cs_derivs[0][0], 3*cs_derivs.size());
         comm.Sum(&cs_atoms[0], cs_atoms.size());
@@ -1323,7 +1318,7 @@ void CS2Backbone::calculate()
     }
   }
 
-  if(!serial) {
+  if(!runInSerial()) {
     comm.Sum(&aa_derivs[0][0], 3*aa_derivs.size());
     if(camshift) comm.Sum(&score, 1);
   }
@@ -1333,7 +1328,7 @@ void CS2Backbone::calculate()
     virial += Tensor(getPosition(i), aa_derivs[i]);
   }
 
-  if(!serial) {
+  if(!runInSerial()) {
     comm.Sum(&virial[0][0], 9);
   }
 

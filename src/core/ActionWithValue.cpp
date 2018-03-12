@@ -299,7 +299,7 @@ void ActionWithValue::turnOnDerivatives() {
 
 Value* ActionWithValue::getPntrToOutput( const unsigned& ind ) const {
   plumed_dbg_massert(ind<values.size(),"you have requested a pointer that is out of bounds");
-  return values[ind];
+  return values[ind].get();
 }
 
 Value* ActionWithValue::getPntrToComponent( const std::string& name ) {
@@ -663,7 +663,7 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ) {
 
 bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
   unsigned type=0;
-  if( values[0]->shape.size()==0 && values[0]->hasDeriv ) type=1;
+  if( values[0]->shape.size()==0 ) type=1;
   else if( values[0]->hasDeriv ) type=2;
   else plumed_assert( values[0]->shape.size()>0 );
 

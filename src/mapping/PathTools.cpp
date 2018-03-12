@@ -147,14 +147,14 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   if( ifilename.length()>0 ) {
     fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
     FILE* fp=fopen(ifilename.c_str(),"r");
-    bool do_read=true; std::vector<ReferenceConfiguration*> frames;
+    bool do_read=true; std::vector<std::unique_ptr<ReferenceConfiguration>> frames;
     while (do_read) {
       PDB mypdb;
       // Read the pdb file
       do_read=mypdb.readFromFilepointer(fp,false,0.1);
       if( do_read ) {
         ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
-        frames.push_back( mymsd ); mymsd->checkRead();
+        frames.emplace_back( mymsd ); mymsd->checkRead();
       }
     }
     std::vector<unsigned> fixed; parseVector("--fixed",fixed);
@@ -196,7 +196,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 
     // Delete all the frames
     OFile ofile; ofile.open(ofilename);
-    for(unsigned i=0; i<frames.size(); ++i) { frames[i]->print( ofile, ofmt, 10. ); delete frames[i]; }
+    for(unsigned i=0; i<frames.size(); ++i) { frames[i]->print( ofile, ofmt, 10. ); }
     // Delete the vals as we don't need them
     for(unsigned i=0; i<vals.size(); ++i) delete vals[i];
     // Return as we are done
@@ -249,27 +249,27 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 
 
 // Now create frames
-  std::vector<ReferenceConfiguration*> final_path;
+  std::vector<std::unique_ptr<ReferenceConfiguration>> final_path;
   Direction pos(ReferenceConfigurationOptions("DIRECTION"));
   pos.setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
   for(int i=0; i<nbefore; ++i) {
     pos.setDirection( sframe->getReferencePositions(), sframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( -i*delr, mydir );
-    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) );
+    final_path.emplace_back( metricRegister().create<ReferenceConfiguration>(mtype) );
     final_path[final_path.size()-1]->setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
     final_path[final_path.size()-1]->setReferenceConfig( pos.getReferencePositions(), pos.getReferenceArguments(), sframe->getReferenceMetric() );
   }
   for(unsigned i=1; i<nbetween; ++i) {
     pos.setDirection( sframe->getReferencePositions(), sframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( i*delr, mydir );
-    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) );
+    final_path.emplace_back( metricRegister().create<ReferenceConfiguration>(mtype) );
     final_path[final_path.size()-1]->setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
     final_path[final_path.size()-1]->setReferenceConfig( pos.getReferencePositions(), pos.getReferenceArguments(), sframe->getReferenceMetric() );
   }
   for(unsigned i=0; i<nafter; ++i) {
     pos.setDirection( eframe->getReferencePositions(), eframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( i*delr, mydir );
-    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) );
+    final_path.emplace_back( metricRegister().create<ReferenceConfiguration>(mtype) );
     final_path[final_path.size()-1]->setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
     final_path[final_path.size()-1]->setReferenceConfig( pos.getReferencePositions(), pos.getReferenceArguments(), sframe->getReferenceMetric() );
   }
@@ -283,7 +283,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );
 
   OFile ofile; ofile.open(ofilename);
-  for(unsigned i=0; i<final_path.size(); ++i) { final_path[i]->print( ofile, ofmt, 10. ); delete final_path[i]; }
+  for(unsigned i=0; i<final_path.size(); ++i) { final_path[i]->print( ofile, ofmt, 10. ); }
 // Delete the args as we don't need them anymore
   for(unsigned i=0; i<args.size(); ++i) delete args[i];
   ofile.close(); return 0;

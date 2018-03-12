@@ -66,7 +66,8 @@ Kernel::Kernel(const ActionOptions&ao):
 {
   string sw; bool normed;
   parse("KERNEL",sw); parseFlag("NORMALIZED",normed);
-  kernel.push_back( KernelFunctions( sw, normed ) );
+  kernel.push_back( KernelFunctions( sw ) );
+  if( normed ) kernel[0].normalize( getArguments() );
   log.printf("  %s\n", kernel[0].description().c_str() );
   addValueWithDerivatives(); checkRead();
 }

@@ -436,7 +436,7 @@ void Histogram::setupNeighborsVector() {
         support[i] = bead.getCutoff(); nneigh[i] = static_cast<unsigned>( ceil( support[i]/gridobject.getGridSpacing()[i] ));
       }
     } else {
-      KernelFunctions kernel( point, bandwidth, kerneltype, false, 1.0, true );
+      KernelFunctions kernel( point, bandwidth, kerneltype, "DIAGONAL", 1.0 ); kernel.normalize( getArguments() );
       nneigh=kernel.getSupport( gridobject.getGridSpacing() );
       for(unsigned i=0; i<support.size(); ++i) support[i] = kernel.getContinuousSupport()[i];
     }
@@ -513,7 +513,7 @@ void Histogram::buildSingleKernel( std::vector<unsigned>& tflags, const double& 
   } else if( kerneltype.find("bin")!=std::string::npos ) {
     cheight = height; for(unsigned i=0; i<args.size(); ++i) cval[i] = args[i];
   } else {
-    kernel = new KernelFunctions( args, bandwidth, kerneltype, false, height, true );
+    kernel = new KernelFunctions( args, bandwidth, kerneltype, "DIAGONAL", height ); kernel->normalize( getArguments() );
   }
   unsigned num_neigh; std::vector<unsigned> neighbors;
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
@@ -582,7 +582,8 @@ KernelFunctions* Histogram::setupValuesAndKernel( const std::vector<double>& arg
     if( gridobject.isPeriodic(i) ) vv[i]->setDomain( gmin[i], gmax[i] );
     else vv[i]->setNotPeriodic();
   }
-  return new KernelFunctions( args, bandwidth, kerneltype, false, height, true );
+  KernelFunctions* kk=new KernelFunctions( args, bandwidth, kerneltype, "DIAGONAL", height ); kk->normalize( getArguments() );
+  return kk;
 }
 
 void Histogram::addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const {

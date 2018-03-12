@@ -187,8 +187,7 @@ void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ) {
 
 ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const ActionOptions& ao ):
   Action(ao),
-  AnalysisWithLandmarks(ao),
-  myembedding(new PointWiseMapping( getMetricName(), false ))
+  AnalysisWithLandmarks(ao)
 {
 
   parse("NLOW_DIM",nlow);
@@ -209,7 +208,7 @@ void ClassicalMultiDimensionalScaling::analyzeLandmarks() {
   // Calculate all pairwise diatances
   Matrix<double> targets( data.size(), data.size() ); targets=0;
   for(unsigned i=1; i<data.size(); ++i) {
-    for(unsigned j=0; j<i; ++j) targets(i,j)=targets(j,i)=distance( getPbc(), getArguments(), data[i], data[j], true );
+    for(unsigned j=0; j<i; ++j) targets(i,j)=targets(j,i)=distance( getPbc(), getArguments(), data[i].get(), data[j].get(), true );
   }
 
   // Run multidimensional scaling

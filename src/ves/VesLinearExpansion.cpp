@@ -413,7 +413,7 @@ void VesLinearExpansion::calculate() {
   std::vector<double> coeffsderivs_values(ncoeffs_);
 
   for(unsigned int k=0; k<nargs_; k++) {
-    cv_values[k]=getArgument(k);
+    cv_values[k]=getArgumentScalar(k);
   }
 
   bool all_inside = true;

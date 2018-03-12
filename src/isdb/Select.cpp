@@ -73,8 +73,8 @@ class Select : public function::Function
 
 public:
   explicit Select(const ActionOptions&);
-  void calculate();
   static void registerKeywords(Keywords& keys);
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(Select,"SELECT")
@@ -99,19 +99,14 @@ Select::Select(const ActionOptions&ao):
 
 }
 
-void Select::calculate()
-{
+void Select::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   unsigned iselect = static_cast<unsigned>(plumed.passMap[selector_]);
 
   // check if iselect is smaller than the number of arguments
-  if(iselect>=getNumberOfArguments()) error("the value of the SELECTOR is greater than the number of arguments!");
-
-  // put all the derivatives to zero
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) setDerivative(i, 0.0);
+  if(iselect>=args.size()) error("the value of the SELECTOR is greater than the number of arguments!");
 
   // set value and derivative for selected argument
-  setValue(getArgument(iselect));
-  setDerivative(iselect, 1.0);
+  addValue(0, args[iselect], myvals ); addDerivative( 0, iselect, 1.0, myvals );
 }
 
 }

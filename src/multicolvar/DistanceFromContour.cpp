@@ -311,7 +311,8 @@ void DistanceFromContour::evaluateDerivatives( const Vector root1, const double&
     for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
 
     // Now create the kernel and evaluate
-    KernelFunctions kernel( pp, bw, kerneltype, false, 1.0, true );
+    KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 ); 
+    std::vector<Value*> fvals; kernel.normalize( fvals );
     double newval = kernel.evaluate( pval, ddd, true );
     if( getNumberOfArguments()==1 ) {
     } else {
@@ -352,7 +353,8 @@ double DistanceFromContour::getDifferenceFromContour( const std::vector<double>&
     for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
 
     // Now create the kernel and evaluate
-    KernelFunctions kernel( pp, bw, kerneltype, false, 1.0, true );
+    KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 );
+    std::vector<Value*> fvals; kernel.normalize( fvals );
     double newval = kernel.evaluate( pval, ddd, true );
     if( getNumberOfArguments()==1 ) {
       sumk += getPntrToArgument(0)->get(active_list[i])*newval;

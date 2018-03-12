@@ -43,7 +43,6 @@ void Mapping::shortcutKeywords( Keywords& keys ) {
            "\\ref dists");
   keys.add("optional","LOWER_CUTOFF","only pairs of atoms further than LOWER_CUTOFF are considered in the calculation.");
   keys.add("optional","UPPER_CUTOFF","only pairs of atoms closer than UPPER_CUTOFF are considered in the calculation.");
-  keys.addFlag("NOPBC",false,"don't use PBC in calculation of DRMSD vectors");
 }
 
 void Mapping::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -62,7 +61,6 @@ void Mapping::expandShortcut( const std::string& lab, const std::vector<std::str
     if( keys.find("UPPER_CUTOFF")!=keys.end() ) thisact.push_back( keys.find("UPPER_CUTOFF")->first + "=" + keys.find("UPPER_CUTOFF")->second );
     else plumed_merror("UPPER_CUTOFF must be specified in DRMSD actions");
 
-    if( keys.find("NOPBC")!=keys.end() ) thisact.push_back("NOPBC");
   } else if( words[0]=="MULTI-RMSD" ) {
     if( keys.find("TYPE")!=keys.end() ) thisact.push_back( keys.find("TYPE")->first + "=" + keys.find("TYPE")->second );
     else thisact.push_back( "TYPE=MULTI-SIMPLE");
@@ -108,7 +106,7 @@ Mapping::Mapping(const ActionOptions&ao):
   // Read stuff for DRMSD
   double lcutoff=0; parse("LOWER_CUTOFF",lcutoff);
   double ucutoff=std::numeric_limits<double>::max(); parse("UPPER_CUTOFF",ucutoff);
-  bool nopbc; parseFlag("NOPBC",nopbc); std::vector<std::string> drmsd_remarks;
+  parseFlag("NOPBC",nopbc); std::vector<std::string> drmsd_remarks;
   if( nopbc || lcutoff>0 || ucutoff<std::numeric_limits<double>::max() ) {
     std::string lstr; Tools::convert( lcutoff, lstr ); drmsd_remarks.push_back( "LOWER_CUTOFF=" + lstr );
     std::string ustr; Tools::convert( ucutoff, ustr ); drmsd_remarks.push_back( "UPPER_CUTOFF=" + ustr );
@@ -134,7 +132,7 @@ Mapping::Mapping(const ActionOptions&ao):
     // And add a task to the list
     addTaskToList( myframes.size() );
     // And read the frame
-    myframes.push_back( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
+    myframes.emplace_back( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
   }
   fclose(fp);
 
@@ -150,7 +148,7 @@ Mapping::Mapping(const ActionOptions&ao):
   // Get the arguments and atoms that are required
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
   for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
-  requestAtoms( atoms ); std::vector<Value*> req_args;
+  requestAtoms( atoms ); std::vector<Value*> req_args; if( getNumberOfAtoms()==0 ) nopbc = true;
   interpretArgumentList( args, req_args ); requestArguments( req_args, false );
   // Resize forces array
   if( getNumberOfAtoms()>0 ) {
@@ -160,12 +158,13 @@ Mapping::Mapping(const ActionOptions&ao):
   }
 }
 
-void Mapping::buildCurrentTaskList( std::vector<unsigned>& tflags ) const {
+void Mapping::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
   tflags.assign(tflags.size(),1);
 }
 
 void Mapping::calculate() {
   plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
+  if( !nopbc ) makeWhole(); 
   runAllTasks();
 }
 
@@ -195,7 +194,7 @@ void Mapping::performTask( const unsigned& current, MultiValue& myvals ) const {
   unsigned nargs2=myframes[current]->getNumberOfReferenceArguments(); unsigned nat2=myframes[current]->getNumberOfReferencePositions();
   if( mypack.getNumberOfAtoms()!=nat2 || mypack.getNumberOfArguments()!=nargs2 ) mypack.resize( nargs2, nat2 );
   if( nat2>0 ) {
-    ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myframes[current] ); plumed_dbg_assert( myat2 );
+    ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myframes[current].get() ); plumed_dbg_assert( myat2 );
     for(unsigned i=0; i<nat2; ++i) mypack.setAtomIndex( i, myat2->getAtomIndex(i) );
   }
   myvals.setValue( getPntrToOutput(0)->getPositionInStream(), calculateDistanceFromReference( current, mypack ) );

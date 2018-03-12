@@ -187,7 +187,7 @@ public:
   double getMetaDer(const unsigned index);
   void writeStatus();
   void turnOnDerivatives();
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() const ;
   void lockRequests();
   void unlockRequests();
   void calculateNumericalDerivatives( ActionWithValue* a );
@@ -288,7 +288,7 @@ void MetainferenceBase::turnOnDerivatives() {
 }
 
 inline
-unsigned MetainferenceBase::getNumberOfDerivatives() {
+unsigned MetainferenceBase::getNumberOfDerivatives() const {
   if( getNumberOfAtoms()>0 ) {
     return 3*getNumberOfAtoms() + 9 + getNumberOfArguments();
   }
@@ -326,16 +326,10 @@ void MetainferenceBase::calculateNumericalDerivatives( ActionWithValue* a ) {
 
 inline
 void MetainferenceBase::apply() {
-  bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    if( getPntrToComponent(i)->applyForce( forces ) ) {
-      wasforced=true;
-      for(unsigned i=0; i<forces.size(); ++i) forcesToApply[i]+=forces[i];
-    }
-  }
-  if( wasforced ) {
-    addForcesOnArguments( forcesToApply );
-    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, getNumberOfArguments() );
+  forcesToApply.assign(forcesToApply.size(),0.0);
+  if( getForcesFromValues(forcesToApply) ) {
+    unsigned start=0; setForcesOnArguments( forcesToApply, start );
+    if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, start );
   }
 }
 

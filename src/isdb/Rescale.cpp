@@ -450,7 +450,7 @@ void Rescale::calculate()
   vector<double> all_args(getNumberOfArguments(), 0.0);
   // first calculate arguments
   for(unsigned i=0; i<all_args.size(); ++i) {
-    double arg = getArgument(i);
+    double arg = getArgumentScalar(i);
     // sum shared arguments across replicas
     if(shared_[i]==1) {
       if(comm.Get_rank()==0) multi_sim_comm.Sum(arg);

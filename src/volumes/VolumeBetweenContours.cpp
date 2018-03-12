@@ -121,7 +121,8 @@ VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
 
   std::vector<double> pp(3,0.0), bandwidth(3); parseVector("BANDWIDTH",bandwidth);
   log.printf("  using %s kernel with bandwidths %f %f %f \n",getKernelType().c_str(),bandwidth[0],bandwidth[1],bandwidth[2] );
-  kernel.reset( new KernelFunctions( pp, bandwidth, getKernelType(), "DIAGONAL", 1.0 ) );
+  kernel.reset( new KernelFunctions( pp, bandwidth, getKernelType(), "DIAGONAL", 1.0 ) ); 
+  std::vector<Value*> fargs; kernel->normalize( fargs );
   for(unsigned i=0; i<3; ++i) { pos.push_back(new Value()); pos[i]->setNotPeriodic(); }
   std::vector<double> csupport( kernel->getContinuousSupport() );
   double maxs = csupport[0];

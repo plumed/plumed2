@@ -1163,7 +1163,7 @@ void MetainferenceBase::get_weights(double &fact, double &var_fact)
   if(do_reweight_) {
     vector<double> bias(nrep_,0);
     if(master) {
-      bias[replica_] = getArgument(0);
+      bias[replica_] = getArgumentScalar(0);
       if(nrep_>1) multi_sim_comm.Sum(&bias[0], nrep_);
     }
     comm.Sum(&bias[0], nrep_);
