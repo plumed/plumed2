@@ -1226,8 +1226,31 @@ double EMMI::doRegression()
       scale_best = scale;
     }
   }
-// set scale components
+// calculate acceptance
   double accscale = MCacc / static_cast<double>(MCsteps);
+// global communication
+  if(!no_aver_ && nrep_>1) {
+    if(replica_!=0) {
+      scale_best = 0.0;
+      ebest = 0.0;
+      accscale = 0.0;
+    }
+    if(rank_==0) {
+      multi_sim_comm.Sum(&scale_best, 1);
+      multi_sim_comm.Sum(&ebest, 1);
+      multi_sim_comm.Sum(&accscale, 1);
+    }
+  }
+  // local communication
+  if(rank_!=0) {
+    scale_best = 0.0;
+    ebest = 0.0;
+    accscale = 0.0;
+  }
+  comm.Sum(&scale_best, 1);
+  comm.Sum(&ebest, 1);
+  comm.Sum(&accscale, 1);
+// set scale parameters
   getPntrToComponent("accscale")->set(accscale);
   getPntrToComponent("enescale")->set(ebest);
 // return scale value
