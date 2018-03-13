@@ -175,8 +175,9 @@ private:
   // regression
   unsigned nregres_;
   double scale_;
-  double off_;
-  double corr_;
+  double scale_min_;
+  double scale_max_;
+  double dscale_;
   // tabulated exponential
   double dpcutoff_;
   double dexp_;
@@ -199,12 +200,13 @@ private:
 // annealing
   double get_annealing(long int step);
 // do regression
-  void doRegression();
+  double scaleEnergy(double s);
+  double doRegression();
 // read and write status
   void read_status();
   void print_status(long int step);
 // accept or reject
-  bool doAccept(double oldE, double newE);
+  bool doAccept(double oldE, double newE, double kbt);
 // do MonteCarlo
   void doMonteCarlo();
 // read error file
@@ -270,8 +272,10 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
   keys.add("optional","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
   keys.add("optional","REGRESSION","regression stride");
+  keys.add("optional","REG_SCALE_MIN","regression minimum scale");
+  keys.add("optional","REG_SCALE_MAX","regression maximum scale");
+  keys.add("optional","REG_DSCALE","regression maximum scale MC move");
   keys.add("optional","SCALE","scale factor");
-  keys.add("optional","OFFSET","offset");
   keys.add("optional","ANNEAL", "Length of annealing cycle");
   keys.add("optional","ANNEAL_FACT", "Annealing temperature factor");
   keys.add("optional","TEMP","temperature");
@@ -280,10 +284,10 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.addFlag("ANALYSIS",false,"run in analysis mode");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
-  keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance");
-  keys.addOutputComponent("scale", "REGRESSION","scaling factor");
-  keys.addOutputComponent("offset","REGRESSION","offset");
-  keys.addOutputComponent("corr",  "REGRESSION","Pearson's correlation coefficient");
+  keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
+  keys.addOutputComponent("scale", "REGRESSION","scale factor");
+  keys.addOutputComponent("accscale", "REGRESSION","MC acceptance for scale regression");
+  keys.addOutputComponent("enescale", "REGRESSION","MC energy for scale regression");
   keys.addOutputComponent("anneal","ANNEAL","annealing factor");
 }
 
@@ -295,7 +299,7 @@ EMMI::EMMI(const ActionOptions&ao):
   analysis_(false), nframe_(0.0), pbc_(true),
   MCstride_(1), MCfirst_(-1), MCaccept_(0),
   statusstride_(0), first_status_(true),
-  nregres_(0), scale_(1.), off_(0.0),
+  nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
   kanneal_(0.), anneal_(1.), prior_(1.)
 {
@@ -373,9 +377,18 @@ EMMI::EMMI(const ActionOptions&ao):
 
   // regression stride
   parse("REGRESSION",nregres_);
-  // scale and offset
+  // other regression parameters
+  if(nregres_>0) {
+    parse("REG_SCALE_MIN",scale_min_);
+    parse("REG_SCALE_MAX",scale_max_);
+    parse("REG_DSCALE",dscale_);
+    // checks
+    if(scale_max_<=scale_min_) error("with REGRESSION, REG_SCALE_MAX must be greater than REG_SCALE_MIN");
+    if(dscale_<=0.) error("with REGRESSION, REG_DSCALE must be positive");
+  }
+
+  // scale factor
   parse("SCALE", scale_);
-  parse("OFFSET", off_);
 
   // read map resolution
   double reso;
@@ -422,9 +435,13 @@ EMMI::EMMI(const ActionOptions&ao):
   log.printf("  neighbor list cutoff : %lf\n", nl_cutoff_);
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
   log.printf("  minimum uncertainty : %f\n",sigma_min);
-  if(nregres_>0) log.printf("  regression stride : %u\n", nregres_);
   log.printf("  scale factor : %lf\n",scale_);
-  log.printf("  constant offset : %lf\n",off_);
+  if(nregres_>0) {
+    log.printf("  regression stride : %u\n", nregres_);
+    log.printf("  regression minimum scale : %lf\n", scale_min_);
+    log.printf("  regression maximum scale : %lf\n", scale_max_);
+    log.printf("  regression maximum scale MC move : %lf\n", dscale_);
+  }
   if(noise_!=2) {
     log.printf("  initial value of the uncertainty : %f\n",sigma_ini);
     log.printf("  max MC move in uncertainty : %f\n",dsigma);
@@ -453,7 +470,7 @@ EMMI::EMMI(const ActionOptions&ao):
   get_GMM_d(GMM_file);
   log.printf("  number of GMM components : %u\n", static_cast<unsigned>(GMM_d_m_.size()));
 
-  // normalize atom weight map - not really needed with REGRESSION
+  // normalize atom weight map
   if(norm_d <= 0.0) norm_d = accumulate(GMM_d_w_.begin(), GMM_d_w_.end(), 0.0);
   double norm_m = accumulate(GMM_m_w.begin(),  GMM_m_w.end(),  0.0);
   // renormalization
@@ -526,12 +543,13 @@ EMMI::EMMI(const ActionOptions&ao):
 
   // add components
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
+
   if(noise_!=2) {addComponent("acc"); componentIsNotPeriodic("acc");}
 
   if(nregres_>0) {
-    addComponent("scale");  componentIsNotPeriodic("scale");
-    addComponent("offset"); componentIsNotPeriodic("offset");
-    addComponent("corr");   componentIsNotPeriodic("corr");
+    addComponent("scale");     componentIsNotPeriodic("scale");
+    addComponent("accscale");  componentIsNotPeriodic("accscale");
+    addComponent("enescale");  componentIsNotPeriodic("enescale");
   }
 
   if(nanneal_>0) {addComponent("anneal"); componentIsNotPeriodic("anneal");}
@@ -620,10 +638,10 @@ void EMMI::print_status(long int step)
   statusfile_.printField();
 }
 
-bool EMMI::doAccept(double oldE, double newE) {
+bool EMMI::doAccept(double oldE, double newE, double kbt) {
   bool accept = false;
   // calculate delta energy
-  double delta = ( newE - oldE ) / kbt_;
+  double delta = ( newE - oldE ) / kbt;
   // if delta is negative always accept move
   if( delta < 0.0 ) {
     accept = true;
@@ -665,7 +683,7 @@ void EMMI::doMonteCarlo()
       // id GMM component
       int GMMid = GMM_d_grps_[nGMM][i];
       // deviation
-      double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] );
+      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
       // add to chi2
       chi2 += dev * dev;
     }
@@ -680,7 +698,7 @@ void EMMI::doMonteCarlo()
       // id GMM component
       int GMMid = GMM_d_grps_[nGMM][i];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] );
+      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
       // add to energies
       old_ene += std::log( 1.0 + 0.5 * dev * dev * old_inv_s2);
       new_ene += std::log( 1.0 + 0.5 * dev * dev * new_inv_s2);
@@ -691,7 +709,7 @@ void EMMI::doMonteCarlo()
   }
 
   // accept or reject
-  bool accept = doAccept(old_ene/anneal_, new_ene/anneal_);
+  bool accept = doAccept(old_ene/anneal_, new_ene/anneal_, kbt_);
   if(accept) {
     sigma_[nGMM] = new_s;
     MCaccept_++;
@@ -1155,35 +1173,65 @@ void EMMI::calculate_overlap() {
   }
 }
 
-void EMMI::doRegression()
+double EMMI::scaleEnergy(double s)
 {
-// calculate averages
-  double ovdd_ave = 0.0;
-  double ovmd_ave = 0.0;
+  double ene = 0.0;
   for(unsigned i=0; i<ovdd_.size(); ++i) {
-    ovdd_ave += ovdd_[i];
-    ovmd_ave += ovmd_[i];
+    ene += std::log( abs ( s * ovmd_[i] - ovdd_[i] ) );
   }
-  ovdd_ave /= static_cast<double>(ovdd_.size());
-  ovmd_ave /= static_cast<double>(ovmd_.size());
-// calculate scaling and offset
-  double Bn = 0.0; double Bd = 0.0; double C = 0.0;
-  for(unsigned i=0; i<ovmd_.size(); ++i) {
-    // add to sum
-    Bn += ( ovmd_[i] - ovmd_ave ) * ( ovdd_[i] - ovdd_ave );
-    Bd += ( ovmd_[i] - ovmd_ave ) * ( ovmd_[i] - ovmd_ave );
-    C  += ( ovdd_[i] - ovdd_ave ) * ( ovdd_[i] - ovdd_ave );
+  return ene;
+}
+
+double EMMI::doRegression()
+{
+// standard MC parameters
+  unsigned MCsteps = 100000;
+  double kbtmin = 1.0;
+  double kbtmax = 10.0;
+  unsigned ncold = 5000;
+  unsigned nhot = 2000;
+  double MCacc = 0.0;
+  double kbt, ebest, scale_best;
+
+// initial value of scale factor and energy
+  double scale = random_.RandU01() * ( scale_max_ - scale_min_ ) + scale_min_;
+  double ene = scaleEnergy(scale);
+// set best energy
+  ebest = ene;
+
+// MC loop
+  for(unsigned istep=0; istep<MCsteps; ++istep) {
+    // get temperature
+    if(istep%(ncold+nhot)<ncold) kbt = kbtmin;
+    else kbt = kbtmax;
+    // propose move in scale
+    double ds = dscale_ * ( 2.0 * random_.RandU01() - 1.0 );
+    double new_scale = scale + ds;
+    // check boundaries
+    if(new_scale > scale_max_) {new_scale = 2.0 * scale_max_ - new_scale;}
+    if(new_scale < scale_min_) {new_scale = 2.0 * scale_min_ - new_scale;}
+    // new energy
+    double new_ene = scaleEnergy(new_scale);
+    // accept or reject
+    bool accept = doAccept(ene, new_ene, kbt);
+    // in case of acceptance
+    if(accept) {
+      scale = new_scale;
+      ene = new_ene;
+      MCacc += 1.0;
+    }
+    // save best
+    if(ene<ebest) {
+      ebest = ene;
+      scale_best = scale;
+    }
   }
-// reset scale_
-  if(Bd<=0.) {
-    scale_ = 1.;
-    off_ = 0.;
-    corr_ = 1.0;
-  } else {
-    scale_ = Bn / Bd;
-    off_ = ovdd_ave - scale_*ovmd_ave;
-    corr_ = Bn / sqrt(Bd) / sqrt(C);
-  }
+// set scale components
+  double accscale = MCacc / static_cast<double>(MCsteps);
+  getPntrToComponent("accscale")->set(accscale);
+  getPntrToComponent("enescale")->set(ebest);
+// return scale value
+  return scale_best;
 }
 
 double EMMI::get_annealing(long int step)
@@ -1231,11 +1279,9 @@ void EMMI::calculate()
 
     // do regression
     if(nregres_>0) {
-      if(step%nregres_==0 && !getExchangeStep()) doRegression();
-      // print scale
+      if(step%nregres_==0 && !getExchangeStep()) scale_ = doRegression();
+      // set scale component
       getPntrToComponent("scale")->set(scale_);
-      getPntrToComponent("offset")->set(off_);
-      getPntrToComponent("corr")->set(corr_);
     }
 
     // clear energy and virial
@@ -1371,7 +1417,7 @@ void EMMI::calculate_Gauss()
       // id of the GMM component
       int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] ) / sigma_[i];
+      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
       eneg += 0.5 * dev * dev;
       // store derivative for later
@@ -1392,7 +1438,7 @@ void EMMI::calculate_Outliers()
       // id of the GMM component
       int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] ) / sigma_[i];
+      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
       eneg += std::log( 1.0 + 0.5 * dev * dev );
       // store derivative for later
@@ -1412,7 +1458,7 @@ void EMMI::calculate_Marginal()
       // id of the GMM component
       int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]+off_-ovdd_[GMMid] );
+      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
       // calculate errf
       double errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
       // add to group energy
