@@ -916,22 +916,25 @@ void EMMI::get_GMM_d(string GMM_file)
 
 void EMMI::calculate_useful_stuff(double reso)
 {
-  // calculate effective resolution
-  double ave_s2 = 0.0;
+  // calculate average resolution (Res), using the following definition:
+  // the Fourier transform of the density distribution in real space
+  // f(s) falls to 1/e of its maximum value at wavenumber 1/resolution
+  // i.e. from f(s) = A * exp(-B*s**2) -> Res = sqrt(B).
+  // In terms of the sigma in real space:
+  // Res = sigma * pi * sqrt(2)
+  double ave_reso = 0.0;
   for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
-    // Gaussian sigma in real space (and nm)
-    double s = sqrt ( 0.5 * GMM_m_s_[GMM_m_type_[i]] ) / pi * 0.1;
-    // add to average
-    ave_s2 += s*s;
+    // add to average (in nm)
+    ave_reso += sqrt ( GMM_m_s_[GMM_m_type_[i]] ) * 0.1;
   }
-  ave_s2 /= static_cast<double>(GMM_m_type_.size());
-  // target effective sigma squared
-  double st = reso*reso/4.0;
+  ave_reso /= static_cast<double>(GMM_m_type_.size());
   // calculate blur factor
   double blur = 0.0;
-  if(st>ave_s2) blur = sqrt(st-ave_s2);
-  log.printf("  map resolution : %f\n", reso);
-  log.printf("  Gaussian blur factor : %f\n", blur);
+  if(reso < ave_reso) warning("The forward model is optimized to predict maps at ~0.35 nm resolution and lower");
+  else blur = ( reso - ave_reso ) / pi / sqrt(2.0);
+  log.printf("  experimental map resolution : %f\n", reso);
+  log.printf("  predicted map resolution : %f\n", ave_reso);
+  log.printf("  blur factor : %f\n", blur);
 
   // now calculate useful stuff
   VectorGeneric<6> cov, sum, inv_sum;
@@ -940,8 +943,8 @@ void EMMI::calculate_useful_stuff(double reso)
     // the Gaussian in density (real) space is the FT of scattering factor
     // f(r) = A * (pi/B)**1.5 * exp(-pi**2/B*r**2)
     double s = sqrt ( 0.5 * GMM_m_s_[i] ) / pi * 0.1;
-    // calculate s2 and add Gaussian blur
-    double s2 = s*s + blur*blur;
+    // add Gaussian blur and calculate s2
+    double s2 = ( s + blur ) * ( s + blur );
     // covariance matrix for spherical Gaussian
     cov[0]=s2; cov[1]=0.0; cov[2]=0.0;
     cov[3]=s2; cov[4]=0.0;
