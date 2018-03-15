@@ -146,7 +146,6 @@ private:
   std::vector<double> ssds_;
   std::vector<double> step_size_;
   std::vector<Value*> out_coupling_;
-  std::vector<int> update_range_;
   Matrix<double> covar_;
   Matrix<double> covar2_;
   Matrix<double> lm_inv_;
@@ -257,7 +256,6 @@ EDS::EDS(const ActionOptions&ao):
   means_(ncvs_,0.0),
   step_size_(ncvs_,0.0),
   out_coupling_(ncvs_,NULL),
-  update_range_(ncvs_,0.0),
   in_restart_name_(""),
   out_restart_name_(""),
   fmt_("%f"),
@@ -429,8 +427,6 @@ EDS::EDS(const ActionOptions&ao):
     for(unsigned int i = 0; i<max_coupling_range_.size(); i++) {
       //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
       max_coupling_range_[i]*=kbt_;
-      //max_coupling_grad_[i] = max_coupling_range_[i]*update_period_/100.;
-      //max_coupling_grad_[i] = max_coupling_range_[i]/10.0;
       max_coupling_grad_[i] = max_coupling_range_[i];
       log.printf("    %f / %f\n",max_coupling_range_[i],max_coupling_grad_[i]);
     }
@@ -688,14 +684,6 @@ void EDS::calculate() {
   //Update max coupling range if not hard
   if(!b_hard_c_range_) {
     for(unsigned int i = 0; i < ncvs_; ++i) {
-  /*
-      if( update_range_[i] ) {
-          log.printf("\tincreasing factor %i by %f to %f (%f)\n",i,c_range_increase_f_,max_coupling_range_[i],max_coupling_grad_[i]);
-          max_coupling_range_[i]*=c_range_increase_f_;
-          max_coupling_grad_[i]*=c_range_increase_f_;
-          update_range_[i] = 0;
-      }
-*/
       if(fabs(current_coupling_[i])>max_coupling_range_[i]) {
         max_coupling_range_[i]*=c_range_increase_f_;
         max_coupling_grad_[i]*=c_range_increase_f_;
@@ -806,7 +794,7 @@ void EDS::calc_covar_step_size() {
     tmp = 0;
     for(unsigned int j = 0; j < ncvs_; ++j)
       tmp += difference(i, center_[i], means_[i]) * covar_(i,j);
-    step_size_[i] = 2 * tmp / kbt_ / scale_[i] * update_calls_ / (update_calls_ - 1);
+    step_size_[i] = 2 * tmp / kbt_ / scale_[i] * update_calls_ / fmax(1,update_calls_ - 1);
   }
 
 }
@@ -814,7 +802,7 @@ void EDS::calc_covar_step_size() {
 void EDS::calc_ssd_step_size() {
   double tmp;
   for(unsigned int i = 0; i< ncvs_; ++i) {
-    tmp = 2. * difference(i, center_[i], means_[i]) * ssds_[i] / (update_calls_ - 1);
+    tmp = 2. * difference(i, center_[i], means_[i]) * ssds_[i] / fmax(1,update_calls_ - 1);
     step_size_[i] = tmp / kbt_/scale_[i];
   }
 }
@@ -843,9 +831,6 @@ void EDS::update_bias()
 
       //check if update to coupling exceeds maximum possible gradient
       double coupling_change = copysign(fmin(fabs(proposed_coupling_change), max_coupling_grad_[i]), proposed_coupling_change);
-      // if had to take change from max_coupling_grad, then increase max_coupling_range_
-      update_range_[i] = int( coupling_change != proposed_coupling_change);
-      //log.printf("updating range for %i\n",i);
 
       step_size_[i] = coupling_change/proposed_coupling_prefactor;
       coupling_accum_[i] += step_size_[i] * step_size_[i];
