@@ -316,7 +316,7 @@ EDS::EDS(const ActionOptions&ao):
   checkRead();
 
   /*
-   * Things that are different when usnig changing centers:
+   * Things that are different when using changing centers:
    * 1. Scale
    * 2. The log file
    * 3. Reading Restarts
@@ -426,6 +426,8 @@ EDS::EDS(const ActionOptions&ao):
     log.printf("\n  with initial ranges / rates:\n");
     for(unsigned int i = 0; i<max_coupling_range_.size(); i++) {
       //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
+      //
+      //using the current maxing out scheme, max_coupling_range is the biggest step that can be taken in any given interval
       max_coupling_range_[i]*=kbt_;
       max_coupling_grad_[i] = max_coupling_range_[i];
       log.printf("    %f / %f\n",max_coupling_range_[i],max_coupling_grad_[i]);
