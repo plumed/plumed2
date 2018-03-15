@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -44,8 +44,6 @@ const std::unordered_map<std::string, int> & GREXWordMap() {
 
 GREX::GREX(PlumedMain&p):
   initialized(false),
-  intracomm(*new Communicator),
-  intercomm(*new Communicator),
   plumedMain(p),
   atoms(p.getAtoms()),
   partner(-1), // = unset
@@ -59,8 +57,7 @@ GREX::GREX(PlumedMain&p):
 }
 
 GREX::~GREX() {
-  delete &intercomm;
-  delete &intracomm;
+// empty destructor to delete unique_ptr
 }
 
 #define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after GREX initialization")

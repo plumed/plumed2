@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,11 +22,11 @@
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
 #include "tools/NeighborList.h"
-#include "tools/OpenMP.h"
 #include "tools/Pbc.h"
 
 #include <string>
 #include <cmath>
+#include <memory>
 
 using namespace std;
 
@@ -81,12 +81,11 @@ private:
   double           inept;
   vector<double>   rtwo;
   vector<unsigned> nga;
-  NeighborList     *nl;
+  std::unique_ptr<NeighborList> nl;
   unsigned         tot_size;
 public:
   static void registerKeywords( Keywords& keys );
   explicit PRE(const ActionOptions&);
-  ~PRE();
   virtual void calculate();
   void update();
 };
@@ -186,7 +185,7 @@ PRE::PRE(const ActionOptions&ao):
   }
 
   // Create neighbour lists
-  nl= new NeighborList(gb_lista,ga_lista,true,pbc,getPbc());
+  nl.reset( new NeighborList(gb_lista,ga_lista,true,pbc,getPbc()) );
 
   // Ouput details of all contacts
   unsigned index=0;
@@ -204,6 +203,8 @@ PRE::PRE(const ActionOptions&ao):
 
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
+
+  log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
 
   if(!getDoScore()) {
     for(unsigned i=0; i<nga.size(); i++) {
@@ -242,10 +243,6 @@ PRE::PRE(const ActionOptions&ao):
   }
   setDerivatives();
   checkRead();
-}
-
-PRE::~PRE() {
-  delete nl;
 }
 
 void PRE::calculate()

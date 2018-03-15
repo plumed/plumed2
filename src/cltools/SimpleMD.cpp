@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <cmath>
 #include <vector>
+#include <memory>
 
 using namespace std;
 
@@ -443,10 +444,10 @@ private:
 
     Random random;                 // random numbers stream
 
-    PLMD::Plumed* plumed=NULL;
+    std::unique_ptr<Plumed> plumed;
 
 // Commenting the next line it is possible to switch-off plumed
-    plumed=new PLMD::Plumed;
+    plumed.reset(new PLMD::Plumed);
 
     if(plumed) {
       int s=sizeof(double);
@@ -607,8 +608,6 @@ private:
 
 // close the statistic file if it was open:
     if(write_statistics_fp) fclose(write_statistics_fp);
-
-    if(plumed) delete plumed;
 
     return 0;
   }

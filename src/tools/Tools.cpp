@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -189,7 +189,7 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
     if(!w.empty()) {
       if(inside && *(w.begin())=="...") {
         inside=false;
-        if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" lines, if present, should be equal to first word of directive");
+        if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" "+w[1]+" line, if present, should be equal to first word of directive: "+words[0]);
         plumed_massert(w.size()<=2,"terminating \"...\" lines cannot consist of more than two words");
         w.clear();
       } else if(*(w.end()-1)=="...") {
@@ -252,7 +252,7 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep) {
       if(rep>=0 && startWith(s,multi)) {
         s=s.substr(multi.length(),s.length());
         std::vector<std::string> words=getWords(s,"\t\n ,");
-        plumed_massert(rep<words.size(),"Number of fields in " + s + " not consistent with number of replicas");
+        plumed_massert(rep<static_cast<int>(words.size()),"Number of fields in " + s + " not consistent with number of replicas");
         s=words[rep];
       }
       return true;
@@ -353,6 +353,16 @@ std::string Tools::extension(const std::string&s) {
     if(base.length()>0 && base[base.length()-1]=='/') ext="";
   }
   return ext;
+}
+
+double Tools::bessel0( const double& val ) {
+  if (fabs(val)<3.75) {
+    double y = Tools::fastpow( val/3.75, 2 );
+    return 1 + y*(3.5156229 +y*(3.0899424 + y*(1.2067492+y*(0.2659732+y*(0.0360768+y*0.0045813)))));
+  }
+  double ax=fabs(val), y=3.75/ax, bx=std::exp(ax)/sqrt(ax);
+  ax=0.39894228+y*(0.01328592+y*(0.00225319+y*(-0.00157565+y*(0.00916281+y*(-0.02057706+y*(0.02635537+y*(-0.01647633+y*0.00392377)))))));
+  return ax*bx;
 }
 
 bool Tools::startWith(const std::string & full,const std::string &start) {

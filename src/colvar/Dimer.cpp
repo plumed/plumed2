@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017 The plumed team
+   Copyright (c) 2017,2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -135,7 +135,7 @@ in the standard way for each replica according to the value of DSIGMA.
 class Dimer : public Colvar {
 public:
   static void registerKeywords( Keywords& keys);
-  Dimer(const ActionOptions&);
+  explicit Dimer(const ActionOptions&);
   virtual void calculate();
 protected:
   bool trimer,useall;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,12 +40,10 @@ namespace PLMD {
 ActionAtomistic::~ActionAtomistic() {
 // forget the pending request
   atoms.remove(this);
-  delete(&pbc);
 }
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   Action(ao),
-  pbc(*new(Pbc)),
   lockRequestAtoms(false),
   donotretrieve(false),
   donotforce(false),
@@ -198,7 +196,7 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
     if(!ok) {
       const ActionSet&actionSet(plumed.getActionSet());
       for(const auto & a : actionSet) {
-        ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(a);
+        ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(a.get());
         if(c) if(c->getLabel()==strings[i]) {
             ok=true;
             t.push_back(c->getIndex());

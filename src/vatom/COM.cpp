@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
+#include <cmath>
 
 using namespace std;
 
@@ -69,6 +70,7 @@ class COM:
   public ActionWithVirtualAtom
 {
   bool nopbc;
+  bool first;
 public:
   explicit COM(const ActionOptions&ao);
   void calculate();
@@ -85,7 +87,8 @@ void COM::registerKeywords(Keywords& keys) {
 COM::COM(const ActionOptions&ao):
   Action(ao),
   ActionWithVirtualAtom(ao),
-  nopbc(false)
+  nopbc(false),
+  first(true)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -98,7 +101,7 @@ COM::COM(const ActionOptions&ao):
     log.printf(" %d",atoms[i].serial());
   }
   log.printf("\n");
-  if(!nopbc) {
+  if(nopbc) {
     log<<"  PBC will be ignored\n";
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
@@ -110,6 +113,17 @@ void COM::calculate() {
   Vector pos;
   if(!nopbc) makeWhole();
   double mass(0.0);
+  if( first ) {
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+      if(std::isnan(getMass(i))) {
+        error(
+          "You are trying to compute a COM but masses are not known.\n"
+          "        If you are using plumed driver, please use the --mc option"
+        );
+      }
+    }
+    first=false;
+  }
   vector<Tensor> deriv(getNumberOfAtoms());
   for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
   if( plumed.getAtoms().chargesWereSet() ) {

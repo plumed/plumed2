@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017 The plumed team
+   Copyright (c) 2017,2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,9 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithArguments.h"
+#include "core/PlumedMain.h"
 #include "tools/Random.h"
+#include "tools/OpenMP.h"
 
 #define PLUMED_METAINF_INIT(ao) Action(ao),MetainferenceBase(ao)
 
@@ -277,7 +279,7 @@ void MetainferenceBase::setDerivatives() {
 
   // Resize all derivative arrays
   forces.resize( nder ); forcesToApply.resize( nder );
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
+  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
 }
 
 inline
@@ -312,11 +314,11 @@ void MetainferenceBase::calculateNumericalDerivatives( ActionWithValue* a ) {
   }
   if( getNumberOfAtoms()>0 ) {
     Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) if(getPntrToComponent(j)->hasDerivatives()) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
     }
     calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) if(getPntrToComponent(j)->hasDerivatives()) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
     }
   }
@@ -325,7 +327,7 @@ void MetainferenceBase::calculateNumericalDerivatives( ActionWithValue* a ) {
 inline
 void MetainferenceBase::apply() {
   bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+  for(int i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->applyForce( forces ) ) {
       wasforced=true;
       for(unsigned i=0; i<forces.size(); ++i) forcesToApply[i]+=forces[i];

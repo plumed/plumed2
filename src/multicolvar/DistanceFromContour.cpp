@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -161,7 +161,7 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
   for(unsigned i=0; i<mybasemulticolvars[0]->getFullNumberOfTasks(); ++i) addTaskToList(i);
   // And a cutoff
   std::vector<double> pp( bw.size(),0 );
-  KernelFunctions kernel( pp, bw, kerneltype, false, 1.0, true );
+  KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 );
   double rcut = kernel.getCutoff( bw[0] );
   for(unsigned j=1; j<bw.size(); ++j) {
     if( kernel.getCutoff(bw[j])>rcut ) rcut=kernel.getCutoff(bw[j]);
@@ -206,9 +206,10 @@ void DistanceFromContour::calculate() {
   // Set bracket as center of mass of membrane in active region
   deactivateAllTasks();
   Vector myvec = getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(0) ); pos2[dir]=myvec[dir];
-  taskFlags[0]=1; double d2, mindist = myvec.modulo2();
+  taskFlags[0]=1; double mindist = myvec.modulo2();
   for(unsigned j=1; j<getNumberOfAtoms()-1; ++j) {
     Vector distance=getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(j) );
+    double d2;
     if( (d2=distance[perp_dirs[0]]*distance[perp_dirs[0]])<rcut2 &&
         (d2+=distance[perp_dirs[1]]*distance[perp_dirs[1]])<rcut2 ) {
       d2+=distance[dir]*distance[dir];
@@ -309,8 +310,8 @@ double DistanceFromContour::compute( const unsigned& tindex, AtomValuePack& myat
   std::vector<double> pp(3), der(3,0); for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
 
   // Now create the kernel and evaluate
-  KernelFunctions kernel( pp, bw, kerneltype, false, 1.0, true );
-  double newval = kernel.evaluate( pval, der, true );
+  KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 );
+  kernel.normalize( pval ); double newval = kernel.evaluate( pval, der, true );
 
   if( mybasemulticolvars[0]->isDensity() ) {
     if( !doNotCalculateDerivatives() && derivTime ) {

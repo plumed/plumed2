@@ -3,7 +3,7 @@
 set -e
 set -x
 
-cd "$(mktemp -d)"
+cd "$(mktemp -dt plumed.XXXXXX)"
 
 version=4.1.4
 

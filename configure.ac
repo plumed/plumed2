@@ -237,15 +237,14 @@ PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
-PLUMED_CONFIG_ENABLE([cxx-exceptions],[c++ exceptions],[yes])
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
+PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
 PLUMED_CONFIG_ENABLE([molfile-plugins],[use molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([external-molfile-plugins],[search for external molfile_plugins],[yes])
-PLUMED_CONFIG_ENABLE([matheval],[search for matheval],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([readdir-r],[search for readdir_r (threadsafe)],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[search for C regular expression],[yes])
@@ -256,10 +255,13 @@ PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[no])
+PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
 AC_ARG_VAR(LDSHARED,[command for linking shared library - configure will use CXX plus the proper flags ])
+AC_ARG_VAR(PYTHON_BIN,[python executable (e.g. python2.7 or /opt/local/bin/python2.7) - default: search for a python executable])
+AC_ARG_VAR(MPIEXEC,[command to run mpi programs in tests - default not specified, which means use PLUMED_MPIRUN env var at runtime for backward compatibility])
 
 
 # by default use -O flag
@@ -275,6 +277,13 @@ fi
 # correct fallback list to be searched after preferred choices
 # (e.g. MPI) have been checked.
 compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+
+# on OSX, prefer clang++
+case `(uname)` in
+  (Darwin)
+    compilers="clang++ $compilers"
+  ;;
+esac
 
 # if searching for MPI, try first mpi-like compilers
 if test $mpi == true ; then
@@ -577,9 +586,6 @@ fi
 # when configuring with --disable-openmp
 AC_OPENMP
 
-if test $matheval == true ; then
-  PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
-fi
 if test $readdir_r == true ; then
   PLUMED_CHECK_PACKAGE([dirent.h],[readdir_r],[__PLUMED_HAS_READDIR_R])
 fi
@@ -645,6 +651,37 @@ if test $fftw == true ; then
   PLUMED_CHECK_PACKAGE([fftw3.h],[fftw_execute],[__PLUMED_HAS_FFTW],[fftw3])
 fi
 
+if test $python == true  ; then
+# if PYTHON_BIN is defined, it is expected to be the full path to python
+# Otherwise, search from a list of names:
+  if test -z "$PYTHON_BIN" ; then
+    AC_CHECK_PROGS([PYTHON_BIN],[python])
+  fi
+  if test -n "$PYTHON_BIN"
+  then
+    AC_MSG_NOTICE([Python executable is $PYTHON_BIN])
+    AC_MSG_CHECKING([support for required python modules (distutils, cython, numpy, subprocess, os)])
+testimport="
+from distutils.core import setup
+from distutils.extension import Extension
+from Cython.Build import cythonize
+import numpy
+import subprocess
+import os
+"
+    if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
+       AC_MSG_RESULT([yes])
+       AC_DEFINE([__PLUMED_HAS_PYTHON])
+    else
+       AC_MSG_RESULT([no])
+       AC_MSG_WARN([cannot enable python interface])
+       PYTHON_BIN=
+    fi
+  else
+    AC_MSG_WARN([cannot enable python interface])
+  fi
+fi
+
 # in non-debug mode, add -DNDEBUG
 if test "$debug" == false ; then
   AC_MSG_NOTICE([Release mode, adding -DNDEBUG])
@@ -657,11 +694,6 @@ if test "$debug_glibcxx" == true ; then
   AC_DEFINE([_GLIBCXX_DEBUG])
 fi
 
-if test "$cxx_exceptions" == true ; then
-  AC_MSG_NOTICE([Enabling c++ exceptions -D__PLUMED_HAS_EXCEPTIONS])
-  AC_DEFINE([__PLUMED_HAS_EXCEPTIONS])
-fi
-
 # this is necessary in many MPI implementations
 # I leave it by default, since it seems harmless
 AC_DEFINE([_REENTRANT])
@@ -672,6 +704,10 @@ AC_SUBST(LD)
 AC_SUBST(LDSHARED)
 # these are libraries that should be linked also to MD engines
 AC_SUBST(STATIC_LIBS)
+# python executable
+AC_SUBST(PYTHON_BIN)
+
+AC_SUBST(MPIEXEC)
 
 if test "$shared" == true ; then
   case `(uname)` in
@@ -839,6 +875,14 @@ int main(int argc,char*argv[[]]){
 )
 fi
 
+if test $mpi_found == ok ; then
+  if test -n "$MPIEXEC" ; then
+    AC_MSG_NOTICE([Regtest suite will use $MPIEXEC command to run MPI tests])
+  else
+    AC_MSG_NOTICE([Regtest suite will use env var PLUMED_MPIRUN to run MPI tests (default: mpirun)])
+  fi
+fi
+
 #### This further tests are required to allow linking with non c++ compiler
 AC_MSG_NOTICE([PLUMED seems to be configured properly!])
 AC_MSG_NOTICE([**************************])
@@ -880,7 +924,7 @@ EOF
     AC_MSG_RESULT([no])
   fi
 done
- 
+
 fi
 
 AC_SUBST(AR_CR)
@@ -922,6 +966,56 @@ EOF
   fi
 done
  
+fi
+
+make_static_archive=no
+AC_SUBST(make_static_archive)
+
+if test "${static_archive}" == true ; then
+  if test -z "$LD_RO" || test -z "$AR_CR" ; then
+    AC_MSG_WARN([no way to create a static archive if ld -ro or ar cr do not work])
+    static_archive=false
+  fi
+fi
+
+if test "${static_archive}" == true ; then
+  AC_MSG_CHECKING([whether static-object constructors can be linked from a static archive])
+
+  magic_token=c1bc476d093a3a5c67b4530e6c54c633593fe9aa
+  rm -f conftest-*
+  
+  cat << EOF > conftest-main.cpp
+  void f(void);
+  int main(int argc,char**argv){ f(); return 0; }
+EOF
+  cat << EOF > conftest-f.cpp
+  void f(void){ return; }
+EOF
+  cat << EOF > conftest-g.cpp
+#include <iostream>
+  class g{
+    public:
+    g(){ std::cout<<"$magic_token\n"; }
+  } init;
+EOF
+
+  $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
+  
+  $LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+# linking the previously merged objects should work:
+  $AR_CR conftest-both.a conftest-both.o 1> /dev/null 2> /dev/null
+# something like the following, instead, should not work:
+#  $AR_CR conftest-both.a conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+#
+  $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.a 1> /dev/null 2> /dev/null
+  if grep -q $magic_token ./conftest.exe ; then
+    AC_MSG_RESULT([yes])
+    make_static_archive=yes
+  else
+    AC_MSG_RESULT([no])
+  fi
 fi
 
 if test "${static_patch}" == true ; then

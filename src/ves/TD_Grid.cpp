@@ -83,7 +83,7 @@ td: TD_GRID FILE=input-grid.data
 
 
 class TD_Grid : public TargetDistribution {
-  Grid* distGrid_;
+  std::unique_ptr<Grid> distGrid_;
   std::vector<double> minima_;
   std::vector<double> maxima_;
   std::vector<bool> periodic_;
@@ -92,7 +92,6 @@ class TD_Grid : public TargetDistribution {
 public:
   static void registerKeywords( Keywords&);
   explicit TD_Grid(const ActionOptions& ao);
-  ~TD_Grid();
   double getValue(const std::vector<double>&) const ;
 };
 
@@ -110,16 +109,8 @@ void TD_Grid::registerKeywords(Keywords& keys) {
   keys.use("SHIFT_TO_ZERO");
 }
 
-TD_Grid::~TD_Grid() {
-  if(distGrid_!=NULL) {
-    delete distGrid_;
-  }
-}
-
-
 TD_Grid::TD_Grid(const ActionOptions& ao):
   PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
-  distGrid_(NULL),
   minima_(0),
   maxima_(0),
   zero_outside_(false),
@@ -203,7 +194,7 @@ double TD_Grid::getValue(const std::vector<double>& argument) const {
       arg[k] =maxima_[k];
     }
   }
-  return GridLinearInterpolation::getGridValueWithLinearInterpolation(distGrid_,arg)+shift_;
+  return GridLinearInterpolation::getGridValueWithLinearInterpolation(distGrid_.get(),arg)+shift_;
 }
 
 

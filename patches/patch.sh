@@ -57,6 +57,9 @@ save_originals=
 quiet=
 mdroot=
 
+# default value:
+plumed_ignore_mpi=no
+
 for option
 do
 
@@ -90,20 +93,20 @@ do
     (--quiet|-q) quiet=yes ;;
     (*)
       echo "ERROR: Unknown option $prefix_option. Use -h for help."
-      exit
+      exit 1
   esac
 done
 
 if [ -n "$mdroot" ] ; then
   if ! cd "$mdroot" ; then
-    echo "Directory $mdroot does not exist"
-    exit
+    echo "ERROR: Directory $mdroot does not exist"
+    exit 1
   fi
 fi
 
 if [ -n "$multiple_actions" ] ; then
-  echo "Too many actions. -h for help"
-  exit
+  echo "ERROR: Too many actions. -h for help"
+  exit 1
 fi
 
 if [ -z "$action" ] ; then
@@ -117,13 +120,13 @@ if [ -z "$PLUMED_ROOT" ]
 then
   echo "ERROR: I cannot find PLUMED"
   echo "Please set PLUMED_ROOT environment variable or use --root"
-  exit
+  exit 1
 fi
 if [ ! -d "$PLUMED_ROOT/patches/" ]
 then
   echo "ERROR: cannot find $PLUMED_ROOT/patches/ directory"
   echo "Check your PLUMED_ROOT variable or --root option"
-  exit
+  exit 1
 fi
 
 # build MD engines list
@@ -153,7 +156,7 @@ then
   test -n "$quiet" || echo "Creating a new patch"
   if [[ -e "$PLUMED_ROOT"/patches/"$newpatch".diff ]] ; then
       echo "ERROR: patch $newpatch is already defined"
-      exit
+      exit 1
   fi
   touch "$PLUMED_ROOT"/patches/"$newpatch".diff
   test -n "$quiet" || echo "Created file $PLUMED_ROOT/patches/$newpatch.diff"
@@ -204,8 +207,8 @@ fi
 case "$mode" in
 (static|shared|runtime) ;;
 (*)
-  echo "I don't understand mode $mode"
-  exit
+  echo "ERROR: I don't understand mode $mode"
+  exit 1
 esac
 
 
@@ -213,7 +216,7 @@ case "$action" in
   (patch)
     if [ ! -e "$diff" ] ; then
       echo "ERROR: MD engine not supported (or mispelled)"
-      exit
+      exit 1
     fi
     if type -t plumed_preliminary_test 1>/dev/null ; then
       if plumed_preliminary_test || [ "$force" ] ; then
@@ -222,34 +225,40 @@ case "$action" in
         echo "ERROR: Preliminary test not passed."
         echo "It seems that this is not $engine, or you are in the wrong directory"
         echo "If you are sure about what you are doing, use -f"
-      exit
+      exit 1
       fi
     fi
-    if [ -L Plumed.h -o -L Plumed.inc ]
+    if [ -L Plumed.h -o -L Plumed.inc -o -L Plumed.cmake ]
     then
-      echo "ERROR: you have likely already patched. Revert first (-r)"
-      exit
+      if ( type -t plumed_before_revert 1>/dev/null || type -t plumed_after_revert 1>/dev/null) && ( type -t plumed_before_patch 1>/dev/null || type -t plumed_after_patch 1>/dev/null)
+      then
+        echo "ERROR: you have likely already patched, and your patch seems to need to be reverted."
+        echo "Revert first (-r)"
+        exit 1
+      else
+        echo "WARNING: you have likely already patched. Assuming that you can patch multiple times and continuing"
+      fi
     fi
     if [ ! -f "$PLUMED_ROOT/src/lib/Plumed.inc" ]
     then
       echo "ERROR: cannot find $PLUMED_ROOT/src/lib/Plumed.inc file"
       echo "Compile plumed before patching"
-      exit
+      exit 1
     fi
     if [ ! -f "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" ]
     then
       echo "ERROR: cannot find $PLUMED_ROOT/src/lib/Plumed.cmake.$mode file"
       echo "Compile a $mode version of plumed before patching, or change patching mode [static|shared|runtime]"
-      exit
+      exit 1
     fi
     if type -t plumed_before_patch 1>/dev/null ; then
       test -n "$quiet" || echo "Executing plumed_before_patch function"
       plumed_before_patch
     fi
-    test -n "$quiet" || echo "Linking Plumed.h and Plumed.inc ($mode mode)"
-    ln -s "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h" Plumed.h
-    ln -s "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
-    ln -s "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
+    test -n "$quiet" || echo "Linking Plumed.h, Plumed.inc, and Plumed.cmake ($mode mode)"
+    ln -fs "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h" Plumed.h
+    ln -fs "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
+    ln -fs "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
 
     if [ -d "$diff" ]; then
       test -n "$quiet" || echo "Patching with on-the-fly diff from stored originals"
@@ -258,7 +267,7 @@ case "$action" in
         file="${bckfile%.preplumed}"
         if test -e "$file" ; then
           diff -U 5 "$diff/$bckfile" "$diff/$file" --label="$bckfile" --label="$file" |
-          patch -u -l -b -F 5 --suffix=.preplumed "$file"
+          patch -u -l -b -F 5 -N --suffix=.preplumed "$file"
         else
           echo "ERROR: File $file is missing"
         fi
@@ -281,11 +290,13 @@ case "$action" in
       echo "by the PLUMED_KERNEL environment variable"
     fi
 
-    echo ""
-    if grep -q "D__PLUMED_HAS_MPI=1" "$PLUMED_ROOT"/src/config/compile_options.sh ; then
-      echo "PLUMED is compiled with MPI support so you can configure $engine with MPI" 
-    else
-      echo "PLUMED is compiled WITHOUT MPI support so you CANNOT configure $engine with MPI"
+    if [ "$plumed_ignore_mpi" = no ] ; then
+      echo ""
+      if grep -q "D__PLUMED_HAS_MPI=1" "$PLUMED_ROOT"/src/config/compile_options.sh ; then
+        echo "PLUMED is compiled with MPI support so you can configure $engine with MPI" 
+      else
+        echo "PLUMED is compiled WITHOUT MPI support so you CANNOT configure $engine with MPI"
+      fi
     fi
 
     
@@ -304,15 +315,15 @@ case "$action" in
     fi
   ;;
   (save)
-    if [ ! -L Plumed.h -o ! -L Plumed.inc ]
+    if [ ! -L Plumed.h -o ! -L Plumed.inc -o ! -L Plumed.cmake ]
     then
-      echo "ERROR: I cannot find Plumed.h and Plumed.inc files. You have likely not patched yet."
-      exit
+      echo "ERROR: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
+      exit 1
     fi
     PREPLUMED=$(find . -name "*.preplumed" | sort)
     if ! test "$PREPLUMED" ; then
       echo "ERROR: I cannot find any .preplumed file. There is nothing to save."
-      exit
+      exit 1
     fi
     if type -t plumed_preliminary_test 1>/dev/null ; then
       if plumed_preliminary_test || [ "$force" ] ; then
@@ -321,7 +332,7 @@ case "$action" in
         echo "ERROR: Preliminary test not passed."
         echo "It seems that this is not $engine, or you are in the wrong directory"
         echo "If you are sure about what you are doing, use -f"
-      exit
+      exit 1
       fi
     fi
     test -n "$quiet" || echo "Saving your changes to $diff"
@@ -359,7 +370,7 @@ case "$action" in
           cp "$file" "$diff/$file"
           cp "$bckfile" "$diff/$bckfile"
         else
-          echo "patch -u -l -b -F 5 --suffix=.preplumed \"${file}\" << \\EOF_EOF" >> "$diff"
+          echo "patch -u -l -b -F 5 -N --suffix=.preplumed \"${file}\" << \\EOF_EOF" >> "$diff"
           diff -U 5 "${bckfile}" "$file" --label="$bckfile" --label="$file" >> "$diff"
           echo "EOF_EOF"                                                   >> "$diff"
         fi
@@ -378,17 +389,17 @@ EOF
   (revert)
     if [ ! -e "$diff" ] ; then
       echo "ERROR: MD engine not supported (or mispelled)"
-      exit
+      exit 1
     fi
     if type -t plumed_before_revert 1>/dev/null ; then
       test -n "$quiet" || echo "Executing plumed_before_revert function"
       plumed_before_revert
     fi
-    if [ ! -L Plumed.h -o ! -L Plumed.inc ]
+    if [ ! -L Plumed.h -o ! -L Plumed.inc -o ! -L Plumed.cmake ]
     then
-      echo "WARNING: I cannot find Plumed.h and Plumed.inc files. You have likely not patched yet."
+      echo "WARNING: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
     else
-    test -n "$quiet" || echo "Removing Plumed.h and Plumed.inc"
+    test -n "$quiet" || echo "Removing Plumed.h, Plumed.inc, and Plumed.cmake"
       rm Plumed.h Plumed.inc Plumed.cmake
     fi
     PREPLUMED=$(find . -name "*.preplumed")

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #include "tools/Tools.h"
 #include "tools/OpenMP.h"
 #include "tools/Exception.h"
+#include "tools/Units.h"
 #include <algorithm>
 #include <string>
 
@@ -285,11 +286,11 @@ MDAtomsTyped<T>::MDAtomsTyped():
   virial(NULL)
 {}
 
-MDAtomsBase* MDAtomsBase::create(unsigned p) {
+std::unique_ptr<MDAtomsBase> MDAtomsBase::create(unsigned p) {
   if(p==sizeof(double)) {
-    return new MDAtomsTyped<double>;
+    return std::unique_ptr<MDAtomsTyped<double>>(new MDAtomsTyped<double>);
   } else if (p==sizeof(float)) {
-    return new MDAtomsTyped<float>;
+    return std::unique_ptr<MDAtomsTyped<float>>(new MDAtomsTyped<float>);
   }
   std::string pp;
   Tools::convert(p,pp);

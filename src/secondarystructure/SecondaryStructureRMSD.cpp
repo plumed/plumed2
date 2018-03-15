@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -45,7 +45,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD. "
            "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD. For more details on the "
            "DRMSD method see \\ref DRMSD.");
-  keys.add("compulsory","R_0","The r_0 parameter of the switching function.");
+  keys.add("compulsory","R_0","0.08","The r_0 parameter of the switching function.");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","NN","8","The n parameter of the switching function");
   keys.add("compulsory","MM","12","The m parameter of the switching function");
@@ -94,7 +94,7 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
 }
 
 SecondaryStructureRMSD::~SecondaryStructureRMSD() {
-  for(unsigned i=0; i<references.size(); ++i) delete references[i];
+// destructor needed to delete forward declarated objects
 }
 
 void SecondaryStructureRMSD::turnOnDerivatives() {
@@ -112,7 +112,8 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std:
 
   std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );
   if( !verbose_output ) {
-    if(resstrings[0]=="all") {
+    if(resstrings.size()==0) error("residues are not defined, check the keyword RESIDUES");
+    else if(resstrings[0]=="all") {
       log.printf("  examining all possible secondary structure combinations\n");
     } else {
       log.printf("  examining secondary structure in residue positions : %s \n",resstrings[0].c_str() );
@@ -168,7 +169,7 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   }
 
   // Set the reference structure
-  references.push_back( metricRegister().create<SingleDomainRMSD>( alignType ) );
+  references.emplace_back( metricRegister().create<SingleDomainRMSD>( alignType ) );
   unsigned nn=references.size()-1;
   std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
   references[nn]->setBoundsOnDistances( true, bondlength );   // We always use pbc

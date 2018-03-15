@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,6 +25,7 @@
 #include "FileBase.h"
 #include <vector>
 #include <sstream>
+#include <memory>
 
 namespace PLMD {
 
@@ -150,13 +151,13 @@ class OFile:
 /// see link(OFile&)
   OFile* linked;
 /// Internal buffer for printf
-  char* buffer_string;
+  std::unique_ptr<char[]> buffer_string;
 /// Internal buffer (generic use)
-  char* buffer;
+  std::unique_ptr<char[]> buffer;
 /// Internal buffer length
   int buflen;
 /// This variables stores the actual buffer length
-  unsigned actual_buffer_length;
+  int actual_buffer_length;
 /// Class identifying a single field for fielded output
   class Field:
     public FieldBase {
@@ -192,8 +193,6 @@ class OFile:
 public:
 /// Constructor
   OFile();
-/// Destructor
-  ~OFile();
 /// Allows overloading of link
   using FileBase::link;
 /// Allows overloading of open

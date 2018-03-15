@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -131,7 +131,7 @@ Center::Center(const ActionOptions&ao):
       log.printf("\n");
     }
   }
-  if(!nopbc) {
+  if(nopbc) {
     log<<"  PBC will be ignored\n";
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";

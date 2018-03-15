@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,6 +26,7 @@
 #include "reference/ArgumentOnlyDistance.h"
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
+#include <memory>
 
 using namespace std;
 
@@ -101,10 +102,9 @@ class Target : public Function {
 private:
   MultiValue myvals;
   ReferenceValuePack mypack;
-  PLMD::ArgumentOnlyDistance* target;
+  std::unique_ptr<PLMD::ArgumentOnlyDistance> target;
 public:
   explicit Target(const ActionOptions&);
-  ~Target();
   virtual void calculate();
   static void registerKeywords(Keywords& keys );
 };
@@ -137,7 +137,7 @@ Target::Target(const ActionOptions&ao):
   expandArgKeywordInPDB( pdb );
 
   // Generate the reference structure
-  target=metricRegister().create<ArgumentOnlyDistance>( type, pdb );
+  target.reset(metricRegister().create<ArgumentOnlyDistance>( type, pdb ));
 
   // Get the argument names
   std::vector<std::string> args_to_retrieve;
@@ -154,10 +154,6 @@ Target::Target(const ActionOptions&ao):
 
   // Create the value
   addValueWithDerivatives(); setNotPeriodic();
-}
-
-Target::~Target() {
-  delete target;
 }
 
 void Target::calculate() {

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -58,6 +58,7 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
 // Terminal groups
     else if(residuename=="ACE") return true;
     else if(residuename=="NME") return true;
+    else if(residuename=="NH2") return true;
 // Alternative residue names in common force fiels
     else if(residuename=="GLH") return true; // neutral GLU
     else if(residuename=="ASH") return true; // neutral ASP
@@ -67,6 +68,9 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
     else if(residuename=="HSE") return true; // HIS-E charmm
     else if(residuename=="HIP") return true; // HIS-P amber
     else if(residuename=="HSP") return true; // HIS-P charmm
+// Weird amino acids
+    else if(residuename=="NLE") return true;
+    else if(residuename=="SFO") return true;
     else return false;
   } else if( type=="dna" ) {
     if(residuename=="DA") return true;
@@ -138,7 +142,7 @@ void MolDataClass::getBackboneForResidue( const std::string& type, const unsigne
     } else if( residuename=="ACE") {
       atoms.resize(1);
       atoms[0]=mypdb.getNamedAtomFromResidue("C",residuenum);
-    } else if( residuename=="NME") {
+    } else if( residuename=="NME"||residuename=="NH2") {
       atoms.resize(1);
       atoms[0]=mypdb.getNamedAtomFromResidue("N",residuenum);
     } else {
@@ -167,6 +171,7 @@ bool MolDataClass::isTerminalGroup( const std::string& type, const std::string& 
   if( type=="protein" ) {
     if( residuename=="ACE" ) return true;
     else if( residuename=="NME" ) return true;
+    else if( residuename=="NH2" ) return true;
     else return false;
   } else {
     plumed_merror(type + " is not a valid molecule type");
@@ -214,7 +219,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum+1,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum+1,chainid));
       } else if( name=="chi1" && !isTerminalGroup("protein",resname) ) {
-        if ( resname=="GLY" || resname=="ALA" ) plumed_merror("chi-1 is not defined for Alanine and Glycine");
+        if ( resname=="GLY" || resname=="ALA" || resname=="SFO" ) plumed_merror("chi-1 is not defined for Alanine, Glycine and SFO");
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CB",resnum,chainid));

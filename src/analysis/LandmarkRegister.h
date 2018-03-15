@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,7 +37,7 @@ namespace analysis {
 class LandmarkRegister {
 private:
 /// Pointer to a function which, given the type for a ReferenceConfiguration, creates it
-  typedef LandmarkSelectionBase*(*creator_pointer)(const LandmarkSelectionOptions&);
+  typedef std::unique_ptr<LandmarkSelectionBase>(*creator_pointer)(const LandmarkSelectionOptions&);
 /// The set of possible landmark selection algorithms we can work with
   std::map<std::string,creator_pointer> m;
 public:
@@ -50,14 +50,14 @@ public:
 /// Verify if a landmark selection style is present in the register
   bool check(std::string type);
 /// Create a landmark selection object
-  LandmarkSelectionBase* create( const LandmarkSelectionOptions& lo );
+  std::unique_ptr<LandmarkSelectionBase> create( const LandmarkSelectionOptions& lo );
 };
 
 LandmarkRegister& landmarkRegister();
 
 #define PLUMED_REGISTER_LANDMARKS(classname,type) \
   static class classname##RegisterMe{ \
-    static LandmarkSelectionBase * create(const LandmarkSelectionOptions&lo){return new classname(lo);} \
+    static std::unique_ptr<LandmarkSelectionBase> create(const LandmarkSelectionOptions&lo){return std::unique_ptr<classname>(new classname(lo));} \
   public: \
     classname##RegisterMe(){landmarkRegister().add(type,create);}; \
     ~classname##RegisterMe(){landmarkRegister().remove(create);}; \

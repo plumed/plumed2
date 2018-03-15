@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,6 +28,7 @@
 #include "tools/DynamicList.h"
 #include "tools/MultiValue.h"
 #include <vector>
+#include "tools/ForwardDecl.h"
 
 namespace PLMD {
 class Value;
@@ -86,8 +87,9 @@ private:
   std::vector<double> buffer;
 /// Do we want to output information on the timings of different parts of the calculation
   bool timers;
+  ForwardDecl<Stopwatch> stopwatch_fwd;
 /// The stopwatch that times the different parts of the calculation
-  Stopwatch& stopwatch;
+  Stopwatch& stopwatch=*stopwatch_fwd;
 /// These are used to minmise computational expense in complex functions
   bool dertime_can_be_off;
 protected:

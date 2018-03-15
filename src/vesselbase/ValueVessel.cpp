@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@ namespace vesselbase {
 
 void ValueVessel::registerKeywords( Keywords& keys ) {
   Vessel::registerKeywords( keys );
-  keys.add("compulsory","COMPONENT","1","The component we are using in the functions");
+  keys.add("compulsory","COMPONENT","1","the component of the vector for which to calculate this quantity");
 }
 
 ValueVessel::ValueVessel( const VesselOptions& da ):
@@ -57,7 +57,8 @@ ValueVessel::~ValueVessel() {
 
 std::string ValueVessel::description() {
   if( final_value->getName()==getAction()->getLabel() ) return "value " + getAction()->getLabel() + " contains " + value_descriptor();
-  return "value " + getAction()->getLabel() + "." + getLabel() + " contains " + value_descriptor();
+  std::string compstr; Tools::convert(mycomp,compstr);
+  return "value " + getAction()->getLabel() + "." + getLabel() + " is obtained by taking the " + compstr + "th component and finding " + value_descriptor();
 }
 
 bool ValueVessel::applyForce( std::vector<double>& forces ) {

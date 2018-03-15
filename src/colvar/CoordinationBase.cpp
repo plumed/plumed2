@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -78,11 +78,11 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
 
   addValueWithDerivatives(); setNotPeriodic();
   if(gb_lista.size()>0) {
-    if(doneigh)  nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut,nl_st);
-    else         nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc());
+    if(doneigh)  nl.reset( new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut,nl_st) );
+    else         nl.reset( new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc()) );
   } else {
-    if(doneigh)  nl= new NeighborList(ga_lista,pbc,getPbc(),nl_cut,nl_st);
-    else         nl= new NeighborList(ga_lista,pbc,getPbc());
+    if(doneigh)  nl.reset( new NeighborList(ga_lista,pbc,getPbc(),nl_cut,nl_st) );
+    else         nl.reset( new NeighborList(ga_lista,pbc,getPbc()) );
   }
 
   requestAtoms(nl->getFullAtomList());
@@ -109,7 +109,7 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
 }
 
 CoordinationBase::~CoordinationBase() {
-  delete nl;
+// destructor required to delete forward declared class
 }
 
 void CoordinationBase::prepare() {
@@ -195,7 +195,7 @@ void CoordinationBase::calculate()
     }
     #pragma omp critical
     if(nt>1) {
-      for(int i=0; i<getPositions().size(); i++) deriv[i]+=omp_deriv[i];
+      for(unsigned i=0; i<getPositions().size(); i++) deriv[i]+=omp_deriv[i];
       virial+=omp_virial;
     }
   }

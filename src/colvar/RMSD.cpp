@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,12 +37,12 @@ class RMSD : public Colvar {
 
   MultiValue myvals;
   ReferenceValuePack mypack;
-  PLMD::RMSDBase* rmsd;
+  std::unique_ptr<PLMD::RMSDBase> rmsd;
   bool squared;
+  bool nopbc;
 
 public:
   explicit RMSD(const ActionOptions&);
-  ~RMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -128,6 +128,17 @@ all the atoms in the segment are assumed to be part of both the alignment and di
 Please note that there are a number of other methods for calculating the distance between the instantaneous configuration and a reference configuration
 that are available in plumed.  More information on these various methods can be found in the section of the manual on \ref dists.
 
+When running with periodic boundary conditions, the atoms should be
+in the proper periodic image. This is done automatically since PLUMED 2.5,
+by considering the ordered list of atoms and rebuilding PBCs with a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED.
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
+
 \par Examples
 
 The following tells plumed to calculate the RMSD distance between
@@ -150,11 +161,14 @@ void RMSD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
   keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
-  keys.remove("NOPBC");
 }
 
 RMSD::RMSD(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),myvals(1,0), mypack(0,0,myvals),squared(false)
+  PLUMED_COLVAR_INIT(ao),
+  myvals(1,0),
+  mypack(0,0,myvals),
+  squared(false),
+  nopbc(false)
 {
   string reference;
   parse("REFERENCE",reference);
@@ -162,6 +176,7 @@ RMSD::RMSD(const ActionOptions&ao):
   type.assign("SIMPLE");
   parse("TYPE",type);
   parseFlag("SQUARED",squared);
+  parseFlag("NOPBC",nopbc);
 
   checkRead();
 
@@ -173,7 +188,7 @@ RMSD::RMSD(const ActionOptions&ao):
   if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
     error("missing input file " + reference );
 
-  rmsd = metricRegister().create<RMSDBase>(type,pdb);
+  rmsd.reset( metricRegister().create<RMSDBase>(type,pdb) );
 
   std::vector<AtomNumber> atoms;
   rmsd->getAtomRequests( atoms );
@@ -188,15 +203,14 @@ RMSD::RMSD(const ActionOptions&ao):
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
   log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
-}
-
-RMSD::~RMSD() {
-  delete rmsd;
+  if(nopbc) log.printf("  without periodic boundary conditions\n");
+  else      log.printf("  using periodic boundary conditions\n");
 }
 
 
 // calculator
 void RMSD::calculate() {
+  if(!nopbc) makeWhole();
   double r=rmsd->calculate( getPositions(), mypack, squared );
 
   setValue(r);

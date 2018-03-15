@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -89,7 +89,7 @@ protected:
 /// files are backed up.
   void parseOutputFile( const std::string& key, std::string& filename );
 /// The data we are going to analyze
-  std::vector<ReferenceConfiguration*> data;
+  std::vector<std::unique_ptr<ReferenceConfiguration>> data;
 /// Get the name of the metric we are using to measure distances
   std::string getMetricName() const ;
 /// Return the number of data points

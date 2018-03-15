@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -56,12 +56,12 @@ bool LandmarkRegister::check(std::string type) {
   return false;
 }
 
-LandmarkSelectionBase* LandmarkRegister::create( const LandmarkSelectionOptions& lo ) {
-  LandmarkSelectionBase* lselect;
+std::unique_ptr<LandmarkSelectionBase> LandmarkRegister::create( const LandmarkSelectionOptions& lo ) {
+  std::unique_ptr<LandmarkSelectionBase> lselect;
   if( check(lo.words[0]) ) {
     lselect=m[lo.words[0]](lo);
     lselect->checkRead();
-  } else lselect=NULL;
+  }
   return lselect;
 }
 

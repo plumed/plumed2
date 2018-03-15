@@ -1,6 +1,6 @@
 export PATH="@build_dir@/src/lib/:$PATH"
 export LIBRARY_PATH="@build_dir@/src/lib/:$LIBRARY_PATH"
 export LD_LIBRARY_PATH="@build_dir@/src/lib/:$LD_LIBRARY_PATH"
-export DYLD_LIBRARY_PATH="@build_dir@/src/lib/:$DYLD_LIBRARY_PATH"
 export PLUMED_KERNEL="@build_dir@/src/lib/libplumedKernel.@SOEXT@"
 export PLUMED_VIMPATH="@build_dir@/vim"
+export PYTHONPATH="@build_dir@/python:$PYTHONPATH"

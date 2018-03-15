@@ -43,7 +43,7 @@ using namespace std;
 namespace PLMD {
 namespace drr {
 
-//+PLUMEDOC BIAS DRR
+//+PLUMEDOC EABFMOD_BIAS DRR
 /*
 Used to performed extended-system adaptive biasing force(eABF) \cite Lelievre2007 method
 on one or more collective variables. This method is also
@@ -121,47 +121,108 @@ lwall: LOWER_WALLS ARG=eabf_winall.dist1_fict AT=1.2 KAPPA=418.4
 PRINT STRIDE=10 ARG=dist1,eabf_winall.dist1_fict,eabf_winall.dist1_biasforce FILE=COLVAR
 \endplumedfile
 
+It's also possible to run extended generalized adaptive biasing force (egABF) described in \cite Zhao2017 .
+An egABF example:
+\plumedfile
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+DRR ...
+LABEL=gabf_phi
+ARG=phi
+FULLSAMPLES=500
+GRID_MIN=-pi
+GRID_MAX=pi
+GRID_BIN=180
+FRICTION=8.0
+TAU=0.5
+OUTPUTFREQ=50000
+HISTORYFREQ=500000
+... DRR
+
+DRR ...
+LABEL=gabf_psi
+ARG=psi
+FULLSAMPLES=500
+GRID_MIN=-pi
+GRID_MAX=pi
+GRID_BIN=180
+FRICTION=8.0
+TAU=0.5
+OUTPUTFREQ=50000
+HISTORYFREQ=500000
+... DRR
+
+DRR ...
+LABEL=gabf_2d
+ARG=phi,psi
+EXTERNAL_FORCE=gabf_phi.phi_springforce,gabf_psi.psi_springforce
+EXTERNAL_FICT=gabf_phi.phi_fictNoPBC,gabf_psi.psi_fictNoPBC
+GRID_MIN=-pi,-pi
+GRID_MAX=pi,pi
+GRID_BIN=180,180
+NOBIAS
+OUTPUTFREQ=50000
+HISTORYFREQ=500000
+... DRR
+
+PRINT STRIDE=10 ARG=phi,psi FILE=COLVAR
+\endplumedfile
+
  */
 //+ENDPLUMEDOC
+
+using std::vector;
+using std::string;
 
 class DynamicReferenceRestraining : public Bias {
 private:
   bool firsttime;
   bool nobias;
-  std::vector<double> fictNoPBC;
-  std::vector<double> real;
-  std::vector<double> springlength; // spring lengths
-  std::vector<double> fict;         // coordinates of extended variables
-  std::vector<double> vfict;        // velocities of extended variables
-  std::vector<double> vfict_laststep;
-  std::vector<double> ffict; // forces exerted on extended variables
-  std::vector<double> fbias; // bias forces from eABF
-  std::vector<double> kappa;
-  std::vector<double> tau;
-  std::vector<double> friction;
-  std::vector<double> etemp;
-  std::vector<double> ffict_measured;
-  std::vector<Value *> biasforceValue;
-  std::vector<Value *> fictValue;
-  std::vector<Value *> vfictValue;
-  std::vector<double> c1;
-  std::vector<double> c2;
-  std::vector<double> mass;
-  std::vector<DRRAxis> delim;
-  std::string outputname;
-  std::string cptname;
-  std::string outputprefix;
+  vector<double> fictNoPBC;
+  vector<double> real;
+  vector<double> springlength; // spring lengths
+  vector<double> fict;         // coordinates of extended variables
+  vector<double> vfict;        // velocities of extended variables
+  vector<double> vfict_laststep;
+  vector<double> ffict; // forces exerted on extended variables
+  vector<double> fbias; // bias forces from eABF
+  vector<double> kappa;
+  vector<double> tau;
+  vector<double> friction;
+  vector<double> etemp;
+  vector<double> ffict_measured;
+  vector<double> force_external;
+  vector<double> fict_external;
+  vector<Value *> biasforceValue;
+  vector<Value *> springforceValue;
+  vector<Value *> fictValue;
+  vector<Value *> vfictValue;
+  vector<Value *> fictNoPBCValue;
+  vector<Value *> externalForceValue;
+  vector<Value *> externalFictValue;
+  vector<double> c1;
+  vector<double> c2;
+  vector<double> mass;
+  vector<DRRAxis> delim;
+  string outputname;
+  string cptname;
+  string outputprefix;
   const size_t ndims;
   double dt;
   double kbt;
   double outputfreq;
   double historyfreq;
   bool isRestart;
+  bool useCZARestimator;
   bool useUIestimator;
   bool textoutput;
+  bool withExternalForce;
+  bool withExternalFict;
   ABF ABFGrid;
   CZAR CZARestimator;
   double fullsamples;
+  double maxFactor;
   UIestimator::UIestimator eabf_UI;
   Random rand;
 
@@ -169,9 +230,9 @@ public:
   explicit DynamicReferenceRestraining(const ActionOptions &);
   void calculate();
   void update();
-  void save(const std::string &filename, long long int step);
-  void load(const std::string &filename);
-  void backupFile(const std::string &filename);
+  void save(const string &filename, long long int step);
+  void load(const string &filename);
+  void backupFile(const string &filename);
   static void registerKeywords(Keywords &keys);
   bool is_file_exist(const char *fileName);
 };
@@ -199,11 +260,26 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.add("optional", "GRID_SPACING", "the approximate grid spacing (to be "
            "used as an alternative or together "
            "with GRID_BIN)");
+  keys.add("optional", "ZGRID_MIN", "the lower bounds for the grid (ZGRID_BIN"
+           " or ZGRID_SPACING should be specified)");
+  keys.add("optional", "ZGRID_MAX", "the upper bounds for the grid (ZGRID_BIN"
+           " or ZGRID_SPACING should be specified)");
+  keys.add("optional", "ZGRID_BIN", "the number of bins for the grid");
+  keys.add("optional", "ZGRID_SPACING", "the approximate grid spacing (to be "
+           "used as an alternative or together "
+           "with ZGRID_BIN)");
+  keys.add("optional", "EXTERNAL_FORCE", "use forces from other action instead"
+           " of internal spring force, this disable the extended system!");
+  keys.add("optional", "EXTERNAL_FICT", "position of external fictitious "
+           "particles, useful for UIESTIMATOR");
   keys.add("compulsory", "FULLSAMPLES", "500",
            "number of samples in a bin prior to application of the ABF");
+  keys.add("compulsory", "MAXFACTOR", "1.0",
+           "maximum scaling factor of biasing force");
   keys.add("compulsory", "OUTPUTFREQ", "write results to a file every N steps");
   keys.add("optional", "HISTORYFREQ", "save history to a file every N steps");
-  keys.addFlag("UIESTIMATOR", false,
+  keys.addFlag("NOCZAR", false, "disable the CZAR estimator");
+  keys.addFlag("UI", false,
                "enable the umbrella integration estimator");
   keys.add("optional", "UIRESTARTPREFIX",
            "specify the restart files for umbrella integration");
@@ -239,6 +315,9 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.addOutputComponent(
     "_biasforce", "default",
     "The bias force from eABF/DRR of the fictitious particle.");
+  keys.addOutputComponent("_springforce", "default", "Spring force between real CVs and extended CVs");
+  keys.addOutputComponent("_fictNoPBC", "default",
+                          "the positions of fictitious particles (without PBC).");
 }
 
 DynamicReferenceRestraining::DynamicReferenceRestraining(
@@ -253,13 +332,19 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     friction(getNumberOfArguments(), 0.0), etemp(getNumberOfArguments(), 0.0),
     ffict_measured(getNumberOfArguments(), 0.0),
     biasforceValue(getNumberOfArguments(), NULL),
+    springforceValue(getNumberOfArguments(), NULL),
     fictValue(getNumberOfArguments(), NULL),
-    vfictValue(getNumberOfArguments(), NULL), c1(getNumberOfArguments(), 0.0),
+    vfictValue(getNumberOfArguments(), NULL),
+    fictNoPBCValue(getNumberOfArguments(), NULL),
+    externalForceValue(getNumberOfArguments(), NULL),
+    externalFictValue(getNumberOfArguments(), NULL),
+    c1(getNumberOfArguments(), 0.0),
     c2(getNumberOfArguments(), 0.0), mass(getNumberOfArguments(), 0.0),
     delim(getNumberOfArguments()), outputname(""), cptname(""),
     outputprefix(""), ndims(getNumberOfArguments()), dt(0.0), kbt(0.0),
     outputfreq(0.0), historyfreq(-1.0), isRestart(false),
-    useUIestimator(false), textoutput(false)
+    useCZARestimator(true), useUIestimator(false), textoutput(false),
+    withExternalForce(false), withExternalFict(false)
 {
   log << "eABF/DRR: You now are using the extended adaptive biasing "
       "force(eABF) method."
@@ -289,7 +374,10 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       "method carefully!"
       << '\n';
   parseFlag("NOBIAS", nobias);
-  parseFlag("UIESTIMATOR", useUIestimator);
+  parseFlag("UI", useUIestimator);
+  bool noCZAR = false;
+  parseFlag("NOCZAR", noCZAR);
+//   noCZAR == false ? useCZARestimator = true : useCZARestimator = false;
   parseFlag("TEXTOUTPUT", textoutput);
   parseVector("TAU", tau);
   parseVector("FRICTION", friction);
@@ -298,13 +386,32 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   double temp = -1.0;
   parse("TEMP", temp);
   parse("FULLSAMPLES", fullsamples);
+  parse("MAXFACTOR", maxFactor);
   parse("OUTPUTFREQ", outputfreq);
   parse("HISTORYFREQ", historyfreq);
   parse("OUTPUTPREFIX", outputprefix);
-  std::string restartfilename;
-  parse("DRR_RFILE", restartfilename);
-  std::string uirprefix;
+  string restart_prefix;
+  parse("DRR_RFILE", restart_prefix);
+  string uirprefix;
   parse("UIRESTARTPREFIX", uirprefix);
+  parseArgumentList("EXTERNAL_FORCE", externalForceValue);
+  parseArgumentList("EXTERNAL_FICT", externalFictValue);
+  if (externalForceValue.empty()) {
+    withExternalForce = false;
+  } else if (externalForceValue.size() != ndims) {
+    error("eABF/DRR: Number of forces doesn't match ARGS!");
+  } else {
+    withExternalForce = true;
+  }
+  if (withExternalForce && useUIestimator) {
+    if (externalFictValue.empty()) {
+      error("eABF/DRR: No external fictitious particles specified. UI estimator needs it.");
+    } else if(externalFictValue.size() != ndims) {
+      error("eABF/DRR: Number of fictitious particles doesn't match ARGS!");
+    } else {
+      withExternalFict = true;
+    }
+  }
   if (temp >= 0.0)
     kbt = plumed.getAtoms().getKBoltzmann() * temp;
   else
@@ -316,10 +423,10 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         << '\n';
   }
   if (getRestart()) {
-    if (restartfilename.length() != 0) {
+    if (restart_prefix.length() != 0) {
       isRestart = true;
       firsttime = false;
-      load(restartfilename);
+      load(restart_prefix);
     } else {
       log << "eABF/DRR: You don't specify the file for restarting." << '\n';
       log << "eABF/DRR: So I assume you are splitting windows." << '\n';
@@ -328,27 +435,45 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     }
   }
 
-  std::vector<string> gmin(getNumberOfArguments());
+  vector<string> gmin(ndims);
+  vector<string> zgmin(ndims);
   parseVector("GRID_MIN", gmin);
-  if (gmin.size() != getNumberOfArguments())
+  parseVector("ZGRID_MIN", zgmin);
+  if (gmin.size() != ndims)
     error("eABF/DRR: not enough values for GRID_MIN");
-  std::vector<string> gmax(getNumberOfArguments());
+  if (zgmin.size() != ndims) {
+    log << "eABF/DRR: You didn't specify ZGRID_MIN. " << '\n'
+        << "eABF/DRR: The GRID_MIN will be used instead.";
+    zgmin = gmin;
+  }
+  vector<string> gmax(ndims);
+  vector<string> zgmax(ndims);
   parseVector("GRID_MAX", gmax);
-  if (gmax.size() != getNumberOfArguments())
+  parseVector("ZGRID_MAX", zgmax);
+  if (gmax.size() != ndims)
     error("eABF/DRR: not enough values for GRID_MAX");
-  std::vector<unsigned> gbin(getNumberOfArguments());
-  std::vector<double> gspacing(getNumberOfArguments());
+  if (zgmax.size() != ndims) {
+    log << "eABF/DRR: You didn't specify ZGRID_MAX. " << '\n'
+        << "eABF/DRR: The GRID_MAX will be used instead.";
+    zgmax = gmax;
+  }
+  vector<unsigned> gbin(ndims);
+  vector<unsigned> zgbin(ndims);
+  vector<double> gspacing(ndims);
+  vector<double> zgspacing(ndims);
   parseVector("GRID_BIN", gbin);
+  parseVector("ZGRID_BIN", zgbin);
   parseVector("GRID_SPACING", gspacing);
-  if (gbin.size() != getNumberOfArguments()) {
+  parseVector("ZGRID_SPACING", zgspacing);
+  if (gbin.size() != ndims) {
     log << "eABF/DRR: You didn't specify GRID_BIN. Trying to use GRID_SPACING "
         "instead."
         << '\n';
-    if (gspacing.size() != getNumberOfArguments()) {
+    if (gspacing.size() != ndims) {
       error("eABF/DRR: not enough values for GRID_BIN");
     } else {
-      gbin.resize(getNumberOfArguments());
-      for (size_t i = 0; i < getNumberOfArguments(); ++i) {
+      gbin.resize(ndims);
+      for (size_t i = 0; i < ndims; ++i) {
         double l, h;
         PLMD::Tools::convert(gmin[i], l);
         PLMD::Tools::convert(gmax[i], h);
@@ -358,40 +483,79 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
       }
     }
   }
+  if (zgbin.size() != ndims) {
+    log << "eABF/DRR: You didn't specify ZGRID_BIN. Trying to use ZGRID_SPACING instead." << '\n';
+    if (zgspacing.size() != ndims) {
+      log << "eABF/DRR: You didn't specify ZGRID_SPACING. Trying to use GRID_SPACING or GRID_BIN instead." << '\n';
+      zgbin = gbin;
+      zgspacing = gspacing;
+    } else {
+      zgbin.resize(ndims);
+      for (size_t i = 0; i < ndims; ++i) {
+        double l, h;
+        PLMD::Tools::convert(zgmin[i], l);
+        PLMD::Tools::convert(zgmax[i], h);
+        zgbin[i] = std::nearbyint((h - l) / zgspacing[i]);
+        zgspacing[i] = (h - l) / zgbin[i];
+        log << "ZGRID_BIN[" << i << "] is " << zgbin[i] << '\n';
+      }
+    }
+  }
   checkRead();
 
   // Set up kbt for extended system
-  std::vector<double> ekbt(ndims, 0.0);
-  if (etemp.size() != getNumberOfArguments()) {
-    etemp.resize(getNumberOfArguments(), 0.0);
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-      etemp[i] = kbt / plumed.getAtoms().getKBoltzmann();
-    }
+  log << "eABF/DRR: The fullsamples is " << fullsamples << '\n';
+  log << "eABF/DRR: The maximum scaling factor is " << maxFactor << '\n';
+  if (maxFactor > 1.0) {
+    log << "eABF/DRR: Warning! The maximum scaling factor larger than 1.0 is not recommended!" << '\n';
   }
-  for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  log << "eABF/DRR: The kbt(real system) is " << kbt << '\n';
+  dt = getTimeStep();
+  vector<double> ekbt(ndims, 0.0);
+  if (etemp.size() != ndims) {
+    etemp.assign(ndims, kbt / plumed.getAtoms().getKBoltzmann());
+  }
+  if (tau.size() != ndims) {
+    tau.assign(ndims, 0.5);
+  }
+  if (friction.size() != ndims) {
+    friction.assign(ndims, 8.0);
+  }
+  for (size_t i = 0; i < ndims; ++i) {
     ekbt[i] = etemp[i] * plumed.getAtoms().getKBoltzmann();
     log << "eABF/DRR: The kbt(extended system) of [" << i << "] is " << ekbt[i]
         << '\n';
+    log << "eABF/DRR: relaxation time tau [" << i << "] is " << tau[i] << '\n';
+    log << "eABF/DRR: Extended variable [" << i << "] has friction: " << friction[i] << '\n';
   }
 
-  log << "eABF/DRR: The fullsamples is " << fullsamples << '\n';
-  log << "eABF/DRR: The kbt(real system) is " << kbt << '\n';
   // Set up the force grid
-  for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  vector<DRRAxis> zdelim(ndims);
+  for (size_t i = 0; i < ndims; ++i) {
     log << "eABF/DRR: The " << i << " dimensional grid minimum is " << gmin[i]
         << '\n';
     log << "eABF/DRR: The " << i << " dimensional grid maximum is " << gmax[i]
         << '\n';
     log << "eABF/DRR: The " << i << " dimensional grid has " << gbin[i]
         << " bins" << '\n';
+    log << "eABF/DRR: The " << i << " dimensional zgrid minimum is " << zgmin[i]
+        << '\n';
+    log << "eABF/DRR: The " << i << " dimensional zgrid maximum is " << zgmax[i]
+        << '\n';
+    log << "eABF/DRR: The " << i << " dimensional zgrid has " << zgbin[i]
+        << " bins" << '\n';
     double l, h;
     PLMD::Tools::convert(gmin[i], l);
     PLMD::Tools::convert(gmax[i], h);
     delim[i].set(l, h, gbin[i]);
+    double zl,zh;
+    PLMD::Tools::convert(zgmin[i], zl);
+    PLMD::Tools::convert(zgmax[i], zh);
+    zdelim[i].set(zl, zh, zgbin[i]);
   }
-  if (kappa.size() != getNumberOfArguments()) {
-    kappa.resize(getNumberOfArguments(), 0.0);
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  if (kappa.size() != ndims) {
+    kappa.resize(ndims, 0.0);
+    for (size_t i = 0; i < ndims; ++i) {
       if (kappa[i] <= 0) {
         log << "eABF/DRR: The spring force constant kappa[" << i
             << "] is not set." << '\n';
@@ -404,44 +568,31 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     }
   } else {
     log << "eABF/DRR: The kappa have been set manually." << '\n';
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+    for (size_t i = 0; i < ndims; ++i) {
       log << "eABF/DRR: The spring force constant kappa[" << i << "] is "
           << std::fixed << std::setprecision(10) << kappa[i] << '\n';
     }
   }
 
-  if (tau.size() != getNumberOfArguments()) {
-    std::fill(std::begin(tau), std::end(tau), 0.5);
-  }
-  for (unsigned i = 0; i < tau.size(); i++) {
-    log << "eABF/DRR: relaxation time tau[" << i << "] is " << tau[i] << '\n';
-  }
-  if (friction.size() != getNumberOfArguments()) {
-    std::fill(std::begin(friction), std::end(friction), 8.0);
-  }
-  for (unsigned i = 0; i < friction.size(); ++i) {
-    log << "eABF/DRR: Extended variable [" << i
-        << "] has friction: " << friction[i] << '\n';
-  }
-  dt = getTimeStep();
-  for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
+  for (size_t i = 0; i < ndims; ++i) {
     mass[i] = kappa[i] * tau[i] * tau[i] / (4 * pi * pi);
     log << "eABF/DRR: Fictitious mass[" << i << "] is " << mass[i] << '\n';
     c1[i] = exp(-0.5 * friction[i] * dt);
     c2[i] = sqrt(ekbt[i] * (1.0 - c1[i] * c1[i]) / mass[i]);
   }
 
-  for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+  for (size_t i = 0; i < ndims; ++i) {
     // Position output
-    std::string comp = getPntrToArgument(i)->getName() + "_fict";
+    string comp = getPntrToArgument(i)->getName() + "_fict";
     addComponentWithDerivatives(comp);
     if (getPntrToArgument(i)->isPeriodic()) {
-      std::string a, b;
+      string a, b;
       double c, d;
       getPntrToArgument(i)->getDomain(a, b);
       getPntrToArgument(i)->getDomain(c, d);
       componentIsPeriodic(comp, a, b);
       delim[i].setPeriodicity(c, d);
+      zdelim[i].setPeriodicity(c, d);
     } else
       componentIsNotPeriodic(comp);
     fictValue[i] = getPntrToComponent(comp);
@@ -455,19 +606,46 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     addComponent(comp);
     componentIsNotPeriodic(comp);
     biasforceValue[i] = getPntrToComponent(comp);
+    // Spring force output, useful for perform egABF and other analysis
+    comp = getPntrToArgument(i)->getName() + "_springforce";
+    addComponent(comp);
+    componentIsNotPeriodic(comp);
+    springforceValue[i] = getPntrToComponent(comp);
+    // Position output, no pbc-aware
+    comp = getPntrToArgument(i)->getName() + "_fictNoPBC";
+    addComponent(comp);
+    componentIsNotPeriodic(comp);
+    fictNoPBCValue[i] = getPntrToComponent(comp);
   }
 
-  if (outputprefix.length() == 0)
+  if (outputprefix.length() == 0) {
     outputprefix = getLabel();
+  }
+  // Support multiple replica
+  string replica_suffix = plumed.getSuffix();
+  if (replica_suffix.empty() == false) {
+    outputprefix = outputprefix + replica_suffix;
+  }
   outputname = outputprefix + ".drrstate";
   cptname = outputprefix + ".cpt.drrstate";
 
   if (!isRestart) {
     // If you want to use on-the-fly text output for CZAR and naive estimator,
     // you should turn it to true first!
-    ABFGrid = ABF(delim, ".abf", textoutput);
-    CZARestimator = CZAR(delim, ".czar", kbt, textoutput);
+    ABFGrid = ABF(delim, ".abf", fullsamples, maxFactor, textoutput);
+    // Just initialize it even useCZARestimator is off.
+    CZARestimator = CZAR(zdelim, ".czar", kbt, textoutput);
     log << "eABF/DRR: The init function of the grid is finished." << '\n';
+  } else {
+    // ABF Parametres are not saved in binary files
+    // So manully set them up
+    ABFGrid.setParameters(fullsamples, maxFactor);
+  }
+  if (useCZARestimator) {
+    log << "eABF/DRR: Using corrected z-average restraint estimator of gradients" << '\n';
+    log << "  Bibliography " << plumed.cite("Lesage, Lelièvre, Stoltz and Hénin, "
+                                            "J. Phys. Chem. B 3676, 121 (2017)");
+    log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)") << '\n';
   }
   if (useUIestimator) {
     log << "eABF/DRR: Using umbrella integration(Zheng and Yang's) estimator "
@@ -475,64 +653,62 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         << '\n';
     log << "eABF/DRR: The UI estimator code is contributed by Haohao Fu."
         << '\n';
-    std::vector<double> lowerboundary(delim.size(), 0);
-    std::vector<double> upperboundary(delim.size(), 0);
-    std::vector<double> width(delim.size(), 0);
-    for (size_t i = 0; i < delim.size(); ++i) {
-      lowerboundary[i] = delim[i].getMin();
-      upperboundary[i] = delim[i].getMax();
-      width[i] = delim[i].getWidth();
+    log << "  Bibliography " << plumed.cite(
+          "Fu, Shao, Chipot and Cai, J. Chem. Theory Comput. 3506, 12 (2016)");
+    log << plumed.cite("Zheng and Yang, J. Chem. Theory Comput. 810, 8 (2012)");
+    log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)") << '\n';
+    vector<double> lowerboundary(zdelim.size(), 0);
+    vector<double> upperboundary(zdelim.size(), 0);
+    vector<double> width(zdelim.size(), 0);
+    for (size_t i = 0; i < zdelim.size(); ++i) {
+      lowerboundary[i] = zdelim[i].getMin();
+      upperboundary[i] = zdelim[i].getMax();
+      width[i] = zdelim[i].getWidth();
     }
-    std::vector<std::string> input_filename;
+    vector<string> input_filename;
     bool uirestart = false;
     if (isRestart && (uirprefix.length() != 0)) {
       input_filename.push_back(uirprefix);
       uirestart = true;
     }
-    if (isRestart && (uirprefix.length() == 0))
-      input_filename.push_back(getLabel());
+    if (isRestart && (uirprefix.length() == 0)) {
+      input_filename.push_back(outputprefix);
+    }
     eabf_UI = UIestimator::UIestimator(
-                lowerboundary, upperboundary, width, kappa, getLabel(), int(outputfreq),
+                lowerboundary, upperboundary, width, kappa, outputprefix, int(outputfreq),
                 uirestart, input_filename, kbt / plumed.getAtoms().getKBoltzmann());
   }
-  log << "  Bibliography " << plumed.cite("Lesage, Lelièvre, Stoltz and Hénin, "
-                                          "J. Phys. Chem. B 3676, 121 (2017)");
-  log << plumed.cite("Darve and Pohorille, J. Chem. Phys. 9169, 115 (2001)");
-  if (useUIestimator) {
-    log << plumed.cite(
-          "Fu, Shao, Chipot and Cai, J. Chem. Theory Comput. 3506, 12 (2016)");
-    log << plumed.cite("Zheng and Yang, J. Chem. Theory Comput. 810, 8 (2012)");
-  }
-  log << "\n";
 }
 
 void DynamicReferenceRestraining::calculate() {
-  const unsigned long step_now = getStep();
+  long long int step_now = getStep();
   if (firsttime) {
-    for (unsigned i = 0; i < ndims; ++i) {
+    for (size_t i = 0; i < ndims; ++i) {
       fict[i] = getArgument(i);
     }
     firsttime = false;
   }
   if (step_now != 0) {
     if ((step_now % int(outputfreq)) == 0) {
-      if (!textoutput) {
-        save(outputname, step_now);
-      } else {
+      save(outputname, step_now);
+      if (textoutput) {
         ABFGrid.writeAll(outputprefix);
-        CZARestimator.writeAll(outputprefix);
+        if (useCZARestimator) {
+          CZARestimator.writeAll(outputprefix);
+        }
       }
     }
     if (historyfreq > 0 && (step_now % int(historyfreq)) == 0) {
-      if (!textoutput) {
-        const std::string filename =
-          outputprefix + "." + std::to_string(step_now) + ".drrstate";
-        save(filename, step_now);
-      } else {
-        const std::string filename =
+      const string filename =
+        outputprefix + "." + std::to_string(step_now) + ".drrstate";
+      save(filename, step_now);
+      if (textoutput) {
+        const string textfilename =
           outputprefix + "." + std::to_string(step_now);
-        ABFGrid.writeAll(filename);
-        CZARestimator.writeAll(filename);
+        ABFGrid.writeAll(textfilename);
+        if (useCZARestimator) {
+          CZARestimator.writeAll(textfilename);
+        }
       }
     }
     if (getCPT()) {
@@ -542,23 +718,45 @@ void DynamicReferenceRestraining::calculate() {
       save(cptname, step_now);
     }
   }
-  double ene = 0.0;
-  for (unsigned i = 0; i < ndims; ++i) {
-    real[i] = getArgument(i);
-    springlength[i] = difference(i, fict[i], real[i]);
-    fictNoPBC[i] = real[i] - springlength[i];
-    double f = -kappa[i] * springlength[i];
-    ffict_measured[i] = -f;
-    ene += 0.5 * kappa[i] * springlength[i] * springlength[i];
-    setOutputForce(i, f);
-    ffict[i] = -f;
-    fict[i] = fictValue[i]->bringBackInPbc(fict[i]);
-    fictValue[i]->set(fict[i]);
-    vfictValue[i]->set(vfict_laststep[i]);
+  if (withExternalForce == false) {
+    double ene = 0.0;
+    for (size_t i = 0; i < ndims; ++i) {
+      real[i] = getArgument(i);
+      springlength[i] = difference(i, fict[i], real[i]);
+      fictNoPBC[i] = real[i] - springlength[i];
+      double f = -kappa[i] * springlength[i];
+      ffict_measured[i] = -f;
+      ene += 0.5 * kappa[i] * springlength[i] * springlength[i];
+      setOutputForce(i, f);
+      ffict[i] = -f;
+      fict[i] = fictValue[i]->bringBackInPbc(fict[i]);
+      fictValue[i]->set(fict[i]);
+      vfictValue[i]->set(vfict_laststep[i]);
+      springforceValue[i]->set(ffict_measured[i]);
+      fictNoPBCValue[i]->set(fictNoPBC[i]);
+    }
+    setBias(ene);
+    ABFGrid.store_getbias(fict, ffict_measured, fbias);
+  } else {
+    for (size_t i = 0; i < ndims; ++i) {
+      real[i] = getArgument(i);
+      ffict_measured[i] = externalForceValue[i]->get();
+      if (withExternalFict) {
+        fictNoPBC[i] = externalFictValue[i]->get();
+      }
+      springforceValue[i]->set(ffict_measured[i]);
+      fictNoPBCValue[i]->set(fictNoPBC[i]);
+    }
+    ABFGrid.store_getbias(real, ffict_measured, fbias);
+    if (!nobias) {
+      for (size_t i = 0; i < ndims; ++i) {
+        setOutputForce(i, fbias[i]);
+      }
+    }
   }
-  setBias(ene);
-  ABFGrid.store_getbias(fict, ffict_measured, fbias, fullsamples);
-  CZARestimator.store(real, ffict_measured);
+  if (useCZARestimator) {
+    CZARestimator.store(real, ffict_measured);
+  }
   if (useUIestimator) {
     eabf_UI.update_output_filename(outputprefix);
     eabf_UI.update(int(step_now), real, fictNoPBC);
@@ -566,31 +764,32 @@ void DynamicReferenceRestraining::calculate() {
 }
 
 void DynamicReferenceRestraining::update() {
-  for (unsigned i = 0; i < ndims; ++i) {
-    // consider additional forces on the fictitious particle
-    // (e.g. MetaD stuff)
-    ffict[i] += fictValue[i]->getForce();
-    if (!nobias) {
-      ffict[i] += fbias[i];
+  if (withExternalForce == false) {
+    for (size_t i = 0; i < ndims; ++i) {
+      // consider additional forces on the fictitious particle
+      // (e.g. MetaD stuff)
+      ffict[i] += fictValue[i]->getForce();
+      if (!nobias) {
+        ffict[i] += fbias[i];
+      }
+      biasforceValue[i]->set(fbias[i]);
+      // update velocity (half step)
+      vfict[i] += ffict[i] * 0.5 * dt / mass[i];
+      // thermostat (half step)
+      vfict[i] = c1[i] * vfict[i] + c2[i] * rand.Gaussian();
+      // save full step velocity to be dumped at next step
+      vfict_laststep[i] = vfict[i];
+      // thermostat (half step)
+      vfict[i] = c1[i] * vfict[i] + c2[i] * rand.Gaussian();
+      // update velocity (half step)
+      vfict[i] += ffict[i] * 0.5 * dt / mass[i];
+      // update position (full step)
+      fict[i] += vfict[i] * dt;
     }
-    biasforceValue[i]->set(fbias[i]);
-    // update velocity (half step)
-    vfict[i] += ffict[i] * 0.5 * dt / mass[i];
-    // thermostat (half step)
-    vfict[i] = c1[i] * vfict[i] + c2[i] * rand.Gaussian();
-    // save full step velocity to be dumped at next step
-    vfict_laststep[i] = vfict[i];
-    // thermostat (half step)
-    vfict[i] = c1[i] * vfict[i] + c2[i] * rand.Gaussian();
-    // update velocity (half step)
-    vfict[i] += ffict[i] * 0.5 * dt / mass[i];
-    // update position (full step)
-    fict[i] += vfict[i] * dt;
-    //     }
   }
 }
 
-void DynamicReferenceRestraining::save(const std::string &filename,
+void DynamicReferenceRestraining::save(const string &filename,
                                        long long int step) {
   std::ofstream out;
   out.open(filename.c_str(), std::ios::binary);
@@ -600,7 +799,14 @@ void DynamicReferenceRestraining::save(const std::string &filename,
   out.close();
 }
 
-void DynamicReferenceRestraining::load(const std::string &filename) {
+void DynamicReferenceRestraining::load(const string &rfile_prefix) {
+  string replica_suffix = plumed.getSuffix();
+  string filename;
+  if (replica_suffix.empty() == true) {
+    filename = rfile_prefix + ".drrstate";
+  } else {
+    filename = rfile_prefix + "." + replica_suffix + ".drrstate";
+  }
   std::ifstream in;
   long long int step;
   in.open(filename.c_str(), std::ios::binary);
@@ -613,14 +819,14 @@ void DynamicReferenceRestraining::load(const std::string &filename) {
   backupFile(filename);
 }
 
-void DynamicReferenceRestraining::backupFile(const std::string &filename) {
+void DynamicReferenceRestraining::backupFile(const string &filename) {
   bool isSuccess = false;
-  int i = 0;
+  long int i = 0;
   while (!isSuccess) {
     // If libstdc++ support C++17 we can simplify following code.
-    const std::string bckname = "bck." + filename + "." + std::to_string(i);
+    const string bckname = "bck." + filename + "." + std::to_string(i);
     if (is_file_exist(bckname.c_str())) {
-      i++;
+      ++i;
     } else {
       log << "eABF/DRR: Backup original restart file to " << bckname << '\n';
       std::ifstream src(filename.c_str(), std::ios::binary);

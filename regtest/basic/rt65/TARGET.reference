@@ -1,5 +1,6 @@
 #! FIELDS time e1 sigma_e1 height biasf
 #! SET multivariate false
+#! SET kerneltype gaussian
 #! SET min_e1 -pi
 #! SET max_e1 pi
                   0.002     -1.903205551688819                   0.15  9.109750009330055e-06                     -1

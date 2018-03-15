@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,6 +34,17 @@ namespace colvar {
 /*
 Calculate the dipole moment for a group of atoms.
 
+When running with periodic boundary conditions, the atoms should be
+in the proper periodic image. This is done automatically since PLUMED 2.5,
+by considering the ordered list of atoms and rebuilding PBCs with a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED.
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
+
 \par Examples
 
 The following tells plumed to calculate the dipole of the group of atoms containing
@@ -55,6 +66,7 @@ on the position) is computed on the geometric center of the group.
 class Dipole : public Colvar {
   vector<AtomNumber> ga_lista;
   bool components;
+  bool nopbc;
 public:
   explicit Dipole(const ActionOptions&);
   virtual void calculate();
@@ -70,7 +82,6 @@ void Dipole::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("x","COMPONENTS","the x-component of the dipole");
   keys.addOutputComponent("y","COMPONENTS","the y-component of the dipole");
   keys.addOutputComponent("z","COMPONENTS","the z-component of the dipole");
-  keys.remove("NOPBC");
 }
 
 Dipole::Dipole(const ActionOptions&ao):
@@ -79,6 +90,7 @@ Dipole::Dipole(const ActionOptions&ao):
 {
   parseAtomList("GROUP",ga_lista);
   parseFlag("COMPONENTS",components);
+  parseFlag("NOPBC",nopbc);
   checkRead();
   if(components) {
     addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
@@ -93,12 +105,16 @@ Dipole::Dipole(const ActionOptions&ao):
     log.printf("  %d", ga_lista[i].serial());
   }
   log.printf("  \n");
+  if(nopbc) log.printf("  without periodic boundary conditions\n");
+  else      log.printf("  using periodic boundary conditions\n");
+
   requestAtoms(ga_lista);
 }
 
 // calculator
 void Dipole::calculate()
 {
+  if(!nopbc) makeWhole();
   double ctot=0.;
   unsigned N=getNumberOfAtoms();
   vector<double> charges(N);

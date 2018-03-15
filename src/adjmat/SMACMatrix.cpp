@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -109,7 +109,7 @@ SMACMatrix::SMACMatrix( const ActionOptions& ao ):
 
 void SMACMatrix::readOrientationConnector( const unsigned& iv, const unsigned& jv, const std::vector<std::string>& desc ) {
   for(int i=0; i<desc.size(); i++) {
-    KernelFunctions mykernel( desc[i], false );
+    KernelFunctions mykernel( desc[i] );
     kernels(iv,jv).push_back( mykernel );
     if( jv!=iv ) kernels(jv,iv).push_back( mykernel );
   }

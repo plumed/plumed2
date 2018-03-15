@@ -9,4 +9,5 @@ URL: http://www.plumed.org
 Version: @_VERSION_@
 Cflags: -I${includedir} @_cppflags_@
 Libs: -L${libdir} -l@_program_name_@ @_libs_@
+Libs.private: @_private_libs_@
 Conflicts: @_conflicts_@

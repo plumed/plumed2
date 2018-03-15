@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -56,7 +56,7 @@ Mapping::Mapping(const ActionOptions&ao):
   std::string mtype; parse("TYPE",mtype);
   bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
   // Setup the object that does the mapping
-  mymap = new PointWiseMapping( mtype, skipchecks );
+  mymap.reset( new PointWiseMapping( mtype, skipchecks ) );
 
   // Read the properties we require
   if( keywords.exists("PROPERTY") ) {
@@ -122,10 +122,6 @@ Mapping::Mapping(const ActionOptions&ao):
 void Mapping::turnOnDerivatives() {
   ActionWithValue::turnOnDerivatives();
   needsDerivatives();
-}
-
-Mapping::~Mapping() {
-  delete mymap;
 }
 
 void Mapping::prepare() {
@@ -208,11 +204,11 @@ void Mapping::calculateNumericalDerivatives( ActionWithValue* a ) {
   }
   if( getNumberOfAtoms()>0 ) {
     Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
     }
     calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
     }
   }

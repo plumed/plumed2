@@ -52,7 +52,7 @@ fi
 # done
 # echo "+++++++++++++++++++++++++++++++++++++"
 
-TMPDIR="$(mktemp -d)"
+TMPDIR="$(mktemp -dt plumed.XXXXXX)"
 FATAL_FILE="$TMPDIR/codecheck.fatal"
 CLEAN_FILE="$TMPDIR/codecheck.clean"
 

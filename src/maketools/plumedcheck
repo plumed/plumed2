@@ -14,7 +14,7 @@
 # DOC: In case you think you have a valid reason for a code not passing the check
 # DOC: to be merged, please contact the developers.
 
-TEMP=$(mktemp)
+TEMP=$(mktemp -t plumed.XXXXXX)
 
 cat > $TEMP << \EOF
 
@@ -144,7 +144,7 @@ BEGIN{
   core_modules["reference"]=1
 
 # create tmp dir for future usage
-  "mktemp -d" | getline tmpdir
+  "mktemp -dt plumed.XXXXXX" | getline tmpdir
 }
 
 # for each input file
@@ -278,6 +278,10 @@ BEGINFILE{
 # DOC: E.g., use `#include <cstdlib>` instead of `#include <stdlib.h>`. Notice that
 # DOC: using the modern header all the functions are declared inside the `std` namespace.
       if(h in deprecated_headers) error("deprecated_header","including deprecated header " h);
+# DOC: :unsupported_header_regex:
+# DOC: Header `<regex>`, although part of the C++11 standard, is not supported by gcc 4.8.
+# DOC: In order to allow compatibility with old compilers, this header should not be used.
+      if(h == "regex") error("unsupported_header_regex","including unsupported header " h);
 # DOC: :external_header: (style)
 # DOC: Header files should possibly not include other header files from external libraries.
 # DOC: Indeed, once PLUMED is installed, if paths are not set correctly the include files of the other libraries

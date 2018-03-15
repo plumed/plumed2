@@ -622,6 +622,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 build_dir
 program_name
+make_static_archive
 AR_CR
 LD_RO
 program_can_run_mpi
@@ -651,6 +652,8 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
+MPIEXEC
+PYTHON_BIN
 LDSHARED
 STATIC_LIBS
 SOEXT
@@ -708,15 +711,14 @@ enable_debug_glibcxx
 enable_shared
 enable_dependency_tracking
 enable_rpath
-enable_cxx_exceptions
 enable_ld_r
 enable_ar_cr
+enable_static_archive
 enable_mpi
 enable_external_lapack
 enable_external_blas
 enable_molfile_plugins
 enable_external_molfile_plugins
-enable_matheval
 enable_zlib
 enable_readdir_r
 enable_cregex
@@ -727,6 +729,7 @@ enable_xdrfile
 enable_boost_graph
 enable_boost_serialization
 enable_fftw
+enable_python
 enable_openmp
 '
       ac_precious_vars='build_alias
@@ -735,6 +738,8 @@ target_alias
 SOEXT
 STATIC_LIBS
 LDSHARED
+PYTHON_BIN
+MPIEXEC
 CXX
 CXXFLAGS
 LDFLAGS
@@ -1375,10 +1380,11 @@ Optional Features:
   --enable-dependency-tracking
                           enable dependency tracking, default: yes
   --enable-rpath          enable store rpath, default: no
-  --enable-cxx-exceptions enable c++ exceptions, default: yes
   --enable-ld-r           enable group object files, default: yes
   --enable-ar-cr          enable use ar to build libplumedWrapper.a, default:
                           yes
+  --enable-static-archive enable try to build libplumed.a for static linking,
+                          default: yes
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
@@ -1388,7 +1394,6 @@ Optional Features:
   --enable-external-molfile-plugins
                           enable search for external molfile_plugins, default:
                           yes
-  --enable-matheval       enable search for matheval, default: yes
   --enable-zlib           enable search for zlib, default: yes
   --enable-readdir-r      enable search for readdir_r (threadsafe), default:
                           yes
@@ -1401,6 +1406,7 @@ Optional Features:
   --enable-boost_serialization
                           enable search for boost serialization, default: no
   --enable-fftw           enable search for fftw, default: no
+  --enable-python         enable search for python, default: yes
   --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
@@ -1409,6 +1415,11 @@ Some influential environment variables:
               configure will add here -ldl if necessary
   LDSHARED    command for linking shared library - configure will use CXX plus
               the proper flags
+  PYTHON_BIN  python executable (e.g. python2.7 or /opt/local/bin/python2.7) -
+              default: search for a python executable
+  MPIEXEC     command to run mpi programs in tests - default not specified,
+              which means use PLUMED_MPIRUN env var at runtime for backward
+              compatibility
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -2662,24 +2673,6 @@ fi
 
 
 
-cxx_exceptions=
-# Check whether --enable-cxx-exceptions was given.
-if test "${enable_cxx_exceptions+set}" = set; then :
-  enableval=$enable_cxx_exceptions; case "${enableval}" in
-             (yes) cxx_exceptions=true ;;
-             (no)  cxx_exceptions=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-cxx-exceptions" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) cxx_exceptions=true ;;
-             (no)  cxx_exceptions=false ;;
-  esac
-
-fi
-
-
-
 ld_r=
 # Check whether --enable-ld-r was given.
 if test "${enable_ld_r+set}" = set; then :
@@ -2710,6 +2703,24 @@ else
   case "yes" in
              (yes) ar_cr=true ;;
              (no)  ar_cr=false ;;
+  esac
+
+fi
+
+
+
+static_archive=
+# Check whether --enable-static-archive was given.
+if test "${enable_static_archive+set}" = set; then :
+  enableval=$enable_static_archive; case "${enableval}" in
+             (yes) static_archive=true ;;
+             (no)  static_archive=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-static-archive" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) static_archive=true ;;
+             (no)  static_archive=false ;;
   esac
 
 fi
@@ -2800,24 +2811,6 @@ else
   case "yes" in
              (yes) external_molfile_plugins=true ;;
              (no)  external_molfile_plugins=false ;;
-  esac
-
-fi
-
-
-
-matheval=
-# Check whether --enable-matheval was given.
-if test "${enable_matheval+set}" = set; then :
-  enableval=$enable_matheval; case "${enableval}" in
-             (yes) matheval=true ;;
-             (no)  matheval=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-matheval" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) matheval=true ;;
-             (no)  matheval=false ;;
   esac
 
 fi
@@ -3004,6 +2997,26 @@ fi
 
 
 
+python=
+# Check whether --enable-python was given.
+if test "${enable_python+set}" = set; then :
+  enableval=$enable_python; case "${enableval}" in
+             (yes) python=true ;;
+             (no)  python=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-python" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) python=true ;;
+             (no)  python=false ;;
+  esac
+
+fi
+
+
+
+
+
 
 
 
@@ -3022,6 +3035,13 @@ fi
 # correct fallback list to be searched after preferred choices
 # (e.g. MPI) have been checked.
 compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+
+# on OSX, prefer clang++
+case `(uname)` in
+  (Darwin)
+    compilers="clang++ $compilers"
+  ;;
+esac
 
 # if searching for MPI, try first mpi-like compilers
 if test $mpi == true ; then
@@ -6722,144 +6742,6 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
 
 
 
-if test $matheval == true ; then
-
-    found=ko
-    __PLUMED_HAS_MATHEVAL=no
-    ac_fn_cxx_check_header_mongrel "$LINENO" "matheval.h" "ac_cv_header_matheval_h" "$ac_includes_default"
-if test "x$ac_cv_header_matheval_h" = xyes; then :
-
-
-  if test "${libsearch}" == true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing evaluator_create" >&5
-$as_echo_n "checking for library containing evaluator_create... " >&6; }
-if ${ac_cv_search_evaluator_create+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char evaluator_create ();
-int
-main ()
-{
-return evaluator_create ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' matheval; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_evaluator_create=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_evaluator_create+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_evaluator_create+:} false; then :
-
-else
-  ac_cv_search_evaluator_create=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_evaluator_create" >&5
-$as_echo "$ac_cv_search_evaluator_create" >&6; }
-ac_res=$ac_cv_search_evaluator_create
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing evaluator_create" >&5
-$as_echo_n "checking for library containing evaluator_create... " >&6; }
-if ${ac_cv_search_evaluator_create+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char evaluator_create ();
-int
-main ()
-{
-return evaluator_create ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_evaluator_create=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_evaluator_create+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_evaluator_create+:} false; then :
-
-else
-  ac_cv_search_evaluator_create=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_evaluator_create" >&5
-$as_echo "$ac_cv_search_evaluator_create" >&6; }
-ac_res=$ac_cv_search_evaluator_create
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  fi
-
-
-fi
-
-
-    if test $found == ok ; then
-       $as_echo "#define __PLUMED_HAS_MATHEVAL 1" >>confdefs.h
-
-       __PLUMED_HAS_MATHEVAL=yes
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_MATHEVAL" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_MATHEVAL" >&2;}
-    fi
-
-fi
 if test $readdir_r == true ; then
 
     found=ko
@@ -8330,6 +8212,85 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_FFTW" >&2;}
 
 fi
 
+if test $python == true  ; then
+# if PYTHON_BIN is defined, it is expected to be the full path to python
+# Otherwise, search from a list of names:
+  if test -z "$PYTHON_BIN" ; then
+    for ac_prog in python
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_PYTHON_BIN+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$PYTHON_BIN"; then
+  ac_cv_prog_PYTHON_BIN="$PYTHON_BIN" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_PYTHON_BIN="$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+PYTHON_BIN=$ac_cv_prog_PYTHON_BIN
+if test -n "$PYTHON_BIN"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_BIN" >&5
+$as_echo "$PYTHON_BIN" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$PYTHON_BIN" && break
+done
+
+  fi
+  if test -n "$PYTHON_BIN"
+  then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Python executable is $PYTHON_BIN" >&5
+$as_echo "$as_me: Python executable is $PYTHON_BIN" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (distutils, cython, numpy, subprocess, os)" >&5
+$as_echo_n "checking support for required python modules (distutils, cython, numpy, subprocess, os)... " >&6; }
+testimport="
+from distutils.core import setup
+from distutils.extension import Extension
+from Cython.Build import cythonize
+import numpy
+import subprocess
+import os
+"
+    if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
+       { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+       $as_echo "#define __PLUMED_HAS_PYTHON 1" >>confdefs.h
+
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable python interface" >&5
+$as_echo "$as_me: WARNING: cannot enable python interface" >&2;}
+       PYTHON_BIN=
+    fi
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable python interface" >&5
+$as_echo "$as_me: WARNING: cannot enable python interface" >&2;}
+  fi
+fi
+
 # in non-debug mode, add -DNDEBUG
 if test "$debug" == false ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: Release mode, adding -DNDEBUG" >&5
@@ -8346,13 +8307,6 @@ $as_echo "$as_me: Check boundaries, adding -D_GLIBCXX_DEBUG" >&6;}
 
 fi
 
-if test "$cxx_exceptions" == true ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling c++ exceptions -D__PLUMED_HAS_EXCEPTIONS" >&5
-$as_echo "$as_me: Enabling c++ exceptions -D__PLUMED_HAS_EXCEPTIONS" >&6;}
-  $as_echo "#define __PLUMED_HAS_EXCEPTIONS 1" >>confdefs.h
-
-fi
-
 # this is necessary in many MPI implementations
 # I leave it by default, since it seems harmless
 $as_echo "#define _REENTRANT 1" >>confdefs.h
@@ -8363,6 +8317,10 @@ $as_echo "#define _REENTRANT 1" >>confdefs.h
 
 
 # these are libraries that should be linked also to MD engines
+
+# python executable
+
+
 
 
 if test "$shared" == true ; then
@@ -8755,6 +8713,16 @@ fi
 
 fi
 
+if test $mpi_found == ok ; then
+  if test -n "$MPIEXEC" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Regtest suite will use $MPIEXEC command to run MPI tests" >&5
+$as_echo "$as_me: Regtest suite will use $MPIEXEC command to run MPI tests" >&6;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Regtest suite will use env var PLUMED_MPIRUN to run MPI tests (default: mpirun)" >&5
+$as_echo "$as_me: Regtest suite will use env var PLUMED_MPIRUN to run MPI tests (default: mpirun)" >&6;}
+  fi
+fi
+
 #### This further tests are required to allow linking with non c++ compiler
 { $as_echo "$as_me:${as_lineno-$LINENO}: PLUMED seems to be configured properly!" >&5
 $as_echo "$as_me: PLUMED seems to be configured properly!" >&6;}
@@ -8846,6 +8814,60 @@ $as_echo "no" >&6; }
   fi
 done
 
+fi
+
+make_static_archive=no
+
+
+if test "${static_archive}" == true ; then
+  if test -z "$LD_RO" || test -z "$AR_CR" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: no way to create a static archive if ld -ro or ar cr do not work" >&5
+$as_echo "$as_me: WARNING: no way to create a static archive if ld -ro or ar cr do not work" >&2;}
+    static_archive=false
+  fi
+fi
+
+if test "${static_archive}" == true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether static-object constructors can be linked from a static archive" >&5
+$as_echo_n "checking whether static-object constructors can be linked from a static archive... " >&6; }
+
+  magic_token=c1bc476d093a3a5c67b4530e6c54c633593fe9aa
+  rm -f conftest-*
+
+  cat << EOF > conftest-main.cpp
+  void f(void);
+  int main(int argc,char**argv){ f(); return 0; }
+EOF
+  cat << EOF > conftest-f.cpp
+  void f(void){ return; }
+EOF
+  cat << EOF > conftest-g.cpp
+#include <iostream>
+  class g{
+    public:
+    g(){ std::cout<<"$magic_token\n"; }
+  } init;
+EOF
+
+  $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
+
+  $LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+# linking the previously merged objects should work:
+  $AR_CR conftest-both.a conftest-both.o 1> /dev/null 2> /dev/null
+# something like the following, instead, should not work:
+#  $AR_CR conftest-both.a conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+#
+  $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.a 1> /dev/null 2> /dev/null
+  if grep -q $magic_token ./conftest.exe ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    make_static_archive=yes
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+  fi
 fi
 
 if test "${static_patch}" == true ; then

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -155,7 +155,7 @@ SMAC::SMAC(const ActionOptions& ao):
   std::string kernelinpt;
   for(int i=1;; i++) {
     if( !parseNumbered("KERNEL",i,kernelinpt) ) break;
-    KernelFunctions mykernel( kernelinpt, false );
+    KernelFunctions mykernel( kernelinpt );
     kernels.push_back( mykernel );
   }
   if( kernels.size()==0 ) error("no kernels defined");

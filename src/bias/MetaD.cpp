@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,6 +35,7 @@
 #include <iostream>
 #include <limits>
 #include <ctime>
+#include <memory>
 
 #define DP2CUTOFF 6.25
 
@@ -364,7 +365,7 @@ private:
   vector<Gaussian> hills_;
   OFile hillsOfile_;
   OFile gridfile_;
-  Grid* BiasGrid_;
+  std::unique_ptr<Grid> BiasGrid_;
   bool storeOldGrids_;
   int wgridstride_;
   bool grid_;
@@ -375,13 +376,13 @@ private:
   double dampfactor_;
   struct TemperingSpecs tt_specs_;
   std::string targetfilename_;
-  Grid* TargetGrid_;
+  std::unique_ptr<Grid> TargetGrid_;
   double kbt_;
   int stride_;
   bool welltemp_;
-  double* dp_;
+  std::unique_ptr<double[]> dp_;
   int adaptive_;
-  FlexibleBin *flexbin;
+  std::unique_ptr<FlexibleBin> flexbin;
   int mw_n_;
   string mw_dir_;
   int mw_id_;
@@ -397,7 +398,7 @@ private:
   bool calc_transition_bias_;
   double transition_bias_;
   vector<vector<double> > transitionwells_;
-  vector<IFile*> ifiles;
+  vector<std::unique_ptr<IFile>> ifiles;
   vector<string> ifilesnames;
   double uppI_;
   double lowI_;
@@ -413,7 +414,6 @@ private:
   void   readTemperingSpecs(TemperingSpecs &t_specs);
   void   logTemperingSpecs(const TemperingSpecs &t_specs);
   void   readGaussians(IFile*);
-  bool   readChunkOfGaussians(IFile *ifile, unsigned n);
   void   writeGaussian(const Gaussian&,OFile&);
   void   addGaussian(const Gaussian&);
   double getHeight(const vector<double>&);
@@ -429,7 +429,6 @@ private:
 
 public:
   explicit MetaD(const ActionOptions&);
-  ~MetaD();
   void calculate();
   void update();
   static void registerKeywords(Keywords& keys);
@@ -505,33 +504,17 @@ void MetaD::registerTemperingKeywords(const std::string &name_stem, const std::s
   keys.add("optional", name_stem + "ALPHA", "use " + name + " metadynamics with this hill size decay exponent parameter.  Please note you must also specify " + name_stem + "BIASFACTOR");
 }
 
-MetaD::~MetaD() {
-  if(flexbin) delete flexbin;
-  if(BiasGrid_) delete BiasGrid_;
-  if(TargetGrid_) delete TargetGrid_;
-  hillsOfile_.close();
-  if(wgridstride_>0) gridfile_.close();
-  delete [] dp_;
-  // close files
-  for(int i=0; i<mw_n_; ++i) {
-    if(ifiles[i]->isOpen()) ifiles[i]->close();
-    delete ifiles[i];
-  }
-}
-
 MetaD::MetaD(const ActionOptions& ao):
   PLUMED_BIAS_INIT(ao),
 // Grid stuff initialization
-  BiasGrid_(NULL), wgridstride_(0), grid_(false),
+  wgridstride_(0), grid_(false),
 // Metadynamics basic parameters
   height0_(std::numeric_limits<double>::max()), biasf_(-1.0), dampfactor_(0.0),
   tt_specs_(false, "TT", "Transition Tempered", -1.0, 0.0, 1.0),
-  TargetGrid_(NULL),
   kbt_(0.0),
   stride_(0), welltemp_(false),
 // Other stuff
-  dp_(NULL), adaptive_(FlexibleBin::none),
-  flexbin(NULL),
+  adaptive_(FlexibleBin::none),
 // Multiple walkers initialization
   mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
   walkers_mpi(false), mpi_nw_(0), mpi_mw_(0),
@@ -597,7 +580,7 @@ MetaD::MetaD(const ActionOptions& ao):
       for(unsigned i=0; i<getNumberOfArguments(); i++) {sigma0max_[i]=-1.;}
     }
 
-    flexbin=new FlexibleBin(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
+    flexbin.reset(new FlexibleBin(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_));
   }
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
@@ -976,7 +959,7 @@ MetaD::MetaD(const ActionOptions& ao):
   }
 
   // for performance
-  dp_ = new double[getNumberOfArguments()];
+  dp_.reset( new double[getNumberOfArguments()] );
 
   // initializing and checking grid
   if(grid_) {
@@ -993,13 +976,15 @@ MetaD::MetaD(const ActionOptions& ao):
       }
     }
     std::string funcl=getLabel() + ".bias";
-    if(!sparsegrid) {BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-    else {BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+    if(!sparsegrid) {BiasGrid_.reset(new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true));}
+    else {BiasGrid_.reset(new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true));}
     std::vector<std::string> actualmin=BiasGrid_->getMin();
     std::vector<std::string> actualmax=BiasGrid_->getMax();
     for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
-      if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
+      std::string is;
+      Tools::convert(i,is);
+      if(gmin[i]!=actualmin[i]) error("GRID_MIN["+is+"] must be adjusted to "+actualmin[i]+" to fit periodicity");
+      if(gmax[i]!=actualmax[i]) error("GRID_MAX["+is+"] must be adjusted to "+actualmax[i]+" to fit periodicity");
     }
   }
 
@@ -1043,8 +1028,8 @@ MetaD::MetaD(const ActionOptions& ao):
       if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
     }
     std::string funcl=getLabel() + ".bias";
-    if(!sparsegrid) {BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
-    else {BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+    if(!sparsegrid) {BiasGrid_.reset(new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true));}
+    else {BiasGrid_.reset(new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true));}
     std::vector<std::string> actualmin=BiasGrid_->getMin();
     std::vector<std::string> actualmax=BiasGrid_->getMax();
     for(unsigned i=0; i<getNumberOfArguments(); i++) {
@@ -1075,14 +1060,14 @@ MetaD::MetaD(const ActionOptions& ao):
       }
     }
     IFile *ifile = new IFile();
-    ifile->link(*this);
-    ifiles.push_back(ifile);
+    ifiles.emplace_back(ifile);
     ifilesnames.push_back(fname);
+    ifile->link(*this);
     if(ifile->FileExist(fname)) {
       ifile->open(fname);
       if(getRestart()&&!restartedFromGrid) {
         log.printf("  Restarting from %s:",ifilesnames[i].c_str());
-        readGaussians(ifiles[i]);
+        readGaussians(ifiles[i].get());
       }
       ifiles[i]->reset(false);
       // close only the walker own hills file for later writing
@@ -1149,6 +1134,7 @@ MetaD::MetaD(const ActionOptions& ao):
   hillsOfile_.open(ifilesnames[mw_id_]);
   if(fmt.length()>0) hillsOfile_.fmtField(fmt);
   hillsOfile_.addConstantField("multivariate");
+  hillsOfile_.addConstantField("kerneltype");
   if(doInt_) {
     hillsOfile_.addConstantField("lower_int").printField("lower_int",lowI_);
     hillsOfile_.addConstantField("upper_int").printField("upper_int",uppI_);
@@ -1159,7 +1145,7 @@ MetaD::MetaD(const ActionOptions& ao):
 
   bool concurrent=false;
   const ActionSet&actionSet(plumed.getActionSet());
-  for(const auto & p : actionSet) if(dynamic_cast<MetaD*>(p)) { concurrent=true; break; }
+  for(const auto & p : actionSet) if(dynamic_cast<MetaD*>(p.get())) { concurrent=true; break; }
   if(concurrent) log<<"  You are using concurrent metadynamics\n";
   if(rect_biasf_.size()>0) {
     if(walkers_mpi) {
@@ -1192,8 +1178,8 @@ MetaD::MetaD(const ActionOptions& ao):
           "Hosek, Toulcova, Bortolato, and Spiwok, J. Phys. Chem. B 120, 2209 (2016)");
   if(targetfilename_.length()>0) {
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
-    log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
-    log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, submitted (2016)");
+    log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
+    log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, J. Chem. Theory Comput. 12, 2790 (2016)");
   }
   log<<"\n";
 }
@@ -1249,32 +1235,6 @@ void MetaD::readGaussians(IFile *ifile)
   log.printf("      %d Gaussians read\n",nhills);
 }
 
-bool MetaD::readChunkOfGaussians(IFile *ifile, unsigned n)
-{
-  unsigned ncv=getNumberOfArguments();
-  vector<double> center(ncv);
-  vector<double> sigma(ncv);
-  double height;
-  unsigned nhills=0;
-  bool multivariate=false;
-  std::vector<Value> tmpvalues;
-  for(unsigned j=0; j<getNumberOfArguments(); ++j) tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) );
-
-  while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)) {
-    ;
-// note that for gamma=1 we store directly -F
-    if(welltemp_ && biasf_>1.0) height*=(biasf_-1.0)/biasf_;
-    addGaussian(Gaussian(center,sigma,height,multivariate));
-    if(nhills==n) {
-      log.printf("      %u Gaussians read\n",nhills);
-      return true;
-    }
-    nhills++;
-  }
-  log.printf("      %u Gaussians read\n",nhills);
-  return false;
-}
-
 void MetaD::writeGaussian(const Gaussian& hill, OFile&file)
 {
   unsigned ncv=getNumberOfArguments();
@@ -1282,6 +1242,7 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file)
   for(unsigned i=0; i<ncv; ++i) {
     file.printField(getPntrToArgument(i),hill.center[i]);
   }
+  hillsOfile_.printField("kerneltype","gaussian");
   if(hill.multivariate) {
     hillsOfile_.printField("multivariate","true");
     Matrix<double> mymatrix(ncv,ncv);
@@ -1590,12 +1551,12 @@ void MetaD::calculate()
 
   const unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv);
-  double* der = new double[ncv];
+  std::unique_ptr<double[]> der(new double[ncv]);
   for(unsigned i=0; i<ncv; ++i) {
     cv[i]=getArgument(i);
     der[i]=0.;
   }
-  double ene = getBiasAndDerivatives(cv,der);
+  double ene = getBiasAndDerivatives(cv,der.get());
 // special case for gamma=1.0
   if(biasf_==1.0) {
     ene=0.0;
@@ -1618,7 +1579,6 @@ void MetaD::calculate()
   for(unsigned i=0; i<ncv; ++i) {
     setOutputForce(i,-der[i]);
   }
-  delete [] der;
 }
 
 void MetaD::update() {
@@ -1742,7 +1702,7 @@ void MetaD::update() {
         // otherwise read the new Gaussians
       } else {
         log.printf("  Reading hills from %s:",ifilesnames[i].c_str());
-        readGaussians(ifiles[i]);
+        readGaussians(ifiles[i].get());
         ifiles[i]->reset(false);
       }
     }
@@ -1780,6 +1740,9 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
       }
       center[i]=tmpvalues[i].get();
     }
+    // scan for kerneltype
+    std::string ktype="gaussian";
+    if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
     // scan for multivariate label: record the actual file position so to eventually rewind
     std::string sss;
     ifile->scanField("multivariate",sss);
@@ -1850,7 +1813,9 @@ void MetaD::computeReweightingFactor()
   }
 
   // Now sum over whole grid
-  reweight_factor=0.0; double* der=new double[ncv]; std::vector<unsigned> t_index( ncv );
+  reweight_factor=0.0;
+  std::unique_ptr<double[]> der(new double[ncv]);
+  std::vector<unsigned> t_index( ncv );
   double sum1=0.0; double sum2=0.0;
   double afactor = biasf_ / (kbt_*(biasf_-1.0)); double afactor2 = 1.0 / (kbt_*(biasf_-1.0));
   unsigned rank=comm.Get_rank(), stride=comm.Get_size();
@@ -1862,11 +1827,10 @@ void MetaD::computeReweightingFactor()
 
     for(unsigned j=0; j<ncv; ++j) vals[j]=dmin[j] + t_index[j]*grid_spacing[j];
 
-    double currentb=getBiasAndDerivatives(vals,der);
+    double currentb=getBiasAndDerivatives(vals,der.get());
     sum1 += exp( afactor*currentb );
     sum2 += exp( afactor2*currentb );
   }
-  delete [] der;
   comm.Sum( sum1 ); comm.Sum( sum2 );
   reweight_factor = kbt_ * std::log( sum1/sum2 );
   getPntrToComponent("rct")->set(reweight_factor);
@@ -1890,7 +1854,7 @@ double MetaD::getTransitionBarrierBias() {
     // starting well. With this choice the searches will terminate in one step until
     // transitionwell_[1] is sampled.
   } else {
-    double least_transition_bias, curr_transition_bias;
+    double least_transition_bias;
     vector<double> sink = transitionwells_[0];
     vector<double> source = transitionwells_[1];
     least_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
@@ -1899,7 +1863,7 @@ double MetaD::getTransitionBarrierBias() {
         break;
       }
       source = transitionwells_[i];
-      curr_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
+      double curr_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
       least_transition_bias = fmin(curr_transition_bias, least_transition_bias);
     }
     return least_transition_bias;
