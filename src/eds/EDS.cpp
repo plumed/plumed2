@@ -208,8 +208,8 @@ void EDS::registerKeywords(Keywords& keys) {
            "CENTER_ARG is for calculated centers, e.g. from a CV or analysis. ");
 
   keys.add("optional","PERIOD","Steps over which to adjust bias for adaptive or ramping");
-  keys.add("compulsory","RANGE","3.0","The largest magnitude of the force constant which one expects (in kBT) for each CV based");
-  keys.add("compulsory","INCREASE_FACTOR","1.25","Factor by which to increase RANGE, which is the max prefactor for increasing coefficients in a step.");
+  keys.add("compulsory","RANGE","25.0","The (starting) maximum increase in coupling constant per PERIOD (in kBT/[BIAS_SCALE unit]) for each CV based");
+  keys.add("compulsory","INCREASE_FACTOR","1.0","Factor by which to increase RANGE every time coupling exceeds RANGE. RANGE is the max prefactor for increasing coupling in a given PERIOD.");
   keys.add("compulsory","SEED","0","Seed for random order of changing bias");
   keys.add("compulsory","INIT","0","Starting value for coupling constant");
   keys.add("compulsory","FIXED","0","Fixed target values for coupling constant. Non-adaptive.");
@@ -249,7 +249,7 @@ EDS::EDS(const ActionOptions&ao):
   current_coupling_(ncvs_,0.0),
   set_coupling_(ncvs_,0.0),
   target_coupling_(ncvs_,0.0),
-  max_coupling_range_(ncvs_,3.0),
+  max_coupling_range_(ncvs_,25.0),
   max_coupling_grad_(ncvs_,0.0),
   coupling_rate_(ncvs_,1.0),
   coupling_accum_(ncvs_,0.0),
@@ -273,7 +273,7 @@ EDS::EDS(const ActionOptions&ao):
   avg_coupling_count_(1),
   update_calls_(0),
   kbt_(0.0),
-  c_range_increase_f_(1.25),
+  c_range_increase_f_(1.0),
   multi_prop_(-1.0),
   lm_mixing_par_(0.1),
   value_force2_(NULL)
