@@ -164,8 +164,8 @@ private:
   bool pbc_;
 // Monte Carlo stuff
   int      MCstride_;
-  long int MCfirst_;
-  unsigned MCaccept_;
+  double   MCaccept_;
+  double   MCtrials_;
   Random   random_;
   // status stuff
   unsigned int statusstride_;
@@ -297,7 +297,7 @@ EMMI::EMMI(const ActionOptions&ao):
   sqrt2_pi_(0.797884560802865),
   first_time_(true), no_aver_(false),
   analysis_(false), nframe_(0.0), pbc_(true),
-  MCstride_(1), MCfirst_(-1), MCaccept_(0),
+  MCstride_(1), MCaccept_(0.), MCtrials_(0.),
   statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
@@ -708,20 +708,25 @@ void EMMI::doMonteCarlo()
     new_ene = kbt_ * ( new_ene + (ng+prior_) * std::log(new_s) );
   }
 
+  // increment number of trials
+  MCtrials_ += 1.0;
+
   // accept or reject
   bool accept = doAccept(old_ene/anneal_, new_ene/anneal_, kbt_);
   if(accept) {
     sigma_[nGMM] = new_s;
-    MCaccept_++;
+    MCaccept_ += 1.0;
   }
   // local communication
   if(rank_!=0) {
     for(unsigned i=0; i<sigma_.size(); ++i) sigma_[i] = 0.0;
-    MCaccept_ = 0;
+    MCaccept_ = 0.0;
+    MCtrials_ = 0.0;
   }
   if(size_>1) {
     comm.Sum(&sigma_[0], sigma_.size());
     comm.Sum(&MCaccept_, 1);
+    comm.Sum(&MCtrials_, 1);
   }
 }
 
@@ -1250,9 +1255,11 @@ double EMMI::doRegression()
     ebest = 0.0;
     accscale = 0.0;
   }
-  comm.Sum(&scale_best, 1);
-  comm.Sum(&ebest, 1);
-  comm.Sum(&accscale, 1);
+  if(size_>1) {
+    comm.Sum(&scale_best, 1);
+    comm.Sum(&ebest, 1);
+    comm.Sum(&accscale, 1);
+  }
 // set scale parameters
   getPntrToComponent("accscale")->set(accscale);
   getPntrToComponent("enescale")->set(ebest);
@@ -1389,11 +1396,8 @@ void EMMI::calculate()
       if(step%statusstride_==0) print_status(step);
 
       // calculate acceptance ratio
-      // this is needed when restarting simulations
-      if(MCfirst_==-1) MCfirst_=step;
-      // acceptance
-      double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
-      double acc = static_cast<double>(MCaccept_) / MCtrials;
+      double acc = MCaccept_ / MCtrials_;
+
       // set value
       getPntrToComponent("acc")->set(acc);
 
