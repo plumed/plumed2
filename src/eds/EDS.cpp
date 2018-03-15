@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2017 of Glen Hocky and Andrew White
+Copyright (c) 2018 of Glen Hocky and Andrew White
 
 The eds module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -43,7 +43,10 @@ Add a linear bias on a set of observables.
 This force is the same as the linear part of the bias in \ref
 RESTRAINT, but this bias has the ability to compute prefactors
 adaptively using the scheme of White and Voth \cite white2014efficient
-in order to match target observable values for a set of CVs. You can
+in order to match target observable values for a set of CVs. 
+Further updates to the algorithm are described in \cite hocky2017cgds.
+
+You can
 see a tutorial on EDS specifically for biasing coordination number at
 <a
 href="http://thewhitelab.org/Blog/tutorial/2017/05/10/lammps-coordination-number-tutorial/">
@@ -494,6 +497,7 @@ EDS::EDS(const ActionOptions&ao):
   }
 
   log<<"  Bibliography "<<plumed.cite("White and Voth, J. Chem. Theory Comput. 10 (8), 3023-3030 (2014)")<<"\n";
+  log<<"  Bibliography "<<plumed.cite("G. M. Hocky, T. Dannenhoffer-Lafage, G. A. Voth, J. Chem. Theory Comput. 13 (9), 4593-4603 (2017)")<<"\n";
 }
 
 void EDS::readInRestart(const bool b_mean) {
