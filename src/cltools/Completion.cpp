@@ -80,7 +80,7 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
 #include "completion.xxd"
     , 0x00
   };
-  fprintf(out,"local cmds=\"help -h -help");
+  fprintf(out,"local cmds=\"help -h --help");
 // Build list of available C++ tools:
   std::vector<string> availableCxx=cltoolRegister().list();
 // Build list of available shell tools:
