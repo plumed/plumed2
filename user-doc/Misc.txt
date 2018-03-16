@@ -101,6 +101,9 @@ For the impatients, just add the following to your .bashrc file:
 _plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
 complete -F _plumed -o default plumed
 \endverbatim
+and enjoy bash autocompletion.
+
+\par Effect
 
 When typing on the the shell you should observe the following behavior.
 \verbatim
@@ -112,13 +115,16 @@ will autocomplete with the names of the available PLUMED commands (e.g. `driver`
 \endverbatim
 will autocomplete with the available PLUMED options (e.g. `--no-mpi`, etc).
 
-Notice that as of now PLUMED does not know which are the options available for each command
+PLUMED also knows which are the options available for each command
 (e.g. `plumed driver --natoms`). So, the following
 \verbatim
-> plumed driver <TAB>
+> plumed driver -<TAB>
 \endverbatim
-will just use the default bash autocompletion rules showing all the files in your directory.
-We hope to be able to include autocompletion for individual commands as well in the future.
+(notice the `-`) will autocomplete to the options of `plumed driver`. On the contrary
+\verbatim
+> plumed driver --ixtc <TAB>
+\endverbatim
+(notice the there is no `-` before `<TAB>`) will autocomplete to the files in the current directory.
 
 Also notice that every time you use the `<TAB>` key to autocomplete the command `plumed` will be invoked.
 This should allow the correct commands and options to be reported depending on the exact `plumed` command
