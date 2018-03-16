@@ -18,7 +18,11 @@
       cmd_found=""
       for cmd_test in $cmds ; do
         if [[ "$cmd_test" == "${COMP_WORDS[i]}" ]] ; then
-          COMPREPLY=( $(compgen -o bashdefault -- $cur ) )
+          eval "local comp=\"\$cmd_keys_${cmd_test//-/_}\""
+          case "$cur" in 
+            (-*) COMPREPLY=( $(compgen -W "$comp" -- $cur ) ) ;;
+            (*)  COMPREPLY=( $(compgen -o bashdefault -- ${cur}) ) ;;
+          esac
           return 0
         fi
       done

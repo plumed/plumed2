@@ -94,17 +94,40 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
   for(unsigned j=0; j<tmp.size(); ++j) if(tmp[j].length()>0) fprintf(out," %s",tmp[j].c_str());
   fprintf(out,"\"\n");
 
+  for(unsigned j=0; j<availableCxx.size(); j++) {
+    std::string s=availableCxx[j];
+// handle - sign (convert to underscore)
+    for(;;) {
+      size_t n=s.find("-");
+      if(n==std::string::npos) break;
+      s[n]='_';
+    }
+    fprintf(out,"local cmd_keys_%s=\"",s.c_str());
+    std::vector<std::string> keys=cltoolRegister().getKeys(availableCxx[j]);
+    for(unsigned k=0; k<keys.size(); k++) {
+// handle --help/-h
+      std::string s=keys[k];
+      for(;;) {
+        size_t n=s.find("/");
+        if(n==std::string::npos) break;
+        s[n]=' ';
+      }
+      fprintf(out," %s",s.c_str());
+    }
+    fprintf(out,"\"\n");
+  }
+
   fprintf(out,"%s\n",completion);
   std::string name=config::getPlumedProgramName();
 
   fprintf(out,
-"############################################\n"
-"## ADD THESE COMMANDS TO YOUR .bashrc FILE:\n"
-"############################################\n"
-"# _%s() { eval \"$(%s --no-mpi completion 2>/dev/null)\";}\n"
-"# complete -F _%s -o default %s\n"
-"############################################\n",
-name.c_str(),name.c_str(),name.c_str(),name.c_str());
+          "############################################\n"
+          "## ADD THESE COMMANDS TO YOUR .bashrc FILE:\n"
+          "############################################\n"
+          "# _%s() { eval \"$(%s --no-mpi completion 2>/dev/null)\";}\n"
+          "# complete -F _%s -o default %s\n"
+          "############################################\n",
+          name.c_str(),name.c_str(),name.c_str(),name.c_str());
 
   return 0;
 }
