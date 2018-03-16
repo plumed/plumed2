@@ -43,7 +43,7 @@ Add a linear bias on a set of observables.
 This force is the same as the linear part of the bias in \ref
 RESTRAINT, but this bias has the ability to compute prefactors
 adaptively using the scheme of White and Voth \cite white2014efficient
-in order to match target observable values for a set of CVs. 
+in order to match target observable values for a set of CVs.
 Further updates to the algorithm are described in \cite hocky2017cgds.
 
 You can
@@ -376,7 +376,7 @@ EDS::EDS(const ActionOptions&ao):
     covar_.resize(ncvs_, ncvs_);
     covar2_.resize(ncvs_, ncvs_);
     lm_inv_.resize(ncvs_, ncvs_);
-    covar2_*=0;lm_inv_*=0;
+    covar2_*=0; lm_inv_*=0;
     if(multi_prop_ != 1) log.printf("     WARNING - doing LM minimization but MULTI_PROP!=1\n");
   }
   else if(b_covar_) {
@@ -774,18 +774,18 @@ void EDS::reset_statistics() {
 void EDS::calc_lm_step_size() {
   //calulcate step size
   //uses scale here, which by default is center
-  
+
   mult(covar_,covar_,covar2_);
   for(unsigned int i = 0; i< ncvs_; ++i) {
-      differences_[i] = difference(i, center_[i], means_[i]);
-      covar2_[i][i]+=lm_mixing_par_*covar2_[i][i];
+    differences_[i] = difference(i, center_[i], means_[i]);
+    covar2_[i][i]+=lm_mixing_par_*covar2_[i][i];
   }
 
 // "step_size_vec" = 2*inv(covar*covar+ lambda diag(covar*covar))*covar*(mean-center)
   mult(covar_,differences_,alpha_vector_);
   Invert(covar2_,lm_inv_);
   mult(lm_inv_,alpha_vector_,alpha_vector_2_);
-  
+
   for(unsigned int i = 0; i< ncvs_; ++i) {
     step_size_[i] = 2 * alpha_vector_2_[i] / kbt_ / scale_[i];
   }
@@ -817,7 +817,7 @@ void EDS::update_bias()
 {
   log.flush();
   if (b_lm_)
-    {
+  {
     log.flush();
     calc_lm_step_size();
   }
