@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2018 of Glen Hocky and Andrew White
+Copyright (c) 2017 of Glen Hocky and Andrew White
 
 The eds module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
