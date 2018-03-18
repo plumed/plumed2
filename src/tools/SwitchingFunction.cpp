@@ -381,8 +381,9 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
     } else if(type==nativeq) {
       double rdist2 = beta*(distance - lambda * ref);
       double exprdist=exp(rdist2);
+      double exprmdist=1.0/exprdist;
       result=1./(1.+exprdist);
-      dfunc=-exprdist/(1.+exprdist)/(1.+exprdist);
+      dfunc=-1.0/(exprmdist+1.0)/(1.+exprdist);
     } else if(type==gaussian) {
       result=exp(-0.5*rdist*rdist);
       dfunc=-rdist*result;
