@@ -7,6 +7,11 @@ if [ "$1" = --description ] ; then
   exit 0
 fi
 
+if [ "$1" = --options ] ; then
+  echo "--description --options --annotate-syntax --pdf --crop --fs --colors"
+  exit 0
+fi
+
 if [ "$1" = --help ] ; then
 cat << EOF
 Usage:
