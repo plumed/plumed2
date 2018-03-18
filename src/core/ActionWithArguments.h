@@ -164,11 +164,6 @@ const std::vector<Value*> & ActionWithArguments::getArguments() const {
   return arguments;
 }
 
-inline
-bool ActionWithArguments::mustBeTreatedAsDistinctArguments() const {
-  return (done_over_stream || getNumberOfArguments()>1);
-}
-
 }
 
 #endif

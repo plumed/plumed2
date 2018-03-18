@@ -108,6 +108,26 @@ void ActionWithValue::getAllActionLabelsInChain( std::vector<std::string>& mylab
   if( action_to_do_after ) action_to_do_after->getAllActionLabelsInChain( mylabels );
 }
 
+void ActionWithValue::getAllActionsRequired( std::vector<const ActionWithValue*>& allvals ) const {
+  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( !aa ) {
+      bool found = false;
+      for(unsigned k=0;k<allvals.size();++k) {
+          if( allvals[k]==this ) { found=true; break; }
+      }
+      if( !found ) allvals.push_back( this );
+  } else {
+     for(unsigned j=0;j<aa->getNumberOfArguments();++j) {
+        ((aa->getPntrToArgument(j))->getPntrToAction())->getAllActionsRequired( allvals );
+        bool found = false;
+        for(unsigned k=0;k<allvals.size();++k) {
+            if( allvals[k]==(aa->getPntrToArgument(j))->getPntrToAction() ) { found=true; break; }
+        }
+        if( !found ) allvals.push_back( (aa->getPntrToArgument(j))->getPntrToAction() );
+     }
+  }
+}
+
 bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels, ActionWithValue* act ) {
   if( action_to_do_after ) { bool state=action_to_do_after->addActionToChain( alabels, act ); return state; }
 

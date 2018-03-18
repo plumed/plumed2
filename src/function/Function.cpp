@@ -306,7 +306,7 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
       for(unsigned i=0; i<distinct_arguments.size(); ++i) {
         unsigned istrn, jvalind;
         for(unsigned j=0; j<getNumberOfArguments(); ++j) {
-          if( getPntrToArgument(j)->getPntrToAction()==distinct_arguments[i].first ) {
+          if( arg_deriv_starts[j]==der_start ) {
             istrn = getArgumentPositionInStream(j,myvals);
             jvalind = j; break;
           }

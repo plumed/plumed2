@@ -452,4 +452,31 @@ std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool
   return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "VON-MISSES", h ) );
 }
 
+std::string KernelFunctions::getInputString() const {
+  // Setup the type
+  std::string outstring;
+  if( ktype==gaussian ) outstring = "GAUSSIAN";
+  else if( ktype==truncatedgaussian ) outstring = "TRUNCATED-GAUSSIAN";
+  else if( ktype==uniform ) outstring = "UNIFORM";
+  else if( ktype==triangular ) outstring = "TRIANGULAR";
+  else plumed_error();
+
+  // Setup the distance metric type
+  if( dtype==multi ) outstring += " MULTIVARIATE";
+  else if( dtype==vonmises ) outstring += " VON-MISSES";
+
+  // Set the position of the center
+  std::string numstr; Tools::convert( center[0], numstr ); outstring += " CENTER=" + numstr;
+  for(unsigned i=1;i<center.size();++i){ Tools::convert( center[i], numstr ); outstring += "," + numstr; } 
+
+  // And sigma
+  Tools::convert( width[0], numstr ); outstring += " SIGMA=" + numstr;
+  for(unsigned i=1; i<width.size(); ++i){ Tools::convert( width[i], numstr ); outstring += "," + numstr; }
+
+  // Set the height
+  Tools::convert( height, numstr ); outstring += " HEIGHT=" + numstr;
+  
+  return outstring;
+}
+
 }

@@ -349,7 +349,11 @@ unsigned ActionWithArguments::setupActionInChain() {
       if( f_actions[j]==myact ) { found=true; break; }
     }
     if( !found ) {
-      if( f_actions.size()==0 || !arguments[i]->storedata ) f_actions.push_back( myact );
+      bool storing_for_this=false;
+      for(unsigned j=0;j<arguments[i]->store_data_for.size();++j) {
+          if( arguments[i]->store_data_for[j].first==getLabel() ) { storing_for_this=true; break; }
+      }   
+      if( f_actions.size()==0 || !storing_for_this ) f_actions.push_back( myact );
     }
   }
 
@@ -413,11 +417,38 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   }
 }
 
+bool ActionWithArguments::mustBeTreatedAsDistinctArguments() const {
+//  if( done_over_stream || arguments.size()>1 ) return true;
+  if( !done_over_stream ) return true;
+  if( arguments.size()==1 ) return false;
+
+  std::vector<const ActionWithValue*> allvals; (arguments[0]->getPntrToAction())->getAllActionsRequired( allvals );
+  for(unsigned j=1;j<arguments.size();++j) {
+      std::vector<const ActionWithValue*> tvals; (arguments[j]->getPntrToAction())->getAllActionsRequired( tvals );
+      if( allvals.size()!=tvals.size() ) return true;
+
+      for(unsigned k=0;k<tvals.size();++k) {
+          if( tvals[k]!=allvals[k] ) return true;
+      }
+  } 
+  return false;
+} 
+
 ActionWithValue* ActionWithArguments::getFirstNonStream() {
-  plumed_massert( getNumberOfArguments()<2, "cannot use functions with multiple arguments in this way " + getLabel() );
   ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( getPntrToArgument(0)->getPntrToAction() );
-  if( !aa || aa->mustBeTreatedAsDistinctArguments() ) return getPntrToArgument(0)->getPntrToAction();
-  else return aa->getFirstNonStream();
+  if( !aa || aa->mustBeTreatedAsDistinctArguments() ){ 
+      ActionWithValue* av=dynamic_cast<ActionWithValue*>(this); 
+      plumed_assert( av ); return av; 
+  }
+
+  for(unsigned i=1;i<arguments.size();++i) {
+      ActionWithArguments* aaa=dynamic_cast<ActionWithArguments*>( getPntrToArgument(i)->getPntrToAction() );
+      if( aa!=aaa ){ 
+          ActionWithValue* av=dynamic_cast<ActionWithValue*>(this); 
+          plumed_assert( av ); return av;
+      }
+  }
+  return aa->getFirstNonStream();
 }
 
 void ActionWithArguments::createTasksFromArguments() {

@@ -134,7 +134,7 @@ Torsion::Torsion(const ActionOptions&ao):
   Action(ao),
   MultiColvarBase(ao)
 {
-  addValueWithDerivatives(); setNotPeriodic(); checkRead();
+  addValueWithDerivatives(); setPeriodic( "-pi", "pi" ); checkRead();
 }
 
 void Torsion::compute( const std::vector<Vector>& pos, MultiValue& myvals ) const {

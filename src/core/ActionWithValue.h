@@ -152,6 +152,8 @@ public:
   ActionWithValue* getActionThatCalculates();
 /// This allows us to have components and values in special circumstances
   virtual bool allowComponentsAndValue() const { return false; }
+/// Get the list of actions that are required to calculate this particular action
+  void getAllActionsRequired( std::vector<const ActionWithValue*>& allvals ) const ;
 /// Add a value with a name like label.name
   void addComponent( const std::string& name, const std::vector<unsigned>& shape=std::vector<unsigned>() );
 /// Add a value with a name like label.name that has derivatives
