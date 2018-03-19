@@ -3,6 +3,7 @@
 - \subpage comments
 - \subpage ContinuationLines
 - \subpage VimSyntax
+- \subpage BashAutocompletion
 - \subpage includes
 - \subpage load
 - \subpage degub
@@ -93,6 +94,71 @@ dist: DISTANCES ...
 ...  
 \endplumedfile
 
+\page BashAutocompletion Using bash autocompletion
+
+For the impatients, just add the following to your .bashrc file:
+\verbatim
+_plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
+complete -F _plumed -o default plumed
+\endverbatim
+and enjoy bash autocompletion.
+
+\par Effect
+
+When typing on the the shell you should observe the following behavior.
+\verbatim
+> plumed <TAB>
+\endverbatim
+will autocomplete with the names of the available PLUMED commands (e.g. `driver`, `help`, etc).
+\verbatim
+> plumed -<TAB>
+\endverbatim
+will autocomplete with the available PLUMED options (e.g. `--no-mpi`, etc).
+
+PLUMED also knows which are the options available for each command
+(e.g. `plumed driver --natoms`). So, the following
+\verbatim
+> plumed driver -<TAB>
+\endverbatim
+(notice the `-`) will autocomplete to the options of `plumed driver`. On the contrary
+\verbatim
+> plumed driver --ixtc <TAB>
+\endverbatim
+(notice the there is no `-` before `<TAB>`) will autocomplete to the files in the current directory.
+
+Also notice that every time you use the `<TAB>` key to autocomplete the command `plumed` will be invoked.
+This should allow the correct commands and options to be reported depending on the exact `plumed` command
+in the current execution path. For instance, if you have multiple PLUMED versions installed with
+env modules, you should be able to see the commands available in the currently loaded version.
+Clearly, this feature will only be available if `plumed` can run on this machine (that is: will not work
+if you are cross compiling). This is not a problem since you are not expecting to run the `plumed` command
+in this specific case.
+
+\par Technicalities
+
+The command `plumed completion` just writes on its standard output the body of a bash function.
+Now look at these lines:
+\verbatim
+_plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
+complete -F _plumed -o default plumed
+\endverbatim
+The `-o default` options will make sure that if `plumed --no-mpi completion` returns an error the default bash completion
+will be used. This is what will happen if you load an older PLUMED version for which the `completion` command is not available yet.
+In future PLUMED versions the `plumed completion` command might return more sophisticated functions. You should
+be able to benefit of these features without ever changing your bash configuration file again.
+
+\par Multiple versions and suffixes
+
+In case you have multiple versions of PLUMED installed in separate env modules there is nothing more to do.
+However, if you have have multiple versions of PLUMED installed with different suffixes you should
+consistently add more lines to your profile file. For instance, if you installed executables named
+`plumed` and `plumed_mpi` your configuration file should look like:
+\verbatim
+_plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
+complete -F _plumed -o default plumed
+_plumed_mpi() { eval "$(plumed_mpi --no-mpi completion 2>/dev/null)";}
+complete -F _plumed_mpi -o default plumed_mpi
+\endverbatim
 
 \page VimSyntax Using VIM syntax file
 

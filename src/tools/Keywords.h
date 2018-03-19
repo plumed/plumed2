@@ -154,6 +154,8 @@ public:
   void addOutputComponent( const std::string& name, const std::string& key, const std::string& descr );
 /// Has a component with this name been added?
   bool outputComponentExists( const std::string& name, const bool& custom ) const ;
+/// Reference to keys
+  std::vector<std::string> getKeys() const { return keys; }
 };
 
 }
