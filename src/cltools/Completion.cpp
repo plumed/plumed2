@@ -117,33 +117,36 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
     fprintf(out,"\"\n");
   }
 
-  for(unsigned j=0; j<tmp.size(); j++) {
-    std::string s=tmp[j];
-// handle - sign (convert to underscore)
-    for(;;) {
-      size_t n=s.find("-");
-      if(n==std::string::npos) break;
-      s[n]='_';
-    }
-    fprintf(out,"local cmd_keys_%s=\"",s.c_str());
-    std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"/scripts/"+s+".sh\" --options";
-    FILE *fp=popen(cmd.c_str(),"r");
-    std::string line,manual;
-    while(Tools::getline(fp,line))manual+=line;
-    pclose(fp);
-    std::vector<std::string> keys=Tools::getWords(manual);
-    for(unsigned k=0; k<keys.size(); k++) {
-// handle --help/-h
-      std::string s=keys[k];
-      for(;;) {
-        size_t n=s.find("/");
-        if(n==std::string::npos) break;
-        s[n]=' ';
-      }
-      fprintf(out," %s",s.c_str());
-    }
-    fprintf(out,"\"\n");
-  }
+////  ALTERNATIVE IMPLEMENTATION
+////  checking tools on the fly
+////     for(unsigned j=0; j<tmp.size(); j++) {
+////       std::string s=tmp[j];
+////   // handle - sign (convert to underscore)
+////       for(;;) {
+////         size_t n=s.find("-");
+////         if(n==std::string::npos) break;
+////         s[n]='_';
+////       }
+////       fprintf(out,"local cmd_keys_%s=\"",s.c_str());
+////       std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"/scripts/"+s+".sh\" --options";
+////       FILE *fp=popen(cmd.c_str(),"r");
+////       std::string line,manual;
+////       while(Tools::getline(fp,line))manual+=line;
+////       pclose(fp);
+////       std::vector<std::string> keys=Tools::getWords(manual);
+////       for(unsigned k=0; k<keys.size(); k++) {
+////   // handle --help/-h
+////         std::string s=keys[k];
+////         for(;;) {
+////           size_t n=s.find("/");
+////           if(n==std::string::npos) break;
+////           s[n]=' ';
+////         }
+////         fprintf(out," %s",s.c_str());
+////       }
+////       fprintf(out,"\"\n");
+////     }
+
   fprintf(out,"%s\n",completion);
   std::string name=config::getPlumedProgramName();
 
