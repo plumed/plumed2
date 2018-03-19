@@ -27,6 +27,8 @@ http://www.parashift.com/c++-faq-lite/
 
 This manual might  also contain a detailed analysis of which parts of the PLUMED code have been tested when compiling it.
 In case so, you will find it at <a href="../coverage/index.html"> this link </a>.
+If this manual was compiled on Travis-CI, notice that as of PLUMED 2.5 the coverage scan ends up on a separate 
+repository named `github.com/plumed/coverage-branchname`.
 
 \defgroup TOOLBOX Tool Box
 @{

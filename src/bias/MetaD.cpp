@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -1178,8 +1178,8 @@ MetaD::MetaD(const ActionOptions& ao):
           "Hosek, Toulcova, Bortolato, and Spiwok, J. Phys. Chem. B 120, 2209 (2016)");
   if(targetfilename_.length()>0) {
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
-    log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
-    log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, submitted (2016)");
+    log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
+    log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, J. Chem. Theory Comput. 12, 2790 (2016)");
   }
   log<<"\n";
 }

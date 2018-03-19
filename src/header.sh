@@ -34,7 +34,10 @@ then
 else
     years=$(git log --follow -M75% --format=%aD $file |
     sort -r -n -k 4 |
-    awk '{if(NR==1)last=$4;}END{
+    awk -v now="$(date +%Y)" '{if(NR==1)last=$4;}END{
+# override last with now
+    last=now
+# Notice that the script could be simplified, I leave it as is for reference:
     first=$4
     if(first=="") print ""
     else if(first==last) print first;

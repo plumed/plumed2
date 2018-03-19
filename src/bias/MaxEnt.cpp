@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,6 +39,10 @@
 //#include "tools/IFile.h"
 //#include "tools/OFile.h"
 
+// The original implementation of this method was contributed
+// by Andrea Cesari (andreacesari90@gmail.com).
+// Copyright has been then transferred to PLUMED developers
+// (see https://github.com/plumed/plumed2/blob/master/.github/CONTRIBUTING.md)
 
 using namespace std;
 
