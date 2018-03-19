@@ -1,18 +1,15 @@
-# Experimental script for bash completion. Just "source" it.
-# In perspective, this script should be generated automatically by the plumed
-# executable on the basis of the implemented CLTools.
-# 
-_plumed() 
-{
-    local cur prev opts cmds
+    local cur prev opts
+    shopt -s extglob
     COMPREPLY=()
 
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 # these options can be combined with other commands
     opts="--load"
-# only one of these commands should be used
-    cmds="help driver info manual simplemd mklib newcv patch -h --help --has-mpi"
+# this option should be the first
+    if((COMP_CWORD==1)) ; then
+      opts="$opts --no-mpi --mpi"
+    fi
 
     local cmd_found i cmd_test
 
@@ -21,18 +18,22 @@ _plumed()
       cmd_found=""
       for cmd_test in $cmds ; do
         if [[ "$cmd_test" == "${COMP_WORDS[i]}" ]] ; then
-          COMPREPLY=( $(compgen -f -- $cur ) )
+          eval "local comp=\"\$cmd_keys_${cmd_test//-/_}\""
+          case "$cur" in 
+            (-*) COMPREPLY=( $(compgen -W "$comp" -- $cur ) ) ;;
+            (*)  COMPREPLY=( $(compgen -o bashdefault -- ${cur}) ) ;;
+          esac
           return 0
         fi
       done
-      if [[ $cmd_found == 1 ]]; then
+      if [[ "$cmd_found" == 1 ]]; then
         break
       fi
     done
 
 # if previous is --load, autocomplete with dynamic library
     if [[ "${prev}" == --load ]] ; then
-      COMPREPLY=( $(compgen -f -X '!*.@(dylib|so)' -- $cur ) )
+      COMPREPLY=( $(compgen -X '!*.@(dylib|so)' -- $cur ) )
       return 0
     fi
 
@@ -43,5 +44,3 @@ _plumed()
     (*)  COMPREPLY=( $(compgen -W "${cmds}" -- ${cur}) ) ;;
     esac
     return 0
-}
-complete -d -F _plumed plumed

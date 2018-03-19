@@ -5,6 +5,11 @@ if [ "$1" = --description ] ; then
   exit 0
 fi
 
+if [ "$1" = --options ] ; then
+  echo "--description"
+  exit 0
+fi
+
 if [ $# != 2 ] ;
 then
   echo "ERROR"
