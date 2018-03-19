@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,9 +51,9 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
 
 #ifdef __PLUMED_STATIC_KERNEL
 /* Real interface */
-void*plumedmain_create(void);
-void plumedmain_cmd(void*,const char*,const void*);
-void plumedmain_finalize(void*);
+void*plumed_plumedmain_create(void);
+void plumed_plumedmain_cmd(void*,const char*,const void*);
+void plumed_plumedmain_finalize(void*);
 #else
 /* dummy interface */
 void*plumed_dummy_create(void);
@@ -102,10 +102,10 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
 #ifdef __PLUMED_STATIC_KERNEL
   /*
     When __PLUMED_STATIC_KERNEL is defined, the function holder is initialized
-    to statically bound plumedmain_create,plumedmain_cmd,plumedmain_finalize and
+    to statically bound plumed_plumedmain_create, plumed_plumedmain_cmd, plumed_plumedmain_finalize and
     cannot be changed. This saves from mis-set values for PLUMED_KERNEL
   */
-  static plumed_plumedmain_function_holder g= {plumedmain_create,plumedmain_cmd,plumedmain_finalize};
+  static plumed_plumedmain_function_holder g= {plumed_plumedmain_create,plumed_plumedmain_cmd,plumed_plumedmain_finalize};
   (void) f; /* avoid warning on unused parameter */
   return &g;
 #else

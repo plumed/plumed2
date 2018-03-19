@@ -58,7 +58,7 @@ fi
 
 gromacs5=1
 
-if [ $1 == --gromacs4 ] ; then
+if [ "$1" == --gromacs4 ] ; then
   gromacs5=0
   shift
 fi

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -80,8 +80,7 @@ class Communicator {
     template <unsigned n,unsigned m> explicit Data(TensorGeneric<n,m> &p): pointer(&p), size(n*m), type(getMPIType<double>()) {}
 /// Init from reference to std::vector
     template <typename T> explicit Data(std::vector<T>&v) {
-      if(v.size()>0) { Data d(&v[0],v.size()); pointer=d.pointer; size=d.size; type=d.type; }
-      else { pointer=NULL; size=0; }
+      Data d(v.data(),v.size()); pointer=d.pointer; size=d.size; type=d.type;
     }
 /// Init from reference to PLMD::Matrix
     template <typename T> explicit Data(Matrix<T>&m ) {
@@ -107,8 +106,7 @@ class Communicator {
     template <unsigned n,unsigned m> explicit ConstData(const TensorGeneric<n,m> *p,int s): pointer(p), size(n*m*s), type(getMPIType<double>()) {}
     template <unsigned n,unsigned m> explicit ConstData(const TensorGeneric<n,m> &p): pointer(&p), size(n*m), type(getMPIType<double>()) {}
     template <typename T> explicit ConstData(const std::vector<T>&v) {
-      if(v.size()>0) { ConstData d(&v[0],v.size()); pointer=d.pointer; size=d.size; type=d.type; }
-      else { pointer=NULL; size=0; }
+      ConstData d(v.data(),v.size()); pointer=d.pointer; size=d.size; type=d.type;
     }
     template <typename T> explicit ConstData(const Matrix<T>&m ) {
       if(m.nrows()*m.ncols()>0) { ConstData d(&m(0,0),m.nrows()*m.ncols()); pointer=d.pointer; size=d.size; type=d.type; }

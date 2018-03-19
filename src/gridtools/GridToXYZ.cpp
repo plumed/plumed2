@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -92,7 +92,7 @@ GridToXYZ::GridToXYZ(const ActionOptions&ao):
 }
 
 void GridToXYZ::printGrid( OFile& ofile ) const {
-  std::vector<double> point( 3 ); double val;
+  std::vector<double> point( 3 );
   ofile.printf("%u\n",ingrid->getNumberOfPoints());
   ofile.printf("Grid converted to xyz file \n");
   for(unsigned i=0; i<ingrid->getNumberOfPoints(); ++i) {

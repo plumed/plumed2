@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,9 +24,11 @@
 #include "tools/Exception.h"
 #include "tools/Communicator.h"
 #include "tools/BiasRepresentation.h"
+#include "tools/KernelFunctions.h"
 #include "tools/File.h"
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
+#include "tools/Grid.h"
 #include <iostream>
 #include <memory>
 

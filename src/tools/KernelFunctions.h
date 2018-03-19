@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,7 +22,6 @@
 #ifndef __PLUMED_tools_KernelFunctions_h
 #define __PLUMED_tools_KernelFunctions_h
 
-#include "Tools.h"
 #include "Matrix.h"
 #include "core/Value.h"
 #include <vector>

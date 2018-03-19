@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -206,9 +206,10 @@ void DistanceFromContour::calculate() {
   // Set bracket as center of mass of membrane in active region
   deactivateAllTasks();
   Vector myvec = getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(0) ); pos2[dir]=myvec[dir];
-  taskFlags[0]=1; double d2, mindist = myvec.modulo2();
+  taskFlags[0]=1; double mindist = myvec.modulo2();
   for(unsigned j=1; j<getNumberOfAtoms()-1; ++j) {
     Vector distance=getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(j) );
+    double d2;
     if( (d2=distance[perp_dirs[0]]*distance[perp_dirs[0]])<rcut2 &&
         (d2+=distance[perp_dirs[1]]*distance[perp_dirs[1]])<rcut2 ) {
       d2+=distance[dir]*distance[dir];

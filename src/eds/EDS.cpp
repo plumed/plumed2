@@ -43,7 +43,10 @@ Add a linear bias on a set of observables.
 This force is the same as the linear part of the bias in \ref
 RESTRAINT, but this bias has the ability to compute prefactors
 adaptively using the scheme of White and Voth \cite white2014efficient
-in order to match target observable values for a set of CVs. You can
+in order to match target observable values for a set of CVs.
+Further updates to the algorithm are described in \cite hocky2017cgds.
+
+You can
 see a tutorial on EDS specifically for biasing coordination number at
 <a
 href="http://thewhitelab.org/Blog/tutorial/2017/05/10/lammps-coordination-number-tutorial/">
@@ -140,10 +143,15 @@ private:
   std::vector<double> coupling_rate_;
   std::vector<double> coupling_accum_;
   std::vector<double> means_;
+  std::vector<double> differences_;
+  std::vector<double> alpha_vector_;
+  std::vector<double> alpha_vector_2_;
   std::vector<double> ssds_;
   std::vector<double> step_size_;
   std::vector<Value*> out_coupling_;
   Matrix<double> covar_;
+  Matrix<double> covar2_;
+  Matrix<double> lm_inv_;
   std::string in_restart_name_;
   std::string out_restart_name_;
   std::string fmt_;
@@ -158,6 +166,7 @@ private:
   bool b_restart_;
   bool b_write_restart_;
   bool b_hard_c_range_;
+  bool b_lm_;
   int seed_;
   int update_period_;
   int avg_coupling_count_;
@@ -165,6 +174,7 @@ private:
   double kbt_;
   double c_range_increase_f_;
   double multi_prop_;
+  double lm_mixing_par_;
   Random rand_;
   Value* value_force2_;
 
@@ -175,6 +185,7 @@ private:
   /*write output restart*/
   void writeOutRestart();
   void update_statistics();
+  void calc_lm_step_size();
   void calc_covar_step_size();
   void calc_ssd_step_size();
   void reset_statistics();
@@ -200,8 +211,8 @@ void EDS::registerKeywords(Keywords& keys) {
            "CENTER_ARG is for calculated centers, e.g. from a CV or analysis. ");
 
   keys.add("optional","PERIOD","Steps over which to adjust bias for adaptive or ramping");
-
-  keys.add("compulsory","RANGE","3.0","The largest magnitude of the force constant which one expects (in kBT) for each CV based");
+  keys.add("compulsory","RANGE","25.0","The (starting) maximum increase in coupling constant per PERIOD (in kBT/[BIAS_SCALE unit]) for each CV based");
+  keys.add("compulsory","INCREASE_FACTOR","1.0","Factor by which to increase RANGE every time coupling exceeds RANGE. RANGE is the max prefactor for increasing coupling in a given PERIOD.");
   keys.add("compulsory","SEED","0","Seed for random order of changing bias");
   keys.add("compulsory","INIT","0","Starting value for coupling constant");
   keys.add("compulsory","FIXED","0","Fixed target values for coupling constant. Non-adaptive.");
@@ -211,6 +222,10 @@ void EDS::registerKeywords(Keywords& keys) {
   keys.add("optional","MULTI_PROP","What proportion of dimensions to update at each step. "
            "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
            "If not set, default is 1 / N, where N is the number of CVs. ");
+
+  keys.addFlag("LM",false,"Use Levenberg-Marquadt algorithm along with simulatneous keyword. Otherwise use gradient descent.");
+  keys.addFlag("LM_MIXING","1","Initial mixing parameter when using Levenberg-Marquadt minimization.");
+
   keys.add("optional","RESTART_FMT","the format that should be used to output real numbers in EDS restarts");
   keys.add("optional","OUT_RESTART","Output file for all information needed to continue EDS simulation. "
            "If you have the RESTART directive set (global or for EDS), this file will be appended to. "
@@ -237,7 +252,7 @@ EDS::EDS(const ActionOptions&ao):
   current_coupling_(ncvs_,0.0),
   set_coupling_(ncvs_,0.0),
   target_coupling_(ncvs_,0.0),
-  max_coupling_range_(ncvs_,3.0),
+  max_coupling_range_(ncvs_,25.0),
   max_coupling_grad_(ncvs_,0.0),
   coupling_rate_(ncvs_,1.0),
   coupling_accum_(ncvs_,0.0),
@@ -255,13 +270,15 @@ EDS::EDS(const ActionOptions&ao):
   b_restart_(false),
   b_write_restart_(false),
   b_hard_c_range_(false),
+  b_lm_(false),
   seed_(0),
   update_period_(0),
   avg_coupling_count_(1),
   update_calls_(0),
   kbt_(0.0),
-  c_range_increase_f_(1.25),
+  c_range_increase_f_(1.0),
   multi_prop_(-1.0),
+  lm_mixing_par_(0.1),
   value_force2_(NULL)
 {
   double temp=-1.0;
@@ -285,12 +302,15 @@ EDS::EDS(const ActionOptions&ao):
   parseVector("FIXED",target_coupling_);
   parseVector("INIT",set_coupling_);
   parse("PERIOD",update_period_);
+  parse("INCREASE_FACTOR",c_range_increase_f_);
   parse("TEMP",temp);
   parse("SEED",seed_);
   parse("MULTI_PROP",multi_prop_);
+  parse("LM_MIXING",lm_mixing_par_);
   parse("RESTART_FMT", fmt_);
   fmt_ = " " + fmt_;//add space since parse strips them
   parse("OUT_RESTART",out_restart_name_);
+  parseFlag("LM",b_lm_);
   parseFlag("RAMP",b_ramp_);
   parseFlag("FREEZE",b_freeze_);
   parseFlag("MEAN",b_mean);
@@ -299,7 +319,7 @@ EDS::EDS(const ActionOptions&ao):
   checkRead();
 
   /*
-   * Things that are different when usnig changing centers:
+   * Things that are different when using changing centers:
    * 1. Scale
    * 2. The log file
    * 3. Reading Restarts
@@ -348,7 +368,18 @@ EDS::EDS(const ActionOptions&ao):
   log.printf("\n");
 
 
-  if(b_covar_) {
+  if (b_lm_) {
+    log.printf("  EDS will perform Levenberg-Marquardt minimization with mixing parameter = %f\n",lm_mixing_par_);
+    differences_.resize(ncvs_);
+    alpha_vector_.resize(ncvs_);
+    alpha_vector_2_.resize(ncvs_);
+    covar_.resize(ncvs_, ncvs_);
+    covar2_.resize(ncvs_, ncvs_);
+    lm_inv_.resize(ncvs_, ncvs_);
+    covar2_*=0; lm_inv_*=0;
+    if(multi_prop_ != 1) log.printf("     WARNING - doing LM minimization but MULTI_PROP!=1\n");
+  }
+  else if(b_covar_) {
     log.printf("  EDS will utilize covariance matrix for update steps\n");
     covar_.resize(ncvs_, ncvs_);
   } else {
@@ -398,8 +429,10 @@ EDS::EDS(const ActionOptions&ao):
     log.printf("\n  with initial ranges / rates:\n");
     for(unsigned int i = 0; i<max_coupling_range_.size(); i++) {
       //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
+      //
+      //using the current maxing out scheme, max_coupling_range is the biggest step that can be taken in any given interval
       max_coupling_range_[i]*=kbt_;
-      max_coupling_grad_[i] = max_coupling_range_[i]*update_period_/100.;
+      max_coupling_grad_[i] = max_coupling_range_[i];
       log.printf("    %f / %f\n",max_coupling_range_[i],max_coupling_grad_[i]);
     }
 
@@ -464,6 +497,7 @@ EDS::EDS(const ActionOptions&ao):
   }
 
   log<<"  Bibliography "<<plumed.cite("White and Voth, J. Chem. Theory Comput. 10 (8), 3023-3030 (2014)")<<"\n";
+  log<<"  Bibliography "<<plumed.cite("G. M. Hocky, T. Dannenhoffer-Lafage, G. A. Voth, J. Chem. Theory Comput. 13 (9), 4593-4603 (2017)")<<"\n";
 }
 
 void EDS::readInRestart(const bool b_mean) {
@@ -587,7 +621,7 @@ void EDS::writeOutRestart() {
     out_restart_.printField(cv_name + "_maxgrad",max_coupling_grad_[i]);
     out_restart_.printField(cv_name + "_accum",coupling_accum_[i]);
     out_restart_.printField(cv_name + "_mean",means_[i]);
-    if(!b_covar_)
+    if(!b_covar_ && !b_lm_)
       out_restart_.printField(cv_name + "_std",ssds_[i] / (fmax(1, update_calls_ - 1)));
     else
       out_restart_.printField(cv_name + "_std",covar_(i,i) / (fmax(1, update_calls_ - 1)));
@@ -710,10 +744,10 @@ void EDS::update_statistics()  {
   for(unsigned int i = 0; i < ncvs_; ++i)  {
     deltas[i] = difference(i,means_[i],getArgument(i));
     means_[i] += deltas[i]/fmax(1,update_calls_);
-    if(!b_covar_)
+    if(!b_covar_ && !b_lm_)
       ssds_[i] += deltas[i]*difference(i,means_[i],getArgument(i));
   }
-  if(b_covar_) {
+  if(b_covar_ || b_lm_) {
     for(unsigned int i = 0; i < ncvs_; ++i) {
       for(unsigned int j = i; j < ncvs_; ++j) {
         s = (update_calls_ - 1) * deltas[i] * deltas[j] / update_calls_ / update_calls_ - covar_(i,j) / update_calls_;
@@ -728,13 +762,34 @@ void EDS::update_statistics()  {
 void EDS::reset_statistics() {
   for(unsigned int i = 0; i < ncvs_; ++i)  {
     means_[i] = 0;
-    if(!b_covar_)
+    if(!b_covar_ && !b_lm_)
       ssds_[i] = 0;
   }
-  if(b_covar_)
+  if(b_covar_ || b_lm_)
     for(unsigned int i = 0; i < ncvs_; ++i)
       for(unsigned int j = 0; j < ncvs_; ++j)
         covar_(i,j) = 0;
+}
+
+void EDS::calc_lm_step_size() {
+  //calulcate step size
+  //uses scale here, which by default is center
+
+  mult(covar_,covar_,covar2_);
+  for(unsigned int i = 0; i< ncvs_; ++i) {
+    differences_[i] = difference(i, center_[i], means_[i]);
+    covar2_[i][i]+=lm_mixing_par_*covar2_[i][i];
+  }
+
+// "step_size_vec" = 2*inv(covar*covar+ lambda diag(covar*covar))*covar*(mean-center)
+  mult(covar_,differences_,alpha_vector_);
+  Invert(covar2_,lm_inv_);
+  mult(lm_inv_,alpha_vector_,alpha_vector_2_);
+
+  for(unsigned int i = 0; i< ncvs_; ++i) {
+    step_size_[i] = 2 * alpha_vector_2_[i] / kbt_ / scale_[i];
+  }
+
 }
 
 void EDS::calc_covar_step_size() {
@@ -745,7 +800,7 @@ void EDS::calc_covar_step_size() {
     tmp = 0;
     for(unsigned int j = 0; j < ncvs_; ++j)
       tmp += difference(i, center_[i], means_[i]) * covar_(i,j);
-    step_size_[i] = 2 * tmp / kbt_ / scale_[i] * update_calls_ / (update_calls_ - 1);
+    step_size_[i] = 2 * tmp / kbt_ / scale_[i] * update_calls_ / fmax(1,update_calls_ - 1);
   }
 
 }
@@ -753,39 +808,52 @@ void EDS::calc_covar_step_size() {
 void EDS::calc_ssd_step_size() {
   double tmp;
   for(unsigned int i = 0; i< ncvs_; ++i) {
-    tmp = 2. * difference(i, center_[i], means_[i]) * ssds_[i] / (update_calls_ - 1);
+    tmp = 2. * difference(i, center_[i], means_[i]) * ssds_[i] / fmax(1,update_calls_ - 1);
     step_size_[i] = tmp / kbt_/scale_[i];
   }
 }
 
 void EDS::update_bias()
 {
-  if(b_covar_)
+  log.flush();
+  if (b_lm_)
+  {
+    log.flush();
+    calc_lm_step_size();
+  }
+  else if(b_covar_)
     calc_covar_step_size();
   else
     calc_ssd_step_size();
 
   for(unsigned int i = 0; i< ncvs_; ++i) {
 
-    //check if the step_size exceeds maximum possible gradient
-    step_size_[i] = copysign(fmin(fabs(step_size_[i]), max_coupling_grad_[i]), step_size_[i]);
-
-    //reset means/vars
-    reset_statistics();
-
     //multidimesional stochastic step
     if(ncvs_ == 1 || (rand_.RandU01() < (multi_prop_) ) ) {
+
+      double proposed_coupling_accum = coupling_accum_[i] + step_size_[i] * step_size_[i];
+      double proposed_coupling_prefactor = max_coupling_range_[i]/sqrt(proposed_coupling_accum);
+      double proposed_coupling_change = proposed_coupling_prefactor*step_size_[i];
+
+      //check if update to coupling exceeds maximum possible gradient
+      double coupling_change = copysign(fmin(fabs(proposed_coupling_change), max_coupling_grad_[i]), proposed_coupling_change);
+
+      step_size_[i] = coupling_change/proposed_coupling_prefactor;
       coupling_accum_[i] += step_size_[i] * step_size_[i];
 
       //equation 5 in White and Voth, JCTC 2014
       //no negative sign because it's in step_size
-      set_coupling_[i] += max_coupling_range_[i]/sqrt(coupling_accum_[i])*step_size_[i];
+      set_coupling_[i] += coupling_change;
       coupling_rate_[i] = (set_coupling_[i]-current_coupling_[i])/update_period_;
 
     } else {
       //do not change the bias
       coupling_rate_[i] = 0;
     }
+
+    //reset means/vars
+    reset_statistics();
+
   }
 }
 

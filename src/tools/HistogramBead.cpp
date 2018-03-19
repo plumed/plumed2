@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -229,9 +229,8 @@ double HistogramBead::calculateWithCutoff( double x, double& df ) const {
 }
 
 double HistogramBead::lboundDerivative( const double& x ) const {
-  double lowB;
   if( type==gaussian ) {
-    lowB = difference( x, lowb ) / ( sqrt(2.0) * width );
+    double lowB = difference( x, lowb ) / ( sqrt(2.0) * width );
     return exp( -lowB*lowB ) / ( sqrt(2*pi)*width );
   } else if ( type==triangular ) {
     plumed_error();
@@ -246,9 +245,8 @@ double HistogramBead::lboundDerivative( const double& x ) const {
 
 double HistogramBead::uboundDerivative( const double& x ) const {
   plumed_dbg_assert(init && periodicity!=unset );
-  double upperB;
   if( type==gaussian ) {
-    upperB = difference( x, highb ) / ( sqrt(2.0) * width );
+    double upperB = difference( x, highb ) / ( sqrt(2.0) * width );
     return exp( -upperB*upperB ) / ( sqrt(2*pi)*width );
   } else if ( type==triangular ) {
     plumed_error();

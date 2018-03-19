@@ -1,5 +1,14 @@
 #! /bin/bash
 
+WHAT=$1
+
+case "$WHAT" in
+(doc) echo "Pushing documentation" ;;
+(coverage) echo "Pushing coverage" ;;
+(*) echo "ERROR!!"
+    exit 1
+esac
+
 set -e
 set -x
 
@@ -28,24 +37,40 @@ root="$PWD"
 mkdir -p tmp/$$
 cd tmp/$$
 
+
+case "$WHAT" in
+(doc)
 # grab doc
-mkdir user-doc
-cp -R $root/user-doc/{html,manual.pdf} user-doc/
-test -d $root/user-doc/regtests && cp -R $root/user-doc/regtests user-doc/ || true
-mkdir developer-doc
-cp -R $root/developer-doc/html developer-doc/
-test -d $root/developer-doc/coverage && cp -R $root/developer-doc/coverage developer-doc || true
+  mkdir user-doc
+  cp -R $root/user-doc/{html,manual.pdf} user-doc/
+  test -d $root/user-doc/regtests && cp -R $root/user-doc/regtests user-doc/ || true
+  mkdir developer-doc
+  cp -R $root/developer-doc/html developer-doc/
+;;
+(coverage)
+  cp -R $root/developer-doc/coverage .
+esac
+
 
 # This file should be here, it is needed otherwise
 # files beginning with _ are skipped
 touch .nojekyll
+
+case "$WHAT" in
+(doc)
+  home="user-doc/html/index.html"
+  ;;
+(coverage)
+  home="coverage/index.html"
+  ;;
+esac
 
 cat > index.html << EOF
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <html>
 <head>
 <title>Page Auto Redirect</title>
-<meta http-equiv="refresh" content ="0; user-doc/html/index.html">
+<meta http-equiv="refresh" content ="0; $home">
 </head>
 <body>
 This is an auto redirect page.
@@ -69,8 +94,11 @@ git config user.name "${GIT_BOT}"
 git checkout -b gh-pages
 # this is not to show the GIT_TOKEN on Travis log
 set +x
-git remote add doc https://${GIT_BOT}:$GIT_TOKEN@github.com/$GIT_OWNER/doc-${TRAVIS_BRANCH}.git
+git remote add doc https://${GIT_BOT}:$GIT_TOKEN@github.com/$GIT_OWNER/${WHAT}-${TRAVIS_BRANCH}.git
 set -x
+
+case "$WHAT" in
+(doc)
 cat > README.md << EOF
 Precompiled manual for PLUMED ${TRAVIS_BRANCH}
 -----------------------------
@@ -80,10 +108,10 @@ git revision [$hash](https://github.com/${GIT_OWNER}/${GIT_REPO}/commit/$hash).
 
 This manual has been compiled on [travis](http://travis-ci.org/${GIT_OWNER}/${GIT_REPO}) on $(date).
 
-To browse the manual you should go [here](http://${GIT_OWNER}.github.io/doc-${TRAVIS_BRANCH}).
+To browse the manual you should go [here](http://${GIT_OWNER}.github.io/${WHAT}-${TRAVIS_BRANCH}).
 
 You can also download a full copy of the manual for offline access
-at [this link](http://github.com/${GIT_OWNER}/doc-${TRAVIS_BRANCH}/archive/gh-pages.zip).
+at [this link](http://github.com/${GIT_OWNER}/${WHAT}-${TRAVIS_BRANCH}/archive/gh-pages.zip).
 
 EOF
 
@@ -92,6 +120,24 @@ case "$branchtype" in
 (unsupported) echo "This is the manual for an official but unsupported PLUMED branch. It will not appear on search engines." >> README.md ;;
 (master)      echo "This is the manual for the development PLUMED branch." >> README.md ;;
 (unofficial)  echo "This is the manual for an unofficial PLUMED branch. It will not appear on search engines." >> README.md ;;
+esac
+;;
+
+(coverage)
+cat > README.md << EOF
+Coverage scan for PLUMED ${TRAVIS_BRANCH}
+-----------------------------
+
+This repository hosts the coverage scan for [PLUMED](http://www.plumed.org) ${TRAVIS_BRANCH},
+git revision [$hash](https://github.com/${GIT_OWNER}/${GIT_REPO}/commit/$hash).
+
+Coverage scan done on [travis](http://travis-ci.org/${GIT_OWNER}/${GIT_REPO}) on $(date).
+
+To browse the scan you should go [here](http://${GIT_OWNER}.github.io/${WHAT}-${TRAVIS_BRANCH}).
+
+You can also download a full copy of the scan for offline access
+at [this link](http://github.com/${GIT_OWNER}/${WHAT}-${TRAVIS_BRANCH}/archive/gh-pages.zip).
+EOF
 esac
 
 case "$branchtype" in
