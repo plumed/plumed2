@@ -39,6 +39,10 @@
 //#include "tools/IFile.h"
 //#include "tools/OFile.h"
 
+// The original implementation of this method was contributed
+// by Andrea Cesari (andreacesari90@gmail.com).
+// Copyright has been then transferred to PLUMED developers
+// (see https://github.com/plumed/plumed2/blob/master/.github/CONTRIBUTING.md)
 
 using namespace std;
 
