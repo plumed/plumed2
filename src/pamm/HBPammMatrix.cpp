@@ -20,8 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "adjmat/AdjacencyMatrixBase.h"
-#include "multicolvar/AtomValuePack.h"
-#include "HBPammObject.h"
+#include "multicolvar/MultiColvarBase.h"
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"
 #include "tools/IFile.h"
@@ -43,45 +42,86 @@ class HBPammMatrix : public adjmat::AdjacencyMatrixBase {
 private:
   unsigned ndonor_types;
   double regulariser;
-  Matrix<HBPammObject> myhb_objs;
+  enum {dah,adh,hda} order=dah;
+  std::vector<KernelFunctions*> kernels;
 public:
+  static void shortcutKeywords( Keywords& keys );
+  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                              const std::map<std::string,std::string>& keys,
+                              std::vector<std::vector<std::string> >& actions );
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit HBPammMatrix(const ActionOptions&);
-/// Setup the connector -- i.e. read in the clusters file
-  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
+  ~HBPammMatrix();
 ///
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
-///
-/// Used to check for connections between atoms
-  bool checkForConnection( const std::vector<double>& myvals ) const { return !(myvals[1]>epsilon); }
+  double calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(HBPammMatrix,"HBPAMM_MATRIX")
+PLUMED_REGISTER_SHORTCUT(HBPammMatrix,"HBPAMM_SD")
+PLUMED_REGISTER_SHORTCUT(HBPammMatrix,"HBPAMM_SA")
+PLUMED_REGISTER_SHORTCUT(HBPammMatrix,"HBPAMM_SH")
 
-void HBPammMatrix::registerKeywords( Keywords& keys ) {
-  adjmat::AdjacencyMatrixBase::registerKeywords( keys );
-  keys.add("atoms-1","SITES","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
+void HBPammMatrix::shortcutKeywords( Keywords& keys ) {
+  keys.add("optional","SITES","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
            "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified"
            "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
            "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
            "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
            "variety of functions of the contact matrix as described in \\ref contactmatrix");
-  keys.add("atoms-2","DONORS","The list of atoms which can donate a hydrogen bond.  The atoms involved must be specified "
+  keys.add("optional","DONORS","The list of atoms which can donate a hydrogen bond.  The atoms involved must be specified "
            "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
            "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
            "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
            "variety of functions of the contact matrix as described in \\ref contactmatrix");
-  keys.add("atoms-2","ACCEPTORS","The list of atoms which can accept a hydrogen bond.  The atoms involved must be specified "
+  keys.add("optional","ACCEPTORS","The list of atoms which can accept a hydrogen bond.  The atoms involved must be specified "
            "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
            "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
            "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
            "variety of functions of the contact matrix as described in \\ref contactmatrix");
-  keys.add("atoms","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
+  keys.add("compulsory","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
            "an index range or by using a \\ref GROUP");
-  keys.add("numbered","CLUSTERS","the name of the file that contains the definitions of all the kernels for PAMM");
-  keys.reset_style("CLUSTERS","compulsory"); keys.use("SUM");
+  multicolvar::MultiColvarBase::shortcutKeywords( keys );
+}
+
+void HBPammMatrix::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
+                                   const std::map<std::string,std::string>& keys,
+                                   std::vector<std::vector<std::string> >& actions ) {
+  std::vector<std::string> mwords; mwords.push_back( lab + "_mat:"); mwords.push_back("HBPAMM_MATRIX");
+  if( words[0]=="HBPAMM_SD" ) {
+      if( keys.count("SITES") ) {
+          mwords.push_back("GROUP=" + keys.find("SITES")->second ); 
+      } else {
+          mwords.push_back("GROUPA=" + keys.find("DONORS")->second ); mwords.push_back("GROUPB=" + keys.find("ACCEPTORS")->second );
+      }
+      mwords.push_back("GROUPC=" + keys.find("HYDROGENS")->second ); mwords.push_back("ORDER=dah");
+  } else if( words[0]=="HBPAMM_SA" ) {
+      if( keys.count("SITES") ) {  
+          mwords.push_back("GROUP=" + keys.find("SITES")->second ); 
+      } else {
+          mwords.push_back("GROUPA=" + keys.find("ACCEPTORS")->second ); mwords.push_back("GROUPB=" + keys.find("DONORS")->second );
+      }   
+      mwords.push_back("GROUPC=" + keys.find("HYDROGENS")->second ); mwords.push_back("ORDER=adh");
+  } else if( words[0]=="HBPAMM_SH" ) {
+      mwords.push_back("GROUPA=" + keys.find("HYDROGENS")->second ); mwords.push_back("ORDER=hda");
+      if( keys.count("SITES") ) {
+          mwords.push_back("GROUPB=" + keys.find("SITES")->second ); mwords.push_back("GROUPC=" + keys.find("SITES")->second );
+      } else {
+          mwords.push_back("GROUPB=" + keys.find("DONORS")->second ); mwords.push_back("GROUPC=" + keys.find("ACCEPTORS")->second );
+      }
+  }
+  for(unsigned i=1;i<words.size();++i) mwords.push_back( words[i] );
+  actions.push_back( mwords ); std::vector<std::string> cwords; cwords.push_back( lab + ":"); cwords.push_back("COORDINATIONNUMBER");
+  cwords.push_back("WEIGHT=" + lab + "_mat.w"); actions.push_back( cwords );
+  multicolvar::MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
+}
+
+void HBPammMatrix::registerKeywords( Keywords& keys ) {
+  adjmat::AdjacencyMatrixBase::registerKeywords( keys ); keys.use("GROUPC");
+  keys.add("compulsory","ORDER","dah","the order in which the groups are specified in the input.  Can be dah (donor/acceptor/hydrogens), "
+                                      "adh (acceptor/donor/hydrogens) or hda (hydrogens/donor/hydrogens");
+  keys.add("compulsory","CLUSTERS","the name of the file that contains the definitions of all the kernels for PAMM");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
 }
 
@@ -90,58 +130,108 @@ HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
   Action(ao),
   AdjacencyMatrixBase(ao)
 {
-  readMaxThreeSpeciesMatrix("SITES", "DONORS", "ACCEPTORS", "HYDROGENS", false );
-  // Retrieve dimensions of hbonding matrix and resize
-  unsigned nrows, ncols; retrieveTypeDimensions( nrows, ncols, ndonor_types );
-  myhb_objs.resize( nrows, ncols );
+  std::string sorder; parse("ORDER",sorder);
+  if( sorder=="dah" ) {
+     order = dah;
+     log.printf("  GROUPA is list of donor atoms \n");
+  } else if( sorder=="adh" ) {
+     order = adh;
+     log.printf("  GROUPA is list of acceptor atoms \n");
+  } else if( sorder=="hda" ) {
+     order = hda;
+     log.printf("  GROUPA is list of hydrogen atoms \n");
+  } else plumed_error();
   // Read in the regularisation parameter
   parse("REGULARISE",regulariser);
-  // Read in the switching functions
-  parseConnectionDescriptions("CLUSTERS",false,ndonor_types);
+  // Create a vector of pos
+  std::vector<Value*> pos; std::vector<std::string> valnames(3);
+  for(unsigned i=0;i<3;++i) pos.push_back( new Value() );
+  // Create the kernels
+  valnames[0]="ptc"; valnames[1]="ssc"; valnames[2]="adc"; 
+  // Read in the kernels
+  std::string fname; parse("CLUSTERS", fname);
+  IFile ifile; ifile.open(fname); ifile.allowIgnoredFields(); kernels.resize(0);
+  for(unsigned k=0;; ++k) {
+    std::unique_ptr<KernelFunctions> kk = KernelFunctions::read( &ifile, false, valnames );
+    if( !kk ) break ;
+    kk->normalize( pos );
+    kernels.emplace_back( kk.release() ); 
+    // meanwhile, I just release the unique_ptr herelease the unique_ptr here. GB
+    ifile.scanField();
+  }
+  ifile.close(); for(unsigned i=0;i<3;++i) delete pos[i];
 
   // Find cutoff for link cells
   double sfmax=0;
-  for(unsigned i=0; i<myhb_objs.ncols(); ++i) {
-    for(unsigned j=i; j<myhb_objs.nrows(); ++j) {
-      double rcut=myhb_objs(i,j).get_cutoff();
-      if( rcut>sfmax ) { sfmax=rcut; }
-    }
+  for(unsigned k=0;k<kernels.size();++k) {
+      double rcut = kernels[k]->getCenter()[2] + kernels[k]->getContinuousSupport()[2];
+      if( rcut>sfmax ) sfmax = rcut;
   }
   setLinkCellCutoff( sfmax );
 }
 
-void HBPammMatrix::setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) {
-  log.printf("  reading definition of hydrogen bond between between type %u and %u from file %s \n",i,j,desc[0].c_str() );
-  plumed_assert( desc.size()==1 ); std::string errors;
-  if( i==j ) {
-    myhb_objs( i, j ).setup( desc[0], regulariser, this, errors );
-  } else {
-    myhb_objs( i, j ).setup( desc[0], regulariser, this, errors );
-    myhb_objs( j, i ).setup( desc[0], regulariser, this, errors );
-  }
-  if( errors.length()>0 ) error( errors );
+HBPammMatrix::~HBPammMatrix() {
+  for(unsigned k=0;k<kernels.size();++k) delete kernels[k];
 }
 
-double HBPammMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-  Vector d_da = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) ); double md_da = d_da.modulo(); // acceptor - donor
+double HBPammMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
+  Vector doo = pbcDistance( pos1, pos2 ); double doom = doo.modulo();
 
-  // Get the base colvar numbers
-  unsigned ano, dno = getBaseColvarNumber( myatoms.getIndex(0) );
-  if( ndonor_types==0 ) ano = getBaseColvarNumber( myatoms.getIndex(1) );
-  else ano = getBaseColvarNumber( myatoms.getIndex(1) ) - ndonor_types;
-
-  double value=0;
-  if( myatoms.getNumberOfAtoms()>3 ) {
-    const HBPammObject& myhb=myhb_objs(dno,ano);
-    for(unsigned i=2; i<myatoms.getNumberOfAtoms(); ++i) {
-      value+=myhb.evaluate( 0, 1, i, d_da, md_da, myatoms );
-    }
-  } else {
-    plumed_dbg_assert( myatoms.getNumberOfAtoms()==3 );
-    value=myhb_objs(dno,ano).evaluate( 0, 1, 2, d_da, md_da, myatoms );
+  std::vector<Value*> pos; 
+  for(unsigned i=0;i<3;++i) {
+      pos.push_back( new Value() ); pos[i]->setNotPeriodic();
   }
 
-  return value;
+  double pref=1,tot=0; std::vector<double> der(3), dderiv(3), tder(3);
+  for(unsigned i=0; i<natoms; ++i) {
+    Vector dij = getPosition(i,myvals); double dijm = dij.modulo();
+    Vector dik = pbcDistance( pos2, getPosition(i,myvals) ); double dikm=dik.modulo();
+    if( dikm<epsilon ) continue; 
+
+    if( order==dah ) {
+        pos[0]->set( dijm - dikm ); pos[1]->set( dijm + dikm ); pos[2]->set( doom ); pref=+1;
+    } else if( order==adh ) {
+        pos[0]->set( dikm - dijm ); pos[1]->set( dijm + dikm ); pos[2]->set( doom ); pref=-1;
+    } else if( order==hda ) {
+        pos[0]->set( doom - dijm ); pos[1]->set( doom + dijm ); pos[2]->set( dikm );
+    }
+    double vv = kernels[0]->evaluate( pos, der ); 
+    double denom = regulariser + vv; for(unsigned j=0;j<3;++j) dderiv[j] = der[j];
+    for(unsigned k=1;k<kernels.size();++k) {
+        denom += kernels[k]->evaluate( pos, tder );
+        for(unsigned j=0;j<3;++j) dderiv[j] += tder[j];
+    }
+    double vf = vv / denom; tot += vf;
+    for(unsigned j=0;j<3;++j) der[j] = der[j] / denom - vf*dderiv[j]/denom;
+
+    // And finish the calculation
+    if( order==dah || order==adh ) {
+        addAtomDerivatives( 0, pref*((-der[0])/dijm)*dij, myvals );
+        addAtomDerivatives( 1, pref*((+der[0])/dikm)*dik, myvals );
+        addThirdAtomDerivatives( i, pref*((+der[0])/dijm)*dij - pref*((+der[0])/dikm)*dik, myvals );
+        addBoxDerivatives( pref*((-der[0])/dijm)*Tensor(dij,dij) - pref*((-der[0])/dikm)*Tensor(dik,dik), myvals );
+        addAtomDerivatives( 0, ((-der[1])/dijm)*dij, myvals );
+        addAtomDerivatives( 1, ((-der[1])/dikm)*dik, myvals );
+        addThirdAtomDerivatives( i, ((+der[1])/dijm)*dij + ((+der[1])/dikm)*dik, myvals );
+        addBoxDerivatives( ((-der[1])/dijm)*Tensor(dij,dij) + ((-der[1])/dikm)*Tensor(dik,dik), myvals );
+        addAtomDerivatives( 0, ((-der[2])/doom)*doo, myvals );
+        addAtomDerivatives( 1, ((+der[2])/doom)*doo, myvals );
+        addBoxDerivatives( ((-der[2])/doom)*Tensor(doo,doo), myvals );
+    } else if( order==hda ) { 
+        addAtomDerivatives( 0, ((-der[0])/doom)*doo - ((-der[0])/dijm)*dij, myvals );
+        addAtomDerivatives( 1, ((+der[0])/doom)*doo, myvals );
+        addThirdAtomDerivatives( i, -((+der[0])/dijm)*dij, myvals );
+        addBoxDerivatives( ((-der[0])/doom)*Tensor(doo,doo) - ((-der[0])/dijm)*Tensor(dij,dij), myvals );
+        addAtomDerivatives( 0, ((-der[1])/doom)*doo + ((-der[1])/dijm)*dij, myvals );
+        addAtomDerivatives( 1, ((+der[1])/doom)*doo, myvals );
+        addThirdAtomDerivatives( i, ((+der[1])/dijm)*dij, myvals );
+        addBoxDerivatives( ((-der[1])/doom)*Tensor(doo,doo) + ((-der[1])/dijm)*Tensor(dij,dij), myvals );
+        addAtomDerivatives( 1, ((-der[2])/dikm)*dik, myvals );
+        addThirdAtomDerivatives( i, ((+der[2])/dikm)*dik, myvals );
+        addBoxDerivatives( ((-der[2])/dikm)*Tensor(dik,dik), myvals );
+    }
+  }
+  return tot;
 }
 
 }
