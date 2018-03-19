@@ -43,7 +43,7 @@ do
     exit 0
     ;;
   (--options)
-    echo "--help -h --description --options --quiet -q --version -v show has module"
+    echo "--help -h --description --options --quiet -q --version -v show has module mpiexec makefile_conf"
     exit 0
     ;;
   (--quiet|-q) quiet=yes ;;
