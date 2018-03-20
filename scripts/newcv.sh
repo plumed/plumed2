@@ -6,7 +6,7 @@ if [ "$1" = --description ] ; then
 fi
 
 if [ "$1" = --options ] ; then
-  echo "--description"
+  echo "--description --options"
   exit 0
 fi
 
