@@ -19,7 +19,7 @@ set key bottom left sample 1.
 
 everyValue=1
 
-pl "../fes-mintozero/fes_77.dat" u 1:($2/2.494) w l ls 1 title "sum hills", \
+pl "../Bias_calculation/fes.dat" u 1:($2/2.494) w l ls 1 title "sum hills", \
  "./histo" u 1:(-log($2)+2.15) every everyValue w p ls 2 title "Reweight", \
  "./histo_wall" u 1:(-log($2)+1.3) every everyValue  w p ls 3 title "Reweight w/ wall bias"
 
