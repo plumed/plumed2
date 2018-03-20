@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -128,7 +128,7 @@ private:
   void read_input(double& temperature,
                   double& tstep,
                   double& friction,
-                  int&    dim,
+                  int& dim,
                   std::string& plumedin,
                   std::vector<double>& ipos,
                   int&    nstep,
@@ -155,7 +155,7 @@ private:
       std::vector<double> min( dim ); parseVector("min",min);
       std::vector<double> max( dim ); parseVector("max",max);
       periods.resize( dim );
-      for(unsigned i=0; i<dim; ++i) {
+      for(int i=0; i<dim; ++i) {
         if( max[i]<min[i] ) error("invalid periods specified max is less than min");
         periods[i]=max[i]-min[i];
       }
@@ -197,21 +197,21 @@ public:
     plumed->cmd("init");
 
     // Now create some fake atoms
-    unsigned nat = std::floor( dim/3 ) + 1;
+    int nat = std::floor( dim/3 ) + 1;
     std::vector<double> masses( 1+nat, 1 );
     std::vector<Vector> velocities( nat ), positions( nat+1 ), forces( nat+1 );
     // Will set these properly eventually
-    unsigned k=0; positions[0].zero(); // Atom zero is fixed at origin
-    for(unsigned i=0; i<nat; ++i) for(unsigned j=0; j<3; ++j) {
+    int k=0; positions[0].zero(); // Atom zero is fixed at origin
+    for(int i=0; i<nat; ++i) for(unsigned j=0; j<3; ++j) {
         if( k<dim ) { positions[1+i][j]=ipos[k]; } else { positions[1+i][j]=0;}
         k++;
       }
     // And initialize the velocities
-    for(unsigned i=0; i<nat; ++i) for(unsigned j=0; j<3; ++j) velocities[i][j]=random.Gaussian() * sqrt( temp );
+    for(int i=0; i<nat; ++i) for(int j=0; j<3; ++j) velocities[i][j]=random.Gaussian() * sqrt( temp );
     // And calcualte the kinetic energy
     double tke=0;
-    for(unsigned i=0; i<nat; ++i) {
-      for(unsigned j=0; j<3; ++j) {
+    for(int i=0; i<nat; ++i) {
+      for(int j=0; j<3; ++j) {
         if( 3*i+j>dim ) break;
         tke += 0.5*velocities[i][j]*velocities[i][j];
       }
@@ -229,22 +229,18 @@ public:
     plumed->cmd("calc");
 
 
-//      potential=calc_energy(positions,forces);
     double therm_eng=0;
-
     FILE* fp=fopen("stats.out","w+");
-//     double conserved = potential+1.5*ttt+therm_eng; FILE* fp=fopen("stats.out","w+");
-//     if( pc.Get_rank()==0 ) fprintf(fp,"%d %f %f \n", 0, 0., tke, therm_eng );
 
-    for(unsigned istep=0; istep<nsteps; ++istep) {
+    for(int istep=0; istep<nsteps; ++istep) {
 
-      if( istep%20==0 && pc.Get_rank()==0 ) printf("Doing step %u\n",istep);
+      if( istep%20==0 && pc.Get_rank()==0 ) printf("Doing step %i\n",istep);
 
       // Langevin thermostat
       double lscale=exp(-0.5*tstep/friction);
       double lrand=sqrt((1.-lscale*lscale)*temp);
-      for(unsigned j=0; j<nat; ++j) {
-        for(unsigned k=0; k<3; ++k) {
+      for(int j=0; j<nat; ++j) {
+        for(int k=0; k<3; ++k) {
           if( 3*j+k>dim ) break;
           therm_eng=therm_eng+0.5*velocities[j][k]*velocities[j][k];
           velocities[j][k]=lscale*velocities[j][k]+lrand*random.Gaussian();
@@ -253,14 +249,11 @@ public:
       }
 
       // First step of velocity verlet
-      for(unsigned j=0; j<nat; ++j) {
-        for(unsigned k=0; k<3; ++k) {
+      for(int j=0; j<nat; ++j) {
+        for(int k=0; k<3; ++k) {
           if( 3*j+k>dim ) break;
           velocities[j][k] = velocities[j][k] + 0.5*tstep*forces[1+j][k];
           positions[1+j][k] = positions[1+j][k] + tstep*velocities[j][k];
-          // Apply pbc
-          // if( positions[0][k]>pi ) positions[0][k]-=2*pi;
-          // if( positions[0][k]<=-pi ) positions[0][k]+=2*pi;
         }
       }
 
@@ -279,8 +272,8 @@ public:
       if(plumedWantsToStop) nsteps=istep;
 
       // Second step of velocity verlet
-      for(unsigned j=0; j<nat; ++j) {
-        for(unsigned k=0; k<3; ++k) {
+      for(int j=0; j<nat; ++j) {
+        for(int k=0; k<3; ++k) {
           if( 3*j+k>dim ) break;
           velocities[j][k] = velocities[j][k] + 0.5*tstep*forces[1+j][k];
         }
@@ -289,8 +282,8 @@ public:
       // Langevin thermostat
       lscale=exp(-0.5*tstep/friction);
       lrand=sqrt((1.-lscale*lscale)*temp);
-      for(unsigned j=0; j<nat; ++j) {
-        for(unsigned k=0; k<3; ++k) {
+      for(int j=0; j<nat; ++j) {
+        for(int k=0; k<3; ++k) {
           if( 3*j+k>dim ) break;
           therm_eng=therm_eng+0.5*velocities[j][k]*velocities[j][k];
           velocities[j][k]=lscale*velocities[j][k]+lrand*random.Gaussian();
@@ -299,8 +292,8 @@ public:
       }
       // Calculate total kinetic energy
       tke=0;
-      for(unsigned i=0; i<nat; ++i) {
-        for(unsigned j=0; j<3; ++j) {
+      for(int i=0; i<nat; ++i) {
+        for(int j=0; j<3; ++j) {
           if( 3*i+j>dim ) break;
           tke += 0.5*velocities[i][j]*velocities[i][j];
         }
@@ -308,7 +301,7 @@ public:
 
       // Print everything
       // conserved = potential+1.5*ttt+therm_eng;
-      if( pc.Get_rank()==0 ) fprintf(fp,"%u %f %f %f \n", istep, istep*tstep, tke, therm_eng );
+      if( pc.Get_rank()==0 ) fprintf(fp,"%i %f %f %f \n", istep, istep*tstep, tke, therm_eng );
     }
 
     fclose(fp);

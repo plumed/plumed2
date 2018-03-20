@@ -10,7 +10,12 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes
+# coverage scan
+  - os: linux
+    dist: trusty
+    sudo: required
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKECOVERAGE=yes PLUMED_ALL_TESTS=yes
 # the following are with debug flags
   - os: linux
     dist: trusty
@@ -20,17 +25,11 @@ matrix:
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-# cppcheck - takes a lot of time to compile the code, so I place it closer
-# to the beginning of the list
+# cppcheck
   - os: linux
     dist: trusty
     sudo: required
     env: CPPCHECK=yes CPPCHECK_VERSION=1.81
-# then check with different optimization flags
-  - os: linux
-    dist: trusty
-    sudo: required
-    env: PLUMED_CC=mpicc   PLUMED_CXX=mpic++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
 # test using external blas with internal lapack
   - os: linux
     if: branch =~ ^test- OR type IN(pull_request)
@@ -130,7 +129,7 @@ install:
 # install doxygen-latex
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y doxygen-latex ; fi
 # install lcov
-  - if test "$MAKEDOC" == yes ; then ./.travis/install.lcov v1.13 ; fi
+  - if test "$MAKECOVERAGE" == yes ; then ./.travis/install.lcov v1.13 ; fi
 # install numpy and cython for python interface
 # only for linux and homebrew (no macports)
   - if test "$PLUMED_CXX" ; then
@@ -141,7 +140,7 @@ install:
 # then replace doxygen with the desided version
 # I use 1.8.10 instead of 1.8.11 since it looks like 1.8.11 have troubles with
 # non case sensitive files (it writes capitalized filenames)
-  - if test "$MAKEDOC" == yes ; then ./.travis/install.doxygen Release_1_8_13 ; fi
+  - if test "$MAKEDOC" == yes ; then ./.travis/install.doxygen Release_1_8_14 ; fi
   - if test "$VALGRIND" == yes ; then sudo apt-get install -y valgrind           ; fi
   - if test "$LAPACK" == yes ; then sudo apt-get -y install libatlas-base-dev      ; fi
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
@@ -162,14 +161,16 @@ install:
 script:
 # make sure all modules are enabled
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=all"
+# disable tracking dependencies, to build faster
+  - CONFIG_FLAGS="$CONFIG_FLAGS --disable-dependency-tracking"
 # we enable fftw, which is off by default
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-fftw"
 # enable boost_serialization to test drr module
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-boost_serialization"
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
-  - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
+  - if test "$MAKECOVERAGE" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
 # when running lcov plumed should be compiled with -O0
-  - if test "$MAKEDOC" == yes ; then PLUMED_CXXFLAGS=-O0 ; fi
+  - if test "$MAKECOVERAGE" == yes ; then PLUMED_CXXFLAGS=-O0 ; fi
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined
@@ -184,7 +185,7 @@ script:
 # build using macports
   - if test -n "$PLUMED_MACPORTS" ; then
       sudo port -N -k install $PLUMED_MACPORTS ;
-      plumed config show
+      plumed config show ;
       ./macports-ci ccache --save ;
     fi
 
@@ -201,7 +202,7 @@ script:
 # currently, gcc6 fails for numerical reasons. Once this is fixed we can add the "make -C regtest checkfail" command below
 
   - if test "$MAKEDOC" == yes ; then make -C regtest copytodoc ; fi
-  - if test "$MAKEDOC" == yes ; then make -C developer-doc coverage ; fi
+  - if test "$MAKECOVERAGE" == yes ; then make -C developer-doc coverage ; fi
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
   - if test "$PLUMED_CXX" ; then make -C regtest checkfail ; fi
   - if test -n "$PLUMED_MACPORTS" ; then sudo port -N -d test $PLUMED_MACPORTS ; fi
@@ -215,4 +216,5 @@ script:
 # script which check if coding policies are satisfied
   - if test "$CPPCHECK" == yes ; then make codecheck ; fi
 after_success:
-  - if test "$MAKEDOC" == yes ; then ./.travis/pushdoc ; fi 
+  - if test "$MAKEDOC" == yes ; then ./.travis/push doc ; fi 
+  - if test "$MAKECOVERAGE" == yes ; then ./.travis/push coverage ; fi 

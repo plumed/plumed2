@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -157,9 +157,10 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
 
 double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   // Calculate the coordination number
-  double dfunc, d2, sw, d, raised;
+  double dfunc, sw, d, raised;
   for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
     Vector& distance=myatoms.getPosition(i);
+    double d2;
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
          (d2+=distance[2]*distance[2])<rcut2 &&

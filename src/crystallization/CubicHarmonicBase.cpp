@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -100,10 +100,10 @@ double CubicHarmonicBase::compute( const unsigned& tindex, multicolvar::AtomValu
   // Calculate the coordination number
   Vector myder, rotateder, fder; unsigned nat=myatoms.getNumberOfAtoms();
 
-  double d2;
   for(unsigned i=1; i<nat; ++i) {
     Vector& distance=myatoms.getPosition(i);
 
+    double d2;
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
          (d2+=distance[2]*distance[2])<rcut2 &&

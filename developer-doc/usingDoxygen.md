@@ -488,6 +488,9 @@ for that user enabling html access is stored in the environment variable GIT_TOK
 In this way, any commit made in the plumed repository by one of the developers will have access to the variable and will trigger
 manual build and push. Conversely, pull requests by external users should not be able to
 access the token and won't update manual changes.
+Starting with PLUMED 2.3 the web manual also contains a coverage scan that shows which parts of the code are actually
+covered by the regtests. As of PLUMED 2.5, the coverage scan ends up on a separate repository named 
+http://github.com/plumed/coverage-NAMEOFTHEBRANCH.
 
 Notice that to solve [this issue](https://github.com/plumed/plumed2/issues/239) as of PLUMED 2.3.2 the script that
 pushes the documentation to travis-ci adds special information to remove from search engine results pages from
@@ -513,4 +516,7 @@ To generate a manual for a specific branch you need to create a repository
 `GIT_BOT`. The generated manuals will be accessible on 
 https://USERNAME.github.io/doc-NAMEOFTHEBRANCH. Note that manuals generated in 
 this way will always be labeled as unofficial and not shown in search engine results.
+Starting with PLUMED 2.5, if you want to show the results of the coverage scan you should
+similarly create arepository `USERNAME/coverage-NAMEOFTHEBRANCH`.
+
 

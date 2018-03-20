@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -129,14 +129,14 @@ void LWalls::calculate() {
   double ene = 0.0;
   double totf2 = 0.0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    const double cv=difference(i,at[i],getArgument(i));
-    const double k=kappa[i];
-    const double exponent=exp[i];
-    const double epsilon=eps[i];
-    const double off=offset[i];
-    const double lscale = (cv-off)/epsilon;
     double f = 0.0;
+    const double cv=difference(i,at[i],getArgument(i));
+    const double off=offset[i];
+    const double epsilon=eps[i];
+    const double lscale = (cv-off)/epsilon;
     if( lscale < 0.) {
+      const double k=kappa[i];
+      const double exponent=exp[i];
       double power = pow( lscale, exponent );
       f = -( k / epsilon ) * exponent * power / lscale;
       ene += k * power;

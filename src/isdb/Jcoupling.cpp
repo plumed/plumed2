@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,8 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "tools/OpenMP.h"
 #include "tools/Pbc.h"
 #include "tools/Torsion.h"
 
@@ -169,7 +167,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
   ncoupl_ = atoms.size()/6;
 
   // Parse J-Coupling type, this will determine the Karplus parameters
-  unsigned jtype_;
+  unsigned jtype_ = CUSTOM;
   string string_type;
   parse("TYPE", string_type);
   if(string_type == "HAN") {
@@ -212,6 +210,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
     parse("SHIFT", kshift_);
   }
 
+  log << "  Bibliography ";
 
   // Set Karplus parameters
   switch (jtype_) {
@@ -221,8 +220,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
     kc_ = -0.27;
     kshift_ = pi / 3.0;
     log.printf("J-coupling type is HAN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-    log << "  Bibliography "
-        << plumed.cite("Wang A C, Bax A, J. Am. Chem. Soc. 117, 1810 (1995)") << "\n";
+    log << plumed.cite("Wang A C, Bax A, J. Am. Chem. Soc. 117, 1810 (1995)");
     break;
   case HAHN:
     ka_ = 7.09;
@@ -230,8 +228,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
     kc_ = 1.55;
     kshift_ = -pi / 3.0;
     log.printf("J-coupling type is HAHN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-    log << "  Bibliography "
-        << plumed.cite("Hu J-S, Bax A, J. Am. Chem. Soc. 119, 6360 (1997)") << "\n";
+    log << plumed.cite("Hu J-S, Bax A, J. Am. Chem. Soc. 119, 6360 (1997)");
     break;
   case CCG:
     ka_ = 2.31;
@@ -239,8 +236,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
     kc_ = 0.55;
     kshift_ = (2.0 * pi) / 3.0;
     log.printf("J-coupling type is CCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-    log << "  Bibliography "
-        << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)") << "\n";
+    log << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)");
     break;
   case NCG:
     ka_ = 1.29;
@@ -248,13 +244,14 @@ JCoupling::JCoupling(const ActionOptions&ao):
     kc_ = 0.37;
     kshift_ = 0.0;
     log.printf("J-coupling type is NCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-    log << "  Bibliography "
-        << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)") << "\n";
+    log << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)");
     break;
   case CUSTOM:
     log.printf("J-coupling type is custom, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
     break;
   }
+  log<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
+  log<<"\n";
 
   for (unsigned i = 0; i < ncoupl_; ++i) {
     log.printf("  The %uth J-Coupling is calculated from atoms : %d %d %d %d.",

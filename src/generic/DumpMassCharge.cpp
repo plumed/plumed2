@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -128,7 +128,7 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   parseAtomList("ATOMS",atoms);
 
   if(atoms.size()==0) {
-    for(unsigned i=0; i<plumed.getAtoms().getNatoms(); i++) {
+    for(int i=0; i<plumed.getAtoms().getNatoms(); i++) {
       atoms.push_back(AtomNumber::index(i));
     }
   }
@@ -149,7 +149,7 @@ void DumpMassCharge::update() {
   of.link(*this);
   of.open(file);
 
-  for(int i=0; i<getNumberOfAtoms(); i++) {
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
     int ii=getAbsoluteIndex(i).index();
     of.printField("index",ii);
     of.printField("mass",getMass(i));

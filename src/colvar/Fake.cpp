@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -86,7 +86,7 @@ ColvarFake::ColvarFake(const ActionOptions&ao):
   std::vector<std::string> period;
   parseVector("PERIODIC",period);
   if(period.size()!=0) {
-    plumed_massert(getNumberOfComponents()*2==period.size(),"the periodicty should coincide with the number of components");
+    plumed_massert(static_cast<unsigned>(getNumberOfComponents()*2)==period.size(),"the periodicty should coincide with the number of components");
     if(comps.size()!=0) {
       for(int i=0; i<getNumberOfComponents(); i++) {
         string pp=comps[i];

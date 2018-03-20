@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,6 +37,7 @@ class PCARMSD : public Colvar {
 
   std::unique_ptr<PLMD::RMSD> rmsd;
   bool squared;
+  bool nopbc;
   std::vector< std::vector<Vector> > eigenvectors;
   std::vector<PDB> pdbv;
   std::vector<string> pca_names;
@@ -79,7 +80,9 @@ void PCARMSD::registerKeywords(Keywords& keys) {
 }
 
 PCARMSD::PCARMSD(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),squared(true)
+  PLUMED_COLVAR_INIT(ao),
+  squared(true),
+  nopbc(false)
 {
   string f_average;
   parse("AVERAGE",f_average);
@@ -89,6 +92,7 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   parse("EIGENVECTORS",f_eigenvectors);
   bool sq;  parseFlag("SQUARED-ROOT",sq);
   if (sq) { squared=false; }
+  parseFlag("NOPBC",nopbc);
   checkRead();
 
   PDB pdb;
@@ -112,6 +116,8 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   log.printf("  average from file %s\n",f_average.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
   log.printf("  method for alignment : %s \n",type.c_str() );
+  if(nopbc) log.printf("  without periodic boundary conditions\n");
+  else      log.printf("  using periodic boundary conditions\n");
 
   log<<"  Bibliography "<<plumed.cite("Spiwok, Lipovova and Kralova, JPCB, 111, 3073 (2007)  ");
   log<<" "<<plumed.cite( "Sutto, D'Abramo, Gervasio, JCTC, 6, 3640 (2010)");
@@ -159,6 +165,7 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
 
 // calculator
 void PCARMSD::calculate() {
+  if(!nopbc) makeWhole();
   Tensor rotation,invrotation;
   Matrix<std::vector<Vector> > drotdpos(3,3);
   std::vector<Vector> alignedpos;
@@ -208,7 +215,7 @@ void PCARMSD::calculate() {
     }
   }
 
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) setBoxDerivativesNoPbc( getPntrToComponent(i) );
+  for(int i=0; i<getNumberOfComponents(); ++i) setBoxDerivativesNoPbc( getPntrToComponent(i) );
 
 }
 

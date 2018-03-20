@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,8 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "tools/OpenMP.h"
 #include "tools/Pbc.h"
 
 #ifdef __PLUMED_HAS_GSL
@@ -228,10 +226,9 @@ RDC::RDC(const ActionOptions&ao):
 
   const double RDCConst = 0.3356806;
   const double PCSConst = 1.0;
-  bool rdc = true;
 
-  if( getName().find("RDC")!=std::string::npos) { Const *= RDCConst; rdc=true;}
-  else if( getName().find("PCS")!=std::string::npos) { Const *= PCSConst; rdc=false;}
+  if( getName().find("RDC")!=std::string::npos) { Const *= RDCConst; }
+  else if( getName().find("PCS")!=std::string::npos) { Const *= PCSConst; }
 
   // Read in the atoms
   vector<AtomNumber> t, atoms;
@@ -288,7 +285,9 @@ RDC::RDC(const ActionOptions&ao):
 
   log<<"  Bibliography "
      <<plumed.cite("Camilloni C, Vendruscolo M, J. Phys. Chem. B 119, 653 (2015)")
-     <<plumed.cite("Camilloni C, Vendruscolo M, Biochemistry 54, 7470 (2015)") <<"\n";
+     <<plumed.cite("Camilloni C, Vendruscolo M, Biochemistry 54, 7470 (2015)");
+  log<< plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
+
 
   if(!getDoScore()&&!svd) {
     for(unsigned i=0; i<ndata; i++) {

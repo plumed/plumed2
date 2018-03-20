@@ -1,4 +1,4 @@
-patch -u -l -b -F 5 --suffix=.preplumed "./Makefile" << \EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./Makefile" << \EOF_EOF
 --- ./Makefile.preplumed
 +++ ./Makefile
 @@ -358,10 +358,12 @@

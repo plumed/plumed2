@@ -341,17 +341,43 @@ or compile the manual. This is not a problem.
 
 You can also check if PLUMED is correctly compiled by performing our regression tests.
 Be warned that some of them fail because of the different numerical accuracy on different machines.
+As of version 2.4, in order to test the `plumed` executable that you just compiled
+(prior to installing it) you can use the following command
+\verbatim
+> make check
+\endverbatim
+On the other hand, in order to test the `plumed` executable that you just installed (see \ref InstallingPlumed)
+you should type
+\verbatim
+> make installcheck
+\endverbatim
+In addition, similarly to previous versions of PLUMED, you can test the `plumed` executable
+that is in your current path with
 \verbatim
 > cd regtest
 > make
 \endverbatim 
-Notice that regtests are performed using the "plumed" executable that is currenty in the path.
 You can check the exact version they will use by using the command
 \verbatim
 > which plumed
 \endverbatim
-This means that if you do not source "sourceme.sh", the tests will fails. This does not mean 
-that plumed is not working it just means that you haven't told them shell where to find plumed!
+Thus, you can easily run the test suite using a different version of PLUMED
+(maybe an earlier version that you already installed), just making sure that it can be 
+found in the path. Clearly, if you test a given
+version of PLUMED with a test suite from a different version you can expect two
+possible kinds of innocuous errors:
+- If `plumed` executable is older than the test suite, the tests might fail since they rely on
+  some feature introduced in PLUMED in a newer version.
+- If `plumed` executable is newer than the test suite, the tests might fail since some
+  non-backward compatible change was made in PLUMED. We try to keep the number
+  of non-backward compatible changes small, but as you can see in the \ref Changelog there
+  are typically a few of them at every new major release.
+
+\attention
+Even though we regularly perform tests on [Travis-CI](http://travis-ci.org/plumed/plumed2),
+it is possible that aggressive optimizations or even architecture dependent features
+trigger bugs that did not show up on travis. So please always perform regtests when you install
+PLUMED.
 
 Notice that the compiled executable, which now sits in 'src/lib/plumed', relies
 on other resource files present in the compilation directory.
@@ -504,9 +530,10 @@ Particularly interesting options include:
   and the MD code, leaving to the user the possibility to combine different versions at will. 
   We also recommend to use the provided modulefile (see above) to properly set the runtime environment.
 
-Notice that it is not currently possible to link PLUMED as a static library (something like 'libplumed.a').
-The reason for this is that PLUMED heavily relies on C++ static constructors that do not behave well in static libraries.
-For this reason, to produce a static executable with an MD code + PLUMED we link PLUMED as a collection of object files.
+Notice that with PLUMED version <2.5 there was no possibility to link PLUMED as a static library (something like 'libplumed.a').
+However, starting with PLUMED 2.5, the `./configure` script will try to set up the system so that a `libplumed.a` file is produced.
+Patching an MD code with `--static` with try to link against this static library.
+Creation of the `libplumed.a` library can be avoided with `./configure --disable-static-archive`.
 
 If your MD code is not supported, you may want to implement an interface for
 it. Refer to the <a href="../../developer-doc/html/index.html"> developer
@@ -552,14 +579,18 @@ Notice that plumed comes with many variants that can be inspected with the comma
     > sudo port info plumed
 
 Plumed uses variants to support different compilers.
-For instance, you can install plumed with openmpi using
+For instance, you can install plumed with mpich using
 
-    > sudo port install plumed +openmpi
+    > sudo port install plumed +mpich
 
-Using gcc instead of native compilers is recommended so as to
+Using more recent clang instead of native compilers is recommended so as to
 take advantage of openMP
 
-    > sudo port install plumed +openmpi +gcc7
+    > sudo port install plumed +mpich +clang50
+
+Notice that support for c++11 with gcc compilers is someway problematic within MacPorts
+due to impossibility to use the system c++ library. For this reason, only clang compilers are supported
+(see also [this discussion](https://github.com/macports/macports-ports/pull/1252)).
 
 Variants can be also used to compile with debug flags (`+debug`), to pick a linear algebra library
 (e.g. `+openblas`) and to enable all optional modules (`+allmodules`).
@@ -576,18 +607,18 @@ under the subport `plumed-devel` that can be installed with
 
 It is also possible to install a plumed-patched version of gromacs.
 For instance, you can use the following command to install
-gromacs patched with plumed with gcc compiler and openmpi:
+gromacs patched with plumed with clang-5.0 compiler and mpich:
 
-    > sudo port install plumed +openmpi +gcc7
-    > sudo port install gromacs-plumed +openmpi +gcc7
+    > sudo port install plumed +mpich +clang50
+    > sudo port install gromacs-plumed +mpich +clang50
 
 In case you want to combine gromacs with the unstable version of plumed, use this instead:
 
-    > sudo port install plumed-devel +openmpi +gcc7
-    > sudo port install gromacs-plumed +openmpi +gcc7
+    > sudo port install plumed-devel +mpich +clang50
+    > sudo port install gromacs-plumed +mpich +clang50
 
 Notice that gromacs should be compiled using the same compiler
-variant as plumed (in this example `+openmpi +gcc7`). In case this is not
+variant as plumed (in this example `+mpich +clang50`). In case this is not
 true, compilation will fail.
 
 Also notice that gromacs is patched with plumed in runtime mode

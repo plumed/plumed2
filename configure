@@ -622,6 +622,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 build_dir
 program_name
+make_static_archive
 AR_CR
 LD_RO
 program_can_run_mpi
@@ -710,9 +711,9 @@ enable_debug_glibcxx
 enable_shared
 enable_dependency_tracking
 enable_rpath
-enable_cxx_exceptions
 enable_ld_r
 enable_ar_cr
+enable_static_archive
 enable_mpi
 enable_external_lapack
 enable_external_blas
@@ -1379,10 +1380,11 @@ Optional Features:
   --enable-dependency-tracking
                           enable dependency tracking, default: yes
   --enable-rpath          enable store rpath, default: no
-  --enable-cxx-exceptions enable c++ exceptions, default: yes
   --enable-ld-r           enable group object files, default: yes
   --enable-ar-cr          enable use ar to build libplumedWrapper.a, default:
                           yes
+  --enable-static-archive enable try to build libplumed.a for static linking,
+                          default: yes
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
@@ -2671,24 +2673,6 @@ fi
 
 
 
-cxx_exceptions=
-# Check whether --enable-cxx-exceptions was given.
-if test "${enable_cxx_exceptions+set}" = set; then :
-  enableval=$enable_cxx_exceptions; case "${enableval}" in
-             (yes) cxx_exceptions=true ;;
-             (no)  cxx_exceptions=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-cxx-exceptions" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) cxx_exceptions=true ;;
-             (no)  cxx_exceptions=false ;;
-  esac
-
-fi
-
-
-
 ld_r=
 # Check whether --enable-ld-r was given.
 if test "${enable_ld_r+set}" = set; then :
@@ -2719,6 +2703,24 @@ else
   case "yes" in
              (yes) ar_cr=true ;;
              (no)  ar_cr=false ;;
+  esac
+
+fi
+
+
+
+static_archive=
+# Check whether --enable-static-archive was given.
+if test "${enable_static_archive+set}" = set; then :
+  enableval=$enable_static_archive; case "${enableval}" in
+             (yes) static_archive=true ;;
+             (no)  static_archive=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-static-archive" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) static_archive=true ;;
+             (no)  static_archive=false ;;
   esac
 
 fi
@@ -3033,6 +3035,13 @@ fi
 # correct fallback list to be searched after preferred choices
 # (e.g. MPI) have been checked.
 compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+
+# on OSX, prefer clang++
+case `(uname)` in
+  (Darwin)
+    compilers="clang++ $compilers"
+  ;;
+esac
 
 # if searching for MPI, try first mpi-like compilers
 if test $mpi == true ; then
@@ -8298,13 +8307,6 @@ $as_echo "$as_me: Check boundaries, adding -D_GLIBCXX_DEBUG" >&6;}
 
 fi
 
-if test "$cxx_exceptions" == true ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling c++ exceptions -D__PLUMED_HAS_EXCEPTIONS" >&5
-$as_echo "$as_me: Enabling c++ exceptions -D__PLUMED_HAS_EXCEPTIONS" >&6;}
-  $as_echo "#define __PLUMED_HAS_EXCEPTIONS 1" >>confdefs.h
-
-fi
-
 # this is necessary in many MPI implementations
 # I leave it by default, since it seems harmless
 $as_echo "#define _REENTRANT 1" >>confdefs.h
@@ -8812,6 +8814,60 @@ $as_echo "no" >&6; }
   fi
 done
 
+fi
+
+make_static_archive=no
+
+
+if test "${static_archive}" == true ; then
+  if test -z "$LD_RO" || test -z "$AR_CR" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: no way to create a static archive if ld -ro or ar cr do not work" >&5
+$as_echo "$as_me: WARNING: no way to create a static archive if ld -ro or ar cr do not work" >&2;}
+    static_archive=false
+  fi
+fi
+
+if test "${static_archive}" == true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether static-object constructors can be linked from a static archive" >&5
+$as_echo_n "checking whether static-object constructors can be linked from a static archive... " >&6; }
+
+  magic_token=c1bc476d093a3a5c67b4530e6c54c633593fe9aa
+  rm -f conftest-*
+
+  cat << EOF > conftest-main.cpp
+  void f(void);
+  int main(int argc,char**argv){ f(); return 0; }
+EOF
+  cat << EOF > conftest-f.cpp
+  void f(void){ return; }
+EOF
+  cat << EOF > conftest-g.cpp
+#include <iostream>
+  class g{
+    public:
+    g(){ std::cout<<"$magic_token\n"; }
+  } init;
+EOF
+
+  $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
+
+  $LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+# linking the previously merged objects should work:
+  $AR_CR conftest-both.a conftest-both.o 1> /dev/null 2> /dev/null
+# something like the following, instead, should not work:
+#  $AR_CR conftest-both.a conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+#
+  $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.a 1> /dev/null 2> /dev/null
+  if grep -q $magic_token ./conftest.exe ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    make_static_archive=yes
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+  fi
 fi
 
 if test "${static_patch}" == true ; then
