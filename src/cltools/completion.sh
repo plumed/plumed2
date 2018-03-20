@@ -1,4 +1,4 @@
-    local cur prev opts
+    local cur prev opts cmd_found i cmd_test comp1 comp2 l
     shopt -s extglob
     COMPREPLY=()
 
@@ -11,17 +11,23 @@
       opts="$opts --no-mpi --mpi"
     fi
 
-    local cmd_found i cmd_test
-
 # check if one of the previous keywords is a command
     for((i=1;i<COMP_CWORD;i++)); do
       cmd_found=""
       for cmd_test in $cmds ; do
         if [[ "$cmd_test" == "${COMP_WORDS[i]}" ]] ; then
           eval "local comp=\"\$cmd_keys_${cmd_test//-/_}\""
+          comp1=""
+          comp2=""
+          for l in $comp ; do
+            case $l in
+            (-*) comp1="$comp1 $l" ;;
+            (*) comp2="$comp2 $l" ;;
+            esac
+          done
           case "$cur" in 
-            (-*) COMPREPLY=( $(compgen -W "$comp" -- $cur ) ) ;;
-            (*)  COMPREPLY=( $(compgen -o bashdefault -- ${cur}) ) ;;
+            (-*) COMPREPLY=( $(compgen -W "$comp1" -- $cur ) ) ;;
+            (*)  COMPREPLY=( $(compgen -W "$comp2" -o bashdefault -- ${cur}) ) ;;
           esac
           return 0
         fi
@@ -37,10 +43,19 @@
       return 0
     fi
 
+    comp1=""
+    comp2=""
+    for l in $opts $cmds ; do
+      case $l in
+      (-*) comp1="$comp1 $l" ;;
+      (*) comp2="$comp2 $l" ;;
+      esac
+    done
+
 # complete with options or commands
     case "${cur}" in
 # show options only if completing a "-" 
-    (-*) COMPREPLY=( $(compgen -W "${opts} ${cmds}" -- ${cur}) ) ;;
-    (*)  COMPREPLY=( $(compgen -W "${cmds}" -- ${cur}) ) ;;
+    (-*) COMPREPLY=( $(compgen -W "$comp1" -- ${cur}) ) ;;
+    (*)  COMPREPLY=( $(compgen -W "$comp2" -- ${cur}) ) ;;
     esac
     return 0
