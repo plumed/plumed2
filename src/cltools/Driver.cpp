@@ -241,9 +241,9 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("optional","--initial-step","provides a number for the initial step, default is 0");
   keys.add("optional","--debug-forces","output a file containing the forces due to the bias evaluated using numerical derivatives "
            "and using the analytical derivatives implemented in plumed");
-  keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
-  keys.add("hidden","--debug-dd","use a fake domain decomposition");
-  keys.add("hidden","--debug-pd","use a fake particle decomposition");
+  keys.add("hidden","--debug-float","[yes/no] turns on the single precision version (to check float interface)");
+  keys.add("hidden","--debug-dd","[yes/no] use a fake domain decomposition");
+  keys.add("hidden","--debug-pd","[yes/no] use a fake particle decomposition");
   keys.add("hidden","--debug-grex","use a fake gromacs-like replica exchange, specify exchange stride");
   keys.add("hidden","--debug-grex-log","log file for debug=grex");
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
@@ -277,9 +277,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   if( printhelpdebug ) {
     fprintf(out,"%s",
             "Additional options for debug (only to be used in regtest):\n"
-            "  [--debug-float]         : turns on the single precision version (to check float interface)\n"
-            "  [--debug-dd]            : use a fake domain decomposition\n"
-            "  [--debug-pd]            : use a fake particle decomposition\n"
+            "  [--debug-float yes]     : turns on the single precision version (to check float interface)\n"
+            "  [--debug-dd yes]        : use a fake domain decomposition\n"
+            "  [--debug-pd yes]        : use a fake particle decomposition\n"
            );
     return 0;
   }
@@ -287,16 +287,39 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   bool noatoms; parseFlag("--noatoms",noatoms);
 
   std::string fakein;
-  bool debugfloat=parse("--debug-float",fakein);
-  if(debugfloat && sizeof(real)!=sizeof(float)) {
+  bool debug_float=false;
+  fakein="";
+  if(parse("--debug-float",fakein)) {
+    if(fakein=="yes") debug_float=true;
+    else if(fakein=="no") debug_float=false;
+    else error("--debug-float should have argument yes or no");
+  }
+
+  if(debug_float && sizeof(real)!=sizeof(float)) {
     std::unique_ptr<CLTool> cl(cltoolRegister().create(CLToolOptions("driver-float")));
     cl->setInputData(this->getInputData());
     int ret=cl->main(in,out,pc);
     return ret;
   }
 
-  bool debug_pd=parse("--debug-pd",fakein);
-  bool debug_dd=parse("--debug-dd",fakein);
+  bool debug_pd=false;
+  fakein="";
+  if(parse("--debug-pd",fakein)) {
+    if(fakein=="yes") debug_pd=true;
+    else if(fakein=="no") debug_pd=false;
+    else error("--debug-pd should have argument yes or no");
+  }
+  if(debug_pd) fprintf(out,"DEBUGGING PARTICLE DECOMPOSITION\n");
+
+  bool debug_dd=false;
+  fakein="";
+  if(parse("--debug-dd",fakein)) {
+    if(fakein=="yes") debug_dd=true;
+    else if(fakein=="no") debug_dd=false;
+    else error("--debug-dd should have argument yes or no");
+  }
+  if(debug_dd) fprintf(out,"DEBUGGING DOMAIN DECOMPOSITION\n");
+
   if( debug_pd || debug_dd ) {
     if(noatoms) error("cannot debug without atoms");
   }
