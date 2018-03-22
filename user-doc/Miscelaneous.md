@@ -96,12 +96,14 @@ dist: DISTANCES ...
 
 \page BashAutocompletion Using bash autocompletion
 
-For the impatients, just add the following to your .bashrc file:
+When possible, PLUMED tries to install bash autocompletion so that
+you do not have to do anything. Just use the `<TAB>` key to complete
+plumed commands (e.g. `plumed dr<TAB>`) or even options (e.g. `plumed driver --i<TAB>`).
+In case this does not work, you might have to add the following lines to your .bashrc file:
 \verbatim
 _plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
 complete -F _plumed -o default plumed
 \endverbatim
-and enjoy bash autocompletion.
 
 \par Effect
 
@@ -136,12 +138,19 @@ in this specific case.
 
 \par Technicalities
 
-The command `plumed completion` just writes on its standard output the body of a bash function.
+At configure time if the variable `BASH_COMPLETION_DIR` is defined it will be used to decide where PLUMED
+autocompletion should be installed. Otherwise, configure will look for the presence of the `bash-completion` package
+and, in case it is installed on the same prefix as PLUMED, also PLUMED autocompletion will be installed.
+Finally, if none of these two conditions are satisfied, autocompletion will not be enabled. You will
+have to change your bashrc file once adding the following lines:
 Now look at these lines:
 \verbatim
 _plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
 complete -F _plumed -o default plumed
 \endverbatim
+This is what you are expected to do if for instance you have multiple versions of PLUMED installed
+concurrently using separate env modules.
+The command `plumed completion` just writes on its standard output the body of a bash function.
 The `-o default` options will make sure that if `plumed --no-mpi completion` returns an error the default bash completion
 will be used. This is what will happen if you load an older PLUMED version for which the `completion` command is not available yet.
 In future PLUMED versions the `plumed completion` command might return more sophisticated functions. You should

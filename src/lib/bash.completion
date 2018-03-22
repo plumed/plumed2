@@ -1,0 +1,7 @@
+# generic bash completion for plumed
+# actual function is generated with current plumed version
+
+_plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
+
+complete -F _plumed -o default plumed
+

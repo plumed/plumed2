@@ -51,7 +51,8 @@ configure.args-append \
                --disable-libsearch \
                --disable-static-patch \
                --disable-mpi \
-               --disable-python
+               --disable-python \
+               BASH_COMPLETION_DIR=${prefix}/share/bash-completion/completions
 
 # Hardcode path for libplumedKernel.dylib.
 # This allows to patch MD codes using the --runtime option but using as
