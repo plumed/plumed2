@@ -402,7 +402,7 @@ EMMI::EMMI(const ActionOptions&ao):
   parse("NL_STRIDE",nl_stride_);
   if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
 
-  // averaging or not 
+  // averaging or not
   parseFlag("NO_AVER",no_aver_);
 
   // write overlap file
