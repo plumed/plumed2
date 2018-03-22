@@ -194,7 +194,12 @@ private:
   // total score and virial;
   double ene_;
   Tensor virial_;
+  // model overlap file
+  unsigned int ovstride_;
+  string       ovfilename_;
 
+// write file with model overlap
+  void write_model_overlap(long int step);
 // get median of vector
   double get_median(vector<double> &v);
 // annealing
@@ -280,6 +285,8 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","ANNEAL_FACT", "Annealing temperature factor");
   keys.add("optional","TEMP","temperature");
   keys.add("optional","PRIOR", "exponent of uncertainty prior");
+  keys.add("optional","WRITE_OV_STRIDE","write model overlaps every N steps");
+  keys.add("optional","WRITE_OV","write a file with model overlaps");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
   keys.addFlag("ANALYSIS",false,"run in analysis mode");
   componentsAreNotOptional(keys);
@@ -301,7 +308,7 @@ EMMI::EMMI(const ActionOptions&ao):
   statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
-  kanneal_(0.), anneal_(1.), prior_(1.)
+  kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0)
 {
   // periodic boundary conditions
   bool nopbc=!pbc_;
@@ -405,6 +412,11 @@ EMMI::EMMI(const ActionOptions&ao):
   parseFlag("NO_AVER",no_aver_);
   parseFlag("ANALYSIS",analysis_);
 
+  // write overlap file
+  parse("WRITE_OV_STRIDE", ovstride_);
+  parse("WRITE_OV", ovfilename_);
+  if(ovstride_>0 && ovfilename_=="") error("With WRITE_OV_STRIDE you must specify WRITE_OV");
+
   checkRead();
 
   // set parallel stuff
@@ -458,6 +470,10 @@ EMMI::EMMI(const ActionOptions&ao):
   if(nanneal_>0) {
     log.printf("  length of annealing cycle : %u\n",nanneal_);
     log.printf("  annealing factor : %f\n",kanneal_);
+  }
+  if(ovstride_>0) {
+    log.printf("  stride for writing model overlaps : %u\n",ovstride_);
+    log.printf("  file for writing model overlaps : %s\n", ovfilename_.c_str());
   }
 
   // set constant quantity before calculating stuff
@@ -570,6 +586,25 @@ EMMI::EMMI(const ActionOptions&ao):
   log<<plumed.cite("Bonomi, Pellarin, Vendruscolo, bioRxiv doi: 10.1101/219972 (2017)");
   if(!no_aver_ && nrep_>1)log<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   log<<"\n";
+}
+
+void EMMI::write_model_overlap(long int step)
+{
+  OFile ovfile;
+  ovfile.link(*this);
+  std::string num; Tools::convert(step,num);
+  string name = ovfilename_+"-"+num;
+  ovfile.open(name);
+  ovfile.setHeavyFlush();
+  ovfile.fmtField("%10.7e ");
+// write overlaps
+  for(int i=0; i<ovmd_.size(); ++i) {
+    ovfile.printField("Model", ovmd_[i]);
+    ovfile.printField("ModelScaled", scale_ * ovmd_[i]);
+    ovfile.printField("Data", ovdd_[i]);
+    ovfile.printField();
+  }
+  ovfile.close();
 }
 
 double EMMI::get_median(vector<double> &v)
@@ -1316,6 +1351,9 @@ void EMMI::calculate()
       // set scale component
       getPntrToComponent("scale")->set(scale_);
     }
+
+    // write model overlap to file
+    if(ovstride_>0 && step%ovstride_==0) write_model_overlap(step);
 
     // clear energy and virial
     ene_ = 0.0;
