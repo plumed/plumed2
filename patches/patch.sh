@@ -182,6 +182,25 @@ then
   done
 fi
 
+if [[ "$action" == patch || "$action" == revert ]]
+then
+  found=no
+  for engine_try in $mdlist ; do
+    if [[ "$engine" == "$engine_try" ]] ; then
+      found=yes
+    fi
+  done
+  if [[ "$found" == no ]] ; then
+    echo "WARNING: engine $engine not found, I will search for a close match"
+    for engine_try in $mdlist ; do
+      if [[ "${engine%.*}" == "${engine_try%.*}" ]] ; then
+        echo "WARNING: found $engine_try"
+        engine="$engine_try"
+      fi
+    done
+  fi
+fi
+
 if [ -z "$diff" ]
 then
   diff="$PLUMED_ROOT/patches/${engine}.diff"
