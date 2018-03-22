@@ -156,10 +156,6 @@ private:
 // parallel stuff
   unsigned size_;
   unsigned rank_;
-// analysis mode
-  bool analysis_;
-  OFile Devfile_;
-  double nframe_;
 // pbc
   bool pbc_;
 // Monte Carlo stuff
@@ -288,7 +284,6 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","WRITE_OV_STRIDE","write model overlaps every N steps");
   keys.add("optional","WRITE_OV","write a file with model overlaps");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
-  keys.addFlag("ANALYSIS",false,"run in analysis mode");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
@@ -302,8 +297,7 @@ EMMI::EMMI(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   inv_sqrt2_(0.707106781186548),
   sqrt2_pi_(0.797884560802865),
-  first_time_(true), no_aver_(false),
-  analysis_(false), nframe_(0.0), pbc_(true),
+  first_time_(true), no_aver_(false), pbc_(true),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
   statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
@@ -408,9 +402,8 @@ EMMI::EMMI(const ActionOptions&ao):
   parse("NL_STRIDE",nl_stride_);
   if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
 
-  // various flags
+  // averaging or not 
   parseFlag("NO_AVER",no_aver_);
-  parseFlag("ANALYSIS",analysis_);
 
   // write overlap file
   parse("WRITE_OV_STRIDE", ovstride_);
@@ -1324,153 +1317,119 @@ void EMMI::calculate()
 // calculate CV
   calculate_overlap();
 
-  if(!analysis_) {
+  // rescale factor for ensemble average
+  double escale = 1.0 / static_cast<double>(nrep_);
 
-    // rescale factor for ensemble average
-    double escale = 1.0 / static_cast<double>(nrep_);
-
-    // in case of ensemble averaging, calculate average overlap
-    if(!no_aver_ && nrep_>1) {
-      // if master node, calculate average across replicas
-      if(rank_==0) {
-        multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
-        for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
-      } else {
-        for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
-      }
-      // local communication
-      if(size_>1) comm.Sum(&ovmd_[0], ovmd_.size());
+  // in case of ensemble averaging, calculate average overlap
+  if(!no_aver_ && nrep_>1) {
+    // if master node, calculate average across replicas
+    if(rank_==0) {
+      multi_sim_comm.Sum(&ovmd_[0], ovmd_.size());
+      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] *= escale;
+    } else {
+      for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
     }
+    // local communication
+    if(size_>1) comm.Sum(&ovmd_[0], ovmd_.size());
+  }
 
-    // get time step
-    long int step = getStep();
+  // get time step
+  long int step = getStep();
 
-    // do regression
-    if(nregres_>0) {
-      if(step%nregres_==0 && !getExchangeStep()) scale_ = doRegression();
-      // set scale component
-      getPntrToComponent("scale")->set(scale_);
+  // do regression
+  if(nregres_>0) {
+    if(step%nregres_==0 && !getExchangeStep()) scale_ = doRegression();
+    // set scale component
+    getPntrToComponent("scale")->set(scale_);
+  }
+
+  // write model overlap to file
+  if(ovstride_>0 && step%ovstride_==0) write_model_overlap(step);
+
+  // clear energy and virial
+  ene_ = 0.0;
+  virial_.zero();
+
+  // Gaussian noise
+  if(noise_==0) calculate_Gauss();
+
+  // Outliers noise
+  if(noise_==1) calculate_Outliers();
+
+  // Marginal noise
+  if(noise_==2) calculate_Marginal();
+
+  // get annealing rescale factor
+  if(nanneal_>0) {
+    anneal_ = get_annealing(step);
+    getPntrToComponent("anneal")->set(anneal_);
+  }
+
+  // annealing rescale
+  ene_ /= anneal_;
+
+  // in case of ensemble averaging
+  if(!no_aver_ && nrep_>1) {
+    // if master node, sum der_GMMid derivatives and ene
+    if(rank_==0) {
+      multi_sim_comm.Sum(&GMMid_der_[0], GMMid_der_.size());
+      multi_sim_comm.Sum(&ene_, 1);
+    } else {
+      // set der_GMMid derivatives and energy to zero
+      for(unsigned i=0; i<GMMid_der_.size(); ++i) GMMid_der_[i]=0.0;
+      ene_ = 0.0;
     }
-
-    // write model overlap to file
-    if(ovstride_>0 && step%ovstride_==0) write_model_overlap(step);
-
-    // clear energy and virial
-    ene_ = 0.0;
-    virial_.zero();
-
-    // Gaussian noise
-    if(noise_==0) calculate_Gauss();
-
-    // Outliers noise
-    if(noise_==1) calculate_Outliers();
-
-    // Marginal noise
-    if(noise_==2) calculate_Marginal();
-
-    // get annealing rescale factor
-    if(nanneal_>0) {
-      anneal_ = get_annealing(step);
-      getPntrToComponent("anneal")->set(anneal_);
-    }
-
-    // annealing rescale
-    ene_ /= anneal_;
-
-    // in case of ensemble averaging
-    if(!no_aver_ && nrep_>1) {
-      // if master node, sum der_GMMid derivatives and ene
-      if(rank_==0) {
-        multi_sim_comm.Sum(&GMMid_der_[0], GMMid_der_.size());
-        multi_sim_comm.Sum(&ene_, 1);
-      } else {
-        // set der_GMMid derivatives and energy to zero
-        for(unsigned i=0; i<GMMid_der_.size(); ++i) GMMid_der_[i]=0.0;
-        ene_ = 0.0;
-      }
-      // local communication
-      if(size_>1) {
-        comm.Sum(&GMMid_der_[0], GMMid_der_.size());
-        comm.Sum(&ene_, 1);
-      }
-    }
-
-    // clean temporary vector
-    for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
-
-    // get derivatives of bias with respect to atoms
-    for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
-      // get indexes of data and model component
-      unsigned id = nl_[i] / GMM_m_type_.size();
-      unsigned im = nl_[i] % GMM_m_type_.size();
-      // chain rule + replica normalization
-      Vector tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
-      Vector pos;
-      if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
-      else     pos = getPosition(im);
-      // increment derivatives and virial
-      atom_der_[im] += tot_der;
-      virial_ += Tensor(pos, -tot_der);
-    }
-
-    // communicate local derivatives and virial
+    // local communication
     if(size_>1) {
-      comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
-      comm.Sum(virial_);
+      comm.Sum(&GMMid_der_[0], GMMid_der_.size());
+      comm.Sum(&ene_, 1);
     }
+  }
 
-    // set derivatives, virial, and score
-    for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
-    setBoxDerivatives(getPntrToComponent("scoreb"), virial_);
-    getPntrToComponent("scoreb")->set(ene_);
+  // clean temporary vector
+  for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
 
-    // This part is needed only for Gaussian and Outliers noise models
-    if(noise_!=2) {
+  // get derivatives of bias with respect to atoms
+  for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
+    // get indexes of data and model component
+    unsigned id = nl_[i] / GMM_m_type_.size();
+    unsigned im = nl_[i] % GMM_m_type_.size();
+    // chain rule + replica normalization
+    Vector tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
+    Vector pos;
+    if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
+    else     pos = getPosition(im);
+    // increment derivatives and virial
+    atom_der_[im] += tot_der;
+    virial_ += Tensor(pos, -tot_der);
+  }
 
-      // do Montecarlo
-      if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep()) doMonteCarlo();
+  // communicate local derivatives and virial
+  if(size_>1) {
+    comm.Sum(&atom_der_[0][0], 3*atom_der_.size());
+    comm.Sum(virial_);
+  }
 
-      // print status
-      if(step%statusstride_==0) print_status(step);
+  // set derivatives, virial, and score
+  for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
+  setBoxDerivatives(getPntrToComponent("scoreb"), virial_);
+  getPntrToComponent("scoreb")->set(ene_);
 
-      // calculate acceptance ratio
-      double acc = MCaccept_ / MCtrials_;
+  // This part is needed only for Gaussian and Outliers noise models
+  if(noise_!=2) {
 
-      // set value
-      getPntrToComponent("acc")->set(acc);
+    // do Montecarlo
+    if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep()) doMonteCarlo();
 
-    }
+    // print status
+    if(step%statusstride_==0) print_status(step);
 
-  } else {
+    // calculate acceptance ratio
+    double acc = MCaccept_ / MCtrials_;
 
-    // ANALYSIS MODE
-    // prepare stuff for the first time
-    if(nframe_ <= 0.0) {
-      Devfile_.link(*this);
-      Devfile_.open("ovmd_deviations.dat");
-      Devfile_.setHeavyFlush();
-      Devfile_.fmtField("%12.6f");
-      ovmd_ave_.resize(ovmd_.size());
-      for(unsigned i=0; i<ovmd_ave_.size(); ++i) ovmd_ave_[i] = 0.0;
-    }
+    // set value
+    getPntrToComponent("acc")->set(acc);
 
-    // increment number of frames
-    nframe_ += 1.0;
-
-    // add average ovmd_
-    for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_ave_[i] += ovmd_[i];
-
-    // print stuff
-    for(unsigned i=0; i<ovmd_.size(); ++i) {
-      // convert i to string
-      string ss; Tools::convert(i,ss);
-      // print entry
-      double ave = ovmd_ave_[i] / nframe_;
-      double dev2 = (ave-ovdd_[i])*(ave-ovdd_[i])/ovdd_[i]/ovdd_[i];
-      double dev = sqrt(dev2);
-      Devfile_.printField("ovmd_" + ss, dev);
-    }
-    Devfile_.printField();
   }
 
 }
