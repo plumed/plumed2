@@ -1133,8 +1133,8 @@ AC_MSG_NOTICE([**** datadir: $datadir])
 AC_MSG_NOTICE([**** docdir: ${datarootdir}/doc/$program_name])
 AC_MSG_NOTICE([**** htmldir: $htmldir])
 AC_MSG_NOTICE([**** Executable will be named $program_name])
-AC_MSG_NOTICE([**** You can change paths later using options to "make install"])
-AC_MSG_NOTICE([**** e.g. with "make install prefix=/path"])
+AC_MSG_NOTICE([**** As of PLUMED 2.5, you cannot change paths anymore during "make install"])
+AC_MSG_NOTICE([**** Please configure and make clean to change the prefix])
 
 if test $mpi == true; then
   if test $mpi_found == ok; then
