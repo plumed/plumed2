@@ -26,53 +26,68 @@
 #endif
 
 #include <cstdio>
+#include <cstring>
 #include <cstdlib>
 
 using namespace std;
 namespace PLMD {
 
-std::string Exception::trace() {
-  std::string message="\n\n********** STACK DUMP **********\n";
+Exception::Exception():
+  note(true)
+{
 #ifdef __PLUMED_HAS_EXECINFO
-  void* callstack[128];
-  int frames = backtrace(callstack, 128);
-  char** strs = backtrace_symbols(callstack, frames);
-  for (int i = 0; i < frames; ++i) {message+=strs[i]; message+="\n";}
-  free(strs);
-#else
-  message+="not available\n";
-#endif
-  message+="********** END STACK DUMP **********\n";
-  return message;
-}
-
-std::string Exception::format(const std::string&msg,const std::string&file,unsigned line,const std::string&function) {
-  std::string message;
-  if(getenv("PLUMED_STACK_TRACE"))message+=trace();
-  message+="\n+++ PLUMED error";
-  if(file.length()>0) {
-    char cline[1000];
-    sprintf(cline,"%u",line);
-    message += "\n+++ file "+file+", line "+cline;
-    if(function.length()>0) message +=", function "+function;
+  {
+    void* callstack[128];
+    int frames = backtrace(callstack, 128);
+    char** strs = backtrace_symbols(callstack, frames);
+    for (int i = 0; i < frames; ++i) {stackString+=strs[i]; stackString+="\n";}
+    free(strs);
   }
-  if(msg.length()>0) message +="\n+++ message: "+msg;
-  return message;
+#endif
+  if(stackString.length()>0 && !strcmp(getenv("PLUMED_STACK_TRACE"),"yes")) {
+    msg+="\n\n********** STACK DUMP **********\n";
+    msg+=stackString;
+    msg+="\n********** END STACK DUMP **********\n";
+  }
+  msg+="\n+++ PLUMED error";
 }
 
-
-Exception::Exception()
+Exception& Exception::operator<<(const std::string&msg)
 {
+  if(msg.length()>0) {
+    if(note) this->msg +="\n+++ message follows +++\n";
+    this->msg +=msg;
+    note=false;
+  }
+  return *this;
 }
 
-Exception::Exception(const std::string&msg):
-  msg(format(msg,"",0,""))
+Exception& Exception::operator<<(const Location&loc)
 {
+  if(loc.file) {
+    char cline[1000];
+    sprintf(cline,"%u",loc.line);
+    this->msg += "\n+++ at ";
+    this->msg += loc.file;
+    this->msg += ":";
+    this->msg += cline;
+    if(loc.pretty && loc.pretty[0]) {
+      this->msg += ", function ";
+      this->msg += loc.pretty;
+    }
+  }
+  note=true;
+  return *this;
 }
 
-Exception::Exception(const std::string&msg,const std::string&file,unsigned line,const std::string&function):
-  msg(format(msg,file,line,function))
+Exception& Exception::operator<<(const Assertion&as)
 {
+  if(as.assertion) {
+    this->msg += "\n+++ assertion failed: ";
+    this->msg += as.assertion;
+  }
+  note=true;
+  return *this;
 }
 
 }
