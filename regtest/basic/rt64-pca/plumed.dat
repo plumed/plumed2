@@ -1,6 +1,17 @@
+# break PBC:
+f: FIXEDATOM AT=5,5,5
+WRAPAROUND ATOMS=1-22 AROUND=f
+# compute incorrect PCA
+wrongpca: PCARMSD AVERAGE=average.pdb EIGENVECTORS=eigenvec.pdb NOPBC
+PRINT ARG=wrongpca.* FILE=wrongcolvar FMT=%8.4f STRIDE=10 
+
+### this would be with PLUMED < 2.5
+# WHOLEMOLECULES ENTITY0=1-22
+# pca: PCARMSD AVERAGE=average.pdb EIGENVECTORS=eigenvec.pdb
+
 #pca-1: PCARMSD AVERAGE=average.pdb EIGENVECTORS=eigenvec1.pdb
 #pca-2: PCARMSD AVERAGE=average.pdb EIGENVECTORS=eigenvec1.pdb NUMERICAL_DERIVATIVES
 #DUMPDERIVATIVES ARG=pca-1.pca-0,pca-2.pca-0 FILE=check
 pca: PCARMSD AVERAGE=average.pdb EIGENVECTORS=eigenvec.pdb
 DUMPDERIVATIVES ARG=pca.eig-0 FMT=%8.4f FILE=check
-PRINT ARG=* FILE=colvar FMT=%8.4f STRIDE=10 
+PRINT ARG=pca.* FILE=colvar FMT=%8.4f STRIDE=10 

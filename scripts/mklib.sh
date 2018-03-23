@@ -1,11 +1,16 @@
 #! /bin/bash
 
-source "$PLUMED_ROOT"/src/config/compile_options.sh
-
 if [ "$1" = --description ] ; then
   echo "compile a .cpp file into a shared library"
   exit 0
 fi
+
+if [ "$1" = --options ] ; then
+  echo "--description --options"
+  exit 0
+fi
+
+source "$PLUMED_ROOT"/src/config/compile_options.sh
 
 if [ $# != 1 ] || [[ "$1" != *.cpp ]] ;
 then

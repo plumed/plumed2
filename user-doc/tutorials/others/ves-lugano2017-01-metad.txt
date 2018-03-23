@@ -29,7 +29,7 @@ We consider the association/dissociation of NaCl in acqueous solution.
 The dissociation barrier is expected to be around 2.5 \f$k_\mathrm{B} T\f$.
 One interesting aspect of the ion dissociation problem is that collective
 solvent motions play an important role in the transition.
-This problem has been considered in the original metadynamics paper \cite metad 
+This problem has been considered in the original metadynamics paper \cite metad
 and also in reference \cite tps2 .
 We will use the potential developed in ref.\ \cite Pettitt-JCP-1986 for NaCl and TIP3P water with
 parameters corrected to be used with long-range Coulomb solvers \cite Price-JCP-2004.
@@ -239,7 +239,7 @@ The scripts for this example can be found in the folder Bias_calculation.
 In this case we observe only the first 200 ps of the simulation.
 The (negative) bias can be calculated using:
 \verbatim
-plumed sum_hills --hills ../HILLS --min 0.1 --max 0.8 --bin 300 --stride 100 --negbias
+plumed sum_hills --hills ../HILLS --min 0.1 --max 0.8 --bin 300 --stride 10 --negbias
 \endverbatim
 This plot illustrates clearly how the bias is constructed to progressively "fill" the FES.
 \anchor ves-school-2017-metad-biasEvolution
@@ -390,6 +390,7 @@ You will find a gnuplot script plot.gpi to make this plot inside the ReweightDis
 We can obtain important information of the system by reweighting on 2 CVs: The
 distance Na-Cl and the coordination of Na with O.
 This reweighting is similar to the one already done and the files that you will need are located in the ReweightBoth folder.
+Additionally the COLVAR file with the omitted first steps is required.
 The plot of the FES as a function of these 2 CVs provides important
 information of the association/dissociation mechanism. In the
 dissociated state, Na can have a coordination of 5 or 6, though it is more
@@ -454,7 +455,7 @@ and plot the results using the following lines in gnuplot:
 \verbatim
 set pm3d map
 set zr [0:15]
-pl "fes.dat" u 1:2:3
+spl "fes.dat" u 1:2:3
 \endverbatim
 \section ves-lugano2017-metad-final Final remarks
 
