@@ -1,10 +1,23 @@
 MOLINFO STRUCTURE=helix.pdb
-
+# break molecule first:
+f: FIXEDATOM AT=49,49,49
+WRAPAROUND ATOMS=1-132 AROUND=f
+# if reconstruction is correct, this only affects before.gro
 DUMPATOMS ATOMS=1-132 FILE=before.gro
 
-FIT_TO_TEMPLATE REFERENCE=align.pdb TYPE=OPTIMAL
+# reconstruct with NOPBC
+# this should do the same as plumed 2.4, and report an incorrect gro:
+FIT_TO_TEMPLATE REFERENCE=align.pdb TYPE=OPTIMAL NOPBC
+DUMPATOMS ATOMS=1-132 FILE=incorrect_pbc.gro
+
+# reconstruct without NOPBC
+FIT_TO_TEMPLATE REFERENCE=align.pdb TYPE=OPTIMAL # NOPBC
+
+# Making the molecule whole afterwards will result in the same result as with plumed 2.4
+WHOLEMOLECULES ENTITY0=1-132
 DUMPATOMS ATOMS=1-132 FILE=after.gro
 RESET_CELL
 
 DUMPATOMS ATOMS=1-132 FILE=after2.gro
+
 

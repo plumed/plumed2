@@ -57,6 +57,9 @@ save_originals=
 quiet=
 mdroot=
 
+# default value:
+plumed_ignore_mpi=no
+
 for option
 do
 
@@ -72,6 +75,7 @@ do
     (--list-engines|-l) test -n "$action" && multiple_actions=yes ; action=list ;;
     (--info|-i)         test -n "$action" && multiple_actions=yes ; action=info ;;
     (--new=*)           test -n "$action" && multiple_actions=yes ; action=new ; newpatch="${prefix_option#--new=}" ;;
+    (--options)         test -n "$action" && multiple_actions=yes ; action=options ;;
     (--description)     echo "patch an MD engine" ; exit ;;
     (--engine=*) engine="${prefix_option#--engine=}" ;;
     (--mdroot=*) mdroot="${prefix_option#--mdroot=}" ;;
@@ -109,6 +113,11 @@ fi
 if [ -z "$action" ] ; then
   echo "Nothing to do. -h for help"
   exit
+fi
+
+if [ "$action" = options ] ; then
+  echo "--help -h --patch -p --save -s --save-originals --revert -R -r --list-engines -l --info -i --new --options --description --engine --mdroot --mode --diff --engine -e --mdroot --root --diff -d --mode -m --new -n --static --shared --runtime --force -f --quiet -q"
+  exit 0
 fi
 
 test -n "$quiet" || echo "PLUMED patching tool"
@@ -173,6 +182,25 @@ then
   done
 fi
 
+if [[ "$action" == patch || "$action" == revert ]]
+then
+  found=no
+  for engine_try in $mdlist ; do
+    if [[ "$engine" == "$engine_try" ]] ; then
+      found=yes
+    fi
+  done
+  if [[ "$found" == no ]] ; then
+    echo "WARNING: engine $engine not found, I will search for a close match"
+    for engine_try in $mdlist ; do
+      if [[ "${engine%.*}" == "${engine_try%.*}" ]] ; then
+        echo "WARNING: found $engine_try"
+        engine="$engine_try"
+      fi
+    done
+  fi
+fi
+
 if [ -z "$diff" ]
 then
   diff="$PLUMED_ROOT/patches/${engine}.diff"
@@ -225,10 +253,16 @@ case "$action" in
       exit 1
       fi
     fi
-    if [ -L Plumed.h -o -L Plumed.inc ]
+    if [ -L Plumed.h -o -L Plumed.inc -o -L Plumed.cmake ]
     then
-      echo "ERROR: you have likely already patched. Revert first (-r)"
-      exit 1
+      if ( type -t plumed_before_revert 1>/dev/null || type -t plumed_after_revert 1>/dev/null) && ( type -t plumed_before_patch 1>/dev/null || type -t plumed_after_patch 1>/dev/null)
+      then
+        echo "ERROR: you have likely already patched, and your patch seems to need to be reverted."
+        echo "Revert first (-r)"
+        exit 1
+      else
+        echo "WARNING: you have likely already patched. Assuming that you can patch multiple times and continuing"
+      fi
     fi
     if [ ! -f "$PLUMED_ROOT/src/lib/Plumed.inc" ]
     then
@@ -246,10 +280,10 @@ case "$action" in
       test -n "$quiet" || echo "Executing plumed_before_patch function"
       plumed_before_patch
     fi
-    test -n "$quiet" || echo "Linking Plumed.h and Plumed.inc ($mode mode)"
-    ln -s "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h" Plumed.h
-    ln -s "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
-    ln -s "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
+    test -n "$quiet" || echo "Linking Plumed.h, Plumed.inc, and Plumed.cmake ($mode mode)"
+    ln -fs "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/wrapper/Plumed.h" Plumed.h
+    ln -fs "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
+    ln -fs "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
 
     if [ -d "$diff" ]; then
       test -n "$quiet" || echo "Patching with on-the-fly diff from stored originals"
@@ -258,7 +292,7 @@ case "$action" in
         file="${bckfile%.preplumed}"
         if test -e "$file" ; then
           diff -U 5 "$diff/$bckfile" "$diff/$file" --label="$bckfile" --label="$file" |
-          patch -u -l -b -F 5 --suffix=.preplumed "$file"
+          patch -u -l -b -F 5 -N --suffix=.preplumed "$file"
         else
           echo "ERROR: File $file is missing"
         fi
@@ -281,11 +315,13 @@ case "$action" in
       echo "by the PLUMED_KERNEL environment variable"
     fi
 
-    echo ""
-    if grep -q "D__PLUMED_HAS_MPI=1" "$PLUMED_ROOT"/src/config/compile_options.sh ; then
-      echo "PLUMED is compiled with MPI support so you can configure $engine with MPI" 
-    else
-      echo "PLUMED is compiled WITHOUT MPI support so you CANNOT configure $engine with MPI"
+    if [ "$plumed_ignore_mpi" = no ] ; then
+      echo ""
+      if grep -q "D__PLUMED_HAS_MPI=1" "$PLUMED_ROOT"/src/config/compile_options.sh ; then
+        echo "PLUMED is compiled with MPI support so you can configure $engine with MPI" 
+      else
+        echo "PLUMED is compiled WITHOUT MPI support so you CANNOT configure $engine with MPI"
+      fi
     fi
 
     
@@ -304,9 +340,9 @@ case "$action" in
     fi
   ;;
   (save)
-    if [ ! -L Plumed.h -o ! -L Plumed.inc ]
+    if [ ! -L Plumed.h -o ! -L Plumed.inc -o ! -L Plumed.cmake ]
     then
-      echo "ERROR: I cannot find Plumed.h and Plumed.inc files. You have likely not patched yet."
+      echo "ERROR: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
       exit 1
     fi
     PREPLUMED=$(find . -name "*.preplumed" | sort)
@@ -359,7 +395,7 @@ case "$action" in
           cp "$file" "$diff/$file"
           cp "$bckfile" "$diff/$bckfile"
         else
-          echo "patch -u -l -b -F 5 --suffix=.preplumed \"${file}\" << \\EOF_EOF" >> "$diff"
+          echo "patch -u -l -b -F 5 -N --suffix=.preplumed \"${file}\" << \\EOF_EOF" >> "$diff"
           diff -U 5 "${bckfile}" "$file" --label="$bckfile" --label="$file" >> "$diff"
           echo "EOF_EOF"                                                   >> "$diff"
         fi
@@ -384,11 +420,11 @@ EOF
       test -n "$quiet" || echo "Executing plumed_before_revert function"
       plumed_before_revert
     fi
-    if [ ! -L Plumed.h -o ! -L Plumed.inc ]
+    if [ ! -L Plumed.h -o ! -L Plumed.inc -o ! -L Plumed.cmake ]
     then
-      echo "WARNING: I cannot find Plumed.h and Plumed.inc files. You have likely not patched yet."
+      echo "WARNING: I cannot find Plumed.h, Plumed.inc, and Plumed.cmake files. You have likely not patched yet."
     else
-    test -n "$quiet" || echo "Removing Plumed.h and Plumed.inc"
+    test -n "$quiet" || echo "Removing Plumed.h, Plumed.inc, and Plumed.cmake"
       rm Plumed.h Plumed.inc Plumed.cmake
     fi
     PREPLUMED=$(find . -name "*.preplumed")

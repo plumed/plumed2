@@ -42,6 +42,10 @@ do
     echo "inquire plumed about how it was configure"
     exit 0
     ;;
+  (--options)
+    echo "--help -h --description --options --quiet -q --version -v show has module mpiexec makefile_conf python_bin"
+    exit 0
+    ;;
   (--quiet|-q) quiet=yes ;;
   (--version|-v) action=version ;;
   (show)

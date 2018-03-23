@@ -21,6 +21,7 @@
 					<Add option="-fno-exceptions" />
 					<Add option="-fPIC" />
 					<Add option="-Wno-c++98-compat" />
+					<Add option="-Wno-c++98-compat-pedantic" />
 					<Add option="-Wno-exit-time-destructors" />
 					<Add option="-Wno-global-constructors" />
 					<Add option="-Wno-missing-variable-declarations" />
@@ -54,6 +55,7 @@
 					<Add option="-fno-exceptions" />
 					<Add option="-fPIC" />
 					<Add option="-Wno-c++98-compat" />
+					<Add option="-Wno-c++98-compat-pedantic" />
 					<Add option="-Wno-exit-time-destructors" />
 					<Add option="-Wno-global-constructors" />
 					<Add option="-Wno-missing-variable-declarations" />
@@ -76,7 +78,7 @@
 			</Target>
 			<Environment>
 				<Variable name="MAJORVER" value="3" />
-				<Variable name="MINORVER" value="0" />
+				<Variable name="MINORVER" value="1" />
 				<Variable name="PATCHVER" value="0" />
 				<Variable name="SOLIBVER" value="$(MAJORVER).$(MINORVER).$(PATCHVER)" />
 			</Environment>
