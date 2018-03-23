@@ -567,13 +567,16 @@ Metainference::Metainference(const ActionOptions&ao):
             Tools::convert(j,msg_j);
             std::string msg = msg_i+"_"+msg_j;
             double read_sm;
-            restart_sfile.scanField("sigma_mean_"+msg,read_sm);
+            restart_sfile.scanField("sigmaMean_"+msg,read_sm);
             sigma_mean2_last_[i][j][0] = read_sm*read_sm;
           }
         }
         if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
           double read_sm;
-          restart_sfile.scanField("sigma_mean_0_"+msg_i,read_sm);
+          std::string msg_j;
+          Tools::convert(0,msg_j);
+          std::string msg = msg_i+"_"+msg_j;
+          restart_sfile.scanField("sigmaMean_"+msg,read_sm);
           for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j][0] = read_sm*read_sm;
         }
       }
@@ -1561,7 +1564,7 @@ void Metainference::writeStatus()
       Tools::convert(j,msg_j);
       std::string msg = msg_i+"_"+msg_j;
       if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-        sfile_.printField("sigma_mean_"+msg,sqrt(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end())));
+        sfile_.printField("sigmaMean_"+msg,sqrt(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end())));
       } else {
         // find maximum for each data point
         max_values.push_back(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end()));
@@ -1570,7 +1573,9 @@ void Metainference::writeStatus()
     if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
       // find maximum across data points
       const double max_now = sqrt(*max_element(max_values.begin(), max_values.end()));
-      sfile_.printField("sigma_mean_0_"+msg_i,max_now);
+      Tools::convert(0,msg_j);
+      std::string msg = msg_i+"_"+msg_j;
+      sfile_.printField("sigmaMean_"+msg, max_now);
     }
   }
   for(unsigned i=0; i<sigma_.size(); ++i) {
