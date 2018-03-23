@@ -455,16 +455,15 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // calculate model GMM constant parameters
   vector<double> GMM_m_w = get_GMM_m(atoms);
-
-  // read experimenal data
-  read_exp_data(datafile);
-  log.printf("  number of voxels : %u\n", static_cast<unsigned>(ovdd_.size()));
-
   // normalize atom weight map
   if(norm_d <= 0.0) norm_d = 1.0;
   double norm_m = accumulate(GMM_m_w.begin(),  GMM_m_w.end(),  0.0);
   // renormalization
   for(unsigned i=0; i<GMM_m_w_.size(); ++i) GMM_m_w_[i] *= norm_d / norm_m;
+
+  // read experimenal data
+  read_exp_data(datafile);
+  log.printf("  number of voxels : %u\n", static_cast<unsigned>(ovdd_.size()));
 
   // read experimental errors
   vector<double> exp_err;
@@ -885,8 +884,6 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   log.printf("  predicted map resolution : %f\n", ave_reso);
   log.printf("  blur factor : %f\n", blur);
 
-  // now calculate useful stuff
-  VectorGeneric<6> cov, sum, inv_sum;
   // cycle on all atoms types (4 for the moment)
   for(unsigned i=0; i<GMM_m_s_.size(); ++i) {
     // the Gaussian in density (real) space is the FT of scattering factor
@@ -894,7 +891,7 @@ void EMMIVOX::calculate_useful_stuff(double reso)
     double s = sqrt ( 0.5 * GMM_m_s_[i] ) / pi * 0.1 + blur;
     // save constant parameters for later
     inv_s2_.push_back(1.0/pow(s,2.0));
-    double pre_fact = 1.0/pow(2.0*pi,1.5)/pow(s,3.0);
+    double pre_fact = GMM_m_w_[i] / pow(2.0*pi,1.5) / pow(s,3.0);
     pre_fact_.push_back(pre_fact);
   }
 
@@ -937,8 +934,7 @@ double EMMIVOX::get_density(const Vector &m_m, const Vector &d_m, double pre_fac
 
 void EMMIVOX::update_neighbor_list()
 {
-  // dimension of data and atom vectors
-  unsigned VOX_size = ovdd_.size();
+  // dimension of atom vector
   unsigned GMM_m_size = GMM_m_type_.size();
   // local neighbor list
   vector < unsigned > nl_l;
@@ -946,7 +942,7 @@ void EMMIVOX::update_neighbor_list()
   nl_.clear();
 
   // cycle on voxels - in parallel
-  for(unsigned id=rank_; id<VOX_size; id+=size_) {
+  for(unsigned id=rank_; id<ovdd_.size(); id+=size_) {
     // overlap lists and map
     vector<double> ov_l;
     map<double, unsigned> ov_m;
@@ -954,8 +950,10 @@ void EMMIVOX::update_neighbor_list()
     double ov_tot = 0.0;
     // cycle on all atoms
     for(unsigned im=0; im<GMM_m_size; ++im) {
+      // get atom type
+      unsigned itype = GMM_m_type_[im];
       // get inv_s2 for this atom type
-      double inv_s2 = inv_s2_[GMM_m_type_[im]];
+      double inv_s2 = inv_s2_[itype];
       // calculate exponent of density = 0.5*d**2*inv_s2
       double expd = get_density_exp(VOX_m_[id], getPosition(im), inv_s2);
       // get index of expd in tabulated exponential
@@ -963,7 +961,7 @@ void EMMIVOX::update_neighbor_list()
       // check boundaries and skip atom in case
       if(itab >= tab_exp_.size()) continue;
       // in case calculate density
-      double ov = pre_fact_[GMM_m_type_[im]] * tab_exp_[itab];
+      double ov = pre_fact_[itype] * tab_exp_[itab];
       // add to list
       ov_l.push_back(ov);
       // and map to retrieve atom index
@@ -1028,8 +1026,9 @@ void EMMIVOX::calculate_density() {
   for(unsigned i=0; i<ovmd_.size(); ++i)     ovmd_[i] = 0.0;
   for(unsigned i=0; i<ovmd_der_.size(); ++i) ovmd_der_[i] = Vector(0,0,0);
 
-  // we have to cycle over the neighbor list
+  // dimension of the atom list
   unsigned GMM_m_size = GMM_m_type_.size();
+  // we have to cycle over the neighbor list
   for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
     // get data (id) and atom (im) indexes
     unsigned id = nl_[i] / GMM_m_size;
@@ -1213,7 +1212,7 @@ void EMMIVOX::calculate()
       multi_sim_comm.Sum(&VOXid_der_[0], VOXid_der_.size());
       multi_sim_comm.Sum(&ene_, 1);
     } else {
-      // set der_VOXid derivatives and energy to zero
+      // set derivatives and energy to zero
       for(unsigned i=0; i<VOXid_der_.size(); ++i) VOXid_der_[i]=0.0;
       ene_ = 0.0;
     }
