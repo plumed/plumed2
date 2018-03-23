@@ -144,16 +144,18 @@ private:
   vector<double> sigma_max_;
   vector<double> dsigma_;
 // list of prefactors for model density calculation
-// pre_fact = 1.0 / (2pi)**1.5 / sigma**3
+// pre_fact = w / (2pi)**1.5 / sigma**3
   vector<double> pre_fact_;
-// useful constants for density calculation
+// list of inverse sigma squared
+// inv_s2 = 1.0/s**2
   vector<double> inv_s2_;
 // neighbor list
   double   nl_cutoff_;
   unsigned nl_stride_;
   bool first_time_;
-  bool no_aver_;
   vector<unsigned> nl_;
+// averaging
+  bool no_aver_;
 // parallel stuff
   unsigned size_;
   unsigned rank_;
@@ -215,7 +217,7 @@ private:
   vector<double> get_GMM_m(vector<AtomNumber> &atoms);
 // read experimental data
   void read_exp_data(string datafile);
-// read experimental error
+// read experimental errors
   vector<double> read_exp_errors(string errfile);
 // auxiliary method
   void calculate_useful_stuff(double reso);
@@ -883,18 +885,18 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   log.printf("  experimental map resolution : %f\n", reso);
   log.printf("  predicted map resolution : %f\n", ave_reso);
   log.printf("  blur factor : %f\n", blur);
-
   // cycle on all atoms types (4 for the moment)
   for(unsigned i=0; i<GMM_m_s_.size(); ++i) {
     // the Gaussian in density (real) space is the FT of scattering factor
     // f(r) = A * (pi/B)**1.5 * exp(-pi**2/B*r**2)
     double s = sqrt ( 0.5 * GMM_m_s_[i] ) / pi * 0.1 + blur;
     // save constant parameters for later
+    // inverse of sigma squared
     inv_s2_.push_back(1.0/pow(s,2.0));
+    // prefactor for density calculation
     double pre_fact = GMM_m_w_[i] / pow(2.0*pi,1.5) / pow(s,3.0);
     pre_fact_.push_back(pre_fact);
   }
-
   // tabulate exponential
   dexp_ = dpcutoff_ / static_cast<double> (nexp_-1);
   for(unsigned i=0; i<nexp_; ++i) {
@@ -902,7 +904,7 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   }
 }
 
-// get density
+// get density exponent - for NL fast computation
 double EMMIVOX::get_density_exp(const Vector &m_m, const Vector &d_m, double inv_s2)
 {
   Vector md;
@@ -952,7 +954,7 @@ void EMMIVOX::update_neighbor_list()
     for(unsigned im=0; im<GMM_m_size; ++im) {
       // get atom type
       unsigned itype = GMM_m_type_[im];
-      // get inv_s2 for this atom type
+      // get inverse of sigma squared for this atom type
       double inv_s2 = inv_s2_[itype];
       // calculate exponent of density = 0.5*d**2*inv_s2
       double expd = get_density_exp(VOX_m_[id], getPosition(im), inv_s2);
@@ -1014,7 +1016,7 @@ void EMMIVOX::prepare()
   if(getExchangeStep()) first_time_=true;
 }
 
-// density calculator
+// calculate model density with NL
 void EMMIVOX::calculate_density() {
 
   if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0) {
@@ -1028,12 +1030,12 @@ void EMMIVOX::calculate_density() {
 
   // dimension of the atom list
   unsigned GMM_m_size = GMM_m_type_.size();
-  // we have to cycle over the neighbor list
+  // cycle over neighbor list in parallel
   for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
     // get data (id) and atom (im) indexes
     unsigned id = nl_[i] / GMM_m_size;
     unsigned im = nl_[i] % GMM_m_size;
-    // get im atom type
+    // get im-th atom type
     unsigned itype = GMM_m_type_[im];
     // add density with im component of model GMM
     ovmd_[id] += get_density(VOX_m_[id], getPosition(im), pre_fact_[itype],
@@ -1226,7 +1228,7 @@ void EMMIVOX::calculate()
   // clean temporary vector
   for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
 
-  // get derivatives of bias with respect to atoms
+  // get derivatives of energy with respect to atoms positions
   for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
     // get indexes of data and model component
     unsigned id = nl_[i] / GMM_m_type_.size();
