@@ -93,13 +93,13 @@ private:
   void setupPeriodicity();
 // bring value within PBCs
   void applyPeriodicity( const unsigned& ival );
-/// Add information on who is using this action
-  void interpretDataRequest( const std::string& uselab, unsigned& nargs, std::vector<Value*>& args, const std::string& values );
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
 /// A constructor that is used throughout the code to setup the value poiters
   Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss=std::vector<unsigned>());
+/// Add information on who is using this action
+  void interpretDataRequest( const std::string& uselab, unsigned& nargs, std::vector<Value*>& args, const std::string& values );
 /// Set the shape of the Value
   void setShape( const std::vector<unsigned>&ss );
 /// Set the value of the function

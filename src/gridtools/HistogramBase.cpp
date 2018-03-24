@@ -143,8 +143,15 @@ void HistogramBase::calculate() {
 }
 
 void HistogramBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  if( !one_kernel_at_a_time ) { tflags.assign(tflags.size(),1); norm = static_cast<double>( tflags.size() ); }
-  else {
+  if( !one_kernel_at_a_time ) { 
+      if( heights_index==2 ) {
+          tflags.assign(tflags.size(),1); unsigned hind = getNumberOfDerivatives();
+          for(unsigned i=0;i<tflags.size();++i) {
+              if( fabs(getPntrToArgument(arg_ends[hind])->get(i))<epsilon ) tflags[i]=0;
+          }
+      } else { tflags.assign(tflags.size(),1); }
+      norm = static_cast<double>( tflags.size() ); 
+  } else {
     std::vector<double> args( getNumberOfDerivatives() );
     double height=1.0; if( heights_index==2 ) height = getPntrToArgument(arg_ends[args.size()])->get();
     for(unsigned i=0; i<args.size(); ++i) args[i]=getPntrToArgument(i)->get();

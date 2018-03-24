@@ -52,6 +52,7 @@ std::unique_ptr<DataFetchingObject> DataFetchingObject::create(unsigned n, Plume
 }
 
 DataFetchingObject::DataFetchingObject(PlumedMain&p):
+  nvals(0),
   plumed(p)
 {
 }
@@ -74,12 +75,12 @@ void DataFetchingObject::get_rank( const ActionSet& a, const std::string& key, c
 
   // Find the appropriate action and store value containing quantity of interest
   ActionWithValue* myv = findAction( a, key );
-  Value* val = myv->copyOutput( key );
+  plumed_assert( myv ); Value* val = myv->copyOutput( key );
 
   // Now work out what we are returning for this action
   if( type=="" ) {
     // Return a single value in this case
-    dims[0]=1;
+    dims[0]=val->getRank();
   } else if( type=="derivatives" ) {
     plumed_merror("not yet implemented");
   } else if( type=="forces" ) {
@@ -99,8 +100,12 @@ void DataFetchingObject::get_shape( const ActionSet& a, const std::string& key, 
 
   // Now work out what we are returning for this action
   if( type=="" ) {
-    // Return a single value in this case
-    dims[0]=1;
+    // Return the value in this case
+    if( val->getRank()==0 ){ 
+        dims[0]=1;
+    } else {
+        for(unsigned j=0;j<val->getRank();++j) dims[j] = val->getShape()[j];
+    }
   } else if( type=="derivatives" ) {
     plumed_merror("not yet implemented");
   } else if( type=="forces" ) {
@@ -134,7 +139,9 @@ void DataFetchingObjectTyped<T>::setData( const std::string& key, const std::str
   }
   if( !found ) myactions.push_back( myv );
   // Store the value
-  myvalues.push_back( myv->copyOutput( key ) );
+  Value* val=myv->copyOutput( key ); 
+  val->interpretDataRequest( "python", nvals, myvalues, "" );
+  val->buildDataStore( "python" );
 }
 
 template <class T>
@@ -143,7 +150,7 @@ void DataFetchingObjectTyped<T>::finishDataGrab() {
   for(const auto & p : myvalues ) {
     T* val = static_cast<T*>( data.find(p->getName() + " ")->second );
     if( data.find(p->getName() + " ")!=data.end() ) {
-      val[0] = static_cast<T>( p->get() );
+      for(unsigned i=0;i<p->getNumberOfValues("python");++i) val[i] = static_cast<T>( p->get(i) );
     }
     if( data.find(p->getName() + " derivatives")!=data.end() ) {
       plumed_merror("not implemented yet");

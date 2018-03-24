@@ -37,6 +37,8 @@ class Value;
 
 class DataFetchingObject {
 protected:
+/// The number of values we are getting from the actions
+  unsigned nvals;
 /// Pointers to the various actions required by the grabber
   std::vector<ActionWithValue*> myactions;
 /// The values required by the user
