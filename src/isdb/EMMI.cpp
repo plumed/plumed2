@@ -950,26 +950,30 @@ void EMMI::get_GMM_d(string GMM_file)
 
 void EMMI::calculate_useful_stuff(double reso)
 {
-  // calculate average resolution (Res), using the following definition:
+  // We use the following definition for resolution:
   // the Fourier transform of the density distribution in real space
   // f(s) falls to 1/e of its maximum value at wavenumber 1/resolution
   // i.e. from f(s) = A * exp(-B*s**2) -> Res = sqrt(B).
-  // In terms of the sigma in real space:
-  // Res = sigma * pi * sqrt(2)
-  double ave_reso = 0.0;
+  // average value of B in Ang^2
+  double Bave = 0.0;
   for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
-    // add to average (in nm)
-    ave_reso += sqrt ( GMM_m_s_[GMM_m_type_[i]] ) * 0.1;
+    Bave += GMM_m_s_[GMM_m_type_[i]];
   }
-  ave_reso /= static_cast<double>(GMM_m_type_.size());
-  // calculate blur factor
+  Bave /= static_cast<double>(GMM_m_type_.size());
+  // calculate blur factor in Ang^2 (reso is in nm)
   double blur = 0.0;
-  if(reso < ave_reso) warning("The forward model is optimized to predict maps at ~0.35 nm resolution and lower");
-  else blur = ( reso - ave_reso ) / pi / sqrt(2.0);
-  log.printf("  experimental map resolution : %f\n", reso);
-  log.printf("  predicted map resolution : %f\n", ave_reso);
-  log.printf("  blur factor : %f\n", blur);
-
+  if(100.0*reso*reso>Bave) blur = 100.0*reso*reso-Bave;
+  else warning("PLUMED should not be used with maps at resolution better than 0.3 nm");
+  // add blur to B
+  for(unsigned i=0; i<GMM_m_s_.size(); ++i) GMM_m_s_[i] += blur;
+  // calculate average resolution in nm
+  double ave_res = 0.0;
+  for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
+    ave_res += sqrt(GMM_m_s_[GMM_m_type_[i]]);
+  }
+  ave_res = 0.1 * ave_res / static_cast<double>(GMM_m_type_.size());
+  log.printf("  experimental map resolution : %3.2f\n", reso);
+  log.printf("  predicted map resolution : %3.2f\n", ave_res);
   // now calculate useful stuff
   VectorGeneric<6> cov, sum, inv_sum;
   // cycle on all atoms types (4 for the moment)
@@ -977,12 +981,10 @@ void EMMI::calculate_useful_stuff(double reso)
     // the Gaussian in density (real) space is the FT of scattering factor
     // f(r) = A * (pi/B)**1.5 * exp(-pi**2/B*r**2)
     double s = sqrt ( 0.5 * GMM_m_s_[i] ) / pi * 0.1;
-    // add Gaussian blur and calculate s2
-    double s2 = ( s + blur ) * ( s + blur );
     // covariance matrix for spherical Gaussian
-    cov[0]=s2; cov[1]=0.0; cov[2]=0.0;
-    cov[3]=s2; cov[4]=0.0;
-    cov[5]=s2;
+    cov[0]=s*s; cov[1]=0.0; cov[2]=0.0;
+    cov[3]=s*s; cov[4]=0.0;
+    cov[5]=s*s;
     // cycle on all data GMM
     for(unsigned j=0; j<GMM_d_m_.size(); ++j) {
       // we need the sum of the covariance matrices
