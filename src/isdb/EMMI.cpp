@@ -974,6 +974,7 @@ void EMMI::calculate_useful_stuff(double reso)
   ave_res = 0.1 * ave_res / static_cast<double>(GMM_m_type_.size());
   log.printf("  experimental map resolution : %3.2f\n", reso);
   log.printf("  predicted map resolution : %3.2f\n", ave_res);
+  log.printf("  blur factor : %f\n", blur);
   // now calculate useful stuff
   VectorGeneric<6> cov, sum, inv_sum;
   // cycle on all atoms types (4 for the moment)

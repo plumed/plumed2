@@ -890,6 +890,7 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   ave_res = 0.1 * ave_res / static_cast<double>(GMM_m_type_.size());
   log.printf("  experimental map resolution : %3.2f\n", reso);
   log.printf("  predicted map resolution : %3.2f\n", ave_res);
+  log.printf("  blur factor : %f\n", blur);
   // cycle on all atoms types (4 for the moment)
   for(unsigned i=0; i<GMM_m_s_.size(); ++i) {
     // the Gaussian in density (real) space is the FT of scattering factor
