@@ -835,10 +835,10 @@ vector<double> EMMI::get_GMM_m(vector<AtomNumber> &atoms)
   type_map["N"]=2;
   type_map["S"]=3;
   // fill in sigma vector
-  GMM_m_s_.push_back(15.146);  // type 0
-  GMM_m_s_.push_back(8.59722); // type 1
-  GMM_m_s_.push_back(11.1116); // type 2
-  GMM_m_s_.push_back(15.8952); // type 3
+  GMM_m_s_.push_back(0.01*15.146);  // type 0
+  GMM_m_s_.push_back(0.01*8.59722); // type 1
+  GMM_m_s_.push_back(0.01*11.1116); // type 2
+  GMM_m_s_.push_back(0.01*15.8952); // type 3
   // fill in weight vector
   GMM_m_w_.push_back(2.49982); // type 0
   GMM_m_w_.push_back(1.97692); // type 1
@@ -954,24 +954,24 @@ void EMMI::calculate_useful_stuff(double reso)
   // the Fourier transform of the density distribution in real space
   // f(s) falls to 1/e of its maximum value at wavenumber 1/resolution
   // i.e. from f(s) = A * exp(-B*s**2) -> Res = sqrt(B).
-  // average value of B in Ang^2
+  // average value of B
   double Bave = 0.0;
   for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
     Bave += GMM_m_s_[GMM_m_type_[i]];
   }
   Bave /= static_cast<double>(GMM_m_type_.size());
-  // calculate blur factor in Ang^2 (reso is in nm)
+  // calculate blur factor
   double blur = 0.0;
-  if(100.0*reso*reso>Bave) blur = 100.0*reso*reso-Bave;
+  if(reso*reso>Bave) blur = reso*reso-Bave;
   else warning("PLUMED should not be used with maps at resolution better than 0.3 nm");
   // add blur to B
   for(unsigned i=0; i<GMM_m_s_.size(); ++i) GMM_m_s_[i] += blur;
-  // calculate average resolution in nm
+  // calculate average resolution
   double ave_res = 0.0;
   for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
     ave_res += sqrt(GMM_m_s_[GMM_m_type_[i]]);
   }
-  ave_res = 0.1 * ave_res / static_cast<double>(GMM_m_type_.size());
+  ave_res = ave_res / static_cast<double>(GMM_m_type_.size());
   log.printf("  experimental map resolution : %3.2f\n", reso);
   log.printf("  predicted map resolution : %3.2f\n", ave_res);
   log.printf("  blur factor : %f\n", blur);
@@ -981,7 +981,7 @@ void EMMI::calculate_useful_stuff(double reso)
   for(unsigned i=0; i<GMM_m_s_.size(); ++i) {
     // the Gaussian in density (real) space is the FT of scattering factor
     // f(r) = A * (pi/B)**1.5 * exp(-pi**2/B*r**2)
-    double s = sqrt ( 0.5 * GMM_m_s_[i] ) / pi * 0.1;
+    double s = sqrt ( 0.5 * GMM_m_s_[i] ) / pi;
     // covariance matrix for spherical Gaussian
     cov[0]=s*s; cov[1]=0.0; cov[2]=0.0;
     cov[3]=s*s; cov[4]=0.0;
