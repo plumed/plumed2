@@ -122,6 +122,7 @@ void Neighbors::performTask( const unsigned& current, MultiValue& myvals ) const
     myvals.setValue( matout, 1.0 );
     unsigned colno = rows[nind-1-i].second; if( lowest ) colno = rows[i].second;
     av->runTask( av->getLabel(), myvals.getTaskIndex(), current, getFullNumberOfTasks()+colno, myvals );
+    av->clearMatrixElements( myvals );
   }
   if( !doNotCalculateDerivatives() ) plumed_merror("I have not implemented this yet");
 }

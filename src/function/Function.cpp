@@ -46,20 +46,38 @@ Function::Function(const ActionOptions&ao):
   forcesToApply(getNumberOfScalarArguments())
 {
   plumed_dbg_assert( getNumberOfArguments()>0 );
-  bool gridinput=false; unsigned npoints=0;
+  std::vector<double> gspacing; std::vector<unsigned> nbin; std::vector<bool> pbc;
+  bool gridinput=false; unsigned npoints=0; std::string gtype; std::vector<std::string> gargn, min, max; 
   // Method for if input to function is a function on a grid
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) {
       gridinput=true; npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
-      nderivatives = getPntrToArgument(i)->getRank() + getNumberOfArguments(); break;
+      nderivatives = getPntrToArgument(i)->getRank() + getNumberOfArguments(); 
+      gspacing.resize( getPntrToArgument(i)->getRank() ); nbin.resize( getPntrToArgument(i)->getRank() );
+      min.resize( getPntrToArgument(i)->getRank() ); max.resize( getPntrToArgument(i)->getRank() ); 
+      gargn.resize( getPntrToArgument(i)->getRank() ); pbc.resize( getPntrToArgument(i)->getRank() );
+      (getPntrToArgument(i)->getPntrToAction())->getInfoForGridHeader( gtype, gargn, min, max, nbin, gspacing, pbc, false );
+      break;
     }
   }
   if( gridinput ) {
     unsigned nscalars=0; done_over_stream=false;
+    
+    std::vector<unsigned> gnbin( min.size() ); std::vector<bool> gpbc( min.size() );
+    std::vector<std::string> ggargn( min.size() ), gmin( min.size() ), gmax( min.size() ); std::string ggtype;
     if( arg_ends.size()==0 && getNumberOfArguments()==1 ) { arg_ends.push_back(0); arg_ends.push_back(1); }
     for(unsigned j=0; j<getNumberOfArguments(); ++j) {
       if( getPntrToArgument(j)->getRank()!=0 ) {
         if( getPntrToArgument(j)->getNumberOfValues( getLabel() )!=npoints || !getPntrToArgument(j)->hasDerivatives() ) error("mismatch in input arguments");
+        (getPntrToArgument(j)->getPntrToAction())->getInfoForGridHeader( ggtype, ggargn, gmin, gmax, gnbin, gspacing, gpbc, false );
+        if( gtype!=ggtype ) error("mismatch between grid types");
+        for(unsigned k=0;k<min.size();++k) { 
+            if( min[k]!=gmin[k] ) error("mismatch between grid domains");
+            if( max[k]!=gmax[k] ) error("mismatch between grid domains");
+            if( pbc[k]!=gpbc[k] ) error("mismatch between grid domains");
+            if( nbin[k]!=gnbin[k] ) error("mismatch between grid domains");
+            if( gargn[k]!=ggargn[k] ) error("mismatch between grid domains");
+        }
       } else { nscalars++; }
     }
     if( nscalars>1 ) error("can only multiply/divide grid by one scalar at a time");
