@@ -118,6 +118,10 @@ private:
   vector<double> GMM_m_s_;
 // model GMM - list of atom weights - one per atom type
   vector<double> GMM_m_w_;
+// model GMM - list of neighboring voxels per atom
+  vector< vector<unsigned> > GMM_m_nb_;
+// model GMM - bfactor list
+  vector<double> GMM_m_b_;
 // model density
   vector<double> ovmd_;
 
@@ -143,12 +147,6 @@ private:
   vector<double> sigma_min_;
   vector<double> sigma_max_;
   vector<double> dsigma_;
-// list of prefactors for model density calculation
-// pre_fact = w / (2pi)**1.5 / sigma**3
-  vector<double> pre_fact_;
-// list of inverse sigma squared
-// inv_s2 = 1.0/s**2
-  vector<double> inv_s2_;
 // neighbor list
   double   nl_cutoff_;
   unsigned nl_stride_;
@@ -166,6 +164,10 @@ private:
   double   MCaccept_;
   double   MCtrials_;
   Random   random_;
+  int      MCBstride_;
+  double   MCBaccept_;
+  double   MCBtrials_;
+  double   dbfact_;
   // status stuff
   unsigned int statusstride_;
   string       statusfilename_;
@@ -212,6 +214,7 @@ private:
 // accept or reject
   bool doAccept(double oldE, double newE, double kbt);
 // do MonteCarlo
+  void doMonteCarloBfact();
   void doMonteCarlo();
 // calculate model GMM parameters
   vector<double> get_GMM_m(vector<AtomNumber> &atoms);
@@ -222,9 +225,9 @@ private:
 // auxiliary method
   void calculate_useful_stuff(double reso);
 // get density in one point
-  double get_density_exp(const Vector &m_m, const Vector &d_m, double inv_s2);
-  double get_density(const Vector &m_m, const Vector &d_m, double pre_fact,
-                     double inv_s2, Vector &ov_der);
+  double get_density_exp(const Vector &m_m, const Vector &d_m, double b);
+  double get_density(const Vector &m_m, const Vector &d_m, double w,
+                     double b, Vector &ov_der);
 // update the neighbor list
   void update_neighbor_list();
 // calculate model density
@@ -258,6 +261,9 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","SIGMA0","initial value of the uncertainty");
   keys.add("optional","DSIGMA","MC step for uncertainties");
   keys.add("optional","MC_STRIDE", "Monte Carlo stride");
+  keys.add("optional","DBFACT","MC step for bfactor");
+  keys.add("optional","MCBFACT_STRIDE", "Bfactor Monte Carlo stride");
+  keys.add("compulsory","VOXEL", "Voxel side");
   keys.add("optional","ERR_FILE","file with experimental errors");
   keys.add("optional","NORM_DENSITY","integral of the experimental density");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
@@ -277,6 +283,8 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
+  keys.addOutputComponent("accB",  "default", "Bfactor MC acceptance");
+  keys.addOutputComponent("res",   "default", "Average resolution");
   keys.addOutputComponent("scale", "REGRESSION","scale factor");
   keys.addOutputComponent("accscale", "REGRESSION","MC acceptance for scale regression");
   keys.addOutputComponent("enescale", "REGRESSION","MC energy for scale regression");
@@ -289,7 +297,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   sqrt2_pi_(0.797884560802865),
   first_time_(true), no_aver_(false), pbc_(true),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
-  statusstride_(0), first_status_(true),
+  MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
+  dbfact_(0.0), statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
   kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0)
@@ -319,6 +328,10 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   double sigma_min;
   parse("SIGMA_MIN", sigma_min);
   if(sigma_min<0) error("SIGMA_MIN should be greater or equal to zero");
+
+  // Monte Carlo in B-factors
+  parse("DBFACT", dbfact_);
+  parse("MCBFACT_STRIDE", MCBstride_);
 
   // the following parameters must be specified with noise type 0 and 1
   double sigma_ini, dsigma;
@@ -521,6 +534,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // add components
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
+  addComponent("accB"); componentIsNotPeriodic("accB");
+  addComponent("res"); componentIsNotPeriodic("res");
 
   if(noise_!=2) {addComponent("acc"); componentIsNotPeriodic("acc");}
 
@@ -648,6 +663,110 @@ bool EMMIVOX::doAccept(double oldE, double newE, double kbt) {
     if( s < exp(-delta) ) { accept = true; }
   }
   return accept;
+}
+
+void EMMIVOX::doMonteCarloBfact()
+{
+// move 100 randomly chosen bfactor
+  for(unsigned istep=0; istep<1000000; ++istep) {
+
+    // extract random atom
+    unsigned im = static_cast<unsigned>(floor(random_.RandU01()*static_cast<double>(GMM_m_nb_.size())));
+    if(im==GMM_m_nb_.size()) im -=1;
+
+    // get atom type, bold, weight and position
+    unsigned itype = GMM_m_type_[im];
+    double bold = GMM_m_s_[itype]+GMM_m_b_[im];
+    double w = GMM_m_w_[itype];
+    Vector pos = getPosition(im);
+
+    // propose move in b
+    double db = dbfact_ * ( 2.0 * random_.RandU01() - 1.0 );
+    double bfact = GMM_m_b_[im] + db;
+    // check boundaries
+    if(bfact > 10000.0) {bfact = 20000.0 - bfact;}
+    if(bfact < 0.0)     {bfact = -bfact;}
+    double bnew = GMM_m_s_[itype]+bfact;
+
+    vector<double> ovdd, ovmdold, ovmdnew;
+    vector<unsigned> ids, grp;
+    Vector der;
+
+    // cycle on all the voxels affected
+    for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
+      // voxel id
+      unsigned id = GMM_m_nb_[im][i];
+      // store voxel id
+      ids.push_back(id);
+      // store voxel group
+      grp.push_back(VOX_beta_[id]);
+      // and experimental value
+      ovdd.push_back(ovdd_[id]);
+      // store density before change
+      ovmdold.push_back(ovmd_[id]);
+      // get contribution before change
+      double dold=get_density(VOX_m_[id], pos, w, bold, der);
+      // get contribution after change
+      double dnew=get_density(VOX_m_[id], pos, w, bnew, der);
+      // store overall density after change
+      ovmdnew.push_back(ovmd_[id]-dold+dnew);
+    }
+
+    // calculate new and old score
+    double old_ene = 0.0;
+    double new_ene = 0.0;
+    if(noise_==0) {
+      for(unsigned i=0; i<ovmdold.size(); ++i) {
+        double devold = ( scale_*ovmdold[i]-ovdd[i] ) / sigma_[grp[i]];
+        double devnew = ( scale_*ovmdnew[i]-ovdd[i] ) / sigma_[grp[i]];
+        old_ene += 0.5 * kbt_ * devold * devold;
+        new_ene += 0.5 * kbt_ * devnew * devnew;
+      }
+    }
+    if(noise_==1) {
+      for(unsigned i=0; i<ovmdold.size(); ++i) {
+        double devold = ( scale_*ovmdold[i]-ovdd[i] ) / sigma_[grp[i]];
+        double devnew = ( scale_*ovmdnew[i]-ovdd[i] ) / sigma_[grp[i]];
+        old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
+        new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
+      }
+    }
+    if(noise_==2) {
+      for(unsigned i=0; i<ovmdold.size(); ++i) {
+        double devold = ( scale_*ovmdold[i]-ovdd[i] );
+        double devnew = ( scale_*ovmdnew[i]-ovdd[i] );
+        old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[grp[i]] ));
+        new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[grp[i]] ));
+      }
+    }
+    // add priors
+    old_ene += kbt_ * std::log(GMM_m_b_[im]);
+    new_ene += kbt_ * std::log(bfact);
+
+// increment number of trials
+    MCBtrials_ += 1.0;
+
+    // accept or reject
+    bool accept = doAccept(old_ene, new_ene, kbt_);
+    if(accept) {
+      GMM_m_b_[im] = bfact;
+      MCBaccept_ += 1.0;
+      // change the value of all ovmd affected
+      for(unsigned i=0; i<ovmdnew.size(); ++i) ovmd_[ids[i]]=ovmdnew[i];
+    }
+  } // end cycle on atoms
+
+// local communication
+  if(rank_!=0) {
+    for(unsigned i=0; i<GMM_m_b_.size(); ++i) GMM_m_b_[i] = 0.0;
+    MCBaccept_ = 0.0;
+    MCBtrials_ = 0.0;
+  }
+  if(size_>1) {
+    comm.Sum(&GMM_m_b_[0], GMM_m_b_.size());
+    comm.Sum(&MCBaccept_, 1);
+    comm.Sum(&MCBtrials_, 1);
+  }
 }
 
 void EMMIVOX::doMonteCarlo()
@@ -779,10 +898,10 @@ vector<double> EMMIVOX::get_GMM_m(vector<AtomNumber> &atoms)
   type_map["N"]=2;
   type_map["S"]=3;
   // fill in sigma vector
-  GMM_m_s_.push_back(15.146);  // type 0
-  GMM_m_s_.push_back(8.59722); // type 1
-  GMM_m_s_.push_back(11.1116); // type 2
-  GMM_m_s_.push_back(15.8952); // type 3
+  GMM_m_s_.push_back(0.01*15.146);  // type 0
+  GMM_m_s_.push_back(0.01*8.59722); // type 1
+  GMM_m_s_.push_back(0.01*11.1116); // type 2
+  GMM_m_s_.push_back(0.01*15.8952); // type 3
   // fill in weight vector
   GMM_m_w_.push_back(2.49982); // type 0
   GMM_m_w_.push_back(1.97692); // type 1
@@ -870,39 +989,27 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   // the Fourier transform of the density distribution in real space
   // f(s) falls to 1/e of its maximum value at wavenumber 1/resolution
   // i.e. from f(s) = A * exp(-B*s**2) -> Res = sqrt(B).
-  // average value of B in Ang^2
+  // average value of B
   double Bave = 0.0;
   for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
     Bave += GMM_m_s_[GMM_m_type_[i]];
   }
   Bave /= static_cast<double>(GMM_m_type_.size());
-  // calculate blur factor in Ang^2 (reso is in nm)
-  double blur = 0.0;
-  if(100.0*reso*reso>Bave) blur = 100.0*reso*reso-Bave;
+  // calculate blur factor
+  double blur = 1.0e-5;
+  if(reso*reso>Bave) blur = reso*reso-Bave;
   else warning("PLUMED should not be used with maps at resolution better than 0.3 nm");
-  // add blur to B
-  for(unsigned i=0; i<GMM_m_s_.size(); ++i) GMM_m_s_[i] += blur;
-  // calculate average resolution in nm
+  // initialize B factor to blur
+  for(unsigned i=0; i<GMM_m_type_.size(); ++i) GMM_m_b_.push_back(blur);
+  // calculate average resolution
   double ave_res = 0.0;
   for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
-    ave_res += sqrt(GMM_m_s_[GMM_m_type_[i]]);
+    ave_res += sqrt(GMM_m_s_[GMM_m_type_[i]]+blur);
   }
-  ave_res = 0.1 * ave_res / static_cast<double>(GMM_m_type_.size());
+  ave_res = ave_res / static_cast<double>(GMM_m_type_.size());
   log.printf("  experimental map resolution : %3.2f\n", reso);
   log.printf("  predicted map resolution : %3.2f\n", ave_res);
-  log.printf("  blur factor : %f\n", blur);
-  // cycle on all atoms types (4 for the moment)
-  for(unsigned i=0; i<GMM_m_s_.size(); ++i) {
-    // the Gaussian in density (real) space is the FT of scattering factor
-    // f(r) = A * (pi/B)**1.5 * exp(-pi**2/B*r**2)
-    double s = sqrt ( 0.5 * GMM_m_s_[i] ) / pi * 0.1;
-    // save constant parameters for later
-    // inverse of sigma squared
-    inv_s2_.push_back(1.0/pow(s,2.0));
-    // prefactor for density calculation
-    double pre_fact = GMM_m_w_[i] / pow(2.0*pi,1.5) / pow(s,3.0);
-    pre_fact_.push_back(pre_fact);
-  }
+  log.printf("  initial blur factor : %f\n", blur);
   // tabulate exponential
   dexp_ = dpcutoff_ / static_cast<double> (nexp_-1);
   for(unsigned i=0; i<nexp_; ++i) {
@@ -911,7 +1018,7 @@ void EMMIVOX::calculate_useful_stuff(double reso)
 }
 
 // get density exponent - for NL fast computation
-double EMMIVOX::get_density_exp(const Vector &m_m, const Vector &d_m, double inv_s2)
+double EMMIVOX::get_density_exp(const Vector &m_m, const Vector &d_m, double b)
 {
   Vector md;
   // calculate vector difference m_m-d_m with/without pbc
@@ -920,12 +1027,12 @@ double EMMIVOX::get_density_exp(const Vector &m_m, const Vector &d_m, double inv
   // calculate distance squared
   double d2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2];
   // return density exponent
-  return 0.5*d2*inv_s2;
+  return pi*pi*d2/b;
 }
 
 // get density and derivatives
-double EMMIVOX::get_density(const Vector &m_m, const Vector &d_m, double pre_fact,
-                            double inv_s2, Vector &ov_der)
+double EMMIVOX::get_density(const Vector &m_m, const Vector &d_m, double w,
+                            double b, Vector &ov_der)
 {
   Vector md;
   // calculate vector difference m_m-d_m with/without pbc
@@ -934,9 +1041,9 @@ double EMMIVOX::get_density(const Vector &m_m, const Vector &d_m, double pre_fac
   // calculate distance squared
   double d2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2];
   // calculate density
-  double d = pre_fact * exp(-0.5*d2*inv_s2);
+  double d = w * pow(pi/b,1.5) * exp(-pi*pi*d2/b);
   // derivatives
-  ov_der = d * inv_s2 * Vector(md[0], md[1], md[2]);
+  ov_der = d*pi*pi/b * Vector(md[0], md[1], md[2]);
   return d;
 }
 
@@ -960,16 +1067,16 @@ void EMMIVOX::update_neighbor_list()
     for(unsigned im=0; im<GMM_m_size; ++im) {
       // get atom type
       unsigned itype = GMM_m_type_[im];
-      // get inverse of sigma squared for this atom type
-      double inv_s2 = inv_s2_[itype];
-      // calculate exponent of density = 0.5*d**2*inv_s2
-      double expd = get_density_exp(VOX_m_[id], getPosition(im), inv_s2);
+      // total value of b
+      double b = GMM_m_s_[itype]+GMM_m_b_[im];
+      // calculate exponent of density
+      double expd = get_density_exp(VOX_m_[id], getPosition(im), b);
       // get index of expd in tabulated exponential
       unsigned itab = static_cast<unsigned> (round(expd/dexp_));
       // check boundaries and skip atom in case
       if(itab >= tab_exp_.size()) continue;
       // in case calculate density
-      double ov = pre_fact_[itype] * tab_exp_[itab];
+      double ov = GMM_m_w_[itype] * pow(pi/b,1.5) * tab_exp_[itab];
       // add to list
       ov_l.push_back(ov);
       // and map to retrieve atom index
@@ -1015,6 +1122,13 @@ void EMMIVOX::update_neighbor_list()
   comm.Allgatherv(&nl_l[0], recvcounts[rank_], &nl_[0], &recvcounts[0], &disp[0]);
   // now resize derivatives
   ovmd_der_.resize(tot_size);
+  // now cycle over the neighbor list to creat a list of voxels per atom
+  GMM_m_nb_.clear(); GMM_m_nb_.resize(GMM_m_size);
+  for(unsigned i=0; i<tot_size; ++i) {
+    unsigned id = nl_[i] / GMM_m_size;
+    unsigned im = nl_[i] % GMM_m_size;
+    GMM_m_nb_[im].push_back(id);
+  }
 }
 
 void EMMIVOX::prepare()
@@ -1041,11 +1155,10 @@ void EMMIVOX::calculate_density() {
     // get data (id) and atom (im) indexes
     unsigned id = nl_[i] / GMM_m_size;
     unsigned im = nl_[i] % GMM_m_size;
-    // get im-th atom type
     unsigned itype = GMM_m_type_[im];
     // add density with im component of model GMM
-    ovmd_[id] += get_density(VOX_m_[id], getPosition(im), pre_fact_[itype],
-                             inv_s2_[itype], ovmd_der_[i]);
+    ovmd_[id] += get_density(VOX_m_[id], getPosition(im), GMM_m_w_[itype],
+                             GMM_m_s_[itype]+GMM_m_b_[im], ovmd_der_[i]);
   }
   // communicate stuff
   if(size_>1) {
@@ -1188,9 +1301,6 @@ void EMMIVOX::calculate()
     getPntrToComponent("scale")->set(scale_);
   }
 
-  // write densities to file
-  if(ovstride_>0 && step%ovstride_==0) write_densities(step);
-
   // clear energy and virial
   ene_ = 0.0;
   virial_.zero();
@@ -1259,6 +1369,26 @@ void EMMIVOX::calculate()
   for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
   setBoxDerivatives(getPntrToComponent("scoreb"), virial_);
   getPntrToComponent("scoreb")->set(ene_);
+
+  // now do Monte Carlo on b factors
+  if(dbfact_>0 && step%MCBstride_==0 && !getExchangeStep()) doMonteCarloBfact();
+
+  // write densities to file
+  if(ovstride_>0 && step%ovstride_==0) write_densities(step);
+
+  // calculate acceptance ratio
+  double acc = MCBaccept_ / MCBtrials_;
+
+  // set value
+  getPntrToComponent("accB")->set(acc);
+
+  // average resolution
+  double ave_res = 0.0;
+  for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
+    ave_res += sqrt(GMM_m_s_[GMM_m_type_[i]]+GMM_m_b_[i]);
+  }
+  ave_res = ave_res / static_cast<double>(GMM_m_type_.size());
+  getPntrToComponent("res")->set(ave_res);
 
   // This part is needed only for Gaussian and Outliers noise models
   if(noise_!=2) {
