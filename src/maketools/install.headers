@@ -8,15 +8,22 @@ shift
 
 script=""
 includedir=
-for dir in $*
+dirs=$*
+
+for dir in $dirs
 do
 script="$script"'
 s|^# *include *"'$dir'/|#include "../'$dir'/|'
 done
 export LC_ALL=C
 
-for file in */*.h
+for dir in $dirs
 do
-  mkdir -p "$where/${file%/*}"
-  cat $file | sed "$script" > "$where/$file"
+for file in $dir/*.h
+do
+  if test -e $file ; then
+    mkdir -p "$where/${file%/*}"
+    cat $file | sed "$script" > "$where/$file"
+  fi
+done
 done
