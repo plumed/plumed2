@@ -118,15 +118,23 @@ private:
   vector<double> GMM_m_s_;
 // model GMM - list of atom weights - one per atom type
   vector<double> GMM_m_w_;
-// data GMM - means, weights, and covariances + beta option
+// model GMM - list of neighboring voxels per atom
+  vector< vector<unsigned> > GMM_m_nb_;
+// model GMM - bfactor list
+  vector<double> GMM_m_b_;
+// model overlap
+  vector<double> ovmd_;
+
+// data GMM - means, sigma2 + beta option
   vector<Vector> GMM_d_m_;
   vector<Vector> GMM_d_s_;
   vector<int>    GMM_d_beta_;
+// data GMM - groups bookeeping
   vector < vector<int> > GMM_d_grps_;
-// overlaps
-  vector<double> ovmd_;
+// data GMM - overlap
   vector<double> ovdd_;
-// and derivatives
+
+// derivatives
   vector<Vector> ovmd_der_;
   vector<Vector> atom_der_;
   vector<double> GMMid_der_;
@@ -144,8 +152,9 @@ private:
   double   nl_cutoff_;
   unsigned nl_stride_;
   bool first_time_;
-  bool no_aver_;
   vector<unsigned> nl_;
+// averaging
+  bool no_aver_;
 // parallel stuff
   unsigned size_;
   unsigned rank_;
@@ -156,6 +165,12 @@ private:
   double   MCaccept_;
   double   MCtrials_;
   Random   random_;
+// Bfact Monte Carlo
+  int      MCBstride_;
+  double   MCBaccept_;
+  double   MCBtrials_;
+  double   dbfact_;
+  double   bfactmax_;
   // status stuff
   unsigned int statusstride_;
   string       statusfilename_;
@@ -203,6 +218,8 @@ private:
   bool doAccept(double oldE, double newE, double kbt);
 // do MonteCarlo
   void doMonteCarlo();
+// do MonteCarlo for Bfactor
+  void doMonteCarloBfact();
 // read error file
   vector<double> read_exp_errors(string errfile);
 // calculate model GMM parameters
@@ -244,11 +261,14 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","SIGMA_MIN","minimum uncertainty");
   keys.add("compulsory","RESOLUTION", "Cryo-EM map resolution");
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS, OUTLIERS, MARGINAL)");
+  keys.add("compulsory","NORM_DENSITY","integral of the experimental density");
   keys.add("optional","SIGMA0","initial value of the uncertainty");
   keys.add("optional","DSIGMA","MC step for uncertainties");
   keys.add("optional","MC_STRIDE", "Monte Carlo stride");
+  keys.add("optional","DBFACT","MC step for bfactor");
+  keys.add("optional","BFACT_MAX","Maximum value of bfactor");
+  keys.add("optional","MCBFACT_STRIDE", "Bfactor Monte Carlo stride");
   keys.add("optional","ERR_FILE","file with experimental or GMM fit errors");
-  keys.add("compulsory","NORM_DENSITY","integral of the experimental density");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
   keys.add("optional","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
   keys.add("optional","REGRESSION","regression stride");
@@ -266,6 +286,7 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
+  keys.addOutputComponent("accB",  "default", "Bfactor MC acceptance");
   keys.addOutputComponent("scale", "REGRESSION","scale factor");
   keys.addOutputComponent("accscale", "REGRESSION","MC acceptance for scale regression");
   keys.addOutputComponent("enescale", "REGRESSION","MC energy for scale regression");
@@ -278,6 +299,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   sqrt2_pi_(0.797884560802865),
   first_time_(true), no_aver_(false), pbc_(true),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
+  MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
+  dbfact_(0.0), bfactmax_(10.0),
   statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
@@ -308,6 +331,14 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   double sigma_min;
   parse("SIGMA_MIN", sigma_min);
   if(sigma_min<0) error("SIGMA_MIN should be greater or equal to zero");
+
+  // Monte Carlo in B-factors
+  parse("DBFACT", dbfact_);
+  parse("BFACT_MAX", bfactmax_);
+  parse("MCBFACT_STRIDE", MCBstride_);
+  if(dbfact_<0) error("DBFACT should be greater or equal to zero");
+  if(dbfact_>0 && MCBstride_<=0) error("you must specify a positive MCBFACT_STRIDE");
+  if(dbfact_>0 && bfactmax_<=0) error("you must specify a positive BFACT_MAX");
 
   // the following parameters must be specified with noise type 0 and 1
   double sigma_ini, dsigma;
@@ -406,6 +437,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   comm.Sum(&nrep_,1);
   comm.Sum(&replica_,1);
 
+  if(nrep_>1 && dbfact_>0) error("Bfactor sampling not supported with ensemble averaging");
+
   log.printf("  atoms involved : ");
   for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial());
   log.printf("\n");
@@ -428,6 +461,10 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     log.printf("  MC stride : %u\n", MCstride_);
     log.printf("  reading/writing to status file : %s\n",statusfilename_.c_str());
     log.printf("  with stride : %u\n",statusstride_);
+  }
+  if(dbfact_>0) {
+    log.printf("  max MC move in bfactor : %f\n",dbfact_);
+    log.printf("  Bfactor MC stride : %u\n", MCBstride_);
   }
   if(errfile.size()>0) log.printf("  reading experimental errors from file : %s\n", errfile.c_str());
   log.printf("  temperature of the system in energy unit : %f\n",kbt_);
@@ -512,15 +549,13 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // add components
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
-
+  if(dbfact_>0) {addComponent("accB"); componentIsNotPeriodic("accB");}
   if(noise_!=2) {addComponent("acc"); componentIsNotPeriodic("acc");}
-
   if(nregres_>0) {
     addComponent("scale");     componentIsNotPeriodic("scale");
     addComponent("accscale");  componentIsNotPeriodic("accscale");
     addComponent("enescale");  componentIsNotPeriodic("enescale");
   }
-
   if(nanneal_>0) {addComponent("anneal"); componentIsNotPeriodic("anneal");}
 
   // initialize random seed
