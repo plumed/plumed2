@@ -170,7 +170,9 @@ private:
   double   MCBaccept_;
   double   MCBtrials_;
   double   dbfact_;
+  double   bfactmin_;
   double   bfactmax_;
+  bool     bfactprior_;
   // status stuff
   unsigned int statusstride_;
   string       statusfilename_;
@@ -231,8 +233,6 @@ private:
 // calculate overlap between two Gaussians
   double get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
                      double m_w, double m_b, Vector &ov_der);
-  double get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
-                     double m_w, double m_b);
 // update the neighbor list
   void update_neighbor_list();
 // calculate overlap
@@ -271,6 +271,7 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","DBFACT","MC step for bfactor");
   keys.add("optional","BFACT_MAX","Maximum value of bfactor");
   keys.add("optional","MCBFACT_STRIDE", "Bfactor Monte Carlo stride");
+  keys.addFlag("optiotnal","BFACT_PRIOR", "add Jeffreys prior to Bfactor");
   keys.add("optional","ERR_FILE","file with experimental errors");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
   keys.add("optional","REGRESSION","regression stride");
@@ -302,8 +303,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   first_time_(true), no_aver_(false), pbc_(true),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
-  dbfact_(0.0), bfactmax_(1.0),
-  statusstride_(0), first_status_(true),
+  dbfact_(0.0), bfactmin_(1.0e-4), bfactmax_(1.0),
+  bfactprior_(false), statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
   kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0)
@@ -338,6 +339,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("DBFACT", dbfact_);
   parse("BFACT_MAX", bfactmax_);
   parse("MCBFACT_STRIDE", MCBstride_);
+  parseFlag("BFACT_PRIOR", bfactprior_);
   if(dbfact_<0) error("DBFACT should be greater or equal to zero");
   if(dbfact_>0 && MCBstride_<=0) error("you must specify a positive MCBFACT_STRIDE");
   if(dbfact_>0 && bfactmax_<=0) error("you must specify a positive BFACT_MAX");
@@ -791,12 +793,13 @@ void EMMIVOX::doMonteCarloBfact()
     double bfact = GMM_m_b_[im] + dbfact_ * ( 2.0 * random_.RandU01() - 1.0 );
     // check boundaries
     if(bfact > bfactmax_) {bfact = 2.0*bfactmax_ - bfact;}
-    if(bfact < 0.0)       {bfact = -bfact;}
+    if(bfact < bfactmin_) {bfact = 2.0*bfactmin_ - bfact;}
     double bnew = GMM_m_s_[atype]+bfact;
 
     // cycle on all the components affected
     vector<double> ovdd, ovmdold, ovmdnew;
     vector<unsigned> ids, grp;
+    Vector der;
     for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
       // voxel id
       unsigned id = GMM_m_nb_[im][i];
@@ -809,9 +812,9 @@ void EMMIVOX::doMonteCarloBfact()
       // store density before change
       ovmdold.push_back(ovmd_[id]);
       // get contribution before change
-      double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bold);
+      double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bold, der);
       // get contribution after change
-      double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bnew);
+      double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bnew, der);
       // store overall density after change
       ovmdnew.push_back(ovmd_[id]-dold+dnew);
     }
@@ -842,6 +845,11 @@ void EMMIVOX::doMonteCarloBfact()
         old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[grp[i]] ));
         new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[grp[i]] ));
       }
+    }
+    // add prior
+    if(bfactprior_) {
+      old_ene += kbt_ * std::log(GMM_m_b_[im]);
+      new_ene += kbt_ * std::log(bfact);
     }
 
 // increment number of trials
@@ -1028,7 +1036,7 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   }
   Bave /= static_cast<double>(GMM_m_type_.size());
   // calculate blur factor
-  double blur = 0.0;
+  double blur = bfactmin_;
   if(reso*reso>Bave) blur = reso*reso-Bave;
   else warning("PLUMED should not be used with maps at resolution better than 0.3 nm");
   // initialize B factor to blur
@@ -1069,27 +1077,6 @@ double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, const Vector &
   ov_der = ov * Vector(md[0]*invs2[0],md[1]*invs2[1],md[2]*invs2[2]);
   return ov;
 }
-
-// get overlap
-double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
-                            double m_w, double m_b)
-{
-  Vector md, invs2;
-  double ov = 0.0;
-  // calculate vector difference with/without pbc
-  if(pbc_) md = pbcDistance(m_m, d_m);
-  else     md = delta(m_m, d_m);
-  // calculate exponent
-  for(unsigned i=0; i<3; ++i) {
-    invs2[i] = 1.0 / ( d_s[i] + 0.5*m_b/pi/pi );
-    ov += md[i] * md[i] * invs2[i];
-  }
-  // final calculation
-  ov = m_w * cfact_ * sqrt(invs2[0]*invs2[1]*invs2[2]) * exp(-0.5*ov);
-  return ov;
-}
-
-
 
 void EMMIVOX::update_neighbor_list()
 {
