@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017 The plumed team
+   Copyright (c) 2017,2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -118,27 +118,20 @@ private:
   vector<double> GMM_m_s_;
 // model GMM - list of atom weights - one per atom type
   vector<double> GMM_m_w_;
-// model GMM - list of neighboring voxels per atom
-  vector< vector<unsigned> > GMM_m_nb_;
-// model GMM - bfactor list
-  vector<double> GMM_m_b_;
-// model density
+// data GMM - means, weights, and covariances + beta option
+  vector<Vector> GMM_d_m_;
+  vector<Vector> GMM_d_s_;
+  vector<int>    GMM_d_beta_;
+  vector < vector<int> > GMM_d_grps_;
+// overlaps
   vector<double> ovmd_;
-
-// data - voxel list
-  vector<Vector> VOX_m_;
-// data - voxel group id
-  vector<int> VOX_beta_;
-// data - voxel groups bookeeping
-  vector < vector<int> > VOX_grps_;
-// data density
   vector<double> ovdd_;
-
 // and derivatives
   vector<Vector> ovmd_der_;
   vector<Vector> atom_der_;
-  vector<double> VOXid_der_;
+  vector<double> GMMid_der_;
 // constants
+  double cfact_;
   double inv_sqrt2_, sqrt2_pi_;
 // metainference
   unsigned nrep_;
@@ -151,9 +144,8 @@ private:
   double   nl_cutoff_;
   unsigned nl_stride_;
   bool first_time_;
-  vector<unsigned> nl_;
-// averaging
   bool no_aver_;
+  vector<unsigned> nl_;
 // parallel stuff
   unsigned size_;
   unsigned rank_;
@@ -164,10 +156,6 @@ private:
   double   MCaccept_;
   double   MCtrials_;
   Random   random_;
-  int      MCBstride_;
-  double   MCBaccept_;
-  double   MCBtrials_;
-  double   dbfact_;
   // status stuff
   unsigned int statusstride_;
   string       statusfilename_;
@@ -195,12 +183,12 @@ private:
   // total score and virial;
   double ene_;
   Tensor virial_;
-  // model density file
+  // model overlap file
   unsigned int ovstride_;
-  string ovfilename_;
+  string       ovfilename_;
 
-// write file with model and data densities
-  void write_densities(long int step);
+// write file with model overlap
+  void write_model_overlap(long int step);
 // get median of vector
   double get_median(vector<double> &v);
 // annealing
@@ -214,24 +202,24 @@ private:
 // accept or reject
   bool doAccept(double oldE, double newE, double kbt);
 // do MonteCarlo
-  void doMonteCarloBfact();
   void doMonteCarlo();
+// read error file
+  vector<double> read_exp_errors(string errfile);
 // calculate model GMM parameters
   vector<double> get_GMM_m(vector<AtomNumber> &atoms);
-// read experimental data
-  void read_exp_data(string datafile);
-// read experimental errors
-  vector<double> read_exp_errors(string errfile);
+// read data file
+  void get_exp_data(string datafile);
 // auxiliary method
   void calculate_useful_stuff(double reso);
-// get density in one point
-  double get_density_exp(const Vector &m_m, const Vector &d_m, double b);
-  double get_density(const Vector &m_m, const Vector &d_m, double w,
-                     double b, Vector &ov_der);
+// calculate overlap between two Gaussians
+  double get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
+                     double m_w, double m_b, Vector &ov_der);
+// calculate exponent of overlap for neighbor list update
+  double get_exp_overlap(const Vector &d_m, const Vector &m_m, const Vector &invs2);
 // update the neighbor list
   void update_neighbor_list();
-// calculate model density
-  void calculate_density();
+// calculate overlap
+  void calculate_overlap();
 // Gaussian noise
   void calculate_Gauss();
 // Outliers noise
@@ -252,8 +240,8 @@ PLUMED_REGISTER_ACTION(EMMIVOX,"EMMIVOX")
 void EMMIVOX::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","atoms for which we calculate the density map, typically all heavy atoms");
-  keys.add("compulsory","DATA_FILE","file with experimental data");
-  keys.add("compulsory","NL_CUTOFF","The model density cutoff for neighbor list");
+  keys.add("compulsory","DATA_FILE","file with the experimental data");
+  keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
   keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
   keys.add("compulsory","SIGMA_MIN","minimum uncertainty");
   keys.add("compulsory","RESOLUTION", "Cryo-EM map resolution");
@@ -261,11 +249,8 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","SIGMA0","initial value of the uncertainty");
   keys.add("optional","DSIGMA","MC step for uncertainties");
   keys.add("optional","MC_STRIDE", "Monte Carlo stride");
-  keys.add("optional","DBFACT","MC step for bfactor");
-  keys.add("optional","MCBFACT_STRIDE", "Bfactor Monte Carlo stride");
-  keys.add("compulsory","VOXEL", "Voxel side");
-  keys.add("optional","ERR_FILE","file with experimental errors");
-  keys.add("optional","NORM_DENSITY","integral of the experimental density");
+  keys.add("optional","ERR_FILE","file with experimental or GMM fit errors");
+  keys.add("compulsory","NORM_DENSITY","integral of the experimental density");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
   keys.add("optional","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
   keys.add("optional","REGRESSION","regression stride");
@@ -277,14 +262,12 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","ANNEAL_FACT", "Annealing temperature factor");
   keys.add("optional","TEMP","temperature");
   keys.add("optional","PRIOR", "exponent of uncertainty prior");
-  keys.add("optional","WRITE_DENSITY_STRIDE","write model density every N steps");
-  keys.add("optional","WRITE_DENSITY","write a file with model density");
+  keys.add("optional","WRITE_OV_STRIDE","write model overlaps every N steps");
+  keys.add("optional","WRITE_OV","write a file with model overlaps");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
-  keys.addOutputComponent("accB",  "default", "Bfactor MC acceptance");
-  keys.addOutputComponent("res",   "default", "Average resolution");
   keys.addOutputComponent("scale", "REGRESSION","scale factor");
   keys.addOutputComponent("accscale", "REGRESSION","MC acceptance for scale regression");
   keys.addOutputComponent("enescale", "REGRESSION","MC energy for scale regression");
@@ -297,8 +280,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   sqrt2_pi_(0.797884560802865),
   first_time_(true), no_aver_(false), pbc_(true),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
-  MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
-  dbfact_(0.0), statusstride_(0), first_status_(true),
+  statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
   kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0)
@@ -329,10 +311,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("SIGMA_MIN", sigma_min);
   if(sigma_min<0) error("SIGMA_MIN should be greater or equal to zero");
 
-  // Monte Carlo in B-factors
-  parse("DBFACT", dbfact_);
-  parse("MCBFACT_STRIDE", MCBstride_);
-
   // the following parameters must be specified with noise type 0 and 1
   double sigma_ini, dsigma;
   if(noise_!=2) {
@@ -357,7 +335,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("ERR_FILE", errfile);
 
   // integral of the experimetal density
-  double norm_d = 0.0;
+  double norm_d;
   parse("NORM_DENSITY", norm_d);
 
   // temperature
@@ -405,10 +383,9 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parseFlag("NO_AVER",no_aver_);
 
   // write overlap file
-  parse("WRITE_DENSITY_STRIDE", ovstride_);
-  parse("WRITE_DENSITY", ovfilename_);
-  if(ovstride_>0 && ovfilename_=="") error("With WRITE_DENSITY_STRIDE you must specify WRITE_DENSITY");
-  if(ovfilename_!="" && ovstride_==0) error("With WRITE_DENSITY you must specify WRITE_DENSITY_STRIDE");
+  parse("WRITE_OV_STRIDE", ovstride_);
+  parse("WRITE_OV", ovfilename_);
+  if(ovstride_>0 && ovfilename_=="") error("With WRITE_OV_STRIDE you must specify WRITE_OV");
 
   checkRead();
 
@@ -464,51 +441,54 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     log.printf("  annealing factor : %f\n",kanneal_);
   }
   if(ovstride_>0) {
-    log.printf("  stride for writing model density : %u\n",ovstride_);
-    log.printf("  file for writing model density : %s\n", ovfilename_.c_str());
+    log.printf("  stride for writing model overlaps : %u\n",ovstride_);
+    log.printf("  file for writing model overlaps : %s\n", ovfilename_.c_str());
   }
+
+  // set constant quantity before calculating stuff
+  cfact_ = 1.0/pow( 2.0*pi, 1.5 );
 
   // calculate model GMM constant parameters
   vector<double> GMM_m_w = get_GMM_m(atoms);
+
+  // read data file
+  get_exp_data(datafile);
+  log.printf("  number of kernel functions : %u\n", static_cast<unsigned>(GMM_d_m_.size()));
+
   // normalize atom weight map
-  if(norm_d <= 0.0) norm_d = 1.0;
   double norm_m = accumulate(GMM_m_w.begin(),  GMM_m_w.end(),  0.0);
   // renormalization
   for(unsigned i=0; i<GMM_m_w_.size(); ++i) GMM_m_w_[i] *= norm_d / norm_m;
-
-  // read experimenal data
-  read_exp_data(datafile);
-  log.printf("  number of voxels : %u\n", static_cast<unsigned>(ovdd_.size()));
 
   // read experimental errors
   vector<double> exp_err;
   if(errfile.size()>0) exp_err = read_exp_errors(errfile);
 
-  log.printf("  number of data groups : %u\n", static_cast<unsigned>(VOX_grps_.size()));
+  log.printf("  number of GMM groups : %u\n", static_cast<unsigned>(GMM_d_grps_.size()));
   // cycle on GMM groups
-  for(unsigned Gid=0; Gid<VOX_grps_.size(); ++Gid) {
+  for(unsigned Gid=0; Gid<GMM_d_grps_.size(); ++Gid) {
     log.printf("    group %d\n", Gid);
-    // calculate median density and experimental error
+    // calculate median overlap and experimental error
     vector<double> ovdd;
     vector<double> err;
     // cycle on the group members
-    for(unsigned i=0; i<VOX_grps_[Gid].size(); ++i) {
-      // VOX id
-      int VOXid = VOX_grps_[Gid][i];
+    for(unsigned i=0; i<GMM_d_grps_[Gid].size(); ++i) {
+      // GMM id
+      int GMMid = GMM_d_grps_[Gid][i];
       // add to experimental error
-      if(errfile.size()>0) err.push_back(exp_err[VOXid]);
+      if(errfile.size()>0) err.push_back(exp_err[GMMid]);
       else                 err.push_back(0.);
-      // add to group density
-      ovdd.push_back(ovdd_[VOXid]);
+      // add to GMM overlap
+      ovdd.push_back(ovdd_[GMMid]);
     }
     // calculate median quantities
     double ovdd_m = get_median(ovdd);
     double err_m  = get_median(err);
     // print out statistics
-    log.printf("     # of members : %u\n", VOX_grps_[Gid].size());
-    log.printf("     median density : %lf\n", ovdd_m);
+    log.printf("     # of members : %u\n", GMM_d_grps_[Gid].size());
+    log.printf("     median overlap : %lf\n", ovdd_m);
     log.printf("     median error : %lf\n", err_m);
-    // add minimum value of sigma for this data group
+    // add minimum value of sigma for this group of GMMs
     sigma_min_.push_back(sqrt(err_m*err_m+sigma_min*ovdd_m*sigma_min*ovdd_m));
     // these are only needed with Gaussian and Outliers noise models
     if(noise_!=2) {
@@ -530,12 +510,10 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   // prepare data and derivative vectors
   ovmd_.resize(ovdd_.size());
   atom_der_.resize(GMM_m_type_.size());
-  VOXid_der_.resize(ovdd_.size());
+  GMMid_der_.resize(ovdd_.size());
 
   // add components
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
-  addComponent("accB"); componentIsNotPeriodic("accB");
-  addComponent("res"); componentIsNotPeriodic("res");
 
   if(noise_!=2) {addComponent("acc"); componentIsNotPeriodic("acc");}
 
@@ -565,7 +543,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   log<<"\n";
 }
 
-void EMMIVOX::write_densities(long int step)
+void EMMIVOX::write_model_overlap(long int step)
 {
   OFile ovfile;
   ovfile.link(*this);
@@ -665,141 +643,37 @@ bool EMMIVOX::doAccept(double oldE, double newE, double kbt) {
   return accept;
 }
 
-void EMMIVOX::doMonteCarloBfact()
-{
-// move 100 randomly chosen bfactor
-  for(unsigned istep=0; istep<1000000; ++istep) {
-
-    // extract random atom
-    unsigned im = static_cast<unsigned>(floor(random_.RandU01()*static_cast<double>(GMM_m_nb_.size())));
-    if(im==GMM_m_nb_.size()) im -=1;
-
-    // get atom type, bold, weight and position
-    unsigned itype = GMM_m_type_[im];
-    double bold = GMM_m_s_[itype]+GMM_m_b_[im];
-    double w = GMM_m_w_[itype];
-    Vector pos = getPosition(im);
-
-    // propose move in b
-    double db = dbfact_ * ( 2.0 * random_.RandU01() - 1.0 );
-    double bfact = GMM_m_b_[im] + db;
-    // check boundaries
-    if(bfact > 10000.0) {bfact = 20000.0 - bfact;}
-    if(bfact < 0.0)     {bfact = -bfact;}
-    double bnew = GMM_m_s_[itype]+bfact;
-
-    vector<double> ovdd, ovmdold, ovmdnew;
-    vector<unsigned> ids, grp;
-    Vector der;
-
-    // cycle on all the voxels affected
-    for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
-      // voxel id
-      unsigned id = GMM_m_nb_[im][i];
-      // store voxel id
-      ids.push_back(id);
-      // store voxel group
-      grp.push_back(VOX_beta_[id]);
-      // and experimental value
-      ovdd.push_back(ovdd_[id]);
-      // store density before change
-      ovmdold.push_back(ovmd_[id]);
-      // get contribution before change
-      double dold=get_density(VOX_m_[id], pos, w, bold, der);
-      // get contribution after change
-      double dnew=get_density(VOX_m_[id], pos, w, bnew, der);
-      // store overall density after change
-      ovmdnew.push_back(ovmd_[id]-dold+dnew);
-    }
-
-    // calculate new and old score
-    double old_ene = 0.0;
-    double new_ene = 0.0;
-    if(noise_==0) {
-      for(unsigned i=0; i<ovmdold.size(); ++i) {
-        double devold = ( scale_*ovmdold[i]-ovdd[i] ) / sigma_[grp[i]];
-        double devnew = ( scale_*ovmdnew[i]-ovdd[i] ) / sigma_[grp[i]];
-        old_ene += 0.5 * kbt_ * devold * devold;
-        new_ene += 0.5 * kbt_ * devnew * devnew;
-      }
-    }
-    if(noise_==1) {
-      for(unsigned i=0; i<ovmdold.size(); ++i) {
-        double devold = ( scale_*ovmdold[i]-ovdd[i] ) / sigma_[grp[i]];
-        double devnew = ( scale_*ovmdnew[i]-ovdd[i] ) / sigma_[grp[i]];
-        old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
-        new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
-      }
-    }
-    if(noise_==2) {
-      for(unsigned i=0; i<ovmdold.size(); ++i) {
-        double devold = ( scale_*ovmdold[i]-ovdd[i] );
-        double devnew = ( scale_*ovmdnew[i]-ovdd[i] );
-        old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[grp[i]] ));
-        new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[grp[i]] ));
-      }
-    }
-    // add priors
-    old_ene += kbt_ * std::log(GMM_m_b_[im]);
-    new_ene += kbt_ * std::log(bfact);
-
-// increment number of trials
-    MCBtrials_ += 1.0;
-
-    // accept or reject
-    bool accept = doAccept(old_ene, new_ene, kbt_);
-    if(accept) {
-      GMM_m_b_[im] = bfact;
-      MCBaccept_ += 1.0;
-      // change the value of all ovmd affected
-      for(unsigned i=0; i<ovmdnew.size(); ++i) ovmd_[ids[i]]=ovmdnew[i];
-    }
-  } // end cycle on atoms
-
-// local communication
-  if(rank_!=0) {
-    for(unsigned i=0; i<GMM_m_b_.size(); ++i) GMM_m_b_[i] = 0.0;
-    MCBaccept_ = 0.0;
-    MCBtrials_ = 0.0;
-  }
-  if(size_>1) {
-    comm.Sum(&GMM_m_b_[0], GMM_m_b_.size());
-    comm.Sum(&MCBaccept_, 1);
-    comm.Sum(&MCBtrials_, 1);
-  }
-}
-
 void EMMIVOX::doMonteCarlo()
 {
-  // extract random data group
-  unsigned nVOX = static_cast<unsigned>(floor(random_.RandU01()*static_cast<double>(VOX_grps_.size())));
-  if(nVOX==VOX_grps_.size()) nVOX -= 1;
+  // extract random GMM group
+  unsigned nGMM = static_cast<unsigned>(floor(random_.RandU01()*static_cast<double>(GMM_d_grps_.size())));
+  if(nGMM==GMM_d_grps_.size()) nGMM -= 1;
 
   // generate random move
-  double shift = dsigma_[nVOX] * ( 2.0 * random_.RandU01() - 1.0 );
+  double shift = dsigma_[nGMM] * ( 2.0 * random_.RandU01() - 1.0 );
   // new sigma
-  double new_s = sigma_[nVOX] + shift;
+  double new_s = sigma_[nGMM] + shift;
   // check boundaries
-  if(new_s > sigma_max_[nVOX]) {new_s = 2.0 * sigma_max_[nVOX] - new_s;}
-  if(new_s < sigma_min_[nVOX]) {new_s = 2.0 * sigma_min_[nVOX] - new_s;}
+  if(new_s > sigma_max_[nGMM]) {new_s = 2.0 * sigma_max_[nGMM] - new_s;}
+  if(new_s < sigma_min_[nGMM]) {new_s = 2.0 * sigma_min_[nGMM] - new_s;}
   // old s2
-  double old_inv_s2 = 1.0 / sigma_[nVOX] / sigma_[nVOX];
+  double old_inv_s2 = 1.0 / sigma_[nGMM] / sigma_[nGMM];
   // new s2
   double new_inv_s2 = 1.0 / new_s / new_s;
 
   // cycle on GMM group and calculate old and new energy
   double old_ene = 0.0;
   double new_ene = 0.0;
-  double ng = static_cast<double>(VOX_grps_[nVOX].size());
+  double ng = static_cast<double>(GMM_d_grps_[nGMM].size());
 
   // in case of Gaussian noise
   if(noise_==0) {
     double chi2 = 0.0;
-    for(unsigned i=0; i<VOX_grps_[nVOX].size(); ++i) {
-      // id VOX
-      int VOXid = VOX_grps_[nVOX][i];
+    for(unsigned i=0; i<GMM_d_grps_[nGMM].size(); ++i) {
+      // id GMM component
+      int GMMid = GMM_d_grps_[nGMM][i];
       // deviation
-      double dev = ( scale_*ovmd_[VOXid]-ovdd_[VOXid] );
+      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
       // add to chi2
       chi2 += dev * dev;
     }
@@ -810,17 +684,17 @@ void EMMIVOX::doMonteCarlo()
 
   // in case of Outliers noise
   if(noise_==1) {
-    for(unsigned i=0; i<VOX_grps_[nVOX].size(); ++i) {
-      // id VOX
-      int VOXid = VOX_grps_[nVOX][i];
+    for(unsigned i=0; i<GMM_d_grps_[nGMM].size(); ++i) {
+      // id GMM component
+      int GMMid = GMM_d_grps_[nGMM][i];
       // calculate deviation
-      double dev = ( scale_*ovmd_[VOXid]-ovdd_[VOXid] );
+      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
       // add to energies
       old_ene += std::log( 1.0 + 0.5 * dev * dev * old_inv_s2);
       new_ene += std::log( 1.0 + 0.5 * dev * dev * new_inv_s2);
     }
     // final energy calculation: add normalization and prior
-    old_ene = kbt_ * ( old_ene + (ng+prior_) * std::log(sigma_[nVOX]) );
+    old_ene = kbt_ * ( old_ene + (ng+prior_) * std::log(sigma_[nGMM]) );
     new_ene = kbt_ * ( new_ene + (ng+prior_) * std::log(new_s) );
   }
 
@@ -830,7 +704,7 @@ void EMMIVOX::doMonteCarlo()
   // accept or reject
   bool accept = doAccept(old_ene/anneal_, new_ene/anneal_, kbt_);
   if(accept) {
-    sigma_[nVOX] = new_s;
+    sigma_[nGMM] = new_s;
     MCaccept_ += 1.0;
   }
   // local communication
@@ -857,7 +731,7 @@ vector<double> EMMIVOX::read_exp_errors(string errfile)
     ifile->open(errfile);
     // scan for number of experimental errors
     ifile->scanField("Nexp", nexp);
-    // cycle on data
+    // cycle on GMM components
     while(ifile->scanField("Id",idcomp)) {
       // total experimental error
       double err_tot = 0.0;
@@ -941,29 +815,36 @@ vector<double> EMMIVOX::get_GMM_m(vector<AtomNumber> &atoms)
   return GMM_m_w;
 }
 
-// read experimental data
-void EMMIVOX::read_exp_data(string datafile)
+// read experimental data file in PLUMED format:
+void EMMIVOX::get_exp_data(string datafile)
 {
-  int idvox, beta;
-  double m0, m1, m2, d;
+  Vector pos, sigma;
+  double ov, beta;
+  int idcomp;
+
 // open file
   IFile *ifile = new IFile();
   if(ifile->FileExist(datafile)) {
     ifile->open(datafile);
-    while(ifile->scanField("Id",idvox)) {
-      ifile->scanField("Pos_0",m0);
-      ifile->scanField("Pos_1",m1);
-      ifile->scanField("Pos_2",m2);
-      ifile->scanField("Density",d);
+    while(ifile->scanField("Id",idcomp)) {
+      ifile->scanField("Mean_0",pos[0]);
+      ifile->scanField("Mean_1",pos[1]);
+      ifile->scanField("Mean_2",pos[2]);
+      ifile->scanField("Sigma_0",sigma[0]);
+      ifile->scanField("Sigma_1",sigma[1]);
+      ifile->scanField("Sigma_2",sigma[2]);
       ifile->scanField("Beta",beta);
+      ifile->scanField("Overlap",ov);
       // check beta
       if(beta<0) error("Beta must be positive!");
-      // voxel coordinates
-      VOX_m_.push_back(Vector(m0,m1,m2));
-      // density
-      ovdd_.push_back(d);
+      // center of the Gaussian
+      GMM_d_m_.push_back(pos);
+      // vector of sigma
+      GMM_d_s_.push_back(sigma);
       // beta
-      VOX_beta_.push_back(beta);
+      GMM_d_beta_.push_back(beta);
+      // experimental overlap
+      ovdd_.push_back(ov);
       // new line
       ifile->scanField();
     }
@@ -973,13 +854,13 @@ void EMMIVOX::read_exp_data(string datafile)
   }
   delete ifile;
   // now create a set from beta (unique set of values)
-  set<int> bu(VOX_beta_.begin(), VOX_beta_.end());
+  set<int> bu(GMM_d_beta_.begin(), GMM_d_beta_.end());
   // now prepare the group vector
-  VOX_grps_.resize(bu.size());
+  GMM_d_grps_.resize(bu.size());
   // and fill it in
-  for(unsigned i=0; i<VOX_beta_.size(); ++i) {
-    if(VOX_beta_[i]>=VOX_grps_.size()) error("Check Beta values");
-    VOX_grps_[VOX_beta_[i]].push_back(i);
+  for(unsigned i=0; i<GMM_d_beta_.size(); ++i) {
+    if(GMM_d_beta_[i]>=GMM_d_grps_.size()) error("Check Beta values");
+    GMM_d_grps_[GMM_d_beta_[i]].push_back(i);
   }
 }
 
@@ -996,20 +877,20 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   }
   Bave /= static_cast<double>(GMM_m_type_.size());
   // calculate blur factor
-  double blur = 1.0e-5;
+  double blur = 0.0;
   if(reso*reso>Bave) blur = reso*reso-Bave;
   else warning("PLUMED should not be used with maps at resolution better than 0.3 nm");
-  // initialize B factor to blur
-  for(unsigned i=0; i<GMM_m_type_.size(); ++i) GMM_m_b_.push_back(blur);
+  // add blur to B
+  for(unsigned i=0; i<GMM_m_s_.size(); ++i) GMM_m_s_[i] += blur;
   // calculate average resolution
   double ave_res = 0.0;
   for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
-    ave_res += sqrt(GMM_m_s_[GMM_m_type_[i]]+blur);
+    ave_res += sqrt(GMM_m_s_[GMM_m_type_[i]]);
   }
   ave_res = ave_res / static_cast<double>(GMM_m_type_.size());
   log.printf("  experimental map resolution : %3.2f\n", reso);
   log.printf("  predicted map resolution : %3.2f\n", ave_res);
-  log.printf("  initial blur factor : %f\n", blur);
+  log.printf("  blur factor : %f\n", blur);
   // tabulate exponential
   dexp_ = dpcutoff_ / static_cast<double> (nexp_-1);
   for(unsigned i=0; i<nexp_; ++i) {
@@ -1017,66 +898,74 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   }
 }
 
-// get density exponent - for NL fast computation
-double EMMIVOX::get_density_exp(const Vector &m_m, const Vector &d_m, double b)
+// get overlap and derivatives
+double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
+                            double m_w, double m_b, Vector &ov_der)
 {
   Vector md;
-  // calculate vector difference m_m-d_m with/without pbc
-  if(pbc_) md = pbcDistance(d_m, m_m);
-  else     md = delta(d_m, m_m);
-  // calculate distance squared
-  double d2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2];
-  // return density exponent
-  return pi*pi*d2/b;
+  // calculate vector difference with/without pbc
+  if(pbc_) md = pbcDistance(m_m, d_m);
+  else     md = delta(m_m, d_m);
+  // calculate gaussian sigma
+  Vector invs2;
+  for(unsigned i=0; i<3; ++i) invs2[i]=1.0/(d_s[i]+0.5*m_b/pi/pi);
+  // calculate exponent
+  double ov = 0.0;
+  for(unsigned i=0; i<3; ++i) ov += md[i]*md[i]*invs2[i];
+  // final calculation
+  ov = m_w * cfact_ * sqrt(invs2[0]*invs2[1]*invs2[2]) * exp(-0.5*ov);
+  // derivatives
+  ov_der = ov * Vector(md[0]*invs2[0],md[1]*invs2[1],md[2]*invs2[2]);
+  return ov;
 }
 
-// get density and derivatives
-double EMMIVOX::get_density(const Vector &m_m, const Vector &d_m, double w,
-                            double b, Vector &ov_der)
+// get the exponent of the overlap
+double EMMIVOX::get_exp_overlap(const Vector &d_m, const Vector &m_m, const Vector &invs2)
 {
   Vector md;
   // calculate vector difference m_m-d_m with/without pbc
-  if(pbc_) md = pbcDistance(d_m, m_m);
-  else     md = delta(d_m, m_m);
-  // calculate distance squared
-  double d2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2];
-  // calculate density
-  double d = w * pow(pi/b,1.5) * exp(-pi*pi*d2/b);
-  // derivatives
-  ov_der = d*pi*pi/b * Vector(md[0], md[1], md[2]);
-  return d;
+  if(pbc_) md = pbcDistance(m_m, d_m);
+  else     md = delta(m_m, d_m);
+  // calculate exponent
+  double ov = 0.0;
+  for(unsigned i=0; i<3; ++i) ov += md[i]*md[i]*invs2[i];
+  return ov;
 }
 
 void EMMIVOX::update_neighbor_list()
 {
-  // dimension of atom vector
+  // dimension of atom vectors
   unsigned GMM_m_size = GMM_m_type_.size();
   // local neighbor list
   vector < unsigned > nl_l;
   // clear old neighbor list
   nl_.clear();
 
-  // cycle on voxels - in parallel
+  // cycle on GMM components - in parallel
   for(unsigned id=rank_; id<ovdd_.size(); id+=size_) {
     // overlap lists and map
     vector<double> ov_l;
     map<double, unsigned> ov_m;
-    // total density in id
+    // Kernel functions
+    Vector d_m = GMM_d_m_[id];
+    Vector d_s = GMM_d_s_[id];
+    Vector invs2;
+    // total overlap with id
     double ov_tot = 0.0;
     // cycle on all atoms
     for(unsigned im=0; im<GMM_m_size; ++im) {
       // get atom type
-      unsigned itype = GMM_m_type_[im];
-      // total value of b
-      double b = GMM_m_s_[itype]+GMM_m_b_[im];
-      // calculate exponent of density
-      double expd = get_density_exp(VOX_m_[id], getPosition(im), b);
-      // get index of expd in tabulated exponential
-      unsigned itab = static_cast<unsigned> (round(expd/dexp_));
+      unsigned atype = GMM_m_type_[im];
+      // get effective sigma
+      for(unsigned i=0; i<3; ++i) invs2[i]=1.0/(d_s[i]+0.5*GMM_m_s_[atype]/pi/pi);
+      // calculate exponent of overlap
+      double expov = get_exp_overlap(d_m, getPosition(im), invs2);
+      // get index of expov in tabulated exponential
+      unsigned itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
       // check boundaries and skip atom in case
       if(itab >= tab_exp_.size()) continue;
-      // in case calculate density
-      double ov = GMM_m_w_[itype] * pow(pi/b,1.5) * tab_exp_[itab];
+      // in case calculate overlap
+      double ov = GMM_m_w_[atype]*cfact_*sqrt(invs2[0]*invs2[1]*invs2[2])*tab_exp_[itab];
       // add to list
       ov_l.push_back(ov);
       // and map to retrieve atom index
@@ -1101,7 +990,7 @@ void EMMIVOX::update_neighbor_list()
     // now add atoms to neighborlist
     for(map<double, unsigned>::iterator it=ov_m.begin(); it!=ov_m.end(); ++it)
       nl_l.push_back(id*GMM_m_size+it->second);
-    // end cycle on voxels in parallel
+    // end cycle on GMM components in parallel
   }
   // find total dimension of neighborlist
   vector <int> recvcounts(size_, 0);
@@ -1122,13 +1011,6 @@ void EMMIVOX::update_neighbor_list()
   comm.Allgatherv(&nl_l[0], recvcounts[rank_], &nl_[0], &recvcounts[0], &disp[0]);
   // now resize derivatives
   ovmd_der_.resize(tot_size);
-  // now cycle over the neighbor list to creat a list of voxels per atom
-  GMM_m_nb_.clear(); GMM_m_nb_.resize(GMM_m_size);
-  for(unsigned i=0; i<tot_size; ++i) {
-    unsigned id = nl_[i] / GMM_m_size;
-    unsigned im = nl_[i] % GMM_m_size;
-    GMM_m_nb_[im].push_back(id);
-  }
 }
 
 void EMMIVOX::prepare()
@@ -1136,8 +1018,8 @@ void EMMIVOX::prepare()
   if(getExchangeStep()) first_time_=true;
 }
 
-// calculate model density with NL
-void EMMIVOX::calculate_density() {
+// overlap calculator
+void EMMIVOX::calculate_overlap() {
 
   if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0) {
     update_neighbor_list();
@@ -1148,17 +1030,17 @@ void EMMIVOX::calculate_density() {
   for(unsigned i=0; i<ovmd_.size(); ++i)     ovmd_[i] = 0.0;
   for(unsigned i=0; i<ovmd_der_.size(); ++i) ovmd_der_[i] = Vector(0,0,0);
 
-  // dimension of the atom list
+  // we have to cycle over all model and data GMM components in the neighbor list
   unsigned GMM_m_size = GMM_m_type_.size();
-  // cycle over neighbor list in parallel
   for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
     // get data (id) and atom (im) indexes
     unsigned id = nl_[i] / GMM_m_size;
     unsigned im = nl_[i] % GMM_m_size;
-    unsigned itype = GMM_m_type_[im];
-    // add density with im component of model GMM
-    ovmd_[id] += get_density(VOX_m_[id], getPosition(im), GMM_m_w_[itype],
-                             GMM_m_s_[itype]+GMM_m_b_[im], ovmd_der_[i]);
+    // get atom type
+    unsigned atype = GMM_m_type_[im];
+    // add overlap with im component of model GMM
+    ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), GMM_d_s_[id],
+                             GMM_m_w_[atype], GMM_m_s_[atype], ovmd_der_[i]);
   }
   // communicate stuff
   if(size_>1) {
@@ -1272,8 +1154,8 @@ double EMMIVOX::get_annealing(long int step)
 void EMMIVOX::calculate()
 {
 
-// calculate model density
-  calculate_density();
+// calculate CV
+  calculate_overlap();
 
   // rescale factor for ensemble average
   double escale = 1.0 / static_cast<double>(nrep_);
@@ -1301,6 +1183,9 @@ void EMMIVOX::calculate()
     getPntrToComponent("scale")->set(scale_);
   }
 
+  // write model overlap to file
+  if(ovstride_>0 && step%ovstride_==0) write_model_overlap(step);
+
   // clear energy and virial
   ene_ = 0.0;
   virial_.zero();
@@ -1325,18 +1210,18 @@ void EMMIVOX::calculate()
 
   // in case of ensemble averaging
   if(!no_aver_ && nrep_>1) {
-    // if master node, sum derivatives and ene
+    // if master node, sum der_GMMid derivatives and ene
     if(rank_==0) {
-      multi_sim_comm.Sum(&VOXid_der_[0], VOXid_der_.size());
+      multi_sim_comm.Sum(&GMMid_der_[0], GMMid_der_.size());
       multi_sim_comm.Sum(&ene_, 1);
     } else {
-      // set derivatives and energy to zero
-      for(unsigned i=0; i<VOXid_der_.size(); ++i) VOXid_der_[i]=0.0;
+      // set der_GMMid derivatives and energy to zero
+      for(unsigned i=0; i<GMMid_der_.size(); ++i) GMMid_der_[i]=0.0;
       ene_ = 0.0;
     }
     // local communication
     if(size_>1) {
-      comm.Sum(&VOXid_der_[0], VOXid_der_.size());
+      comm.Sum(&GMMid_der_[0], GMMid_der_.size());
       comm.Sum(&ene_, 1);
     }
   }
@@ -1344,15 +1229,15 @@ void EMMIVOX::calculate()
   // clean temporary vector
   for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
 
-  // get derivatives of energy with respect to atoms positions
+  // get derivatives of bias with respect to atoms
   for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
     // get indexes of data and model component
     unsigned id = nl_[i] / GMM_m_type_.size();
     unsigned im = nl_[i] % GMM_m_type_.size();
     // chain rule + replica normalization
-    Vector tot_der = VOXid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
+    Vector tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
     Vector pos;
-    if(pbc_) pos = pbcDistance(VOX_m_[id], getPosition(im)) + VOX_m_[id];
+    if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
     else     pos = getPosition(im);
     // increment derivatives and virial
     atom_der_[im] += tot_der;
@@ -1369,26 +1254,6 @@ void EMMIVOX::calculate()
   for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
   setBoxDerivatives(getPntrToComponent("scoreb"), virial_);
   getPntrToComponent("scoreb")->set(ene_);
-
-  // now do Monte Carlo on b factors
-  if(dbfact_>0 && step%MCBstride_==0 && !getExchangeStep()) doMonteCarloBfact();
-
-  // write densities to file
-  if(ovstride_>0 && step%ovstride_==0) write_densities(step);
-
-  // calculate acceptance ratio
-  double acc = MCBaccept_ / MCBtrials_;
-
-  // set value
-  getPntrToComponent("accB")->set(acc);
-
-  // average resolution
-  double ave_res = 0.0;
-  for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
-    ave_res += sqrt(GMM_m_s_[GMM_m_type_[i]]+GMM_m_b_[i]);
-  }
-  ave_res = ave_res / static_cast<double>(GMM_m_type_.size());
-  getPntrToComponent("res")->set(ave_res);
 
   // This part is needed only for Gaussian and Outliers noise models
   if(noise_!=2) {
@@ -1412,61 +1277,61 @@ void EMMIVOX::calculate()
 void EMMIVOX::calculate_Gauss()
 {
   // cycle on all the GMM groups
-  for(unsigned i=0; i<VOX_grps_.size(); ++i) {
+  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
     double eneg = 0.0;
     // cycle on all the members of the group
-    for(unsigned j=0; j<VOX_grps_[i].size(); ++j) {
+    for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
       // id of the GMM component
-      int VOXid = VOX_grps_[i][j];
+      int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[VOXid]-ovdd_[VOXid] ) / sigma_[i];
+      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
       eneg += 0.5 * dev * dev;
       // store derivative for later
-      VOXid_der_[VOXid] = kbt_ * dev / sigma_[i];
+      GMMid_der_[GMMid] = kbt_ * dev / sigma_[i];
     }
     // add to total energy along with normalizations and prior
-    ene_ += kbt_ * ( eneg + (static_cast<double>(VOX_grps_[i].size())+prior_) * std::log(sigma_[i]) );
+    ene_ += kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
   }
 }
 
 void EMMIVOX::calculate_Outliers()
 {
   // cycle on all the GMM groups
-  for(unsigned i=0; i<VOX_grps_.size(); ++i) {
+  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
     // cycle on all the members of the group
     double eneg = 0.0;
-    for(unsigned j=0; j<VOX_grps_[i].size(); ++j) {
+    for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
       // id of the GMM component
-      int VOXid = VOX_grps_[i][j];
+      int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[VOXid]-ovdd_[VOXid] ) / sigma_[i];
+      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
       eneg += std::log( 1.0 + 0.5 * dev * dev );
       // store derivative for later
-      VOXid_der_[VOXid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
+      GMMid_der_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
     }
     // add to total energy along with normalizations and prior
-    ene_ += kbt_ * ( eneg + (static_cast<double>(VOX_grps_[i].size())+prior_) * std::log(sigma_[i]) );
+    ene_ += kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
   }
 }
 
 void EMMIVOX::calculate_Marginal()
 {
   // cycle on all the GMM groups
-  for(unsigned i=0; i<VOX_grps_.size(); ++i) {
+  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
     // cycle on all the members of the group
-    for(unsigned j=0; j<VOX_grps_[i].size(); ++j) {
+    for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
       // id of the GMM component
-      int VOXid = VOX_grps_[i][j];
+      int GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[VOXid]-ovdd_[VOXid] );
+      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
       // calculate errf
       double errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
       // add to group energy
       ene_ += -kbt_ * std::log ( 0.5 / dev * errf ) ;
       // store derivative for later
-      VOXid_der_[VOXid] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
+      GMMid_der_[GMMid] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
     }
   }
 }
