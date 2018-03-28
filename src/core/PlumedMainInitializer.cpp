@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,16 +43,16 @@ typedef struct {
 /* These functions should be accessible from C, since they might be statically
    used from Plumed.c (for static binding) */
 
-extern "C" void*plumedmain_create() {
+extern "C" void*plumed_plumedmain_create() {
   return new PLMD::PlumedMain;
 }
 
-extern "C" void plumedmain_cmd(void*plumed,const char*key,const void*val) {
+extern "C" void plumed_plumedmain_cmd(void*plumed,const char*key,const void*val) {
   plumed_massert(plumed,"trying to use a plumed object which is not initialized");
   static_cast<PLMD::PlumedMain*>(plumed)->cmd(key,val);
 }
 
-extern "C" void plumedmain_finalize(void*plumed) {
+extern "C" void plumed_plumedmain_finalize(void*plumed) {
   plumed_massert(plumed,"trying to deallocate a plumed object which is not initialized");
 // I think it is not possible to replace this delete with a smart pointer
 // since the ownership of this pointer is in a C structure. GB
@@ -66,12 +66,12 @@ namespace PLMD {
 
 /// Static object which registers Plumed.
 /// This is a static object which, during its construction at startup,
-/// registers the pointers to plumedmain_create, plumedmain_cmd and plumedmain_finalize
+/// registers the pointers to plumed_plumedmain_create, plumed_plumedmain_cmd and plumed_plumedmain_finalize
 /// to the plumed_kernel_register function
 static class PlumedMainInitializer {
 public:
   PlumedMainInitializer() {
-    plumed_plumedmain_function_holder fh= {plumedmain_create,plumedmain_cmd,plumedmain_finalize};
+    plumed_plumedmain_function_holder fh= {plumed_plumedmain_create,plumed_plumedmain_cmd,plumed_plumedmain_finalize};
     plumed_kernel_register(&fh);
   }
 } RegisterMe;

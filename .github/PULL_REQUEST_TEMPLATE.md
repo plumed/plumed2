@@ -51,6 +51,6 @@ I would like my code to appear in release __XXXXX__
 <!--
   After your branch has been merged to the desired branch and then to plumed2/master, and after the
   plumed official manual has been updated, please check out the coverage scan at
-  http://plumed.github.io/doc-master/developer-doc/coverage/index.html
+  http://plumed.github.io/coverage-master
   In case your new features are not well covered, please try to add more complete regtests.
 -->

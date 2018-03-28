@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -97,7 +97,6 @@ void RMSD::setReference(const vector<Vector> & reference) {
   plumed_massert(displace.empty(),"you should first clear() an RMSD object, then set a new reference");
   align.resize(n,1.0/n);
   displace.resize(n,1.0/n);
-  #pragma omp simd
   for(unsigned i=0; i<n; i++) reference_center+=this->reference[i]*align[i];
   #pragma omp simd
   for(unsigned i=0; i<n; i++) this->reference[i]-=reference_center;
@@ -116,8 +115,9 @@ void RMSD::setAlign(const vector<double> & align, bool normalize_weights, bool r
   this->align=align;
   if(normalize_weights) {
     double w=0.0;
-    #pragma omp simd
+    #pragma omp simd reduction(+:w)
     for(unsigned i=0; i<n; i++) w+=this->align[i];
+    plumed_massert(w>epsilon,"It looks like weights used for alignment are zero. Check your reference PDB file.");
     double inv=1.0/w;
     #pragma omp simd
     for(unsigned i=0; i<n; i++) this->align[i]*=inv;
@@ -149,8 +149,9 @@ void RMSD::setDisplace(const vector<double> & displace, bool normalize_weights) 
   plumed_massert(this->displace.size()==displace.size(),"mismatch in dimension of align/displace arrays");
   this->displace=displace;
   double w=0.0;
-  #pragma omp simd
+  #pragma omp simd reduction(+:w)
   for(unsigned i=0; i<n; i++) w+=this->displace[i];
+  plumed_massert(w>epsilon,"It looks like weights used for displacement are zero. Check your reference PDB file.");
   double inv=1.0/w;
   if(normalize_weights) {
     #pragma omp simd
@@ -973,7 +974,6 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
   Vector cp; cp.zero(); if(!cpositions_is_removed)cp=cpositions;
   Vector cr; cr.zero(); if(!creference_is_removed)cr=creference;
 // second expensive loop: compute second moments wrt centers
-  #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     double w=align[iat];
     rr00+=dotProduct(positions[iat]-cp,positions[iat]-cp)*w;
@@ -1110,11 +1110,11 @@ double RMSDCoreData::getDistance( bool squared) {
 
   if(!isInitialized)plumed_merror("getDistance cannot calculate the distance without being initialized first by doCoreCalc ");
 
-  if(safe || !alEqDis) dist=0.0;
-  else
-    dist=eigenvals[0]+rr00+rr11;
+  double localDist=0.0;
   const unsigned n=static_cast<unsigned int>(reference.size());
-  double localDist = 0;
+  if(safe || !alEqDis) localDist=0.0;
+  else
+    localDist=eigenvals[0]+rr00+rr11;
   #pragma omp simd reduction(+:localDist)
   for(unsigned iat=0; iat<n; iat++) {
     if(alEqDis) {
@@ -1180,8 +1180,6 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions() {
   if(!hasDistance)plumed_merror("getDPositionsDerivatives needs to calculate the distance via getDistance first !");
   if(!isInitialized)plumed_merror("getDPositionsDerivatives needs to initialize the coreData first!");
   Vector csum;
-  Vector tmp1,tmp2;
-  #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     if(alEqDis) {
 // there is no need for derivatives of rotation and shift here as it is by construction zero
@@ -1189,12 +1187,12 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions() {
       derivatives[iat]= 2*prefactor*align[iat]*d[iat];
     } else {
 // these are the derivatives assuming the roto-translation as frozen
-      tmp1=2*displace[iat]*d[iat];
+      Vector tmp1=2*displace[iat]*d[iat];
       derivatives[iat]=tmp1;
 // derivative of cpositions
       ddist_dcpositions+=-tmp1;
       // these needed for com corrections
-      tmp2=matmul(ddist_drr01,reference[iat]-creference)*align[iat];
+      Vector tmp2=matmul(ddist_drr01,reference[iat]-creference)*align[iat];
       derivatives[iat]+=tmp2;
       csum+=tmp2;
     }
@@ -1214,7 +1212,7 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference() {
   derivatives.resize(n);
   double prefactor=1.0;
   if(!distanceIsMSD) prefactor*=0.5/dist;
-  Vector csum,tmp1,tmp2;
+  Vector csum;
 
   plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!hasDistance)plumed_merror("getDDistanceDReference needs to calculate the distance via getDistance first !");
@@ -1224,7 +1222,6 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference() {
   Tensor t_ddist_drr01=ddist_drr01.transpose();
 
 // third expensive loop: derivatives
-  #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     if(alEqDis) {
 // there is no need for derivatives of rotation and shift here as it is by construction zero
@@ -1233,12 +1230,12 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference() {
       derivatives[iat]= -2*prefactor*align[iat]*matmul(t_rotation,d[iat]);
     } else {
 // these are the derivatives assuming the roto-translation as frozen
-      tmp1=2*displace[iat]*matmul(t_rotation,d[iat]);
+      Vector tmp1=2*displace[iat]*matmul(t_rotation,d[iat]);
       derivatives[iat]= -tmp1;
 // derivative of cpositions
       ddist_dcreference+=tmp1;
       // these below are needed for com correction
-      tmp2=matmul(t_ddist_drr01,positions[iat]-cpositions)*align[iat];
+      Vector tmp2=matmul(t_ddist_drr01,positions[iat]-cpositions)*align[iat];
       derivatives[iat]+=tmp2;
       csum+=tmp2;
     }

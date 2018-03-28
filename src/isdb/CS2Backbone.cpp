@@ -589,6 +589,8 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   log.printf("  Initializing N shifts %s\n", stringadb.c_str());
   init_cs(stringadb, "N", pdb);
 
+  if(chemicalshifts.size()==0) plumed_merror("There are no chemical shifts to calculate, there must be at least a not empty file (CA|CB|C|HA|H|N|shifts.dat)");
+
   init_types(pdb);
   init_rings(pdb);
 
@@ -643,7 +645,7 @@ void CS2Backbone::init_cs(const string &file, const string &nucl, const PDB &pdb
 
   ifstream in;
   in.open(file.c_str());
-  if(!in) plumed_merror("Unable to open " + file);
+  if(!in) return;
   istream_iterator<string> iter(in), end;
   unsigned begin=0;
 

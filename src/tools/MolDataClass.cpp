@@ -184,16 +184,21 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
 // symbol should be something like
 // phi-123 i.e. phi torsion of residue 123 of first chain
 // psi-A321 i.e. psi torsion of residue 321 of chain A
+// psi-4_321 is psi torsion of residue 321 of chain 4
+// psi-A_321 is equivalent to psi-A321
     numbers.resize(0);
     std::size_t dash=symbol.find_first_of('-');
+    std::size_t firstunderscore=symbol.find_first_of('_',dash+1);
     std::size_t firstnum=symbol.find_first_of("0123456789",dash+1);
     std::string name=symbol.substr(0,dash);
     unsigned resnum;
     std::string resname;
     std::string chainid;
-    if(firstnum==dash+1) {
+    if(firstunderscore != std::string::npos) {
+      Tools::convert( symbol.substr(firstunderscore+1), resnum );
+      chainid=symbol.substr(dash+1,firstunderscore-(dash+1));
+    } else if(firstnum==dash+1) {
       Tools::convert( symbol.substr(dash+1), resnum );
-      resname= mypdb.getResidueName(resnum);
       chainid="*"; // this is going to match the first chain
     } else {
       // if chain id is provided:

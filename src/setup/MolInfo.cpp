@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,6 +54,7 @@ Using MOLINFO with a protein's or nucleic acid's pdb extends the possibility of 
 symbol in the form
 
 \verbatim
+@"definition"-chain_residuenum
 @"definition"-chainresiduenum
 @"definition"-residuenum
 \endverbatim
@@ -62,8 +63,12 @@ So for example
 
 \verbatim
 @psi-1 will select the atoms defining the psi torsion of residue 1
-@psi-C1 will define the same torsion for residue 1 of chain C.
+@psi-C1  or @psi-C_1 will define the same torsion for residue 1 of chain C.
+@psi-3_1 will define the same torsion for residue 1 of chain 3.
 \endverbatim
+
+Using the underscore to separate chain and residue is available as of PLUMED 2.5 and allows selecting chains
+with a numeric id.
 
 In the following are listed the current available definitions:
 
@@ -115,7 +120,7 @@ Notice that `zeta` and `epsilon` groups should not be used on 3' end residue and
 should not be used on 5' end residue.
 
 Furthermore it is also possible to pick single atoms using the syntax
-`@atom-chainresiduenum` or `@atom-residuenum`.
+`atom-chain_residuenum`, `@atom-chainresiduenum` or `@atom-residuenum`.
 
 \warning If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
 

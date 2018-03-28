@@ -239,6 +239,7 @@ PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
+PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
@@ -260,6 +261,7 @@ AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
 AC_ARG_VAR(LDSHARED,[command for linking shared library - configure will use CXX plus the proper flags ])
 AC_ARG_VAR(PYTHON_BIN,[python executable (e.g. python2.7 or /opt/local/bin/python2.7) - default: search for a python executable])
+AC_ARG_VAR(BASH_COMPLETION_DIR,[path where bash completion will be installed - default: search with pkg-config])
 AC_ARG_VAR(MPIEXEC,[command to run mpi programs in tests - default not specified, which means use PLUMED_MPIRUN env var at runtime for backward compatibility])
 
 
@@ -923,7 +925,7 @@ EOF
     AC_MSG_RESULT([no])
   fi
 done
- 
+
 fi
 
 AC_SUBST(AR_CR)
@@ -965,6 +967,56 @@ EOF
   fi
 done
  
+fi
+
+make_static_archive=no
+AC_SUBST(make_static_archive)
+
+if test "${static_archive}" == true ; then
+  if test -z "$LD_RO" || test -z "$AR_CR" ; then
+    AC_MSG_WARN([no way to create a static archive if ld -ro or ar cr do not work])
+    static_archive=false
+  fi
+fi
+
+if test "${static_archive}" == true ; then
+  AC_MSG_CHECKING([whether static-object constructors can be linked from a static archive])
+
+  magic_token=c1bc476d093a3a5c67b4530e6c54c633593fe9aa
+  rm -f conftest-*
+  
+  cat << EOF > conftest-main.cpp
+  void f(void);
+  int main(int argc,char**argv){ f(); return 0; }
+EOF
+  cat << EOF > conftest-f.cpp
+  void f(void){ return; }
+EOF
+  cat << EOF > conftest-g.cpp
+#include <iostream>
+  class g{
+    public:
+    g(){ std::cout<<"$magic_token\n"; }
+  } init;
+EOF
+
+  $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
+  
+  $LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+# linking the previously merged objects should work:
+  $AR_CR conftest-both.a conftest-both.o 1> /dev/null 2> /dev/null
+# something like the following, instead, should not work:
+#  $AR_CR conftest-both.a conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+#
+  $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.a 1> /dev/null 2> /dev/null
+  if grep -q $magic_token ./conftest.exe ; then
+    AC_MSG_RESULT([yes])
+    make_static_archive=yes
+  else
+    AC_MSG_RESULT([no])
+  fi
 fi
 
 if test "${static_patch}" == true ; then
@@ -1045,6 +1097,32 @@ then
   prefix=/usr/local
 fi
 
+pkgconfig_bin=""
+
+AC_PATH_PROGS(pkgconfig_bin,pkg-config)
+
+if test -z "$BASH_COMPLETION_DIR" && test -n "$pkgconfig_bin"; then
+  if test "$prefix" == "$(pkg-config --variable=prefix bash-completion 2>/dev/null)"
+  then
+    AC_MSG_NOTICE([bash-completion is installed on the same prefix where plumed will be installed])
+    if pkg-config --variable=completionsdir bash-completion 2>/dev/null >/dev/null ; then
+      BASH_COMPLETION_DIR="$(pkg-config --variable=completionsdir  bash-completion 2>/dev/null)"
+    fi
+  else
+    AC_MSG_NOTICE([bash-completion is not installed or it is installed on a different prefix])
+    pkgconfig_bin=""
+  fi
+fi
+
+if test -n "$BASH_COMPLETION_DIR"
+then
+  AC_MSG_NOTICE([bash completion for plumed will be installed in $BASH_COMPLETION_DIR])
+else
+  AC_MSG_NOTICE([bash completion for plumed will not be installed])
+fi
+
+AC_SUBST(BASH_COMPLETION_DIR)
+
 AC_ARG_PROGRAM
 
 
@@ -1082,8 +1160,14 @@ AC_MSG_NOTICE([**** datadir: $datadir])
 AC_MSG_NOTICE([**** docdir: ${datarootdir}/doc/$program_name])
 AC_MSG_NOTICE([**** htmldir: $htmldir])
 AC_MSG_NOTICE([**** Executable will be named $program_name])
-AC_MSG_NOTICE([**** You can change paths later using options to "make install"])
-AC_MSG_NOTICE([**** e.g. with "make install prefix=/path"])
+AC_MSG_NOTICE([**** As of PLUMED 2.5, you cannot change paths anymore during "make install"])
+AC_MSG_NOTICE([**** Please configure and make clean to change the prefix])
+
+if test -z "$BASH_COMPLETION_DIR" ; then
+  AC_MSG_WARN([**** Bash completion for plumed will not be installed, please add the following two lines to your bashrc])
+  AC_MSG_WARN([**** _$program_name() { eval "\$($program_name --no-mpi completion 2>/dev/null)";}])
+  AC_MSG_WARN([**** complete -F _$program_name -o default $program_name])
+fi
 
 if test $mpi == true; then
   if test $mpi_found == ok; then

@@ -447,7 +447,7 @@ continuously.
 As an exercise, you can use a target distribution consisting in a gaussian
 centered at the dissociation barrier. The syntax in Plumed is:
 \plumedfile
-td1: TD_GAUSSIAN CENTER=0.325 SIGMA=0.03
+td1: TD_GAUSSIAN CENTER1=0.325 SIGMA1=0.03
 
 VES_LINEAR_EXPANSION ...
  ARG=d1

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,12 +23,16 @@
 #define __PLUMED_tools_BiasRepresentation_h
 
 #include "Exception.h"
-#include "KernelFunctions.h"
-#include "File.h"
-#include "Grid.h"
 #include <memory>
+#include <vector>
 
 namespace PLMD {
+
+class Value;
+class Grid;
+class IFile;
+class KernelFunctions;
+class Communicator;
 
 //+PLUMEDOC INTERNAL biasrepresentation
 /*

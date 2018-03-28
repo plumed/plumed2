@@ -1,7 +1,7 @@
 # Terminal settings
-set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
-set output "plotTD.png"
-set border lw 1.5
+#set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+#set output "plotTD.png"
+#set border lw 1.5
 
 # Set labels
 set xlabel "Distance (nm)"

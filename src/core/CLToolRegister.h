@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -56,7 +56,7 @@ public:
 /// \param kp  A pointer to a function which returns the allowed keywords
   void add(std::string key,creator_pointer cp,keywords_pointer kp);
 /// Verify if a directive is present in the register
-  bool check(std::string cltool);
+  bool check(std::string cltool)const;
 /// Create an CLTool of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   std::unique_ptr<CLTool> create(const CLToolOptions&ao);
@@ -66,6 +66,8 @@ public:
   std::vector<std::string> list()const;
 /// Print out the instructions for using the tool in html ready for input into the manual
   bool printManual(const std::string& cltool);
+/// Return all the keys of this cltool
+  std::vector<std::string> getKeys(const std::string& cltool)const;
 };
 
 /// Function returning a reference to the CLToolRegister.
