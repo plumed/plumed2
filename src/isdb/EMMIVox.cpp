@@ -214,8 +214,6 @@ private:
 // calculate overlap between two Gaussians
   double get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
                      double m_w, double m_b, Vector &ov_der);
-// calculate exponent of overlap for neighbor list update
-  double get_exp_overlap(const Vector &d_m, const Vector &m_m, const Vector &invs2);
 // update the neighbor list
   void update_neighbor_list();
 // calculate overlap
@@ -902,33 +900,20 @@ void EMMIVOX::calculate_useful_stuff(double reso)
 double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
                             double m_w, double m_b, Vector &ov_der)
 {
-  Vector md;
+  Vector md, invs2;
+  double ov = 0.0;
   // calculate vector difference with/without pbc
   if(pbc_) md = pbcDistance(m_m, d_m);
   else     md = delta(m_m, d_m);
-  // calculate gaussian sigma
-  Vector invs2;
-  for(unsigned i=0; i<3; ++i) invs2[i]=1.0/(d_s[i]+0.5*m_b/pi/pi);
   // calculate exponent
-  double ov = 0.0;
-  for(unsigned i=0; i<3; ++i) ov += md[i]*md[i]*invs2[i];
+  for(unsigned i=0; i<3; ++i) {
+    invs2[i] = 1.0 / ( d_s[i] + 0.5*m_b/pi/pi );
+    ov += md[i] * md[i] * invs2[i];
+  }
   // final calculation
   ov = m_w * cfact_ * sqrt(invs2[0]*invs2[1]*invs2[2]) * exp(-0.5*ov);
   // derivatives
   ov_der = ov * Vector(md[0]*invs2[0],md[1]*invs2[1],md[2]*invs2[2]);
-  return ov;
-}
-
-// get the exponent of the overlap
-double EMMIVOX::get_exp_overlap(const Vector &d_m, const Vector &m_m, const Vector &invs2)
-{
-  Vector md;
-  // calculate vector difference m_m-d_m with/without pbc
-  if(pbc_) md = pbcDistance(m_m, d_m);
-  else     md = delta(m_m, d_m);
-  // calculate exponent
-  double ov = 0.0;
-  for(unsigned i=0; i<3; ++i) ov += md[i]*md[i]*invs2[i];
   return ov;
 }
 
@@ -938,34 +923,48 @@ void EMMIVOX::update_neighbor_list()
   unsigned GMM_m_size = GMM_m_type_.size();
   // local neighbor list
   vector < unsigned > nl_l;
+  // other useful stuff
+  vector<double> ov_l;
+  map<double, unsigned> ov_m;
+  map<double, unsigned>::iterator it;
+  Vector d_m, d_s, md, invs2;
+  double ov_tot, expov, ov;
+  double ov_cut, res;
+  unsigned atype, itab;
+  int tot_size, rank_size;
+
   // clear old neighbor list
   nl_.clear();
 
   // cycle on GMM components - in parallel
   for(unsigned id=rank_; id<ovdd_.size(); id+=size_) {
-    // overlap lists and map
-    vector<double> ov_l;
-    map<double, unsigned> ov_m;
+    // clear overlap lists and map
+    ov_l.clear();
+    ov_m.clear();
     // Kernel functions
-    Vector d_m = GMM_d_m_[id];
-    Vector d_s = GMM_d_s_[id];
-    Vector invs2;
+    d_m = GMM_d_m_[id];
+    d_s = GMM_d_s_[id];
     // total overlap with id
-    double ov_tot = 0.0;
+    ov_tot = 0.0;
     // cycle on all atoms
     for(unsigned im=0; im<GMM_m_size; ++im) {
+      // calculate vector difference m_m-d_m with/without pbc
+      if(pbc_) md = pbcDistance(getPosition(im), d_m);
+      else     md = delta(getPosition(im), d_m);
       // get atom type
-      unsigned atype = GMM_m_type_[im];
-      // get effective sigma
-      for(unsigned i=0; i<3; ++i) invs2[i]=1.0/(d_s[i]+0.5*GMM_m_s_[atype]/pi/pi);
-      // calculate exponent of overlap
-      double expov = get_exp_overlap(d_m, getPosition(im), invs2);
+      atype = GMM_m_type_[im];
+      // calculate exponent
+      expov = 0.0;
+      for(unsigned i=0; i<3; ++i) {
+        invs2[i] = 1.0/( d_s[i] + 0.5*GMM_m_s_[atype]/pi/pi );
+        expov += md[i] * md[i] * invs2[i];
+      }
       // get index of expov in tabulated exponential
-      unsigned itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
+      itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
       // check boundaries and skip atom in case
       if(itab >= tab_exp_.size()) continue;
       // in case calculate overlap
-      double ov = GMM_m_w_[atype]*cfact_*sqrt(invs2[0]*invs2[1]*invs2[2])*tab_exp_[itab];
+      ov = GMM_m_w_[atype]*cfact_*sqrt(invs2[0]*invs2[1]*invs2[2])*tab_exp_[itab];
       // add to list
       ov_l.push_back(ov);
       // and map to retrieve atom index
@@ -976,11 +975,11 @@ void EMMIVOX::update_neighbor_list()
     // check if zero size -> ov_tot = 0
     if(ov_l.size()==0) continue;
     // define cutoff
-    double ov_cut = ov_tot * nl_cutoff_;
+    ov_cut = ov_tot * nl_cutoff_;
     // sort ov_l in ascending order
     std::sort(ov_l.begin(), ov_l.end());
     // integrate ov_l
-    double res = 0.0;
+    res = 0.0;
     for(unsigned i=0; i<ov_l.size(); ++i) {
       res += ov_l[i];
       // if exceeding the cutoff for overlap, stop
@@ -988,7 +987,7 @@ void EMMIVOX::update_neighbor_list()
       else ov_m.erase(ov_l[i]);
     }
     // now add atoms to neighborlist
-    for(map<double, unsigned>::iterator it=ov_m.begin(); it!=ov_m.end(); ++it)
+    for(it=ov_m.begin(); it!=ov_m.end(); ++it)
       nl_l.push_back(id*GMM_m_size+it->second);
     // end cycle on GMM components in parallel
   }
@@ -996,13 +995,13 @@ void EMMIVOX::update_neighbor_list()
   vector <int> recvcounts(size_, 0);
   recvcounts[rank_] = nl_l.size();
   comm.Sum(&recvcounts[0], size_);
-  int tot_size = accumulate(recvcounts.begin(), recvcounts.end(), 0);
+  tot_size = accumulate(recvcounts.begin(), recvcounts.end(), 0);
   // resize neighbor stuff
   nl_.resize(tot_size);
   // calculate vector of displacement
   vector<int> disp(size_);
   disp[0] = 0;
-  int rank_size = 0;
+  rank_size = 0;
   for(unsigned i=0; i<size_-1; ++i) {
     rank_size += recvcounts[i];
     disp[i+1] = rank_size;
@@ -1031,13 +1030,14 @@ void EMMIVOX::calculate_overlap() {
   for(unsigned i=0; i<ovmd_der_.size(); ++i) ovmd_der_[i] = Vector(0,0,0);
 
   // we have to cycle over all model and data GMM components in the neighbor list
+  unsigned id, im, atype;
   unsigned GMM_m_size = GMM_m_type_.size();
   for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
     // get data (id) and atom (im) indexes
-    unsigned id = nl_[i] / GMM_m_size;
-    unsigned im = nl_[i] % GMM_m_size;
+    id = nl_[i] / GMM_m_size;
+    im = nl_[i] % GMM_m_size;
     // get atom type
-    unsigned atype = GMM_m_type_[im];
+    atype = GMM_m_type_[im];
     // add overlap with im component of model GMM
     ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), GMM_d_s_[id],
                              GMM_m_w_[atype], GMM_m_s_[atype], ovmd_der_[i]);
@@ -1230,13 +1230,14 @@ void EMMIVOX::calculate()
   for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
 
   // get derivatives of bias with respect to atoms
+  unsigned id, im;
+  Vector tot_der, pos;
   for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
     // get indexes of data and model component
-    unsigned id = nl_[i] / GMM_m_type_.size();
-    unsigned im = nl_[i] % GMM_m_type_.size();
+    id = nl_[i] / GMM_m_type_.size();
+    im = nl_[i] % GMM_m_type_.size();
     // chain rule + replica normalization
-    Vector tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
-    Vector pos;
+    tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
     if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
     else     pos = getPosition(im);
     // increment derivatives and virial
@@ -1276,15 +1277,17 @@ void EMMIVOX::calculate()
 
 void EMMIVOX::calculate_Gauss()
 {
+  double eneg, dev;
+  int GMMid;
   // cycle on all the GMM groups
   for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
-    double eneg = 0.0;
+    eneg = 0.0;
     // cycle on all the members of the group
     for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
       // id of the GMM component
-      int GMMid = GMM_d_grps_[i][j];
+      GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
+      dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
       eneg += 0.5 * dev * dev;
       // store derivative for later
@@ -1297,15 +1300,17 @@ void EMMIVOX::calculate_Gauss()
 
 void EMMIVOX::calculate_Outliers()
 {
+  double eneg, dev;
+  int GMMid;
   // cycle on all the GMM groups
   for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
     // cycle on all the members of the group
-    double eneg = 0.0;
+    eneg = 0.0;
     for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
       // id of the GMM component
-      int GMMid = GMM_d_grps_[i][j];
+      GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
+      dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
       eneg += std::log( 1.0 + 0.5 * dev * dev );
       // store derivative for later
@@ -1318,16 +1323,18 @@ void EMMIVOX::calculate_Outliers()
 
 void EMMIVOX::calculate_Marginal()
 {
+  double dev, errf;
+  int GMMid;
   // cycle on all the GMM groups
   for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
     // cycle on all the members of the group
     for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
       // id of the GMM component
-      int GMMid = GMM_d_grps_[i][j];
+      GMMid = GMM_d_grps_[i][j];
       // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
+      dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
       // calculate errf
-      double errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
+      errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
       // add to group energy
       ene_ += -kbt_ * std::log ( 0.5 / dev * errf ) ;
       // store derivative for later
