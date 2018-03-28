@@ -913,17 +913,17 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   double blur = 0.0;
   if(reso*reso>Bave) blur = reso*reso-Bave;
   else warning("PLUMED should not be used with maps at resolution better than 0.3 nm");
-  // add blur to B
-  for(unsigned i=0; i<GMM_m_s_.size(); ++i) GMM_m_s_[i] += blur;
+  // initialize B factor to blur
+  for(unsigned i=0; i<GMM_m_type_.size(); ++i) GMM_m_b_.push_back(blur);
   // calculate average resolution
   double ave_res = 0.0;
   for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
-    ave_res += sqrt(GMM_m_s_[GMM_m_type_[i]]);
+    ave_res += sqrt(GMM_m_s_[GMM_m_type_[i]]+blur);
   }
   ave_res = ave_res / static_cast<double>(GMM_m_type_.size());
   log.printf("  experimental map resolution : %3.2f\n", reso);
   log.printf("  predicted map resolution : %3.2f\n", ave_res);
-  log.printf("  blur factor : %f\n", blur);
+  log.printf("  initial blur factor : %f\n", blur);
   // tabulate exponential
   dexp_ = dpcutoff_ / static_cast<double> (nexp_-1);
   for(unsigned i=0; i<nexp_; ++i) {
@@ -988,10 +988,12 @@ void EMMIVOX::update_neighbor_list()
       else     md = delta(getPosition(im), d_m);
       // get atom type
       atype = GMM_m_type_[im];
+      // total value of b
+      double b = GMM_m_s_[atype]+GMM_m_b_[im];
       // calculate exponent
       expov = 0.0;
       for(unsigned i=0; i<3; ++i) {
-        invs2[i] = 1.0/( d_s[i] + 0.5*GMM_m_s_[atype]/pi/pi );
+        invs2[i] = 1.0/( d_s[i] + 0.5*b/pi/pi );
         expov += md[i] * md[i] * invs2[i];
       }
       // get index of expov in tabulated exponential
@@ -1073,9 +1075,11 @@ void EMMIVOX::calculate_overlap() {
     im = nl_[i] % GMM_m_size;
     // get atom type
     atype = GMM_m_type_[im];
+    // total value of b
+    double b = GMM_m_s_[atype]+GMM_m_b_[im];
     // add overlap with im component of model GMM
     ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), GMM_d_s_[id],
-                             GMM_m_w_[atype], GMM_m_s_[atype], ovmd_der_[i]);
+                             GMM_m_w_[atype], b, ovmd_der_[i]);
   }
   // communicate stuff
   if(size_>1) {
