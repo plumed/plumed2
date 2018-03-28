@@ -271,7 +271,7 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","DBFACT","MC step for bfactor");
   keys.add("optional","BFACT_MAX","Maximum value of bfactor");
   keys.add("optional","MCBFACT_STRIDE", "Bfactor Monte Carlo stride");
-  keys.addFlag("optiotnal","BFACT_PRIOR", "add Jeffreys prior to Bfactor");
+  keys.addFlag("optional","BFACT_PRIOR", "add Jeffreys prior to Bfactor");
   keys.add("optional","ERR_FILE","file with experimental errors");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
   keys.add("optional","REGRESSION","regression stride");
