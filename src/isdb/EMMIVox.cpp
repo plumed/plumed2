@@ -262,15 +262,15 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","RESOLUTION", "Cryo-EM map resolution");
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS, OUTLIERS, MARGINAL)");
   keys.add("compulsory","NORM_DENSITY","integral of the experimental density");
+  keys.add("compulsory","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
   keys.add("optional","SIGMA0","initial value of the uncertainty");
   keys.add("optional","DSIGMA","MC step for uncertainties");
   keys.add("optional","MC_STRIDE", "Monte Carlo stride");
   keys.add("optional","DBFACT","MC step for bfactor");
   keys.add("optional","BFACT_MAX","Maximum value of bfactor");
   keys.add("optional","MCBFACT_STRIDE", "Bfactor Monte Carlo stride");
-  keys.add("optional","ERR_FILE","file with experimental or GMM fit errors");
+  keys.add("optional","ERR_FILE","file with experimental errors");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
-  keys.add("optional","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
   keys.add("optional","REGRESSION","regression stride");
   keys.add("optional","REG_SCALE_MIN","regression minimum scale");
   keys.add("optional","REG_SCALE_MAX","regression maximum scale");
@@ -351,13 +351,14 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     if(dsigma<0) error("you must specify a positive DSIGMA");
     parse("MC_STRIDE", MCstride_);
     if(dsigma>0 && MCstride_<=0) error("you must specify a positive MC_STRIDE");
-    // status file parameters
-    parse("WRITE_STRIDE", statusstride_);
-    if(statusstride_<=0) error("you must specify a positive WRITE_STRIDE");
-    parse("STATUS_FILE",  statusfilename_);
-    if(statusfilename_=="") statusfilename_ = "MISTATUS"+getLabel();
-    else                    statusfilename_ = statusfilename_+getLabel();
   }
+
+  // status file parameters
+  parse("WRITE_STRIDE", statusstride_);
+  if(statusstride_<=0) error("you must specify a positive WRITE_STRIDE");
+  parse("STATUS_FILE",  statusfilename_);
+  if(statusfilename_=="") statusfilename_ = "MISTATUS"+getLabel();
+  else                    statusfilename_ = statusfilename_+getLabel();
 
   // error file
   string errfile;
@@ -449,6 +450,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
   log.printf("  minimum uncertainty : %f\n",sigma_min);
   log.printf("  scale factor : %lf\n",scale_);
+  log.printf("  reading/writing to status file : %s\n",statusfilename_.c_str());
+  log.printf("  with stride : %u\n",statusstride_);
   if(nregres_>0) {
     log.printf("  regression stride : %u\n", nregres_);
     log.printf("  regression minimum scale : %lf\n", scale_min_);
@@ -459,8 +462,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     log.printf("  initial value of the uncertainty : %f\n",sigma_ini);
     log.printf("  max MC move in uncertainty : %f\n",dsigma);
     log.printf("  MC stride : %u\n", MCstride_);
-    log.printf("  reading/writing to status file : %s\n",statusfilename_.c_str());
-    log.printf("  with stride : %u\n",statusstride_);
   }
   if(dbfact_>0) {
     log.printf("  max MC move in bfactor : %f\n",dbfact_);
