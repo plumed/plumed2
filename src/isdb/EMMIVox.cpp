@@ -753,6 +753,103 @@ void EMMIVOX::doMonteCarlo()
   }
 }
 
+void EMMIVOX::doMonteCarloBfact()
+{
+  // cycle on all the atoms
+  for(unsigned im=0; im<GMM_m_nb_.size(); ++im) {
+
+    // get atom type, bold, weight and position
+    unsigned atype = GMM_m_type_[im];
+    double bold = GMM_m_s_[atype]+GMM_m_b_[im];
+    double w = GMM_m_w_[atype];
+    Vector pos = getPosition(im);
+
+    // propose move in b
+    double db = dbfact_ * ( 2.0 * random_.RandU01() - 1.0 );
+    double bfact = GMM_m_b_[im] + db;
+    // check boundaries
+    if(bfact > bfactmax_) {bfact = 2.0*bfactmax_ - bfact;}
+    if(bfact < 0.0)       {bfact = -bfact;}
+    double bnew = GMM_m_s_[atype]+bfact;
+
+    // cycle on all the components affected
+    vector<double> ovdd, ovmdold, ovmdnew;
+    vector<unsigned> ids, grp;
+    Vector der;
+    for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
+      // voxel id
+      unsigned id = GMM_m_nb_[im][i];
+      // store voxel id
+      ids.push_back(id);
+      // store voxel group
+      grp.push_back(GMM_d_beta_[id]);
+      // and experimental value
+      ovdd.push_back(ovdd_[id]);
+      // store density before change
+      ovmdold.push_back(ovmd_[id]);
+      // get contribution before change
+      double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bold, der);
+      // get contribution after change
+      double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bnew, der);
+      // store overall density after change
+      ovmdnew.push_back(ovmd_[id]-dold+dnew);
+    }
+
+    // calculate new and old score
+    double old_ene = 0.0;
+    double new_ene = 0.0;
+    if(noise_==0) {
+      for(unsigned i=0; i<ovmdold.size(); ++i) {
+        double devold = ( scale_*ovmdold[i]-ovdd[i] ) / sigma_[grp[i]];
+        double devnew = ( scale_*ovmdnew[i]-ovdd[i] ) / sigma_[grp[i]];
+        old_ene += 0.5 * kbt_ * devold * devold;
+        new_ene += 0.5 * kbt_ * devnew * devnew;
+      }
+    }
+    if(noise_==1) {
+      for(unsigned i=0; i<ovmdold.size(); ++i) {
+        double devold = ( scale_*ovmdold[i]-ovdd[i] ) / sigma_[grp[i]];
+        double devnew = ( scale_*ovmdnew[i]-ovdd[i] ) / sigma_[grp[i]];
+        old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
+        new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
+      }
+    }
+    if(noise_==2) {
+      for(unsigned i=0; i<ovmdold.size(); ++i) {
+        double devold = ( scale_*ovmdold[i]-ovdd[i] );
+        double devnew = ( scale_*ovmdnew[i]-ovdd[i] );
+        old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[grp[i]] ));
+        new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[grp[i]] ));
+      }
+    }
+
+// increment number of trials
+    MCBtrials_ += 1.0;
+
+    // accept or reject
+    bool accept = doAccept(old_ene, new_ene, kbt_);
+    if(accept) {
+      GMM_m_b_[im] = bfact;
+      MCBaccept_ += 1.0;
+      // change the value of all ovmd affected
+      for(unsigned i=0; i<ovmdnew.size(); ++i) ovmd_[ids[i]]=ovmdnew[i];
+    }
+  } // end cycle on atoms
+
+// local communication
+  if(rank_!=0) {
+    for(unsigned i=0; i<GMM_m_b_.size(); ++i) GMM_m_b_[i] = 0.0;
+    MCBaccept_ = 0.0;
+    MCBtrials_ = 0.0;
+  }
+  if(size_>1) {
+    comm.Sum(&GMM_m_b_[0], GMM_m_b_.size());
+    comm.Sum(&MCBaccept_, 1);
+    comm.Sum(&MCBtrials_, 1);
+  }
+
+}
+
 vector<double> EMMIVOX::read_exp_errors(string errfile)
 {
   int nexp, idcomp;
@@ -1047,6 +1144,13 @@ void EMMIVOX::update_neighbor_list()
   comm.Allgatherv(&nl_l[0], recvcounts[rank_], &nl_[0], &recvcounts[0], &disp[0]);
   // now resize derivatives
   ovmd_der_.resize(tot_size);
+  // now cycle over the neighbor list to creat a list of voxels per atom
+  GMM_m_nb_.clear(); GMM_m_nb_.resize(GMM_m_size);
+  for(unsigned i=0; i<tot_size; ++i) {
+    unsigned id = nl_[i] / GMM_m_size;
+    unsigned im = nl_[i] % GMM_m_size;
+    GMM_m_nb_[im].push_back(id);
+  }
 }
 
 void EMMIVOX::prepare()
@@ -1312,6 +1416,19 @@ void EMMIVOX::calculate()
 
   }
 
+  // Monte Carlo on b factors
+  if(dbfact_>0) {
+
+    // do Monte Carlo
+    if(step%MCBstride_==0 && !getExchangeStep()) doMonteCarloBfact();
+
+    // calculate acceptance ratio
+    double acc = MCBaccept_ / MCBtrials_;
+
+    // set value
+    getPntrToComponent("accB")->set(acc);
+
+  }
 }
 
 void EMMIVOX::calculate_Gauss()
