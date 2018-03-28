@@ -44,7 +44,8 @@ Exception::Exception():
     free(strs);
   }
 #endif
-  if(stackString.length()>0 && !strcmp(getenv("PLUMED_STACK_TRACE"),"yes")) {
+  const char* env=getenv("PLUMED_STACK_TRACE");
+  if(stackString.length()>0 && env && !strcmp(env,"yes")) {
     msg+="\n\n********** STACK DUMP **********\n";
     msg+=stackString;
     msg+="\n********** END STACK DUMP **********\n";
