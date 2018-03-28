@@ -536,11 +536,11 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     }
   }
 
-  // read status file if restarting
-  if(getRestart() && noise_!=2) read_status();
-
   // calculate auxiliary stuff
   calculate_useful_stuff(reso);
+
+  // read status file if restarting
+  if(getRestart()) read_status();
 
   // prepare data and derivative vectors
   ovmd_.resize(ovdd_.size());
@@ -623,11 +623,21 @@ void EMMIVOX::read_status()
   if(ifile->FileExist(statusfilename_)) {
     ifile->open(statusfilename_);
     while(ifile->scanField("MD_time", MDtime)) {
-      for(unsigned i=0; i<sigma_.size(); ++i) {
+      // read sigma only if not marginal noise
+      if(noise_!=2) {
+        for(unsigned i=0; i<sigma_.size(); ++i) {
+          // convert i to string
+          std::string num; Tools::convert(i,num);
+          // read entries
+          ifile->scanField("s"+num, sigma_[i]);
+        }
+      }
+      // always read bfactors
+      for(unsigned i=0; i<GMM_m_b_.size(); ++i) {
         // convert i to string
         std::string num; Tools::convert(i,num);
         // read entries
-        ifile->scanField("s"+num, sigma_[i]);
+        ifile->scanField("bfact"+num, GMM_m_b_[i]);
       }
       // new line
       ifile->scanField();
@@ -652,11 +662,21 @@ void EMMIVOX::print_status(long int step)
 // write fields
   double MDtime = static_cast<double>(step)*getTimeStep();
   statusfile_.printField("MD_time", MDtime);
-  for(unsigned i=0; i<sigma_.size(); ++i) {
+  // write sigma only if not marginal noise
+  if(noise_!=2) {
+    for(unsigned i=0; i<sigma_.size(); ++i) {
+      // convert i to string
+      std::string num; Tools::convert(i,num);
+      // print entry
+      statusfile_.printField("s"+num, sigma_[i]);
+    }
+  }
+  // always write bfactors
+  for(unsigned i=0; i<GMM_m_b_.size(); ++i) {
     // convert i to string
     std::string num; Tools::convert(i,num);
     // print entry
-    statusfile_.printField("s"+num, sigma_[i]);
+    statusfile_.printField("bfact"+num, GMM_m_b_[i]);
   }
   statusfile_.printField();
 }
@@ -1401,34 +1421,26 @@ void EMMIVOX::calculate()
 
   // This part is needed only for Gaussian and Outliers noise models
   if(noise_!=2) {
-
-    // do Montecarlo
+    // do Monte Carlo
     if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep()) doMonteCarlo();
-
-    // print status
-    if(step%statusstride_==0) print_status(step);
-
     // calculate acceptance ratio
     double acc = MCaccept_ / MCtrials_;
-
     // set value
     getPntrToComponent("acc")->set(acc);
-
   }
 
   // Monte Carlo on b factors
   if(dbfact_>0) {
-
     // do Monte Carlo
     if(step%MCBstride_==0 && !getExchangeStep()) doMonteCarloBfact();
-
     // calculate acceptance ratio
     double acc = MCBaccept_ / MCBtrials_;
-
     // set value
     getPntrToComponent("accB")->set(acc);
-
   }
+
+  // print status
+  if(step%statusstride_==0) print_status(step);
 }
 
 void EMMIVOX::calculate_Gauss()
