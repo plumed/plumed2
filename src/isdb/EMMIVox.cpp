@@ -118,10 +118,14 @@ private:
   vector<double> GMM_m_s_;
 // model GMM - list of atom weights - one per atom type
   vector<double> GMM_m_w_;
+// model GMM - map between residue number and list of atoms
+  map< unsigned, vector<unsigned> > GMM_m_resmap_;
+// model GMM - list of residue ids
+  vector<unsigned> GMM_m_res_;
 // model GMM - list of neighboring voxels per atom
   vector< vector<unsigned> > GMM_m_nb_;
-// model GMM - bfactor list
-  vector<double> GMM_m_b_;
+// model GMM - map between res id and bfactor
+  map<unsigned,double> GMM_m_b_;
 // model overlap
   vector<double> ovmd_;
 
@@ -172,7 +176,6 @@ private:
   double   dbfact_;
   double   bfactmin_;
   double   bfactmax_;
-  bool     bfactprior_;
   // status stuff
   unsigned int statusstride_;
   string       statusfilename_;
@@ -271,7 +274,6 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","DBFACT","MC step for bfactor");
   keys.add("optional","BFACT_MAX","Maximum value of bfactor");
   keys.add("optional","MCBFACT_STRIDE", "Bfactor Monte Carlo stride");
-  keys.addFlag("BFACT_PRIOR",false, "add Jeffreys prior to Bfactor");
   keys.add("optional","ERR_FILE","file with experimental errors");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
   keys.add("optional","REGRESSION","regression stride");
@@ -303,8 +305,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   first_time_(true), no_aver_(false), pbc_(true),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
-  dbfact_(0.0), bfactmin_(1.0e-4), bfactmax_(1.0),
-  bfactprior_(false), statusstride_(0), first_status_(true),
+  dbfact_(0.0), bfactmax_(1.0),
+  statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
   kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0)
@@ -339,7 +341,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("DBFACT", dbfact_);
   parse("BFACT_MAX", bfactmax_);
   parse("MCBFACT_STRIDE", MCBstride_);
-  parseFlag("BFACT_PRIOR", bfactprior_);
   if(dbfact_<0) error("DBFACT should be greater or equal to zero");
   if(dbfact_>0 && MCBstride_<=0) error("you must specify a positive MCBFACT_STRIDE");
   if(dbfact_>0 && bfactmax_<=0) error("you must specify a positive BFACT_MAX");
@@ -638,11 +639,11 @@ void EMMIVOX::read_status()
         }
       }
       // always read bfactors
-      for(unsigned i=0; i<GMM_m_b_.size(); ++i) {
+      for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
         // convert i to string
         std::string num; Tools::convert(i,num);
         // read entries
-        ifile->scanField("bfact"+num, GMM_m_b_[i]);
+        ifile->scanField("bfact"+num, GMM_m_b_[GMM_m_res_[i]]);
       }
       // new line
       ifile->scanField();
@@ -677,11 +678,11 @@ void EMMIVOX::print_status(long int step)
     }
   }
   // always write bfactors
-  for(unsigned i=0; i<GMM_m_b_.size(); ++i) {
+  for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
     // convert i to string
     std::string num; Tools::convert(i,num);
     // print entry
-    statusfile_.printField("bfact"+num, GMM_m_b_[i]);
+    statusfile_.printField("bfact"+num, GMM_m_b_[GMM_m_res_[i]]);
   }
   statusfile_.printField();
 }
@@ -780,76 +781,98 @@ void EMMIVOX::doMonteCarlo()
 
 void EMMIVOX::doMonteCarloBfact()
 {
-  // cycle on all the atoms
-  for(unsigned im=0; im<GMM_m_nb_.size(); ++im) {
+  map<unsigned,double>::iterator it;
+  // cycle on all the bfactors
+  for(it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
 
-    // get atom type, bold, weight and position
-    unsigned atype = GMM_m_type_[im];
-    double bold = GMM_m_s_[atype]+GMM_m_b_[im];
-    double w = GMM_m_w_[atype];
-    Vector pos = getPosition(im);
+    // residue id and bfactor value
+    unsigned ires = it->first;
+    double bfactold = it->second;
 
     // propose move in bfactor
-    double bfact = GMM_m_b_[im] + dbfact_ * ( 2.0 * random_.RandU01() - 1.0 );
+    double bfactnew = bfactold + dbfact_ * ( 2.0 * random_.RandU01() - 1.0 );
     // check boundaries
-    if(bfact > bfactmax_) {bfact = 2.0*bfactmax_ - bfact;}
-    if(bfact < bfactmin_) {bfact = 2.0*bfactmin_ - bfact;}
-    double bnew = GMM_m_s_[atype]+bfact;
+    if(bfactnew > bfactmax_) {bfactnew = 2.0*bfactmax_ - bfactnew;}
+    if(bfactnew < bfactmin_) {bfactnew = 2.0*bfactmin_ - bfactnew;}
 
-    // cycle on all the components affected
-    vector<double> ovdd, ovmdold, ovmdnew;
-    vector<unsigned> ids, grp;
-    Vector der;
-    for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
-      // voxel id
-      unsigned id = GMM_m_nb_[im][i];
-      // store voxel id
-      ids.push_back(id);
-      // store voxel group
-      grp.push_back(GMM_d_beta_[id]);
-      // and experimental value
-      ovdd.push_back(ovdd_[id]);
-      // store density before change
-      ovmdold.push_back(ovmd_[id]);
-      // get contribution before change
-      double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bold, der);
-      // get contribution after change
-      double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bnew, der);
-      // store overall density after change
-      ovmdnew.push_back(ovmd_[id]-dold+dnew);
+    // useful quantities
+    map<unsigned, double> ovmdold, ovmdnew;
+    Vector pos, der;
+
+    // cycle over all the atoms belonging to residue ires
+    for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
+
+      // get atom id
+      unsigned im = GMM_m_resmap_[ires][ia];
+      // get atom type, bs, weight and position
+      unsigned atype = GMM_m_type_[im];
+      double bold = GMM_m_s_[atype]+bfactold;
+      double bnew = GMM_m_s_[atype]+bfactnew;
+      double w = GMM_m_w_[atype];
+      pos = getPosition(im);
+
+      // cycle on all the components affected
+      for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
+        // voxel id
+        unsigned id = GMM_m_nb_[im][i];
+        // if first time this component is encountered
+        if(ovmdnew.count(id)==0) {
+          ovmdnew[id] = ovmd_[id];
+          ovmdold[id] = ovmd_[id];
+        }
+        // get contribution before change
+        double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bold, der);
+        // get contribution after change
+        double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bnew, der);
+        // update new density
+        ovmdnew[id] = ovmdnew[id]-dold+dnew;
+      }
+
     }
 
-    // calculate new and old score
+    // now calculate new and old score
+    map<unsigned, double>::iterator itov;
     double old_ene = 0.0;
     double new_ene = 0.0;
+
     if(noise_==0) {
-      for(unsigned i=0; i<ovmdold.size(); ++i) {
-        double devold = ( scale_*ovmdold[i]-ovdd[i] ) / sigma_[grp[i]];
-        double devnew = ( scale_*ovmdnew[i]-ovdd[i] ) / sigma_[grp[i]];
+      for(itov=ovmdnew.begin(); itov!=ovmdnew.end(); ++itov) {
+        // id of the component
+        unsigned id = itov->first;
+        // experimental value
+        double ovdd = ovdd_[id];
+        // scores
+        double devold = ( scale_*ovmdold[id]-ovdd ) / sigma_[GMM_d_beta_[id]];
+        double devnew = ( scale_*ovmdnew[id]-ovdd ) / sigma_[GMM_d_beta_[id]];
         old_ene += 0.5 * kbt_ * devold * devold;
         new_ene += 0.5 * kbt_ * devnew * devnew;
       }
     }
     if(noise_==1) {
-      for(unsigned i=0; i<ovmdold.size(); ++i) {
-        double devold = ( scale_*ovmdold[i]-ovdd[i] ) / sigma_[grp[i]];
-        double devnew = ( scale_*ovmdnew[i]-ovdd[i] ) / sigma_[grp[i]];
+      for(itov=ovmdnew.begin(); itov!=ovmdnew.end(); ++itov) {
+        // id of the component
+        unsigned id = itov->first;
+        // experimental value
+        double ovdd = ovdd_[id];
+        // scores
+        double devold = ( scale_*ovmdold[id]-ovdd ) / sigma_[GMM_d_beta_[id]];
+        double devnew = ( scale_*ovmdnew[id]-ovdd ) / sigma_[GMM_d_beta_[id]];
         old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
         new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
       }
     }
     if(noise_==2) {
-      for(unsigned i=0; i<ovmdold.size(); ++i) {
-        double devold = ( scale_*ovmdold[i]-ovdd[i] );
-        double devnew = ( scale_*ovmdnew[i]-ovdd[i] );
-        old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[grp[i]] ));
-        new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[grp[i]] ));
+      for(itov=ovmdnew.begin(); itov!=ovmdnew.end(); ++itov) {
+        // id of the component
+        unsigned id = itov->first;
+        // experimental value
+        double ovdd = ovdd_[id];
+        // scores
+        double devold = ( scale_*ovmdold[id]-ovdd );
+        double devnew = ( scale_*ovmdnew[id]-ovdd );
+        old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
+        new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
       }
-    }
-    // add prior
-    if(bfactprior_) {
-      old_ene += kbt_ * std::log(GMM_m_b_[im]);
-      new_ene += kbt_ * std::log(bfact);
     }
 
 // increment number of trials
@@ -858,25 +881,36 @@ void EMMIVOX::doMonteCarloBfact()
     // accept or reject
     bool accept = doAccept(old_ene, new_ene, kbt_);
     if(accept) {
-      GMM_m_b_[im] = bfact;
+      // update bfactor
+      it->second = bfactnew;
+      // update acceptance rate
       MCBaccept_ += 1.0;
       // change the value of all ovmd affected
-      for(unsigned i=0; i<ovmdnew.size(); ++i) ovmd_[ids[i]]=ovmdnew[i];
+      for(itov=ovmdnew.begin(); itov!=ovmdnew.end(); ++itov) ovmd_[itov->first]=itov->second;
     }
-  } // end cycle on atoms
+  } // end cycle on bfactors
 
 // local communication
-  if(rank_!=0) {
-    for(unsigned i=0; i<GMM_m_b_.size(); ++i) GMM_m_b_[i] = 0.0;
-    MCBaccept_ = 0.0;
-    MCBtrials_ = 0.0;
-  }
   if(size_>1) {
-    comm.Sum(&GMM_m_b_[0], GMM_m_b_.size());
+    vector<double> ids, bs;
+    // load map into a vector
+    for(it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
+      ids.push_back(it->first);
+      bs.push_back(it->second);
+    }
+    // reset stuff if not rank 0
+    if(rank_!=0) {
+      for(unsigned i=0; i<bs.size(); ++i) bs[i] = 0.0;
+      MCBaccept_ = 0.0;
+      MCBtrials_ = 0.0;
+    }
+    // share with all local ranks
+    comm.Sum(&bs[0], bs.size());
     comm.Sum(&MCBaccept_, 1);
     comm.Sum(&MCBtrials_, 1);
+    // put back in the map
+    for(unsigned i=0; i<ids.size(); ++i) GMM_m_b_[ids[i]]=bs[i];
   }
-
 }
 
 vector<double> EMMIVOX::read_exp_errors(string errfile)
@@ -964,6 +998,13 @@ vector<double> EMMIVOX::get_GMM_m(vector<AtomNumber> &atoms)
         GMM_m_type_.push_back(type_map[type_s]);
         // this will be normalized in the final density
         GMM_m_w.push_back(GMM_m_w_[type_map[type_s]]);
+        // get residue id
+        unsigned ires = moldat[0]->getResidueNumber(atoms[i]);
+        // add to map and list
+        GMM_m_resmap_[ires].push_back(i);
+        GMM_m_res_.push_back(ires);
+        // initialize Bfactor map
+        GMM_m_b_[ires] = 0.0;
       } else {
         error("Wrong atom type "+type_s+" from atom name "+name+"\n");
       }
@@ -1036,20 +1077,14 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   }
   Bave /= static_cast<double>(GMM_m_type_.size());
   // calculate blur factor
-  double blur = bfactmin_;
-  if(reso*reso>Bave) blur = reso*reso-Bave;
+  bfactmin_ = 0.0;
+  if(reso*reso>Bave) bfactmin_ = reso*reso-Bave;
   else warning("PLUMED should not be used with maps at resolution better than 0.3 nm");
-  // initialize B factor to blur
-  for(unsigned i=0; i<GMM_m_type_.size(); ++i) GMM_m_b_.push_back(blur);
-  // calculate average resolution
-  double ave_res = 0.0;
-  for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
-    ave_res += sqrt(GMM_m_s_[GMM_m_type_[i]]+blur);
+  // initialize B factor to minimum value
+  for(map<unsigned,double>::iterator it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
+    it->second = bfactmin_;
   }
-  ave_res = ave_res / static_cast<double>(GMM_m_type_.size());
   log.printf("  experimental map resolution : %3.2f\n", reso);
-  log.printf("  predicted map resolution : %3.2f\n", ave_res);
-  log.printf("  initial blur factor : %f\n", blur);
   // tabulate exponential
   dexp_ = dpcutoff_ / static_cast<double> (nexp_-1);
   for(unsigned i=0; i<nexp_; ++i) {
@@ -1115,7 +1150,7 @@ void EMMIVOX::update_neighbor_list()
       // get atom type
       atype = GMM_m_type_[im];
       // total value of b
-      double b = GMM_m_s_[atype]+GMM_m_b_[im];
+      double b = GMM_m_s_[atype]+GMM_m_b_[GMM_m_res_[im]];
       // calculate exponent
       expov = 0.0;
       for(unsigned i=0; i<3; ++i) {
@@ -1209,7 +1244,7 @@ void EMMIVOX::calculate_overlap() {
     // get atom type
     atype = GMM_m_type_[im];
     // total value of b
-    double b = GMM_m_s_[atype]+GMM_m_b_[im];
+    double b = GMM_m_s_[atype]+GMM_m_b_[GMM_m_res_[im]];
     // add overlap with im component of model GMM
     ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), GMM_d_s_[id],
                              GMM_m_w_[atype], b, ovmd_der_[i]);
