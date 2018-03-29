@@ -810,7 +810,8 @@ void EMMIVOX::doMonteCarloBfact()
 
       // useful quantities
       map<unsigned, double> ovmdold, ovmdnew;
-      Vector pos, der;
+      Vector pos, posn, dist, der;
+      set<unsigned> ngbs;
 
       // cycle over all the atoms belonging to residue ires
       for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
@@ -839,8 +840,14 @@ void EMMIVOX::doMonteCarloBfact()
           double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bnew, der);
           // update new density
           ovmdnew[id] = ovmdnew[id]-dold+dnew;
+          // look for neighbors
+          for(unsigned j=0; j<GMM_d_nb_[id].size(); ++j) {
+            posn = getPosition(GMM_d_nb_[id][j]);
+            if(pbc_) dist = pbcDistance(pos,posn);
+            else     dist = delta(pos,posn);
+            if(dist.modulo()<0.5) ngbs.insert(GMM_m_res_[GMM_d_nb_[id][j]]);
+          }
         }
-
       }
 
       // now calculate new and old score
@@ -889,20 +896,7 @@ void EMMIVOX::doMonteCarloBfact()
       }
 
 // add restraint to keep Bfactor of close atoms close
-      vector<unsigned> bfactv;
-      for(itov=ovmdnew.begin(); itov!=ovmdnew.end(); ++itov) {
-        // id of the component
-        unsigned id = itov->first;
-        // cycle on component neighbors
-        for(unsigned i=0; i<GMM_d_nb_[id].size(); ++i) {
-          bfactv.push_back(GMM_m_res_[GMM_d_nb_[id][i]]);
-        }
-      }
-// make unique set
-      set<unsigned> bfacts(bfactv.begin(), bfactv.end());
-
-// cycle on set
-      for(set<unsigned>::iterator is=bfacts.begin(); is!=bfacts.end(); ++is) {
+      for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
         old_ene += pi*(bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/(bfactold+GMM_m_b_[*is]);
         new_ene += pi*(bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/(bfactnew+GMM_m_b_[*is]);
       }
