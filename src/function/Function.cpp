@@ -76,7 +76,6 @@ Function::Function(const ActionOptions&ao):
             if( max[k]!=gmax[k] ) error("mismatch between grid domains");
             if( pbc[k]!=gpbc[k] ) error("mismatch between grid domains");
             if( nbin[k]!=gnbin[k] ) error("mismatch between grid domains");
-            if( gargn[k]!=ggargn[k] ) error("mismatch between grid domains");
         }
       } else { nscalars++; }
     }
