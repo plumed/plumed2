@@ -146,7 +146,7 @@ private:
   vector<double> GMMid_der_;
 // constants
   double cfact_;
-  double inv_sqrt2_, sqrt2_pi_;
+  double inv_sqrt2_, sqrt2_pi_, inv_pi2_;
 // metainference
   unsigned nrep_;
   unsigned replica_;
@@ -306,6 +306,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   inv_sqrt2_(0.707106781186548),
   sqrt2_pi_(0.797884560802865),
+  inv_pi2_(0.050660591821169),
   first_time_(true), no_aver_(false), pbc_(true),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
   MCBstride_(1), MCBsteps_(1), MCBaccept_(0.), MCBtrials_(0.),
@@ -809,7 +810,7 @@ void EMMIVOX::doMonteCarloBfact()
       if(bfactnew < bfactmin_) {bfactnew = 2.0*bfactmin_ - bfactnew;}
 
       // useful quantities
-      map<unsigned, double> ovmdold, ovmdnew;
+      map<unsigned, double> deltaov;
       Vector pos, posn, dist, der;
       set<unsigned> ngbs;
 
@@ -829,17 +830,12 @@ void EMMIVOX::doMonteCarloBfact()
         for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
           // voxel id
           unsigned id = GMM_m_nb_[im][i];
-          // if first time this component is encountered
-          if(ovmdnew.count(id)==0) {
-            ovmdnew[id] = ovmd_[id];
-            ovmdold[id] = ovmd_[id];
-          }
           // get contribution before change
           double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bold, der);
           // get contribution after change
           double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bnew, der);
-          // update new density
-          ovmdnew[id] = ovmdnew[id]-dold+dnew;
+          // update delta overlap
+          deltaov[id] += dnew-dold;
           // look for neighbors
           for(unsigned j=0; j<GMM_d_nb_[id].size(); ++j) {
             posn = getPosition(GMM_d_nb_[id][j]);
@@ -856,40 +852,40 @@ void EMMIVOX::doMonteCarloBfact()
       double new_ene = 0.0;
 
       if(noise_==0) {
-        for(itov=ovmdnew.begin(); itov!=ovmdnew.end(); ++itov) {
+        for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
           // id of the component
           unsigned id = itov->first;
-          // experimental value
-          double ovdd = ovdd_[id];
+          // new value
+          double ovmdnew = ovmd_[id]+itov->second;
           // scores
-          double devold = ( scale_*ovmdold[id]-ovdd ) / sigma_[GMM_d_beta_[id]];
-          double devnew = ( scale_*ovmdnew[id]-ovdd ) / sigma_[GMM_d_beta_[id]];
+          double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+          double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
           old_ene += 0.5 * kbt_ * devold * devold;
           new_ene += 0.5 * kbt_ * devnew * devnew;
         }
       }
       if(noise_==1) {
-        for(itov=ovmdnew.begin(); itov!=ovmdnew.end(); ++itov) {
+        for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
           // id of the component
           unsigned id = itov->first;
-          // experimental value
-          double ovdd = ovdd_[id];
+          // new value
+          double ovmdnew = ovmd_[id]+itov->second;
           // scores
-          double devold = ( scale_*ovmdold[id]-ovdd ) / sigma_[GMM_d_beta_[id]];
-          double devnew = ( scale_*ovmdnew[id]-ovdd ) / sigma_[GMM_d_beta_[id]];
+          double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+          double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
           old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
           new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
         }
       }
       if(noise_==2) {
-        for(itov=ovmdnew.begin(); itov!=ovmdnew.end(); ++itov) {
+        for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
           // id of the component
           unsigned id = itov->first;
-          // experimental value
-          double ovdd = ovdd_[id];
+          // new value
+          double ovmdnew = ovmd_[id]+itov->second;
           // scores
-          double devold = ( scale_*ovmdold[id]-ovdd );
-          double devnew = ( scale_*ovmdnew[id]-ovdd );
+          double devold = scale_*ovmd_[id]-ovdd_[id];
+          double devnew = scale_*ovmdnew  -ovdd_[id];
           old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
           new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
         }
@@ -904,7 +900,7 @@ void EMMIVOX::doMonteCarloBfact()
 // increment number of trials
       MCBtrials_ += 1.0;
 
-      // accept or reject
+// accept or reject
       bool accept = doAccept(old_ene, new_ene, kbt_);
       if(accept) {
         // update bfactor
@@ -912,7 +908,7 @@ void EMMIVOX::doMonteCarloBfact()
         // update acceptance rate
         MCBaccept_ += 1.0;
         // change the value of all ovmd affected
-        for(itov=ovmdnew.begin(); itov!=ovmdnew.end(); ++itov) ovmd_[itov->first]=itov->second;
+        for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) ovmd_[itov->first] += itov->second;
       }
 
     } // end cycle on bfactors
@@ -1133,7 +1129,7 @@ double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, const Vector &
   else     md = delta(m_m, d_m);
   // calculate exponent
   for(unsigned i=0; i<3; ++i) {
-    invs2[i] = 1.0 / ( d_s[i] + 0.5*m_b/pi/pi );
+    invs2[i] = 1.0 / ( d_s[i] + inv_pi2_*m_b );
     ov += md[i] * md[i] * invs2[i];
   }
   // final calculation
@@ -1184,7 +1180,7 @@ void EMMIVOX::update_neighbor_list()
       // calculate exponent
       expov = 0.0;
       for(unsigned i=0; i<3; ++i) {
-        invs2[i] = 1.0/( d_s[i] + 0.5*b/pi/pi );
+        invs2[i] = 1.0/( d_s[i] + inv_pi2_*b );
         expov += md[i] * md[i] * invs2[i];
       }
       // get index of expov in tabulated exponential
