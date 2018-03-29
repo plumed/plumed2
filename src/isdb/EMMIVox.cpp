@@ -145,7 +145,7 @@ private:
   vector<Vector> atom_der_;
   vector<double> GMMid_der_;
 // constants
-  double cfact_;
+  vector<double> cfact_;
   double inv_sqrt2_, sqrt2_pi_, inv_pi2_;
 // metainference
   unsigned nrep_;
@@ -238,7 +238,7 @@ private:
   void calculate_useful_stuff(double reso);
 // calculate overlap between two Gaussians
   double get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
-                     double m_w, double m_b, Vector &ov_der);
+                     double pref, double m_b, Vector &ov_der);
 // update the neighbor list
   void update_neighbor_list();
 // calculate overlap
@@ -495,9 +495,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     log.printf("  file for writing model overlaps : %s\n", ovfilename_.c_str());
   }
 
-  // set constant quantity before calculating stuff
-  cfact_ = 1.0/pow( 2.0*pi, 1.5 );
-
   // calculate model GMM constant parameters
   vector<double> GMM_m_w = get_GMM_m(atoms);
 
@@ -509,6 +506,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   double norm_m = accumulate(GMM_m_w.begin(),  GMM_m_w.end(),  0.0);
   // renormalization
   for(unsigned i=0; i<GMM_m_w_.size(); ++i) GMM_m_w_[i] *= norm_d / norm_m;
+  // constant cfact
+  for(unsigned i=0; i<GMM_m_w_.size(); ++i) cfact_.push_back(GMM_m_w_[i]/pow( 2.0*pi, 1.5 ));
 
   // read experimental errors
   vector<double> exp_err;
@@ -823,7 +822,7 @@ void EMMIVOX::doMonteCarloBfact()
         unsigned atype = GMM_m_type_[im];
         double bold = GMM_m_s_[atype]+bfactold;
         double bnew = GMM_m_s_[atype]+bfactnew;
-        double w = GMM_m_w_[atype];
+        double pref = cfact_[atype];
         pos = getPosition(im);
 
         // cycle on all the components affected
@@ -831,9 +830,9 @@ void EMMIVOX::doMonteCarloBfact()
           // voxel id
           unsigned id = GMM_m_nb_[im][i];
           // get contribution before change
-          double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bold, der);
+          double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, bold, der);
           // get contribution after change
-          double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], w, bnew, der);
+          double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, bnew, der);
           // update delta overlap
           deltaov[id] += dnew-dold;
           // look for neighbors
@@ -1120,7 +1119,7 @@ void EMMIVOX::calculate_useful_stuff(double reso)
 
 // get overlap and derivatives
 double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
-                            double m_w, double m_b, Vector &ov_der)
+                            double pref, double m_b, Vector &ov_der)
 {
   Vector md, invs2;
   double ov = 0.0;
@@ -1133,7 +1132,7 @@ double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, const Vector &
     ov += md[i] * md[i] * invs2[i];
   }
   // final calculation
-  ov = m_w * cfact_ * sqrt(invs2[0]*invs2[1]*invs2[2]) * exp(-0.5*ov);
+  ov = pref * sqrt(invs2[0]*invs2[1]*invs2[2]) * exp(-0.5*ov);
   // derivatives
   ov_der = ov * Vector(md[0]*invs2[0],md[1]*invs2[1],md[2]*invs2[2]);
   return ov;
@@ -1188,7 +1187,7 @@ void EMMIVOX::update_neighbor_list()
       // check boundaries and skip atom in case
       if(itab >= tab_exp_.size()) continue;
       // in case calculate overlap
-      ov = GMM_m_w_[atype]*cfact_*sqrt(invs2[0]*invs2[1]*invs2[2])*tab_exp_[itab];
+      ov = cfact_[atype]*sqrt(invs2[0]*invs2[1]*invs2[2])*tab_exp_[itab];
       // add to list
       ov_l.push_back(ov);
       // and map to retrieve atom index
@@ -1275,7 +1274,7 @@ void EMMIVOX::calculate_overlap() {
     double b = GMM_m_s_[atype]+GMM_m_b_[GMM_m_res_[im]];
     // add overlap with im component of model GMM
     ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), GMM_d_s_[id],
-                             GMM_m_w_[atype], b, ovmd_der_[i]);
+                             cfact_[atype], b, ovmd_der_[i]);
   }
   // communicate stuff
   if(size_>1) {
