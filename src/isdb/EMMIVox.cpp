@@ -1107,7 +1107,7 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   }
   Bave /= static_cast<double>(GMM_m_type_.size());
   // calculate blur factor
-  bfactmin_ = 0.0;
+  bfactmin_ = 1.0e-5;
   if(reso*reso>Bave) bfactmin_ = reso*reso-Bave;
   else warning("PLUMED should not be used with maps at resolution better than 0.3 nm");
   // initialize B factor to minimum value
