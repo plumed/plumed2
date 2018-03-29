@@ -921,7 +921,8 @@ void EMMIVOX::doMonteCarloBfact()
 
 // local communication
   if(size_>1) {
-    vector<double> ids, bs;
+    vector<unsigned> ids;
+    vector<double>   bs;
     // load map into a vector
     for(it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
       ids.push_back(it->first);
