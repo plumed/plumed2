@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionRegister.h"
 #include "Function.h"
-
+#include "tools/OpenMP.h"
 #include "lepton/Lepton.h"
 
 using namespace std;
@@ -179,8 +179,12 @@ progression (S) and distance (Z) variables \cite perez2015atp.
 class Matheval :
   public Function
 {
-  mutable lepton::CompiledExpression expression;
-  mutable std::vector<lepton::CompiledExpression> expression_deriv;
+/// Lepton expression.
+/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!  
+  std::vector<lepton::CompiledExpression> expression;
+/// Lepton expression for derivative
+/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
+  std::vector<std::vector<lepton::CompiledExpression> > expression_deriv;
   vector<string> var;
   string func;
 public:
@@ -227,8 +231,13 @@ void Matheval::registerKeywords(Keywords& keys) {
 Matheval::Matheval(const ActionOptions&ao):
   Action(ao),
   Function(ao),
+  expression(OpenMP::getNumThreads()),
   expression_deriv(getNumberOfArguments())
 {
+  // Resize the expression for the derivatives
+  for(unsigned i=0;i<expression_deriv.size();++i) expression_deriv[i].resize(OpenMP::getNumThreads());
+
+  // Read in the variables
   parseVector("VAR",var);
   if(var.size()==0) {
     var.resize(getNumberOfArguments());
@@ -251,8 +260,8 @@ Matheval::Matheval(const ActionOptions&ao):
 
   lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(leptonConstants);
   log<<"  function as parsed by lepton: "<<pe<<"\n";
-  expression=pe.createCompiledExpression();
-  for(auto &p: expression.getVariables()) {
+  for(auto & e : expression) e=pe.createCompiledExpression();
+  for(auto & p : expression[0].getVariables()) {
     if(std::find(var.begin(),var.end(),p)==var.end()) {
       error("variable " + p + " is not defined");
     }
@@ -260,8 +269,7 @@ Matheval::Matheval(const ActionOptions&ao):
   log<<"  derivatives as computed by lepton:\n";
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(leptonConstants);
-    log<<"    "<<pe<<"\n";
-    expression_deriv[i]=pe.createCompiledExpression();
+    log<<"    "<<pe<<"\n"; for(auto & e : expression_deriv[i]) e=pe.createCompiledExpression();
   } 
 }
 
@@ -277,25 +285,26 @@ void Matheval::calculateFunction( const std::vector<double>& args, MultiValue& m
     }
   }
 
+  const unsigned t=OpenMP::getThreadNum(); plumed_assert(t<expression.size());
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     try {
-      expression.getVariableReference(var[i])=args[i];
+      const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference(var[i])=args[i];
     } catch(PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
     }
   }
-  addValue(0, expression.evaluate(), myvals );
+  addValue(0, expression[t].evaluate(), myvals );
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     for(unsigned j=0; j<getNumberOfArguments(); j++) {
       try {
-        expression_deriv[i].getVariableReference(var[j])=args[j];
+        const_cast<lepton::CompiledExpression*>(&expression_deriv[i][t])->getVariableReference(var[j])=args[j];
       } catch(PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
       }
     }
-    addDerivative(0, i, expression_deriv[i].evaluate(), myvals);
+    addDerivative(0, i, expression_deriv[i][t].evaluate(), myvals);
   }
 }
 
