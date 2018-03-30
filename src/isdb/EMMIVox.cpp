@@ -810,8 +810,10 @@ void EMMIVOX::doMonteCarloBfact()
 
       // useful quantities
       map<unsigned, double> deltaov;
-      Vector pos, posn, dist, der;
+      Vector pos, posn, der;
+      double dist;
       set<unsigned> ngbs;
+      map< unsigned, vector<double> > ngbs_mdist;
 
       // cycle over all the atoms belonging to residue ires
       for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
@@ -838,9 +840,12 @@ void EMMIVOX::doMonteCarloBfact()
           // look for neighbors
           for(unsigned j=0; j<GMM_d_nb_[id].size(); ++j) {
             posn = getPosition(GMM_d_nb_[id][j]);
-            if(pbc_) dist = pbcDistance(pos,posn);
-            else     dist = delta(pos,posn);
-            if(dist.modulo()<0.5) ngbs.insert(GMM_m_res_[GMM_d_nb_[id][j]]);
+            if(pbc_) dist = pbcDistance(pos,posn).modulo();
+            else     dist = delta(pos,posn).modulo();
+            if(dist>0 && dist<0.5) {
+              ngbs.insert(GMM_m_res_[GMM_d_nb_[id][j]]);
+              ngbs_mdist[GMM_m_res_[GMM_d_nb_[id][j]]].push_back(dist);
+            }
           }
         }
       }
@@ -891,8 +896,9 @@ void EMMIVOX::doMonteCarloBfact()
       }
 
 // add restraint to keep Bfactor of close atoms close
-      double sig=0.03;
       for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
+        double mdist = *std::min_element(ngbs_mdist[*is].begin(), ngbs_mdist[*is].end());
+        double sig = 0.03 * sqrt(mdist/0.1);
         old_ene += 0.5 * kbt_ * (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/sig/sig;
         new_ene += 0.5 * kbt_ * (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/sig/sig;
       }
