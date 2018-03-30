@@ -891,11 +891,10 @@ void EMMIVOX::doMonteCarloBfact()
       }
 
 // add restraint to keep Bfactor of close atoms close
+      double sig=0.03;
       for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
-        double sigo = 0.05445*(bfactold+GMM_m_b_[*is])/2.0;
-        double sign = 0.05445*(bfactnew+GMM_m_b_[*is])/2.0;
-        old_ene += 0.5 * kbt_ * (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/sigo/sigo;
-        new_ene += 0.5 * kbt_ * (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/sign/sign;
+        old_ene += 0.5 * kbt_ * (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/sig/sig;
+        new_ene += 0.5 * kbt_ * (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/sig/sig;
       }
 
 // increment number of trials
@@ -938,8 +937,6 @@ void EMMIVOX::doMonteCarloBfact()
     // put back in the map
     for(unsigned i=0; i<ids.size(); ++i) GMM_m_b_[ids[i]]=bs[i];
   }
-// after move in Bfactor update neighbor list
-  update_neighbor_list();
 }
 
 vector<double> EMMIVOX::read_exp_errors(string errfile)
