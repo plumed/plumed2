@@ -455,11 +455,24 @@ void ActionWithArguments::createTasksFromArguments() {
   ActionWithValue* av = dynamic_cast<ActionWithValue*>(this); plumed_assert( av );
   unsigned ntasks=1;
   if( arg_ends.size()>0 ) {
-    ntasks=0; for(unsigned j=arg_ends[0]; j<arg_ends[1]; ++j) ntasks += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+     ntasks=0; 
+     for(unsigned j=arg_ends[0]; j<arg_ends[1]; ++j) {
+         // Get number of tasks
+         if( getPntrToArgument(j)->getRank()==2 && !getPntrToArgument(j)->hasDerivatives() ) {
+             if( !getPntrToArgument(j)->usingAllVals( getLabel() ) ) error("cannot use a subset of values as input to this argument");
+             ntasks += (getPntrToArgument(j)->getPntrToAction())->getFullNumberOfTasks();
+         } else ntasks += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+     }
 
-    for(unsigned i=1; i<arg_ends.size()-1; ++i) {
+     for(unsigned i=1; i<arg_ends.size()-1; ++i) {
       unsigned nt = 0;
-      for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) nt += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+      for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
+          // Get number of tasks
+          if( getPntrToArgument(j)->getRank()==2 && !getPntrToArgument(j)->hasDerivatives() ) {
+               if( !getPntrToArgument(j)->usingAllVals( getLabel() ) ) error("cannot use a subset of values as input to this argument");
+               nt += (getPntrToArgument(j)->getPntrToAction())->getFullNumberOfTasks();
+          } else nt += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+      }
       plumed_assert( nt==ntasks );
     }
   } else if( getNumberOfArguments()==1 && arguments[0]->usingAllVals( getLabel() ) ) {

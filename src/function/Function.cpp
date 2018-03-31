@@ -96,7 +96,7 @@ Function::Function(const ActionOptions&ao):
           nranks++; npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
         }
       }
-      if( nscalars>1 ) error("can only multiply/divide grid by one scalar at a time");
+      if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
       // Now create a task list for the function
       for(unsigned j=0; j<npoints; ++j) addTaskToList(j);
     } else {
