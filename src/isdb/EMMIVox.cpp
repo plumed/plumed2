@@ -175,6 +175,7 @@ private:
   int      MCBstride_;
   double   MCBaccept_;
   double   MCBtrials_;
+  bool     MCBcollect_;
   double   dbfact_;
   double   bfactmin_;
   double   bfactmax_;
@@ -227,6 +228,7 @@ private:
   void doMonteCarlo();
 // do MonteCarlo for Bfactor
   void doMonteCarloBfact();
+  void doMonteCarloBfactCollect();
 // read error file
   vector<double> read_exp_errors(string errfile);
 // calculate model GMM parameters
@@ -291,6 +293,7 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","WRITE_OV_STRIDE","write model overlaps every N steps");
   keys.add("optional","WRITE_OV","write a file with model overlaps");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
+  keys.addFlag("MCBFACT_COLLECT",false,"collective move for Bfactor Monte Carlo");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
@@ -309,7 +312,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   first_time_(true), no_aver_(false), pbc_(true),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
-  dbfact_(0.0), bfactmax_(4.0),
+  MCBcollect_(false), dbfact_(0.0), bfactmax_(4.0),
   statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
@@ -345,6 +348,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("DBFACT", dbfact_);
   parse("BFACT_MAX", bfactmax_);
   parse("MCBFACT_STRIDE", MCBstride_);
+  parseFlag("MCBFACT_COLLECT", MCBcollect_);
   if(dbfact_<0) error("DBFACT should be greater or equal to zero");
   if(dbfact_>0 && MCBstride_<=0) error("you must specify a positive MCBFACT_STRIDE");
   if(dbfact_>0 && bfactmax_<=0)  error("you must specify a positive BFACT_MAX");
@@ -889,12 +893,12 @@ void EMMIVOX::doMonteCarloBfact()
 // add restraint to keep Bfactor of close atoms close
   for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
     double mdist = *std::min_element(ngbs_mdist[*is].begin(), ngbs_mdist[*is].end());
-    double gold = (bfactold-GMM_m_b_[*is])/0.058/sqrt(bfactold + GMM_m_b_[*is]);
-    double gnew = (bfactnew-GMM_m_b_[*is])/0.058/sqrt(bfactnew + GMM_m_b_[*is]);
-    old_ene += 0.5 * kbt_ * gold * gold / pow(mdist/0.1,1.69);
-    new_ene += 0.5 * kbt_ * gnew * gnew / pow(mdist/0.1,1.69);
-    //old_ene += (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/(bfactold + GMM_m_b_[*is])/pow(mdist/0.1,1.69);
-    //new_ene += (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/(bfactnew + GMM_m_b_[*is])/pow(mdist/0.1,1.69);
+    //double gold = (bfactold-GMM_m_b_[*is])/0.058/sqrt(bfactold + GMM_m_b_[*is]);
+    //double gnew = (bfactnew-GMM_m_b_[*is])/0.058/sqrt(bfactnew + GMM_m_b_[*is]);
+    //old_ene += 0.5 * kbt_ * gold * gold / pow(mdist/0.1,1.69);
+    //new_ene += 0.5 * kbt_ * gnew * gnew / pow(mdist/0.1,1.69);
+    old_ene += (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/(bfactold + GMM_m_b_[*is])/pow(mdist/0.1,1.69);
+    new_ene += (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/(bfactnew + GMM_m_b_[*is])/pow(mdist/0.1,1.69);
   }
 
 // increment number of trials
@@ -1025,6 +1029,133 @@ vector<double> EMMIVOX::get_GMM_m(vector<AtomNumber> &atoms)
     error("MOLINFO DATA not found\n");
   }
   return GMM_m_w;
+}
+
+void EMMIVOX::doMonteCarloBfactCollect()
+{
+  // iterator over Bfact map
+  map<unsigned,double>::iterator it;
+  // map of variations per component
+  map<unsigned, double> deltaov;
+
+  // generate move - same for all bfactors
+  double db = dbfact_ * ( 2.0 * random_.RandU01() - 1.0 );
+
+  // cycle over bfactor map
+  for(it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
+
+    // residue id and old bfactor
+    unsigned ires = it->first;
+    double bfactold = it->second;
+
+    // new bfactor
+    double bfactnew = bfactold + db;
+    // check boundaries
+    if(bfactnew > bfactmax_) {bfactnew = 2.0*bfactmax_ - bfactnew;}
+    if(bfactnew < bfactmin_) {bfactnew = 2.0*bfactmin_ - bfactnew;}
+
+    // useful quantities
+    Vector pos, posn, der;
+    double dist;
+
+    // cycle over all the atoms belonging to residue ires
+    for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
+
+      // get atom id
+      unsigned im = GMM_m_resmap_[ires][ia];
+      // get atom type, bs, weight and position
+      unsigned atype = GMM_m_type_[im];
+      double bold = GMM_m_s_[atype]+bfactold/4.0;
+      double bnew = GMM_m_s_[atype]+bfactnew/4.0;
+      double pref = cfact_[atype];
+      pos = getPosition(im);
+
+      // cycle on all the components affected
+      for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
+        // voxel id
+        unsigned id = GMM_m_nb_[im][i];
+        // get contribution before change
+        double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, bold, der);
+        // get contribution after change
+        double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, bnew, der);
+        // update delta overlap
+        deltaov[id] += dnew-dold;
+      }
+    }
+  }
+
+  // now calculate new and old score
+  map<unsigned, double>::iterator itov;
+  double old_ene = 0.0;
+  double new_ene = 0.0;
+
+  if(noise_==0) {
+    for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+      // id of the component
+      unsigned id = itov->first;
+      // new value
+      double ovmdnew = ovmd_[id]+itov->second;
+      // scores
+      double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+      double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+      old_ene += 0.5 * kbt_ * devold * devold;
+      new_ene += 0.5 * kbt_ * devnew * devnew;
+    }
+  }
+  if(noise_==1) {
+    for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+      // id of the component
+      unsigned id = itov->first;
+      // new value
+      double ovmdnew = ovmd_[id]+itov->second;
+      // scores
+      double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+      double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+      old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
+      new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
+    }
+  }
+  if(noise_==2) {
+    for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+      // id of the component
+      unsigned id = itov->first;
+      // new value
+      double ovmdnew = ovmd_[id]+itov->second;
+      // scores
+      double devold = scale_*ovmd_[id]-ovdd_[id];
+      double devnew = scale_*ovmdnew  -ovdd_[id];
+      old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
+      new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
+    }
+  }
+
+// increment number of trials
+  MCBtrials_ += 1.0;
+
+// accept or reject
+  bool accept = doAccept(old_ene, new_ene, kbt_);
+
+// communicate results
+  int iacc = 0;
+  if(rank_==0 && accept) iacc = 1;
+  if(size_>1) comm.Sum(&iacc, 1);
+
+// in case of acceptance
+  if(iacc==1) {
+    // update acceptance rate
+    MCBaccept_ += 1.0;
+    // share bfactor variation
+    if(rank_!=0) db = 0.0;
+    if(size_>1) comm.Sum(&db, 1);
+    // update bfactors
+    for(it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
+      // update bfactor
+      it->second += db;
+      // check boundaries
+      if(it->second > bfactmax_) {it->second = 2.0*bfactmax_ - it->second;}
+      if(it->second < bfactmin_) {it->second = 2.0*bfactmin_ - it->second;}
+    }
+  }
 }
 
 // read experimental data file in PLUMED format:
@@ -1480,9 +1611,18 @@ void EMMIVOX::calculate()
   }
 
   // Monte Carlo on b factors
-  if(dbfact_>0) {
+  if(dbfact_>0 && !MCBcollect_) {
     // do Monte Carlo
     if(step%MCBstride_==0 && !getExchangeStep()) doMonteCarloBfact();
+    // calculate acceptance ratio
+    double acc = MCBaccept_ / MCBtrials_;
+    // set value
+    getPntrToComponent("accB")->set(acc);
+  }
+  // Collective Monte Carlo on b factors
+  if(dbfact_>0 && MCBcollect_) {
+    // do Monte Carlo
+    if(step%MCBstride_==0 && !getExchangeStep()) doMonteCarloBfactCollect();
     // calculate acceptance ratio
     double acc = MCBaccept_ / MCBtrials_;
     // set value
