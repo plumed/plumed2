@@ -898,9 +898,10 @@ void EMMIVOX::doMonteCarloBfact()
 // add restraint to keep Bfactor of close atoms close
       for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
         double mdist = *std::min_element(ngbs_mdist[*is].begin(), ngbs_mdist[*is].end());
-        double sig = 0.03 * sqrt(mdist/0.1);
-        old_ene += 0.5 * kbt_ * (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/sig/sig;
-        new_ene += 0.5 * kbt_ * (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/sig/sig;
+        double sigo = 0.02899*sqrt(bfactold + GMM_m_b_[*is])*sqrt(mdist/0.1);
+        double sign = 0.02899*sqrt(bfactnew + GMM_m_b_[*is])*sqrt(mdist/0.1);
+        old_ene += 0.5 * kbt_ * (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/sigo/sigo;
+        new_ene += 0.5 * kbt_ * (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/sign/sign;
       }
 
 // increment number of trials
