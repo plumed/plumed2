@@ -309,7 +309,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   first_time_(true), no_aver_(false), pbc_(true),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
-  dbfact_(0.0), bfactmax_(1.0),
+  dbfact_(0.0), bfactmax_(4.0),
   statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
@@ -813,8 +813,8 @@ void EMMIVOX::doMonteCarloBfact()
     unsigned im = GMM_m_resmap_[ires][ia];
     // get atom type, bs, weight and position
     unsigned atype = GMM_m_type_[im];
-    double bold = GMM_m_s_[atype]+bfactold;
-    double bnew = GMM_m_s_[atype]+bfactnew;
+    double bold = GMM_m_s_[atype]+bfactold/4.0;
+    double bnew = GMM_m_s_[atype]+bfactnew/4.0;
     double pref = cfact_[atype];
     pos = getPosition(im);
 
@@ -889,12 +889,12 @@ void EMMIVOX::doMonteCarloBfact()
 // add restraint to keep Bfactor of close atoms close
   for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
     double mdist = *std::min_element(ngbs_mdist[*is].begin(), ngbs_mdist[*is].end());
-    double sigo = 0.02899*sqrt(bfactold + GMM_m_b_[*is])*sqrt(mdist/0.1);
-    double sign = 0.02899*sqrt(bfactnew + GMM_m_b_[*is])*sqrt(mdist/0.1);
-    old_ene += 0.5 * kbt_ * (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/sigo/sigo;
-    new_ene += 0.5 * kbt_ * (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/sign/sign;
-    //old_ene += pi * (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/(bfactold + GMM_m_b_[*is])/mdist*0.1;
-    //new_ene += pi * (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/(bfactnew + GMM_m_b_[*is])/mdist*0.1;
+    double gold = (bfactold-GMM_m_b_[*is])/0.058/sqrt(bfactold + GMM_m_b_[*is]);
+    double gnew = (bfactnew-GMM_m_b_[*is])/0.058/sqrt(bfactnew + GMM_m_b_[*is]);
+    old_ene += 0.5 * kbt_ * gold * gold / pow(mdist/0.1,1.69);
+    new_ene += 0.5 * kbt_ * gnew * gnew / pow(mdist/0.1,1.69);
+    //old_ene += (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/(bfactold + GMM_m_b_[*is])/pow(mdist/0.1,1.69);
+    //new_ene += (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/(bfactnew + GMM_m_b_[*is])/pow(mdist/0.1,1.69);
   }
 
 // increment number of trials
@@ -1090,7 +1090,7 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   Bave /= static_cast<double>(GMM_m_type_.size());
   // calculate blur factor
   bfactmin_ = 1.0e-5;
-  if(reso*reso>Bave) bfactmin_ = reso*reso-Bave;
+  if(reso*reso>Bave) bfactmin_ = 4.0 * ( reso*reso-Bave );
   else warning("PLUMED should not be used with maps at resolution better than 0.3 nm");
   // initialize B factor to minimum value
   for(map<unsigned,double>::iterator it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
@@ -1156,7 +1156,7 @@ void EMMIVOX::update_neighbor_list()
       // get atom type
       atype = GMM_m_type_[im];
       // total value of b
-      double b = GMM_m_s_[atype]+GMM_m_b_[GMM_m_res_[im]];
+      double b = GMM_m_s_[atype]+GMM_m_b_[GMM_m_res_[im]]/4.0;
       // calculate invs2
       for(unsigned i=0; i<3; ++i) invs2[i] = 1.0/(d_s[i]+inv_pi2_*b);
       // calculate exponent
@@ -1250,7 +1250,7 @@ void EMMIVOX::calculate_overlap() {
     // get atom type
     atype = GMM_m_type_[im];
     // total value of b
-    double b = GMM_m_s_[atype]+GMM_m_b_[GMM_m_res_[im]];
+    double b = GMM_m_s_[atype]+GMM_m_b_[GMM_m_res_[im]]/4.0;
     // add overlap with im component of model GMM
     ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), GMM_d_s_[id],
                              cfact_[atype], b, ovmd_der_[i]);
