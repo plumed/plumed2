@@ -914,12 +914,10 @@ void EMMIVOX::doMonteCarloBfact()
     MCBaccept_ += 1.0;
     if(rank_!=0) {
       bfactnew = 0.0;
-      MCBaccept_ = 0.0;
       ires = 0;
     }
     if(size_>1) {
       comm.Sum(&bfactnew, 1);
-      comm.Sum(&MCBaccept_,1);
       comm.Sum(&ires, 1);
     }
     // update bfactor
