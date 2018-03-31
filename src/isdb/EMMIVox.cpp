@@ -173,7 +173,6 @@ private:
   Random   random_;
 // Bfact Monte Carlo
   int      MCBstride_;
-  int      MCBsteps_;
   double   MCBaccept_;
   double   MCBtrials_;
   double   dbfact_;
@@ -309,7 +308,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   inv_pi2_(0.050660591821169),
   first_time_(true), no_aver_(false), pbc_(true),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
-  MCBstride_(1), MCBsteps_(1), MCBaccept_(0.), MCBtrials_(0.),
+  MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
   dbfact_(0.0), bfactmax_(1.0),
   statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
@@ -346,10 +345,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("DBFACT", dbfact_);
   parse("BFACT_MAX", bfactmax_);
   parse("MCBFACT_STRIDE", MCBstride_);
-  parse("MCBFACT_STEPS",  MCBsteps_);
   if(dbfact_<0) error("DBFACT should be greater or equal to zero");
   if(dbfact_>0 && MCBstride_<=0) error("you must specify a positive MCBFACT_STRIDE");
-  if(dbfact_>0 && MCBsteps_<=0)  error("you must specify a positive MCBFACT_STEPS");
   if(dbfact_>0 && bfactmax_<=0)  error("you must specify a positive BFACT_MAX");
 
 
@@ -479,7 +476,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   if(dbfact_>0) {
     log.printf("  max MC move in bfactor : %f\n",dbfact_);
     log.printf("  Bfactor MC stride : %u\n", MCBstride_);
-    log.printf("  Bfactor MC steps  : %u\n", MCBsteps_);
   }
   if(errfile.size()>0) log.printf("  reading experimental errors from file : %s\n", errfile.c_str());
   log.printf("  temperature of the system in energy unit : %f\n",kbt_);
@@ -789,160 +785,145 @@ void EMMIVOX::doMonteCarlo()
 
 void EMMIVOX::doMonteCarloBfact()
 {
-// iterator over B-factor map
-  map<unsigned,double>::iterator it;
+  // extract random atom
+  unsigned imb = static_cast<unsigned>(floor(random_.RandU01()*static_cast<double>(GMM_m_res_.size())));
+  if(imb==GMM_m_res_.size()) imb -=1;
 
-// number of MC steps
-  for(unsigned istep=0; istep<MCBsteps_; ++istep) {
+  // residue id and old bfactor
+  unsigned ires = GMM_m_res_[imb];
+  double bfactold = GMM_m_b_[ires];
 
-    // cycle on all the bfactors
-    for(it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
+  // propose move in bfactor
+  double bfactnew = bfactold + dbfact_ * ( 2.0 * random_.RandU01() - 1.0 );
+  // check boundaries
+  if(bfactnew > bfactmax_) {bfactnew = 2.0*bfactmax_ - bfactnew;}
+  if(bfactnew < bfactmin_) {bfactnew = 2.0*bfactmin_ - bfactnew;}
 
-      // residue id and bfactor value
-      unsigned ires = it->first;
-      double bfactold = it->second;
+  // useful quantities
+  map<unsigned, double> deltaov;
+  Vector pos, posn, der;
+  double dist;
+  set<unsigned> ngbs;
+  map< unsigned, vector<double> > ngbs_mdist;
 
-      // propose move in bfactor
-      double bfactnew = bfactold + dbfact_ * ( 2.0 * random_.RandU01() - 1.0 );
-      // check boundaries
-      if(bfactnew > bfactmax_) {bfactnew = 2.0*bfactmax_ - bfactnew;}
-      if(bfactnew < bfactmin_) {bfactnew = 2.0*bfactmin_ - bfactnew;}
+  // cycle over all the atoms belonging to residue ires
+  for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
 
-      // useful quantities
-      map<unsigned, double> deltaov;
-      Vector pos, posn, der;
-      double dist;
-      set<unsigned> ngbs;
-      map< unsigned, vector<double> > ngbs_mdist;
+    // get atom id
+    unsigned im = GMM_m_resmap_[ires][ia];
+    // get atom type, bs, weight and position
+    unsigned atype = GMM_m_type_[im];
+    double bold = GMM_m_s_[atype]+bfactold;
+    double bnew = GMM_m_s_[atype]+bfactnew;
+    double pref = cfact_[atype];
+    pos = getPosition(im);
 
-      // cycle over all the atoms belonging to residue ires
-      for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
-
-        // get atom id
-        unsigned im = GMM_m_resmap_[ires][ia];
-        // get atom type, bs, weight and position
-        unsigned atype = GMM_m_type_[im];
-        double bold = GMM_m_s_[atype]+bfactold;
-        double bnew = GMM_m_s_[atype]+bfactnew;
-        double pref = cfact_[atype];
-        pos = getPosition(im);
-
-        // cycle on all the components affected
-        for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
-          // voxel id
-          unsigned id = GMM_m_nb_[im][i];
-          // get contribution before change
-          double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, bold, der);
-          // get contribution after change
-          double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, bnew, der);
-          // update delta overlap
-          deltaov[id] += dnew-dold;
-          // look for neighbors
-          for(unsigned j=0; j<GMM_d_nb_[id].size(); ++j) {
-            posn = getPosition(GMM_d_nb_[id][j]);
-            if(pbc_) dist = pbcDistance(pos,posn).modulo();
-            else     dist = delta(pos,posn).modulo();
-            if(dist>0 && dist<0.5) {
-              ngbs.insert(GMM_m_res_[GMM_d_nb_[id][j]]);
-              ngbs_mdist[GMM_m_res_[GMM_d_nb_[id][j]]].push_back(dist);
-            }
-          }
+    // cycle on all the components affected
+    for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
+      // voxel id
+      unsigned id = GMM_m_nb_[im][i];
+      // get contribution before change
+      double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, bold, der);
+      // get contribution after change
+      double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, bnew, der);
+      // update delta overlap
+      deltaov[id] += dnew-dold;
+      // look for neighbors
+      for(unsigned j=0; j<GMM_d_nb_[id].size(); ++j) {
+        posn = getPosition(GMM_d_nb_[id][j]);
+        if(pbc_) dist = pbcDistance(pos,posn).modulo();
+        else     dist = delta(pos,posn).modulo();
+        if(dist>0 && dist<0.5) {
+          ngbs.insert(GMM_m_res_[GMM_d_nb_[id][j]]);
+          ngbs_mdist[GMM_m_res_[GMM_d_nb_[id][j]]].push_back(dist);
         }
       }
+    }
+  }
 
-      // now calculate new and old score
-      map<unsigned, double>::iterator itov;
-      double old_ene = 0.0;
-      double new_ene = 0.0;
+  // now calculate new and old score
+  map<unsigned, double>::iterator itov;
+  double old_ene = 0.0;
+  double new_ene = 0.0;
 
-      if(noise_==0) {
-        for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
-          // id of the component
-          unsigned id = itov->first;
-          // new value
-          double ovmdnew = ovmd_[id]+itov->second;
-          // scores
-          double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-          double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-          old_ene += 0.5 * kbt_ * devold * devold;
-          new_ene += 0.5 * kbt_ * devnew * devnew;
-        }
-      }
-      if(noise_==1) {
-        for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
-          // id of the component
-          unsigned id = itov->first;
-          // new value
-          double ovmdnew = ovmd_[id]+itov->second;
-          // scores
-          double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-          double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-          old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
-          new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
-        }
-      }
-      if(noise_==2) {
-        for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
-          // id of the component
-          unsigned id = itov->first;
-          // new value
-          double ovmdnew = ovmd_[id]+itov->second;
-          // scores
-          double devold = scale_*ovmd_[id]-ovdd_[id];
-          double devnew = scale_*ovmdnew  -ovdd_[id];
-          old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
-          new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
-        }
-      }
+  if(noise_==0) {
+    for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+      // id of the component
+      unsigned id = itov->first;
+      // new value
+      double ovmdnew = ovmd_[id]+itov->second;
+      // scores
+      double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+      double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+      old_ene += 0.5 * kbt_ * devold * devold;
+      new_ene += 0.5 * kbt_ * devnew * devnew;
+    }
+  }
+  if(noise_==1) {
+    for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+      // id of the component
+      unsigned id = itov->first;
+      // new value
+      double ovmdnew = ovmd_[id]+itov->second;
+      // scores
+      double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+      double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+      old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
+      new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
+    }
+  }
+  if(noise_==2) {
+    for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+      // id of the component
+      unsigned id = itov->first;
+      // new value
+      double ovmdnew = ovmd_[id]+itov->second;
+      // scores
+      double devold = scale_*ovmd_[id]-ovdd_[id];
+      double devnew = scale_*ovmdnew  -ovdd_[id];
+      old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
+      new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
+    }
+  }
 
 // add restraint to keep Bfactor of close atoms close
-      for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
-        double mdist = *std::min_element(ngbs_mdist[*is].begin(), ngbs_mdist[*is].end());
-        double sigo = 0.02899*sqrt(bfactold + GMM_m_b_[*is])*sqrt(mdist/0.1);
-        double sign = 0.02899*sqrt(bfactnew + GMM_m_b_[*is])*sqrt(mdist/0.1);
-        old_ene += 0.5 * kbt_ * (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/sigo/sigo;
-        new_ene += 0.5 * kbt_ * (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/sign/sign;
-      }
+  for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
+    double mdist = *std::min_element(ngbs_mdist[*is].begin(), ngbs_mdist[*is].end());
+    double sigo = 0.02899*sqrt(bfactold + GMM_m_b_[*is])*sqrt(mdist/0.1);
+    double sign = 0.02899*sqrt(bfactnew + GMM_m_b_[*is])*sqrt(mdist/0.1);
+    old_ene += 0.5 * kbt_ * (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/sigo/sigo;
+    new_ene += 0.5 * kbt_ * (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/sign/sign;
+    //old_ene += pi * (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/(bfactold + GMM_m_b_[*is])/mdist*0.1;
+    //new_ene += pi * (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/(bfactnew + GMM_m_b_[*is])/mdist*0.1;
+  }
 
 // increment number of trials
-      MCBtrials_ += 1.0;
+  MCBtrials_ += 1.0;
 
 // accept or reject
-      bool accept = doAccept(old_ene, new_ene, kbt_);
-      if(accept) {
-        // update bfactor
-        it->second = bfactnew;
-        // update acceptance rate
-        MCBaccept_ += 1.0;
-        // change the value of all ovmd affected
-        for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) ovmd_[itov->first] += itov->second;
-      }
+  bool accept = doAccept(old_ene, new_ene, kbt_);
 
-    } // end cycle on bfactors
+// communicate results
+  int iacc = 0;
+  if(rank_==0 && accept) iacc = 1;
+  if(size_>1) comm.Sum(&iacc, 1);
 
-  } // end cycle on MCB steps
-
-// local communication
-  if(size_>1) {
-    vector<unsigned> ids;
-    vector<double>   bs;
-    // load map into a vector
-    for(it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
-      ids.push_back(it->first);
-      bs.push_back(it->second);
-    }
-    // reset stuff if not rank 0
+// in case of acceptance
+  if(iacc==1) {
+    // update acceptance rate
+    MCBaccept_ += 1.0;
     if(rank_!=0) {
-      for(unsigned i=0; i<bs.size(); ++i) bs[i] = 0.0;
+      bfactnew = 0.0;
       MCBaccept_ = 0.0;
-      MCBtrials_ = 0.0;
+      ires = 0;
     }
-    // share with all local ranks
-    comm.Sum(&bs[0], bs.size());
-    comm.Sum(&MCBaccept_, 1);
-    comm.Sum(&MCBtrials_, 1);
-    // put back in the map
-    for(unsigned i=0; i<ids.size(); ++i) GMM_m_b_[ids[i]]=bs[i];
+    if(size_>1) {
+      comm.Sum(&bfactnew, 1);
+      comm.Sum(&MCBaccept_,1);
+      comm.Sum(&ires, 1);
+    }
+    // update bfactor
+    GMM_m_b_[ires] = bfactnew;
   }
 }
 
@@ -1130,15 +1111,13 @@ double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, const Vector &
                             double pref, double m_b, Vector &ov_der)
 {
   Vector md, invs2;
-  double ov = 0.0;
   // calculate vector difference with/without pbc
   if(pbc_) md = pbcDistance(m_m, d_m);
   else     md = delta(m_m, d_m);
+  // calculate invs2
+  for(unsigned i=0; i<3; ++i) invs2[i] = 1.0/(d_s[i]+inv_pi2_*m_b);
   // calculate exponent
-  for(unsigned i=0; i<3; ++i) {
-    invs2[i] = 1.0 / ( d_s[i] + inv_pi2_*m_b );
-    ov += md[i] * md[i] * invs2[i];
-  }
+  double ov = md[0]*md[0]*invs2[0]+md[1]*md[1]*invs2[1]+md[2]*md[2]*invs2[2];
   // final calculation
   ov = pref * sqrt(invs2[0]*invs2[1]*invs2[2]) * exp(-0.5*ov);
   // derivatives
@@ -1162,14 +1141,10 @@ void EMMIVOX::update_neighbor_list()
   unsigned atype, itab;
   int tot_size, rank_size;
 
-  // clear old neighbor list
-  nl_.clear();
-
   // cycle on GMM components - in parallel
   for(unsigned id=rank_; id<ovdd_.size(); id+=size_) {
     // clear overlap lists and map
-    ov_l.clear();
-    ov_m.clear();
+    ov_l.clear(); ov_m.clear();
     // Kernel functions
     d_m = GMM_d_m_[id];
     d_s = GMM_d_s_[id];
@@ -1184,12 +1159,10 @@ void EMMIVOX::update_neighbor_list()
       atype = GMM_m_type_[im];
       // total value of b
       double b = GMM_m_s_[atype]+GMM_m_b_[GMM_m_res_[im]];
+      // calculate invs2
+      for(unsigned i=0; i<3; ++i) invs2[i] = 1.0/(d_s[i]+inv_pi2_*b);
       // calculate exponent
-      expov = 0.0;
-      for(unsigned i=0; i<3; ++i) {
-        invs2[i] = 1.0/( d_s[i] + inv_pi2_*b );
-        expov += md[i] * md[i] * invs2[i];
-      }
+      expov = md[0]*md[0]*invs2[0]+md[1]*md[1]*invs2[1]+md[2]*md[2]*invs2[2];
       // get index of expov in tabulated exponential
       itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
       // check boundaries and skip atom in case
@@ -1227,8 +1200,8 @@ void EMMIVOX::update_neighbor_list()
   recvcounts[rank_] = nl_l.size();
   comm.Sum(&recvcounts[0], size_);
   tot_size = accumulate(recvcounts.begin(), recvcounts.end(), 0);
-  // resize neighbor stuff
-  nl_.resize(tot_size);
+  // clear and resize neighbor stuff
+  nl_.clear(); nl_.resize(tot_size);
   // calculate vector of displacement
   vector<int> disp(size_);
   disp[0] = 0;
