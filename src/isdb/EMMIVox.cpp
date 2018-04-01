@@ -808,7 +808,7 @@ void EMMIVOX::doMonteCarloBfact()
   Vector pos, posn, der;
   double dist;
   set<unsigned> ngbs;
-  map< unsigned, vector<double> > ngbs_mdist;
+  map< unsigned, set<double> > ngbs_mdist;
 
   // cycle over all the atoms belonging to residue ires
   for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
@@ -834,12 +834,20 @@ void EMMIVOX::doMonteCarloBfact()
       deltaov[id] += dnew-dold;
       // look for neighbors
       for(unsigned j=0; j<GMM_d_nb_[id].size(); ++j) {
-        posn = getPosition(GMM_d_nb_[id][j]);
+        // atom index of potential neighbor
+        unsigned in = GMM_d_nb_[id][j];
+        // residue index of potential neighbor
+        unsigned iresn = GMM_m_res_[in];
+        // check if same residue
+        if(ires==iresn) continue;
+        // distance
+        posn = getPosition(in);
         if(pbc_) dist = pbcDistance(pos,posn).modulo();
         else     dist = delta(pos,posn).modulo();
+        // if closer than 0.5 nm, add residue to lists
         if(dist>0 && dist<0.5) {
-          ngbs.insert(GMM_m_res_[GMM_d_nb_[id][j]]);
-          ngbs_mdist[GMM_m_res_[GMM_d_nb_[id][j]]].push_back(dist);
+          ngbs.insert(iresn);
+          ngbs_mdist[iresn].insert(dist);
         }
       }
     }
@@ -892,13 +900,12 @@ void EMMIVOX::doMonteCarloBfact()
 
 // add restraint to keep Bfactor of close atoms close
   for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
-    double mdist = *std::min_element(ngbs_mdist[*is].begin(), ngbs_mdist[*is].end());
-    //double gold = (bfactold-GMM_m_b_[*is])/0.058/sqrt(bfactold + GMM_m_b_[*is]);
-    //double gnew = (bfactnew-GMM_m_b_[*is])/0.058/sqrt(bfactnew + GMM_m_b_[*is]);
-    //old_ene += 0.5 * kbt_ * gold * gold / pow(mdist/0.1,1.69);
-    //new_ene += 0.5 * kbt_ * gnew * gnew / pow(mdist/0.1,1.69);
-    old_ene += (bfactold-GMM_m_b_[*is])*(bfactold-GMM_m_b_[*is])/(bfactold + GMM_m_b_[*is])/pow(mdist/0.1,1.69);
-    new_ene += (bfactnew-GMM_m_b_[*is])*(bfactnew-GMM_m_b_[*is])/(bfactnew + GMM_m_b_[*is])/pow(mdist/0.1,1.69);
+    // minimum distance between neighboring bfactors
+    double mdist = *min_element(ngbs_mdist[*is].begin(), ngbs_mdist[*is].end());
+    double gold = (bfactold-GMM_m_b_[*is])*2.0/(bfactold+GMM_m_b_[*is])/0.065/(mdist/0.13);
+    double gnew = (bfactnew-GMM_m_b_[*is])*2.0/(bfactnew+GMM_m_b_[*is])/0.065/(mdist/0.13);
+    old_ene += 0.5 * kbt_ * gold * gold;
+    new_ene += 0.5 * kbt_ * gnew * gnew;
   }
 
 // increment number of trials
@@ -1056,7 +1063,6 @@ void EMMIVOX::doMonteCarloBfactCollect()
 
     // useful quantities
     Vector pos, posn, der;
-    double dist;
 
     // cycle over all the atoms belonging to residue ires
     for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
