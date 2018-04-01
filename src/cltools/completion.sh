@@ -5,11 +5,7 @@
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 # these options can be combined with other commands
-    opts="--load"
-# this option should be the first
-    if((COMP_CWORD==1)) ; then
-      opts="$opts --no-mpi --mpi"
-    fi
+    opts="--load --no-mpi --mpi"
 
 # check if one of the previous keywords is a command
     for((i=1;i<COMP_CWORD;i++)); do
