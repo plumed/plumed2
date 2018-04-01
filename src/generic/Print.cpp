@@ -193,7 +193,7 @@ Print::Print(const ActionOptions&ao):
     for(unsigned i=0; i<arg_ends.size()-1; ++i) {
       unsigned nt=0;
       for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
-        if( getPntrToArgument(j)->getRank()>0 && getPntrToArgument(j)->hasDerivatives() ) { gridinput=true; }
+        if( getPntrToArgument(j)->getRank()>0 && getPntrToArgument(j)->hasDerivatives() ) { gridinput=true; break; }
         if( getPntrToArgument(j)->getRank()!=1 ) error("can only output vectors in xyz/ndx output");
         nt += getPntrToArgument(j)->getNumberOfValues( getLabel() );
       }
@@ -446,12 +446,16 @@ void Print::update() {
     std::vector<double> spacing( gval->getRank() ), xx( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
     std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
     act->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, false );
-    if( gtype=="fibonacci" ) error("cannot print fibonacci grids out to grid files");
-    for(unsigned i=0; i<gval->getRank(); ++i) {
-      ogfile.addConstantField("min_" + argn[i] );
-      ogfile.addConstantField("max_" + argn[i] );
-      ogfile.addConstantField("nbins_" + argn[i] );
-      ogfile.addConstantField("periodic_" + argn[i] );
+    if( gtype=="fibonacci" ) {
+      ogfile.addConstantField("nbins"); 
+    } else {
+      plumed_assert( gtype=="flat" );
+      for(unsigned i=0; i<gval->getRank(); ++i) {
+        ogfile.addConstantField("min_" + argn[i] );
+        ogfile.addConstantField("max_" + argn[i] );
+        ogfile.addConstantField("nbins_" + argn[i] );
+        ogfile.addConstantField("periodic_" + argn[i] );
+      }
     }
 
     for(unsigned i=0; i<gval->getNumberOfValues( getLabel() ); ++i) {
@@ -459,12 +463,16 @@ void Print::update() {
       act->getGridPointIndicesAndCoordinates( i, ind, xx );
       if(i>0 && gval->getRank()==2 && ind[gval->getRank()-2]==0) ogfile.printf("\n");
       ogfile.fmtField(fmt); ogfile.printField("normalisation", gval->getNorm() );
-      for(unsigned j=0; j<gval->getRank(); ++j) {
-        ogfile.printField("min_" + argn[j], min[j] );
-        ogfile.printField("max_" + argn[j], max[j] );
-        ogfile.printField("nbins_" + argn[j], static_cast<int>(nbin[j]) );
-        if( pbc[j] ) ogfile.printField("periodic_" + argn[j], "true" );
-        else         ogfile.printField("periodic_" + argn[j], "false" );
+      if( gtype=="fibonacci" ) {
+        ogfile.printField("nbins", static_cast<int>(nbin[0]) );
+      } else {
+        for(unsigned j=0; j<gval->getRank(); ++j) {
+          ogfile.printField("min_" + argn[j], min[j] );
+          ogfile.printField("max_" + argn[j], max[j] );
+          ogfile.printField("nbins_" + argn[j], static_cast<int>(nbin[j]) );
+          if( pbc[j] ) ogfile.printField("periodic_" + argn[j], "true" );
+          else         ogfile.printField("periodic_" + argn[j], "false" );
+        }
       }
       // Print the grid coordinates
       for(unsigned j=0; j<gval->getRank(); ++j) { ogfile.fmtField(fmt); ogfile.printField(argn[j],xx[j]); }

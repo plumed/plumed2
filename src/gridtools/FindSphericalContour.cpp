@@ -151,8 +151,8 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   // Set this here so the same set of grid points are used on every turn
   std::vector<bool> ipbc( 3, false ); gridcoords.setup( "fibonacci", ipbc, npoints, 0.0 );
   // Now create a value
-  std::vector<unsigned> shape( 1 ); shape[0]=npoints; addValueWithDerivatives( shape ); setNotPeriodic();
-  checkRead();
+  std::vector<unsigned> shape( 3 ); shape[0]=npoints; shape[1]=shape[2]=1;
+  addValueWithDerivatives( shape ); setNotPeriodic(); checkRead();
   // Create a task list
   for(unsigned i=0; i<npoints; ++i) addTaskToList( i );
 }
@@ -160,7 +160,7 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
 void FindSphericalContour::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
     std::vector<std::string>& max, std::vector<unsigned>& nbin,
     std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-  gtype="fibonacci"; nbin[0] = npoints; spacing[0]=0.0;
+  gtype="fibonacci"; nbin[0] = npoints; nbin[1]=nbin[2]=1; spacing[0]=0.0;
 }
 
 void FindSphericalContour::getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const {

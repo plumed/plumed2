@@ -42,11 +42,16 @@ CreateGridInSetup::CreateGridInSetup(const ActionOptions&ao):
 void CreateGridInSetup::createGridAndValue( const std::string& gtype, const std::vector<bool>& ipbc, const unsigned& nfermi, 
                                             const std::vector<std::string>& gmin, const std::vector<std::string>& gmax,
                                             const std::vector<unsigned>& gbin ) {
-  gridobject.setup( "flat", ipbc, nfermi, 0.0 ); std::vector<double> gspacing;
-  gridobject.setBounds( gmin, gmax, gbin, gspacing );
-  // Now create the value
-  std::vector<unsigned> shape( gridobject.getNbin(true) );
-  ActionWithValue::addValueWithDerivatives( shape ); setNotPeriodic();
+  gridobject.setup( gtype, ipbc, nfermi, 0.0 ); std::vector<double> gspacing;
+  if( gtype=="flat" ) {
+      gridobject.setBounds( gmin, gmax, gbin, gspacing );
+      // Now create the value
+      std::vector<unsigned> shape( gridobject.getNbin(true) );
+      ActionWithValue::addValueWithDerivatives( shape ); setNotPeriodic();
+  } else {
+      std::vector<unsigned> shape( 3 ); shape[0]=gbin[0]; shape[1]=shape[2]=1;
+      ActionWithValue::addValueWithDerivatives( shape ); setNotPeriodic();
+  }
 }
 
 unsigned CreateGridInSetup::getNumberOfDerivatives() const {
@@ -56,16 +61,22 @@ unsigned CreateGridInSetup::getNumberOfDerivatives() const {
 void CreateGridInSetup::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                             std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
                                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-  plumed_assert( !dumpcube ); gtype="flat"; std::vector<unsigned> nbin( gridobject.getNbin(false) );
-  for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
-    argn[i]=labels[i]; double gmin, gmax;
-    if( gridobject.getMin().size()>0 ) {
-      Tools::convert( gridobject.getMin()[i], gmin ); Tools::convert( gmin, min[i] );
-      Tools::convert( gridobject.getMax()[i], gmax ); Tools::convert( gmax, max[i] );
+  plumed_assert( !dumpcube ); gtype=gridobject.getGridType(); 
+  if( gtype=="fibonacci" ) { 
+    out_nbin[0]=getPntrToOutput(0)->getShape()[0];  
+    for(unsigned i=0;i<labels.size();++i) argn[i] = labels[i];
+  } else {
+    std::vector<unsigned> nbin( gridobject.getNbin(false) );
+    for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
+      argn[i]=labels[i]; double gmin, gmax;
+      if( gridobject.getMin().size()>0 ) {
+        Tools::convert( gridobject.getMin()[i], gmin ); Tools::convert( gmin, min[i] );
+        Tools::convert( gridobject.getMax()[i], gmax ); Tools::convert( gmax, max[i] );
+      }
+      if( nbin.size()>0 ) out_nbin[i]=nbin[i];
+      if( spacing.size()>0 ) spacing[i]=gridobject.getGridSpacing()[i];
+      pbc[i]=gridobject.isPeriodic(i);
     }
-    if( nbin.size()>0 ) out_nbin[i]=nbin[i];
-    if( spacing.size()>0 ) spacing[i]=gridobject.getGridSpacing()[i];
-    pbc[i]=gridobject.isPeriodic(i);
   }
 }
 

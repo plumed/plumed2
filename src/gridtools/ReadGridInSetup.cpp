@@ -59,41 +59,53 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
    std::vector<std::string> fieldnames; ifile.scanFieldList( fieldnames );
  
    // Retrieve the names of the variables the grid is computed over
+   bool flatgrid=false;
    for(unsigned i=0;i<fieldnames.size();++i) {
-       std::size_t dot = fieldnames[i].find_first_of("min_");
-       if( fieldnames[i].find("min_")!=std::string::npos ) labels.push_back( fieldnames[i].substr(dot+4) );
+       if( fieldnames[i].find("min_")!=std::string::npos ) flatgrid=true;
+       std::size_t dot = fieldnames[i].find_first_of("d" + valuestr + "_" );
+       if( fieldnames[i].find("d" + valuestr + "_")!=std::string::npos ) labels.push_back( fieldnames[i].substr(dot+2+valuestr.length()) );
    }
    // Now get all the header data for the grid
    std::vector<std::string> gmin( labels.size() ), gmax( labels.size() ); std::string pstring;
    int gbin1; std::vector<unsigned> gbin( labels.size() ); std::vector<bool> ipbc( labels.size() );
-   for(unsigned i=0; i<labels.size(); ++i) {
-     ifile.scanField( "min_" + labels[i], gmin[i]);
-     ifile.scanField( "max_" + labels[i], gmax[i]);
-     ifile.scanField( "periodic_" + labels[i], pstring );
-     ifile.scanField( "nbins_" + labels[i], gbin1); gbin[i]=gbin1;
-     if( pstring=="true" ) ipbc[i]=true; 
-     else if( pstring=="false" ) ipbc[i]=false; 
-     else error("do not understand periodidicy of " + labels[i] );
+   if( !flatgrid ) {
+     ifile.scanField( "nbins", gbin1); gbin[0]=gbin1; 
+     createGridAndValue( "fibonacci", ipbc, gbin[0], gmin, gmax, gbin );
+   } else {
+     for(unsigned i=0; i<labels.size(); ++i) {
+       ifile.scanField( "min_" + labels[i], gmin[i]);
+       ifile.scanField( "max_" + labels[i], gmax[i]);
+       ifile.scanField( "periodic_" + labels[i], pstring );
+       ifile.scanField( "nbins_" + labels[i], gbin1); gbin[i]=gbin1;
+       if( pstring=="true" ) ipbc[i]=true; 
+       else if( pstring=="false" ) ipbc[i]=false; 
+       else error("do not understand periodidicy of " + labels[i] );
  
-     bool hasder=ifile.FieldExist( "d" + valuestr + "_" + labels[i] );
-     if( !hasder ) plumed_merror("missing derivatives from grid file");
+       bool hasder=ifile.FieldExist( "d" + valuestr + "_" + labels[i] );
+       if( !hasder ) plumed_merror("missing derivatives from grid file");
+     }
+     createGridAndValue( "flat", ipbc, 0, gmin, gmax, gbin );
    }
-   createGridAndValue( "flat", ipbc, 0, gmin, gmax, gbin );
    // And finally read all the grid points
    Value* valout=getPntrToOutput(0); 
    std::vector<double> dder( labels.size() ), xx( labels.size() );
    for(unsigned i=0;i<valout->getNumberOfValues( getLabel() );++i) {
      double x, val, norm; ifile.scanField( valuestr, val ); ifile.scanField( "normalisation", norm );
      for(unsigned j=0; j<labels.size(); ++j) {
-       ifile.scanField(labels[j],x); xx[j]=x+gridobject.getGridSpacing()[j]/2.0;
-       ifile.scanField( "min_" + labels[j], gmin[j]);
-       ifile.scanField( "max_" + labels[j], gmax[j]);
-       ifile.scanField( "nbins_" + labels[j], gbin1);
-       ifile.scanField( "periodic_" + labels[j], pstring );
+       ifile.scanField(labels[j],x); 
+       if( !flatgrid ) {
+          ifile.scanField("nbins", gbin1);
+       } else {
+          xx[j]=x+gridobject.getGridSpacing()[j]/2.0;
+          ifile.scanField( "min_" + labels[j], gmin[j]);
+          ifile.scanField( "max_" + labels[j], gmax[j]);
+          ifile.scanField( "nbins_" + labels[j], gbin1);
+          ifile.scanField( "periodic_" + labels[j], pstring );
+       }
      }
      for(unsigned j=0; j<labels.size(); ++j) ifile.scanField( "d" + valuestr + "_" + labels[j], dder[j] );  
  
-     unsigned index=gridobject.getIndex(xx);
+     unsigned index=gridobject.getIndex(xx); if( !flatgrid ) index=i;
      valout->setNorm( norm ); valout->add( index*(labels.size()+1), norm*val );
      for(unsigned j=0; j<labels.size(); ++j) valout->add( index*(labels.size()+1)+1+j, norm*dder[j] );  
      ifile.scanField();

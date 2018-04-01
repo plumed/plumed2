@@ -99,7 +99,7 @@ SphericalKDE::SphericalKDE(const ActionOptions&ao):
   gridobject.setup( "fibonacci", ipbc, nbins, fib_cutoff ); checkRead();
 
   // Setup the grid
-  std::vector<unsigned> shape(1); shape[0]=nbins;
+  std::vector<unsigned> shape(3); shape[0]=nbins; shape[1]=shape[2]=1;
   addValueWithDerivatives( shape ); setupNeighborsVector();
 }
 
@@ -108,7 +108,13 @@ void SphericalKDE::setupNeighborsVector() { }
 void SphericalKDE::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
     std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
     std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const {
-  gtype="fibonacci"; out_nbin[0] = nbins; spacing[0] = von_misses_concentration;
+  gtype="fibonacci"; 
+  for(unsigned i=0; i<3;++i) {
+      unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
+      argn[i] = getPntrToArgument( k )->getName();
+  }
+  out_nbin[0] = nbins; out_nbin[1]=out_nbin[2]=1;
+  spacing[0] = von_misses_concentration;
 }
 
 void SphericalKDE::buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args ) {
@@ -126,29 +132,29 @@ double SphericalKDE::calculateValueOfSingleKernel( const std::vector<double>& ar
 }
 
 void SphericalKDE::addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const {
-  std::vector<double> gpoint( args.size() ), der( args.size() );
+  std::vector<double> gpoint( args.size() ); 
   unsigned num_neigh; std::vector<unsigned> neighbors, nneigh;
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
   for(unsigned i=0; i<num_neigh; ++i) {
     gridobject.getGridPointCoordinates( neighbors[i], gpoint );
-    double dot=0; for(unsigned j=0; j<der.size(); ++j) dot += args[j]*gpoint[j];
+    double dot=0; for(unsigned j=0; j<gpoint.size(); ++j) dot += args[j]*gpoint[j];
     double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
-    buffer[ bufstart + neighbors[i]*(1+der.size()) ] += newval;
-    for(unsigned j=0; j<der.size(); ++j) buffer[ bufstart + neighbors[i]*(1+der.size()) + 1 + j ] += von_misses_concentration*newval*gpoint[j];
+    buffer[ bufstart + neighbors[i]*(1+gpoint.size()) ] += newval;
+    for(unsigned j=0; j<gpoint.size(); ++j) buffer[ bufstart + neighbors[i]*(1+gpoint.size()) + 1 + j ] += von_misses_concentration*newval*gpoint[j];
   }
 }
 
 void SphericalKDE::addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args,
                                     const double& height, std::vector<double>& forces ) const {
-  std::vector<double> gpoint( args.size() ), der( args.size() );
+  std::vector<double> gpoint( args.size() );
   unsigned num_neigh; std::vector<unsigned> neighbors, nneigh;
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
   for(unsigned i=0; i<num_neigh; ++i) {
     gridobject.getGridPointCoordinates( neighbors[i], gpoint );
-    double dot=0; for(unsigned j=0; j<der.size(); ++j) dot += args[j]*gpoint[j];
+    double dot=0; for(unsigned j=0; j<gpoint.size(); ++j) dot += args[j]*gpoint[j];
     double fforce = getPntrToOutput(0)->getForce( neighbors[i] ); double newval = height*von_misses_norm*exp( von_misses_concentration*dot );
     if( heights_index==2  ) forces[ args.size()*getFullNumberOfTasks() + itask ] += newval*fforce / height;
-    unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += von_misses_concentration*newval*gpoint[j]*fforce; n += getFullNumberOfTasks(); }
+    unsigned n=itask; for(unsigned j=0; j<gpoint.size(); ++j) { forces[n] += von_misses_concentration*newval*gpoint[j]*fforce; n += getFullNumberOfTasks(); }
   }
 }
 
