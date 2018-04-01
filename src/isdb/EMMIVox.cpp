@@ -1228,12 +1228,17 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   // calculate blur factor
   bfactmin_ = 1.0e-5;
   if(reso*reso>Bave) bfactmin_ = 4.0 * ( reso*reso-Bave );
-  else warning("PLUMED should not be used with maps at resolution better than 0.3 nm");
-  // initialize B factor to minimum value
+  // initialize B factor to reasonable value based on Gaussian width at half maximum height equal the resolution
+  double bfactini = 4.0 * ( 2.0 * pow(0.425*pi*reso,2) - Bave );
+  // check for min and max
+  bfactini = min(bfactmax_, max(bfactmin_, bfactini));
   for(map<unsigned,double>::iterator it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
-    it->second = bfactmin_;
+    it->second = bfactini;
   }
   log.printf("  experimental map resolution : %3.2f\n", reso);
+  log.printf("  minimum Bfactor value       : %3.2f\n", bfactmin_);
+  log.printf("  maximum Bfactor value       : %3.2f\n", bfactmax_);
+  log.printf("  initial Bfactor value       : %3.2f\n", bfactini);
   // tabulate exponential
   dexp_ = dpcutoff_ / static_cast<double> (nexp_-1);
   for(unsigned i=0; i<nexp_; ++i) {
