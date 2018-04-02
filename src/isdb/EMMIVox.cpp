@@ -773,12 +773,10 @@ void EMMIVOX::doMonteCarlo()
   if(rank_!=0) {
     for(unsigned i=0; i<sigma_.size(); ++i) sigma_[i] = 0.0;
     MCaccept_ = 0.0;
-    MCtrials_ = 0.0;
   }
   if(size_>1) {
     comm.Sum(&sigma_[0], sigma_.size());
     comm.Sum(&MCaccept_, 1);
-    comm.Sum(&MCtrials_, 1);
   }
 }
 
