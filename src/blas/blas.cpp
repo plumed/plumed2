@@ -21,7 +21,7 @@ better idea to use the full reference implementation.
 Erik Lindahl, 2008-10-07.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #if ! defined (__PLUMED_HAS_EXTERNAL_BLAS)
-#include <math.h>
+#include <cmath>
 #include "blas.h"
 
 namespace PLMD{
@@ -51,7 +51,7 @@ PLUMED_BLAS_F77_FUNC(dasum,DASUM)(int *n__,
         i__1 = nincx;
         i__2 = incx;
         for (i__ = 1; i__2 < 0 ? i__ >= i__1 : i__ <= i__1; i__ += i__2) {
-            dtemp += fabs(dx[i__]);
+            dtemp += std::abs(dx[i__]);
         }
         return dtemp;
     }
@@ -60,7 +60,7 @@ PLUMED_BLAS_F77_FUNC(dasum,DASUM)(int *n__,
     if (m != 0) {
         i__2 = m;
         for (i__ = 1; i__ <= i__2; ++i__) {
-            dtemp += fabs(dx[i__]);
+            dtemp += std::abs(dx[i__]);
         }
         if (n < 6) {
             return dtemp;
@@ -69,9 +69,9 @@ PLUMED_BLAS_F77_FUNC(dasum,DASUM)(int *n__,
     mp1 = m + 1;
     i__2 = n;
     for (i__ = mp1; i__ <= i__2; i__ += 6) {
-        dtemp = dtemp + fabs(dx[i__]) + fabs(dx[i__ + 1]) + 
-        fabs(dx[i__ + 2]) + fabs(dx[i__+ 3]) + fabs(dx[i__ + 4]) +
-        fabs(dx[i__ + 5]);
+        dtemp = dtemp + std::abs(dx[i__]) + std::abs(dx[i__ + 1]) + 
+        std::abs(dx[i__ + 2]) + std::abs(dx[i__+ 3]) + std::abs(dx[i__ + 4]) +
+        std::abs(dx[i__ + 5]);
     }
     return dtemp;
 }
@@ -240,8 +240,8 @@ PLUMED_BLAS_F77_FUNC(ddot,DDOT)(int *n_arg,
  
 }
 }
-#include <ctype.h>
-#include <math.h>
+#include <cctype>
+#include <cmath>
 
 #include "real.h"
 
@@ -264,11 +264,10 @@ PLUMED_BLAS_F77_FUNC(dgemm,DGEMM)(const char *transa,
                       double *c,
                       int *ldc__)
 {
-  const char tra=toupper(*transa);
-  const char trb=toupper(*transb);
+  const char tra=std::toupper(*transa);
+  const char trb=std::toupper(*transb);
   double temp;
   int i,j,l;
-  int nrowa,ncola,nrowb;
 
   int m = *m__;
   int n = *n__;
@@ -280,24 +279,11 @@ PLUMED_BLAS_F77_FUNC(dgemm,DGEMM)(const char *transa,
   double alpha = *alpha__;
   double beta  = *beta__;
   
-  if(tra=='N') {
-    nrowa = m;
-    ncola = k;
-  } else {
-    nrowa = k;
-    ncola = m;
-  }
-
-  if(trb=='N') 
-    nrowb = k;
-   else 
-    nrowb = n;
-  
-  if(m==0 || n==0 || (( fabs(alpha)<PLUMED_GMX_DOUBLE_MIN || k==0) && fabs(beta-1.0)<PLUMED_GMX_DOUBLE_EPS))
+  if(m==0 || n==0 || (( std::abs(alpha)<PLUMED_GMX_DOUBLE_MIN || k==0) && std::abs(beta-1.0)<PLUMED_GMX_DOUBLE_EPS))
     return;
 
-  if(fabs(alpha)<PLUMED_GMX_DOUBLE_MIN) {
-    if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN) {
+  if(std::abs(alpha)<PLUMED_GMX_DOUBLE_MIN) {
+    if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN) {
       for(j=0;j<n;j++)
 	for(i=0;i<m;i++)
 	  c[j*(ldc)+i] = 0.0;
@@ -314,15 +300,15 @@ PLUMED_BLAS_F77_FUNC(dgemm,DGEMM)(const char *transa,
     if(tra=='N') {
       
       for(j=0;j<n;j++) {
-	if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN) {
+	if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN) {
 	  for(i=0;i<m;i++)
 	    c[j*(ldc)+i] = 0.0;
-	} else if(fabs(beta-1.0)>PLUMED_GMX_DOUBLE_EPS) {
+	} else if(std::abs(beta-1.0)>PLUMED_GMX_DOUBLE_EPS) {
 	  for(i=0;i<m;i++)
 	    c[j*(ldc)+i] *= beta;
 	} 
 	for(l=0;l<k;l++) {
-	  if( fabs(b[ j*(ldb) + l ])>PLUMED_GMX_DOUBLE_MIN) {
+	  if( std::abs(b[ j*(ldb) + l ])>PLUMED_GMX_DOUBLE_MIN) {
 	    temp = alpha * b[ j*(ldb) + l ];
 	    for(i=0;i<m;i++)
 	      c[j*(ldc)+i] += temp * a[l*(lda)+i]; 
@@ -336,7 +322,7 @@ PLUMED_BLAS_F77_FUNC(dgemm,DGEMM)(const char *transa,
 	  temp = 0.0;
 	  for(l=0;l<k;l++) 
 	    temp += a[i*(lda)+l] * b[j*(ldb)+l];
-	  if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN)
+	  if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN)
 	    c[j*(ldc)+i] = alpha * temp;
 	  else
 	    c[j*(ldc)+i] = alpha * temp + beta * c[j*(ldc)+i];
@@ -350,15 +336,15 @@ PLUMED_BLAS_F77_FUNC(dgemm,DGEMM)(const char *transa,
       /* transpose B, but not A */
 
       for(j=0;j<n;j++) {
-	if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN) {
+	if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN) {
 	  for(i=0;i<m;i++)
 	    c[j*(ldc)+i] = 0.0;
-	} else if(fabs(beta-1.0)>PLUMED_GMX_DOUBLE_EPS) {
+	} else if(std::abs(beta-1.0)>PLUMED_GMX_DOUBLE_EPS) {
 	  for(i=0;i<m;i++)
 	    c[j*(ldc)+i] *= beta;
 	} 
 	for(l=0;l<k;l++) {
-	  if( fabs(b[ l*(ldb) + j ])>PLUMED_GMX_DOUBLE_MIN) {
+	  if( std::abs(b[ l*(ldb) + j ])>PLUMED_GMX_DOUBLE_MIN) {
 	    temp = alpha * b[ l*(ldb) + j ];
 	    for(i=0;i<m;i++)
 	      c[j*(ldc)+i] += temp * a[l*(lda)+i]; 
@@ -373,7 +359,7 @@ PLUMED_BLAS_F77_FUNC(dgemm,DGEMM)(const char *transa,
 	  temp = 0.0;
 	  for(l=0;l<k;l++) 
 	    temp += a[i*(lda)+l] * b[l*(ldb)+j];
-	  if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN)
+	  if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN)
 	    c[j*(ldc)+i] = alpha * temp;
 	  else
 	    c[j*(ldc)+i] = alpha * temp + beta * c[j*(ldc)+i];
@@ -384,8 +370,8 @@ PLUMED_BLAS_F77_FUNC(dgemm,DGEMM)(const char *transa,
 }
 }
 }
-#include <math.h>
-#include <ctype.h>
+#include <cctype>
+#include <cmath>
 
 #include "real.h"
 
@@ -406,7 +392,7 @@ PLUMED_BLAS_F77_FUNC(dgemv,DGEMV)(const char *trans,
        double *y,
        int *incy__)
 {
-  const char ch=toupper(*trans);
+  const char ch=std::toupper(*trans);
   int lenx,leny,kx,ky;
   int i,j,jx,jy,ix,iy;
   double temp;
@@ -419,7 +405,7 @@ PLUMED_BLAS_F77_FUNC(dgemv,DGEMV)(const char *trans,
   int incy = *incy__;
   int lda = *lda__;
   
-  if(n<=0 || m<=0 || (fabs(alpha)<PLUMED_GMX_DOUBLE_MIN && fabs(beta-1.0)<PLUMED_GMX_DOUBLE_EPS))
+  if(n<=0 || m<=0 || (std::abs(alpha)<PLUMED_GMX_DOUBLE_MIN && std::abs(beta-1.0)<PLUMED_GMX_DOUBLE_EPS))
     return;
 
   if(ch=='N') {
@@ -440,9 +426,9 @@ PLUMED_BLAS_F77_FUNC(dgemv,DGEMV)(const char *trans,
   else
     ky = 1 - (leny -1)*(incy);
  
-  if(fabs(beta-1.0)>PLUMED_GMX_DOUBLE_EPS) {
+  if(std::abs(beta-1.0)>PLUMED_GMX_DOUBLE_EPS) {
     if(incy==1) {
-      if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN)
+      if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN)
 	for(i=0;i<leny;i++)
 	  y[i] = 0.0;
       else
@@ -451,7 +437,7 @@ PLUMED_BLAS_F77_FUNC(dgemv,DGEMV)(const char *trans,
     } else {
       /* non-unit incr. */
       iy = ky;
-      if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN) 
+      if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN) 
 	for(i=0;i<leny;i++,iy+=incy)
 	  y[iy] = 0.0;
       else
@@ -460,14 +446,14 @@ PLUMED_BLAS_F77_FUNC(dgemv,DGEMV)(const char *trans,
     }
   }
   
-  if(fabs(alpha)<PLUMED_GMX_DOUBLE_MIN)
+  if(std::abs(alpha)<PLUMED_GMX_DOUBLE_MIN)
     return;
   
   if(ch=='N') {
     jx = kx;
     if(incy==1) {
       for(j=1;j<=n;j++,jx+=incx) 
-	if(fabs(x[jx-1])>PLUMED_GMX_DOUBLE_MIN) {
+	if(std::abs(x[jx-1])>PLUMED_GMX_DOUBLE_MIN) {
 	  temp = alpha * x[jx-1];
 	  for(i=1;i<=m;i++)
 	    y[i-1] += temp * a[(j-1)*(lda)+(i-1)];
@@ -475,7 +461,7 @@ PLUMED_BLAS_F77_FUNC(dgemv,DGEMV)(const char *trans,
     } else {
       /* non-unit y incr. */
       for(j=1;j<=n;j++,jx+=incx) 
-	if(fabs(x[jx-1])>PLUMED_GMX_DOUBLE_MIN) {
+	if(std::abs(x[jx-1])>PLUMED_GMX_DOUBLE_MIN) {
 	  temp = alpha * x[jx-1];
 	  iy = ky;
 	  for(i=1;i<=m;i++,iy+=incy)
@@ -507,7 +493,7 @@ PLUMED_BLAS_F77_FUNC(dgemv,DGEMV)(const char *trans,
    
 }
 }
-#include <math.h>
+#include <cmath>
 
 #include "real.h"
 
@@ -538,7 +524,7 @@ PLUMED_BLAS_F77_FUNC(dger,DGER)(int *m__,
     int lda = *lda__;
     double alpha = *alpha__;
     
-    if(m<=0 || n<=0 || fabs(alpha)<PLUMED_GMX_DOUBLE_MIN)
+    if(m<=0 || n<=0 || std::abs(alpha)<PLUMED_GMX_DOUBLE_MIN)
         return;
     
     if(incy>0)
@@ -548,7 +534,7 @@ PLUMED_BLAS_F77_FUNC(dger,DGER)(int *m__,
     
     if(incx==1) {
         for(j=0;j<n;j++,jy+=incy)
-            if(fabs(y[jy])>PLUMED_GMX_DOUBLE_MIN) {
+            if(std::abs(y[jy])>PLUMED_GMX_DOUBLE_MIN) {
                 temp = alpha * y[jy];
                 for(i=0;i<m;i++)
                     a[j*(lda)+i] += temp*x[i];
@@ -561,7 +547,7 @@ PLUMED_BLAS_F77_FUNC(dger,DGER)(int *m__,
             kx = incx * (1 - m);
         
         for(j=0;j<n;j++,jy+=incy) {
-            if(fabs(y[jy])>PLUMED_GMX_DOUBLE_MIN) {
+            if(std::abs(y[jy])>PLUMED_GMX_DOUBLE_MIN) {
                 temp = alpha * y[jy];
                 ix = kx;
                 for(i=0;i<m;i++,ix+=incx)
@@ -573,7 +559,7 @@ PLUMED_BLAS_F77_FUNC(dger,DGER)(int *m__,
 }
 }
 }
-#include <math.h>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -607,7 +593,7 @@ PLUMED_BLAS_F77_FUNC(dnrm2,DNRM2)(int  *     n__,
     max_ix = 1+(n-1)*(incx);
     for(ix=1;ix<=max_ix;ix+=incx) {
         t = x[ix-1];
-        if(fabs(t)>PLUMED_GMX_DOUBLE_MIN) {
+        if(std::abs(t)>PLUMED_GMX_DOUBLE_MIN) {
             absxi = (t>=0) ? t : (-t);
             if(scale<absxi) {
                 t = scale/absxi;
@@ -620,7 +606,7 @@ PLUMED_BLAS_F77_FUNC(dnrm2,DNRM2)(int  *     n__,
             }
         }
     }
-    return scale*sqrt(ssq);
+    return scale*std::sqrt(ssq);
     
 }
 
@@ -783,8 +769,8 @@ PLUMED_BLAS_F77_FUNC(dswap,DSWAP)(int *n__,
  
 }
 }
-#include <ctype.h>
-#include <math.h>
+#include <cctype>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -803,7 +789,7 @@ PLUMED_BLAS_F77_FUNC(dsymv,DSYMV)(const char *uplo,
        double *y,
        int *incy__)
 {
-    const char ch=toupper(*uplo);
+    const char ch=std::toupper(*uplo);
     int kx,ky,i,j,ix,iy,jx,jy;
     double temp1,temp2;
     
@@ -827,9 +813,9 @@ PLUMED_BLAS_F77_FUNC(dsymv,DSYMV)(const char *uplo,
     else
         ky = 1 - (n -1)*(incy);
     
-    if(fabs(beta-1.0)>PLUMED_GMX_DOUBLE_EPS) {
+    if(std::abs(beta-1.0)>PLUMED_GMX_DOUBLE_EPS) {
         if(incy==1) {
-            if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN) 
+            if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN) 
                 for(i=1;i<=n;i++)
                     y[i-1] = 0.0;
             else
@@ -838,7 +824,7 @@ PLUMED_BLAS_F77_FUNC(dsymv,DSYMV)(const char *uplo,
         } else {
             /* non-unit incr. */
             iy = ky;
-            if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN) 
+            if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN) 
                 for(i=1;i<=n;i++) {
                     y[iy-1] = 0.0;
                     iy += incy;
@@ -851,7 +837,7 @@ PLUMED_BLAS_F77_FUNC(dsymv,DSYMV)(const char *uplo,
         }
     }
         
-        if(fabs(alpha)<PLUMED_GMX_DOUBLE_MIN) 
+        if(std::abs(alpha)<PLUMED_GMX_DOUBLE_MIN) 
             return;
         
         if(ch=='U') {
@@ -924,8 +910,8 @@ PLUMED_BLAS_F77_FUNC(dsymv,DSYMV)(const char *uplo,
 }    
 }
 }
-#include <ctype.h>
-#include <math.h>
+#include <cctype>
+#include <cmath>
 
 #include "real.h"
 
@@ -946,7 +932,7 @@ PLUMED_BLAS_F77_FUNC(dsyr2,DSYR2)(const char *    uplo,
 {
     int kx,ky,ix,iy,jx,jy,j,i;
     double temp1,temp2;
-    const char ch=toupper(*uplo);
+    const char ch=std::toupper(*uplo);
     
     int n = *n__;
     int lda = *lda__;
@@ -955,7 +941,7 @@ PLUMED_BLAS_F77_FUNC(dsyr2,DSYR2)(const char *    uplo,
     float alpha = *alpha__;
     
     
-    if(n<=0 || fabs(alpha)<PLUMED_GMX_DOUBLE_MIN || incx==0 || incy==0 ||
+    if(n<=0 || std::abs(alpha)<PLUMED_GMX_DOUBLE_MIN || incx==0 || incy==0 ||
        (ch != 'U' && ch != 'L'))
         return;
     
@@ -981,7 +967,7 @@ PLUMED_BLAS_F77_FUNC(dsyr2,DSYR2)(const char *    uplo,
         if(incx==1 && incy==1) {
             /* Unit increments for both x and y */
             for(j=1;j<=n;j++) {
-                if( fabs(x[j-1])>PLUMED_GMX_DOUBLE_MIN  || fabs(y[j-1])>PLUMED_GMX_DOUBLE_MIN ) {
+                if( std::abs(x[j-1])>PLUMED_GMX_DOUBLE_MIN  || std::abs(y[j-1])>PLUMED_GMX_DOUBLE_MIN ) {
                     temp1 = alpha * y[j-1];
                     temp2 = alpha * x[j-1];
                     for(i=1;i<=j;i++)
@@ -993,7 +979,7 @@ PLUMED_BLAS_F77_FUNC(dsyr2,DSYR2)(const char *    uplo,
             /* non-unit increments */
             for(j=1;j<=n;j++) {
                 
-                if( fabs(x[jx-1])>PLUMED_GMX_DOUBLE_MIN || fabs(y[jy-1])>PLUMED_GMX_DOUBLE_MIN ) {
+                if( std::abs(x[jx-1])>PLUMED_GMX_DOUBLE_MIN || std::abs(y[jy-1])>PLUMED_GMX_DOUBLE_MIN ) {
                     temp1 = alpha * y[jy-1];
                     temp2 = alpha * x[jx-1];
                     ix = kx;
@@ -1013,7 +999,7 @@ PLUMED_BLAS_F77_FUNC(dsyr2,DSYR2)(const char *    uplo,
         if(incx==1 && incy==1) {
             /* Unit increments for both x and y */
             for(j=1;j<=n;j++) {
-                if( fabs(x[j-1])>PLUMED_GMX_DOUBLE_MIN  || fabs(y[j-1])>PLUMED_GMX_DOUBLE_MIN ) {
+                if( std::abs(x[j-1])>PLUMED_GMX_DOUBLE_MIN  || std::abs(y[j-1])>PLUMED_GMX_DOUBLE_MIN ) {
                     temp1 = alpha * y[j-1];
                     temp2 = alpha * x[j-1];
                     for(i=j;i<=n;i++)
@@ -1025,7 +1011,7 @@ PLUMED_BLAS_F77_FUNC(dsyr2,DSYR2)(const char *    uplo,
             /* non-unit increments */
             for(j=1;j<=n;j++) {
                 
-                if( fabs(x[jx-1])>PLUMED_GMX_DOUBLE_MIN || fabs(y[jy-1])>PLUMED_GMX_DOUBLE_MIN ) {
+                if( std::abs(x[jx-1])>PLUMED_GMX_DOUBLE_MIN || std::abs(y[jy-1])>PLUMED_GMX_DOUBLE_MIN ) {
                     temp1 = alpha * y[jy-1];
                     temp2 = alpha * x[jx-1];
                     ix = jx;
@@ -1046,9 +1032,8 @@ PLUMED_BLAS_F77_FUNC(dsyr2,DSYR2)(const char *    uplo,
 }
 }
 }
-#include <math.h>
-#include <ctype.h>
-
+#include <cctype>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -1070,7 +1055,6 @@ PLUMED_BLAS_F77_FUNC(dsyr2k,DSYR2K)(const char *uplo,
 	int *ldc__)
 {
   char ch1,ch2;
-  int nrowa;
   int i,j,l;
   double temp1,temp2;
 
@@ -1084,20 +1068,15 @@ PLUMED_BLAS_F77_FUNC(dsyr2k,DSYR2K)(const char *uplo,
   double alpha = *alpha__;
   double beta  = *beta__;
   
-  ch1 = toupper(*uplo);
-  ch2 = toupper(*trans);
+  ch1 = std::toupper(*uplo);
+  ch2 = std::toupper(*trans);
 
-  if(ch2 == 'N')
-    nrowa = n;
-  else
-    nrowa = k;
-
-  if(n==0 || ( ( fabs(alpha)<PLUMED_GMX_DOUBLE_MIN || k==0 ) && fabs(beta-1.0)<PLUMED_GMX_DOUBLE_EPS))
+  if(n==0 || ( ( std::abs(alpha)<PLUMED_GMX_DOUBLE_MIN || k==0 ) && std::abs(beta-1.0)<PLUMED_GMX_DOUBLE_EPS))
     return;
 
-  if(fabs(alpha)<PLUMED_GMX_DOUBLE_MIN ) {
+  if(std::abs(alpha)<PLUMED_GMX_DOUBLE_MIN ) {
     if(ch1=='U') {
-      if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN) 
+      if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN) 
 	for(j=1;j<=n;j++) 
 	  for(i=1;i<=j;i++)
 	    c[(j-1)*(ldc)+(i-1)] = 0.0;
@@ -1107,7 +1086,7 @@ PLUMED_BLAS_F77_FUNC(dsyr2k,DSYR2K)(const char *uplo,
 	    c[(j-1)*(ldc)+(i-1)] *= beta;
     } else {
       /* lower */
-      if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN) 
+      if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN) 
 	for(j=1;j<=n;j++) 
 	  for(i=j;i<=n;i++)
 	    c[(j-1)*(ldc)+(i-1)] = 0.0;
@@ -1122,15 +1101,15 @@ PLUMED_BLAS_F77_FUNC(dsyr2k,DSYR2K)(const char *uplo,
   if(ch2=='N') {
     if(ch1=='U') {
       for(j=1;j<=n;j++) {
-	if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN)
+	if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN)
 	  for(i=1;i<=j;i++)
 	     c[(j-1)*(ldc)+(i-1)] = 0.0;
-	else if(fabs(beta-1.0)>PLUMED_GMX_DOUBLE_EPS)
+	else if(std::abs(beta-1.0)>PLUMED_GMX_DOUBLE_EPS)
 	  for(i=1;i<=j;i++)
 	    c[(j-1)*(ldc)+(i-1)] *= beta;
 	for(l=1;l<=k;l++) {
-	  if( fabs(a[(l-1)*(lda)+(j-1)])>PLUMED_GMX_DOUBLE_MIN ||
-	      fabs(b[(l-1)*(ldb)+(j-1)])>PLUMED_GMX_DOUBLE_MIN) {
+	  if( std::abs(a[(l-1)*(lda)+(j-1)])>PLUMED_GMX_DOUBLE_MIN ||
+	      std::abs(b[(l-1)*(ldb)+(j-1)])>PLUMED_GMX_DOUBLE_MIN) {
 	    temp1 = alpha * b[(l-1)*(ldb)+(j-1)];
 	    temp2 = alpha * a[(l-1)*(lda)+(j-1)];
 	    for(i=1;i<=j;i++)
@@ -1143,15 +1122,15 @@ PLUMED_BLAS_F77_FUNC(dsyr2k,DSYR2K)(const char *uplo,
     } else {
       /* lower */
       for(j=1;j<=n;j++) {
-	if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN)
+	if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN)
 	  for(i=j;i<=n;i++)
 	    c[(j-1)*(ldc)+(i-1)] = 0.0;
-	else if(fabs(beta-1.0)>PLUMED_GMX_DOUBLE_EPS)
+	else if(std::abs(beta-1.0)>PLUMED_GMX_DOUBLE_EPS)
 	  for(i=j;i<=n;i++)
 	    c[(j-1)*(ldc)+(i-1)] *= beta;
 	for(l=1;l<=k;l++) {
-	  if( fabs(a[(l-1)*(lda)+(j-1)])>PLUMED_GMX_DOUBLE_MIN ||
-	      fabs(b[(l-1)*(ldb)+(j-1)])>PLUMED_GMX_DOUBLE_MIN) {
+	  if( std::abs(a[(l-1)*(lda)+(j-1)])>PLUMED_GMX_DOUBLE_MIN ||
+	      std::abs(b[(l-1)*(ldb)+(j-1)])>PLUMED_GMX_DOUBLE_MIN) {
 	    temp1 = alpha * b[(l-1)*(ldb)+(j-1)];
 	    temp2 = alpha * a[(l-1)*(lda)+(j-1)];
 	    for(i=j;i<=n;i++)
@@ -1173,7 +1152,7 @@ PLUMED_BLAS_F77_FUNC(dsyr2k,DSYR2K)(const char *uplo,
 	     temp1 += a[(i-1)*(lda)+(l-1)] * b[(j-1)*(ldb)+(l-1)];
 	     temp2 += b[(i-1)*(ldb)+(l-1)] * a[(j-1)*(lda)+(l-1)];
 	  }
-	  if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN)
+	  if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN)
 	    c[(j-1)*(ldc)+(i-1)] = alpha * (temp1 + temp2);
 	  else
 	    c[(j-1)*(ldc)+(i-1)] = beta * c[(j-1)*(ldc)+(i-1)] +
@@ -1189,7 +1168,7 @@ PLUMED_BLAS_F77_FUNC(dsyr2k,DSYR2K)(const char *uplo,
 	     temp1 += a[(i-1)*(lda)+(l-1)] * b[(j-1)*(ldb)+(l-1)];
 	     temp2 += b[(i-1)*(ldb)+(l-1)] * a[(j-1)*(lda)+(l-1)];
 	  }
-	  if(fabs(beta)<PLUMED_GMX_DOUBLE_MIN)
+	  if(std::abs(beta)<PLUMED_GMX_DOUBLE_MIN)
 	    c[(j-1)*(ldc)+(i-1)] = alpha * (temp1 + temp2);
 	  else
 	    c[(j-1)*(ldc)+(i-1)] = beta * c[(j-1)*(ldc)+(i-1)] +
@@ -1201,7 +1180,7 @@ PLUMED_BLAS_F77_FUNC(dsyr2k,DSYR2K)(const char *uplo,
 }
 }
 }
-#include <math.h>
+#include <cmath>
 
 #include "real.h"
 
@@ -1231,10 +1210,9 @@ PLUMED_BLAS_F77_FUNC(dtrmm,DTRMM)(const char *side,
     double alpha = *alpha__;
     
     /* Local variables */
-    int i__, j, k, info;
+    int i__, j, k;
     double temp;
     int lside;
-    int nrowa;
     int upper;
     int nounit;
     a_dim1 = lda;
@@ -1246,20 +1224,14 @@ PLUMED_BLAS_F77_FUNC(dtrmm,DTRMM)(const char *side,
 
     /* Function Body */
     lside = (*side=='L' || *side=='l');
-    if (lside) {
-	nrowa = m;
-    } else {
-	nrowa = n;
-    }
+
     nounit = (*diag=='N' || *diag=='n');
     upper = (*uplo=='U' || *uplo=='u');
-
-    info = 0;
 
     if (n == 0) {
 	return;
     }
-    if (fabs(alpha)<PLUMED_GMX_DOUBLE_MIN) {
+    if (std::abs(alpha)<PLUMED_GMX_DOUBLE_MIN) {
 	i__1 = n;
 	for (j = 1; j <= i__1; ++j) {
 	    i__2 = m;
@@ -1276,7 +1248,7 @@ PLUMED_BLAS_F77_FUNC(dtrmm,DTRMM)(const char *side,
 		for (j = 1; j <= i__1; ++j) {
 		    i__2 = m;
 		    for (k = 1; k <= i__2; ++k) {
-			if (fabs(b[k + j * b_dim1])>PLUMED_GMX_DOUBLE_MIN) {
+			if (std::abs(b[k + j * b_dim1])>PLUMED_GMX_DOUBLE_MIN) {
 			    temp = alpha * b[k + j * b_dim1];
 			    i__3 = k - 1;
 			    for (i__ = 1; i__ <= i__3; ++i__) {
@@ -1293,7 +1265,7 @@ PLUMED_BLAS_F77_FUNC(dtrmm,DTRMM)(const char *side,
 		i__1 = n;
 		for (j = 1; j <= i__1; ++j) {
 		    for (k = m; k >= 1; --k) {
-			if (fabs(b[k + j * b_dim1])>PLUMED_GMX_DOUBLE_MIN) {
+			if (std::abs(b[k + j * b_dim1])>PLUMED_GMX_DOUBLE_MIN) {
 			    temp = alpha * b[k + j * b_dim1];
 			    b[k + j * b_dim1] = temp;
 			    if (nounit) {
@@ -1358,7 +1330,7 @@ PLUMED_BLAS_F77_FUNC(dtrmm,DTRMM)(const char *side,
 		    }
 		    i__1 = j - 1;
 		    for (k = 1; k <= i__1; ++k) {
-			if (fabs(a[k + j * a_dim1])>PLUMED_GMX_DOUBLE_MIN) {
+			if (std::abs(a[k + j * a_dim1])>PLUMED_GMX_DOUBLE_MIN) {
 			    temp = alpha * a[k + j * a_dim1];
 			    i__2 = m;
 			    for (i__ = 1; i__ <= i__2; ++i__) {
@@ -1381,7 +1353,7 @@ PLUMED_BLAS_F77_FUNC(dtrmm,DTRMM)(const char *side,
 		    }
 		    i__2 = n;
 		    for (k = j + 1; k <= i__2; ++k) {
-			if (fabs(a[k + j * a_dim1])>PLUMED_GMX_DOUBLE_MIN) {
+			if (std::abs(a[k + j * a_dim1])>PLUMED_GMX_DOUBLE_MIN) {
 			    temp = alpha * a[k + j * a_dim1];
 			    i__3 = m;
 			    for (i__ = 1; i__ <= i__3; ++i__) {
@@ -1399,7 +1371,7 @@ PLUMED_BLAS_F77_FUNC(dtrmm,DTRMM)(const char *side,
 		for (k = 1; k <= i__1; ++k) {
 		    i__2 = k - 1;
 		    for (j = 1; j <= i__2; ++j) {
-			if (fabs(a[j + k * a_dim1])>PLUMED_GMX_DOUBLE_MIN) {
+			if (std::abs(a[j + k * a_dim1])>PLUMED_GMX_DOUBLE_MIN) {
 			    temp = alpha * a[j + k * a_dim1];
 			    i__3 = m;
 			    for (i__ = 1; i__ <= i__3; ++i__) {
@@ -1412,7 +1384,7 @@ PLUMED_BLAS_F77_FUNC(dtrmm,DTRMM)(const char *side,
 		    if (nounit) {
 			temp *= a[k + k * a_dim1];
 		    }
-		    if (fabs(temp-1.0)>PLUMED_GMX_DOUBLE_EPS) {
+		    if (std::abs(temp-1.0)>PLUMED_GMX_DOUBLE_EPS) {
 			i__2 = m;
 			for (i__ = 1; i__ <= i__2; ++i__) {
 			    b[i__ + k * b_dim1] = temp * b[i__ + k * b_dim1];
@@ -1423,7 +1395,7 @@ PLUMED_BLAS_F77_FUNC(dtrmm,DTRMM)(const char *side,
 		for (k = n; k >= 1; --k) {
 		    i__1 = n;
 		    for (j = k + 1; j <= i__1; ++j) {
-			if (fabs(a[j + k * a_dim1])>PLUMED_GMX_DOUBLE_MIN) {
+			if (std::abs(a[j + k * a_dim1])>PLUMED_GMX_DOUBLE_MIN) {
 			    temp = alpha * a[j + k * a_dim1];
 			    i__2 = m;
 			    for (i__ = 1; i__ <= i__2; ++i__) {
@@ -1436,7 +1408,7 @@ PLUMED_BLAS_F77_FUNC(dtrmm,DTRMM)(const char *side,
 		    if (nounit) {
 			temp *= a[k + k * a_dim1];
 		    }
-		    if (fabs(temp-1.0)>PLUMED_GMX_DOUBLE_EPS) {
+		    if (std::abs(temp-1.0)>PLUMED_GMX_DOUBLE_EPS) {
 			i__1 = m;
 			for (i__ = 1; i__ <= i__1; ++i__) {
 			    b[i__ + k * b_dim1] = temp * b[i__ + k * b_dim1];
@@ -1454,7 +1426,7 @@ PLUMED_BLAS_F77_FUNC(dtrmm,DTRMM)(const char *side,
 
 }
 }
-#include <math.h>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -1473,7 +1445,7 @@ PLUMED_BLAS_F77_FUNC(dtrmv,DTRMV)(const char *uplo,
 {
     int a_dim1, a_offset, i__1, i__2;
 
-    int i__, j, ix, jx, kx, info;
+    int i__, j, ix, jx, kx;
     double temp;
     int nounit;
     
@@ -1485,8 +1457,6 @@ PLUMED_BLAS_F77_FUNC(dtrmv,DTRMV)(const char *uplo,
     a_offset = 1 + a_dim1;
     a -= a_offset;
     --x;
-
-    info = 0;
 
     if (n == 0) {
 	return;
@@ -1506,7 +1476,7 @@ PLUMED_BLAS_F77_FUNC(dtrmv,DTRMV)(const char *uplo,
 	    if (incx == 1) {
 		i__1 = n;
 		for (j = 1; j <= i__1; ++j) {
-		    if (fabs(x[j])>PLUMED_GMX_DOUBLE_MIN) {
+		    if (std::abs(x[j])>PLUMED_GMX_DOUBLE_MIN) {
 			temp = x[j];
 			i__2 = j - 1;
 			for (i__ = 1; i__ <= i__2; ++i__) {
@@ -1521,7 +1491,7 @@ PLUMED_BLAS_F77_FUNC(dtrmv,DTRMV)(const char *uplo,
 		jx = kx;
 		i__1 = n;
 		for (j = 1; j <= i__1; ++j) {
-		    if (fabs(x[jx])>PLUMED_GMX_DOUBLE_MIN) {
+		    if (std::abs(x[jx])>PLUMED_GMX_DOUBLE_MIN) {
 			temp = x[jx];
 			ix = kx;
 			i__2 = j - 1;
@@ -1539,7 +1509,7 @@ PLUMED_BLAS_F77_FUNC(dtrmv,DTRMV)(const char *uplo,
 	} else {
 	    if (incx == 1) {
 		for (j = n; j >= 1; --j) {
-		    if (fabs(x[j])>PLUMED_GMX_DOUBLE_MIN) {
+		    if (std::abs(x[j])>PLUMED_GMX_DOUBLE_MIN) {
 			temp = x[j];
 			i__1 = j + 1;
 			for (i__ = n; i__ >= i__1; --i__) {
@@ -1554,7 +1524,7 @@ PLUMED_BLAS_F77_FUNC(dtrmv,DTRMV)(const char *uplo,
 		kx += (n - 1) * incx;
 		jx = kx;
 		for (j = n; j >= 1; --j) {
-		    if (fabs(x[jx])>PLUMED_GMX_DOUBLE_MIN) {
+		    if (std::abs(x[jx])>PLUMED_GMX_DOUBLE_MIN) {
 			temp = x[jx];
 			ix = kx;
 			i__1 = j + 1;
@@ -1642,8 +1612,8 @@ PLUMED_BLAS_F77_FUNC(dtrmv,DTRMV)(const char *uplo,
 
 }
 }
-#include <ctype.h>
-#include <math.h>
+#include <cctype>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -1663,10 +1633,10 @@ PLUMED_BLAS_F77_FUNC(dtrsm,DTRSM)(const char * side,
        double *b,
        int *  ldb__)
 {
-  const char xside  = toupper(*side);
-  const char xuplo  = toupper(*uplo);
-  const char xtrans = toupper(*transa);
-  const char xdiag  = toupper(*diag);
+  const char xside  = std::toupper(*side);
+  const char xuplo  = std::toupper(*uplo);
+  const char xtrans = std::toupper(*transa);
+  const char xdiag  = std::toupper(*diag);
   int i,j,k;
   double temp;
 
@@ -1680,7 +1650,7 @@ PLUMED_BLAS_F77_FUNC(dtrsm,DTRSM)(const char * side,
   if(n<=0)
     return;
   
-  if(fabs(alpha)<PLUMED_GMX_DOUBLE_MIN) { 
+  if(std::abs(alpha)<PLUMED_GMX_DOUBLE_MIN) { 
     for(j=0;j<n;j++)
       for(i=0;i<m;i++)
 	b[j*(ldb)+i] = 0.0;
@@ -1694,12 +1664,12 @@ PLUMED_BLAS_F77_FUNC(dtrsm,DTRSM)(const char * side,
       if(xuplo=='U') {
 	/* upper */
 	for(j=0;j<n;j++) {
-	  if(fabs(alpha-1.0)>PLUMED_GMX_DOUBLE_EPS) {
+	  if(std::abs(alpha-1.0)>PLUMED_GMX_DOUBLE_EPS) {
 	    for(i=0;i<m;i++)
 	      b[j*(ldb)+i] *= alpha;
 	  }
 	  for(k=m-1;k>=0;k--) {
-	    if(fabs(b[j*(ldb)+k])>PLUMED_GMX_DOUBLE_MIN) {
+	    if(std::abs(b[j*(ldb)+k])>PLUMED_GMX_DOUBLE_MIN) {
 	      if(xdiag=='N')
 		b[j*(ldb)+k] /= a[k*(lda)+k];
 	      for(i=0;i<k;i++)
@@ -1710,11 +1680,11 @@ PLUMED_BLAS_F77_FUNC(dtrsm,DTRSM)(const char * side,
       } else {
 	/* lower */
 	for(j=0;j<n;j++) {
-	  if(fabs(alpha-1.0)>PLUMED_GMX_DOUBLE_EPS)
+	  if(std::abs(alpha-1.0)>PLUMED_GMX_DOUBLE_EPS)
 	    for(i=0;i<m;i++)
 	      b[j*(ldb)+i] *= alpha;
 	  for(k=0;k<m;k++) {
-	    if(fabs(b[j*(ldb)+k])>PLUMED_GMX_DOUBLE_MIN) {
+	    if(std::abs(b[j*(ldb)+k])>PLUMED_GMX_DOUBLE_MIN) {
 	      if(xdiag=='N')
 		b[j*(ldb)+k] /= a[k*(lda)+k];
 	      for(i=k+1;i<m;i++)
@@ -1758,11 +1728,11 @@ PLUMED_BLAS_F77_FUNC(dtrsm,DTRSM)(const char * side,
       if(xuplo=='U') {
 	/* upper */
 	for(j=0;j<n;j++) {
-	  if(fabs(alpha-1.0)>PLUMED_GMX_DOUBLE_EPS)
+	  if(std::abs(alpha-1.0)>PLUMED_GMX_DOUBLE_EPS)
 	    for(i=0;i<m;i++)
 	      b[j*(ldb)+i] *= alpha;
 	  for(k=0;k<j;k++) {
-	    if(fabs(a[j*(lda)+k])>PLUMED_GMX_DOUBLE_MIN) {
+	    if(std::abs(a[j*(lda)+k])>PLUMED_GMX_DOUBLE_MIN) {
 	      for(i=0;i<m;i++)
 		b[j*(ldb)+i] -= a[j*(lda)+k]*b[k*(ldb)+i];
 	    }
@@ -1776,11 +1746,11 @@ PLUMED_BLAS_F77_FUNC(dtrsm,DTRSM)(const char * side,
       } else {
 	/* lower */
 	for(j=n-1;j>=0;j--) {
-	  if(fabs(alpha)>PLUMED_GMX_DOUBLE_MIN)
+	  if(std::abs(alpha)>PLUMED_GMX_DOUBLE_MIN)
 	    for(i=0;i<m;i++)
 	      b[j*(ldb)+i] *= alpha;
 	  for(k=j+1;k<n;k++) {
-	    if(fabs(a[j*(lda)+k])>PLUMED_GMX_DOUBLE_MIN) {
+	    if(std::abs(a[j*(lda)+k])>PLUMED_GMX_DOUBLE_MIN) {
 	      for(i=0;i<m;i++)
 		b[j*(ldb)+i] -= a[j*(lda)+k]*b[k*(ldb)+i];
 	    }
@@ -1803,13 +1773,13 @@ PLUMED_BLAS_F77_FUNC(dtrsm,DTRSM)(const char * side,
 	      b[k*(ldb)+i] *= temp;
 	  }
 	  for(j=0;j<k;j++) {
-	    if(fabs(a[k*(lda)+j])>PLUMED_GMX_DOUBLE_MIN) {
+	    if(std::abs(a[k*(lda)+j])>PLUMED_GMX_DOUBLE_MIN) {
 	      temp = a[k*(lda)+j];
 	      for(i=0;i<m;i++)
 		b[j*(ldb)+i] -= temp * b[k*(ldb)+i];
 	    }
 	  }
-	  if(fabs(alpha-1.0)>PLUMED_GMX_DOUBLE_EPS)
+	  if(std::abs(alpha-1.0)>PLUMED_GMX_DOUBLE_EPS)
 	    for(i=0;i<m;i++)
 	      b[k*(ldb)+i] *= alpha;
 	}
@@ -1822,13 +1792,13 @@ PLUMED_BLAS_F77_FUNC(dtrsm,DTRSM)(const char * side,
 	      b[k*(ldb)+i] *= temp;
 	  }
 	  for(j=k+1;j<n;j++) {
-	    if(fabs(a[k*(lda)+j])>PLUMED_GMX_DOUBLE_MIN) {
+	    if(std::abs(a[k*(lda)+j])>PLUMED_GMX_DOUBLE_MIN) {
 	      temp = a[k*(lda)+j];
 	      for(i=0;i<m;i++)
 		b[j*(ldb)+i] -= temp * b[k*(ldb)+i];
 	    }
 	  }
-	  if(fabs(alpha-1.0)>PLUMED_GMX_DOUBLE_EPS)
+	  if(std::abs(alpha-1.0)>PLUMED_GMX_DOUBLE_EPS)
 	    for(i=0;i<m;i++)
 	      b[k*(ldb)+i] *= alpha;
 	}
@@ -1838,7 +1808,7 @@ PLUMED_BLAS_F77_FUNC(dtrsm,DTRSM)(const char * side,
 }
 }
 }
-#include <math.h>
+#include <cmath>
 #include "blas.h"
 
 namespace PLMD{
@@ -1860,12 +1830,12 @@ PLUMED_BLAS_F77_FUNC(idamax,IDAMAX)(int *n__,
   if(n==1)
     return 1;
 
-  dmax = fabs(dx[0]);
+  dmax = std::abs(dx[0]);
   idxmax = 1;
 
   if(incx==1) {
     for(i=1;i<n;i++) {
-      tmp = fabs(dx[i]);
+      tmp = std::abs(dx[i]);
       if(tmp>dmax) {
 	dmax = tmp;
 	idxmax = i+1;
@@ -1875,7 +1845,7 @@ PLUMED_BLAS_F77_FUNC(idamax,IDAMAX)(int *n__,
     /* Non-unit increments */
     ix = incx; /* this is really 0 + an increment */
     for(i=1;i<n;i++,ix+=incx) {
-      tmp = fabs(dx[ix]);
+      tmp = std::abs(dx[ix]);
       if(tmp>dmax) {
 	dmax = tmp;
 	idxmax = ix+1;
@@ -1886,7 +1856,7 @@ PLUMED_BLAS_F77_FUNC(idamax,IDAMAX)(int *n__,
 }
 }
 }
-#include <math.h>
+#include <cmath>
 #include "blas.h"
 
 namespace PLMD{
@@ -1908,12 +1878,12 @@ PLUMED_BLAS_F77_FUNC(isamax,ISAMAX)(int *n__,
   if(n==1)
     return 1;
 
-  dmax = fabs(dx[0]);
+  dmax = std::abs(dx[0]);
   idxmax = 1;
 
   if(incx==1) {
     for(i=1;i<n;i++) {
-      tmp = fabs(dx[i]);
+      tmp = std::abs(dx[i]);
       if(tmp>dmax) {
 	dmax = tmp;
 	idxmax = i+1;
@@ -1923,7 +1893,7 @@ PLUMED_BLAS_F77_FUNC(isamax,ISAMAX)(int *n__,
     /* Non-unit increments */
     ix = incx; /* this is really 0 + an increment */
     for(i=1;i<n;i++,ix+=incx) {
-      tmp = fabs(dx[ix]);
+      tmp = std::abs(dx[ix]);
       if(tmp>dmax) {
 	dmax = tmp;
 	idxmax = ix+1;
@@ -1934,7 +1904,7 @@ PLUMED_BLAS_F77_FUNC(isamax,ISAMAX)(int *n__,
 }
 }
 }
-#include <math.h>
+#include <cmath>
 #include "blas.h"
 
 namespace PLMD{
@@ -1965,7 +1935,7 @@ PLUMED_BLAS_F77_FUNC(sasum,SASUM)(int *n__,
         i__1 = nincx;
         i__2 = incx;
         for (i__ = 1; i__2 < 0 ? i__ >= i__1 : i__ <= i__1; i__ += i__2) {
-            dtemp += fabs(dx[i__]);
+            dtemp += std::abs(dx[i__]);
         }
         return dtemp;
     }
@@ -1974,7 +1944,7 @@ PLUMED_BLAS_F77_FUNC(sasum,SASUM)(int *n__,
     if (m != 0) {
         i__2 = m;
         for (i__ = 1; i__ <= i__2; ++i__) {
-            dtemp += fabs(dx[i__]);
+            dtemp += std::abs(dx[i__]);
         }
         if (n < 6) {
             return dtemp;
@@ -1983,9 +1953,9 @@ PLUMED_BLAS_F77_FUNC(sasum,SASUM)(int *n__,
     mp1 = m + 1;
     i__2 = n;
     for (i__ = mp1; i__ <= i__2; i__ += 6) {
-        dtemp = dtemp + fabs(dx[i__]) + fabs(dx[i__ + 1]) + 
-        fabs(dx[i__ + 2]) + fabs(dx[i__+ 3]) + fabs(dx[i__ + 4]) +
-        fabs(dx[i__ + 5]);
+        dtemp = dtemp + std::abs(dx[i__]) + std::abs(dx[i__ + 1]) + 
+        std::abs(dx[i__ + 2]) + std::abs(dx[i__+ 3]) + std::abs(dx[i__ + 4]) +
+        std::abs(dx[i__ + 5]);
     }
     return dtemp;
 }
@@ -2155,8 +2125,8 @@ PLUMED_BLAS_F77_FUNC(sdot,SDOT)(int *n_arg,
 
 }
 }
-#include <ctype.h>
-#include <math.h>
+#include <cctype>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -2178,11 +2148,10 @@ PLUMED_BLAS_F77_FUNC(sgemm,SGEMM)(const char *transa,
        float *c,
        int *ldc__)
 {
-  const char tra=toupper(*transa);
-  const char trb=toupper(*transb);
+  const char tra=std::toupper(*transa);
+  const char trb=std::toupper(*transb);
   float temp;
   int i,j,l;
-  int nrowa,ncola,nrowb;
 
   int m   = *m__;
   int n   = *n__;
@@ -2194,24 +2163,11 @@ PLUMED_BLAS_F77_FUNC(sgemm,SGEMM)(const char *transa,
   float alpha = *alpha__;
   float beta  = *beta__;
   
-  if(tra=='N') {
-    nrowa = m;
-    ncola = k;
-  } else {
-    nrowa = k;
-    ncola = m;
-  }
-
-  if(trb=='N') 
-    nrowb = k;
-   else 
-    nrowb = n;
-  
-  if(m==0 || n==0 || (( fabs(alpha)<PLUMED_GMX_FLOAT_MIN || k==0) && fabs(beta-1.0)<PLUMED_GMX_FLOAT_EPS))
+  if(m==0 || n==0 || (( std::abs(alpha)<PLUMED_GMX_FLOAT_MIN || k==0) && std::abs(beta-1.0)<PLUMED_GMX_FLOAT_EPS))
     return;
 
-  if(fabs(alpha)<PLUMED_GMX_FLOAT_MIN) {
-    if(fabs(beta)<PLUMED_GMX_FLOAT_MIN) {
+  if(std::abs(alpha)<PLUMED_GMX_FLOAT_MIN) {
+    if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN) {
       for(j=0;j<n;j++)
 	for(i=0;i<m;i++)
 	  c[j*(ldc)+i] = 0.0;
@@ -2228,15 +2184,15 @@ PLUMED_BLAS_F77_FUNC(sgemm,SGEMM)(const char *transa,
     if(tra=='N') {
       
       for(j=0;j<n;j++) {
-	if(fabs(beta)<PLUMED_GMX_FLOAT_MIN) {
+	if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN) {
 	  for(i=0;i<m;i++)
 	    c[j*(ldc)+i] = 0.0;
-	} else if(fabs(beta-1.0)>PLUMED_GMX_FLOAT_EPS) {
+	} else if(std::abs(beta-1.0)>PLUMED_GMX_FLOAT_EPS) {
 	  for(i=0;i<m;i++)
 	    c[j*(ldc)+i] *= beta;
 	} 
 	for(l=0;l<k;l++) {
-	  if( fabs(b[ j*(ldb) + l ])>PLUMED_GMX_FLOAT_MIN) {
+	  if( std::abs(b[ j*(ldb) + l ])>PLUMED_GMX_FLOAT_MIN) {
 	    temp = alpha * b[ j*(ldb) + l ];
 	    for(i=0;i<m;i++)
 	      c[j*(ldc)+i] += temp * a[l*(lda)+i]; 
@@ -2250,7 +2206,7 @@ PLUMED_BLAS_F77_FUNC(sgemm,SGEMM)(const char *transa,
 	  temp = 0.0;
 	  for(l=0;l<k;l++) 
 	    temp += a[i*(lda)+l] * b[j*(ldb)+l];
-	  if(fabs(beta)<PLUMED_GMX_FLOAT_MIN)
+	  if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN)
 	    c[j*(ldc)+i] = alpha * temp;
 	  else
 	    c[j*(ldc)+i] = alpha * temp + beta * c[j*(ldc)+i];
@@ -2264,15 +2220,15 @@ PLUMED_BLAS_F77_FUNC(sgemm,SGEMM)(const char *transa,
       /* transpose B, but not A */
 
       for(j=0;j<n;j++) {
-	if(fabs(beta)<PLUMED_GMX_FLOAT_MIN) {
+	if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN) {
 	  for(i=0;i<m;i++)
 	    c[j*(ldc)+i] = 0.0;
-	} else if(fabs(beta-1.0)>PLUMED_GMX_FLOAT_EPS) {
+	} else if(std::abs(beta-1.0)>PLUMED_GMX_FLOAT_EPS) {
 	  for(i=0;i<m;i++)
 	    c[j*(ldc)+i] *= beta;
 	} 
 	for(l=0;l<k;l++) {
-	  if( fabs(b[ l*(ldb) + j ])>PLUMED_GMX_FLOAT_MIN) {
+	  if( std::abs(b[ l*(ldb) + j ])>PLUMED_GMX_FLOAT_MIN) {
 	    temp = alpha * b[ l*(ldb) + j ];
 	    for(i=0;i<m;i++)
 	      c[j*(ldc)+i] += temp * a[l*(lda)+i]; 
@@ -2287,7 +2243,7 @@ PLUMED_BLAS_F77_FUNC(sgemm,SGEMM)(const char *transa,
 	  temp = 0.0;
 	  for(l=0;l<k;l++) 
 	    temp += a[i*(lda)+l] * b[l*(ldb)+j];
-	  if(fabs(beta)<PLUMED_GMX_FLOAT_MIN)
+	  if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN)
 	    c[j*(ldc)+i] = alpha * temp;
 	  else
 	    c[j*(ldc)+i] = alpha * temp + beta * c[j*(ldc)+i];
@@ -2298,8 +2254,8 @@ PLUMED_BLAS_F77_FUNC(sgemm,SGEMM)(const char *transa,
 }
 }
 }
-#include <ctype.h>
-#include <math.h>
+#include <cctype>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -2319,7 +2275,7 @@ PLUMED_BLAS_F77_FUNC(sgemv,SGEMV)(const char *trans,
                       float *y,
                       int *incy__)
 {
-  const char ch=toupper(*trans);
+  const char ch=std::toupper(*trans);
   int lenx,leny,kx,ky;
   int i,j,jx,jy,ix,iy;
   float temp;
@@ -2332,7 +2288,7 @@ PLUMED_BLAS_F77_FUNC(sgemv,SGEMV)(const char *trans,
   int incy = *incy__;
   int lda = *lda__;
   
-  if(n<=0 || m<=0 || (fabs(alpha)<PLUMED_GMX_FLOAT_MIN && fabs(beta-1.0)<PLUMED_GMX_FLOAT_EPS))
+  if(n<=0 || m<=0 || (std::abs(alpha)<PLUMED_GMX_FLOAT_MIN && std::abs(beta-1.0)<PLUMED_GMX_FLOAT_EPS))
     return;
 
   if(ch=='N') {
@@ -2353,9 +2309,9 @@ PLUMED_BLAS_F77_FUNC(sgemv,SGEMV)(const char *trans,
   else
     ky = 1 - (leny -1)*(incy);
  
-  if(fabs(beta-1.0)>PLUMED_GMX_FLOAT_EPS) {
+  if(std::abs(beta-1.0)>PLUMED_GMX_FLOAT_EPS) {
     if(incy==1) {
-      if(fabs(beta)<PLUMED_GMX_FLOAT_MIN)
+      if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN)
 	for(i=0;i<leny;i++)
 	  y[i] = 0.0;
       else
@@ -2364,7 +2320,7 @@ PLUMED_BLAS_F77_FUNC(sgemv,SGEMV)(const char *trans,
     } else {
       /* non-unit incr. */
       iy = ky;
-      if(fabs(beta)<PLUMED_GMX_FLOAT_MIN) 
+      if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN) 
 	for(i=0;i<leny;i++,iy+=incy)
 	  y[iy] = 0.0;
       else
@@ -2373,14 +2329,14 @@ PLUMED_BLAS_F77_FUNC(sgemv,SGEMV)(const char *trans,
     }
   }
   
-  if(fabs(alpha)<PLUMED_GMX_FLOAT_MIN)
+  if(std::abs(alpha)<PLUMED_GMX_FLOAT_MIN)
     return;
   
   if(ch=='N') {
     jx = kx;
     if(incy==1) {
       for(j=1;j<=n;j++,jx+=incx) 
-	if( fabs(x[jx-1])>PLUMED_GMX_FLOAT_MIN) {
+	if( std::abs(x[jx-1])>PLUMED_GMX_FLOAT_MIN) {
 	  temp = alpha * x[jx-1];
 	  for(i=1;i<=m;i++)
 	    y[i-1] += temp * a[(j-1)*(lda)+(i-1)];
@@ -2388,7 +2344,7 @@ PLUMED_BLAS_F77_FUNC(sgemv,SGEMV)(const char *trans,
     } else {
       /* non-unit y incr. */
       for(j=1;j<=n;j++,jx+=incx) 
-	if( fabs(x[jx-1])>PLUMED_GMX_FLOAT_MIN) {
+	if( std::abs(x[jx-1])>PLUMED_GMX_FLOAT_MIN) {
 	  temp = alpha * x[jx-1];
 	  iy = ky;
 	  for(i=1;i<=m;i++,iy+=incy)
@@ -2420,7 +2376,7 @@ PLUMED_BLAS_F77_FUNC(sgemv,SGEMV)(const char *trans,
    
 }
 }
-#include <math.h>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -2449,7 +2405,7 @@ PLUMED_BLAS_F77_FUNC(sger,SGER)(int *m__,
     int lda = *lda__;
     float alpha = *alpha__;
     
-    if(m<=0 || n<=0 || fabs(alpha)<PLUMED_GMX_FLOAT_MIN)
+    if(m<=0 || n<=0 || std::abs(alpha)<PLUMED_GMX_FLOAT_MIN)
         return;
     
     if(incy>0)
@@ -2459,7 +2415,7 @@ PLUMED_BLAS_F77_FUNC(sger,SGER)(int *m__,
     
     if(incx==1) {
         for(j=0;j<n;j++,jy+=incy)
-            if(fabs(y[jy])>PLUMED_GMX_FLOAT_MIN) {
+            if(std::abs(y[jy])>PLUMED_GMX_FLOAT_MIN) {
                 temp = alpha * y[jy];
                 for(i=0;i<m;i++)
                     a[j*(lda)+i] += temp*x[i];
@@ -2472,7 +2428,7 @@ PLUMED_BLAS_F77_FUNC(sger,SGER)(int *m__,
             kx = incx * (1 - m);
         
         for(j=0;j<n;j++,jy+=incy) {
-            if(fabs(y[jy])>PLUMED_GMX_FLOAT_MIN) {
+            if(std::abs(y[jy])>PLUMED_GMX_FLOAT_MIN) {
                 temp = alpha * y[jy];
                 ix = kx;
                 for(i=0;i<m;i++,ix+=incx)
@@ -2484,7 +2440,7 @@ PLUMED_BLAS_F77_FUNC(sger,SGER)(int *m__,
 }
 }
 }
-#include <math.h>
+#include <cmath>
 
 
 #include "real.h"
@@ -2519,7 +2475,7 @@ PLUMED_BLAS_F77_FUNC(snrm2,SNRM2)(int  *     n__,
     max_ix = 1+(n-1)*(incx);
     for(ix=1;ix<=max_ix;ix+=incx) {
         t = x[ix-1];
-        if(fabs(t)>PLUMED_GMX_FLOAT_MIN) {
+        if(std::abs(t)>PLUMED_GMX_FLOAT_MIN) {
             absxi = (t>=0) ? t : (-t);
             if(scale<absxi) {
                 t = scale/absxi;
@@ -2532,7 +2488,7 @@ PLUMED_BLAS_F77_FUNC(snrm2,SNRM2)(int  *     n__,
             }
         }
     }
-    return scale*sqrt(ssq);
+    return scale*std::sqrt(ssq);
     
 }
 
@@ -2695,8 +2651,8 @@ PLUMED_BLAS_F77_FUNC(sswap,SSWAP)(int *n__,
  
 }
 }
-#include <math.h>
-#include <ctype.h>
+#include <cctype>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -2715,7 +2671,7 @@ PLUMED_BLAS_F77_FUNC(ssymv,SSYMV)(const char *uplo,
                       float *y,
                       int *incy__)
 {
-    const char ch=toupper(*uplo);
+    const char ch=std::toupper(*uplo);
     int kx,ky,i,j,ix,iy,jx,jy;
     float temp1,temp2;
     
@@ -2739,9 +2695,9 @@ PLUMED_BLAS_F77_FUNC(ssymv,SSYMV)(const char *uplo,
     else
         ky = 1 - (n -1)*(incy);
     
-    if(fabs(beta-1.0)>PLUMED_GMX_FLOAT_EPS) {
+    if(std::abs(beta-1.0)>PLUMED_GMX_FLOAT_EPS) {
         if(incy==1) {
-            if(fabs(beta)<PLUMED_GMX_FLOAT_MIN) 
+            if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN) 
                 for(i=1;i<=n;i++)
                     y[i-1] = 0.0;
             else
@@ -2750,7 +2706,7 @@ PLUMED_BLAS_F77_FUNC(ssymv,SSYMV)(const char *uplo,
         } else {
             /* non-unit incr. */
             iy = ky;
-            if(fabs(beta)<PLUMED_GMX_FLOAT_MIN) 
+            if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN) 
                 for(i=1;i<=n;i++) {
                     y[iy-1] = 0.0;
                     iy += incy;
@@ -2763,7 +2719,7 @@ PLUMED_BLAS_F77_FUNC(ssymv,SSYMV)(const char *uplo,
         }
     }
         
-        if(fabs(alpha)<PLUMED_GMX_FLOAT_MIN) 
+        if(std::abs(alpha)<PLUMED_GMX_FLOAT_MIN) 
             return;
         
         if(ch=='U') {
@@ -2836,8 +2792,8 @@ PLUMED_BLAS_F77_FUNC(ssymv,SSYMV)(const char *uplo,
 }    
 }
 }
-#include <ctype.h>
-#include <math.h>
+#include <cctype>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -2857,7 +2813,7 @@ PLUMED_BLAS_F77_FUNC(ssyr2,SSYR2)(const char *    uplo,
 {
     int kx,ky,ix,iy,jx,jy,j,i;
     float temp1,temp2;
-    const char ch=toupper(*uplo);
+    const char ch=std::toupper(*uplo);
     
     int n = *n__;
     int lda = *lda__;
@@ -2865,7 +2821,7 @@ PLUMED_BLAS_F77_FUNC(ssyr2,SSYR2)(const char *    uplo,
     int incy = *incy__;
     float alpha = *alpha__;
     
-    if(n<=0 || fabs(alpha)<PLUMED_GMX_FLOAT_MIN || incx==0 || incy==0 ||
+    if(n<=0 || std::abs(alpha)<PLUMED_GMX_FLOAT_MIN || incx==0 || incy==0 ||
        (ch != 'U' && ch != 'L'))
         return;
     
@@ -2891,7 +2847,7 @@ PLUMED_BLAS_F77_FUNC(ssyr2,SSYR2)(const char *    uplo,
         if(incx==1 && incy==1) {
             /* Unit increments for both x and y */
             for(j=1;j<=n;j++) {
-                if( fabs(x[j-1])>PLUMED_GMX_FLOAT_MIN  || fabs(y[j-1])>PLUMED_GMX_FLOAT_MIN ) {
+                if( std::abs(x[j-1])>PLUMED_GMX_FLOAT_MIN  || std::abs(y[j-1])>PLUMED_GMX_FLOAT_MIN ) {
                     temp1 = alpha * y[j-1];
                     temp2 = alpha * x[j-1];
                     for(i=1;i<=j;i++)
@@ -2903,7 +2859,7 @@ PLUMED_BLAS_F77_FUNC(ssyr2,SSYR2)(const char *    uplo,
             /* non-unit increments */
             for(j=1;j<=n;j++) {
                 
-                if( fabs(x[jx-1])>PLUMED_GMX_FLOAT_MIN || fabs(y[jy-1])>PLUMED_GMX_FLOAT_MIN ) {
+                if( std::abs(x[jx-1])>PLUMED_GMX_FLOAT_MIN || std::abs(y[jy-1])>PLUMED_GMX_FLOAT_MIN ) {
                     temp1 = alpha * y[jy-1];
                     temp2 = alpha * x[jx-1];
                     ix = kx;
@@ -2923,7 +2879,7 @@ PLUMED_BLAS_F77_FUNC(ssyr2,SSYR2)(const char *    uplo,
         if(incx==1 && incy==1) {
             /* Unit increments for both x and y */
             for(j=1;j<=n;j++) {
-                if( fabs(x[j-1])>PLUMED_GMX_FLOAT_MIN  || fabs(y[j-1])>PLUMED_GMX_FLOAT_MIN ) {
+                if( std::abs(x[j-1])>PLUMED_GMX_FLOAT_MIN  || std::abs(y[j-1])>PLUMED_GMX_FLOAT_MIN ) {
                     temp1 = alpha * y[j-1];
                     temp2 = alpha * x[j-1];
                     for(i=j;i<=n;i++)
@@ -2935,7 +2891,7 @@ PLUMED_BLAS_F77_FUNC(ssyr2,SSYR2)(const char *    uplo,
             /* non-unit increments */
             for(j=1;j<=n;j++) {
                 
-                if( fabs(x[jx-1])>PLUMED_GMX_FLOAT_MIN || fabs(y[jy-1])>PLUMED_GMX_FLOAT_MIN ) {
+                if( std::abs(x[jx-1])>PLUMED_GMX_FLOAT_MIN || std::abs(y[jy-1])>PLUMED_GMX_FLOAT_MIN ) {
                     temp1 = alpha * y[jy-1];
                     temp2 = alpha * x[jx-1];
                     ix = jx;
@@ -2956,8 +2912,8 @@ PLUMED_BLAS_F77_FUNC(ssyr2,SSYR2)(const char *    uplo,
 }
 }
 }
-#include <ctype.h>
-#include <math.h>
+#include <cctype>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -2979,7 +2935,6 @@ PLUMED_BLAS_F77_FUNC(ssyr2k,SSYR2K)(const char *uplo,
                         int *ldc__)
 {
   char ch1,ch2;
-  int nrowa;
   int i,j,l;
   float temp1,temp2;
 
@@ -2992,20 +2947,15 @@ PLUMED_BLAS_F77_FUNC(ssyr2k,SSYR2K)(const char *uplo,
   float alpha = *alpha__;
   float beta  = *beta__;
   
-  ch1 = toupper(*uplo);
-  ch2 = toupper(*trans);
+  ch1 = std::toupper(*uplo);
+  ch2 = std::toupper(*trans);
 
-  if(ch2 == 'N')
-    nrowa = n;
-  else
-    nrowa = k;
-
-  if(n==0 || ( ( fabs(alpha)<PLUMED_GMX_FLOAT_MIN || k==0 ) && fabs(beta-1.0)<PLUMED_GMX_FLOAT_EPS))
+  if(n==0 || ( ( std::abs(alpha)<PLUMED_GMX_FLOAT_MIN || k==0 ) && std::abs(beta-1.0)<PLUMED_GMX_FLOAT_EPS))
     return;
 
-  if(fabs(alpha)<PLUMED_GMX_FLOAT_MIN) {
+  if(std::abs(alpha)<PLUMED_GMX_FLOAT_MIN) {
     if(ch1=='U') {
-      if(fabs(beta)<PLUMED_GMX_FLOAT_MIN) 
+      if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN) 
 	for(j=1;j<=n;j++) 
 	  for(i=1;i<=j;i++)
 	    c[(j-1)*(ldc)+(i-1)] = 0.0;
@@ -3015,7 +2965,7 @@ PLUMED_BLAS_F77_FUNC(ssyr2k,SSYR2K)(const char *uplo,
 	    c[(j-1)*(ldc)+(i-1)] *= beta;
     } else {
       /* lower */
-      if(fabs(beta)<PLUMED_GMX_FLOAT_MIN) 
+      if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN) 
 	for(j=1;j<=n;j++) 
 	  for(i=j;i<=n;i++)
 	    c[(j-1)*(ldc)+(i-1)] = 0.0;
@@ -3030,15 +2980,15 @@ PLUMED_BLAS_F77_FUNC(ssyr2k,SSYR2K)(const char *uplo,
   if(ch2=='N') {
     if(ch1=='U') {
       for(j=1;j<=n;j++) {
-	if(fabs(beta)<PLUMED_GMX_FLOAT_MIN)
+	if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN)
 	  for(i=1;i<=j;i++)
 	     c[(j-1)*(ldc)+(i-1)] = 0.0;
-	else if(fabs(beta-1.0)>PLUMED_GMX_FLOAT_EPS)
+	else if(std::abs(beta-1.0)>PLUMED_GMX_FLOAT_EPS)
 	  for(i=1;i<=j;i++)
 	    c[(j-1)*(ldc)+(i-1)] *= beta;
 	for(l=1;l<=k;l++) {
-	  if( fabs(a[(l-1)*(lda)+(j-1)])>PLUMED_GMX_FLOAT_MIN ||
-	      fabs(b[(l-1)*(ldb)+(j-1)])>PLUMED_GMX_FLOAT_MIN) {
+	  if( std::abs(a[(l-1)*(lda)+(j-1)])>PLUMED_GMX_FLOAT_MIN ||
+	      std::abs(b[(l-1)*(ldb)+(j-1)])>PLUMED_GMX_FLOAT_MIN) {
 	    temp1 = alpha * b[(l-1)*(ldb)+(j-1)];
 	    temp2 = alpha * a[(l-1)*(lda)+(j-1)];
 	    for(i=1;i<=j;i++)
@@ -3051,15 +3001,15 @@ PLUMED_BLAS_F77_FUNC(ssyr2k,SSYR2K)(const char *uplo,
     } else {
       /* lower */
       for(j=1;j<=n;j++) {
-	if(fabs(beta)<PLUMED_GMX_FLOAT_MIN)
+	if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN)
 	  for(i=j;i<=n;i++)
 	    c[(j-1)*(ldc)+(i-1)] = 0.0;
-	else if(fabs(beta-1.0)>PLUMED_GMX_FLOAT_EPS)
+	else if(std::abs(beta-1.0)>PLUMED_GMX_FLOAT_EPS)
 	  for(i=j;i<=n;i++)
 	    c[(j-1)*(ldc)+(i-1)] *= beta;
 	for(l=1;l<=k;l++) {
-	  if( fabs(a[(l-1)*(lda)+(j-1)])>PLUMED_GMX_FLOAT_MIN ||
-	      fabs(b[(l-1)*(ldb)+(j-1)])>PLUMED_GMX_FLOAT_MIN) {
+	  if( std::abs(a[(l-1)*(lda)+(j-1)])>PLUMED_GMX_FLOAT_MIN ||
+	      std::abs(b[(l-1)*(ldb)+(j-1)])>PLUMED_GMX_FLOAT_MIN) {
 	    temp1 = alpha * b[(l-1)*(ldb)+(j-1)];
 	    temp2 = alpha * a[(l-1)*(lda)+(j-1)];
 	    for(i=j;i<=n;i++)
@@ -3081,7 +3031,7 @@ PLUMED_BLAS_F77_FUNC(ssyr2k,SSYR2K)(const char *uplo,
 	     temp1 += a[(i-1)*(lda)+(l-1)] * b[(j-1)*(ldb)+(l-1)];
 	     temp2 += b[(i-1)*(ldb)+(l-1)] * a[(j-1)*(lda)+(l-1)];
 	  }
-	  if(fabs(beta)<PLUMED_GMX_FLOAT_MIN)
+	  if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN)
 	    c[(j-1)*(ldc)+(i-1)] = alpha * (temp1 + temp2);
 	  else
 	    c[(j-1)*(ldc)+(i-1)] = beta * c[(j-1)*(ldc)+(i-1)] +
@@ -3097,7 +3047,7 @@ PLUMED_BLAS_F77_FUNC(ssyr2k,SSYR2K)(const char *uplo,
 	     temp1 += a[(i-1)*(lda)+(l-1)] * b[(j-1)*(ldb)+(l-1)];
 	     temp2 += b[(i-1)*(ldb)+(l-1)] * a[(j-1)*(lda)+(l-1)];
 	  }
-	  if(fabs(beta)<PLUMED_GMX_FLOAT_MIN)
+	  if(std::abs(beta)<PLUMED_GMX_FLOAT_MIN)
 	    c[(j-1)*(ldc)+(i-1)] = alpha * (temp1 + temp2);
 	  else
 	    c[(j-1)*(ldc)+(i-1)] = beta * c[(j-1)*(ldc)+(i-1)] +
@@ -3109,7 +3059,7 @@ PLUMED_BLAS_F77_FUNC(ssyr2k,SSYR2K)(const char *uplo,
 }
 }
 }
-#include <math.h>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -3138,10 +3088,9 @@ PLUMED_BLAS_F77_FUNC(strmm,STRMM)(const char *side,
     float alpha = *alpha__;
     
     /* Local variables */
-    int i__, j, k, info;
+    int i__, j, k;
     float temp;
     int lside;
-    int nrowa;
     int upper;
     int nounit;
     a_dim1 = lda;
@@ -3153,20 +3102,14 @@ PLUMED_BLAS_F77_FUNC(strmm,STRMM)(const char *side,
 
     /* Function Body */
     lside = (*side=='L' || *side=='l');
-    if (lside) {
-	nrowa = m;
-    } else {
-	nrowa = n;
-    }
+
     nounit = (*diag=='N' || *diag=='n');
     upper = (*uplo=='U' || *uplo=='u');
-
-    info = 0;
 
     if (n == 0) {
 	return;
     }
-    if (fabs(alpha)<PLUMED_GMX_FLOAT_MIN) {
+    if (std::abs(alpha)<PLUMED_GMX_FLOAT_MIN) {
 	i__1 = n;
 	for (j = 1; j <= i__1; ++j) {
 	    i__2 = m;
@@ -3183,7 +3126,7 @@ PLUMED_BLAS_F77_FUNC(strmm,STRMM)(const char *side,
 		for (j = 1; j <= i__1; ++j) {
 		    i__2 = m;
 		    for (k = 1; k <= i__2; ++k) {
-			if ( fabs(b[k + j * b_dim1])>PLUMED_GMX_FLOAT_MIN) {
+			if ( std::abs(b[k + j * b_dim1])>PLUMED_GMX_FLOAT_MIN) {
 			    temp = alpha * b[k + j * b_dim1];
 			    i__3 = k - 1;
 			    for (i__ = 1; i__ <= i__3; ++i__) {
@@ -3201,7 +3144,7 @@ PLUMED_BLAS_F77_FUNC(strmm,STRMM)(const char *side,
 		i__1 = n;
 		for (j = 1; j <= i__1; ++j) {
 		    for (k = m; k >= 1; --k) {
-			if (fabs(b[k + j * b_dim1])>PLUMED_GMX_FLOAT_MIN) {
+			if (std::abs(b[k + j * b_dim1])>PLUMED_GMX_FLOAT_MIN) {
 			    temp = alpha * b[k + j * b_dim1];
 			    b[k + j * b_dim1] = temp;
 			    if (nounit) {
@@ -3266,7 +3209,7 @@ PLUMED_BLAS_F77_FUNC(strmm,STRMM)(const char *side,
 		    }
 		    i__1 = j - 1;
 		    for (k = 1; k <= i__1; ++k) {
-			if ( fabs(a[k + j * a_dim1])>PLUMED_GMX_FLOAT_MIN) {
+			if ( std::abs(a[k + j * a_dim1])>PLUMED_GMX_FLOAT_MIN) {
 			    temp = alpha * a[k + j * a_dim1];
 			    i__2 = m;
 			    for (i__ = 1; i__ <= i__2; ++i__) {
@@ -3289,7 +3232,7 @@ PLUMED_BLAS_F77_FUNC(strmm,STRMM)(const char *side,
 		    }
 		    i__2 = n;
 		    for (k = j + 1; k <= i__2; ++k) {
-			if ( fabs(a[k + j * a_dim1])>PLUMED_GMX_FLOAT_MIN) {
+			if ( std::abs(a[k + j * a_dim1])>PLUMED_GMX_FLOAT_MIN) {
 			    temp = alpha * a[k + j * a_dim1];
 			    i__3 = m;
 			    for (i__ = 1; i__ <= i__3; ++i__) {
@@ -3307,7 +3250,7 @@ PLUMED_BLAS_F77_FUNC(strmm,STRMM)(const char *side,
 		for (k = 1; k <= i__1; ++k) {
 		    i__2 = k - 1;
 		    for (j = 1; j <= i__2; ++j) {
-			if ( fabs(a[j + k * a_dim1])>PLUMED_GMX_FLOAT_MIN ) {
+			if ( std::abs(a[j + k * a_dim1])>PLUMED_GMX_FLOAT_MIN ) {
 			    temp = alpha * a[j + k * a_dim1];
 			    i__3 = m;
 			    for (i__ = 1; i__ <= i__3; ++i__) {
@@ -3320,7 +3263,7 @@ PLUMED_BLAS_F77_FUNC(strmm,STRMM)(const char *side,
 		    if (nounit) {
 			temp *= a[k + k * a_dim1];
 		    }
-		    if ( fabs(temp-1.0)>PLUMED_GMX_FLOAT_EPS) {
+		    if ( std::abs(temp-1.0)>PLUMED_GMX_FLOAT_EPS) {
 			i__2 = m;
 			for (i__ = 1; i__ <= i__2; ++i__) {
 			    b[i__ + k * b_dim1] = temp * b[i__ + k * b_dim1];
@@ -3331,7 +3274,7 @@ PLUMED_BLAS_F77_FUNC(strmm,STRMM)(const char *side,
 		for (k = n; k >= 1; --k) {
 		    i__1 = n;
 		    for (j = k + 1; j <= i__1; ++j) {
-			if ( fabs(a[j + k * a_dim1])>PLUMED_GMX_FLOAT_MIN) {
+			if ( std::abs(a[j + k * a_dim1])>PLUMED_GMX_FLOAT_MIN) {
 			    temp = alpha * a[j + k * a_dim1];
 			    i__2 = m;
 			    for (i__ = 1; i__ <= i__2; ++i__) {
@@ -3344,7 +3287,7 @@ PLUMED_BLAS_F77_FUNC(strmm,STRMM)(const char *side,
 		    if (nounit) {
 			temp *= a[k + k * a_dim1];
 		    }
-		    if ( fabs(temp-1.0)>PLUMED_GMX_FLOAT_EPS) {
+		    if ( std::abs(temp-1.0)>PLUMED_GMX_FLOAT_EPS) {
 			i__1 = m;
 			for (i__ = 1; i__ <= i__1; ++i__) {
 			    b[i__ + k * b_dim1] = temp * b[i__ + k * b_dim1];
@@ -3362,7 +3305,7 @@ PLUMED_BLAS_F77_FUNC(strmm,STRMM)(const char *side,
 
 }
 }
-#include <math.h>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -3381,7 +3324,7 @@ PLUMED_BLAS_F77_FUNC(strmv,STRMV)(const char *uplo,
 {
     int a_dim1, a_offset, i__1, i__2;
 
-    int i__, j, ix, jx, kx, info;
+    int i__, j, ix, jx, kx;
     float temp;
     int nounit;
     
@@ -3393,8 +3336,6 @@ PLUMED_BLAS_F77_FUNC(strmv,STRMV)(const char *uplo,
     a_offset = 1 + a_dim1;
     a -= a_offset;
     --x;
-
-    info = 0;
 
     if (n == 0) {
 	return;
@@ -3414,7 +3355,7 @@ PLUMED_BLAS_F77_FUNC(strmv,STRMV)(const char *uplo,
 	    if (incx == 1) {
 		i__1 = n;
 		for (j = 1; j <= i__1; ++j) {
-		    if (fabs(x[j])>PLUMED_GMX_FLOAT_MIN) {
+		    if (std::abs(x[j])>PLUMED_GMX_FLOAT_MIN) {
 			temp = x[j];
 			i__2 = j - 1;
 			for (i__ = 1; i__ <= i__2; ++i__) {
@@ -3429,7 +3370,7 @@ PLUMED_BLAS_F77_FUNC(strmv,STRMV)(const char *uplo,
 		jx = kx;
 		i__1 = n;
 		for (j = 1; j <= i__1; ++j) {
-		    if (fabs(x[jx])>PLUMED_GMX_FLOAT_MIN) {
+		    if (std::abs(x[jx])>PLUMED_GMX_FLOAT_MIN) {
 			temp = x[jx];
 			ix = kx;
 			i__2 = j - 1;
@@ -3447,7 +3388,7 @@ PLUMED_BLAS_F77_FUNC(strmv,STRMV)(const char *uplo,
 	} else {
 	    if (incx == 1) {
 		for (j = n; j >= 1; --j) {
-		    if (fabs(x[j])>PLUMED_GMX_FLOAT_MIN) {
+		    if (std::abs(x[j])>PLUMED_GMX_FLOAT_MIN) {
 			temp = x[j];
 			i__1 = j + 1;
 			for (i__ = n; i__ >= i__1; --i__) {
@@ -3462,7 +3403,7 @@ PLUMED_BLAS_F77_FUNC(strmv,STRMV)(const char *uplo,
 		kx += (n - 1) * incx;
 		jx = kx;
 		for (j = n; j >= 1; --j) {
-		    if (fabs(x[jx])>PLUMED_GMX_FLOAT_MIN) {
+		    if (std::abs(x[jx])>PLUMED_GMX_FLOAT_MIN) {
 			temp = x[jx];
 			ix = kx;
 			i__1 = j + 1;
@@ -3550,8 +3491,8 @@ PLUMED_BLAS_F77_FUNC(strmv,STRMV)(const char *uplo,
 
 }
 }
-#include <ctype.h>
-#include <math.h>
+#include <cctype>
+#include <cmath>
 
 #include "real.h"
 #include "blas.h"
@@ -3571,10 +3512,10 @@ PLUMED_BLAS_F77_FUNC(strsm,STRSM)(const char * side,
                       float *b,
                       int *  ldb__)
 {
-  const char xside  = toupper(*side);
-  const char xuplo  = toupper(*uplo);
-  const char xtrans = toupper(*transa);
-  const char xdiag  = toupper(*diag);
+  const char xside  = std::toupper(*side);
+  const char xuplo  = std::toupper(*uplo);
+  const char xtrans = std::toupper(*transa);
+  const char xdiag  = std::toupper(*diag);
   int i,j,k;
   float temp;
 
@@ -3588,7 +3529,7 @@ PLUMED_BLAS_F77_FUNC(strsm,STRSM)(const char * side,
     return;
 
   
-  if(fabs(alpha)<PLUMED_GMX_FLOAT_MIN) { 
+  if(std::abs(alpha)<PLUMED_GMX_FLOAT_MIN) { 
     for(j=0;j<n;j++)
       for(i=0;i<m;i++)
 	b[j*(ldb)+i] = 0.0;
@@ -3602,12 +3543,12 @@ PLUMED_BLAS_F77_FUNC(strsm,STRSM)(const char * side,
       if(xuplo=='U') {
 	/* upper */
 	for(j=0;j<n;j++) {
-	  if(fabs(alpha-1.0)>PLUMED_GMX_FLOAT_EPS) {
+	  if(std::abs(alpha-1.0)>PLUMED_GMX_FLOAT_EPS) {
 	    for(i=0;i<m;i++)
 	      b[j*(ldb)+i] *= alpha;
 	  }
 	  for(k=m-1;k>=0;k--) {
-	    if( fabs(b[j*(ldb)+k])>PLUMED_GMX_FLOAT_MIN) {
+	    if( std::abs(b[j*(ldb)+k])>PLUMED_GMX_FLOAT_MIN) {
 	      if(xdiag=='N')
 		b[j*(ldb)+k] /= a[k*(lda)+k];
 	      for(i=0;i<k;i++)
@@ -3618,11 +3559,11 @@ PLUMED_BLAS_F77_FUNC(strsm,STRSM)(const char * side,
       } else {
 	/* lower */
 	for(j=0;j<n;j++) {
-	  if(fabs(alpha-1.0)>PLUMED_GMX_FLOAT_EPS)
+	  if(std::abs(alpha-1.0)>PLUMED_GMX_FLOAT_EPS)
 	    for(i=0;i<m;i++)
 	      b[j*(ldb)+i] *= alpha;
 	  for(k=0;k<m;k++) {
-	    if( fabs(b[j*(ldb)+k])>PLUMED_GMX_FLOAT_MIN) {
+	    if( std::abs(b[j*(ldb)+k])>PLUMED_GMX_FLOAT_MIN) {
 	      if(xdiag=='N')
 		b[j*(ldb)+k] /= a[k*(lda)+k];
 	      for(i=k+1;i<m;i++)
@@ -3666,11 +3607,11 @@ PLUMED_BLAS_F77_FUNC(strsm,STRSM)(const char * side,
       if(xuplo=='U') {
 	/* upper */
 	for(j=0;j<n;j++) {
-	  if(fabs(alpha-1.0)>PLUMED_GMX_FLOAT_EPS)
+	  if(std::abs(alpha-1.0)>PLUMED_GMX_FLOAT_EPS)
 	    for(i=0;i<m;i++)
 	      b[j*(ldb)+i] *= alpha;
 	  for(k=0;k<j;k++) {
-	    if( fabs(a[j*(lda)+k])>PLUMED_GMX_FLOAT_MIN) {
+	    if( std::abs(a[j*(lda)+k])>PLUMED_GMX_FLOAT_MIN) {
 	      for(i=0;i<m;i++)
 		b[j*(ldb)+i] -= a[j*(lda)+k]*b[k*(ldb)+i];
 	    }
@@ -3684,11 +3625,11 @@ PLUMED_BLAS_F77_FUNC(strsm,STRSM)(const char * side,
       } else {
 	/* lower */
 	for(j=n-1;j>=0;j--) {
-	  if(fabs(alpha-1.0)>PLUMED_GMX_FLOAT_EPS)
+	  if(std::abs(alpha-1.0)>PLUMED_GMX_FLOAT_EPS)
 	    for(i=0;i<m;i++)
 	      b[j*(ldb)+i] *= alpha;
 	  for(k=j+1;k<n;k++) {
-	    if( fabs(a[j*(lda)+k])>PLUMED_GMX_FLOAT_MIN ) {
+	    if( std::abs(a[j*(lda)+k])>PLUMED_GMX_FLOAT_MIN ) {
 	      for(i=0;i<m;i++)
 		b[j*(ldb)+i] -= a[j*(lda)+k]*b[k*(ldb)+i];
 	    }
@@ -3711,13 +3652,13 @@ PLUMED_BLAS_F77_FUNC(strsm,STRSM)(const char * side,
 	      b[k*(ldb)+i] *= temp;
 	  }
 	  for(j=0;j<k;j++) {
-	    if( fabs(a[k*(lda)+j])>PLUMED_GMX_FLOAT_MIN) {
+	    if( std::abs(a[k*(lda)+j])>PLUMED_GMX_FLOAT_MIN) {
 	      temp = a[k*(lda)+j];
 	      for(i=0;i<m;i++)
 		b[j*(ldb)+i] -= temp * b[k*(ldb)+i];
 	    }
 	  }
-	  if(fabs(alpha-1.0)>PLUMED_GMX_FLOAT_EPS)
+	  if(std::abs(alpha-1.0)>PLUMED_GMX_FLOAT_EPS)
 	    for(i=0;i<m;i++)
 	      b[k*(ldb)+i] *= alpha;
 	}
@@ -3730,13 +3671,13 @@ PLUMED_BLAS_F77_FUNC(strsm,STRSM)(const char * side,
 	      b[k*(ldb)+i] *= temp;
 	  }
 	  for(j=k+1;j<n;j++) {
-	    if( fabs(a[k*(lda)+j])>PLUMED_GMX_FLOAT_MIN) {
+	    if( std::abs(a[k*(lda)+j])>PLUMED_GMX_FLOAT_MIN) {
 	      temp = a[k*(lda)+j];
 	      for(i=0;i<m;i++)
 		b[j*(ldb)+i] -= temp * b[k*(ldb)+i];
 	    }
 	  }
-	  if(fabs(alpha-1.0)>PLUMED_GMX_FLOAT_EPS)
+	  if(std::abs(alpha-1.0)>PLUMED_GMX_FLOAT_EPS)
 	    for(i=0;i<m;i++)
 	      b[k*(ldb)+i] *= alpha;
 	}

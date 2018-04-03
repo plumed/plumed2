@@ -85,7 +85,7 @@ EOF
 
 {
 echo "#if ! defined (__PLUMED_HAS_EXTERNAL_BLAS)"
-for file in "$GRO"/src/gromacs/linearalgebra/gmx_blas/*.c
+for file in "$GRO"/src/gromacs/linearalgebra/gmx_blas/*.cpp
 do
   cat "$file" |
   sed 's|"gromacs/utility/real.h"|"real.h"|' |

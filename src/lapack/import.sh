@@ -83,7 +83,7 @@ EOF
 
 {
 echo "#if ! defined(__PLUMED_HAS_EXTERNAL_LAPACK)"
-for file in "$GRO"/src/gromacs/linearalgebra/gmx_lapack/*.c
+for file in "$GRO"/src/gromacs/linearalgebra/gmx_lapack/*.cpp
 do
   cat "$file" |
   sed 's|"gromacs/utility/real.h"|"real.h"|' |
