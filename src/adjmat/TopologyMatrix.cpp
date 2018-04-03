@@ -122,9 +122,10 @@ TopologyMatrix::TopologyMatrix(const ActionOptions&ao):
 
 double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
   HistogramBead bead; bead.isNotPeriodic(); bead.setKernelType( kerneltype );
-  Vector g1derivf,g2derivf,lderivf; Tensor vir;
+  Vector g1derivf,g2derivf,lderivf; Tensor vir; double binlength = maxbins * binw_mat;
   MultiValue tvals( maxbins, getNumberOfDerivatives() );
   for(unsigned i=0; i<natoms; ++i) {
+    // Position of sea atom (this will be the origin)
     Vector d2 = getPosition(i,myvals);
     // Vector connecting sea atom and first in bond taking pbc into account
     Vector d20 = pbcDistance( d2, pos1 );
@@ -134,22 +135,23 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
     Vector d1 = delta( d20, d21 ); double d1_len = d1.modulo(); d1 = d1 / d1_len;
     // Switching function on distance between nodes
     double dfuncl, sw = switchingFunction.calculate( d1_len, dfuncl );
-    if( i==0 ) printf("D1 LEN %f \n",d1_len );
-    // Now calculate projection of d2 on d1
-    double proj=dotProduct(-d20,d1);
+    // Ensure that the center of the bins are on the center of the bond connecting the two atoms
+    Vector dstart = d20 + 0.5*(d1_len - binlength)*d1;
+    // Now calculate projection of axis of cylinder
+    double proj=dotProduct(-dstart,d1);
+    // Calculate length of vector connecting start of cylinder to first atom
+    double start2atom = delta( d20, dstart ).modulo();
+    // And now work out projection on vector connecting start and end of cylinder
+    double proj_between = proj - start2atom;
     // This tells us if we are outside the end of the cylinder
-    double excess = proj - d1_len;
+    double excess = proj_between - d1_len;
     // Return if we are outside of the cylinder as calculated based on excess
-    if( excess>low_sf.get_dmax() ) continue;
-    // Find the length of the cylinder
-    double lcylinder = (std::floor( d1_len / binw_mat ) + 1)*binw_mat;
-    // Return if the projection is outside the length of interest
-    if( proj<-bead.getCutoff() || proj>(lcylinder+bead.getCutoff()) ) continue;
-
+    if( excess>low_sf.get_dmax() || -proj_between>low_sf.get_dmax() ) continue;
     // Calculate the excess swiching function
-    double edf, eval = low_sf.calculate( excess, edf );
+    double edf1, eval1 = low_sf.calculate( excess, edf1 );
+    double edf2=0, eval2=1; if( proj_between<0 ) eval2 = low_sf.calculate( -proj_between, edf2 );
     // Calculate the projection on the perpendicular distance from the center of the tube
-    double cm = d2.modulo2() - proj*proj;
+    double cm = dstart.modulo2() - proj*proj;
 
     // Now calculate the density in the cylinder
     if( cm<cylinder_sw.get_dmax2() ) {
@@ -179,27 +181,27 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
         dc3 = dfuncr*( d2 - proj*dd3 );
 
         // Calculate derivatives of excess
-        de1 = edf*excess*( dd1 + d1 );
-        de2 = edf*excess*( dd2 - d1 );
-        de3 = edf*excess*dd3;
+        de1 = (eval2*edf1*excess + eval1*edf2*(-proj_between))*( dd1 + d1 );
+        de2 = (eval2*edf1*excess + eval1*edf2*(-proj_between))*( dd2 - d1 );
+        de3 = (eval2*edf1*excess + eval1*edf2*(-proj_between))*dd3;
       }
       Vector posA = d1_len*d1; Vector posB = d2;
       for(unsigned bin=0; bin<maxbins; ++bin) {
         bead.set( bin*binw_mat, (bin+1)*binw_mat, sigma );
         if( proj<(bin*binw_mat-bead.getCutoff()) || proj>binw_mat*(bin+1)+bead.getCutoff() ) continue;
         double der, contr=bead.calculateWithCutoff( proj, der ) / cell_volume; der /= cell_volume;
-        tvals.addValue( bin, sw*contr*val*eval );
+        tvals.addValue( bin, sw*contr*val*eval1*eval2 );
 
         if( !doNotCalculateDerivatives() ) {
-          g1derivf=sw*contr*eval*dc1 + sw*val*eval*der*dd1 + sw*contr*val*de1 - contr*val*eval*dfuncl*d1_len*d1;
+          g1derivf=sw*contr*eval1*eval2*dc1 + sw*val*eval1*eval2*der*dd1 + sw*contr*val*de1 - contr*val*eval1*eval2*dfuncl*d1_len*d1;
           tvals.addDerivative( bin, 3*myvals.getTaskIndex()+0, g1derivf[0] );
           tvals.addDerivative( bin, 3*myvals.getTaskIndex()+1, g1derivf[1] );
           tvals.addDerivative( bin, 3*myvals.getTaskIndex()+2, g1derivf[2] );
-          g2derivf=sw*contr*eval*dc2 + sw*val*eval*der*dd2 + sw*contr*val*de2 + contr*val*eval*dfuncl*d1_len*d1;
+          g2derivf=sw*contr*eval1*eval2*dc2 + sw*val*eval1*eval2*der*dd2 + sw*contr*val*de2 + contr*val*eval1*eval2*dfuncl*d1_len*d1;
           tvals.addDerivative( bin, 3*myvals.getSecondTaskIndex()+0, g2derivf[0] );
           tvals.addDerivative( bin, 3*myvals.getSecondTaskIndex()+1, g2derivf[1] );
           tvals.addDerivative( bin, 3*myvals.getSecondTaskIndex()+2, g2derivf[2] );
-          lderivf=sw*contr*eval*dc3 + sw*val*eval*der*dd3 + sw*contr*val*de3;
+          lderivf=sw*contr*eval1*eval2*dc3 + sw*val*eval1*eval2*der*dd3 + sw*contr*val*de3;
           unsigned tindex = myvals.getIndices()[ i + myvals.getSplitIndex() ];
           tvals.addDerivative( bin, 3*tindex+1, lderivf[0] );
           tvals.addDerivative( bin, 3*tindex+1, lderivf[1] );
@@ -225,13 +227,37 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
   for(unsigned i=1; i<maxbins; ++i) {
     if( tvals.get(i)>max ) { max=tvals.get(i); vout=i; }
   }
-  printf("MAX %d %f \n", getStep(), max );
   // Transform the density
   double df, tsw = 1.0 - threshold_switch.calculate( max, df );
   if( !doNotCalculateDerivatives() ) {
-
+      Vector ader; Tensor vir;
+      ader[0] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+0 );
+      ader[1] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+1 );
+      ader[2] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+2 );
+      addAtomDerivatives( 0, -df*max*ader, myvals );
+      ader[0] = tvals.getDerivative( vout, 3*myvals.getSecondTaskIndex()+0 );
+      ader[1] = tvals.getDerivative( vout, 3*myvals.getSecondTaskIndex()+1 );
+      ader[2] = tvals.getDerivative( vout, 3*myvals.getSecondTaskIndex()+2 );
+      addAtomDerivatives( 1, -df*max*ader, myvals );
+      for(unsigned i=0;i<natoms;++i) {
+          unsigned tindex = myvals.getIndices()[ i + myvals.getSplitIndex() ];
+          ader[0] = tvals.getDerivative( vout, 3*tindex+0 );
+          ader[1] = tvals.getDerivative( vout, 3*tindex+1 );
+          ader[2] = tvals.getDerivative( vout, 3*tindex+2 );
+          addThirdAtomDerivatives( i, -df*max*ader, myvals );
+      }
+      unsigned nbase = 3*getNumberOfAtoms();
+      vir(0,0) = tvals.getDerivative( vout, nbase+0 );
+      vir(0,1) = tvals.getDerivative( vout, nbase+1 );
+      vir(0,2) = tvals.getDerivative( vout, nbase+2 );
+      vir(1,0) = tvals.getDerivative( vout, nbase+3 );
+      vir(1,1) = tvals.getDerivative( vout, nbase+4 );
+      vir(1,2) = tvals.getDerivative( vout, nbase+5 );
+      vir(2,0) = tvals.getDerivative( vout, nbase+6 );
+      vir(2,1) = tvals.getDerivative( vout, nbase+7 );
+      vir(2,2) = tvals.getDerivative( vout, nbase+8 );
+      addBoxDerivatives( -df*max*vir, myvals );
   }
-  printf("STUPID %f \n",tsw );
   return tsw;
 }
 
