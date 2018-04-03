@@ -915,7 +915,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         p.cmd("GREX shareAllDeltaBias");
         for(int i=0; i<n; i++) {
           string s; Tools::convert(i,s);
-          real a; s="GREX getDeltaBias "+s; p.cmd(s.c_str(),&a);
+          real a=NAN; s="GREX getDeltaBias "+s; p.cmd(s.c_str(),&a);
           if(grex_log) fprintf(grex_log," %f",a);
         }
         if(grex_log) fprintf(grex_log,"\n");

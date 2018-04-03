@@ -172,7 +172,7 @@ public:
     const char*file;
     const unsigned line;
     const char* pretty;
-    Location(const char*file,unsigned line,const char* pretty=nullptr):
+    explicit Location(const char*file,unsigned line,const char* pretty=nullptr):
       file(file),
       line(line),
       pretty(pretty)
@@ -184,7 +184,7 @@ public:
   class Assertion {
   public:
     const char*assertion;
-    Assertion(const char*assertion=nullptr):
+    explicit Assertion(const char*assertion=nullptr):
       assertion(assertion)
     {}
   };
