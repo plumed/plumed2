@@ -265,6 +265,7 @@ As such, all the meaningful words in the input should be highlighted:
 - Values provided by users (such as the number of the atoms following `ATOMS=`) will be highlighted with a different color
   (`String` in VIM).
 - Comments (see \ref comments) will be highlighted as comments (`Comment` in VIM).
+- String `__FILL__` (extensively used in tutorials to indicate parts to be completed) is highlighted (`Todo` in VIM).
 
 If you see something that is not highlighted and appears in black, this is likely going to result in an error at runtime.
 Think of this as a sort of preliminary spell-check.
