@@ -291,7 +291,7 @@ void Value::print( const std::string& uselab, OFile& ofile ) const {
   } else if( userdata.find(uselab)->second[0].first<0 ) {
     if( isPeriodic() ) { ofile.printField( "min_" + name, str_min ); ofile.printField("max_" + name, str_max ); }
     std::vector<unsigned> indices( shape.size() );
-    for(unsigned i=0; i<action->getFullNumberOfTasks(); ++i) {
+    for(unsigned i=0; i<getNumberOfValues(uselab); ++i) {
       convertIndexToindices( i, indices ); std::string num, fname = name;
       for(unsigned i=0; i<shape.size(); ++i) { Tools::convert( indices[i]+1, num ); fname += "." + num; }
       ofile.printField( fname, get(i) );
