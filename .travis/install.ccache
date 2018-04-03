@@ -1,0 +1,30 @@
+#! /bin/bash
+
+set -e
+set -x
+
+cd "$(mktemp -dt plumed.XXXXXX)"
+
+git clone https://github.com/ccache/ccache.git
+
+cd ccache
+
+if [ -n "$1" ] ; then
+  echo "installing ccache $version"
+  version=$1
+else
+  echo "installing latest ccache"
+  version=$(git tag | tail -n 1)
+fi
+
+git checkout $version
+
+./autogen.sh
+./configure --prefix="$HOME/opt"
+make -j 4
+
+# full install does not work as it required asciidoc installed:
+# make install
+
+mkdir -p "$HOME/opt/bin"
+cp ccache $HOME/opt/bin/
