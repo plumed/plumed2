@@ -355,7 +355,7 @@ PLUMED_BLAS_F77_FUNC(dbdsqr,DBDSQR)(const char *uplo,
     double unfl, sinl, cosr, smin, smax, sinr;
     double oldcs;
     int oldll;
-    double shift, sigmn, oldsn;
+    double shift, sigmn, oldsn = 0.;
     int maxit;
     double sminl;
     double sigmx;
@@ -3352,9 +3352,9 @@ PLUMED_BLAS_F77_FUNC(dlagts,DLAGTS)(int *job,
 	    }
 	} else {
 	    for (k = *n; k >= 1; --k) {
-		if (k <= *n - 2) {
+		if (k + 2 <= *n) {
 		    temp = y[k] - b[k] * y[k + 1] - d__[k] * y[k + 2];
-		} else if (k == *n - 1) {
+		} else if (k + 1 == *n) {
 		    temp = y[k] - b[k] * y[k + 1];
 		} else {
 		    temp = y[k];
@@ -13071,6 +13071,7 @@ PLUMED_BLAS_F77_FUNC(dstebz,DSTEBZ)(const char *range,
     ulp = 2*PLUMED_GMX_DOUBLE_EPS;
     rtoli = ulp * 2.;
     nb = DSTEBZ_BLOCKSIZE;
+    // cppcheck-suppress knownConditionTrueFalse
     if (nb <= 1) {
 	nb = 0;
     }
@@ -15955,7 +15956,7 @@ PLUMED_BLAS_F77_FUNC(sbdsqr,SBDSQR)(const char *uplo,
     float unfl, sinl, cosr, smin, smax, sinr;
     float oldcs;
     int oldll;
-    float shift, sigmn, oldsn;
+    float shift, sigmn, oldsn = 0.;
     int maxit;
     float sminl;
     float sigmx;
@@ -18951,9 +18952,9 @@ PLUMED_BLAS_F77_FUNC(slagts,SLAGTS)(int *job,
 	    }
 	} else {
 	    for (k = *n; k >= 1; --k) {
-		if (k <= *n - 2) {
+		if (k + 2 <= *n) {
 		    temp = y[k] - b[k] * y[k + 1] - d__[k] * y[k + 2];
-		} else if (k == *n - 1) {
+		} else if (k + 1 == *n) {
 		    temp = y[k] - b[k] * y[k + 1];
 		} else {
 		    temp = y[k];
@@ -28673,6 +28674,7 @@ PLUMED_BLAS_F77_FUNC(sstebz,SSTEBZ)(const char *range,
     ulp = 2*PLUMED_GMX_FLOAT_EPS;
     rtoli = ulp * 2.;
     nb = DSTEBZ_BLOCKSIZE;
+    // cppcheck-suppress knownConditionTrueFalse
     if (nb <= 1) {
 	nb = 0;
     }
