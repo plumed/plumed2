@@ -129,8 +129,8 @@ void AdjacencyMatrixBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) 
   linkcells.buildCellLists( ltmp_pos, ablocks, getPbc() );
   if( threeblocks.size()>0 ) {
     std::vector<Vector> ltmp_pos2( threeblocks.size() );
-    for(unsigned i=0; i<ablocks.size(); ++i) {
-      ltmp_pos[i]=ActionAtomistic::getPosition( threeblocks[i] );
+    for(unsigned i=0; i<threeblocks.size(); ++i) {
+      ltmp_pos2[i]=ActionAtomistic::getPosition( threeblocks[i] );
     }
     threecells.buildCellLists( ltmp_pos2, threeblocks, getPbc() );
   }
