@@ -234,23 +234,23 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
     if( tvals.get(i)>max ) { max=tvals.get(i); vout=i; }
   }
   // Transform the density
-  double df, tsw = 1.0 - threshold_switch.calculate( max, df ); 
+  double df, tsw = threshold_switch.calculate( max, df ); 
   if( !doNotCalculateDerivatives() ) {
       Vector ader; Tensor vir;
       ader[0] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+0 );
       ader[1] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+1 );
       ader[2] = tvals.getDerivative( vout, 3*myvals.getTaskIndex()+2 );
-      addAtomDerivatives( 0, -sw*df*max*ader - tsw*dfuncl*distance, myvals );
+      addAtomDerivatives( 0, sw*df*max*ader - tsw*dfuncl*distance, myvals );
       ader[0] = tvals.getDerivative( vout, 3*myvals.getSecondTaskIndex()+0 );
       ader[1] = tvals.getDerivative( vout, 3*myvals.getSecondTaskIndex()+1 );
       ader[2] = tvals.getDerivative( vout, 3*myvals.getSecondTaskIndex()+2 );
-      addAtomDerivatives( 1, -sw*df*max*ader + tsw*dfuncl*distance, myvals );
+      addAtomDerivatives( 1, sw*df*max*ader + tsw*dfuncl*distance, myvals );
       for(unsigned i=0;i<natoms;++i) {
           unsigned tindex = myvals.getIndices()[ i + myvals.getSplitIndex() ];
           ader[0] = tvals.getDerivative( vout, 3*tindex+0 );
           ader[1] = tvals.getDerivative( vout, 3*tindex+1 );
           ader[2] = tvals.getDerivative( vout, 3*tindex+2 );
-          addThirdAtomDerivatives( i, -sw*df*max*ader, myvals );
+          addThirdAtomDerivatives( i, sw*df*max*ader, myvals );
       }
       unsigned nbase = 3*getNumberOfAtoms();
       vir(0,0) = tvals.getDerivative( vout, nbase+0 );
@@ -262,7 +262,7 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
       vir(2,0) = tvals.getDerivative( vout, nbase+6 );
       vir(2,1) = tvals.getDerivative( vout, nbase+7 );
       vir(2,2) = tvals.getDerivative( vout, nbase+8 );
-      addBoxDerivatives( -sw*df*max*vir, myvals );
+      addBoxDerivatives( sw*df*max*vir, myvals );
   }
   return sw*tsw;
 }

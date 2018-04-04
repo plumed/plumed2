@@ -51,7 +51,7 @@ ClusteringBase::ClusteringBase(const ActionOptions&ao):
   // Now create a value - this holds the data on which cluster each guy is in
   std::vector<unsigned> shape(1); shape[0]=mat[0]->getShape()[0];
   // Build the store here to make sure that next action has all data
-  addValue( shape ); getPntrToOutput(0)->alwaysStoreValues();
+  addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
   // Resize local variables
   which_cluster.resize( mat[0]->getShape()[0] ); cluster_sizes.resize( mat[0]->getShape()[0] );
   // Create a group for this action
