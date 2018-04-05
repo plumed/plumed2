@@ -845,99 +845,103 @@ void EMMIVOX::doMonteCarloBfact()
         }
       }
     }
-  }
 
-  // now calculate new and old score
-  map<unsigned, double>::iterator itov;
-  double old_ene = 0.0;
-  double new_ene = 0.0;
+    // now calculate new and old score
+    map<unsigned, double>::iterator itov;
+    double old_ene = 0.0;
+    double new_ene = 0.0;
 
-  if(noise_==0) {
-    for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
-      // id of the component
-      unsigned id = itov->first;
-      // new value
-      double ovmdnew = ovmd_[id]+itov->second;
-      // scores
-      double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-      double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-      old_ene += 0.5 * kbt_ * devold * devold;
-      new_ene += 0.5 * kbt_ * devnew * devnew;
+    if(noise_==0) {
+      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+        // id of the component
+        unsigned id = itov->first;
+        // new value
+        double ovmdnew = ovmd_[id]+itov->second;
+        // scores
+        double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+        double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+        old_ene += 0.5 * kbt_ * devold * devold;
+        new_ene += 0.5 * kbt_ * devnew * devnew;
+      }
     }
-  }
-  if(noise_==1) {
-    for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
-      // id of the component
-      unsigned id = itov->first;
-      // new value
-      double ovmdnew = ovmd_[id]+itov->second;
-      // scores
-      double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-      double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-      old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
-      new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
+    if(noise_==1) {
+      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+        // id of the component
+        unsigned id = itov->first;
+        // new value
+        double ovmdnew = ovmd_[id]+itov->second;
+        // scores
+        double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+        double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+        old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
+        new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
+      }
     }
-  }
-  if(noise_==2) {
-    for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
-      // id of the component
-      unsigned id = itov->first;
-      // new value
-      double ovmdnew = ovmd_[id]+itov->second;
-      // scores
-      double devold = scale_*ovmd_[id]-ovdd_[id];
-      double devnew = scale_*ovmdnew  -ovdd_[id];
-      old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
-      new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
+    if(noise_==2) {
+      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+        // id of the component
+        unsigned id = itov->first;
+        // new value
+        double ovmdnew = ovmd_[id]+itov->second;
+        // scores
+        double devold = scale_*ovmd_[id]-ovdd_[id];
+        double devnew = scale_*ovmdnew  -ovdd_[id];
+        old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
+        new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
+      }
     }
-  }
 
-  // add restraint to keep Bfactor of close atoms close
-  for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
-    double gold = (bfactold-GMM_m_b_[*is])/sqrt(bfactold+GMM_m_b_[*is])/0.058;
-    double gnew = (bfactnew-GMM_m_b_[*is])/sqrt(bfactnew+GMM_m_b_[*is])/0.058;
-    old_ene += 0.5 * kbt_ * gold * gold;
-    new_ene += 0.5 * kbt_ * gnew * gnew;
-  }
+    // add restraint to keep Bfactor of close atoms close
+    for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
+      double gold = (bfactold-GMM_m_b_[*is])/sqrt(bfactold+GMM_m_b_[*is])/0.058;
+      double gnew = (bfactnew-GMM_m_b_[*is])/sqrt(bfactnew+GMM_m_b_[*is])/0.058;
+      old_ene += 0.5 * kbt_ * gold * gold;
+      new_ene += 0.5 * kbt_ * gnew * gnew;
+    }
 
-  // increment number of trials
-  MCBtrials_ += 1.0;
+    // increment number of trials
+    MCBtrials_ += 1.0;
 
-  // accept or reject
-  bool accept = doAccept(old_ene, new_ene, kbt_);
+    // accept or reject
+    bool accept = doAccept(old_ene, new_ene, kbt_);
 
-  // in case of acceptance
-  if(accept==1) {
-    // update acceptance rate
-    MCBaccept_ += 1.0;
-    // update bfactor
-    it->second = bfactnew;
-    // change all the ovmd_ affected
-    for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) ovmd_[itov->first] += itov->second;
-  }
+    // in case of acceptance
+    if(accept==1) {
+      // update acceptance rate
+      MCBaccept_ += 1.0;
+      // update bfactor
+      it->second = bfactnew;
+      // change all the ovmd_ affected
+      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) ovmd_[itov->first] += itov->second;
+    }
 
-} // end cycle on bfactors
+  } // end cycle on bfactors
 
 // now communicate results
-vector<unsigned> ires; vector<double> newb;
-ires.resize(GMM_m_b_.size()); newb.resize(GMM_m_b_.size());
-if(rank_==0) {
-  unsigned i=0;
-  for(it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
-    ires[i] = it->first;
-    newb[i] = it->second;
-    ++i;
+  vector<unsigned> ires;
+  vector<double>   newb;
+// make it right dimension
+  ires.resize(GMM_m_b_.size()); newb.resize(GMM_m_b_.size());
+// master rank fills them in
+  if(rank_==0) {
+    unsigned i=0;
+    for(it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
+      ires[i] = it->first;
+      newb[i] = it->second;
+      ++i;
+    }
+  } else {
+    MCBaccept_ = 0.0;
   }
-} else {
-  MCBaccept_ = 0.0;
-}
-if(size_>1) {
-  comm.Sum(&MCBaccept_, 1);
-  comm.Sum(&ires[0], ires.size());
-  comm.Sum(&newb[0], newb.size());
-}
+// communicate
+  if(size_>1) {
+    comm.Sum(&MCBaccept_, 1);
+    comm.Sum(&ires[0], ires.size());
+    comm.Sum(&newb[0], newb.size());
+  }
 // put things back in map
-for(unsigned i=0; i<ires.size(); ++i) GMM_m_b_[ires[i]] = newb[i];
+  for(unsigned i=0; i<ires.size(); ++i) GMM_m_b_[ires[i]] = newb[i];
+
 }
 
 vector<double> EMMIVOX::read_exp_errors(string errfile)
