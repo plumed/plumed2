@@ -49,18 +49,15 @@ public:
   static void registerKeywords( Keywords& keys );
 private:
   vector<double> time;
-  vector<double> var;
-  vector<double> min;
-  double kappa;
-  double deltat;
-  double mult;
+  vector< vector<double> > var;
+  double   deltat;
+  double   mult;
   bool     master;
   unsigned replica_;
   unsigned nrep_;
-  vector<double> sigma_mean2_;
-  // optimize sigma mean
-  vector < vector <double> > sigma_mean2_last_;
   unsigned optsigmamean_stride_;
+  vector<double> sigma_mean2_;
+  vector< vector<double> > sigma_mean2_last_;
 
   void get_sigma_mean(const double fact, const vector<double> &mean);
   void replica_averaging(const double fact, vector<double> &mean);
@@ -71,21 +68,26 @@ PLUMED_REGISTER_ACTION(Caliber,"CALIBER")
 void Caliber::registerKeywords( Keywords& keys ) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","FILE","the name of the file containing the CV values in function of time");
-  keys.add("compulsory","KAPPA","the array of force constants");
+  keys.add("compulsory","FILE","the name of the file containing the time-resolved values");
+  keys.add("compulsory","KAPPA","a force constant, this can be use to scale a constant estimanted on-the-fly using AVERAGING");
+  keys.add("optional","AVERAGING", "Stride for calculation of the optimum kappa, if 0 only KAPPA is used.");
   keys.addOutputComponent("x0","default","the instantaneous value of the center of the potential");
+  keys.addOutputComponent("mean","default","the current average value of the calculated observable");
+  keys.addOutputComponent("kappa","default","the current force constant");
 }
 
 Caliber::Caliber(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
-  kappa(0),
-  mult(0)
+  mult(0),
+  optsigmamean_stride_(0)
 {
-  string filename;
-  double tempT, tempVar;
   parse("KAPPA",mult);
+  string filename;
   parse("FILE",filename);
   if( filename.length()==0 ) error("No external variable file was specified");
+  unsigned averaging=0;
+  parse("AVERAGING", averaging);
+  if(averaging>0) optsigmamean_stride_ = averaging;
 
   checkRead();
 
@@ -101,65 +103,55 @@ Caliber::Caliber(const ActionOptions&ao):
   comm.Sum(&nrep_,1);
   comm.Sum(&replica_,1);
   const unsigned narg = getNumberOfArguments();
-  min.resize(narg);
-  sigma_mean2_.resize(narg,0.00001);
+  sigma_mean2_.resize(narg,1);
   sigma_mean2_last_.resize(narg);
-  for(unsigned j=0; j<narg; j++) sigma_mean2_last_[j].push_back(sigma_mean2_[j]);
-  optsigmamean_stride_ = 10;
-  log.printf("  External variable from file %s\n",filename.c_str());
+  for(unsigned j=0; j<narg; j++) sigma_mean2_last_[j].push_back(0.000001);
 
-// read varfile
+  log.printf("  Time resolved data from file %s\n",filename.c_str());
   std::ifstream varfile(filename.c_str());
-
+  var.resize(narg);
   while (!varfile.eof()) {
-    varfile >> tempT >> tempVar;
+    double tempT, tempVar;
+    varfile >> tempT;
     time.push_back(tempT);
-    var.push_back(tempVar);
+    for(unsigned i=0;i<narg;i++) {
+      varfile >> tempVar;
+      var[i].push_back(tempVar);
+    }
   }
-
   varfile.close();
 
   deltat = time[1] - time[0];
 
-  addComponent("x0"); componentIsNotPeriodic("x0");
-  addComponent("kappa"); componentIsNotPeriodic("kappa");
-  addComponent("mean"); componentIsNotPeriodic("mean");
-  addComponent("min"); componentIsNotPeriodic("min");
+  for(unsigned i=0;i<narg;i++) {
+    std::string num; Tools::convert(i,num);
+    addComponent("sigmaMean_"+num); componentIsNotPeriodic("sigmaMean_"+num);
+    addComponent("x0_"+num); componentIsNotPeriodic("x0_"+num);
+    addComponent("kappa_"+num); componentIsNotPeriodic("kappa_"+num);
+    addComponent("mean_"+num); componentIsNotPeriodic("mean_"+num);
+  }
 }
 
 void Caliber::get_sigma_mean(const double fact, const vector<double> &mean)
 {
   const unsigned narg = getNumberOfArguments();
-  const double dnrep    = static_cast<double>(nrep_);
-  vector<double> sigma_mean2_tmp(sigma_mean2_.size(), 0.);
+  const double dnrep = static_cast<double>(nrep_);
 
-  // remove first entry of the history vector
-  if(sigma_mean2_last_[0].size()==optsigmamean_stride_&&optsigmamean_stride_>0)
-    for(unsigned i=0; i<narg; ++i) sigma_mean2_last_[i].erase(sigma_mean2_last_[i].begin());
-  /* this is the current estimate of sigma mean for each argument
-     there is one of this per argument in any case  because it is
-     the maximum among these to be used in case of GAUSS/OUTLIER */
+  if(sigma_mean2_last_[0].size()==optsigmamean_stride_) for(unsigned i=0; i<narg; ++i) sigma_mean2_last_[i].erase(sigma_mean2_last_[i].begin());
   vector<double> sigma_mean2_now(narg,0);
   if(master) {
     for(unsigned i=0; i<narg; ++i) {
-      double tmp  = getArgument(i)-mean[i];
+      double tmp = getArgument(i)-mean[i];
       sigma_mean2_now[i] = fact*tmp*tmp;
     }
     if(nrep_>1) multi_sim_comm.Sum(&sigma_mean2_now[0], narg);
   }
   comm.Sum(&sigma_mean2_now[0], narg);
-  for(unsigned i=0; i<narg; ++i) sigma_mean2_now[i] /= dnrep;
-
-  // add sigma_mean2 to history
-  for(unsigned i=0; i<narg; ++i) sigma_mean2_last_[i].push_back(sigma_mean2_now[i]);
 
   for(unsigned i=0; i<narg; ++i) {
-    /* set to the maximum in history vector */
-    sigma_mean2_tmp[i] = *max_element(sigma_mean2_last_[i].begin(), sigma_mean2_last_[i].end());
+    sigma_mean2_last_[i].push_back(sigma_mean2_now[i]/dnrep);
+    sigma_mean2_[i] = *max_element(sigma_mean2_last_[i].begin(), sigma_mean2_last_[i].end());
   }
-  // endif sigma optimization
-
-  sigma_mean2_ = sigma_mean2_tmp;
 }
 
 void Caliber::replica_averaging(const double fact, vector<double> &mean)
@@ -173,44 +165,36 @@ void Caliber::replica_averaging(const double fact, vector<double> &mean)
 }
 
 
-void Caliber::calculate() {
-  long int now=getStep();
-  double x0, dnow = static_cast<double>(now);
+void Caliber::calculate()
+{
+  const long int now = getStep(); 
+  const double dnow = static_cast<double>(now);
   const unsigned narg = getNumberOfArguments();
-  int tindex;
-
-  tindex = now/static_cast<int>(deltat);
-
-  x0 = var[tindex]   * (1. - (dnow - time[tindex])/(time[tindex+1] - time[tindex]) ) + \
-       var[tindex+1] * (1. - (time[tindex+1] - dnow)/(time[tindex+1] - time[tindex]) );
-
-
-  const double dnrep    = static_cast<double>(nrep_);
+  const int tindex = now/static_cast<int>(deltat);
+  const double dnrep = static_cast<double>(nrep_);
   double fact = 1.0/dnrep;
 
-  // calculate the mean
   vector<double> mean(narg,0);
-  // this is the derivative of the mean with respect to the argument
   vector<double> dmean_x(narg,fact);
-  // calculate it
   replica_averaging(fact, mean);
-  // get kappa
-  get_sigma_mean(fact, mean);
+  if(optsigmamean_stride_>0) get_sigma_mean(fact, mean);
 
   double ene=0;
   for(unsigned i=0; i<narg; ++i) {
-    kappa = mult*dnrep/sigma_mean2_[i];
-    const double cv=difference(i,x0,mean[i]); // this gives: getArgument(i) - x0
+    double x0 = var[i][tindex]   * (1. - (dnow - time[tindex])/(time[tindex+1] - time[tindex]) ) + \
+                var[i][tindex+1] * (1. - (time[tindex+1] - dnow)/(time[tindex+1] - time[tindex]) );
+    double kappa = mult*dnrep/sigma_mean2_[i];
+    const double cv=difference(i,x0,mean[i]);
     const double f=-kappa*cv*dmean_x[i];
     setOutputForce(i,f);
     ene+=0.5*kappa*cv*cv;
-    getPntrToComponent("kappa")->set(kappa);
-    getPntrToComponent("mean")->set(mean[i]);
+    std::string num; Tools::convert(i,num);
+    getPntrToComponent("kappa_"+num)->set(kappa);
+    getPntrToComponent("x0_"+num)->set(x0);
+    getPntrToComponent("mean_"+num)->set(mean[i]);
   }
 
-  // we will need to add back the calculation of the work
   setBias(ene);
-  getPntrToComponent("x0")->set(x0);
 }
 
 }
