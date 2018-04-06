@@ -220,4 +220,5 @@ script:
   - if test "$CPPCHECK" == yes ; then make codecheck ; fi
 after_success:
   - if test "$MAKEDOC" == yes ; then ./.travis/push doc ; fi 
+  - if test "$MAKECOVERAGE" == yes ; then bash <(curl -s https://codecov.io/bash) ; fi
   - if test "$MAKECOVERAGE" == yes ; then ./.travis/push coverage ; fi 
