@@ -114,7 +114,7 @@ Caliber::Caliber(const ActionOptions&ao):
     double tempT, tempVar;
     varfile >> tempT;
     time.push_back(tempT);
-    for(unsigned i=0;i<narg;i++) {
+    for(unsigned i=0; i<narg; i++) {
       varfile >> tempVar;
       var[i].push_back(tempVar);
     }
@@ -123,7 +123,7 @@ Caliber::Caliber(const ActionOptions&ao):
 
   deltat = time[1] - time[0];
 
-  for(unsigned i=0;i<narg;i++) {
+  for(unsigned i=0; i<narg; i++) {
     std::string num; Tools::convert(i,num);
     addComponent("sigmaMean_"+num); componentIsNotPeriodic("sigmaMean_"+num);
     addComponent("x0_"+num); componentIsNotPeriodic("x0_"+num);
@@ -167,7 +167,7 @@ void Caliber::replica_averaging(const double fact, vector<double> &mean)
 
 void Caliber::calculate()
 {
-  const long int now = getStep(); 
+  const long int now = getStep();
   const double dnow = static_cast<double>(now);
   const unsigned narg = getNumberOfArguments();
   const int tindex = now/static_cast<int>(deltat);
