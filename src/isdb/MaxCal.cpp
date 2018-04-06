@@ -125,7 +125,6 @@ Caliber::Caliber(const ActionOptions&ao):
 
   for(unsigned i=0; i<narg; i++) {
     std::string num; Tools::convert(i,num);
-    addComponent("sigmaMean_"+num); componentIsNotPeriodic("sigmaMean_"+num);
     addComponent("x0_"+num); componentIsNotPeriodic("x0_"+num);
     addComponent("kappa_"+num); componentIsNotPeriodic("kappa_"+num);
     addComponent("mean_"+num); componentIsNotPeriodic("mean_"+num);
@@ -164,6 +163,11 @@ void Caliber::replica_averaging(const double fact, vector<double> &mean)
   comm.Sum(&mean[0], narg);
 }
 
+
+double Caliber::doSpline()
+{
+
+}
 
 void Caliber::calculate()
 {
