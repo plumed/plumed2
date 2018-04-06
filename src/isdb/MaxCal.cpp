@@ -164,11 +164,6 @@ void Caliber::replica_averaging(const double fact, vector<double> &mean)
 }
 
 
-double Caliber::doSpline()
-{
-
-}
-
 void Caliber::calculate()
 {
   const long int now = getStep();
