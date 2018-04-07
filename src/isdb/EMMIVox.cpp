@@ -1192,12 +1192,12 @@ void EMMIVOX::update_neighbor_list()
       itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
       // check boundaries
       if(itab >= tab_exp_.size()) {
-         // look for minimum
-         if(expov < expmin){
-            expmin = expov;
-            idmin = im;
-         }
-         continue;
+        // look for minimum
+        if(expov < expmin) {
+          expmin = expov;
+          idmin = im;
+        }
+        continue;
       }
       // in case calculate overlap
       ov = cfact_[atype]*sqrt(invs2[0]*invs2[1]*invs2[2])*tab_exp_[itab];
@@ -1208,7 +1208,7 @@ void EMMIVOX::update_neighbor_list()
       // increase ov_tot
       ov_tot += ov;
     }
-    // check if zero size -> add atom with max overlap 
+    // check if zero size -> add atom with max overlap
     if(ov_l.size()==0) {
       nl_l.push_back(id*GMM_m_size+idmin);
     } else {
