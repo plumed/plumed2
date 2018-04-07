@@ -1218,7 +1218,7 @@ void EMMIVOX::update_neighbor_list()
       std::sort(ov_l.begin(), ov_l.end());
       // integrate ov_l
       res = 0.0;
-      for(unsigned i=1; i<ov_l.size(); ++i) {
+      for(unsigned i=0; i<ov_l.size()-1; ++i) {
         res += ov_l[i];
         // if exceeding the cutoff for overlap, stop
         if(res >= ov_cut) break;
