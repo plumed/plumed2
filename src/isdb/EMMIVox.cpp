@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018 The plumed team
+   Copyright (c) 2017,2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -1172,6 +1172,9 @@ void EMMIVOX::update_neighbor_list()
     d_s = GMM_d_s_[id];
     // total overlap with id
     ov_tot = 0.0;
+    // store minimum exponent and id
+    double expmin = std::numeric_limits<double>::max();
+    unsigned idmin;
     // cycle on all atoms
     for(unsigned im=0; im<GMM_m_size; ++im) {
       // calculate vector difference m_m-d_m with/without pbc
@@ -1187,8 +1190,15 @@ void EMMIVOX::update_neighbor_list()
       expov = md[0]*md[0]*invs2[0]+md[1]*md[1]*invs2[1]+md[2]*md[2]*invs2[2];
       // get index of expov in tabulated exponential
       itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
-      // check boundaries and skip atom in case
-      if(itab >= tab_exp_.size()) continue;
+      // check boundaries
+      if(itab >= tab_exp_.size()) {
+         // look for minimum
+         if(expov < expmin){
+            expmin = expov;
+            idmin = im;
+         }
+         continue;
+      }
       // in case calculate overlap
       ov = cfact_[atype]*sqrt(invs2[0]*invs2[1]*invs2[2])*tab_exp_[itab];
       // add to list
@@ -1198,24 +1208,27 @@ void EMMIVOX::update_neighbor_list()
       // increase ov_tot
       ov_tot += ov;
     }
-    // check if zero size -> ov_tot = 0
-    if(ov_l.size()==0) continue;
-    // define cutoff
-    ov_cut = ov_tot * nl_cutoff_;
-    // sort ov_l in ascending order
-    std::sort(ov_l.begin(), ov_l.end());
-    // integrate ov_l
-    res = 0.0;
-    for(unsigned i=0; i<ov_l.size(); ++i) {
-      res += ov_l[i];
-      // if exceeding the cutoff for overlap, stop
-      if(res >= ov_cut) break;
-      else ov_m.erase(ov_l[i]);
+    // check if zero size -> add atom with max overlap 
+    if(ov_l.size()==0) {
+      nl_l.push_back(id*GMM_m_size+idmin);
+    } else {
+      // define cutoff
+      ov_cut = ov_tot * nl_cutoff_;
+      // sort ov_l in ascending order
+      std::sort(ov_l.begin(), ov_l.end());
+      // integrate ov_l
+      res = 0.0;
+      for(unsigned i=1; i<ov_l.size(); ++i) {
+        res += ov_l[i];
+        // if exceeding the cutoff for overlap, stop
+        if(res >= ov_cut) break;
+        else ov_m.erase(ov_l[i]);
+      }
+      // now add atoms to neighborlist
+      for(it=ov_m.begin(); it!=ov_m.end(); ++it)
+        nl_l.push_back(id*GMM_m_size+it->second);
+      // end cycle on GMM components in parallel
     }
-    // now add atoms to neighborlist
-    for(it=ov_m.begin(); it!=ov_m.end(); ++it)
-      nl_l.push_back(id*GMM_m_size+it->second);
-    // end cycle on GMM components in parallel
   }
   // find total dimension of neighborlist
   vector <int> recvcounts(size_, 0);
