@@ -25,12 +25,23 @@
 #include "MatrixSquareBracketsAccess.h"
 #include "Vector.h"
 #include "LoopUnroller.h"
-
-#ifdef _GLIBCXX_DEBUG
 #include "Exception.h"
-#endif
+
+#include <array>
 
 namespace PLMD {
+
+/// Small class to contain local utilities.
+/// Should not be used outside of the TensorGeneric class.
+class TensorGenericAux {
+public:
+// local redefinition, just to avoid including lapack.h here
+  static void local_dsyevr(const char *jobz, const char *range, const char *uplo, int *n,
+                           double *a, int *lda, double *vl, double *vu, int *
+                           il, int *iu, double *abstol, int *m, double *w,
+                           double *z__, int *ldz, int *isuppz, double *work,
+                           int *lwork, int *iwork, int *liwork, int *info);
+};
 
 /**
 \ingroup TOOLBOX
@@ -179,6 +190,14 @@ public:
 /// Allows printing tensor `t` with `std::cout<<t;`
   template<unsigned n_,unsigned m_>
   friend std::ostream & operator<<(std::ostream &os, const TensorGeneric<n_,m_>&);
+/// Diagonalize tensor.
+/// Syntax is the same as Matrix::diagMat.
+/// In addition, it is possible to call if with m_ smaller than n_. In this case,
+/// only the first (smaller) m_ eigenvalues and eigenvectors are retrieved.
+/// If case lapack fails (info!=0) it throws an exception.
+/// Notice that tensor is assumed to be symmetric!!!
+  template<unsigned n_,unsigned m_>
+  friend void diagMatSym(const TensorGeneric<n_,n_>&,VectorGeneric<m_>&evals,TensorGeneric<m_,n_>&evec);
 };
 
 template<unsigned n,unsigned m>
@@ -497,8 +516,41 @@ TensorGeneric<3,3> deriNorm(const VectorGeneric<3>&v1,const TensorGeneric<3,3>&v
   return over_norm*(v2 - over_norm*over_norm*(extProduct(matmul(v2,v1),v1)));
 }
 
-
-
+template<unsigned n,unsigned m>
+void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneric<m,n>&evec) {
+  // some guess number to make sure work is large enough.
+  // for correctness it should be >=20. However, it is recommended to be the block size.
+  // I put some likely exaggerated number
+  constexpr int bs=100;
+  // temporary data, on stack so as to avoid allocations
+  std::array<int,10*n> iwork;
+  std::array<double,(6+bs)*n> work;
+  std::array<int,2*m> isup;
+  int nn=n;              // dimension of matrix
+  double vl=0.0, vu=1.0; // ranges - not used
+  int one=1,mm=m;        // minimun and maximum index
+  double abstol=0.0;     // tolerance
+  int mout=0;            // number of eigenvalues found (same as mm)
+  int info=0;            // result
+  int liwork=iwork.size();
+  int lwork=work.size();
+  TensorGenericAux::local_dsyevr("V", (n==m?"A":"I"), "U", &nn, const_cast<double*>(&mat[0][0]), &nn, &vl, &vu, &one, &mm,
+                                 &abstol, &mout, &evals[0], &evec[0][0], &nn,
+                                 &isup[0], &work[0], &lwork, &iwork[0], &liwork, &info);
+  if(info!=0) plumed_error()<<"Error diagonalizing matrix\n"
+                              <<"Matrix:\n"<<mat<<"\n"
+                              <<"Info: "<<info<<"\n";
+  plumed_assert(mout==m);
+  // This changes eigenvectors so that the first non-null element
+  // of each of them is positive
+  // We can do it because the phase is arbitrary, and helps making
+  // the result reproducible
+  for(int i=0; i<m; ++i) {
+    int j=0;
+    for(j=0; j<n; j++) if(evec(i,j)*evec(i,j)>1e-14) break;
+    if(j<n) if(evec(i,j)<0.0) for(j=0; j<n; j++) evec(i,j)*=-1;
+  }
+}
 
 
 }
