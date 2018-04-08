@@ -210,7 +210,6 @@ double Caliber::getSpline(const unsigned iarg)
     double X3=X2*X;
     double C=(1.0-3.0*X2+2.0*X3) - (x0?-1.0:1.0)*yy*(X-2.0*X2+X3)*deltat;
 
-
     value+=grid*C;
   }
   return value;
@@ -220,7 +219,7 @@ void Caliber::calculate()
 {
   const unsigned narg = getNumberOfArguments();
   const double dnrep = static_cast<double>(nrep_);
-  double fact = 1.0/dnrep;
+  const double fact = 1.0/dnrep;
 
   vector<double> mean(narg,0);
   vector<double> dmean_x(narg,fact);
