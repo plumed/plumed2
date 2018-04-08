@@ -212,7 +212,7 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
           tvals.addDerivative( bin, 3*tindex+1, lderivf[1] );
           tvals.addDerivative( bin, 3*tindex+2, lderivf[2] );
           // Virial
-          vir = - Tensor( d2, g1derivf ) - Tensor( d2, g2derivf ); 
+          vir = - Tensor( d20, g1derivf ) - Tensor( d21, g2derivf ); 
           unsigned nbase = 3*getNumberOfAtoms();
           tvals.addDerivative( bin, nbase+0, vir(0,0) );
           tvals.addDerivative( bin, nbase+1, vir(0,1) );
