@@ -568,10 +568,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   if(nanneal_>0) {addComponent("anneal"); componentIsNotPeriodic("anneal");}
 
   // initialize random seed
-  unsigned iseed;
-  if(rank_==0) iseed = time(NULL)+replica_;
-  else iseed = 0;
-  comm.Sum(&iseed, 1);
+  unsigned iseed = time(NULL)+replica_*size_+rank_;
   random_.setSeed(-iseed);
 
   // request the atoms
@@ -707,77 +704,86 @@ bool EMMIVOX::doAccept(double oldE, double newE, double kbt) {
 
 void EMMIVOX::doMonteCarlo()
 {
-  // extract random GMM group
-  unsigned nGMM = static_cast<unsigned>(floor(random_.RandU01()*static_cast<double>(GMM_d_grps_.size())));
-  if(nGMM==GMM_d_grps_.size()) nGMM -= 1;
+  // prepare vector for new sigma
+  vector<double> newsigma;
+  newsigma.resize(sigma_.size());
+  // and local acceptance
+  double MCaccept = 0.0;
 
-  // generate random move
-  double shift = dsigma_[nGMM] * ( 2.0 * random_.RandU01() - 1.0 );
-  // new sigma
-  double new_s = sigma_[nGMM] + shift;
-  // check boundaries
-  if(new_s > sigma_max_[nGMM]) {new_s = 2.0 * sigma_max_[nGMM] - new_s;}
-  if(new_s < sigma_min_[nGMM]) {new_s = 2.0 * sigma_min_[nGMM] - new_s;}
-  // old s2
-  double old_inv_s2 = 1.0 / sigma_[nGMM] / sigma_[nGMM];
-  // new s2
-  double new_inv_s2 = 1.0 / new_s / new_s;
+  // cycle over all the groups in parallel
+  for(unsigned nGMM=rank_; nGMM<sigma_.size(); nGMM+=size_) {
 
-  // cycle on GMM group and calculate old and new energy
-  double old_ene = 0.0;
-  double new_ene = 0.0;
-  double ng = static_cast<double>(GMM_d_grps_[nGMM].size());
+    // generate random move
+    double shift = dsigma_[nGMM] * ( 2.0 * random_.RandU01() - 1.0 );
+    // new sigma
+    double new_s = sigma_[nGMM] + shift;
+    // check boundaries
+    if(new_s > sigma_max_[nGMM]) {new_s = 2.0 * sigma_max_[nGMM] - new_s;}
+    if(new_s < sigma_min_[nGMM]) {new_s = 2.0 * sigma_min_[nGMM] - new_s;}
+    // old s2
+    double old_inv_s2 = 1.0 / sigma_[nGMM] / sigma_[nGMM];
+    // new s2
+    double new_inv_s2 = 1.0 / new_s / new_s;
 
-  // in case of Gaussian noise
-  if(noise_==0) {
-    double chi2 = 0.0;
-    for(unsigned i=0; i<GMM_d_grps_[nGMM].size(); ++i) {
-      // id GMM component
-      int GMMid = GMM_d_grps_[nGMM][i];
-      // deviation
-      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
-      // add to chi2
-      chi2 += dev * dev;
+    // cycle on GMM group and calculate old and new energy
+    double old_ene = 0.0;
+    double new_ene = 0.0;
+    double ng = static_cast<double>(GMM_d_grps_[nGMM].size());
+
+    // in case of Gaussian noise
+    if(noise_==0) {
+      double chi2 = 0.0;
+      for(unsigned i=0; i<GMM_d_grps_[nGMM].size(); ++i) {
+        // id GMM component
+        int GMMid = GMM_d_grps_[nGMM][i];
+        // deviation
+        double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
+        // add to chi2
+        chi2 += dev * dev;
+      }
+      // final energy calculation: add normalization and prior
+      old_ene = 0.5 * kbt_ * ( chi2 * old_inv_s2 - (ng+prior_) * std::log(old_inv_s2) );
+      new_ene = 0.5 * kbt_ * ( chi2 * new_inv_s2 - (ng+prior_) * std::log(new_inv_s2) );
     }
-    // final energy calculation: add normalization and prior
-    old_ene = 0.5 * kbt_ * ( chi2 * old_inv_s2 - (ng+prior_) * std::log(old_inv_s2) );
-    new_ene = 0.5 * kbt_ * ( chi2 * new_inv_s2 - (ng+prior_) * std::log(new_inv_s2) );
-  }
 
-  // in case of Outliers noise
-  if(noise_==1) {
-    for(unsigned i=0; i<GMM_d_grps_[nGMM].size(); ++i) {
-      // id GMM component
-      int GMMid = GMM_d_grps_[nGMM][i];
-      // calculate deviation
-      double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
-      // add to energies
-      old_ene += std::log( 1.0 + 0.5 * dev * dev * old_inv_s2);
-      new_ene += std::log( 1.0 + 0.5 * dev * dev * new_inv_s2);
+    // in case of Outliers noise
+    if(noise_==1) {
+      for(unsigned i=0; i<GMM_d_grps_[nGMM].size(); ++i) {
+        // id GMM component
+        int GMMid = GMM_d_grps_[nGMM][i];
+        // calculate deviation
+        double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
+        // add to energies
+        old_ene += std::log( 1.0 + 0.5 * dev * dev * old_inv_s2);
+        new_ene += std::log( 1.0 + 0.5 * dev * dev * new_inv_s2);
+      }
+      // final energy calculation: add normalization and prior
+      old_ene = kbt_ * ( old_ene + (ng+prior_) * std::log(sigma_[nGMM]) );
+      new_ene = kbt_ * ( new_ene + (ng+prior_) * std::log(new_s) );
     }
-    // final energy calculation: add normalization and prior
-    old_ene = kbt_ * ( old_ene + (ng+prior_) * std::log(sigma_[nGMM]) );
-    new_ene = kbt_ * ( new_ene + (ng+prior_) * std::log(new_s) );
-  }
 
-  // increment number of trials
-  MCtrials_ += 1.0;
+    // accept or reject
+    bool accept = doAccept(old_ene/anneal_, new_ene/anneal_, kbt_);
 
-  // accept or reject
-  bool accept = doAccept(old_ene/anneal_, new_ene/anneal_, kbt_);
-  if(accept) {
-    sigma_[nGMM] = new_s;
-    MCaccept_ += 1.0;
-  }
+    // in case of acceptance
+    if(accept) {
+      newsigma[nGMM] = new_s;
+      MCaccept += 1.0;
+    } else {
+      newsigma[nGMM] = sigma_[nGMM];
+    }
+  } // end of cycle over sigmas
+
+  // update trials
+  MCtrials_ += static_cast<double>(sigma_.size());
   // local communication
-  if(rank_!=0) {
-    for(unsigned i=0; i<sigma_.size(); ++i) sigma_[i] = 0.0;
-    MCaccept_ = 0.0;
-  }
-  if(size_>1) {
-    comm.Sum(&sigma_[0], sigma_.size());
-    comm.Sum(&MCaccept_, 1);
-  }
+  comm.Sum(&newsigma[0], newsigma.size());
+  comm.Sum(&MCaccept, 1);
+  // increase acceptance
+  MCaccept_ += MCaccept;
+  // put back into sigma_
+  for(unsigned i=0; i<sigma_.size(); ++i) sigma_[i] = newsigma[i];
+
 }
 
 void EMMIVOX::doMonteCarloBfact()
@@ -906,7 +912,7 @@ void EMMIVOX::doMonteCarloBfact()
     bool accept = doAccept(old_ene, new_ene, kbt_);
 
     // in case of acceptance
-    if(accept==1) {
+    if(accept) {
       // update acceptance rate
       MCBaccept_ += 1.0;
       // update bfactor
