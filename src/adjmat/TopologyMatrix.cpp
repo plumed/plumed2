@@ -142,11 +142,10 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
     // Switching function on distance between nodes
     if( d1_len>switchingFunction.get_dmax() ) continue ;
     // Ensure that the center of the bins are on the center of the bond connecting the two atoms
-    Vector dstart = d20 + 0.5*(d1_len - binlength)*d1;
+    double start2atom = 0.5*(binlength-d1_len); Vector dstart = d20 - start2atom*d1;
     // Now calculate projection of axis of cylinder
     double proj=dotProduct(-dstart,d1);
     // Calculate length of vector connecting start of cylinder to first atom
-    double start2atom = delta( d20, dstart ).modulo();
     // And now work out projection on vector connecting start and end of cylinder
     double proj_between = proj - start2atom;
     // This tells us if we are outside the end of the cylinder
@@ -177,21 +176,21 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
         d1_a1(2,2) = ( -(d1[1]*d1[1]+d1[0]*d1[0])/d1_len );
 
         // Calculate derivatives of dot product
-        dd1 = matmul(-dstart, d1_a1) - d1;
-        dd2 = matmul(-dstart, -d1_a1);
+        dd1 = matmul(-dstart, d1_a1) - 0.5*d1;
+        dd2 = matmul(-dstart, -d1_a1) - 0.5*d1;
         dd3 = d1;
 
         // Calculate derivatives of cross product
-        dc1 = dfuncr*( dstart - proj*dd1 );
-        dc2 = dfuncr*( -proj*dd2 );
+        Vector der( -0.5*binlength*matmul( d1_a1,dstart ) );
+        dc1 = dfuncr*( 0.5*dstart + der - proj*dd1 );
+        dc2 = dfuncr*( 0.5*dstart - der - proj*dd2 );
         dc3 = dfuncr*( -dstart - proj*dd3 );
 
         // Calculate derivatives of excess
-        de1 = (eval2*edf1*excess + eval1*edf2*(-proj_between))*( dd1 + d1 );
-        de2 = (eval2*edf1*excess + eval1*edf2*(-proj_between))*( dd2 - d1 );
-        de3 = (eval2*edf1*excess + eval1*edf2*(-proj_between))*dd3;
+        de1 = eval2*edf1*excess*(dd1 + 0.5*d1 ) + eval1*edf2*proj_between*(dd1 - 0.5*d1);
+        de2 = eval2*edf1*excess*(dd2 - 0.5*d1 ) + eval1*edf2*proj_between*(dd2 + 0.5*d1);
+        de3 = ( eval2*edf1*excess + eval1*edf2*proj_between )*dd3;
       }
-      Vector posA = d1_len*d1; Vector posB = d2;
       for(unsigned bin=0; bin<maxbins; ++bin) {
         bead.set( bin*binw_mat, (bin+1)*binw_mat, sigma );
         if( proj<(bin*binw_mat-bead.getCutoff()) || proj>binw_mat*(bin+1)+bead.getCutoff() ) continue;
@@ -199,11 +198,11 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
         tvals.addValue( bin, contr*val*eval1*eval2 );
 
         if( !doNotCalculateDerivatives() ) {
-          g1derivf=contr*eval1*eval2*dc1 + val*eval1*eval2*der*dd1 + contr*val*de1; // - contr*val*eval1*eval2*dfuncl*d1_len*d1;
+          g1derivf=contr*eval1*eval2*dc1 + val*eval1*eval2*der*dd1 + contr*val*de1; 
           tvals.addDerivative( bin, 3*myvals.getTaskIndex()+0, g1derivf[0] );
           tvals.addDerivative( bin, 3*myvals.getTaskIndex()+1, g1derivf[1] );
           tvals.addDerivative( bin, 3*myvals.getTaskIndex()+2, g1derivf[2] );
-          g2derivf=contr*eval1*eval2*dc2 + val*eval1*eval2*der*dd2 + contr*val*de2; // + contr*val*eval1*eval2*dfuncl*d1_len*d1;
+          g2derivf=contr*eval1*eval2*dc2 + val*eval1*eval2*der*dd2 + contr*val*de2; 
           tvals.addDerivative( bin, 3*myvals.getSecondTaskIndex()+0, g2derivf[0] );
           tvals.addDerivative( bin, 3*myvals.getSecondTaskIndex()+1, g2derivf[1] );
           tvals.addDerivative( bin, 3*myvals.getSecondTaskIndex()+2, g2derivf[2] );
@@ -213,7 +212,7 @@ double TopologyMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
           tvals.addDerivative( bin, 3*tindex+1, lderivf[1] );
           tvals.addDerivative( bin, 3*tindex+2, lderivf[2] );
           // Virial
-          vir = - Tensor( posA, g2derivf ) - Tensor( posB, lderivf );
+          vir = - Tensor( d2, g1derivf ) - Tensor( d2, g2derivf ); 
           unsigned nbase = 3*getNumberOfAtoms();
           tvals.addDerivative( bin, nbase+0, vir(0,0) );
           tvals.addDerivative( bin, nbase+1, vir(0,1) );
