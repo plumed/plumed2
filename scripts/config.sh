@@ -102,7 +102,7 @@ case $action in
   echo "Version: $long (git: $git)"
  ;;
 (python_bin)
-  py=$(echo "$configfile" | grep -v \# | awk '{ if($1=="python_bin") print $2 }')
+  py=$(cat "$configfile" | grep -v \# | awk '{ if($1=="python_bin") print $2 }')
   if test -n "$py" ; then
     retval=0
     test "$quiet" = no && echo "$py"
