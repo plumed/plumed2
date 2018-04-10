@@ -33,12 +33,8 @@ MultiReferenceBase::MultiReferenceBase( const std::string& type, const bool& che
   if(checksoff) plumed_assert( mtype.length()==0 );
 }
 
-MultiReferenceBase::~MultiReferenceBase() {
-  for(unsigned i=0; i<frames.size(); ++i) delete frames[i];
-}
-
 void MultiReferenceBase::clearFrames() {
-  for(unsigned i=0; i<frames.size(); ++i) delete frames[i];
+  for(unsigned i=0; i<frames.size(); ++i) frames[i].reset();
   frames.resize(0);
   clearRestOfData();
 }
@@ -48,7 +44,7 @@ void MultiReferenceBase::readFrame( PDB& mypdb ) {
   // If skipchecks are enabled metric types must be specified in the input file
   ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
   // Save everything
-  frames.push_back( mymsd );
+  frames.emplace_back( mymsd );
   // Do reading in derived class
   readRestOfFrame();
   // Check readin was succesfull
@@ -80,7 +76,7 @@ void MultiReferenceBase::copyFrame( ReferenceConfiguration* frameToCopy ) {
   // Copy weight
   mymsd->setWeight( frameToCopy->getWeight() );
   // Easy bit - copy the frame
-  frames.push_back( mymsd );
+  frames.emplace_back( mymsd );
   // This resizes the low dim array
   resizeRestOfFrame();
 }
@@ -97,7 +93,7 @@ void MultiReferenceBase::calculateAllDistances( const Pbc& pbc, const std::vecto
   for(unsigned i=1; i<frames.size(); ++i) {
     for(unsigned j=0; j<i; ++j) {
       if( (k++)%size!=rank ) continue;
-      distances(i,j) = distances(j,i) = distance( pbc, vals, frames[i], frames[j], squared );
+      distances(i,j) = distances(j,i) = distance( pbc, vals, frames[i].get(), frames[j].get(), squared );
     }
   }
   comm.Sum( distances );

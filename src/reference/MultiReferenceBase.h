@@ -37,14 +37,14 @@ private:
   std::string mtype;
 protected:
 /// These are the configurations that serve as references
-  std::vector<ReferenceConfiguration*> frames;
+  std::vector<std::unique_ptr<ReferenceConfiguration>> frames;
 /// Read something from the last frame
   template <class T>
   void parse(const std::string& key, T& val );
 public:
   MultiReferenceBase( const std::string& type, const bool& checksoff );
 /// Destructor deletes all polymorphic pointers
-  virtual ~MultiReferenceBase();
+  virtual ~MultiReferenceBase() {};
 /// Delete all the data in the reference object
   void clearFrames();
   virtual void clearRestOfData() {};
@@ -66,7 +66,7 @@ public:
 /// Return the ith reference frame
   ReferenceConfiguration* getFrame( const unsigned& iframe );
 /// Return a reference to all the reference frames
-  std::vector<ReferenceConfiguration*>& getReferenceConfigurations();
+  const std::vector<std::unique_ptr<ReferenceConfiguration>>& getReferenceConfigurations();
 /// Copy a reference configuration into the multi reference object
   void copyFrame( ReferenceConfiguration* frameToCopy );
 /// Set the weight of the ith frame
@@ -102,11 +102,11 @@ double MultiReferenceBase::getWeight( const unsigned& ifram ) const {
 inline
 ReferenceConfiguration* MultiReferenceBase::getFrame( const unsigned& iframe ) {
   plumed_dbg_assert( iframe<frames.size() );
-  return frames[iframe];
+  return frames[iframe].get();
 }
 
 inline
-std::vector<ReferenceConfiguration*>& MultiReferenceBase::getReferenceConfigurations() {
+const std::vector<std::unique_ptr<ReferenceConfiguration>>& MultiReferenceBase::getReferenceConfigurations() {
   return frames;
 }
 

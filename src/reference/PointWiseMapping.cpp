@@ -67,7 +67,7 @@ void PointWiseMapping::resizeRestOfFrame() {
 void PointWiseMapping::duplicateFrameList() {
   unsigned nframes=frames.size();
   for(unsigned i=0; i<nframes; ++i) {
-    frames.push_back( new FakeFrame( ReferenceConfigurationOptions("fake") ) );
+    frames.emplace_back( new FakeFrame( ReferenceConfigurationOptions("fake") ) );
   }
 }
 

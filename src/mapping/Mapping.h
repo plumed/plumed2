@@ -64,7 +64,7 @@ protected:
 /// Get the value of the weight
   double getWeight( const unsigned& weight ) const ;
 /// Return the vector of refernece configurations
-  std::vector<ReferenceConfiguration*>& getAllReferenceConfigurations();
+  const std::vector<std::unique_ptr<ReferenceConfiguration>>& getAllReferenceConfigurations();
 /// Return a pointer to one of the reference configurations
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& ifunc );
 public:
@@ -153,7 +153,7 @@ void Mapping::storeDistanceFunction( const unsigned& ifunc ) {
 }
 
 inline
-std::vector<ReferenceConfiguration*>& Mapping::getAllReferenceConfigurations() {
+const std::vector<std::unique_ptr<ReferenceConfiguration>>& Mapping::getAllReferenceConfigurations() {
   return mymap->getReferenceConfigurations();
 }
 

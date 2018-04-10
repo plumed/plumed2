@@ -24,7 +24,7 @@
 namespace PLMD {
 namespace mapping {
 
-PathReparameterization::PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<ReferenceConfiguration*>& pp ):
+PathReparameterization::PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, const std::vector<std::unique_ptr<ReferenceConfiguration>>& pp ):
   mydpack( 1, pp[0]->getNumberOfReferenceArguments() + 3*pp[0]->getNumberOfReferencePositions() + 9 ),
   mypack( pp[0]->getNumberOfReferenceArguments(), pp[0]->getNumberOfReferencePositions(), mydpack ),
   mydir(ReferenceConfigurationOptions("DIRECTION")),

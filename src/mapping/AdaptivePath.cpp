@@ -226,7 +226,7 @@ void AdaptivePath::update() {
   }
   if( (getStep()>0) && (getStep()%wstride==0) ) {
     pathfile.printf("# PATH AT STEP %d TIME %f \n", getStep(), getTime() );
-    std::vector<ReferenceConfiguration*>& myconfs=getAllReferenceConfigurations();
+    const auto& myconfs=getAllReferenceConfigurations();
     for(unsigned i=0; i<myconfs.size(); ++i) myconfs[i]->print( pathfile, ofmt, atoms.getUnits().getLength()/0.1 );
     pathfile.flush();
   }
