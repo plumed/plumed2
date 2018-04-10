@@ -38,12 +38,11 @@ private:
 /// The domain of the function
   std::vector<std::string> min, max;
 /// List of kernel functions involved
-  std::vector<KernelFunctions*> kernels;
+  std::vector<std::unique_ptr<KernelFunctions>> kernels;
 public:
 // Explicit definitions for constructor, copy constructor and destructor
   PammObject();
   PammObject( const PammObject& );
-  ~PammObject();
   PammObject operator=(const PammObject& po) { plumed_error(); regulariser=po.regulariser; return PammObject(); }
 /// Setup the Pamm object
   void setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames,
