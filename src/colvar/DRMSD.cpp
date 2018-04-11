@@ -146,7 +146,7 @@ DRMSD::DRMSD(const ActionOptions&ao):
 
   // store target_ distance
   std::string type; parse("TYPE",type);
-  drmsd_.reset( metricRegister().create<PLMD::DRMSD>( type ) );
+  drmsd_=metricRegister().create<PLMD::DRMSD>( type );
   drmsd_->setBoundsOnDistances( !nopbc, lcutoff, ucutoff );
   drmsd_->set( pdb );
   checkRead();

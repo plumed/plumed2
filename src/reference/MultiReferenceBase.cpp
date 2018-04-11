@@ -42,13 +42,14 @@ void MultiReferenceBase::clearFrames() {
 void MultiReferenceBase::readFrame( PDB& mypdb ) {
   wasSet=true;
   // If skipchecks are enabled metric types must be specified in the input file
-  ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
+  auto mymsd=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
   // Save everything
-  frames.emplace_back( mymsd );
+  frames.emplace_back( std::move(mymsd) );
   // Do reading in derived class
   readRestOfFrame();
-  // Check readin was succesfull
-  mymsd->checkRead();
+  // Check readin was succesful
+  // Notice that myrmsd has been moved so cannot be used
+  frames.back()->checkRead();
 }
 
 void MultiReferenceBase::getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args ) {
@@ -68,7 +69,7 @@ void MultiReferenceBase::getAtomAndArgumentRequirements( std::vector<AtomNumber>
 
 void MultiReferenceBase::copyFrame( ReferenceConfiguration* frameToCopy ) {
   // Create a reference configuration of the appropriate type
-  ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( frameToCopy->getName() );
+  auto mymsd=metricRegister().create<ReferenceConfiguration>( frameToCopy->getName() );
   // Copy names of arguments and and indexes
   mymsd->setNamesAndAtomNumbers( frameToCopy->getAbsoluteIndexes(), frameToCopy->getArgumentNames() );
   // Copy reference positions, reference arguments and reference metric
@@ -76,7 +77,7 @@ void MultiReferenceBase::copyFrame( ReferenceConfiguration* frameToCopy ) {
   // Copy weight
   mymsd->setWeight( frameToCopy->getWeight() );
   // Easy bit - copy the frame
-  frames.emplace_back( mymsd );
+  frames.emplace_back( std::move(mymsd) );
   // This resizes the low dim array
   resizeRestOfFrame();
 }

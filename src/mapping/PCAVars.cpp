@@ -243,7 +243,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
     expandArgKeywordInPDB( mypdb );
     if(do_read) {
       if( nfram==0 ) {
-        myref.reset( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
+        myref=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
         Direction* tdir = dynamic_cast<Direction*>( myref.get() );
         if( tdir ) error("first frame should be reference configuration - not direction of vector");
         if( !myref->pcaIsEnabledForThisReference() ) error("can't do PCA with reference type " + mtype );

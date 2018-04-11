@@ -122,7 +122,7 @@ PCA::PCA(const ActionOptions&ao):
 {
   // Setup reference configuration
   log.printf("  performing PCA analysis using %s metric \n", getMetricName().c_str() );
-  myref.reset( metricRegister().create<ReferenceConfiguration>( getMetricName() ) );
+  myref=metricRegister().create<ReferenceConfiguration>( getMetricName() );
   std::vector<std::string> argnames( getNumberOfArguments() );
   for(unsigned i=0; i<argnames.size(); ++i) {
     if( getArguments()[i]->isPeriodic() ) error("cannot run PCA with periodic variables");

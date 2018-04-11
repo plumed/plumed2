@@ -97,7 +97,7 @@ Analysis::Analysis(const ActionOptions&ao):
       log.printf("  running analysis every %u steps\n",freq);
       ndata=freq/getStride(); data.resize( ndata ); logweights.resize( ndata );
       for(unsigned i=0; i<ndata; ++i) {
-        data[i].reset(metricRegister().create<ReferenceConfiguration>( metricname ));
+        data[i]=metricRegister().create<ReferenceConfiguration>( metricname );
         data[i]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
       }
     }
