@@ -24,12 +24,8 @@
 
 #include <cmath>
 #include <iosfwd>
+#include <array>
 #include "LoopUnroller.h"
-
-#ifdef _GLIBCXX_DEBUG
-#include "Exception.h"
-#endif
-
 
 namespace PLMD {
 
@@ -81,7 +77,7 @@ int main(){
 
 template <unsigned n>
 class VectorGeneric {
-  double d[n];
+  std::array<double,n> d;
 /// Auxiliary private function for constructor
   void auxiliaryConstructor();
 /// Auxiliary private function for constructor
@@ -180,67 +176,55 @@ VectorGeneric<n>::VectorGeneric(double first,Args... arg)
 
 template <unsigned n>
 void VectorGeneric<n>::zero() {
-  LoopUnroller<n>::_zero(d);
+  LoopUnroller<n>::_zero(d.data());
 }
 
 template <unsigned n>
 VectorGeneric<n>::VectorGeneric() {
-  LoopUnroller<n>::_zero(d);
+  LoopUnroller<n>::_zero(d.data());
 }
 
 template <unsigned n>
 double & VectorGeneric<n>::operator[](unsigned i) {
-#ifdef _GLIBCXX_DEBUG
-  plumed_assert(i<n);
-#endif
   return d[i];
 }
 
 template <unsigned n>
 const double & VectorGeneric<n>::operator[](unsigned i)const {
-#ifdef _GLIBCXX_DEBUG
-  plumed_assert(i<n);
-#endif
   return d[i];
 }
 
 template <unsigned n>
 double & VectorGeneric<n>::operator()(unsigned i) {
-#ifdef _GLIBCXX_DEBUG
-  plumed_assert(i<n);
-#endif
   return d[i];
 }
 
 template <unsigned n>
 const double & VectorGeneric<n>::operator()(unsigned i)const {
-#ifdef _GLIBCXX_DEBUG
-  plumed_assert(i<n);
-#endif
   return d[i];
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator +=(const VectorGeneric<n>& b) {
-  LoopUnroller<n>::_add(d,b.d);
+  LoopUnroller<n>::_add(d.data(),b.d.data());
   return *this;
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator -=(const VectorGeneric<n>& b) {
-  LoopUnroller<n>::_sub(d,b.d);
+  LoopUnroller<n>::_sub(d.data(),b.d.data());
   return *this;
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator *=(double s) {
-  LoopUnroller<n>::_mul(d,s);
+  LoopUnroller<n>::_mul(d.data(),s);
   return *this;
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator /=(double s) {
-  LoopUnroller<n>::_mul(d,1.0/s);
+  LoopUnroller<n>::_mul(d.data(),1.0/s);
   return *this;
 }
 
@@ -252,7 +236,7 @@ VectorGeneric<n>  VectorGeneric<n>::operator +()const {
 template <unsigned n>
 VectorGeneric<n> VectorGeneric<n>::operator -()const {
   VectorGeneric<n> r;
-  LoopUnroller<n>::_neg(r.d,d);
+  LoopUnroller<n>::_neg(r.d.data(),d.data());
   return r;
 }
 
@@ -291,12 +275,12 @@ VectorGeneric<n> delta(const VectorGeneric<n>&v1,const VectorGeneric<n>&v2) {
 
 template <unsigned n>
 double VectorGeneric<n>::modulo2()const {
-  return LoopUnroller<n>::_sum2(d);
+  return LoopUnroller<n>::_sum2(d.data());
 }
 
 template <unsigned n>
 double dotProduct(const VectorGeneric<n>& v1,const VectorGeneric<n>& v2) {
-  return LoopUnroller<n>::_dot(v1.d,v2.d);
+  return LoopUnroller<n>::_dot(v1.d.data(),v2.d.data());
 }
 
 inline
