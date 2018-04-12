@@ -115,9 +115,10 @@ private:
 // model GMM - atom types
   vector<unsigned> GMM_m_type_;
 // model GMM - list of atom sigmas - one per atom type
-  vector<double> GMM_m_s_;
+  vector<double> GMM_m_s0_;
+  vector<Vector5d> GMM_m_s_;
 // model GMM - list of atom weights - one per atom type
-  vector<double> GMM_m_w_;
+  vector<Vector5d> GMM_m_w_;
 // model GMM - map between residue number and list of atoms
   map< unsigned, vector<unsigned> > GMM_m_resmap_;
 // model GMM - list of residue ids
@@ -145,7 +146,7 @@ private:
   vector<Vector> atom_der_;
   vector<double> GMMid_der_;
 // constants
-  vector<double> cfact_;
+  vector<Vector5d> cfact_;
   double inv_sqrt2_, sqrt2_pi_, inv_pi2_;
 // metainference
   unsigned nrep_;
@@ -237,7 +238,8 @@ private:
   void calculate_useful_stuff(double reso);
 // calculate overlap between two Gaussians
   double get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
-                     double pref, double m_b, Vector &ov_der);
+                     const Vector5d &pref, const Vector5d &m_s,
+                     double bfact, Vector &ov_der);
 // update the neighbor list
   void update_neighbor_list();
 // calculate overlap
@@ -499,10 +501,15 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // normalize atom weight map
   double norm_m = accumulate(GMM_m_w.begin(),  GMM_m_w.end(),  0.0);
-  // renormalization
-  for(unsigned i=0; i<GMM_m_w_.size(); ++i) GMM_m_w_[i] *= norm_d / norm_m;
-  // constant cfact
-  for(unsigned i=0; i<GMM_m_w_.size(); ++i) cfact_.push_back(GMM_m_w_[i]/pow( 2.0*pi, 1.5 ));
+  // renormalization and constant factor
+  for(unsigned i=0; i<GMM_m_w_.size(); ++i) {
+    Vector5d cf;
+    for(unsigned j=0; j<5; ++j) {
+      GMM_m_w_[i][j] *= norm_d / norm_m;
+      cf[j] = GMM_m_w_[i][j]/pow( 2.0*pi, 1.5 );
+    }
+    cfact_.push_back(cf);
+  }
 
   // read experimental errors
   vector<double> exp_err;
@@ -817,11 +824,13 @@ void EMMIVOX::doMonteCarloBfact()
 
       // get atom id
       unsigned im = GMM_m_resmap_[ires][ia];
-      // get atom type, bs, weight and position
+      // get atom type
       unsigned atype = GMM_m_type_[im];
-      double bold = GMM_m_s_[atype]+bfactold/4.0;
-      double bnew = GMM_m_s_[atype]+bfactnew/4.0;
-      double pref = cfact_[atype];
+      // sigma for 5 Gaussians
+      Vector5d m_s = GMM_m_s_[atype];
+      // prefactors
+      Vector5d pref = cfact_[atype];
+      // and position
       pos = getPosition(im);
 
       // cycle on all the components affected
@@ -829,9 +838,9 @@ void EMMIVOX::doMonteCarloBfact()
         // voxel id
         unsigned id = GMM_m_nb_[im][i];
         // get contribution before change
-        double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, bold, der);
+        double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, m_s, bfactold, der);
         // get contribution after change
-        double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, bnew, der);
+        double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, m_s, bfactnew, der);
         // update delta overlap
         deltaov[id] += dnew-dold;
         // look for neighbors
@@ -1001,16 +1010,21 @@ vector<double> EMMIVOX::get_GMM_m(vector<AtomNumber> &atoms)
   type_map["O"]=1;
   type_map["N"]=2;
   type_map["S"]=3;
+  // fill in sigma0 vector
+  GMM_m_s0_.push_back(0.01*15.146);  // type 0
+  GMM_m_s0_.push_back(0.01*8.59722); // type 1
+  GMM_m_s0_.push_back(0.01*11.1116); // type 2
+  GMM_m_s0_.push_back(0.01*15.8952); // type 3
   // fill in sigma vector
-  GMM_m_s_.push_back(0.01*15.146);  // type 0
-  GMM_m_s_.push_back(0.01*8.59722); // type 1
-  GMM_m_s_.push_back(0.01*11.1116); // type 2
-  GMM_m_s_.push_back(0.01*15.8952); // type 3
+  GMM_m_s_.push_back(0.01*Vector5d(0.114,1.0825,5.4281,17.8811,51.1341));   // type 0
+  GMM_m_s_.push_back(0.01*Vector5d(0.0652,0.6184,2.9449,9.6298,28.2194));   // type 1
+  GMM_m_s_.push_back(0.01*Vector5d(0.0541,0.5165,2.8207,10.6297,34.3764));  // type 2
+  GMM_m_s_.push_back(0.01*Vector5d(0.0838,0.7788,4.3462,15.5846,44.63655)); // type 3
   // fill in weight vector
-  GMM_m_w_.push_back(2.49982); // type 0
-  GMM_m_w_.push_back(1.97692); // type 1
-  GMM_m_w_.push_back(2.20402); // type 2
-  GMM_m_w_.push_back(5.14099); // type 3
+  GMM_m_w_.push_back(Vector5d(0.0489,0.2091,0.7537,1.1420,0.3555)); // type 0
+  GMM_m_w_.push_back(Vector5d(0.0365,0.1729,0.5805,0.8814,0.3121)); // type 1
+  GMM_m_w_.push_back(Vector5d(0.0267,0.1328,0.5301,1.1020,0.4215)); // type 2
+  GMM_m_w_.push_back(Vector5d(0.0915,0.4312,1.0847,2.4671,1.0852)); // type 3
 
   // check if MOLINFO line is present
   if( moldat.size()==1 ) {
@@ -1034,7 +1048,8 @@ vector<double> EMMIVOX::get_GMM_m(vector<AtomNumber> &atoms)
         // save atom type
         GMM_m_type_.push_back(type_map[type_s]);
         // this will be normalized in the final density
-        GMM_m_w.push_back(GMM_m_w_[type_map[type_s]]);
+        Vector5d w = GMM_m_w_[type_map[type_s]];
+        GMM_m_w.push_back(w[0]+w[1]+w[2]+w[3]+w[4]);
         // get residue id
         unsigned ires = moldat[0]->getResidueNumber(atoms[i]);
         // add to map and list
@@ -1110,7 +1125,7 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   // average value of B
   double Bave = 0.0;
   for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
-    Bave += GMM_m_s_[GMM_m_type_[i]];
+    Bave += GMM_m_s0_[GMM_m_type_[i]];
   }
   Bave /= static_cast<double>(GMM_m_type_.size());
   // calculate blur factor
@@ -1136,21 +1151,30 @@ void EMMIVOX::calculate_useful_stuff(double reso)
 
 // get overlap and derivatives
 double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
-                            double pref, double m_b, Vector &ov_der)
+                            const Vector5d &pref, const Vector5d &m_s,
+                            double bfact, Vector &ov_der)
 {
   Vector md, invs2;
   // calculate vector difference with/without pbc
   if(pbc_) md = pbcDistance(m_m, d_m);
   else     md = delta(m_m, d_m);
-  // calculate invs2
-  for(unsigned i=0; i<3; ++i) invs2[i] = 1.0/(d_s[i]+inv_pi2_*m_b);
-  // calculate exponent
-  double ov = md[0]*md[0]*invs2[0]+md[1]*md[1]*invs2[1]+md[2]*md[2]*invs2[2];
-  // final calculation
-  ov = pref * sqrt(invs2[0]*invs2[1]*invs2[2]) * exp(-0.5*ov);
-  // derivatives
-  ov_der = ov * Vector(md[0]*invs2[0],md[1]*invs2[1],md[2]*invs2[2]);
-  return ov;
+  // cycle on 5 Gaussians
+  double ov_tot = 0.0;
+  for(unsigned j=0; j<5; ++j) {
+    // total value of b
+    double m_b = m_s[j]+bfact/4.0;
+    // calculate invs2
+    for(unsigned i=0; i<3; ++i) invs2[i] = 1.0/(d_s[i]+inv_pi2_*m_b);
+    // calculate exponent
+    double ov = md[0]*md[0]*invs2[0]+md[1]*md[1]*invs2[1]+md[2]*md[2]*invs2[2];
+    // final calculation
+    ov = pref[j] * sqrt(invs2[0]*invs2[1]*invs2[2]) * exp(-0.5*ov);
+    // derivatives
+    ov_der += ov * Vector(md[0]*invs2[0],md[1]*invs2[1],md[2]*invs2[2]);
+    // increase total overlap
+    ov_tot += ov;
+  }
+  return ov_tot;
 }
 
 void EMMIVOX::update_neighbor_list()
@@ -1178,9 +1202,6 @@ void EMMIVOX::update_neighbor_list()
     d_s = GMM_d_s_[id];
     // total overlap with id
     ov_tot = 0.0;
-    // store minimum exponent and id
-    double expmin = std::numeric_limits<double>::max();
-    unsigned idmin;
     // cycle on all atoms
     for(unsigned im=0; im<GMM_m_size; ++im) {
       // calculate vector difference m_m-d_m with/without pbc
@@ -1188,25 +1209,33 @@ void EMMIVOX::update_neighbor_list()
       else     md = delta(getPosition(im), d_m);
       // get atom type
       atype = GMM_m_type_[im];
-      // total value of b
-      double b = GMM_m_s_[atype]+GMM_m_b_[GMM_m_res_[im]]/4.0;
+      // bfactor
+      double bfact = GMM_m_b_[GMM_m_res_[im]]/4.0;
+      // total value of largest m_b
+      double m_b = GMM_m_s_[atype][4]+bfact;
       // calculate invs2
-      for(unsigned i=0; i<3; ++i) invs2[i] = 1.0/(d_s[i]+inv_pi2_*b);
+      for(unsigned i=0; i<3; ++i) invs2[i] = 1.0/(d_s[i]+inv_pi2_*m_b);
       // calculate exponent
       expov = md[0]*md[0]*invs2[0]+md[1]*md[1]*invs2[1]+md[2]*md[2]*invs2[2];
       // get index of expov in tabulated exponential
       itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
       // check boundaries
-      if(itab >= tab_exp_.size()) {
-        // look for minimum
-        if(expov < expmin) {
-          expmin = expov;
-          idmin = im;
-        }
-        continue;
-      }
+      if(itab >= tab_exp_.size()) continue;
       // in case calculate overlap
-      ov = cfact_[atype]*sqrt(invs2[0]*invs2[1]*invs2[2])*tab_exp_[itab];
+      ov = cfact_[atype][4]*sqrt(invs2[0]*invs2[1]*invs2[2])*tab_exp_[itab];
+      // add other Gaussian components
+      for(unsigned j=0; j<4; ++j) {
+        // total value of b
+        m_b = GMM_m_s_[atype][j]+bfact;
+        // calculate invs2
+        for(unsigned i=0; i<3; ++i) invs2[i] = 1.0/(d_s[i]+inv_pi2_*m_b);
+        // calculate exponent
+        expov = md[0]*md[0]*invs2[0]+md[1]*md[1]*invs2[1]+md[2]*md[2]*invs2[2];
+        // get index of expov in tabulated exponential
+        itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
+        if(itab < tab_exp_.size())
+          ov += cfact_[atype][j]*sqrt(invs2[0]*invs2[1]*invs2[2])*tab_exp_[itab];
+      }
       // add to list
       ov_l.push_back(ov);
       // and map to retrieve atom index
@@ -1215,26 +1244,23 @@ void EMMIVOX::update_neighbor_list()
       ov_tot += ov;
     }
     // check if zero size -> add atom with max overlap
-    if(ov_l.size()==0) {
-      nl_l.push_back(id*GMM_m_size+idmin);
-    } else {
-      // define cutoff
-      ov_cut = ov_tot * nl_cutoff_;
-      // sort ov_l in ascending order
-      std::sort(ov_l.begin(), ov_l.end());
-      // integrate ov_l
-      res = 0.0;
-      for(unsigned i=0; i<ov_l.size()-1; ++i) {
-        res += ov_l[i];
-        // if exceeding the cutoff for overlap, stop
-        if(res >= ov_cut) break;
-        else ov_m.erase(ov_l[i]);
-      }
-      // now add atoms to neighborlist
-      for(it=ov_m.begin(); it!=ov_m.end(); ++it)
-        nl_l.push_back(id*GMM_m_size+it->second);
-      // end cycle on GMM components in parallel
+    if(ov_l.size()==0) continue;
+    // define cutoff
+    ov_cut = ov_tot * nl_cutoff_;
+    // sort ov_l in ascending order
+    std::sort(ov_l.begin(), ov_l.end());
+    // integrate ov_l
+    res = 0.0;
+    for(unsigned i=0; i<ov_l.size()-1; ++i) {
+      res += ov_l[i];
+      // if exceeding the cutoff for overlap, stop
+      if(res >= ov_cut) break;
+      else ov_m.erase(ov_l[i]);
     }
+    // now add atoms to neighborlist
+    for(it=ov_m.begin(); it!=ov_m.end(); ++it)
+      nl_l.push_back(id*GMM_m_size+it->second);
+    // end cycle on GMM components in parallel
   }
   // find total dimension of neighborlist
   vector <int> recvcounts(size_, 0);
@@ -1292,11 +1318,9 @@ void EMMIVOX::calculate_overlap() {
     im = nl_[i] % GMM_m_size;
     // get atom type
     atype = GMM_m_type_[im];
-    // total value of b
-    double b = GMM_m_s_[atype]+GMM_m_b_[GMM_m_res_[im]]/4.0;
     // add overlap with im component of model GMM
     ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), GMM_d_s_[id],
-                             cfact_[atype], b, ovmd_der_[i]);
+                             cfact_[atype], GMM_m_s_[atype], GMM_m_b_[GMM_m_res_[im]], ovmd_der_[i]);
   }
   // communicate stuff
   if(size_>1) {

@@ -88,6 +88,7 @@ public:
   VectorGeneric(double,double);
   VectorGeneric(double,double,double);
   VectorGeneric(double,double,double,double);
+  VectorGeneric(double,double,double,double,double);
 /// create it null
   VectorGeneric();
 /// set it to zero
@@ -175,6 +176,16 @@ VectorGeneric<4>:: VectorGeneric(double x0,double x1,double x2,double x3) {
   d[1]=x1;
   d[2]=x2;
   d[3]=x3;
+}
+
+template<>
+inline
+VectorGeneric<5>:: VectorGeneric(double x0,double x1,double x2,double x3,double x4) {
+  d[0]=x0;
+  d[1]=x1;
+  d[2]=x2;
+  d[3]=x3;
+  d[4]=x4;
 }
 
 template <unsigned n>
@@ -338,6 +349,9 @@ typedef VectorGeneric<3> Vector3d;
 /// \ingroup TOOLBOX
 /// Alias for four dimensional vectors
 typedef VectorGeneric<4> Vector4d;
+/// \ingroup TOOLBOX
+/// Alias for five dimensional vectors
+typedef VectorGeneric<5> Vector5d;
 /// \ingroup TOOLBOX
 /// Alias for three dimensional vectors
 typedef Vector3d Vector;
