@@ -88,15 +88,21 @@ class TensorGeneric:
   public MatrixSquareBracketsAccess<TensorGeneric<n,m>,double>
 {
   double d[n*m];
+/// Auxiliary private function for constructor
+  void auxiliaryConstructor();
+/// Auxiliary private function for constructor
+  template<typename... Args>
+  void auxiliaryConstructor(double first,Args... arg);
 public:
+/// Constructor accepting n*m double parameters.
+/// Can be used as Tensor<2,2>(1.0,2.0,3.0,4.0)
+/// In case a wrong number of parameters is given, a static assertion will fail.
+  template<typename... Args>
+  TensorGeneric(double first,Args... arg);
 /// initialize the tensor to zero
   TensorGeneric();
 /// initialize a tensor as an external product of two Vector
   TensorGeneric(const VectorGeneric<n>&v1,const VectorGeneric<m>&v2);
-/// initialize a tensor with 4 values, in standard C order
-  TensorGeneric(double,double,double,double);
-/// initialize a tensor with 9 values, in standard C order
-  TensorGeneric(double,double,double,double,double,double,double,double,double);
 /// set it to zero
   void zero();
 /// access element
@@ -200,6 +206,26 @@ public:
   friend void diagMatSym(const TensorGeneric<n_,n_>&,VectorGeneric<m_>&evals,TensorGeneric<m_,n_>&evec);
 };
 
+template <unsigned n,unsigned m>
+void TensorGeneric<n,m>::auxiliaryConstructor()
+{}
+
+template <unsigned n,unsigned m>
+template<typename... Args>
+void TensorGeneric<n,m>::auxiliaryConstructor(double first,Args... arg)
+{
+  d[n*m-(sizeof...(Args))-1]=first;
+  auxiliaryConstructor(arg...);
+}
+
+template <unsigned n,unsigned m>
+template<typename... Args>
+TensorGeneric<n,m>::TensorGeneric(double first,Args... arg)
+{
+  static_assert((sizeof...(Args))+1==n*m,"you are trying to initialize a Tensor with the wrong number of arguments");
+  auxiliaryConstructor(first,arg...);
+}
+
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>::TensorGeneric() {
   LoopUnroller<n*m>::_zero(d);
@@ -208,29 +234,6 @@ TensorGeneric<n,m>::TensorGeneric() {
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>::TensorGeneric(const VectorGeneric<n>&v1,const VectorGeneric<m>&v2) {
   for(unsigned i=0; i<n; i++)for(unsigned j=0; j<m; j++)d[i*m+j]=v1[i]*v2[j];
-}
-
-template<>
-inline
-TensorGeneric<2,2>::TensorGeneric(double d00,double d01,double d10,double d11) {
-  d[0]=d00;
-  d[1]=d01;
-  d[2]=d10;
-  d[3]=d11;
-}
-
-template<>
-inline
-TensorGeneric<3,3>::TensorGeneric(double d00,double d01,double d02,double d10,double d11,double d12,double d20,double d21,double d22) {
-  d[0]=d00;
-  d[1]=d01;
-  d[2]=d02;
-  d[3]=d10;
-  d[4]=d11;
-  d[5]=d12;
-  d[6]=d20;
-  d[7]=d21;
-  d[8]=d22;
 }
 
 template<unsigned n,unsigned m>
@@ -481,11 +484,15 @@ std::ostream & operator<<(std::ostream &os, const TensorGeneric<n,m>& t) {
 }
 
 /// \ingroup TOOLBOX
+typedef TensorGeneric<1,1> Tensor1d;
+/// \ingroup TOOLBOX
 typedef TensorGeneric<2,2> Tensor2d;
 /// \ingroup TOOLBOX
 typedef TensorGeneric<3,3> Tensor3d;
 /// \ingroup TOOLBOX
 typedef TensorGeneric<4,4> Tensor4d;
+/// \ingroup TOOLBOX
+typedef TensorGeneric<5,5> Tensor5d;
 /// \ingroup TOOLBOX
 typedef Tensor3d Tensor;
 
