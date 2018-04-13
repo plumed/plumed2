@@ -179,6 +179,7 @@ private:
   double   dbfact_;
   double   bfactmin_;
   double   bfactmax_;
+  bool     readbf_;
   // status stuff
   unsigned int statusstride_;
   string       statusfilename_;
@@ -225,7 +226,7 @@ private:
 // accept or reject
   bool doAccept(double oldE, double newE, double kbt);
 // do MonteCarlo
-  void doMonteCarlo();
+  void doMonteCarlo(vector<double> &eneg);
 // do MonteCarlo for Bfactor
   void doMonteCarloBfact();
 // read error file
@@ -245,9 +246,9 @@ private:
 // calculate overlap
   void calculate_overlap();
 // Gaussian noise
-  void calculate_Gauss();
+  vector<double> calculate_Gauss();
 // Outliers noise
-  void calculate_Outliers();
+  vector<double> calculate_Outliers();
 // Marginal noise
   void calculate_Marginal();
 
@@ -278,6 +279,7 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","DBFACT","MC step for bfactor");
   keys.add("optional","BFACT_MAX","Maximum value of bfactor");
   keys.add("optional","MCBFACT_STRIDE", "Bfactor Monte Carlo stride");
+  keys.addFlag("READ_BFACT",false,"read Bfactor from status file at restart");
   keys.add("optional","ERR_FILE","file with experimental errors");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
   keys.add("optional","REGRESSION","regression stride");
@@ -310,7 +312,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   first_time_(true), no_aver_(false), pbc_(true),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
-  dbfact_(0.0), bfactmax_(4.0),
+  dbfact_(0.0), bfactmax_(4.0), readbf_(false),
   statusstride_(0), first_status_(true),
   nregres_(0), scale_(1.),
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
@@ -346,6 +348,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("DBFACT", dbfact_);
   parse("BFACT_MAX", bfactmax_);
   parse("MCBFACT_STRIDE", MCBstride_);
+  parseFlag("READ_BFACT", readbf_);
   if(dbfact_<0) error("DBFACT should be greater or equal to zero");
   if(dbfact_>0 && MCBstride_<=0) error("you must specify a positive MCBFACT_STRIDE");
   if(dbfact_>0 && bfactmax_<=0)  error("you must specify a positive BFACT_MAX");
@@ -645,12 +648,14 @@ void EMMIVOX::read_status()
           ifile->scanField("s"+num, sigma_[i]);
         }
       }
-      // always read bfactors
-      for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
-        // convert i to string
-        std::string num; Tools::convert(i,num);
-        // read entries
-        ifile->scanField("bfact"+num, GMM_m_b_[GMM_m_res_[i]]);
+      // read bfactors
+      if(readbf_) {
+        for(unsigned i=0; i<GMM_m_res_.size(); ++i) {
+          // convert i to string
+          std::string num; Tools::convert(i,num);
+          // read entries
+          ifile->scanField("bfact"+num, GMM_m_b_[GMM_m_res_[i]]);
+        }
       }
       // new line
       ifile->scanField();
@@ -685,7 +690,7 @@ void EMMIVOX::print_status(long int step)
     }
   }
   // always write bfactors
-  for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
+  for(unsigned i=0; i<GMM_m_res_.size(); ++i) {
     // convert i to string
     std::string num; Tools::convert(i,num);
     // print entry
@@ -709,11 +714,12 @@ bool EMMIVOX::doAccept(double oldE, double newE, double kbt) {
   return accept;
 }
 
-void EMMIVOX::doMonteCarlo()
+void EMMIVOX::doMonteCarlo(vector<double> &eneg)
 {
-  // prepare vector for new sigma
-  vector<double> newsigma;
+  // prepare vector for new sigma and energy
+  vector<double> newsigma, newene;
   newsigma.resize(sigma_.size());
+  newene.resize(sigma_.size());
   // and local acceptance
   double MCaccept = 0.0;
 
@@ -721,21 +727,13 @@ void EMMIVOX::doMonteCarlo()
   for(unsigned nGMM=rank_; nGMM<sigma_.size(); nGMM+=size_) {
 
     // generate random move
-    double shift = dsigma_[nGMM] * ( 2.0 * random_.RandU01() - 1.0 );
-    // new sigma
-    double new_s = sigma_[nGMM] + shift;
+    double new_s = sigma_[nGMM] + dsigma_[nGMM] * ( 2.0 * random_.RandU01() - 1.0 );
     // check boundaries
     if(new_s > sigma_max_[nGMM]) {new_s = 2.0 * sigma_max_[nGMM] - new_s;}
     if(new_s < sigma_min_[nGMM]) {new_s = 2.0 * sigma_min_[nGMM] - new_s;}
-    // old s2
-    double old_inv_s2 = 1.0 / sigma_[nGMM] / sigma_[nGMM];
-    // new s2
-    double new_inv_s2 = 1.0 / new_s / new_s;
 
-    // cycle on GMM group and calculate old and new energy
-    double old_ene = 0.0;
+    // cycle on GMM group and calculate new energy
     double new_ene = 0.0;
-    double ng = static_cast<double>(GMM_d_grps_[nGMM].size());
 
     // in case of Gaussian noise
     if(noise_==0) {
@@ -749,8 +747,7 @@ void EMMIVOX::doMonteCarlo()
         chi2 += dev * dev;
       }
       // final energy calculation: add normalization and prior
-      old_ene = 0.5 * kbt_ * ( chi2 * old_inv_s2 - (ng+prior_) * std::log(old_inv_s2) );
-      new_ene = 0.5 * kbt_ * ( chi2 * new_inv_s2 - (ng+prior_) * std::log(new_inv_s2) );
+      new_ene = kbt_ * ( 0.5*chi2/new_s/new_s + (static_cast<double>(GMM_d_grps_[nGMM].size())+prior_)*std::log(new_s) );
     }
 
     // in case of Outliers noise
@@ -759,38 +756,41 @@ void EMMIVOX::doMonteCarlo()
         // id GMM component
         int GMMid = GMM_d_grps_[nGMM][i];
         // calculate deviation
-        double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
+        double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / new_s;
         // add to energies
-        old_ene += std::log( 1.0 + 0.5 * dev * dev * old_inv_s2);
-        new_ene += std::log( 1.0 + 0.5 * dev * dev * new_inv_s2);
+        new_ene += std::log( 1.0 + 0.5 * dev * dev);
       }
       // final energy calculation: add normalization and prior
-      old_ene = kbt_ * ( old_ene + (ng+prior_) * std::log(sigma_[nGMM]) );
-      new_ene = kbt_ * ( new_ene + (ng+prior_) * std::log(new_s) );
+      new_ene = kbt_ * ( new_ene + (static_cast<double>(GMM_d_grps_[nGMM].size())+prior_)*std::log(new_s));
     }
 
     // accept or reject
-    bool accept = doAccept(old_ene/anneal_, new_ene/anneal_, kbt_);
+    bool accept = doAccept(eneg[nGMM]/anneal_, new_ene/anneal_, kbt_);
 
     // in case of acceptance
     if(accept) {
       newsigma[nGMM] = new_s;
+      newene[nGMM] = new_ene;
       MCaccept += 1.0;
     } else {
       newsigma[nGMM] = sigma_[nGMM];
+      newene[nGMM] = eneg[nGMM];
     }
   } // end of cycle over sigmas
 
   // update trials
   MCtrials_ += static_cast<double>(sigma_.size());
   // local communication
-  comm.Sum(&newsigma[0], newsigma.size());
-  comm.Sum(&MCaccept, 1);
+  if(size_>1) {
+    comm.Sum(&newsigma[0], newsigma.size());
+    comm.Sum(&newene[0], newene.size());
+    comm.Sum(&MCaccept, 1);
+  }
   // increase acceptance
   MCaccept_ += MCaccept;
-  // put back into sigma_
+  // put back into sigma_ and eneg
   for(unsigned i=0; i<sigma_.size(); ++i) sigma_[i] = newsigma[i];
-
+  for(unsigned i=0; i<eneg.size(); ++i)   eneg[i]   = newene[i];
 }
 
 void EMMIVOX::doMonteCarloBfact()
@@ -1118,23 +1118,21 @@ void EMMIVOX::get_exp_data(string datafile)
 
 void EMMIVOX::calculate_useful_stuff(double reso)
 {
-  // We use the following definition for resolution:
-  // the Fourier transform of the density distribution in real space
-  // f(s) falls to 1/e of its maximum value at wavenumber 1/resolution
-  // i.e. from f(s) = A * exp(-B*s**2) -> Res = sqrt(B).
-  // average value of B
-  double Bave = 0.0;
-  for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
-    Bave += GMM_m_s0_[GMM_m_type_[i]];
+  double bfactini = 0.0;
+  // if doing Bfactor Monte Carlo
+  if(dbfact_>0) {
+    // average value of B
+    double Bave = 0.0;
+    for(unsigned i=0; i<GMM_m_type_.size(); ++i) {
+      Bave += GMM_m_s0_[GMM_m_type_[i]];
+    }
+    Bave /= static_cast<double>(GMM_m_type_.size());
+    // initialize B factor to reasonable value based on Gaussian width at half maximum height equal the resolution
+    bfactini = 4.0 * ( 2.0 * pow(0.425*pi*reso,2) - Bave );
+    // check for min and max
+    bfactini = min(bfactmax_, max(bfactmin_, bfactini));
   }
-  Bave /= static_cast<double>(GMM_m_type_.size());
-  // calculate blur factor
-  bfactmin_ = 1.0e-5;
-  if(reso*reso>Bave) bfactmin_ = 4.0 * ( reso*reso-Bave );
-  // initialize B factor to reasonable value based on Gaussian width at half maximum height equal the resolution
-  double bfactini = 4.0 * ( 2.0 * pow(0.425*pi*reso,2) - Bave );
-  // check for min and max
-  bfactini = min(bfactmax_, max(bfactmin_, bfactini));
+  // set initial Bfactor
   for(map<unsigned,double>::iterator it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
     it->second = bfactini;
   }
@@ -1467,14 +1465,16 @@ void EMMIVOX::calculate()
   if(ovstride_>0 && step%ovstride_==0) write_model_overlap(step);
 
   // clear energy and virial
-  ene_ = 0.0;
-  virial_.zero();
+  ene_ = 0.0; virial_.zero();
+
+  // store energy per group
+  vector<double> eneg;
 
   // Gaussian noise
-  if(noise_==0) calculate_Gauss();
+  if(noise_==0) eneg = calculate_Gauss();
 
   // Outliers noise
-  if(noise_==1) calculate_Outliers();
+  if(noise_==1) eneg = calculate_Outliers();
 
   // Marginal noise
   if(noise_==2) calculate_Marginal();
@@ -1539,7 +1539,7 @@ void EMMIVOX::calculate()
   // This part is needed only for Gaussian and Outliers noise models
   if(noise_!=2) {
     // do Monte Carlo
-    if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep()) doMonteCarlo();
+    if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep()) doMonteCarlo(eneg);
     // calculate acceptance ratio
     double acc = MCaccept_ / MCtrials_;
     // set value
@@ -1560,13 +1560,15 @@ void EMMIVOX::calculate()
   if(step%statusstride_==0) print_status(step);
 }
 
-void EMMIVOX::calculate_Gauss()
+vector<double> EMMIVOX::calculate_Gauss()
 {
-  double eneg, dev;
+  vector<double> eneg;
+  double dev;
   int GMMid;
   // cycle on all the GMM groups
   for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
-    eneg = 0.0;
+    // initialize group energy
+    eneg.push_back(0.0);
     // cycle on all the members of the group
     for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
       // id of the GMM component
@@ -1574,36 +1576,44 @@ void EMMIVOX::calculate_Gauss()
       // calculate deviation
       dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
-      eneg += 0.5 * dev * dev;
+      eneg[i] += dev * dev;
       // store derivative for later
       GMMid_der_[GMMid] = kbt_ * dev / sigma_[i];
     }
-    // add to total energy along with normalizations and prior
-    ene_ += kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
+    // add normalizations and prior
+    eneg[i] = kbt_ * ( 0.5 * eneg[i] + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
+    // add to total energy
+    ene_ += eneg[i];
   }
+  return eneg;
 }
 
-void EMMIVOX::calculate_Outliers()
+vector<double> EMMIVOX::calculate_Outliers()
 {
-  double eneg, dev;
+  vector<double> eneg;
+  double dev;
   int GMMid;
   // cycle on all the GMM groups
   for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+    // initialize group energy
+    eneg.push_back(0.0);
     // cycle on all the members of the group
-    eneg = 0.0;
     for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
       // id of the GMM component
       GMMid = GMM_d_grps_[i][j];
       // calculate deviation
       dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
       // add to group energy
-      eneg += std::log( 1.0 + 0.5 * dev * dev );
+      eneg[i] += std::log( 1.0 + 0.5 * dev * dev );
       // store derivative for later
       GMMid_der_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
     }
-    // add to total energy along with normalizations and prior
-    ene_ += kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
+    // add normalizations and prior
+    eneg[i] = kbt_ * ( eneg[i] + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
+    // add to total energy
+    ene_ += eneg[i];
   }
+  return eneg;
 }
 
 void EMMIVOX::calculate_Marginal()
