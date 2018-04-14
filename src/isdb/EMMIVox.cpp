@@ -633,6 +633,7 @@ double EMMIVOX::get_median(vector<double> &v)
 void EMMIVOX::read_status()
 {
   double MDtime;
+  double bf;
 // open file
   IFile *ifile = new IFile();
   ifile->link(*this);
@@ -649,13 +650,12 @@ void EMMIVOX::read_status()
         }
       }
       // read bfactors
-      if(readbf_) {
-        for(unsigned i=0; i<GMM_m_res_.size(); ++i) {
-          // convert i to string
-          std::string num; Tools::convert(i,num);
-          // read entries
-          ifile->scanField("bfact"+num, GMM_m_b_[GMM_m_res_[i]]);
-        }
+      for(unsigned i=0; i<GMM_m_res_.size(); ++i) {
+        // convert i to string
+        std::string num; Tools::convert(i,num);
+        // read entries
+        if(readbf_) ifile->scanField("bfact"+num, GMM_m_b_[GMM_m_res_[i]]);
+        else        ifile->scanField("bfact"+num, bf);
       }
       // new line
       ifile->scanField();
