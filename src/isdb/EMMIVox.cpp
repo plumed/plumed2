@@ -132,7 +132,7 @@ private:
 
 // data GMM - means, sigma2 + beta option
   vector<Vector> GMM_d_m_;
-  vector<Vector> GMM_d_s_;
+  double         GMM_d_s_;
   vector<int>    GMM_d_beta_;
 // data GMM - groups bookeeping
   vector < vector<int> > GMM_d_grps_;
@@ -146,8 +146,10 @@ private:
   vector<Vector> atom_der_;
   vector<double> GMMid_der_;
 // constants
-  vector<Vector5d> cfact_;
   double inv_sqrt2_, sqrt2_pi_, inv_pi2_;
+  vector<Vector5d> pref_;
+  vector<Vector5d> invs2_;
+  vector<Vector5d> cfact_;
 // metainference
   unsigned nrep_;
   unsigned replica_;
@@ -237,10 +239,13 @@ private:
   void get_exp_data(string datafile);
 // auxiliary method
   void calculate_useful_stuff(double reso);
+  void get_auxiliary_vectors();
 // calculate overlap between two Gaussians
-  double get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
-                     const Vector5d &pref, const Vector5d &m_s,
-                     double bfact, Vector &ov_der);
+  double get_overlap_der(const Vector &d_m, const Vector &m_m,
+                         const Vector5d &pref, const Vector5d &invs2,
+                         Vector &ov_der);
+  double get_overlap(const Vector &d_m, const Vector &m_m, double d_s,
+                     const Vector5d &cfact, const Vector5d &m_s, double bfact);
 // update the neighbor list
   void update_neighbor_list();
 // calculate overlap
@@ -270,6 +275,7 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
   keys.add("compulsory","SIGMA_MIN","minimum uncertainty");
   keys.add("compulsory","RESOLUTION", "Cryo-EM map resolution");
+  keys.add("compulsory","VOXEL","Side of voxel grid");
   keys.add("compulsory","NOISETYPE","functional form of the noise (GAUSS, OUTLIERS, MARGINAL)");
   keys.add("compulsory","NORM_DENSITY","integral of the experimental density");
   keys.add("compulsory","WRITE_STRIDE","write the status to a file every N steps, this can be used for restart");
@@ -353,7 +359,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   if(dbfact_>0 && MCBstride_<=0) error("you must specify a positive MCBFACT_STRIDE");
   if(dbfact_>0 && bfactmax_<=0)  error("you must specify a positive BFACT_MAX");
 
-
   // the following parameters must be specified with noise type 0 and 1
   double sigma_ini, dsigma;
   if(noise_!=2) {
@@ -416,6 +421,11 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   double reso;
   parse("RESOLUTION", reso);
   if(reso<=0.) error("RESOLUTION should be strictly positive");
+
+  // voxel size
+  parse("VOXEL", GMM_d_s_);
+  // transform into sigma^2 for overlap calculation
+  GMM_d_s_ = pow(GMM_d_s_/4.0, 2.0);
 
   // neighbor list stuff
   parse("NL_CUTOFF",nl_cutoff_);
@@ -500,7 +510,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // read data file
   get_exp_data(datafile);
-  log.printf("  number of kernel functions : %u\n", static_cast<unsigned>(GMM_d_m_.size()));
+  log.printf("  number of voxels : %u\n", static_cast<unsigned>(GMM_d_m_.size()));
 
   // normalize atom weight map
   double norm_m = accumulate(GMM_m_w.begin(),  GMM_m_w.end(),  0.0);
@@ -555,7 +565,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
     }
   }
 
-  // calculate auxiliary stuff
+  // calculate constant and auxiliary stuff
   calculate_useful_stuff(reso);
 
   // read status file if restarting
@@ -815,7 +825,7 @@ void EMMIVOX::doMonteCarloBfact()
 
     // useful quantities
     map<unsigned, double> deltaov;
-    Vector pos, posn, der;
+    Vector pos, posn;
     double dist;
     set<unsigned> ngbs;
 
@@ -829,7 +839,7 @@ void EMMIVOX::doMonteCarloBfact()
       // sigma for 5 Gaussians
       Vector5d m_s = GMM_m_s_[atype];
       // prefactors
-      Vector5d pref = cfact_[atype];
+      Vector5d cfact = cfact_[atype];
       // and position
       pos = getPosition(im);
 
@@ -838,9 +848,9 @@ void EMMIVOX::doMonteCarloBfact()
         // voxel id
         unsigned id = GMM_m_nb_[im][i];
         // get contribution before change
-        double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, m_s, bfactold, der);
+        double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_, cfact, m_s, bfactold);
         // get contribution after change
-        double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_[id], pref, m_s, bfactnew, der);
+        double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_, cfact, m_s, bfactnew);
         // update delta overlap
         deltaov[id] += dnew-dold;
         // look for neighbors
@@ -956,7 +966,8 @@ void EMMIVOX::doMonteCarloBfact()
   }
 // put things back in map
   for(unsigned i=0; i<ires.size(); ++i) GMM_m_b_[ires[i]] = newb[i];
-
+// update auxiliary lists
+  get_auxiliary_vectors();
 }
 
 vector<double> EMMIVOX::read_exp_errors(string errfile)
@@ -1070,8 +1081,8 @@ vector<double> EMMIVOX::get_GMM_m(vector<AtomNumber> &atoms)
 // read experimental data file in PLUMED format:
 void EMMIVOX::get_exp_data(string datafile)
 {
-  Vector pos, sigma;
-  double ov, beta;
+  Vector pos;
+  double dens, beta;
   int idcomp;
 
 // open file
@@ -1079,24 +1090,19 @@ void EMMIVOX::get_exp_data(string datafile)
   if(ifile->FileExist(datafile)) {
     ifile->open(datafile);
     while(ifile->scanField("Id",idcomp)) {
-      ifile->scanField("Mean_0",pos[0]);
-      ifile->scanField("Mean_1",pos[1]);
-      ifile->scanField("Mean_2",pos[2]);
-      ifile->scanField("Sigma_0",sigma[0]);
-      ifile->scanField("Sigma_1",sigma[1]);
-      ifile->scanField("Sigma_2",sigma[2]);
+      ifile->scanField("Pos_0",pos[0]);
+      ifile->scanField("Pos_1",pos[1]);
+      ifile->scanField("Pos_2",pos[2]);
       ifile->scanField("Beta",beta);
-      ifile->scanField("Overlap",ov);
+      ifile->scanField("Density",dens);
       // check beta
       if(beta<0) error("Beta must be positive!");
       // center of the Gaussian
       GMM_d_m_.push_back(pos);
-      // vector of sigma
-      GMM_d_s_.push_back(sigma);
       // beta
       GMM_d_beta_.push_back(beta);
-      // experimental overlap
-      ovdd_.push_back(ov);
+      // experimental density
+      ovdd_.push_back(dens);
       // new line
       ifile->scanField();
     }
@@ -1145,14 +1151,68 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   for(unsigned i=0; i<nexp_; ++i) {
     tab_exp_.push_back(exp(-static_cast<double>(i) * dexp_));
   }
+  // prepare auxiliary vectors
+  get_auxiliary_vectors();
+}
+
+// prepare auxiliary vectors
+void EMMIVOX::get_auxiliary_vectors()
+{
+// temporary stuff
+  Vector5d pref, invs2;
+// clear lists
+  pref_.clear(); invs2_.clear();
+// calculate constant quantities
+  for(unsigned im=0; im<GMM_m_res_.size(); ++im) {
+    // get atom type
+    unsigned atype = GMM_m_type_[im];
+    // get residue id
+    unsigned ires = GMM_m_res_[im];
+    // get bfactor
+    double bfact = GMM_m_b_[ires];
+    // sigma for 5 gaussians
+    Vector5d m_s = GMM_m_s_[atype];
+    // calculate constant quantities
+    for(unsigned j=0; j<5; ++j) {
+      double m_b = m_s[j] + bfact/4.0;
+      invs2[j] = 1.0/(GMM_d_s_+inv_pi2_*m_b);
+      pref[j]  = cfact_[atype][j] * pow(invs2[j],1.5);
+    }
+    // add to lists
+    pref_.push_back(pref);
+    invs2_.push_back(invs2);
+  }
 }
 
 // get overlap and derivatives
-double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, const Vector &d_s,
-                            const Vector5d &pref, const Vector5d &m_s,
-                            double bfact, Vector &ov_der)
+double EMMIVOX::get_overlap_der(const Vector &d_m, const Vector &m_m,
+                                const Vector5d &pref, const Vector5d &invs2,
+                                Vector &ov_der)
 {
-  Vector md, invs2;
+  Vector md;
+  // calculate vector difference with/without pbc
+  if(pbc_) md = pbcDistance(m_m, d_m);
+  else     md = delta(m_m, d_m);
+  // cycle on 5 Gaussians
+  double ov_tot = 0.0;
+  for(unsigned j=0; j<5; ++j) {
+    // calculate exponent
+    double ov = (md[0]*md[0]+md[1]*md[1]+md[2]*md[2])*invs2[j];
+    // final calculation
+    ov = pref[j] * exp(-0.5*ov);
+    // derivatives
+    ov_der += ov * Vector(md[0]*invs2[j],md[1]*invs2[j],md[2]*invs2[j]);
+    // increase total overlap
+    ov_tot += ov;
+  }
+  return ov_tot;
+}
+
+// get overlap
+double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, double d_s,
+                            const Vector5d &cfact, const Vector5d &m_s, double bfact)
+{
+  Vector md;
   // calculate vector difference with/without pbc
   if(pbc_) md = pbcDistance(m_m, d_m);
   else     md = delta(m_m, d_m);
@@ -1162,15 +1222,11 @@ double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, const Vector &
     // total value of b
     double m_b = m_s[j]+bfact/4.0;
     // calculate invs2
-    for(unsigned i=0; i<3; ++i) invs2[i] = 1.0/(d_s[i]+inv_pi2_*m_b);
+    double invs2 = 1.0/(d_s+inv_pi2_*m_b);
     // calculate exponent
-    double ov = md[0]*md[0]*invs2[0]+md[1]*md[1]*invs2[1]+md[2]*md[2]*invs2[2];
+    double ov = (md[0]*md[0]+md[1]*md[1]+md[2]*md[2])*invs2;
     // final calculation
-    ov = pref[j] * sqrt(invs2[0]*invs2[1]*invs2[2]) * exp(-0.5*ov);
-    // derivatives
-    ov_der += ov * Vector(md[0]*invs2[0],md[1]*invs2[1],md[2]*invs2[2]);
-    // increase total overlap
-    ov_tot += ov;
+    ov_tot += cfact[j] * pow(invs2, 1.5) * exp(-0.5*ov);
   }
   return ov_tot;
 }
@@ -1185,7 +1241,7 @@ void EMMIVOX::update_neighbor_list()
   vector<double> ov_l;
   map<double, unsigned> ov_m;
   map<double, unsigned>::iterator it;
-  Vector d_m, d_s, md, invs2;
+  Vector d_m, md;
   double ov_tot, expov, ov;
   double ov_cut, res;
   unsigned atype, itab;
@@ -1195,9 +1251,8 @@ void EMMIVOX::update_neighbor_list()
   for(unsigned id=rank_; id<ovdd_.size(); id+=size_) {
     // clear overlap lists and map
     ov_l.clear(); ov_m.clear();
-    // Kernel functions
+    // grid point
     d_m = GMM_d_m_[id];
-    d_s = GMM_d_s_[id];
     // total overlap with id
     ov_tot = 0.0;
     // cycle on all atoms
@@ -1205,34 +1260,23 @@ void EMMIVOX::update_neighbor_list()
       // calculate vector difference m_m-d_m with/without pbc
       if(pbc_) md = pbcDistance(getPosition(im), d_m);
       else     md = delta(getPosition(im), d_m);
-      // get atom type
-      atype = GMM_m_type_[im];
-      // bfactor
-      double bfact = GMM_m_b_[GMM_m_res_[im]]/4.0;
-      // total value of largest m_b
-      double m_b = GMM_m_s_[atype][4]+bfact;
-      // calculate invs2
-      for(unsigned i=0; i<3; ++i) invs2[i] = 1.0/(d_s[i]+inv_pi2_*m_b);
+      // calculate modulo
+      double m2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2];
       // calculate exponent
-      expov = md[0]*md[0]*invs2[0]+md[1]*md[1]*invs2[1]+md[2]*md[2]*invs2[2];
+      expov = m2 * invs2_[im][4];
       // get index of expov in tabulated exponential
       itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
       // check boundaries
-      if(itab >= tab_exp_.size()) continue;
+      if(itab>=tab_exp_.size()) continue;
       // in case calculate overlap
-      ov = cfact_[atype][4]*sqrt(invs2[0]*invs2[1]*invs2[2])*tab_exp_[itab];
+      ov = pref_[im][4] * tab_exp_[itab];
       // add other Gaussian components
       for(unsigned j=0; j<4; ++j) {
-        // total value of b
-        m_b = GMM_m_s_[atype][j]+bfact;
-        // calculate invs2
-        for(unsigned i=0; i<3; ++i) invs2[i] = 1.0/(d_s[i]+inv_pi2_*m_b);
         // calculate exponent
-        expov = md[0]*md[0]*invs2[0]+md[1]*md[1]*invs2[1]+md[2]*md[2]*invs2[2];
+        expov = m2 * invs2_[im][j];
         // get index of expov in tabulated exponential
         itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
-        if(itab < tab_exp_.size())
-          ov += cfact_[atype][j]*sqrt(invs2[0]*invs2[1]*invs2[2])*tab_exp_[itab];
+        if(itab<tab_exp_.size()) ov += pref_[im][j] * tab_exp_[itab];
       }
       // add to list
       ov_l.push_back(ov);
@@ -1314,11 +1358,8 @@ void EMMIVOX::calculate_overlap() {
     // get data (id) and atom (im) indexes
     id = nl_[i] / GMM_m_size;
     im = nl_[i] % GMM_m_size;
-    // get atom type
-    atype = GMM_m_type_[im];
     // add overlap with im component of model GMM
-    ovmd_[id] += get_overlap(GMM_d_m_[id], getPosition(im), GMM_d_s_[id],
-                             cfact_[atype], GMM_m_s_[atype], GMM_m_b_[GMM_m_res_[im]], ovmd_der_[i]);
+    ovmd_[id] += get_overlap_der(GMM_d_m_[id],getPosition(im),pref_[im],invs2_[im],ovmd_der_[i]);
   }
   // communicate stuff
   if(size_>1) {
