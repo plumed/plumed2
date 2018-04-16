@@ -237,7 +237,7 @@ private:
   vector<double> get_GMM_m(vector<AtomNumber> &atoms);
 // read data file
   void get_exp_data(string datafile);
-// auxiliary method
+// auxiliary methods
   void calculate_useful_stuff(double reso);
   void get_auxiliary_vectors();
 // calculate overlap between two Gaussians
@@ -570,6 +570,9 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // read status file if restarting
   if(getRestart()) read_status();
+
+  // prepare auxiliary vectors
+  get_auxiliary_vectors();
 
   // prepare data and derivative vectors
   ovmd_.resize(ovdd_.size());
@@ -1151,8 +1154,6 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   for(unsigned i=0; i<nexp_; ++i) {
     tab_exp_.push_back(exp(-static_cast<double>(i) * dexp_));
   }
-  // prepare auxiliary vectors
-  get_auxiliary_vectors();
 }
 
 // prepare auxiliary vectors
