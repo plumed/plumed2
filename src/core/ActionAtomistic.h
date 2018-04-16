@@ -77,8 +77,10 @@ public:
 /// Get position of i-th atom (access by relative index)
   const Vector & getPosition(int)const;
 /// Get position of i-th atom (access by absolute AtomNumber).
-/// With direct access to the global atom array
-  const Vector & getPosition(AtomNumber)const;
+/// With direct access to the global atom array.
+/// \warning Should be only used by actions that need to read the shared position array.
+///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
+  const Vector & getGlobalPosition(AtomNumber)const;
 /// Get modifiable position of i-th atom (access by absolute AtomNumber).
 /// Should be used by action that need to modify the stored atomic coordinates
   Vector & modifyPosition(AtomNumber);
@@ -188,7 +190,7 @@ const Vector & ActionAtomistic::getPosition(int i)const {
 }
 
 inline
-const Vector & ActionAtomistic::getPosition(AtomNumber i)const {
+const Vector & ActionAtomistic::getGlobalPosition(AtomNumber i)const {
   return atoms.positions[i.index()];
 }
 
