@@ -1271,12 +1271,15 @@ void EMMIVOX::update_neighbor_list()
       // in case calculate overlap
       ov = pref_[im][4] * tab_exp_[itab];
       // add other Gaussian components
-      for(unsigned j=0; j<4; ++j) {
+      for(int j=3; j>=0; j--) {
         // calculate exponent
         expov = m2 * invs2_[im][j];
         // get index of expov in tabulated exponential
         itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
-        if(itab<tab_exp_.size()) ov += pref_[im][j] * tab_exp_[itab];
+        // check boundaries
+        if(itab>=tab_exp_.size()) break;
+        // add overlap contribution
+        ov += pref_[im][j] * tab_exp_[itab];
       }
       // add to list
       ov_l.push_back(ov);
