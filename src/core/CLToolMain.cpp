@@ -174,16 +174,10 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       return (config::isInstalled()?0:1);
     } else if(a=="--no-mpi") {
 // this is ignored, as it is parsed in main
-      if(i>1) {
-        fprintf(stderr,"--no-mpi option can only be used as the first option");
-        return 1;
-      }
+      continue;
     } else if(a=="--mpi") {
 // this is ignored, as it is parsed in main
-      if(i>1) {
-        fprintf(stderr,"--mpi option can only be used as the first option");
-        return 1;
-      }
+      continue;
     } else if(a=="--standalone-executable") {
       standalone_executable=true;
     } else if(Tools::startWith(a,"--load=")) {

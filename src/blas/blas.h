@@ -1,7 +1,7 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 These files are semi-automatic translations by f2c from the original netlib BLAS library.
 The source has been modified to (mostly) use modern C formatting, and to get rid of
-compiler warnings. Any errors in doing this should be blamed on the Gromacs developers, and
+compiler warnings. Any errors in doing this should be blamed on the GROMACS developers, and
 not the reference BLAS implementation.
 
 The reference BLAS implementation is available from http://www.netlib.org/blas 
@@ -12,10 +12,10 @@ BLAS does not come with a formal named "license", but a general statement that
 via anonymous ftp and the World Wide Web. Thus, it can be included in commercial software
 packages (and has been). We only ask that proper credit be given to the authors."
 
-While the rest of Gromacs is LGPL, we think it's only fair to give you the same rights to
+While the rest of GROMACS is LGPL, we think it's only fair to give you the same rights to
 our modified BLAS files as the original netlib versions, so do what you want with them.
 However, be warned that we have only tested that they to the right thing in the cases used
-in Gromacs (primarily full & sparse matrix diagonalization), so in most cases it is a much
+in GROMACS (primarily full & sparse matrix diagonalization), so in most cases it is a much
 better idea to use the full reference implementation.
 
 Erik Lindahl, 2008-10-07.
@@ -26,12 +26,11 @@ Erik Lindahl, 2008-10-07.
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2001-2008, The GROMACS development team.
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -59,22 +58,9 @@ Erik Lindahl, 2008-10-07.
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _GMX_BLAS_H_
-#define _GMX_BLAS_H_
-
-#include "simple.h"
-
-/* Suppress Cygwin compiler warnings from using newlib version of
- * ctype.h */
-#ifdef GMX_CYGWIN
-#undef toupper
-#endif
-
-
-/** @file
- *
- *  @brief Header definitions for the standard BLAS library.
+/*! \internal \file
+ * \brief
+ * Header definitions for the standard BLAS library.
  *
  * This is the subset of BLAS routines used for the
  * linear algebra operations in Gromacs.
@@ -90,8 +76,18 @@ Erik Lindahl, 2008-10-07.
  * at http://www.netlib.org/blas , so there is no point in repeating
  * it here.
  */
+#ifndef GMX_BLAS_H
+#define GMX_BLAS_H
 
-#include "simple.h"
+/*! \cond */
+
+
+/* These are not required by this file, but by the internal BLAS
+ * implementation.  In principle, they could be included in each file
+ * that requires them, but this is simpler.  Since the header is internal
+ * to the linearyalgebra/ module, the added complexity may not be worth it. */
+#include "real.h"
+
 #ifndef __PLUMED_BLAS_RETURNS_FLOAT
 #define __PLUMED_BLAS_RETURNS_FLOAT float
 #endif
@@ -251,7 +247,7 @@ int
 }
 #endif
 
+/*! \endcond */
 
-
-#endif /* _BLAS_H_ */
+#endif /* GMX_BLAS_H */
 #endif

@@ -247,7 +247,7 @@ else
 endif
 endif
 # also copy .h files into include/ dir
-	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C "$(DESTDIR)$(includedir)/$(program_name)/"
+	$(MAKE) install-headers
 # install executable
 # for OSX we can use the dynamically linked executable
 ifeq ($(SOEXT),dylib)
@@ -600,6 +600,9 @@ dirslinks:
 	$(MAKE) $(DIRSLINKS)
 $(DIRSLINKS): %.links:
 	$(MAKE) -C $* links
+
+install-headers:
+	bash ../maketools/install.headers "$(DESTDIR)$(includedir)/$(program_name)/" $(subst ../,,$(DIRS))
 
 
 # generic makefile rules

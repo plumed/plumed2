@@ -419,7 +419,7 @@ void EMMI::get_GMM_d(string GMM_file)
   VectorGeneric<6> cov;
 
 // open file
-  IFile *ifile = new IFile();
+  std::unique_ptr<IFile> ifile(new IFile);
   if(ifile->FileExist(GMM_file)) {
     ifile->open(GMM_file);
     int idcomp;
@@ -454,7 +454,6 @@ void EMMI::get_GMM_d(string GMM_file)
   } else {
     error("Cannot find GMM_FILE "+GMM_file+"\n");
   }
-  delete ifile;
 
 }
 

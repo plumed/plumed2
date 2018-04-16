@@ -77,7 +77,7 @@ private:
   double contour;
   double pbc_param;
   std::string kerneltype;
-  std::vector<Value*> pval;
+  std::vector<std::unique_ptr<Value>> pval;
   std::vector<double> bw, pos1, pos2, dirv, dirv2;
   std::vector<double> forces;
   std::vector<unsigned> perp_dirs;
@@ -87,7 +87,6 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromContour( const ActionOptions& );
-  ~DistanceFromContour();
   bool isDensity() const { return true; }
   void calculate();
   unsigned getNumberOfQuantities() const ;
@@ -185,11 +184,7 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
   plumed_assert( myvalue_vessel && myderiv_vessel ); resizeFunctions();
 
   // Create the vector of values that holds the position
-  for(unsigned i=0; i<3; ++i) pval.push_back( new Value() );
-}
-
-DistanceFromContour::~DistanceFromContour() {
-  for(unsigned i=0; i<3; ++i) delete pval[i];
+  for(unsigned i=0; i<3; ++i) pval.emplace_back( new Value() );
 }
 
 unsigned DistanceFromContour::getNumberOfQuantities() const {
@@ -309,9 +304,12 @@ double DistanceFromContour::compute( const unsigned& tindex, AtomValuePack& myat
   Vector distance = getSeparation( getPosition(getNumberOfAtoms()-1), myatoms.getPosition(0) );
   std::vector<double> pp(3), der(3,0); for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
 
+  // convert the pointer once
+  auto pval_ptr=Tools::unique2raw(pval);
+
   // Now create the kernel and evaluate
   KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 );
-  kernel.normalize( pval ); double newval = kernel.evaluate( pval, der, true );
+  kernel.normalize( pval_ptr ); double newval = kernel.evaluate( pval_ptr, der, true );
 
   if( mybasemulticolvars[0]->isDensity() ) {
     if( !doNotCalculateDerivatives() && derivTime ) {
