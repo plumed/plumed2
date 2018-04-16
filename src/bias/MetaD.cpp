@@ -640,7 +640,7 @@ MetaD::MetaD(const ActionOptions& ao):
       for(unsigned i=0; i<getNumberOfArguments(); i++) {sigma0max_[i]=-1.;}
     }
 
-    flexbin.reset(new FlexibleBin(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_));
+    flexbin=Tools::make_unique<FlexibleBin>(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
   }
   // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
@@ -1090,8 +1090,8 @@ MetaD::MetaD(const ActionOptions& ao):
       }
     }
     std::string funcl=getLabel() + ".bias";
-    if(!sparsegrid) {BiasGrid_.reset(new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true));}
-    else {BiasGrid_.reset(new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true));}
+    if(!sparsegrid) {BiasGrid_=Tools::make_unique<Grid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+    else {BiasGrid_=Tools::make_unique<SparseGrid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
     std::vector<std::string> actualmin=BiasGrid_->getMin();
     std::vector<std::string> actualmax=BiasGrid_->getMax();
     for(unsigned i=0; i<getNumberOfArguments(); i++) {
@@ -1141,8 +1141,8 @@ MetaD::MetaD(const ActionOptions& ao):
       if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
     }
     std::string funcl=getLabel() + ".bias";
-    if(!sparsegrid) {BiasGrid_.reset(new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true));}
-    else {BiasGrid_.reset(new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true));}
+    if(!sparsegrid) {BiasGrid_=Tools::make_unique<Grid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+    else {BiasGrid_=Tools::make_unique<SparseGrid>(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
     std::vector<std::string> actualmin=BiasGrid_->getMin();
     std::vector<std::string> actualmax=BiasGrid_->getMax();
     for(unsigned i=0; i<getNumberOfArguments(); i++) {
@@ -1172,7 +1172,7 @@ MetaD::MetaD(const ActionOptions& ao):
         fname = hillsfname;
       }
     }
-    ifiles.emplace_back(new IFile());
+    ifiles.emplace_back(Tools::make_unique<IFile>());
     // this is just a shortcut pointer to the last element:
     IFile *ifile = ifiles.back().get();
     ifilesnames.push_back(fname);

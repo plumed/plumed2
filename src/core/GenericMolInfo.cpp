@@ -208,7 +208,7 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
     if(!selector) {
       log<<"  MOLINFO "<<getLabel()<<": starting python interpreter\n";
       if(comm.Get_rank()==0) {
-        selector.reset(new Subprocess(pythonCmd+" \""+config::getPlumedRoot()+"\"/scripts/selector.sh --pdb " + reference));
+        selector=Tools::make_unique<Subprocess>(pythonCmd+" \""+config::getPlumedRoot()+"\"/scripts/selector.sh --pdb " + reference);
         selector->stop();
       }
     }

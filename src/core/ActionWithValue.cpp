@@ -104,12 +104,12 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 
 void ActionWithValue::addValue() {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(new Value(this,getLabel(), false ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false ) );
 }
 
 void ActionWithValue::addValueWithDerivatives() {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(new Value(this,getLabel(), true ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true ) );
 }
 
 void ActionWithValue::setNotPeriodic() {
@@ -145,7 +145,7 @@ void ActionWithValue::addComponent( const std::string& name ) {
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponent(\"bias\") from your bias.");
   }
-  values.emplace_back(new Value(this,thename, false ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, false ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
@@ -162,7 +162,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name ) {
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
   }
-  values.emplace_back(new Value(this,thename, true ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, true ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }

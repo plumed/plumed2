@@ -311,7 +311,7 @@ Rescale::~Rescale()
 void Rescale::read_bias()
 {
 // open file
-  std::unique_ptr<IFile> ifile(new IFile);
+  auto ifile=Tools::make_unique<IFile>();
   ifile->link(*this);
   if(ifile->FileExist(Biasfilename_)) {
     ifile->open(Biasfilename_);

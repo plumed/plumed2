@@ -41,7 +41,7 @@ ValueVessel::ValueVessel( const VesselOptions& da ):
     a->setNotPeriodic();
     final_value=a->copyOutput( a->getNumberOfComponents()-1 );
   } else if( numval<0 ) {
-    final_value_ptr.reset(new Value);
+    final_value_ptr=Tools::make_unique<Value>();
     final_value=final_value_ptr.get();
     final_value->setNotPeriodic();
   } else {
