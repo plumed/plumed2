@@ -931,7 +931,7 @@ void EMMIVOX::doMonteCarloBfact()
     MCBtrials_ += 1.0;
 
     // accept or reject
-    bool accept = doAccept(old_ene, new_ene, kbt_);
+    bool accept = doAccept(old_ene/anneal_, new_ene/anneal_, kbt_);
 
     // in case of acceptance
     if(accept) {
