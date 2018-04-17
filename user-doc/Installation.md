@@ -414,22 +414,14 @@ This is done using
 This will allow you to remove the original compilation directory,
 or to recompile a different PLUMED version in the same place.
 
-To install PLUMED one should first decide the location.
-The standard way to do it is during the configure step:
+To install PLUMED one should first decide the location:
 \verbatim
 > ./configure --prefix=$HOME/opt
 > make
 > make install
 \endverbatim
-However, you can also change it after compilation setting
-the variable `prefix`.
-\verbatim
-> ./configure
-> make
-> make install prefix=$HOME/opt
-\endverbatim
-If you didn't specify the `--prefix` option during configure, and you did not set the `prefix`
-variable when installing, PLUMED will be installed in /usr/local.
+As of PLUMED 2.5 you cannot anymore change the location during install.
+If you didn't specify the `--prefix` option during configure PLUMED will be installed in /usr/local.
 The install command should be executed with root permissions (e.g. "sudo make install")
 if you want to install PLUMED on a system directory.
 

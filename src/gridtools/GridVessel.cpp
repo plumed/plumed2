@@ -38,10 +38,10 @@ void GridVessel::registerKeywords( Keywords& keys ) {
 GridVessel::GridVessel( const vesselbase::VesselOptions& da ):
   AveragingVessel(da),
   bounds_set(false),
-  cube_units(1.0),
-  noderiv(false),
   npoints(0),
-  wasforced(false)
+  cube_units(1.0),
+  wasforced(false),
+  noderiv(false)
 {
   std::string geom; parse("TYPE",geom);
   if( geom=="flat" ) gtype=flat;

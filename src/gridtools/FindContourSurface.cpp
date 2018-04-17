@@ -209,7 +209,7 @@ void FindContourSurface::finishAveraging() {
 }
 
 void FindContourSurface::compute( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<unsigned> neighbours; unsigned num_neighbours; unsigned nfound=0; double minv=0, minp=0;
+  std::vector<unsigned> neighbours; unsigned num_neighbours; unsigned nfound=0; double minp=0;
   std::vector<unsigned> bins_n( ingrid->getNbin() ); unsigned shiftn=current;
   std::vector<unsigned> ind( ingrid->getDimension() ); std::vector<double> point( ingrid->getDimension() );
 #ifndef DNDEBUG

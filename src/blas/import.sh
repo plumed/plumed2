@@ -6,16 +6,17 @@ fi
 
 GRO="$1"
 
-cp "$GRO"/src/gmxlib/gmx_blas/blas_copyright COPYRIGHT
+cp "$GRO"/src/gromacs/linearalgebra/gmx_blas/blas_copyright COPYRIGHT
 
-sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_blas.h |
+sed 's|"gromacs/utility/real.h"|"real.h"|' "$GRO"/src/gromacs/linearalgebra/gmx_blas.h |
   sed 's|F77_FUNC|PLUMED_BLAS_F77_FUNC|' |
+  grep -v config.h |
+  grep -v gromacs/utility/basedefinitions.h |
   awk '{
          if($1=="#ifdef" && $2=="__cplusplus"){
            inside=1;
            a++;
            if(a==1){
-             print "#include \"simple.h\""
              print "#ifndef __PLUMED_BLAS_RETURNS_FLOAT"
              print "#define __PLUMED_BLAS_RETURNS_FLOAT float"
              print "#endif"
@@ -52,27 +53,26 @@ grep PLUMED_BLAS_F77_FUNC blas.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' |
   awk '{print "#define plumed_blas_"$2" PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_external.h
 
 
-cat << EOF > simple.h
-#ifndef PLUMED_blas_simple_h
-#define PLUMED_blas_simple_h
-#define _simple_h
+cat << EOF > real.h
+#ifndef PLUMED_blas_real_h
+#define PLUMED_blas_real_h
     /*! \brief Double precision accuracy */
-#define PLUMED_GMX_DOUBLE_EPS   1.11022302E-16
+#define PLUMED_GMX_DOUBLE_EPS   2.2204460492503131e-16
 
     /*! \brief Maximum double precision value - reduced 1 unit in last digit for MSVC */
-#define PLUMED_GMX_DOUBLE_MAX   1.79769312E+308
+#define PLUMED_GMX_DOUBLE_MAX   1.7976931348623157e+308
 
     /*! \brief Minimum double precision value */
-#define PLUMED_GMX_DOUBLE_MIN   2.22507386E-308
+#define PLUMED_GMX_DOUBLE_MIN   2.2250738585072014e-308
 
     /*! \brief Single precision accuracy */
-#define PLUMED_GMX_FLOAT_EPS    5.96046448E-08
+#define PLUMED_GMX_FLOAT_EPS    1.19209290e-07F
 
     /*! \brief Maximum single precision value - reduced 1 unit in last digit for MSVC */
-#define PLUMED_GMX_FLOAT_MAX    3.40282346E+38
+#define PLUMED_GMX_FLOAT_MAX    3.40282346E+38F
 
     /*! \brief Minimum single precision value */
-#define PLUMED_GMX_FLOAT_MIN    1.17549435E-38
+#define PLUMED_GMX_FLOAT_MIN    1.175494351E-38F
 
 #if defined(F77_NO_UNDERSCORE)
 #define PLUMED_BLAS_F77_FUNC(lower,upper) lower
@@ -85,8 +85,11 @@ EOF
 
 {
 echo "#if ! defined (__PLUMED_HAS_EXTERNAL_BLAS)"
-for file in "$GRO"/src/gmxlib/gmx_blas/*.c
+for file in "$GRO"/src/gromacs/linearalgebra/gmx_blas/*.cpp
 do
+  cat "$file" |
+  sed 's|"gromacs/utility/real.h"|"real.h"|' |
+  sed 's|"../gmx_blas.h"|"blas.h"|' |
   awk '{
     if(match($0,"F77_FUNC") && !done){
       print "namespace PLMD{"
@@ -99,11 +102,9 @@ do
     print save
     print "}"
     print "}"
-  }' "$file" |
+  }' |
  sed 's|F77_FUNC|PLUMED_BLAS_F77_FUNC|' |
- sed 's|GMX_|PLUMED_GMX_|g' |
- sed 's|gmx_blas|blas|g' |
- sed 's|<types/simple.h>|"simple.h"|'
+ sed 's|GMX_|PLUMED_GMX_|g' 
 done
 echo "#endif"
 } > blas.cpp

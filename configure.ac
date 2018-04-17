@@ -261,6 +261,7 @@ AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
 AC_ARG_VAR(LDSHARED,[command for linking shared library - configure will use CXX plus the proper flags ])
 AC_ARG_VAR(PYTHON_BIN,[python executable (e.g. python2.7 or /opt/local/bin/python2.7) - default: search for a python executable])
+AC_ARG_VAR(BASH_COMPLETION_DIR,[path where bash completion will be installed - default: search with pkg-config])
 AC_ARG_VAR(MPIEXEC,[command to run mpi programs in tests - default not specified, which means use PLUMED_MPIRUN env var at runtime for backward compatibility])
 
 
@@ -1096,6 +1097,32 @@ then
   prefix=/usr/local
 fi
 
+pkgconfig_bin=""
+
+AC_PATH_PROGS(pkgconfig_bin,pkg-config)
+
+if test -z "$BASH_COMPLETION_DIR" && test -n "$pkgconfig_bin"; then
+  if test "$prefix" == "$(pkg-config --variable=prefix bash-completion 2>/dev/null)"
+  then
+    AC_MSG_NOTICE([bash-completion is installed on the same prefix where plumed will be installed])
+    if pkg-config --variable=completionsdir bash-completion 2>/dev/null >/dev/null ; then
+      BASH_COMPLETION_DIR="$(pkg-config --variable=completionsdir  bash-completion 2>/dev/null)"
+    fi
+  else
+    AC_MSG_NOTICE([bash-completion is not installed or it is installed on a different prefix])
+    pkgconfig_bin=""
+  fi
+fi
+
+if test -n "$BASH_COMPLETION_DIR"
+then
+  AC_MSG_NOTICE([bash completion for plumed will be installed in $BASH_COMPLETION_DIR])
+else
+  AC_MSG_NOTICE([bash completion for plumed will not be installed])
+fi
+
+AC_SUBST(BASH_COMPLETION_DIR)
+
 AC_ARG_PROGRAM
 
 
@@ -1133,8 +1160,14 @@ AC_MSG_NOTICE([**** datadir: $datadir])
 AC_MSG_NOTICE([**** docdir: ${datarootdir}/doc/$program_name])
 AC_MSG_NOTICE([**** htmldir: $htmldir])
 AC_MSG_NOTICE([**** Executable will be named $program_name])
-AC_MSG_NOTICE([**** You can change paths later using options to "make install"])
-AC_MSG_NOTICE([**** e.g. with "make install prefix=/path"])
+AC_MSG_NOTICE([**** As of PLUMED 2.5, you cannot change paths anymore during "make install"])
+AC_MSG_NOTICE([**** Please configure and make clean to change the prefix])
+
+if test -z "$BASH_COMPLETION_DIR" ; then
+  AC_MSG_WARN([**** Bash completion for plumed will not be installed, please add the following two lines to your bashrc])
+  AC_MSG_WARN([**** _$program_name() { eval "\$($program_name --no-mpi completion 2>/dev/null)";}])
+  AC_MSG_WARN([**** complete -F _$program_name -o default $program_name])
+fi
 
 if test $mpi == true; then
   if test $mpi_found == ok; then
