@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -109,11 +109,11 @@ void ReferenceArguments::getArgumentRequests( std::vector<std::string>& argout, 
       if( arg_names.size()!=argout.size() ) error("mismatched numbers of arguments in pdb frames");
     }
     for(unsigned i=0; i<arg_names.size(); ++i) {
-      bool found=false;
       if(!disable_checks) {
         if( argout[i]!=arg_names[i] ) error("found mismatched arguments in pdb frames");
         arg_der_index[i]=i;
       } else {
+        bool found=false;
         for(unsigned j=0; j<arg_names.size(); ++j) {
           if( argout[j]==arg_names[i] ) { found=true; arg_der_index[i]=j; break; }
         }

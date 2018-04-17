@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -181,6 +181,7 @@ private:
   std::vector<Direction> directions;
 /// Stuff for applying forces
   std::vector<double> forces, forcesToApply;
+  bool nopbc;
 public:
   static void registerKeywords( Keywords& keys );
   explicit PCAVars(const ActionOptions&);
@@ -208,6 +209,7 @@ void PCAVars::registerKeywords( Keywords& keys ) {
                           "reference point.");
   keys.add("compulsory","REFERENCE","a pdb file containing the reference configuration and configurations that define the directions for each eigenvector");
   keys.add("compulsory","TYPE","OPTIMAL","The method we are using for alignment to the reference structure");
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
 PCAVars::PCAVars(const ActionOptions& ao):
@@ -216,11 +218,14 @@ PCAVars::PCAVars(const ActionOptions& ao):
   ActionAtomistic(ao),
   ActionWithArguments(ao),
   myvals(1,0),
-  mypack(0,0,myvals)
+  mypack(0,0,myvals),
+  nopbc(false)
 {
 
   // What type of distance are we calculating
   std::string mtype; parse("TYPE",mtype);
+
+  parseFlag("NOPBC",nopbc);
 
   // Open reference file
   std::string reference; parse("REFERENCE",reference);
@@ -281,6 +286,9 @@ PCAVars::PCAVars(const ActionOptions& ao):
   // Work out if the user wants to normalise the input vector
   checkRead();
 
+  if(nopbc) log.printf("  without periodic boundary conditions\n");
+  else      log.printf("  using periodic boundary conditions\n");
+
   // Resize the matrices that will hold our eivenvectors
   for(unsigned i=1; i<nfram; ++i) {
     directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")));
@@ -307,7 +315,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
 
   // Resize all derivative arrays
   forces.resize( nder ); forcesToApply.resize( nder );
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
+  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
 }
 
 unsigned PCAVars::getNumberOfDerivatives() {
@@ -328,6 +336,9 @@ void PCAVars::unlockRequests() {
 }
 
 void PCAVars::calculate() {
+
+  if(!nopbc) makeWhole();
+
   // Clear the reference value pack
   mypack.clear();
   // Calculate distance between instaneous configuration and reference
@@ -345,7 +356,7 @@ void PCAVars::calculate() {
 
   // Now calculate projections on pca vectors
   Vector adif, ader; Tensor fvir, tvir;
-  for(unsigned i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
+  for(int i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
     double proj=myref->projectDisplacementOnVector( directions[i], getArguments(), args, mypack );
     // And now accumulate derivatives
     Value* eid=getPntrToComponent(i);
@@ -401,11 +412,11 @@ void PCAVars::calculateNumericalDerivatives( ActionWithValue* a ) {
   }
   if( getNumberOfAtoms()>0 ) {
     Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
     }
     calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
     }
   }
@@ -414,7 +425,7 @@ void PCAVars::calculateNumericalDerivatives( ActionWithValue* a ) {
 void PCAVars::apply() {
 
   bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+  for(int i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->applyForce( forces ) ) {
       wasforced=true;
       for(unsigned i=0; i<forces.size(); ++i) forcesToApply[i]+=forces[i];

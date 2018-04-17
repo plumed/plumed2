@@ -38,6 +38,7 @@ As far as we know, the following MD codes can be used with PLUMED out of the box
 - [DL_POLY4](https://www.scd.stfc.ac.uk/Pages/DL_POLY.aspx).
 - [VNL-ATK](https://quantumwise.com), see [this link](https://docs.quantumwise.com/tutorials/metadynamics_with_plumed/metadynamics_with_plumed.html).
 - [ABIN](https://github.com/PHOTOX/ABIN).
+- [i-pi](https://github.com/i-pi/i-pi).
 
 Please refer to the documentation of the MD code to know how to use it with the latest PLUMED release.
 If you maintain another MD code that is PLUMED-ready let us know and we will add it to this list.

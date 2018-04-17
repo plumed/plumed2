@@ -22,7 +22,7 @@ In PT, exchanges are usually attempted between adjacent temperatures
 with the following acceptance probability:
 
 \f[
-p(i \rightarrow j) = min \{ 1,\Delta_{i,j}^{PT} \},
+p(i \rightarrow j) = min \{ 1,e^{\Delta_{i,j}^{PT}} \},
 \f]
 
 with

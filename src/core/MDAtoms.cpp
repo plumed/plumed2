@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #include "tools/Tools.h"
 #include "tools/OpenMP.h"
 #include "tools/Exception.h"
+#include "tools/Units.h"
 #include <algorithm>
 #include <string>
 

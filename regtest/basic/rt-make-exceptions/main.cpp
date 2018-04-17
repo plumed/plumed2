@@ -88,6 +88,10 @@ int main(){
   test_line(ofs,plumed,"d: COORDINATION GROUPA=1 GROUPB=2 SWITCH={WRONGNAME R_0=1.0}");
   test_line(ofs,plumed,"d: RMSD REFERENCE=missing.pdb");
   test_line(ofs,plumed,"d: RMSD REFERENCE=test-too-many-atoms.pdb");
+  test_line(ofs,plumed,"d: RMSD TYPE=OPTIMAL REFERENCE=test_zero_displace_weight.pdb");
+  test_line(ofs,plumed,"d: RMSD TYPE=OPTIMAL REFERENCE=test_zero_align_weight.pdb");
+  test_line(ofs,plumed,"d: RMSD TYPE=SIMPLE REFERENCE=test_zero_displace_weight.pdb");
+  test_line(ofs,plumed,"d: RMSD TYPE=SIMPLE REFERENCE=test_zero_align_weight.pdb");
   test_line(ofs,plumed,"d: DRMSD REFERENCE=missing.pdb LOWER_CUTOFF=0.0 UPPER_CUTOFF=15.0");
 
 // these should not fail
@@ -95,6 +99,10 @@ int main(){
   plumed.cmd("readInputLine","d1: DISTANCE ATOMS={1 2}"); // check if braces are parsed correctly
   plumed.cmd("readInputLine","t: TORSION ATOMS=1,2,3,4");
   plumed.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1");
+
+// check regexp not surrounded by parentheses (bug in 2.3.3).
+  test_line(ofs,plumed,"RESTRAINT ARG=x(d) KAPPA=5 AT=0");
+  test_line(ofs,plumed,"RESTRAINT ARG=(d)x KAPPA=5 AT=0");
 
   test_line(ofs,plumed,"EXTERNAL ARG=d FILE=potential LABEL=ext");
   test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1 RESTART=WHAT");

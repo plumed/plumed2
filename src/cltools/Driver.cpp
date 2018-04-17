@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -230,6 +230,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--mass-units","units for mass in pdb and mc file, either as a string or a number");
   keys.add("optional","--charge-units","units for charge in pdb and mc file, either as a string or a number");
+  keys.add("optional","--kt","set kBT, it will not be necessary to specify temperature in input file");
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
   keys.addFlag("--dump-full-virial",false,"with --dump-forces, it dumps the 9 components of the virial");
@@ -248,7 +249,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
   MOLFILE_INIT_ALL
   MOLFILE_REGISTER_ALL(NULL, register_cb)
-  for(int i=0; i<plugins.size(); i++) {
+  for(unsigned i=0; i<plugins.size(); i++) {
     string kk="--mf_"+string(plugins[i]->name);
     string mm=" molfile: the trajectory in "+string(plugins[i]->name)+" format " ;
     //cerr<<"REGISTERING "<<kk<<mm<<endl;
@@ -351,6 +352,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   if( debugforces!="" && (debug_dd || debug_pd) ) error("cannot debug forces and domain/particle decomposition at same time");
   if( debugforces!="" && sizeof(real)!=sizeof(double) ) error("cannot debug forces in single precision mode");
 
+  real kt=-1.0;
+  parse("--kt",kt);
   string trajectory_fmt;
 
   bool use_molfile=false;
@@ -380,7 +383,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     parse("--itrr",traj_trr);
 #endif
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-    for(int i=0; i<plugins.size(); i++) {
+    for(unsigned i=0; i<plugins.size(); i++) {
       string molfile_key="--mf_"+string(plugins[i]->name);
       string traj_molfile;
       parse(molfile_key,traj_molfile);
@@ -633,6 +636,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       natoms=0;
     }
     if( checknatoms<0 ) {
+      if(kt>=0) {
+        p.cmd("setKbT",&kt);
+      }
       checknatoms=natoms;
       p.cmd("setNatoms",&natoms);
       p.cmd("init");
@@ -731,7 +737,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         }
         // info on coords
         // the order is xyzxyz...
-        for(unsigned i=0; i<3*natoms; i++) {
+        for(int i=0; i<3*natoms; i++) {
           coordinates[i]=real(ts_in.coords[i]/10.); //convert to nm
           //cerr<<"COOR "<<coordinates[i]<<endl;
         }
@@ -750,7 +756,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         if(ret==exdrENDOFFILE) break;
         if(ret!=exdrOK) break;
         for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) cell[3*i+j]=box[i][j];
-        for(unsigned i=0; i<natoms; i++) for(unsigned j=0; j<3; j++)
+        for(int i=0; i<natoms; i++) for(unsigned j=0; j<3; j++)
             coordinates[3*i+j]=real(pos[i][j]);
 #endif
       } else {

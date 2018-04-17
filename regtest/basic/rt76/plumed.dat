@@ -1,3 +1,10 @@
+# this test is pretty stupid
+# the trajectory is from a LJ systems but RMSD is computed from a peptide...
+# anyway, it validates RMSD without NOPBC option since it gives results
+# equivalent to these ones:
+# WHOLEMOLECULES ENTITY0={ 2 4 6 7 8 9 10 12 14 16 18 19 20 21 22 }
+# rmsd0:   RMSD TYPE=OPTIMAL REFERENCE=test0.pdb NOPBC
+
 rmsd0:   RMSD TYPE=OPTIMAL REFERENCE=test0.pdb
 
 PRINT ...

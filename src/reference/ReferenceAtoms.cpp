@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -99,9 +99,8 @@ void ReferenceAtoms::singleDomainRequests( std::vector<AtomNumber>& numbers, boo
       if( numbers.size()!=indices.size() ) error("mismatched numbers of atoms in pdb frames");
     }
 
-    bool found;
     for(unsigned i=0; i<indices.size(); ++i) {
-      found=false;
+      bool found=false;
       if(!disable_checks) {
         if( indices[i]!=numbers[i] ) error("found mismatched reference atoms in pdb frames");
         atom_der_index[i]=i;

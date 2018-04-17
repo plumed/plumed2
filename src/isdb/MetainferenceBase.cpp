@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017 The plumed team
+   Copyright (c) 2017,2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,14 +20,16 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetainferenceBase.h"
-#include "core/PlumedMain.h"
 #include "tools/File.h"
-#include "tools/OpenMP.h"
 #include <cmath>
 #include <ctime>
 #include <numeric>
 
 using namespace std;
+
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
 
 namespace PLMD {
 namespace isdb {
@@ -552,6 +554,7 @@ void MetainferenceBase::Initialise(const unsigned input)
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   if(do_reweight_) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
   if(do_optsigmamean_>0) log<<plumed.cite("Loehr, Jussupow, Camilloni, J. Chem. Phys. 146, 165102 (2017)");
+  log<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 }
 
@@ -889,7 +892,7 @@ void MetainferenceBase::doMonteCarlo(const vector<double> &mean_)
     }
 
     // calculate new energy
-    double new_energy;
+    double new_energy=0.;
     switch(noise_type_) {
     case GAUSS:
       new_energy = getEnergyGJ(mean_,new_sigma,scale_,offset_);

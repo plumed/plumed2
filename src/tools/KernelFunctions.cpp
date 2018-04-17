@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -160,9 +160,10 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
 
 void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
 
-  double det; unsigned ncv=ndim();
+  double det=1.;
+  unsigned ncv=ndim();
   if(dtype==diagonal) {
-    det=1; for(unsigned i=0; i<width.size(); ++i) det*=width[i]*width[i];
+    for(unsigned i=0; i<width.size(); ++i) det*=width[i]*width[i];
   } else if(dtype==multi) {
     Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
     Invert(mymatrix,myinv); double logd;
@@ -273,8 +274,8 @@ std::vector<double> KernelFunctions::getContinuousSupport( ) const {
     Invert(mymatrix,myinv);
     Matrix<double> myautovec(ncv,ncv); std::vector<double> myautoval(ncv);
     diagMat(myinv,myautoval,myautovec);
-    double maxautoval; maxautoval=0.;
-    unsigned ind_maxautoval;
+    double maxautoval=0.;
+    unsigned ind_maxautoval=0;
     for (unsigned i=0; i<ncv; i++) {
       if(myautoval[i]>maxautoval) {maxautoval=myautoval[i]; ind_maxautoval=i;}
     }
@@ -340,7 +341,7 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
 
     Matrix<double> mymatrix( getMatrix() );
     for(unsigned i=0; i<mymatrix.nrows(); ++i) {
-      double dp_i, dp_j; derivatives[i]=0;
+      derivatives[i]=0;
       if( pos[i]->isPeriodic() ) {
         r2+=2*( 1 - costmp[i] )*mymatrix(i,i);
       } else {
@@ -387,7 +388,7 @@ std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool
   if( !ifile->scanField("height",h) ) return NULL;;
 
   std::string sss; ifile->scanField("multivariate",sss);
-  std::string ktype; ifile->scanField("kerneltype",ktype);
+  std::string ktype="gaussian"; if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
   plumed_massert( sss=="false" || sss=="true" || sss=="von-misses", "multivariate flag must be either false, true or von-misses");
 
   // Read the position of the center

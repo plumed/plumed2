@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -414,7 +414,6 @@ private:
   void   readTemperingSpecs(TemperingSpecs &t_specs);
   void   logTemperingSpecs(const TemperingSpecs &t_specs);
   void   readGaussians(IFile*);
-  bool   readChunkOfGaussians(IFile *ifile, unsigned n);
   void   writeGaussian(const Gaussian&,OFile&);
   void   addGaussian(const Gaussian&);
   double getHeight(const vector<double>&);
@@ -1179,8 +1178,8 @@ MetaD::MetaD(const ActionOptions& ao):
           "Hosek, Toulcova, Bortolato, and Spiwok, J. Phys. Chem. B 120, 2209 (2016)");
   if(targetfilename_.length()>0) {
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
-    log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
-    log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, submitted (2016)");
+    log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
+    log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, J. Chem. Theory Comput. 12, 2790 (2016)");
   }
   log<<"\n";
 }
@@ -1234,32 +1233,6 @@ void MetaD::readGaussians(IFile *ifile)
     addGaussian(Gaussian(center,sigma,height,multivariate));
   }
   log.printf("      %d Gaussians read\n",nhills);
-}
-
-bool MetaD::readChunkOfGaussians(IFile *ifile, unsigned n)
-{
-  unsigned ncv=getNumberOfArguments();
-  vector<double> center(ncv);
-  vector<double> sigma(ncv);
-  double height;
-  unsigned nhills=0;
-  bool multivariate=false;
-  std::vector<Value> tmpvalues;
-  for(unsigned j=0; j<getNumberOfArguments(); ++j) tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) );
-
-  while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)) {
-    ;
-// note that for gamma=1 we store directly -F
-    if(welltemp_ && biasf_>1.0) height*=(biasf_-1.0)/biasf_;
-    addGaussian(Gaussian(center,sigma,height,multivariate));
-    if(nhills==n) {
-      log.printf("      %u Gaussians read\n",nhills);
-      return true;
-    }
-    nhills++;
-  }
-  log.printf("      %u Gaussians read\n",nhills);
-  return false;
 }
 
 void MetaD::writeGaussian(const Gaussian& hill, OFile&file)
@@ -1767,9 +1740,12 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
       }
       center[i]=tmpvalues[i].get();
     }
+    // scan for kerneltype
+    std::string ktype="gaussian";
+    if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
     // scan for multivariate label: record the actual file position so to eventually rewind
-    std::string sss, ktype;
-    ifile->scanField("multivariate",sss); ifile->scanField("kerneltype",ktype);
+    std::string sss;
+    ifile->scanField("multivariate",sss);
     if(sss=="true") multivariate=true;
     else if(sss=="false") multivariate=false;
     else plumed_merror("cannot parse multivariate = "+ sss);
@@ -1878,7 +1854,7 @@ double MetaD::getTransitionBarrierBias() {
     // starting well. With this choice the searches will terminate in one step until
     // transitionwell_[1] is sampled.
   } else {
-    double least_transition_bias, curr_transition_bias;
+    double least_transition_bias;
     vector<double> sink = transitionwells_[0];
     vector<double> source = transitionwells_[1];
     least_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
@@ -1887,7 +1863,7 @@ double MetaD::getTransitionBarrierBias() {
         break;
       }
       source = transitionwells_[i];
-      curr_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
+      double curr_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
       least_transition_bias = fmin(curr_transition_bias, least_transition_bias);
     }
     return least_transition_bias;
