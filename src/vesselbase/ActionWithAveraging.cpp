@@ -81,8 +81,9 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
   }
 }
 
-void ActionWithAveraging::setAveragingAction( AveragingVessel* av_vessel, const bool& usetasks ) {
-  myaverage=av_vessel; addVessel( myaverage );
+void ActionWithAveraging::setAveragingAction( std::unique_ptr<AveragingVessel> av_vessel, const bool& usetasks ) {
+  myaverage=av_vessel.get();
+  addVessel( std::move(av_vessel) );
   useRunAllTasks=usetasks; resizeFunctions();
 }
 

@@ -65,7 +65,7 @@ protected:
 /// The current weight and its logarithm
   double lweight, cweight;
 /// Set the averaging action
-  void setAveragingAction( AveragingVessel* av_vessel, const bool& usetasks );
+  void setAveragingAction( std::unique_ptr<AveragingVessel> av_vessel, const bool& usetasks );
 /// Check if we are using the normalization condition when calculating this quantity
   bool noNormalization() const ;
 public:

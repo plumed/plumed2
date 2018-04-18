@@ -228,10 +228,12 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   // Create a task list
   for(unsigned i=0; i<mycolv->getFullNumberOfTasks(); ++i) addTaskToList(i);
   // And create the grid
-  if( mycolv->isDensity() ) createGrid( "histogram", vstring );
-  else createGrid( "average", vstring );
+  std::unique_ptr<gridtools::GridVessel> grid;
+  if( mycolv->isDensity() ) grid=createGrid( "histogram", vstring );
+  else grid=createGrid( "average", vstring );
+  mygrid=grid.get();
   // And finish the grid setup
-  setAveragingAction( mygrid, true );
+  setAveragingAction( std::move(grid), true );
 
   // Enusre units for cube files are set correctly
   if( !fractional ) {

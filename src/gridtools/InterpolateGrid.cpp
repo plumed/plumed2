@@ -76,7 +76,8 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   plumed_assert( ingrid->getNumberOfComponents()==1 );
   if( ingrid->noDerivatives() ) error("cannot interpolate a grid that does not have derivatives");
   // Create the input from the old string
-  createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString()  );
+  auto grid=createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString()  );
+  // notice that createGrid also sets mygrid=grid.get()
 
   std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
   std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
@@ -85,8 +86,8 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   }
 
   // Need this for creation of tasks
-  mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), nbin, gspacing );
-  setAveragingAction( mygrid, true );
+  grid->setBounds( ingrid->getMin(), ingrid->getMax(), nbin, gspacing );
+  setAveragingAction( std::move(grid), true );
 
   // Now create task list
   for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) addTaskToList(i);

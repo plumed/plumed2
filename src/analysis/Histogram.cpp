@@ -312,7 +312,8 @@ Histogram::Histogram(const ActionOptions&ao):
     }
   }
   // And create the grid
-  createGrid( "histogram", vstring );
+  auto grid=createGrid( "histogram", vstring );
+  // notice that createGrid also sets mygrid=grid.get()
   if( mygrid->getType()=="flat" ) {
     if( mvectors ) error("computing histogram for three dimensional vectors but grid is not of fibonacci type - use CONCENTRATION");
     std::vector<std::string> gmin( narg ), gmax( narg );
@@ -333,12 +334,12 @@ Histogram::Histogram(const ActionOptions&ao):
   if( myvessels.size()>0 ) {
     // Create a task list
     for(unsigned i=0; i<myvessels[0]->getFullNumberOfTasks(); ++i) addTaskToList(i);
-    setAveragingAction( mygrid, true );
+    setAveragingAction( std::move(grid), true );
   } else {
     // Create a task list
     for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) addTaskToList(i);
     myhist->addOneKernelEachTimeOnly();
-    setAveragingAction( mygrid, myhist->noDiscreteKernels() );
+    setAveragingAction( std::move(grid), myhist->noDiscreteKernels() );
   }
   checkRead();
 }
