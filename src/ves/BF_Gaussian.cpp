@@ -24,7 +24,6 @@
 
 #include "core/ActionRegister.h"
 
-
 namespace PLMD {
 namespace ves {
 
@@ -54,7 +53,12 @@ Add stuff here...
 //+ENDPLUMEDOC
 
 class BF_Gaussian : public BasisFunctions {
-  double width_;
+  // variance of the Gaussians
+  double variance_;
+  // positions of the means
+  std::vector<double> mean_;
+  // normfactor of the Gaussians
+  double normfactor_;
   virtual void setupLabels();
 public:
   static void registerKeywords( Keywords&);
@@ -69,25 +73,28 @@ PLUMED_REGISTER_ACTION(BF_Gaussian,"BF_GAUSSIAN")
 
 void BF_Gaussian::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
-  keys.add("optional","WIDTH","The normalization factor that is used to normalize the basis functions. By default it is equal to the sub-intervall size.");
-  //keys.remove("NUMERICAL_INTEGRALS");
+  keys.add("optional","VARIANCE","The variance (i.e. width) of the Gaussian functions. By default it is equal to the sub-intervall size.");
+  keys.remove("NUMERICAL_INTEGRALS");
 }
 
 BF_Gaussian::BF_Gaussian(const ActionOptions&ao):
-  PLUMED_VES_BASISFUNCTIONS_INIT(ao)
+  PLUMED_VES_BASISFUNCTIONS_INIT(ao),
+  variance_(intervalRange() / getOrder())
 {
   setNumberOfBasisFunctions(getOrder());
   setIntrinsicInterval(intervalMin(),intervalMax());
-  double normfactor_=1.0;
-  parse("NORMALIZATION",normfactor_);
-  if(normfactor_!=1.0) {addKeywordToList("NORMALIZATION",normfactor_);}
+  if(parse("VARIANCE",variance_)) {addKeywordToList("VARIANCE",variance_);}
+  mean_.reserve(getNumberOfBasisFunctions());
+  for(unsigned int i=0; i < getNumberOfBasisFunctions; i++)
+    mean_.push_back(intervalMin()+(i+0.5)*(intervalRange()/getNumberOfBasisFunctions()));
+  normfactor_ = 1/sqrt(2*pi*variance_);
   setNonPeriodic();
   setNonOrthogonal();
   setIntervalBounded();
   setType("gaussian_functions");
   setDescription("Gaussian Functions");
   setupBF();
-  log.printf("   normalization factor: %f\n",normfactor_);
+  log.printf("   variance: %f\n",variance_);
   checkRead();
 }
 
@@ -96,25 +103,22 @@ void BF_Gaussian::getAllValues(const double arg, double& argT, bool& inside_rang
   inside_range=true;
   argT=checkIfArgumentInsideInterval(arg,inside_range);
   //
-  values[0]=1.0;
-  derivs[0]=0.0;
-  //
-  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
+  for(unsigned int i=0; i < getNumberOfBasisFunctions(); i++) {
     // double io = static_cast<double>(i);
     // values[i] = pow(argT,io);
     // derivs[i] = io*pow(argT,io-1.0);
-    values[i] = argT*values[i-1];
-    derivs[i]=values[i-1]+argT*derivs[i-1];
+    values[i] = normfactor_ * exp(-pow(argT-mean_[i],2.0)/2*variance_);
+    derivs[i] = -values[i] * (argT-mean_[i])/variance_;
   }
   if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
 }
 
 
+// label according to positions?
 void BF_Gaussian::setupLabels() {
-  setLabel(0,"1");
-  for(unsigned int i=1; i < getOrder()+1; i++) {
-    std::string is; Tools::convert(i,is);
-    setLabel(i,"s^"+is);
+  for(unsigned int i=0; i < getNumberOfBasisFunctions(); i++) {
+    std::string is; Tools::convert(mean_[i],is);
+    setLabel(i,"s="+is);
   }
 }
 
