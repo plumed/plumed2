@@ -83,9 +83,11 @@ BF_Gaussian::BF_Gaussian(const ActionOptions&ao):
 {
   setNumberOfBasisFunctions(getOrder());
   setIntrinsicInterval(intervalMin(),intervalMax());
-  if(parse("VARIANCE",variance_)) {addKeywordToList("VARIANCE",variance_);}
+  parse("VARIANCE",variance_);
+  if(variance_ <= 0.0) {plumed_merror("VARIANCE should be larger than 0");}
+  if(variance_ != intervalRange()/getOrder()) {addKeywordToList("VARIANCE",variance_);}
   mean_.reserve(getNumberOfBasisFunctions());
-  for(unsigned int i=0; i < getNumberOfBasisFunctions; i++)
+  for(unsigned int i=0; i < getNumberOfBasisFunctions(); i++)
     mean_.push_back(intervalMin()+(i+0.5)*(intervalRange()/getNumberOfBasisFunctions()));
   normfactor_ = 1/sqrt(2*pi*variance_);
   setNonPeriodic();
