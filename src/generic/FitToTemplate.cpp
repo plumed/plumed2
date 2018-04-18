@@ -285,7 +285,7 @@ void FitToTemplate::calculate() {
     shift=center-cc;
     setValue(shift.modulo());
     for(unsigned i=0; i<getTotAtoms(); i++) {
-      Vector & ato (modifyPosition(AtomNumber::index(i)));
+      Vector & ato (modifyGlobalPosition(AtomNumber::index(i)));
       ato+=shift;
     }
   }
@@ -294,7 +294,7 @@ void FitToTemplate::calculate() {
     double r=rmsd->calc_FitElements( getPositions(), rotation,  drotdpos, centeredpositions, center_positions);
     setValue(r);
     for(unsigned i=0; i<getTotAtoms(); i++) {
-      Vector & ato (modifyPosition(AtomNumber::index(i)));
+      Vector & ato (modifyGlobalPosition(AtomNumber::index(i)));
       ato=matmul(rotation,ato-center_positions)+center;
     }
 // rotate box
