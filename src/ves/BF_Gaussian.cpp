@@ -42,7 +42,7 @@ bounded interval. You need to provide the interval \f$[a,b]\f$ on which the
 basis functions are to be used. The order of the expansion \f$N\f$ determines
 the position of the means of the Gaussian functions by separating the
 intervall into \f$N\f$ parts.
-It is also possible to specify the width (i.e. variance) of the Gaussians using
+It is also possible to specify the width (i.e. standart deviation) of the Gaussians using
 the WIDTH keyword. By default it is set to the sub-intervall length.
 
 The optimization then adjusts the heigths of the individual Gaussians.
@@ -53,12 +53,10 @@ Add stuff here...
 //+ENDPLUMEDOC
 
 class BF_Gaussian : public BasisFunctions {
-  // variance of the Gaussians
-  double variance_;
+  // width of the Gaussians
+  double width_;
   // positions of the means
   std::vector<double> mean_;
-  // normfactor of the Gaussians
-  double normfactor_;
   virtual void setupLabels();
 public:
   static void registerKeywords( Keywords&);
@@ -73,30 +71,30 @@ PLUMED_REGISTER_ACTION(BF_Gaussian,"BF_GAUSSIAN")
 
 void BF_Gaussian::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
-  keys.add("optional","VARIANCE","The variance (i.e. width) of the Gaussian functions. By default it is equal to the sub-intervall size.");
+  keys.add("optional","WIDTH","The width (i.e. standart deviation) of the Gaussian functions. By default it is equal to the sub-intervall size.");
   keys.remove("NUMERICAL_INTEGRALS");
 }
 
 BF_Gaussian::BF_Gaussian(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
-  variance_(intervalRange() / getOrder())
+  width_((intervalMax()-intervalMin()) / getOrder())
 {
   setNumberOfBasisFunctions(getOrder());
   setIntrinsicInterval(intervalMin(),intervalMax());
-  parse("VARIANCE",variance_);
-  if(variance_ <= 0.0) {plumed_merror("VARIANCE should be larger than 0");}
-  if(variance_ != intervalRange()/getOrder()) {addKeywordToList("VARIANCE",variance_);}
+  parse("WIDTH",width_);
+  if(width_ <= 0.0) {plumed_merror("WIDTH should be larger than 0");}
+  if(width_ != (intervalMax()-intervalMin())/getOrder()) {addKeywordToList("WIDTH",width_);}
   mean_.reserve(getNumberOfBasisFunctions());
-  for(unsigned int i=0; i < getNumberOfBasisFunctions(); i++)
-    mean_.push_back(intervalMin()+(i+0.5)*(intervalRange()/getNumberOfBasisFunctions()));
-  normfactor_ = 1/sqrt(2*pi*variance_);
+  for(unsigned int i=0; i < getNumberOfBasisFunctions(); i++) {
+    mean_.push_back(intervalMin()+(i+0.5)*((intervalMax()-intervalMin())/getNumberOfBasisFunctions()));
+  }
   setNonPeriodic();
   setNonOrthogonal();
   setIntervalBounded();
   setType("gaussian_functions");
-  setDescription("Gaussian Functions");
+  setDescription("Gaussian Functions with shifted means that are optimized in their height");
   setupBF();
-  log.printf("   variance: %f\n",variance_);
+  log.printf("   width: %f\n",width_);
   checkRead();
 }
 
@@ -109,8 +107,8 @@ void BF_Gaussian::getAllValues(const double arg, double& argT, bool& inside_rang
     // double io = static_cast<double>(i);
     // values[i] = pow(argT,io);
     // derivs[i] = io*pow(argT,io-1.0);
-    values[i] = normfactor_ * exp(-pow(argT-mean_[i],2.0)/2*variance_);
-    derivs[i] = -values[i] * (argT-mean_[i])/variance_;
+    values[i] = exp(-0.5*pow((argT-mean_[i])/width_,2.0));
+    derivs[i] = -values[i] * (argT-mean_[i])/pow(width_,2.0);
   }
   if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
 }
