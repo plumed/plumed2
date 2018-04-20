@@ -206,7 +206,7 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
     if(dd && shuffledAtoms>0) {
       for(const auto & p : unique) uniq_index.push_back(dd.g2l[p.index()]);
     } else {
-      for(const auto & p : unique) uniq_index.push_back(p.index());
+      for(const auto & p : unique) uniq_index.push_back(g2l_nondd[p.index()]);
     }
     mdatoms->getPositions(unique,uniq_index,positions);
   }
@@ -379,7 +379,9 @@ void Atoms::setAtomsNlocal(int n) {
     dd.positionsToBeReceived.resize(natoms*5,0.0);
     dd.indexToBeSent.resize(n,0);
     dd.indexToBeReceived.resize(natoms,0);
-  };
+  } else {
+    g2l_nondd.resize(natoms,-1);
+  }
 }
 
 void Atoms::setAtomsGatindex(int*g,bool fortran) {
@@ -391,6 +393,7 @@ void Atoms::setAtomsGatindex(int*g,bool fortran) {
     for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=g[i];
   }
   for(unsigned i=0; i<dd.g2l.size(); i++) dd.g2l[i]=-1;
+  for(unsigned i=0; i<g2l_nondd.size(); ++i) g2l_nondd[i]=-1;
   if( gatindex.size()==natoms ) {
     shuffledAtoms=0;
     for(unsigned i=0; i<gatindex.size(); i++) {
@@ -402,6 +405,9 @@ void Atoms::setAtomsGatindex(int*g,bool fortran) {
   if(dd) {
     dd.Sum(shuffledAtoms);
     for(unsigned i=0; i<gatindex.size(); i++) dd.g2l[gatindex[i]]=i;
+  }
+  if(!dd) {
+    for(unsigned i=0; i<gatindex.size(); ++i) g2l_nondd[gatindex[i]]=i;
   }
 
   for(unsigned i=0; i<actions.size(); i++) {

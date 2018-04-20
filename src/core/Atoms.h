@@ -49,6 +49,7 @@ class Atoms
   int natoms;
   std::set<AtomNumber> unique;
   std::vector<unsigned> uniq_index;
+  std::vector<int> g2l_nondd;
   std::vector<Vector> positions;
   std::vector<Vector> forces;
   std::vector<double> masses;
