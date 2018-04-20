@@ -119,12 +119,9 @@ void MDAtomsTyped<T>::getPositions(const std::set<AtomNumber>&index,const vector
 // cannot be parallelized with omp because access to positions is not ordered
   unsigned k=0;
   for(const auto & p : index) {
-//    positions[p.index()][0]=px[stride*i[k]]*scalep;
-//    positions[p.index()][1]=py[stride*i[k]]*scalep;
-//    positions[p.index()][2]=pz[stride*i[k]]*scalep;
- positions[p.index()][0]=px[stride*k]*scalep;
- positions[p.index()][1]=py[stride*k]*scalep;
- positions[p.index()][2]=pz[stride*k]*scalep;
+    positions[p.index()][0]=px[stride*i[k]]*scalep;
+    positions[p.index()][1]=py[stride*i[k]]*scalep;
+    positions[p.index()][2]=pz[stride*i[k]]*scalep;
     k++;
   }
 }
