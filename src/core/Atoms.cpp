@@ -468,7 +468,10 @@ void Atoms::createFullList(int*n) {
     fullList.resize(natoms);
     for(unsigned i=0;i<natoms;i++) fullList[i]=i;
   } else {
-    std::set<AtomNumber> unique;
+// We update here the unique list defined at Atoms::unique.
+// This is not very clear, and probably should be coded differently.
+// Hopefully this fix the longstanding issue with NAMD.
+    unique.clear();
     for(unsigned i=0; i<actions.size(); i++) {
       if(actions[i]->isActive()) {
         if(!actions[i]->getUnique().empty()) {
