@@ -27,10 +27,10 @@ namespace mapping {
 PathReparameterization::PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<ReferenceConfiguration*>& pp ):
   mydpack( 1, pp[0]->getNumberOfReferenceArguments() + 3*pp[0]->getNumberOfReferencePositions() + 9 ),
   mypack( pp[0]->getNumberOfReferenceArguments(), pp[0]->getNumberOfReferencePositions(), mydpack ),
-  mypath(pp),
+  mydir(ReferenceConfigurationOptions("DIRECTION")),
   pbc(ipbc),
   args(iargs),
-  mydir(ReferenceConfigurationOptions("DIRECTION")),
+  mypath(pp),
   len(pp.size()),
   sumlen(pp.size()),
   sfrac(pp.size()),
