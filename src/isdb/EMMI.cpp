@@ -576,7 +576,7 @@ EMMI::EMMI(const ActionOptions&ao):
   // print bibliography
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<plumed.cite("Hanot, Bonomi, Greenberg, Sali, Nilges, Vendruscolo, Pellarin, bioRxiv doi: 10.1101/113951 (2017)");
-  log<<plumed.cite("Bonomi, Pellarin, Vendruscolo, bioRxiv doi: 10.1101/219972 (2017)");
+  log<<plumed.cite("Bonomi, Pellarin, Vendruscolo, Biophys. J. 114, 1604 (2018)");
   if(!no_aver_ && nrep_>1)log<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   log<<"\n";
 }
