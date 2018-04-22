@@ -167,8 +167,6 @@ private:
 // parallel stuff
   unsigned size_;
   unsigned rank_;
-// pbc
-  bool pbc_;
 // Monte Carlo stuff
   int      MCstride_;
   double   MCaccept_;
@@ -315,7 +313,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   inv_sqrt2_(0.707106781186548),
   sqrt2_pi_(0.797884560802865),
   inv_pi2_(0.050660591821169),
-  first_time_(true), no_aver_(false), pbc_(true),
+  first_time_(true), no_aver_(false),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
   dbfact_(0.0), bfactmax_(4.0), readbf_(false),
@@ -324,10 +322,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
   kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0)
 {
-  // periodic boundary conditions
-  bool nopbc=!pbc_;
-  parseFlag("NOPBC",nopbc);
-  pbc_=!nopbc;
 
   // list of atoms
   vector<AtomNumber> atoms;
@@ -828,7 +822,7 @@ void EMMIVOX::doMonteCarloBfact()
 
     // useful quantities
     map<unsigned, double> deltaov;
-    Vector pos, posn;
+    Vector pos;
     double dist;
     set<unsigned> ngbs;
 
@@ -865,9 +859,7 @@ void EMMIVOX::doMonteCarloBfact()
           // check if same residue
           if(ires==iresn) continue;
           // distance
-          posn = getPosition(in);
-          if(pbc_) dist = pbcDistance(pos,posn).modulo();
-          else     dist = delta(pos,posn).modulo();
+          dist = delta(pos,getPosition(in)).modulo();
           // if closer than 0.5 nm, add residue to lists
           if(dist>0 && dist<0.5) ngbs.insert(iresn);
         }
@@ -1190,10 +1182,8 @@ double EMMIVOX::get_overlap_der(const Vector &d_m, const Vector &m_m,
                                 const Vector5d &pref, const Vector5d &invs2,
                                 Vector &ov_der)
 {
-  Vector md;
   // calculate vector difference with/without pbc
-  if(pbc_) md = pbcDistance(m_m, d_m);
-  else     md = delta(m_m, d_m);
+  Vector md = delta(m_m, d_m);
   // cycle on 5 Gaussians
   double ov_tot = 0.0;
   for(unsigned j=0; j<5; ++j) {
@@ -1213,10 +1203,8 @@ double EMMIVOX::get_overlap_der(const Vector &d_m, const Vector &m_m,
 double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, double d_s,
                             const Vector5d &cfact, const Vector5d &m_s, double bfact)
 {
-  Vector md;
   // calculate vector difference with/without pbc
-  if(pbc_) md = pbcDistance(m_m, d_m);
-  else     md = delta(m_m, d_m);
+  Vector md = delta(m_m, d_m);
   // cycle on 5 Gaussians
   double ov_tot = 0.0;
   for(unsigned j=0; j<5; ++j) {
@@ -1259,8 +1247,7 @@ void EMMIVOX::update_neighbor_list()
     // cycle on all atoms
     for(unsigned im=0; im<GMM_m_size; ++im) {
       // calculate vector difference m_m-d_m with/without pbc
-      if(pbc_) md = pbcDistance(getPosition(im), d_m);
-      else     md = delta(getPosition(im), d_m);
+      md = delta(getPosition(im), d_m);
       // calculate modulo
       double m2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2];
       // calculate exponent
@@ -1556,18 +1543,16 @@ void EMMIVOX::calculate()
 
   // get derivatives of bias with respect to atoms
   unsigned id, im;
-  Vector tot_der, pos;
+  Vector tot_der;
   for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
     // get indexes of data and model component
     id = nl_[i] / GMM_m_type_.size();
     im = nl_[i] % GMM_m_type_.size();
     // chain rule + replica normalization
     tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
-    if(pbc_) pos = pbcDistance(GMM_d_m_[id], getPosition(im)) + GMM_d_m_[id];
-    else     pos = getPosition(im);
     // increment derivatives and virial
     atom_der_[im] += tot_der;
-    virial_ += Tensor(pos, -tot_der);
+    virial_ += Tensor(getPosition(im), -tot_der);
   }
 
   // communicate local derivatives and virial
