@@ -40,12 +40,12 @@ and some special cases.
 Basis functions given by Gaussian functions with shifted means defined on a
 bounded interval. You need to provide the interval \f$[a,b]\f$ on which the
 basis functions are to be used. The order of the expansion \f$N\f$ determines
-the position of the means of the Gaussian functions by separating the
-intervall into \f$N\f$ parts.
+the the number of individual Gaussians to be used. The position of their means
+is set by dividing the interval into \f$N\f$ evenly parts and then placing a
+basis function in the middle of each sub-interval.
 It is also possible to specify the width (i.e. standart deviation) of the Gaussians using
 the WIDTH keyword. By default it is set to the sub-intervall length.
-
-The optimization then adjusts the heigths of the individual Gaussians.
+The optimization procedure then adjusts the heigths of the individual Gaussians.
 
 Add stuff here...
 
