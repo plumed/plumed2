@@ -49,7 +49,7 @@ class Atoms
   int natoms;
   std::set<AtomNumber> unique;
   std::vector<unsigned> uniq_index;
-  std::vector<int> g2l_nondd;
+  std::vector<int> g2l;
   std::vector<Vector> positions;
   std::vector<Vector> forces;
   std::vector<double> masses;
@@ -113,7 +113,6 @@ class Atoms
   public:
     bool on;
     bool async;
-    std::vector<int>    g2l;
 
     std::vector<Communicator::Request> mpi_request_positions;
     std::vector<Communicator::Request> mpi_request_index;

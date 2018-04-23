@@ -173,7 +173,7 @@ void Atoms::shareAll() {
   unique.clear();
   // keep in unique only those atoms that are local
   if(dd && shuffledAtoms>0) {
-    for(int i=0; i<natoms; i++) if(dd.g2l[i]>=0) unique.insert(AtomNumber::index(i));
+    for(int i=0; i<natoms; i++) if(g2l[i]>=0) unique.insert(AtomNumber::index(i));
   } else {
     for(int i=0; i<natoms; i++) unique.insert(AtomNumber::index(i));
   }
@@ -203,10 +203,8 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
   } else {
     uniq_index.clear();
     uniq_index.reserve(unique.size());
-    if(dd && shuffledAtoms>0) {
-      for(const auto & p : unique) uniq_index.push_back(dd.g2l[p.index()]);
-    } else {
-      for(const auto & p : unique) uniq_index.push_back(g2l_nondd[p.index()]);
+    if(shuffledAtoms>0) {
+      for(const auto & p : unique) uniq_index.push_back(g2l[p.index()]);
     }
     mdatoms->getPositions(unique,uniq_index,positions);
   }
@@ -368,8 +366,8 @@ void Atoms::DomainDecomposition::enable(Communicator& c) {
 
 void Atoms::setAtomsNlocal(int n) {
   gatindex.resize(n);
+  g2l.resize(natoms,-1);
   if(dd) {
-    dd.g2l.resize(natoms,-1);
 // Since these vectors are sent with MPI by using e.g.
 // &dd.positionsToBeSent[0]
 // we make sure they are non-zero-sized so as to
@@ -379,8 +377,6 @@ void Atoms::setAtomsNlocal(int n) {
     dd.positionsToBeReceived.resize(natoms*5,0.0);
     dd.indexToBeSent.resize(n,0);
     dd.indexToBeReceived.resize(natoms,0);
-  } else {
-    g2l_nondd.resize(natoms,-1);
   }
 }
 
@@ -392,8 +388,7 @@ void Atoms::setAtomsGatindex(int*g,bool fortran) {
   } else {
     for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=g[i];
   }
-  for(unsigned i=0; i<dd.g2l.size(); i++) dd.g2l[i]=-1;
-  for(unsigned i=0; i<g2l_nondd.size(); ++i) g2l_nondd[i]=-1;
+  for(unsigned i=0; i<g2l.size(); i++) g2l[i]=-1;
   if( gatindex.size()==natoms ) {
     shuffledAtoms=0;
     for(unsigned i=0; i<gatindex.size(); i++) {
@@ -404,11 +399,8 @@ void Atoms::setAtomsGatindex(int*g,bool fortran) {
   }
   if(dd) {
     dd.Sum(shuffledAtoms);
-    for(unsigned i=0; i<gatindex.size(); i++) dd.g2l[gatindex[i]]=i;
   }
-  if(!dd) {
-    for(unsigned i=0; i<gatindex.size(); ++i) g2l_nondd[gatindex[i]]=i;
-  }
+  for(unsigned i=0; i<gatindex.size(); i++) g2l[gatindex[i]]=i;
 
   for(unsigned i=0; i<actions.size(); i++) {
     // keep in unique only those atoms that are local
@@ -420,8 +412,8 @@ void Atoms::setAtomsGatindex(int*g,bool fortran) {
 void Atoms::setAtomsContiguous(int start) {
   ddStep=plumed.getStep();
   for(unsigned i=0; i<gatindex.size(); i++) gatindex[i]=start+i;
-  for(unsigned i=0; i<dd.g2l.size(); i++) dd.g2l[i]=-1;
-  if(dd) for(unsigned i=0; i<gatindex.size(); i++) dd.g2l[gatindex[i]]=i;
+  for(unsigned i=0; i<g2l.size(); i++) g2l[i]=-1;
+  for(unsigned i=0; i<gatindex.size(); i++) g2l[gatindex[i]]=i;
   if(gatindex.size()<natoms) shuffledAtoms=1;
   for(unsigned i=0; i<actions.size(); i++) {
     // keep in unique only those atoms that are local
