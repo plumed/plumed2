@@ -464,7 +464,7 @@ void Atoms::createFullList(int*n) {
   if(!massAndChargeOK && shareMassAndChargeOnlyAtFirstStep) {
     *n=natoms;
     fullList.resize(natoms);
-    for(unsigned i=0;i<natoms;i++) fullList[i]=i;
+    for(unsigned i=0; i<natoms; i++) fullList[i]=i;
   } else {
 // We update here the unique list defined at Atoms::unique.
 // This is not very clear, and probably should be coded differently.
