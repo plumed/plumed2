@@ -40,11 +40,13 @@ and some special cases.
 Basis functions given by Gaussian functions with shifted means defined on a
 bounded interval. You need to provide the interval \f$[a,b]\f$ on which the
 basis functions are to be used. The order of the expansion \f$N\f$ determines
-the the number of individual Gaussians to be used. The position of their means
-is set by dividing the interval into \f$N\f$ evenly parts and then placing a
-basis function in the middle of each sub-interval.
-It is also possible to specify the width (i.e. standart deviation) of the Gaussians using
-the WIDTH keyword. By default it is set to the sub-intervall length.
+the number of equally sized sub-intervalls to be used. On the borders of each
+of these sub-intervalls the mean of a Gaussian basis function is placed.
+
+It is also possible to specify the width (i.e. standart deviation) of the
+Gaussians using the WIDTH keyword. By default it is set to the sub-intervall
+length.
+
 The optimization procedure then adjusts the heigths of the individual Gaussians.
 
 Add stuff here...
@@ -79,14 +81,14 @@ BF_Gaussian::BF_Gaussian(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
   width_((intervalMax()-intervalMin()) / getOrder())
 {
-  setNumberOfBasisFunctions(getOrder());
+  setNumberOfBasisFunctions(getOrder()+1);
   setIntrinsicInterval(intervalMin(),intervalMax());
   parse("WIDTH",width_);
   if(width_ <= 0.0) {plumed_merror("WIDTH should be larger than 0");}
   if(width_ != (intervalMax()-intervalMin())/getOrder()) {addKeywordToList("WIDTH",width_);}
   mean_.reserve(getNumberOfBasisFunctions());
   for(unsigned int i=0; i < getNumberOfBasisFunctions(); i++) {
-    mean_.push_back(intervalMin()+(i+0.5)*((intervalMax()-intervalMin())/getNumberOfBasisFunctions()));
+    mean_.push_back(intervalMin()+i*((intervalMax()-intervalMin())/getOrder()));
   }
   setNonPeriodic();
   setNonOrthogonal();
