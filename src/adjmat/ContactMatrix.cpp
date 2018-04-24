@@ -103,7 +103,7 @@ ContactMatrix::ContactMatrix( const ActionOptions& ao ):
   }
   // And set the link cell cutoff
   log.printf("  switching function cutoff is %s \n",switchingFunction.description().c_str() );
-  setLinkCellCutoff( switchingFunction.get_dmax() );
+  setLinkCellCutoff( true, switchingFunction.get_dmax() );
 }
 
 double ContactMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {

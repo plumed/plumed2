@@ -38,6 +38,7 @@ namespace adjmat {
 
 class DistanceMatrix : public AdjacencyMatrixBase {
 private:
+  double cutoff;
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
@@ -51,6 +52,7 @@ PLUMED_REGISTER_ACTION(DistanceMatrix,"DISTANCE_MATRIX")
 
 void DistanceMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );
+  keys.add("compulsory","CUTOFF","-1","ignore distances that have a value larger than this cutoff");
 }
 
 DistanceMatrix::DistanceMatrix( const ActionOptions& ao ):
@@ -59,7 +61,13 @@ DistanceMatrix::DistanceMatrix( const ActionOptions& ao ):
 {
   // And set the link cell cutoff
   log.printf("  weight is distance between atoms \n");
-  setLinkCellCutoff( std::numeric_limits<double>::max() );
+  parse("CUTOFF",cutoff);
+  if( cutoff<0 ) {
+      setLinkCellCutoff( true, std::numeric_limits<double>::max() );
+  } else {
+      log.printf("  ignoring distances that are larger than %f \n", cutoff);
+      setLinkCellCutoff( true, cutoff );
+  }
 }
 
 double DistanceMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
@@ -67,7 +75,8 @@ double DistanceMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
   addAtomDerivatives( 0, (-invd)*distance, myvals );
   addAtomDerivatives( 1, (+invd)*distance, myvals );
   addBoxDerivatives( (-invd)*Tensor(distance,distance), myvals );
-  return mod;
+  if( cutoff<0 || mod<cutoff ) return mod;
+  return 0;
 }
 
 }

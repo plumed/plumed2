@@ -168,6 +168,14 @@ void Function::addValueWithDerivatives() {
   } else { period.resize(1); period[0]="NO"; }
 
   std::vector<unsigned> shape( getShape() );
+  // Check for matrices
+  bool symmetric=true;
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->getRank()==2 ) {
+          if( !getPntrToArgument(i)->isSymmetric() ){ symmetric=false; break; }
+      } 
+  }
+
   if( arg_ends.size()==0 ) {
     if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
     else if( hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
@@ -176,6 +184,9 @@ void Function::addValueWithDerivatives() {
     else ActionWithValue::addValue( shape );
     if(period.size()==1 && period[0]=="NO") setNotPeriodic();
     else if(period.size()==2) setPeriodic(period[0],period[1]);
+    // Ensure symmetry of matrix is transferred if it is valid
+    Value* myval = getPntrToValue();
+    if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
   } else if( arg_ends[1]-arg_ends[0]==1 ) {
     if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
     else if( hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
@@ -184,6 +195,9 @@ void Function::addValueWithDerivatives() {
     else ActionWithValue::addValue( shape );
     if(period.size()==1 && period[0]=="NO") setNotPeriodic();
     else if(period.size()==2) setPeriodic(period[0],period[1]);
+    // Ensure symmetry of matrix is transferred if it is valid
+    Value* myval = getPntrToValue();
+    if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
   } else {
     std::string num;
     for(unsigned i=0; i<arg_ends.size()-1; ++i) {
@@ -195,6 +209,9 @@ void Function::addValueWithDerivatives() {
       else ActionWithValue::addComponent( "arg_" + num, shape );
       if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg_" + num );
       else if(period.size()==2) componentIsPeriodic("arg_" + num, period[0], period[1]);
+      // Ensure symmetry of matrix is transferred if it is valid
+      Value* myval = getPntrToComponent(getNumberOfComponents()-1);
+      if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
     }
   }
 }
@@ -203,18 +220,32 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
   plumed_massert( getNumberOfArguments()!=0, "for functions you must requestArguments before adding values");
 
   std::vector<unsigned> shape( getShape() );
+  // Check for matrices
+  bool symmetric=true;
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->getRank()==2 ) {
+          if( !getPntrToArgument(i)->isSymmetric() ){ symmetric=false; break; }
+      }
+  }
+
   if( arg_ends.size()==0 ) {
     if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape);
     else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape );
     else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent(name,shape);
     else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives(name,shape);
     else ActionWithValue::addComponent(name,shape);
+    // Ensure symmetry of matrix is transferred if it is valid
+    Value* myval = getPntrToComponent(getNumberOfComponents()-1);
+    if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
   } else if( arg_ends[1]-arg_ends[0]==1 ) {
     if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape);
     else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape );
     else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent(name,shape);
     else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives(name,shape);
     else ActionWithValue::addComponent(name,shape);
+    // Ensure symmetry of matrix is transferred if it is valid
+    Value* myval = getPntrToComponent(getNumberOfComponents()-1);
+    if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
   } else {
     std::string num;
     for(unsigned i=0; i<arg_ends.size()-1; ++i) {
@@ -224,6 +255,9 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
       else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent( name + "_arg_" + num, shape );
       else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives(name + "_arg_" + num, shape);
       else ActionWithValue::addComponent( name + "_arg_" + num, shape );
+      // Ensure symmetry of matrix is transferred if it is valid
+      Value* myval = getPntrToComponent(getNumberOfComponents()-1);
+      if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
     }
   }
 }

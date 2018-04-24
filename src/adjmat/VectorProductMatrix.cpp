@@ -92,7 +92,7 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
   }
   requestArguments( args, false );
   // And create the matrix to hold the dot products
-  addValue( shape );
+  addValue( shape ); // if( readgroup ) getPntrToComponent(0)->setSymmetric( true );    /// Is this right though???
   if( args[0]->getRank()==0 ) narg_derivatives = getNumberOfArguments();
   else if( ncol_args>0 ) narg_derivatives = (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
   else narg_derivatives = getPntrToArgument(0)->getShape()[0]*getNumberOfArguments();

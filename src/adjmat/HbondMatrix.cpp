@@ -127,7 +127,7 @@ HbondMatrix::HbondMatrix(const ActionOptions&ao):
   if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
 
   // Setup link cells
-  setLinkCellCutoff( distanceOOSwitch.get_dmax() );
+  setLinkCellCutoff( false, distanceOOSwitch.get_dmax() );
 
   // And check everything has been read in correctly
   checkRead();

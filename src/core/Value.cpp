@@ -42,6 +42,7 @@ Value::Value():
   alwaysstore(false),
   storedata(true),
   columnsums(false),
+  symmetric(false),
   bufstart(0),
   streampos(0),
   periodicity(unset),
@@ -63,6 +64,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   hasDeriv(withderiv),
   alwaysstore(false),
   columnsums(false),
+  symmetric(false),
   bufstart(0),
   streampos(0),
   periodicity(unset),
@@ -364,6 +366,16 @@ std::string Value::getOutputDescription( const std::string& alabel ) const {
     Tools::convert( userdata.find(alabel)->second[i].first+1, num ); datp += " " + name + "." + num;
   }
   return datp;
+}
+
+void Value::setSymmetric( const bool& sym ) {
+  plumed_assert( shape.size()==2 && !hasDeriv ); 
+  if( sym && shape[0]!=shape[1] ) plumed_merror("non-square matrix cannot be symmetric");
+  symmetric=sym; 
+}
+
+bool Value::isSymmetric() const {
+  return symmetric;
 }
 
 // void Value::setBufferPosition( const unsigned& ibuf ){

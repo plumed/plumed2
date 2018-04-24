@@ -35,7 +35,7 @@ class AdjacencyMatrixBase :
   public ActionWithValue
 {
 private:
-  bool nopbc, components;
+  bool nopbc, components, read_one_group;
   LinkCells linkcells, threecells;
   std::vector<double> forcesToApply;
   std::vector<unsigned> ablocks, threeblocks;
@@ -47,7 +47,7 @@ protected:
   Vector getPosition( const unsigned& indno, const MultiValue& myvals ) const ;
   void addAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const ;
   void addThirdAtomDerivatives( const unsigned& indno, const Vector& der, MultiValue& myvals ) const ;
-  void setLinkCellCutoff( const double& lcut, double tcut=-1.0 );
+  void setLinkCellCutoff( const bool& symmetric, const double& lcut, double tcut=-1.0 );
   void addBoxDerivatives( const Tensor& vir, MultiValue& myvals ) const ;
 public:
   static void registerKeywords( Keywords& keys );

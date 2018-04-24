@@ -103,7 +103,23 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
   bool hasrank = getPntrToArgument(0)->getRank()>0; done_over_stream = false;
   if( hasrank ) {
     for(unsigned i=0; i<getNumberOfArguments(); ++i) { getPntrToArgument(i)->buildDataStore( getLabel() ); plumed_assert( getPntrToArgument(i)->getRank()>0 ); }
-    for(unsigned i=0; i<nvals; ++i) addTaskToList(i);
+    if( getPntrToArgument(0)->getRank()==2 ) {
+       bool symmetric=true; std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+           if( !getPntrToArgument(i)->isSymmetric() ) symmetric=false;
+       }
+       if( symmetric ) {
+           for(unsigned j=0;j<shape[0];++j) {
+               for(unsigned k=0;k<=j;++k) addTaskToList( j*shape[0] + k );
+           }
+       } else {
+           for(unsigned i=0; i<nvals; ++i) addTaskToList(i);
+       }
+    } else if( getPntrToArgument(0)->getRank()==1 ) {
+       for(unsigned i=0; i<nvals; ++i) addTaskToList(i);
+    } else {
+       error("do not know how to build histograms for objects with this rank");
+    }
   } else {
     one_kernel_at_a_time=true; for(unsigned i=0; i<arg_ends.size(); ++i) { if( arg_ends[i]!=i ) { one_kernel_at_a_time=false; break; } }
     if( !one_kernel_at_a_time ) for(unsigned i=0; i<nvals; ++i) addTaskToList(i);
@@ -147,7 +163,7 @@ void HistogramBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
       if( heights_index==2 ) {
           tflags.assign(tflags.size(),1); unsigned hind = getNumberOfDerivatives();
           for(unsigned i=0;i<tflags.size();++i) {
-              if( fabs(getPntrToArgument(arg_ends[hind])->get(i))<epsilon ) tflags[i]=0;
+              if( fabs(getPntrToArgument(arg_ends[hind])->get( getTaskCode(i) ))<epsilon ) tflags[i]=0;
           }
       } else { tflags.assign(tflags.size(),1); }
       norm = static_cast<double>( tflags.size() ); 

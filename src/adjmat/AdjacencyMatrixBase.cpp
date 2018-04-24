@@ -46,6 +46,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
+  read_one_group(false),
   linkcells(comm),
   threecells(comm)
 {
@@ -73,7 +74,7 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
     for(unsigned i=0; i<t.size(); ++i) { log.printf("%d ", t[i].serial()); addTaskToList( i ); ablocks[i]=i; }
     log.printf("\n"); shape[0]=shape[1]=t.size();
     // Create a group of the atoms in the rows
-    atoms.insertGroup( getLabel(), t );
+    atoms.insertGroup( getLabel(), t ); read_one_group=true;
   }
   if( keywords.exists("GROUPC") ) {
     std::vector<AtomNumber> tc; parseAtomList("GROUPC",tc);
@@ -96,10 +97,14 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   requestAtoms( t ); forcesToApply.resize( getNumberOfDerivatives() );
   parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);
   addComponent( "w", shape ); componentIsNotPeriodic("w");
+
   if( components ) {
     addComponent( "x", shape ); componentIsNotPeriodic("x");
+    if( read_one_group ){ getPntrToComponent(0)->setSymmetric( false ); } 
     addComponent( "y", shape ); componentIsNotPeriodic("y");
+    if( read_one_group ){ getPntrToComponent(0)->setSymmetric( false ); }
     addComponent( "z", shape ); componentIsNotPeriodic("z");
+    if( read_one_group ){ getPntrToComponent(0)->setSymmetric( false ); }
   }
   log<<"  Bibliography "<<plumed.cite("Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)")<<"\n";
 }
@@ -110,7 +115,9 @@ void AdjacencyMatrixBase::setupThirdAtomBlock( const std::vector<AtomNumber>& tc
   log.printf("\n");
 }
 
-void AdjacencyMatrixBase::setLinkCellCutoff( const double& lcut, double tcut ) {
+void AdjacencyMatrixBase::setLinkCellCutoff( const bool& symmetric, const double& lcut, double tcut ) {
+  if( read_one_group && symmetric ) getPntrToComponent(0)->setSymmetric( true );
+
   if( tcut<0 ) tcut=lcut;
   linkcells.setCutoff( lcut );
   threecells.setCutoff( tcut );

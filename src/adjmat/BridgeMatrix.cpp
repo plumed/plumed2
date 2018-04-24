@@ -111,16 +111,16 @@ BridgeMatrix::BridgeMatrix(const ActionOptions&ao):
   Action(ao),
   AdjacencyMatrixBase(ao)
 {
-  std::string sfinput,errors; parse("SWITCH",sfinput);
+  bool oneswitch; std::string sfinput,errors; parse("SWITCH",sfinput);
   if( sfinput.length()>0 ) {
-    sf1.set(sfinput,errors);
+    sf1.set(sfinput,errors); oneswitch=true;
     if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
     sf2.set(sfinput,errors);
     if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
   } else {
     parse("SWITCHA",sfinput);
     if(sfinput.length()>0) {
-      sf1.set(sfinput,errors);
+      sf1.set(sfinput,errors); oneswitch=false;
       if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors );
       sfinput.clear(); parse("SWITCHB",sfinput);
       if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
@@ -134,7 +134,7 @@ BridgeMatrix::BridgeMatrix(const ActionOptions&ao):
   log.printf("  distance between bridging atoms and atoms in GROUPB must be less than %s\n",sf2.description().c_str());
 
   // Setup link cells
-  setLinkCellCutoff( sf1.get_dmax() + sf2.get_dmax() );
+  setLinkCellCutoff( oneswitch, sf1.get_dmax() + sf2.get_dmax() );
 
   // And check everything has been read in correctly
   checkRead();

@@ -106,7 +106,7 @@ FunctionOnGrid::FunctionOnGrid(const ActionOptions&ao):
    for(unsigned i=1;i<gmin.size();++i) log.printf(", %s", gmin[i].c_str() );
    log.printf(") and (%s", gmax[0].c_str() );
    for(unsigned i=1;i<gmax.size();++i) log.printf(", %s", gmax[i].c_str() );
-   log.printf("\n");
+   log.printf(")\n");
 
    lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(leptonConstants);
    log<<"  function as parsed by lepton: "<<pe<<"\n";

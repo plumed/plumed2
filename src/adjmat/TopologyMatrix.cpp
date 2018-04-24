@@ -109,7 +109,7 @@ TopologyMatrix::TopologyMatrix(const ActionOptions&ao):
   parse("SIGMA",sigma); parse("KERNEL",kerneltype); parse("BIN_SIZE",binw_mat);
 
   // Set the link cell cutoff
-  setLinkCellCutoff( switchingFunction.get_dmax(), std::numeric_limits<double>::max() );
+  setLinkCellCutoff( true, switchingFunction.get_dmax(), std::numeric_limits<double>::max() );
   // Set the number of bins
   maxbins = std::floor( switchingFunction.get_dmax() / binw_mat ) + 1;
   // Set the cell volume

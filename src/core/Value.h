@@ -78,6 +78,8 @@ private:
   std::vector<std::pair<std::string,int> > store_data_for;
 /// Are we taking column sums
   bool columnsums;
+/// Some variables for dealing with matrices
+  bool symmetric;
 /// Variables for storing data
   unsigned bufstart, streampos, matpos;
 /// Store information on who is using information contained in this value
@@ -201,6 +203,10 @@ public:
   void getRequiredValue( const std::string& alabel, const unsigned& num, std::vector<double>& args ) const ;
 ///
   std::string getOutputDescription( const std::string& alabel ) const ;
+///
+  void setSymmetric( const bool& sym );
+///
+  bool isSymmetric() const ;
 };
 
 inline

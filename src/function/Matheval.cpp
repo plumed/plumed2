@@ -179,6 +179,9 @@ progression (S) and distance (Z) variables \cite perez2015atp.
 class Matheval :
   public Function
 {
+/// Check if only multiplication is done in function.  If only multiplication is done we can do some tricks
+/// to speed things up
+  bool onlymultiplication;
 /// Lepton expression.
 /// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!  
   std::vector<lepton::CompiledExpression> expression;
@@ -231,6 +234,7 @@ void Matheval::registerKeywords(Keywords& keys) {
 Matheval::Matheval(const ActionOptions&ao):
   Action(ao),
   Function(ao),
+  onlymultiplication(true),
   expression(OpenMP::getNumThreads()),
   expression_deriv(getNumberOfArguments())
 {
@@ -250,6 +254,10 @@ Matheval::Matheval(const ActionOptions&ao):
   if(var.size()!=getNumberOfArguments())
     error("Size of VAR array should be the same as number of arguments");
   parse("FUNC",func);
+  // Check for operations that are not multiplication
+  onlymultiplication = func.find("*")!=std::string::npos;
+  if( func.find("/")!=std::string::npos || func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) onlymultiplication=false;
+  if( onlymultiplication ) log.printf("  optimizing implementation as function only involves multiplication");
   addValueWithDerivatives();
   checkRead();
 
@@ -275,14 +283,18 @@ Matheval::Matheval(const ActionOptions&ao):
 
 void Matheval::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
   bool allzero=(fabs(args[0])<epsilon);
+  if( onlymultiplication && !allzero ) {
+      for(unsigned i=1; i<args.size(); ++i) {
+        if( fabs(args[i])<epsilon ) { allzero=true; break; }
+      } 
+  } else if( !onlymultiplication && allzero ) {
+      for(unsigned i=1; i<args.size(); ++i) {
+        if( fabs(args[i])>epsilon ) { allzero=false; break; }
+      }
+  }
   if( allzero ) {
-    for(unsigned i=1; i<args.size(); ++i) {
-      if( fabs(args[i])>epsilon ) { allzero=false; break; }
-    }
-    if( allzero ) {
       addValue(0, 0.0, myvals ); for(unsigned i=0; i<getNumberOfArguments(); i++) addDerivative(0, i, 0.0, myvals );
       return;
-    }
   }
 
   const unsigned t=OpenMP::getThreadNum(); plumed_assert(t<expression.size());

@@ -167,7 +167,7 @@ HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
       double rcut = kernels[k]->getCenter()[2] + kernels[k]->getContinuousSupport()[2];
       if( rcut>sfmax ) sfmax = rcut;
   }
-  setLinkCellCutoff( sfmax );
+  setLinkCellCutoff( false, sfmax );
 }
 
 HBPammMatrix::~HBPammMatrix() {
