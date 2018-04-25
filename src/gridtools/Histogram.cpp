@@ -730,8 +730,8 @@ void Histogram::addKernelForces( const unsigned& heights_index, const unsigned& 
     for(unsigned i=0; i<num_neigh; ++i) {
       gridobject.getGridPointCoordinates( neighbors[i], gpoint );
       double val = evaluateBeadValue( bead, gpoint, args, height, der ); double fforce = getPntrToOutput(0)->getForce( neighbors[i] );
-      if( heights_index==2 ) forces[ args.size()*getFullNumberOfTasks() + itask ] += val*fforce / height;
-      unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += der[j]*fforce; n += getFullNumberOfTasks(); }
+      if( heights_index==2 ) forces[ args.size()*numberOfKernels + itask ] += val*fforce / height;
+      unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += der[j]*fforce; n += numberOfKernels; }
     }
   } else {
     std::vector<Value*> vv; KernelFunctions* kk = setupValuesAndKernel( args, height, vv );
@@ -739,8 +739,8 @@ void Histogram::addKernelForces( const unsigned& heights_index, const unsigned& 
       gridobject.getGridPointCoordinates( neighbors[i], gpoint );
       for(unsigned j=0; j<der.size(); ++j) vv[j]->set( gpoint[j] );
       double val = kk->evaluate( vv, der, true ); double fforce = getPntrToOutput(0)->getForce( neighbors[i] );
-      if( heights_index==2 ) forces[ args.size()*getFullNumberOfTasks() + itask ] += val*fforce / height;
-      unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += -der[j]*fforce; n += getFullNumberOfTasks(); }
+      if( heights_index==2 ) forces[ args.size()*numberOfKernels + itask ] += val*fforce / height;
+      unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += -der[j]*fforce; n += numberOfKernels; }
     }
     delete kk; for(unsigned i=0; i<der.size(); ++i) delete vv[i];
   }

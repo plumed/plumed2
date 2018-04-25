@@ -739,8 +739,8 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
         av->runTask( itask, av->partialTaskList[i], myvals );
 
         // Now get the forces
-        if( nt>1 ) av->gatherForces( itask, myvals, omp_forces );
-        else av->gatherForces( itask, myvals, forces );
+        if( nt>1 ) av->gatherForces( av->partialTaskList[i], myvals, omp_forces );
+        else av->gatherForces( av->partialTaskList[i], myvals, forces );
 
         myvals.clearAll();
         myvals.clearStoredForces();

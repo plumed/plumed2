@@ -71,11 +71,14 @@ DistanceMatrix::DistanceMatrix( const ActionOptions& ao ):
 }
 
 double DistanceMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, const unsigned& natoms, MultiValue& myvals ) const {
-  Vector distance = pos2; double mod = distance.modulo(); double invd = 1.0/mod;
-  addAtomDerivatives( 0, (-invd)*distance, myvals );
-  addAtomDerivatives( 1, (+invd)*distance, myvals );
-  addBoxDerivatives( (-invd)*Tensor(distance,distance), myvals );
-  if( cutoff<0 || mod<cutoff ) return mod;
+  Vector distance = pos2; double mod = distance.modulo(); 
+  if( cutoff<0 || mod<cutoff ) {
+      double invd = 1.0/mod;
+      addAtomDerivatives( 0, (-invd)*distance, myvals );
+      addAtomDerivatives( 1, (+invd)*distance, myvals );
+      addBoxDerivatives( (-invd)*Tensor(distance,distance), myvals );
+      return mod;
+  }
   return 0;
 }
 

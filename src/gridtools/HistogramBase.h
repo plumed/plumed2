@@ -38,7 +38,7 @@ private:
   void retrieveArgumentsAndHeight( const MultiValue& myvals, std::vector<double>& args, double& height ) const ;
 protected:
   double norm;
-  unsigned heights_index;
+  unsigned heights_index, numberOfKernels;
   bool one_kernel_at_a_time, unorm;
   GridCoordinatesObject gridobject;
   void addValueWithDerivatives( const std::vector<unsigned>& shape );

@@ -66,15 +66,15 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
   ActionWithValue(ao),
   ActionWithArguments(ao),
   heights_index(1),
+  numberOfKernels(1),
   one_kernel_at_a_time(false)
 {
   // Check all the values have the right size
-  unsigned nvals = 1;
   if( arg_ends.size()>0 ) {
-    nvals=0; for(unsigned i=arg_ends[0]; i<arg_ends[1]; ++i) nvals += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+    numberOfKernels=0; for(unsigned i=arg_ends[0]; i<arg_ends[1]; ++i) numberOfKernels += getPntrToArgument(i)->getNumberOfValues( getLabel() );
     for(unsigned i=1; i<arg_ends.size()-1; ++i) {
       unsigned tvals=0; for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
-      if( nvals!=tvals ) error("mismatch between numbers of values in input arguments");
+      if( numberOfKernels!=tvals ) error("mismatch between numbers of values in input arguments");
     }
   } else {
     arg_ends.push_back(0); for(unsigned i=0; i<getNumberOfArguments(); ++i) arg_ends.push_back(i+1);
@@ -92,7 +92,7 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
       tvals += weight_args[i]->getNumberOfValues( getLabel() );
       args.push_back( weight_args[i] );
     }
-    if( nvals!=tvals ) error("mismatch between numbers of values in input arguments and HEIGHTS");
+    if( numberOfKernels!=tvals ) error("mismatch between numbers of values in input arguments and HEIGHTS");
     arg_ends.push_back( args.size() ); requestArguments( args, true );
   }
 
@@ -113,16 +113,16 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
                for(unsigned k=0;k<=j;++k) addTaskToList( j*shape[0] + k );
            }
        } else {
-           for(unsigned i=0; i<nvals; ++i) addTaskToList(i);
+           for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
        }
     } else if( getPntrToArgument(0)->getRank()==1 ) {
-       for(unsigned i=0; i<nvals; ++i) addTaskToList(i);
+       for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
     } else {
        error("do not know how to build histograms for objects with this rank");
     }
   } else {
     one_kernel_at_a_time=true; for(unsigned i=0; i<arg_ends.size(); ++i) { if( arg_ends[i]!=i ) { one_kernel_at_a_time=false; break; } }
-    if( !one_kernel_at_a_time ) for(unsigned i=0; i<nvals; ++i) addTaskToList(i);
+    if( !one_kernel_at_a_time ) for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
   }
 
   // Resize the forces vector
