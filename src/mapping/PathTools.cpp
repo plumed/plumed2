@@ -200,7 +200,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     // Delete the vals as we don't need them
     for(unsigned i=0; i<vals.size(); ++i) delete vals[i];
     // Return as we are done
-    ofile.close(); return 0;
+    return 0;
   }
 
 // Read initial frame
@@ -286,7 +286,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   for(unsigned i=0; i<final_path.size(); ++i) { final_path[i]->print( ofile, ofmt, 10. ); delete final_path[i]; }
 // Delete the args as we don't need them anymore
   for(unsigned i=0; i<args.size(); ++i) delete args[i];
-  ofile.close(); return 0;
+  return 0;
 }
 
 } // End of namespace

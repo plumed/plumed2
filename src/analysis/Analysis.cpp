@@ -197,10 +197,6 @@ void Analysis::accumulate() {
   idata++;
 }
 
-Analysis::~Analysis() {
-  if( write_chq ) rfile.close();
-}
-
 std::vector<double> Analysis::getMetric() const {
   // Add more exotic metrics in here -- FlexibleHill for instance
   std::vector<double> empty;

@@ -559,7 +559,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           if(minTOzero) histoGrid.setMinToZero();
           histoGrid.setOutputFmt(fmt);
           histoGrid.writeToFile(gridfile);
-          gridfile.close();
 
           if(!ihisto)integratehisto=false;// once you get to the final bunch just give up
         }
@@ -581,7 +580,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           if(minTOzero) biasGrid.setMinToZero();
           biasGrid.setOutputFmt(fmt);
           biasGrid.writeToFile(gridfile);
-          gridfile.close();
           // rescale back prior to accumulate
           if(!ibias)integratehills=false;// once you get to the final bunch just give up
         }
@@ -603,7 +601,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           if(minTOzero) histoGrid.setMinToZero();
           histoGrid.setOutputFmt(fmt);
           histoGrid.writeToFile(gridfile);
-          gridfile.close();
 
           if(!ihisto)integratehisto=false; // once you get to the final bunch just give up
         }

@@ -230,8 +230,6 @@ void PCA::performAnalysis() {
     tref->setDirection( tmp_atoms, tmp_args );
     tref->print( ofile, getOutputFormat(), atoms.getUnits().getLength()/0.1 );
   }
-  // Close the output file
-  ofile.close();
 }
 
 }

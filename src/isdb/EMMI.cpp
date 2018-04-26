@@ -450,7 +450,6 @@ void EMMI::get_GMM_d(string GMM_file)
       // new line
       ifile->scanField();
     }
-    ifile->close();
   } else {
     error("Cannot find GMM_FILE "+GMM_file+"\n");
   }
