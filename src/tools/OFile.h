@@ -154,9 +154,9 @@ class OFile:
 /// see link(OFile&)
   OFile* linked;
 /// Internal buffer for printf
-  std::unique_ptr<char[]> buffer_string;
+  std::vector<char> buffer_string;
 /// Internal buffer (generic use)
-  std::unique_ptr<char[]> buffer;
+  std::vector<char> buffer;
 /// Internal buffer length
   int buflen;
 /// This variables stores the actual buffer length

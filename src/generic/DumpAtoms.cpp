@@ -289,6 +289,8 @@ void DumpAtoms::update() {
     float time=getTime()/plumed.getAtoms().getUnits().getTime();
     float precision=Tools::fastpow(10.0,iprecision);
     for(int i=0; i<3; i++) for(int j=0; j<3; j++) box[i][j]=lenunit*t(i,j);
+// here we cannot use a std::vector<rvec> since it does not compile.
+// we thus use a std::unique_ptr<rvec[]>
     auto pos = Tools::make_unique<xdrfile::rvec[]>(natoms);
     for(int i=0; i<natoms; i++) for(int j=0; j<3; j++) pos[i][j]=lenunit*getPosition(i)(j);
     if(type=="xtc") {

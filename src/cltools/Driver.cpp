@@ -385,10 +385,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   molfile_plugin_t *api=NULL;
   void *h_in=NULL;
   molfile_timestep_t ts_in; // this is the structure that has the timestep
-// a std::unique_ptr<float> with the same scope as ts_in
+// a std::vector<float> with the same scope as ts_in
 // it is necessary in order to store the pointer to ts_in.coords
-  std::unique_ptr<float[]> ts_in_coords;
-  ts_in.coords=ts_in_coords.get();
+  std::vector<float> ts_in_coords;
+  ts_in.coords=ts_in_coords.data();
   ts_in.velocities=NULL;
   ts_in.A=-1; // we use this to check whether cell is provided or not
 #endif
@@ -555,8 +555,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           if(command_line_natoms>=0) natoms=command_line_natoms;
           else error("this file format does not provide number of atoms; use --natoms on the command line");
         }
-        ts_in_coords=Tools::make_unique<float[]>(3*natoms);
-        ts_in.coords = ts_in_coords.get();
+        ts_in_coords.resize(3*natoms);
+        ts_in.coords = ts_in_coords.data();
 #endif
       } else if(trajectory_fmt=="xdr-xtc" || trajectory_fmt=="xdr-trr") {
         xd=xdrfile::xdrfile_open(trajectoryFile.c_str(),"r");
@@ -844,6 +844,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         int localstep;
         float time;
         xdrfile::matrix box;
+// here we cannot use a std::vector<rvec> since it does not compile.
+// we thus use a std::unique_ptr<rvec[]>
         auto pos=Tools::make_unique<xdrfile::rvec[]>(natoms);
         float prec,lambda;
         int ret=xdrfile::exdrOK;
