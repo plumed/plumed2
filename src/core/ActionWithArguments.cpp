@@ -73,23 +73,25 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
 #ifdef __PLUMED_HAS_CREGEX
         // take the string enclosed in quotes and put in round brackets
         std::string myregex=c[i];
-        log.printf("  Evaluating regexp for this action: %s \n",myregex.c_str());
-        int errcode;
-        regex_t *preg = (regex_t*)malloc(sizeof(regex_t)); // pointer to the regular expression
-        regmatch_t *pmatch;
-        if ((errcode=regcomp(preg, myregex.c_str(),REG_EXTENDED|REG_NEWLINE))) {  // compile the regular expression
-          char* errbuf;
-          size_t errbuf_size;
+        log<<"  Evaluating regexp for this action: "<<myregex<<"\n";
+
+        regex_t reg; // regular expression
+
+        int errcode=regcomp(&reg, myregex.c_str(),REG_EXTENDED|REG_NEWLINE); // compile the regular expression
+        if(errcode) {
           // one can check the errors asking to regerror
-          errbuf_size = regerror(errcode, preg, NULL, 0);
-          if (!(errbuf=(char*)malloc(errbuf_size))) {
-            plumed_merror("cannot allocate the buffer for error detection in regexp!");
-          };
-          regerror(errcode, preg, errbuf, errbuf_size);
-          error(errbuf);
+          size_t errbuf_size = regerror(errcode, &reg, NULL, 0);
+          std::vector<char> errbuf(errbuf_size);
+          regerror(errcode, &reg, errbuf.data(), errbuf_size);
+          plumed_error()<<"Error parsing regular expression: "<<errbuf.data();
         }
-        plumed_massert(preg->re_nsub==1,"I can parse with only one subexpression");
-        pmatch = (regmatch_t*)malloc(sizeof(regmatch_t)*preg->re_nsub);
+
+        // call regfree when reg goes out of scope
+        auto deleter=[](regex_t* r) { regfree(r); };
+        std::unique_ptr<regex_t,decltype(deleter)> reg_deleter(&reg,deleter);
+
+        plumed_massert(reg.re_nsub==1,"I can parse with only one subexpression");
+        regmatch_t match;
         // select all the actions that have a value
         std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
         if( all.empty() ) error("your input file is not telling plumed to calculate anything");
@@ -100,32 +102,27 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             std::vector<char> str(ll);
             strcpy(&str[0],ss[k].c_str());
             const char *ppstr=&str[0];
-            if(!regexec(preg, ppstr, preg->re_nsub, pmatch, 0)) {
+            if(!regexec(&reg, ppstr, reg.re_nsub, &match, 0)) {
               log.printf("  Something matched with \"%s\" : ",ss[k].c_str());
               do {
-                if (pmatch[0].rm_so != -1) {	/* The regex is matching part of a string */
-                  char *submatch;
-                  size_t matchlen = pmatch[0].rm_eo - pmatch[0].rm_so;
-                  submatch = (char*)malloc(matchlen+1);
-                  strncpy(submatch, ppstr+pmatch[0].rm_so, matchlen+1);
+                if (match.rm_so != -1) {	/* The regex is matching part of a string */
+                  size_t matchlen = match.rm_eo - match.rm_so;
+                  std::vector<char> submatch(matchlen+1);
+                  strncpy(submatch.data(), ppstr+match.rm_so, matchlen+1);
                   submatch[matchlen]='\0';
-                  log.printf("  subpattern %s\n", submatch);
+                  log.printf("  subpattern %s\n", submatch.data());
                   // this is the match: try to see if it is a valid action
-                  std::string putativeVal(submatch);
+                  std::string putativeVal(submatch.data());
                   if( all[j]->exists(putativeVal) ) {
                     arg.push_back(all[j]->copyOutput(putativeVal));
                     log.printf("  Action %s added! \n",putativeVal.c_str());
                   }
-                  free(submatch);
                 };
-                ppstr += pmatch[0].rm_eo;	/* Restart from last match */
-              } while(!regexec(preg,ppstr,preg->re_nsub,pmatch,0));
+                ppstr += match.rm_eo;	/* Restart from last match */
+              } while(!regexec(&reg,ppstr,reg.re_nsub,&match,0));
             }
           }
-        };
-        regfree(preg);
-        free(preg);
-        free(pmatch);
+        }
 #else
         plumed_merror("Regexp support not compiled!");
 #endif
