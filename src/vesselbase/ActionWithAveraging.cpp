@@ -45,6 +45,7 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
   ActionWithValue(ao),
   ActionWithVessel(ao),
   myaverage(NULL),
+  normalization(t),
   useRunAllTasks(false),
   clearstride(0),
   lweight(0),cweight(0)
