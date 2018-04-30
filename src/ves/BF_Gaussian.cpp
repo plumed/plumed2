@@ -81,20 +81,21 @@ BF_Gaussian::BF_Gaussian(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
   width_((intervalMax()-intervalMin()) / getOrder())
 {
-  setNumberOfBasisFunctions(getOrder()+1);
+  setNumberOfBasisFunctions(getOrder()+2);
   setIntrinsicInterval(intervalMin(),intervalMax());
   parse("WIDTH",width_);
   if(width_ <= 0.0) {plumed_merror("WIDTH should be larger than 0");}
   if(width_ != (intervalMax()-intervalMin())/getOrder()) {addKeywordToList("WIDTH",width_);}
   mean_.reserve(getNumberOfBasisFunctions());
-  for(unsigned int i=0; i < getNumberOfBasisFunctions(); i++) {
-    mean_.push_back(intervalMin()+i*((intervalMax()-intervalMin())/getOrder()));
+  mean_.push_back(1.0);
+  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
+    mean_.push_back(intervalMin()+(1-i)*((intervalMax()-intervalMin())/getOrder()));
   }
   setNonPeriodic();
   setNonOrthogonal();
   setIntervalBounded();
   setType("gaussian_functions");
-  setDescription("Gaussian Functions with shifted means that are optimized in their height");
+  setDescription("Gaussian Functions with shifted means that are being optimized in their height");
   setupBF();
   log.printf("   width: %f\n",width_);
   checkRead();
@@ -104,11 +105,9 @@ BF_Gaussian::BF_Gaussian(const ActionOptions&ao):
 void BF_Gaussian::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
   inside_range=true;
   argT=checkIfArgumentInsideInterval(arg,inside_range);
-  //
-  for(unsigned int i=0; i < getNumberOfBasisFunctions(); i++) {
-    // double io = static_cast<double>(i);
-    // values[i] = pow(argT,io);
-    // derivs[i] = io*pow(argT,io-1.0);
+  values[0]=1.0;
+  derivs[0]=0.0;
+  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
     values[i] = exp(-0.5*pow((argT-mean_[i])/width_,2.0));
     derivs[i] = -values[i] * (argT-mean_[i])/pow(width_,2.0);
   }
