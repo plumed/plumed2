@@ -8306,11 +8306,15 @@ $as_echo "$as_me: Release mode, adding -DNDEBUG" >&6;}
 
 fi
 
-# in debug-glibcxx mode, add -D_GLIBCXX_DEBUG
+# in debug-glibcxx mode, add other debug macros
 if test "$debug_glibcxx" == true ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Check boundaries, adding -D_GLIBCXX_DEBUG" >&5
-$as_echo "$as_me: Check boundaries, adding -D_GLIBCXX_DEBUG" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling libstdc++ debug options, adding -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -D_GLIBCXX_ASSERTIONS" >&5
+$as_echo "$as_me: Enabling libstdc++ debug options, adding -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -D_GLIBCXX_ASSERTIONS" >&6;}
   $as_echo "#define _GLIBCXX_DEBUG 1" >>confdefs.h
+
+  $as_echo "#define _GLIBCXX_DEBUG_PEDANTIC 1" >>confdefs.h
+
+  $as_echo "#define _GLIBCXX_DEBUG_ASSERTIONS 1" >>confdefs.h
 
 fi
 

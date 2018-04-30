@@ -689,10 +689,12 @@ if test "$debug" == false ; then
   AC_DEFINE([NDEBUG])
 fi
 
-# in debug-glibcxx mode, add -D_GLIBCXX_DEBUG
+# in debug-glibcxx mode, add other debug macros
 if test "$debug_glibcxx" == true ; then
-  AC_MSG_NOTICE([Check boundaries, adding -D_GLIBCXX_DEBUG])
+  AC_MSG_NOTICE([Enabling libstdc++ debug options, adding -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -D_GLIBCXX_ASSERTIONS])
   AC_DEFINE([_GLIBCXX_DEBUG])
+  AC_DEFINE([_GLIBCXX_DEBUG_PEDANTIC])
+  AC_DEFINE([_GLIBCXX_DEBUG_ASSERTIONS])
 fi
 
 # this is necessary in many MPI implementations
