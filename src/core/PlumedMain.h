@@ -100,10 +100,6 @@ private:
 
   std::unique_ptr<WithCmd> cltool;
 
-/// Forward declaration.
-  ForwardDecl<Stopwatch> stopwatch_fwd;
-  Stopwatch& stopwatch=*stopwatch_fwd;
-
   std::unique_ptr<WithCmd> grex;
 /// Flag to avoid double initialization
   bool  initialized;
@@ -114,6 +110,11 @@ private:
   ForwardDecl<Log> log_fwd;
 /// Log stream
   Log& log=*log_fwd;
+
+/// Forward declaration.
+/// Should be placed after log since its constructor takes a log reference as an argument.
+  ForwardDecl<Stopwatch> stopwatch_fwd;
+  Stopwatch& stopwatch=*stopwatch_fwd;
 
 /// Forward declaration.
   ForwardDecl<Citations> citations_fwd;
