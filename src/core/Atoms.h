@@ -49,6 +49,11 @@ class Atoms
   int natoms;
   std::set<AtomNumber> unique;
   std::vector<unsigned> uniq_index;
+/// Map global indexes to local indexes
+/// E.g. g2l[i] is the position of atom i in the array passed from the MD engine.
+/// Called "global to local" since originally it was used to map global indexes to local
+/// ones used in domain decomposition. However, it is now also used for the NAMD-like
+/// interface, where only a small number of atoms is passed to plumed.
   std::vector<int> g2l;
   std::vector<Vector> positions;
   std::vector<Vector> forces;
