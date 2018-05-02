@@ -698,7 +698,8 @@ ld: TOC section size exceeds 64k
 ./configure --disable-ld-r
 \endverbatim
 - On Cray machines, you might have to set the following environment variable
-  before configuring and building PLUMED (reported by Marco De La Pierre):
+  before configuring and building both PLUMED and the MD code that you want
+  to patch with PLUMED (kindly reported by Marco De La Pierre):
 \verbatim
 export CRAYPE_LINK_TYPE=dynamic
 \endverbatim
