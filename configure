@@ -622,6 +622,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 build_dir
 program_name
+pkgconfig_bin
 make_static_archive
 AR_CR
 LD_RO
@@ -653,6 +654,7 @@ LDFLAGS
 CXXFLAGS
 CXX
 MPIEXEC
+BASH_COMPLETION_DIR
 PYTHON_BIN
 LDSHARED
 STATIC_LIBS
@@ -739,6 +741,7 @@ SOEXT
 STATIC_LIBS
 LDSHARED
 PYTHON_BIN
+BASH_COMPLETION_DIR
 MPIEXEC
 CXX
 CXXFLAGS
@@ -1417,6 +1420,9 @@ Some influential environment variables:
               the proper flags
   PYTHON_BIN  python executable (e.g. python2.7 or /opt/local/bin/python2.7) -
               default: search for a python executable
+  BASH_COMPLETION_DIR
+              path where bash completion will be installed - default: search
+              with pkg-config
   MPIEXEC     command to run mpi programs in tests - default not specified,
               which means use PLUMED_MPIRUN env var at runtime for backward
               compatibility
@@ -3012,6 +3018,7 @@ else
   esac
 
 fi
+
 
 
 
@@ -8957,6 +8964,80 @@ then
   prefix=/usr/local
 fi
 
+pkgconfig_bin=""
+
+for ac_prog in pkg-config
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_pkgconfig_bin+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $pkgconfig_bin in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_pkgconfig_bin="$pkgconfig_bin" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_pkgconfig_bin="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+pkgconfig_bin=$ac_cv_path_pkgconfig_bin
+if test -n "$pkgconfig_bin"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $pkgconfig_bin" >&5
+$as_echo "$pkgconfig_bin" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$pkgconfig_bin" && break
+done
+
+
+if test -z "$BASH_COMPLETION_DIR" && test -n "$pkgconfig_bin"; then
+  if test "$prefix" == "$(pkg-config --variable=prefix bash-completion 2>/dev/null)"
+  then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: bash-completion is installed on the same prefix where plumed will be installed" >&5
+$as_echo "$as_me: bash-completion is installed on the same prefix where plumed will be installed" >&6;}
+    if pkg-config --variable=completionsdir bash-completion 2>/dev/null >/dev/null ; then
+      BASH_COMPLETION_DIR="$(pkg-config --variable=completionsdir  bash-completion 2>/dev/null)"
+    fi
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: bash-completion is not installed or it is installed on a different prefix" >&5
+$as_echo "$as_me: bash-completion is not installed or it is installed on a different prefix" >&6;}
+    pkgconfig_bin=""
+  fi
+fi
+
+if test -n "$BASH_COMPLETION_DIR"
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: bash completion for plumed will be installed in $BASH_COMPLETION_DIR" >&5
+$as_echo "$as_me: bash completion for plumed will be installed in $BASH_COMPLETION_DIR" >&6;}
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: bash completion for plumed will not be installed" >&5
+$as_echo "$as_me: bash completion for plumed will not be installed" >&6;}
+fi
+
+
+
 test "$program_prefix" != NONE &&
   program_transform_name="s&^&$program_prefix&;$program_transform_name"
 # Use a double $ so make ignores it.
@@ -9014,10 +9095,19 @@ $as_echo "$as_me: **** docdir: ${datarootdir}/doc/$program_name" >&6;}
 $as_echo "$as_me: **** htmldir: $htmldir" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** Executable will be named $program_name" >&5
 $as_echo "$as_me: **** Executable will be named $program_name" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** You can change paths later using options to \"make install\"" >&5
-$as_echo "$as_me: **** You can change paths later using options to \"make install\"" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** e.g. with \"make install prefix=/path\"" >&5
-$as_echo "$as_me: **** e.g. with \"make install prefix=/path\"" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** As of PLUMED 2.5, you cannot change paths anymore during \"make install\"" >&5
+$as_echo "$as_me: **** As of PLUMED 2.5, you cannot change paths anymore during \"make install\"" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** Please configure and make clean to change the prefix" >&5
+$as_echo "$as_me: **** Please configure and make clean to change the prefix" >&6;}
+
+if test -z "$BASH_COMPLETION_DIR" ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: **** Bash completion for plumed will not be installed, please add the following two lines to your bashrc" >&5
+$as_echo "$as_me: WARNING: **** Bash completion for plumed will not be installed, please add the following two lines to your bashrc" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: **** _$program_name() { eval \"\$($program_name --no-mpi completion 2>/dev/null)\";}" >&5
+$as_echo "$as_me: WARNING: **** _$program_name() { eval \"\$($program_name --no-mpi completion 2>/dev/null)\";}" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: **** complete -F _$program_name -o default $program_name" >&5
+$as_echo "$as_me: WARNING: **** complete -F _$program_name -o default $program_name" >&2;}
+fi
 
 if test $mpi == true; then
   if test $mpi_found == ok; then

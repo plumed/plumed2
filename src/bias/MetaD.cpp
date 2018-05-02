@@ -921,7 +921,6 @@ MetaD::MetaD(const ActionOptions& ao):
         acc_rfile.scanField(acclabel, acc_rmean);
         acc_rfile.scanField();
       }
-      acc_rfile.close();
       acc_restart_mean_ = acc_rmean;
       // Set component based on the read values.
       getPntrToComponent("acc")->set(acc_rmean);
@@ -1001,7 +1000,6 @@ MetaD::MetaD(const ActionOptions& ao):
     }
     std::string funcl=getLabel() + ".bias";
     BiasGrid_=Grid::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true);
-    gridfile.close();
     if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
@@ -1088,7 +1086,6 @@ MetaD::MetaD(const ActionOptions& ao):
     IFile gridfile; gridfile.open(targetfilename_);
     std::string funcl=getLabel() + ".target";
     TargetGrid_=Grid::create(funcl,getArguments(),gridfile,false,false,true);
-    gridfile.close();
     if(TargetGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->isPeriodic()!=TargetGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");

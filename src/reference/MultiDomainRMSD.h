@@ -37,10 +37,9 @@ private:
 /// Blocks containing start and end points for all the domains
   std::vector<unsigned> blocks;
 /// Each of the domains we are calculating the distance from
-  std::vector<SingleDomainRMSD*> domains;
+  std::vector<std::unique_ptr<SingleDomainRMSD>> domains;
 public:
   explicit MultiDomainRMSD( const ReferenceConfigurationOptions& ro );
-  ~MultiDomainRMSD();
 /// Read in the input from a pdb
   void read( const PDB& );
 /// Set the input from an analysis object (don't know how this will work yet so currently just a plumed_error)

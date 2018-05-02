@@ -178,7 +178,7 @@ We will also perform metadynamics with an infrequent deposition stride to ensure
 METAD ...
    ARG=CV1,CV2
    SIGMA=0.2,0.2
-   HEIGHT=0.15,0.15
+   HEIGHT=0.15
    PACE=4000
    LABEL=metad
 ... METAD

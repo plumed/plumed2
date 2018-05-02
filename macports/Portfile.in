@@ -2,14 +2,16 @@
 
 PortSystem          1.0
 
-name                plumed
+# Notice that this rules out gcc variants.
+# See https://github.com/macports/macports-ports/pull/1252
+PortGroup           cxx11 1.1
 PortGroup           mpi 1.0
 PortGroup           linear_algebra 1.0
 PortGroup           debug 1.0
-PortGroup           cxx11 1.1
 
 version             @_VERSION_@
 revision            @_REVISION_@
+name                plumed
 categories          science
 
 # Most of the PLUMED code is L-GPL3. However, PLUMED containts
@@ -47,11 +49,12 @@ homepage            http://www.plumed.org/
 #                         statically to an MD code.
 # --disable-mpi:          Do not search for MPI compiler (replaced when enabling mpi, see below)
 configure.args-append \
-               --disable-doc \
-               --disable-libsearch \
-               --disable-static-patch \
-               --disable-mpi \
-               --disable-python
+                    --disable-doc \
+                    --disable-libsearch \
+                    --disable-static-patch \
+                    --disable-mpi \
+                    --disable-python \
+                    BASH_COMPLETION_DIR=${prefix}/share/bash-completion/completions
 
 # Hardcode path for libplumedKernel.dylib.
 # This allows to patch MD codes using the --runtime option but using as
@@ -65,34 +68,45 @@ mpi.setup
 
 # To enable mpi, replace a configure flag
 if {[mpi_variant_isset]} {
-  configure.args-replace --disable-mpi --enable-mpi
-  # command should be included in a pre-configure block to access properly the mpi.exec variable
-  pre-configure {
-  # MPIEXEC is stored so that it can be used to perform tests
-    configure.args-append MPIEXEC="${mpi.exec}"
-  }
+    configure.args-replace --disable-mpi --enable-mpi
+# command should be included in a pre-configure block to access properly the mpi.exec variable
+    pre-configure {
+# MPIEXEC is stored so that it can be used to perform tests
+        configure.args-append MPIEXEC="${mpi.exec}"
+    }
 }
 
 # Libraries.
 # Library names are specified here to make sure that
 # only requested packages are linked.
-configure.ldflags-append -lxdrfile -lz -lgsl
-depends_lib-append port:xdrfile port:zlib port:gsl
+configure.ldflags-append \
+                    -lxdrfile -lz -lgsl
+depends_lib-append  port:gsl \
+                    port:xdrfile \
+                    port:zlib
+
+# C++ library
+# Required in order to use clang with gcc library on old OSX versions.
+# See https://github.com/macports/macports-ports/pull/1254
+if [string match *clang* ${configure.compiler}] {
+    configure.ldflags-append -stdlib=${configure.cxx_stdlib}
+}
 
 # This variant enables optional modules in PLUMED.
 # Notice that one of the optional modules (drr) requires boost_serialization
 variant allmodules description {Enable all optional modules} {
-  configure.args-append --enable-modules=all --enable-boost-serialization
-  configure.ldflags-append -lboost_serialization-mt
-  depends_lib-append port:boost
+    configure.args-append --enable-modules=all
+    configure.args-append --enable-boost-serialization
+    configure.ldflags-append -lboost_serialization-mt
+    depends_lib-append port:boost
 }
 
 @_PYTHON_@
 
 # Link lapack/blas libraries
 pre-configure {
-  # commands should be included in a pre-configure block to access tcl variables
-  configure.ldflags-append ${linalglib}
+    # commands should be included in a pre-configure block to access tcl variables
+    configure.ldflags-append ${linalglib}
 }
 
 # Allow running tests from MacPorts

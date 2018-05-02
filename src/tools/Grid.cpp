@@ -368,8 +368,7 @@ void Grid::addKernel( const KernelFunctions& kernel ) {
 // this is the simplest way to replace a unique_ptr here.
 // perhaps the interface of kernel.evaluate() should be changed
 // in order to accept a std::vector<std::unique_ptr<Value>>
-  std::vector<Value*> vv_ptr( dimension_ );
-  for(unsigned i=0; i<dimension_; ++i) vv_ptr[i]=vv[i].get();
+  auto vv_ptr=Tools::unique2raw(vv);
 
   std::vector<double> der( dimension_ );
   for(unsigned i=0; i<neighbors.size(); ++i) {

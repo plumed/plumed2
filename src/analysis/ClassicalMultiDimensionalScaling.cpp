@@ -228,14 +228,12 @@ void ClassicalMultiDimensionalScaling::analyzeLandmarks() {
     }
     gfile.printField();
   }
-  gfile.close();
 
   // Output the embedding in plumed format
   if( efilename!="dont output") {
     OFile afile; afile.link(*this); afile.setBackupString("analysis");
     afile.open( efilename.c_str() );
     myembedding->print( "classical mds", getTime(), afile, getOutputFormat(), atoms.getUnits().getLength()/0.1 );
-    afile.close();
   }
 }
 

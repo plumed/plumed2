@@ -81,7 +81,10 @@ std::unique_ptr<KernelFunctions> HistogramOnGrid::getKernelAndNeighbors( std::ve
     neighbors[0] = getIndex( point ); return NULL;
   } else if( getType()=="flat" ) {
     std::unique_ptr<KernelFunctions> kernel(new KernelFunctions( point, bandwidths, kerneltype, "DIAGONAL", 1.0 ));
-    kernel->normalize( getVectorOfValues() ); getNeighbors( kernel->getCenter(), nneigh, num_neigh, neighbors );
+// GB: Now values is destroyed when exiting this function.
+// I think before there was a leak
+    std::vector<std::unique_ptr<Value>> values=getVectorOfValues();
+    kernel->normalize( Tools::unique2raw(values) ); getNeighbors( kernel->getCenter(), nneigh, num_neigh, neighbors );
     return kernel;
   } else if( getType()=="fibonacci" ) {
     getNeighbors( point, nneigh, num_neigh, neighbors );
@@ -92,10 +95,10 @@ std::unique_ptr<KernelFunctions> HistogramOnGrid::getKernelAndNeighbors( std::ve
   return NULL;
 }
 
-std::vector<Value*> HistogramOnGrid::getVectorOfValues() const {
-  std::vector<Value*> vv;
+std::vector<std::unique_ptr<Value>> HistogramOnGrid::getVectorOfValues() const {
+  std::vector<std::unique_ptr<Value>> vv;
   for(unsigned i=0; i<dimension; ++i) {
-    vv.push_back(new Value());
+    vv.emplace_back(new Value());
     if( pbc[i] ) vv[i]->setDomain( str_min[i], str_max[i] );
     else vv[i]->setNotPeriodic();
   }
@@ -124,7 +127,7 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
     } else {
       double totwforce=0.0;
       std::vector<double> intforce( 2*dimension, 0.0 );
-      std::vector<Value*> vv( getVectorOfValues() );
+      std::vector<std::unique_ptr<Value>> vv( getVectorOfValues() );
 
       double newval; std::vector<unsigned> tindices( dimension ); std::vector<double> xx( dimension );
       for(unsigned i=0; i<num_neigh; ++i) {
@@ -133,7 +136,7 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
         getGridPointCoordinates( ineigh, tindices, xx );
         if( kernel ) {
           for(unsigned j=0; j<dimension; ++j) vv[j]->set(xx[j]);
-          newval = kernel->evaluate( vv, der, true );
+          newval = kernel->evaluate( Tools::unique2raw(vv), der, true );
         } else {
           // Evalulate dot product
           double dot=0; for(unsigned j=0; j<dimension; ++j) { dot+=xx[j]*point[j]; der[j]=xx[j]; }
@@ -169,7 +172,6 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
           buffer[ bufstart + gridbuf + nder + 1 + kder ] += myvals.getDerivative( 0, kder );
         }
       }
-      for(unsigned i=0; i<dimension; ++i) delete vv[i];
     }
   }
 }

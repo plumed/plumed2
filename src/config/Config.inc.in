@@ -167,6 +167,15 @@ bool hasXdrfile() {
 #endif
 }
 
+std::string getCompilationDate() {
+  return __DATE__;
+}
+
+std::string getCompilationTime() {
+  return __TIME__;
+}
+
+
 }
 }
 

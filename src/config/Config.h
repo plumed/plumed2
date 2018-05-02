@@ -85,6 +85,14 @@ std::string getVersionLong();
 /// E.g. "c5badb091cd30"
 std::string getVersionGit();
 
+/// Return the day PLUMED was compiled.
+/// E.g. "Apr 16 2018"
+std::string getCompilationDate();
+
+/// Return the time at which PLUMED was compiled.
+/// E.g. "13:27:58"
+std::string getCompilationTime();
+
 bool hasMatheval();
 
 bool hasDlopen();

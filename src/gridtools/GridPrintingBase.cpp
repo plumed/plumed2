@@ -67,14 +67,14 @@ void GridPrintingBase::update() {
 
   OFile ofile; ofile.link(*this);
   ofile.setBackupString("analysis");
-  ofile.open( filename ); printGrid( ofile ); ofile.close();
+  ofile.open( filename ); printGrid( ofile );
 }
 
 void GridPrintingBase::runFinalJobs() {
   if( getStride()>0 ) return;
 
   OFile ofile; ofile.link(*this);
-  ofile.open( filename ); printGrid( ofile ); ofile.close();
+  ofile.open( filename ); printGrid( ofile );
 }
 
 }

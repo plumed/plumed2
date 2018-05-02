@@ -64,6 +64,8 @@ const std::unordered_map<std::string, int> & plumedMainWordMap() {
 
 PlumedMain::PlumedMain():
   initialized(false),
+// automatically write on log in destructor
+  stopwatch_fwd(log),
   step(0),
   active(false),
   mydatafetcher(DataFetchingObject::create(sizeof(double),*this)),
@@ -82,14 +84,10 @@ PlumedMain::PlumedMain():
 {
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
-  stopwatch.start();
-  stopwatch.pause();
 }
 
+// destructor needed to delete forward declarated objects
 PlumedMain::~PlumedMain() {
-  stopwatch.start();
-  stopwatch.stop();
-  if(initialized) log<<stopwatch;
 }
 
 /////////////////////////////////////////////////////////////
@@ -104,7 +102,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
 
   try {
 
-    stopwatch.start();
+    auto ss=stopwatch.startPause();
 
     std::vector<std::string> words=Tools::getWords(word);
     unsigned nw=words.size();
@@ -474,7 +472,6 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       }
     }
-    stopwatch.pause();
 
   } catch (Exception &e) {
     if(log.isOpen()) {
@@ -495,7 +492,8 @@ void PlumedMain::init() {
   atoms.init();
   if(!log.isOpen()) log.link(stdout);
   log<<"PLUMED is starting\n";
-  log<<"Version: "<<config::getVersionLong()<<" (git: "<<config::getVersionGit()<<") compiled on " __DATE__ " at " __TIME__ "\n";
+  log<<"Version: "<<config::getVersionLong()<<" (git: "<<config::getVersionGit()<<") "
+     <<"compiled on " <<config::getCompilationDate() << " at " << config::getCompilationTime() << "\n";
   log<<"Please cite this paper when using PLUMED ";
   log<<cite("Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. 185, 604 (2014)");
   log<<"\n";
@@ -609,7 +607,8 @@ void PlumedMain::prepareCalc() {
 // traverse them in this order:
 void PlumedMain::prepareDependencies() {
 
-  stopwatch.start("1 Prepare dependencies");
+// Stopwatch is stopped when sw goes out of scope
+  auto sw=stopwatch.startStop("1 Prepare dependencies");
 
 // activate all the actions which are on step
 // activation is recursive and enables also the dependencies
@@ -638,15 +637,14 @@ void PlumedMain::prepareDependencies() {
     }
   }
 
-  stopwatch.stop("1 Prepare dependencies");
 }
 
 void PlumedMain::shareData() {
 // atom positions are shared (but only if there is something to do)
   if(!active)return;
-  stopwatch.start("2 Sharing data");
+// Stopwatch is stopped when sw goes out of scope
+  auto sw=stopwatch.startStop("2 Sharing data");
   if(atoms.getNatoms()>0) atoms.share();
-  stopwatch.stop("2 Sharing data");
 }
 
 void PlumedMain::performCalcNoUpdate() {
@@ -665,14 +663,15 @@ void PlumedMain::performCalc() {
 
 void PlumedMain::waitData() {
   if(!active)return;
-  stopwatch.start("3 Waiting for data");
+// Stopwatch is stopped when sw goes out of scope
+  auto sw=stopwatch.startStop("3 Waiting for data");
   if(atoms.getNatoms()>0) atoms.wait();
-  stopwatch.stop("3 Waiting for data");
 }
 
 void PlumedMain::justCalculate() {
   if(!active)return;
-  stopwatch.start("4 Calculating (forward loop)");
+// Stopwatch is stopped when sw goes out of scope
+  auto sw=stopwatch.startStop("4 Calculating (forward loop)");
   bias=0.0;
   work=0.0;
 
@@ -681,11 +680,13 @@ void PlumedMain::justCalculate() {
   for(const auto & pp : actionSet) {
     Action* p(pp.get());
     if(p->isActive()) {
-      std::string actionNumberLabel;
+// Stopwatch is stopped when sw goes out of scope.
+// We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
+      Stopwatch::Handler sw;
       if(detailedTimers) {
+        std::string actionNumberLabel;
         Tools::convert(iaction,actionNumberLabel);
-        actionNumberLabel="4A "+actionNumberLabel+" "+p->getLabel();
-        stopwatch.start(actionNumberLabel);
+        sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
       }
       ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
       ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
@@ -705,11 +706,9 @@ void PlumedMain::justCalculate() {
       if(av)av->setGradientsIfNeeded();
       ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
       if(avv)avv->setGradientsIfNeeded();
-      if(detailedTimers) stopwatch.stop(actionNumberLabel);
     }
     iaction++;
   }
-  stopwatch.stop("4 Calculating (forward loop)");
 }
 
 void PlumedMain::justApply() {
@@ -720,17 +719,20 @@ void PlumedMain::justApply() {
 void PlumedMain::backwardPropagate() {
   if(!active)return;
   int iaction=0;
-  stopwatch.start("5 Applying (backward loop)");
+// Stopwatch is stopped when sw goes out of scope
+  auto sw=stopwatch.startStop("5 Applying (backward loop)");
 // apply them in reverse order
   for(auto pp=actionSet.rbegin(); pp!=actionSet.rend(); ++pp) {
     const auto & p(pp->get());
     if(p->isActive()) {
 
-      std::string actionNumberLabel;
+// Stopwatch is stopped when sw goes out of scope.
+// We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
+      Stopwatch::Handler sw;
       if(detailedTimers) {
+        std::string actionNumberLabel;
         Tools::convert(iaction,actionNumberLabel);
-        actionNumberLabel="5A "+actionNumberLabel+" "+p->getLabel();
-        stopwatch.start(actionNumberLabel);
+        sw=stopwatch.startStop("5A "+actionNumberLabel+" "+p->getLabel());
       }
 
       p->apply();
@@ -738,22 +740,24 @@ void PlumedMain::backwardPropagate() {
 // still ActionAtomistic has a special treatment, since they may need to add forces on atoms
       if(a) a->applyForces();
 
-      if(detailedTimers) stopwatch.stop(actionNumberLabel);
     }
     iaction++;
   }
 
+// Stopwatch is stopped when sw goes out of scope.
+// We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
+  Stopwatch::Handler sw1;
+  if(detailedTimers) sw1=stopwatch.startStop("5B Update forces");
 // this is updating the MD copy of the forces
-  if(detailedTimers) stopwatch.start("5B Update forces");
   if(atoms.getNatoms()>0) atoms.updateForces();
-  if(detailedTimers) stopwatch.stop("5B Update forces");
-  stopwatch.stop("5 Applying (backward loop)");
 }
 
 void PlumedMain::update() {
   if(!active)return;
 
-  stopwatch.start("6 Update");
+// Stopwatch is stopped when sw goes out of scope
+  auto sw=stopwatch.startStop("6 Update");
+
 // update step (for statistics, etc)
   updateFlags.push(true);
   for(const auto & p : actionSet) {
@@ -776,7 +780,6 @@ void PlumedMain::update() {
     log.flush();
     for(const auto & p : actionSet) p->fflush();
   }
-  stopwatch.stop("6 Update");
 }
 
 void PlumedMain::load(const std::string& ss) {
