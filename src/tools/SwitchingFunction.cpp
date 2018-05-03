@@ -135,6 +135,17 @@ s(r) = FUNC
 </table>
 
 Notice that for backward compatibility we allow using `MATHEVAL` instead of `CUSTOM`.
+Also notice that if the a `CUSTOM` switching function only depents on even powers of `x` it can be
+made faster by using `x2` as a variable. For instance
+\verbatim
+{CUSTOM FUNC=1/(1+x2^3) R_0=\f$r_0\f$ D_0=\f$d_0\f$}
+\endverbatim
+is equivalent to
+\verbatim
+{CUSTOM FUNC=1/(1+x^6) R_0=\f$r_0\f$ D_0=\f$d_0\f$}
+\endverbatim
+but runs faster. The reason is that there is an expensive square root calculation that can be optimized out.
+
 
 \attention
 Notice that CUSTOM is slower than other functions
