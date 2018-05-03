@@ -676,6 +676,10 @@ void PlumedMain::justCalculate() {
       if(detailedTimers) {
         std::string actionNumberLabel;
         Tools::convert(iaction,actionNumberLabel);
+        const unsigned m=actionSet.size();
+        unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
+        const int pad=k-actionNumberLabel.length();
+        for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
         sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
       }
       ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
@@ -722,6 +726,10 @@ void PlumedMain::backwardPropagate() {
       if(detailedTimers) {
         std::string actionNumberLabel;
         Tools::convert(iaction,actionNumberLabel);
+        const unsigned m=actionSet.size();
+        unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
+        const int pad=k-actionNumberLabel.length();
+        for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
         sw=stopwatch.startStop("5A "+actionNumberLabel+" "+p->getLabel());
       }
 
