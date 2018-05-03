@@ -148,11 +148,9 @@ but runs faster. The reason is that there is an expensive square root calculatio
 
 
 \attention
-Notice that CUSTOM is slower than other functions
+With the default implementation CUSTOM is slower than other functions
 (e.g., it is slower than an equivalent RATIONAL function by approximately a factor 2).
-Thus, the CUSTOM switching function is useful to perform quick
-tests on switching functions with arbitrary form before proceeding to their
-implementation in C++.
+Checkout page \ref Lepton to see how to improve its performance.
 
 For all the switching functions in the above table one can also specify a further (optional) parameter using the parameter
 keyword D_MAX to assert that for \f$r>d_{\textrm{max}}\f$ the switching function can be assumed equal to zero.
