@@ -71,8 +71,8 @@
 #include <string>
 #include <utility>
 #include <vector>
-#ifdef LEPTON_USE_JIT
-    #include "asmjit.h"
+#ifdef __PLUMED_HAS_ASMJIT
+    #include "asmjit/asmjit.h"
 #endif
 
 namespace PLMD {
@@ -133,7 +133,7 @@ private:
     mutable std::vector<double> argValues;
     std::map<std::string, double> dummyVariables;
     void* jitCode;
-#ifdef LEPTON_USE_JIT
+#ifdef __PLUMED_HAS_ASMJIT
     void generateJitCode();
     void generateSingleArgCall(asmjit::X86Compiler& c, asmjit::X86XmmVar& dest, asmjit::X86XmmVar& arg, double (*function)(double));
     std::vector<double> constants;

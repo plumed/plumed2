@@ -69,7 +69,7 @@
 namespace PLMD {
 using namespace lepton;
 using namespace std;
-#ifdef LEPTON_USE_JIT
+#ifdef __PLUMED_HAS_ASMJIT
     using namespace asmjit;
 #endif
 
@@ -85,7 +85,7 @@ CompiledExpression::CompiledExpression(const ParsedExpression& expression) : jit
         if (operation[i]->getNumArguments() > maxArguments)
             maxArguments = operation[i]->getNumArguments();
     argValues.resize(maxArguments);
-#ifdef LEPTON_USE_JIT
+#ifdef __PLUMED_HAS_ASMJIT
     generateJitCode();
 #endif
 }
@@ -179,7 +179,7 @@ double& CompiledExpression::getVariableReference(const string& name) {
 
 void CompiledExpression::setVariableLocations(map<string, double*>& variableLocations) {
     variablePointers = variableLocations;
-#ifdef LEPTON_USE_JIT
+#ifdef __PLUMED_HAS_ASMJIT
     // Rebuild the JIT code.
     
     if (workspace.size() > 0)
@@ -197,7 +197,7 @@ void CompiledExpression::setVariableLocations(map<string, double*>& variableLoca
 }
 
 double CompiledExpression::evaluate() const {
-#ifdef LEPTON_USE_JIT
+#ifdef __PLUMED_HAS_ASMJIT
     return ((double (*)()) jitCode)();
 #else
     for (int i = 0; i < variablesToCopy.size(); i++)
@@ -219,7 +219,7 @@ double CompiledExpression::evaluate() const {
 #endif
 }
 
-#ifdef LEPTON_USE_JIT
+#ifdef __PLUMED_HAS_ASMJIT
 static double evaluateOperation(Operation* op, double* args) {
     map<string, double>* dummyVariables = NULL;
     return op->evaluate(args, *dummyVariables);
