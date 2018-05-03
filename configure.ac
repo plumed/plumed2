@@ -657,13 +657,17 @@ using namespace asmjit;
 typedef int (*Func)(void);
 int main(int argc, char* argv[[]]) {
   JitRuntime rt;
-  X86Assembler a(&rt);
+  CodeHolder code;
+  code.init(rt.getCodeInfo());
+  X86Assembler a(&code);
   a.mov(x86::eax, 1);
   a.ret();
   Func fn;
-  fn=(int (*)(void)) a.make();
+  Error err = rt.add(&fn, &code);
+  if (err) return 1;
   int result = fn();
   printf("%d\n", result);
+  rt.release(fn);
   return 0;
 }
   ], [__PLUMED_HAS_ASMJIT],[asmjit])
