@@ -226,19 +226,20 @@ static double evaluateOperation(Operation* op, double* args) {
 }
 
 void CompiledExpression::generateJitCode() {
-    X86Compiler c(&runtime);
-    c.addFunc(kFuncConvHost, FuncBuilder0<double>());
+    X86Assembler a(&runtime);
+    X86Compiler c(&a);
+    c.addFunc(FuncBuilder0<double>(kCallConvHost));
     vector<X86XmmVar> workspaceVar(workspace.size());
     for (int i = 0; i < (int) workspaceVar.size(); i++)
         workspaceVar[i] = c.newXmmVar(kX86VarTypeXmmSd);
-    X86GpVar argsPointer(c);
+    X86GpVar argsPointer = c.newIntPtr();
     c.mov(argsPointer, imm_ptr(&argValues[0]));
     
     // Load the arguments into variables.
     
     for (set<string>::const_iterator iter = variableNames.begin(); iter != variableNames.end(); ++iter) {
         map<string, int>::iterator index = variableIndices.find(*iter);
-        X86GpVar variablePointer(c);
+        X86GpVar variablePointer = c.newIntPtr();
         c.mov(variablePointer, imm_ptr(&getVariableReference(index->first)));
         c.movsd(workspaceVar[index->second], x86::ptr(variablePointer, 0, 0));
     }
@@ -283,7 +284,7 @@ void CompiledExpression::generateJitCode() {
     
     vector<X86XmmVar> constantVar(constants.size());
     if (constants.size() > 0) {
-        X86GpVar constantsPointer(c);
+        X86GpVar constantsPointer = c.newIntPtr();
         c.mov(constantsPointer, imm_ptr(&constants[0]));
         for (int i = 0; i < (int) constants.size(); i++) {
             constantVar[i] = c.newXmmVar(kX86VarTypeXmmSd);
@@ -410,9 +411,9 @@ void CompiledExpression::generateJitCode() {
                 
                 for (int i = 0; i < (int) args.size(); i++)
                     c.movsd(x86::ptr(argsPointer, 8*i, 0), workspaceVar[args[i]]);
-                X86GpVar fn(c, kVarTypeIntPtr);
+                X86GpVar fn = c.newIntPtr();
                 c.mov(fn, imm_ptr((void*) evaluateOperation));
-                X86CallNode* call = c.call(fn, kFuncConvHost, FuncBuilder2<double, Operation*, double*>());
+                X86CallNode* call = c.call(fn, FuncBuilder2<double, Operation*, double*>(kCallConvHost));
                 call->setArg(0, imm_ptr(&op));
                 call->setArg(1, imm_ptr(&argValues[0]));
                 call->setRet(0, workspaceVar[target[step]]);
@@ -420,13 +421,14 @@ void CompiledExpression::generateJitCode() {
     }
     c.ret(workspaceVar[workspace.size()-1]);
     c.endFunc();
-    jitCode = c.make();
+    c.finalize();
+    jitCode = a.make();
 }
 
 void CompiledExpression::generateSingleArgCall(X86Compiler& c, X86XmmVar& dest, X86XmmVar& arg, double (*function)(double)) {
-    X86GpVar fn(c, kVarTypeIntPtr);
+    X86GpVar fn = c.newIntPtr();
     c.mov(fn, imm_ptr((void*) function));
-    X86CallNode* call = c.call(fn, kFuncConvHost, FuncBuilder1<double, double>());
+    X86CallNode* call = c.call(fn, FuncBuilder1<double, double>(kCallConvHost));
     call->setArg(0, arg);
     call->setRet(0, dest);
 }
