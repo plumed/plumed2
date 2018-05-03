@@ -10,7 +10,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=673dcefa
 # coverage scan
   - os: linux
     dist: trusty
@@ -114,6 +114,8 @@ install:
 # install some package - these are fast, we install them anyway
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libfftw3-dev gsl-bin libgsl0-dev  libboost-serialization-dev ; fi
   - if test "$PLUMED_CXX" ; then ./.travis/install.xdrfile ; fi
+# a specific old version of asmjit is required:
+  - if test -n "$ASMJIT" ; then ./.travis/install.asmjit $ASMJIT ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       ./.travis/install.ccache v3.4.2 ;
     fi
@@ -170,6 +172,8 @@ script:
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-fftw"
 # enable boost_serialization to test drr module
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-boost_serialization"
+# enable asmjit used in lepton
+  - if test -n "$ASMJIT" ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-asmjit" ; fi
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
   - if test "$MAKECOVERAGE" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
 # when running lcov plumed should be compiled with -O0
