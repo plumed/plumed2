@@ -146,7 +146,8 @@ public:
                  std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
                  std::map<std::string,std::string>& atags, std::vector<std::string>& cnam, std::map<std::string,std::string>& ck,
                  std::map<std::string,std::string>& cd ) const ;
-/// Clear everything from the keywords object
+/// Clear everything from the keywords object.
+/// Not actually needed if your Keywords object is going out of scope.
   void destroyData();
 /// Set the text that introduces how the components for this action are introduced
   void setComponentsIntroduction( const std::string& instr );

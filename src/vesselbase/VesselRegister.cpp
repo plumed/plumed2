@@ -68,7 +68,6 @@ Vessel* VesselRegister::create(std::string keyword, const VesselOptions&da) {
     Keywords keys; mk[keyword](keys);
     VesselOptions nda( da,keys );
     df=m[keyword](nda);
-    keys.destroyData();
   }
   else df=NULL;
   return df;
