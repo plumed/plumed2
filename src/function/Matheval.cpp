@@ -181,7 +181,7 @@ class Matheval :
 {
 /// Check if only multiplication is done in function.  If only multiplication is done we can do some tricks
 /// to speed things up
-  bool onlymultiplication;
+  std::vector<unsigned> check_multiplication_vars;
 /// Lepton expression.
 /// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!  
   std::vector<lepton::CompiledExpression> expression;
@@ -234,7 +234,6 @@ void Matheval::registerKeywords(Keywords& keys) {
 Matheval::Matheval(const ActionOptions&ao):
   Action(ao),
   Function(ao),
-  onlymultiplication(true),
   expression(OpenMP::getNumThreads()),
   expression_deriv(getNumberOfArguments())
 {
@@ -254,10 +253,26 @@ Matheval::Matheval(const ActionOptions&ao):
   if(var.size()!=getNumberOfArguments())
     error("Size of VAR array should be the same as number of arguments");
   parse("FUNC",func);
-  // Check for operations that are not multiplication
-  onlymultiplication = func.find("*")!=std::string::npos;
-  if( func.find("/")!=std::string::npos || func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) onlymultiplication=false;
-  if( onlymultiplication ) log.printf("  optimizing implementation as function only involves multiplication");
+  // Check for operations that are not multiplication (this can probably be done much more cleverly)
+  bool onlymultiplication = func.find("*")!=std::string::npos;
+  // Find first bracket in expression
+  if( func.find("(")!=std::string::npos ) {
+     std::size_t br = func.find_first_of("("); std::string subexpr=func.substr(0,br); onlymultiplication = func.find("*")!=std::string::npos;
+     if( subexpr.find("/")!=std::string::npos || subexpr.find("+")!=std::string::npos || subexpr.find("-")!=std::string::npos ) onlymultiplication=false;
+     // Now work out which vars are in multiplication
+     if( onlymultiplication ) {
+         for(unsigned i=0;i<var.size();++i) {
+             if( subexpr.find(var[i])!=std::string::npos ) check_multiplication_vars.push_back(i);
+         }
+     }
+  } else if( func.find("/")!=std::string::npos || func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) {
+      onlymultiplication=false;
+  } else {
+      for(unsigned i=0;i<var.size();++i) check_multiplication_vars.push_back(i);
+  }
+  if( check_multiplication_vars.size()>0 ) {
+      log.printf("  optimizing implementation as function only involves multiplication \n");
+  }
   addValueWithDerivatives();
   checkRead();
 
@@ -282,12 +297,14 @@ Matheval::Matheval(const ActionOptions&ao):
 }
 
 void Matheval::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  bool allzero=(fabs(args[0])<epsilon);
-  if( onlymultiplication && !allzero ) {
-      for(unsigned i=1; i<args.size(); ++i) {
-        if( fabs(args[i])<epsilon ) { allzero=true; break; }
+  bool allzero;
+  if( check_multiplication_vars.size()>0 ) {
+      allzero=false;
+      for(unsigned i=0; i<check_multiplication_vars.size(); ++i) {
+        if( fabs(args[check_multiplication_vars[i]])<epsilon ) { allzero=true; break; }
       } 
-  } else if( !onlymultiplication && allzero ) {
+  } else if( check_multiplication_vars.size()==0 ) {
+      allzero=(fabs(args[0])<epsilon);
       for(unsigned i=1; i<args.size(); ++i) {
         if( fabs(args[i])>epsilon ) { allzero=false; break; }
       }
