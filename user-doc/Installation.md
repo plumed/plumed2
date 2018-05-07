@@ -425,9 +425,6 @@ If you didn't specify the `--prefix` option during configure PLUMED will be inst
 The install command should be executed with root permissions (e.g. "sudo make install")
 if you want to install PLUMED on a system directory.
 
-\warning Please **do not** set prefix to the current directory (`./configure --prefix=$PWD`). PLUMED
-expects the installation directory to be a different one! You might want to use something like `./configure --prefix=$PWD/install` instead.
-
 Notice that upon installation PLUMED might need to relink a library.
 This was always true until version 2.1, but in version 2.2 libraries should
 only be relinked if one changes the install prefix during when typing `make install`.

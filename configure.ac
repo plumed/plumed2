@@ -1124,16 +1124,6 @@ fi
 
 AC_MSG_CHECKING([If prefix is equal to present working directory])
 
-# ignore cases where the directory does not exist:
-normalized_prefix="`cd "${prefix}" 2>/dev/null && pwd || true`"
-
-if test "`pwd`" = "$normalized_prefix" ; then
-  AC_MSG_RESULT([yes])
-  AC_MSG_ERROR([prefix should not be equal to the present working directory])
-else
-  AC_MSG_RESULT([no])
-fi
-
 pkgconfig_bin=""
 
 AC_PATH_PROGS(pkgconfig_bin,pkg-config)
