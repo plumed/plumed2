@@ -215,12 +215,17 @@ public:
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                               const std::map<std::string,std::string>& keys,
                               std::vector<std::vector<std::string> >& actions );
+  static unsigned getNumberOfInputAtoms( const std::map<std::string,std::string>& keys );
   static void createAveragingObject( const std::string& ilab, const std::string& olab,
                                      const std::map<std::string,std::string>& keys,
                                      std::vector<std::vector<std::string> >& actions );
-  static std::string createRDFObject( const std::string& lab, const std::vector<std::string>& words,
-                                      const std::map<std::string,std::string>& keys,
+  static void createX2ReferenceObject( const std::string& lab, const std::vector<std::string>& words,
+                                       const std::map<std::string,std::string>& keys, std::vector<std::vector<std::string> >& actions );
+  static std::string createRDFObject( const int& anum, const std::string& lab, const std::string& nlab, const unsigned& norm_atoms, 
+                                      const std::vector<std::string>& words, const std::map<std::string,std::string>& keys, 
                                       std::vector<std::vector<std::string> >& actions );
+  static void createPairEntropyObjects( const std::string& natoms, const std::string lab, const std::string& nlab, const std::vector<std::string>& words,
+                                        const std::map<std::string,std::string>& keys, std::vector<std::vector<std::string> >& actions );
   static void setupDirectionFlag( const std::string& lab, const std::map<std::string,std::string>& keys, std::vector<std::string>& input );
   static void registerKeywords( Keywords& keys );
   explicit Histogram(const ActionOptions&ao);
@@ -242,6 +247,7 @@ PLUMED_REGISTER_SHORTCUT(Histogram,"HISTOGRAM")
 PLUMED_REGISTER_SHORTCUT(Histogram,"MULTICOLVARDENS")
 PLUMED_REGISTER_SHORTCUT(Histogram,"RDF")
 PLUMED_REGISTER_SHORTCUT(Histogram,"PAIRENTROPY")
+PLUMED_REGISTER_SHORTCUT(Histogram,"PAIRENTROPIES")
 
 void Histogram::shortcutKeywords( Keywords& keys ) {
   HistogramBase::shortcutKeywords( keys );
@@ -289,11 +295,16 @@ void Histogram::createAveragingObject( const std::string& ilab, const std::strin
   actions.push_back( av_words );
 }
 
-std::string Histogram::createRDFObject( const std::string& lab, const std::vector<std::string>& words,
-                                        const std::map<std::string,std::string>& keys,
-                                        std::vector<std::vector<std::string> >& actions ) {
+unsigned Histogram::getNumberOfInputAtoms( const std::map<std::string,std::string>& keys ) {
+  std::vector<std::string> awords=Tools::getWords(keys.find("ATOMS")->second,"\t\n ,");
+  Tools::interpretRanges( awords ); return awords.size();
+}
+
+void Histogram::createX2ReferenceObject( const std::string& lab, const std::vector<std::string>& words,
+                                         const std::map<std::string,std::string>& keys,
+                                         std::vector<std::vector<std::string> >& actions ) {
   // Create grid with normalizing function
-  std::vector<std::string> norm_func; norm_func.push_back(lab + "_norm:"); norm_func.push_back("REFERENCE_FUNCTION");
+  std::vector<std::string> norm_func; norm_func.push_back(lab + "_x2:"); norm_func.push_back("REFERENCE_FUNCTION");
   norm_func.push_back("GRID_MIN=0"); norm_func.push_back("GRID_MAX=" + keys.find("MAXR")->second);
   norm_func.push_back("PERIODIC=NO"); norm_func.push_back("FUNC=x*x");
   std::string nbins;
@@ -303,12 +314,17 @@ std::string Histogram::createRDFObject( const std::string& lab, const std::vecto
           nbins = words[i].substr(eq+1); break;
       }
   }
-  norm_func.push_back("GRID_BIN=" + nbins); actions.push_back( norm_func );
+  norm_func.push_back("GRID_BIN=" + nbins); actions.push_back( norm_func );  
   // Compute density if required
   if( !keys.count("DENSITY") ) {
       std::vector<std::string> vol_input; vol_input.push_back(lab + "_vol:");
       vol_input.push_back("VOLUME"); actions.push_back( vol_input );
   }
+}
+
+std::string Histogram::createRDFObject( const int& anum, const std::string& lab, const std::string& nlab, const unsigned& norm_atoms, 
+                                        const std::vector<std::string>& words, const std::map<std::string,std::string>& keys, 
+                                        std::vector<std::vector<std::string> >& actions ) {
   // Setup cutoff for rdf properly
   std::string kernel="gaussian"; std::vector<double> bandwidth(1,-1);
   for(unsigned i=1;i<words.size();++i) {
@@ -329,13 +345,18 @@ std::string Histogram::createRDFObject( const std::string& lab, const std::vecto
       KernelFunctions kk( center, bandwidth, kernel, "DIAGONAL", 1.0 ); std::vector<double> support( kk.getContinuousSupport() ); 
       double fcut; Tools::convert( keys.find("MAXR")->second, fcut ); Tools::convert( fcut + support[0], cutoff );
   }
-  // Create contact matrix
-  std::vector<std::string> mat_input; mat_input.push_back(lab + "_mat:"); mat_input.push_back("DISTANCE_MATRIX");
-  mat_input.push_back("GROUP=" + keys.find("ATOMS")->second ); mat_input.push_back("CUTOFF=" + cutoff);
-  actions.push_back( mat_input );
   // Retrieve the number of atoms in the system
   std::vector<std::string> awords=Tools::getWords(keys.find("ATOMS")->second,"\t\n ,");
-  Tools::interpretRanges( awords ); std::string natoms; Tools::convert( awords.size(), natoms );
+  Tools::interpretRanges( awords ); std::string natoms; Tools::convert( getNumberOfInputAtoms( keys ), natoms );
+  // Create contact matrix
+  std::vector<std::string> mat_input; mat_input.push_back(lab + "_mat:"); mat_input.push_back("DISTANCE_MATRIX");
+  if( anum<0 ) {
+     mat_input.push_back("GROUP=" + keys.find("ATOMS")->second ); 
+  } else {
+     if( anum>=getNumberOfInputAtoms( keys ) ) plumed_merror("number of atom should be less than total number of atoms in system");
+     mat_input.push_back("GROUPA=" + awords[anum] ); mat_input.push_back("GROUPB=" + keys.find("ATOMS")->second );
+  }
+  mat_input.push_back("CUTOFF=" + cutoff); actions.push_back( mat_input );
   // Calculate weights of distances
   std::vector<std::string> wmat_input; wmat_input.push_back(lab + "_wmat:"); wmat_input.push_back("MATHEVAL");
   wmat_input.push_back("ARG1=" + lab + "_mat.w"); wmat_input.push_back("FUNC=step(" + cutoff + "-x)");
@@ -348,19 +369,49 @@ std::string Histogram::createRDFObject( const std::string& lab, const std::vecto
   actions.push_back( hist_words );
   // Transform the histogram by normalizing factor for rdf
   std::vector<std::string> rdf_words; rdf_words.push_back( lab + "_vrdf:"); rdf_words.push_back("MATHEVAL");
-  rdf_words.push_back("ARG1=" + lab + "_kde"); rdf_words.push_back("ARG2=" + lab + "_norm");
+  rdf_words.push_back("ARG1=" + lab + "_kde"); rdf_words.push_back("ARG2=" + nlab + "_x2");
   rdf_words.push_back("FUNC=x/(2*pi*y)"); rdf_words.push_back("PERIODIC=NO"); actions.push_back( rdf_words );
   // And normalize by density and number of atoms (separated from above to avoid nans)
   std::vector<std::string> rdf_words2; rdf_words2.push_back( lab + "_rdf:"); rdf_words2.push_back("MATHEVAL");
-  rdf_words2.push_back("ARG1=" + lab + "_vrdf"); rdf_words2.push_back("PERIODIC=NO");
+  rdf_words2.push_back("ARG1=" + lab + "_vrdf"); rdf_words2.push_back("PERIODIC=NO"); 
+  std::string str_norm_atoms; Tools::convert( norm_atoms, str_norm_atoms );
   if( keys.count("DENSITY") ) {
-      rdf_words2.push_back("FUNC=x/(" + keys.find("DENSITY")->second + "*" + natoms + ")");
+      rdf_words2.push_back("FUNC=x/(" + keys.find("DENSITY")->second + "*" + str_norm_atoms + ")");
   } else {
-      rdf_words2.push_back("ARG2=" + lab + "_vol"); rdf_words2.push_back("FUNC=x*y/(" + natoms + "*" + natoms + ")");
+      rdf_words2.push_back("ARG2=" + nlab + "_vol"); rdf_words2.push_back("FUNC=x*y/(" + natoms + "*" + str_norm_atoms + ")");
   }
   actions.push_back( rdf_words2 );
   // Return the number of atoms in the system as it is used to compute pair entropy
   return natoms;
+}
+
+void Histogram::createPairEntropyObjects( const std::string& natoms, const std::string lab, const std::string& nlab, const std::vector<std::string>& words,
+                                          const std::map<std::string,std::string>& keys, std::vector<std::vector<std::string> >& actions ) {
+    // And compute the two functions we are integrating (we use two matheval objects here and sum them in order to avoid nans from taking logarithms of zero)
+    std::vector<std::string> int_words; int_words.push_back( lab + "_conv_t1:"); int_words.push_back("MATHEVAL");
+    int_words.push_back("ARG1=" + lab + "_rdf"); int_words.push_back("ARG2=" + nlab + "_x2");
+    int_words.push_back("FUNC=x*y*log(x)"); int_words.push_back("PERIODIC=NO");
+    actions.push_back( int_words );
+    std::vector<std::string> int_words2; int_words2.push_back( lab + "_conv_t2:"); int_words2.push_back("MATHEVAL");
+    int_words2.push_back("ARG1=" + lab + "_rdf"); int_words2.push_back("ARG2=" + nlab + "_x2");
+    int_words2.push_back("FUNC=(1-x)*y"); int_words2.push_back("PERIODIC=NO");
+    actions.push_back( int_words2 );
+    std::vector<std::string> int_words3; int_words3.push_back( lab + "_conv:"); int_words3.push_back("MATHEVAL");
+    int_words3.push_back("ARG1=" + lab + "_conv_t1"); int_words3.push_back("ARG2=" + lab + "_conv_t2");
+    int_words3.push_back("FUNC=x+y"); int_words3.push_back("PERIODIC=NO");
+    actions.push_back( int_words3 );
+    // Now integrate using trapezium rule
+    std::vector<std::string> cv_words; cv_words.push_back( lab + "_int:"); cv_words.push_back("TRAPEZIUM_RULE");
+    cv_words.push_back("ARG=" + lab + "_conv"); actions.push_back( cv_words );
+    // And multiply by final normalizing constant
+    std::vector<std::string> f_words; f_words.push_back( lab + ":"); f_words.push_back("MATHEVAL");
+    f_words.push_back("ARG1=" + lab + "_int"); f_words.push_back("PERIODIC=NO");
+    if( keys.count("DENSITY") ) {
+        f_words.push_back("FUNC=-2*pi*x*" + keys.find("DENSITY")->second );
+    } else {
+        f_words.push_back("ARG2=" + nlab + "_vol"); f_words.push_back("FUNC=-(2*pi*x/y)*" + natoms );
+    }
+    actions.push_back( f_words ); 
 }
 
 void Histogram::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -408,35 +459,29 @@ void Histogram::expandShortcut( const std::string& lab, const std::vector<std::s
       createAveragingObject( lab + "_kde", lab, keys, actions );
     }
   } else if( words[0]=="RDF" ) {
-    std::string natoms = createRDFObject( lab, words, keys, actions ); 
+    createX2ReferenceObject( lab, words, keys, actions );
+    // Create the matrix of distances
+    std::string natoms = createRDFObject( -1, lab, lab, getNumberOfInputAtoms( keys ), words, keys, actions ); 
     createAveragingObject( lab + "_rdf", lab, keys, actions );
   } else if( words[0]=="PAIRENTROPY" ) {
-    std::string natoms = createRDFObject( lab, words, keys, actions );
-    // And compute the two functions we are integrating (we use two matheval objects here and sum them in order to avoid nans from taking logarithms of zero)
-    std::vector<std::string> int_words; int_words.push_back( lab + "_conv_t1:"); int_words.push_back("MATHEVAL");
-    int_words.push_back("ARG1=" + lab + "_rdf"); int_words.push_back("ARG2=" + lab + "_norm"); 
-    int_words.push_back("FUNC=x*y*log(x)"); int_words.push_back("PERIODIC=NO");
-    actions.push_back( int_words );
-    std::vector<std::string> int_words2; int_words2.push_back( lab + "_conv_t2:"); int_words2.push_back("MATHEVAL");
-    int_words2.push_back("ARG1=" + lab + "_rdf"); int_words2.push_back("ARG2=" + lab + "_norm");
-    int_words2.push_back("FUNC=(1-x)*y"); int_words2.push_back("PERIODIC=NO");
-    actions.push_back( int_words2 );
-    std::vector<std::string> int_words3; int_words3.push_back( lab + "_conv:"); int_words3.push_back("MATHEVAL");
-    int_words3.push_back("ARG1=" + lab + "_conv_t1"); int_words3.push_back("ARG2=" + lab + "_conv_t2");
-    int_words3.push_back("FUNC=x+y"); int_words3.push_back("PERIODIC=NO");
-    actions.push_back( int_words3 );
-    // Now integrate using trapezium rule
-    std::vector<std::string> cv_words; cv_words.push_back( lab + "_int:"); cv_words.push_back("TRAPEZIUM_RULE"); 
-    cv_words.push_back("ARG=" + lab + "_conv"); actions.push_back( cv_words );
-    // And multiply by final normalizing constant
-    std::vector<std::string> f_words; f_words.push_back( lab + ":"); f_words.push_back("MATHEVAL"); 
-    f_words.push_back("ARG1=" + lab + "_int"); f_words.push_back("PERIODIC=NO");
-    if( keys.count("DENSITY") ) {
-        f_words.push_back("FUNC=-2*pi*x*" + keys.find("DENSITY")->second ); 
-    } else {
-        f_words.push_back("ARG2=" + lab + "_vol"); f_words.push_back("FUNC=-(2*pi*x/y)*" + natoms );  
+    createX2ReferenceObject( lab, words, keys, actions );
+    std::string natoms = createRDFObject( -1,  lab, lab, getNumberOfInputAtoms( keys ), words, keys, actions );
+    createPairEntropyObjects( natoms, lab, lab, words, keys, actions ); 
+  } else if( words[0]=="PAIRENTROPIES") {
+    // Create the x2 value
+    createX2ReferenceObject( lab, words, keys, actions );
+    unsigned nat  = getNumberOfInputAtoms( keys ); 
+    // Now create all the pairentropy objects
+    for(unsigned i=0;i<nat;++i) {
+        std::string ilab; Tools::convert( i, ilab );
+        std::string natoms = createRDFObject( i, lab + ilab, lab, 2, words, keys, actions ); 
+        createPairEntropyObjects( natoms, lab + ilab, lab, words, keys, actions );
     }
-    actions.push_back( f_words );
+    // And compose a vector containing the values of all the pair entropies
+    std::vector<std::string> comp; comp.push_back( lab + ":" ); comp.push_back("COMPOSE_VECTOR"); 
+    std::string num, alist = "ARG=" + lab + "0"; 
+    for(unsigned i=1;i<nat;++i){ Tools::convert( i, num ); alist += "," + lab + num; }
+    comp.push_back( alist ); actions.push_back( comp );
   }
 }
 
