@@ -370,10 +370,7 @@ std::unique_ptr<MDAtomsBase> MDAtomsBase::create(unsigned p) {
   } else if (p==sizeof(float)) {
     return Tools::make_unique<MDAtomsTyped<float>>();
   }
-  std::string pp;
-  Tools::convert(p,pp);
-  plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
-  return nullptr;
+  plumed_error() << "Cannot create an MD interface with sizeof(real)==" << p;
 }
 
 }
