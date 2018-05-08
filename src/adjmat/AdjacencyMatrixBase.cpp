@@ -253,23 +253,35 @@ bool AdjacencyMatrixBase::performTask( const std::string& controller, const unsi
     myvals.setValue( x_index, atom[0] ); myvals.setValue( y_index, atom[1] ); myvals.setValue( z_index, atom[2] );
     if( !doNotCalculateDerivatives() ) {
       myvals.addDerivative( x_index, 3*index1+0, -1 ); myvals.addDerivative( x_index, 3*index2+0, +1 );
+      myvals.addDerivative( x_index, 3*index1+1, 0 ); myvals.addDerivative( x_index, 3*index2+1, 0 );
+      myvals.addDerivative( x_index, 3*index1+2, 0 ); myvals.addDerivative( x_index, 3*index2+2, 0 );
+      myvals.addDerivative( y_index, 3*index1+0, 0 ); myvals.addDerivative( y_index, 3*index2+0, 0 );
       myvals.addDerivative( y_index, 3*index1+1, -1 ); myvals.addDerivative( y_index, 3*index2+1, +1 );
+      myvals.addDerivative( y_index, 3*index1+2, 0 ); myvals.addDerivative( y_index, 3*index2+2, 0 );
+      myvals.addDerivative( z_index, 3*index1+0, 0 ); myvals.addDerivative( z_index, 3*index2+0, 0 );
+      myvals.addDerivative( z_index, 3*index1+1, 0 ); myvals.addDerivative( z_index, 3*index2+1, 0 );
       myvals.addDerivative( z_index, 3*index1+2, -1 ); myvals.addDerivative( z_index, 3*index2+2, +1 );
-      // Update dynamic lists for central atom
-      myvals.updateIndex( x_index, 3*index1+0 ); myvals.updateIndex( y_index, 3*index1+1 ); myvals.updateIndex( z_index, 3*index1+2 );
-      // Update dynamic lists for bonded atom
-      myvals.updateIndex( x_index, 3*index2+0 ); myvals.updateIndex( y_index, 3*index2+1 ); myvals.updateIndex( z_index, 3*index2+2 );
+      for(unsigned k=0;k<3;++k) {
+          // Update dynamic lists for central atom
+          myvals.updateIndex( x_index, 3*index1+k ); myvals.updateIndex( y_index, 3*index1+k ); myvals.updateIndex( z_index, 3*index1+k );
+          // Update dynamic lists for bonded atom
+          myvals.updateIndex( x_index, 3*index2+k ); myvals.updateIndex( y_index, 3*index2+k ); myvals.updateIndex( z_index, 3*index2+k );
+      }
       // Add derivatives of virial
       unsigned base = 3*getNumberOfAtoms();
       // Virial for x
       myvals.addDerivative( x_index, base+0, -atom[0] ); myvals.addDerivative( x_index, base+3, -atom[1] ); myvals.addDerivative( x_index, base+6, -atom[2] );
-      myvals.updateIndex( x_index, base+0 ); myvals.updateIndex( x_index, base+3 ); myvals.updateIndex( x_index, base+6 );
+      myvals.addDerivative( x_index, base+1, 0 ); myvals.addDerivative( x_index, base+4, 0 ); myvals.addDerivative( x_index, base+7, 0 );
+      myvals.addDerivative( x_index, base+2, 0 ); myvals.addDerivative( x_index, base+5, 0 ); myvals.addDerivative( x_index, base+8, 0 );
       // Virial for y
+      myvals.addDerivative( y_index, base+0, 0 ); myvals.addDerivative( y_index, base+3, 0 ); myvals.addDerivative( y_index, base+6, 0 );
       myvals.addDerivative( y_index, base+1, -atom[0] ); myvals.addDerivative( y_index, base+4, -atom[1] ); myvals.addDerivative( y_index, base+7, -atom[2] );
-      myvals.updateIndex( y_index, base+1 ); myvals.updateIndex( y_index, base+4 ); myvals.updateIndex( y_index, base+7 );
+      myvals.addDerivative( y_index, base+2, 0 ); myvals.addDerivative( y_index, base+5, 0 ); myvals.addDerivative( y_index, base+8, 0 );
       // Virial for z
+      myvals.addDerivative( z_index, base+0, 0 ); myvals.addDerivative( z_index, base+3, 0 ); myvals.addDerivative( z_index, base+6, 0 );
+      myvals.addDerivative( z_index, base+1, 0 ); myvals.addDerivative( z_index, base+4, 0 ); myvals.addDerivative( z_index, base+7, 0 );
       myvals.addDerivative( z_index, base+2, -atom[0] ); myvals.addDerivative( z_index, base+5, -atom[1] ); myvals.addDerivative( z_index, base+8, -atom[2] );
-      myvals.updateIndex( z_index, base+2 ); myvals.updateIndex( z_index, base+5 ); myvals.updateIndex( z_index, base+8 );
+      for(unsigned k=0;k<9;++k) { myvals.updateIndex( x_index, base+k ); myvals.updateIndex( y_index, base+k ); myvals.updateIndex( z_index, base+k ); }
     }
   }
   // Update derivatives
