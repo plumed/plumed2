@@ -336,8 +336,17 @@ Stopwatch::Handler::Handler(Handler && handler) noexcept :
 
 inline
 Stopwatch::Handler & Stopwatch::Handler::operator=(Handler && handler) noexcept {
-  std::swap(watch,handler.watch);
-  std::swap(stop,handler.stop);
+  if(this!=&handler) {
+    if(watch) {
+      if(stop) watch->stop();
+      else watch->pause();
+    }
+// cppcheck complains about this:
+// cppcheck-suppress uselessAssignmentPtrArg
+    watch=handler.watch;
+    stop=handler.stop;
+    handler.watch=nullptr;
+  }
   return *this;
 }
 
