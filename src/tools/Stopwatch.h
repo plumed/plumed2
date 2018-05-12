@@ -254,7 +254,7 @@ private:
 
 public:
 // Constructor.
-  Stopwatch() = default;
+  explicit Stopwatch() = default;
 // Constructor.
 // When destructing, stopwatch is logged.
 // Make sure that log survives stopwatch. Typically, it should be declared earlier, in order
