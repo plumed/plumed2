@@ -145,6 +145,10 @@ BEGIN{
 
 # create tmp dir for future usage
   "mktemp -dt plumed.XXXXXX" | getline tmpdir
+
+# checking astyle presence
+  astyle_available=!system(astyle " --version > /dev/null 2> /dev/null") 
+  if(!astyle_available) error("astyle_not_available","astyle not available on this system, skipping astyle checks")
 }
 
 # for each input file
@@ -198,7 +202,7 @@ BEGINFILE{
 # checks that are done only on some modules will be skipped if the module name is not known
   if((filetype=="source" || filetype=="header") && !module) information("missing_module_name","module name is not know, some check will be skipped");
 
-  if(filetype=="source" || filetype=="header"){
+  if(astyle_available && (filetype=="source" || filetype=="header")){
     tempfile = tmpdir "/astyle"
     system(astyle " --options=" astyle_options " < " FILENAME " > " tempfile)
     s=system("diff -q " FILENAME " " tempfile ">/dev/null 2>/dev/null")
@@ -407,7 +411,7 @@ BEGINFILE{
 # now it is considered equivalent to a verbatim
 # later on we might make plumedfile compulsory instead of verbatim
     if(in_plumed_doc && (in_plumed_doc in provide_examples) && match($0,"^ *\\\\plumedfile *$")){
-      provide_verbatim[in_plumed_doc]=1
+      provide_plumedfile[in_plumed_doc]=1
     }
 #print match($0,"^ *\\\\verbatim *$"),"X" $0 "X"
 
@@ -544,11 +548,11 @@ END{
 # DOC: Every action that is registered should contain an `Example` section in its documentation.
 # DOC: Notice that if the `Example` section is not added the manual will not show the registered keywords.
       error("action_without_examples","action " action " at " plumed_doc_action[action] " has no example")
-    } else if(!(action in provide_verbatim)){
+    } else if(!(action in provide_plumedfile)){
 # DOC: :action_without_verbatim:
-# DOC: Every action that is registered should contain an example in the form of a `verbatim` section.
+# DOC: Every action that is registered should contain an example in the form of a `plumedfile` section.
 # DOC: This is currently a stylistic warning since there are many actions not satisfying this requirement.
-      style("action_without_verbatim","action " action " at " provide_examples[action] " has no verbatim")
+      style("action_without_plumedfile","action " action " at " provide_examples[action] " has no plumedfile")
     }
   }
 
