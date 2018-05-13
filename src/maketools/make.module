@@ -90,6 +90,10 @@ codecheck:
 astyle:
 	cd ../ ; ./astyle.sh $(CURDIR)
 
+.PHONY: show_used_modules
+show_used_modules:
+	@echo used_modules $(USE)
+
 
 
 # generic makefile rules
