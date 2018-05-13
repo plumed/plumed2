@@ -145,6 +145,10 @@ BEGIN{
 
 # create tmp dir for future usage
   "mktemp -dt plumed.XXXXXX" | getline tmpdir
+
+# checking astyle presence
+  astyle_available=!system(astyle " --version > /dev/null 2> /dev/null") 
+  if(!astyle_available) error("astyle_not_available","astyle not available on this system, skipping astyle checks")
 }
 
 # for each input file
@@ -198,7 +202,7 @@ BEGINFILE{
 # checks that are done only on some modules will be skipped if the module name is not known
   if((filetype=="source" || filetype=="header") && !module) information("missing_module_name","module name is not know, some check will be skipped");
 
-  if(filetype=="source" || filetype=="header"){
+  if(astyle_available && (filetype=="source" || filetype=="header")){
     tempfile = tmpdir "/astyle"
     system(astyle " --options=" astyle_options " < " FILENAME " > " tempfile)
     s=system("diff -q " FILENAME " " tempfile ">/dev/null 2>/dev/null")
