@@ -237,8 +237,8 @@ double CompiledExpression::evaluate() const {
 
 #ifdef __PLUMED_HAS_ASMJIT
 static double evaluateOperation(Operation* op, double* args) {
-    map<string, double>* dummyVariables = NULL;
-    return op->evaluate(args, *dummyVariables);
+    static map<string, double> dummyVariables;
+    return op->evaluate(args, dummyVariables);
 }
 
 static void generateSingleArgCall(X86Compiler& c, X86Xmm& dest, X86Xmm& arg, double (*function)(double));
