@@ -45,7 +45,7 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
   if(!do_pair) {
     nallpairs_=nlist0_*nlist1_;
   } else {
-    plumed_assert(nlist0_==nlist1_);
+    plumed_massert(nlist0_==nlist1_,"when using PAIR option, the two groups should have the same number of elements");
     nallpairs_=nlist0_;
   }
   initialize();
