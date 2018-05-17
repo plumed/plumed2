@@ -103,7 +103,6 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Analysis(const ActionOptions&);
-  ~Analysis();
   void calculate() {}
   void apply() {}
   void accumulate();

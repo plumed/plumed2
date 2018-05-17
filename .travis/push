@@ -49,6 +49,7 @@ case "$WHAT" in
 ;;
 (coverage)
   cp -R $root/developer-doc/coverage .
+  cp -R $root/developer-doc/coverage-libs .
 esac
 
 
@@ -58,25 +59,39 @@ touch .nojekyll
 
 case "$WHAT" in
 (doc)
-  home="user-doc/html/index.html"
-  ;;
-(coverage)
-  home="coverage/index.html"
-  ;;
-esac
-
 cat > index.html << EOF
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <html>
 <head>
 <title>Page Auto Redirect</title>
-<meta http-equiv="refresh" content ="0; $home">
+<meta http-equiv="refresh" content ="0; user-doc/html/index.html">
 </head>
 <body>
 This is an auto redirect page.
 </body>
 </html>
 EOF
+  ;;
+(coverage)
+cat > index.html << EOF
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<body>
+<title> Coverage scan </title>
+<h1> Coverage scan </h1>
+Here you can find coverage scan reports for PLUMED:
+<ul>
+  <li><a href=coverage/index.html>Standard coverage (excluding libraries)</a></li>
+  <li><a href=coverage-libs/index.html>Coverage for third-party libraries</a></li>
+</ul>
+The first one is equivalent to the one you will find on <a href="https://codecov.io/gh/$GIT_OWNER/$GIT_REPO">CodeCov</a> (if enabled).
+The second one only contains third-party libraries included in PLUMED.
+</body>
+</html>
+EOF
+  ;;
+esac
+
 
 if test -z "${GIT_BOT}"
 then

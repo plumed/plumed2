@@ -106,7 +106,7 @@ void DumpGraph::update() {
   unsigned nedge; std::vector<std::pair<unsigned,unsigned> > edge_list( mymatrix->getNumberOfRows()*maxconnections );
   mymatrix->retrieveEdgeList( nedge, edge_list );
   for(unsigned i=0; i<nedge; ++i) ofile.printf("%u -- %u \n", edge_list[i].first, edge_list[i].second );
-  ofile.printf("} \n"); ofile.close();
+  ofile.printf("} \n");
 }
 
 }

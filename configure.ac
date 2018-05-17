@@ -254,6 +254,7 @@ PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
+PLUMED_CONFIG_ENABLE([asmjit],[search for asmjit],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[no])
 PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
 
@@ -646,6 +647,30 @@ int main() {
 }
   ], [__PLUMED_HAS_BOOST_SERIALIZATION],[boost_serialization boost_serialization-mt])
 # notice: macports install libraries with -mt suffix
+fi
+
+if test $asmjit == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([asmjit],[
+#include <asmjit/asmjit.h>
+#include <stdio.h>
+using namespace asmjit;
+typedef int (*Func)(void);
+int main(int argc, char* argv[[]]) {
+  JitRuntime rt;
+  CodeHolder code;
+  code.init(rt.getCodeInfo());
+  X86Assembler a(&code);
+  a.mov(x86::eax, 1);
+  a.ret();
+  Func fn;
+  Error err = rt.add(&fn, &code);
+  if (err) return 1;
+  int result = fn();
+  printf("%d\n", result);
+  rt.release(fn);
+  return 0;
+}
+  ], [__PLUMED_HAS_ASMJIT],[asmjit])
 fi
 
 if test $fftw == true ; then
@@ -1096,6 +1121,8 @@ if test "$prefix" == NONE
 then
   prefix=/usr/local
 fi
+
+AC_MSG_CHECKING([If prefix is equal to present working directory])
 
 pkgconfig_bin=""
 

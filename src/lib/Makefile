@@ -426,7 +426,7 @@ ifeq ($(PLUMED_INSTALL),Install)
 else
 	@echo "export PLUMED_IS_INSTALLED=no" >> $@
 	@echo "export PLUMED_ROOT=\"\$${PLUMED_ROOT-$(realpath ../../)}\"" >> $@
-	@echo "export PLUMED_INCLUDEDIR=\"\$${PLUMED_ROOT}/include\"" >> $@
+	@echo "export PLUMED_INCLUDEDIR=\"\$${PLUMED_ROOT}/src/include\"" >> $@
 	@echo "export PLUMED_HTMLDIR=\"\$${PLUMED_ROOT}\"" >> $@
 	@echo "export PLUMED_PROGRAM_NAME=plumed" >> $@
 	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@

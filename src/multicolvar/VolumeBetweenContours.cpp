@@ -49,11 +49,11 @@ The input below calculates a density field from the positions of atoms 1-14400. 
 that are specified in the DENSITY action that are within a region where the density field is greater than
 2.0 is then calculated.
 
-\verbatim
+\plumedfile
 d1: DENSITY SPECIES=14401-74134:3 LOWMEM
 fi: INENVELOPE DATA=d1 ATOMS=1-14400 CONTOUR={RATIONAL D_0=2.0 R_0=1.0} BANDWIDTH=0.1,0.1,0.1 LOWMEM
 PRINT ARG=fi,rr.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

@@ -70,7 +70,7 @@ private:
 /// Tolerance for quantities being put in neighbor lists
   double nl_tolerance;
 /// Pointers to the functions we are using on each value
-  std::vector<Vessel*> functions;
+  std::vector<std::unique_ptr<Vessel>> functions;
 /// Tempory storage for forces
   std::vector<double> tmpforces;
 /// Ths full list of tasks we have to perform
@@ -220,7 +220,7 @@ unsigned ActionWithVessel::getNumberOfQuantities() const {
 inline
 Vessel* ActionWithVessel::getPntrToVessel( const unsigned& i ) {
   plumed_dbg_assert( i<functions.size() );
-  return functions[i];
+  return functions[i].get();
 }
 
 inline

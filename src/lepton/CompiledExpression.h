@@ -71,12 +71,30 @@
 #include <string>
 #include <utility>
 #include <vector>
-#ifdef LEPTON_USE_JIT
-    #include "asmjit.h"
-#endif
 
 namespace PLMD {
 namespace lepton {
+
+// Utility class.
+// Implement an unique pointer to asmjit::JitRuntime.
+// Needed to decouple asmjit header file from this one.
+class AsmJitRuntimePtr {
+/// if ASMJIT is not defined, just set the pointer to null
+  void* ptr=nullptr;
+public:
+/// constructor
+  AsmJitRuntimePtr();
+/// destructor
+  ~AsmJitRuntimePtr();
+/// deleted copy constructor
+  AsmJitRuntimePtr(const AsmJitRuntimePtr&) = delete;
+/// deleted assignment
+  AsmJitRuntimePtr & operator=(const AsmJitRuntimePtr&) = delete;
+/// get the pointer
+  void* get() {
+    return ptr;
+  }
+};
 
 class Operation;
 class ParsedExpression;
@@ -133,12 +151,9 @@ private:
     mutable std::vector<double> argValues;
     std::map<std::string, double> dummyVariables;
     void* jitCode;
-#ifdef LEPTON_USE_JIT
     void generateJitCode();
-    void generateSingleArgCall(asmjit::X86Compiler& c, asmjit::X86XmmVar& dest, asmjit::X86XmmVar& arg, double (*function)(double));
     std::vector<double> constants;
-    asmjit::JitRuntime runtime;
-#endif
+    AsmJitRuntimePtr runtimeptr;
 };
 
 } // namespace lepton

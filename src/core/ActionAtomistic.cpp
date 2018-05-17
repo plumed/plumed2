@@ -285,7 +285,7 @@ void ActionAtomistic::updateUniqueLocal() {
   unique_local.clear();
   if(atoms.dd && atoms.shuffledAtoms>0) {
     for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
-      if(atoms.dd.g2l[pp->index()]>=0) unique_local.insert(*pp);
+      if(atoms.g2l[pp->index()]>=0) unique_local.insert(*pp);
     }
   } else {
     unique_local.insert(unique.begin(),unique.end());
