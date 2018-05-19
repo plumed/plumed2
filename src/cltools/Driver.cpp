@@ -22,7 +22,7 @@
 #include "CLTool.h"
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
-#include "wrapper/Plumed.h"
+#include "core/PlumedMain.h"
 #include "tools/Communicator.h"
 #include "tools/Random.h"
 #include "tools/Pbc.h"
@@ -201,7 +201,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Driver(const CLToolOptions& co );
   int main(FILE* in,FILE*out,Communicator& pc);
-  void evaluateNumericalDerivatives( const long int& step, Plumed& p, const std::vector<real>& coordinates,
+  void evaluateNumericalDerivatives( const long int& step, PlumedMain& p, const std::vector<real>& coordinates,
                                      const std::vector<real>& masses, const std::vector<real>& charges,
                                      std::vector<real>& cell, const double& base, std::vector<real>& numder );
   string description()const;
@@ -493,7 +493,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     if( !Communicator::initialized() ) error("needs mpi for debug-pd");
   }
 
-  Plumed p;
+  PlumedMain p;
   int rr=sizeof(real);
   p.cmd("setRealPrecision",&rr);
   int checknatoms=-1;
@@ -981,7 +981,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 }
 
 template<typename real>
-void Driver<real>::evaluateNumericalDerivatives( const long int& step, Plumed& p, const std::vector<real>& coordinates,
+void Driver<real>::evaluateNumericalDerivatives( const long int& step, PlumedMain& p, const std::vector<real>& coordinates,
     const std::vector<real>& masses, const std::vector<real>& charges,
     std::vector<real>& cell, const double& base, std::vector<real>& numder ) {
 
