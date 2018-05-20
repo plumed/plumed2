@@ -215,6 +215,14 @@ BEGINFILE{
           for(mod in used_modules[module]) used_modules_here=used_modules_here " " mod
         }
         information("used_modules",module " uses:" used_modules_here)
+# DOC: :used_wrapper_module:
+# DOC: Wrapper module should not be used in other modules (via `USE=wrapper` in `Makefile`).
+# DOC: The reason is that this makes `libplumedKernel` dependent on the PLUMED wrappers.
+# DOC: An exception is the `main` module, which needs to use the `wrapper` module.
+# DOC: Notice that within the PLUMED library there is no need to use the external `cmd` interface
+# DOC: since one can directly declare a `PlumedMain` object.
+        if(!(module in outer_modules) && isarray(used_modules[module]) && ("wrapper" in used_modules[module]))
+           error("used_wrapper_module","wrapped module should not be used except in main")
       }
     }
   }
