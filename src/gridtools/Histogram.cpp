@@ -743,6 +743,12 @@ KernelFunctions* Histogram::setupValuesAndKernel( const std::vector<double>& arg
 }
 
 void Histogram::addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const {
+  if( kerneltype=="DISCRETE" ) {
+      std::vector<double> newargs( args.size() );
+      for(unsigned i=0; i<args.size(); ++i) newargs[i] = args[i] + 0.5*gridobject.getGridSpacing()[i];
+      buffer[ bufstart + gridobject.getIndex( newargs )*(1+args.size()) ] += height;
+      return;
+  }
   unsigned num_neigh; std::vector<unsigned> neighbors;
   std::vector<double> gpoint( args.size() ), der( args.size() );
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
@@ -767,6 +773,7 @@ void Histogram::addKernelToGrid( const double& height, const std::vector<double>
 }
 
 void Histogram::addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const {
+  plumed_assert( kerneltype!="DISCRETE" );
   unsigned num_neigh; std::vector<unsigned> neighbors;
   std::vector<double> gpoint( args.size() ), der( args.size() );
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );
