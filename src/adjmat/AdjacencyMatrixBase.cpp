@@ -22,6 +22,7 @@
 #include "AdjacencyMatrixBase.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
+#include "tools/OpenMP.h"
 
 namespace PLMD {
 namespace adjmat {
@@ -36,6 +37,8 @@ void AdjacencyMatrixBase::registerKeywords( Keywords& keys ) {
   keys.reserve("atoms","GROUPC","");
   keys.addFlag("COMPONENTS",false,"also calculate the components of the vector connecting the atoms in the contact matrix");
   keys.addFlag("NOPBC",false,"don't use pbc");
+  keys.add("compulsory","NL_CUTOFF","0.0","The cutoff for the neighbor list.  A value of 0 means we are not using a neighbor list");
+  keys.add("compulsory","NL_STRIDE","1","The frequency with which we are updating the atoms in the neighbor list");
   keys.addOutputComponent("w","default","the weight of the connection");
   keys.addOutputComponent("x","COMPONENT","the projection of the bond on the x axis");
   keys.addOutputComponent("y","COMPONENT","the projection of the bond on the y axis");
@@ -97,6 +100,11 @@ AdjacencyMatrixBase::AdjacencyMatrixBase(const ActionOptions& ao):
   requestAtoms( t ); forcesToApply.resize( getNumberOfDerivatives() );
   parseFlag("COMPONENTS",components); parseFlag("NOPBC",nopbc);
   addComponent( "w", shape ); componentIsNotPeriodic("w");
+  // Stuff for neighbor list
+  parse("NL_CUTOFF",nl_cut); nl_cut2=nl_cut*nl_cut;
+  parse("NL_STRIDE",nl_stride); nlist.resize( getFullNumberOfTasks()*( 2 + ablocks.size() ) );
+  if( nl_cut==0 && nl_stride>1 ) error("NL_CUTOFF must be set if NL_STRIDE is set greater than 1");
+  if( nl_cut>0 ) log.printf("  using neighbor list with cutoff %f.  List is updated every %u steps.\n",nl_cut,nl_stride);
 
   if( components ) {
     addComponent( "x", shape ); componentIsNotPeriodic("x");
@@ -117,9 +125,10 @@ void AdjacencyMatrixBase::setupThirdAtomBlock( const std::vector<AtomNumber>& tc
 
 void AdjacencyMatrixBase::setLinkCellCutoff( const bool& symmetric, const double& lcut, double tcut ) {
   if( read_one_group && symmetric ) getPntrToComponent(0)->setSymmetric( true );
+  if( nl_cut>0 && lcut>nl_cut ) error("D_MAX for switching functions should be shorter than neighbor list cutoff");
 
   if( tcut<0 ) tcut=lcut;
-  linkcells.setCutoff( lcut );
+  if( nl_cut>0 ) linkcells.setCutoff( nl_cut ); else linkcells.setCutoff( lcut );
   threecells.setCutoff( tcut );
 }
 
@@ -129,11 +138,75 @@ void AdjacencyMatrixBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) 
   // Make sure all tasks are done
   tflags.assign(tflags.size(),1);
   // Build link cells here so that this is done in stream if it needed in stream
-  std::vector<Vector> ltmp_pos( ablocks.size() );
-  for(unsigned i=0; i<ablocks.size(); ++i) {
-    ltmp_pos[i]=ActionAtomistic::getPosition( ablocks[i] );
+  if( getStep()%nl_stride==0 ) {
+      // Build the link cells   
+      std::vector<Vector> ltmp_pos( ablocks.size() );
+      for(unsigned i=0; i<ablocks.size(); ++i) ltmp_pos[i]=ActionAtomistic::getPosition( ablocks[i] );
+      linkcells.buildCellLists( ltmp_pos, ablocks, getPbc() );
+      // Set the number of neighbors to zero for all ranks
+      nlist.assign(getFullNumberOfTasks(),0);  
+      // Now get stuff to do parallel implementation
+      unsigned stride=comm.Get_size(); unsigned rank=comm.Get_rank();
+      if( runInSerial() ) { stride=1; rank=0; }
+      unsigned nt=OpenMP::getNumThreads();
+      if( nt*stride*10>getFullNumberOfTasks() ) nt=getFullNumberOfTasks()/stride/10;
+      if( nt==0 || runWithoutOpenMP() ) nt=1;
+
+      #pragma omp parallel num_threads(nt)
+      { 
+        // Build a tempory nlist so we can do omp parallelism
+        std::vector<unsigned> omp_nlist;
+        if( nt>1 ) omp_nlist.resize( nlist.size(), 0 );
+        // Now run over all atoms and construct the link cells
+        std::vector<Vector> t_atoms( 1+ablocks.size() );
+        std::vector<unsigned> indices( 1+ablocks.size() ), cells_required( linkcells.getNumberOfCells() );
+        #pragma omp for nowait
+        for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride) {
+            // Retrieve cells required from link cells - for matrix blocks
+            unsigned ncells_required=0; 
+            linkcells.addRequiredCells( linkcells.findMyCell( ActionAtomistic::getPosition(i) ), ncells_required, cells_required ); 
+            // Now get the indices of the atoms in the link cells positions
+            unsigned natoms=1; indices[0]=i;
+            linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
+            if( nl_stride==1 ) {
+                if( nt>1 ) omp_nlist[i]=0; else nlist[i] = 0;
+                unsigned lstart = getFullNumberOfTasks() + i*(1+ablocks.size());
+                for(unsigned j=0;j<natoms;++j) { 
+                    if( nt>1 ) { omp_nlist[ lstart + omp_nlist[i] ] = indices[j]; omp_nlist[i]++; }
+                    else { nlist[ lstart + nlist[i] ] = indices[j]; nlist[i]++; }
+                }
+            } else { 
+                // Get the positions of all the atoms in the link cells relative to the central atom
+                for(unsigned j=0; j<natoms; ++i) t_atoms[j] = ActionAtomistic::getPosition(indices[j]) - ActionAtomistic::getPosition(i);
+                if( !nopbc ) pbcApply( t_atoms, natoms );
+                // Now construct the neighbor list
+                if( nt>1 ) omp_nlist[i] = 0; else nlist[i] = 0;
+                unsigned lstart = getFullNumberOfTasks() + i*(1+ablocks.size());
+                for(unsigned j=0;j<natoms;++j) {
+                    double d2; 
+                    if ( (d2=t_atoms[j][0]*t_atoms[j][0])<nl_cut2 &&
+                         (d2+=t_atoms[j][1]*t_atoms[j][1])<nl_cut2 &&
+                         (d2+=t_atoms[j][2]*t_atoms[j][2])<nl_cut2 ) {
+                              if( nt>1 ) { omp_nlist[ lstart + omp_nlist[i] ] = indices[j]; omp_nlist[i]++; }
+                              else { nlist[ lstart + nlist[i] ] = indices[j]; nlist[i]++; }
+                    }
+                }    
+            
+            }
+        }
+        // Gather OMP stuff
+        #pragma omp critical
+        if(nt>1) {
+           for(unsigned i=0; i<getFullNumberOfTasks(); ++i) nlist[i]+=omp_nlist[i]; 
+           for(unsigned i=0; i<getFullNumberOfTasks(); ++i) {
+               unsigned lstart = getFullNumberOfTasks() + i*(1+ablocks.size()); 
+               for(unsigned j=0;j<omp_nlist[i];++j) nlist[ lstart + j ] += omp_nlist[ lstart + j ]; 
+           }
+        } 
+      }
+      // MPI gather
+      if( !runInSerial() ) comm.Sum( nlist );
   }
-  linkcells.buildCellLists( ltmp_pos, ablocks, getPbc() );
   if( threeblocks.size()>0 ) {
     std::vector<Vector> ltmp_pos2( threeblocks.size() );
     for(unsigned i=0; i<threeblocks.size(); ++i) {
@@ -164,22 +237,18 @@ void AdjacencyMatrixBase::updateWeightDerivativeIndices( const unsigned& index1,
 }
 
 void AdjacencyMatrixBase::setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const {
-  // Retrieve cells required from link cells - for matrix blocks
-  std::vector<unsigned> cells_required( linkcells.getNumberOfCells() ); unsigned ncells_required=0;
-  linkcells.addRequiredCells( linkcells.findMyCell( ActionAtomistic::getPosition(current) ), ncells_required, cells_required );
-
   // Now retrieve bookeeping arrays
   if( indices.size()!=(1+ablocks.size()+threeblocks.size()) ) indices.resize( 1+ablocks.size()+threeblocks.size() );
 
   // Now get the positions
-  unsigned natoms=1; indices[0]=current;
-  linkcells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
+  unsigned natoms=nlist[current]; indices[0]=current; 
+  unsigned lstart = getFullNumberOfTasks() + current*(1+ablocks.size()); plumed_dbg_assert( nlist[lstart]==current );
+  for(unsigned i=1;i<nlist[current];++i){ indices[i] = nlist[ lstart + i ]; }
   unsigned ntwo_atoms=natoms; myvals.setSplitIndex( ntwo_atoms );
 
   // Now retrieve everything for the third atoms
   if( threeblocks.size()>0 ) {
-    if( cells_required.size()!=threecells.getNumberOfCells() ) cells_required.resize( threecells.getNumberOfCells() );
-    unsigned ncells_required=0;
+    unsigned ncells_required=0; std::vector<unsigned> cells_required( threecells.getNumberOfCells() );
     threecells.addRequiredCells( threecells.findMyCell( ActionAtomistic::getPosition(current) ), ncells_required, cells_required );
     threecells.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
   }

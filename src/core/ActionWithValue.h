@@ -147,6 +147,8 @@ protected:
   void runAllTasks();
 /// Run all calculations in serial
   bool runInSerial() const ;
+///  Ruan all calculations without open MP
+  bool runWithoutOpenMP() const ;
 public:
 /// Get the action that does the calculation
   ActionWithValue* getActionThatCalculates();
@@ -332,6 +334,11 @@ unsigned ActionWithValue::getTaskCode( const unsigned& ii ) const {
 inline
 bool ActionWithValue::runInSerial() const {
   return serial;
+}
+
+inline
+bool ActionWithValue::runWithoutOpenMP() const {
+  return no_openmp;
 }
 
 inline

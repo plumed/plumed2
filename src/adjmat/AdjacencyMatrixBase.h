@@ -39,6 +39,9 @@ private:
   LinkCells linkcells, threecells;
   std::vector<double> forcesToApply;
   std::vector<unsigned> ablocks, threeblocks;
+  double nl_cut, nl_cut2;
+  unsigned nl_stride;
+  std::vector<unsigned> nlist;
   void updateWeightDerivativeIndices( const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   void setupThirdAtomBlock( const std::vector<AtomNumber>& tc, std::vector<AtomNumber>& t );
   void setupForTask( const unsigned& current, MultiValue& myvals, std::vector<unsigned> & indices, std::vector<Vector>& atoms ) const ;
