@@ -92,9 +92,11 @@ private:
   Stopwatch& stopwatch=*stopwatch_fwd;
 /// The current number of active tasks
   unsigned nactive_tasks;
+/// Stores the labels of all the actions that are in this chain.  Used when setting up what to calculate
+  std::vector<std::string> actionsLabelsInChain;
 /// The indices of the tasks in the full list of tasks
   std::vector<unsigned> indexOfTaskInFullList;
-/// The list of currently active tasks
+/// The list of currently active tasks  
   std::vector<unsigned> partialTaskList;
 /// Ths full list of tasks we have to perform
   std::vector<unsigned> fullTaskList;
@@ -108,6 +110,11 @@ private:
   ActionWithValue* action_to_do_after;
 /// Return the index for the component named name
   int getComponent( const std::string& name ) const;
+////
+  void selectActiveTasks( const std::vector<std::string>& actionLabelsInChain, bool& forceAllTasks,
+                          std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
+///
+  void prepareForTaskLoop( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
 ///  Run the task
   void runTask( const unsigned& index, const unsigned& taskno, MultiValue& myvals ) const ;
 /// Retrieve the forces for a particualr task
@@ -246,7 +253,7 @@ public:
   void runTask( const std::string& controller, const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const ;
   void clearMatrixElements( MultiValue& myvals ) const ;
 ///
-  virtual void buildCurrentTaskList( std::vector<unsigned>& tflags ) { plumed_merror( "problem in task list for " + getLabel() ); }
+  virtual void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {}
 ///
   virtual void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                      std::vector<std::string>& max, std::vector<unsigned>& nbin,
@@ -256,10 +263,8 @@ public:
 ///
   virtual void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { plumed_merror("problem in getting grid data for " + getLabel() ); }
   virtual void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const { plumed_merror("problem in getting grid data for " + getLabel() ); }
-///
-  virtual void selectActiveTasks( std::vector<unsigned>& tflags );
 /// Make sure all tasks required for loop are done before loop starts
-  virtual void prepareForTasks();
+  virtual void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {}
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 ///

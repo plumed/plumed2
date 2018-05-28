@@ -122,7 +122,6 @@ public:
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const { plumed_error(); }
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
   unsigned getNumberOfDerivatives() const ;
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
                                const unsigned& bufstart, std::vector<double>& buffer ) const ;
@@ -170,10 +169,6 @@ void FindSphericalContour::getGridPointAsCoordinate( const unsigned& ind, const 
 
 unsigned FindSphericalContour::getNumberOfDerivatives() const {
   return gridcoords.getDimension();
-}
-
-void FindSphericalContour::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  tflags.assign(tflags.size(),1);
 }
 
 void FindSphericalContour::performTask( const unsigned& current, MultiValue& myvals ) const {

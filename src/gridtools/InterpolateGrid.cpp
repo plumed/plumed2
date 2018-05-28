@@ -64,7 +64,6 @@ public:
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void finishOutputSetup();
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
                                const unsigned& bufstart, std::vector<double>& buffer ) const ;
@@ -136,10 +135,6 @@ void InterpolateGrid::getInfoForGridHeader( std::string& gtype, std::vector<std:
 
 void InterpolateGrid::getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const {
   gridcoords.getGridPointCoordinates( ind, indices, coords );
-}
-
-void InterpolateGrid::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  tflags.assign(tflags.size(),1);
 }
 
 void InterpolateGrid::performTask( const unsigned& current, MultiValue& myvals ) const {

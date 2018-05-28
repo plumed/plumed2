@@ -56,7 +56,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit AdjacencyMatrixBase(const ActionOptions&);
   unsigned getNumberOfDerivatives() const ;
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
+  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
+  void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
   void calculate();
   void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
   bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;

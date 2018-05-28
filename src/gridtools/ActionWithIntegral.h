@@ -39,7 +39,6 @@ public:
   explicit ActionWithIntegral(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const ;
   void finishOutputSetup();
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void apply();
 };
 

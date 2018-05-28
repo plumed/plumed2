@@ -174,8 +174,6 @@ public:
   void alwaysStoreValues();
   void buildColumnSums();
 ///
-  void activateTasks( std::vector<unsigned>& taskFlags ) const ;
-///
   unsigned getRank() const ;
 ///
   double getNorm() const ;

@@ -158,10 +158,6 @@ Mapping::Mapping(const ActionOptions&ao):
   }
 }
 
-void Mapping::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  tflags.assign(tflags.size(),1);
-}
-
 void Mapping::calculate() {
   plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
   if( !nopbc ) makeWhole(); 

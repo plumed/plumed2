@@ -133,10 +133,6 @@ void VectorProductMatrix::unlockRequests() {
 
 void VectorProductMatrix::calculateNumericalDerivatives( ActionWithValue* a ) { plumed_error(); }
 
-void VectorProductMatrix::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  tflags.assign(tflags.size(),1);
-}
-
 void VectorProductMatrix::calculate() {
   if( actionInChain() ) return;
   runAllTasks();

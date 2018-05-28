@@ -79,10 +79,6 @@ public:
   ~MultiColvarBase();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() const ;
-/// Prepare to run the calculation and get all atoms if required
-  void prepareForTasks();
-/// Buld the current lists of tags
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
 /// Do the calculation
   void calculate();
 /// Perform one of the tasks

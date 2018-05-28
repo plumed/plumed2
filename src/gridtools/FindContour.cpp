@@ -99,7 +99,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
   void finishOutputSetup();
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
+  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ); 
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void jobsAfterLoop();
 };
@@ -138,9 +138,9 @@ void FindContour::finishOutputSetup() {
   for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToOutput(i)->setShape( shape );
 }
 
-void FindContour::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
+void FindContour::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   // We now need to identify the grid points that we need to search through
-  Value* gval=getPntrToArgument(0);
+  Value* gval=getPntrToArgument(0); actionsThatSelectTasks.push_back( getLabel() );
   std::vector<unsigned> ind( gval->getRank() );
   std::vector<unsigned> ones( gval->getRank(), 1 );
   std::vector<unsigned> nbin( gridobject.getNbin( false ) );

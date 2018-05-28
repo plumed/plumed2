@@ -55,6 +55,7 @@ public:
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
+  void completeGridObjectSetup() {}
   void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
   double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const ;
   void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const ;

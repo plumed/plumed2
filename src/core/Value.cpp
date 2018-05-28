@@ -250,14 +250,6 @@ ActionWithValue* Value::getPntrToAction() {
   return action;
 }
 
-void Value::activateTasks( std::vector<unsigned>& taskFlags ) const {
-  //plumed_dbg_assert( indices_in_stream.size()>0 );
-  //if( indices_in_stream[0]==-1 ){
-  //    for(unsigned i=0;i<taskFlags.size();++i) taskFlags[i]=1;
-  //}
-  //for(unsigned i=0;i<indices_in_stream.size();++i) taskFlags[ indices_in_stream[i] ] = 1;
-}
-
 unsigned Value::getSize() const {
   unsigned size=getNumberOfValues( name );
   if( shape.size()>0 && hasDeriv ) return size*( 1 + action->getNumberOfDerivatives() );

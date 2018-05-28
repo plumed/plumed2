@@ -84,7 +84,7 @@ public:
 /// The number of derivatives
   unsigned getNumberOfDerivatives() const ;
 /// Work out what needs to be done in this action
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
+  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
 /// Do the calculation
   void calculate();
 /// We can use ActionWithVessel to run all the calculation
@@ -150,8 +150,8 @@ ClusterDistribution::ClusterDistribution(const ActionOptions&ao):
   plumed.getAtoms().insertGroup( getLabel(), m->second );
 }
 
-void ClusterDistribution::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  plumed_assert( getPntrToArgument(0)->valueHasBeenSet() );
+void ClusterDistribution::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  plumed_assert( getPntrToArgument(0)->valueHasBeenSet() ); actionsThatSelectTasks.push_back( getLabel() );
   if( getNumberOfArguments()>1 ) plumed_assert( getPntrToArgument(1)->valueHasBeenSet() );
   double csize = getPntrToArgument(0)->get(0);
   for(unsigned i=1; i<getPntrToArgument(0)->getShape()[0]; ++i) {

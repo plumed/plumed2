@@ -62,11 +62,10 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ActionVolume(const ActionOptions&);
   unsigned getNumberOfDerivatives() const ;
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
+  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void calculate();
   void apply();
   virtual void setupRegions() = 0;
-  void prepareForTasks();
   void performTask( const unsigned&, MultiValue& ) const ;
   virtual double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const=0;
 };

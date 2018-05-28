@@ -64,10 +64,6 @@ MultiBias::MultiBias(const ActionOptions&ao):
   turnOnDerivatives();
 }
 
-void MultiBias::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  if( !actionInChain() ) tflags.assign(tflags.size(),1);
-}
-
 void MultiBias::calculate() {
   // Everything is done elsewhere
   if( actionInChain() ) return;

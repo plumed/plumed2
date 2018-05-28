@@ -234,7 +234,7 @@ public:
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
+  void completeGridObjectSetup();
   void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
   double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const ;
   void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const ;
@@ -603,7 +603,7 @@ void Histogram::setupNeighborsVector() {
   }
 }
 
-void Histogram::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
+void Histogram::completeGridObjectSetup() {
   if( firststep ) {
     for(unsigned i=0; i<getNumberOfDerivatives(); ++i) {
       if( gmin[i]=="auto" ) {
@@ -631,7 +631,6 @@ void Histogram::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
     // And never do this again
     firststep=false;
   }
-  HistogramBase::buildCurrentTaskList( tflags );
 }
 
 void Histogram::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,

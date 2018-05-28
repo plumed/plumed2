@@ -106,7 +106,6 @@ public:
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
   unsigned getNumberOfDerivatives() const ;
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
                                const unsigned& bufstart, std::vector<double>& buffer ) const ;
@@ -220,10 +219,6 @@ void FindContourSurface::getGridPointAsCoordinate( const unsigned& ind, const bo
 
 unsigned FindContourSurface::getNumberOfDerivatives() const {
   return gridcoords.getDimension();
-}
-
-void FindContourSurface::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  tflags.assign(tflags.size(),1);
 }
 
 void FindContourSurface::jobsAfterLoop() {

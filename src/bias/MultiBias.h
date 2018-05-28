@@ -51,7 +51,6 @@ public:
   static void registerKeywords(Keywords&);
   explicit MultiBias(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const ;
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void calculate();
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   virtual void calculateBias( const std::vector<double>& args, MultiValue& myvals ) const = 0;

@@ -49,10 +49,6 @@ void ActionWithIntegral::finishOutputSetup() {
   if( !doNotCalculateDerivatives() ) turnOnDerivatives();
 }
 
-void ActionWithIntegral::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  tflags.assign(tflags.size(),1);
-}
-
 void ActionWithIntegral::apply() {
   if( doNotCalculateDerivatives() ) return;
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned fstart=0;

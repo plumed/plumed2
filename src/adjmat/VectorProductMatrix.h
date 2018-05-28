@@ -47,7 +47,6 @@ public:
   void lockRequests();
   void unlockRequests();
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void calculate();
   void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
   bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;

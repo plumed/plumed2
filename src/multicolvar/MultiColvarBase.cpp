@@ -402,15 +402,6 @@ Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) 
   else { return delta( vec1, vec2 ); }
 }
 
-void MultiColvarBase::prepareForTasks() {
-  if( actionInChain() ) retrieveAtoms();
-  ActionWithValue::prepareForTasks();
-}
-
-void MultiColvarBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  tflags.assign(tflags.size(),1);
-}
-
 void MultiColvarBase::calculate() {
   // Set positions of all virtual atoms
   if( catom_indices.size()==0 ) {

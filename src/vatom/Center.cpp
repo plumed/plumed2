@@ -133,7 +133,7 @@ public:
   unsigned getNumberOfDerivatives() const ;
   void setStashIndices( unsigned& nquants );
   void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
+  void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
   void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
   void gatherForVirtualAtom( const MultiValue& myvals, std::vector<double>& buffer ) const ;
   void transformFinalValueAndDerivatives( const std::vector<double>& buffer );
@@ -260,9 +260,7 @@ unsigned Center::getNumberOfDerivatives() const {
   return 3*getNumberOfAtoms();
 }
 
-void Center::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  // Must retrieve the atoms if it has not been done already
-  if( actionInChain() ) retrieveAtoms();
+void Center::prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {
   // Check that we are orthorhomoic
   if( berryp && !getPbc().isOrthorombic() ) error("cannot calculate berry phase average with non-orthorhombic cells");
   // Check if we need to make the whole thing
@@ -278,8 +276,6 @@ void Center::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
     for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
     setCharge(charge);
   } else setCharge(0.0);
-  // Set that we need to do all tasks
-  tflags.assign(tflags.size(),1);
 }
 
 void Center::setStashIndices( unsigned& nquants ) {

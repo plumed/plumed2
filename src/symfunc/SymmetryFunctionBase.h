@@ -55,7 +55,6 @@ public:
   bool mustBeTreatedAsDistinctArguments() const ;
   virtual unsigned getNumberOfDerivatives() const ;
   void calculate() {}
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   virtual void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const = 0;
   virtual void updateDerivativeIndices( MultiValue& myvals ) const ;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;

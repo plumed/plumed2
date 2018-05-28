@@ -158,7 +158,8 @@ void HistogramBase::calculate() {
   runAllTasks();
 }
 
-void HistogramBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
+void HistogramBase::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  completeGridObjectSetup(); actionsThatSelectTasks.push_back( getLabel() );
   if( !one_kernel_at_a_time ) { 
       if( heights_index==2 ) {
           tflags.assign(tflags.size(),1); unsigned hind = getNumberOfDerivatives();

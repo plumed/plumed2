@@ -36,7 +36,6 @@ public:
                               std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit TorsionsMatrix(const ActionOptions&);
-  void prepareForTasks();
   unsigned getNumberOfDerivatives() const ;
   double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                const std::vector<double>& vec1, const std::vector<double>& vec2,
@@ -168,10 +167,6 @@ unsigned TorsionsMatrix::getNumberOfDerivatives() const  {
   unsigned nat_der = 3*getNumberOfAtoms()+9; plumed_assert( getPntrToArgument(0)->getRank()!=0 );
   if( ncol_args>0 ) return nat_der + (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
   return nat_der + getPntrToArgument(0)->getShape()[0]*getNumberOfArguments();
-}
-
-void TorsionsMatrix::prepareForTasks() {
-  if( actionInChain() ) retrieveAtoms();
 }
 
 double TorsionsMatrix::computeVectorProduct( const unsigned& index1, const unsigned& index2,

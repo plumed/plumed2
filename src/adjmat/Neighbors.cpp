@@ -39,7 +39,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Neighbors(const ActionOptions&);
   unsigned getNumberOfDerivatives() const ;
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void calculate() { if( !actionInChain() ) plumed_error(); }
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void apply() {}
@@ -88,10 +87,6 @@ Neighbors::Neighbors(const ActionOptions&ao):
 
 unsigned Neighbors::getNumberOfDerivatives() const {
   return (getPntrToArgument(0)->getPntrToAction())->getNumberOfDerivatives();
-}
-
-void Neighbors::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  plumed_assert( actionInChain() ); tflags.assign(tflags.size(),1);
 }
 
 void Neighbors::performTask( const unsigned& current, MultiValue& myvals ) const {

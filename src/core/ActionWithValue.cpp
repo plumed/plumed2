@@ -385,9 +385,20 @@ void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
   plumed_assert( fullTaskList.size()==taskFlags.size() );
 }
 
-void ActionWithValue::selectActiveTasks( std::vector<unsigned>& tflags ) {
-  buildCurrentTaskList( tflags );
-  if( action_to_do_after ) action_to_do_after->selectActiveTasks( tflags );
+void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionLabelsInChain, bool& forceAllTasks,
+                                         std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  buildCurrentTaskList( forceAllTasks, actionsThatSelectTasks, tflags );
+  if( action_to_do_after ) {
+      // Retrieve the atoms for tasks in the stream
+      ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( action_to_do_after ); if( aa ) aa->retrieveAtoms();
+      // And set up the task list for the next one
+      action_to_do_after->selectActiveTasks( actionLabelsInChain, forceAllTasks, actionsThatSelectTasks, tflags );
+  }
+}
+
+void ActionWithValue::prepareForTaskLoop( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {
+  prepareForTasks( nactive, pTaskList ); 
+  if( action_to_do_after ) action_to_do_after->prepareForTaskLoop( nactive, pTaskList );
 }
 
 void ActionWithValue::runAllTasks() {
@@ -398,8 +409,13 @@ void ActionWithValue::runAllTasks() {
   unsigned rank=comm.Get_rank();
   if(serial) { stride=1; rank=0; }
 
-  // Build the list of active tasks
-  taskFlags.assign(taskFlags.size(),0); selectActiveTasks( taskFlags ); nactive_tasks = 0;
+  // Determine if some tasks can be switched off
+  if( actionsLabelsInChain.size()==0 ) getAllActionLabelsInChain( actionsLabelsInChain );
+  std::vector<std::string> actionsThatSelectTasks; bool forceAllTasks=false; 
+  taskFlags.assign(taskFlags.size(),0); selectActiveTasks( actionsLabelsInChain, forceAllTasks, actionsThatSelectTasks, taskFlags ); 
+  if( forceAllTasks || actionsThatSelectTasks.size()==0 ) taskFlags.assign(taskFlags.size(),1);
+  // Now actually build the list of active tasks
+  nactive_tasks = 0;
   for(unsigned i=0; i<fullTaskList.size(); ++i) {
     if( taskFlags[i]>0 ) nactive_tasks++;
   }
@@ -417,6 +433,8 @@ void ActionWithValue::runAllTasks() {
       partialTaskList[n] = fullTaskList[i]; indexOfTaskInFullList[n]=i; n++;
     }
   }
+  // Now do all preparations required to run all the tasks
+  prepareForTaskLoop( nactive_tasks, partialTaskList );
 
   // Get the total number of streamed quantities that we need
   unsigned nquantities = 0, ncols=0, nmatrices=0;
@@ -431,8 +449,6 @@ void ActionWithValue::runAllTasks() {
   // Recover the number of derivatives we require
   unsigned nderivatives = 0; bool gridsInStream=checkForGrids();
   if( !noderiv || gridsInStream ) getNumberOfStreamedDerivatives( nderivatives );
-  // Perform all tasks required before main loop
-  prepareForTasks();
 
   if(timers) stopwatch.start("2 Loop over tasks");
   #pragma omp parallel num_threads(nt)
@@ -525,10 +541,6 @@ void ActionWithValue::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& 
     else if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ) bufsize += values[i]->getSize();
   }
   if( action_to_do_after ) action_to_do_after->getSizeOfBuffer( nactive_tasks, bufsize );
-}
-
-void ActionWithValue::prepareForTasks() {
-  if( action_to_do_after ) action_to_do_after->prepareForTasks();
 }
 
 void ActionWithValue::runTask( const std::string& controller, const unsigned& task_index, const unsigned& current, const unsigned colno, MultiValue& myvals ) const {

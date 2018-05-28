@@ -293,9 +293,9 @@ void Function::runFinalJobs() {
   evaluateAllFunctions();
 }
 
-void Function::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  if( !actionInChain() ) tflags.assign(tflags.size(),1);
-}
+// void Function::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
+//   // if( !actionInChain() ) tflags.assign(tflags.size(),1);
+// }
 
 void Function::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                      std::vector<std::string>& max, std::vector<unsigned>& nbin,

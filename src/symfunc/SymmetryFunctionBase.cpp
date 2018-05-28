@@ -177,10 +177,6 @@ void SymmetryFunctionBase::addComponentWithDerivatives( const std::string& name 
   if( usecols ) getPntrToOutput( getNumberOfComponents()-1 )->buildColumnSums();
 }
 
-void SymmetryFunctionBase::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  plumed_assert( actionInChain() ); tflags.assign(tflags.size(),1);
-}
-
 void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myvals ) const {
   if( !myvals.inVectorCall() && done_with_matrix_comput && !myvals.inMatrixRerun() ) {
     double weight = myvals.get( getPntrToArgument(0)->getPositionInStream() );

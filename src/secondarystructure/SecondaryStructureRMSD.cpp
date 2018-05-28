@@ -179,16 +179,15 @@ void SecondaryStructureRMSD::setupValues() {
   }
 }
 
-void SecondaryStructureRMSD::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
+void SecondaryStructureRMSD::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   if( s_cutoff2>0 ) {
+    actionsThatSelectTasks.push_back( getLabel() ); 
     for(unsigned i=0; i<tflags.size(); ++i) {
       Vector distance=pbcDistance( ActionAtomistic::getPosition( getAtomIndex(i,align_atom_1) ),
                                    ActionAtomistic::getPosition( getAtomIndex(i,align_atom_2) ) );
       if( distance.modulo2()<s_cutoff2 ) tflags[i]=1;
     }
-  } else {
-    tflags.assign(tflags.size(),1);
-  }
+  } 
 }
 
 void SecondaryStructureRMSD::calculate() {

@@ -55,7 +55,7 @@ public:
   explicit Function(const ActionOptions&);
   virtual ~Function() {}
   virtual void calculate();
-  void buildCurrentTaskList( std::vector<unsigned>& tflags );
+  // void buildCurrentTaskList( std::vector<unsigned>& tflags );
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin,
                              std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;

@@ -176,18 +176,14 @@ void ActionVolume::requestAtoms( const std::vector<AtomNumber> & a ) {
   ActionAtomistic::requestAtoms( all_atoms ); forcesToApply.resize( 3*all_atoms.size()+9 );
 }
 
-void ActionVolume::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-  tflags.assign(tflags.size(),1);  // Can surely do something more smart here
+void ActionVolume::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  setupRegions();
+  // tflags.assign(tflags.size(),1);  // Can surely do something more smart here
 }
 
 void ActionVolume::calculate() {
   if( actionInChain() ) return;
   setupRegions(); runAllTasks();
-}
-
-void ActionVolume::prepareForTasks() {
-  if( actionInChain() ) retrieveAtoms();
-  setupRegions(); ActionWithValue::prepareForTasks();
 }
 
 void ActionVolume::performTask( const unsigned& curr, MultiValue& outvals ) const {
