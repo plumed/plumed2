@@ -3,6 +3,6 @@
 # Typically, 2.X.Y where Y is the patch number
 # On git repo, we can use 2.X.Y-dev, then remove the "dev" upon release
 # (this is same as gromacs)
-# Notice that "plumed --version" will return only 2.X
-# and "plumed --long-version" will return the full string
+# Notice that "plumed info --version" will return only 2.X
+# and "plumed info --long-version" will return the full string
 2.5.0-dev
