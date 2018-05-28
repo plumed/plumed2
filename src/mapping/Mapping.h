@@ -95,8 +95,6 @@ public:
   std::string getArgumentName( unsigned& iarg );
 /// Get the value of the ith property for the current frame
   double getPropertyValue( const unsigned& current, const unsigned& iprop ) const ;
-/// Stuff to do before we do the calculation
-  void prepare();
 /// Apply the forces
   void apply();
 };
