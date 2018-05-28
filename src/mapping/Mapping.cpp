@@ -103,8 +103,10 @@ Mapping::Mapping(const ActionOptions&ao):
   // Get the arguments and atoms that are required
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
   mymap->getAtomAndArgumentRequirements( atoms, args );
-  requestAtoms( atoms ); std::vector<Value*> req_args;
-  interpretArgumentList( args, req_args ); requestArguments( req_args );
+  std::vector<Value*> req_args; interpretArgumentList( args, req_args );
+  if( req_args.size()>0 && atoms.size()>0 ) error("cannot mix atoms and arguments");
+  if( req_args.size()>0 ) requestArguments( req_args );
+  if( atoms.size()>0 ) requestAtoms( atoms );
   // Duplicate all frames (duplicates are used by sketch-map)
   // mymap->duplicateFrameList();
   // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
@@ -122,30 +124,6 @@ Mapping::Mapping(const ActionOptions&ao):
 void Mapping::turnOnDerivatives() {
   ActionWithValue::turnOnDerivatives();
   needsDerivatives();
-}
-
-void Mapping::prepare() {
-  if( mymap->mappingNeedsSetup() ) {
-    // Get the arguments and atoms that are required
-    std::vector<AtomNumber> atoms; std::vector<std::string> args;
-    mymap->getAtomAndArgumentRequirements( atoms, args );
-    requestAtoms( atoms ); std::vector<Value*> req_args;
-    interpretArgumentList( args, req_args ); requestArguments( req_args );
-    // Duplicate all frames (duplicates are used by sketch-map)
-    //mymap->duplicateFrameList();
-    // Get the number of frames in the path
-    // unsigned nfram=getNumberOfReferencePoints();
-    // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
-    // plumed_assert( !mymap->mappingNeedsSetup() );
-    // Resize all derivative arrays
-    // mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
-    // Resize forces array
-    if( getNumberOfAtoms()>0 ) {
-      forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
-    } else {
-      forcesToApply.resize( getNumberOfArguments() );
-    }
-  }
 }
 
 unsigned Mapping::getPropertyIndex( const std::string& name ) const {
