@@ -67,7 +67,7 @@ DSIGMA=0
 TEMP=300
 ... SAXS
 
-PRINT ARG=c1,saxs_va.* FILE=colv_va STRIDE=1
+PRINT ARG=c1,saxs_va.* FILE=colv_va STRIDE=1 FMT=%.5f
 
 DUMPDERIVATIVES ARG=saxs_va.score FILE=forces_va FMT=%.4f
 
