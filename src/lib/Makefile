@@ -67,8 +67,14 @@ PLUMED_SCRIPTS := $(PLUMED_SCRIPTS_SH:.sh=)
 PLUMED_SCRIPTS_EXE := $(addprefix $(PLUMED_LIBDIR)plumed-,$(PLUMED_SCRIPTS))
 
 # plumed main exec
-PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)plumed
-PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)plumed-shared
+ifeq ($(SOEXT),dylib)
+# on OSX, use shared executable by default
+  PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)plumed-static
+  PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)plumed
+else
+  PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)plumed
+  PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)plumed-shared
+endif
 PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)plumed-runtime
 
 
@@ -249,12 +255,8 @@ endif
 # also copy .h files into include/ dir
 	$(MAKE) install-headers
 # install executable
-# for OSX we can use the dynamically linked executable
-ifeq ($(SOEXT),dylib)
-	cp install/plumed-shared "$(DESTDIR)$(bindir)/$(program_name)"
-else
+# for OSX, this automatically use the dynamically linked executable
 	cp install/plumed "$(DESTDIR)$(bindir)/$(program_name)"
-endif
 # patch file for cross compiling
 	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-patch"
 # config file for cross compiling
