@@ -274,6 +274,18 @@ void Function::evaluateAllFunctions() {
   runAllTasks();
 }
 
+void Function::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  bool safeToChain=true;
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      std::string argact = getPntrToArgument(i)->getPntrToAction()->getLabel(); bool found=false;
+      for(unsigned j=0;j<actionsThatSelectTasks.size();++j) {
+          if( argact==actionsThatSelectTasks[j] ){ found=true; break; }
+      }
+      if( !found ) safeToChain=false;
+  }
+  if( safeToChain ) actionsThatSelectTasks.push_back( getLabel() );
+}
+
 void Function::calculate() {
   // Everything is done elsewhere
   if( hasAverageAsArgument() || actionInChain() ) return;
@@ -292,10 +304,6 @@ void Function::runFinalJobs() {
   plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
   evaluateAllFunctions();
 }
-
-// void Function::buildCurrentTaskList( std::vector<unsigned>& tflags ) {
-//   // if( !actionInChain() ) tflags.assign(tflags.size(),1);
-// }
 
 void Function::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                                      std::vector<std::string>& max, std::vector<unsigned>& nbin,

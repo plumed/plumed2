@@ -388,6 +388,29 @@ void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
 void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionLabelsInChain, bool& forceAllTasks,
                                          std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   buildCurrentTaskList( forceAllTasks, actionsThatSelectTasks, tflags );
+  // Check which actions are using the values calculated by this action
+  bool usedOutsideOfChain=false;
+  for(unsigned i=0;i<values.size();++i) {
+      for(const auto & p : values[i]->userdata) {
+          // Check if the action is only being used within the chain
+          bool inchain=false;
+          for(unsigned j=0;j<actionLabelsInChain.size();++j) {
+              if( p.first==actionLabelsInChain[j] ){ inchain=true; break; } 
+          }
+          // If the action we are using is not in the chain check if it is safe to deactivate some stuff 
+          if( !inchain ) usedOutsideOfChain=true; 
+      }
+  }
+  // Now check if we can deactivate tasks with this action by checking if it is one of the actions that 
+  // allows deactivated tasks
+  if( usedOutsideOfChain ) {
+      bool OKToDeactivate=false;
+      for(unsigned i=0;i<actionsThatSelectTasks.size();++i) {
+          if( getLabel()==actionsThatSelectTasks[i] ){ OKToDeactivate=true; break; }
+      }
+      if( !OKToDeactivate ) forceAllTasks=true;
+  }
+  // And now do stuff for the next action in the chain
   if( action_to_do_after ) {
       // Retrieve the atoms for tasks in the stream
       ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( action_to_do_after ); if( aa ) aa->retrieveAtoms();

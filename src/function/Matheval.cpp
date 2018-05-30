@@ -192,6 +192,7 @@ class Matheval :
   string func;
 public:
   explicit Matheval(const ActionOptions&);
+  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const;
   static void registerKeywords(Keywords& keys);
 };
@@ -294,6 +295,22 @@ Matheval::Matheval(const ActionOptions&ao):
     lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(leptonConstants);
     log<<"    "<<pe<<"\n"; for(auto & e : expression_deriv[i]) e=pe.createCompiledExpression();
   } 
+}
+
+void Matheval::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  if( check_multiplication_vars.size()>0 ) {
+      bool foundarg=false;
+      for(unsigned i=0;i<check_multiplication_vars.size();++i) {
+          std::string argact = getPntrToArgument(check_multiplication_vars[i])->getPntrToAction()->getLabel();
+          for(unsigned j=0;j<actionsThatSelectTasks.size();++j) {
+              if( argact==actionsThatSelectTasks[j] ){ foundarg=true; break; }
+          } 
+          if( foundarg ) break;
+      }
+      if( foundarg ) actionsThatSelectTasks.push_back( getLabel() );
+  } else {
+      Function::buildCurrentTaskList( forceAllTasks, actionsThatSelectTasks, tflags );
+  }
 }
 
 void Matheval::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {

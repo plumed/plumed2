@@ -177,13 +177,21 @@ void ActionVolume::requestAtoms( const std::vector<AtomNumber> & a ) {
 }
 
 void ActionVolume::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
-  setupRegions();
-  // tflags.assign(tflags.size(),1);  // Can surely do something more smart here
+  setupRegions(); actionsThatSelectTasks.push_back( getLabel() );
+
+  Vector wdf; Tensor vir; std::vector<Vector> refders( getNumberOfAtoms()-getFullNumberOfTasks() );
+  for(unsigned i=0;i<tflags.size();++i) {
+      // Calculate weight for this position
+      double weight=calculateNumberInside( ActionAtomistic::getPosition(i), wdf, vir, refders );
+      if( not_in ) weight = 1.0 - weight;
+      // Now activate only those tasks that have a significant weight
+      if( weight>epsilon ) tflags[i]=1;
+  }
 }
 
 void ActionVolume::calculate() {
   if( actionInChain() ) return;
-  setupRegions(); runAllTasks();
+  runAllTasks();
 }
 
 void ActionVolume::performTask( const unsigned& curr, MultiValue& outvals ) const {

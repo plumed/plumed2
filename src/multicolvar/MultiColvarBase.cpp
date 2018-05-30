@@ -141,24 +141,50 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
   // Parse ALT_MIN
   if( keys.count("ALT_MIN") ) {
     if( weights.length()>0 ) plumed_merror("cannot use ALT_MIN with this shortcut");
-    std::vector<std::string> input; input.push_back( labout + "_altmin:" ); input.push_back("ALT_MIN");
-    input.push_back("ARG=" + argin ); std::size_t dd = keys.find("ALT_MIN")->second.find("BETA");
-    input.push_back( keys.find("ALT_MIN")->second.substr(dd) );
-    actions.push_back( input );
+    std::vector<std::string> matheval_inp; matheval_inp.push_back( labout + "_me_altmin:" );
+    matheval_inp.push_back("MATHEVAL"); matheval_inp.push_back("ARG1=" + argin );
+    std::size_t dd = keys.find("ALT_MIN")->second.find("BETA");
+    matheval_inp.push_back("FUNC=exp(-x*" + keys.find("ALT_MIN")->second.substr(dd+5) + ")" ); 
+    matheval_inp.push_back("PERIODIC=NO"); actions.push_back( matheval_inp ); 
+    std::vector<std::string> combine_inp; combine_inp.push_back( labout + "_mec_altmin:" );
+    combine_inp.push_back("COMBINE"); combine_inp.push_back("ARG=" + labout + "_me_altmin" );
+    combine_inp.push_back("PERIODIC=NO"); actions.push_back( combine_inp );
+    std::vector<std::string> final_inp; final_inp.push_back( labout + "_altmin:" );
+    final_inp.push_back("MATHEVAL"); final_inp.push_back("ARG=" + labout + "_mec_altmin" );
+    final_inp.push_back("FUNC=-log(x)/" + keys.find("ALT_MIN")->second.substr(dd+5) ); final_inp.push_back("PERIODIC=NO");
+    actions.push_back( final_inp );
   }
   // Parse MIN
   if( keys.count("MIN") ) {
     if( weights.length()>0 ) plumed_merror("cannot use MIN with this shortcut");
-    std::vector<std::string> input; input.push_back( labout + "_min:" ); input.push_back("MIN");
-    input.push_back("ARG=" + argin ); std::size_t dd = keys.find("MIN")->second.find("BETA");
-    input.push_back( keys.find("MIN")->second.substr(dd) ); actions.push_back( input );
+    std::vector<std::string> matheval_inp; matheval_inp.push_back( labout + "_me_min:" );
+    matheval_inp.push_back("MATHEVAL"); matheval_inp.push_back("ARG1=" + argin );
+    std::size_t dd = keys.find("MIN")->second.find("BETA");
+    matheval_inp.push_back("FUNC=exp(" + keys.find("MIN")->second.substr(dd+5) + "/x)" );
+    matheval_inp.push_back("PERIODIC=NO"); actions.push_back( matheval_inp );
+    std::vector<std::string> combine_inp; combine_inp.push_back( labout + "_mec_min:" );
+    combine_inp.push_back("COMBINE"); combine_inp.push_back("ARG=" + labout + "_me_min" );
+    combine_inp.push_back("PERIODIC=NO"); actions.push_back( combine_inp );
+    std::vector<std::string> final_inp; final_inp.push_back( labout + "_min:" );
+    final_inp.push_back("MATHEVAL"); final_inp.push_back("ARG=" + labout + "_mec_min" );
+    final_inp.push_back("FUNC=" + keys.find("MIN")->second.substr(dd+5) + "/log(x)" ); final_inp.push_back("PERIODIC=NO");
+    actions.push_back( final_inp );
   }
   // Parse MAX
   if( keys.count("MAX") ) {
     if( weights.length()>0 ) plumed_merror("cannot use MAX with this shortcut");
-    std::vector<std::string> input; input.push_back( labout + "_max:" ); input.push_back("MAX");
-    input.push_back("ARG=" + argin ); std::size_t dd = keys.find("MAX")->second.find("BETA");
-    input.push_back( keys.find("MAX")->second.substr(dd) ); actions.push_back( input );
+    std::vector<std::string> matheval_inp; matheval_inp.push_back( labout + "_me_max:" );
+    matheval_inp.push_back("MATHEVAL"); matheval_inp.push_back("ARG1=" + argin ); 
+    std::size_t dd = keys.find("MAX")->second.find("BETA");
+    matheval_inp.push_back("FUNC=exp(x/" + keys.find("MAX")->second.substr(dd+5) + ")" );
+    matheval_inp.push_back("PERIODIC=NO"); actions.push_back( matheval_inp ); 
+    std::vector<std::string> combine_inp; combine_inp.push_back( labout + "_mec_max:" );
+    combine_inp.push_back("COMBINE"); combine_inp.push_back("ARG=" + labout + "_me_max" );
+    combine_inp.push_back("PERIODIC=NO"); actions.push_back( combine_inp );
+    std::vector<std::string> final_inp; final_inp.push_back( labout + "_max:" );
+    final_inp.push_back("MATHEVAL"); final_inp.push_back("ARG=" + labout + "_mec_max" );
+    final_inp.push_back("FUNC=" + keys.find("MAX")->second.substr(dd+5) + "*log(x)" ); final_inp.push_back("PERIODIC=NO");
+    actions.push_back( final_inp );
   }
   // Parse HIGHEST
   if( keys.count("HIGHEST") ) {
