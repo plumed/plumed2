@@ -67,7 +67,7 @@ Makefile.conf.xxd: ../../Makefile.conf
 	cat ../../Makefile.conf | xxd -i > Makefile.conf.xxd
 
 # file to import compilation options inside a bash script
-compile_options.sh:
+compile_options.sh: ../../Makefile.conf
 	@echo Building compile_options.sh, a sourceable bash script with some compilation options
 	@echo "compile='"$(CXX) -c -I'"$$PLUMED_INCLUDEDIR/$$PLUMED_PROGRAM_NAME"'/ $(CPPFLAGS) $(CXXFLAGS) -o"'" > $@
 	@echo "link='"$(LDSHARED) $(DYNAMIC_LIBS) -o"'" >> $@
