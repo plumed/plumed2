@@ -87,9 +87,9 @@ BF_Gaussian::BF_Gaussian(const ActionOptions&ao):
   if(width_ <= 0.0) {plumed_merror("WIDTH should be larger than 0");}
   if(width_ != (intervalMax()-intervalMin())/getOrder()) {addKeywordToList("WIDTH",width_);}
   mean_.reserve(getNumberOfBasisFunctions());
-  mean_.push_back(1.0);
-  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    mean_.push_back(intervalMin()+(1-i)*((intervalMax()-intervalMin())/getOrder()));
+  mean_.push_back(0.0);
+  for(unsigned int i=0; i < getNumberOfBasisFunctions()-1; i++) {
+    mean_.push_back(intervalMin()+i*(intervalMax()-intervalMin())/getOrder());
   }
   setNonPeriodic();
   setNonOrthogonal();
