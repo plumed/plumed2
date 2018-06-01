@@ -249,6 +249,7 @@ PLUMED_CONFIG_ENABLE([zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([readdir-r],[search for readdir_r (threadsafe)],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
+PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
@@ -597,6 +598,19 @@ fi
 if test $dlopen == true ; then
   PLUMED_CHECK_PACKAGE([dlfcn.h],[dlopen],[__PLUMED_HAS_DLOPEN])
 fi
+
+if test $rtld_default == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([RTLD_DEFAULT],[
+#include <dlfcn.h>
+int
+main ()
+{
+  void* f=dlsym(RTLD_DEFAULT,"path");
+  return 0;
+}
+  ], [__PLUMED_HAS_RTLD_DEFAULT])
+fi
+
 if test $execinfo == true ; then
   PLUMED_CHECK_PACKAGE([execinfo.h],[backtrace],[__PLUMED_HAS_EXECINFO])
 fi
