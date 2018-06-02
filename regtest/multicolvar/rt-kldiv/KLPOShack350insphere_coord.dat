@@ -1,0 +1,49 @@
+# Now calculate vectors for centers distances
+CONTACT_MATRIX ...
+GROUP=1-6981:20
+SWITCH={RATIONAL R_0=0.08 D_0=0.85 NN=10 MM=20 D_MAX=1.05}
+COMPONENTS 
+LABEL=dd_centers
+... CONTACT_MATRIX
+
+# Now normalize the orientation vectors
+bonds: NORMALIZE ARG1=dd_centers.x ARG2=dd_centers.y ARG3=dd_centers.z
+
+# Now calculate vectors for OO distances
+CONTACT_MATRIX ...
+#LOWMEM
+GROUPA=19-6999:20
+GROUPB=20-7000:20
+SWITCH={RATIONAL R_0=0.08 D_0=0.85 NN=10 MM=20 D_MAX=1.05}
+COMPONENTS 
+LABEL=dd_OO
+... CONTACT_MATRIX
+
+# Now normalize the vectors
+bonds_OO: NORMALIZE ARG1=dd_OO.x ARG2=dd_OO.y ARG3=dd_OO.z
+
+# Now calculate vectors for ON distances
+CONTACT_MATRIX ...
+#LOWMEM
+GROUPA=19-6999:20
+GROUPB=18-6998:20
+SWITCH={RATIONAL R_0=0.08 D_0=0.85 NN=10 MM=20 D_MAX=1.05}
+COMPONENTS 
+LABEL=dd_ON
+... CONTACT_MATRIX
+
+# Now normalize the vectors
+bonds_ON: NORMALIZE ARG1=dd_ON.x ARG2=dd_ON.y ARG3=dd_ON.z
+
+# Building correct weight matrices by element wise multiplication of all weigths
+test: MATHEVAL ARG1=spmat ARG2=coordmat FUNC=x*y PERIODIC=NO
+w_centers: MATHEVAL ARG1=spmat ARG2=coordmat ARG3=dd_centers.w FUNC=x*y*z PERIODIC=NO
+w_OO: MATHEVAL ARG1=spmat ARG2=coordmat.w ARG3=dd_OO.w FUNC=x*y*z PERIODIC=NO
+w_ON: MATHEVAL ARG1=spmat ARG2=coordmat.w ARG3=dd_ON.w FUNC=x*y*z PERIODIC=NO
+# Now construct the instantaneous histograms 
+Sppos: SPHERICAL_KDE ARG1=bonds.x ARG2=bonds.y ARG3=bonds.z HEIGHTS=w_centers GRID_BIN=400 CONCENTRATION=100.0
+Sppos_OO: SPHERICAL_KDE ARG1=bonds_OO.x ARG2=bonds_OO.y ARG3=bonds_OO.z HEIGHTS=w_OO GRID_BIN=400 CONCENTRATION=100.0
+Sppos_ON: SPHERICAL_KDE ARG1=bonds_ON.x ARG2=bonds_ON.y ARG3=bonds_ON.z HEIGHTS=w_ON GRID_BIN=400 CONCENTRATION=100.0
+#Sppos: SPHERICAL_KDE ARG1=bonds.x ARG2=bonds.y ARG3=bonds.z HEIGHTS=dd_centers.w GRID_BIN=400 CONCENTRATION=100.0
+#Sppos_OO: SPHERICAL_KDE ARG1=bonds_OO.x ARG2=bonds_OO.y ARG3=bonds_OO.z HEIGHTS=dd_OO.w GRID_BIN=400 CONCENTRATION=100.0
+#Sppos_ON: SPHERICAL_KDE ARG1=bonds_ON.x ARG2=bonds_ON.y ARG3=bonds_ON.z HEIGHTS=dd_ON.w GRID_BIN=400 CONCENTRATION=100.0

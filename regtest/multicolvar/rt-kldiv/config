@@ -1,0 +1,3 @@
+type=driver
+# this is to test a different name
+arg="--plumed plumed_computeKLfrom_ref.dat --igro parac350eth1675whole.gro" 

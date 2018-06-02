@@ -1,0 +1,13 @@
+INCLUDE FILE=paramols350.dat
+INCLUDE FILE=KLcoord350.dat
+INCLUDE FILE=KLOhack350insphere_coord.dat #KLOhack350.dat  #KLOhack350insphere_coord.dat          
+INCLUDE FILE=KLPOShack350insphere_coord.dat #KLPOShack350.dat #KLPOShack350insphere_coord.dat           
+
+# And compute a grid that in which each grid point contains the integrand of the final integral
+KLSp_Xvalue: KL_ENTROPY ARG=Sp_X REFERENCE=averageSp_X240.grid VALUE=av_Sp_X
+KLSp_Zvalue: KL_ENTROPY ARG=Sp_Z REFERENCE=averageSp_Z240.grid VALUE=av_Sp_Z
+KLSpposvalue: KL_ENTROPY ARG=Sppos REFERENCE=averageSppos240.grid VALUE=av_Sppos
+KLSppos_OOvalue: KL_ENTROPY ARG=Sppos_OO REFERENCE=averageSppos_OO240.grid VALUE=av_Sppos_OO
+KLSppos_ONvalue: KL_ENTROPY ARG=Sppos_ON REFERENCE=averageSppos_ON240.grid VALUE=av_Sppos_ON
+
+PRINT ARG=KLSp_Xvalue,KLSp_Zvalue,KLSpposvalue,KLSppos_OOvalue,KLSppos_ONvalue FILE=colvar_insphere_coord.out FMT=%8.4f

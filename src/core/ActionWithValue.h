@@ -85,8 +85,6 @@ private:
   bool serial;
 /// Are we using timers
   bool timers;
-/// This action should never be added to the chain of another action
-  bool do_not_add_to_chain;
 /// The stopwatch that times the different parts of the calculation
   ForwardDecl<Stopwatch> stopwatch_fwd;
   Stopwatch& stopwatch=*stopwatch_fwd;

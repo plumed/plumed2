@@ -207,10 +207,6 @@ void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
 
 void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool& allow_streams ) {
   plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
-  if( !allow_streams ) {
-    ActionWithValue* av=dynamic_cast<ActionWithValue*>( this );
-    if( av ) av->do_not_add_to_chain=true;
-  }
   bool firstcall=(arguments.size()==0);
   arguments=arg;
   clearDependencies();
@@ -359,9 +355,7 @@ unsigned ActionWithArguments::setupActionInChain() {
 
   // Now make sure that everything we need is in the chain
   std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
-  for(unsigned i=1; i<f_actions.size(); ++i) {
-    if( !f_actions[0]->do_not_add_to_chain ) f_actions[0]->addActionToChain( empty, f_actions[i] );
-  }
+  for(unsigned i=1; i<f_actions.size(); ++i) f_actions[0]->addActionToChain( empty, f_actions[i] );
 
   // Now add this argument to the chain
   bool added=false; ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );

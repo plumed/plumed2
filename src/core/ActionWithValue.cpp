@@ -68,7 +68,6 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   no_openmp(false),
   serial(false),
   timers(false),
-  do_not_add_to_chain(false),
   nactive_tasks(0),
   action_to_do_before(NULL),
   action_to_do_after(NULL)

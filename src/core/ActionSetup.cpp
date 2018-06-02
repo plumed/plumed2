@@ -29,10 +29,12 @@ namespace PLMD {
 ActionSetup::ActionSetup(const ActionOptions&ao):
   Action(ao)
 {
-  const ActionSet& actionset(plumed.getActionSet());
-  for(const auto & p : actionset) {
-// check that all the preceeding actions are ActionSetup
-    if( !dynamic_cast<ActionSetup*>(p.get()) ) error("Action " + getLabel() + " is a setup action, and should be only preceeded by other setup actions");
+  if( !keywords.exists("LABEL") ) {
+       const ActionSet& actionset(plumed.getActionSet());
+       for(const auto & p : actionset) {
+     // check that all the preceeding actions are ActionSetup
+         if( !dynamic_cast<ActionSetup*>(p.get()) ) error("Action " + getLabel() + " is a setup action, and should be only preceeded by other setup actions");
+       }
   }
 }
 
