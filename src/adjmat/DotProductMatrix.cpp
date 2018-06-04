@@ -60,44 +60,86 @@ void DotProductMatrix::expandShortcut( const std::string& lab, const std::vector
   std::vector<std::string> cmap_input; cmap_input.push_back(lab + "_cmap:"); cmap_input.push_back("CONTACT_MATRIX");
   std::vector<std::string> dpmat_input; dpmat_input.push_back(lab + "_dpmat:"); dpmat_input.push_back("DOTPRODUCT_MATRIX");
   if( keys.count("SPECIES") ) {
-    std::string sp_lab = keys.find("SPECIES")->second;
-    cmap_input.push_back( "GROUP=" + sp_lab );
-    std::vector<std::string> norm_input; norm_input.push_back("normalized_" + sp_lab + ":"); norm_input.push_back("NORMALIZE");
-    if( words[0].find("LOCAL_Q")!=std::string::npos ) {
-      unsigned k=0; int num; Tools::convert( words[0].substr(7), num ); std::string numstr, numstr2;
-      for(int i=-num; i<=num; ++i) {
-        k++; Tools::convert( k, numstr ); Tools::convert( i, numstr2 );
-        norm_input.push_back( "ARG" + numstr + "=" + sp_lab + ".rm-[" + numstr2 + "]");
-        dpmat_input.push_back( "GROUP" + numstr + "=normalized_" + sp_lab + ".rm-[" + numstr2 + "]");
-        k++; Tools::convert( k, numstr );
-        norm_input.push_back( "ARG" + numstr + "=" + sp_lab + ".im-[" + numstr2 + "]");
-        dpmat_input.push_back( "GROUP" + numstr + "=normalized_" + sp_lab + ".im-[" + numstr2 + "]");
-      }
+    std::vector<std::string> sp_lab = Tools::getWords(keys.find("SPECIES")->second, "\t\n ,");
+    cmap_input.push_back( "GROUP=" + keys.find("SPECIES")->second );
+    for(unsigned j=0;j<sp_lab.size();++j) {
+        std::vector<std::string> norm_input; norm_input.push_back("normalized_" + sp_lab[j] + ":"); norm_input.push_back("NORMALIZE");
+        if( words[0].find("LOCAL_Q")!=std::string::npos ) {
+          unsigned k=0; int num; Tools::convert( words[0].substr(7), num ); std::string numstr, numstr2;
+          for(int i=-num; i<=num; ++i) {
+            k++; Tools::convert( k, numstr ); Tools::convert( i, numstr2 );
+            norm_input.push_back( "ARG" + numstr + "=" + sp_lab[j] + ".rm-[" + numstr2 + "]");
+            if( j==0 ) {
+                std::string arginp="GROUP" + numstr + "=normalized_" + sp_lab[0] + ".rm-[" + numstr2 + "]";
+                for(unsigned j=1;j<sp_lab.size();++j) arginp += ",normalized_" + sp_lab[j] + ".rm-[" + numstr2 + "]";
+                dpmat_input.push_back( arginp );
+            } 
+            k++; Tools::convert( k, numstr );
+            norm_input.push_back( "ARG" + numstr + "=" + sp_lab[j] + ".im-[" + numstr2 + "]");
+            if( j==0 ) {
+                std::string arginp="GROUP" + numstr + "=normalized_" + sp_lab[0] + ".im-[" + numstr2 + "]";
+                for(unsigned j=1;j<sp_lab.size();++j) arginp += ",normalized_" + sp_lab[j] + ".im-[" + numstr2 + "]";
+                dpmat_input.push_back( arginp );
+            }
+          }
+        }
+        actions.push_back( norm_input );
     }
-    actions.push_back( norm_input );
   } else if( keys.count("SPECIESA") ) {
     if( !keys.count("SPECIESB") ) plumed_merror("need both SPECIESA and SPECIESB in input to " + words[0] );
-    std::string sp_laba = keys.find("SPECIESA")->second;
-    std::string sp_labb = keys.find("SPECIESB")->second;
-    std::vector<std::string> norm_input1; norm_input1.push_back("normalized_" + sp_laba + ":"); norm_input1.push_back("NORMALIZE");
-    std::vector<std::string> norm_input2; norm_input2.push_back("normalized_" + sp_labb + ":"); norm_input2.push_back("NORMALIZE");
-    cmap_input.push_back( "GROUPA=" + sp_laba ); cmap_input.push_back( "GROUPB=" + sp_labb );
+    std::vector<std::string> sp_laba = Tools::getWords(keys.find("SPECIESA")->second, "\t\n ,");
+    std::vector<std::string> sp_labb = Tools::getWords(keys.find("SPECIESB")->second, "\t\n ,");
+    cmap_input.push_back( "GROUPA=" + keys.find("SPECIESA")->second ); 
+    cmap_input.push_back( "GROUPB=" + keys.find("SPECIESB")->second );
     if( words[0].find("LOCAL_Q")!=std::string::npos ) {
-      unsigned k=0; int num; Tools::convert( words[0].substr(7), num ); std::string numstr, numstr2;
-      for(int i=-num; i<=num; ++i) {
-        k++; Tools::convert( k, numstr ); Tools::convert( i, numstr2 );
-        norm_input1.push_back( "ARG" + numstr + "=" + sp_laba + ".rm-[" + numstr2 + "]");
-        norm_input2.push_back( "ARG" + numstr + "=" + sp_labb + ".rm-[" + numstr2 + "]");
-        dpmat_input.push_back( "GROUPA" + numstr + "=normalized_" + sp_laba +  ".rm-[" + numstr2 + "]");
-        dpmat_input.push_back( "GROUPB" + numstr + "=normalized_" + sp_labb +  ".rm-[" + numstr2 + "]");
-        k++; Tools::convert( k, numstr );
-        norm_input1.push_back( "ARG" + numstr + "=" + sp_laba + ".im-[" + numstr2 + "]");
-        norm_input2.push_back( "ARG" + numstr + "=" + sp_labb + ".im-[" + numstr2 + "]");
-        dpmat_input.push_back( "GROUPA" + numstr + "=normalized_" + sp_laba + ".im-[" + numstr2 + "]");
-        dpmat_input.push_back( "GROUPB" + numstr + "=normalized_" + sp_labb + ".im-[" + numstr2 + "]");
+      for(unsigned j=0;j<sp_laba.size();++j) {
+          std::vector<std::string> norm_input1; norm_input1.push_back("normalized_" + sp_laba[j] + ":"); norm_input1.push_back("NORMALIZE"); 
+          unsigned k=0; int num; Tools::convert( words[0].substr(7), num ); std::string numstr, numstr2; 
+          for(int i=-num; i<=num; ++i) {
+            k++; Tools::convert( k, numstr ); Tools::convert( i, numstr2 );
+            norm_input1.push_back( "ARG" + numstr + "=" + sp_laba[j] + ".rm-[" + numstr2 + "]");
+            if( j==0 ) {
+                std::string arginp="GROUPA" + numstr + "=normalized_" + sp_laba[0] + ".rm-[" + numstr2 + "]";
+                for(unsigned j=1;j<sp_laba.size();++j) arginp += ",normalized_" + sp_laba[j] + ".rm-[" + numstr2 + "]";
+                dpmat_input.push_back( arginp );
+            }
+            k++; Tools::convert( k, numstr );
+            norm_input1.push_back( "ARG" + numstr + "=" + sp_laba[j] + ".im-[" + numstr2 + "]");
+            if( j==0 ) {
+                std::string arginp="GROUPA" + numstr + "=normalized_" + sp_laba[0] + ".im-[" + numstr2 + "]";
+                for(unsigned j=1;j<sp_laba.size();++j) arginp += ",normalized_" + sp_laba[j] + ".im-[" + numstr2 + "]";
+                dpmat_input.push_back( arginp );
+            }
+          }
+          actions.push_back( norm_input1 );
+      }
+      for(unsigned j=0;j<sp_labb.size();++j) {
+          bool done_for_spa = false;
+          for(unsigned k=0;k<sp_laba.size();++k) {
+              if( sp_labb[j]==sp_laba[k] ){ done_for_spa=true; break; }
+          }
+          std::vector<std::string> norm_input2; 
+          if( !done_for_spa ) { norm_input2.push_back("normalized_" + sp_labb[j] + ":"); norm_input2.push_back("NORMALIZE"); }
+          unsigned k=0; int num; Tools::convert( words[0].substr(7), num ); std::string numstr, numstr2;
+          for(int i=-num; i<=num; ++i) {
+            k++; Tools::convert( k, numstr ); Tools::convert( i, numstr2 );
+            if( !done_for_spa ) { norm_input2.push_back( "ARG" + numstr + "=" + sp_labb[j] + ".rm-[" + numstr2 + "]"); }
+            if( j==0 ) {
+                std::string arginp="GROUPB" + numstr + "=normalized_" + sp_labb[0] + ".rm-[" + numstr2 + "]";
+                for(unsigned j=1;j<sp_labb.size();++j) arginp += ",normalized_" + sp_labb[j] + ".rm-[" + numstr2 + "]";
+                dpmat_input.push_back( arginp );
+            }
+            k++; Tools::convert( k, numstr );
+            if( !done_for_spa ) { norm_input2.push_back( "ARG" + numstr + "=" + sp_labb[j] + ".im-[" + numstr2 + "]"); }
+            if( j==0 ) {
+                std::string arginp="GROUPB" + numstr + "=normalized_" + sp_labb[0] + ".im-[" + numstr2 + "]";
+                for(unsigned j=1;j<sp_labb.size();++j) arginp += ",normalized_" + sp_labb[j] + ".im-[" + numstr2 + "]";
+                dpmat_input.push_back( arginp );
+            }
+          }
+          if( !done_for_spa ) actions.push_back( norm_input2 ); 
       }
     }
-    actions.push_back( norm_input1 ); actions.push_back( norm_input2 );
   }
   cmap_input.push_back( "SWITCH=" + keys.find("SWITCH")->second );
   actions.push_back( cmap_input ); actions.push_back( dpmat_input );

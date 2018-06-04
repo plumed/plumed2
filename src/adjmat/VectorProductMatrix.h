@@ -38,6 +38,7 @@ private:
   void updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const ;
 protected:
   unsigned ncol_args;
+  unsigned nspAa,nspAb;
   unsigned narg_derivatives;
   std::vector<double> forcesToApply;
 public:
