@@ -72,7 +72,7 @@ modules=$(
 cd ../
 for dir in *
 do
-  if test -f $dir/module.type
+  if test -f "$dir/module.type"
   then
     mtype="$(cat "$dir/module.type")"
     is=""
