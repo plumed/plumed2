@@ -112,25 +112,28 @@ void MatrixTimesVector::expandShortcut( const std::string& lab, const std::vecto
   std::vector<std::string> coord; coord.push_back( lab + "_coord:"); coord.push_back("COORDINATIONNUMBER");
   coord.push_back("WEIGHT=" + lab + "_mat.w"); actions.push_back( coord );
   if( words[0].find("LOCAL_AVERAGE_Q")!=std::string::npos ) {
+    std::string specA, specB; 
+    if( keys.count("SPECIES") ){ specA=specB=keys.find("SPECIES")->second; }
+    else { specA=keys.find("SPECIESB")->second; specB=keys.find("SPECIESB")->second; }
     int l; Tools::convert( words[0].substr(15), l );
     for(int i=-l; i<=l; ++i) {
       std::string num; Tools::convert( i, num );
       std::vector<std::string> realdata; realdata.push_back( lab + "_prod-rmn-[" + num + "]:");
       realdata.push_back("MATRIX_VECTOR_PRODUCT"); realdata.push_back("WEIGHT=" + lab + "_mat.w");
-      realdata.push_back("VECTOR=" + keys.find("SPECIES")->second + "_rmn-[" + num + "]");
+      realdata.push_back("VECTOR=" + specB + "_rmn-[" + num + "]");
       actions.push_back( realdata );
       std::vector<std::string> realmath; realmath.push_back( lab + "_av-rmn-[" + num + "]:");
       realmath.push_back("MATHEVAL"); realmath.push_back("ARG1=" + lab + "_prod-rmn-[" + num + "]");
-      realmath.push_back("ARG2=" + keys.find("SPECIES")->second + "_rmn-[" + num + "]");
+      realmath.push_back("ARG2=" + specA + "_rmn-[" + num + "]");
       realmath.push_back("ARG3=" + lab + "_coord"); realmath.push_back("FUNC=(x+y)/(1+z)");
       realmath.push_back("PERIODIC=NO"); actions.push_back( realmath );
       std::vector<std::string> imagdata; imagdata.push_back( lab + "_prod-imn-[" + num + "]:");
       imagdata.push_back("MATRIX_VECTOR_PRODUCT"); imagdata.push_back("WEIGHT=" + lab + "_mat.w");
-      imagdata.push_back("VECTOR=" + keys.find("SPECIES")->second + "_imn-[" + num + "]");
+      imagdata.push_back("VECTOR=" + specB + "_imn-[" + num + "]");
       actions.push_back( imagdata );
       std::vector<std::string> imagmath; imagmath.push_back( lab + "_av-imn-[" + num + "]:");
       imagmath.push_back("MATHEVAL"); imagmath.push_back("ARG1=" + lab + "_prod-imn-[" + num + "]");
-      imagmath.push_back("ARG2=" + keys.find("SPECIES")->second + "_imn-[" + num + "]");
+      imagmath.push_back("ARG2=" + specA + "_imn-[" + num + "]");
       imagmath.push_back("ARG3=" + lab + "_coord"); imagmath.push_back("FUNC=(x+y)/(1+z)");
       imagmath.push_back("PERIODIC=NO"); actions.push_back( imagmath );
     }
