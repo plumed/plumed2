@@ -184,8 +184,7 @@ unsigned DotProductMatrix::getNumberOfDerivatives() const  {
       else return ( 1 + getPntrToArgument(ncol_args)->getShape()[0] )*getNumberOfArguments() / 2;
     } else return getNumberOfArguments();
   } else {
-    if( ncol_args>0 ) return (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
-    return getPntrToArgument(0)->getShape()[0]*getNumberOfArguments();
+    return narg_derivatives;
   }
 }
 

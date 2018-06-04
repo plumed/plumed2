@@ -119,15 +119,21 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
         for(unsigned i=0; i<args[j]->getShape()[0]; ++i){ addTaskToList(tnum); tnum++; }
     }
     unsigned cnum=0;
-    for(unsigned j=ncol_args;j<ncol_args+nspAb;++j) cnum += args[j]->getShape()[0];
+    for(unsigned j=nspAa*ncol_args;j<nspAa*ncol_args+nspAb;++j) cnum += args[j]->getShape()[0];
     shape[0]=tnum; shape[1]=cnum;
   }
   requestArguments( args, false );
   // And create the matrix to hold the dot products
   addValue( shape ); // if( readgroup ) getPntrToComponent(0)->setSymmetric( true );    /// Is this right though???
   if( args[0]->getRank()==0 ) narg_derivatives = getNumberOfArguments();
-  else if( ncol_args>0 ) narg_derivatives = (getPntrToArgument(0)->getShape()[0]+getPntrToArgument(ncol_args)->getShape()[0])*getNumberOfArguments()/2;
-  else narg_derivatives = getPntrToArgument(0)->getShape()[0]*getNumberOfArguments();
+  else if( ncol_args>0 ) {
+    unsigned tnum=0; for(unsigned j=0;j<nspAa;++j) tnum += args[j]->getShape()[0];
+    unsigned cnum=0; for(unsigned j=nspAa*ncol_args;j<nspAa*ncol_args+nspAb;++j) cnum += args[j]->getShape()[0];
+    narg_derivatives = ( tnum + cnum ) * getNumberOfArguments() / ( nspAa + nspAb ); 
+  } else { 
+    unsigned tnum=0; for(unsigned j=0;j<nspAa;++j) tnum += args[j]->getShape()[0];
+    narg_derivatives = tnum * getNumberOfArguments() / nspAa;
+  }
 }
 
 Value* VectorProductMatrix::convertStringToValue( const std::string& name ) {
@@ -173,13 +179,16 @@ void VectorProductMatrix::calculate() {
 void VectorProductMatrix::updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return;
 
-  unsigned nargs=getNumberOfArguments(); if( ncol_args>0 ) nargs /= 2;
+  unsigned nargs=getNumberOfArguments() / nspAa; 
+  if( ncol_args>0 ) nargs = getNumberOfArguments() / (nspAa+nspAb);
   unsigned nmat = getPntrToOutput(0)->getPositionInMatrixStash();
   unsigned nmat_ind = myvals.getNumberOfMatrixIndices( nmat );
   std::vector<unsigned>& matrix_indices( myvals.getMatrixIndices( nmat ) );
   unsigned invals;
   if( getPntrToArgument(0)->getRank()==0 ) invals = 1;
-  else invals = getPntrToArgument(0)->getShape()[0];
+  else {
+    invals = 0; for(unsigned i=0;i<nspAa;++i) invals += getPntrToArgument(i)->getShape()[0];
+  }
   for(unsigned i=0; i<nargs; ++i) { matrix_indices[nmat_ind] = ind + i*invals; nmat_ind++; }
   if( getNumberOfAtoms()>0 ) {
     matrix_indices[nmat_ind+0]=narg_derivatives + 3*ind+0;
@@ -216,12 +225,17 @@ void VectorProductMatrix::performTask( const unsigned& current, MultiValue& myva
 
 bool VectorProductMatrix::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
   unsigned invals, jnvals; invals = jnvals = 1;
-  if( getPntrToArgument(0)->getRank()>0 ) invals = jnvals = getPntrToArgument(0)->getShape()[0];
+  if( getPntrToArgument(0)->getRank()>0 ) {
+      invals=0; for(unsigned i=0;i<nspAa;++i) invals +=  getPntrToArgument(i)->getShape()[0];
+      jnvals=invals; 
+  }
 
   unsigned jindex=index2, jind_start = 0, nargs=getNumberOfArguments() / nspAa;
   if( ncol_args>0 ) {
-    nargs /= (nspAa+nspAb); jnvals = 1; 
-    if( getPntrToArgument(nspAa*ncol_args)->getRank()>0 ) jnvals = getPntrToArgument(ncol_args)->getShape()[0];
+    nargs = getNumberOfArguments() / (nspAa+nspAb); jnvals = 1; 
+    if( getPntrToArgument(nspAa*ncol_args)->getRank()>0 ) {
+        jnvals = 0; for(unsigned j=nspAa*ncol_args;j<nspAa*ncol_args+nspAb;++j) jnvals += getPntrToArgument(j)->getShape()[0];
+    }
     jindex = index2 - getFullNumberOfTasks();
     jind_start = nargs*invals;
   }
