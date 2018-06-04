@@ -397,7 +397,7 @@ uninstall:
 	rm -f "$(DESTDIR)$(bindir)/bin/$(program_name)-config"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
-	rm -f "$(DESTDIR)$(libdir)/lib/pkgconfig/$(PLUMED_PROGRAM_NAME).pc"
+	rm -f "$(DESTDIR)$(libdir)/lib/pkgconfig/$(program_name).pc"
 
 $(DIRS):
 	$(MAKE) -C $@ obj
