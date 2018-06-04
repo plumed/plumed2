@@ -19,9 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionAtomistic.h"
-#include "core/ActionWithValue.h"
-#include "core/ActionWithArguments.h"
+#include "DistanceFromContourBase.h"
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"
 #include "tools/RootFindingBase.h"
@@ -69,58 +67,32 @@ dc: DISTANCE_FROM_CONTOUR DATA=dens ATOM=1 BANDWIDTH=0.5,0.5,0.5 DIR=z CONTOUR=0
 namespace PLMD {
 namespace multicolvar {
 
-class DistanceFromContour :
-  public ActionWithValue,
-  public ActionAtomistic,
-  public ActionWithArguments
-{
+class DistanceFromContour : public DistanceFromContourBase {
 private:
   unsigned dir;
-  double rcut2;
-  double contour;
   double pbc_param;
-  std::string kerneltype;
-  std::vector<Value*> pval;
-  std::vector<double> bw, pos1, pos2, dirv, dirv2;
-  std::vector<double> forces;
+  std::vector<double> pos1, pos2, dirv, dirv2;
   std::vector<unsigned> perp_dirs;
-  unsigned nactive;
-  std::vector<unsigned> active_list;
   std::vector<Vector> atom_deriv;
-  std::vector<double> forcesToApply;
   RootFindingBase<DistanceFromContour> mymin;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromContour( const ActionOptions& );
-  ~DistanceFromContour();
-  unsigned getNumberOfDerivatives() const ;
-  void lockRequests();
-  void unlockRequests();
-  void calculateNumericalDerivatives( ActionWithValue* a ) { plumed_merror("numerical derivatives are not implemented for this action"); }
   void calculate();
   void evaluateDerivatives( const Vector root1, const double& root2 );
-  double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der );
-// We need an apply action as we are using an independent value
-  void apply();
 };
 
 PLUMED_REGISTER_ACTION(DistanceFromContour,"DISTANCE_FROM_CONTOUR")
 
 void DistanceFromContour::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
-  keys.remove("NUMERICAL_DERIVATIVES");
+  DistanceFromContourBase::registerKeywords( keys );
   keys.addOutputComponent("dist1","default","the distance between the reference atom and the nearest contour");
   keys.addOutputComponent("dist2","default","the distance between the reference atom and the other contour");
   keys.addOutputComponent("qdist","default","the differentiable (squared) distance between the two contours (see above)");
   keys.addOutputComponent("thickness","default","the distance between the two contours on the line from the reference atom");
   keys.add("atoms","POSITIONS","the positions of the atoms that we are calculating the contour from");
   keys.add("atoms","ATOM","The atom whose perpendicular distance we are calculating from the contour");
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
-           "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("compulsory","DIR","the direction perpendicular to the contour that you are looking for");
-  keys.add("compulsory","CONTOUR","the value we would like for the contour");
   keys.add("compulsory","TOLERANCE","0.1","this parameter is used to manage periodic boundary conditions.  The problem "
            "here is that we can be between contours even when we are not within the membrane "
            "because of periodic boundary conditions.  When we are in the contour, however, we "
@@ -131,41 +103,15 @@ void DistanceFromContour::registerKeywords( Keywords& keys ) {
 
 DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
   Action(ao),
-  ActionWithValue(ao),
-  ActionAtomistic(ao),
-  ActionWithArguments(ao),
-  bw(3),
+  DistanceFromContourBase(ao),
   pos1(3,0.0),
   pos2(3,0.0),
   dirv(3,0.0),
   dirv2(3,0.0),
   perp_dirs(2),
-  nactive(0),
+  atom_deriv(active_list.size()),
   mymin(this)
 {
-  if( getNumberOfArguments()>1 ) error("should only use one argument for this action");
-  if( getNumberOfArguments()==1 ) {
-    if( getPntrToArgument(0)->getRank()!=1 ) error("ARG for distance from contour should be rank one");
-  }
-  // Read in the multicolvar/atoms
-  std::vector<AtomNumber> atoms; parseAtomList("POSITIONS",atoms);
-  std::vector<AtomNumber> origin; parseAtomList("ATOM",origin);
-  if( origin.size()!=1 ) error("should only specify one atom for origin keyword");
-
-  log.printf("  calculating distance between atom %d and contour \n", origin[0].serial() );
-  log.printf("  contour is in field constructed from positions of atoms : ");
-  for(unsigned i=0; i<atoms.size(); ++i) log.printf("%d ",atoms[i].serial() );
-  if( getNumberOfArguments()==1 ) {
-    if( getPntrToArgument(0)->getShape()[0]!=atoms.size() ) error("mismatch between number of atoms and size of vector specified using ARG keyword");
-    log.printf("\n  and weights from %s \n", getPntrToArgument(0)->getName().c_str() );
-  } else {
-    log.printf("\n  all weights are set equal to one \n");
-  }
-  // Request everything we need
-  active_list.resize( atoms.size(), 0 ); atom_deriv.resize( atoms.size() );
-  std::vector<Value*> args( getArguments() ); atoms.push_back( origin[0] );
-  requestAtoms( atoms ); requestArguments( args, false );
-
   // Get the direction
   std::string ldir; parse("DIR",ldir );
   if( ldir=="x" ) { dir=0; perp_dirs[0]=1; perp_dirs[1]=2; dirv[0]=1; dirv2[0]=-1; }
@@ -173,48 +119,15 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
   else if( ldir=="z" ) { dir=2; perp_dirs[0]=0; perp_dirs[1]=1; dirv[2]=1; dirv2[2]=-1; }
   else error(ldir + " is not a valid direction use x, y or z");
 
-  // Read in details of phase field construction
-  parseVector("BANDWIDTH",bw); parse("KERNEL",kerneltype); parse("CONTOUR",contour);
-  log.printf("  constructing phase field using %s kernels with bandwidth (%f, %f, %f) \n",kerneltype.c_str(), bw[0], bw[1], bw[2] );
   // Read in the tolerance for the pbc parameter
-  std::vector<AtomNumber> all_atoms; parse("TOLERANCE",pbc_param);
+  parse("TOLERANCE",pbc_param);
 
-  // And a cutoff
-  std::vector<double> pp( bw.size(),0 );
-  KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 );
-  double rcut = kernel.getCutoff( bw[0] );
-  for(unsigned j=1; j<bw.size(); ++j) {
-    if( kernel.getCutoff(bw[j])>rcut ) rcut=kernel.getCutoff(bw[j]);
-  }
-  rcut2=rcut*rcut; std::vector<unsigned> shape;
+  std::vector<unsigned> shape;
   // Create the values
   addComponent("thickness", shape ); componentIsNotPeriodic("thickness");
   addComponent("dist1", shape ); componentIsNotPeriodic("dist1");
   addComponent("dist2", shape ); componentIsNotPeriodic("dist2");
   addComponentWithDerivatives("qdist", shape ); componentIsNotPeriodic("qdist");
-
-  // Create the vector of values that holds the position
-  for(unsigned i=0; i<3; ++i) pval.push_back( new Value() );
-  forcesToApply.resize( 3*getNumberOfAtoms() + 9 );
-}
-
-DistanceFromContour::~DistanceFromContour() {
-  for(unsigned i=0; i<3; ++i) delete pval[i];
-}
-
-void DistanceFromContour::lockRequests() {
-  ActionWithArguments::lockRequests();
-  ActionAtomistic::lockRequests();
-}
-
-void DistanceFromContour::unlockRequests() {
-  ActionWithArguments::unlockRequests();
-  ActionAtomistic::unlockRequests();
-}
-
-unsigned DistanceFromContour::getNumberOfDerivatives() const {
-  if( getNumberOfArguments()==1 ) return 4*getNumberOfAtoms() + 8;  // One derivative for each weight hence four times the number of atoms - 1
-  return 3*getNumberOfAtoms() + 9;
 }
 
 void DistanceFromContour::calculate() {
@@ -338,56 +251,6 @@ void DistanceFromContour::evaluateDerivatives( const Vector root1, const double&
 
   // Add derivatives to virial
   for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) { val->addDerivative( nbase, -prefactor*vir(i,j) ); nbase++; }
-}
-
-double DistanceFromContour::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) {
-  std::string min, max;
-  for(unsigned j=0; j<3; ++j) {
-    Tools::convert( -0.5*getBox()(j,j), min );
-    Tools::convert( +0.5*getBox()(j,j), max );
-    pval[j]->setDomain( min, max ); pval[j]->set( x[j] );
-  }
-  double sumk = 0, sumd = 0; std::vector<double> pp(3), ddd(3,0);
-  for(unsigned i=0; i<nactive; ++i) {
-    Vector distance = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(active_list[i]) );
-    for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
-
-    // Now create the kernel and evaluate
-    KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 );
-    std::vector<Value*> fvals; kernel.normalize( fvals );
-    double newval = kernel.evaluate( pval, ddd, true );
-    if( getNumberOfArguments()==1 ) {
-      sumk += getPntrToArgument(0)->get(active_list[i])*newval;
-      sumd += newval;
-    } else sumk += newval;
-  }
-  if( getNumberOfArguments()==0 ) return sumk - contour;
-  return (sumk/sumd) - contour;
-}
-
-void DistanceFromContour::apply() {
-  if( doNotCalculateDerivatives() ) return ;
-  std::vector<Vector>&   f(modifyForces());
-  Tensor&           v(modifyVirial());
-  const unsigned    nat=getNumberOfAtoms();
-
-  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
-  if(getPntrToComponent(3)->applyForce(forcesToApply)) {
-    for(unsigned j=0; j<nat; ++j) {
-      f[j][0]+=forcesToApply[3*j+0];
-      f[j][1]+=forcesToApply[3*j+1];
-      f[j][2]+=forcesToApply[3*j+2];
-    }
-    v(0,0)+=forcesToApply[3*nat+0];
-    v(0,1)+=forcesToApply[3*nat+1];
-    v(0,2)+=forcesToApply[3*nat+2];
-    v(1,0)+=forcesToApply[3*nat+3];
-    v(1,1)+=forcesToApply[3*nat+4];
-    v(1,2)+=forcesToApply[3*nat+5];
-    v(2,0)+=forcesToApply[3*nat+6];
-    v(2,1)+=forcesToApply[3*nat+7];
-    v(2,2)+=forcesToApply[3*nat+8];
-  }
 }
 
 }
