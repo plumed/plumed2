@@ -16,6 +16,13 @@ ifneq ($(MAKECMDGOALS),clean)
   -include ../../Makefile.conf
 endif
 
+# Extra flags for python
+ifeq ($(SOEXT),dylib)
+PYTHON_EXTRA_LDFLAGS=-undefined dynamic_lookup
+else
+PYTHON_EXTRA_LDFLAGS=
+endif
+
 # if machine dependent configuration has been found:
 ifdef GCCDEP
 
@@ -303,7 +310,7 @@ ifdef python_bin
 	cp -pr ../../python install 
 	cd install/python && rm -fr *.so plumed.cpp build && \
         CC="$(CC)" \
-          LDSHARED="$(LDSHARED)" \
+          LDSHARED="$(LDSHARED) $(PYTHON_EXTRA_LDFLAGS)" \
           CXX="$(CXX)" \
           plumedexe="../../plumed" \
           program_name="$(program_name)" \

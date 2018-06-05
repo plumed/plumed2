@@ -756,7 +756,7 @@ if test "$shared" == true ; then
     AC_MSG_NOTICE([Dynamic library extension is 'dylib'])
     AC_MSG_NOTICE([LDSHARED needs special flags])
     SOEXT=dylib
-    LDSHARED="$LDSHARED -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
+    LDSHARED="$LDSHARED -dynamiclib -Wl,-headerpad_max_install_names"
     if test "$rpath" = true ; then
       AC_MSG_NOTICE([Switching off rpath on OSX])
       rpath=false

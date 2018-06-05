@@ -8513,7 +8513,7 @@ $as_echo "$as_me: Dynamic library extension is 'dylib'" >&6;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: LDSHARED needs special flags" >&5
 $as_echo "$as_me: LDSHARED needs special flags" >&6;}
     SOEXT=dylib
-    LDSHARED="$LDSHARED -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
+    LDSHARED="$LDSHARED -dynamiclib -Wl,-headerpad_max_install_names"
     if test "$rpath" = true ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: Switching off rpath on OSX" >&5
 $as_echo "$as_me: Switching off rpath on OSX" >&6;}
