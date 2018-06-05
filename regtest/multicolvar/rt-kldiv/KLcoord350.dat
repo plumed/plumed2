@@ -18,11 +18,6 @@ coord_sum: COMBINE ARG=coord_morethan PERIODIC=NO
 c1: FIXEDATOM AT=3.01,3.01,3.01
 #c1: CENTER ATOMS=1-200
 sp: INSPHERE ATOMS=1-6981:20 CENTER=c1 RADIUS={RATIONAL R_0=0.2 D_0=2.3 NN=10 MM=20 D_MAX=2.7}
-# Calculate matrix in which element i,j tells you if atoms i and j are both within the sphere 
-spmat: DOTPRODUCT_MATRIX GROUP1=sp
-# Calculate matrix in which element i,j tells you if atoms i and j have both coord num higher than the threshold
-coordmat: DOTPRODUCT_MATRIX GROUP1=coord_morethan
-
 
 #klcoord: KLDIV GRID=coord USEKLDIV REFERENCE=/home/ggobbo/simulations/solvated/plumed_files/coord_reference240.dat
 #PRINT ARG=coord_sum FILE=colvarcoord.dat

@@ -32,12 +32,17 @@ COMPONENTS
 LABEL=dd_ON
 ... CONTACT_MATRIX
 
+# Calculate matrix in which element i,j tells you if atoms i and j are both within the sphere 
+spmat: DOTPRODUCT_MATRIX GROUP1=sp
+# Calculate matrix in which element i,j tells you if atoms i and j have both coord num higher than the threshold
+coordmat: DOTPRODUCT_MATRIX GROUP1=coord_morethan
+
 # Now normalize the vectors
 bonds_ON: NORMALIZE ARG1=dd_ON.x ARG2=dd_ON.y ARG3=dd_ON.z
 
 # Building correct weight matrices by element wise multiplication of all weigths
 test: MATHEVAL ARG1=spmat ARG2=coordmat FUNC=x*y PERIODIC=NO
-w_centers: MATHEVAL ARG1=spmat ARG2=coordmat ARG3=dd_centers.w FUNC=x*y*z PERIODIC=NO
+w_centers: MATHEVAL ARG1=dd_centers.w ARG2=coordmat ARG3=spmat FUNC=x*y*z PERIODIC=NO
 w_OO: MATHEVAL ARG1=spmat ARG2=coordmat.w ARG3=dd_OO.w FUNC=x*y*z PERIODIC=NO
 w_ON: MATHEVAL ARG1=spmat ARG2=coordmat.w ARG3=dd_ON.w FUNC=x*y*z PERIODIC=NO
 # Now construct the instantaneous histograms 

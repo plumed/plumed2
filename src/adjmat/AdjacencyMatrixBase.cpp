@@ -220,6 +220,7 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
 }
 
 void AdjacencyMatrixBase::calculate() {
+  if( actionInChain() ) return;
   // Now run all the tasks
   runAllTasks();
 }
