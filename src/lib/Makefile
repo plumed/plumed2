@@ -70,17 +70,23 @@ PLUMED_SCRIPTS_SH := $(shell cd ../../scripts/ ; ls *.sh 2>/dev/null)
 PLUMED_SCRIPTS := $(PLUMED_SCRIPTS_SH:.sh=)
 PLUMED_SCRIPTS_EXE := $(addprefix $(PLUMED_LIBDIR)plumed-,$(PLUMED_SCRIPTS))
 
-# plumed main exec
-ifeq ($(SOEXT),dylib)
-# on OSX, use shared executable by default
+# use shared executable by default when possible
+ifdef SOEXT
   PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)$(PLUMED_NAME)-static
   PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)$(PLUMED_NAME)
+  PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)$(PLUMED_NAME)-runtime
 else
   PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)$(PLUMED_NAME)
-  PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)$(PLUMED_NAME)-shared
+  PLUMED_MAIN_SHARED :=
+  PLUMED_MAIN_RUNTIME :=
 endif
-PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)$(PLUMED_NAME)-runtime
 
+# check if bindir and libdir are consistent.
+# notice that this is not required yet but if we later we want
+# to use $ORIGIN based rpaths this would be needed
+ifneq ($(dir $(bindir)),$(dir $(libdir)))
+  $(error bindir and libdir are not consistent, please set them as subdirectories of the same directory)
+endif
 
 .PHONY: all links $(DIRS) $(DIRSLINKS) all-static $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.inc install $(PLUMED_SCRIPTS_EXE) install-html
 all:
@@ -439,36 +445,40 @@ else
 endif
 	chmod a+x $@
 
+# the only difference between OSX and Linux is that on OSX we hardcode full paths
+# whereas on Linux we use the file name only. For Linux, this implies
+# that LD_LIBRARY_PATH must be set correctly.
 $(PLUMED_KERNEL):$(OBJ_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-	cd install && $(LDSHARED) -o lib$(program_name)Kernel.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(DYNAMIC_LIBS)
 ifeq ($(SOEXT),dylib)
-	install_name_tool -id "$(libdir)/lib$(program_name)Kernel.$(SOEXT)" $@
+	$(LDSHARED) -o $@ $^ -Wl,-install_name,"$(libdir)/lib$(program_name)Kernel.$(SOEXT)" $(DYNAMIC_LIBS)
+else
+	$(LDSHARED) -o $@ $^ -Wl,-soname,"$(notdir $(PLUMED_KERNEL))" $(DYNAMIC_LIBS)
 endif
 else
-	$(LDSHARED) -o $@ $^ $(DYNAMIC_LIBS)
 ifeq ($(SOEXT),dylib)
-	install_name_tool -id "$(realpath .)/libplumedKernel.$(SOEXT)" $@
+	$(LDSHARED) -o $@ $^ -Wl,-install_name,"$(realpath .)/libplumedKernel.$(SOEXT)" $(DYNAMIC_LIBS)
+else
+	$(LDSHARED) -o $@ $^ -Wl,-soname,"$(notdir $(PLUMED_KERNEL))" $(DYNAMIC_LIBS)
 endif
 endif
 
 # dependence on PLUMED_KERNEL is required for build on OSX to work correctly:
+# dependence on OBJ_KERNEL is required on linux
 $(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
 ifeq ($(SOEXT),dylib)
-	cd install && $(LDSHARED) -o lib$(program_name).$(SOEXT) lib$(program_name)Kernel.dylib $(addprefix ../,$(OBJ_WRAPPER)) $(LIBS)
-	install_name_tool -id "$(libdir)/lib$(program_name).$(SOEXT)" $@
+	$(LDSHARED) -o $@ $(OBJ_WRAPPER) $(PLUMED_KERNEL) -Wl,-install_name,"$(libdir)/lib$(program_name).$(SOEXT)" $(LIBS)
 else
-	cd install && $(LDSHARED) -o lib$(program_name).$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(addprefix ../,$(OBJ_WRAPPER)) $(DYNAMIC_LIBS)
+	$(LDSHARED) -o $@ $(OBJ_WRAPPER) $(PLUMED_KERNEL) -Wl,-soname,"$(notdir $(PLUMED_SHARED_OBJ))" $(LIBS)
 endif
 else
 ifeq ($(SOEXT),dylib)
-	$(LDSHARED) -o $@ $(OBJ_WRAPPER) libplumedKernel.dylib $(LIBS)
-	install_name_tool -id "$(realpath .)/libplumed.$(SOEXT)" $@
+	$(LDSHARED) -o $@ $(OBJ_WRAPPER) $(PLUMED_KERNEL) -Wl,-install_name,"$(realpath .)/libplumed.$(SOEXT)" $(LIBS)
 else
-	$(LDSHARED) -o $@ $(OBJ_KERNEL) $(OBJ_WRAPPER) $(DYNAMIC_LIBS)
+	$(LDSHARED) -o $@ $(OBJ_WRAPPER) $(PLUMED_KERNEL) -Wl,-soname,"$(notdir $(PLUMED_SHARED_OBJ))" $(LIBS)
 endif
 endif
 
@@ -476,17 +486,19 @@ ifdef AR_CR
 $(PLUMED_WRAPPER_LIB): $(OBJ_DYNAMIC_WRAPPER)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-	cd install && $(AR_CR) lib$(program_name)Wrapper.a $(addprefix ../,$(OBJ_DYNAMIC_WRAPPER))
-else
-	$(AR_CR) $@ $(OBJ_DYNAMIC_WRAPPER)
 endif
+	$(AR_CR) $@ $^
 endif
 
 $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(DYNAMIC_LIBS)
 	
 $(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(PLUMED_SHARED_OBJ)
-	$(LD) $(LDFLAGS) $(OBJ_MAIN) "$(realpath $(PLUMED_SHARED_OBJ))" -o $@ $(LIBS)
+ifeq ($(SOEXT),dylib)
+	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
+else
+	$(LD) $(LDFLAGS) $^ -o $@ -Wl,-rpath-link,"$(dir $@)" $(LIBS)
+endif
 
 $(PLUMED_MAIN_RUNTIME): $(OBJ_MAIN) $(OBJ_DYNAMIC_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
