@@ -249,11 +249,13 @@ PLUMED_CONFIG_ENABLE([zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([readdir-r],[search for readdir_r (threadsafe)],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
+PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
+PLUMED_CONFIG_ENABLE([asmjit],[search for asmjit],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[no])
 PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
 
@@ -596,6 +598,19 @@ fi
 if test $dlopen == true ; then
   PLUMED_CHECK_PACKAGE([dlfcn.h],[dlopen],[__PLUMED_HAS_DLOPEN])
 fi
+
+if test $rtld_default == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([RTLD_DEFAULT],[
+#include <dlfcn.h>
+int
+main ()
+{
+  void* f=dlsym(RTLD_DEFAULT,"path");
+  return 0;
+}
+  ], [__PLUMED_HAS_RTLD_DEFAULT])
+fi
+
 if test $execinfo == true ; then
   PLUMED_CHECK_PACKAGE([execinfo.h],[backtrace],[__PLUMED_HAS_EXECINFO])
 fi
@@ -646,6 +661,30 @@ int main() {
 }
   ], [__PLUMED_HAS_BOOST_SERIALIZATION],[boost_serialization boost_serialization-mt])
 # notice: macports install libraries with -mt suffix
+fi
+
+if test $asmjit == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([asmjit],[
+#include <asmjit/asmjit.h>
+#include <stdio.h>
+using namespace asmjit;
+typedef int (*Func)(void);
+int main(int argc, char* argv[[]]) {
+  JitRuntime rt;
+  CodeHolder code;
+  code.init(rt.getCodeInfo());
+  X86Assembler a(&code);
+  a.mov(x86::eax, 1);
+  a.ret();
+  Func fn;
+  Error err = rt.add(&fn, &code);
+  if (err) return 1;
+  int result = fn();
+  printf("%d\n", result);
+  rt.release(fn);
+  return 0;
+}
+  ], [__PLUMED_HAS_ASMJIT],[asmjit])
 fi
 
 if test $fftw == true ; then
@@ -717,7 +756,7 @@ if test "$shared" == true ; then
     AC_MSG_NOTICE([Dynamic library extension is 'dylib'])
     AC_MSG_NOTICE([LDSHARED needs special flags])
     SOEXT=dylib
-    LDSHARED="$LDSHARED -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
+    LDSHARED="$LDSHARED -dynamiclib -Wl,-headerpad_max_install_names"
     if test "$rpath" = true ; then
       AC_MSG_NOTICE([Switching off rpath on OSX])
       rpath=false
@@ -1096,6 +1135,8 @@ if test "$prefix" == NONE
 then
   prefix=/usr/local
 fi
+
+AC_MSG_CHECKING([If prefix is equal to present working directory])
 
 pkgconfig_bin=""
 

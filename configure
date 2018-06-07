@@ -725,11 +725,13 @@ enable_zlib
 enable_readdir_r
 enable_cregex
 enable_dlopen
+enable_rtld_default
 enable_execinfo
 enable_gsl
 enable_xdrfile
 enable_boost_graph
 enable_boost_serialization
+enable_asmjit
 enable_fftw
 enable_python
 enable_openmp
@@ -1402,12 +1404,14 @@ Optional Features:
                           yes
   --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
+  --enable-rtld_default   enable search for RTLD_DEFAULT macro, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
   --enable-gsl            enable search for gsl, default: yes
   --enable-xdrfile        enable search for xdrfile, default: yes
   --enable-boost_graph    enable search for boost graph, default: no
   --enable-boost_serialization
                           enable search for boost serialization, default: no
+  --enable-asmjit         enable search for asmjit, default: no
   --enable-fftw           enable search for fftw, default: no
   --enable-python         enable search for python, default: yes
   --disable-openmp        do not use OpenMP
@@ -2895,6 +2899,24 @@ fi
 
 
 
+rtld_default=
+# Check whether --enable-rtld_default was given.
+if test "${enable_rtld_default+set}" = set; then :
+  enableval=$enable_rtld_default; case "${enableval}" in
+             (yes) rtld_default=true ;;
+             (no)  rtld_default=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-rtld_default" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) rtld_default=true ;;
+             (no)  rtld_default=false ;;
+  esac
+
+fi
+
+
+
 execinfo=
 # Check whether --enable-execinfo was given.
 if test "${enable_execinfo+set}" = set; then :
@@ -2979,6 +3001,24 @@ else
   case "no" in
              (yes) boost_serialization=true ;;
              (no)  boost_serialization=false ;;
+  esac
+
+fi
+
+
+
+asmjit=
+# Check whether --enable-asmjit was given.
+if test "${enable_asmjit+set}" = set; then :
+  enableval=$enable_asmjit; case "${enableval}" in
+             (yes) asmjit=true ;;
+             (no)  asmjit=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-asmjit" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) asmjit=true ;;
+             (no)  asmjit=false ;;
   esac
 
 fi
@@ -7163,6 +7203,67 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_DLOPEN" >&2;}
     fi
 
 fi
+
+if test $rtld_default == true ; then
+
+    found=ko
+    __PLUMED_HAS_RTLD_DEFAULT=no
+    if test "${libsearch}" == true ; then
+      testlibs=""
+    else
+      testlibs=""
+    fi
+    for testlib in "" $testlibs
+    do
+      save_LIBS="$LIBS"
+      if test -n "$testlib" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT with -l$testlib" >&5
+$as_echo_n "checking RTLD_DEFAULT with -l$testlib... " >&6; }
+        LIBS="-l$testlib $LIBS"
+      else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT without extra libs" >&5
+$as_echo_n "checking RTLD_DEFAULT without extra libs... " >&6; }
+      fi
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <dlfcn.h>
+int
+main ()
+{
+  void* f=dlsym(RTLD_DEFAULT,"path");
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      if test $found == ok ; then
+        break
+      fi
+      LIBS="$save_LIBS"
+    done
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_RTLD_DEFAULT 1" >>confdefs.h
+
+      __PLUMED_HAS_RTLD_DEFAULT=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_RTLD_DEFAULT" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_RTLD_DEFAULT" >&2;}
+      LIBS="$save_LIBS"
+    fi
+
+fi
+
 if test $execinfo == true ; then
 
     found=ko
@@ -8080,6 +8181,78 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_BOOST_SERIALIZATION" >&2;}
 # notice: macports install libraries with -mt suffix
 fi
 
+if test $asmjit == true ; then
+
+    found=ko
+    __PLUMED_HAS_ASMJIT=no
+    if test "${libsearch}" == true ; then
+      testlibs="asmjit"
+    else
+      testlibs=""
+    fi
+    for testlib in "" $testlibs
+    do
+      save_LIBS="$LIBS"
+      if test -n "$testlib" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking asmjit with -l$testlib" >&5
+$as_echo_n "checking asmjit with -l$testlib... " >&6; }
+        LIBS="-l$testlib $LIBS"
+      else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking asmjit without extra libs" >&5
+$as_echo_n "checking asmjit without extra libs... " >&6; }
+      fi
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <asmjit/asmjit.h>
+#include <stdio.h>
+using namespace asmjit;
+typedef int (*Func)(void);
+int main(int argc, char* argv[]) {
+  JitRuntime rt;
+  CodeHolder code;
+  code.init(rt.getCodeInfo());
+  X86Assembler a(&code);
+  a.mov(x86::eax, 1);
+  a.ret();
+  Func fn;
+  Error err = rt.add(&fn, &code);
+  if (err) return 1;
+  int result = fn();
+  printf("%d\n", result);
+  rt.release(fn);
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      if test $found == ok ; then
+        break
+      fi
+      LIBS="$save_LIBS"
+    done
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_ASMJIT 1" >>confdefs.h
+
+      __PLUMED_HAS_ASMJIT=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ASMJIT" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ASMJIT" >&2;}
+      LIBS="$save_LIBS"
+    fi
+
+fi
+
 if test $fftw == true ; then
 
     found=ko
@@ -8340,7 +8513,7 @@ $as_echo "$as_me: Dynamic library extension is 'dylib'" >&6;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: LDSHARED needs special flags" >&5
 $as_echo "$as_me: LDSHARED needs special flags" >&6;}
     SOEXT=dylib
-    LDSHARED="$LDSHARED -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
+    LDSHARED="$LDSHARED -dynamiclib -Wl,-headerpad_max_install_names"
     if test "$rpath" = true ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: Switching off rpath on OSX" >&5
 $as_echo "$as_me: Switching off rpath on OSX" >&6;}
@@ -8963,6 +9136,9 @@ if test "$prefix" == NONE
 then
   prefix=/usr/local
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking If prefix is equal to present working directory" >&5
+$as_echo_n "checking If prefix is equal to present working directory... " >&6; }
 
 pkgconfig_bin=""
 

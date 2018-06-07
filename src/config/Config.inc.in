@@ -60,7 +60,7 @@ std::string getPlumedHtmldir() {
 }
 
 std::string getPlumedIncludedir() {
-  if(!isInstalled()) return getPlumedRoot()+"/include";
+  if(!isInstalled()) return getPlumedRoot()+"/src/include";
   char *env = std::getenv("PLUMED_INCLUDEDIR");
   std::string ss;
   if( env == NULL) {
