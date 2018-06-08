@@ -32,24 +32,55 @@ namespace ves {
 Gaussian basis functions.
 
 \attention
-__These basis functions should not be used in conventional biasing simulations__.
-Instead you should use orthogonal basis functions like Legendre or
-Chebyshev polynomials. They are only included for usage in \ref ves_md_linearexpansion
-and some special cases.
+__These basis functions are still experimental and should not be used in
+conventional biasing simulations__.
+Instead you should use orthogonal basis functions like Legendre or Chebyshev
+polynomials.
 
 Basis functions given by Gaussian functions with shifted means defined on a
-bounded interval. You need to provide the interval \f$[a,b]\f$ on which the
-basis functions are to be used. The order of the expansion \f$N\f$ determines
-the number of equally sized sub-intervalls to be used. On the borders of each
-of these sub-intervalls the mean of a Gaussian basis function is placed.
+bounded interval.
+You need to provide the interval \f$[a,b]\f$ on which the bias is to be
+expanded.
+The order of the expansion \f$N\f$ determines the number of equally sized
+sub-intervalls to be used.
+On the borders of each of these sub-intervalls the mean \f$\mu\f$ of a Gaussian
+basis function is placed:
+\f{align}{
+  \mu_i = a + (i-1) \frac{b-a}{N}
+\f}
 
-It is also possible to specify the width (i.e. standart deviation) of the
-Gaussians using the WIDTH keyword. By default it is set to the sub-intervall
-length.
+The total number of basis functions is \f$N+2\f$ as the constant
+\f$f_{0}(x)=1\f$ is also included.
+
+The basis functions are given by
+\f{align}{
+  f_0 = 1 \\
+  f_i = \exp\left(-\frac{{\left(x-\mu_i\right)}^2}{2\sigma^2}\right)
+\f}
+
+It is possible to specify the width \f$\sigma\f$ (i.e. the standart deviation)
+of the Gaussians using the WIDTH keyword.
+By default it is set to the sub-intervall length.
 
 The optimization procedure then adjusts the heigths of the individual Gaussians.
 
-Add stuff here...
+\par Examples
+Here the bias is expanded with Gaussian functions in the intervall from 0.0 to
+10.0 using order 20.
+This results in 22 basis functions.
+
+\plumedfile
+bfG: BF_GAUSSIAN MINIMUM=0.0 MAXIMUM=10.0 ORDER=20
+\endplumedfile
+
+Because it was not specified, the width of the Gaussians was set to
+\f$\sigma=0.5\f$.
+To e.g. enhance the overlap between neighbouring basis functions it could be
+specified explicitely.
+
+\plumedfile
+bfG: BF_GAUSSIAN MINIMUM=0.0 MAXIMUM=10.0 ORDER=20 WIDTH=0.7
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
