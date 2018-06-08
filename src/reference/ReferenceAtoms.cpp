@@ -53,7 +53,7 @@ void ReferenceAtoms::setAtomNumbers( const std::vector<AtomNumber>& numbers ) {
 void ReferenceAtoms::printAtoms( OFile& ofile, const double& lunits ) const {
   plumed_assert( indices.size()==reference_atoms.size() && align.size()==reference_atoms.size() && displace.size()==reference_atoms.size() );
   for(unsigned i=0; i<reference_atoms.size(); ++i) {
-    ofile.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+    ofile.printf("ATOM  %5d  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                  indices[i].serial(), i,
                  lunits*reference_atoms[i][0], lunits*reference_atoms[i][1], lunits*reference_atoms[i][2],
                  align[i], displace[i] );
