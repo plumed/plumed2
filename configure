@@ -625,6 +625,7 @@ program_name
 pkgconfig_bin
 make_static_archive
 AR_CR
+use_absolute_soname
 LD_RO
 program_can_run_mpi
 program_can_run
@@ -713,6 +714,7 @@ enable_debug_glibcxx
 enable_shared
 enable_dependency_tracking
 enable_rpath
+enable_absolute_soname
 enable_ld_r
 enable_ar_cr
 enable_static_archive
@@ -1385,6 +1387,9 @@ Optional Features:
   --enable-dependency-tracking
                           enable dependency tracking, default: yes
   --enable-rpath          enable store rpath, default: no
+  --enable-absolute-soname
+                          enable store absolute soname (Linux only - this is
+                          the default behavior on OSX), default: no
   --enable-ld-r           enable group object files, default: yes
   --enable-ar-cr          enable use ar to build libplumedWrapper.a, default:
                           yes
@@ -2677,6 +2682,24 @@ else
   case "no" in
              (yes) rpath=true ;;
              (no)  rpath=false ;;
+  esac
+
+fi
+
+
+
+absolute_soname=
+# Check whether --enable-absolute-soname was given.
+if test "${enable_absolute_soname+set}" = set; then :
+  enableval=$enable_absolute_soname; case "${enableval}" in
+             (yes) absolute_soname=true ;;
+             (no)  absolute_soname=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-absolute-soname" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) absolute_soname=true ;;
+             (no)  absolute_soname=false ;;
   esac
 
 fi
@@ -8954,6 +8977,12 @@ $as_echo "no" >&6; }
   fi
 done
 
+fi
+
+use_absolute_soname=no
+
+if test "$absolute_soname" == true ; then
+  use_absolute_soname=yes
 fi
 
 

@@ -237,6 +237,7 @@ PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
+PLUMED_CONFIG_ENABLE([absolute-soname],[store absolute soname (Linux only - this is the default behavior on OSX)],[no])
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
@@ -969,6 +970,12 @@ EOF
   fi
 done
 
+fi
+
+use_absolute_soname=no
+AC_SUBST(use_absolute_soname)
+if test "$absolute_soname" == true ; then
+  use_absolute_soname=yes
 fi
 
 AC_SUBST(AR_CR)
