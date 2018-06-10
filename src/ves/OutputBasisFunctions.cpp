@@ -109,7 +109,7 @@ void OutputBasisFunctions::registerKeywords(Keywords& keys) {
   keys.add("optional","FILE_TARGETDIST","filename of the files on which the target distributions are written. By default it is BF_LABEL.targetdist-#.data.");
   keys.add("numbered","TARGET_DISTRIBUTION","the target distribution to be used.");
   keys.addFlag("IGNORE_PERIODICITY",false,"if the periodicity of the basis functions should be ignored.");
-  keys.addFlag("NUMERICAL_DERIVATIES",false,"if the derivatives of the basis functions should be calculated numerically.");
+  keys.addFlag("NUMERICAL_DERIVATIVES",false,"if the derivatives of the basis functions should be calculated numerically.");
 }
 
 OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
@@ -150,7 +150,7 @@ OutputBasisFunctions::OutputBasisFunctions(const ActionOptions&ao):
   parseFlag("IGNORE_PERIODICITY",ignore_periodicity);
 
   bool numerical_deriv = false;
-  parseFlag("NUMERICAL_DERIVATIES",numerical_deriv);
+  parseFlag("NUMERICAL_DERIVATIVES",numerical_deriv);
 
   std::vector<TargetDistribution*> targetdist_pntrs;
   targetdist_pntrs.push_back(NULL);
