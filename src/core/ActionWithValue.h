@@ -278,6 +278,10 @@ public:
   virtual void transformFinalValueAndDerivatives( const std::vector<double>& buf  ) {};
 /// Retrieve the forces acting on all values
   bool getForcesFromValues( std::vector<double>& forces );
+///
+  virtual bool writeInGraph( std::string& exline ) const { return false; }
+///
+  void generateGraphNodes( OFile& ofile, std::vector<std::string>& graph_actions ) const ;
 };
 
 inline
