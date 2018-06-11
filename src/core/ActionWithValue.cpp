@@ -151,6 +151,15 @@ bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels,
       if( !storingall ) return false;
     }
   }
+  // This checks that there is nothing that will cause problems in the chain
+  mylabels.resize(0); getActionThatCalculates()->getAllActionLabelsInChain( mylabels );
+  for(unsigned i=0;i<mylabels.size();++i) {
+      ActionWithValue* av1=plumed.getActionSet().selectWithLabel<ActionWithValue*>( mylabels[i] ); 
+      for(unsigned j=0;j<i;++j) {
+          ActionWithValue* av2=plumed.getActionSet().selectWithLabel<ActionWithValue*>( mylabels[j] );
+          if( !av1->canBeAfterInChain( av2 ) ) error("must calculate " + mylabels[j] + " before " + mylabels[i] );
+      }
+  }
   action_to_do_after=act; act->addDependency( this ); act->action_to_do_before=this;
   return true;
 }

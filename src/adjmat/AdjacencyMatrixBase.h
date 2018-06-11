@@ -34,6 +34,7 @@ class AdjacencyMatrixBase :
   public ActionAtomistic,
   public ActionWithValue
 {
+friend class VectorProductMatrix;
 private:
   bool nopbc, components, read_one_group;
   LinkCells linkcells, threecells;
@@ -55,6 +56,7 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdjacencyMatrixBase(const ActionOptions&);
+  bool canBeAfterInChain( ActionWithValue* av ) const ;
   unsigned getNumberOfDerivatives() const ;
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );

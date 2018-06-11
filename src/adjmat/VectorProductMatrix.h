@@ -44,6 +44,7 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit VectorProductMatrix(const ActionOptions&);
+  bool canBeAfterInChain( ActionWithValue* av ) const ;
   bool mustBeTreatedAsDistinctArguments() const ;
   void lockRequests();
   void unlockRequests();

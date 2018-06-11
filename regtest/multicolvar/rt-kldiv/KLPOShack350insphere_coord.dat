@@ -33,18 +33,22 @@ LABEL=dd_ON
 ... CONTACT_MATRIX
 
 # Calculate matrix in which element i,j tells you if atoms i and j are both within the sphere 
-spmat: DOTPRODUCT_MATRIX GROUP1=sp
+spmat_1: DOTPRODUCT_MATRIX GROUP1=sp
+spmat_2: DOTPRODUCT_MATRIX GROUPA1=sp GROUPB1=sp
+spmat_3: DOTPRODUCT_MATRIX GROUPA1=sp GROUPB1=sp
 # Calculate matrix in which element i,j tells you if atoms i and j have both coord num higher than the threshold
-coordmat: DOTPRODUCT_MATRIX GROUP1=coord_morethan
+coordmat_1: DOTPRODUCT_MATRIX GROUP1=coord_morethan
+coordmat_2: DOTPRODUCT_MATRIX GROUPA1=coord_morethan GROUPB1=coord_morethan
+coordmat_3: DOTPRODUCT_MATRIX GROUPA1=coord_morethan GROUPB1=coord_morethan
 
 # Now normalize the vectors
 bonds_ON: NORMALIZE ARG1=dd_ON.x ARG2=dd_ON.y ARG3=dd_ON.z
 
 # Building correct weight matrices by element wise multiplication of all weigths
-test: MATHEVAL ARG1=spmat ARG2=coordmat FUNC=x*y PERIODIC=NO
-w_centers: MATHEVAL ARG1=dd_centers.w ARG2=coordmat ARG3=spmat FUNC=x*y*z PERIODIC=NO
-w_OO: MATHEVAL ARG1=spmat ARG2=coordmat.w ARG3=dd_OO.w FUNC=x*y*z PERIODIC=NO
-w_ON: MATHEVAL ARG1=spmat ARG2=coordmat.w ARG3=dd_ON.w FUNC=x*y*z PERIODIC=NO
+#test: MATHEVAL ARG1=spmat_1 ARG2=coordmat_2 FUNC=x*y PERIODIC=NO
+w_centers: MATHEVAL ARG1=dd_centers.w ARG2=coordmat_1 ARG3=spmat_1 FUNC=x*y*z PERIODIC=NO
+w_OO: MATHEVAL ARG1=dd_OO.w ARG2=coordmat_2 ARG3=spmat_2 FUNC=x*y*z PERIODIC=NO
+w_ON: MATHEVAL ARG1=dd_ON.w ARG2=coordmat_3 ARG3=spmat_3 FUNC=x*y*z PERIODIC=NO
 # Now construct the instantaneous histograms 
 Sppos: SPHERICAL_KDE ARG1=bonds.x ARG2=bonds.y ARG3=bonds.z HEIGHTS=w_centers GRID_BIN=400 CONCENTRATION=100.0
 Sppos_OO: SPHERICAL_KDE ARG1=bonds_OO.x ARG2=bonds_OO.y ARG3=bonds_OO.z HEIGHTS=w_OO GRID_BIN=400 CONCENTRATION=100.0

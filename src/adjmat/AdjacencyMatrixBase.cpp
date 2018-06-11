@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AdjacencyMatrixBase.h"
+#include "VectorProductMatrix.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/OpenMP.h"
@@ -121,6 +122,12 @@ void AdjacencyMatrixBase::setupThirdAtomBlock( const std::vector<AtomNumber>& tc
   threeblocks.resize( tc.size() ); unsigned base=t.size();
   for(unsigned i=0; i<tc.size(); ++i) { log.printf("%d ", tc[i].serial()); t.push_back(tc[i]); threeblocks[i]=base+i; }
   log.printf("\n");
+}
+
+bool AdjacencyMatrixBase::canBeAfterInChain( ActionWithValue* av ) const {
+  VectorProductMatrix* vp = dynamic_cast<VectorProductMatrix*>( av );
+  if( vp ) return false;
+  return true;
 }
 
 void AdjacencyMatrixBase::setLinkCellCutoff( const bool& symmetric, const double& lcut, double tcut ) {
