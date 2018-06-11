@@ -625,8 +625,8 @@ program_name
 pkgconfig_bin
 make_static_archive
 AR_CR
-use_absolute_soname
 LD_RO
+use_absolute_soname
 program_can_run_mpi
 program_can_run
 xxd
@@ -715,6 +715,7 @@ enable_shared
 enable_dependency_tracking
 enable_rpath
 enable_absolute_soname
+enable_absolute_install_name
 enable_ld_r
 enable_ar_cr
 enable_static_archive
@@ -1390,6 +1391,9 @@ Optional Features:
   --enable-absolute-soname
                           enable store absolute soname (Linux only - this is
                           the default behavior on OSX), default: no
+  --enable-absolute-install-name
+                          enable store absolute relative (OSX only - disable
+                          to have a behavior similar to Linux), default: yes
   --enable-ld-r           enable group object files, default: yes
   --enable-ar-cr          enable use ar to build libplumedWrapper.a, default:
                           yes
@@ -2700,6 +2704,24 @@ else
   case "no" in
              (yes) absolute_soname=true ;;
              (no)  absolute_soname=false ;;
+  esac
+
+fi
+
+
+
+absolute_install_name=
+# Check whether --enable-absolute-install-name was given.
+if test "${enable_absolute_install_name+set}" = set; then :
+  enableval=$enable_absolute_install_name; case "${enableval}" in
+             (yes) absolute_install_name=true ;;
+             (no)  absolute_install_name=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-absolute-install-name" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) absolute_install_name=true ;;
+             (no)  absolute_install_name=false ;;
   esac
 
 fi
@@ -8886,6 +8908,35 @@ $as_echo "$as_me: Regtest suite will use env var PLUMED_MPIRUN to run MPI tests 
   fi
 fi
 
+if test "$SOEXT" == "dylib" ; then
+  use_absolute_soname=yes
+else
+  use_absolute_soname=no
+fi
+
+
+if test "$absolute_soname" == true ; then
+  if test "$SOEXT" == "dylib" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --enable-absolute-soname has no effect on OSX" >&5
+$as_echo "$as_me: WARNING: --enable-absolute-soname has no effect on OSX" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: enabling absolute soname. Full path will be hardcoded in plumed library soname" >&5
+$as_echo "$as_me: enabling absolute soname. Full path will be hardcoded in plumed library soname" >&6;}
+    use_absolute_soname=yes
+  fi
+fi
+
+if test "$absolute_install_name" == false ; then
+  if test "$SOEXT" == "so" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --disable-absolute-install-name has no effect on Linux" >&5
+$as_echo "$as_me: WARNING: --disable-absolute-install-name has no effect on Linux" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: enabling relative install_name. You will have to set DYLD_LIBRARY_PATH yor plumed libraries to be found at runtime" >&5
+$as_echo "$as_me: enabling relative install_name. You will have to set DYLD_LIBRARY_PATH yor plumed libraries to be found at runtime" >&6;}
+    use_absolute_soname=no
+  fi
+fi
+
 #### This further tests are required to allow linking with non c++ compiler
 { $as_echo "$as_me:${as_lineno-$LINENO}: PLUMED seems to be configured properly!" >&5
 $as_echo "$as_me: PLUMED seems to be configured properly!" >&6;}
@@ -8933,12 +8984,6 @@ $as_echo "no" >&6; }
   fi
 done
 
-fi
-
-use_absolute_soname=no
-
-if test "$absolute_soname" == true ; then
-  use_absolute_soname=yes
 fi
 
 

@@ -20,8 +20,6 @@ ifeq ($(SOEXT),dylib)
 # Extra flags required to properly compile the python interface
   PYTHON_EXTRA_LDFLAGS:=-undefined dynamic_lookup
   SONAME_OPTION:=-Wl,-install_name
-# on OSX we always hardcode paths
-  use_absolute_soname:=yes
 else
   PYTHON_EXTRA_LDFLAGS:=
   SONAME_OPTION:=-Wl,-soname
@@ -146,7 +144,8 @@ endif
            sed "s|@_program_name_@|$(program_name)|" | \
            sed "s|@_libdir_@|$(libdir)|" | \
            sed "s|@_bindir_@|$(bindir)|" | \
-           sed "s|@_includedir_@|$(includedir)|" \
+           sed "s|@_includedir_@|$(includedir)|" | \
+           sed "s|@_use_absolute_soname_@|$(use_absolute_soname)|" \
 	   > install/modulefile
 	@cat pkgconfig.in | \
            sed "s|@_SOEXT_@|$(SOEXT)|" | \

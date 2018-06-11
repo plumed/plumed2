@@ -238,6 +238,7 @@ PLUMED_CONFIG_ENABLE([shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
 PLUMED_CONFIG_ENABLE([absolute-soname],[store absolute soname (Linux only - this is the default behavior on OSX)],[no])
+PLUMED_CONFIG_ENABLE([absolute-install-name],[store absolute relative (OSX only - disable to have a behavior similar to Linux)],[yes])
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
@@ -929,6 +930,31 @@ if test $mpi_found == ok ; then
   fi
 fi
 
+if test "$SOEXT" == "dylib" ; then
+  use_absolute_soname=yes
+else
+  use_absolute_soname=no
+fi
+
+AC_SUBST(use_absolute_soname)
+if test "$absolute_soname" == true ; then
+  if test "$SOEXT" == "dylib" ; then
+    AC_MSG_WARN([--enable-absolute-soname has no effect on OSX])
+  else
+    AC_MSG_NOTICE([enabling absolute soname. Full path will be hardcoded in plumed library soname])
+    use_absolute_soname=yes
+  fi
+fi
+
+if test "$absolute_install_name" == false ; then
+  if test "$SOEXT" == "so" ; then
+    AC_MSG_WARN([--disable-absolute-install-name has no effect on Linux])
+  else
+    AC_MSG_NOTICE([enabling relative install_name. You will have to set DYLD_LIBRARY_PATH yor plumed libraries to be found at runtime])
+    use_absolute_soname=no
+  fi
+fi
+
 #### This further tests are required to allow linking with non c++ compiler
 AC_MSG_NOTICE([PLUMED seems to be configured properly!])
 AC_MSG_NOTICE([**************************])
@@ -971,12 +997,6 @@ EOF
   fi
 done
 
-fi
-
-use_absolute_soname=no
-AC_SUBST(use_absolute_soname)
-if test "$absolute_soname" == true ; then
-  use_absolute_soname=yes
 fi
 
 AC_SUBST(AR_CR)

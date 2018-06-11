@@ -14,6 +14,9 @@ set soext  "@_SOEXT_@"
 # this is the name of the plumed program
 # it is usually plumed
 set progname "@_program_name_@"
+# if yes, soname is absolute - does not require setting (DY)LD_LIBRARY_PATH
+# otherwise, soname is relative - requires require setting (DY)LD_LIBRARY_PATH (common in Linux)
+set use_absolute_soname "@_use_absolute_soname_@"
 
 # everything past this line should not need any editing
 
@@ -48,9 +51,13 @@ if { [module-info mode load] && [ info exists ::env(PLUMED_KERNEL) ] } {
     puts stderr " (typically means that you are loading two plumed modules, both defining dynamic libraries)"
 }
 
-# ld_library_path is only set on Linux
-if { $soext == "so"  } {
-  prepend-path  LD_LIBRARY_PATH    $libdir
+# if we use a relative soname (as it is common in Linux) then the (DY)LD_LIBRARY_PATH should be set.
+if { $use_absolute_soname != "yes" } {
+  if { $soext == "dylib"  } {
+    prepend-path  DYLD_LIBRARY_PATH    $libdir
+  } else {
+    prepend-path  LD_LIBRARY_PATH    $libdir
+  }
 }
 
 # python path
