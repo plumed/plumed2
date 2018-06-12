@@ -265,7 +265,7 @@ ActionWithVirtualAtom* Atoms::getVirtualAtomsAction(AtomNumber i)const {
 
 inline
 bool Atoms::usingNaturalUnits() const {
-  return naturalUnits;
+  return naturalUnits || MDnaturalUnits;
 }
 
 inline
