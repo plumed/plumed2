@@ -37,7 +37,7 @@ conventional biasing simulations__.
 Instead you should use orthogonal basis functions like Legendre or Chebyshev
 polynomials.
 
-Basis functions given by Gaussian functions with shifted means defined on a
+Basis functions given by Gaussian distributions with shifted means defined on a
 bounded interval.
 You need to provide the interval \f$[a,b]\f$ on which the bias is to be
 expanded.
@@ -54,8 +54,8 @@ The total number of basis functions is \f$N+2\f$ as the constant
 
 The basis functions are given by
 \f{align}{
-  f_0 = 1 \\
-  f_i = \exp\left(-\frac{{\left(x-\mu_i\right)}^2}{2\sigma^2}\right)
+  f_0(x) &= 1 \\
+  f_i(x) &= \exp\left(-\frac{{\left(x-\mu_i\right)}^2}{2\sigma^2}\right)
 \f}
 
 It is possible to specify the width \f$\sigma\f$ (i.e. the standart deviation)
@@ -65,7 +65,8 @@ By default it is set to the sub-intervall length.
 The optimization procedure then adjusts the heigths of the individual Gaussians.
 
 \par Examples
-Here the bias is expanded with Gaussian functions in the intervall from 0.0 to
+
+The bias is expanded with Gaussian functions in the intervall from 0.0 to
 10.0 using order 20.
 This results in 22 basis functions.
 
@@ -73,10 +74,10 @@ This results in 22 basis functions.
 bfG: BF_GAUSSIAN MINIMUM=0.0 MAXIMUM=10.0 ORDER=20
 \endplumedfile
 
-Because it was not specified, the width of the Gaussians was set to
-\f$\sigma=0.5\f$.
-To e.g. enhance the overlap between neighbouring basis functions it could be
-specified explicitely.
+Because it was not specified, the width of the Gaussians is by default
+set to the sub-intervall length, i.e.\ \f$\sigma=0.5\f$.
+To e.g. enhance the overlap between neighbouring basis functions, it can be
+specified explicitely:
 
 \plumedfile
 bfG: BF_GAUSSIAN MINIMUM=0.0 MAXIMUM=10.0 ORDER=20 WIDTH=0.7
