@@ -77,6 +77,23 @@ vector<AtomNumber>& NeighborList::getFullAtomList() {
   return fullatomlist_;
 }
 
+// Pipolo_Pietrucci: get original index
+pair<unsigned,unsigned> NeighborList::getOIndexPair(unsigned ipair) const {
+ pair<unsigned,unsigned> Oindex;
+ if(twolists_ && do_pair_){
+  Oindex=pair<unsigned,unsigned>(fullatomlist_[ipair].index(),fullatomlist_[ipair+nlist0_].index());
+ }else if (twolists_ && !do_pair_){
+  Oindex=pair<unsigned,unsigned>(fullatomlist_[ipair/nlist1_].index(),fullatomlist_[ipair%nlist1_+nlist0_].index());
+ }else if (!twolists_){
+  unsigned ii = nallpairs_-1-ipair;
+  unsigned  K = unsigned(floor((sqrt(double(8*ii+1))+1)/2));
+  unsigned jj = ii-K*(K-1)/2;
+  Oindex=pair<unsigned,unsigned>(fullatomlist_[nlist0_-1-K].index(),fullatomlist_[nlist0_-1-jj].index());
+ }
+ return Oindex;
+}
+//
+
 pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair) {
   pair<unsigned,unsigned> index;
   if(twolists_ && do_pair_) {
@@ -156,6 +173,14 @@ unsigned NeighborList::size() const {
 pair<unsigned,unsigned> NeighborList::getClosePair(unsigned i) const {
   return neighbors_[i];
 }
+
+// Pipolo_Pietrucci: get original index pair
+ pair<unsigned,unsigned> NeighborList::getOClosePair(unsigned i) const {
+ pair<unsigned,unsigned> Oneigh;
+ Oneigh=pair<unsigned,unsigned>(fullatomlist_[neighbors_[i].first].index(),fullatomlist_[neighbors_[i].second].index());
+ return Oneigh;
+}
+//
 
 vector<unsigned> NeighborList::getNeighbors(unsigned index) {
   vector<unsigned> neighbors;
