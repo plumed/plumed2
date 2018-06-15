@@ -118,6 +118,12 @@ public:
   double get_dmax() const;
 /// Return dmax squared
   double get_dmax2() const;
+// Pipolo_Pietrucci
+  /// Returns nn
+    int get_nn() const;
+  /// Returns mm
+    int get_mm() const;
+//
 };
 
 }
