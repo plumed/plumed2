@@ -695,6 +695,7 @@ void DynamicReferenceRestraining::calculate() {
         ABFGrid.writeAll(outputprefix);
         if (useCZARestimator) {
           CZARestimator.writeAll(outputprefix);
+          CZARestimator.writeZCount(outputprefix);
         }
       }
     }
@@ -708,6 +709,7 @@ void DynamicReferenceRestraining::calculate() {
         ABFGrid.writeAll(textfilename);
         if (useCZARestimator) {
           CZARestimator.writeAll(textfilename);
+          CZARestimator.writeZCount(textfilename);
         }
       }
     }

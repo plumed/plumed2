@@ -500,6 +500,27 @@ CZAR CZAR::mergewindow(const CZAR &cWA, const CZAR &cWB) {
   }
   return result;
 }
+
+void CZAR:: writeZCount(const string &filename) const {
+  string countname = filename + ".zcount";
+  vector<double> pos(ndims, 0);
+  FILE *pCount;
+  pCount = fopen(countname.c_str(), "w");
+  char *buffer;
+  buffer = (char *)malloc((sizeof(double)) * sampleSize * ndims);
+  setvbuf(pCount, buffer, _IOFBF, (sizeof(double)) * sampleSize * ndims);
+  fwrite(headers.c_str(), sizeof(char), strlen(headers.c_str()), pCount);
+  for (size_t i = 0; i < sampleSize; ++i) {
+    for (size_t j = 0; j < ndims; ++j) {
+      pos[j] = table[j][i];
+      fprintf(pCount, " %.9f", table[j][i]);
+    }
+    fprintf(pCount, " %lu\n", getCount(pos, true));
+  }
+  fclose(pCount);
+  free(buffer);
+}
+
 }
 }
 
