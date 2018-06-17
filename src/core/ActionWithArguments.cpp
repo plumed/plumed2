@@ -364,7 +364,7 @@ unsigned ActionWithArguments::setupActionInChain() {
   unsigned nderivatives=0;
   for(unsigned i=0; i<distinct_arguments.size(); ++i) {
     if( distinct_arguments[i].second==0 ) nderivatives += distinct_arguments[i].first->getNumberOfDerivatives();
-    else nderivatives += distinct_arguments[i].first->getFullNumberOfTasks();
+    else nderivatives += distinct_arguments[i].first->getFullNumberOfTasks();  // GAT - does this work with matrices??
   }
   return nderivatives;
 }

@@ -46,6 +46,7 @@ private:
   std::vector<unsigned> getShape();
   void evaluateAllFunctions();
 protected:
+  bool getPeriodFromArg;
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name );
   void addValue( const unsigned& ival, const double& val, MultiValue& myvals ) const ;

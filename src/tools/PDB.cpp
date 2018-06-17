@@ -273,7 +273,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
   //cerr<<file<<endl;
   bool file_is_alive=true;
   if(naturalUnits) scale=1.0;
-  string line;
+  string line; 
   fpos_t pos; bool between_ters=true;
   while(file_is_alive) {
     file_is_alive = Tools::getline(fp,line);
@@ -553,7 +553,6 @@ void PDB::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, con
   }
   ofile.printf("END\n");
 }
-
 
 }
 

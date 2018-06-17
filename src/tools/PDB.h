@@ -24,6 +24,7 @@
 
 #include "AtomNumber.h"
 #include "Vector.h"
+#include "Tensor.h"
 #include <vector>
 #include <string>
 #include <map>

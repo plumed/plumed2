@@ -17,16 +17,18 @@ PRINT ...
 
 DUMPDERIVATIVES ...
   STRIDE=10
-  ARG=drmsd,drmsdn
+  ARG=drmsd_2,drmsdn_2
   FILE=DERIVATIVES1 
   FMT=%8.5f
 ... DUMPDERIVATIVES 
 
 DUMPDERIVATIVES ...
   STRIDE=10
-  ARG=drmsdnopbc,drmsdnopbcn
+  ARG=drmsdnopbc_2,drmsdnopbcn_2
   FILE=DERIVATIVES2
   FMT=%8.5f
 ... DUMPDERIVATIVES
+
+BIASVALUE ARG=drmsd
 
 ENDPLUMED

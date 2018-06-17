@@ -585,11 +585,12 @@ void Atoms::getLocalMDForces(std::vector<Vector>& localForces) {
 }
 
 ActionAtomistic* Atoms::getVirtualAtomsAction(AtomNumber i)const {
-  unsigned va_action_ind=0, nn=0, va_index = i.index() - getNatoms();
+  bool found=false; unsigned va_action_ind=0, nn=0, va_index = i.index() - getNatoms();
   for(unsigned i=0; i<virtualAtomsActions.size(); ++i) {
     nn += virtualAtomsActions[i]->getNumberOfVirtualAtoms();
-    if( va_index<nn ) { va_action_ind = i; break; }
+    if( va_index<nn ) { found=true; va_action_ind = i; break; }
   }
+  plumed_dbg_assert( found );
   return virtualAtomsActions[va_action_ind];
 }
 
