@@ -37,19 +37,7 @@
 
 using namespace std;
 
-#include "CLToolMainEnum.inc"
-
 namespace PLMD {
-
-const std::unordered_map<std::string, int> & clToolMainWordMap() {
-  static std::unordered_map<std::string, int> word_map;
-  static bool init=false;
-  if(!init) {
-#include "CLToolMainMap.inc"
-  }
-  init=true;
-  return word_map;
-}
 
 CLToolMain::CLToolMain():
   argc(0),
@@ -66,6 +54,16 @@ CLToolMain::~CLToolMain() {
 
 void CLToolMain::cmd(const std::string& word,void*val) {
 
+// Enumerate all possible commands:
+  enum {
+#include "CLToolMainEnum.inc"
+  };
+
+// Static object (initialized once) containing the map of commands:
+  const static std::unordered_map<std::string, int> word_map = {
+#include "CLToolMainMap.inc"
+  };
+
   std::vector<std::string> words=Tools::getWords(word);
   unsigned nw=words.size();
   if(nw==0) {
@@ -74,8 +72,8 @@ void CLToolMain::cmd(const std::string& word,void*val) {
     int iword=-1;
     char**v;
     char*vv;
-    const auto it=clToolMainWordMap().find(words[0]);
-    if(it!=clToolMainWordMap().end()) iword=it->second;
+    const auto it=word_map.find(words[0]);
+    if(it!=word_map.end()) iword=it->second;
     switch(iword) {
     case cmd_setArgc:
       CHECK_NULL(val,word);

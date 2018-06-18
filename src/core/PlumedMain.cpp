@@ -48,19 +48,7 @@
 
 using namespace std;
 
-#include "PlumedMainEnum.inc"
-
 namespace PLMD {
-
-const std::unordered_map<std::string, int> & plumedMainWordMap() {
-  static std::unordered_map<std::string, int> word_map;
-  static bool init=false;
-  if(!init) {
-#include "PlumedMainMap.inc"
-  }
-  init=true;
-  return word_map;
-}
 
 PlumedMain::PlumedMain():
   initialized(false),
@@ -100,6 +88,16 @@ PlumedMain::~PlumedMain() {
 
 void PlumedMain::cmd(const std::string & word,void*val) {
 
+// Enumerate all possible commands:
+  enum {
+#include "PlumedMainEnum.inc"
+  };
+
+// Static object (initialized once) containing the map of commands:
+  const static std::unordered_map<std::string, int> word_map = {
+#include "PlumedMainMap.inc"
+  };
+
   try {
 
     auto ss=stopwatch.startPause();
@@ -111,8 +109,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
     } else {
       int iword=-1;
       double d;
-      const auto it=plumedMainWordMap().find(words[0]);
-      if(it!=plumedMainWordMap().end()) iword=it->second;
+      const auto it=word_map.find(words[0]);
+      if(it!=word_map.end()) iword=it->second;
       switch(iword) {
       case cmd_setBox:
         CHECK_INIT(initialized,word);
