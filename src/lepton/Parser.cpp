@@ -74,11 +74,15 @@ namespace PLMD {
 using namespace lepton;
 using namespace std;
 
+namespace lepton {
+
 static const string Digits = "0123456789";
 static const string Operators = "+-*/^";
 static const bool LeftAssociative[] = {true, true, true, true, false};
 static const int Precedence[] = {0, 0, 1, 1, 3};
 static const Operation::Id OperationId[] = {Operation::ADD, Operation::SUBTRACT, Operation::MULTIPLY, Operation::DIVIDE, Operation::POWER};
+
+}
 
 class lepton::ParseToken {
 public:
