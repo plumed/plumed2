@@ -133,7 +133,7 @@ public:
     if(handle) dlclose(handle);
 #endif
   }
-} RegisterMe;
+} PlumedMainInitializerRegisterMe;
 
 }
 
