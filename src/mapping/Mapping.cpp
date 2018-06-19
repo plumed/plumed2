@@ -32,8 +32,6 @@ namespace PLMD {
 namespace mapping {
 
 PLUMED_REGISTER_ACTION(Mapping,"EUCLIDEAN_DISSIMILARITIES_VECTOR")
-PLUMED_REGISTER_SHORTCUT(Mapping,"MULTI-RMSD")
-PLUMED_REGISTER_SHORTCUT(Mapping,"TARGET")
 
 void Mapping::shortcutKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","the manner in which distances are calculated. More information on the different "
