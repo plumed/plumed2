@@ -85,7 +85,7 @@ Exception::Exception(const std::string&msg,const std::string&file,unsigned line,
 void Exception::abortIfExceptionsAreDisabled() {
 #if ! defined(__PLUMED_HAS_EXCEPTIONS)
   fprintf(stderr,"%s","Exceptions are disabled, aborting now\n");
-  fprintf(stderr,"%s",what());
+  fprintf(stderr,"%s",Exception::what());
   fprintf(stderr,"\n");
   std::abort();
 #endif
