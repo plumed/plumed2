@@ -24,6 +24,9 @@
 #include "Log.h"
 #include <cstdio>
 #include <iostream>
+// Pipolo_Pietrucci
+#include "Tensor.h"
+//
 
 using namespace std;
 
@@ -472,6 +475,28 @@ const std::vector<AtomNumber> & PDB::getAtomNumbers()const {
   return numbers;
 }
 
+// Pipolo_Pietrucci to read box and get residue numbers and atom indexes
+const std::vector<unsigned> & PDB::getAtomIndex()const{
+  return index;
+}
+
+const std::vector<AtomNumber> & PDB::getResidueNumbers()const{
+  return residueAN;
+}
+
+const Vector & PDB::getBoxAxs()const{
+  return BoxXYZ;
+}
+
+const Vector & PDB::getBoxAng()const{
+  return BoxABG;
+}
+
+const Tensor & PDB::getBoxVec()const{
+  return Box;
+}
+//
+
 std::string PDB::getAtomName(AtomNumber a)const {
   const auto p=number2index.find(a);
   if(p==number2index.end()) return "";
@@ -515,6 +540,14 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
     string z=line.substr(46,8);
     string occ=line.substr(54,6);
     string bet=line.substr(60,6);
+    // Pipolo_Pietrucci 
+    string BoxX=line.substr(7,8);
+    string BoxY=line.substr(16,8);
+    string BoxZ=line.substr(25,8);
+    string BoxA=line.substr(34,6);
+    string BoxB=line.substr(41,6);
+    string BoxG=line.substr(48,6);
+    //
     Tools::trim(record);
     if(record=="TER") { between_ters=false; block_ends.push_back( positions.size() ); }
     if(record=="END") { file_is_alive=true;  break;}
@@ -523,9 +556,42 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       vector<string> v1;  v1=Tools::getWords(line.substr(6));
       addRemark( v1 );
     }
+    // Pipolo_Pietrucci  
+    if(record=="CRYST1"){
+      Tools::convert(BoxX,BoxXYZ[0]);
+      Tools::convert(BoxY,BoxXYZ[1]);
+      Tools::convert(BoxZ,BoxXYZ[2]);
+      Tools::convert(BoxA,BoxABG[0]);
+      Tools::convert(BoxB,BoxABG[1]);
+      Tools::convert(BoxG,BoxABG[2]);
+      BoxXYZ*=scale;
+      Vector Vcos;
+      double tmpr;
+      for (unsigned i=0;i<3;i++) {
+        Vcos[i]=cos(BoxABG[i]*3.1415926535/180.); 
+        Box[i][0]=0.; Box[i][1]=0.; Box[i][2]=0.;
+      }
+      BoxXYZ[1]=BoxXYZ[1]/BoxXYZ[0];
+      BoxXYZ[2]=BoxXYZ[2]/BoxXYZ[0];
+      tmpr=sqrt(1.-Vcos[2]*Vcos[2]);
+      Box[0][0]=BoxXYZ[0];
+      Box[1][0]=BoxXYZ[0]*BoxXYZ[1]*Vcos[2];
+      Box[1][1]=BoxXYZ[0]*BoxXYZ[1]*tmpr;
+      Box[2][0]=BoxXYZ[0]*BoxXYZ[2]*Vcos[1];
+      Box[2][1]=BoxXYZ[0]*BoxXYZ[2]*(Vcos[0]-Vcos[1]*Vcos[2])/tmpr;
+      tmpr=(1.+2.*Vcos[0]*Vcos[1]*Vcos[2]-Vcos[0]*Vcos[0]-Vcos[1]*Vcos[1]-Vcos[2]*Vcos[2]);
+      Box[2][2]=BoxXYZ[0]*BoxXYZ[2]*sqrt(tmpr/(1.-Vcos[2]*Vcos[2]));
+      BoxXYZ[1]=BoxXYZ[1]*BoxXYZ[0];
+      BoxXYZ[2]=BoxXYZ[2]*BoxXYZ[0];
+    }
+    //
     if(record=="ATOM" || record=="HETATM") {
       between_ters=true;
       AtomNumber a; unsigned resno;
+      // Pipolo_Pietrucci
+      AtomNumber resnoAN;
+      unsigned ndx;
+      //
       double o,b;
       Vector p;
       Tools::convert(serial,a);
@@ -541,6 +607,10 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       }
 
       Tools::convert(resnum,resno);
+      // Pipolo_Pietrucci
+      Tools::convert(resnum,resnoAN);
+      Tools::convert(serial,ndx);
+      //
       Tools::convert(occ,o);
       Tools::convert(bet,b);
       Tools::convert(x,p[0]);
@@ -554,6 +624,10 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       std::size_t endpos=atomname.find_last_not_of(" \t");
       atomsymb.push_back( atomname.substr(startpos, endpos-startpos+1) );
       residue.push_back(resno);
+      // Pipolo_Pietrucci
+      residueAN.push_back(resnoAN);
+      index.push_back(ndx);
+      //
       chain.push_back(chainID);
       occupancy.push_back(o);
       beta.push_back(b);

@@ -78,7 +78,12 @@ public:
   std::pair<unsigned,unsigned> getClosePair(unsigned i) const;
 /// Get the list of neighbors of the i-th atom
   std::vector<unsigned> getNeighbors(unsigned i);
-  ~NeighborList() {}
+  ~NeighborList() {};
+// Pipolo_Pietrucci
+  /// Get the i-th pair of the neighbor list
+  std::pair<unsigned,unsigned> getOClosePair(unsigned i) const;
+  std::pair<unsigned,unsigned> getOIndexPair(unsigned i) const;
+//
 };
 
 }

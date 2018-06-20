@@ -519,6 +519,15 @@ double SwitchingFunction::get_dmax2() const {
   return dmax_2;
 }
 
+// Pipolo_Pietrucci: added to update sfs along the trj
+int SwitchingFunction::get_nn() const {
+  return nn;
+}
+int SwitchingFunction::get_mm() const {
+  return mm;
+}
+//
+
 
 }
 
