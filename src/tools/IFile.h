@@ -67,7 +67,7 @@ public:
 /// Destructor
   ~IFile();
 /// Opens the file
-  IFile& open(const std::string&name);
+  IFile& open(const std::string&name) override;
 /// Gets the list of all fields
   IFile& scanFieldList(std::vector<std::string>&);
 /// Read a double field

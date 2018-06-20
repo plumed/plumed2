@@ -36,8 +36,8 @@ private:
 public:
   explicit DataFetchingObjectTyped(PlumedMain&plumed);
   ~DataFetchingObjectTyped() {}
-  void setData( const std::string& key, const std::string& type, void* outval );
-  void finishDataGrab();
+  void setData( const std::string& key, const std::string& type, void* outval ) override;
+  void finishDataGrab() override;
 };
 
 std::unique_ptr<DataFetchingObject> DataFetchingObject::create(unsigned n, PlumedMain& p) {
