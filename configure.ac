@@ -310,7 +310,11 @@ AC_LANG(C++)
 
 # log the initial flags
 LD="$CXX"
-LDSHARED="$CXX"
+
+if test -z "$LDSHARED" ; then
+  LDSHARED="$CXX"
+fi
+
 AC_MSG_NOTICE([Initial CXX:         $CXX])
 AC_MSG_NOTICE([Initial CXXFLAGS:    $CXXFLAGS])
 AC_MSG_NOTICE([Initial CPPFLAGS:    $CPPFLAGS])

@@ -1070,6 +1070,9 @@ MetaD::MetaD(const ActionOptions& ao):
       ifiles[i]->reset(false);
       // close only the walker own hills file for later writing
       if(i==mw_id_) ifiles[i]->close();
+    } else {
+      // in case a file does not exist and we are restarting, complain that the file was not found
+      if(getRestart()) log<<"  WARNING: restart file "<<fname<<" not found\n";
     }
   }
 

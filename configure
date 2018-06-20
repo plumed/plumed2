@@ -4371,7 +4371,11 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 # log the initial flags
 LD="$CXX"
-LDSHARED="$CXX"
+
+if test -z "$LDSHARED" ; then
+  LDSHARED="$CXX"
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXX:         $CXX" >&5
 $as_echo "$as_me: Initial CXX:         $CXX" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXXFLAGS:    $CXXFLAGS" >&5

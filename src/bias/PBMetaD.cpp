@@ -701,6 +701,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         ifiles[k]->reset(false);
         // close only the walker own hills file for later writing
         if(j==mw_id_) ifiles[k]->close();
+      } else {
+        // in case a file does not exist and we are restarting, complain that the file was not found
+        if(getRestart()) log<<"  WARNING: restart file "<<fname<<" not found\n";
       }
     }
   }
