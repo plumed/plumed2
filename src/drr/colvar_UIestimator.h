@@ -196,12 +196,12 @@ public:
     return vector[convert_x(x)];
   }
 
-  void inline set_value(const std::vector<double> & x, const T value)
+  void inline set_value(const std::vector<double> & x, const T & value)
   {
     vector[convert_x(x)] = value;
   }
 
-  void inline increase_value(const std::vector<double> & x, const T value)
+  void inline increase_value(const std::vector<double> & x, const T & value)
   {
     vector[convert_x(x)] += value;
   }
