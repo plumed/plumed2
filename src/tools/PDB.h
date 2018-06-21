@@ -27,6 +27,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include "Tensor.h"
 
 
 namespace PLMD {
@@ -47,6 +48,8 @@ class PDB {
   std::vector<AtomNumber> numbers;
   std::map<AtomNumber,unsigned> number2index;
   std::vector<std::string> residuenames;
+  Vector BoxXYZ,BoxABG;
+  Tensor Box;
 public:
 /// Read the pdb from a file, scaling positions by a factor scale
   bool read(const std::string&file,bool naturalUnits,double scale);
@@ -111,6 +114,12 @@ public:
   void setPositions(const std::vector<Vector> &v);
 /// Access to the position array
   Vector getPosition(AtomNumber a)const;
+/// Returns box axis lengths  
+const Vector & getBoxAxs()const;
+/// Returns box axis angles 
+const Vector & getBoxAng()const;
+/// Returns box axis vectors
+const Tensor & getBoxVec()const;
 };
 
 }
