@@ -181,7 +181,7 @@ When using PIV please cite \cite pipolo2017navigating .
 class PIV      : public Colvar
 {
 private:
-  bool pbc, docomp, dosum, docmdist, serial, timer;
+  bool pbc, serial, timer;
   ForwardDecl<Stopwatch> stopwatch_fwd;
   /// The stopwatch that times the different parts of the calculation
   Stopwatch& stopwatch=*stopwatch_fwd;
