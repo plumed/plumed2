@@ -473,15 +473,15 @@ const std::vector<AtomNumber> & PDB::getAtomNumbers()const {
   return numbers;
 }
 
-const Vector & PDB::getBoxAxs()const{
+const Vector & PDB::getBoxAxs()const {
   return BoxXYZ;
 }
 
-const Vector & PDB::getBoxAng()const{
+const Vector & PDB::getBoxAng()const {
   return BoxABG;
 }
 
-const Tensor & PDB::getBoxVec()const{
+const Tensor & PDB::getBoxVec()const {
   return Box;
 }
 
@@ -542,7 +542,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       vector<string> v1;  v1=Tools::getWords(line.substr(6));
       addRemark( v1 );
     }
-    if(record=="CRYST1"){
+    if(record=="CRYST1") {
       Tools::convert(BoxX,BoxXYZ[0]);
       Tools::convert(BoxY,BoxXYZ[1]);
       Tools::convert(BoxZ,BoxXYZ[2]);
@@ -552,8 +552,8 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       BoxXYZ*=scale;
       Vector Vcos;
       double tmpr;
-      for (unsigned i=0;i<3;i++) {
-        Vcos[i]=cos(BoxABG[i]*3.1415926535/180.); 
+      for (unsigned i=0; i<3; i++) {
+        Vcos[i]=cos(BoxABG[i]*3.1415926535/180.);
         Box[i][0]=0.; Box[i][1]=0.; Box[i][2]=0.;
       }
       BoxXYZ[1]=BoxXYZ[1]/BoxXYZ[0];

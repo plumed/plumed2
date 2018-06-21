@@ -158,9 +158,9 @@ pair<unsigned,unsigned> NeighborList::getClosePair(unsigned i) const {
 }
 
 pair<AtomNumber,AtomNumber> NeighborList::getClosePairAtomNumber(unsigned i) const {
- pair<AtomNumber,AtomNumber> Aneigh;
- Aneigh=pair<AtomNumber,AtomNumber>(fullatomlist_[neighbors_[i].first],fullatomlist_[neighbors_[i].second]);
- return Aneigh;
+  pair<AtomNumber,AtomNumber> Aneigh;
+  Aneigh=pair<AtomNumber,AtomNumber>(fullatomlist_[neighbors_[i].first],fullatomlist_[neighbors_[i].second]);
+  return Aneigh;
 }
 
 vector<unsigned> NeighborList::getNeighbors(unsigned index) {

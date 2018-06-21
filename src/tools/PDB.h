@@ -114,12 +114,12 @@ public:
   void setPositions(const std::vector<Vector> &v);
 /// Access to the position array
   Vector getPosition(AtomNumber a)const;
-/// Returns box axis lengths  
-const Vector & getBoxAxs()const;
-/// Returns box axis angles 
-const Vector & getBoxAng()const;
+/// Returns box axis lengths
+  const Vector & getBoxAxs()const;
+/// Returns box axis angles
+  const Vector & getBoxAng()const;
 /// Returns box axis vectors
-const Tensor & getBoxVec()const;
+  const Tensor & getBoxVec()const;
 };
 
 }
