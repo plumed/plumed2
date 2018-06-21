@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,8 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "tools/OpenMP.h"
 #include "tools/Pbc.h"
 #include "tools/Torsion.h"
 
@@ -169,7 +167,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
   ncoupl_ = atoms.size()/6;
 
   // Parse J-Coupling type, this will determine the Karplus parameters
-  unsigned jtype_;
+  unsigned jtype_ = CUSTOM;
   string string_type;
   parse("TYPE", string_type);
   if(string_type == "HAN") {
@@ -212,6 +210,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
     parse("SHIFT", kshift_);
   }
 
+  log << "  Bibliography ";
 
   // Set Karplus parameters
   switch (jtype_) {
@@ -221,8 +220,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
     kc_ = -0.27;
     kshift_ = pi / 3.0;
     log.printf("J-coupling type is HAN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-    log << "  Bibliography "
-        << plumed.cite("Wang A C, Bax A, J. Am. Chem. Soc. 117, 1810 (1995)") << "\n";
+    log << plumed.cite("Wang A C, Bax A, J. Am. Chem. Soc. 117, 1810 (1995)");
     break;
   case HAHN:
     ka_ = 7.09;
@@ -230,8 +228,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
     kc_ = 1.55;
     kshift_ = -pi / 3.0;
     log.printf("J-coupling type is HAHN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-    log << "  Bibliography "
-        << plumed.cite("Hu J-S, Bax A, J. Am. Chem. Soc. 119, 6360 (1997)") << "\n";
+    log << plumed.cite("Hu J-S, Bax A, J. Am. Chem. Soc. 119, 6360 (1997)");
     break;
   case CCG:
     ka_ = 2.31;
@@ -239,8 +236,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
     kc_ = 0.55;
     kshift_ = (2.0 * pi) / 3.0;
     log.printf("J-coupling type is CCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-    log << "  Bibliography "
-        << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)") << "\n";
+    log << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)");
     break;
   case NCG:
     ka_ = 1.29;
@@ -248,13 +244,14 @@ JCoupling::JCoupling(const ActionOptions&ao):
     kc_ = 0.37;
     kshift_ = 0.0;
     log.printf("J-coupling type is NCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-    log << "  Bibliography "
-        << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)") << "\n";
+    log << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)");
     break;
   case CUSTOM:
     log.printf("J-coupling type is custom, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
     break;
   }
+  log<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
+  log<<"\n";
 
   for (unsigned i = 0; i < ncoupl_; ++i) {
     log.printf("  The %uth J-Coupling is calculated from atoms : %d %d %d %d.",
@@ -320,15 +317,20 @@ void JCoupling::calculate() {
   {
     #pragma omp for
     // Loop through atoms, with steps of 6 atoms (one iteration per datapoint)
-    for (unsigned r = 0; r < (ncoupl_ * 6); r += 6) {
+    for (unsigned r=0; r<ncoupl_; r++) {
       // Index is the datapoint index
-      const unsigned index = r / 6;
+      const unsigned index = 6*r;
 
       // 6 atoms -> 3 vectors
-      Vector d0, d1, d2;
-      d0 = delta(getPosition(r + 1), getPosition(r + 0));
-      d1 = delta(getPosition(r + 3), getPosition(r + 2));
-      d2 = delta(getPosition(r + 5), getPosition(r + 4));
+      const unsigned a0=index;
+      const unsigned a1=index+1;
+      const unsigned a2=index+2;
+      const unsigned a3=index+3;
+      const unsigned a4=index+4;
+      const unsigned a5=index+5;
+      Vector d0 = delta(getPosition(a1), getPosition(a0));
+      Vector d1 = delta(getPosition(a3), getPosition(a2));
+      Vector d2 = delta(getPosition(a5), getPosition(a4));
 
       // Calculate dihedral with 3 vectors, get the derivatives
       Vector dd0, dd1, dd2;
@@ -338,34 +340,40 @@ void JCoupling::calculate() {
       // Calculate the Karplus relation and its derivative
       const double theta = torsion + kshift_;
       const double cos_theta = cos(theta);
-      const double j = ka_ * cos_theta * cos_theta + kb_ * cos_theta + kc_;
-      const double derj = sin(theta) * (-1.0 * (2.0 * ka_ * cos_theta + kb_));
-      string num; Tools::convert(index,num);
+      const double pder = ka_*cos_theta + kb_;
+      const double j = pder*cos_theta + kc_;
+      const double derj = -sin(theta)*(2.*pder - kb_);
+
+      string num; Tools::convert(r,num);
       Value* val=getPntrToComponent("j_"+num);
       val->set(j);
-      if(getDoScore()) {
-        setCalcData(index, j);
-        deriv[r+0] = derj * dd0;
-        deriv[r+1] = derj * -dd0;
-        deriv[r+2] = derj * dd1;
-        deriv[r+3] = derj * -dd1;
-        deriv[r+4] = derj * dd2;
-        deriv[r+5] = derj * -dd2;
-      } else {
-        setAtomsDerivatives(val, r + 0, derj * dd0);
-        setAtomsDerivatives(val, r + 1, derj * -dd0);
-        setAtomsDerivatives(val, r + 2, derj * dd1);
-        setAtomsDerivatives(val, r + 3, derj * -dd1);
-        setAtomsDerivatives(val, r + 4, derj * dd2);
-        setAtomsDerivatives(val, r + 5, derj * -dd2);
 
-        Tensor virial;
-        virial-=Tensor(getPosition(r+0),derj * dd0);
-        virial-=Tensor(getPosition(r+1),derj * -dd0);
-        virial-=Tensor(getPosition(r+2),derj * dd1);
-        virial-=Tensor(getPosition(r+3),derj * -dd1);
-        virial-=Tensor(getPosition(r+4),derj * dd2);
-        virial-=Tensor(getPosition(r+5),derj * -dd2);
+      dd0 *= derj;
+      dd1 *= derj;
+      dd2 *= derj;
+
+      if(getDoScore()) {
+        setCalcData(r, j);
+        deriv[a0] =  dd0;
+        deriv[a1] = -dd0;
+        deriv[a2] =  dd1;
+        deriv[a3] = -dd1;
+        deriv[a4] =  dd2;
+        deriv[a5] = -dd2;
+      } else {
+        setAtomsDerivatives(val, a0,  dd0);
+        setAtomsDerivatives(val, a1, -dd0);
+        setAtomsDerivatives(val, a2,  dd1);
+        setAtomsDerivatives(val, a3, -dd1);
+        setAtomsDerivatives(val, a4,  dd2);
+        setAtomsDerivatives(val, a5, -dd2);
+
+        Tensor virial = -Tensor(getPosition(a0),  dd0);
+        virial -= Tensor(getPosition(a1), -dd0);
+        virial -= Tensor(getPosition(a2),  dd1);
+        virial -= Tensor(getPosition(a3), -dd1);
+        virial -= Tensor(getPosition(a4),  dd2);
+        virial -= Tensor(getPosition(a5), -dd2);
         setBoxDerivatives(val,virial);
       }
     }
@@ -379,20 +387,26 @@ void JCoupling::calculate() {
     /* calculate final derivatives */
     Tensor virial;
     Value* val=getPntrToComponent("score");
-    for (unsigned r = 0; r < (ncoupl_ * 6); r += 6) {
-      const unsigned index = r / 6;
-      setAtomsDerivatives(val, r + 0, deriv[r+0]*getMetaDer(index));
-      virial-=Tensor(getPosition(r+0), deriv[r+0]*getMetaDer(index));
-      setAtomsDerivatives(val, r + 1, deriv[r+1]*getMetaDer(index));
-      virial-=Tensor(getPosition(r+1), deriv[r+1]*getMetaDer(index));
-      setAtomsDerivatives(val, r + 2, deriv[r+2]*getMetaDer(index));
-      virial-=Tensor(getPosition(r+2), deriv[r+2]*getMetaDer(index));
-      setAtomsDerivatives(val, r + 3, deriv[r+3]*getMetaDer(index));
-      virial-=Tensor(getPosition(r+3), deriv[r+3]*getMetaDer(index));
-      setAtomsDerivatives(val, r + 4, deriv[r+4]*getMetaDer(index));
-      virial-=Tensor(getPosition(r+4), deriv[r+4]*getMetaDer(index));
-      setAtomsDerivatives(val, r + 5, deriv[r+5]*getMetaDer(index));
-      virial-=Tensor(getPosition(r+5), deriv[r+5]*getMetaDer(index));
+    for (unsigned r=0; r<ncoupl_; r++) {
+      const unsigned index = 6*r;
+      const unsigned a0=index;
+      const unsigned a1=index+1;
+      const unsigned a2=index+2;
+      const unsigned a3=index+3;
+      const unsigned a4=index+4;
+      const unsigned a5=index+5;
+      setAtomsDerivatives(val, a0, deriv[a0]*getMetaDer(r));
+      setAtomsDerivatives(val, a1, deriv[a1]*getMetaDer(r));
+      setAtomsDerivatives(val, a2, deriv[a2]*getMetaDer(r));
+      setAtomsDerivatives(val, a3, deriv[a3]*getMetaDer(r));
+      setAtomsDerivatives(val, a4, deriv[a4]*getMetaDer(r));
+      setAtomsDerivatives(val, a5, deriv[a5]*getMetaDer(r));
+      virial-=Tensor(getPosition(a0), deriv[a0]*getMetaDer(r));
+      virial-=Tensor(getPosition(a1), deriv[a1]*getMetaDer(r));
+      virial-=Tensor(getPosition(a2), deriv[a2]*getMetaDer(r));
+      virial-=Tensor(getPosition(a3), deriv[a3]*getMetaDer(r));
+      virial-=Tensor(getPosition(a4), deriv[a4]*getMetaDer(r));
+      virial-=Tensor(getPosition(a5), deriv[a5]*getMetaDer(r));
     }
     setBoxDerivatives(val, virial);
   }

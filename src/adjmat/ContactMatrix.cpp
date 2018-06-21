@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -135,11 +135,10 @@ double ContactMatrix::calculateWeight( const unsigned& taskCode, const double& w
 
 double ContactMatrix::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).calculate( distance.modulo(), dfunc );
+  double dfunc;
+  double sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).calculate( distance.modulo(), dfunc );
 
   if( !doNotCalculateDerivatives() ) {
-    Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-    double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(1) ) - ncol_t ).calculate( distance.modulo(), dfunc );
     addAtomDerivatives( 1, 0, (-dfunc)*distance, myatoms );
     addAtomDerivatives( 1, 1, (+dfunc)*distance, myatoms );
     myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) );

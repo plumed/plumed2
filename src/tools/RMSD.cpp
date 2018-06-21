@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -97,7 +97,6 @@ void RMSD::setReference(const vector<Vector> & reference) {
   plumed_massert(displace.empty(),"you should first clear() an RMSD object, then set a new reference");
   align.resize(n,1.0/n);
   displace.resize(n,1.0/n);
-  #pragma omp simd
   for(unsigned i=0; i<n; i++) reference_center+=this->reference[i]*align[i];
   #pragma omp simd
   for(unsigned i=0; i<n; i++) this->reference[i]-=reference_center;
@@ -116,8 +115,9 @@ void RMSD::setAlign(const vector<double> & align, bool normalize_weights, bool r
   this->align=align;
   if(normalize_weights) {
     double w=0.0;
-    #pragma omp simd
+    #pragma omp simd reduction(+:w)
     for(unsigned i=0; i<n; i++) w+=this->align[i];
+    plumed_massert(w>epsilon,"It looks like weights used for alignment are zero. Check your reference PDB file.");
     double inv=1.0/w;
     #pragma omp simd
     for(unsigned i=0; i<n; i++) this->align[i]*=inv;
@@ -149,8 +149,9 @@ void RMSD::setDisplace(const vector<double> & displace, bool normalize_weights) 
   plumed_massert(this->displace.size()==displace.size(),"mismatch in dimension of align/displace arrays");
   this->displace=displace;
   double w=0.0;
-  #pragma omp simd
+  #pragma omp simd reduction(+:w)
   for(unsigned i=0; i<n; i++) w+=this->displace[i];
+  plumed_massert(w>epsilon,"It looks like weights used for displacement are zero. Check your reference PDB file.");
   double inv=1.0/w;
   if(normalize_weights) {
     #pragma omp simd
@@ -418,7 +419,6 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
                               const std::vector<Vector> & positions,
                               const std::vector<Vector> & reference,
                               std::vector<Vector>  & derivatives, bool squared)const {
-  double dist(0);
   const unsigned n=reference.size();
 // This is the trace of positions*positions + reference*reference
   double rr00(0);
@@ -444,7 +444,8 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
     rr01+=Tensor(positions[iat]-cpositions,reference[iat])*w;
   }
 
-  Matrix<double> m=Matrix<double>(4,4);
+  Tensor4d m;
+
   m[0][0]=2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
   m[1][1]=2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
   m[2][2]=2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
@@ -482,25 +483,16 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
     dm_drr01[3][2] = dm_drr01[2][3];
   }
 
-  vector<double> eigenvals;
-  Matrix<double> eigenvecs;
-  int diagerror=diagMat(m, eigenvals, eigenvecs );
-
-  if (diagerror!=0) {
-    string sdiagerror;
-    Tools::convert(diagerror,sdiagerror);
-    string msg="DIAGONALIZATION FAILED WITH ERROR CODE "+sdiagerror;
-    plumed_merror(msg);
-  }
-
-  dist=eigenvals[0]+rr00+rr11;
-
-  Matrix<double> ddist_dm(4,4);
-
-  Vector4d q(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
+  double dist=0.0;
+  Vector4d q;
 
   Tensor dq_drr01[4];
   if(!alEqDis) {
+    Vector4d eigenvals;
+    Tensor4d eigenvecs;
+    diagMatSym(m, eigenvals, eigenvecs );
+    dist=eigenvals[0]+rr00+rr11;
+    q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
     double dq_dm[4][4][4];
     for(unsigned i=0; i<4; i++) for(unsigned j=0; j<4; j++) for(unsigned k=0; k<4; k++) {
           double tmp=0.0;
@@ -516,7 +508,14 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
         }
       dq_drr01[i]=tmp;
     }
+  } else {
+    VectorGeneric<1> eigenvals;
+    TensorGeneric<1,4> eigenvecs;
+    diagMatSym(m, eigenvals, eigenvecs );
+    dist=eigenvals[0]+rr00+rr11;
+    q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
   }
+
 
 // This is the rotation matrix that brings reference to positions
 // i.e. matmul(rotation,reference[iat])+shift is fitted to positions[iat]
@@ -973,7 +972,6 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
   Vector cp; cp.zero(); if(!cpositions_is_removed)cp=cpositions;
   Vector cr; cr.zero(); if(!creference_is_removed)cr=creference;
 // second expensive loop: compute second moments wrt centers
-  #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     double w=align[iat];
     rr00+=dotProduct(positions[iat]-cp,positions[iat]-cp)*w;
@@ -982,7 +980,7 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
   }
 
 // the quaternion matrix: this is internal
-  Matrix<double> m=Matrix<double>(4,4);
+  Tensor4d m;
 
   m[0][0]=2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
   m[1][1]=2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
@@ -1023,20 +1021,12 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
   }
 
 
-  int diagerror=diagMat(m, eigenvals, eigenvecs );
-
-  if (diagerror!=0) {
-    std::string sdiagerror;
-    Tools::convert(diagerror,sdiagerror);
-    std::string msg="DIAGONALIZATION FAILED WITH ERROR CODE "+sdiagerror;
-    plumed_merror(msg);
-  }
-
-  Vector4d q(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
-//  cerr<<"EIGENVAL "<<eigenvals[0]<<" "<<eigenvals[1]<<" "<<eigenvals[2]<<" "<<eigenvals[3]<<"\n";
+  Vector4d q;
 
   Tensor dq_drr01[4];
   if(!alEqDis or !only_rotation) {
+    diagMatSym(m, eigenvals, eigenvecs );
+    q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
     double dq_dm[4][4][4];
     for(unsigned i=0; i<4; i++) for(unsigned j=0; j<4; j++) for(unsigned k=0; k<4; k++) {
           double tmp=0.0;
@@ -1052,6 +1042,13 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
         }
       dq_drr01[i]=tmp;
     }
+  } else {
+    TensorGeneric<1,4> here_eigenvecs;
+    VectorGeneric<1> here_eigenvals;
+    diagMatSym(m, here_eigenvals, here_eigenvecs );
+    for(unsigned i=0; i<4; i++) eigenvecs[0][i]=here_eigenvecs[0][i];
+    eigenvals[0]=here_eigenvals[0];
+    q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
   }
 
 // This is the rotation matrix that brings reference to positions
@@ -1110,11 +1107,11 @@ double RMSDCoreData::getDistance( bool squared) {
 
   if(!isInitialized)plumed_merror("getDistance cannot calculate the distance without being initialized first by doCoreCalc ");
 
-  if(safe || !alEqDis) dist=0.0;
-  else
-    dist=eigenvals[0]+rr00+rr11;
+  double localDist=0.0;
   const unsigned n=static_cast<unsigned int>(reference.size());
-  double localDist = 0;
+  if(safe || !alEqDis) localDist=0.0;
+  else
+    localDist=eigenvals[0]+rr00+rr11;
   #pragma omp simd reduction(+:localDist)
   for(unsigned iat=0; iat<n; iat++) {
     if(alEqDis) {
@@ -1180,8 +1177,6 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions() {
   if(!hasDistance)plumed_merror("getDPositionsDerivatives needs to calculate the distance via getDistance first !");
   if(!isInitialized)plumed_merror("getDPositionsDerivatives needs to initialize the coreData first!");
   Vector csum;
-  Vector tmp1,tmp2;
-  #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     if(alEqDis) {
 // there is no need for derivatives of rotation and shift here as it is by construction zero
@@ -1189,12 +1184,12 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions() {
       derivatives[iat]= 2*prefactor*align[iat]*d[iat];
     } else {
 // these are the derivatives assuming the roto-translation as frozen
-      tmp1=2*displace[iat]*d[iat];
+      Vector tmp1=2*displace[iat]*d[iat];
       derivatives[iat]=tmp1;
 // derivative of cpositions
       ddist_dcpositions+=-tmp1;
       // these needed for com corrections
-      tmp2=matmul(ddist_drr01,reference[iat]-creference)*align[iat];
+      Vector tmp2=matmul(ddist_drr01,reference[iat]-creference)*align[iat];
       derivatives[iat]+=tmp2;
       csum+=tmp2;
     }
@@ -1214,7 +1209,7 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference() {
   derivatives.resize(n);
   double prefactor=1.0;
   if(!distanceIsMSD) prefactor*=0.5/dist;
-  Vector csum,tmp1,tmp2;
+  Vector csum;
 
   plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!hasDistance)plumed_merror("getDDistanceDReference needs to calculate the distance via getDistance first !");
@@ -1224,7 +1219,6 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference() {
   Tensor t_ddist_drr01=ddist_drr01.transpose();
 
 // third expensive loop: derivatives
-  #pragma omp simd
   for(unsigned iat=0; iat<n; iat++) {
     if(alEqDis) {
 // there is no need for derivatives of rotation and shift here as it is by construction zero
@@ -1233,12 +1227,12 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference() {
       derivatives[iat]= -2*prefactor*align[iat]*matmul(t_rotation,d[iat]);
     } else {
 // these are the derivatives assuming the roto-translation as frozen
-      tmp1=2*displace[iat]*matmul(t_rotation,d[iat]);
+      Vector tmp1=2*displace[iat]*matmul(t_rotation,d[iat]);
       derivatives[iat]= -tmp1;
 // derivative of cpositions
       ddist_dcreference+=tmp1;
       // these below are needed for com correction
-      tmp2=matmul(t_ddist_drr01,positions[iat]-cpositions)*align[iat];
+      Vector tmp2=matmul(t_ddist_drr01,positions[iat]-cpositions)*align[iat];
       derivatives[iat]+=tmp2;
       csum+=tmp2;
     }

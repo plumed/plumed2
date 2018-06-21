@@ -9,7 +9,7 @@ export valgrind=env
 for opt in ${*}
 do
 case "$opt" in
-(--valgrind) valgrind="valgrind --leak-check=full --show-reachable=yes" ;;
+(--valgrind) valgrind="valgrind --leak-check=full --track-origins=yes" ;;
 (*) echo error ; exit ;;
 esac
 done

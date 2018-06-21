@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -81,6 +81,12 @@ class SwitchingFunction {
 /// Lepton expression for derivative
 /// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
   std::vector<lepton::CompiledExpression> expression_deriv;
+  std::vector<double*> lepton_ref;
+  std::vector<double*> lepton_ref_deriv;
+/// Set to true for fast rational functions (depending on x**2 only)
+  bool fastrational=false;
+/// Set to true if lepton only uses x2
+  bool leptonx2=false;
 public:
   static void registerKeywords( Keywords& keys );
 /// Set a "rational" switching function.

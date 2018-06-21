@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2017 The VES code team
+   Copyright (c) 2016-2018 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -422,6 +422,7 @@ double LinearBasisSetExpansion::getBiasAndForces(const std::vector<double>& args
   }
   //
   if(comm_in!=NULL) {
+    // coeffsderivs_values is not summed as the mpi Sum is done later on for the averages
     comm_in->Sum(bias);
     comm_in->Sum(forces);
   }
@@ -465,6 +466,31 @@ void LinearBasisSetExpansion::getBasisSetValues(const std::vector<double>& args_
   if(comm_in!=NULL) {
     comm_in->Sum(basisset_values);
   }
+}
+
+
+double LinearBasisSetExpansion::getBasisSetValue(const std::vector<double>& args_values, const size_t index, std::vector<BasisFunctions*>& basisf_pntrs_in, CoeffsVector* coeffs_pntr_in) {
+  unsigned int nargs = args_values.size();
+  plumed_assert(coeffs_pntr_in->numberOfDimensions()==nargs);
+  plumed_assert(basisf_pntrs_in.size()==nargs);
+
+  std::vector<double> args_values_trsfrm(nargs);
+  std::vector< std::vector <double> > bf_values;
+  //
+  for(unsigned int k=0; k<nargs; k++) {
+    std::vector<double> tmp_val(basisf_pntrs_in[k]->getNumberOfBasisFunctions());
+    std::vector<double> tmp_der(tmp_val.size());
+    bool inside=true;
+    basisf_pntrs_in[k]->getAllValues(args_values[k],args_values_trsfrm[k],inside,tmp_val,tmp_der);
+    bf_values.push_back(tmp_val);
+  }
+  //
+  std::vector<unsigned int> indices=coeffs_pntr_in->getIndices(index);
+  double bf_value=1.0;
+  for(unsigned int k=0; k<nargs; k++) {
+    bf_value*=bf_values[k][indices[k]];
+  }
+  return bf_value;
 }
 
 
@@ -551,6 +577,7 @@ void LinearBasisSetExpansion::calculateTargetDistAveragesFromGrid(const Grid* ta
   for(Grid::index_t l=rank; l<targetdist_grid_pntr->getSize(); l+=stride) {
     std::vector<double> args_values = targetdist_grid_pntr->getPoint(l);
     std::vector<double> basisset_values(ncoeffs_);
+    // parallelization done over the grid -> should NOT use parallel in getBasisSetValues!!
     getBasisSetValues(args_values,basisset_values,false);
     double weight = integration_weights[l]*targetdist_grid_pntr->getValue(l);
     for(unsigned int i=0; i<ncoeffs_; i++) {
@@ -559,7 +586,7 @@ void LinearBasisSetExpansion::calculateTargetDistAveragesFromGrid(const Grid* ta
   }
   mycomm_.Sum(targetdist_averages);
   // the overall constant;
-  targetdist_averages[0] = 1.0;
+  targetdist_averages[0] = getBasisSetConstant();
   TargetDistAverages() = targetdist_averages;
 }
 

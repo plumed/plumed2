@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -83,7 +83,7 @@ OFile::OFile():
   actual_buffer_length=0;
   buffer.reset(new char [buflen]);
 // these are set to zero to avoid valgrind errors
-  for(unsigned i=0; i<buflen; ++i) buffer[i]=0;
+  for(int i=0; i<buflen; ++i) buffer[i]=0;
   buffer_string.reset(new char [1000]);
 // these are set to zero to avoid valgrind errors
   for(unsigned i=0; i<1000; ++i) buffer_string[i]=0;

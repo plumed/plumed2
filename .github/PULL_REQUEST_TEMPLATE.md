@@ -35,7 +35,7 @@ I would like my code to appear in release __XXXXX__
   MAKE SURE TO TICK ALSO THE FOLLOWING BOX
 -->
 
-- [ ] the module I added or modified contains a `COPYRIGHT` file with the correct license information. I also used the command `cd src && ./headers.sh mymodulename` in order to make sure the headers of the module are correct.
+- [ ] the module I added or modified contains a `COPYRIGHT` file with the correct license information. I also used the command `cd src && ./header.sh mymodulename` in order to make sure the headers of the module are correct.
 
 ##### Tests
 
@@ -51,6 +51,6 @@ I would like my code to appear in release __XXXXX__
 <!--
   After your branch has been merged to the desired branch and then to plumed2/master, and after the
   plumed official manual has been updated, please check out the coverage scan at
-  http://plumed.github.io/doc-master/developer-doc/coverage/index.html
+  http://plumed.github.io/coverage-master
   In case your new features are not well covered, please try to add more complete regtests.
 -->

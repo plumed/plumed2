@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,7 +48,7 @@ private:
 /// The underlying value object for the arguments
   const std::vector<Value*>& args;
 /// Reference to path that we are reparameterizing
-  std::vector<std::unique_ptr<ReferenceConfiguration>>& mypath;
+  const std::vector<std::unique_ptr<ReferenceConfiguration>>& mypath;
 /// These are the current separations and the total length of the path
   std::vector<double> len, sumlen, sfrac;
 /// Maximum number of cycles in path reparameterization

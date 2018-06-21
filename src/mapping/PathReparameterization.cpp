@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,10 +27,10 @@ namespace mapping {
 PathReparameterization::PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<std::unique_ptr<ReferenceConfiguration>>& pp ):
   mydpack( 1, pp[0]->getNumberOfReferenceArguments() + 3*pp[0]->getNumberOfReferencePositions() + 9 ),
   mypack( pp[0]->getNumberOfReferenceArguments(), pp[0]->getNumberOfReferencePositions(), mydpack ),
-  mypath(pp),
+  mydir(ReferenceConfigurationOptions("DIRECTION")),
   pbc(ipbc),
   args(iargs),
-  mydir(ReferenceConfigurationOptions("DIRECTION")),
+  mypath(pp),
   len(pp.size()),
   sumlen(pp.size()),
   sfrac(pp.size()),

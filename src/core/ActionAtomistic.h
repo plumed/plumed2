@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -77,13 +77,16 @@ public:
 /// Get position of i-th atom (access by relative index)
   const Vector & getPosition(int)const;
 /// Get position of i-th atom (access by absolute AtomNumber).
-/// With direct access to the global atom array
-  const Vector & getPosition(AtomNumber)const;
+/// With direct access to the global atom array.
+/// \warning Should be only used by actions that need to read the shared position array.
+///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
+  const Vector & getGlobalPosition(AtomNumber)const;
 /// Get modifiable position of i-th atom (access by absolute AtomNumber).
-/// Should be used by action that need to modify the stored atomic coordinates
-  Vector & modifyPosition(AtomNumber);
+/// \warning Should be only used by actions that need to modify the shared position array.
+///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
+  Vector & modifyGlobalPosition(AtomNumber);
 /// Get total number of atoms, including virtual ones.
-/// Can be used to make a loop on modifyPosition or getPosition(AtomNumber)
+/// Can be used to make a loop on modifyGlobalPosition or getGlobalPosition.
   unsigned getTotAtoms()const;
 /// Get modifiable force of i-th atom (access by absolute AtomNumber).
 /// \warning  Should be used by action that need to modify the stored atomic forces.
@@ -188,12 +191,12 @@ const Vector & ActionAtomistic::getPosition(int i)const {
 }
 
 inline
-const Vector & ActionAtomistic::getPosition(AtomNumber i)const {
+const Vector & ActionAtomistic::getGlobalPosition(AtomNumber i)const {
   return atoms.positions[i.index()];
 }
 
 inline
-Vector & ActionAtomistic::modifyPosition(AtomNumber i) {
+Vector & ActionAtomistic::modifyGlobalPosition(AtomNumber i) {
   return atoms.positions[i.index()];
 }
 

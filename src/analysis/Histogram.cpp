@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -437,7 +437,7 @@ void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {
   } else if( myvessels.size()>0 ) {
     std::vector<double> cvals( myvessels[0]->getNumberOfQuantities() );
     stashes[0]->retrieveSequentialValue( current, false, cvals );
-    unsigned derbase; double totweight=cvals[0], tnorm = cvals[0]; myvals.setValue( 1, cvals[1] );
+    unsigned derbase=0; double totweight=cvals[0], tnorm = cvals[0]; myvals.setValue( 1, cvals[1] );
     // Get the derivatives as well if we are in apply
     if( in_apply ) {
       // This bit gets the total weight
@@ -481,14 +481,14 @@ void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {
     if( in_apply ) myvals.updateDynamicList();
   } else {
     plumed_assert( !in_apply );
-    std::vector<Value*> vv( myhist->getVectorOfValues() );
+    std::vector<std::unique_ptr<Value>> vv( myhist->getVectorOfValues() );
     std::vector<double> val( getNumberOfArguments() ), der( getNumberOfArguments() );
     // Retrieve the location of the grid point at which we are evaluating the kernel
     mygrid->getGridPointCoordinates( current, val );
     if( kernel ) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) vv[i]->set( val[i] );
       // Evaluate the histogram at the relevant grid point and set the values
-      double vvh = kernel->evaluate( vv, der,true); myvals.setValue( 1, vvh );
+      double vvh = kernel->evaluate( Tools::unique2raw(vv), der,true); myvals.setValue( 1, vvh );
     } else {
       plumed_merror("normalisation of vectors does not work with arguments and spherical grids");
       // Evalulate dot product
@@ -499,7 +499,7 @@ void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {
       for(unsigned j=0; j<getNumberOfArguments(); ++j) der[j] *= (myhist->von_misses_concentration)*newval;
     }
     // Set the derivatives and delete the vector of values
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) { myvals.setDerivative( 1, i, der[i] ); delete vv[i]; }
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) { myvals.setDerivative( 1, i, der[i] ); }
   }
 }
 

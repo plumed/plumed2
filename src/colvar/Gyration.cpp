@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,7 +22,6 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "tools/Matrix.h"
 
 #include <string>
 #include <cmath>
@@ -145,7 +144,8 @@ Gyration::Gyration(const ActionOptions&ao):
   case GYRATION_2: log.printf("  THE MIDDLE PRINCIPAL RADIUS OF GYRATION (r_g2);"); break;
   case GYRATION_1: log.printf("  THE LARGEST PRINCIPAL RADIUS OF GYRATION (r_g1);"); break;
   }
-  if(rg_type>TRACE) log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)"); log<<"\n";
+  if(rg_type>TRACE) log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)");
+  log<<"\n";
 
   log.printf("  atoms involved : ");
   for(unsigned i=0; i<atoms.size(); ++i) {
@@ -218,8 +218,7 @@ void Gyration::calculate() {
   }
 
 
-  Matrix<double> gyr_tens(3,3);
-  for(unsigned i=0; i<3; i++)  for(unsigned j=0; j<3; j++) gyr_tens(i,j)=0.;
+  Tensor3d gyr_tens;
   //calculate gyration tensor
   if( use_masses ) {
     for(unsigned i=0; i<getNumberOfAtoms(); i++) {
@@ -247,12 +246,11 @@ void Gyration::calculate() {
   gyr_tens[1][0] = gyr_tens[0][1];
   gyr_tens[2][0] = gyr_tens[0][2];
   gyr_tens[2][1] = gyr_tens[1][2];
-  Matrix<double> ttransf(3,3), transf(3,3);
-  vector<double> princ_comp(3), prefactor(3);
-  prefactor[0]=prefactor[1]=prefactor[2]=0.;
+  Tensor3d ttransf,transf;
+  Vector princ_comp,prefactor;
   //diagonalize gyration tensor
-  diagMat(gyr_tens, princ_comp, ttransf);
-  transpose(ttransf, transf);
+  diagMatSym(gyr_tens, princ_comp, ttransf);
+  transf=transpose(ttransf);
   //sort eigenvalues and eigenvectors
   if (princ_comp[0]<princ_comp[1]) {
     double tmp=princ_comp[0]; princ_comp[0]=princ_comp[1]; princ_comp[1]=tmp;
@@ -267,9 +265,7 @@ void Gyration::calculate() {
     for (unsigned i=0; i<3; i++) {tmp=transf[i][0]; transf[i][0]=transf[i][1]; transf[i][1]=tmp;}
   }
   //calculate determinant of transformation matrix
-  double det = transf[0][0]*transf[1][1]*transf[2][2]+transf[0][1]*transf[1][2]*transf[2][0]+
-               transf[0][2]*transf[1][0]*transf[2][1]-transf[0][2]*transf[1][1]*transf[2][0]-
-               transf[0][1]*transf[1][0]*transf[2][2]-transf[0][0]*transf[1][2]*transf[2][1];
+  double det = determinant(transf);
   // trasformation matrix for rotation must have positive determinant, otherwise multiply one column by (-1)
   if(det<0) {
     for(unsigned j=0; j<3; j++) transf[j][2]=-transf[j][2];

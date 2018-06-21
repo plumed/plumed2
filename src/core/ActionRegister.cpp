@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -81,7 +81,6 @@ std::unique_ptr<Action> ActionRegister::create(const ActionOptions&ao) {
     Keywords keys; mk[ao.line[0]](keys);
     ActionOptions nao( ao,keys );
     action=m[ao.line[0]](nao);
-    keys.destroyData();
   }
   return action;
 }
@@ -94,7 +93,6 @@ bool ActionRegister::printManual( const std::string& action, const bool& vimout 
     } else {
       keys.print_html();
     }
-    keys.destroyData();
     return true;
   } else {
     return false;
@@ -104,7 +102,7 @@ bool ActionRegister::printManual( const std::string& action, const bool& vimout 
 bool ActionRegister::printTemplate( const std::string& action, bool include_optional ) {
   if( check(action) ) {
     Keywords keys; mk[action](keys);
-    keys.print_template(action, include_optional); keys.destroyData();
+    keys.print_template(action, include_optional);
     return true;
   } else {
     return false;

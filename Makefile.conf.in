@@ -15,6 +15,9 @@ LDSHARED=@LDSHARED@
 GCCDEP=@CXX@
 disable_dependency_tracking=@disable_dependency_tracking@
 prefix=@prefix@
+# use this variable to double check that prefix is not changed after configure
+# (new in v2.5)
+prefix_double_check=@prefix@
 program_name=@program_name@
 program_transform_name=@program_transform_name@
 program_can_run_mpi=@program_can_run_mpi@
@@ -34,3 +37,5 @@ docdir=@docdir@
 htmldir=@htmldir@
 python_bin=@PYTHON_BIN@
 mpiexec=@MPIEXEC@
+make_static_archive=@make_static_archive@
+BASH_COMPLETION_DIR=@BASH_COMPLETION_DIR@

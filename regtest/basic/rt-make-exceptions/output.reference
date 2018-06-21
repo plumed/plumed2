@@ -40,7 +40,21 @@ readInputLine d: RMSD REFERENCE=missing.pdb
 +++ catched
 readInputLine d: RMSD REFERENCE=test-too-many-atoms.pdb
 +++ catched
+readInputLine d: RMSD TYPE=OPTIMAL REFERENCE=test_zero_displace_weight.pdb
++++ catched
+readInputLine d: RMSD TYPE=OPTIMAL REFERENCE=test_zero_align_weight.pdb
++++ catched
+readInputLine d: RMSD TYPE=SIMPLE REFERENCE=test_zero_displace_weight.pdb
++++ catched
+readInputLine d: RMSD TYPE=SIMPLE REFERENCE=test_zero_align_weight.pdb
++++ catched
 readInputLine d: DRMSD REFERENCE=missing.pdb LOWER_CUTOFF=0.0 UPPER_CUTOFF=15.0
++++ catched
+readInputLine RESTRAINT ARG=x(d) KAPPA=5 AT=0
++++ catched
+readInputLine RESTRAINT ARG=(d)x KAPPA=5 AT=0
++++ catched
+readInputLine RESTRAINT ARG=([a) KAPPA=5 AT=0
 +++ catched
 readInputLine EXTERNAL ARG=d FILE=potential LABEL=ext
 +++ catched

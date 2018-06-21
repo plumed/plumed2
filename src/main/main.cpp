@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,8 +39,12 @@ using namespace std;
 int main(int argc,char**argv) {
 #ifdef __PLUMED_HAS_MPI
   bool nompi=false;
-  if(argc>1 && !strcmp(argv[1],"--no-mpi")) nompi=true;
-  if(argc>1 && !strcmp(argv[1],"--mpi"))    nompi=false;
+  for(unsigned iarg=1; iarg<argc; iarg++) {
+    if(!strcmp(argv[iarg],"--no-mpi")) nompi=true;
+    if(!strcmp(argv[iarg],"--mpi"))    nompi=false;
+// stop at first non-option
+    if(argv[iarg] && argv[iarg][0]!='-') break;
+  }
   if(!nompi) MPI_Init(&argc,&argv);
 #endif
   int ret=0;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -68,7 +68,6 @@ Vessel* VesselRegister::create(std::string keyword, const VesselOptions&da) {
     Keywords keys; mk[keyword](keys);
     VesselOptions nda( da,keys );
     df=m[keyword](nda);
-    keys.destroyData();
   }
   else df=NULL;
   return df;

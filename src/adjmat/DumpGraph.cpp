@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -106,7 +106,7 @@ void DumpGraph::update() {
   unsigned nedge; std::vector<std::pair<unsigned,unsigned> > edge_list( mymatrix->getNumberOfRows()*maxconnections );
   mymatrix->retrieveEdgeList( nedge, edge_list );
   for(unsigned i=0; i<nedge; ++i) ofile.printf("%u -- %u \n", edge_list[i].first, edge_list[i].second );
-  ofile.printf("} \n"); ofile.close();
+  ofile.printf("} \n");
 }
 
 }

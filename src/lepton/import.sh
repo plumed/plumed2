@@ -21,7 +21,10 @@ cp $path/src/*.cpp $path/src/*.h .
 
 for file in *.h *.cpp ; do
   sed 's|lepton/||
-       s|Lepton|lepton|' $file > tmp
+       s|Lepton|lepton|
+       s|LEPTON_USE_JIT|__PLUMED_HAS_ASMJIT|g
+       s|asmjit.h|asmjit/asmjit.h|g
+      ' $file > tmp
   mv tmp $file
   dos2unix $file
 done

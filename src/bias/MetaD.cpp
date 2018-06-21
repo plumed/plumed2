@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -921,7 +921,6 @@ MetaD::MetaD(const ActionOptions& ao):
         acc_rfile.scanField(acclabel, acc_rmean);
         acc_rfile.scanField();
       }
-      acc_rfile.close();
       acc_restart_mean_ = acc_rmean;
       // Set component based on the read values.
       getPntrToComponent("acc")->set(acc_rmean);
@@ -1001,7 +1000,6 @@ MetaD::MetaD(const ActionOptions& ao):
     }
     std::string funcl=getLabel() + ".bias";
     BiasGrid_=Grid::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true);
-    gridfile.close();
     if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
@@ -1072,6 +1070,9 @@ MetaD::MetaD(const ActionOptions& ao):
       ifiles[i]->reset(false);
       // close only the walker own hills file for later writing
       if(i==mw_id_) ifiles[i]->close();
+    } else {
+      // in case a file does not exist and we are restarting, complain that the file was not found
+      if(getRestart()) log<<"  WARNING: restart file "<<fname<<" not found\n";
     }
   }
 
@@ -1088,7 +1089,6 @@ MetaD::MetaD(const ActionOptions& ao):
     IFile gridfile; gridfile.open(targetfilename_);
     std::string funcl=getLabel() + ".target";
     TargetGrid_=Grid::create(funcl,getArguments(),gridfile,false,false,true);
-    gridfile.close();
     if(TargetGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->isPeriodic()!=TargetGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
@@ -1178,8 +1178,8 @@ MetaD::MetaD(const ActionOptions& ao):
           "Hosek, Toulcova, Bortolato, and Spiwok, J. Phys. Chem. B 120, 2209 (2016)");
   if(targetfilename_.length()>0) {
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
-    log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
-    log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, submitted (2016)");
+    log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
+    log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, J. Chem. Theory Comput. 12, 2790 (2016)");
   }
   log<<"\n";
 }
@@ -1854,7 +1854,7 @@ double MetaD::getTransitionBarrierBias() {
     // starting well. With this choice the searches will terminate in one step until
     // transitionwell_[1] is sampled.
   } else {
-    double least_transition_bias, curr_transition_bias;
+    double least_transition_bias;
     vector<double> sink = transitionwells_[0];
     vector<double> source = transitionwells_[1];
     least_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
@@ -1863,7 +1863,7 @@ double MetaD::getTransitionBarrierBias() {
         break;
       }
       source = transitionwells_[i];
-      curr_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
+      double curr_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
       least_transition_bias = fmin(curr_transition_bias, least_transition_bias);
     }
     return least_transition_bias;

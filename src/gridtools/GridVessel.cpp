@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,10 +38,10 @@ void GridVessel::registerKeywords( Keywords& keys ) {
 GridVessel::GridVessel( const vesselbase::VesselOptions& da ):
   AveragingVessel(da),
   bounds_set(false),
-  cube_units(1.0),
-  noderiv(false),
   npoints(0),
-  wasforced(false)
+  cube_units(1.0),
+  wasforced(false),
+  noderiv(false)
 {
   std::string geom; parse("TYPE",geom);
   if( geom=="flat" ) gtype=flat;
@@ -120,7 +120,7 @@ void GridVessel::setupFibonacciGrid( const unsigned& np ) {
 
   std::vector<double> icoord( dimension ), jcoord( dimension );
   // Find minimum distance between each pair of points
-  std::vector<unsigned> tindices( dimension ); std::vector<double> mindists( npoints );
+  std::vector<double> mindists( npoints );
   for(unsigned i=0; i<npoints; ++i) {
     getFibonacciCoordinates( i, icoord ); mindists[i] = 0;
     for(unsigned j=0; j<npoints; ++j) {

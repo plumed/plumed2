@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -179,11 +179,7 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   if(file.length()==0) error("name out output file was not specified");
   type=Tools::extension(file);
   log<<"  file name "<<file<<"\n";
-  if(type=="gro" || type=="xyz"
-#ifdef __PLUMED_HAS_XDRFILE
-      || type=="xtc" || type=="trr"
-#endif
-    ) {
+  if(type=="gro" || type=="xyz" || type=="xtc" || type=="trr") {
     log<<"  file extension indicates a "<<type<<" file\n";
   } else {
     log<<"  file extension not detected, assuming xyz\n";
@@ -192,14 +188,14 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   string ntype;
   parse("TYPE",ntype);
   if(ntype.length()>0) {
-    if(ntype!="xyz" && ntype!="gro"
-#ifdef __PLUMED_HAS_XDRFILE
-        && ntype!="xtc" && ntype!="trr"
-#endif
+    if(ntype!="xyz" && ntype!="gro" && ntype!="xtc" && ntype!="trr"
       ) error("TYPE cannot be understood");
     log<<"  file type enforced to be "<<ntype<<"\n";
     type=ntype;
   }
+#ifndef __PLUMED_HAS_XDRFILE
+  if(type=="xtc" || type=="trr") error("types xtc and trr require PLUMED to be linked with the xdrfile library. Please install it and recompile PLUMED.");
+#endif
 
   fmt_gro_pos="%8.3f";
   fmt_gro_box="%12.7f";

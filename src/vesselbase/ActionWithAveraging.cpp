@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -50,6 +50,7 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
   myaverage(NULL),
   activated(false),
   my_analysis_object(NULL),
+  normalization(t),
   useRunAllTasks(false),
   clearstride(0),
   lweight(0),cweight(0)

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,12 +38,11 @@ private:
 /// The domain of the function
   std::vector<std::string> min, max;
 /// List of kernel functions involved
-  std::vector<KernelFunctions*> kernels;
+  std::vector<std::unique_ptr<KernelFunctions>> kernels;
 public:
 // Explicit definitions for constructor, copy constructor and destructor
   PammObject();
   PammObject( const PammObject& );
-  ~PammObject();
   PammObject operator=(const PammObject& po) { plumed_error(); regulariser=po.regulariser; return PammObject(); }
 /// Setup the Pamm object
   void setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames,

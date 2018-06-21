@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2017 The VES code team
+   Copyright (c) 2016-2018 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -48,6 +48,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
   iter_counter(0),
   use_hessian_(false),
   diagonal_hessian_(true),
+  monitor_instantaneous_gradient_(false),
   use_mwalkers_mpi_(false),
   mwalkers_mpi_single_files_(true),
   dynamic_targetdists_(0),
@@ -275,12 +276,16 @@ Optimizer::Optimizer(const ActionOptions&ao):
     }
   }
 
+  if(keywords.exists("MONITOR_INSTANTANEOUS_GRADIENT")) {
+    parseFlag("MONITOR_INSTANTANEOUS_GRADIENT",monitor_instantaneous_gradient_);
+  }
+
   if(keywords.exists("MONITOR_AVERAGE_GRADIENT")) {
     bool monitor_aver_gradient = false;
     parseFlag("MONITOR_AVERAGE_GRADIENT",monitor_aver_gradient);
     if(monitor_aver_gradient) {
       unsigned int averaging_exp_decay=0;
-      parse("MONITOR_AVERAGES_EXP_DECAY",averaging_exp_decay);
+      parse("MONITOR_AVERAGES_GRADIENT_EXP_DECAY",averaging_exp_decay);
       aver_gradient_pntrs_.clear();
       for(unsigned int i=0; i<ncoeffssets_; i++) {
         CoeffsVector* aver_gradient_tmp = new CoeffsVector(*gradient_pntrs_[i]);
@@ -709,9 +714,11 @@ Optimizer::Optimizer(const ActionOptions&ao):
   if(ncoeffssets_==1) {
     log.printf("  Output Components:\n");
     log.printf(" ");
-    addComponent("gradrms"); componentIsNotPeriodic("gradrms");
-    log.printf(" ");
-    addComponent("gradmax"); componentIsNotPeriodic("gradmax");
+    if(monitor_instantaneous_gradient_) {
+      addComponent("gradrms"); componentIsNotPeriodic("gradrms");
+      log.printf(" ");
+      addComponent("gradmax"); componentIsNotPeriodic("gradmax");
+    }
     if(aver_gradient_pntrs_.size()>0) {
       log.printf(" ");
       addComponent("avergradrms"); componentIsNotPeriodic("avergradrms");
@@ -729,9 +736,11 @@ Optimizer::Optimizer(const ActionOptions&ao):
       log.printf("  Output Components for coefficent set %u:\n",i);
       std::string is=""; Tools::convert(i,is); is = "_" + coeffssetid_prefix_ + is;
       log.printf(" ");
-      addComponent("gradrms"+is); componentIsNotPeriodic("gradrms"+is);
-      log.printf(" ");
-      addComponent("gradmax"+is); componentIsNotPeriodic("gradmax"+is);
+      if(monitor_instantaneous_gradient_) {
+        addComponent("gradrms"+is); componentIsNotPeriodic("gradrms"+is);
+        log.printf(" ");
+        addComponent("gradmax"+is); componentIsNotPeriodic("gradmax"+is);
+      }
       if(aver_gradient_pntrs_.size()>0) {
         log.printf(" ");
         addComponent("avergradrms"+is); componentIsNotPeriodic("avergradrms"+is);
@@ -837,8 +846,10 @@ void Optimizer::registerKeywords( Keywords& keys ) {
   //
   keys.reserveFlag("START_OPTIMIZATION_AFRESH",false,"if the iterations should be started afresh when a restart has been triggered by the RESTART keyword or the MD code.");
   //
-  keys.reserveFlag("MONITOR_AVERAGE_GRADIENT",false,"if the averaged gradient should be monitored.");
-  keys.reserve("optional","MONITOR_AVERAGES_EXP_DECAY","use an exponentially decaying averaging with a given time constant when monitoring the averaged gradient");
+  keys.addFlag("MONITOR_INSTANTANEOUS_GRADIENT",false,"if quantities related to the instantaneous gradient should be outputted.");
+  //
+  keys.reserveFlag("MONITOR_AVERAGE_GRADIENT",false,"if the averaged gradient should be monitored and quantities related to it should be outputted.");
+  keys.reserve("optional","MONITOR_AVERAGES_GRADIENT_EXP_DECAY","use an exponentially decaying averaging with a given time constant when monitoring the averaged gradient");
   //
   keys.reserve("optional","TARGETDIST_STRIDE","stride for updating a target distribution that is iteratively updated during the optimization. Note that the value is given in terms of coefficent iterations.");
   keys.reserve("optional","TARGETDIST_OUTPUT","how often the dynamic target distribution(s) should be written out to file. Note that the value is given in terms of coefficent iterations.");
@@ -859,8 +870,8 @@ void Optimizer::registerKeywords( Keywords& keys ) {
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
   // Components that are always active
-  keys.addOutputComponent("gradrms","default","the root mean square value of the coefficent gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
-  keys.addOutputComponent("gradmax","default","the largest absolute value of the coefficent gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
+  keys.addOutputComponent("gradrms","MONITOR_INSTANTANEOUS_GRADIENT","the root mean square value of the coefficent gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
+  keys.addOutputComponent("gradmax","MONITOR_INSTANTANEOUS_GRADIENT","the largest absolute value of the coefficent gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
   ActionWithValue::useCustomisableComponents(keys);
   // keys.addOutputComponent("gradmaxidx","default","the index of the maximum absolute value of the gradient");
 
@@ -902,9 +913,11 @@ void Optimizer::useRestartKeywords(Keywords& keys) {
 }
 
 
-void Optimizer::useMonitorAveragesKeywords(Keywords& keys) {
+void Optimizer::useMonitorAverageGradientKeywords(Keywords& keys) {
   keys.use("MONITOR_AVERAGE_GRADIENT");
-  keys.use("MONITOR_AVERAGES_EXP_DECAY");
+  keys.use("MONITOR_AVERAGES_GRADIENT_EXP_DECAY");
+  keys.addOutputComponent("avergradrms","MONITOR_AVERAGE_GRADIENT","the root mean square value of the averaged coefficent gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
+  keys.addOutputComponent("avergradmax","MONITOR_AVERAGE_GRADIENT","the largest absolute value of the averaged coefficent gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
 }
 
 
@@ -1074,12 +1087,15 @@ void Optimizer::updateOutputComponents() {
     if(!fixed_stepsize_) {
       getPntrToComponent("stepsize")->set( getCurrentStepSize(0) );
     }
-    getPntrToComponent("gradrms")->set( gradient_pntrs_[0]->getRMS() );
-    size_t gradient_maxabs_idx=0;
-    getPntrToComponent("gradmax")->set( gradient_pntrs_[0]->getMaxAbsValue(gradient_maxabs_idx) );
+    if(monitor_instantaneous_gradient_) {
+      getPntrToComponent("gradrms")->set( gradient_pntrs_[0]->getRMS() );
+      size_t gradient_maxabs_idx=0;
+      getPntrToComponent("gradmax")->set( gradient_pntrs_[0]->getMaxAbsValue(gradient_maxabs_idx) );
+    }
     if(aver_gradient_pntrs_.size()>0) {
       getPntrToComponent("avergradrms")->set( aver_gradient_pntrs_[0]->getRMS() );
-      getPntrToComponent("avergradmax")->set( aver_gradient_pntrs_[0]->getMaxAbsValue(gradient_maxabs_idx) );
+      size_t avergradient_maxabs_idx=0;
+      getPntrToComponent("avergradmax")->set( aver_gradient_pntrs_[0]->getMaxAbsValue(avergradient_maxabs_idx) );
     }
   }
   else {
@@ -1088,12 +1104,15 @@ void Optimizer::updateOutputComponents() {
       if(!fixed_stepsize_) {
         getPntrToComponent("stepsize"+is)->set( getCurrentStepSize(i) );
       }
-      getPntrToComponent("gradrms"+is)->set( gradient_pntrs_[i]->getRMS() );
-      size_t gradient_maxabs_idx=0;
-      getPntrToComponent("gradmax"+is)->set( gradient_pntrs_[i]->getMaxAbsValue(gradient_maxabs_idx) );
+      if(monitor_instantaneous_gradient_) {
+        getPntrToComponent("gradrms"+is)->set( gradient_pntrs_[i]->getRMS() );
+        size_t gradient_maxabs_idx=0;
+        getPntrToComponent("gradmax"+is)->set( gradient_pntrs_[i]->getMaxAbsValue(gradient_maxabs_idx) );
+      }
       if(aver_gradient_pntrs_.size()>0) {
         getPntrToComponent("avergradrms"+is)->set( aver_gradient_pntrs_[0]->getRMS() );
-        getPntrToComponent("avergradmax"+is)->set( aver_gradient_pntrs_[0]->getMaxAbsValue(gradient_maxabs_idx) );
+        size_t avergradient_maxabs_idx=0;
+        getPntrToComponent("avergradmax"+is)->set( aver_gradient_pntrs_[0]->getMaxAbsValue(avergradient_maxabs_idx) );
       }
     }
   }

@@ -27,6 +27,7 @@ help in taking the most by using PLUMED for your simulations.
 - \subpage Openmp
 - \subpage Secondary
 - \subpage Time
+- \subpage Lepton
 
 \page GMXGPU GROMACS and PLUMED with GPU
 
@@ -206,6 +207,67 @@ The metric used to calculate the distance from ideal secondary structure element
 the performances, try to use TYPE=OPTIMAL or TYPE=OPTIMAL-FAST instead of TYPE=DRMSD.
 
 At last, try to reduce the number of residues in the calculation.
+
+\page Lepton Making lepton library faster
+
+In case you are using a lot of \ref CUSTOM functions or \ref switchingfunction "switching functions",
+notice that these functionalities depend on the lepton library included in PLUMED.
+This library replace libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
+However, you can make it even faster using a [just-in-time compilater](https://github.com/asmjit/asmjit.git).
+Currently, this is an experimental feature, so use it with care.
+
+In order to enable it you should first install asmjit.
+\verbatim
+git clone https://github.com/asmjit/asmjit.git
+cd asmjit
+git checkout 673dcefa # this is a specific version
+mkdir build
+cd build
+cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=$prefix ../
+make -j 4
+make install
+\endverbatim
+
+Notice that you should set the prefix correctly so that PLUMED can find it at configure time.
+In the example asmjit is installed on `/usr/local` but you might be willing to install it somewhere else.
+On a Mac, you might also have to use `install_name_tool` to fix its path
+\verbatim
+install_name_tool -id $prefix/lib/libasmgit.dylib $prefix/lib/libasmgit.dylib
+\endverbatim
+
+Also notice that a specific version of asmjit is required.
+The version supported by PLUMED is more recent than the version originally supported by the Lepton library.
+In case you find troubles and want to experiment with older versions, write on the mailing list
+or check the Lepton implementation for older asmjit releases by doing `cd src/lepton; gitk`.
+If on your system a more recent version of the asmjit library is already installed, you might have to make
+sure that PLUMED finds the correct version, both at compilation and run time.
+
+Then, configure PLUMED using this additional flag:
+\verbatim
+./configure --enable-asmjit
+make
+make install
+\endverbatim
+
+You are done!
+
+In some case using a custom expression is almost as fast as using a hard-coded
+function. For instance, with an input like this one:
+\verbatim
+...
+c: COORDINATION GROUPA=1-108 GROUPB=1-108 R_0=1
+dfast: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={CUSTOM FUNC=1/(1+x2^3) R_0=1}
+...
+\endverbatim
+I (GB) obtained the following timings (on a Macbook laptop):
+\verbatim
+...
+PLUMED: 4A  1 c                                          108     0.126592     0.001172     0.000701     0.002532
+PLUMED: 4A  2 dfast                                      108     0.135210     0.001252     0.000755     0.002623
+...
+\endverbatim
+
+Notice the usage of `x2` as a variable for the switching function (see \switchingfunction).
 
 \page Time Time your Input
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017 The plumed team
+   Copyright (c) 2017,2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,14 +20,16 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetainferenceBase.h"
-#include "core/PlumedMain.h"
 #include "tools/File.h"
-#include "tools/OpenMP.h"
 #include <cmath>
 #include <ctime>
 #include <numeric>
 
 using namespace std;
+
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
 
 namespace PLMD {
 namespace isdb {
@@ -151,7 +153,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
 
   // reweight implies a different number of arguments (the latest one must always be the bias)
   parseFlag("REWEIGHT", do_reweight_);
-  if(do_reweight_&&getNumberOfArguments()!=1) error("To REWEIGHT one must provide a bias as an argument");
+  if(do_reweight_&&getNumberOfArguments()!=1) error("To REWEIGHT one must provide one single bias as an argument");
   if(do_reweight_&&nrep_<2) error("REWEIGHT can only be used in parallel with 2 or more replicas");
   if(!getRestart()) average_weights_.resize(nsel_, vector<double> (nrep_, 1./static_cast<double>(nrep_)));
   else average_weights_.resize(nsel_, vector<double> (nrep_, 0.));
@@ -160,7 +162,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   parse("AVERAGING", averaging);
   if(averaging>0) {
     decay_w_ = 1./static_cast<double> (averaging);
-    optsigmamean_stride_    = averaging;
+    optsigmamean_stride_ = averaging;
   }
 
   string stringa_noise;
@@ -262,16 +264,37 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
     sigma_=readsigma;
   } else sigma_.resize(1, readsigma[0]);
 
-  double read_smin_;
-  parse("SIGMA_MIN",read_smin_);
-  sigma_min_.resize(1,read_smin_);
-  double read_smax_;
-  parse("SIGMA_MAX",read_smax_);
-  sigma_max_.resize(1,read_smax_);
-  double read_dsigma_=-1.;
-  parse("DSIGMA",read_dsigma_);
-  if(read_dsigma_<0) read_dsigma_ = 0.05*(read_smax_ - read_smin_);
-  Dsigma_.resize(1,read_dsigma_);
+  vector<double> readsigma_min;
+  parseVector("SIGMA_MIN",readsigma_min);
+  if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma_min.size()>1)
+    error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
+  if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+    sigma_min_.resize(readsigma_min.size());
+    sigma_min_=readsigma_min;
+  } else sigma_min_.resize(1, readsigma_min[0]);
+
+  vector<double> readsigma_max;
+  parseVector("SIGMA_MAX",readsigma_max);
+  if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma_max.size()>1)
+    error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
+  if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+    sigma_max_.resize(readsigma_max.size());
+    sigma_max_=readsigma_max;
+  } else sigma_max_.resize(1, readsigma_max[0]);
+
+  if(sigma_max_.size()!=sigma_min_.size()) error("The number of values for SIGMA_MIN and SIGMA_MAX must be the same");
+
+  vector<double> read_dsigma;
+  parseVector("DSIGMA",read_dsigma);
+  if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma_max.size()>1)
+    error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
+  if(read_dsigma.size()>0) {
+    Dsigma_.resize(read_dsigma.size());
+    Dsigma_=read_dsigma;
+  } else {
+    Dsigma_.resize(sigma_max_.size());
+    for(unsigned i=0; i<sigma_max_.size(); i++) Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
+  }
 
   // monte carlo stuff
   parse("MC_STEPS",MCsteps_);
@@ -351,14 +374,25 @@ void MetainferenceBase::Initialise(const unsigned input)
     } else if(sigma_.size()>1&&sigma_.size()!=narg) {
       error("SIGMA0 can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS|GENERIC)");
     }
+    if(sigma_min_.size()==1) {
+      double tmp = sigma_min_[0];
+      sigma_min_.resize(narg, tmp);
+    } else if(sigma_min_.size()>1&&sigma_min_.size()!=narg) {
+      error("SIGMA_MIN can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS|GENERIC)");
+    }
+    if(sigma_max_.size()==1) {
+      double tmp = sigma_max_[0];
+      sigma_max_.resize(narg, tmp);
+    } else if(sigma_max_.size()>1&&sigma_max_.size()!=narg) {
+      error("SIGMA_MAX can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS|GENERIC)");
+    }
+    if(Dsigma_.size()==1) {
+      double tmp = Dsigma_[0];
+      Dsigma_.resize(narg, tmp);
+    } else if(Dsigma_.size()>1&&Dsigma_.size()!=narg) {
+      error("DSIGMA can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS|GENERIC)");
+    }
   }
-
-  double tmp_min = sigma_min_[0];
-  sigma_min_.resize(sigma_.size(),tmp_min);
-  double tmp_max = sigma_max_[0];
-  sigma_max_.resize(sigma_.size(),tmp_max);
-  double tmp_ds = Dsigma_[0];
-  Dsigma_.resize(sigma_.size(),tmp_ds);
 
   IFile restart_sfile;
   restart_sfile.link(*this);
@@ -380,13 +414,16 @@ void MetainferenceBase::Initialise(const unsigned input)
             Tools::convert(j,msg_j);
             std::string msg = msg_i+"_"+msg_j;
             double read_sm;
-            restart_sfile.scanField("sigma_mean_"+msg,read_sm);
+            restart_sfile.scanField("sigmaMean_"+msg,read_sm);
             sigma_mean2_last_[i][j][0] = read_sm*read_sm;
           }
         }
         if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
           double read_sm;
-          restart_sfile.scanField("sigma_mean_0_"+msg_i,read_sm);
+          std::string msg_j;
+          Tools::convert(0,msg_j);
+          std::string msg = msg_i+"_"+msg_j;
+          restart_sfile.scanField("sigmaMean_"+msg,read_sm);
           for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j][0] = read_sm*read_sm;
         }
       }
@@ -535,9 +572,15 @@ void MetainferenceBase::Initialise(const unsigned input)
   log.printf("  initial data uncertainties");
   for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f", sigma_[i]);
   log.printf("\n");
-  log.printf("  minimum data uncertainty %f\n",sigma_min_[0]);
-  log.printf("  maximum data uncertainty %f\n",sigma_max_[0]);
-  log.printf("  maximum MC move of data uncertainty %f\n",Dsigma_[0]);
+  log.printf("  minimum data uncertainties");
+  for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f",sigma_min_[i]);
+  log.printf("\n");
+  log.printf("  maximum data uncertainties");
+  for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f",sigma_max_[i]);
+  log.printf("\n");
+  log.printf("  maximum MC move of data uncertainties");
+  for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f",Dsigma_[i]);
+  log.printf("\n");
   log.printf("  temperature of the system %f\n",kbt_);
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  MC stride %u\n",MCstride_);
@@ -552,6 +595,7 @@ void MetainferenceBase::Initialise(const unsigned input)
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   if(do_reweight_) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
   if(do_optsigmamean_>0) log<<plumed.cite("Loehr, Jussupow, Camilloni, J. Chem. Phys. 146, 165102 (2017)");
+  log<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 }
 
@@ -889,7 +933,7 @@ void MetainferenceBase::doMonteCarlo(const vector<double> &mean_)
     }
 
     // calculate new energy
-    double new_energy;
+    double new_energy=0.;
     switch(noise_type_) {
     case GAUSS:
       new_energy = getEnergyGJ(mean_,new_sigma,scale_,offset_);
@@ -1355,7 +1399,7 @@ void MetainferenceBase::writeStatus()
       Tools::convert(j,msg_j);
       std::string msg = msg_i+"_"+msg_j;
       if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-        sfile_.printField("sigma_mean_"+msg,sqrt(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end())));
+        sfile_.printField("sigmaMean_"+msg,sqrt(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end())));
       } else {
         // find maximum for each data point
         max_values.push_back(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end()));
@@ -1364,7 +1408,9 @@ void MetainferenceBase::writeStatus()
     if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
       // find maximum across data points
       const double max_now = sqrt(*max_element(max_values.begin(), max_values.end()));
-      sfile_.printField("sigma_mean_0_"+msg_i,max_now);
+      Tools::convert(0,msg_j);
+      std::string msg = msg_i+"_"+msg_j;
+      sfile_.printField("sigmaMean_"+msg, max_now);
     }
   }
   for(unsigned i=0; i<sigma_.size(); ++i) {

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -67,14 +67,14 @@ void GridPrintingBase::update() {
 
   OFile ofile; ofile.link(*this);
   ofile.setBackupString("analysis");
-  ofile.open( filename ); printGrid( ofile ); ofile.close();
+  ofile.open( filename ); printGrid( ofile );
 }
 
 void GridPrintingBase::runFinalJobs() {
   if( getStride()>0 ) return;
 
   OFile ofile; ofile.link(*this);
-  ofile.open( filename ); printGrid( ofile ); ofile.close();
+  ofile.open( filename ); printGrid( ofile );
 }
 
 }

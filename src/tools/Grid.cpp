@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -305,10 +305,10 @@ vector<Grid::index_t> Grid::getNeighbors
     for(unsigned i=0; i<dimension_; ++i) {
       int i0=small_indices[i]-nneigh[i]+indices[i];
       if(!pbc_[i] && i0<0)         continue;
-      if(!pbc_[i] && i0>=nbin_[i]) continue;
+      if(!pbc_[i] && i0>=static_cast<int>(nbin_[i])) continue;
       if( pbc_[i] && i0<0)         i0=nbin_[i]-(-i0)%nbin_[i];
-      if( pbc_[i] && i0>=nbin_[i]) i0%=nbin_[i];
-      tmp_indices[ll]=((unsigned)i0);
+      if( pbc_[i] && i0>=static_cast<int>(nbin_[i])) i0%=nbin_[i];
+      tmp_indices[ll]=static_cast<unsigned>(i0);
       ll++;
     }
     tmp_indices.resize(ll);
@@ -393,8 +393,7 @@ void Grid::addKernel( const KernelFunctions& kernel ) {
 // this is the simplest way to replace a unique_ptr here.
 // perhaps the interface of kernel.evaluate() should be changed
 // in order to accept a std::vector<std::unique_ptr<Value>>
-  std::vector<Value*> vv_ptr( dimension_ );
-  for(unsigned i=0; i<dimension_; ++i) vv_ptr[i]=vv[i].get();
+  auto vv_ptr=Tools::unique2raw(vv);
 
   std::vector<double> der( dimension_ );
   for(unsigned i=0; i<neighbors.size(); ++i) {

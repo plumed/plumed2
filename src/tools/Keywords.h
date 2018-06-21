@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -150,7 +150,8 @@ public:
                  std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
                  std::map<std::string,std::string>& atags, std::vector<std::string>& cnam, std::map<std::string,std::string>& ck,
                  std::map<std::string,std::string>& cd ) const ;
-/// Clear everything from the keywords object
+/// Clear everything from the keywords object.
+/// Not actually needed if your Keywords object is going out of scope.
   void destroyData();
 /// Set the text that introduces how the components for this action are introduced
   void setComponentsIntroduction( const std::string& instr );
@@ -158,6 +159,8 @@ public:
   void addOutputComponent( const std::string& name, const std::string& key, const std::string& descr );
 /// Has a component with this name been added?
   bool outputComponentExists( const std::string& name, const bool& custom ) const ;
+/// Reference to keys
+  std::vector<std::string> getKeys() const { return keys; }
 };
 
 }

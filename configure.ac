@@ -239,6 +239,7 @@ PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
+PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
@@ -248,11 +249,13 @@ PLUMED_CONFIG_ENABLE([zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([readdir-r],[search for readdir_r (threadsafe)],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
+PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
+PLUMED_CONFIG_ENABLE([asmjit],[search for asmjit],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[no])
 PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
 
@@ -260,6 +263,7 @@ AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
 AC_ARG_VAR(LDSHARED,[command for linking shared library - configure will use CXX plus the proper flags ])
 AC_ARG_VAR(PYTHON_BIN,[python executable (e.g. python2.7 or /opt/local/bin/python2.7) - default: search for a python executable])
+AC_ARG_VAR(BASH_COMPLETION_DIR,[path where bash completion will be installed - default: search with pkg-config])
 AC_ARG_VAR(MPIEXEC,[command to run mpi programs in tests - default not specified, which means use PLUMED_MPIRUN env var at runtime for backward compatibility])
 
 
@@ -276,6 +280,13 @@ fi
 # correct fallback list to be searched after preferred choices
 # (e.g. MPI) have been checked.
 compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+
+# on OSX, prefer clang++
+case `(uname)` in
+  (Darwin)
+    compilers="clang++ $compilers"
+  ;;
+esac
 
 # if searching for MPI, try first mpi-like compilers
 if test $mpi == true ; then
@@ -299,7 +310,11 @@ AC_LANG(C++)
 
 # log the initial flags
 LD="$CXX"
-LDSHARED="$CXX"
+
+if test -z "$LDSHARED" ; then
+  LDSHARED="$CXX"
+fi
+
 AC_MSG_NOTICE([Initial CXX:         $CXX])
 AC_MSG_NOTICE([Initial CXXFLAGS:    $CXXFLAGS])
 AC_MSG_NOTICE([Initial CPPFLAGS:    $CPPFLAGS])
@@ -587,6 +602,19 @@ fi
 if test $dlopen == true ; then
   PLUMED_CHECK_PACKAGE([dlfcn.h],[dlopen],[__PLUMED_HAS_DLOPEN])
 fi
+
+if test $rtld_default == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([RTLD_DEFAULT],[
+#include <dlfcn.h>
+int
+main ()
+{
+  void* f=dlsym(RTLD_DEFAULT,"path");
+  return 0;
+}
+  ], [__PLUMED_HAS_RTLD_DEFAULT])
+fi
+
 if test $execinfo == true ; then
   PLUMED_CHECK_PACKAGE([execinfo.h],[backtrace],[__PLUMED_HAS_EXECINFO])
 fi
@@ -637,6 +665,30 @@ int main() {
 }
   ], [__PLUMED_HAS_BOOST_SERIALIZATION],[boost_serialization boost_serialization-mt])
 # notice: macports install libraries with -mt suffix
+fi
+
+if test $asmjit == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([asmjit],[
+#include <asmjit/asmjit.h>
+#include <stdio.h>
+using namespace asmjit;
+typedef int (*Func)(void);
+int main(int argc, char* argv[[]]) {
+  JitRuntime rt;
+  CodeHolder code;
+  code.init(rt.getCodeInfo());
+  X86Assembler a(&code);
+  a.mov(x86::eax, 1);
+  a.ret();
+  Func fn;
+  Error err = rt.add(&fn, &code);
+  if (err) return 1;
+  int result = fn();
+  printf("%d\n", result);
+  rt.release(fn);
+  return 0;
+}
+  ], [__PLUMED_HAS_ASMJIT],[asmjit])
 fi
 
 if test $fftw == true ; then
@@ -708,7 +760,7 @@ if test "$shared" == true ; then
     AC_MSG_NOTICE([Dynamic library extension is 'dylib'])
     AC_MSG_NOTICE([LDSHARED needs special flags])
     SOEXT=dylib
-    LDSHARED="$LDSHARED -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
+    LDSHARED="$LDSHARED -dynamiclib -Wl,-headerpad_max_install_names"
     if test "$rpath" = true ; then
       AC_MSG_NOTICE([Switching off rpath on OSX])
       rpath=false
@@ -916,7 +968,7 @@ EOF
     AC_MSG_RESULT([no])
   fi
 done
- 
+
 fi
 
 AC_SUBST(AR_CR)
@@ -958,6 +1010,56 @@ EOF
   fi
 done
  
+fi
+
+make_static_archive=no
+AC_SUBST(make_static_archive)
+
+if test "${static_archive}" == true ; then
+  if test -z "$LD_RO" || test -z "$AR_CR" ; then
+    AC_MSG_WARN([no way to create a static archive if ld -ro or ar cr do not work])
+    static_archive=false
+  fi
+fi
+
+if test "${static_archive}" == true ; then
+  AC_MSG_CHECKING([whether static-object constructors can be linked from a static archive])
+
+  magic_token=c1bc476d093a3a5c67b4530e6c54c633593fe9aa
+  rm -f conftest-*
+  
+  cat << EOF > conftest-main.cpp
+  void f(void);
+  int main(int argc,char**argv){ f(); return 0; }
+EOF
+  cat << EOF > conftest-f.cpp
+  void f(void){ return; }
+EOF
+  cat << EOF > conftest-g.cpp
+#include <iostream>
+  class g{
+    public:
+    g(){ std::cout<<"$magic_token\n"; }
+  } init;
+EOF
+
+  $CXX $CXXFLAGS -c conftest-main.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-f.cpp 1> /dev/null 2> /dev/null
+  $CXX $CXXFLAGS -c conftest-g.cpp 1> /dev/null 2> /dev/null
+  
+  $LD_RO conftest-both.o conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+# linking the previously merged objects should work:
+  $AR_CR conftest-both.a conftest-both.o 1> /dev/null 2> /dev/null
+# something like the following, instead, should not work:
+#  $AR_CR conftest-both.a conftest-f.o conftest-g.o 1> /dev/null 2> /dev/null
+#
+  $CXX $CXXFLAGS -o conftest.exe conftest-main.o conftest-both.a 1> /dev/null 2> /dev/null
+  if grep -q $magic_token ./conftest.exe ; then
+    AC_MSG_RESULT([yes])
+    make_static_archive=yes
+  else
+    AC_MSG_RESULT([no])
+  fi
 fi
 
 if test "${static_patch}" == true ; then
@@ -1038,6 +1140,34 @@ then
   prefix=/usr/local
 fi
 
+AC_MSG_CHECKING([If prefix is equal to present working directory])
+
+pkgconfig_bin=""
+
+AC_PATH_PROGS(pkgconfig_bin,pkg-config)
+
+if test -z "$BASH_COMPLETION_DIR" && test -n "$pkgconfig_bin"; then
+  if test "$prefix" == "$(pkg-config --variable=prefix bash-completion 2>/dev/null)"
+  then
+    AC_MSG_NOTICE([bash-completion is installed on the same prefix where plumed will be installed])
+    if pkg-config --variable=completionsdir bash-completion 2>/dev/null >/dev/null ; then
+      BASH_COMPLETION_DIR="$(pkg-config --variable=completionsdir  bash-completion 2>/dev/null)"
+    fi
+  else
+    AC_MSG_NOTICE([bash-completion is not installed or it is installed on a different prefix])
+    pkgconfig_bin=""
+  fi
+fi
+
+if test -n "$BASH_COMPLETION_DIR"
+then
+  AC_MSG_NOTICE([bash completion for plumed will be installed in $BASH_COMPLETION_DIR])
+else
+  AC_MSG_NOTICE([bash completion for plumed will not be installed])
+fi
+
+AC_SUBST(BASH_COMPLETION_DIR)
+
 AC_ARG_PROGRAM
 
 
@@ -1075,8 +1205,14 @@ AC_MSG_NOTICE([**** datadir: $datadir])
 AC_MSG_NOTICE([**** docdir: ${datarootdir}/doc/$program_name])
 AC_MSG_NOTICE([**** htmldir: $htmldir])
 AC_MSG_NOTICE([**** Executable will be named $program_name])
-AC_MSG_NOTICE([**** You can change paths later using options to "make install"])
-AC_MSG_NOTICE([**** e.g. with "make install prefix=/path"])
+AC_MSG_NOTICE([**** As of PLUMED 2.5, you cannot change paths anymore during "make install"])
+AC_MSG_NOTICE([**** Please configure and make clean to change the prefix])
+
+if test -z "$BASH_COMPLETION_DIR" ; then
+  AC_MSG_WARN([**** Bash completion for plumed will not be installed, please add the following two lines to your bashrc])
+  AC_MSG_WARN([**** _$program_name() { eval "\$($program_name --no-mpi completion 2>/dev/null)";}])
+  AC_MSG_WARN([**** complete -F _$program_name -o default $program_name])
+fi
 
 if test $mpi == true; then
   if test $mpi_found == ok; then

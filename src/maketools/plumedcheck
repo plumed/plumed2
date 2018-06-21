@@ -14,7 +14,7 @@
 # DOC: In case you think you have a valid reason for a code not passing the check
 # DOC: to be merged, please contact the developers.
 
-TEMP=$(mktemp)
+TEMP=$(mktemp -t plumed.XXXXXX)
 
 cat > $TEMP << \EOF
 
@@ -143,8 +143,16 @@ BEGIN{
   core_modules["tools"]=1
   core_modules["reference"]=1
 
+# declare these as empty arrays
+  used_modules[0]=1
+  delete used_modules
+
 # create tmp dir for future usage
-  "mktemp -d" | getline tmpdir
+  "mktemp -dt plumed.XXXXXX" | getline tmpdir
+
+# checking astyle presence
+  astyle_available=!system(astyle " --version > /dev/null 2> /dev/null") 
+  if(!astyle_available) error("astyle_not_available","astyle not available on this system, skipping astyle checks")
 }
 
 # for each input file
@@ -160,6 +168,12 @@ BEGINFILE{
 #  found_include_system_header=0
 #  report_include_system_headers=0
 
+# guess type of file from extension
+  filetype=""
+  if(match(FILENAME,".*\\.h")) filetype="header"
+  if(match(FILENAME,".*\\.cpp")) filetype="source"
+  if(match(FILENAME,".*\\.ac")) filetype="autoconf"
+
 # guess module name from directory
 # only works when path is specified
   filename=FILENAME
@@ -167,13 +181,15 @@ BEGINFILE{
   gsub("^[.]/","",filename);
   if(!match(filename,".*/.*")) filename=ENVIRON["PWD"] "/" filename
   gsub("/+","/",filename); # fix multiple slashes
+  filepath=filename
   module=""
   nf=split(filename,ff,"/");
   if(nf>1){
     module=ff[nf-1];
     if(!(module in module_type)){
-      path=filename
+      path=filepath
       sub("/.*$","/module.type",path);
+# detect module type
       if((getline < path > 0) ){
         module_type[module]=$0
         information("module_type","module " module " has type '" module_type[module] "'" );
@@ -184,21 +200,40 @@ BEGINFILE{
         if(!(module_type[module] in allowed_module_types)) error("wrong_module_type","module " module " has a wrong module type '" module_type[module] "'");
       }
     }
+# detect used modules
+    if(filetype=="source" || filetype=="header") {
+      if(!(module in used_modules)){
+        tempfile = tmpdir "/used_modules." module
+        path=filepath
+        sub("/[^/]*$","",path);
+# an explicit cd is required since the command might be run from a different directory
+        system("cd " path "; make show_used_modules 2>/dev/null > " tempfile)
+        if(getline < tempfile >0 && $1=="used_modules") for(i=2;i<=NF;i++) used_modules[module][$i]=1
+        system("rm " tempfile)
+        used_modules_here=""
+        if(isarray(used_modules[module])) {
+          for(mod in used_modules[module]) used_modules_here=used_modules_here " " mod
+        }
+        information("used_modules",module " uses:" used_modules_here)
+# DOC: :used_wrapper_module:
+# DOC: Wrapper module should not be used in other modules (via `USE=wrapper` in `Makefile`).
+# DOC: The reason is that this makes `libplumedKernel` dependent on the PLUMED wrappers.
+# DOC: An exception is the `main` module, which needs to use the `wrapper` module.
+# DOC: Notice that within the PLUMED library there is no need to use the external `cmd` interface
+# DOC: since one can directly declare a `PlumedMain` object.
+        if(!(module in outer_modules) && isarray(used_modules[module]) && ("wrapper" in used_modules[module]))
+           error("used_wrapper_module","wrapped module should not be used except in main")
+      }
+    }
   }
   file=ff[nf];
   filebase=file;
   sub("\\..*","",filebase);
 
-# guess type of file from extension
-  filetype=""
-  if(match(FILENAME,".*\\.h")) filetype="header"
-  if(match(FILENAME,".*\\.cpp")) filetype="source"
-  if(match(FILENAME,".*\\.ac")) filetype="autoconf"
-
 # checks that are done only on some modules will be skipped if the module name is not known
   if((filetype=="source" || filetype=="header") && !module) information("missing_module_name","module name is not know, some check will be skipped");
 
-  if(filetype=="source" || filetype=="header"){
+  if(astyle_available && (filetype=="source" || filetype=="header")){
     tempfile = tmpdir "/astyle"
     system(astyle " --options=" astyle_options " < " FILENAME " > " tempfile)
     s=system("diff -q " FILENAME " " tempfile ">/dev/null 2>/dev/null")
@@ -242,13 +277,22 @@ BEGINFILE{
 # detect copyright lines
     if($0=="/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++") in_copyright=1;
 # check direct inclusion of headers that would bypass module dependencies
+    if(module && match($0,"^# *include +\\\"\\.\\.")) {
+      included_module_name=$0;
+      sub("^# *include +\\\"\\.\\./","",included_module_name);
+      sub("/.*$","",included_module_name);
 # DOC: :include_dots:
-# DOC: It is considered an error to include a file using a path starting with `..`.
-# DOC: The reason is that this would allow to include PLUMED modules that have not been
-# DOC: explicitly declared in the Makefile (e.g. using `#include "../tools/Vector.h"`).
+# DOC: It is considered an error to include a file using a path starting with `../dir`,
+# DOC: where `dir` is not the name of a module explicitly declared as used in the Makefile.
 # DOC: This might result in undetected dependences between the modules, which means that
 # DOC: by enabling some set of modules one would result in a non-linkable library.
-    if(match($0,"^# *include +\\\"\\.\\.")) error("include_dots","cannot include files using .. path");
+# DOC: As an exception, one can include files such as `../dir` where `dir` is the current module
+# DOC: since this would obviously create no problem.
+# DOC: This would simplify life when moving files from a directory to another.
+      if(module != included_module_name) # ignore case where module is the same
+      if(!isarray(used_modules[module]) || (included_module_name in used_modules[module])==0)
+        error("include_dots","wrong include. Module '" included_module_name "' is not used.");
+    }
 
 # check if there is anything behind copyright and preprocessor commands
     if(!in_copyright && !match($0,"^# *include") && !match($0,"^# *ifndef") && !match($0,"^# *endif") && !match($0,"^# *define") && !match($0,"^ *$")) found_non_preprocessor_lines=1
@@ -278,6 +322,10 @@ BEGINFILE{
 # DOC: E.g., use `#include <cstdlib>` instead of `#include <stdlib.h>`. Notice that
 # DOC: using the modern header all the functions are declared inside the `std` namespace.
       if(h in deprecated_headers) error("deprecated_header","including deprecated header " h);
+# DOC: :unsupported_header_regex:
+# DOC: Header `<regex>`, although part of the C++11 standard, is not supported by gcc 4.8.
+# DOC: In order to allow compatibility with old compilers, this header should not be used.
+      if(h == "regex") error("unsupported_header_regex","including unsupported header " h);
 # DOC: :external_header: (style)
 # DOC: Header files should possibly not include other header files from external libraries.
 # DOC: Indeed, once PLUMED is installed, if paths are not set correctly the include files of the other libraries
@@ -403,7 +451,7 @@ BEGINFILE{
 # now it is considered equivalent to a verbatim
 # later on we might make plumedfile compulsory instead of verbatim
     if(in_plumed_doc && (in_plumed_doc in provide_examples) && match($0,"^ *\\\\plumedfile *$")){
-      provide_verbatim[in_plumed_doc]=1
+      provide_plumedfile[in_plumed_doc]=1
     }
 #print match($0,"^ *\\\\verbatim *$"),"X" $0 "X"
 
@@ -540,11 +588,11 @@ END{
 # DOC: Every action that is registered should contain an `Example` section in its documentation.
 # DOC: Notice that if the `Example` section is not added the manual will not show the registered keywords.
       error("action_without_examples","action " action " at " plumed_doc_action[action] " has no example")
-    } else if(!(action in provide_verbatim)){
+    } else if(!(action in provide_plumedfile)){
 # DOC: :action_without_verbatim:
-# DOC: Every action that is registered should contain an example in the form of a `verbatim` section.
+# DOC: Every action that is registered should contain an example in the form of a `plumedfile` section.
 # DOC: This is currently a stylistic warning since there are many actions not satisfying this requirement.
-      style("action_without_verbatim","action " action " at " provide_examples[action] " has no verbatim")
+      style("action_without_plumedfile","action " action " at " provide_examples[action] " has no plumedfile")
     }
   }
 

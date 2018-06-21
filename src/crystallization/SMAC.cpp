@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -172,7 +172,8 @@ double SMAC::computeVectorFunction( const Vector& conn, const std::vector<double
 
   unsigned nvectors = ( vec1.size() - 2 ) / 3; plumed_assert( (vec1.size()-2)%3==0 );
   std::vector<Vector> dv1(nvectors), dv2(nvectors), tdconn(nvectors); Torsion t; std::vector<Vector> v1(nvectors), v2(nvectors);
-  std::vector<Value*> pos; for(unsigned i=0; i<nvectors; ++i) { pos.push_back( new Value() ); pos[i]->setDomain( "-pi", "pi" ); }
+  std::vector<std::unique_ptr<Value>> pos;
+  for(unsigned i=0; i<nvectors; ++i) { pos.emplace_back( new Value() ); pos[i]->setDomain( "-pi", "pi" ); }
 
   for(unsigned j=0; j<nvectors; ++j) {
     for(unsigned k=0; k<3; ++k) {
@@ -182,15 +183,16 @@ double SMAC::computeVectorFunction( const Vector& conn, const std::vector<double
     pos[j]->set( angle );
   }
 
+  auto pos_ptr=Tools::unique2raw(pos);
+
   double ans=0; std::vector<double> deriv( nvectors ), df( nvectors, 0 );
   for(unsigned i=0; i<kernels.size(); ++i) {
-    ans += kernels[i].evaluate( pos, deriv );
+    ans += kernels[i].evaluate( pos_ptr, deriv );
     for(unsigned j=0; j<nvectors; ++j) df[j] += deriv[j];
   }
   dconn.zero(); for(unsigned j=0; j<nvectors; ++j) dconn += df[j]*tdconn[j];
   for(unsigned j=0; j<nvectors; ++j) {
     for(unsigned k=0; k<3; ++k) { dvec1[2+3*j+k]=df[j]*dv1[j][k]; dvec2[2+3*j+k]=df[j]*dv2[j][k]; }
-    delete pos[j];
   }
   return ans;
 }

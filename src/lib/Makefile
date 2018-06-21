@@ -16,6 +16,13 @@ ifneq ($(MAKECMDGOALS),clean)
   -include ../../Makefile.conf
 endif
 
+# Extra flags for python
+ifeq ($(SOEXT),dylib)
+PYTHON_EXTRA_LDFLAGS=-undefined dynamic_lookup
+else
+PYTHON_EXTRA_LDFLAGS=
+endif
+
 # if machine dependent configuration has been found:
 ifdef GCCDEP
 
@@ -42,21 +49,25 @@ OBJ_KERNEL := $(XXX:.c=.o)
 ALL_OBJ := $(OBJ_KERNEL) $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER) $(OBJ_MAIN)
 
 # when calling install-build, libraries in install should be built.
+# PLUMED_NAME is just set to $(program_name) instead of plumed
+# this allows setting the correct names for the to be installed libraries
 ifeq ($(PLUMED_INSTALL),Install)
   PLUMED_LIBDIR:=install/
+  PLUMED_NAME=$(program_name)
 else
   PLUMED_LIBDIR:=
+  PLUMED_NAME=plumed
 endif
 
 # plumed kernel
-PLUMED_KERNEL := $(PLUMED_LIBDIR)libplumedKernel.$(SOEXT)
+PLUMED_KERNEL := $(PLUMED_LIBDIR)lib$(PLUMED_NAME)Kernel.$(SOEXT)
 
 # plumed library (kernel + wrapper)
-PLUMED_SHARED_OBJ := $(PLUMED_LIBDIR)libplumed.$(SOEXT)
+PLUMED_SHARED_OBJ := $(PLUMED_LIBDIR)lib$(PLUMED_NAME).$(SOEXT)
 
 # plumed wrapper library
 ifdef AR_CR
-PLUMED_WRAPPER_LIB := $(PLUMED_LIBDIR)libplumedWrapper.a
+PLUMED_WRAPPER_LIB := $(PLUMED_LIBDIR)lib$(PLUMED_NAME)Wrapper.a
 else
 PLUMED_WRAPPER_LIB := 
 endif
@@ -66,11 +77,23 @@ PLUMED_SCRIPTS_SH := $(shell cd ../../scripts/ ; ls *.sh 2>/dev/null)
 PLUMED_SCRIPTS := $(PLUMED_SCRIPTS_SH:.sh=)
 PLUMED_SCRIPTS_EXE := $(addprefix $(PLUMED_LIBDIR)plumed-,$(PLUMED_SCRIPTS))
 
-# plumed main exec
-PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)plumed
-PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)plumed-shared
-PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)plumed-runtime
+# use shared executable by default when possible
+ifdef SOEXT
+  PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)$(PLUMED_NAME)-static
+  PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)$(PLUMED_NAME)
+  PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)$(PLUMED_NAME)-runtime
+else
+  PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)$(PLUMED_NAME)
+  PLUMED_MAIN_SHARED :=
+  PLUMED_MAIN_RUNTIME :=
+endif
 
+# check if bindir and libdir are consistent.
+# notice that this is not required yet but if we later we want
+# to use $ORIGIN based rpaths this would be needed
+ifneq ($(dir $(bindir)),$(dir $(libdir)))
+  $(error bindir and libdir are not consistent, please set them as subdirectories of the same directory)
+endif
 
 .PHONY: all links $(DIRS) $(DIRSLINKS) all-static $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.inc install $(PLUMED_SCRIPTS_EXE) install-html
 all:
@@ -85,6 +108,10 @@ ifneq ($(PLUMED_INSTALL),Install)
 	$(MAKE) install-build
 endif
 
+# on Mac, for pkgconfigInternals should also link -lplumedKernel
+ifeq ($(SOEXT),dylib)
+  LIBS_PLUMED_KERNEL=-l$(program_name)Kernel
+endif
 
 dirs:
 	@echo "*** Compiling all directories ***"
@@ -95,6 +122,9 @@ install-build:
 	$(MAKE) PLUMED_INSTALL=Install all
 ifdef LD_RO
 	$(MAKE) PLUMED_INSTALL=Install install/kernel.o
+endif
+ifeq ($(make_static_archive),yes)
+	$(MAKE) PLUMED_INSTALL=Install install/lib$(program_name).a
 endif
 # modulefile
 	@cat modulefile.in | \
@@ -109,6 +139,7 @@ endif
            sed "s|@_program_name_@|$(program_name)|" | \
            sed "s|@_libdir_@|$(libdir)|" | \
            sed "s|@_libs_@||" | \
+           sed "s|@_private_libs_@|$(LIBS) $(DYNAMIC_LIBS)|" | \
            sed "s|@_bindir_@|$(bindir)|" | \
            sed "s|@_includedir_@|$(includedir)|" | \
            sed "s|@_prefix_@|$(prefix)|" | \
@@ -122,7 +153,8 @@ endif
            sed "s|@_SOEXT_@|$(SOEXT)|" | \
            sed "s|@_program_name_@|$(program_name)|" | \
            sed "s|@_libdir_@|$(libdir)|" | \
-           sed "s|@_libs_@||" | \
+           sed "s|@_libs_@|$(LIBS_PLUMED_KERNEL)|" | \
+           sed "s|@_private_libs_@|$(LIBS) $(DYNAMIC_LIBS)|" | \
            sed "s|@_bindir_@|$(bindir)|" | \
            sed "s|@_includedir_@|$(includedir)|" | \
            sed "s|@_prefix_@|$(prefix)|" | \
@@ -137,6 +169,7 @@ endif
            sed "s|@_program_name_@|$(program_name)Wrapper|" | \
            sed "s|@_libdir_@|$(libdir)|" | \
            sed "s|@_libs_@|$(LIBS)|" | \
+           sed "s|@_private_libs_@||" | \
            sed "s|@_bindir_@|$(bindir)|" | \
            sed "s|@_includedir_@|$(includedir)|" | \
            sed "s|@_prefix_@|$(prefix)|" | \
@@ -152,6 +185,12 @@ install/kernel.o: $(OBJ_KERNEL)
 	$(LD_RO) install/kernel.o $(OBJ_KERNEL)
 endif
 
+ifeq ($(make_static_archive),yes)
+install/lib$(program_name).a: install/kernel.o $(OBJ_WRAPPER)
+	rm -f $@
+	$(AR_CR) $@ $^
+endif
+
 # standard target (according to GNU doc)
 install-html:
 	if test -d ../../user-doc/html ; then mkdir -p "$(DESTDIR)$(htmldir)" && cd ../../ && tar cf - user-doc/html | tar xf - -C "$(DESTDIR)$(htmldir)/" ; fi
@@ -163,11 +202,9 @@ install:
 ifdef PLUMED_PREFIX
 	@echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	@echo "WARNING: using PLUMED_PREFIX variable is not allowed anymore"
-	@echo "         please use one of the following choices:"
-	@echo "         (1) at configure time:"
-	@echo "           ./configure --prefix=$(PLUMED_PREFIX)"
-	@echo "         (2) or later, at install time:"
-	@echo "           make install prefix=$(PLUMED_PREFIX)"
+	@echo "         please use the following option at configure time"
+	@echo "         ./configure --prefix='$(PLUMED_PREFIX)'"
+	@echo "         there is no way to change the suffix at install time"
 	@echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 endif
 ifdef PLUMED_LIBSUFFIX
@@ -179,19 +216,22 @@ ifdef PLUMED_LIBSUFFIX
 	@echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 endif
 ifndef program_name
-	$(error "it seems Makefile.conf does not defined program_name - please configure again!")
+	$(error "it seems Makefile.conf does not define program_name - please configure again!")
 endif
 ifndef bindir
-	$(error "it seems Makefile.conf does not defined bindir - please configure again!")
+	$(error "it seems Makefile.conf does not define bindir - please configure again!")
 endif
 ifndef libdir
-	$(error "it seems Makefile.conf does not defined libdir - please configure again!")
+	$(error "it seems Makefile.conf does not define libdir - please configure again!")
 endif
 ifndef includedir
-	$(error "it seems Makefile.conf does not defined includedir - please configure again!")
+	$(error "it seems Makefile.conf does not define includedir - please configure again!")
 endif
 ifndef htmldir
-	$(error "it seems Makefile.conf does not defined htmldir - please configure again!")
+	$(error "it seems Makefile.conf does not define htmldir - please configure again!")
+endif
+ifneq ($(prefix),$(prefix_double_check))
+	$(error "with PLUMED 2.5 you cannot change anymore prefix during make install - please configure again!")
 endif
 	cd ../config ; $(MAKE)
 # in principle we should uninstall before install
@@ -219,17 +259,21 @@ endif
 	cp ../config/compile_options.sh "$(DESTDIR)$(libdir)/$(program_name)/src/config/compile_options.sh"
 # copy config.txt file (we leave it in src/colvar/ for backward compatibility)
 	cp ../config/config.txt "$(DESTDIR)$(libdir)/$(program_name)/src/config/config.txt"
+ifeq ($(make_static_archive),yes)
+	cp install/lib$(program_name).a "$(DESTDIR)$(libdir)/"
+else
+	cp $(OBJ_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/PlumedStatic.o"
 ifdef LD_RO
 	cp install/kernel.o "$(DESTDIR)$(libdir)/$(program_name)/obj/kernel.o"
 else
 	../maketools/copyobjects "$(DESTDIR)$(libdir)/$(program_name)/obj/k" $(subst ../config/Config.o,../config/ConfigInstall.o,$(OBJ_KERNEL))
 endif
-	cp $(OBJ_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/PlumedStatic.o"
-	cp $(OBJ_DYNAMIC_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/Plumed.o"
+endif
 # also copy .h files into include/ dir
-	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C "$(DESTDIR)$(includedir)/$(program_name)/"
+	$(MAKE) install-headers
 # install executable
-	cp install/plumed "$(DESTDIR)$(bindir)/$(program_name)"
+# for OSX, this automatically use the dynamically linked executable
+	cp install/"$(program_name)" "$(DESTDIR)$(bindir)/"
 # patch file for cross compiling
 	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-patch"
 # config file for cross compiling
@@ -241,15 +285,14 @@ endif
 # other shell-based cltools are copied
 	for file in $(PLUMED_SCRIPTS) ; do cp install/plumed-$$file "$(DESTDIR)$(libdir)/$(program_name)/plumed-$$file" ; done
 ifdef SOEXT
-	cp install/libplumed.$(SOEXT) "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
-	cp install/libplumedKernel.$(SOEXT) "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
-ifeq ($(SOEXT),dylib)
-	install_name_tool -id "$(libdir)/lib$(program_name).$(SOEXT)" "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
-	install_name_tool -id "$(libdir)/lib$(program_name)Kernel.$(SOEXT)" "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
-endif
-endif
+	cp install/lib"$(program_name)".$(SOEXT) "$(DESTDIR)$(libdir)/"
+	cp install/lib"$(program_name)"Kernel.$(SOEXT) "$(DESTDIR)$(libdir)/"
+	if test -e install/"$(program_name)"-runtime ; then cp install/"$(program_name)"-runtime "$(DESTDIR)$(libdir)/$(program_name)/plumed-runtime" ; fi
 ifdef AR_CR
-	cp install/libplumedWrapper.a "$(DESTDIR)$(libdir)/lib$(program_name)Wrapper.a"
+	cp install/lib$(program_name)Wrapper.a "$(DESTDIR)$(libdir)/"
+else
+	cp $(OBJ_DYNAMIC_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/Plumed.o"
+endif
 endif
 # modulefile
 	cp install/modulefile "$(DESTDIR)$(libdir)/$(program_name)/modulefile"
@@ -268,7 +311,7 @@ ifdef python_bin
 	cp -pr ../../python install 
 	cd install/python && rm -fr *.so plumed.cpp build && \
         CC="$(CC)" \
-          LDSHARED="$(LDSHARED)" \
+          LDSHARED="$(LDSHARED) $(PYTHON_EXTRA_LDFLAGS)" \
           CXX="$(CXX)" \
           plumedexe="../../plumed" \
           program_name="$(program_name)" \
@@ -276,6 +319,10 @@ ifdef python_bin
           lib_dir="$(DESTDIR)$(libdir)" \
           $(python_bin) buildPythonInterface.py build_ext -i
 	cp -pr install/python "$(DESTDIR)$(libdir)/$(program_name)/" 
+endif
+ifdef BASH_COMPLETION_DIR
+	mkdir -p "$(DESTDIR)$(BASH_COMPLETION_DIR)"
+	cp bash.completion "$(DESTDIR)$(BASH_COMPLETION_DIR)/$(program_name)"
 endif
 # making everything visible:
 	chmod -R go+rX,go-w "$(DESTDIR)$(libdir)/$(program_name)"
@@ -316,6 +363,9 @@ ifdef SOEXT
 	@echo $(libdir)/lib$(program_name).$(SOEXT)
 	@echo $(libdir)/lib$(program_name)Kernel.$(SOEXT)
 endif
+ifdef BASH_COMPLETION_DIR
+	@echo $(BASH_COMPLETION_DIR)/$(program_name)
+endif
 	@if test -d ../../vim/help ; then echo "A vim plugin can be found here: $(libdir)/$(program_name)/vim/" ; fi
 	@if test -d ../../vim/help ; then echo "Copy it to $(HOME)/.vim/ directory" ; fi
 	@if test -d ../../vim/help ; then echo "Alternatively:" ; fi
@@ -329,18 +379,20 @@ endif
 	@if test -d ../../python/build ; then echo "Plumed can be loaded in a python script using the command import plumed" ; fi
 ifeq ($(program_can_run),no)
 	@echo "WARNING: $(program_name) executable will not run on this machine"
-	@echo "WARNING: to patch an MD code use 'plumed-patch'"
-	@echo "WARNING: to verify configuration use 'plumed-config'"
-	@echo "WARNING: a few other command line tools are avalable as $(libdir)/$(program_name)/plumed-*"
+	@echo "WARNING: This is normal if you are cross compiling."
+	@echo "WARNING: - to patch an MD code use '$(program_name)-patch'"
+	@echo "WARNING: - to verify configuration use '$(program_name)-config'"
+	@echo "WARNING: - a few other command line tools are avalable as $(libdir)/$(program_name)/plumed-*"
 else ifeq ($(program_can_run_mpi),no)
 	@echo "WARNING: $(program_name) executable will not run on this machine"
 	@echo "WARNING: unless you invoke it as '$(program_name) --no-mpi'"
-	@echo "WARNING: to patch an MD code now use '$(program_name) --no-mpi patch'"
-	@echo "WARNING: (notice that MPI will be available anyway in the patched code)"
-	@echo "WARNING: all command line tools are available as '$(program_name) --no-mpi name-of-the-tool'"
-	@echo "WARNING: e.g. '$(program_name) --no-mpi driver'"
+	@echo "WARNING: This is normal if this is the login node of a cluster."
+	@echo "WARNING: - to patch an MD code now use '$(program_name) --no-mpi patch'"
+	@echo "WARNING:   (notice that MPI will be available anyway in the patched code)"
+	@echo "WARNING: - all command line tools are available as '$(program_name) --no-mpi name-of-the-tool'"
+	@echo "WARNING:   e.g. '$(program_name) --no-mpi driver'"
+	@echo "WARNING:   (MPI will be disabled in this case)"
 endif
-
 
 uninstall:
 	@echo WARNING
@@ -363,7 +415,7 @@ uninstall:
 	rm -f "$(DESTDIR)$(bindir)/bin/$(program_name)-config"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
-	rm -f "$(DESTDIR)$(libdir)/lib/pkgconfig/$(PLUMED_PROGRAM_NAME).pc"
+	rm -f "$(DESTDIR)$(libdir)/lib/pkgconfig/$(program_name).pc"
 
 $(DIRS):
 	$(MAKE) -C $@ obj
@@ -394,32 +446,47 @@ ifeq ($(PLUMED_INSTALL),Install)
 else
 	@echo "export PLUMED_IS_INSTALLED=no" >> $@
 	@echo "export PLUMED_ROOT=\"\$${PLUMED_ROOT-$(realpath ../../)}\"" >> $@
-	@echo "export PLUMED_INCLUDEDIR=\"\$${PLUMED_ROOT}/include\"" >> $@
+	@echo "export PLUMED_INCLUDEDIR=\"\$${PLUMED_ROOT}/src/include\"" >> $@
 	@echo "export PLUMED_HTMLDIR=\"\$${PLUMED_ROOT}\"" >> $@
 	@echo "export PLUMED_PROGRAM_NAME=plumed" >> $@
 	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@
 endif
 	chmod a+x $@
 
+# the only difference between OSX and Linux is that on OSX we hardcode full paths
+# whereas on Linux we use the file name only. For Linux, this implies
+# that LD_LIBRARY_PATH must be set correctly.
 $(PLUMED_KERNEL):$(OBJ_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-	cd install && $(LDSHARED) -o libplumedKernel.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(DYNAMIC_LIBS)
-else
-	$(LDSHARED) -o $@ $^ $(DYNAMIC_LIBS)
 ifeq ($(SOEXT),dylib)
-	install_name_tool -id "$(realpath .)/libplumedKernel.$(SOEXT)" libplumedKernel.$(SOEXT)
+	$(LDSHARED) -o $@ $^ -Wl,-install_name,"$(libdir)/lib$(program_name)Kernel.$(SOEXT)" $(DYNAMIC_LIBS)
+else
+	$(LDSHARED) -o $@ $^ -Wl,-soname,"$(notdir $(PLUMED_KERNEL))" $(DYNAMIC_LIBS)
+endif
+else
+ifeq ($(SOEXT),dylib)
+	$(LDSHARED) -o $@ $^ -Wl,-install_name,"$(realpath .)/libplumedKernel.$(SOEXT)" $(DYNAMIC_LIBS)
+else
+	$(LDSHARED) -o $@ $^ -Wl,-soname,"$(notdir $(PLUMED_KERNEL))" $(DYNAMIC_LIBS)
 endif
 endif
 
-$(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER)
+# dependence on PLUMED_KERNEL is required for build on OSX to work correctly:
+# dependence on OBJ_KERNEL is required on linux
+$(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-	cd install && $(LDSHARED) -o libplumed.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(addprefix ../,$(OBJ_WRAPPER)) $(DYNAMIC_LIBS)
-else
-	$(LDSHARED) -o $@ $^ $(DYNAMIC_LIBS)
 ifeq ($(SOEXT),dylib)
-	install_name_tool -id "$(realpath .)/libplumed.$(SOEXT)" $@
+	$(LDSHARED) -o $@ $(OBJ_WRAPPER) $(PLUMED_KERNEL) -Wl,-install_name,"$(libdir)/lib$(program_name).$(SOEXT)" $(LIBS)
+else
+	$(LDSHARED) -o $@ $(OBJ_WRAPPER) $(PLUMED_KERNEL) -Wl,-soname,"$(notdir $(PLUMED_SHARED_OBJ))" $(LIBS)
+endif
+else
+ifeq ($(SOEXT),dylib)
+	$(LDSHARED) -o $@ $(OBJ_WRAPPER) $(PLUMED_KERNEL) -Wl,-install_name,"$(realpath .)/libplumed.$(SOEXT)" $(LIBS)
+else
+	$(LDSHARED) -o $@ $(OBJ_WRAPPER) $(PLUMED_KERNEL) -Wl,-soname,"$(notdir $(PLUMED_SHARED_OBJ))" $(LIBS)
 endif
 endif
 
@@ -427,17 +494,19 @@ ifdef AR_CR
 $(PLUMED_WRAPPER_LIB): $(OBJ_DYNAMIC_WRAPPER)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-	cd install && $(AR_CR) libplumedWrapper.a $(addprefix ../,$(OBJ_DYNAMIC_WRAPPER))
-else
-	$(AR_CR) $@ $(OBJ_DYNAMIC_WRAPPER)
 endif
+	$(AR_CR) $@ $^
 endif
 
 $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(DYNAMIC_LIBS)
 	
 $(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(PLUMED_SHARED_OBJ)
-	$(LD) $(LDFLAGS) $(OBJ_MAIN) "$(realpath $(PLUMED_SHARED_OBJ))" -o $@ $(LIBS)
+ifeq ($(SOEXT),dylib)
+	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
+else
+	$(LD) $(LDFLAGS) $^ -o $@ -Wl,-rpath-link,"$(dir $@)" $(LIBS)
+endif
 
 $(PLUMED_MAIN_RUNTIME): $(OBJ_MAIN) $(OBJ_DYNAMIC_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
@@ -451,22 +520,30 @@ ifdef AR_CR
 else
 	@echo "PLUMED_RUNTIME_LOAD= \"$(libdir)/$(program_name)/obj/Plumed.o\" $(LIBS) $(LDFLAGS)" > $@
 endif
+ifeq ($(make_static_archive),yes)
+	@echo "PLUMED_STATIC_LOAD= \"$(libdir)/lib$(program_name).a\" $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)" >> $@
+else
 ifdef LD_RO
 	@echo "PLUMED_STATIC_LOAD= \"$(libdir)/$(program_name)/obj/kernel.o\" \"$(libdir)/$(program_name)/obj/PlumedStatic.o\" $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)" >> $@
 else
 # single quote required to preserve double quote in resulting file
 	@echo "PLUMED_STATIC_LOAD= '$(shell ../maketools/listobjects "$(libdir)/$(program_name)/obj/k" $(OBJ_KERNEL))' \"$(libdir)/$(program_name)/obj/PlumedStatic.o\" $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)" >> $@
 endif
+endif
 	@echo "PLUMED_SHARED_LOAD= \"$(libdir)/lib$(program_name).$(SOEXT)\" $(LIBS) $(LDFLAGS)" >> $@
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
 # in principle all objects are replaced at the same time
 # however, to keep compatibility with the include files generated in plumed 2.0 and 2.1,
 # I put all the objects (or shared objects) here
+ifeq ($(make_static_archive),yes)
+	@echo "PLUMED_STATIC_DEPENDENCIES= \"$(libdir)/lib$(program_name).a\"" >> $@
+else
 ifdef LD_RO
 	@echo "PLUMED_STATIC_DEPENDENCIES= \"$(libdir)/$(program_name)/obj/kernel.o\" \"$(libdir)/$(program_name)/obj/PlumedStatic.o\"" >> $@
 else
 # single quote required to preserve double quote in resulting file
 	@echo "PLUMED_STATIC_DEPENDENCIES= '$(shell ../maketools/listobjects "$(libdir)/$(program_name)/obj/k" $(OBJ_KERNEL))' \"$(libdir)/$(program_name)/obj/PlumedStatic.o\"" >> $@
+endif
 endif
 	@echo "PLUMED_SHARED_DEPENDENCIES= \"$(libdir)/lib$(program_name).$(SOEXT)\""  >> $@
 else
@@ -537,8 +614,7 @@ endif
 .PHONY: clean dirslinks
 clean:
 	rm -f $(CLEANLIST)
-	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
-	rm -f Plumed.inc* plumed-* Plumed.cmake*
+	rm -f plumed Plumed.inc* plumed-* Plumed.cmake*
 # this is not necessary, I leave it here to remove spurious plumed.vim files generated with
 # the first version of plumed.vim syntax file:
 	rm -f plumed.vim
@@ -550,6 +626,9 @@ dirslinks:
 	$(MAKE) $(DIRSLINKS)
 $(DIRSLINKS): %.links:
 	$(MAKE) -C $* links
+
+install-headers:
+	bash ../maketools/install.headers "$(DESTDIR)$(includedir)/$(program_name)/" $(subst ../,,$(DIRS))
 
 
 # generic makefile rules

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017 The plumed team
+   Copyright (c) 2017,2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,20 +22,28 @@
 /*
  This class was originally written by Alexander Jussupow and
  Carlo Camilloni
+ Extension for the middleman algorithm by Max Muehlbauer
 */
 
 #include "MetainferenceBase.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
-#include "core/PlumedMain.h"
 #include "core/SetupMolInfo.h"
 #include "tools/Communicator.h"
-#include "tools/OpenMP.h"
 #include "tools/Pbc.h"
 
 #include <string>
 #include <cmath>
 #include <map>
+
+#ifdef __PLUMED_HAS_GSL
+#include <gsl/gsl_sf_bessel.h>
+#include <gsl/gsl_sf_legendre.h>
+#endif
+
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
 
 using namespace std;
 
@@ -97,12 +105,23 @@ class SAXS :
 private:
   bool                     pbc;
   bool                     serial;
+  bool                     bessel;
+  bool                     force_bessel;
   vector<double>           q_list;
   vector<double>           FF_rank;
   vector<vector<double> >  FF_value;
+  vector<double>           avals;
+  vector<double>           bvals;
 
   void getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter);
   void calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho);
+  void bessel_calculate(vector<Vector> &deriv, vector<double> &sum, vector<Vector2d> &qRnm, const vector<double> &r_polar,
+                        const vector<unsigned> &trunc, const int algorithm, const unsigned p2);
+  void setup_midl(vector<double> &r_polar, vector<Vector2d> &qRnm, int &algorithm, unsigned &p2, vector<unsigned> &trunc);
+  Vector2d dXHarmonics(const unsigned p2, const unsigned k, const unsigned i, const int n, const int m, const vector<Vector2d> &decRnm);
+  Vector2d dYHarmonics(const unsigned p2, const unsigned k, const unsigned i, const int n, const int m, const vector<Vector2d> &decRnm);
+  Vector2d dZHarmonics(const unsigned p2, const unsigned k, const unsigned i, const int n, const int m, const vector<Vector2d> &decRnm);
+  void cal_coeff();
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -119,6 +138,8 @@ void SAXS::registerKeywords(Keywords& keys) {
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
+  keys.addFlag("BESSEL",false,"Perform the calculation using the adaptive spherical harmonic approximation");
+  keys.addFlag("FORCE_BESSEL",false,"Perform the calculation using the adaptive spherical harmonic approximation, without adaptive algorithm, usefull for debug only");
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
@@ -135,13 +156,23 @@ void SAXS::registerKeywords(Keywords& keys) {
 SAXS::SAXS(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
   pbc(true),
-  serial(false)
+  serial(false),
+  bessel(false),
+  force_bessel(false)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   const unsigned size = atoms.size();
 
   parseFlag("SERIAL",serial);
+
+  parseFlag("BESSEL",bessel);
+  parseFlag("FORCE_BESSEL",force_bessel);
+  if(force_bessel) bessel = true;
+#ifndef __PLUMED_HAS_GSL
+  if(bessel) error("You CANNOT use BESSEL without GSL. Recompile PLUMED with GSL!\n");
+#endif
+  if(bessel) cal_coeff();
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -159,7 +190,6 @@ SAXS::SAXS(const ActionOptions&ao):
     ntarget++;
   }
   const unsigned numq = ntarget;
-
 
   bool atomistic=false;
   parseFlag("ATOMISTIC",atomistic);
@@ -269,6 +299,7 @@ SAXS::SAXS(const ActionOptions&ao):
   // convert units to nm^-1
   for(unsigned i=0; i<numq; ++i) {
     q_list[i]=q_list[i]*10.0;    //factor 10 to convert from A^-1 to nm^-1
+    if(bessel&&i>0&&q_list[i]<q_list[i-1]) plumed_merror("With BESSEL the Q values should be ordered from the smallest to the largest");
   }
   log<<"  Bibliography ";
   log<<plumed.cite("Jussupow, et al. (in preparation)");
@@ -277,6 +308,7 @@ SAXS::SAXS(const ActionOptions&ao):
     log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978).");
     log<<plumed.cite("Brown, Fox, Maslen, O'Keefe, Willis, International Tables for Crystallography C, 554–595 (International Union of Crystallography, 2006).");
   }
+  log<< plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 
   requestAtoms(atoms);
@@ -288,7 +320,8 @@ SAXS::SAXS(const ActionOptions&ao):
   checkRead();
 }
 
-void SAXS::calculate() {
+void SAXS::calculate()
+{
   if(pbc) makeWhole();
 
   const unsigned size = getNumberOfAtoms();
@@ -303,28 +336,59 @@ void SAXS::calculate() {
 
   vector<Vector> deriv(numq*size);
   vector<double> sum(numq,0);
+  vector<Vector> c_dist(size*size);
+  vector<double> m_dist(size*size);
 
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for (unsigned k=0; k<numq; k++) {
-    const unsigned kdx=k*size;
+  vector<double> r_polar;
+  vector<Vector2d> qRnm;
+  vector<unsigned> trunc;
+  int algorithm=-1;
+  unsigned p2=0;
+  bool direct = true;
+
+  if(bessel) {
+    r_polar.resize(size);
+    trunc.resize(numq);
+    setup_midl(r_polar, qRnm, algorithm, p2, trunc);
+    if(algorithm>=0) bessel_calculate(deriv, sum, qRnm, r_polar, trunc, algorithm, p2);
+    if(algorithm+1>=numq) direct=false;
+    if(algorithm==-1) bessel=false;
+  }
+
+  if(direct) {
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
     for (unsigned i=rank; i<size-1; i+=stride) {
-      const double FF=2.*FF_value[k][i];
       const Vector posi=getPosition(i);
-      Vector dsum;
       for (unsigned j=i+1; j<size ; j++) {
-        const Vector c_distances = delta(posi,getPosition(j));
-        const double m_distances = c_distances.modulo();
-        const double qdist       = q_list[k]*m_distances;
-        const double FFF = FF*FF_value[k][j];
-        const double tsq = FFF*sin(qdist)/qdist;
-        const double tcq = FFF*cos(qdist);
-        const double tmp = (tcq-tsq)/(m_distances*m_distances);
-        const Vector dd  = c_distances*tmp;
-        dsum         += dd;
-        deriv[kdx+j] += dd;
-        sum[k]       += tsq;
+        c_dist[i*size+j] = delta(posi,getPosition(j));
+        m_dist[i*size+j] = c_dist[i*size+j].modulo();
       }
-      deriv[kdx+i] -= dsum;
+    }
+
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+    for (unsigned k=(algorithm+1); k<numq; k++) {
+      const unsigned kdx=k*size;
+      for (unsigned i=rank; i<size-1; i+=stride) {
+        const double FF=2.*FF_value[k][i];
+        //const Vector posi=getPosition(i);
+        Vector dsum;
+        for (unsigned j=i+1; j<size ; j++) {
+          //const Vector c_distances = delta(posi,getPosition(j));
+          //const double m_distances = c_distances.modulo();
+          const Vector c_distances = c_dist[i*size+j];
+          const double m_distances = m_dist[i*size+j];
+          const double qdist       = q_list[k]*m_distances;
+          const double FFF = FF*FF_value[k][j];
+          const double tsq = FFF*sin(qdist)/qdist;
+          const double tcq = FFF*cos(qdist);
+          const double tmp = (tcq-tsq)/(m_distances*m_distances);
+          const Vector dd  = c_distances*tmp;
+          dsum         += dd;
+          deriv[kdx+j] += dd;
+          sum[k]       += tsq;
+        }
+        deriv[kdx+i] -= dsum;
+      }
     }
   }
 
@@ -333,12 +397,26 @@ void SAXS::calculate() {
     comm.Sum(&sum[0], numq);
   }
 
-  for (unsigned k=0; k<numq; k++) {
-    sum[k]+=FF_rank[k];
-    string num; Tools::convert(k,num);
-    Value* val=getPntrToComponent("q_"+num);
-    val->set(sum[k]);
-    if(getDoScore()) setCalcData(k, sum[k]);
+  if(bessel) {
+    for(unsigned k=0; k<=algorithm; k++) {
+      const unsigned kN = k*size;
+      sum[k] *= 4.*M_PI;
+      string num; Tools::convert(k,num);
+      Value* val=getPntrToComponent("q_"+num);
+      val->set(sum[k]);
+      if(getDoScore()) setCalcData(k, sum[k]);
+      for(unsigned i=0; i<size; i++) deriv[kN+i] *= 8.*M_PI*q_list[k];
+    }
+  }
+
+  if(direct) {
+    for (unsigned k=algorithm+1; k<numq; k++) {
+      sum[k]+=FF_rank[k];
+      string num; Tools::convert(k,num);
+      Value* val=getPntrToComponent("q_"+num);
+      val->set(sum[k]);
+      if(getDoScore()) setCalcData(k, sum[k]);
+    }
   }
 
   if(getDoScore()) {
@@ -369,9 +447,212 @@ void SAXS::calculate() {
   }
 }
 
+void SAXS::bessel_calculate(vector<Vector> &deriv, vector<double> &sum, vector<Vector2d> &qRnm, const vector<double> &r_polar,
+                            const vector<unsigned> &trunc, const int algorithm, const unsigned p2)
+{
+#ifdef __PLUMED_HAS_GSL
+  const unsigned size = getNumberOfAtoms();
+
+  unsigned stride = comm.Get_size();
+  unsigned rank   = comm.Get_rank();
+  if(serial) {
+    stride = 1;
+    rank   = 0;
+  }
+
+  //calculation via Middleman method
+  for(unsigned k=0; k<algorithm+1; k++) {
+    const unsigned kN  = k * size;
+    const unsigned p22 = trunc[k]*trunc[k];
+    //double sum over the p^2 expansion terms
+    vector<Vector2d> Bnm(p22);
+    for(unsigned i=rank; i<size; i+=stride) {
+      double pq = r_polar[i]*q_list[k];
+      for(unsigned n=0; n<trunc[k]; n++) {
+        //the spherical bessel functions do not depend on the order and are therefore precomputed here
+        double besself = gsl_sf_bessel_jl(n,pq);
+        //here conj(R(m,n))=R(-m,n) is used to decrease the terms in the sum over m by a factor of two
+        for(unsigned m=0; m<(n+1); m++) {
+          int order = m-n;
+          int s = n*n + m;
+          int t = s - 2*order;
+          int x = p2*i + s;
+          int y = p2*i + t;
+          //real part of the spherical basis function of order m, degree n of atom i
+          qRnm[x]  *= besself;
+          //real part of the spherical basis function of order -m, degree n of atom i
+          qRnm[y][0] = qRnm[x][0];
+          //imaginary part of the spherical basis function of order -m, degree n of atom i
+          qRnm[y][1] = -qRnm[x][1];
+          //expansion coefficient of order m and degree n
+          Bnm[s] += FF_value[k][i] * qRnm[y];
+          //correction for expansion coefficient of order -m and degree n
+          if(order!=0) Bnm[t] += FF_value[k][i] * qRnm[x];
+        }
+      }
+    }
+
+    //calculate expansion coefficients for the derivatives
+    vector<Vector2d> a(3*p22);
+    for(unsigned i=rank; i<size; i+=stride) {
+      for(unsigned n=0; n<trunc[k]-1; n++) {
+        for(unsigned m=0; m<(2*n)+1; m++) {
+          unsigned t = 3*(n*n + m);
+          a[t]   += FF_value[k][i] * dXHarmonics(p2,k,i,n,m,qRnm);
+          a[t+1] += FF_value[k][i] * dYHarmonics(p2,k,i,n,m,qRnm);
+          a[t+2] += FF_value[k][i] * dZHarmonics(p2,k,i,n,m,qRnm);
+        }
+      }
+    }
+    if(!serial) {
+      comm.Sum(&Bnm[0][0],2*p22);
+      comm.Sum(&a[0][0],  6*p22);
+    }
+
+    //calculation of the scattering profile I of the kth scattering wavenumber q
+    for(int n=rank; n<trunc[k]; n+=stride) {
+      for(int m=0; m<(2*n)+1; m++) {
+        int s = n * n + m;
+        sum[k] += Bnm[s][0]*Bnm[s][0] + Bnm[s][1]*Bnm[s][1];
+      }
+    }
+
+    //calculation of (box)derivatives
+    for(unsigned i=rank; i<size; i+=stride) {
+      //vector of the derivatives of the expanded functions psi
+      Vector dPsi;
+      int s = p2 * i;
+      double pq = r_polar[i]* q_list[k];
+      for(int n=trunc[k]-1; n>=0; n--) {
+        double besself = gsl_sf_bessel_jl(n,pq);
+        for(int m=0; m<(2*n)+1; m++) {
+          int y = n  * n + m  + s;
+          int z = 3*(n*n+m);
+          dPsi[0] += 0.5*(qRnm[y][0] * a[z][0]   + qRnm[y][1] * a[z][1]);
+          dPsi[1] += 0.5*(qRnm[y][0] * a[z+1][1] - qRnm[y][1] * a[z+1][0]);
+          dPsi[2] +=      qRnm[y][0] * a[z+2][0] + qRnm[y][1] * a[z+2][1];
+          qRnm[y] /= besself;
+        }
+      }
+      deriv[kN+i] += FF_value[k][i] * dPsi;
+    }
+  }
+  //end of the k loop
+#endif
+}
+
+void SAXS::setup_midl(vector<double> &r_polar, vector<Vector2d> &qRnm, int &algorithm, unsigned &p2, vector<unsigned> &trunc)
+{
+#ifdef __PLUMED_HAS_GSL
+  const unsigned size = getNumberOfAtoms();
+  const unsigned numq = q_list.size();
+
+  unsigned stride = comm.Get_size();
+  unsigned rank   = comm.Get_rank();
+  if(serial) {
+    stride = 1;
+    rank   = 0;
+  }
+
+  Vector max = getPosition(0);
+  Vector min = getPosition(0);
+  vector<Vector> polar(size);
+
+  // transform in polar and look for min and max dist
+  for(unsigned i=0; i<size; i++) {
+    Vector coord=getPosition(i);
+    //r
+    polar[i][0]=sqrt(coord[0]*coord[0]+coord[1]*coord[1]+coord[2]*coord[2]);
+    r_polar[i] = polar[i][0];
+    //cos(theta)
+    polar[i][1]=coord[2]/polar[i][0];
+    //phi
+    polar[i][2]=atan2(coord[1],coord[0]);
+
+    if(coord[0]<min[0]) min[0] = coord[0];
+    if(coord[1]<min[1]) min[1] = coord[1];
+    if(coord[2]<min[2]) min[2] = coord[2];
+    if(coord[0]>max[0]) max[0] = coord[0];
+    if(coord[1]>max[1]) max[1] = coord[1];
+    if(coord[2]>max[2]) max[2] = coord[2];
+  }
+  max -= min;
+  double maxdist = max[0];
+  if(maxdist<max[1]) maxdist = max[1];
+  if(maxdist<max[2]) maxdist = max[2];
+  unsigned truncation=5+static_cast<unsigned>(1.2*maxdist*q_list[numq-1]+0.5*pow((12-log10(maxdist*q_list[numq-1])),2/3)*pow(maxdist*q_list[numq-1],1/3));
+  if(truncation<10) truncation=10;
+  if(truncation>99) truncation=99;
+  p2=truncation*truncation;
+  //dynamically set the truncation according to the scattering wavenumber.
+  for(int k=numq-1; k>=0; k--) {
+    trunc[k]=5+static_cast<unsigned>(1.2*maxdist*q_list[k]+0.5*pow((12-log10(maxdist*q_list[k])),2/3)*pow(maxdist*q_list[k],1/3));
+    if(trunc[k]<10) trunc[k] = 10;
+    if(4*trunc[k]<static_cast<unsigned>(sqrt(2*size)) && algorithm<0) algorithm=k;
+  }
+
+  if(algorithm==-1) log.printf("BESSEL is suboptimal for this system and is being disabled, unless FORCE_BESSEL is used\n");
+  if(force_bessel) algorithm=numq-1;
+
+  qRnm.resize(p2*size);
+  //as the legndre polynomials and the exponential term in the basis set expansion are not function of the scattering wavenumber, they can be precomputed
+  for(unsigned i=rank; i<size; i+=stride) {
+    for(int n=0; n<truncation; n++) {
+      for(int m=0; m<(n+1); m++) {
+        int order  = m-n;
+        int x      = p2*i + n*n + m;
+        double gsl = gsl_sf_legendre_sphPlm(n,abs(order),polar[i][1]);
+        //real part of the spherical basis function of order m, degree n of atom i
+        qRnm[x][0] = gsl * cos(order*polar[i][2]);
+        //imaginary part of the spherical basis function of order m, degree n of atom i
+        qRnm[x][1] = gsl * sin(order*polar[i][2]);
+      }
+    }
+  }
+#endif
+}
+
 void SAXS::update() {
   // write status file
   if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
+}
+
+//partial derivatives of the spherical basis functions
+Vector2d SAXS::dXHarmonics(const unsigned p2, const unsigned k, const unsigned i, const int n, const int m, const vector<Vector2d> &qRnm) {
+  Vector2d                            dRdc = (bvals[n*(n+4)-m+1] * qRnm[p2*i+n*(n+2)+m+3] + bvals[n*(n+2)+m+1] * qRnm[p2*i+n*(n+2)+m+1]);
+  if((abs(m-n-1)<=(n-1))&&((n-1)>=0)) dRdc-= bvals[n*(n+2)-m] * qRnm[p2*i+n*(n-2)+m-1];
+  if((abs(m-n+1)<=(n-1))&&((n-1)>=0)) dRdc-= bvals[n*n+m] * qRnm[p2*i+n*n-2*n+m+1];
+  return dRdc;
+}
+
+
+Vector2d SAXS::dYHarmonics(const unsigned p2, const unsigned k, const unsigned i, const int n, const int m, const vector<Vector2d> &qRnm) {
+  Vector2d                            dRdc = (bvals[n*(n+4)-m+1] * qRnm[p2*i+n*(n+2)+m+3] - bvals[n*(n+2)+m+1] * qRnm[p2*i+n*(n+2)+m+1]);
+  if((abs(m-n-1)<=(n-1))&&((n-1)>=0)) dRdc+= bvals[n*(n+2)-m] * qRnm[p2*i+n*(n-2)+m-1];
+  if((abs(m-n+1)<=(n-1))&&((n-1)>=0)) dRdc-= bvals[n*n+m] * qRnm[p2*i+n*(n-2)+m+1];
+  return dRdc;
+}
+
+
+Vector2d SAXS::dZHarmonics(const unsigned p2, const unsigned k, const unsigned i, const int n, const int m, const vector<Vector2d> &qRnm) {
+  Vector2d                          dRdc = -avals[n*n+m]*qRnm[p2*i+n*(n+2)+m+2];
+  if((abs(m-n)<=(n-1))&&((n-1)>=0)) dRdc+= avals[n*(n-2)+m]*qRnm[p2*i+n*(n-2)+m];
+  return dRdc;
+}
+
+//coefficients for partial derivatives of the spherical basis functions
+void SAXS::cal_coeff() {
+  avals.resize(100*100);
+  bvals.resize(100*100);
+  for(int n=0; n<100; n++) {
+    for(int m=0; m<(2*n)+1; m++) {
+      double mval = m-n;
+      double nval = n;
+      avals[n*n+m] = -1 * sqrt(((nval+mval+1)*(nval+1-mval))/(((2*nval)+1)*((2*nval)+3)));
+      bvals[n*n+m] = sqrt(((nval-mval-1)*(nval-mval))/(((2*nval)-1)*((2*nval)+1)));
+      if((-n<=(m-n)) && ((m-n)<0)) bvals[n*n+m] *= -1;
+    }
+  }
 }
 
 void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter)

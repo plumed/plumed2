@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,6 +32,10 @@
 #include <ctime>
 #include <numeric>
 using namespace std;
+
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
 
 namespace PLMD {
 namespace isdb {
@@ -563,13 +567,16 @@ Metainference::Metainference(const ActionOptions&ao):
             Tools::convert(j,msg_j);
             std::string msg = msg_i+"_"+msg_j;
             double read_sm;
-            restart_sfile.scanField("sigma_mean_"+msg,read_sm);
+            restart_sfile.scanField("sigmaMean_"+msg,read_sm);
             sigma_mean2_last_[i][j][0] = read_sm*read_sm;
           }
         }
         if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
           double read_sm;
-          restart_sfile.scanField("sigma_mean_0_"+msg_i,read_sm);
+          std::string msg_j;
+          Tools::convert(0,msg_j);
+          std::string msg = msg_i+"_"+msg_j;
+          restart_sfile.scanField("sigmaMean_"+msg,read_sm);
           for(unsigned j=0; j<narg; j++) sigma_mean2_last_[i][j][0] = read_sm*read_sm;
         }
       }
@@ -752,6 +759,7 @@ Metainference::Metainference(const ActionOptions&ao):
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   if(do_reweight_) log<<plumed.cite("Bonomi, Camilloni, Vendruscolo, Sci. Rep. 6, 31232 (2016)");
   if(do_optsigmamean_>0) log<<plumed.cite("Loehr, Jussupow, Camilloni, J. Chem. Phys. 146, 165102 (2017)");
+  log<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 }
 
@@ -1085,7 +1093,7 @@ void Metainference::doMonteCarlo(const vector<double> &mean_)
     }
 
     // calculate new energy
-    double new_energy;
+    double new_energy = 0.;
     switch(noise_type_) {
     case GAUSS:
       new_energy = getEnergyGJ(mean_,new_sigma,scale_,offset_);
@@ -1556,7 +1564,7 @@ void Metainference::writeStatus()
       Tools::convert(j,msg_j);
       std::string msg = msg_i+"_"+msg_j;
       if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-        sfile_.printField("sigma_mean_"+msg,sqrt(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end())));
+        sfile_.printField("sigmaMean_"+msg,sqrt(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end())));
       } else {
         // find maximum for each data point
         max_values.push_back(*max_element(sigma_mean2_last_[i][j].begin(), sigma_mean2_last_[i][j].end()));
@@ -1565,7 +1573,9 @@ void Metainference::writeStatus()
     if(noise_type_==GAUSS||noise_type_==OUTLIERS) {
       // find maximum across data points
       const double max_now = sqrt(*max_element(max_values.begin(), max_values.end()));
-      sfile_.printField("sigma_mean_0_"+msg_i,max_now);
+      Tools::convert(0,msg_j);
+      std::string msg = msg_i+"_"+msg_j;
+      sfile_.printField("sigmaMean_"+msg, max_now);
     }
   }
   for(unsigned i=0; i<sigma_.size(); ++i) {

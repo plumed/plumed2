@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -60,7 +60,7 @@ std::string getPlumedHtmldir() {
 }
 
 std::string getPlumedIncludedir() {
-  if(!isInstalled()) return getPlumedRoot()+"/include";
+  if(!isInstalled()) return getPlumedRoot()+"/src/include";
   char *env = std::getenv("PLUMED_INCLUDEDIR");
   std::string ss;
   if( env == NULL) {
@@ -166,6 +166,15 @@ bool hasXdrfile() {
   return false;
 #endif
 }
+
+std::string getCompilationDate() {
+  return __DATE__;
+}
+
+std::string getCompilationTime() {
+  return __TIME__;
+}
+
 
 }
 }

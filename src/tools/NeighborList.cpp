@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -45,7 +45,8 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
   if(!do_pair) {
     nallpairs_=nlist0_*nlist1_;
   } else {
-    plumed_assert(nlist0_==nlist1_);
+    plumed_assert(nlist0_==nlist1_) << "when using PAIR option, the two groups should have the same number of elements\n"
+                                    << "the groups you specified have size "<<nlist0_<<" and "<<nlist1_;
     nallpairs_=nlist0_;
   }
   initialize();

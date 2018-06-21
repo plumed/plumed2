@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -61,7 +61,7 @@ void CLToolRegister::add(string key,creator_pointer f,keywords_pointer kf) {
   };
 }
 
-bool CLToolRegister::check(string key) {
+bool CLToolRegister::check(string key)const {
   if(m.count(key)>0) return true;
   return false;
 }
@@ -100,6 +100,16 @@ bool CLToolRegister::printManual( const std::string& cltool ) {
     return false;
   }
 }
+
+std::vector<std::string> CLToolRegister::getKeys(const std::string& cltool)const {
+  if ( check(cltool) ) {
+    return mk.find(cltool)->second.getKeys();
+  } else {
+    std::vector<std::string> empty;
+    return empty;
+  }
+}
+
 
 vector<string> CLToolRegister::list()const {
   vector<string> s;

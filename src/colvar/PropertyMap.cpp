@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -44,6 +44,18 @@ zzz=-\frac{1}{\lambda}\log(\sum_i  \exp(-\lambda D_i(x)))
 
 where the parameters \f$X_i\f$  and  \f$Y_i\f$ are provided in the input pdb (allv.pdb in this case) and
  \f$D_i(x)\f$  is the MSD after optimal alignment calculated on the pdb frames you input (see Kearsley).
+
+
+When running with periodic boundary conditions, the atoms should be
+in the proper periodic image. This is done automatically since PLUMED 2.5,
+by considering the ordered list of atoms and rebuilding PBCs with a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED.
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
 
 \par Examples
 

@@ -30,6 +30,9 @@ prepend-path  PATH               $bindir
 prepend-path  CPATH              $includedir
 prepend-path  INCLUDE            $includedir
 
+# path for VIM syntax
+setenv        PLUMED_VIMPATH     $libdir/$progname/vim
+
 # paths for libraries are only set if plumed is compiled as a dynamic library
 if { [ string length $soext ]  != 0 } {
 
@@ -42,9 +45,7 @@ if { [module-info mode load] && [ info exists ::env(PLUMED_KERNEL) ] } {
 # library path
 prepend-path  LIBRARY_PATH       $libdir
 prepend-path  LD_LIBRARY_PATH    $libdir
-prepend-path  DYLD_LIBRARY_PATH  $libdir
 prepend-path  PYTHONPATH         $libdir/$progname/python
 prepend-path  PKG_CONFIG_PATH    $libdir/pkgconfig/
 setenv        PLUMED_KERNEL      $libdir/lib${progname}Kernel.$soext
-setenv        PLUMED_VIMPATH     $libdir/$progname/vim
 }

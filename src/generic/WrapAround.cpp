@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -209,11 +209,11 @@ WrapAround::WrapAround(const ActionOptions&ao):
 
 void WrapAround::calculate() {
   for(unsigned i=0; i<atoms.size(); i+=groupby) {
-    Vector & first (modifyPosition(atoms[i]));
+    Vector & first (modifyGlobalPosition(atoms[i]));
     double mindist2=std::numeric_limits<double>::max();
     int closest=-1;
     for(unsigned j=0; j<reference.size(); ++j) {
-      Vector & second (modifyPosition(reference[j]));
+      Vector & second (modifyGlobalPosition(reference[j]));
       Vector distance=pbcDistance(first,second);
       double distance2=modulo2(distance);
       if(distance2<mindist2) {
@@ -222,12 +222,12 @@ void WrapAround::calculate() {
       }
     }
     plumed_massert(closest>=0,"closest not found");
-    Vector & second (modifyPosition(reference[closest]));
+    Vector & second (modifyGlobalPosition(reference[closest]));
 // place first atom of the group
     first=second+pbcDistance(second,first);
 // then place other atoms close to the first of the group
     for(unsigned j=1; j<groupby; j++) {
-      Vector & second (modifyPosition(atoms[i+j]));
+      Vector & second (modifyGlobalPosition(atoms[i+j]));
       second=first+pbcDistance(first,second);
     }
   }

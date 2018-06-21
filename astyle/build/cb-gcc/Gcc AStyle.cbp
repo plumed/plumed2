@@ -33,6 +33,17 @@
 					<Add option="-g" />
 					<Add option="-fno-rtti" />
 					<Add option="-fno-exceptions" />
+					<Add option="-Wswitch" />
+					<Add option="-Wno-deprecated-declarations" />
+					<Add option="-Wempty-body" />
+					<Add option="-Wconversion" />
+					<Add option="-Wreturn-type" />
+					<Add option="-Wparentheses" />
+					<Add option="-Wno-format" />
+					<Add option="-Wuninitialized" />
+					<Add option="-Wunused-function" />
+					<Add option="-Wunused-value" />
+					<Add option="-Wunused-variable" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -62,6 +73,18 @@
 					<Add option="-std=c++11" />
 					<Add option="-fno-rtti" />
 					<Add option="-fno-exceptions" />
+					<Add option="-Wswitch" />
+					<Add option="-Wno-deprecated-declarations" />
+					<Add option="-Wempty-body" />
+					<Add option="-Wconversion" />
+					<Add option="-Wreturn-type" />
+					<Add option="-Wparentheses" />
+					<Add option="-Wno-format" />
+					<Add option="-Wuninitialized" />
+					<Add option="-Wunreachable-code" />
+					<Add option="-Wunused-function" />
+					<Add option="-Wunused-value" />
+					<Add option="-Wunused-variable" />
 					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
@@ -90,12 +113,23 @@
 					<Add option="-Wextra" />
 					<Add option="-Wall" />
 					<Add option="-std=c++11" />
+					<Add option="-fno-exceptions" />
+					<Add option="-fno-rtti" />
 					<Add option="-Wint-to-pointer-cast" />
 					<Add option="-Woverloaded-virtual" />
 					<Add option="-Wwrite-strings" />
 					<Add option="-Wno-switch-default" />
-					<Add option="-fno-exceptions" />
-					<Add option="-fno-rtti" />
+					<Add option="-Wswitch" />
+					<Add option="-Wno-deprecated-declarations" />
+					<Add option="-Wempty-body" />
+					<Add option="-Wconversion" />
+					<Add option="-Wreturn-type" />
+					<Add option="-Wparentheses" />
+					<Add option="-Wno-format" />
+					<Add option="-Wuninitialized" />
+					<Add option="-Wunused-function" />
+					<Add option="-Wunused-value" />
+					<Add option="-Wunused-variable" />
 				</Compiler>
 			</Target>
 			<Target title="Coverage">

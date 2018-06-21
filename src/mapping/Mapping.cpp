@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -105,8 +105,10 @@ Mapping::Mapping(const ActionOptions&ao):
   // Get the arguments and atoms that are required
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
   for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
-  requestAtoms( atoms ); std::vector<Value*> req_args;
-  interpretArgumentList( args, req_args ); requestArguments( req_args );
+  std::vector<Value*> req_args; interpretArgumentList( args, req_args );
+  if( req_args.size()>0 && atoms.size()>0 ) error("cannot mix atoms and arguments");
+  if( req_args.size()>0 ) requestArguments( req_args );
+  if( atoms.size()>0 ) requestAtoms( atoms );
   // Duplicate all frames (duplicates are used by sketch-map)
   // mymap->duplicateFrameList();
   // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
@@ -175,11 +177,11 @@ void Mapping::calculateNumericalDerivatives( ActionWithValue* a ) {
   }
   if( getNumberOfAtoms()>0 ) {
     Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
     }
     calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
     }
   }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -285,7 +285,7 @@ void ActionAtomistic::updateUniqueLocal() {
   unique_local.clear();
   if(atoms.dd && atoms.shuffledAtoms>0) {
     for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
-      if(atoms.dd.g2l[pp->index()]>=0) unique_local.insert(*pp);
+      if(atoms.g2l[pp->index()]>=0) unique_local.insert(*pp);
     }
   } else {
     unique_local.insert(unique.begin(),unique.end());

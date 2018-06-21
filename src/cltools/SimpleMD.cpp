@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
 #include "CLToolRegister.h"
-#include "wrapper/Plumed.h"
+#include "core/PlumedMain.h"
 #include "tools/Vector.h"
 #include "tools/Random.h"
 #include <string>
@@ -444,10 +444,10 @@ private:
 
     Random random;                 // random numbers stream
 
-    std::unique_ptr<Plumed> plumed;
+    std::unique_ptr<PlumedMain> plumed;
 
 // Commenting the next line it is possible to switch-off plumed
-    plumed.reset(new PLMD::Plumed);
+    plumed.reset(new PLMD::PlumedMain);
 
     if(plumed) {
       int s=sizeof(double);

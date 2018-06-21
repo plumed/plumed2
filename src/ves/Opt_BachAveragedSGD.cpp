@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2017 The VES code team
+   Copyright (c) 2016-2018 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -206,7 +206,7 @@ void Opt_BachAveragedSGD::registerKeywords(Keywords& keys) {
   Optimizer::useHessianKeywords(keys);
   Optimizer::useMaskKeywords(keys);
   Optimizer::useRestartKeywords(keys);
-  // Optimizer::useMonitorAveragesKeywords(keys);
+  Optimizer::useMonitorAverageGradientKeywords(keys);
   Optimizer::useDynamicTargetDistributionKeywords(keys);
   keys.add("hidden","COMBINED_GRADIENT_FILE","the name of output file for the combined gradient (gradient + Hessian term)");
   keys.add("hidden","COMBINED_GRADIENT_OUTPUT","how often the combined gradient should be written to file. This parameter is given as the number of bias iterations. It is by default 100 if COMBINED_GRADIENT_FILE is specficed");

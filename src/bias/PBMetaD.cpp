@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -642,7 +642,6 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         }
         string funcl = getLabel() + ".bias";
         BiasGrid_=Grid::create(funcl, args, gridfile, gmin_t, gmax_t, gbin_t, sparsegrid, spline, true);
-        gridfile.close();
         if(BiasGrid_->getDimension() != args.size()) {
           error("mismatch between dimensionality of input grid and number of arguments");
         }
@@ -702,6 +701,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         ifiles[k]->reset(false);
         // close only the walker own hills file for later writing
         if(j==mw_id_) ifiles[k]->close();
+      } else {
+        // in case a file does not exist and we are restarting, complain that the file was not found
+        if(getRestart()) log<<"  WARNING: restart file "<<fname<<" not found\n";
       }
     }
   }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -53,7 +53,7 @@ public:
   virtual void accumulateForce( const unsigned& ipoint, const double& weight, const std::vector<double>& der, std::vector<double>& intforce ) const ;
   unsigned getNumberOfBufferPoints() const ;
   std::unique_ptr<KernelFunctions> getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const;
-  std::vector<Value*> getVectorOfValues() const ;
+  std::vector<std::unique_ptr<Value>> getVectorOfValues() const ;
   void addOneKernelEachTimeOnly() { addOneKernelAtATime=true; }
   virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces );
   bool noDiscreteKernels() const ;

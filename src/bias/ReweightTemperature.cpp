@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,12 +48,12 @@ The \ref HISTOGRAM as a function of the distance between atoms 1 and 2 that woul
 had been run at the lower temperature of 300 K is estimated using the data from the higher temperature trajectory and output
 to a file.
 
-\verbatim
+\plumedfile
 x: DISTANCE ATOMS=1,2
 aa: REWEIGHT_TEMP TEMP=500 REWEIGHT_TEMP=300
 hB: HISTOGRAM ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=100 BANDWIDTH=0.1 LOGWEIGHTS=aa
 DUMPGRID GRID=hB FILE=histoB
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

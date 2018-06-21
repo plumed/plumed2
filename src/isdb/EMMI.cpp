@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017 The plumed team
+   Copyright (c) 2017,2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -336,6 +336,7 @@ EMMI::EMMI(const ActionOptions&ao):
 
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   log<<plumed.cite("Hanot, Bonomi, Greenberg, Sali, Nilges, Vendruscolo, Pellarin, bioRxiv doi: 10.1101/113951 (2017)");
+  log<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 }
 
@@ -415,15 +416,16 @@ void EMMI::check_GMM_d(VectorGeneric<6> &cov, double w)
 // read GMM data file in PLUMED format:
 void EMMI::get_GMM_d(string GMM_file)
 {
-  int idcomp, beta;
-  double w, m0, m1, m2;
   VectorGeneric<6> cov;
 
 // open file
-  IFile *ifile = new IFile();
+  std::unique_ptr<IFile> ifile(new IFile);
   if(ifile->FileExist(GMM_file)) {
     ifile->open(GMM_file);
+    int idcomp;
     while(ifile->scanField("Id",idcomp)) {
+      int beta;
+      double w, m0, m1, m2;
       ifile->scanField("Weight",w);
       ifile->scanField("Mean_0",m0);
       ifile->scanField("Mean_1",m1);
@@ -448,11 +450,9 @@ void EMMI::get_GMM_d(string GMM_file)
       // new line
       ifile->scanField();
     }
-    ifile->close();
   } else {
     error("Cannot find GMM_FILE "+GMM_file+"\n");
   }
-  delete ifile;
 
 }
 

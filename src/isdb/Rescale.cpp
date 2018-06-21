@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017 The plumed team
+   Copyright (c) 2017,2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -288,6 +288,9 @@ Rescale::Rescale(const ActionOptions&ao):
   log.printf("  do MC every %d steps\n", MCstride_);
   log.printf("\n");
 
+  log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
+
+
   // add components
   addComponent("igamma");   componentIsNotPeriodic("igamma");
   addComponent("accgamma"); componentIsNotPeriodic("accgamma");
@@ -307,13 +310,13 @@ Rescale::~Rescale()
 
 void Rescale::read_bias()
 {
-  double MDtime;
 // open file
-  IFile *ifile = new IFile();
+  std::unique_ptr<IFile> ifile(new IFile);
   ifile->link(*this);
   if(ifile->FileExist(Biasfilename_)) {
     ifile->open(Biasfilename_);
     // read all the lines, store last value of bias
+    double MDtime;
     while(ifile->scanField("MD_time",MDtime)) {
       for(unsigned i=0; i<bias_.size(); ++i) {
         // convert i to string
@@ -331,7 +334,6 @@ void Rescale::read_bias()
   } else {
     error("Cannot find bias file "+Biasfilename_+"\n");
   }
-  delete ifile;
 }
 
 unsigned Rescale::proposeMove(unsigned x, unsigned xmin, unsigned xmax)
@@ -369,7 +371,6 @@ bool Rescale::doAccept(double oldE, double newE)
 void Rescale::doMonteCarlo(unsigned igamma, double oldE,
                            vector<double> args, vector<double> bargs)
 {
-  bool accept;
   double oldB, newB;
 
 // cycle on MC steps
@@ -392,7 +393,7 @@ void Rescale::doMonteCarlo(unsigned igamma, double oldE,
       newB = bias_[new_igamma];
     }
     // accept or reject
-    accept = doAccept(oldE+oldB, newE+newB);
+    bool accept = doAccept(oldE+oldB, newE+newB);
     if(accept) {
       igamma = new_igamma;
       oldE = newE;

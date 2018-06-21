@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -285,8 +285,8 @@ private:
 
   // the needed stuff for distance and more (one could use eigenvecs components and eigenvals for some reason)
   double dist;
-  std::vector<double> eigenvals;
-  Matrix<double> eigenvecs;
+  Vector4d eigenvals;
+  Tensor4d eigenvecs;
   double rr00; //  sum of positions squared (needed for dist calc)
   double rr11; //  sum of reference squared (needed for dist calc)
   Tensor rotation; // rotation derived from the eigenvector having the smallest eigenvalue

@@ -51,7 +51,7 @@ scripts) and the method that can be used to retrieve them from C++ code.
 When using plumed from its build directory (without installing it) these paths will be set to the
 value reported below:
 - `PLUMED_ROOT=/build/directory`
-- `PLUMED_INCLUDEDIR=$PLUMED_ROOT/include` (this works thanks to a symlink of `/build/directory/src` to `/build/directory/include/plumed`)
+- `PLUMED_INCLUDEDIR=$PLUMED_ROOT/src/include` (this works thanks to a symlink of `/build/directory/src` to `/build/directory/src/include/plumed`)
 - `PLUMED_HTMLDIR=$PLUMED_ROOT`
 - `PLUMED_PROGRAM_NAME=plumed`
 
@@ -107,7 +107,7 @@ object file compiled from `buildroot/src/wrapper/Plumed.cpp`
 To summarize:
 - `bin/plumed` = `buildroot/src/main/main.cpp` + `lib/libplumed.so`
 - `lib/libplumed.so` = `buildroot/src/wrapper/PlumedStatic.cpp` + `lib/libplumedKernel.so`
-- `lib/libplumedWrapper.so` = `buildroot/src/wrapper/Plumed.cpp`
+- `lib/libplumedWrapper.a` = `buildroot/src/wrapper/Plumed.cpp`
 
 The logic of this subdivision is that it is possible to either link the MD code to `/usr/local/lib/libplumed.so`
 or to link it to a single object file (the one compiled from `buildroot/src/wrapper/Plumed.c` or the installed `libplumedWrapper.a`)
@@ -128,11 +128,19 @@ objects to another executable. Indeed, merging them in a single .a file (such as
 would require this library to be linked with special flags so as to allow dropping all the static constructors.
 Whereas the special flags could be found by autoconf, it seems simpler to directly link `/usr/local/lib/plumed/obj/k*.o`.
 
+
 Also notice that this library changes slighlty in the installed version (`/usr/local/lib/libplumedKernel.so`)
 and in the pre-install version (`buildroot/src/lib/libplumedKernel.so`). Indeed, whereas the former
 include the object file from `buildroot/src/config/ConfigInstall.cpp` the latter includes the object file from
 `buildroot/src/config/Config.cpp`. This object file is the one containing the hardcoded paths discussed above,
 and thus should include different strings in the installed and pre-install versions.
+
+\note
+New in PLUMED v2.5, the `./configure` script will check if it is possible to build a `/usr/local/lib/libplumed.a` library.
+This library contains basically `buildroot/src/wrapper/PlumedStatic.cpp` and the single object obtained
+merging all the objects in the kernel. When this library is linked, if at least one of the functions in the wrappers
+is called (e.g. `plumed_cmd`) then all the objects are pulled in. In principle, this should solve the problem
+with C++ static constructors. This feature can be disabled with `--disable-static-archive`.
 
 \section InstallationLayout-installation Installation procedure
 

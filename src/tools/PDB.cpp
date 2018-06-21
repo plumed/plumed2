@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -806,7 +806,7 @@ void PDB::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, con
   if( argnames.size()>0 ) ofile.printf("\n");
   if( !mymoldat ) {
     for(unsigned i=0; i<positions.size(); ++i) {
-      ofile.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+      ofile.printf("ATOM  %5d  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                    numbers[i].serial(), i,
                    lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
                    occupancy[i], beta[i] );

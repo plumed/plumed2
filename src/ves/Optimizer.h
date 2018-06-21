@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2017 The VES code team
+   Copyright (c) 2016-2018 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -66,6 +66,8 @@ private:
   bool use_hessian_;
   bool diagonal_hessian_;
   bool hessian_covariance_from_averages_;
+  //
+  bool monitor_instantaneous_gradient_;
   //
   bool use_mwalkers_mpi_;
   bool mwalkers_mpi_single_files_;
@@ -161,7 +163,7 @@ public:
   static void useDynamicStepSizeKeywords(Keywords&);
   static void useMaskKeywords(Keywords&);
   static void useRestartKeywords(Keywords&);
-  static void useMonitorAveragesKeywords(Keywords&);
+  static void useMonitorAverageGradientKeywords(Keywords&);
   static void useDynamicTargetDistributionKeywords(Keywords&);
   static void useReweightFactorKeywords(Keywords&);
   //

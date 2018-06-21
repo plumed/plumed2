@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -195,7 +195,7 @@ void CoordinationBase::calculate()
     }
     #pragma omp critical
     if(nt>1) {
-      for(int i=0; i<getPositions().size(); i++) deriv[i]+=omp_deriv[i];
+      for(unsigned i=0; i<getPositions().size(); i++) deriv[i]+=omp_deriv[i];
       virial+=omp_virial;
     }
   }

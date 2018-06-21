@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,7 +54,6 @@ int main(){
   pof.printField("x1",10.0).printField("x3",-1e70*20.12345678901234567890).printField();
   pof.printField("x3",10.0).printField("x2",777.0).printField("x1",-1e70*20.12345678901234567890).printField();
   pof.printField("x3",67.0).printField("x1",18.0).printField();
-  pof.close();
   return 0;
 }
 \endverbatim
@@ -137,10 +136,13 @@ int main(){
 // rarely to avoid excessive slow down
 
   }
-
-  snp.close();
-  grw.close();
 }
+
+\notice
+Notice that it is not necessary to explicitely close files, since they are closed implicitely
+when the object goes out of scope. In case you need to explicitly close the file before it is
+destroyed, please check it the procedure is exception safe and, if necessary, add some `try/catch`
+statement.
 
 \endverbatim
 */
@@ -157,7 +159,7 @@ class OFile:
 /// Internal buffer length
   int buflen;
 /// This variables stores the actual buffer length
-  unsigned actual_buffer_length;
+  int actual_buffer_length;
 /// Class identifying a single field for fielded output
   class Field:
     public FieldBase {

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -173,7 +173,7 @@ void Sprint::calculate() {
     startnum += nthis;
   }
   // Set the sprint coordinates
-  for(unsigned icomp=0; icomp<getNumberOfComponents(); ++icomp) {
+  for(int icomp=0; icomp<getNumberOfComponents(); ++icomp) {
     getPntrToComponent(icomp)->set( sqrtn*lambda*maxeig[icomp].first );
   }
 
@@ -190,7 +190,7 @@ void Sprint::calculate() {
   for(unsigned i=rank; i<active_elements.getNumberActive(); i+=stride) {
     unsigned j, k; getAdjacencyVessel()->getMatrixIndices( active_elements[i], j, k );
     double tmp1 = 2 * eigenvecs(nval-1,j)*eigenvecs(nval-1,k);
-    for(unsigned icomp=0; icomp<getNumberOfComponents(); ++icomp) {
+    for(int icomp=0; icomp<getNumberOfComponents(); ++icomp) {
       double tmp2 = 0.;
       for(unsigned n=0; n<nval-1; ++n) { // Need care on following line
         tmp2 += eigenvecs(n,maxeig[icomp].second) * ( eigenvecs(n,j)*eigenvecs(nval-1,k) + eigenvecs(n,k)*eigenvecs(nval-1,j) ) / ( lambda - eigvals[n] );
@@ -205,7 +205,7 @@ void Sprint::calculate() {
   }
   if( !serialCalculation() ) comm.Sum( mymat_ders );
 
-  for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+  for(int j=0; j<getNumberOfComponents(); ++j) {
     Value* val=getPntrToComponent(j);
     for(unsigned i=0; i<getNumberOfDerivatives(); ++i) val->addDerivative( i, mymat_ders(j,i) );
   }
@@ -217,7 +217,7 @@ void Sprint::apply() {
   unsigned          nat=getNumberOfAtoms();
 
   std::vector<double> forces( 3*getNumberOfAtoms() + 9 );
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+  for(int i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->applyForce( forces ) ) {
       for(unsigned j=0; j<nat; ++j) {
         f[j][0]+=forces[3*j+0];

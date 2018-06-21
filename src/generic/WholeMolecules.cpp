@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -178,8 +178,8 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 void WholeMolecules::calculate() {
   for(unsigned i=0; i<groups.size(); ++i) {
     for(unsigned j=0; j<groups[i].size()-1; ++j) {
-      const Vector & first (getPosition(groups[i][j]));
-      Vector & second (modifyPosition(groups[i][j+1]));
+      const Vector & first (getGlobalPosition(groups[i][j]));
+      Vector & second (modifyGlobalPosition(groups[i][j+1]));
       second=first+pbcDistance(first,second);
     }
   }

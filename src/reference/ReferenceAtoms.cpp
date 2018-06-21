@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,6 +42,46 @@ void ReferenceAtoms::readAtomsFromPDB( const PDB& pdb, const bool allowblocks  )
   }
 }
 
+// void ReferenceAtoms::setAtomNumbers( const std::vector<AtomNumber>& numbers ) {
+//   reference_atoms.resize( numbers.size() ); align.resize( numbers.size() );
+//   displace.resize( numbers.size() ); atom_der_index.resize( numbers.size() );
+//   indices.resize( numbers.size() );
+//   for(unsigned i=0; i<numbers.size(); ++i) {
+//     indices[i]=numbers[i]; atom_der_index[i]=i;
+//   }
+// }
+
+// void ReferenceAtoms::printAtoms( OFile& ofile, const double& lunits ) const {
+//   plumed_assert( indices.size()==reference_atoms.size() && align.size()==reference_atoms.size() && displace.size()==reference_atoms.size() );
+//   for(unsigned i=0; i<reference_atoms.size(); ++i) {
+//     ofile.printf("ATOM  %5d  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+//                  indices[i].serial(), i,
+//                  lunits*reference_atoms[i][0], lunits*reference_atoms[i][1], lunits*reference_atoms[i][2],
+//                  align[i], displace[i] );
+//   }
+// }
+
+// bool ReferenceAtoms::parseAtomList( const std::string& key, std::vector<unsigned>& numbers ) {
+//   plumed_assert( numbers.size()==0 );
+// 
+//   std::vector<std::string> strings;
+//   if( !parseVector(key,strings,true) ) return false;
+//   Tools::interpretRanges(strings);
+// 
+//   numbers.resize( strings.size() );
+//   for(unsigned i=0; i<strings.size(); ++i) {
+//     AtomNumber atom;
+//     if( !Tools::convert(strings[i],atom ) ) error("could not convert " + strings[i] + " into atom number");
+// 
+//     bool found=false;
+//     for(unsigned j=0; j<indices.size(); ++j) {
+//       if( atom==indices[j] ) { found=true; numbers[i]=j; break; }
+//     }
+//     if(!found) error("atom labelled " + strings[i] + " is not present in pdb input file");
+//   }
+//   return true;
+// }
+
 void ReferenceAtoms::getAtomRequests( std::vector<AtomNumber>& numbers, bool disable_checks ) {
   singleDomainRequests(numbers,disable_checks);
 }
@@ -60,9 +100,8 @@ void ReferenceAtoms::singleDomainRequests( std::vector<AtomNumber>& numbers, boo
       if( numbers.size()!=indices.size() ) error("mismatched numbers of atoms in pdb frames");
     }
 
-    bool found;
     for(unsigned i=0; i<indices.size(); ++i) {
-      found=false;
+      bool found=false;
       if(!disable_checks) {
         if( indices[i]!=numbers[i] ) error("found mismatched reference atoms in pdb frames");
         atom_der_index[i]=i;

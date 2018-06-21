@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,7 +24,7 @@
 #include "ActionWithInputGrid.h"
 #include "core/ActionRegister.h"
 #ifdef __PLUMED_HAS_FFTW
-#include "fftw3.h" // FFTW interface
+#include <fftw3.h> // FFTW interface
 #endif
 
 namespace PLMD {

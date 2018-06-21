@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2017 The VES code team
+   Copyright (c) 2016-2018 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -125,6 +125,10 @@ public:
   //
   static void getBasisSetValues(const std::vector<double>&, std::vector<double>&, std::vector<BasisFunctions*>&, CoeffsVector*, Communicator* comm_in=NULL);
   void getBasisSetValues(const std::vector<double>&, std::vector<double>&, const bool parallel=true);
+  //
+  static double getBasisSetValue(const std::vector<double>&, const size_t, std::vector<BasisFunctions*>&, CoeffsVector*);
+  double getBasisSetValue(const std::vector<double>&, const size_t);
+  double getBasisSetConstant();
   // Bias grid and output stuff
   void setupBiasGrid(const bool usederiv=false);
   void updateBiasGrid();
@@ -221,6 +225,19 @@ void LinearBasisSetExpansion::getBasisSetValues(const std::vector<double>& args_
   else {
     getBasisSetValues(args_values,basisset_values,basisf_pntrs_, bias_coeffs_pntr_, NULL);
   }
+}
+
+
+inline
+double LinearBasisSetExpansion::getBasisSetValue(const std::vector<double>& args_values, const size_t basisset_index) {
+  return getBasisSetValue(args_values,basisset_index,basisf_pntrs_, bias_coeffs_pntr_);
+}
+
+
+inline
+double LinearBasisSetExpansion::getBasisSetConstant() {
+  std::vector<double> args_dummy(nargs_,0.0);
+  return getBasisSetValue(args_dummy,0,basisf_pntrs_, bias_coeffs_pntr_);
 }
 
 

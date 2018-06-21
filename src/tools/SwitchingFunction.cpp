@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -124,21 +124,33 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 {TANH R_0=\f$r_0\f$ D_0=\f$d_0\f$}
 </td> <td> </td>
 </tr> <tr>
-<td> MATHEVAL </td> <td>
+<td> CUSTOM </td> <td>
 \f$
 s(r) = FUNC
 \f$
 </td> <td>
-{MATHEVAL FUNC=1/(1+x^6) R_0=\f$r_0\f$ D_0=\f$d_0\f$}
+{CUSTOM FUNC=1/(1+x^6) R_0=\f$r_0\f$ D_0=\f$d_0\f$}
 </td> <td> </td>
 </tr>
 </table>
 
+Notice that for backward compatibility we allow using `MATHEVAL` instead of `CUSTOM`.
+Also notice that if the a `CUSTOM` switching function only depents on even powers of `x` it can be
+made faster by using `x2` as a variable. For instance
+\verbatim
+{CUSTOM FUNC=1/(1+x2^3) R_0=0.3}
+\endverbatim
+is equivalent to
+\verbatim
+{CUSTOM FUNC=1/(1+x^6) R_0=0.3}
+\endverbatim
+but runs faster. The reason is that there is an expensive square root calculation that can be optimized out.
+
+
 \attention
-Notice that using MATHEVAL is much slower than using e.g. RATIONAL.
-Thus, the MATHEVAL switching function is useful to perform quick
-tests on switching functions with arbitrary form before proceeding to their
-implementation in C++.
+With the default implementation CUSTOM is slower than other functions
+(e.g., it is slower than an equivalent RATIONAL function by approximately a factor 2).
+Checkout page \ref Lepton to see how to improve its performance.
 
 For all the switching functions in the above table one can also specify a further (optional) parameter using the parameter
 keyword D_MAX to assert that for \f$r>d_{\textrm{max}}\f$ the switching function can be assumed equal to zero.
@@ -221,6 +233,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     present=Tools::findKeyword(data,"MM");
     if(present && !Tools::parse(data,"MM",mm)) errormsg="could not parse MM";
     if(mm==0) mm=2*nn;
+    fastrational=(nn%2==0 && mm%2==0 && d0==0.0);
   } else if(name=="SMAP") {
     type=smap;
     present=Tools::findKeyword(data,"A");
@@ -254,9 +267,37 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     lepton_func=func;
     expression.resize(OpenMP::getNumThreads());
     for(auto & e : expression) e=pe.createCompiledExpression();
-    lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate("x").optimize(leptonConstants);
+    lepton_ref.resize(expression.size());
+    for(unsigned t=0; t<lepton_ref.size(); t++) {
+      try {
+        lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x");
+      } catch(PLMD::lepton::Exception& exc) {
+        try {
+          lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x2");
+          leptonx2=true;
+        } catch(PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=0*x
+          lepton_ref[t]=nullptr;
+        }
+      }
+    }
+    std::string arg="x";
+    if(leptonx2) arg="x2";
+    lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate(arg).optimize(leptonConstants);
     expression_deriv.resize(OpenMP::getNumThreads());
     for(auto & e : expression_deriv) e=ped.createCompiledExpression();
+    lepton_ref_deriv.resize(expression_deriv.size());
+    for(unsigned t=0; t<lepton_ref_deriv.size(); t++) {
+      try {
+        lepton_ref_deriv[t]=&const_cast<lepton::CompiledExpression*>(&expression_deriv[t])->getVariableReference(arg);
+      } catch(PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=3*x
+        lepton_ref_deriv[t]=nullptr;
+      }
+    }
+
   }
   else errormsg="cannot understand switching function type '"+name+"'";
   if( !data.empty() ) {
@@ -271,6 +312,8 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     stretch=1.0/(s0-sd);
     shift=-sd*stretch;
   }
+  plumed_assert(!(leptonx2 && d0!=0.0)) << "You cannot use lepton x2 optimization with d0!=0.0 (d0=" << d0 <<")\n"
+                                        << "Please rewrite your function using x as a variable";
 }
 
 std::string SwitchingFunction::description() const {
@@ -337,13 +380,31 @@ double SwitchingFunction::do_rational(double rdist,double&dfunc,int nn,int mm)co
 }
 
 double SwitchingFunction::calculateSqr(double distance2,double&dfunc)const {
-  if(type==rational && nn%2==0 && mm%2==0 && d0==0.0) {
+  if(fastrational) {
     if(distance2>dmax_2) {
       dfunc=0.0;
       return 0.0;
     }
     const double rdist_2 = distance2*invr0_2;
     double result=do_rational(rdist_2,dfunc,nn/2,mm/2);
+// chain rule:
+    dfunc*=2*invr0_2;
+// stretch:
+    result=result*stretch+shift;
+    dfunc*=stretch;
+    return result;
+  } else if(leptonx2) {
+    if(distance2>dmax_2) {
+      dfunc=0.0;
+      return 0.0;
+    }
+    const unsigned t=OpenMP::getThreadNum();
+    const double rdist_2 = distance2*invr0_2;
+    plumed_assert(t<expression.size());
+    if(lepton_ref[t]) *lepton_ref[t]=rdist_2;
+    if(lepton_ref_deriv[t]) *lepton_ref_deriv[t]=rdist_2;
+    double result=expression[t].evaluate();
+    dfunc=expression_deriv[t].evaluate();
 // chain rule:
     dfunc*=2*invr0_2;
 // stretch:
@@ -361,6 +422,11 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
   if(distance>dmax) {
     dfunc=0.0;
     return 0.0;
+  }
+// in this case, the lepton object stores only the calculateSqr function
+// so we have to implement calculate in terms of calculateSqr
+  if(leptonx2) {
+    return calculateSqr(distance*distance,dfunc);
   }
   const double rdist = (distance-d0)*invr0;
   double result;
@@ -381,8 +447,9 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
     } else if(type==nativeq) {
       double rdist2 = beta*(distance - lambda * ref);
       double exprdist=exp(rdist2);
+      double exprmdist=1.0/exprdist;
       result=1./(1.+exprdist);
-      dfunc=-exprdist/(1.+exprdist)/(1.+exprdist);
+      dfunc=-1.0/(exprmdist+1.0)/(1.+exprdist);
     } else if(type==gaussian) {
       result=exp(-0.5*rdist*rdist);
       dfunc=-rdist*result;
@@ -397,13 +464,8 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
     } else if(type==leptontype) {
       const unsigned t=OpenMP::getThreadNum();
       plumed_assert(t<expression.size());
-      try {
-        const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x")=rdist;
-        const_cast<lepton::CompiledExpression*>(&expression_deriv[t])->getVariableReference("x")=rdist;
-      } catch(PLMD::lepton::Exception& exc) {
-// this is necessary since in some cases lepton things a variable is not present even though it is present
-// e.g. func=0*x
-      }
+      if(lepton_ref[t]) *lepton_ref[t]=rdist;
+      if(lepton_ref_deriv[t]) *lepton_ref_deriv[t]=rdist;
       result=expression[t].evaluate();
       dfunc=expression_deriv[t].evaluate();
     } else plumed_merror("Unknown switching function type");
@@ -431,6 +493,8 @@ void SwitchingFunction::set(int nn,int mm,double r0,double d0) {
   this->d0=d0;
   this->dmax=d0+r0*pow(0.00001,1./(nn-mm));
   this->dmax_2=this->dmax*this->dmax;
+  this->leptonx2=false;
+  this->fastrational=(nn%2==0 && mm%2==0 && d0==0.0);
 
   double dummy;
   double s0=calculate(0.0,dummy);

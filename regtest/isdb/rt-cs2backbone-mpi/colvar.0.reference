@@ -1,2 +1,2 @@
-#! FIELDS time st.sqdevsum st.corr st.slope st.intercept ste.sqdevsum ste.corr ste.slope ste.intercept
- 0.000000 2616.8731   0.9987   0.9981   0.1381 2733.3989   0.9987   0.9974   0.1434
+#! FIELDS time csa st.sqdevsum st.corr st.slope st.intercept ste.sqdevsum ste.corr ste.slope ste.intercept
+ 0.000000 1013.7762 2616.8731   0.9987   0.9981   0.1381 2733.3989   0.9987   0.9974   0.1434

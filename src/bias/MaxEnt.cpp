@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,6 +39,10 @@
 //#include "tools/IFile.h"
 //#include "tools/OFile.h"
 
+// The original implementation of this method was contributed
+// by Andrea Cesari (andreacesari90@gmail.com).
+// Copyright has been then transferred to PLUMED developers
+// (see https://github.com/plumed/plumed2/blob/master/.github/CONTRIBUTING.md)
 
 using namespace std;
 
@@ -160,7 +164,6 @@ class MaxEnt : public Bias {
   int myrep,nrep;
 public:
   explicit MaxEnt(const ActionOptions&);
-  ~MaxEnt();
   void calculate();
   void update();
   void update_lambda();
@@ -208,9 +211,6 @@ void MaxEnt::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("_error","default","Instantaneous values of the discrepancy between the observable and the restraint center");
   keys.addOutputComponent("_coupling","default","Instantaneous values of Lagrangian multipliers. They are also written by default in a separate output file.");
   keys.use("RESTART");
-}
-MaxEnt::~MaxEnt() {
-  lagmultOfile_.close();
 }
 MaxEnt::MaxEnt(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
@@ -331,7 +331,6 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
       printFirstStep=false;
     }
     ifile.reset(false);
-    ifile.close();
   }
 
   lagmultOfile_.link(*this);
@@ -341,9 +340,6 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
 ////MEMBER FUNCTIONS
 void MaxEnt::ReadLagrangians(IFile &ifile)
 {
-  unsigned ncv=getNumberOfArguments();
-  double deltat=getTimeStep();
-  double last_checkpoint=getTime();
   double dummy;
   while(ifile.scanField("time",dummy)) {
     for(unsigned j=0; j<getNumberOfArguments(); ++j) {
@@ -430,20 +426,17 @@ void MaxEnt::update_lambda() {
 
   double totalWork_=0.0;
   const double time=getTime();
-  const double deltat=getTimeStep();
   const double step=getStep();
   double KbT=simtemp;
   double learning_rate;
-  double cv;
   if(reweight)
     BetaReweightBias=plumed.getBias()/KbT;
   else
     BetaReweightBias=0.0;
 
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    double sigma2=pow(sigma,2.0);
     const double k=kappa[i];
-    cv=(getArgument(i)+compute_error(error_type,lambda[i])-at[i]);
+    double cv=(getArgument(i)+compute_error(error_type,lambda[i])-at[i]);
     if(reweight)
       learning_rate=1.0*k/(1+step/tau[i]);
     else

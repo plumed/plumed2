@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -224,12 +224,13 @@ MPI_Comm & Communicator::Get_comm() {
 }
 
 bool Communicator::initialized() {
-  int flag=false;
 #if defined(__PLUMED_HAS_MPI)
+  int flag=0;
   MPI_Initialized(&flag);
-#endif
   if(flag) return true;
   else return false;
+#endif
+  return false;
 }
 
 void Communicator::Request::wait(Status&s) {
