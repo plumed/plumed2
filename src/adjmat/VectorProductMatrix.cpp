@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "VectorProductMatrix.h"
+#include "AdjacencyMatrixBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
@@ -157,6 +158,18 @@ Value* VectorProductMatrix::convertStringToValue( const std::string& name ) {
   }
   plumed_assert( args.size()==1 );
   return args[0];
+}
+
+bool VectorProductMatrix::canBeAfterInChain( ActionWithValue* av ) const {
+  AdjacencyMatrixBase* vp = dynamic_cast<AdjacencyMatrixBase*>( av );
+  if( vp ) {
+      if( vp->getFullNumberOfTasks()<(vp->getNumberOfAtoms()-vp->threeblocks.size()) && ncol_args==0 ) {
+          error("cannot mix GROUPA/GROUPB actions with GROUP actions");
+      } else if( ncol_args>0 && vp->getFullNumberOfTasks()==(vp->getNumberOfAtoms()-vp->threeblocks.size()) ) {
+          error("cannot mix GROUPA/GROUPB actions with GROUP actions");
+      }
+  }
+  return true;
 }
 
 void VectorProductMatrix::lockRequests() {

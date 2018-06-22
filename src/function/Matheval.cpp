@@ -192,6 +192,7 @@ class Matheval :
   string func;
 public:
   explicit Matheval(const ActionOptions&);
+  bool writeInGraph( std::string& exline ) const ;
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const;
   static void registerKeywords(Keywords& keys);
@@ -295,6 +296,10 @@ Matheval::Matheval(const ActionOptions&ao):
     lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(leptonConstants);
     log<<"    "<<pe<<"\n"; for(auto & e : expression_deriv[i]) e=pe.createCompiledExpression();
   } 
+}
+
+bool Matheval::writeInGraph( std::string& exline ) const { 
+  exline = "FUNC=" + func; return true;
 }
 
 void Matheval::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {

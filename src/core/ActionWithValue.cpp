@@ -151,6 +151,15 @@ bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels,
       if( !storingall ) return false;
     }
   }
+  // This checks that there is nothing that will cause problems in the chain
+  mylabels.resize(0); getActionThatCalculates()->getAllActionLabelsInChain( mylabels );
+  for(unsigned i=0;i<mylabels.size();++i) {
+      ActionWithValue* av1=plumed.getActionSet().selectWithLabel<ActionWithValue*>( mylabels[i] ); 
+      for(unsigned j=0;j<i;++j) {
+          ActionWithValue* av2=plumed.getActionSet().selectWithLabel<ActionWithValue*>( mylabels[j] );
+          if( !av1->canBeAfterInChain( av2 ) ) error("must calculate " + mylabels[j] + " before " + mylabels[i] );
+      }
+  }
   action_to_do_after=act; act->addDependency( this ); act->action_to_do_before=this;
   return true;
 }
@@ -814,6 +823,104 @@ void ActionWithValue::gatherForces( const unsigned& itask, const MultiValue& myv
 
 void ActionWithValue::clearAllForcesInChain() {
   clearInputForces(); if( action_to_do_after ) action_to_do_after->clearAllForcesInChain();
+}
+
+void ActionWithValue::generateGraphNodes( OFile& ofile, std::vector<std::string>& graph_actions ) const {
+  if( action_to_do_before ) return ;
+  const ActionWithVirtualAtom* ava=dynamic_cast<const ActionWithVirtualAtom*>(this);
+  if( ava ) return ;
+
+  // Check we have not dealt with this node already
+  for(unsigned i=0;i<graph_actions.size();++i) {
+      if( graph_actions[i]==getLabel() ) return;
+  }
+
+  // Now retrieve all the labels in this chain
+  std::vector<std::string> chain; getAllActionLabelsInChain( chain );
+  if( chain.size()>1 ) { 
+      ofile.printf("   subgraph cluster%d { \n", graph_actions.size() );
+      ofile.printf("      node [style=filled,fillcolor=lightgrey];\n");
+      ofile.printf("      penwidth=3;\n");
+      ofile.printf("      color=black;\n");
+      // Now create all the nodes in this chain
+      unsigned gstart = graph_actions.size(); 
+      for(unsigned i=0;i<chain.size();++i){
+          ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( chain[i] ); std::string exline, num; 
+          std::string label=av->getLabel(); if( label.find("@")!=std::string::npos ){ std::size_t at=label.find_first_of("@"); label=label.substr(at+1); }
+          if( av->writeInGraph(exline) ) {
+              ofile.printf("     %s [label=\"%d \\n %s: \\n %s \\n %s\"] \n", label.c_str(), graph_actions.size() - gstart +1, av->getLabel().c_str(), av->getName().c_str(), exline.c_str() );
+          } else {
+              ofile.printf("     %s [label=\"%d \\n %s: \\n %s\"] \n", label.c_str(), graph_actions.size() - gstart +1, av->getLabel().c_str(), av->getName().c_str() );   
+          }
+          for(unsigned j=0;j<av->values.size();++j) {
+              for(const auto & p : (av->values[j])->userdata) {
+                  // Check if the action is only being used within the chain
+                  bool inchain=false;
+                  for(unsigned k=0;k<chain.size();++k) {
+                      if( p.first==chain[k] ){ inchain=true; break; }
+                  }
+                  if( inchain ) {
+                      ActionWithValue* av2=plumed.getActionSet().selectWithLabel<ActionWithValue*>( p.first ); plumed_assert( av2 );
+                      std::string label2=av2->getLabel(); if( label2.find("@")!=std::string::npos ){ std::size_t at=label2.find_first_of("@"); label2=label2.substr(at+1); }
+                      std::string color="orange";
+                      if( (av->values[j])->getRank()>0 && (av->values[j])->hasDerivatives() ) color="green";
+                      else if( (av->values[j])->getRank()==2 ) color="red";
+                      else if( (av->values[j])->getRank()==1 ) color="blue"; 
+                      ofile.printf("     %s -> %s [label=\"%s\", color=%s, fontcolor=%s]; \n", label.c_str(), label2.c_str(), 
+                                                               (av->values[j])->getName().c_str(), color.c_str(), color.c_str() ); 
+                  }
+              }
+          }
+          graph_actions.push_back( av->getLabel() );
+      }
+      ofile.printf("   }\n");
+  } else {
+      std::string label=getLabel(); if( label.find("@")!=std::string::npos ){ std::size_t at=label.find_first_of("@"); label=label.substr(at+1); } 
+      const ActionWithValue* av = dynamic_cast<const ActionWithValue*>( this ); std::string exline; graph_actions.push_back( getLabel() );
+      if( av ) {  
+          if( av->writeInGraph(exline) ) {
+              ofile.printf("     %s [label=\"%s: \\n %s \\n %s\"] \n", label.c_str(), getLabel().c_str(), getName().c_str(), exline.c_str() );
+          } else {
+              ofile.printf("     %s [label=\"%s: \\n %s\"] \n", label.c_str(), getLabel().c_str(), getName().c_str() );
+          }
+      } else ofile.printf("     %s [label=\"%s: \\n %s\"] \n", label.c_str(), getLabel().c_str(), getName().c_str() ); 
+  }
+  // Now create the links to the nodes outside of this chain
+  for(unsigned i=0;i<chain.size();++i) {
+      ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( chain[i] );
+      std::string label=av->getLabel(); if( label.find("@")!=std::string::npos ){ std::size_t at=label.find_first_of("@"); label=label.substr(at+1); } 
+      for(unsigned j=0;j<av->values.size();++j) {
+          for(const auto & p : (av->values[j])->userdata) {
+              // Check if the action is only being used within the chain
+              bool inchain=false;
+              for(unsigned k=0;k<chain.size();++k) {
+                  if( p.first==chain[k] ){ inchain=true; break; }
+              }
+              if( !inchain ) {
+                  Action* av2=plumed.getActionSet().selectWithLabel<Action*>( p.first ); plumed_assert( av2 );
+                  ActionWithValue* avv2 = dynamic_cast<ActionWithValue*>( av2 );
+                  if( !avv2 ) {
+                      bool found=false;
+                      for(unsigned i=0;i<graph_actions.size();++i) {
+                          if( av2->getLabel()==graph_actions[i] ){ found=true; break; }
+                      } 
+                      if( !found ) {
+                          std::string label=av2->getLabel(); if( label.find("@")!=std::string::npos ){ std::size_t at=label.find_first_of("@"); label=label.substr(at+1); }  
+                          ofile.printf("     %s [label=\"%s: \\n %s\"] \n", label.c_str(), av2->getLabel().c_str(), av2->getName().c_str() );
+                          graph_actions.push_back( av2->getLabel() );
+                      }
+                  }
+                  std::string label2=av2->getLabel(); if( label2.find("@")!=std::string::npos ){ std::size_t at=label2.find_first_of("@"); label2=label2.substr(at+1); }
+                  std::string color="orange";
+                  if( (av->values[j])->getRank()>0 && (av->values[j])->hasDerivatives() ) color="green";
+                  else if( (av->values[j])->getRank()==2 ) color="red";
+                  else if( (av->values[j])->getRank()==1 ) color="blue";
+                  ofile.printf("     %s -> %s [label=\"%s\", color=%s, fontcolor=%s]; \n", label.c_str(), label2.c_str(), 
+                                                               (av->values[j])->getName().c_str(), color.c_str(), color.c_str() ); 
+              }
+          }
+      }
+  }
 }
 
 }
