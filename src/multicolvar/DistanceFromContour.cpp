@@ -90,8 +90,6 @@ void DistanceFromContour::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("dist2","default","the distance between the reference atom and the other contour");
   keys.addOutputComponent("qdist","default","the differentiable (squared) distance between the two contours (see above)");
   keys.addOutputComponent("thickness","default","the distance between the two contours on the line from the reference atom");
-  keys.add("atoms","POSITIONS","the positions of the atoms that we are calculating the contour from");
-  keys.add("atoms","ATOM","The atom whose perpendicular distance we are calculating from the contour");
   keys.add("compulsory","DIR","the direction perpendicular to the contour that you are looking for");
   keys.add("compulsory","TOLERANCE","0.1","this parameter is used to manage periodic boundary conditions.  The problem "
            "here is that we can be between contours even when we are not within the membrane "

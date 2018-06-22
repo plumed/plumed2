@@ -29,6 +29,8 @@ void DistanceFromContourBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
   keys.remove("NUMERICAL_DERIVATIVES");
+  keys.add("atoms","POSITIONS","the positions of the atoms that we are calculating the contour from");
+  keys.add("atoms","ATOM","The atom whose perpendicular distance we are calculating from the contour");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
