@@ -380,6 +380,13 @@ private:
   double kbt_;
   int stride_;
   bool welltemp_;
+  //
+  int current_stride;
+  bool freq_adaptive_;
+  int fa_update_frequency_;
+  int fa_max_stride_;
+  double fa_min_acceleration_;
+  //
   std::unique_ptr<double[]> dp_;
   int adaptive_;
   std::unique_ptr<FlexibleBin> flexbin;
@@ -425,6 +432,7 @@ private:
   bool   scanOneHill(IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate);
   void   computeReweightingFactor();
   double getTransitionBarrierBias();
+  void updateFrequencyAdaptiveStride();
   string fmt;
 
 public:
@@ -513,6 +521,12 @@ MetaD::MetaD(const ActionOptions& ao):
   tt_specs_(false, "TT", "Transition Tempered", -1.0, 0.0, 1.0),
   kbt_(0.0),
   stride_(0), welltemp_(false),
+// frequency adaptive
+  current_stride(0),
+  freq_adaptive_(false),
+  fa_update_frequency_(0),
+  fa_max_stride_(0),
+  fa_min_acceleration_(1.0),
 // Other stuff
   adaptive_(FlexibleBin::none),
 // Multiple walkers initialization
@@ -772,6 +786,15 @@ MetaD::MetaD(const ActionOptions& ao):
     parse("ACCELERATION_RFILE", acc_rfilename);
   }
 
+  freq_adaptive_=false;
+  fa_update_frequency_=stride_;
+  fa_max_stride_=0;
+  fa_min_acceleration_=1.0;
+  parseFlag("FREQUENCY_ADAPTIVE",freq_adaptive_);
+  parse("FA_UPDATE_FREQUENCY",fa_update_frequency_);
+  parse("FA_MAX_PACE",fa_max_stride_);
+  parse("FA_MIN_ACCELERATION",fa_min_acceleration_);
+
   checkRead();
 
   log.printf("  Gaussian width ");
@@ -955,6 +978,18 @@ MetaD::MetaD(const ActionOptions& ao):
         if (transitionwells_[i][j] < min || transitionwells_[i][j] > max) error(" transition well is not in grid");
       }
     }
+  }
+
+  if(freq_adaptive_) {
+    if(!acceleration) {
+      error("Frequency adaptive metadynamics only works if the calculation of the acceleration factor is enabled with the ACCELERATION keyword\n");
+    }
+    log.printf("  The frequency for hill addition will change dynamically based on the metadynamics acceleration factor\n");
+    log.printf("  The hill addition frequency will be updated every %d steps\n",fa_update_frequency_);
+    log.printf("  The hill addition frequency will only be updated after the metadynamics acceleration factor larger than %f \n",fa_min_acceleration_);
+    log.printf("  The hill addition frequency will not become larger than %d\n",fa_max_stride_);
+    addComponent("pace"); componentIsNotPeriodic("pace");
+    updateFrequencyAdaptiveStride();
   }
 
   // for performance
@@ -1180,6 +1215,9 @@ MetaD::MetaD(const ActionOptions& ao):
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
     log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
     log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, J. Chem. Theory Comput. 12, 2790 (2016)");
+  }
+  if(freq_adaptive_) {
+    log<<plumed.cite("Wang, Valsson, Tiwary, Parrinello, and Lindorff-Larsen, J. Chem. Phys. 149, 072309 (2018)");
   }
   log<<"\n";
 }
@@ -1573,6 +1611,9 @@ void MetaD::calculate()
   } else if (acceleration && isFirstStep && acc_restart_mean_ > 0.0) {
     acc = acc_restart_mean_ * static_cast<double>(getStep());
   }
+  if(freq_adaptive_ && getStep()%fa_update_frequency_) {
+    updateFrequencyAdaptiveStride();
+  }
 
   getPntrToComponent("work")->set(work_);
   // set Forces
@@ -1868,6 +1909,20 @@ double MetaD::getTransitionBarrierBias() {
     }
     return least_transition_bias;
   }
+}
+
+
+void MetaD::updateFrequencyAdaptiveStride() {
+  plumed_massert(freq_adaptive_,"should only be used if frequency adaptive metadynamics is enabled");
+  plumed_massert(acceleration,"frequency adaptive metadynamics can only be used if the acceleration factor is calculated");
+  int tmp_stride= stride_*floor((acc/fa_min_acceleration_)+0.5);
+  if(acc >= fa_min_acceleration_) {
+    if(tmp_stride > current_stride) {current_stride = tmp_stride;}
+  }
+  if(fa_max_stride_!=0 && current_stride>fa_max_stride_) {
+    current_stride=fa_max_stride_;
+  }
+  getPntrToComponent("pace")->set(current_stride);
 }
 
 }
