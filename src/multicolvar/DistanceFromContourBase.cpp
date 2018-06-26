@@ -28,7 +28,7 @@ namespace multicolvar {
 void DistanceFromContourBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
-  keys.remove("NUMERICAL_DERIVATIVES");
+  keys.remove("NUMERICAL_DERIVATIVES"); keys.use("ARG");
   keys.add("atoms","POSITIONS","the positions of the atoms that we are calculating the contour from");
   keys.add("atoms","ATOM","The atom whose perpendicular distance we are calculating from the contour");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
