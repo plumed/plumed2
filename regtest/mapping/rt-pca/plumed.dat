@@ -4,14 +4,18 @@ WRAPAROUND ATOMS=1-22 AROUND=f
 
 # wrong:
 PCAVARS REFERENCE=reference.pdb TYPE=SIMPLE LABEL=pcawrong NOPBC
-PRINT ARG=pcawrong.* FILE=wrongcolvar FMT=%8.4f
+PRINT ARG=pcawrong_eig-1,pcawrong_eig-2,pcawrong_residual FILE=wrongcolvar FMT=%8.4f
 
 PCAVARS REFERENCE=reference.pdb TYPE=SIMPLE LABEL=pca
-#PCAVARS REFERENCE=reference.pdb TYPE=SIMPLE NUMERICAL_DERIVATIVES LABEL=pcan
-PRINT ARG=pca.* FILE=colvar FMT=%8.4f
-DUMPDERIVATIVES ARG=pca.* FILE=deriv FMT=%8.4f
+PRINT ARG=pca_eig-1,pca_eig-2,pca_residual FILE=colvar FMT=%8.4f
+
+BIASVALUE ARG=pca_eig-1
+BIASVALUE ARG=pca_eig-2
+BIASVALUE ARG=pca_residual
 
 PCAVARS REFERENCE=reference.pdb TYPE=OPTIMAL LABEL=pca2
-#PCAVARS REFERENCE=reference.pdb TYPE=OPTIMAL NUMERICAL_DERIVATIVES LABEL=pca2n
-PRINT ARG=pca2.* FILE=colvar2 FMT=%8.4f
-DUMPDERIVATIVES ARG=pca2.* FILE=deriv2 FMT=%8.4f
+PRINT ARG=pca2_eig-1,pca2_eig-2,pca2_residual FILE=colvar2 FMT=%8.4f
+
+BIASVALUE ARG=pca2_eig-1
+BIASVALUE ARG=pca2_eig-2
+BIASVALUE ARG=pca2_residual

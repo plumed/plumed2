@@ -36,17 +36,22 @@ namespace colvar {
 class RMSD : public Colvar {
 private:
   bool fixed_reference;
-  std::vector<Vector> pos, der;
+  Tensor rot;
+  Matrix<std::vector<Vector> > DRotDPos;
+  std::vector<Vector> pos, der, direction, centeredpos, centeredreference;
   bool squared;
   bool nopbc;
+  bool displacement;
   std::string type;
   std::vector<double> align,displace;
   PLMD::RMSD myrmsd;
+  std::vector<Vector> forcesToApply;
   void makeStructureWhole();
   void setReferenceConfiguration();
 public:
   explicit RMSD(const ActionOptions&);
   virtual void calculate();
+  void apply();
   static void registerKeywords(Keywords& keys);
   static void shortcutKeywords( Keywords& keys );
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -163,6 +168,7 @@ RMSD REFERENCE=file.pdb TYPE=OPTIMAL
 
 PLUMED_REGISTER_ACTION(RMSD,"RMSD")
 PLUMED_REGISTER_SHORTCUT(RMSD,"RMSD")
+PLUMED_REGISTER_SHORTCUT(RMSD,"PCAVARS")
 
 void RMSD::shortcutKeywords(Keywords& keys ) { 
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
@@ -171,34 +177,101 @@ void RMSD::shortcutKeywords(Keywords& keys ) {
 void RMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                            const std::map<std::string,std::string>& keys,
                            std::vector<std::vector<std::string> >& actions ) {
-  // Create the reference object
-  std::vector<std::string> ref_line; ref_line.push_back( lab + "_ref:" );
-  ref_line.push_back("READ_ATOMS"); ref_line.push_back("REFERENCE=" + keys.find("REFERENCE")->second );
-  actions.push_back( ref_line );
-  // And now create the rmsd object
-  std::vector<std::string> rmsd_line; rmsd_line.push_back( lab + ":");
-  rmsd_line.push_back("RMSD"); rmsd_line.push_back("REFERENCE_ATOMS=" + lab + "_ref"); 
-  // Read the reference pdb file
-  PDB pdb; std::string reference=keys.find("REFERENCE")->second;
-  if( !pdb.read(reference,false,0.1) ) plumed_merror("missing file " + reference );
-  // Get the atom numbers
-  std::vector<AtomNumber> atoms( pdb.getAtomNumbers() ); 
-  std::string atnum; Tools::convert( atoms[0].serial(), atnum ); std::string atlstr="ATOMS=" + atnum;
-  for(unsigned i=1;i<atoms.size();++i){ Tools::convert( atoms[i].serial(), atnum ); atlstr += "," + atnum; }
-  rmsd_line.push_back( atlstr );
-  // Get the align values 
-  std::vector<double> alig( pdb.getOccupancy() ); 
-  std::string anum; Tools::convert( alig[0], anum ); std::string alstr="ALIGN=" + anum;
-  for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); alstr += "," + anum; }
-  rmsd_line.push_back( alstr );
-  // Get the displace values
-  std::vector<double> disp( pdb.getBeta() );
-  std::string dnum; Tools::convert( disp[0], dnum ); std::string dlstr="DISPLACE=" + dnum;
-  for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); dlstr += "," + dnum; }
-  rmsd_line.push_back( dlstr );
-  // And add everything else from the input
-  for(unsigned i=1;i<words.size();++i) rmsd_line.push_back( words[i] );
-  actions.push_back( rmsd_line );
+  if( words[0]=="RMSD") {
+      // Create the reference object
+      std::vector<std::string> ref_line; ref_line.push_back( lab + "_ref:" );
+      ref_line.push_back("READ_ATOMS"); ref_line.push_back("REFERENCE=" + keys.find("REFERENCE")->second );
+      actions.push_back( ref_line );
+      // And now create the rmsd object
+      std::vector<std::string> rmsd_line; rmsd_line.push_back( lab + ":");
+      rmsd_line.push_back("RMSD"); rmsd_line.push_back("REFERENCE_ATOMS=" + lab + "_ref"); 
+      // Read the reference pdb file
+      PDB pdb; std::string reference=keys.find("REFERENCE")->second;
+      if( !pdb.read(reference,false,0.1) ) plumed_merror("missing file " + reference );
+      // Get the atom numbers
+      std::vector<AtomNumber> atoms( pdb.getAtomNumbers() ); 
+      std::string atnum; Tools::convert( atoms[0].serial(), atnum ); std::string atlstr="ATOMS=" + atnum;
+      for(unsigned i=1;i<atoms.size();++i){ Tools::convert( atoms[i].serial(), atnum ); atlstr += "," + atnum; }
+      rmsd_line.push_back( atlstr );
+      // Get the align values 
+      std::vector<double> alig( pdb.getOccupancy() ); 
+      std::string anum; Tools::convert( alig[0], anum ); std::string alstr="ALIGN=" + anum;
+      for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); alstr += "," + anum; }
+      rmsd_line.push_back( alstr );
+      // Get the displace values
+      std::vector<double> disp( pdb.getBeta() );
+      std::string dnum; Tools::convert( disp[0], dnum ); std::string dlstr="DISPLACE=" + dnum;
+      for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); dlstr += "," + dnum; }
+      rmsd_line.push_back( dlstr );
+      // And add everything else from the input
+      for(unsigned i=1;i<words.size();++i) rmsd_line.push_back( words[i] );
+      actions.push_back( rmsd_line );
+  } else if( words[0]=="PCAVARS" ) {
+      // Create the reference object
+      std::vector<std::string> ref_line; ref_line.push_back( lab + "_ref:" );
+      ref_line.push_back("READ_ATOMS"); ref_line.push_back("REFERENCE=" + keys.find("REFERENCE")->second );
+      actions.push_back( ref_line );
+      // And now create the rmsd object
+      std::vector<std::string> rmsd_line; rmsd_line.push_back( lab + ":");
+      rmsd_line.push_back("RMSD"); rmsd_line.push_back("REFERENCE_ATOMS=" + lab + "_ref");
+      // Read the reference pdb file
+      PDB pdb; std::string reference=keys.find("REFERENCE")->second;
+      FILE* fp=std::fopen(reference.c_str(),"r");
+      if(!fp) plumed_merror("could not open reference file " + reference );
+      bool do_read=pdb.readFromFilepointer(fp,false,0.1); 
+      if( !do_read ) plumed_merror("missing file " + reference );
+      // Get the atom numbers
+      std::vector<AtomNumber> atoms( pdb.getAtomNumbers() );
+      std::string atnum; Tools::convert( atoms[0].serial(), atnum ); std::string atlstr="ATOMS=" + atnum;
+      for(unsigned i=1;i<atoms.size();++i){ Tools::convert( atoms[i].serial(), atnum ); atlstr += "," + atnum; }
+      rmsd_line.push_back( atlstr ); rmsd_line.push_back("DISPLACEMENT"); rmsd_line.push_back("SQUARED"); 
+      // And add everything else from the input
+      for(unsigned i=1;i<words.size();++i) rmsd_line.push_back( words[i] );
+      actions.push_back( rmsd_line );
+      // Now read in the directions and create matheval objects to compute the pca components
+      unsigned nfram=1;
+      while( do_read ) {
+        PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,0.1);
+        if( do_read ) {
+            std::string num; Tools::convert( nfram, num ); nfram++;
+            std::vector<std::string> comb_inp; comb_inp.push_back( lab + "_eig-" + num + ":" ); 
+            comb_inp.push_back("COMBINE"); comb_inp.push_back("ARG=" + lab + ".disp" );
+            // Normalize the eigenvector in the input
+            double norm=0; 
+            for(unsigned i=0;i<mypdb.getPositions().size();++i) { 
+                norm += mypdb.getPositions()[i][0]*mypdb.getPositions()[i][0];
+                norm += mypdb.getPositions()[i][1]*mypdb.getPositions()[i][1];
+                norm += mypdb.getPositions()[i][2]*mypdb.getPositions()[i][2];
+            }
+            norm = sqrt( norm ); std::vector<double> normed_coeffs( 3*mypdb.getPositions().size() );
+            for(unsigned i=0;i<mypdb.getPositions().size();++i) {
+                normed_coeffs[3*i+0] = mypdb.getPositions()[i][0] / norm;
+                normed_coeffs[3*i+1] = mypdb.getPositions()[i][1] / norm;
+                normed_coeffs[3*i+2] = mypdb.getPositions()[i][2] / norm;
+            }
+            std::string coeff1; Tools::convert( normed_coeffs[0], coeff1 ); 
+            std::string coeff_inp="COEFFICIENTS=" + coeff1;
+            for(unsigned i=1;i<normed_coeffs.size();++i) {
+                Tools::convert( normed_coeffs[i], coeff1 );
+                coeff_inp += "," + coeff1; 
+            }
+            comb_inp.push_back( coeff_inp ); comb_inp.push_back("PERIODIC=NO"); 
+            actions.push_back( comb_inp );
+        } else { break; }
+      }
+      std::fclose(fp);
+      std::vector<std::string> resid_inp; resid_inp.push_back( lab + "_residual_2:" ); resid_inp.push_back("COMBINE");
+      std::string arg_inp="ARG=" + lab + ".dist", coeff_inp2 = "COEFFICIENTS=1", pow_inp = "POWERS=1";
+      for(unsigned i=0;i<nfram-1;++i) { 
+          std::string num; Tools::convert( i+1, num );
+          arg_inp += "," + lab + "_eig-" + num; coeff_inp2 += ",-1"; pow_inp += ",2";
+      }
+      resid_inp.push_back( arg_inp ); resid_inp.push_back( coeff_inp2 ); resid_inp.push_back( pow_inp );
+      resid_inp.push_back("PERIODIC=NO"); actions.push_back( resid_inp );
+      std::vector<std::string> fresid; fresid.push_back( lab + "_residual:"); fresid.push_back("MATHEVAL");
+      fresid.push_back("ARG=" + lab + "_residual_2"); fresid.push_back("FUNC=sqrt(x)"); fresid.push_back("PERIODIC=NO"); 
+      actions.push_back( fresid );  
+  }
 }
 
 void RMSD::registerKeywords(Keywords& keys) {
@@ -209,18 +282,22 @@ void RMSD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","DISPLACE","1.0","the weights to use when calculating the displacement from the reference structure");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
   keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
+  keys.addFlag("DISPLACEMENT",false,"Calculate the vector of displacements instead of the length of this vector");
 }
 
 RMSD::RMSD(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   fixed_reference(true),
+  DRotDPos(3,3),
   squared(false),
-  nopbc(false)
+  nopbc(false),
+  displacement(false)
 {
   type.assign("SIMPLE");
   parse("TYPE",type);
   parseFlag("SQUARED",squared);
   parseFlag("NOPBC",nopbc);
+  parseFlag("DISPLACEMENT",displacement);
 
   std::vector<AtomNumber> atoms_ref; parseAtomList("REFERENCE_ATOMS",atoms_ref);
   std::vector<AtomNumber> atoms_conf; parseAtomList("ATOMS",atoms_conf);
@@ -230,11 +307,21 @@ RMSD::RMSD(const ActionOptions&ao):
   double wa=0, wd=0; for(unsigned i=0; i<align.size(); ++i) { wa+=align[i]; wd+=displace[i]; }
   for(unsigned i=0; i<align.size(); ++i){ align[i] /= wa; displace[i] /= wd; }
 
-  addValueWithDerivatives(); setNotPeriodic();
+  if( displacement ) {
+     std::vector<unsigned> shape(1); shape[0] = 3*atoms_conf.size();
+     addComponent( "disp", shape ); componentIsNotPeriodic("disp");
+     addComponentWithDerivatives( "dist" ); componentIsNotPeriodic("dist");
+     getPntrToComponent(0)->alwaysStoreValues();
+     forcesToApply.resize( atoms_conf.size() );
+  } else {
+     addValueWithDerivatives(); setNotPeriodic();
+  }
 
   std::vector<AtomNumber> myatoms( atoms_ref );
   for(unsigned i=0;i<atoms_conf.size();++i) myatoms.push_back( atoms_conf[i] );
   requestAtoms( myatoms ); pos.resize( atoms_ref.size() ); der.resize( atoms_ref.size() );
+  direction.resize( atoms_ref.size() ); ; centeredpos.resize( atoms_ref.size() ); 
+  centeredreference.resize( atoms_ref.size() );
 
   // Determine if the reference configuration is fixed
   for(unsigned i=0;i<atoms_conf.size();++i) {
@@ -290,14 +377,87 @@ void RMSD::calculate() {
   for(unsigned i=0;i<pos.size();++i) pos[i] = getPosition(pos.size()+i);
   // Make the molecule whole
   if(!nopbc) makeStructureWhole();
-  // Calculate RMSD distance
-  double r=myrmsd.calculate( pos, der, squared );
-  // Set value and derivatives
-  setValue(r); unsigned n=0;
-  for(unsigned i=pos.size(); i<getNumberOfAtoms(); i++){ setAtomsDerivatives( i, der[n] ); n++; }
-  // And finish by working out virial
-  Tensor virial; plumed_dbg_assert( !mypack.virialWasSet() );
-  setBoxDerivativesNoPbc();
+
+  if( displacement ) {
+      // Calculate RMSD displacement 
+      double d; 
+      if(type=="SIMPLE") { 
+         d = myrmsd.simpleAlignment( align, displace, pos, myrmsd.getReference(), der, direction, squared );
+      } else {
+         d = myrmsd.calc_PCAelements( pos, der, rot, DRotDPos, direction, centeredpos, centeredreference, squared );
+         for(unsigned i=0;i<direction.size();++i) direction[i] = displace[i]*( direction[i] - myrmsd.getReference()[i] );
+      }
+      Value* val=getPntrToComponent(0);
+      for(unsigned i=0;i<pos.size();++i) {
+          val->set( 3*i+0, direction[i][0] ); val->set( 3*i+1, direction[i][1] ); val->set( 3*i+2, direction[i][2] );
+      }
+      // Set the value of the derivatives
+      Value* vv = getPntrToComponent(1); vv->set(d); unsigned n=0; Tensor virial; virial.zero();
+      for(unsigned i=pos.size(); i<getNumberOfAtoms(); i++){ 
+          setAtomsDerivatives( vv, i, der[n] ); virial -= Tensor( pos[n], der[n] ); n++; 
+      } 
+      setBoxDerivatives( vv, virial );
+  } else {
+      // Calculate RMSD distance
+      double r=myrmsd.calculate( pos, der, squared );
+      // Set value and derivatives
+      setValue(r); unsigned n=0; Tensor virial; virial.zero();
+      for(unsigned i=pos.size(); i<getNumberOfAtoms(); i++){ 
+          setAtomsDerivatives( i, der[n] ); virial -= Tensor( pos[n], der[n] ); n++; 
+      }
+      // And finish by working out virial
+      setBoxDerivatives( virial );
+  }
+}
+
+void RMSD::apply() {
+  // This ensures forces are applied to dist component
+  Colvar::apply();
+  // If we have not calculated a displacement we are done
+  if( !displacement ) return ;
+  // Check if forces have been applied to displacement
+  if( !getPntrToOutput(0)->forcesWereAdded() ) return ;
+
+  Value* dval=getPntrToComponent(0); 
+  if( type=="SIMPLE" ) {
+      Vector comforce; comforce[0];
+      for(unsigned i=0; i<pos.size(); i++) {
+          for(unsigned k=0; k<3; ++k) comforce[k] += align[i]*dval->getForce(3*i+k);
+      } 
+      for(unsigned i=0; i<pos.size(); i++) {
+          forcesToApply[i][0] = dval->getForce( 3*i+0 ) - comforce[0];
+          forcesToApply[i][1] = dval->getForce( 3*i+1 ) - comforce[1];
+          forcesToApply[i][2] = dval->getForce( 3*i+2 ) - comforce[2];
+      }
+  } else {
+      Tensor trot=rot.transpose(); double prefactor = 1 / static_cast<double>( pos.size() ); Vector v1; v1.zero();
+      for(unsigned n=0; n<pos.size(); n++) { 
+          Vector ff; ff[0] = dval->getForce( 3*n+0 ); ff[1] = dval->getForce( 3*n+1 ); ff[2] = dval->getForce( 3*n+2 );
+          v1+=prefactor*matmul(trot,ff);
+      }
+      for(unsigned i=0; i<pos.size(); i++) { 
+          Vector ff; ff[0] = dval->getForce( 3*i+0 ); ff[1] = dval->getForce( 3*i+1 ); ff[2] = dval->getForce( 3*i+2 );
+          forcesToApply[i] = displace[i]*( matmul(trot,ff) - v1 );
+      }
+      for(unsigned a=0; a<3; a++) {
+        for(unsigned b=0; b<3; b++) {
+          for(unsigned i=0; i<pos.size(); i++) {
+            double tmp1=0.; for(unsigned m=0; m<pos.size(); m++) tmp1+=centeredpos[m][b]*dval->getForce( 3*m+a );
+            forcesToApply[i] += displace[i]*tmp1*DRotDPos[a][b][i]; 
+          }
+        }
+      }
+  }
+  // Retrieve instantaneous configuration
+  for(unsigned i=0;i<pos.size();++i) pos[i] = getPosition(pos.size()+i);
+  // Make the molecule whole
+  if(!nopbc) makeStructureWhole();
+
+  Tensor& v(modifyVirial()); std::vector<Vector>& f(modifyForces()); unsigned n=pos.size();
+  for(unsigned i=0; i<pos.size(); i++) {
+      f[n][0] += forcesToApply[i][0]; f[n][1] += forcesToApply[i][1]; f[n][2] += forcesToApply[i][2]; n++; 
+      v -= Tensor( pos[i], forcesToApply[i] );
+  }
 }
 
 }

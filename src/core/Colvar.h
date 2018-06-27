@@ -56,7 +56,7 @@ protected:
   void           setBoxDerivatives(Value*,const Tensor&);
   const Tensor & getBoxDerivatives()const;
   const double & getForce()const;
-  void apply();
+  virtual void apply();
 /// Set box derivatives automatically.
 /// It should be called after the setAtomsDerivatives has been used for all
 /// single atoms.
