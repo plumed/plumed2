@@ -454,6 +454,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.addOutputComponent("maxbias", "CALC_MAX_BIAS", "the maximum of the metadynamics V(s, t)");
   keys.addOutputComponent("transbias", "CALC_TRANSITION_BIAS", "the metadynamics transition bias V*(t)");
+  keys.addOutputComponent("pace","FREQUENCY_ADAPTIVE","the hill addition frequency when employing frequency adaptive metadynamics");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
@@ -604,6 +605,7 @@ MetaD::MetaD(const ActionOptions& ao):
   parse("HEIGHT",height0_);
   parse("PACE",stride_);
   if(stride_<=0 ) error("frequency for hill addition is nonsensical");
+  current_stride = stride_;
   string hillsfname="HILLS";
   parse("FILE",hillsfname);
 
@@ -1615,7 +1617,7 @@ void MetaD::calculate()
   } else if (acceleration && isFirstStep && acc_restart_mean_ > 0.0) {
     acc = acc_restart_mean_ * static_cast<double>(getStep());
   }
-  if(freq_adaptive_ && getStep()%fa_update_frequency_) {
+  if(freq_adaptive_ && getStep()%fa_update_frequency_==0) {
     updateFrequencyAdaptiveStride();
   }
 
@@ -1633,7 +1635,7 @@ void MetaD::update() {
 
   // adding hills criteria (could be more complex though)
   bool nowAddAHill;
-  if(getStep()%stride_==0 && !isFirstStep )nowAddAHill=true;
+  if(getStep()%current_stride==0 && !isFirstStep )nowAddAHill=true;
   else {
     nowAddAHill=false;
     isFirstStep=false;
