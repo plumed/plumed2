@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ReweightWham.h"
+#include "ReweightBase.h"
 #include "core/ActionRegister.h"
 #include "tools/Communicator.h"
 
@@ -33,6 +33,24 @@
 
 namespace PLMD {
 namespace bias {
+
+class ReweightWham : public ReweightBase {
+private:
+  double thresh;
+  unsigned nreplicas;
+  unsigned maxiter;
+  bool weightsCalculated;
+  std::vector<double> stored_biases;
+  std::vector<double> final_weights;
+public:
+  static void registerKeywords(Keywords&);
+  explicit ReweightWham(const ActionOptions&ao);
+  bool buildsWeightStore() const { return true; }
+  void calculateWeights( const unsigned& nframes );
+  void clearData();
+  double getLogWeight();
+  double getWeight( const unsigned& iweight ) const ;
+};
 
 PLUMED_REGISTER_ACTION(ReweightWham,"REWEIGHT_WHAM")
 
@@ -67,6 +85,11 @@ double ReweightWham::getLogWeight() {
 
 void ReweightWham::clearData() {
   stored_biases.resize(0);
+}
+
+double ReweightWham::getWeight( const unsigned& iweight ) const {
+  plumed_dbg_assert( weightsCalculated && iweight<final_weights.size() );
+  return final_weights[iweight];
 }
 
 void ReweightWham::calculateWeights( const unsigned& nframes ) {

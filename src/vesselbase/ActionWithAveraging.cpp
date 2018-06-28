@@ -24,7 +24,7 @@
 #include "analysis/ReadAnalysisFrames.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "bias/ReweightWham.h"
+#include "bias/ReweightBase.h"
 
 namespace PLMD {
 namespace vesselbase {
@@ -81,8 +81,8 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
     for(unsigned i=0; i<wwstr.size(); ++i) {
       ActionWithValue* val = plumed.getActionSet().selectWithLabel<ActionWithValue*>(wwstr[i]);
       if( !val ) error("could not find value named");
-      bias::ReweightWham* iswham=dynamic_cast<bias::ReweightWham*>( val );
-      if( iswham ) error("to use wham you must gather data using COLLECT_FRAMES");
+      bias::ReweightBase* iswham=dynamic_cast<bias::ReweightBase*>( val );
+      if( iswham->buildsWeightStore() ) error("to use wham you must gather data using COLLECT_FRAMES");
       weights.push_back( val->copyOutput(val->getLabel()) );
       arg.push_back( val->copyOutput(val->getLabel()) );
       log.printf("%s ",wwstr[i].c_str() );

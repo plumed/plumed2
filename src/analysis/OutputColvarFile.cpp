@@ -47,6 +47,8 @@ class OutputColvarFile : public AnalysisBase {
 private:
   std::string fmt;
   std::string filename;
+  bool output_for_all_replicas;
+  std::vector<unsigned> preps;
   std::vector<std::string> req_vals;
 public:
   static void registerKeywords( Keywords& keys );
@@ -60,6 +62,7 @@ PLUMED_REGISTER_ACTION(OutputColvarFile,"OUTPUT_ANALYSIS_DATA_TO_COLVAR")
 void OutputColvarFile::registerKeywords( Keywords& keys ) {
   AnalysisBase::registerKeywords( keys ); keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file to output to");
+  keys.add("compulsory","REPLICA","0","the replicas for which you would like to output this information");
   keys.add("compulsory","STRIDE","0","the frequency with which to perform the required analysis and to output the data.  The default value of 0 tells plumed to use all the data");
   keys.add("optional","FMT","the format to output the data using");
 }
@@ -67,7 +70,8 @@ void OutputColvarFile::registerKeywords( Keywords& keys ) {
 OutputColvarFile::OutputColvarFile( const ActionOptions& ao ):
   Action(ao),
   AnalysisBase(ao),
-  fmt("%f")
+  fmt("%f"),
+  output_for_all_replicas(false)
 {
   parse("FILE",filename); parse("FMT",fmt);
   if( !getRestart() ) { OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
@@ -78,13 +82,33 @@ OutputColvarFile::OutputColvarFile( const ActionOptions& ao ):
   } else {
     req_vals.resize( getArguments().size() ); for(unsigned i=0; i<req_vals.size(); ++i) req_vals[i]=getPntrToArgument(i)->getName();
   }
-  plumed_assert( req_vals.size()>0 );
-  log.printf("  outputting %s", req_vals[0].c_str() );
-  for(unsigned i=1; i<req_vals.size(); ++i) log.printf(",", req_vals[i].c_str() );
-  log.printf("\n");
+  if( req_vals.size()==0 ) {
+      log.printf("  outputting weights from input action \n");
+  } else {
+      log.printf("  outputting %s", req_vals[0].c_str() );
+      for(unsigned i=1; i<req_vals.size(); ++i) log.printf(",", req_vals[i].c_str() );
+      log.printf("\n");
+  }
+  std::vector<std::string> rep_data; parseVector("REPLICA",rep_data);
+  if( rep_data.size()==1 ) {
+      if( rep_data[0]=="all" ) output_for_all_replicas=true;
+      else {
+         preps.resize(1); Tools::convert( rep_data[0], preps[0] ); 
+      }
+  } else {
+      preps.resize( rep_data.size() );
+      for(unsigned i=0;i<rep_data.size();++i) Tools::convert( rep_data[i], preps[i] );
+  }
 }
 
 void OutputColvarFile::performAnalysis() {
+  if( !output_for_all_replicas ) {
+      bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
+      for(unsigned i=0;i<preps.size();++i) {
+          if( myrep==preps[i] ) { found=true; break; }
+      }
+      if( !found ) return;
+  }
   // Output the embedding as long lists of data
   OFile gfile; gfile.link(*this);
   gfile.setBackupString("analysis");
