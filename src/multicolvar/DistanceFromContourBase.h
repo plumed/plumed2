@@ -25,6 +25,7 @@
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
+#include "tools/RootFindingBase.h" 
 
 namespace PLMD {
 namespace multicolvar {
@@ -36,6 +37,7 @@ class DistanceFromContourBase :
 {
 private:
   double contour;
+  RootFindingBase<DistanceFromContourBase> mymin;
 protected:
   std::string kerneltype;
   std::vector<double> bw;
@@ -44,6 +46,8 @@ protected:
   std::vector<Value*> pval;
   std::vector<double> forcesToApply;
   std::vector<unsigned> active_list;
+/// Find a contour along line specified by direction
+  void findContour( const std::vector<double>& direction, std::vector<double>& point ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromContourBase( const ActionOptions& );
@@ -60,6 +64,11 @@ inline
 unsigned DistanceFromContourBase::getNumberOfDerivatives() const {
   if( getNumberOfArguments()==1 ) return 4*getNumberOfAtoms() + 8;  // One derivative for each weight hence four times the number of atoms - 1
   return 3*getNumberOfAtoms() + 9;
+}
+
+inline
+void DistanceFromContourBase::findContour( const std::vector<double>& direction, std::vector<double>& point ) const {
+  mymin.lsearch( direction, point, &DistanceFromContourBase::getDifferenceFromContour );
 }
 
 }

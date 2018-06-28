@@ -21,8 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DistanceFromContourBase.h"
 #include "core/ActionRegister.h"
-#include "tools/KernelFunctions.h"
-#include "tools/RootFindingBase.h"
 
 //+PLUMEDOC COLVAR DISTANCE_FROM_SPHERICAL_CONTOUR
 /*
@@ -37,8 +35,6 @@ namespace PLMD {
 namespace multicolvar {
 
 class DistanceFromSphericalContour : public DistanceFromContourBase {
-private:
-  RootFindingBase<DistanceFromSphericalContour> mymin;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromSphericalContour( const ActionOptions& );
@@ -57,8 +53,7 @@ void DistanceFromSphericalContour::registerKeywords( Keywords& keys ) {
 
 DistanceFromSphericalContour::DistanceFromSphericalContour( const ActionOptions& ao ):
   Action(ao),
-  DistanceFromContourBase(ao),
-  mymin(this)
+  DistanceFromContourBase(ao)
 {
   // Create the values
   std::vector<unsigned> shape;
@@ -70,78 +65,43 @@ void DistanceFromSphericalContour::calculate() {
   // Check box is orthorhombic
   if( !getPbc().isOrthorombic() ) error("cell box must be orthorhombic");
 
-  // Calculate the director of the vector connecting particle to center of region
-  Vector dirv = pbcDistance( getPosition(getNumberOfAtoms()-2), getPosition(getNumberOfAtoms()-1) );
+  // Calculate the director of the vector connecting the center of the sphere to the molecule of interest
+  Vector dirv = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(getNumberOfAtoms()-2) );
   double len=dirv.modulo(); dirv /= len;
   // Now work out which atoms need to be considered explicitly
-  Vector myvec = pbcDistance( getPosition(getNumberOfAtoms()-2), getPosition(0) ); 
+  Vector myvec = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(0) ); 
   nactive=1; active_list[0]=0; 
-  double dp = dotProduct( myvec, dirv ), mindist = fabs(dp);
-  for(unsigned j=1; j<getNumberOfAtoms()-1; ++j) {
-    Vector distance=pbcDistance( getPosition(getNumberOfAtoms()-2), getPosition(j) );
-    double dp = dotProduct( distance, dirv ); double cp = distance.modulo2() - dp*dp;
-    if( cp<rcut2 ) {
-      if( fabs(dp)<mindist && fabs(dp)>epsilon ) { mindist = dp; }
-      active_list[nactive]=j; nactive++;
+  for(unsigned j=1; j<getNumberOfAtoms()-2; ++j) {
+    if( getNumberOfArguments()==1 ) {
+        if( getPntrToArgument(0)->get(j)<epsilon ) continue;
     }
+    active_list[nactive]=j; nactive++; 
+    Vector distance=pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(j) );
+    double dp = dotProduct( distance, dirv ); double cp = distance.modulo2() - dp*dp;
+    if( cp<rcut2 ) { active_list[nactive]=j; nactive++; }
   }
+  // Get maximum length to fit in box
+  double hbox = 0.5*getBox()(0,0);
+  if( 0.5*getBox()(1,1)<hbox ) hbox = 0.5*getBox()(1,1);
+  if( 0.5*getBox()(2,2)<hbox ) hbox = 0.5*getBox()(2,2);
   // Set initial guess for position of contour to position of closest molecule in region
   std::vector<double> pos1(3), dirv2(3); 
-  for(unsigned k=0;k<3;++k){ dirv2[k]=dirv[k]; pos1[k]=mindist*dirv[k]; }
+  for(unsigned k=0;k<3;++k){ dirv2[k]=hbox*dirv[k]; pos1[k]=0; }
   // Now do a search for the contours
-  mymin.lsearch( dirv2, pos1, &DistanceFromSphericalContour::getDifferenceFromContour );
-  // Now get the final position
-  Vector pos2; for(unsigned i=0;i<3;++i) pos2[i] = pval[i]->get();
-  // And the dot product is the value of the CV
-  double fval = dotProduct( pos2, dirv );
+  findContour( dirv2, pos1 );
+  // Now find the distance between the center of the sphere and the contour
+  double rad = sqrt( pos1[0]*pos1[0] + pos1[1]*pos1[1] + pos1[2]*pos1[2] );
   // Set the radius 
-  getPntrToComponent("radius")->set( len - fval );
-  getPntrToComponent("dist")->set( fval );
+  getPntrToComponent("radius")->set( rad );
+  // Set the distance between the contour and the molecule
+  getPntrToComponent("dist")->set( len - rad );
 
   // Now calculate the derivatives
-  // if( !doNotCalculateDerivatives() ) {
-  //   evaluateDerivatives( root1, root2[dir] ); evaluateDerivatives( root2, root1[dir] );
-  // }
+  if( !doNotCalculateDerivatives() ) plumed_merror("derivatives not implemented");
 }
 
 void DistanceFromSphericalContour::evaluateDerivatives( const Vector root1, const double& root2 ) {
-//   if( getNumberOfArguments()>0 ) plumed_merror("derivatives for phase field distance from contour have not been implemented yet");
-//   for(unsigned j=0; j<3; ++j) pval[j]->set( root1[j] );
-// 
-//   Vector origind; origind.zero(); Tensor vir; vir.zero();
-//   double sumd = 0; std::vector<double> pp(3), ddd(3,0);
-//   for(unsigned i=0; i<nactive; ++i) {
-//     Vector distance = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(active_list[i]) );
-//     for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
-// 
-//     // Now create the kernel and evaluate
-//     KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 ); 
-//     std::vector<Value*> fvals; kernel.normalize( fvals );
-//     double newval = kernel.evaluate( pval, ddd, true );
-//     if( getNumberOfArguments()==1 ) {
-//     } else {
-//       sumd += ddd[dir];
-//       for(unsigned j=0; j<3; ++j) atom_deriv[i][j] = -ddd[j];
-//       origind += -atom_deriv[i]; vir -= Tensor(atom_deriv[i],distance);
-//     }
-//   }
-// 
-//   // Add derivatives to atoms involved
-//   Value* val=getPntrToComponent("qdist"); double prefactor =  root2 / sumd;
-//   for(unsigned i=0; i<nactive; ++i) {
-//     val->addDerivative( 3*active_list[i] + 0, -prefactor*atom_deriv[i][0] );
-//     val->addDerivative( 3*active_list[i] + 1, -prefactor*atom_deriv[i][1] );
-//     val->addDerivative( 3*active_list[i] + 2, -prefactor*atom_deriv[i][2] );
-//   }
-// 
-//   // Add derivatives to atoms at origin
-//   unsigned nbase = 3*(getNumberOfAtoms()-1);
-//   val->addDerivative( nbase, -prefactor*origind[0] ); nbase++;
-//   val->addDerivative( nbase, -prefactor*origind[1] ); nbase++;
-//   val->addDerivative( nbase, -prefactor*origind[2] ); nbase++;
-// 
-//   // Add derivatives to virial
-//   for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) { val->addDerivative( nbase, -prefactor*vir(i,j) ); nbase++; }
+  plumed_error();
 }
 
 }
