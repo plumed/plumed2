@@ -688,8 +688,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           fname = hillsfname[i];
         }
       }
-      IFile *ifile = new IFile();
-      ifiles.emplace_back(ifile);
+      ifiles.emplace_back(new IFile());
+      // this is just a shortcut pointer to the last element:
+      IFile *ifile = ifiles.back().get();
       ifile->link(*this);
       ifilesnames.push_back(fname);
       if(ifile->FileExist(fname)) {
