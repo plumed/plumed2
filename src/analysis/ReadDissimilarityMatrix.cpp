@@ -44,7 +44,7 @@ namespace analysis {
 class ReadDissimilarityMatrix : public AnalysisBase {
 private:
   unsigned nnodes;
-  DataCollectionObject fake_data;
+  std::vector<DataCollectionObject> fake_data;
   std::string fname, wfile;
 //  Matrix<double> dissimilarities;
   std::vector<std::vector<double> > dissimilarities;
@@ -122,6 +122,7 @@ void ReadDissimilarityMatrix::runFinalJobs() {
   if( my_input_data && dissimilarities.size()!=getNumberOfDataPoints() ) {
     error("mismatch between number of data points in trajectory and the dimensions of the dissimilarity matrix");
   }
+  if( !my_input_data ) fake_data.resize( dissimilarities.size() );
 
   weights.resize( dissimilarities.size() );
   if( wfile.length()>0 ) {
@@ -147,7 +148,7 @@ double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const 
 DataCollectionObject& ReadDissimilarityMatrix::getStoredData( const unsigned& idata, const bool& calcdist ) {
   plumed_massert( !calcdist, "cannot calc dist as this data was read in from input");
   if( my_input_data ) return AnalysisBase::getStoredData( idata, calcdist );
-  return fake_data;
+  return fake_data[idata];
 }
 
 double ReadDissimilarityMatrix::getWeight( const unsigned& idata ) {
