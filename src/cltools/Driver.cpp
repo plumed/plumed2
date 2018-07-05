@@ -296,7 +296,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   }
 
   if(debug_float && sizeof(real)!=sizeof(float)) {
-    std::unique_ptr<CLTool> cl(cltoolRegister().create(CLToolOptions("driver-float")));
+    auto cl=cltoolRegister().create(CLToolOptions("driver-float"));
     cl->setInputData(this->getInputData());
     int ret=cl->main(in,out,pc);
     return ret;

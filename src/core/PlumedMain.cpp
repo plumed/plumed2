@@ -552,7 +552,7 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
   } else {
     std::vector<std::string> interpreted(words);
     Tools::interpretLabel(interpreted);
-    std::unique_ptr<Action> action(actionRegister().create(ActionOptions(*this,interpreted)));
+    auto action=actionRegister().create(ActionOptions(*this,interpreted));
     if(!action) {
       std::string msg;
       msg ="ERROR\nI cannot understand line:";

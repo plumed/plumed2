@@ -235,7 +235,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       "Commands:\n";
     fprintf(out,"%s",msg.c_str());
     for(unsigned j=0; j<availableCxx.size(); ++j) {
-      std::unique_ptr<CLTool> cl(cltoolRegister().create(CLToolOptions(availableCxx[j])));
+      auto cl=cltoolRegister().create(CLToolOptions(availableCxx[j]));
       plumed_assert(cl);
       string manual=availableCxx[j]+" : "+cl->description();
       fprintf(out,"  plumed %s\n", manual.c_str());
@@ -260,7 +260,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   string command(argv[i]);
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()) {
-    std::unique_ptr<CLTool> cl(cltoolRegister().create(CLToolOptions(command)));
+    auto cl=cltoolRegister().create(CLToolOptions(command));
     plumed_assert(cl);
     // Read the command line options (returns false if we are just printing help)
     if( !cl->readInput( argc-i,&argv[i],in,out ) ) { return 0; }

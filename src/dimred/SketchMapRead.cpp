@@ -174,8 +174,10 @@ double SketchMapRead::getDissimilarity( const unsigned& i, const unsigned& j ) {
   plumed_assert( i<myframes.size() && j<myframes.size() );
   if( i!=j ) {
     double dd;
-    getStoredData( i, true ).transferDataToPDB( mypdb ); std::unique_ptr<ReferenceConfiguration> myref1=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
-    getStoredData( j, true ).transferDataToPDB( mypdb ); std::unique_ptr<ReferenceConfiguration> myref2=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+    getStoredData( i, true ).transferDataToPDB( mypdb );
+    auto myref1=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+    getStoredData( j, true ).transferDataToPDB( mypdb );
+    auto myref2=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
     dd=distance( getPbc(), ActionWithArguments::getArguments(), myref1.get(), myref2.get(), true );
     return dd;
   }
