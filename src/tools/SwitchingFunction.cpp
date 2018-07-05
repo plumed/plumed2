@@ -519,6 +519,9 @@ double SwitchingFunction::get_dmax2() const {
   return dmax_2;
 }
 
+void SwitchingFunction::set_r0(double r0) {
+  this->invr0=1.0/r0;
+}
 
 }
 
