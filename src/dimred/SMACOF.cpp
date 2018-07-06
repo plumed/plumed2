@@ -69,7 +69,6 @@ void SMACOF::run( const Matrix<double>& Weights, const Matrix<double>& Distances
     mult( mypseudo, BZ, temp); mult(temp, InitialZ, newZ);
     //Compute new sigma
     double newsig = calculateSigma( Weights, Distances, newZ, dists ) / totalWeight;
-    printf("SIGMA VALUES %u %f %f %f \n",n, myfirstsig,newsig,myfirstsig-newsig);
     //Computing whether the algorithm has converged (has the mass of the potato changed
     //when we put it back in the oven!)
     if( fabs( newsig - myfirstsig )<tol ) break;

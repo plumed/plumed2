@@ -74,7 +74,6 @@ void SketchMapSmacof::minimise( Matrix<double>& projections ) {
     SMACOF::run( weights, distances, smap_tol, max_smap, projections );
     // Recalculate weights matrix and sigma
     double newsig = recalculateWeights( projections, weights );
-    printf("HELLO SMACOF %u %f %f \n",i,newsig,filt);
     // Test whether or not the algorithm has converged
     if( fabs( newsig - filt )<iter_tol ) break;
     // Make initial sigma into new sigma so that the value of new sigma is used every time so that the error can be reduced
