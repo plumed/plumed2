@@ -48,6 +48,7 @@ Number of basis functions is therefore also 2*order - 1
 
 class BF_DbWavelets : public BasisFunctions {
   std::unique_ptr<Grid> Wavelet_Grid
+  virtual void setupLabels();
 public:
   static void registerKeywords( Keywords&);
   explicit BF_DbWavelets(const ActionOptions&);
@@ -93,6 +94,15 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
     derivs[i] = 0.0;
   }
   if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
+}
+
+
+// label according to positions?
+void BF_DbWavelets::setupLabels() {
+  for(unsigned int i=0; i < getNumberOfBasisFunctions(); i++) {
+    std::string is; Tools::convert(i,is);
+    setLabel(i,"i"+is);
+  }
 }
 
 
