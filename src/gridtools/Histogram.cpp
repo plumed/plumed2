@@ -664,7 +664,7 @@ void Histogram::getInfoForGridHeader( std::string& gtype, std::vector<std::strin
 void Histogram::buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args ) {
   if( kerneltype=="DISCRETE" ) {
     for(unsigned i=0; i<args.size(); ++i) args[i] += 0.5*gridobject.getGridSpacing()[i];
-    tflags[ gridobject.getIndex( args ) ] = 1; return;
+    tflags[ gridobject.getIndex( args ) ] = 1; cheight=height; return;
   } else if( kerneltype.find("bin")!=std::string::npos ) {
     cheight = height; for(unsigned i=0; i<args.size(); ++i) cval[i] = args[i];
   } else {
@@ -676,7 +676,7 @@ void Histogram::buildSingleKernel( std::vector<unsigned>& tflags, const double& 
 }
 
 double Histogram::calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const {
-  if( kerneltype=="DISCRETE" ) return 1.0;
+  if( kerneltype=="DISCRETE" ) return cheight;
 
   if( kerneltype.find("bin")!=std::string::npos ) {
     double val=cheight; std::size_t dd = kerneltype.find("-bin");
