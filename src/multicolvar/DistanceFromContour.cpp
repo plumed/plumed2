@@ -22,7 +22,6 @@
 #include "DistanceFromContourBase.h"
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"
-#include "tools/RootFindingBase.h"
 
 //+PLUMEDOC COLVAR DISTANCE_FROM_CONTOUR
 /*
@@ -74,7 +73,6 @@ private:
   std::vector<double> pos1, pos2, dirv, dirv2;
   std::vector<unsigned> perp_dirs;
   std::vector<Vector> atom_deriv;
-  RootFindingBase<DistanceFromContour> mymin;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromContour( const ActionOptions& );
@@ -90,8 +88,6 @@ void DistanceFromContour::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("dist2","default","the distance between the reference atom and the other contour");
   keys.addOutputComponent("qdist","default","the differentiable (squared) distance between the two contours (see above)");
   keys.addOutputComponent("thickness","default","the distance between the two contours on the line from the reference atom");
-  keys.add("atoms","POSITIONS","the positions of the atoms that we are calculating the contour from");
-  keys.add("atoms","ATOM","The atom whose perpendicular distance we are calculating from the contour");
   keys.add("compulsory","DIR","the direction perpendicular to the contour that you are looking for");
   keys.add("compulsory","TOLERANCE","0.1","this parameter is used to manage periodic boundary conditions.  The problem "
            "here is that we can be between contours even when we are not within the membrane "
@@ -109,8 +105,7 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
   dirv(3,0.0),
   dirv2(3,0.0),
   perp_dirs(2),
-  atom_deriv(active_list.size()),
-  mymin(this)
+  atom_deriv(active_list.size())
 {
   // Get the direction
   std::string ldir; parse("DIR",ldir );
@@ -182,12 +177,12 @@ void DistanceFromContour::calculate() {
   }
 
   // Now do a search for the two contours
-  mymin.lsearch( dirv, pos1, &DistanceFromContour::getDifferenceFromContour );
+  findContour( dirv, pos1 );
   // Save the first value
   Vector root1; root1.zero(); root1[dir] = pval[dir]->get();
-  mymin.lsearch( dirv2, pos2, &DistanceFromContour::getDifferenceFromContour );
+  findContour( dirv2, pos2 );
   // Calculate the separation between the two roots using PBC
-  Vector root2; root2.zero(); root2[dir]=pval[dir]->get();
+  Vector root2; root2.zero(); root2[dir] = pval[dir]->get();
   Vector sep = pbcDistance( root1, root2 ); double spacing = fabs( sep[dir] ); plumed_assert( spacing>epsilon );
   getPntrToComponent("thickness")->set( spacing );
 

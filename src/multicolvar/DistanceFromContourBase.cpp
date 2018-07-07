@@ -28,7 +28,9 @@ namespace multicolvar {
 void DistanceFromContourBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
-  keys.remove("NUMERICAL_DERIVATIVES");
+  keys.remove("NUMERICAL_DERIVATIVES"); keys.use("ARG");
+  keys.add("atoms","POSITIONS","the positions of the atoms that we are calculating the contour from");
+  keys.add("atoms","ATOM","The atom whose perpendicular distance we are calculating from the contour");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
@@ -40,6 +42,7 @@ DistanceFromContourBase::DistanceFromContourBase( const ActionOptions& ao ):
   ActionWithValue(ao),
   ActionAtomistic(ao),
   ActionWithArguments(ao),
+  mymin(this),
   nactive(0)
 {
   if( getNumberOfArguments()>1 ) error("should only use one argument for this action");
@@ -71,7 +74,9 @@ DistanceFromContourBase::DistanceFromContourBase( const ActionOptions& ao ):
   active_list.resize( atoms.size(), 0 ); 
   std::vector<Value*> args( getArguments() ); atoms.push_back( origin[0] );
   if( center.size()==1 ) atoms.push_back( center[0] );
-  requestAtoms( atoms ); requestArguments( args, false );
+  requestArguments( args, false ); requestAtoms( atoms ); 
+  // Fix to request arguments
+  if( args.size()==1 ) addDependency( args[0]->getPntrToAction() );
 
   // Read in details of phase field construction
   parseVector("BANDWIDTH",bw); parse("KERNEL",kerneltype); parse("CONTOUR",contour);
@@ -127,6 +132,7 @@ double DistanceFromContourBase::getDifferenceFromContour( const std::vector<doub
     } else sumk += newval;
   }
   if( getNumberOfArguments()==0 ) return sumk - contour;
+  if( fabs(sumk)<epsilon ) return -contour; 
   return (sumk/sumd) - contour;
 }
 
