@@ -48,8 +48,10 @@ void ActionShortcut::readInputLine( const std::string& input ) {
   if( update_until!=std::numeric_limits<double>::max() ) {
       std::string util; Tools::convert( update_until, util ); f_input += " UPDATE_UNTIL=" + util;
   }
-  if( restart ) f_input += " RESTART=YES";
-  if( !restart ) f_input += " RESTART=NO";
+  if( keywords.exists("RESTART") ) {
+      if( restart ) f_input += " RESTART=YES";
+      if( !restart ) f_input += " RESTART=NO";
+  }
   plumed.readInputLine( f_input );
 }
 
