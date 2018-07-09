@@ -108,8 +108,8 @@ void BF_DbWavelets::setupLabels() {
 }
 
 // Creates and fills the Grid with the Wavelet values
-void setup_Wavelet_Grid() {
-  for (i=0; i<10; ++i) {
+void BF_DbWavelet::setup_Wavelet_Grid() {
+  for (int i=0; i<10; ++i) {
     std::vector<double> derivtest = {0.3};
     double gridval = i*0.5;
     Wavelet_Grid_->addValueAndDerivatives(i, gridval, derivtest);
