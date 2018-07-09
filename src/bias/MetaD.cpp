@@ -1796,8 +1796,8 @@ void MetaD::computeReweightingFactor()
   if( !welltemp_ ) error("cannot compute the c(t) reweighting factors for non well-tempered metadynamics");
 
   if(biasf_==1.0) {
-// in this case we have no bias, so reweight factor is 1.0
-    getPntrToComponent("rct")->set(1.0);
+// in this case we have no bias, so reweight factor is 0.0
+    getPntrToComponent("rct")->set(0.0);
     return;
   }
 
