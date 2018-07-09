@@ -114,7 +114,7 @@ void BF_DbWavelets::setup_Wavelet_Grid() {
     double gridval = i*0.5;
     Wavelet_Grid_->addValueAndDerivatives(i, gridval, derivtest);
   }
-  Ofile wv_gridfile;
+  OFile wv_gridfile;
 
   wv_gridfile.open("wv_griddump");
   Wavelet_Grid_->writeToFile(wv_gridfile)
