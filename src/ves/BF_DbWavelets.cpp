@@ -47,12 +47,13 @@ Number of basis functions is therefore also 2*order - 1
 //+ENDPLUMEDOC
 
 class BF_DbWavelets : public BasisFunctions {
-  std::unique_ptr<Grid> Wavelet_Grid
+  std::unique_ptr<Grid> Wavelet_Grid_;
   virtual void setupLabels();
 public:
   static void registerKeywords( Keywords&);
   explicit BF_DbWavelets(const ActionOptions&);
   void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
+  void setup_Wavelet_Grid();
 };
 
 
@@ -72,6 +73,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   setIntrinsicInterval(intervalMin(),intervalMax());
   setNonPeriodic();
   setIntervalBounded();
+  setup_Wavelet_Grid();
   setType("daubechies_wavelets");
   setDescription("Daubechies Wavelets (minimum phase type)");
   setLabelPrefix("k");
@@ -103,6 +105,19 @@ void BF_DbWavelets::setupLabels() {
     std::string is; Tools::convert(i,is);
     setLabel(i,"i"+is);
   }
+}
+
+// Creates and fills the Grid with the Wavelet values
+void setup_Wavelet_Grid() {
+  for (i=0; i<10; ++i) {
+    std::vector<double> derivtest = {0.3};
+    double gridval = i*0.5;
+    Wavelet_Grid_->addValueAndDerivatives(i, gridval, derivtest);
+  }
+  Ofile wv_gridfile;
+
+  wv_gridfile.open("wv_griddump");
+  Wavelet_Grid_->writeToFile(wv_gridfile)
 }
 
 
