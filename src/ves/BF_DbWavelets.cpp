@@ -117,7 +117,7 @@ void BF_DbWavelets::setup_Wavelet_Grid() {
   OFile wv_gridfile;
 
   wv_gridfile.open("wv_griddump");
-  Wavelet_Grid_->writeToFile(wv_gridfile)
+  Wavelet_Grid_->writeToFile(wv_gridfile);
 }
 
 
