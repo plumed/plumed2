@@ -49,11 +49,11 @@ Number of basis functions is therefore also 2*order - 1
 class BF_DbWavelets : public BasisFunctions {
   std::unique_ptr<Grid> Wavelet_Grid_;
   virtual void setupLabels();
+  void setup_Wavelet_Grid();
 public:
   static void registerKeywords( Keywords&);
   explicit BF_DbWavelets(const ActionOptions&);
   void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
-  void setup_Wavelet_Grid();
 };
 
 
@@ -109,13 +109,25 @@ void BF_DbWavelets::setupLabels() {
 
 // Creates and fills the Grid with the Wavelet values
 void BF_DbWavelets::setup_Wavelet_Grid() {
-  for (int i=0; i<10; ++i) {
-    std::vector<double> derivtest = {0.3};
-    double gridval = i*0.5;
-    Wavelet_Grid_->addValueAndDerivatives(i, gridval, derivtest);
+  const std::vector<std::string> gridvaluename {"db_wavelets"};
+  const std::vector<std::string> gridmin {"0"};
+  const std::vector<std::string> gridmax {"10"};
+  const std::vector<unsigned> gridbins {10};
+  const std::vector<bool> gridperiodicity {false};
+  const std::vector<std::string> gridpmin {"0."};
+  const std::vector<std::string> gridpmax {"0."};
+  Wavelet_Grid_.reset(new Grid("wv_grid", gridvaluename, gridmin, gridmax, gridbins, false, true, true, gridperiodicity, gridpmin, gridpmax));
+
+  std::vector<double> derivval(1);
+  std::vector<double> gridval(1);
+  //log.printf("\nProperties of Grid:\n Size: %d\nHasderivs: %d\nPeriodic: %d\n\n",Wavelet_Grid_->getSize(), Wavelet_Grid_->hasDerivatives(), Wavelet_Grid_->getIsPeriodic().at(0));
+  Grid::index_t i;
+  for (i=0; i<11; ++i) {
+    gridval.at(0) = (1+i*0.5);
+    derivval.at(0) = 0.3;
+    Wavelet_Grid_->setValueAndDerivatives(i, gridval.at(0), derivval);
   }
   OFile wv_gridfile;
-
   wv_gridfile.open("wv_griddump");
   Wavelet_Grid_->writeToFile(wv_gridfile);
 }
