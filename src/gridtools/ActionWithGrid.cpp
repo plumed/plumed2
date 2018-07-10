@@ -41,7 +41,7 @@ ActionWithGrid::ActionWithGrid( const ActionOptions& ao):
 {
 }
 
-void ActionWithGrid::createGrid( const std::string& type, const std::string& inputstr ) {
+std::unique_ptr<GridVessel> ActionWithGrid::createGrid( const std::string& type, const std::string& inputstr ) {
   // Start creating the input for the grid
   std::string vstring = inputstr;
   if( keywords.exists("KERNEL") ) {
@@ -57,15 +57,18 @@ void ActionWithGrid::createGrid( const std::string& type, const std::string& inp
   vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
   Keywords keys; gridtools::AverageOnGrid::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
+  std::unique_ptr<GridVessel> grid;
   if( type=="histogram" ) {
-    mygrid = new HistogramOnGrid(dar);
+    grid.reset( new HistogramOnGrid(dar) );
   } else if( type=="average" ) {
-    mygrid = new AverageOnGrid(dar);
+    grid.reset( new AverageOnGrid(dar) );
   } else if( type=="grid" ) {
-    mygrid = new GridVessel(dar);
+    grid.reset( new GridVessel(dar) );
   } else {
     plumed_merror("no way to create grid of type " + type );
   }
+  mygrid=grid.get();
+  return grid;
 }
 
 void ActionWithGrid::turnOnDerivatives() {

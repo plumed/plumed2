@@ -131,11 +131,11 @@ double EuclideanDissimilarityMatrix::getDissimilarity( const unsigned& iframe, c
   }
   if( iframe!=jframe ) {
     double dd;
-    getStoredData( iframe, true ).transferDataToPDB( mypdb ); ReferenceConfiguration* myref1=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
-    getStoredData( jframe, true ).transferDataToPDB( mypdb ); ReferenceConfiguration* myref2=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
-    if( !usingLowMem() ) dd=dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = distance( getPbc(), getArguments(), myref1, myref2, true );
-    else dd=distance( getPbc(), getArguments(), myref1, myref2, true );
-    delete myref1; delete myref2; return dd;
+    getStoredData( iframe, true ).transferDataToPDB( mypdb ); std::unique_ptr<ReferenceConfiguration> myref1=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+    getStoredData( jframe, true ).transferDataToPDB( mypdb ); std::unique_ptr<ReferenceConfiguration> myref2=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+    if( !usingLowMem() ) dd=dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = distance( getPbc(), getArguments(), myref1.get(), myref2.get(), true );
+    else dd=distance( getPbc(), getArguments(), myref1.get(), myref2.get(), true );
+    return dd;
   }
   return 0.0;
 }

@@ -71,6 +71,10 @@ void ActionWithInputGrid::prepareForAveraging() {
   }
 }
 
+void ActionWithInputGrid::performOperations( const bool& from_update ) {
+  prepareForAveraging(); runAllTasks();
+}
+
 }
 }
 

@@ -100,14 +100,15 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
   }
 }
 
-void ActionWithAveraging::setAveragingAction( AveragingVessel* av_vessel, const bool& usetasks ) {
-  useRunAllTasks=usetasks;
-  if( av_vessel ) { myaverage=av_vessel; addVessel( myaverage ); resizeFunctions(); }
-}
-
 bool ActionWithAveraging::ignoreNormalization() const {
   if( normalization==f ) return true;
   return false;
+}
+
+void ActionWithAveraging::setAveragingAction( std::unique_ptr<AveragingVessel> av_vessel, const bool& usetasks ) {
+  myaverage=av_vessel.get();
+  addVessel( std::move(av_vessel) );
+  useRunAllTasks=usetasks; resizeFunctions();
 }
 
 void ActionWithAveraging::lockRequests() {

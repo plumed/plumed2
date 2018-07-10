@@ -43,6 +43,7 @@ public:
   virtual void clearAverage();
   virtual void prepareForAveraging();
   virtual bool checkAllActive() const { return true; }
+  virtual void performOperations( const bool& from_update );
   virtual void apply() {};
 };
 

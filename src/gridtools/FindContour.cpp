@@ -156,7 +156,6 @@ FindContour::FindContour(const ActionOptions&ao):
   }
   else lenunit=1.0;
   of.link(*this); of.open(file);
-  setAveragingAction( NULL, true );
   checkRead(); mydata=buildDataStashes( NULL );
 }
 

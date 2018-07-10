@@ -1057,8 +1057,9 @@ MetaD::MetaD(const ActionOptions& ao):
         fname = hillsfname;
       }
     }
-    IFile *ifile = new IFile();
-    ifiles.emplace_back(ifile);
+    ifiles.emplace_back(new IFile());
+    // this is just a shortcut pointer to the last element:
+    IFile *ifile = ifiles.back().get();
     ifilesnames.push_back(fname);
     ifile->link(*this);
     if(ifile->FileExist(fname)) {
@@ -1795,8 +1796,8 @@ void MetaD::computeReweightingFactor()
   if( !welltemp_ ) error("cannot compute the c(t) reweighting factors for non well-tempered metadynamics");
 
   if(biasf_==1.0) {
-// in this case we have no bias, so reweight factor is 1.0
-    getPntrToComponent("rct")->set(1.0);
+// in this case we have no bias, so reweight factor is 0.0
+    getPntrToComponent("rct")->set(0.0);
     return;
   }
 

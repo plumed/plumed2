@@ -39,8 +39,10 @@ private:
 protected:
 /// The grid vessel
   GridVessel* mygrid;
-/// Read in stuff that is specifically for the grid and create it
-  void createGrid( const std::string& type, const std::string& inputstr );
+/// Read in stuff that is specifically for the grid and create it.
+/// Notice that this not only returns a unique_ptr but also set the protected
+/// member mygrid as an alias to that unique_ptr.
+  std::unique_ptr<GridVessel> createGrid( const std::string& type, const std::string& inputstr );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithGrid( const ActionOptions& );

@@ -40,7 +40,7 @@ private:
 /// The eigenvectors for the displacements in argument space
   std::string ofilename, fmt;
 /// The eigenvectors that we are using
-  ReferenceConfiguration* myref;
+  std::unique_ptr<ReferenceConfiguration> myref;
   std::vector<Direction> directions;
 public:
   static void registerKeywords( Keywords& keys );

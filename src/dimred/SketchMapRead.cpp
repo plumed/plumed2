@@ -50,7 +50,7 @@ private:
 /// The data collection objects we have
   std::vector<analysis::DataCollectionObject> data;
 /// The frames that we are using to calculate distances
-  std::vector<ReferenceConfiguration*> myframes;
+  std::vector<std::unique_ptr<ReferenceConfiguration> > myframes;
 public:
   static void registerKeywords( Keywords& keys );
   SketchMapRead( const ActionOptions& ao );
@@ -111,7 +111,7 @@ SketchMapRead::SketchMapRead( const ActionOptions& ao ):
       it->second.push_back(prop);
     }
     // And read the frame ( create a measure )
-    myframes.push_back( metricRegister().create<ReferenceConfiguration>( mtype, inpdb ) );
+    myframes.emplace_back( metricRegister().create<ReferenceConfiguration>( mtype, inpdb ) );
     if( !inpdb.getArgumentValue( "WEIGHT", ww ) ) error("could not find weights in input pdb");
     weights.push_back( ww ); wnorm += ww; nfram++;
     // And create a data collection object
@@ -174,10 +174,10 @@ double SketchMapRead::getDissimilarity( const unsigned& i, const unsigned& j ) {
   plumed_assert( i<myframes.size() && j<myframes.size() );
   if( i!=j ) {
     double dd;
-    getStoredData( i, true ).transferDataToPDB( mypdb ); ReferenceConfiguration* myref1=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
-    getStoredData( j, true ).transferDataToPDB( mypdb ); ReferenceConfiguration* myref2=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
-    dd=distance( getPbc(), ActionWithArguments::getArguments(), myref1, myref2, true );
-    delete myref1; delete myref2; return dd;
+    getStoredData( i, true ).transferDataToPDB( mypdb ); std::unique_ptr<ReferenceConfiguration> myref1=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+    getStoredData( j, true ).transferDataToPDB( mypdb ); std::unique_ptr<ReferenceConfiguration> myref2=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+    dd=distance( getPbc(), ActionWithArguments::getArguments(), myref1.get(), myref2.get(), true );
+    return dd;
   }
   return 0.0;
 }

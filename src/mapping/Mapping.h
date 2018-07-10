@@ -50,7 +50,7 @@ private:
 //  The derivative wrt to the distance from the frame
   std::vector<double> dfframes;
 /// This holds all the reference information
-  std::vector<std::unique_ptr<ReferenceConfiguration>> myframes;
+  std::vector<std::unique_ptr<ReferenceConfiguration> > myframes;
 /// The forces on each of the derivatives (used in apply)
   std::vector<double> forcesToApply;
 /// The weights of the various configurations

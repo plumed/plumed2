@@ -233,7 +233,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
 
   // Read all reference configurations
   // MultiReferenceBase myframes( "", false );
-  std::vector<ReferenceConfiguration*> myframes;
+  std::vector<std::unique_ptr<ReferenceConfiguration> > myframes;
   bool do_read=true; unsigned nfram=0;
   while (do_read) {
     PDB mypdb;
@@ -242,7 +242,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
     // Fix argument names
     if(do_read) {
       if( nfram==0 ) {
-        myref.reset( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
+        myref=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
         Direction* tdir = dynamic_cast<Direction*>( myref.get() );
         if( tdir ) error("first frame should be reference configuration - not direction of vector");
         if( !myref->pcaIsEnabledForThisReference() ) error("can't do PCA with reference type " + mtype );
@@ -250,7 +250,10 @@ PCAVars::PCAVars(const ActionOptions& ao):
         // bool found=Tools::parse( remarks, "TYPE", rtype );
         // if(!found){ std::vector<std::string> newrem(1); newrem[0]="TYPE="+mtype; mypdb.addRemark(newrem); }
         // myframes.push_back( metricRegister().create<ReferenceConfiguration>( "", mypdb ) );
-      } else myframes.push_back( metricRegister().create<ReferenceConfiguration>( "", mypdb ) );
+      } else {
+         auto mymsd = metricRegister().create<ReferenceConfiguration>( "", mypdb );
+         myframes.emplace_back( std::move(mymsd) );
+      }
       nfram++;
     } else {
       break;
