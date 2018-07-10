@@ -1,9 +1,9 @@
-#! FIELDS ff.phi fes
+#! FIELDS hh_collect.phi fes
 #! SET normalisation    1.0000
-#! SET min_ff.phi -pi
-#! SET max_ff.phi pi
-#! SET nbins_ff.phi  50
-#! SET periodic_ff.phi false
+#! SET min_hh_collect.phi -pi
+#! SET max_hh_collect.phi pi
+#! SET nbins_hh_collect.phi  50
+#! SET periodic_hh_collect.phi false
   -3.1416  53.0597
   -3.0159  47.2084
   -2.8903  44.8862

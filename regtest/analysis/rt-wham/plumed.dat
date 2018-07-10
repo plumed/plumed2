@@ -37,19 +37,12 @@ rp: RESTRAINT ARG=phi KAPPA=200.0 ...
      }
 ...
 
-REWEIGHT_WHAM ...
-  ARG=rp.bias 
-  TEMP=300
-  LABEL=ww
-... REWEIGHT_WHAM
-
 PRINT ARG=phi,psi FILE=colvar 
 #PRINT ARG=rp0.bias,rp1.bias,rp2.bias,rp3.bias,rp4.bias,rp5.bias,rp6.bias,rp7.bias,rp8.bias,rp9.bias,rp10.bias,rp11.bias,rp12.bias,rp13.bias,rp14.bias,rp15.bias,rp16.bias,rp17.bias,rp18.bias,rp19.bias,rp20.bias,rp21.bias,rp22.bias,rp23.bias,rp24.bias,rp25.bias,rp26.bias,rp27.bias,rp28.bias,rp29.bias,rp30.bias,rp31.bias FILE=bias
 
-weig: COLLECT_FRAMES STRIDE=1 LOGWEIGHTS=ww
-ff: COLLECT_FRAMES ARG=phi STRIDE=1 LOGWEIGHTS=ww
-OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=weig FILE=wham-weights FMT=%8.4f 
-hh: HISTOGRAM ARG=ff.phi GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 KERNEL=DISCRETE 
+WHAM_WEIGHTS BIAS=rp.bias TEMP=300 FILE=wham-weights FMT=%8.4f 
+
+hh: WHAM_HISTOGRAM ARG=phi BIAS=rp.bias TEMP=300 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 
 
 fes: CONVERT_TO_FES GRID=hh TEMP=300
 DUMPGRID GRID=fes FILE=fes.dat FMT=%8.4f

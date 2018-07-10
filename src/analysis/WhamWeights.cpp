@@ -62,7 +62,7 @@ ActionShortcut(ao)
   readInputLine( rew_line );
   // Input for COLLECT_FRAMES
   std::string col_line = getShortcutLabel() + "_collect: COLLECT_FRAMES LOGWEIGHTS=" + getShortcutLabel() + "_weights";
-  std::string stride; parse("STRIDE",stride); col_line += "STRIDE=" + stride;
+  std::string stride; parse("STRIDE",stride); col_line += " STRIDE=" + stride;
   readInputLine( col_line );
   // Input for line to output data
   std::string out_line="OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=" + getShortcutLabel() + "_collect";
