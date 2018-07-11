@@ -117,6 +117,7 @@ ATOM  A0001  Ar      X   1      46.189  38.631  17.636  1.00  1.00
 \endverbatim
 There are tools that can be found to translate from integers to strings and back using hybrid 36 format
 (a simple python script can be found [here](https://sourceforge.net/p/cctbx/code/HEAD/tree/trunk/iotbx/pdb/hybrid_36.py)).
+In addition, as of PLUMED 2.5, we provide a \ref pdbrenumber "command line tool" that can be used to renumber atoms in a PDB file.
 
 */
 //+ENDPLUMEDOC
