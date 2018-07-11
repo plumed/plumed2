@@ -54,9 +54,10 @@ class BF_DbWavelets : public BasisFunctions {
   // Grid that holds the Wavelet values and its derivative
   std::unique_ptr<Grid> Wavelet_Grid_;
   virtual void setupLabels();
-  void setup_Wavelet_Grid(unsigned recursion_number);
-  std::vector<double> get_filter_coefficients(unsigned order);
-  void setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, std::vector<double> h);
+  void setup_Wavelet_Grid(const unsigned recursion_number);
+  std::vector<double> get_filter_coefficients(const unsigned order);
+  void setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const std::vector<double> h);
+  std::vector<double> get_eigenvector(const Matrix<double> &A, const double eigenvalue);
 
 public:
   static void registerKeywords( Keywords&);
@@ -120,14 +121,15 @@ void BF_DbWavelets::setupLabels() {
   }
 }
 
+
 // Creates and fills the Grid with the Wavelet values
-void BF_DbWavelets::setup_Wavelet_Grid(unsigned recursion_number) {
+void BF_DbWavelets::setup_Wavelet_Grid(const unsigned recursion_number) {
   // Filter coefficients
   std::vector<double> h_coeffs;
   h_coeffs = get_filter_coefficients(getOrder());
-  int matrix_size = getOrder()*2 - 1;
+  int mat_size = getOrder()*2 - 1;
   // Matrices for the cascade
-  Matrix<double> M0(matrix_size, matrix_size), M1(matrix_size, matrix_size);
+  Matrix<double> M0(mat_size, mat_size), M1(mat_size, mat_size);
   setup_Matrices(M0, M1, h_coeffs);
 
   //for (int i = 0; i < matrix_size; ++i) {
@@ -136,35 +138,17 @@ void BF_DbWavelets::setup_Wavelet_Grid(unsigned recursion_number) {
     //log.printf("\n");
   //}
   
+  // get the integer values (eigenvector of M0 with eigenvalue 1)
+  // way to go because of lapack limitations: find vector of null space of (M0 - Id) via SVD
   
-  // copied a lot from the dsyevr method in matrix.h
-  std::vector<int> ipiv(matrix_size);
-  int info, nrhs=1;
-  std::vector<double> da1 (matrix_size*matrix_size), eigvec(matrix_size);
-  for (int i=0; i<matrix_size; ++i) eigvec.at(i) = 0.; // set B for dgetrs to 0
-  //// better method for copying the matrix to vector? --> pass to dgetrf in a way that array can't be changed
-  unsigned k1=0;
-  for (unsigned i=0; i<matrix_size; ++i) for (unsigned j=0; j<matrix_size; ++j){
-    da1[k1]=static_cast<double>( M0(j,i) );
-    if (i==j) da1[k1] -= 1.;
-    k1++;
-  }
-  std::vector<double> da2(da1); 
+  std::vector<double> eigenvec;
+  eigenvec = get_eigenvector(M0, 1);
+  eigenvec = get_eigenvector(M0, 0.5);
 
-  for (int i = 0; i < matrix_size; ++i) {
-    for (int j = 0; j < matrix_size; ++j) {
-      log.printf("%f ", da1.at(i+matrix_size*j)); }
-    log.printf("\n");
-  }
-  // get pivot indices ipiv from dgetrf
-  plumed_lapack_dgetrf(&matrix_size, &matrix_size, da1.data(), &matrix_size, ipiv.data(), &info);
-  log.printf("After dgetrf: %d\n", info);
-  plumed_lapack_dgetrs("N", &matrix_size, &nrhs, da2.data(), &matrix_size, ipiv.data(), eigvec.data(), &matrix_size, &info);
-  log.printf("After dgetrs: %d\n", info);
-  for (int j = 0; j < matrix_size; ++j) {
-    log.printf("%f ", eigvec.at(j)); }
-  log.printf("\n");
   
+
+
+
 
 
   std::string maxsupport; Tools::convert(getNumberOfBasisFunctions(), maxsupport);
@@ -186,7 +170,7 @@ void BF_DbWavelets::setup_Wavelet_Grid(unsigned recursion_number) {
 
 
 // returns the filter coefficients, at the moment simply a lookup table (copied from Mathematica)
-std::vector<double> BF_DbWavelets::get_filter_coefficients(unsigned order) {
+std::vector<double> BF_DbWavelets::get_filter_coefficients(const unsigned order) {
   std::vector<double> h;
   if (order == 4) {
     h = { 0.16290171402564917413726008653520,
@@ -216,7 +200,8 @@ std::vector<double> BF_DbWavelets::get_filter_coefficients(unsigned order) {
   return h;
 }
 
-void BF_DbWavelets::setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, std::vector<double> h_coeffs) {
+void BF_DbWavelets::setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const std::vector<double> h_coeffs) {
+  // maybe initialize M0 and M1 here and not before? --> variable "mat_size" could be replaced
   int n = h_coeffs.size() -1;
   for (int i = 0; i < n; ++i) { // not very elegant, maybe change this later
     for (int j = 0; j < n; ++j) {
@@ -227,6 +212,54 @@ void BF_DbWavelets::setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, std::
         M1[i][j] = 2 * h_coeffs.at(2*i -j + 1);}
   }}
 }
+
+// get eigenvector of square matrix A corresponding to some eigenvalue via SVD decomposition
+std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, const double eigenvalue) {
+  int info, N = A.ncols(); // ncols == nrows 
+  std::vector<double> da(N*N);
+  std::vector<double> S(N);
+  std::vector<double> U(N*N);
+  std::vector<double> VT(N*N);
+  std::vector<int> iwork(8*N);
+
+  // Transfer the matrix to the local array and substract eigenvalue
+  for (int i=0; i<N; ++i) for (int j=0; j<N; ++j) {
+    da[i*N+j]=static_cast<double>( A(j,i) );
+    if (i==j) da[i*N+j] -= eigenvalue;
+  }
+
+  // This optimizes the size of the work array used in lapack singular value decomposition
+  int lwork=-1;
+  std::vector<double> work(1);
+  plumed_lapack_dgesdd( "A", &N, &N, da.data(), &N, S.data(), U.data(), &N, VT.data(), &N, work.data(), &lwork, iwork.data(), &info );
+
+  // Retrieve correct sizes for work and rellocate
+  lwork=(int) work[0]; work.resize(lwork);
+
+  // This does the singular value decomposition
+  plumed_lapack_dgesdd( "A", &N, &N, da.data(), &N, S.data(), U.data(), &N, VT.data(), &N, work.data(), &lwork, iwork.data(), &info );
+
+  // fill eigenvector with last column of VT
+  std::vector<double> eigenvector;
+  for (int i=0; i<N; ++i) eigenvector.push_back(VT.at(N-1 + i*N));
+
+  log.printf("SVD values: ");
+  for (int i = 0; i < N; ++i) log.printf("%f ",S.at(i));
+
+  log.printf("\nVT values:\n");
+  for (int i = 0; i < N; ++i) {
+    for (int j = 0; j < N; ++j) {
+      log.printf("%f ", VT.at(i*N+j)); }
+    log.printf("\n");
+  }
+
+  log.printf("Eigenvector: ");
+  for (int i = 0; i < N; ++i) log.printf("%f ",eigenvector.at(i));
+  log.printf("\n");
+
+  return eigenvector;
+}
+
 
 }
 }
