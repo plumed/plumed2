@@ -203,6 +203,28 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
 // psi-4_321 is psi torsion of residue 321 of chain 4
 // psi-A_321 is equivalent to psi-A321
     numbers.resize(0);
+
+// special cases:
+    if(symbol=="protein") {
+      const auto & all = mypdb.getAtomNumbers();
+      for(auto a : all) {
+        auto resname=mypdb.getResidueName(a);
+        Tools::stripLeadingAndTrailingBlanks(resname);
+        if(allowedResidue("protein",resname)) numbers.push_back(a);
+      }
+      return;
+    }
+
+    if(symbol=="nucleic") {
+      const auto & all = mypdb.getAtomNumbers();
+      for(auto a : all) {
+        auto resname=mypdb.getResidueName(a);
+        Tools::stripLeadingAndTrailingBlanks(resname);
+        if(allowedResidue("dna",resname) || allowedResidue("rna",resname)) numbers.push_back(a);
+      }
+      return;
+    }
+
     std::size_t dash=symbol.find_first_of('-');
     std::size_t firstunderscore=symbol.find_first_of('_',dash+1);
     std::size_t firstnum=symbol.find_first_of("0123456789",dash+1);
