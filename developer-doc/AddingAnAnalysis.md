@@ -1,6 +1,3 @@
-// This document is formatted for Doxygen
-/**
-
 \page AddingAnAnalysis Implementing analysis methods in PLUMED
 
 Information on implementing methods that perform analysis on stored trajectory information eg dimensionality reduction
@@ -205,4 +202,3 @@ PLMD::analysis::AnalysisWithDataCollection as I believe you want the clustering 
 Obviously, if you are thinking of adding methods to cluster trajectory frames within PLUMED please feel free to get in touch with me (gareth.tribello\@gmail.com).  
 I will be more than happy to discuss these ideas with you.
 
-*/
