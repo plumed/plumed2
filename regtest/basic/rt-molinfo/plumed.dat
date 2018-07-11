@@ -1,0 +1,4 @@
+MOLINFO STRUCTURE=test.pdb
+DUMPATOMS ATOMS=@nucleic FILE=nucleic.gro
+DUMPATOMS ATOMS=@water FILE=water.gro
+DUMPATOMS ATOMS=@ions FILE=ions.gro
