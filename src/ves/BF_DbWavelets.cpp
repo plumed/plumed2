@@ -127,9 +127,8 @@ void BF_DbWavelets::setup_Wavelet_Grid(const unsigned recursion_number) {
   // Filter coefficients
   std::vector<double> h_coeffs;
   h_coeffs = get_filter_coefficients(getOrder());
-  int mat_size = getOrder()*2 - 1;
   // Matrices for the cascade
-  Matrix<double> M0(mat_size, mat_size), M1(mat_size, mat_size);
+  Matrix<double> M0, M1;
   setup_Matrices(M0, M1, h_coeffs);
 
   //for (int i = 0; i < matrix_size; ++i) {
@@ -202,19 +201,21 @@ std::vector<double> BF_DbWavelets::get_filter_coefficients(const unsigned order)
 
 void BF_DbWavelets::setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const std::vector<double> h_coeffs) {
   // maybe initialize M0 and M1 here and not before? --> variable "mat_size" could be replaced
-  int n = h_coeffs.size() -1;
-  for (int i = 0; i < n; ++i) { // not very elegant, maybe change this later
-    for (int j = 0; j < n; ++j) {
+  const int N = h_coeffs.size() -1;
+  M0.resize(N,N); M1.resize(N,N);
+  for (int i = 0; i < N; ++i) { // not very elegant, maybe change this later
+    for (int j = 0; j < N; ++j) {
       int shift = 2*i -j;
-      if (0 <= shift && shift <= n) {
+      if (0 <= shift && shift <= N) {
         M0[i][j] = 2 * h_coeffs.at(2*i -j);}
-      if (-1 <= shift && shift <= n -1) {
+      if (-1 <= shift && shift <= N -1) {
         M1[i][j] = 2 * h_coeffs.at(2*i -j + 1);}
   }}
 }
 
 // get eigenvector of square matrix A corresponding to some eigenvalue via SVD decomposition
 std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, const double eigenvalue) {
+  // mostly copied from tools/matrix.h
   int info, N = A.ncols(); // ncols == nrows 
   std::vector<double> da(N*N);
   std::vector<double> S(N);
@@ -242,20 +243,6 @@ std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, cons
   // fill eigenvector with last column of VT
   std::vector<double> eigenvector;
   for (int i=0; i<N; ++i) eigenvector.push_back(VT.at(N-1 + i*N));
-
-  log.printf("SVD values: ");
-  for (int i = 0; i < N; ++i) log.printf("%f ",S.at(i));
-
-  log.printf("\nVT values:\n");
-  for (int i = 0; i < N; ++i) {
-    for (int j = 0; j < N; ++j) {
-      log.printf("%f ", VT.at(i*N+j)); }
-    log.printf("\n");
-  }
-
-  log.printf("Eigenvector: ");
-  for (int i = 0; i < N; ++i) log.printf("%f ",eigenvector.at(i));
-  log.printf("\n");
 
   return eigenvector;
 }
