@@ -20,8 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithAveraging.h"
+#include "analysis/DataCollectionObject.h"
+#include "analysis/ReadAnalysisFrames.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "bias/ReweightBase.h"
 
 namespace PLMD {
 namespace vesselbase {
@@ -45,6 +48,8 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
   ActionWithValue(ao),
   ActionWithVessel(ao),
   myaverage(NULL),
+  activated(false),
+  my_analysis_object(NULL),
   normalization(t),
   useRunAllTasks(false),
   clearstride(0),
@@ -57,6 +62,18 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
       log.printf("  clearing grid every %u steps \n",clearstride);
     }
   }
+  if( getNumberOfArguments()>0 ) {
+    my_analysis_object=dynamic_cast<analysis::AnalysisBase*>( getPntrToArgument(0)->getPntrToAction() );
+    for(unsigned i=1; i<getNumberOfArguments(); i++) {
+      if( my_analysis_object && my_analysis_object->getLabel()!=(getPntrToArgument(i)->getPntrToAction())->getLabel() ) {
+        error("all arguments should be from one single analysis object");
+      }
+    }
+    if( my_analysis_object ) {
+      if( getStride()!=1 ) error("stride should not have been set when calculating average from analysis data");
+      setStride(0); addDependency( my_analysis_object );
+    }
+  }
   if( keywords.exists("LOGWEIGHTS") ) {
     std::vector<std::string> wwstr; parseVector("LOGWEIGHTS",wwstr);
     if( wwstr.size()>0 ) log.printf("  reweighting using weights from ");
@@ -64,6 +81,8 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
     for(unsigned i=0; i<wwstr.size(); ++i) {
       ActionWithValue* val = plumed.getActionSet().selectWithLabel<ActionWithValue*>(wwstr[i]);
       if( !val ) error("could not find value named");
+      bias::ReweightBase* iswham=dynamic_cast<bias::ReweightBase*>( val );
+      if( iswham->buildsWeightStore() ) error("to use wham you must gather data using COLLECT_FRAMES");
       weights.push_back( val->copyOutput(val->getLabel()) );
       arg.push_back( val->copyOutput(val->getLabel()) );
       log.printf("%s ",wwstr[i].c_str() );
@@ -79,6 +98,11 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
     else if( normstr=="ndata" ) normalization=ndata;
     else error("invalid instruction for NORMALIZATION flag should be true, false, or ndata");
   }
+}
+
+bool ActionWithAveraging::ignoreNormalization() const {
+  if( normalization==f ) return true;
+  return false;
 }
 
 void ActionWithAveraging::setAveragingAction( std::unique_ptr<AveragingVessel> av_vessel, const bool& usetasks ) {
@@ -97,32 +121,53 @@ void ActionWithAveraging::unlockRequests() {
   ActionWithArguments::unlockRequests();
 }
 
+unsigned ActionWithAveraging::getNumberOfQuantities() const {
+  if( my_analysis_object ) return getNumberOfArguments()+2;
+  return 2;
+}
+
 void ActionWithAveraging::calculateNumericalDerivatives(PLMD::ActionWithValue*) {
   error("not possible to compute numerical derivatives for this action");
 }
 
 void ActionWithAveraging::update() {
-  if( (clearstride!=1 && getStep()==0) || !onStep() ) return;
+  if( (clearstride!=1 && getStep()==0) || (!onStep() && !my_analysis_object) ) return;
+  if( my_analysis_object ) {
+    analysis::ReadAnalysisFrames* myfram = dynamic_cast<analysis::ReadAnalysisFrames*>( my_analysis_object );
+    if( !activated && !myfram && !onStep() ) return ;
+    else if( !activated && !my_analysis_object->onStep() ) return ;
+  }
+
   // Clear if it is time to reset
   if( myaverage ) {
     if( myaverage->wasreset() ) clearAverage();
   }
   // Calculate the weight for all reweighting
-  if ( weights.size()>0 ) {
+  if ( weights.size()>0 && !my_analysis_object ) {
     double sum=0; for(unsigned i=0; i<weights.size(); ++i) sum+=weights[i]->get();
     lweight=sum; cweight = exp( sum );
   } else {
     lweight=0; cweight=1.0;
   }
+  // Prepare the task list for averaging
+  if( my_analysis_object ) {
+    for(unsigned i=getFullNumberOfTasks(); i<my_analysis_object->getNumberOfDataPoints(); ++i) addTaskToList(i);
+    deactivateAllTasks(); cweight=0;
+    for(unsigned i=0; i<my_analysis_object->getNumberOfDataPoints(); ++i) {
+      taskFlags[i]=1; cweight += my_analysis_object->getWeight(i);
+    }
+    lockContributors();
+  }
   // Prepare to do the averaging
   prepareForAveraging();
   // Run all the tasks (if required
-  if( useRunAllTasks ) runAllTasks();
+  if( my_analysis_object || useRunAllTasks ) runAllTasks();
   // This the averaging if it is not done using task list
   else performOperations( true );
   // Update the norm
-  double normt = cweight; if( normalization==ndata ) normt = 1;
-  if( myaverage ) myaverage->setNorm( normt + myaverage->getNorm() );
+  double normt = cweight; if( !my_analysis_object && normalization==ndata ) normt = 1;
+  if( myaverage && my_analysis_object ) myaverage->setNorm( normt );
+  else if( myaverage ) myaverage->setNorm( normt + myaverage->getNorm() );
   // Finish the averaging
   finishAveraging();
   // By resetting here we are ensuring that the grid will be cleared at the start of the next step
@@ -131,10 +176,25 @@ void ActionWithAveraging::update() {
   }
 }
 
+void ActionWithAveraging::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+  if( my_analysis_object ) {
+    analysis::DataCollectionObject& mystore=my_analysis_object->getStoredData( current, false );
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) myvals.setValue( 1+i, mystore.getArgumentValue( ActionWithArguments::getArguments()[i]->getName() ) );
+    myvals.setValue( 0, my_analysis_object->getWeight(current) );
+    if( normalization==f ) myvals.setValue( 1+getNumberOfArguments(), 1.0 ); else myvals.setValue( 1+getNumberOfArguments(), 1.0 / cweight );
+    accumulateAverage( myvals );
+  } else {
+    runTask( current, myvals );
+  }
+}
+
 void ActionWithAveraging::clearAverage() { plumed_assert( myaverage->wasreset() ); myaverage->clear(); }
 
 void ActionWithAveraging::performOperations( const bool& from_update ) { plumed_error(); }
 
+void ActionWithAveraging::runFinalJobs() {
+  if( my_analysis_object && getStride()==0 ) { activated=true; update(); }
+}
 
 }
 }

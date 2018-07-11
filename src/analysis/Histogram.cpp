@@ -243,42 +243,35 @@ Histogram::Histogram(const ActionOptions&ao):
   mvectors(false)
 {
   // Read in arguments
-  std::string vlab; parse("VECTORS",vlab);
-  if( vlab.length()>0 ) {
-    ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( vlab );
-    if( !myv ) error("action labelled " + vlab + " does not exist or is not an ActionWithVessel");
-    myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
-    addDependency( myv ); mvectors=true;
-    if( myv->getNumberOfQuantities()!=5 ) error("can only compute histograms for three dimensional vectors");
-    log.printf("  for vector quantities calculated by %s \n", vlab.c_str() );
-  } else {
-    std::vector<std::string> mlab; parseVector("DATA",mlab);
-    if( mlab.size()>0 ) {
-      for(unsigned i=0; i<mlab.size(); ++i) {
-        ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( mlab[i] );
-        if( !myv ) error("action labelled " + mlab[i] + " does not exist or is not an ActionWithVessel");
-        myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
-        // log.printf("  for all base quantities calculated by %s \n",myvessel->getLabel().c_str() );
-        // Add the dependency
-        addDependency( myv );
-      }
-      unsigned nvals = myvessels[0]->getFullNumberOfTasks();
-      for(unsigned i=1; i<mlab.size(); ++i) {
-        if( nvals!=myvessels[i]->getFullNumberOfTasks() ) error("mismatched number of quantities calculated by actions input to histogram");
-      }
-      log.printf("  for all base quantities calculated by %s ", myvessels[0]->getLabel().c_str() );
-      for(unsigned i=1; i<mlab.size(); ++i) log.printf(", %s \n", myvessels[i]->getLabel().c_str() );
-      log.printf("\n");
+  if( getNumberOfArguments()==0 ) {
+    std::string vlab; parse("VECTORS",vlab);
+    if( vlab.length()>0 ) {
+      ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( vlab );
+      if( !myv ) error("action labelled " + vlab + " does not exist or is not an ActionWithVessel");
+      myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
+      addDependency( myv ); mvectors=true;
+      if( myv->getNumberOfQuantities()!=5 ) error("can only compute histograms for three dimensional vectors");
+      log.printf("  for vector quantities calculated by %s \n", vlab.c_str() );
     } else {
-      std::vector<Value*> arg; parseArgumentList("ARG",arg);
-      if(!arg.empty()) {
-        log.printf("  with arguments");
-        for(unsigned i=0; i<arg.size(); i++) log.printf(" %s",arg[i]->getName().c_str());
+      std::vector<std::string> mlab; parseVector("DATA",mlab);
+      if( mlab.size()>0 ) {
+        for(unsigned i=0; i<mlab.size(); ++i) {
+          ActionWithVessel* myv = plumed.getActionSet().selectWithLabel<ActionWithVessel*>( mlab[i] );
+          if( !myv ) error("action labelled " + mlab[i] + " does not exist or is not an ActionWithVessel");
+          myvessels.push_back( myv ); stashes.push_back( myv->buildDataStashes( NULL ) );
+          // log.printf("  for all base quantities calculated by %s \n",myvessel->getLabel().c_str() );
+          // Add the dependency
+          addDependency( myv );
+        }
+        unsigned nvals = myvessels[0]->getFullNumberOfTasks();
+        for(unsigned i=1; i<mlab.size(); ++i) {
+          if( nvals!=myvessels[i]->getFullNumberOfTasks() ) error("mismatched number of quantities calculated by actions input to histogram");
+        }
+        log.printf("  for all base quantities calculated by %s ", myvessels[0]->getLabel().c_str() );
+        for(unsigned i=1; i<mlab.size(); ++i) log.printf(", %s \n", myvessels[i]->getLabel().c_str() );
         log.printf("\n");
-        // Retrieve the bias acting and make sure we request this also
-        std::vector<Value*> bias( ActionWithArguments::getArguments() );
-        for(unsigned i=0; i<bias.size(); ++i) arg.push_back( bias[i] );
-        requestArguments(arg);
+      } else {
+        error("input data is missing use ARG/VECTORS/DATA");
       }
     }
   }
@@ -335,6 +328,8 @@ Histogram::Histogram(const ActionOptions&ao):
     // Create a task list
     for(unsigned i=0; i<myvessels[0]->getFullNumberOfTasks(); ++i) addTaskToList(i);
     setAveragingAction( std::move(grid), true );
+  } else if( storeThenAverage() ) {
+    setAveragingAction( std::move(grid), true );
   } else {
     // Create a task list
     for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) addTaskToList(i);
@@ -376,7 +371,7 @@ unsigned Histogram::getNumberOfDerivatives() {
 unsigned Histogram::getNumberOfQuantities() const {
   if( mvectors ) return myvessels[0]->getNumberOfQuantities();
   else if( myvessels.size()>0 ) return myvessels.size()+2;
-  return 2;
+  return ActionWithAveraging::getNumberOfQuantities();
 }
 
 void Histogram::prepareForAveraging() {
@@ -397,7 +392,7 @@ void Histogram::prepareForAveraging() {
     // Sort out normalization of histogram
     if( !noNormalization() ) ww = cweight / norm;
     else ww = cweight;
-  } else {
+  } else if( !storeThenAverage() ) {
     // Now fetch the kernel and the active points
     std::vector<double> point( getNumberOfArguments() );
     for(unsigned i=0; i<point.size(); ++i) point[i]=getArgument(i);

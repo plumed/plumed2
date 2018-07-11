@@ -100,7 +100,7 @@ void ActionWithGrid::calculate() {
   if( mygrid ) mygrid->reset();
 }
 
-void ActionWithGrid::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+void ActionWithGrid::runTask( const unsigned& current, MultiValue& myvals ) const {
   // Set the weight of this point
   myvals.setValue( 0, cweight ); compute( current, myvals );
 }

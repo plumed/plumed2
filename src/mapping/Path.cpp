@@ -169,9 +169,6 @@ Path::Path(const ActionOptions& ao):
 
   std::string empty;
   if(!nos) {
-    if( getPropertyIndex("spath")!=0 || getNumberOfProperties()>1 ) {
-      error("paths only work when there is a single property called sss being calculated");
-    }
     if( getLambda()==0 ) error("you must set LAMBDA parameter in order to calculate spath position.  Use LAMBDA/NOSPATH keyword");
     empty="LABEL=spath";
     addVessel("SPATH",empty,0);

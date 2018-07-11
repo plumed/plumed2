@@ -180,7 +180,7 @@ std::string GridVessel::description() {
 
 void GridVessel::resize() {
   plumed_massert( nper>0, "Number of datapoints at each grid point has not been set");
-  resizeBuffer( getNumberOfBufferPoints()*nper + 1 + 2*getAction()->getNumberOfDerivatives() );
+  if( getAction() ) resizeBuffer( getNumberOfBufferPoints()*nper + 1 + 2*getAction()->getNumberOfDerivatives() );
   setDataSize( npoints*nper ); forces.resize( npoints );
   if( active.size()!=npoints) active.resize( npoints, true );
 }
@@ -288,22 +288,27 @@ void GridVessel::getFibonacciCoordinates( const unsigned& ipoint, std::vector<do
   norm = sqrt(norm); for(unsigned j=0; j<3; ++j) x[j] = x[j] / norm;
 }
 
-void GridVessel::getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ) const {
-  plumed_dbg_assert( gtype==flat ); mysneigh.resize( static_cast<unsigned>(pow(2.,dimension)) );
+void GridVessel::getSplineNeighbors( const unsigned& mybox, unsigned& nneighbors, std::vector<unsigned>& mysneigh ) const {
+  plumed_dbg_assert( gtype==flat ); unsigned nneigh=unsigned(pow(2.0,int(dimension)));
+  if( mysneigh.size()!=nneigh ) mysneigh.resize(nneigh);
 
+  unsigned inind; nneighbors = 0;
   std::vector<unsigned> tmp_indices( dimension );
   std::vector<unsigned> my_indices( dimension );
   getIndices( mybox, my_indices );
-  for(unsigned i=0; i<mysneigh.size(); ++i) {
-    unsigned tmp=i;
+  for(unsigned i=0; i<nneigh; ++i) {
+    unsigned tmp=i; inind=0;
     for(unsigned j=0; j<dimension; ++j) {
       unsigned i0=tmp%2+my_indices[j]; tmp/=2;
-      if(!pbc[j] && i0==nbin[j]) getAction()->error("Extrapolating function on grid");
+      if(!pbc[j] && i0==nbin[j]) continue;
       if( pbc[j] && i0==nbin[j]) i0=0;
-      tmp_indices[j]=i0;
+      tmp_indices[inind++]=i0;
     }
-    mysneigh[i]=getIndex( tmp_indices );
-    plumed_massert( active[mysneigh[i]], "inactive grid point required for splines");
+    if(inind==dimension ) {
+      unsigned findex=getIndex( tmp_indices );
+      mysneigh[nneighbors++]=findex;
+      plumed_massert( active[findex], "inactive grid point required for splines");
+    }
   }
 }
 
@@ -315,6 +320,11 @@ double GridVessel::getGridElement( const unsigned& ipoint, const unsigned& jelem
 void GridVessel::setGridElement( const unsigned& ipoint, const unsigned& jelement, const double& value ) {
   plumed_dbg_assert( bounds_set && ipoint<npoints && jelement<nper );
   setDataElement( nper*ipoint + jelement, value );
+}
+
+void GridVessel::setValueAndDerivatives( const unsigned& ipoint, const unsigned& jelement, const double& value, const std::vector<double>& der ) {
+  plumed_dbg_assert( !noderiv && jelement<getNumberOfComponents() && der.size()==nbin.size() );
+  setGridElement( ipoint, jelement, value ); for(unsigned i=0; i<der.size(); ++i) setGridElement( ipoint, jelement+1+i, der[i] );
 }
 
 void GridVessel::addToGridElement( const unsigned& ipoint, const unsigned& jelement, const double& value ) {
@@ -442,13 +452,13 @@ double GridVessel::getValueAndDerivatives( const std::vector<double>& x, const u
   std::vector<double> D(dimension);
   std::vector<double> dder(dimension);
 
-  std::vector<unsigned> nindices(dimension);
+  std::vector<unsigned> nindices(dimension); unsigned n_neigh;
   std::vector<unsigned> indices(dimension); getIndices( x, indices );
-  std::vector<unsigned> neigh; getSplineNeighbors( getIndex(indices), neigh );
+  std::vector<unsigned> neigh; getSplineNeighbors( getIndex(indices), n_neigh, neigh );
   std::vector<double> xfloor(dimension); getFlatGridCoordinates( getIndex(x), nindices, xfloor );
 
 // loop over neighbors
-  for(unsigned int ipoint=0; ipoint<neigh.size(); ++ipoint) {
+  for(unsigned int ipoint=0; ipoint<n_neigh; ++ipoint) {
     double grid=getGridElement(neigh[ipoint], ind*(1+dimension) );
     for(unsigned j=0; j<dimension; ++j) dder[j] = getGridElement( neigh[ipoint], ind*(1+dimension) + 1 + j );
 

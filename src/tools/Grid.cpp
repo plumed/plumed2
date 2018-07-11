@@ -140,6 +140,10 @@ vector<double> Grid::getDx() const {
   return dx_;
 }
 
+double Grid::getDx(index_t j) const {
+  return dx_[j];
+}
+
 double Grid::getBinVolume() const {
   double vol=1.;
   for(unsigned i=0; i<dx_.size(); ++i) vol*=dx_[i];
@@ -204,20 +208,41 @@ vector<unsigned> Grid::getIndices(index_t index) const {
   return indices;
 }
 
+void Grid::getIndices(index_t index, std::vector<unsigned>& indices) const {
+  if (indices.size()!=dimension_) indices.resize(dimension_);
+  index_t kk=index;
+  indices[0]=(index%nbin_[0]);
+  for(unsigned int i=1; i<dimension_-1; ++i) {
+    kk=(kk-indices[i-1])/nbin_[i-1];
+    indices[i]=(kk%nbin_[i]);
+  }
+  if(dimension_>=2) {
+    indices[dimension_-1]=((kk-indices[dimension_-2])/nbin_[dimension_-2]);
+  }
+}
+
 vector<unsigned> Grid::getIndices(const vector<double> & x) const {
   plumed_dbg_assert(x.size()==dimension_);
-  vector<unsigned> indices;
+  vector<unsigned> indices(dimension_);
   for(unsigned int i=0; i<dimension_; ++i) {
-    indices.push_back(unsigned(floor((x[i]-min_[i])/dx_[i])));
+    indices[i] = unsigned(floor((x[i]-min_[i])/dx_[i]));
   }
   return indices;
 }
 
+void Grid::getIndices(const vector<double> & x, std::vector<unsigned>& indices) const {
+  plumed_dbg_assert(x.size()==dimension_);
+  if (indices.size()!=dimension_) indices.resize(dimension_);
+  for(unsigned int i=0; i<dimension_; ++i) {
+    indices[i] = unsigned(floor((x[i]-min_[i])/dx_[i]));
+  }
+}
+
 vector<double> Grid::getPoint(const vector<unsigned> & indices) const {
   plumed_dbg_assert(indices.size()==dimension_);
-  vector<double> x;
+  vector<double> x(dimension_);
   for(unsigned int i=0; i<dimension_; ++i) {
-    x.push_back(min_[i]+(double)(indices[i])*dx_[i]);
+    x[i]=min_[i]+(double)(indices[i])*dx_[i];
   }
   return x;
 }
@@ -241,7 +266,7 @@ void Grid::getPoint(const std::vector<unsigned> & indices,std::vector<double> & 
   plumed_dbg_assert(indices.size()==dimension_);
   plumed_dbg_assert(point.size()==dimension_);
   for(unsigned int i=0; i<dimension_; ++i) {
-    point[i]=(min_[i]+(double)(indices[i])*dx_[i]);
+    point[i]=min_[i]+(double)(indices[i])*dx_[i];
   }
 }
 
@@ -304,24 +329,24 @@ vector<Grid::index_t> Grid::getNeighbors
   return getNeighbors(getIndices(index),nneigh);
 }
 
-vector<Grid::index_t> Grid::getSplineNeighbors(const vector<unsigned> & indices)const {
+void Grid::getSplineNeighbors(const vector<unsigned> & indices, vector<Grid::index_t>& neighbors, unsigned& nneighbors)const {
   plumed_dbg_assert(indices.size()==dimension_);
-  vector<index_t> neighbors;
   unsigned nneigh=unsigned(pow(2.0,int(dimension_)));
+  if (neighbors.size()!=nneigh) neighbors.resize(nneigh);
 
+  static vector<unsigned> nindices; if (nindices.size()!=dimension_) nindices.resize(dimension_);
+  unsigned inind; nneighbors = 0;
   for(unsigned int i=0; i<nneigh; ++i) {
-    unsigned tmp=i;
-    vector<unsigned> nindices;
+    unsigned tmp=i; inind=0;
     for(unsigned int j=0; j<dimension_; ++j) {
       unsigned i0=tmp%2+indices[j];
       tmp/=2;
       if(!pbc_[j] && i0==nbin_[j]) continue;
       if( pbc_[j] && i0==nbin_[j]) i0=0;
-      nindices.push_back(i0);
+      nindices[inind++]=i0;
     }
-    if(nindices.size()==dimension_) neighbors.push_back(getIndex(nindices));
+    if(inind==dimension_) neighbors[nneighbors++]=getIndex(nindices);
   }
-  return neighbors;
 }
 
 vector<Grid::index_t> Grid::getNearestNeighbors(const index_t index) const {
@@ -436,28 +461,32 @@ double Grid::getValueAndDerivatives
 
   if(dospline_) {
     double X,X2,X3,value;
-    vector<double> fd(dimension_);
-    vector<double> C(dimension_);
-    vector<double> D(dimension_);
-    vector<double> dder(dimension_);
+    static std::vector<double> fd, C, D, dder;
+    if (fd.size() != dimension_) fd.resize(dimension_);
+    if (C.size() != dimension_) C.resize(dimension_);
+    if (D.size() != dimension_) D.resize(dimension_);
+    if (dder.size() != dimension_) dder.resize(dimension_);
 // reset
     value=0.0;
     for(unsigned int i=0; i<dimension_; ++i) der[i]=0.0;
 
-    vector<unsigned> indices=getIndices(x);
-    vector<index_t> neigh=getSplineNeighbors(indices);
-    vector<double>   xfloor=getPoint(x);
+    static vector<unsigned> indices; if (indices.size()!=dimension_) indices.resize(dimension_);
+    getIndices(x, indices);
+    static vector<double> xfloor; if (xfloor.size()!=dimension_) xfloor.resize(dimension_);
+    getPoint(indices, xfloor);
+    static vector<index_t> neigh; unsigned nneigh; getSplineNeighbors(indices, neigh, nneigh);
 
 // loop over neighbors
-    for(unsigned int ipoint=0; ipoint<neigh.size(); ++ipoint) {
+    static vector<unsigned> nindices;
+    for(unsigned int ipoint=0; ipoint<nneigh; ++ipoint) {
       double grid=getValueAndDerivatives(neigh[ipoint],dder);
-      vector<unsigned> nindices=getIndices(neigh[ipoint]);
+      getIndices(neigh[ipoint], nindices);
       double ff=1.0;
 
       for(unsigned j=0; j<dimension_; ++j) {
         int x0=1;
         if(nindices[j]==indices[j]) x0=0;
-        double dx=getDx()[j];
+        double dx=getDx(j);
         X=fabs((x[j]-xfloor[j])/dx-(double)x0);
         X2=X*X;
         X3=X2*X;

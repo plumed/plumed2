@@ -48,7 +48,7 @@ public:
   explicit ActionWithGrid( const ActionOptions& );
   virtual void turnOnDerivatives();
   void calculate();
-  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+  void runTask( const unsigned& current, MultiValue& myvals ) const ;
   virtual void compute( const unsigned& current, MultiValue& myvals ) const = 0;
 };
 

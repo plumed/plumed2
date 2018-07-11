@@ -22,7 +22,6 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithArguments.h"
-#include "reference/MultiReferenceBase.h"
 #include "reference/MetricRegister.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
@@ -200,7 +199,7 @@ void PCAVars::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
-  componentsAreNotOptional(keys);
+  componentsAreNotOptional(keys); keys.use("ARG");
   keys.addOutputComponent("eig","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
   keys.addOutputComponent("residual","default","the distance of the configuration from the linear subspace defined "
                           "by the vectors, \\f$e_i\\f$, that are contained in the rows of \\f$A\\f$.  In other words this is "
@@ -233,25 +232,28 @@ PCAVars::PCAVars(const ActionOptions& ao):
   if(!fp) error("could not open reference file " + reference );
 
   // Read all reference configurations
-  MultiReferenceBase myframes( "", false );
+  // MultiReferenceBase myframes( "", false );
+  std::vector<std::unique_ptr<ReferenceConfiguration> > myframes;
   bool do_read=true; unsigned nfram=0;
   while (do_read) {
     PDB mypdb;
     // Read the pdb file
     do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
     // Fix argument names
-    expandArgKeywordInPDB( mypdb );
     if(do_read) {
       if( nfram==0 ) {
         myref=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
         Direction* tdir = dynamic_cast<Direction*>( myref.get() );
         if( tdir ) error("first frame should be reference configuration - not direction of vector");
         if( !myref->pcaIsEnabledForThisReference() ) error("can't do PCA with reference type " + mtype );
-        std::vector<std::string> remarks( mypdb.getRemark() ); std::string rtype;
-        bool found=Tools::parse( remarks, "TYPE", rtype );
-        if(!found) { std::vector<std::string> newrem(1); newrem[0]="TYPE="+mtype; mypdb.addRemark(newrem); }
-        myframes.readFrame( mypdb );
-      } else myframes.readFrame( mypdb );
+        // std::vector<std::string> remarks( mypdb.getRemark() ); std::string rtype;
+        // bool found=Tools::parse( remarks, "TYPE", rtype );
+        // if(!found){ std::vector<std::string> newrem(1); newrem[0]="TYPE="+mtype; mypdb.addRemark(newrem); }
+        // myframes.push_back( metricRegister().create<ReferenceConfiguration>( "", mypdb ) );
+      } else {
+        auto mymsd = metricRegister().create<ReferenceConfiguration>( "", mypdb );
+        myframes.emplace_back( std::move(mymsd) );
+      }
       nfram++;
     } else {
       break;
@@ -264,10 +266,13 @@ PCAVars::PCAVars(const ActionOptions& ao):
 
   // Finish the setup of the mapping object
   // Get the arguments and atoms that are required
-  std::vector<AtomNumber> atoms; std::vector<std::string> args;
-  myframes.getAtomAndArgumentRequirements( atoms, args );
+  std::vector<AtomNumber> atoms; myref->getAtomRequests( atoms, false );
+  std::vector<std::string> args; myref->getArgumentRequests( args, false );
   requestAtoms( atoms ); std::vector<Value*> req_args;
   interpretArgumentList( args, req_args ); requestArguments( req_args );
+
+  // And now check that the atoms/arguments are the same in all the eigenvalues
+  for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, false ); myframes[i]->getArgumentRequests( args, false ); }
 
   // Setup the derivative pack
   if( atoms.size()>0 ) myvals.resize( 1, args.size() + 3*atoms.size() + 9 );
@@ -275,10 +280,8 @@ PCAVars::PCAVars(const ActionOptions& ao):
   mypack.resize( args.size(), atoms.size() );
   for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
   /// This sets up all the storage data required by PCA in the pack
-  myframes.getFrame(0)->setupPCAStorage( mypack );
+  myref->setupPCAStorage( mypack );
 
-  // Retrieve the position of the first frame, as we use this for alignment
-  myref->setNamesAndAtomNumbers( atoms, args );
   // Check there are no periodic arguments
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->isPeriodic() ) error("cannot use periodic variables in pca projections");
@@ -290,17 +293,20 @@ PCAVars::PCAVars(const ActionOptions& ao):
   else      log.printf("  using periodic boundary conditions\n");
 
   // Resize the matrices that will hold our eivenvectors
-  for(unsigned i=1; i<nfram; ++i) {
-    directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")));
-    directions[i-1].setNamesAndAtomNumbers( atoms, args );
+  PDB mypdb; mypdb.setAtomNumbers( atoms ); mypdb.addBlockEnd( atoms.size() );
+  if( args.size()>0 ) mypdb.setArgumentNames( args );
+  // Resize the matrices that will hold our eivenvectors
+  for(unsigned i=0; i<myframes.size(); ++i) {
+    directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION"))); directions[i].read( mypdb );
   }
 
   // Create fake periodic boundary condition (these would only be used for DRMSD which is not allowed)
   // Now calculate the eigenvectors
-  for(unsigned i=1; i<nfram; ++i) {
-    myframes.getFrame(i)->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), true, directions[i-1] );
+  for(unsigned i=0; i<myframes.size(); ++i) {
+    // Calculate distance from reference configuration
+    myframes[i]->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), true, directions[i] );
     // Create a component to store the output
-    std::string num; Tools::convert( i, num );
+    std::string num; Tools::convert( i+1, num );
     addComponentWithDerivatives("eig-"+num); componentIsNotPeriodic("eig-"+num);
   }
   addComponentWithDerivatives("residual"); componentIsNotPeriodic("residual");

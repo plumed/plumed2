@@ -101,6 +101,7 @@ public:
   void finishAveraging();
   bool isPeriodic() { return false; }
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
+  void accumulateAverage( MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")
@@ -134,6 +135,11 @@ Average::Average( const ActionOptions& ao ):
 
 void Average::performOperations( const bool& from_update ) {
   myaverage->accumulate( cweight, getArgument(0) );
+}
+
+void Average::accumulateAverage( MultiValue& myvals ) const {
+  plumed_dbg_assert( myvals.getNumberOfValues()==3 );
+  myaverage->accumulate( myvals.get(0), myvals.get(1) );
 }
 
 void Average::finishAveraging() {

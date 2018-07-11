@@ -98,14 +98,13 @@ template <class T>
 std::unique_ptr<T> MetricRegister::create( const std::string& type, const PDB& pdb ) {
   std::string rtype;
   if( type.length()==0 ) {
-    std::vector<std::string> remarks( pdb.getRemark() );
-    bool found=Tools::parse( remarks, "TYPE", rtype );
-    if(!found) plumed_merror("TYPE not specified in pdb input file");
+    rtype=pdb.getMtype();
+    plumed_massert(rtype.length()>0, "TYPE not specified in pdb input file");
   } else {
     rtype=type;
   }
   std::unique_ptr<T> confout( create<T>( rtype ) );
-  confout->set( pdb );
+  confout->read( pdb );
   return confout;
 }
 
