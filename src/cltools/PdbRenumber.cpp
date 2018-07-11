@@ -161,7 +161,7 @@ int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {
     }
   } else {
     if(iat==0) iat=1;
-    fprintf(out,"  with atoms starting from %d\n",iat);
+    fprintf(out,"  with atoms starting from %u\n",iat);
   }
 
   IFile ifile;
