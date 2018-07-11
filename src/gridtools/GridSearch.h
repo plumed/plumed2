@@ -25,6 +25,7 @@
 #include "tools/MinimiseBase.h"
 #include "GridVessel.h"
 #include <iostream>
+#include <memory>
 
 namespace PLMD {
 namespace gridtools {
@@ -36,12 +37,11 @@ private:
 /// calculating class that calculates the energy
   typedef double(FCLASS::*engf_pointer)( const std::vector<double>& p, std::vector<double>& der );
   FCLASS* myclass_func;
-  GridVessel* mygrid;
-  GridVessel* myfgrid;
+  std::unique_ptr<GridVessel> mygrid;
+  std::unique_ptr<GridVessel> myfgrid;
 public:
   GridSearch( const std::vector<double>& mmin, const std::vector<double>& mmax, const std::vector<unsigned>& ng, const std::vector<unsigned>& nfg, FCLASS* funcc ) :
-    myclass_func( funcc ),
-    myfgrid(NULL)
+    myclass_func( funcc )
   {
     // Create the grid objects
     std::string nstr, vstring="COMPONENTS=func COORDINATES=x1";
@@ -50,8 +50,8 @@ public:
     vesselbase::VesselOptions da("mygrid","",-1,vstring,NULL);
     Keywords keys; gridtools::GridVessel::registerKeywords( keys );
     vesselbase::VesselOptions dar( da, keys );
-    mygrid = new GridVessel(dar);
-    if( nfg[0]>0 ) myfgrid = new GridVessel(dar);
+    mygrid.reset( new GridVessel(dar) );
+    if( nfg[0]>0 ) myfgrid.reset( new GridVessel(dar) );
 
     // Now setup the min and max values for the grid
     std::vector<std::string> gmin( nfg.size() ), gmax( nfg.size() ); std::vector<double> dummy_spacing;
@@ -59,7 +59,6 @@ public:
     mygrid->setBounds( gmin, gmax, ng, dummy_spacing ); mygrid->resize();
     if( myfgrid ) myfgrid->setBounds( gmin, gmax, nfg, dummy_spacing );
   }
-  ~GridSearch() { delete mygrid; if(myfgrid) delete myfgrid; }
   bool minimise( std::vector<double>& p, engf_pointer myfunc );
 };
 
