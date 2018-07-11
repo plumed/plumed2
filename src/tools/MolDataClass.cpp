@@ -261,6 +261,30 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
       return;
     }
 
+    if(symbol=="hydrogens") {
+      const auto & all = mypdb.getAtomNumbers();
+      for(auto a : all) {
+        auto atomname=mypdb.getAtomName(a);
+        Tools::stripLeadingAndTrailingBlanks(atomname);
+        auto notnumber=atomname.find_first_not_of("0123456789");
+        if(notnumber!=std::string::npos && atomname[notnumber]=='H') numbers.push_back(a);
+      }
+      return;
+    }
+
+    if(symbol=="nonhydrogens") {
+      const auto & all = mypdb.getAtomNumbers();
+      for(auto a : all) {
+        auto atomname=mypdb.getAtomName(a);
+        Tools::stripLeadingAndTrailingBlanks(atomname);
+        auto notnumber=atomname.find_first_not_of("0123456789");
+        if(notnumber!=std::string::npos && atomname[notnumber]=='H') {
+        } else numbers.push_back(a);
+      }
+      return;
+    }
+
+
     std::size_t dash=symbol.find_first_of('-');
     std::size_t firstunderscore=symbol.find_first_of('_',dash+1);
     std::size_t firstnum=symbol.find_first_of("0123456789",dash+1);
