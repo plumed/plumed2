@@ -23,6 +23,7 @@
 #include "BasisFunctions.h"
 
 #include "core/ActionRegister.h"
+#include "../lapack/lapack.h"
 #include "tools/Grid.h"
 #include "tools/Matrix.h"
 
@@ -55,6 +56,7 @@ class BF_DbWavelets : public BasisFunctions {
   virtual void setupLabels();
   void setup_Wavelet_Grid(unsigned recursion_number);
   std::vector<double> get_filter_coefficients(unsigned order);
+  void setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, std::vector<double> h);
 
 public:
   static void registerKeywords( Keywords&);
@@ -121,13 +123,47 @@ void BF_DbWavelets::setupLabels() {
 // Creates and fills the Grid with the Wavelet values
 void BF_DbWavelets::setup_Wavelet_Grid(unsigned recursion_number) {
   // Filter coefficients
-  std::vector<double> h_coeffs, g_coeffs;
-  // Matrices to set up
-  Matrix<double> M1_, M2_;
+  std::vector<double> h_coeffs;
   h_coeffs = get_filter_coefficients(getOrder());
-  for (unsigned i = 0; i < getOrder()*2; ++i){
-    log.printf("%f\n", h_coeffs.at(i));
+  int matrix_size = getOrder()*2 - 1;
+  // Matrices for the cascade
+  Matrix<double> M0(matrix_size, matrix_size), M1(matrix_size, matrix_size);
+  setup_Matrices(M0, M1, h_coeffs);
+
+  //for (int i = 0; i < matrix_size; ++i) {
+    //for (int j = 0; j < matrix_size; ++j) {
+      //log.printf("%f ", M0[i][j]); }
+    //log.printf("\n");
+  //}
+  
+  
+  // copied a lot from the dsyevr method in matrix.h
+  std::vector<int> ipiv(matrix_size);
+  int info, nrhs=1;
+  std::vector<double> da1 (matrix_size*matrix_size), eigvec(matrix_size);
+  for (int i=0; i<matrix_size; ++i) eigvec.at(i) = 0.; // set B for dgetrs to 0
+  //// better method for copying the matrix to vector? --> pass to dgetrf in a way that array can't be changed
+  unsigned k1=0;
+  for (unsigned i=0; i<matrix_size; ++i) for (unsigned j=0; j<matrix_size; ++j){
+    da1[k1]=static_cast<double>( M0(j,i) );
+    if (i==j) da1[k1] -= 1.;
+    k1++;
   }
+  std::vector<double> da2(da1); 
+
+  for (int i = 0; i < matrix_size; ++i) {
+    for (int j = 0; j < matrix_size; ++j) {
+      log.printf("%f ", da1.at(i+matrix_size*j)); }
+    log.printf("\n");
+  }
+  // get pivot indices ipiv from dgetrf
+  plumed_lapack_dgetrf(&matrix_size, &matrix_size, da1.data(), &matrix_size, ipiv.data(), &info);
+  log.printf("After dgetrf: %d\n", info);
+  plumed_lapack_dgetrs("N", &matrix_size, &nrhs, da2.data(), &matrix_size, ipiv.data(), eigvec.data(), &matrix_size, &info);
+  log.printf("After dgetrs: %d\n", info);
+  for (int j = 0; j < matrix_size; ++j) {
+    log.printf("%f ", eigvec.at(j)); }
+  log.printf("\n");
   
 
 
@@ -180,6 +216,17 @@ std::vector<double> BF_DbWavelets::get_filter_coefficients(unsigned order) {
   return h;
 }
 
+void BF_DbWavelets::setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, std::vector<double> h_coeffs) {
+  int n = h_coeffs.size() -1;
+  for (int i = 0; i < n; ++i) { // not very elegant, maybe change this later
+    for (int j = 0; j < n; ++j) {
+      int shift = 2*i -j;
+      if (0 <= shift && shift <= n) {
+        M0[i][j] = 2 * h_coeffs.at(2*i -j);}
+      if (-1 <= shift && shift <= n -1) {
+        M1[i][j] = 2 * h_coeffs.at(2*i -j + 1);}
+  }}
+}
 
 }
 }
