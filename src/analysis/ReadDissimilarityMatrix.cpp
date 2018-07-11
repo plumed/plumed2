@@ -53,6 +53,8 @@ public:
   static void registerKeywords( Keywords& keys );
   ReadDissimilarityMatrix( const ActionOptions& ao );
   unsigned getNumberOfDataPoints() const ;
+// Return the index of the data point in the base class
+  unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
 /// This gives an error as if we read in the matrix we dont have the coordinates
   DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist );
 /// Tell everyone we have dissimilarities
@@ -139,6 +141,10 @@ void ReadDissimilarityMatrix::runFinalJobs() {
 unsigned ReadDissimilarityMatrix::getNumberOfDataPoints() const {
   if( my_input_data ) return AnalysisBase::getNumberOfDataPoints();
   return dissimilarities.size();
+}
+
+unsigned ReadDissimilarityMatrix::getDataPointIndexInBase( const unsigned& idata ) const {
+  return idata;
 }
 
 double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const unsigned& jframe ) {

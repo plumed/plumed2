@@ -82,7 +82,7 @@ ActionShortcut(ao)
   std::string imds_line_pw = getShortcutLabel() + "_smap1_pw: SKETCHMAP_POINTWISE USE_OUTPUT_DATA_FROM=" + getShortcutLabel() + "_smap1_cg";
   imds_line_pw += pw_step_input + " MIXPARAM=1.0"; readInputLine( imds_line_pw );
   // Now sketch-map
-  unsigned asteps; parse("ANNEAL_STEPS",asteps); std::string psmap = getShortcutLabel() + "_smap1.0_pw";
+  unsigned asteps; parse("ANNEAL_STEPS",asteps); std::string psmap = getShortcutLabel() + "_smap1_pw";
   if( asteps>1 ) {
       double smear; parse("ANNEAL_RATE", smear); double old_mix = 1.0; double new_mix = old_mix*smear;
       for(unsigned i=0;i<asteps;++i) {
