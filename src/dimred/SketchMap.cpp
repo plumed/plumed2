@@ -23,7 +23,7 @@
 #include "core/ActionRegister.h"
 
 namespace PLMD {
-namespace analysis {
+namespace dimred {
 
 //+PLUMEDOC ANALYSIS SKETCH_MAP
 /*
