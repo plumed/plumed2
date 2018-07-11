@@ -118,8 +118,6 @@ public:
   double get_dmax() const;
 /// Return dmax squared
   double get_dmax2() const;
-/// Set a r0 switching function.
-  void set_r0(double r_0);
 };
 
 }

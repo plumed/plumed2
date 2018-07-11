@@ -199,10 +199,11 @@ private:
   std::vector<double> fmass;
   std::vector<bool> dosort;
   std::vector<Vector> compos;
+  std::vector<string> sw;
   //std::vector<std:: vector<unsigned> > com2atoms;
   std::vector<NeighborList *> nl;
   std::vector<NeighborList *> nlcom;
-  bool Svol,Sfac,cross,direct,doneigh,test,updatesfs,CompDer,com;
+  bool Svol,Sfac,cross,direct,doneigh,test,CompDer,com;
 public:
   static void registerKeywords( Keywords& keys );
   PIV(const ActionOptions&);
@@ -233,7 +234,6 @@ void PIV::registerKeywords( Keywords& keys )
   keys.addFlag("COM",false,"Use centers of mass of groups of atoms instead of atoms as secified in the Pdb file");
   keys.addFlag("ONLYCROSS",false,"Use only cross-terms (A-B, A-C, B-C, ...) in PIV");
   keys.addFlag("ONLYDIRECT",false,"Use only direct-terms (A-A, B-B, C-C, ...) in PIV");
-  keys.addFlag("UPDATESFS",false,"Update the switching function r0 parameter accordingly to the volume changes (obsolete).");
   keys.addFlag("DERIVATIVES",false,"Activate the calculation of the PIV for every class (needed for numerical derivatives).");
   keys.addFlag("NLIST",false,"Use a neighbour list for distance calculations.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
@@ -255,7 +255,6 @@ PIV::PIV(const ActionOptions&ao):
   cross(true),
   direct(true),
   doneigh(false),
-  updatesfs(false),
   CompDer(false),
   com(false),
   test(false),
@@ -269,6 +268,7 @@ PIV::PIV(const ActionOptions&ao):
   rPIV(std:: vector<std:: vector<double> >(Nlist)),
   scaling(std:: vector<double>(Nlist)),
   r00(std:: vector<double>(Nlist)),
+  sw(std:: vector<string>(Nlist)),
   nl_skin(std:: vector<double>(Nlist)),
   fmass(std:: vector<double>(Nlist)),
   dosort(std:: vector<bool>(Nlist)),
@@ -330,9 +330,6 @@ PIV::PIV(const ActionOptions&ao):
   if (Vol0>0) {
     Svol=true;
   }
-
-  // Update switching Function?
-  parseFlag("UPDATESFS",updatesfs);
 
   // PIV direct and cross blocks
   bool oc=false,od=false;
@@ -574,16 +571,6 @@ PIV::PIV(const ActionOptions&ao):
       }
     }
   }
-  // Read Parameters and set-up switching functions
-  sfs.resize(Nlist);
-  std::string errors;
-  for (unsigned j=0; j<Nlist; j++) {
-    std::string num, sw;
-    Tools::convert(j+1, num);
-    if( !parseNumbered( "SWITCH", j+1, sw ) ) break;
-    sfs[j].set(sw,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH" + num + " keyword : " + errors );
-  }
 
   // Sorting
   dosort.resize(Nlist);
@@ -618,16 +605,33 @@ PIV::PIV(const ActionOptions&ao):
   }
 
   r00.resize(Nlist);
+  sw.resize(Nlist);
+  for (unsigned j=0; j<Nlist; j++) {
+    if( !parseNumbered( "SWITCH", j+1, sw[j] ) ) break;
+  }
   if(CompDer) {
-    //Set switching function parameters: now set at the beginning of the dynamics to solve the r0 issue
+    // Set switching function parameters here only if computing derivatives
+    //   now set at the beginning of the dynamics to solve the r0 issue
     log << "Switching Function Parameters \n";
+    sfs.resize(Nlist);
+    std::string errors;
     for (unsigned j=0; j<Nlist; j++) {
-      double r0=sfs[j].get_r0();
       if(Svol) {
+	double r0;
+        vector<string> data=Tools::getWords(sw[j]);
+        data.erase(data.begin());
+        bool tmp=Tools::parse(data,"R_0",r0);
+        std::string old_r0; Tools::convert(r0,old_r0);
         r0*=Fvol;
+        std::string new_r0; Tools::convert(r0,new_r0);
+	std::size_t pos = sw[j].find("R_0");
+        sw[j].replace(pos+4,old_r0.size(),new_r0);
       }
-      r00[j]=r0;
-      sfs[j].set_r0(r0);
+      sfs[j].set(sw[j],errors);
+      std::string num;
+      Tools::convert(j+1, num);
+      if( errors.length()!=0 ) error("problem reading SWITCH" + num + " keyword : " + errors );
+      r00[j]=sfs[j].get_r0();
       log << "  Swf: " << j << "  r0=" << (sfs[j].description()).c_str() << " \n";
     }
   }
@@ -758,14 +762,28 @@ void PIV::calculate()
     //Set switching function parameters
     log << "\n";
     log << "REFERENCE PDB # " << prev_stp+2 << " \n";
+    // Set switching function parameters here only if computing derivatives
+    //   now set at the beginning of the dynamics to solve the r0 issue
     log << "Switching Function Parameters \n";
+    sfs.resize(Nlist);
+    std::string errors;
     for (unsigned j=0; j<Nlist; j++) {
-      double r0=sfs[j].get_r0();
       if(Svol) {
+	double r0;
+        vector<string> data=Tools::getWords(sw[j]);
+        data.erase(data.begin());
+        bool tmp=Tools::parse(data,"R_0",r0);
+        std::string old_r0; Tools::convert(r0,old_r0);
         r0*=Fvol;
+        std::string new_r0; Tools::convert(r0,new_r0);
+	std::size_t pos = sw[j].find("R_0");
+        sw[j].replace(pos+4,old_r0.size(),new_r0);
       }
-      r00[j]=r0;
-      sfs[j].set_r0(r0);
+      sfs[j].set(sw[j],errors);
+      std::string num;
+      Tools::convert(j+1, num);
+      if( errors.length()!=0 ) error("problem reading SWITCH" + num + " keyword : " + errors );
+      r00[j]=sfs[j].get_r0();
       log << "  Swf: " << j << "  r0=" << (sfs[j].description()).c_str() << " \n";
     }
     //Transform and sort
