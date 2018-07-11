@@ -462,7 +462,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
         } else plumed_error();
       } else numbers.push_back(mypdb.getNamedAtomFromResidueAndChain(name,resnum,chainid));
-    }
+    } else numbers.push_back(mypdb.getNamedAtomFromResidueAndChain(name,resnum,chainid));
   }
   else {
     plumed_merror(type + " is not a valid molecule type");
