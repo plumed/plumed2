@@ -286,6 +286,8 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
 
 
     std::size_t dash=symbol.find_first_of('-');
+    if(dash==std::string::npos) plumed_error() << "Unrecognized symbol "<<symbol;
+
     std::size_t firstunderscore=symbol.find_first_of('_',dash+1);
     std::size_t firstnum=symbol.find_first_of("0123456789",dash+1);
     std::string name=symbol.substr(0,dash);
