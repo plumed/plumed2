@@ -64,23 +64,23 @@ GridPrintingBase::GridPrintingBase(const ActionOptions&ao):
   }
   std::vector<std::string> rep_data; parseVector("REPLICA",rep_data);
   if( rep_data.size()==1 ) {
-      if( rep_data[0]=="all" ) output_for_all_replicas=true;
-      else {
-         preps.resize(1); Tools::convert( rep_data[0], preps[0] );
-      }
+    if( rep_data[0]=="all" ) output_for_all_replicas=true;
+    else {
+      preps.resize(1); Tools::convert( rep_data[0], preps[0] );
+    }
   } else {
-      preps.resize( rep_data.size() );
-      for(unsigned i=0;i<rep_data.size();++i) Tools::convert( rep_data[i], preps[i] );
+    preps.resize( rep_data.size() );
+    for(unsigned i=0; i<rep_data.size(); ++i) Tools::convert( rep_data[i], preps[i] );
   }
 }
 
 void GridPrintingBase::update() {
   if( !output_for_all_replicas ) {
-      bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
-      for(unsigned i=0;i<preps.size();++i) {
-          if( myrep==preps[i] ) { found=true; break; }
-      }
-      if( !found ) return;
+    bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
+    for(unsigned i=0; i<preps.size(); ++i) {
+      if( myrep==preps[i] ) { found=true; break; }
+    }
+    if( !found ) return;
   }
   if( getStep()==0 || getStride()==0 ) return ;
 
@@ -91,11 +91,11 @@ void GridPrintingBase::update() {
 
 void GridPrintingBase::runFinalJobs() {
   if( !output_for_all_replicas ) {
-      bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
-      for(unsigned i=0;i<preps.size();++i) {
-          if( myrep==preps[i] ) { found=true; break; }
-      }
-      if( !found ) return;
+    bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
+    for(unsigned i=0; i<preps.size(); ++i) {
+      if( myrep==preps[i] ) { found=true; break; }
+    }
+    if( !found ) return;
   }
   if( getStride()>0 ) return;
 

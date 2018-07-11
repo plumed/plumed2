@@ -52,13 +52,13 @@ void WhamWeights::registerKeywords( Keywords& keys ) {
 }
 
 WhamWeights::WhamWeights( const ActionOptions& ao ) :
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   // Input for REWEIGHT_WHAM
   std::string rew_line = getShortcutLabel() + "_weights: REWEIGHT_WHAM";
   std::string bias; parse("BIAS",bias); rew_line += " ARG=" + bias;
-  std::string temp; parse("TEMP",temp); rew_line += " TEMP=" + temp; 
+  std::string temp; parse("TEMP",temp); rew_line += " TEMP=" + temp;
   readInputLine( rew_line );
   // Input for COLLECT_FRAMES
   std::string col_line = getShortcutLabel() + "_collect: COLLECT_FRAMES LOGWEIGHTS=" + getShortcutLabel() + "_weights";
@@ -66,7 +66,7 @@ ActionShortcut(ao)
   readInputLine( col_line );
   // Input for line to output data
   std::string out_line="OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=" + getShortcutLabel() + "_collect";
-  std::string file; parse("FILE",file); out_line += " FILE=" + file; 
+  std::string file; parse("FILE",file); out_line += " FILE=" + file;
   std::string fmt="%f"; parse("FMT",fmt); out_line += " FMT=" + fmt;
   readInputLine( out_line );
 }

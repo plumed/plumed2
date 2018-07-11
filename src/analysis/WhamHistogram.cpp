@@ -56,18 +56,18 @@ void WhamHistogram::registerKeywords( Keywords& keys ) {
 
 
 WhamHistogram::WhamHistogram( const ActionOptions& ao ) :
-Action(ao),
-ActionShortcut(ao)
+  Action(ao),
+  ActionShortcut(ao)
 {
   // Input for REWEIGHT_WHAM
   std::string rew_line = getShortcutLabel() + "_weights: REWEIGHT_WHAM";
   std::string bias; parse("BIAS",bias); rew_line += " ARG=" + bias;
-  std::string temp; parse("TEMP",temp); rew_line += " TEMP=" + temp; 
+  std::string temp; parse("TEMP",temp); rew_line += " TEMP=" + temp;
   readInputLine( rew_line );
   // Input for COLLECT_FRAMES
   std::string col_line = getShortcutLabel() + "_collect: COLLECT_FRAMES LOGWEIGHTS=" + getShortcutLabel() + "_weights";
   std::string stride; parse("STRIDE",stride); col_line += " STRIDE=" + stride;
-  std::string arg; parse("ARG",arg); col_line += " ARG=" + arg; 
+  std::string arg; parse("ARG",arg); col_line += " ARG=" + arg;
   readInputLine( col_line );
   // Input for HISTOGRAM
   std::string histo_line = getShortcutLabel() + ": HISTOGRAM ARG=" + getShortcutLabel() + "_collect.*";
@@ -75,7 +75,7 @@ ActionShortcut(ao)
   std::string max; parse("GRID_MAX",max); histo_line += " GRID_MAX=" + max;
   std::string bin; parse("GRID_BIN",bin); histo_line += " GRID_BIN=" + bin;
   std::string bw=""; parse("BANDWIDTH",bw);
-  if( bw!="" ) histo_line += " BANDWIDTH=" + bw; 
+  if( bw!="" ) histo_line += " BANDWIDTH=" + bw;
   else histo_line += " KERNEL=DISCRETE";
   readInputLine( histo_line );
 }

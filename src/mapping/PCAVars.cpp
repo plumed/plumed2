@@ -251,8 +251,8 @@ PCAVars::PCAVars(const ActionOptions& ao):
         // if(!found){ std::vector<std::string> newrem(1); newrem[0]="TYPE="+mtype; mypdb.addRemark(newrem); }
         // myframes.push_back( metricRegister().create<ReferenceConfiguration>( "", mypdb ) );
       } else {
-         auto mymsd = metricRegister().create<ReferenceConfiguration>( "", mypdb );
-         myframes.emplace_back( std::move(mymsd) );
+        auto mymsd = metricRegister().create<ReferenceConfiguration>( "", mypdb );
+        myframes.emplace_back( std::move(mymsd) );
       }
       nfram++;
     } else {

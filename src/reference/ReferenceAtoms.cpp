@@ -63,16 +63,16 @@ void ReferenceAtoms::readAtomsFromPDB( const PDB& pdb, const bool allowblocks  )
 
 // bool ReferenceAtoms::parseAtomList( const std::string& key, std::vector<unsigned>& numbers ) {
 //   plumed_assert( numbers.size()==0 );
-// 
+//
 //   std::vector<std::string> strings;
 //   if( !parseVector(key,strings,true) ) return false;
 //   Tools::interpretRanges(strings);
-// 
+//
 //   numbers.resize( strings.size() );
 //   for(unsigned i=0; i<strings.size(); ++i) {
 //     AtomNumber atom;
 //     if( !Tools::convert(strings[i],atom ) ) error("could not convert " + strings[i] + " into atom number");
-// 
+//
 //     bool found=false;
 //     for(unsigned j=0; j<indices.size(); ++j) {
 //       if( atom==indices[j] ) { found=true; numbers[i]=j; break; }

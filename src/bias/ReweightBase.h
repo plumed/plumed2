@@ -41,7 +41,7 @@ public:
   unsigned getNumberOfDerivatives() { return 0; }
   virtual bool buildsWeightStore() const { return false; }
   void calculate();
-  virtual void calculateWeights( const unsigned& nframes ){}
+  virtual void calculateWeights( const unsigned& nframes ) {}
   virtual double getLogWeight() = 0;
   virtual double getWeight( const unsigned& iweight ) const { plumed_error(); }
   virtual void clearData() {}

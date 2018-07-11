@@ -28,7 +28,7 @@ namespace PLMD {
 
 /**
 \ingroup MULTIINHERIT
-Action used to create a command that expands to multiple PLMD::Action commands when read in during input 
+Action used to create a command that expands to multiple PLMD::Action commands when read in during input
 */
 class ActionShortcut :
   public virtual Action {
