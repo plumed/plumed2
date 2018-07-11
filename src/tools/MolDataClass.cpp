@@ -140,6 +140,22 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
     else if(residuename=="RC3") return true;
     else if(residuename=="RCN") return true;
     else return false;
+  } else if( type=="water" ) {
+    if(residuename=="SOL") return true;
+    if(residuename=="WAT") return true;
+    return false;
+  } else if( type=="ion" ) {
+    if(residuename=="IB+") return true;
+    if(residuename=="CA") return true;
+    if(residuename=="CL") return true;
+    if(residuename=="NA") return true;
+    if(residuename=="MG") return true;
+    if(residuename=="K") return true;
+    if(residuename=="RB") return true;
+    if(residuename=="CS") return true;
+    if(residuename=="LI") return true;
+    if(residuename=="ZN") return true;
+    return false;
   }
   return false;
 }
@@ -221,6 +237,26 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
         auto resname=mypdb.getResidueName(a);
         Tools::stripLeadingAndTrailingBlanks(resname);
         if(allowedResidue("dna",resname) || allowedResidue("rna",resname)) numbers.push_back(a);
+      }
+      return;
+    }
+
+    if(symbol=="ions") {
+      const auto & all = mypdb.getAtomNumbers();
+      for(auto a : all) {
+        auto resname=mypdb.getResidueName(a);
+        Tools::stripLeadingAndTrailingBlanks(resname);
+        if(allowedResidue("ion",resname)) numbers.push_back(a);
+      }
+      return;
+    }
+
+    if(symbol=="water") {
+      const auto & all = mypdb.getAtomNumbers();
+      for(auto a : all) {
+        auto resname=mypdb.getResidueName(a);
+        Tools::stripLeadingAndTrailingBlanks(resname);
+        if(allowedResidue("water",resname)) numbers.push_back(a);
       }
       return;
     }
