@@ -55,9 +55,10 @@ class BF_DbWavelets : public BasisFunctions {
   std::unique_ptr<Grid> Wavelet_Grid_;
   virtual void setupLabels();
   void setup_Wavelet_Grid(const unsigned recursion_number);
-  std::vector<double> get_filter_coefficients(const unsigned order);
-  void setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const std::vector<double> h);
-  std::vector<double> get_eigenvector(const Matrix<double> &A, const double eigenvalue);
+  static std::vector<double> get_filter_coefficients(const unsigned order);
+  static void setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const std::vector<double> h);
+  static std::vector<double> get_eigenvector(const Matrix<double> &A, const double eigenvalue);
+  std::vector<double> calc_integer_values(const Matrix<double> &M, const int deriv);
 
 public:
   static void registerKeywords( Keywords&);
@@ -84,10 +85,10 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   setNonPeriodic();
   setIntervalBounded();
   // gridbins_ defines the number of recursion steps at the Wavelet construction. Maybe change the name? Set by Keyword, how to combine both intuitively for later developers/users?
-  unsigned gridbins_ = 7;
-  parse("GRID_BINS", gridbins_);
-  if(gridbins_!=7) {addKeywordToList("GRID_BINS",gridbins_);}
-  setup_Wavelet_Grid(gridbins_);
+  unsigned gridbins = 7;
+  parse("GRID_BINS", gridbins);
+  if(gridbins!=7) {addKeywordToList("GRID_BINS",gridbins);}
+  setup_Wavelet_Grid(gridbins);
   setType("daubechies_wavelets");
   setDescription("Daubechies Wavelets (minimum phase type)");
   setLabelPrefix("k");
@@ -125,26 +126,19 @@ void BF_DbWavelets::setupLabels() {
 // Creates and fills the Grid with the Wavelet values
 void BF_DbWavelets::setup_Wavelet_Grid(const unsigned recursion_number) {
   // Filter coefficients
-  std::vector<double> h_coeffs;
-  h_coeffs = get_filter_coefficients(getOrder());
+  std::vector<double> h_coeffs = get_filter_coefficients(getOrder());
   // Matrices for the cascade
   Matrix<double> M0, M1;
   setup_Matrices(M0, M1, h_coeffs);
 
-  //for (int i = 0; i < matrix_size; ++i) {
-    //for (int j = 0; j < matrix_size; ++j) {
-      //log.printf("%f ", M0[i][j]); }
-    //log.printf("\n");
-  //}
-  
-  // get the integer values (eigenvector of M0 with eigenvalue 1)
-  // way to go because of lapack limitations: find vector of null space of (M0 - Id) via SVD
-  
-  std::vector<double> eigenvec;
-  eigenvec = get_eigenvector(M0, 1);
-  eigenvec = get_eigenvector(M0, 0.5);
+  // get the values at integers
+  std::vector<double> values_at_integers = calc_integer_values(M0, 0);
+  std::vector<double> derivs_at_integers = calc_integer_values(M0, 1);
 
-  
+  //log.printf("\nInteger values\n");
+  //for (size_t i=0; i < values_at_integers.size(); ++i) log.printf("%f ", values_at_integers.at(i));
+  //log.printf("\nInteger derivative values\n");
+  //for (size_t i=0; i < derivs_at_integers.size(); ++i) log.printf("%f ", derivs_at_integers.at(i));
 
 
 
@@ -203,7 +197,6 @@ std::vector<double> BF_DbWavelets::get_filter_coefficients(const unsigned order)
 }
 
 void BF_DbWavelets::setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const std::vector<double> h_coeffs) {
-  // maybe initialize M0 and M1 here and not before? --> variable "mat_size" could be replaced
   const int N = h_coeffs.size() -1;
   M0.resize(N,N); M1.resize(N,N);
   for (int i = 0; i < N; ++i) { // not very elegant, maybe change this later
@@ -216,6 +209,25 @@ void BF_DbWavelets::setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const
   }}
 }
 
+
+// calculates the values of the Wavelet or its derivatives at the Integer points
+std::vector<double> BF_DbWavelets::calc_integer_values(const Matrix<double> &M, const int deriv) {
+  // corresponding eigenvalue of the matrix
+  double eigenvalue = pow(0.5, deriv);
+  std::vector<double> values = get_eigenvector(M, eigenvalue);
+
+  // normalization of the eigenvector
+  double normfactor = 0.;
+  // i=0 is always 0; for deriv > 1 there is an additional factorial term missing
+  for (unsigned i=1; i<values.size(); ++i) normfactor += values.at(i) * pow(-i, deriv);
+  normfactor = 1/normfactor;
+  for (size_t i=0; i<values.size(); ++i) values.at(i) *= normfactor;
+
+  return values;
+}
+
+
+// maybe move this to the tools/matrix.h file?
 // get eigenvector of square matrix A corresponding to some eigenvalue via SVD decomposition
 std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, const double eigenvalue) {
   // mostly copied from tools/matrix.h
