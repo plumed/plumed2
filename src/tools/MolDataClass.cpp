@@ -140,6 +140,22 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
     else if(residuename=="RC3") return true;
     else if(residuename=="RCN") return true;
     else return false;
+  } else if( type=="water" ) {
+    if(residuename=="SOL") return true;
+    if(residuename=="WAT") return true;
+    return false;
+  } else if( type=="ion" ) {
+    if(residuename=="IB+") return true;
+    if(residuename=="CA") return true;
+    if(residuename=="CL") return true;
+    if(residuename=="NA") return true;
+    if(residuename=="MG") return true;
+    if(residuename=="K") return true;
+    if(residuename=="RB") return true;
+    if(residuename=="CS") return true;
+    if(residuename=="LI") return true;
+    if(residuename=="ZN") return true;
+    return false;
   }
   return false;
 }
@@ -203,7 +219,75 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
 // psi-4_321 is psi torsion of residue 321 of chain 4
 // psi-A_321 is equivalent to psi-A321
     numbers.resize(0);
+
+// special cases:
+    if(symbol=="protein") {
+      const auto & all = mypdb.getAtomNumbers();
+      for(auto a : all) {
+        auto resname=mypdb.getResidueName(a);
+        Tools::stripLeadingAndTrailingBlanks(resname);
+        if(allowedResidue("protein",resname)) numbers.push_back(a);
+      }
+      return;
+    }
+
+    if(symbol=="nucleic") {
+      const auto & all = mypdb.getAtomNumbers();
+      for(auto a : all) {
+        auto resname=mypdb.getResidueName(a);
+        Tools::stripLeadingAndTrailingBlanks(resname);
+        if(allowedResidue("dna",resname) || allowedResidue("rna",resname)) numbers.push_back(a);
+      }
+      return;
+    }
+
+    if(symbol=="ions") {
+      const auto & all = mypdb.getAtomNumbers();
+      for(auto a : all) {
+        auto resname=mypdb.getResidueName(a);
+        Tools::stripLeadingAndTrailingBlanks(resname);
+        if(allowedResidue("ion",resname)) numbers.push_back(a);
+      }
+      return;
+    }
+
+    if(symbol=="water") {
+      const auto & all = mypdb.getAtomNumbers();
+      for(auto a : all) {
+        auto resname=mypdb.getResidueName(a);
+        Tools::stripLeadingAndTrailingBlanks(resname);
+        if(allowedResidue("water",resname)) numbers.push_back(a);
+      }
+      return;
+    }
+
+    if(symbol=="hydrogens") {
+      const auto & all = mypdb.getAtomNumbers();
+      for(auto a : all) {
+        auto atomname=mypdb.getAtomName(a);
+        Tools::stripLeadingAndTrailingBlanks(atomname);
+        auto notnumber=atomname.find_first_not_of("0123456789");
+        if(notnumber!=std::string::npos && atomname[notnumber]=='H') numbers.push_back(a);
+      }
+      return;
+    }
+
+    if(symbol=="nonhydrogens") {
+      const auto & all = mypdb.getAtomNumbers();
+      for(auto a : all) {
+        auto atomname=mypdb.getAtomName(a);
+        Tools::stripLeadingAndTrailingBlanks(atomname);
+        auto notnumber=atomname.find_first_not_of("0123456789");
+        if(notnumber!=std::string::npos && atomname[notnumber]=='H') {
+        } else numbers.push_back(a);
+      }
+      return;
+    }
+
+
     std::size_t dash=symbol.find_first_of('-');
+    if(dash==std::string::npos) plumed_error() << "Unrecognized symbol "<<symbol;
+
     std::size_t firstunderscore=symbol.find_first_of('_',dash+1);
     std::size_t firstnum=symbol.find_first_of("0123456789",dash+1);
     std::string name=symbol.substr(0,dash);
@@ -404,7 +488,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
         } else plumed_error();
       } else numbers.push_back(mypdb.getNamedAtomFromResidueAndChain(name,resnum,chainid));
-    }
+    } else numbers.push_back(mypdb.getNamedAtomFromResidueAndChain(name,resnum,chainid));
   }
   else {
     plumed_merror(type + " is not a valid molecule type");

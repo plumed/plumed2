@@ -163,7 +163,8 @@ public:
   double getKbT()const;
 
   void setNatoms(int);
-  const int & getNatoms()const;
+  const int getNatoms()const;
+  const int getNVirtualAtoms()const;
 
   const long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
@@ -234,8 +235,13 @@ public:
 };
 
 inline
-const int & Atoms::getNatoms()const {
+const int Atoms::getNatoms()const {
   return natoms;
+}
+
+inline
+const int Atoms::getNVirtualAtoms()const {
+  return virtualAtomsActions.size();
 }
 
 inline
