@@ -793,13 +793,28 @@ MetaD::MetaD(const ActionOptions& ao):
   }
 
   freq_adaptive_=false;
-  fa_update_frequency_=stride_;
-  fa_max_stride_=0;
-  fa_min_acceleration_=1.0;
   parseFlag("FREQUENCY_ADAPTIVE",freq_adaptive_);
+  //
+  fa_update_frequency_=0;
   parse("FA_UPDATE_FREQUENCY",fa_update_frequency_);
+  if(fa_update_frequency_!=0 && !freq_adaptive_) {
+    plumed_merror("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive MetaD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
+  }
+  if(fa_update_frequency_==0 && freq_adaptive_) {
+    fa_update_frequency_=stride_;
+  }
+  //
+  fa_max_stride_=0;
   parse("FA_MAX_PACE",fa_max_stride_);
+  if(fa_max_stride_!=0 && !freq_adaptive_) {
+    plumed_merror("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive MetaD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
+  }
+  //
+  fa_min_acceleration_=1.0;
   parse("FA_MIN_ACCELERATION",fa_min_acceleration_);
+  if(fa_min_acceleration_!=1.0 && !freq_adaptive_) {
+    plumed_merror("It doesn't make sense to use the FA_MIN_ACCELERATION keyword if frequency adaptive MetaD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
+  }
 
   checkRead();
 
@@ -990,10 +1005,15 @@ MetaD::MetaD(const ActionOptions& ao):
     if(!acceleration) {
       error("Frequency adaptive metadynamics only works if the calculation of the acceleration factor is enabled with the ACCELERATION keyword\n");
     }
+    log.printf("  Frequency adaptive metadynamics enabled\n");
     log.printf("  The frequency for hill addition will change dynamically based on the metadynamics acceleration factor\n");
     log.printf("  The hill addition frequency will be updated every %d steps\n",fa_update_frequency_);
-    log.printf("  The hill addition frequency will only be updated after the metadynamics acceleration factor larger than %f \n",fa_min_acceleration_);
-    log.printf("  The hill addition frequency will not become larger than %d\n",fa_max_stride_);
+    if(fa_min_acceleration_>1.0) {
+      log.printf("  The hill addition frequency will only be updated once the metadynamics acceleration factor becomes larger than %.1f \n",fa_min_acceleration_);
+    }
+    if(fa_max_stride_!=0) {
+      log.printf("  The hill addition frequency will not become larger than %d steps\n",fa_max_stride_);
+    }
     addComponent("pace"); componentIsNotPeriodic("pace");
     updateFrequencyAdaptiveStride();
   }
