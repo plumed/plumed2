@@ -1638,9 +1638,6 @@ void MetaD::calculate()
   } else if (acceleration && isFirstStep && acc_restart_mean_ > 0.0) {
     acc = acc_restart_mean_ * static_cast<double>(getStep());
   }
-  if(freq_adaptive_ && getStep()%fa_update_frequency_==0) {
-    updateFrequencyAdaptiveStride();
-  }
 
   getPntrToComponent("work")->set(work_);
   // set Forces
@@ -1786,6 +1783,12 @@ void MetaD::update() {
     transition_bias_ = getTransitionBarrierBias();
     getPntrToComponent("transbias")->set(transition_bias_);
   }
+  
+  // Frequency adaptive metadynamics - update hill addition frequency   
+  if(freq_adaptive_ && getStep()%fa_update_frequency_==0) {
+    updateFrequencyAdaptiveStride();
+  }
+
 }
 
 /// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height
