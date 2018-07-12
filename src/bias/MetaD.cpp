@@ -1783,8 +1783,8 @@ void MetaD::update() {
     transition_bias_ = getTransitionBarrierBias();
     getPntrToComponent("transbias")->set(transition_bias_);
   }
-  
-  // Frequency adaptive metadynamics - update hill addition frequency   
+
+  // Frequency adaptive metadynamics - update hill addition frequency
   if(freq_adaptive_ && getStep()%fa_update_frequency_==0) {
     updateFrequencyAdaptiveStride();
   }
