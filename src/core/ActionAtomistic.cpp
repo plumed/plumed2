@@ -175,21 +175,15 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
 // here we check if this is a special symbol for MOLINFO
     if( !ok && strings[i].compare(0,1,"@")==0 ) {
       std::string symbol=strings[i].substr(1);
-      if(symbol=="all") {
+      if(symbol=="allatoms") {
         const auto n=plumed.getAtoms().getNatoms() + plumed.getAtoms().getNVirtualAtoms();
         t.reserve(t.size()+n);
         for(unsigned i=0; i<n; i++) t.push_back(AtomNumber::index(i));
         ok=true;
-      } else if(symbol=="physical") {
+      } else if(symbol=="mdatoms") {
         const auto n=plumed.getAtoms().getNatoms();
         t.reserve(t.size()+n);
         for(unsigned i=0; i<n; i++) t.push_back(AtomNumber::index(i));
-        ok=true;
-      } else if(symbol=="virtual") {
-        const auto n=plumed.getAtoms().getNatoms();
-        const auto v=plumed.getAtoms().getNVirtualAtoms();
-        t.reserve(t.size()+v);
-        for(unsigned i=n; i<n+v; i++) t.push_back(AtomNumber::index(i));
         ok=true;
       } else {
         vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();

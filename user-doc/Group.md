@@ -15,15 +15,16 @@ predefined as a \subpage GROUP that can be reused multiple times. Lists of atoms
 
 In addition, there are a few shortcuts that can be used:
 
-- `@physical` indicate all the physical atoms present in the MD engine (e.g. `DUMPATOMS ATOMS=@physical`).
-- `@virtual` indicate all the \ref vatoms "virtual atoms" defined within PLUMED (e.g. `DUMPATOMS ATOMS=@virtual`).
-- `@all` indicates all atoms (e.g. `DUMPATOMS ATOMS=@all`).
+- `@mdatoms` indicate all the physical atoms present in the MD engine (e.g. `DUMPATOMS ATOMS=@mdatoms`).
+- `@allatoms` indicates all atoms, including \ref vatoms "those defined only in PLUMED" (e.g. `DUMPATOMS ATOMS=@allatoms`).
+
+The list of the virtual atoms defined in PLUMED can be obtained dy difference with `GROUP ATOMS=@allatoms REMOVE=@mdatoms`.
 
 Other shortcuts are available if you loaded the structure of the molecule using the \ref MOLINFO command.
 
 All the above methods can be combined just putting one name after the other separated by a comma:
 \plumedfile
-DUMPATOMS ATOMS=1,2,10-20,40-60:5,100-70:-2,@virtual LABEL=g5 FILE=test.xyz
+DUMPATOMS ATOMS=1,2,10-20,40-60:5,100-70:-2 LABEL=g5 FILE=test.xyz
 \endplumedfile
 
 Some collective variable must accept a fixed number of atoms, for example a \ref DISTANCE is calculated
