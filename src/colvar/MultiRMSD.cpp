@@ -40,6 +40,7 @@ class MultiRMSD : public Colvar {
   bool squared;
   MultiValue myvals;
   ReferenceValuePack mypack;
+  bool nopbc;
 
 public:
   explicit MultiRMSD(const ActionOptions&);
@@ -153,11 +154,10 @@ void MultiRMSD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","MULTI-SIMPLE","the manner in which RMSD alignment is performed.  Should be MULTI-OPTIMAL, MULTI-OPTIMAL-FAST,  MULTI-SIMPLE or MULTI-DRMSD.");
   keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
-  keys.remove("NOPBC");
 }
 
 MultiRMSD::MultiRMSD(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),squared(false),myvals(1,0), mypack(0,0,myvals)
+  PLUMED_COLVAR_INIT(ao),squared(false),myvals(1,0), mypack(0,0,myvals),nopbc(false)
 {
   string reference;
   parse("REFERENCE",reference);
@@ -165,9 +165,8 @@ MultiRMSD::MultiRMSD(const ActionOptions&ao):
   type.assign("SIMPLE");
   parse("TYPE",type);
   parseFlag("SQUARED",squared);
-
+  parseFlag("NOPBC",nopbc);
   checkRead();
-
 
   addValueWithDerivatives(); setNotPeriodic();
   PDB pdb;
@@ -177,6 +176,8 @@ MultiRMSD::MultiRMSD(const ActionOptions&ao):
     error("missing input file " + reference );
 
   rmsd=metricRegister().create<MultiDomainRMSD>(type,pdb);
+  // Do not align molecule if we are doing DRMSD for domains and NOPBC has been specified in input
+  if( pdb.hasFlag("NOPBC") ) nopbc=true;
 
   std::vector<AtomNumber> atoms;
   rmsd->getAtomRequests( atoms );
@@ -193,6 +194,7 @@ MultiRMSD::MultiRMSD(const ActionOptions&ao):
 
 // calculator
 void MultiRMSD::calculate() {
+  if(!nopbc) makeWhole();
   double r=rmsd->calculate( getPositions(), getPbc(), mypack, squared );
 
   setValue(r);
