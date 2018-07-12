@@ -26,6 +26,7 @@
 #include "../lapack/lapack.h"
 #include "tools/Grid.h"
 #include "tools/Matrix.h"
+#include <unordered_map>
 
 namespace PLMD {
 namespace ves {
@@ -140,6 +141,9 @@ void BF_DbWavelets::setup_Wavelet_Grid(const unsigned recursion_number) {
   //log.printf("\nInteger derivative values\n");
   //for (size_t i=0; i < derivs_at_integers.size(); ++i) log.printf("%f ", derivs_at_integers.at(i));
 
+  // map for the cascade scheme with binary representation of the decimal part as keys
+  std::unordered_map<std::string, std::vector<double>> binarymap;
+  binarymap.reserve(1<<recursion_number);
 
 
 
