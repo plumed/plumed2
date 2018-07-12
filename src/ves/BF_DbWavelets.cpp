@@ -110,7 +110,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
     values[i] = 0.0;
     derivs[i] = 0.0;
   }
-  if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
+  if(!inside_range) {for(size_t i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
 }
 
 
@@ -152,9 +152,9 @@ void BF_DbWavelets::setup_Wavelet_Grid(const unsigned recursion_number) {
   std::vector<double> gridval(1);
   //log.printf("\nProperties of Grid:\n Size: %d\nHasderivs: %d\nPeriodic: %d\n\n",Wavelet_Grid_->getSize(), Wavelet_Grid_->hasDerivatives(), Wavelet_Grid_->getIsPeriodic().at(0));
   for (int i=0; i<11; ++i) {
-    gridval.at(0) = (1+i*0.5);
-    derivval.at(0) = 0.3;
-    Wavelet_Grid_->setValueAndDerivatives(i, gridval.at(0), derivval);
+    gridval[0] = (1+i*0.5);
+    derivval[0] = 0.3;
+    Wavelet_Grid_->setValueAndDerivatives(i, gridval[0], derivval);
   }
   OFile wv_gridfile;
   wv_gridfile.open("wv_griddump");
@@ -166,32 +166,34 @@ void BF_DbWavelets::setup_Wavelet_Grid(const unsigned recursion_number) {
 std::vector<double> BF_DbWavelets::get_filter_coefficients(const unsigned order) {
   std::vector<double> h;
   switch(order) {
-    case 4: 
-      h = { 0.16290171402564917413726008653520,
-            0.50547285754591443144136667385662, 
-            0.44610006912337981158583475265059, 
-            -0.019787513117822321547681334086982, 
-            -0.13225358368451986802584241445340,
-            0.021808150237088626328869997057481,
-            0.023251800535490882302747575267605,
-            -0.0074934946651807362225553368271239 };
-      break;
-    case 6:
-      h = { 0.078871216001450708360703821762941,
-            0.34975190703761783105607104498368,
-            0.53113187994086898454751440735467,
-            0.22291566146501775627367242887952,
-            -0.15999329944606139494194938783162,
-            -0.091759032030147576133204962992087,
-            0.068944046487372298805285738485360,
-            0.019461604854164664143361603520751,
-            -0.022331874165094534628441049888253,
-            0.00039162557614857788770574331926167,
-            0.0033780311814639378568864701169004,
-            -0.00076176690280125322760585771112944 };
-      break;
-    default: 
-      plumed_merror("Specified order currently not implemented");
+  case 4:
+    h = { 0.16290171402564917413726008653520,
+          0.50547285754591443144136667385662,
+          0.44610006912337981158583475265059,
+          -0.019787513117822321547681334086982,
+          -0.13225358368451986802584241445340,
+          0.021808150237088626328869997057481,
+          0.023251800535490882302747575267605,
+          -0.0074934946651807362225553368271239
+        };
+    break;
+  case 6:
+    h = { 0.078871216001450708360703821762941,
+          0.34975190703761783105607104498368,
+          0.53113187994086898454751440735467,
+          0.22291566146501775627367242887952,
+          -0.15999329944606139494194938783162,
+          -0.091759032030147576133204962992087,
+          0.068944046487372298805285738485360,
+          0.019461604854164664143361603520751,
+          -0.022331874165094534628441049888253,
+          0.00039162557614857788770574331926167,
+          0.0033780311814639378568864701169004,
+          -0.00076176690280125322760585771112944
+        };
+    break;
+  default:
+    plumed_merror("Specified order currently not implemented");
   }
   return h;
 }
@@ -203,10 +205,13 @@ void BF_DbWavelets::setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const
     for (int j = 0; j < N; ++j) {
       int shift = 2*i -j;
       if (0 <= shift && shift <= N) {
-        M0[i][j] = 2 * h_coeffs.at(2*i -j);}
+        M0[i][j] = 2 * h_coeffs[2*i -j];
+      }
       if (-1 <= shift && shift <= N -1) {
-        M1[i][j] = 2 * h_coeffs.at(2*i -j + 1);}
-  }}
+        M1[i][j] = 2 * h_coeffs[2*i -j + 1];
+      }
+    }
+  }
 }
 
 
@@ -219,9 +224,13 @@ std::vector<double> BF_DbWavelets::calc_integer_values(const Matrix<double> &M, 
   // normalization of the eigenvector
   double normfactor = 0.;
   // i=0 is always 0; for deriv > 1 there is an additional factorial term missing
-  for (unsigned i=1; i<values.size(); ++i) normfactor += values.at(i) * pow(-i, deriv);
+  for (unsigned i=1; i<values.size(); ++i) {
+    normfactor += values[i] * pow(-i, deriv);
+  }
   normfactor = 1/normfactor;
-  for (size_t i=0; i<values.size(); ++i) values.at(i) *= normfactor;
+  for (size_t i=0; i<values.size(); ++i) {
+    values[i] *= normfactor;
+  }
 
   return values;
 }
@@ -231,7 +240,7 @@ std::vector<double> BF_DbWavelets::calc_integer_values(const Matrix<double> &M, 
 // get eigenvector of square matrix A corresponding to some eigenvalue via SVD decomposition
 std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, const double eigenvalue) {
   // mostly copied from tools/matrix.h
-  int info, N = A.ncols(); // ncols == nrows 
+  int info, N = A.ncols(); // ncols == nrows
   std::vector<double> da(N*N);
   std::vector<double> S(N);
   std::vector<double> U(N*N);
@@ -240,16 +249,16 @@ std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, cons
 
   // Transfer the matrix to the local array and substract eigenvalue
   for (int i=0; i<N; ++i) for (int j=0; j<N; ++j) {
-    da[i*N+j]=static_cast<double>( A(j,i) );
-    if (i==j) da[i*N+j] -= eigenvalue;
-  }
+      da[i*N+j]=static_cast<double>( A(j,i) );
+      if (i==j) da[i*N+j] -= eigenvalue;
+    }
 
   // This optimizes the size of the work array used in lapack singular value decomposition
   int lwork=-1;
   std::vector<double> work(1);
   plumed_lapack_dgesdd( "A", &N, &N, da.data(), &N, S.data(), U.data(), &N, VT.data(), &N, work.data(), &lwork, iwork.data(), &info );
 
-  // Retrieve correct sizes for work and rellocate
+  // Retrieve correct sizes for work and reallocate
   lwork=(int) work[0]; work.resize(lwork);
 
   // This does the singular value decomposition
@@ -257,7 +266,7 @@ std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, cons
 
   // fill eigenvector with last column of VT
   std::vector<double> eigenvector;
-  for (int i=0; i<N; ++i) eigenvector.push_back(VT.at(N-1 + i*N));
+  for (int i=0; i<N; ++i) eigenvector.push_back(VT[N-1 + i*N]);
 
   return eigenvector;
 }
