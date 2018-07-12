@@ -181,6 +181,7 @@ std::vector<double> BF_DbWavelets::get_filter_coefficients(const unsigned order)
             0.021808150237088626328869997057481,
             0.023251800535490882302747575267605,
             -0.0074934946651807362225553368271239 };
+      break;
     case 6:
       h = { 0.078871216001450708360703821762941,
             0.34975190703761783105607104498368,
@@ -194,6 +195,7 @@ std::vector<double> BF_DbWavelets::get_filter_coefficients(const unsigned order)
             0.00039162557614857788770574331926167,
             0.0033780311814639378568864701169004,
             -0.00076176690280125322760585771112944 };
+      break;
     default: 
       plumed_merror("Specified order currently not implemented");
   }
