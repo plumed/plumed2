@@ -147,7 +147,7 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   // Setup the kernel type
   if(type=="GAUSSIAN" || type=="gaussian" ) {
     ktype=gaussian;
-  } else if( type=="TRUNCATED-GAUSSIAN" || type=="truncated-gaussian" ) {
+  } else if(type=="TRUNCATED-GAUSSIAN" || type=="truncated-gaussian" ) {
     ktype=truncatedgaussian;
   } else if(type=="UNIFORM" || type=="uniform") {
     ktype=uniform;
@@ -257,7 +257,7 @@ void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
 
 double KernelFunctions::getCutoff( const double& width ) const {
   const double DP2CUTOFF=6.25;
-  if( ktype==gaussian ) return sqrt(2.0*DP2CUTOFF)*width;
+  if( ktype==gaussian || ktype==truncatedgaussian ) return sqrt(2.0*DP2CUTOFF)*width;
   else if(ktype==triangular ) return width;
   else if(ktype==uniform) return width;
   else plumed_merror("No valid kernel type");
@@ -356,7 +356,7 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
     for(unsigned i=0; i<sinout.size(); ++i) r2+=sintmp[i]*sinout[i];
   }
   double kderiv, kval;
-  if(ktype==gaussian) {
+  if(ktype==gaussian || ktype==truncatedgaussian) {
     kval=height*std::exp(-0.5*r2); kderiv=-kval;
   } else {
     double r=sqrt(r2);

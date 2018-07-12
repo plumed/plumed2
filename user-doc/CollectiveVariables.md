@@ -178,6 +178,14 @@ The list of biases of this type are as follows:
 Notice that (in theory) you could also use this functionality to add additional terms to your forcefield or to implement your 
 forcefield.
 
+\section usingbase Extracting all the base quantities
+
+There may be occasions where you want to get information on all the individual colvar values that you have calculated.
+For example you might want to output the values of all the coordination numbers calculated by a \ref COORDINATIONNUMERS 
+action.  You can thus use the following commands to extract this sort of information.
+
+@MCOLVARA@ 
+
 \page contactmatrix Exploiting contact matrices
 
 A contact matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether or not the \f$i\f$th

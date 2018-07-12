@@ -214,15 +214,15 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
         functions.create=NULL;
         functions.cmd=NULL;
         functions.finalize=NULL;
-      /*
-        If the library was loaded, use dlsym to initialize pointers.
-        Notice that as of PLUMED 2.5 we ignore self registrations.
-        Pointers are searched in the form of a single pointer to a structure, which
-        is the standard way in PLUMED 2.5, as well as using alternative names used in
-        PLUMED 2.0 to 2.4 (e.g. plumedmain_create) and in some intermediate versions between
-        PLUMED 2.4 and 2.5 (e.g. plumed_plumedmain_create). The last chance is probably
-        unnecessary and might be removed at some point.
-      */
+        /*
+          If the library was loaded, use dlsym to initialize pointers.
+          Notice that as of PLUMED 2.5 we ignore self registrations.
+          Pointers are searched in the form of a single pointer to a structure, which
+          is the standard way in PLUMED 2.5, as well as using alternative names used in
+          PLUMED 2.0 to 2.4 (e.g. plumedmain_create) and in some intermediate versions between
+          PLUMED 2.4 and 2.5 (e.g. plumed_plumedmain_create). The last chance is probably
+          unnecessary and might be removed at some point.
+        */
         plumed_symbol_table_ptr=(plumed_symbol_table_type*) dlsym(p,"plumed_symbol_table");
         if(plumed_symbol_table_ptr) functions=plumed_symbol_table_ptr->functions;
         if(debug && plumed_symbol_table_ptr) {

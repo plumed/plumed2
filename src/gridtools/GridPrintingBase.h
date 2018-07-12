@@ -33,6 +33,8 @@ class GridPrintingBase : public ActionPilot {
 protected:
   GridVessel* ingrid;
   std::string fmt, filename;
+  bool output_for_all_replicas;
+  std::vector<unsigned> preps;
 public:
   static void registerKeywords( Keywords& keys );
   explicit GridPrintingBase(const ActionOptions&ao);

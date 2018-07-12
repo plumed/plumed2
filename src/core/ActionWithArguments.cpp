@@ -47,9 +47,10 @@ void ActionWithArguments::registerKeywords(Keywords& keys) {
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg) {
-  vector<string> c; arg.clear(); parseVector(key,c);
+  std::string def; vector<string> c; arg.clear(); parseVector(key,c);
   if( c.size()==0 && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
-    std::string def; if( keywords.getDefaultValue(key,def) ) c.push_back( def );
+    if( keywords.getDefaultValue(key,def) ) c.push_back( def );
+    else return;
   }
   interpretArgumentList(c,arg);
 }
@@ -204,15 +205,10 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
 }
 
 void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
-  std::vector<std::string> pdb_remark=pdb.getRemark();
-  std::vector<std::string> arg_names;
-  bool found=Tools::parseVector(pdb_remark,"ARG",arg_names);
-  if( found ) {
+  std::vector<std::string> arg_names = pdb.getArgumentNames();
+  if( arg_names.size()>0 ) {
     std::vector<Value*> arg_vals;
     interpretArgumentList( arg_names, arg_vals );
-    std::string new_args="ARG=" + arg_vals[0]->getName();
-    for(unsigned i=1; i<arg_vals.size(); ++i) new_args = new_args + "," + arg_vals[i]->getName();
-    pdb.setArgKeyword( new_args );
   }
 }
 
@@ -239,7 +235,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
   lockRequestArguments(false)
 {
-  if( keywords.exists("ARG") && !keywords.exists("DATA") ) {
+  if( keywords.exists("ARG") ) {
     vector<Value*> arg;
     parseArgumentList("ARG",arg);
 

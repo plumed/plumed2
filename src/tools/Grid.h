@@ -93,7 +93,8 @@ protected:
   bool dospline_, usederiv_;
   std::string fmt_; // format for output
 /// get "neighbors" for spline
-  std::vector<index_t> getSplineNeighbors(const std::vector<unsigned> & indices)const;
+  void getSplineNeighbors(const std::vector<unsigned> & indices, std::vector<index_t>& neigh, unsigned& nneigh )const;
+// std::vector<index_t> getSplineNeighbors(const std::vector<unsigned> & indices)const;
 
 
 public:
@@ -118,6 +119,7 @@ public:
   std::vector<std::string> getMax() const;
 /// get bin size
   std::vector<double> getDx() const;
+  double getDx(index_t j) const ;
 /// get bin volume
   double getBinVolume() const;
 /// get number of bins
@@ -132,6 +134,8 @@ public:
   bool hasDerivatives() const {return usederiv_;}
 
 /// methods to handle grid indices
+  void getIndices(index_t index, std::vector<unsigned>& rindex) const;
+  void getIndices(const std::vector<double> & x, std::vector<unsigned>& rindex) const;
   std::vector<unsigned> getIndices(index_t index) const;
   std::vector<unsigned> getIndices(const std::vector<double> & x) const;
   index_t getIndex(const std::vector<unsigned> & indices) const;
