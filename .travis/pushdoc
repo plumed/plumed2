@@ -3,6 +3,11 @@
 set -e
 set -x
 
+if [ "$TRAVIS_PULL_REQUEST" != false ] ; then
+  echo "Building from a pull request, nothing to push"
+  exit 0
+fi
+
 if [[ "$TRAVIS_BRANCH" =~ ^v2\.[0-9]+$ ]] ; then
   if test -f CHANGES/"$TRAVIS_BRANCH".txt && grep -q plumednotmaintained CHANGES/"$TRAVIS_BRANCH".txt ; then
     branchtype=unsupported
