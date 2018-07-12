@@ -15,6 +15,11 @@ set -x
 GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
 GIT_REPO=$(   echo $TRAVIS_REPO_SLUG | sed "s/^.*\///" )
 
+if [ "$TRAVIS_PULL_REQUEST" != false ] ; then
+  echo "Building from a pull request, nothing to push"
+  exit 0
+fi
+
 if [ "$GIT_OWNER" = plumed ] ; then
   if [[ "$TRAVIS_BRANCH" =~ ^v2\.[0-9]+$ ]] ; then
     if test -f CHANGES/"$TRAVIS_BRANCH".md && grep -q plumednotmaintained CHANGES/"$TRAVIS_BRANCH".md ; then
