@@ -58,7 +58,7 @@ class BF_DbWavelets : public BasisFunctions {
   void setup_Wavelet_Grid(const unsigned recursion_number);
   static std::vector<double> get_filter_coefficients(const unsigned order);
   static void setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const std::vector<double> h);
-  static std::vector<double> get_eigenvector(const Matrix<double> &A, const double eigenvalue);
+  std::vector<double> get_eigenvector(const Matrix<double> &A, const double eigenvalue);
   std::vector<double> calc_integer_values(const Matrix<double> &M, const int deriv);
 
 public:
@@ -73,7 +73,8 @@ PLUMED_REGISTER_ACTION(BF_DbWavelets,"BF_DB_WAVELETS")
 
 void BF_DbWavelets::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
-  keys.add("optional","GRID_BINS","The number of grid bins per integer values of the Wavelet function, given as the exponent of 2. By default it is 7, resulting in 128 grid values between integers."); // maybe change this to a more user intuitive definition?
+  keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value will be used as guiding value only, while the true number will be \"(ORDER*2 - 1) * 2**n\" with the smallest n such that the grid is at least as large as the specified number."); // Change the commentary a bit?
+  keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\". Default is false.");
   // why is this removed?
   keys.remove("NUMERICAL_INTEGRALS");
 }
@@ -86,10 +87,17 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   setNonPeriodic();
   setIntervalBounded();
   // gridbins_ defines the number of recursion steps at the Wavelet construction. Maybe change the name? Set by Keyword, how to combine both intuitively for later developers/users?
-  unsigned gridbins = 7;
-  parse("GRID_BINS", gridbins);
-  if(gridbins!=7) {addKeywordToList("GRID_BINS",gridbins);}
-  setup_Wavelet_Grid(gridbins);
+  unsigned gridsize = 1000;
+  parse("GRID_SIZE", gridsize);
+  if(gridsize!=1000) {addKeywordToList("GRID_SIZE",gridsize);}
+  setup_Wavelet_Grid(gridsize);
+  bool dump_wavelet_grid=false;
+  parseFlag("DUMP_WAVELET_GRID", dump_wavelet_grid);
+  if (dump_wavelet_grid) {
+    OFile wavelet_gridfile;
+    wavelet_gridfile.open("wavelet_grid.data");
+    Wavelet_Grid_->writeToFile(wavelet_gridfile);
+  }
   setType("daubechies_wavelets");
   setDescription("Daubechies Wavelets (minimum phase type)");
   setLabelPrefix("k");
@@ -125,44 +133,83 @@ void BF_DbWavelets::setupLabels() {
 
 
 // Creates and fills the Grid with the Wavelet values
-void BF_DbWavelets::setup_Wavelet_Grid(const unsigned recursion_number) {
+void BF_DbWavelets::setup_Wavelet_Grid(const unsigned gridsize) {
+  // NumberOfBasisFunctions is equal to the maximum support of the Wavelet scaling function
+  std::string maxsupport; Tools::convert(getNumberOfBasisFunctions(), maxsupport);
+  // determine needed recursion depth for specified size
+  unsigned recursion_number = 0;
+  while (getNumberOfBasisFunctions()*(1<<recursion_number) < gridsize) recursion_number++;
+  unsigned bins_per_int = 1<<recursion_number;
+  // define number of grid bins
+  const std::vector<unsigned> gridbins {getNumberOfBasisFunctions() * (bins_per_int)};
+  // set up Grid
+  Wavelet_Grid_.reset(new Grid("db_wavelet", {"position"}, {"0"}, {maxsupport}, gridbins, false, true, true, {false}, {"0."}, {"0."}));
+  //log.printf("\nProperties of Grid:\n Size: %d\nHasderivs: %d\nPeriodic: %d\n\n",Wavelet_Grid_->getSize(), Wavelet_Grid_->hasDerivatives(), Wavelet_Grid_->getIsPeriodic().at(0));
+
+
   // Filter coefficients
   std::vector<double> h_coeffs = get_filter_coefficients(getOrder());
   // Matrices for the cascade
   Matrix<double> M0, M1;
+  // maybe change the function to return the vector directly --> less memory
+  // or alternatively use a vector of pointers
   setup_Matrices(M0, M1, h_coeffs);
+  std::vector<Matrix<double>> Matvec {M0, M1};
 
   // get the values at integers
-  std::vector<double> values_at_integers = calc_integer_values(M0, 0);
-  std::vector<double> derivs_at_integers = calc_integer_values(M0, 1);
+  std::vector<double> values_at_integers = calc_integer_values(Matvec[0], 0);
+  std::vector<double> derivs_at_integers = calc_integer_values(Matvec[0], 1);
 
   //log.printf("\nInteger values\n");
   //for (size_t i=0; i < values_at_integers.size(); ++i) log.printf("%f ", values_at_integers.at(i));
   //log.printf("\nInteger derivative values\n");
   //for (size_t i=0; i < derivs_at_integers.size(); ++i) log.printf("%f ", derivs_at_integers.at(i));
+  //log.printf("\n");
 
   // map for the cascade scheme with binary representation of the decimal part as keys
   std::unordered_map<std::string, std::vector<double>> binarymap;
-  binarymap.reserve(1<<recursion_number);
+  binarymap.reserve(bins_per_int);
+  //std::vector<std::string> bits {"0","1"};
+  // vector to store the binary representation of all the decimal parts
+  std::vector<std::string> binaryvec;
+  // vector used as result of the matrix multiplications
+  std::vector<double> new_values; // better name?!
 
+  // fill the first two datasets by hand
+  binarymap["0"] = values_at_integers;
+  mult(Matvec[1], values_at_integers, new_values);
+  binarymap["1"] = new_values;
+  binaryvec.push_back("1");
 
-
-
-  std::string maxsupport; Tools::convert(getNumberOfBasisFunctions(), maxsupport);
-  const std::vector<unsigned> gridbins {getNumberOfBasisFunctions() * (1<<recursion_number)};
-  Wavelet_Grid_.reset(new Grid("db_wavelet", {"position"}, {"0"}, {maxsupport}, gridbins, false, true, true, {false}, {"0."}, {"0."}));
-
-  std::vector<double> derivval(1);
-  std::vector<double> gridval(1);
-  //log.printf("\nProperties of Grid:\n Size: %d\nHasderivs: %d\nPeriodic: %d\n\n",Wavelet_Grid_->getSize(), Wavelet_Grid_->hasDerivatives(), Wavelet_Grid_->getIsPeriodic().at(0));
-  for (int i=0; i<11; ++i) {
-    gridval[0] = (1+i*0.5);
-    derivval[0] = 0.3;
-    Wavelet_Grid_->setValueAndDerivatives(i, gridval[0], derivval);
+  for (unsigned i=1; i<recursion_number; ++i) {
+    // vector 
+    std::vector<std::string> new_binaryvec;
+    for (auto binary : binaryvec) {
+      for (int k=0; k<2; ++k) {
+        // prepend the new bit
+        std::string new_binary = std::to_string(k) + binary;
+        //log << "Current binary: " + new_binary + "\n";
+        mult(Matvec[k], binarymap[binary], new_values);
+        binarymap.insert(std::pair<std::string, std::vector<double>>(new_binary, new_values));
+        new_binaryvec.push_back(new_binary);
+      }
+    }
+    binaryvec = new_binaryvec;
   }
-  OFile wv_gridfile;
-  wv_gridfile.open("wv_griddump");
-  Wavelet_Grid_->writeToFile(wv_gridfile);
+
+  std::vector<double> derivval(1); // dummy value until full implementation
+  // Fill the Grid with the values of the unordered maps
+  // this is somewhat complicated… not sure if the unordered_map way is the best way for c++
+  for (auto map_element : binarymap) {
+    // get decimal integer of binary
+    int decimal = std::stoi(map_element.first, nullptr, 2);
+    // calculate first grid element (this looks too complicated)
+    unsigned first_grid_element = decimal * 1<<(recursion_number - map_element.first.length());
+    for (unsigned j=0; j<map_element.second.size(); ++j) {
+      Wavelet_Grid_->setValueAndDerivatives(first_grid_element + bins_per_int*j, map_element.second.at(j), derivval);
+    }
+  }
+
 }
 
 
@@ -232,8 +279,8 @@ std::vector<double> BF_DbWavelets::calc_integer_values(const Matrix<double> &M, 
     normfactor += values[i] * pow(-i, deriv);
   }
   normfactor = 1/normfactor;
-  for (size_t i=0; i<values.size(); ++i) {
-    values[i] *= normfactor;
+  for (auto value : values) {
+    value *= normfactor;
   }
 
   return values;
