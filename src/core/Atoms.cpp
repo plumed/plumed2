@@ -550,12 +550,12 @@ void Atoms::readBinary(std::istream&i) {
 }
 
 double Atoms::getKBoltzmann()const {
-  if(naturalUnits) return 1.0;
+  if(naturalUnits || MDnaturalUnits) return 1.0;
   else return kBoltzmann/units.getEnergy();
 }
 
 double Atoms::getMDKBoltzmann()const {
-  if(naturalUnits) return 1.0;
+  if(naturalUnits || MDnaturalUnits) return 1.0;
   else return kBoltzmann/MDUnits.getEnergy();
 }
 

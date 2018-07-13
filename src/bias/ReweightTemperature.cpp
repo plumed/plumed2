@@ -71,7 +71,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit ReweightTemperature(const ActionOptions&ao);
   void prepare();
-  double getLogWeight() const ;
+  double getLogWeight();
 };
 
 PLUMED_REGISTER_ACTION(ReweightTemperature,"REWEIGHT_TEMP")
@@ -107,7 +107,7 @@ void ReweightTemperature::prepare() {
   plumed.getAtoms().setCollectEnergy(true);
 }
 
-double ReweightTemperature::getLogWeight() const {
+double ReweightTemperature::getLogWeight() {
   // Retrieve the bias
   double bias=0.0; for(unsigned i=0; i<biases.size(); ++i) bias+=biases[i]->get();
   double energy=plumed.getAtoms().getEnergy()+bias;

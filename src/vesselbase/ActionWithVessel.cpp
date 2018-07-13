@@ -99,19 +99,16 @@ ActionWithVessel::~ActionWithVessel() {
 
 void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab ) {
   VesselOptions da(name,"",numlab,input,this);
-  Vessel* vv=vesselRegister().create(name,da);
-  FunctionVessel* fv=dynamic_cast<FunctionVessel*>(vv);
+  std::unique_ptr<Vessel> vv=vesselRegister().create(name,da);
+  FunctionVessel* fv=dynamic_cast<FunctionVessel*>(vv.get());
   if( fv ) {
     std::string mylabel=Vessel::transformName( name );
     plumed_massert( keywords.outputComponentExists(mylabel,false), "a description of the value calculated by vessel " + name + " has not been added to the manual");
   }
-  addVessel(vv);
+  addVessel(std::move(vv));
 }
 
-void ActionWithVessel::addVessel( Vessel* vv ) {
-// logically, this function should accept a unique_ptr.
-// temporarily, we make here the conversion:
-  std::unique_ptr<Vessel> vv_ptr(vv);
+void ActionWithVessel::addVessel( std::unique_ptr<Vessel> vv_ptr ) {
 
 // In the original code, the dynamically casted pointer was deleted here.
 // Now that vv_ptr is a unique_ptr, the object will be deleted automatically when
@@ -150,9 +147,9 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionTha
   }
 
   VesselOptions da("","",0,"",this);
-  StoreDataVessel* mm=new StoreDataVessel(da);
+  std::unique_ptr<StoreDataVessel> mm( new StoreDataVessel(da) );
   if( actionThatUses ) mm->addActionThatUses( actionThatUses );
-  addVessel(mm);
+  addVessel(std::move(mm));
 
   // Make sure resizing of vessels is done
   resizeFunctions();

@@ -188,7 +188,7 @@ RMSD::RMSD(const ActionOptions&ao):
   if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
     error("missing input file " + reference );
 
-  rmsd.reset( metricRegister().create<RMSDBase>(type,pdb) );
+  rmsd=metricRegister().create<RMSDBase>(type,pdb);
 
   std::vector<AtomNumber> atoms;
   rmsd->getAtomRequests( atoms );

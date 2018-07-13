@@ -174,14 +174,26 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
     if(ok) t.push_back(atom);
 // here we check if this is a special symbol for MOLINFO
     if( !ok && strings[i].compare(0,1,"@")==0 ) {
-      std::size_t dot=strings[i].find_first_of("@"); std::string symbol=strings[i].substr(dot+1);
-      vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-      if( moldat.size()>0 ) {
-        vector<AtomNumber> atom_list; moldat[0]->interpretSymbol( symbol, atom_list );
-        if( atom_list.size()>0 ) { ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
-        else { error(strings[i] + " is not a label plumed knows"); }
+      std::string symbol=strings[i].substr(1);
+      if(symbol=="allatoms") {
+        const auto n=plumed.getAtoms().getNatoms() + plumed.getAtoms().getNVirtualAtoms();
+        t.reserve(t.size()+n);
+        for(unsigned i=0; i<n; i++) t.push_back(AtomNumber::index(i));
+        ok=true;
+      } else if(symbol=="mdatoms") {
+        const auto n=plumed.getAtoms().getNatoms();
+        t.reserve(t.size()+n);
+        for(unsigned i=0; i<n; i++) t.push_back(AtomNumber::index(i));
+        ok=true;
       } else {
-        error("atoms specified using @ symbol but no MOLINFO was available");
+        vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+        if( moldat.size()>0 ) {
+          vector<AtomNumber> atom_list; moldat[0]->interpretSymbol( symbol, atom_list );
+          if( atom_list.size()>0 ) { ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
+          else { error(strings[i] + " is not a label plumed knows"); }
+        } else {
+          error("atoms specified using @ symbol but no MOLINFO was available");
+        }
       }
     }
 // here we check if the atom name is the name of a group
