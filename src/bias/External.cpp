@@ -56,8 +56,7 @@ The header in the file bias.dat should read:
 \endverbatim
 
 This should then be followed by the value of the potential and its derivative
-at 100 equally spaced points along the distance between 0 and 1. If you run
-with NOSPLINE you do not need to provide derivative information.
+at 100 equally spaced points along the distance between 0 and 1.
 
 You can also include grids that are a function of more than one collective
 variable.  For instance the following would be the input for an external
