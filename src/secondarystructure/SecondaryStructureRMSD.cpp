@@ -207,15 +207,15 @@ void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsi
 
   // This aligns the two strands if this is required
   if( alignType!="DRMSD" && align_strands && !nopbc ) {
-    for(unsigned i=0;i<14;++i) {
-        const Vector & first (pos[i]);
-        Vector & second (pos[i+1]);
-        second=first+pbcDistance(first,second);
+    for(unsigned i=0; i<14; ++i) {
+      const Vector & first (pos[i]);
+      Vector & second (pos[i+1]);
+      second=first+pbcDistance(first,second);
     }
-    for(unsigned i=16;i<n-1;++i) {
-        const Vector & first (pos[i]);
-        Vector & second (pos[i+1]);
-        second=first+pbcDistance(first,second);
+    for(unsigned i=16; i<n-1; ++i) {
+      const Vector & first (pos[i]);
+      Vector & second (pos[i+1]);
+      second=first+pbcDistance(first,second);
     }
     Vector origin_old, origin_new; origin_old=pos[align_atom_2];
     origin_new=pos[align_atom_1]+distance;
@@ -224,9 +224,9 @@ void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsi
     }
   } else if( alignType!="DRMSD" && !nopbc ) {
     for(unsigned i=0; i<n-1; ++i) {
-        const Vector & first (pos[i]);
-        Vector & second (pos[i+1]);
-        second=first+pbcDistance(first,second);
+      const Vector & first (pos[i]);
+      Vector & second (pos[i+1]);
+      second=first+pbcDistance(first,second);
     }
   }
   // Create a holder for the derivatives
