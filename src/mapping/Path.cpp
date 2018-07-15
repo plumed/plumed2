@@ -74,13 +74,65 @@ void Path::shortcutKeywords( Keywords& keys ) {
 void Path::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
                            const std::map<std::string,std::string>& keys,
                            std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> ref_line; ref_line.push_back( lab + "_data:" );
-  ref_line.push_back("EUCLIDEAN_DISSIMILARITIES_VECTOR");
-  for(const auto & p : keys ) {
-    if( p.first!="PROPERTY" ) ref_line.push_back( p.first + "=" + p.second );
+  // Create list of reference configurations that PLUMED will use
+  std::vector<AtomNumber> indices; std::vector<double> alig, disp;
+  FILE* fp=std::fopen(const_cast<char*>(keys.find("REFERENCE")->second.c_str()),"r");
+  if(!fp) plumed_merror("could not open reference file " + keys.find("REFERENCE")->second );
+  bool do_read=true; double fake_unit=0.1; unsigned nfram = 0; 
+  while (do_read ) {
+      PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
+      // Break if we are done
+      if( !do_read ) break ;
+      std::string num; Tools::convert( nfram+1, num );
+      std::vector<std::string> ref_input; ref_input.push_back( lab + "_ref" + num + ":" );
+      ref_input.push_back("READ_ATOMS"); ref_input.push_back("REFERENCE=" + keys.find("REFERENCE")->second );
+      ref_input.push_back("NUMBER=" + num ); actions.push_back( ref_input ); 
+      if( nfram==0 ) {
+          indices.resize( mypdb.getAtomNumbers().size() );
+          for(unsigned i=0;i<indices.size();++i) indices[i]=mypdb.getAtomNumbers()[i];
+          alig.resize( mypdb.getOccupancy().size() );
+          for(unsigned i=0;i<alig.size();++i) alig[i]=mypdb.getOccupancy()[i];
+          disp.resize( mypdb.getBeta().size() );
+          for(unsigned i=0;i<disp.size();++i) disp[i]=mypdb.getBeta()[i]; 
+      } else {
+          if( indices.size()!=mypdb.getAtomNumbers().size() ) plumed_merror("mismatch between numbers of atoms in frames of path");
+          for(unsigned i=0;i<indices.size();++i) {
+              if( indices[i]!=mypdb.getAtomNumbers()[i] ) plumed_merror("mismatch between atom numbers in frames of path");
+              if( alig[i]!=mypdb.getOccupancy()[i] ) plumed_merror("mismatch between occupancies in frames of path");
+              if( disp[i]!=mypdb.getBeta()[i] ) plumed_merror("mismatch between beta values in frames of path");
+          }
+      }
+      nfram++;   
   }
-  ref_line.push_back("SQUARED"); actions.push_back( ref_line );
-  std::vector<std::string> path_line; unsigned nfram = 0;
+  // Now create PLUMED object that computes all distances
+  std::vector<std::string> ref_line; ref_line.push_back( lab + "_data:" );
+  ref_line.push_back("PLUMED_VECTOR");
+  for(unsigned i=0;i<nfram;++i) {
+      std::string num; Tools::convert(i+1, num );
+      if( keys.find("TYPE")->second=="OPTIMAL-FAST" || keys.find("TYPE")->second=="OPTIMAL" || keys.find("TYPE")->second=="SIMPLE" ) {
+          std::string inp_line = "INPUT" + num + "= RMSD REFERENCE_ATOMS=" + lab + "_ref" + num;
+          std::string atnum; Tools::convert( indices[0].serial(), atnum ); inp_line += " ATOMS=" + atnum;
+          for(unsigned i=1;i<indices.size();++i){ Tools::convert( indices[i].serial(), atnum ); inp_line += "," + atnum; } 
+          // Get the align values 
+          std::string anum; Tools::convert( alig[0], anum ); inp_line += " ALIGN=" + anum;
+          for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); inp_line += "," + anum; }
+          // Get the displace values
+          std::string dnum; Tools::convert( disp[0], dnum ); inp_line += " DISPLACE=" + dnum;
+          for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); inp_line += "," + dnum; }
+          // Set the type
+          inp_line += " TYPE=" + keys.find("TYPE")->second + " SQUARED ";
+          ref_line.push_back( inp_line );
+      } else {
+           plumed_merror("TYPE " + keys.find("TYPE")->second + " is not defined in shortcut for PATH");
+      } 
+  }
+  actions.push_back( ref_line );
+  // ref_line.push_back("EUCLIDEAN_DISSIMILARITIES_VECTOR");
+  // for(const auto & p : keys ) {
+  //   if( p.first!="PROPERTY" ) ref_line.push_back( p.first + "=" + p.second );
+  // }
+  // ref_line.push_back("SQUARED"); actions.push_back( ref_line );
+  std::vector<std::string> path_line; nfram = 0;
   path_line.push_back( lab + ":" );
   for(unsigned i=0; i<words.size(); ++i) path_line.push_back(words[i]);
   path_line.push_back("ARG=" + lab + "_data" );
@@ -92,7 +144,7 @@ void Path::expandShortcut( const std::string& lab, const std::vector<std::string
 
     std::vector<std::string> coords(props.size());
     for(unsigned i=0; i<props.size(); ++i) coords[i]="COORDINATES=";
-    bool do_read=true; double fake_unit=0.1; std::string propstr;
+    do_read=true; std::string propstr;
     while (do_read ) {
       PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
       // Break if we are done

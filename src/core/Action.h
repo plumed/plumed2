@@ -66,6 +66,9 @@ class Action {
 /// Label of the Action, as set with LABEL= in the plumed.dat file.
   std::string label;
 
+/// Label of the object that calls this action to be calculated
+  std::string caller;
+
 /// Directive line.
 /// This line is progressively erased during Action construction
 /// so as to check if all the present keywords are correct.
@@ -252,6 +255,7 @@ public:
 
 /// Check if action is active
   bool isActive()const;
+  bool isActiveForPlumedMain()const;
 
 /// Check if an option is on
   bool isOptionOn(const std::string &s)const;
@@ -290,6 +294,9 @@ public:
 
 /// Cite a paper see PlumedMain::cite
   std::string cite(const std::string&s);
+
+/// Set the name of the action that calls this action to be calculated
+  void setCallingAction( const std::string& aa );
 };
 
 /////////////////////
@@ -416,7 +423,12 @@ void Action::deactivate() {
 }
 
 inline
-bool Action::isActive()const {
+bool Action::isActiveForPlumedMain() const {
+  return (caller=="plumedmain" && active);
+}
+
+inline
+bool Action::isActive() const {
   return active;
 }
 

@@ -57,6 +57,7 @@ void Action::registerKeywords( Keywords& keys ) {
 Action::Action(const ActionOptions&ao):
   name(ao.line[0]),
   line(ao.line),
+  caller("plumedmain"),
   update_from(std::numeric_limits<double>::max()),
   update_until(std::numeric_limits<double>::max()),
   active(false),
@@ -287,6 +288,10 @@ bool Action::checkUpdate()const {
 
 bool Action::getCPT()const {
   return plumed.getCPT();
+}
+
+void Action::setCallingAction( const std::string& aa ) {
+  caller=aa;
 }
 
 }

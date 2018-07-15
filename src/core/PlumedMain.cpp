@@ -693,10 +693,10 @@ void PlumedMain::justCalculate() {
 // calculate the active actions in order (assuming *backward* dependence)
   for(const auto & pp : actionSet) {
     Action* p(pp.get());
-    if(p->isActive()) {
+    if(p->isActiveForPlumedMain()) {
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-      Stopwatch::Handler sw;
+      std::string actionNumberLabel;
       if(detailedTimers) {
         std::string actionNumberLabel;
         Tools::convert(iaction,actionNumberLabel);
@@ -714,7 +714,7 @@ void PlumedMain::justCalculate() {
       }
       {
         if(aa) aa->clearOutputForces();
-        if(aa) if(aa->isActive()) aa->retrieveAtoms();
+        if(aa) if(aa->isActiveForPlumedMain()) aa->retrieveAtoms();
       }
       if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
       else p->calculate();
@@ -742,7 +742,7 @@ void PlumedMain::backwardPropagate() {
 // apply them in reverse order
   for(auto pp=actionSet.rbegin(); pp!=actionSet.rend(); ++pp) {
     const auto & p(pp->get());
-    if(p->isActive()) {
+    if(p->isActiveForPlumedMain()) {
 
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.

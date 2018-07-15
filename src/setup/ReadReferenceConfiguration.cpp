@@ -33,6 +33,7 @@ PLUMED_REGISTER_ACTION(ReadReferenceConfiguration,"READ_ATOMS")
 void ReadReferenceConfiguration::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","REFERENCE","a file in pdb format containing the positions of the atoms in the reference structure.");
+  keys.add("compulsory","NUMBER","1","if there are multiple frames in the input file which structure would you like to read in here");
 }
 
 ReadReferenceConfiguration::ReadReferenceConfiguration(const ActionOptions&ao):
@@ -40,30 +41,40 @@ Action(ao),
 ActionSetup(ao),
 ActionAtomistic(ao)
 {
-  std::string reference; parse("REFERENCE",reference); PDB pdb;
-  if( !pdb.read(reference,atoms.usingNaturalUnits(),0.1/atoms.getUnits().getLength()) ) error("mssing input file " + reference );
-  log.printf("  reading reference structure from file %s \n",reference.c_str());
-  log.printf("  which contains %d atoms \n", pdb.getPositions().size() ); 
-  log.printf("  indices of atoms are : ");
-  for(unsigned i=0;i<pdb.getPositions().size();++i) log.printf("%d ",pdb.getAtomNumbers()[i].serial() );
-  log.printf("\n"); 
+  
+  std::string reference; parse("REFERENCE",reference); 
+  FILE* fp=fopen(reference.c_str(),"r");
+  if(!fp) error("could not open reference file " + reference );
+  unsigned number; parse("NUMBER",number);
+  for(unsigned i=0;i<number;++i) {
+      PDB pdb; bool do_read=pdb.readFromFilepointer(fp,atoms.usingNaturalUnits(),0.1/atoms.getUnits().getLength()); 
+      if(i==number-1) {
+         log.printf("  reading %dth reference structure from file %s \n", number, reference.c_str());
+         log.printf("  which contains %d atoms \n", pdb.getPositions().size() ); 
+         log.printf("  indices of atoms are : ");
+         for(unsigned i=0;i<pdb.getPositions().size();++i) log.printf("%d ",pdb.getAtomNumbers()[i].serial() );
+         log.printf("\n"); fclose(fp);
 
-  // Now make virtual atoms for all these positions and set them to the pdb positions
-  unsigned natoms=pdb.getPositions().size(); 
-  std::vector<AtomNumber> mygroup; myindices.resize( natoms ); 
-  for(unsigned i=0;i<natoms;++i){
-      myindices[i] = pdb.getAtomNumbers()[i];
-      AtomNumber index = atoms.addVirtualAtom( this );
-      mygroup.push_back( index ); 
-      atoms.setVatomMass( index, pdb.getOccupancy()[i] );
-      atoms.setVatomCharge( index, pdb.getBeta()[i] );
-      atoms.setVatomPosition( index, pdb.getPositions()[i] );
-  }
-  atoms.insertGroup( getLabel(), mygroup );
-  // Set the box size if this information was read
-  if( pdb.cellWasRead() ) {
-      Tensor box( pdb.getBox() );
-      atoms.setBox( &box[0][0] );
+         // Now make virtual atoms for all these positions and set them to the pdb positions
+         unsigned natoms=pdb.getPositions().size(); 
+         std::vector<AtomNumber> mygroup; myindices.resize( natoms ); 
+         for(unsigned i=0;i<natoms;++i){
+             myindices[i] = pdb.getAtomNumbers()[i];
+             AtomNumber index = atoms.addVirtualAtom( this );
+             mygroup.push_back( index ); 
+             atoms.setVatomMass( index, pdb.getOccupancy()[i] );
+             atoms.setVatomCharge( index, pdb.getBeta()[i] );
+             atoms.setVatomPosition( index, pdb.getPositions()[i] );
+         }
+         atoms.insertGroup( getLabel(), mygroup );
+         // Set the box size if this information was read
+         if( pdb.cellWasRead() ) {
+             Tensor box( pdb.getBox() );
+             atoms.setBox( &box[0][0] );
+         }
+         break;
+      }
+      if( !do_read ) error("not enough frames input input file " + reference );
   }
 }
 
