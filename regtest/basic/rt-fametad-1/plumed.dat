@@ -18,5 +18,5 @@ METAD ...
  FMT=%12.5f
 ... METAD
 
-PRINT STRIDE=1 ARG=* FILE=COLVAR FMT=%8.4f
+PRINT STRIDE=1 ARG=sum_abs,MetaD.bias,MetaD.acc,MetaD.pace FILE=COLVAR FMT=%8.4f
 
