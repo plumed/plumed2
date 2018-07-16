@@ -134,9 +134,10 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
 
 // label according to positions?
 void BF_DbWavelets::setupLabels() {
-  for(unsigned int i=0; i < getNumberOfBasisFunctions(); i++) {
-    std::string is; Tools::convert(i,is);
-    setLabel(i,"i"+is);
+  setLabel(0,"const");
+  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
+    std::string is; Tools::convert(i-1,is);
+    setLabel(i,"i = "+is);
   }
 }
 
