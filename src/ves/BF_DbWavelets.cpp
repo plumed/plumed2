@@ -39,7 +39,7 @@ order: number of vanishing moments
 
 Support (of the scaling function) is then from 0 to 2*order - 1
 
-Number of basis functions is therefore also 2*order - 1
+Number of basis functions is therefore also 2*order - 1 + 1 constant
 
 
 Method of construction: Strang, Nguyen - Vector cascade algorithm
@@ -56,11 +56,12 @@ class BF_DbWavelets : public BasisFunctions {
   std::unique_ptr<Grid> Wavelet_Grid_;
   virtual void setupLabels();
   void setup_Wavelet_Grid(const unsigned recursion_number);
+  // helper functions to set up Grid
   static std::vector<double> get_filter_coefficients(const unsigned order);
-  static void setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const std::vector<double> h);
-  std::vector<double> get_eigenvector(const Matrix<double> &A, const double eigenvalue);
-  std::vector<double> calc_integer_values(const Matrix<double> &M, const int deriv);
-  std::unordered_map<std::string, std::vector<double>> cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum);
+  static std::vector<Matrix<double>> setup_Matrices(const std::vector<double>& h);
+  static std::vector<double> calc_integer_values(const Matrix<double> &M, const int deriv);
+  static std::vector<double> get_eigenvector(const Matrix<double> &A, const double eigenvalue);
+  static std::unordered_map<std::string, std::vector<double>> cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum);
 
 public:
   static void registerKeywords( Keywords&);
@@ -80,14 +81,14 @@ void BF_DbWavelets::registerKeywords(Keywords& keys) {
   keys.remove("NUMERICAL_INTEGRALS");
 }
 
+
 BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao)
 {
-  setNumberOfBasisFunctions((getOrder()*2)-1);
-  setIntrinsicInterval(intervalMin(),intervalMax());
+  setNumberOfBasisFunctions((getOrder()*2));
+  setIntrinsicInterval("0",std::to_string(getNumberOfBasisFunctions()-1));
   setNonPeriodic();
   setIntervalBounded();
-  // gridbins_ defines the number of recursion steps at the Wavelet construction. Maybe change the name? Set by Keyword, how to combine both intuitively for later developers/users?
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
   if(gridsize!=1000) {addKeywordToList("GRID_SIZE",gridsize);}
@@ -116,11 +117,17 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
   values[0]=1.0;
   derivs[0]=0.0;
   //
-  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    values[i] = 0.0;
-    derivs[i] = 0.0;
+  // Wavelets are 0 outside the defined range
+  if(!inside_range) {
+    for(size_t i=1; i<derivs.size(); i++) {derivs[i]=0.0; values[i] = 0.0;}
   }
-  if(!inside_range) {for(size_t i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
+  else {
+    std::vector<double> temp_deriv;
+    for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
+      values[i] = Wavelet_Grid_->getValueAndDerivatives(argT-i, temp_deriv);
+      derivs[i] = temp_deriv[0];
+  }
+  }
 }
 
 
@@ -135,27 +142,21 @@ void BF_DbWavelets::setupLabels() {
 
 // Creates and fills the Grid with the Wavelet values
 void BF_DbWavelets::setup_Wavelet_Grid(const unsigned gridsize) {
-  // NumberOfBasisFunctions is equal to the maximum support of the Wavelet scaling function
-  std::string maxsupport; Tools::convert(getNumberOfBasisFunctions(), maxsupport);
+  // NumberOfBasisFunctions -1 is equal to the maximum support of the Wavelet scaling function
+  std::string maxsupport; Tools::convert(getNumberOfBasisFunctions()-1, maxsupport);
   // determine needed recursion depth for specified size
   unsigned recursion_number = 0;
-  while (getNumberOfBasisFunctions()*(1<<recursion_number) < gridsize) recursion_number++;
+  while ((getNumberOfBasisFunctions()-1)*(1<<recursion_number) < gridsize) recursion_number++;
   unsigned bins_per_int = 1<<recursion_number;
   // define number of grid bins
-  const std::vector<unsigned> gridbins {getNumberOfBasisFunctions() * (bins_per_int)};
+  const std::vector<unsigned> gridbins {(getNumberOfBasisFunctions()-1)* (bins_per_int)};
   // set up Grid
   Wavelet_Grid_.reset(new Grid("db_wavelet", {"position"}, {"0"}, {maxsupport}, gridbins, false, true, true, {false}, {"0."}, {"0."}));
-  //log.printf("\nProperties of Grid:\n Size: %d\nHasderivs: %d\nPeriodic: %d\n\n",Wavelet_Grid_->getSize(), Wavelet_Grid_->hasDerivatives(), Wavelet_Grid_->getIsPeriodic().at(0));
-
 
   // Filter coefficients
   std::vector<double> h_coeffs = get_filter_coefficients(getOrder());
-  // Matrices for the cascade
-  Matrix<double> M0, M1;
-  // maybe change the function to return the vector directly --> less memory
-  // or alternatively use a vector of pointers
-  setup_Matrices(M0, M1, h_coeffs);
-  std::vector<Matrix<double>> Matvec {M0, M1};
+  // Vector with the Matrices M0 and M1 for the cascade
+  std::vector<Matrix<double>> Matvec = setup_Matrices(h_coeffs);
 
   // get the values at integers
   std::vector<double> values_at_integers = calc_integer_values(Matvec[0], 0);
@@ -226,7 +227,8 @@ std::vector<double> BF_DbWavelets::get_filter_coefficients(const unsigned order)
 }
 
 // Fills the coefficient matrices needed for the cascade algorithm
-void BF_DbWavelets::setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const std::vector<double> h_coeffs) {
+std::vector<Matrix<double>> BF_DbWavelets::setup_Matrices(const std::vector<double>& h_coeffs) {
+  Matrix<double> M0, M1;
   const int N = h_coeffs.size() -1;
   M0.resize(N,N); M1.resize(N,N);
   for (int i = 0; i < N; ++i) { // not very elegant, maybe change this later
@@ -240,6 +242,7 @@ void BF_DbWavelets::setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const
       }
     }
   }
+  return std::vector<Matrix<double>> {M0, M1};
 }
 
 
@@ -259,11 +262,6 @@ std::vector<double> BF_DbWavelets::calc_integer_values(const Matrix<double> &M, 
   for (auto& value : values) {
     value *= normfactor;
   }
-  log << "Values at determination:\n";
-  for (auto& value : values) {
-    log << value << " ";
-  }
-  log << "\n";
 
   return values;
 }
@@ -305,9 +303,9 @@ std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, cons
 }
 
 
-// Calculate the values of the Wavelet or its derivative at 
+// Calculate the values of the Wavelet or its derivative via the vector cascade algorithm
 std::unordered_map<std::string, std::vector<double>> BF_DbWavelets::cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum) {
-  // map for the cascade scheme with binary representation of the decimal part as keys
+  // map of all values with binary representation of the decimal part as keys
   std::unordered_map<std::string, std::vector<double>> binarymap;
   binarymap.reserve(bins_per_int);
   // vector to store the binary representation of all the decimal parts
@@ -315,22 +313,22 @@ std::unordered_map<std::string, std::vector<double>> BF_DbWavelets::cascade(std:
   // vector used as result of the matrix multiplications
   std::vector<double> new_values; // better name?!
 
-  // multiply matrices by 2 if derivatives are calculated
+  // multiply matrices by 2 if derivatives are calculated (assumes chronologic order)
   if (derivnum != 0) for (auto& M : Matvec) M *= 2;
 
   // fill the first two datasets by hand
   binarymap["0"] = values_at_integers;
   mult(Matvec[1], values_at_integers, new_values);
   binarymap["1"] = new_values;
-  binaryvec.push_back("1");
 
+  // now do the cascade
+  binaryvec.push_back("1");
   for (unsigned i=1; i<recursion_number; ++i) {
     std::vector<std::string> new_binaryvec;
     for (auto binary : binaryvec) {
       for (int k=0; k<2; ++k) {
         // prepend the new bit
         std::string new_binary = std::to_string(k) + binary;
-        //log << "Current binary: " + new_binary + "\n";
         mult(Matvec[k], binarymap[binary], new_values);
         binarymap.insert(std::pair<std::string, std::vector<double>>(new_binary, new_values));
         new_binaryvec.push_back(new_binary);
@@ -338,6 +336,7 @@ std::unordered_map<std::string, std::vector<double>> BF_DbWavelets::cascade(std:
     }
     binaryvec = new_binaryvec;
   }
+
   return binarymap;
 }
 
