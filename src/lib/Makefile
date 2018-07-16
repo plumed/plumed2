@@ -501,12 +501,13 @@ endif
 $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(DYNAMIC_LIBS)
 	
-$(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(PLUMED_SHARED_OBJ)
-ifeq ($(SOEXT),dylib)
+# In principle we would like PLUMED_MAIN_SHARED to depend on PLUMED_SHARED_OBJ.
+# However, this would require a special flag on Linux (-rpath-link) in order to
+# find the functions defined in PLUMED_KERNEL (just check history of this file).
+# I thus prefer to directly link PLUMED_KERNEL.
+# This makes Linux identical to OSX and is likely more portable.
+$(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(OBJ_WRAPPER) $(PLUMED_KERNEL)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
-else
-	$(LD) $(LDFLAGS) $^ -o $@ -Wl,-rpath-link,"$(dir $@)" $(LIBS)
-endif
 
 $(PLUMED_MAIN_RUNTIME): $(OBJ_MAIN) $(OBJ_DYNAMIC_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
