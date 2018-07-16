@@ -59,8 +59,8 @@ class BF_DbWavelets : public BasisFunctions {
   // helper functions to set up Grid
   static std::vector<double> get_filter_coefficients(const unsigned order);
   static std::vector<Matrix<double>> setup_Matrices(const std::vector<double>& h);
-  static std::vector<double> calc_integer_values(const Matrix<double> &M, const int deriv);
-  static std::vector<double> get_eigenvector(const Matrix<double> &A, const double eigenvalue);
+  static std::vector<double> calc_integer_values(const Matrix<double>& M, const int deriv);
+  static std::vector<double> get_eigenvector(const Matrix<double>& A, const double eigenvalue);
   static std::unordered_map<std::string, std::vector<double>> cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum);
 
 public:
@@ -111,23 +111,24 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
 void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
   // plumed_assert(values.size()==numberOfBasisFunctions());
   // plumed_assert(derivs.size()==numberOfBasisFunctions());
-  inside_range=true;
-  argT=checkIfArgumentInsideInterval(arg,inside_range);
+  //inside_range=true;
+  //argT=checkIfArgumentInsideInterval(arg,inside_range);
   //
   values[0]=1.0;
   derivs[0]=0.0;
   //
   // Wavelets are 0 outside the defined range
-  if(!inside_range) {
-    for(size_t i=1; i<derivs.size(); i++) {derivs[i]=0.0; values[i] = 0.0;}
-  }
-  else {
-    std::vector<double> temp_deriv;
-    for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-      values[i] = Wavelet_Grid_->getValueAndDerivatives(argT-i, temp_deriv);
-      derivs[i] = temp_deriv[0];
-  }
-  }
+  //else {
+    for(unsigned int i=1; i < getNumberOfBasisFunctions()-1; i++) {
+      double x = arg+1-i;
+      if (x < 0 || x > getNumberOfBasisFunctions()-1) {
+        derivs[i] = 0.0; values[i] = 0.0;
+        continue;
+      }
+      std::vector<double> temp_deriv;
+      values[i] = Wavelet_Grid_->getValueAndDerivatives(x, temp_deriv);
+      derivs[i] = temp_deriv.at(0);
+    }
 }
 
 
@@ -176,10 +177,6 @@ void BF_DbWavelets::setup_Wavelet_Grid(const unsigned gridsize) {
     auto deriv_iter = derivsmap.find(value_element.first);
     // calculate first grid element (this looks too complicated)
     unsigned first_grid_element = decimal * 1<<(recursion_number - value_element.first.length());
-    if (value_element.first == "0") {
-      log << "Integer values: ";
-      for (auto ele : value_element.second) log << ele << " ";
-    }
     for (unsigned j=0; j<value_element.second.size(); ++j) {
       // derivative(s) has to be in vector
       std::vector<double> deriv {deriv_iter->second.at(j)};
