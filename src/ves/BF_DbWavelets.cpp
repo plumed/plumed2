@@ -58,8 +58,9 @@ class BF_DbWavelets : public BasisFunctions {
   void setup_Wavelet_Grid(const unsigned recursion_number);
   static std::vector<double> get_filter_coefficients(const unsigned order);
   static void setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const std::vector<double> h);
-  std::vector<double> get_eigenvector(const Matrix<double> &A, const double eigenvalue);
-  std::vector<double> calc_integer_values(const Matrix<double> &M, const int deriv);
+  static std::vector<double> get_eigenvector(const Matrix<double> &A, const double eigenvalue);
+  static std::vector<double> calc_integer_values(const Matrix<double> &M, const int deriv);
+  static std::unordered_map<std::string, std::vector<double>> cascade(std::vector<Matrix<double>> Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum);
 
 public:
   static void registerKeywords( Keywords&);
@@ -160,46 +161,17 @@ void BF_DbWavelets::setup_Wavelet_Grid(const unsigned gridsize) {
   std::vector<double> values_at_integers = calc_integer_values(Matvec[0], 0);
   std::vector<double> derivs_at_integers = calc_integer_values(Matvec[0], 1);
 
-  //log.printf("\nInteger values\n");
-  //for (size_t i=0; i < values_at_integers.size(); ++i) log.printf("%f ", values_at_integers.at(i));
-  //log.printf("\nInteger derivative values\n");
-  //for (size_t i=0; i < derivs_at_integers.size(); ++i) log.printf("%f ", derivs_at_integers.at(i));
-  //log.printf("\n");
+  // do the cascade algorithm
+  std::unordered_map<std::string, std::vector<double>> valuesmap = cascade(Matvec, values_at_integers, recursion_number, bins_per_int, 0);
+  std::unordered_map<std::string, std::vector<double>> derivsmap = cascade(Matvec, derivs_at_integers, recursion_number, bins_per_int, 1);
 
-  // map for the cascade scheme with binary representation of the decimal part as keys
-  std::unordered_map<std::string, std::vector<double>> binarymap;
-  binarymap.reserve(bins_per_int);
-  //std::vector<std::string> bits {"0","1"};
-  // vector to store the binary representation of all the decimal parts
-  std::vector<std::string> binaryvec;
-  // vector used as result of the matrix multiplications
-  std::vector<double> new_values; // better name?!
 
-  // fill the first two datasets by hand
-  binarymap["0"] = values_at_integers;
-  mult(Matvec[1], values_at_integers, new_values);
-  binarymap["1"] = new_values;
-  binaryvec.push_back("1");
-
-  for (unsigned i=1; i<recursion_number; ++i) {
-    // vector 
-    std::vector<std::string> new_binaryvec;
-    for (auto binary : binaryvec) {
-      for (int k=0; k<2; ++k) {
-        // prepend the new bit
-        std::string new_binary = std::to_string(k) + binary;
-        //log << "Current binary: " + new_binary + "\n";
-        mult(Matvec[k], binarymap[binary], new_values);
-        binarymap.insert(std::pair<std::string, std::vector<double>>(new_binary, new_values));
-        new_binaryvec.push_back(new_binary);
-      }
-    }
-    binaryvec = new_binaryvec;
-  }
-
-  std::vector<double> derivval(1); // dummy value until full implementation
   // Fill the Grid with the values of the unordered maps
   // this is somewhat complicated… not sure if the unordered_map way is the best way for c++
+  for (unsigned i=0; i<bins_per_int; ++i) {
+    // binary reconstruction is not as easy as I thought...
+    
+
   for (auto map_element : binarymap) {
     // get decimal integer of binary
     int decimal = std::stoi(map_element.first, nullptr, 2);
@@ -249,6 +221,7 @@ std::vector<double> BF_DbWavelets::get_filter_coefficients(const unsigned order)
   return h;
 }
 
+// Fills the coefficient matrices needed for the cascade algorithm
 void BF_DbWavelets::setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const std::vector<double> h_coeffs) {
   const int N = h_coeffs.size() -1;
   M0.resize(N,N); M1.resize(N,N);
@@ -288,7 +261,7 @@ std::vector<double> BF_DbWavelets::calc_integer_values(const Matrix<double> &M, 
 
 
 // maybe move this to the tools/matrix.h file?
-// get eigenvector of square matrix A corresponding to some eigenvalue via SVD decomposition
+// get eigenvector of square matrix A corresponding to some eigenvalue via SVD decomposition; this works reliably only for singular eigenvalues
 std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, const double eigenvalue) {
   // mostly copied from tools/matrix.h
   int info, N = A.ncols(); // ncols == nrows
@@ -322,6 +295,42 @@ std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, cons
   return eigenvector;
 }
 
+
+// Calculate the values of the Wavelet or its derivative at 
+std::unordered_map<std::string, std::vector<double>> BF_DbWavelets::cascade(std::vector<Matrix<double>> Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum) {
+  // map for the cascade scheme with binary representation of the decimal part as keys
+  std::unordered_map<std::string, std::vector<double>> binarymap;
+  binarymap.reserve(bins_per_int);
+  // vector to store the binary representation of all the decimal parts
+  std::vector<std::string> binaryvec;
+  // vector used as result of the matrix multiplications
+  std::vector<double> new_values; // better name?!
+
+  // multiply matrices by 2 if derivatives are calculated
+  if (derivnum == 1) for (auto M : Matvec) M *= 2;
+
+  // fill the first two datasets by hand
+  binarymap["0"] = values_at_integers;
+  mult(Matvec[1], values_at_integers, new_values);
+  binarymap["1"] = new_values;
+  binaryvec.push_back("1");
+
+  for (unsigned i=1; i<recursion_number; ++i) {
+    std::vector<std::string> new_binaryvec;
+    for (auto binary : binaryvec) {
+      for (int k=0; k<2; ++k) {
+        // prepend the new bit
+        std::string new_binary = std::to_string(k) + binary;
+        //log << "Current binary: " + new_binary + "\n";
+        mult(Matvec[k], binarymap[binary], new_values);
+        binarymap.insert(std::pair<std::string, std::vector<double>>(new_binary, new_values));
+        new_binaryvec.push_back(new_binary);
+      }
+    }
+    binaryvec = new_binaryvec;
+  }
+  return binarymap;
+}
 
 }
 }
