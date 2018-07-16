@@ -58,9 +58,9 @@ class BF_DbWavelets : public BasisFunctions {
   void setup_Wavelet_Grid(const unsigned recursion_number);
   static std::vector<double> get_filter_coefficients(const unsigned order);
   static void setup_Matrices(Matrix<double> &M0, Matrix<double> &M1, const std::vector<double> h);
-  static std::vector<double> get_eigenvector(const Matrix<double> &A, const double eigenvalue);
-  static std::vector<double> calc_integer_values(const Matrix<double> &M, const int deriv);
-  static std::unordered_map<std::string, std::vector<double>> cascade(std::vector<Matrix<double>> Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum);
+  std::vector<double> get_eigenvector(const Matrix<double> &A, const double eigenvalue);
+  std::vector<double> calc_integer_values(const Matrix<double> &M, const int deriv);
+  std::unordered_map<std::string, std::vector<double>> cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum);
 
 public:
   static void registerKeywords( Keywords&);
@@ -161,24 +161,28 @@ void BF_DbWavelets::setup_Wavelet_Grid(const unsigned gridsize) {
   std::vector<double> values_at_integers = calc_integer_values(Matvec[0], 0);
   std::vector<double> derivs_at_integers = calc_integer_values(Matvec[0], 1);
 
+
   // do the cascade algorithm
   std::unordered_map<std::string, std::vector<double>> valuesmap = cascade(Matvec, values_at_integers, recursion_number, bins_per_int, 0);
   std::unordered_map<std::string, std::vector<double>> derivsmap = cascade(Matvec, derivs_at_integers, recursion_number, bins_per_int, 1);
 
-
   // Fill the Grid with the values of the unordered maps
   // this is somewhat complicated… not sure if the unordered_map way is the best way for c++
-  for (unsigned i=0; i<bins_per_int; ++i) {
-    // binary reconstruction is not as easy as I thought...
-    
-
-  for (auto map_element : binarymap) {
-    // get decimal integer of binary
-    int decimal = std::stoi(map_element.first, nullptr, 2);
+  for (const auto& value_element: valuesmap) {
+    // get decimal of binary key
+    int decimal = std::stoi(value_element.first, nullptr, 2);
+    // corresponding iterator of deriv 
+    auto deriv_iter = derivsmap.find(value_element.first);
     // calculate first grid element (this looks too complicated)
-    unsigned first_grid_element = decimal * 1<<(recursion_number - map_element.first.length());
-    for (unsigned j=0; j<map_element.second.size(); ++j) {
-      Wavelet_Grid_->setValueAndDerivatives(first_grid_element + bins_per_int*j, map_element.second.at(j), derivval);
+    unsigned first_grid_element = decimal * 1<<(recursion_number - value_element.first.length());
+    if (value_element.first == "0") {
+      log << "Integer values: ";
+      for (auto ele : value_element.second) log << ele << " ";
+    }
+    for (unsigned j=0; j<value_element.second.size(); ++j) {
+      // derivative(s) has to be in vector
+      std::vector<double> deriv {deriv_iter->second.at(j)};
+      Wavelet_Grid_->setValueAndDerivatives(first_grid_element + bins_per_int*j, value_element.second[j], deriv);
     }
   }
 
@@ -252,9 +256,14 @@ std::vector<double> BF_DbWavelets::calc_integer_values(const Matrix<double> &M, 
     normfactor += values[i] * pow(-i, deriv);
   }
   normfactor = 1/normfactor;
-  for (auto value : values) {
+  for (auto& value : values) {
     value *= normfactor;
   }
+  log << "Values at determination:\n";
+  for (auto& value : values) {
+    log << value << " ";
+  }
+  log << "\n";
 
   return values;
 }
@@ -297,7 +306,7 @@ std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, cons
 
 
 // Calculate the values of the Wavelet or its derivative at 
-std::unordered_map<std::string, std::vector<double>> BF_DbWavelets::cascade(std::vector<Matrix<double>> Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum) {
+std::unordered_map<std::string, std::vector<double>> BF_DbWavelets::cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum) {
   // map for the cascade scheme with binary representation of the decimal part as keys
   std::unordered_map<std::string, std::vector<double>> binarymap;
   binarymap.reserve(bins_per_int);
@@ -307,7 +316,7 @@ std::unordered_map<std::string, std::vector<double>> BF_DbWavelets::cascade(std:
   std::vector<double> new_values; // better name?!
 
   // multiply matrices by 2 if derivatives are calculated
-  if (derivnum == 1) for (auto M : Matvec) M *= 2;
+  if (derivnum != 0) for (auto& M : Matvec) M *= 2;
 
   // fill the first two datasets by hand
   binarymap["0"] = values_at_integers;
