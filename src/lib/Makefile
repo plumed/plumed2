@@ -478,6 +478,9 @@ ifeq ($(PLUMED_INSTALL),Install)
 endif
 # $(notdir $@) is required to obtain the plain name (without `install/`)
 	$(LDSHARED) -o $@ $^ $(SONAME_OPTION),"$(SONAME_INSTALL_PATH)$(notdir $@)"
+ifeq ($(use_loader_path),yes)
+	install_name_tool -change "$(SONAME_INSTALL_PATH)$(notdir $(PLUMED_KERNEL))" "@loader_path/$(notdir $(PLUMED_KERNEL))" $@
+endif
 
 ifdef AR_CR
 $(PLUMED_WRAPPER_LIB): $(OBJ_DYNAMIC_WRAPPER)
@@ -497,6 +500,14 @@ $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
 # This makes Linux identical to OSX and is likely more portable.
 $(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(OBJ_WRAPPER) $(PLUMED_KERNEL)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
+ifeq ($(use_loader_path),yes)
+ifeq ($(PLUMED_INSTALL),Install)
+	install_name_tool -change "$(SONAME_INSTALL_PATH)$(notdir $(PLUMED_KERNEL))" "@loader_path/../$(notdir $(libdir))/$(notdir $(PLUMED_KERNEL))" $@
+else
+	install_name_tool -change "$(SONAME_INSTALL_PATH)$(notdir $(PLUMED_KERNEL))" "@loader_path/$(notdir $(PLUMED_KERNEL))" $@
+endif
+endif
+
 
 $(PLUMED_MAIN_RUNTIME): $(OBJ_MAIN) $(OBJ_DYNAMIC_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)

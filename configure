@@ -626,6 +626,7 @@ pkgconfig_bin
 make_static_archive
 AR_CR
 LD_RO
+use_loader_path
 use_absolute_soname
 program_can_run_mpi
 program_can_run
@@ -716,6 +717,7 @@ enable_dependency_tracking
 enable_rpath
 enable_absolute_soname
 enable_absolute_install_name
+enable_loader_path
 enable_ld_r
 enable_ar_cr
 enable_static_archive
@@ -1390,10 +1392,14 @@ Optional Features:
   --enable-rpath          enable store rpath, default: no
   --enable-absolute-soname
                           enable store absolute soname (Linux only - this is
-                          the default behavior on OSX), default: no
+                          the default behavior on OSX). Only enable for
+                          testing!, default: no
   --enable-absolute-install-name
                           enable store absolute relative (OSX only - disable
-                          to have a behavior similar to Linux), default: yes
+                          to have a behavior similar to Linux). Only disable
+                          for testing!, default: yes
+  --enable-loader-path    enable use @loader_path to find
+                          libplumedKernel.dylib (OSX only), default: yes
   --enable-ld-r           enable group object files, default: yes
   --enable-ar-cr          enable use ar to build libplumedWrapper.a, default:
                           yes
@@ -2722,6 +2728,24 @@ else
   case "yes" in
              (yes) absolute_install_name=true ;;
              (no)  absolute_install_name=false ;;
+  esac
+
+fi
+
+
+
+loader_path=
+# Check whether --enable-loader-path was given.
+if test "${enable_loader_path+set}" = set; then :
+  enableval=$enable_loader_path; case "${enableval}" in
+             (yes) loader_path=true ;;
+             (no)  loader_path=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-loader-path" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) loader_path=true ;;
+             (no)  loader_path=false ;;
   esac
 
 fi
@@ -8935,6 +8959,17 @@ $as_echo "$as_me: WARNING: --disable-absolute-install-name has no effect on Linu
 $as_echo "$as_me: enabling relative install_name. You will have to set DYLD_LIBRARY_PATH yor plumed libraries to be found at runtime" >&6;}
     use_absolute_soname=no
   fi
+fi
+
+
+if test "$SOEXT" == "dylib" ; then
+  if test "$loader_path" == true ; then
+    use_loader_path=yes
+  else
+    use_loader_path=no
+  fi
+else
+  use_loader_path=no
 fi
 
 #### This further tests are required to allow linking with non c++ compiler
