@@ -968,6 +968,7 @@ MetaD::MetaD(const ActionOptions& ao):
       acc_restart_mean_ = acc_rmean;
       // Set component based on the read values.
       getPntrToComponent("acc")->set(acc_rmean);
+      log.printf("  initial acceleration factor read from file %s: value of %f at time %f\n",acc_rfilename.c_str(),acc_rmean,acc_rtime);
     }
   }
   if (calc_max_bias_) {
