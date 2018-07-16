@@ -261,10 +261,10 @@ The kinetics of the transitions between basins can also be analysed on the fly a
 in \cite PRL230602. The flag ACCELERATION turn on accumulation of the acceleration
 factor that can then be used to determine the rate. This method can be used together
 with \ref COMMITTOR analysis to stop the simulation when the system get to the target basin.
-It must be used together with Well-Tempered Metadynamics. If restarting from a previous 
-metadynamics you need to use the ACCELERATION_RFILE keyword to give the name of the 
-data file from which the previous value of the acceleration factor should be read, otherwise the 
-calculation of the acceleration factor will be wrong. 
+It must be used together with Well-Tempered Metadynamics. If restarting from a previous
+metadynamics you need to use the ACCELERATION_RFILE keyword to give the name of the
+data file from which the previous value of the acceleration factor should be read, otherwise the
+calculation of the acceleration factor will be wrong.
 
 \par
 By using the flag FREQUENCY_ADAPTIVE the frequency adaptive scheme introduced in \cite Wang-JCP-2018
@@ -289,10 +289,10 @@ in PACE. The hill hill addition frequency increase monotonously such that if the
 instantaneous acceleration factor is lower than in the previous updating step the
 previous \f$\tau_{\mathrm{dep}}\f$ is kept rather than updating it to a lower value.
 The instantaneous hill addition frequency \f$\tau_{\mathrm{dep}}(t)\f$ is outputted
-to pace component. Note that if restarting from a previous metadynamics run you need to 
-use the ACCELERATION_RFILE keyword to read in the acceleration factors from the 
-previous run, otherwise the hill addition frequency will start from the initial 
-frequency. 
+to pace component. Note that if restarting from a previous metadynamics run you need to
+use the ACCELERATION_RFILE keyword to read in the acceleration factors from the
+previous run, otherwise the hill addition frequency will start from the initial
+frequency.
 
 
 \par
@@ -974,7 +974,7 @@ MetaD::MetaD(const ActionOptions& ao):
     // If this is not a restart, set to 1.0.
     if (acc_rfilename.length() == 0) {
       getPntrToComponent("acc")->set(1.0);
-      if(getRestart()){
+      if(getRestart()) {
         log.printf("  WARNING: calculating the acceleration factor in a restarted run without reading in the previous value will most likely lead to incorrect results. You should use the ACCELERATION_RFILE keyword.\n");
       }
       // Otherwise, read and set the restart value.
