@@ -1663,6 +1663,10 @@ void MetaD::calculate()
     getPntrToComponent("acc")->set(mean_acc);
   } else if (acceleration && isFirstStep && acc_restart_mean_ > 0.0) {
     acc = acc_restart_mean_ * static_cast<double>(getStep());
+    if(freq_adaptive_) {
+      // has to be done here if restarting, as the acc is not defined before
+      updateFrequencyAdaptiveStride();
+    }
   }
 
   getPntrToComponent("work")->set(work_);
