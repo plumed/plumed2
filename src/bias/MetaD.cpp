@@ -263,6 +263,31 @@ factor that can then be used to determine the rate. This method can be used toge
 with \ref COMMITTOR analysis to stop the simulation when the system get to the target basin.
 It must be used together with Well-Tempered Metadynamics.
 
+\par 
+By using the flag FREQUENCY_ADAPTIVE the frequency adaptive scheme introduced in \cite Wang-JCP-2018 
+is turned on. The frequency for hill addition then changes dynamically based on the acceleration factor 
+according to the following equation
+\f[
+\tau_{\mathrm{dep}}(t) = 
+\min\left[
+\tau_0 \cdot 
+\max\left[\frac{\alpha(t)}{\theta},1\right]
+,\tau_{c}
+\right]
+\f]
+where \f$\tau_0\f$ is the initial hill addition frequency given by the PACE keyword, 
+\f$\tau_{c}\f$ is the maximum allowed frequency given by the FA_MAX_PACE keyword, 
+\f$\alpha(t)\f$ is the instantaneous acceleration factor at time \f$t\f$,
+and \f$\theta\f$ is a threshold value that acceleration factor has to reach before 
+triggering a change in the hill addition frequency given by the FA_MIN_ACCELERATION keyword. 
+The frequency for updating the hill addition frequency according to this equation is 
+given by the FA_UPDATE_FREQUENCY keyword, by default it is the same as the value given 
+in PACE. The hill hill addition frequency increase monotonously such that if the 
+instantaneous acceleration factor is lower than in the previous updating step the 
+previous \f$\tau_{\mathrm{dep}}\f$ is kept rather than updating it to a lower value. 
+The instantaneous hill addition frequency \f$\tau_{\mathrm{dep}}(t)\f$ is outputted 
+to pace component. 
+
 \par
 You can also provide a target distribution using the keyword TARGET
 \cite white2015designing
@@ -502,8 +527,8 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELLx with x=0,1,2,...,n. Each specifies the coordinates for one well as in transition-tempered metadynamics. At least one must be provided.");
   keys.addFlag("FREQUENCY_ADAPTIVE",false,"Set to TRUE if you want to enable frequency adaptive metadynamics such that the frequency for hill addition to change dynamically based on the acceleration factor.");
   keys.add("optional","FA_UPDATE_FREQUENCY","the frequency for updating the hill addition pace in frequency adaptive metadynamics, by default this is equal to the value given in PACE");
-  keys.add("optional","FA_MAX_PACE","the maximum hill addition frequency allowed in frequency adaptive metadynamics");
-  keys.add("optional","FA_MIN_ACCELERATION","only update the hill addition pace in frequency adaptive metadynamics after reaching the minimum acceleration factor given here");
+  keys.add("optional","FA_MAX_PACE","the maximum hill addition frequency allowed in frequency adaptive metadynamics. By default there is no maximum value.");
+  keys.add("optional","FA_MIN_ACCELERATION","only update the hill addition pace in frequency adaptive metadynamics after reaching the minimum acceleration factor given here. By default it is 1.0.");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
