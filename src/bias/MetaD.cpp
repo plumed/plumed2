@@ -1041,6 +1041,10 @@ MetaD::MetaD(const ActionOptions& ao):
     if(!acceleration) {
       error("Frequency adaptive metadynamics only works if the calculation of the acceleration factor is enabled with the ACCELERATION keyword\n");
     }
+    if(walkers_mpi) {
+      plumed_merror("Combining frequency adaptive metadynamics with MPI multiple walkers is not allowed");
+    }
+
     log.printf("  Frequency adaptive metadynamics enabled\n");
     if(getRestart() && acc_rfilename.length() == 0) {
       log.printf("  WARNING: using the frequency adaptive scheme in a restarted run without reading in the previous value of the acceleration factor will most likely lead to incorrect results. You should use the ACCELERATION_RFILE keyword.\n");
