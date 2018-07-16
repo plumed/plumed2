@@ -936,7 +936,7 @@ MetaD::MetaD(const ActionOptions& ao):
     if (kbt_ == 0.0) {
       error("The calculation of the acceleration works only if simulation temperature has been defined");
     }
-    log.printf("  calculation on the fly of the acceleration factor");
+    log.printf("  calculation on the fly of the acceleration factor\n");
     addComponent("acc"); componentIsNotPeriodic("acc");
     // Set the initial value of the the acceleration.
     // If this is not a restart, set to 1.0.
