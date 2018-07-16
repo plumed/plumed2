@@ -974,6 +974,9 @@ MetaD::MetaD(const ActionOptions& ao):
     // If this is not a restart, set to 1.0.
     if (acc_rfilename.length() == 0) {
       getPntrToComponent("acc")->set(1.0);
+      if(getRestart()){
+        log.printf("  WARNING: calculating the acceleration factor in a restarted run without reading in the previous value will most likely lead to incorrect results. You should use the ACCELERATION_RFILE keyword.\n");
+      }
       // Otherwise, read and set the restart value.
     } else {
       // Restart of acceleration does not make sense if the restart timestep is zero.
@@ -1039,6 +1042,9 @@ MetaD::MetaD(const ActionOptions& ao):
       error("Frequency adaptive metadynamics only works if the calculation of the acceleration factor is enabled with the ACCELERATION keyword\n");
     }
     log.printf("  Frequency adaptive metadynamics enabled\n");
+    if(getRestart() && acc_rfilename.length() == 0) {
+      log.printf("  WARNING: using the frequency adaptive scheme in a restarted run without reading in the previous value of the acceleration factor will most likely lead to incorrect results. You should use the ACCELERATION_RFILE keyword.\n");
+    }
     log.printf("  The frequency for hill addition will change dynamically based on the metadynamics acceleration factor\n");
     log.printf("  The hill addition frequency will be updated every %d steps\n",fa_update_frequency_);
     if(fa_min_acceleration_>1.0) {
