@@ -626,6 +626,8 @@ pkgconfig_bin
 make_static_archive
 AR_CR
 LD_RO
+use_loader_path
+use_absolute_soname
 program_can_run_mpi
 program_can_run
 xxd
@@ -713,6 +715,9 @@ enable_debug_glibcxx
 enable_shared
 enable_dependency_tracking
 enable_rpath
+enable_absolute_soname
+enable_absolute_install_name
+enable_loader_path
 enable_ld_r
 enable_ar_cr
 enable_static_archive
@@ -1385,6 +1390,16 @@ Optional Features:
   --enable-dependency-tracking
                           enable dependency tracking, default: yes
   --enable-rpath          enable store rpath, default: no
+  --enable-absolute-soname
+                          enable store absolute soname (Linux only - this is
+                          the default behavior on OSX). Only enable for
+                          testing!, default: no
+  --enable-absolute-install-name
+                          enable store absolute relative (OSX only - disable
+                          to have a behavior similar to Linux). Only disable
+                          for testing!, default: yes
+  --enable-loader-path    enable use @loader_path to find
+                          libplumedKernel.dylib (OSX only), default: yes
   --enable-ld-r           enable group object files, default: yes
   --enable-ar-cr          enable use ar to build libplumedWrapper.a, default:
                           yes
@@ -2677,6 +2692,60 @@ else
   case "no" in
              (yes) rpath=true ;;
              (no)  rpath=false ;;
+  esac
+
+fi
+
+
+
+absolute_soname=
+# Check whether --enable-absolute-soname was given.
+if test "${enable_absolute_soname+set}" = set; then :
+  enableval=$enable_absolute_soname; case "${enableval}" in
+             (yes) absolute_soname=true ;;
+             (no)  absolute_soname=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-absolute-soname" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) absolute_soname=true ;;
+             (no)  absolute_soname=false ;;
+  esac
+
+fi
+
+
+
+absolute_install_name=
+# Check whether --enable-absolute-install-name was given.
+if test "${enable_absolute_install_name+set}" = set; then :
+  enableval=$enable_absolute_install_name; case "${enableval}" in
+             (yes) absolute_install_name=true ;;
+             (no)  absolute_install_name=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-absolute-install-name" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) absolute_install_name=true ;;
+             (no)  absolute_install_name=false ;;
+  esac
+
+fi
+
+
+
+loader_path=
+# Check whether --enable-loader-path was given.
+if test "${enable_loader_path+set}" = set; then :
+  enableval=$enable_loader_path; case "${enableval}" in
+             (yes) loader_path=true ;;
+             (no)  loader_path=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-loader-path" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) loader_path=true ;;
+             (no)  loader_path=false ;;
   esac
 
 fi
@@ -4702,52 +4771,8 @@ fi
 
 if test $gcov == true
 then
-
-  save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS --coverage"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts --coverage" >&5
-$as_echo_n "checking whether $CXX accepts --coverage... " >&6; }
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
-$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
+  CXX="$CXX --coverage"
+  LDSHARED="$LDSHARED --coverage"
   CFLAGS="$CFLAGS --coverage"
   LDFLAGS="$CFLAGS --coverage"
   STATIC_LIBS="$STATIC_LIBS --coverage"
@@ -8905,6 +8930,46 @@ $as_echo "$as_me: Regtest suite will use $MPIEXEC command to run MPI tests" >&6;
     { $as_echo "$as_me:${as_lineno-$LINENO}: Regtest suite will use env var PLUMED_MPIRUN to run MPI tests (default: mpirun)" >&5
 $as_echo "$as_me: Regtest suite will use env var PLUMED_MPIRUN to run MPI tests (default: mpirun)" >&6;}
   fi
+fi
+
+if test "$SOEXT" == "dylib" ; then
+  use_absolute_soname=yes
+else
+  use_absolute_soname=no
+fi
+
+
+if test "$absolute_soname" == true ; then
+  if test "$SOEXT" == "dylib" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --enable-absolute-soname has no effect on OSX" >&5
+$as_echo "$as_me: WARNING: --enable-absolute-soname has no effect on OSX" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: enabling absolute soname. Full path will be hardcoded in plumed library soname" >&5
+$as_echo "$as_me: enabling absolute soname. Full path will be hardcoded in plumed library soname" >&6;}
+    use_absolute_soname=yes
+  fi
+fi
+
+if test "$absolute_install_name" == false ; then
+  if test "$SOEXT" == "so" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --disable-absolute-install-name has no effect on Linux" >&5
+$as_echo "$as_me: WARNING: --disable-absolute-install-name has no effect on Linux" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: enabling relative install_name. You will have to set DYLD_LIBRARY_PATH yor plumed libraries to be found at runtime" >&5
+$as_echo "$as_me: enabling relative install_name. You will have to set DYLD_LIBRARY_PATH yor plumed libraries to be found at runtime" >&6;}
+    use_absolute_soname=no
+  fi
+fi
+
+
+if test "$SOEXT" == "dylib" ; then
+  if test "$loader_path" == true ; then
+    use_loader_path=yes
+  else
+    use_loader_path=no
+  fi
+else
+  use_loader_path=no
 fi
 
 #### This further tests are required to allow linking with non c++ compiler

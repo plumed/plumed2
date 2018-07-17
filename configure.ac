@@ -237,6 +237,9 @@ PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
+PLUMED_CONFIG_ENABLE([absolute-soname],[store absolute soname (Linux only - this is the default behavior on OSX). Only enable for testing!],[no])
+PLUMED_CONFIG_ENABLE([absolute-install-name],[store absolute relative (OSX only - disable to have a behavior similar to Linux). Only disable for testing!],[yes])
+PLUMED_CONFIG_ENABLE([loader-path],[use @loader_path to find libplumedKernel.dylib (OSX only)],[yes])
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
@@ -347,7 +350,8 @@ fi
 
 if test $gcov == true
 then
-  PLUMED_CHECK_CXXFLAG([--coverage])
+  CXX="$CXX --coverage"
+  LDSHARED="$LDSHARED --coverage"
   CFLAGS="$CFLAGS --coverage"
   LDFLAGS="$CFLAGS --coverage"
   STATIC_LIBS="$STATIC_LIBS --coverage"
@@ -925,6 +929,42 @@ if test $mpi_found == ok ; then
   else
     AC_MSG_NOTICE([Regtest suite will use env var PLUMED_MPIRUN to run MPI tests (default: mpirun)])
   fi
+fi
+
+if test "$SOEXT" == "dylib" ; then
+  use_absolute_soname=yes
+else
+  use_absolute_soname=no
+fi
+
+AC_SUBST(use_absolute_soname)
+if test "$absolute_soname" == true ; then
+  if test "$SOEXT" == "dylib" ; then
+    AC_MSG_WARN([--enable-absolute-soname has no effect on OSX])
+  else
+    AC_MSG_NOTICE([enabling absolute soname. Full path will be hardcoded in plumed library soname])
+    use_absolute_soname=yes
+  fi
+fi
+
+if test "$absolute_install_name" == false ; then
+  if test "$SOEXT" == "so" ; then
+    AC_MSG_WARN([--disable-absolute-install-name has no effect on Linux])
+  else
+    AC_MSG_NOTICE([enabling relative install_name. You will have to set DYLD_LIBRARY_PATH yor plumed libraries to be found at runtime])
+    use_absolute_soname=no
+  fi
+fi
+
+AC_SUBST(use_loader_path)
+if test "$SOEXT" == "dylib" ; then
+  if test "$loader_path" == true ; then
+    use_loader_path=yes
+  else
+    use_loader_path=no
+  fi
+else
+  use_loader_path=no
 fi
 
 #### This further tests are required to allow linking with non c++ compiler

@@ -22,7 +22,9 @@
 #include "Plumed.h"
 
 #ifdef __PLUMED_HAS_DLOPEN
+#ifndef __PLUMED_STATIC_KERNEL
 #include <dlfcn.h>
+#endif
 #endif
 #include <stdio.h>
 #include <string.h>

@@ -16,11 +16,23 @@ ifneq ($(MAKECMDGOALS),clean)
   -include ../../Makefile.conf
 endif
 
-# Extra flags for python
 ifeq ($(SOEXT),dylib)
-PYTHON_EXTRA_LDFLAGS=-undefined dynamic_lookup
+# Extra flags required to properly compile the python interface
+  PYTHON_EXTRA_LDFLAGS:=-undefined dynamic_lookup
+  SONAME_OPTION:=-Wl,-install_name
 else
-PYTHON_EXTRA_LDFLAGS=
+  PYTHON_EXTRA_LDFLAGS:=
+  SONAME_OPTION:=-Wl,-soname
+endif
+
+ifeq ($(use_absolute_soname),yes)
+ifeq ($(PLUMED_INSTALL),Install)
+  SONAME_INSTALL_PATH:=$(libdir)/
+else
+  SONAME_INSTALL_PATH:=$(realpath .)/
+endif
+else
+  SONAME_INSTALL_PATH=
 endif
 
 # if machine dependent configuration has been found:
@@ -132,7 +144,8 @@ endif
            sed "s|@_program_name_@|$(program_name)|" | \
            sed "s|@_libdir_@|$(libdir)|" | \
            sed "s|@_bindir_@|$(bindir)|" | \
-           sed "s|@_includedir_@|$(includedir)|" \
+           sed "s|@_includedir_@|$(includedir)|" | \
+           sed "s|@_use_absolute_soname_@|$(use_absolute_soname)|" \
 	   > install/modulefile
 	@cat pkgconfig.in | \
            sed "s|@_SOEXT_@|$(SOEXT)|" | \
@@ -272,7 +285,6 @@ endif
 # also copy .h files into include/ dir
 	$(MAKE) install-headers
 # install executable
-# for OSX, this automatically use the dynamically linked executable
 	cp install/"$(program_name)" "$(DESTDIR)$(bindir)/"
 # patch file for cross compiling
 	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-patch"
@@ -453,41 +465,21 @@ else
 endif
 	chmod a+x $@
 
-# the only difference between OSX and Linux is that on OSX we hardcode full paths
-# whereas on Linux we use the file name only. For Linux, this implies
-# that LD_LIBRARY_PATH must be set correctly.
 $(PLUMED_KERNEL):$(OBJ_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-ifeq ($(SOEXT),dylib)
-	$(LDSHARED) -o $@ $^ -Wl,-install_name,"$(libdir)/lib$(program_name)Kernel.$(SOEXT)" $(DYNAMIC_LIBS)
-else
-	$(LDSHARED) -o $@ $^ -Wl,-soname,"$(notdir $(PLUMED_KERNEL))" $(DYNAMIC_LIBS)
 endif
-else
-ifeq ($(SOEXT),dylib)
-	$(LDSHARED) -o $@ $^ -Wl,-install_name,"$(realpath .)/libplumedKernel.$(SOEXT)" $(DYNAMIC_LIBS)
-else
-	$(LDSHARED) -o $@ $^ -Wl,-soname,"$(notdir $(PLUMED_KERNEL))" $(DYNAMIC_LIBS)
-endif
-endif
+# $(notdir $@) is required to obtain the plain name (without `install/`)
+	$(LDSHARED) -o $@ $^ $(SONAME_OPTION),"$(SONAME_INSTALL_PATH)$(notdir $@)" $(DYNAMIC_LIBS)
 
-# dependence on PLUMED_KERNEL is required for build on OSX to work correctly:
-# dependence on OBJ_KERNEL is required on linux
-$(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_KERNEL)
+$(PLUMED_SHARED_OBJ): $(OBJ_WRAPPER) $(PLUMED_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-ifeq ($(SOEXT),dylib)
-	$(LDSHARED) -o $@ $(OBJ_WRAPPER) $(PLUMED_KERNEL) -Wl,-install_name,"$(libdir)/lib$(program_name).$(SOEXT)" $(LIBS)
-else
-	$(LDSHARED) -o $@ $(OBJ_WRAPPER) $(PLUMED_KERNEL) -Wl,-soname,"$(notdir $(PLUMED_SHARED_OBJ))" $(LIBS)
 endif
-else
-ifeq ($(SOEXT),dylib)
-	$(LDSHARED) -o $@ $(OBJ_WRAPPER) $(PLUMED_KERNEL) -Wl,-install_name,"$(realpath .)/libplumed.$(SOEXT)" $(LIBS)
-else
-	$(LDSHARED) -o $@ $(OBJ_WRAPPER) $(PLUMED_KERNEL) -Wl,-soname,"$(notdir $(PLUMED_SHARED_OBJ))" $(LIBS)
-endif
+# $(notdir $@) is required to obtain the plain name (without `install/`)
+	$(LDSHARED) -o $@ $^ $(SONAME_OPTION),"$(SONAME_INSTALL_PATH)$(notdir $@)"
+ifeq ($(use_loader_path),yes)
+	install_name_tool -change "$(SONAME_INSTALL_PATH)$(notdir $(PLUMED_KERNEL))" "@loader_path/$(notdir $(PLUMED_KERNEL))" $@
 endif
 
 ifdef AR_CR
@@ -501,12 +493,21 @@ endif
 $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(DYNAMIC_LIBS)
 	
-$(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(PLUMED_SHARED_OBJ)
-ifeq ($(SOEXT),dylib)
+# In principle we would like PLUMED_MAIN_SHARED to depend on PLUMED_SHARED_OBJ.
+# However, this would require a special flag on Linux (-rpath-link) in order to
+# find the functions defined in PLUMED_KERNEL (just check history of this file).
+# I thus prefer to directly link PLUMED_KERNEL.
+# This makes Linux identical to OSX and is likely more portable.
+$(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(OBJ_WRAPPER) $(PLUMED_KERNEL)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
+ifeq ($(use_loader_path),yes)
+ifeq ($(PLUMED_INSTALL),Install)
+	install_name_tool -change "$(SONAME_INSTALL_PATH)$(notdir $(PLUMED_KERNEL))" "@loader_path/../$(notdir $(libdir))/$(notdir $(PLUMED_KERNEL))" $@
 else
-	$(LD) $(LDFLAGS) $^ -o $@ -Wl,-rpath-link,"$(dir $@)" $(LIBS)
+	install_name_tool -change "$(SONAME_INSTALL_PATH)$(notdir $(PLUMED_KERNEL))" "@loader_path/$(notdir $(PLUMED_KERNEL))" $@
 endif
+endif
+
 
 $(PLUMED_MAIN_RUNTIME): $(OBJ_MAIN) $(OBJ_DYNAMIC_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
