@@ -89,8 +89,10 @@ Debug::Debug(const ActionOptions&ao):
   if(novirial) log.printf("  Switching off virial contribution\n");
   if(novirial) plumed.novirial=true;
   parseFlag("DETAILED_TIMERS",detailedTimers);
-  if(detailedTimers) log.printf("  Detailed timing on\n");
-  plumed.detailedTimers=true;
+  if(detailedTimers) {
+    log.printf("  Detailed timing on\n");
+    plumed.detailedTimers=true;
+  }
   ofile.link(*this);
   std::string file;
   parse("FILE",file);
