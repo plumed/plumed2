@@ -31,6 +31,10 @@ namespace ves {
 /*
 Daubechies Wavelets as basis functions
 
+Note: at the moment only the scaling function and not the wavelet function is used.
+It should nevertheless form an orthogonal basis set and will be needed for multiscale.
+The Wavelet function can be easily implemented by an additional matrix multiplication and a translation of the position axis.
+
 order: number of vanishing moments
 
 Support (of the scaling function) is then from 0 to 2*order - 1
@@ -96,7 +100,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
   //
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
     double x = arg - ((i-1)/intervalDerivf()); // shift argument by scaled i
-    if (x < 0 || x > intervalRange()) { // Wavelets are 0 outside the defined range
+    if (x < intervalMin() || x > intervalMax()) { // Wavelets are 0 outside the defined range
       values[i] = 0.0; derivs[i] = 0.0;
     }
     else {
