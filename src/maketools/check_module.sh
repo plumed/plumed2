@@ -6,7 +6,7 @@ msg="ERROR: this module depends on $dir, which is presently disabled"
 
 cd ../
 
-if test -f $dir/module.type
+if test -f "$dir/module.type"
 then
   case "$(cat "$dir/module.type")" in
   (always) exit 0 ;;

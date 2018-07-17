@@ -16,6 +16,25 @@ ifneq ($(MAKECMDGOALS),clean)
   -include ../../Makefile.conf
 endif
 
+ifeq ($(SOEXT),dylib)
+# Extra flags required to properly compile the python interface
+  PYTHON_EXTRA_LDFLAGS:=-undefined dynamic_lookup
+  SONAME_OPTION:=-Wl,-install_name
+else
+  PYTHON_EXTRA_LDFLAGS:=
+  SONAME_OPTION:=-Wl,-soname
+endif
+
+ifeq ($(use_absolute_soname),yes)
+ifeq ($(PLUMED_INSTALL),Install)
+  SONAME_INSTALL_PATH:=$(libdir)/
+else
+  SONAME_INSTALL_PATH:=$(realpath .)/
+endif
+else
+  SONAME_INSTALL_PATH=
+endif
+
 # if machine dependent configuration has been found:
 ifdef GCCDEP
 
@@ -42,21 +61,25 @@ OBJ_KERNEL := $(XXX:.c=.o)
 ALL_OBJ := $(OBJ_KERNEL) $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER) $(OBJ_MAIN)
 
 # when calling install-build, libraries in install should be built.
+# PLUMED_NAME is just set to $(program_name) instead of plumed
+# this allows setting the correct names for the to be installed libraries
 ifeq ($(PLUMED_INSTALL),Install)
   PLUMED_LIBDIR:=install/
+  PLUMED_NAME=$(program_name)
 else
   PLUMED_LIBDIR:=
+  PLUMED_NAME=plumed
 endif
 
 # plumed kernel
-PLUMED_KERNEL := $(PLUMED_LIBDIR)libplumedKernel.$(SOEXT)
+PLUMED_KERNEL := $(PLUMED_LIBDIR)lib$(PLUMED_NAME)Kernel.$(SOEXT)
 
 # plumed library (kernel + wrapper)
-PLUMED_SHARED_OBJ := $(PLUMED_LIBDIR)libplumed.$(SOEXT)
+PLUMED_SHARED_OBJ := $(PLUMED_LIBDIR)lib$(PLUMED_NAME).$(SOEXT)
 
 # plumed wrapper library
 ifdef AR_CR
-PLUMED_WRAPPER_LIB := $(PLUMED_LIBDIR)libplumedWrapper.a
+PLUMED_WRAPPER_LIB := $(PLUMED_LIBDIR)lib$(PLUMED_NAME)Wrapper.a
 else
 PLUMED_WRAPPER_LIB := 
 endif
@@ -66,11 +89,23 @@ PLUMED_SCRIPTS_SH := $(shell cd ../../scripts/ ; ls *.sh 2>/dev/null)
 PLUMED_SCRIPTS := $(PLUMED_SCRIPTS_SH:.sh=)
 PLUMED_SCRIPTS_EXE := $(addprefix $(PLUMED_LIBDIR)plumed-,$(PLUMED_SCRIPTS))
 
-# plumed main exec
-PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)plumed
-PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)plumed-shared
-PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)plumed-runtime
+# use shared executable by default when possible
+ifdef SOEXT
+  PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)$(PLUMED_NAME)-static
+  PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)$(PLUMED_NAME)
+  PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)$(PLUMED_NAME)-runtime
+else
+  PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)$(PLUMED_NAME)
+  PLUMED_MAIN_SHARED :=
+  PLUMED_MAIN_RUNTIME :=
+endif
 
+# check if bindir and libdir are consistent.
+# notice that this is not required yet but if we later we want
+# to use $ORIGIN based rpaths this would be needed
+ifneq ($(dir $(bindir)),$(dir $(libdir)))
+  $(error bindir and libdir are not consistent, please set them as subdirectories of the same directory)
+endif
 
 .PHONY: all links $(DIRS) $(DIRSLINKS) all-static $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.inc install $(PLUMED_SCRIPTS_EXE) install-html
 all:
@@ -101,7 +136,7 @@ ifdef LD_RO
 	$(MAKE) PLUMED_INSTALL=Install install/kernel.o
 endif
 ifeq ($(make_static_archive),yes)
-	$(MAKE) PLUMED_INSTALL=Install install/libplumed.a
+	$(MAKE) PLUMED_INSTALL=Install install/lib$(program_name).a
 endif
 # modulefile
 	@cat modulefile.in | \
@@ -109,7 +144,8 @@ endif
            sed "s|@_program_name_@|$(program_name)|" | \
            sed "s|@_libdir_@|$(libdir)|" | \
            sed "s|@_bindir_@|$(bindir)|" | \
-           sed "s|@_includedir_@|$(includedir)|" \
+           sed "s|@_includedir_@|$(includedir)|" | \
+           sed "s|@_use_absolute_soname_@|$(use_absolute_soname)|" \
 	   > install/modulefile
 	@cat pkgconfig.in | \
            sed "s|@_SOEXT_@|$(SOEXT)|" | \
@@ -163,7 +199,7 @@ install/kernel.o: $(OBJ_KERNEL)
 endif
 
 ifeq ($(make_static_archive),yes)
-install/libplumed.a: install/kernel.o $(OBJ_WRAPPER)
+install/lib$(program_name).a: install/kernel.o $(OBJ_WRAPPER)
 	rm -f $@
 	$(AR_CR) $@ $^
 endif
@@ -237,7 +273,7 @@ endif
 # copy config.txt file (we leave it in src/colvar/ for backward compatibility)
 	cp ../config/config.txt "$(DESTDIR)$(libdir)/$(program_name)/src/config/config.txt"
 ifeq ($(make_static_archive),yes)
-	cp install/libplumed.a "$(DESTDIR)$(libdir)/lib$(program_name).a"
+	cp install/lib$(program_name).a "$(DESTDIR)$(libdir)/"
 else
 	cp $(OBJ_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/PlumedStatic.o"
 ifdef LD_RO
@@ -249,12 +285,7 @@ endif
 # also copy .h files into include/ dir
 	$(MAKE) install-headers
 # install executable
-# for OSX we can use the dynamically linked executable
-ifeq ($(SOEXT),dylib)
-	cp install/plumed-shared "$(DESTDIR)$(bindir)/$(program_name)"
-else
-	cp install/plumed "$(DESTDIR)$(bindir)/$(program_name)"
-endif
+	cp install/"$(program_name)" "$(DESTDIR)$(bindir)/"
 # patch file for cross compiling
 	cp install/plumed-patch "$(DESTDIR)$(bindir)/$(program_name)-patch"
 # config file for cross compiling
@@ -266,13 +297,14 @@ endif
 # other shell-based cltools are copied
 	for file in $(PLUMED_SCRIPTS) ; do cp install/plumed-$$file "$(DESTDIR)$(libdir)/$(program_name)/plumed-$$file" ; done
 ifdef SOEXT
-	cp install/libplumed.$(SOEXT) "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
-	cp install/libplumedKernel.$(SOEXT) "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
-endif
+	cp install/lib"$(program_name)".$(SOEXT) "$(DESTDIR)$(libdir)/"
+	cp install/lib"$(program_name)"Kernel.$(SOEXT) "$(DESTDIR)$(libdir)/"
+	if test -e install/"$(program_name)"-runtime ; then cp install/"$(program_name)"-runtime "$(DESTDIR)$(libdir)/$(program_name)/plumed-runtime" ; fi
 ifdef AR_CR
-	cp install/libplumedWrapper.a "$(DESTDIR)$(libdir)/lib$(program_name)Wrapper.a"
+	cp install/lib$(program_name)Wrapper.a "$(DESTDIR)$(libdir)/"
 else
 	cp $(OBJ_DYNAMIC_WRAPPER) "$(DESTDIR)$(libdir)/$(program_name)/obj/Plumed.o"
+endif
 endif
 # modulefile
 	cp install/modulefile "$(DESTDIR)$(libdir)/$(program_name)/modulefile"
@@ -291,7 +323,7 @@ ifdef python_bin
 	cp -pr ../../python install 
 	cd install/python && rm -fr *.so plumed.cpp build && \
         CC="$(CC)" \
-          LDSHARED="$(LDSHARED)" \
+          LDSHARED="$(LDSHARED) $(PYTHON_EXTRA_LDFLAGS)" \
           CXX="$(CXX)" \
           plumedexe="../../plumed" \
           program_name="$(program_name)" \
@@ -395,7 +427,7 @@ uninstall:
 	rm -f "$(DESTDIR)$(bindir)/bin/$(program_name)-config"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	rm -f "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
-	rm -f "$(DESTDIR)$(libdir)/lib/pkgconfig/$(PLUMED_PROGRAM_NAME).pc"
+	rm -f "$(DESTDIR)$(libdir)/lib/pkgconfig/$(program_name).pc"
 
 $(DIRS):
 	$(MAKE) -C $@ obj
@@ -436,51 +468,46 @@ endif
 $(PLUMED_KERNEL):$(OBJ_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-	cd install && $(LDSHARED) -o libplumedKernel.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(DYNAMIC_LIBS)
-ifeq ($(SOEXT),dylib)
-	install_name_tool -id "$(libdir)/lib$(program_name)Kernel.$(SOEXT)" $@
 endif
-else
-	$(LDSHARED) -o $@ $^ $(DYNAMIC_LIBS)
-ifeq ($(SOEXT),dylib)
-	install_name_tool -id "$(realpath .)/libplumedKernel.$(SOEXT)" $@
-endif
-endif
+# $(notdir $@) is required to obtain the plain name (without `install/`)
+	$(LDSHARED) -o $@ $^ $(SONAME_OPTION),"$(SONAME_INSTALL_PATH)$(notdir $@)" $(DYNAMIC_LIBS)
 
-# dependence on PLUMED_KERNEL is required for build on OSX to work correctly:
-$(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_KERNEL)
+$(PLUMED_SHARED_OBJ): $(OBJ_WRAPPER) $(PLUMED_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-ifeq ($(SOEXT),dylib)
-	cd install && $(LDSHARED) -o libplumed.$(SOEXT) libplumedKernel.dylib $(addprefix ../,$(OBJ_WRAPPER)) $(LIBS)
-	install_name_tool -id "$(libdir)/lib$(program_name).$(SOEXT)" $@
-else
-	cd install && $(LDSHARED) -o libplumed.$(SOEXT) $(addprefix ../,$(OBJ_KERNEL)) $(addprefix ../,$(OBJ_WRAPPER)) $(DYNAMIC_LIBS)
 endif
-else
-ifeq ($(SOEXT),dylib)
-	$(LDSHARED) -o $@ $(OBJ_WRAPPER) libplumedKernel.dylib $(LIBS)
-	install_name_tool -id "$(realpath .)/libplumed.$(SOEXT)" $@
-else
-	$(LDSHARED) -o $@ $(OBJ_KERNEL) $(OBJ_WRAPPER) $(DYNAMIC_LIBS)
-endif
+# $(notdir $@) is required to obtain the plain name (without `install/`)
+	$(LDSHARED) -o $@ $^ $(SONAME_OPTION),"$(SONAME_INSTALL_PATH)$(notdir $@)"
+ifeq ($(use_loader_path),yes)
+	install_name_tool -change "$(SONAME_INSTALL_PATH)$(notdir $(PLUMED_KERNEL))" "@loader_path/$(notdir $(PLUMED_KERNEL))" $@
 endif
 
 ifdef AR_CR
 $(PLUMED_WRAPPER_LIB): $(OBJ_DYNAMIC_WRAPPER)
 ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
-	cd install && $(AR_CR) libplumedWrapper.a $(addprefix ../,$(OBJ_DYNAMIC_WRAPPER))
-else
-	$(AR_CR) $@ $(OBJ_DYNAMIC_WRAPPER)
 endif
+	$(AR_CR) $@ $^
 endif
 
 $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(DYNAMIC_LIBS)
 	
-$(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(PLUMED_SHARED_OBJ)
-	$(LD) $(LDFLAGS) $(OBJ_MAIN) "$(realpath $(PLUMED_SHARED_OBJ))" -o $@ $(LIBS)
+# In principle we would like PLUMED_MAIN_SHARED to depend on PLUMED_SHARED_OBJ.
+# However, this would require a special flag on Linux (-rpath-link) in order to
+# find the functions defined in PLUMED_KERNEL (just check history of this file).
+# I thus prefer to directly link PLUMED_KERNEL.
+# This makes Linux identical to OSX and is likely more portable.
+$(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(OBJ_WRAPPER) $(PLUMED_KERNEL)
+	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
+ifeq ($(use_loader_path),yes)
+ifeq ($(PLUMED_INSTALL),Install)
+	install_name_tool -change "$(SONAME_INSTALL_PATH)$(notdir $(PLUMED_KERNEL))" "@loader_path/../$(notdir $(libdir))/$(notdir $(PLUMED_KERNEL))" $@
+else
+	install_name_tool -change "$(SONAME_INSTALL_PATH)$(notdir $(PLUMED_KERNEL))" "@loader_path/$(notdir $(PLUMED_KERNEL))" $@
+endif
+endif
+
 
 $(PLUMED_MAIN_RUNTIME): $(OBJ_MAIN) $(OBJ_DYNAMIC_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)

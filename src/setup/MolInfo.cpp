@@ -50,8 +50,23 @@ for known residues from these three types of molecule. In other words, this is a
 historical reasons and to allow future extensions where alternative lists will be provided.
 As of now, you can just ignore this keyoword.
 
-Using MOLINFO with a protein's or nucleic acid's pdb extends the possibility of atoms selection using the @ special
-symbol in the form
+Using \ref MOLINFO extends the possibility of atoms selection using the @ special
+symbol. The following shortcuts are available that do not refer to one specific residue:
+
+\verbatim
+@nucleic : all atoms that are part of a DNA or RNA molecule
+@protein : all atoms that are part of a protein
+@water : all water molecules
+@ions : all the ions
+@hydrogens : all hydrogen atoms (those for which the first non-number in the name is a H)
+@nonhydrogens : all non hydrogen atoms (those for which the first non-number in the name is not a H)
+\endverbatim
+
+\warning
+Be careful since these choices are based on common names used in PDB files. Always check if
+the selected atoms are correct.
+
+In addition, atoms from a specific residue can be selected with a symbol in this form:
 
 \verbatim
 @"definition"-chain_residuenum
@@ -121,6 +136,10 @@ should not be used on 5' end residue.
 
 Furthermore it is also possible to pick single atoms using the syntax
 `atom-chain_residuenum`, `@atom-chainresiduenum` or `@atom-residuenum`.
+As of PLUMED 2.5, this also works when the residue is not a protein/rna/dna residue.
+For instance, `@OW-100` will select oxygen of water molecule with residue number 100.
+
+Finally, notice that other shortcuts are available even when not using the \ref MOLINFO command (see \ref atomSpecs).
 
 \warning If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
 
@@ -154,12 +173,12 @@ PRINT ARG=hb1,hb2,hb3
 
 This example use MOLINFO to calculate torsions angles
 
-\verbatim
+\plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 t1: TORSION ATOMS=@phi-3
 t2: TORSION ATOMS=@psi-4
 PRINT ARG=t1,t2 FILE=colvar STRIDE=10
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

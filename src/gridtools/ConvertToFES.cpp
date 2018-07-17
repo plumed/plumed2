@@ -92,11 +92,11 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   plumed_assert( ingrid->getNumberOfComponents()==1 );
 
   // Create a grid
-  createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString() );
-  if( ingrid->noDerivatives() ) mygrid->setNoDerivatives();
+  auto grid=createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString() );
+  if( ingrid->noDerivatives() ) grid->setNoDerivatives();
   std::vector<double> fspacing;
-  mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing);
-  setAveragingAction( mygrid, true );
+  grid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing);
+  setAveragingAction( std::move(grid), true );
 
   simtemp=0.; parse("TEMP",simtemp);
   if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();

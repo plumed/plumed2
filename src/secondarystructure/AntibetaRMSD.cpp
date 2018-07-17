@@ -22,7 +22,6 @@
 #include "SecondaryStructureRMSD.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace secondarystructure {

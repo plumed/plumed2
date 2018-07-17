@@ -237,6 +237,9 @@ PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
+PLUMED_CONFIG_ENABLE([absolute-soname],[store absolute soname (Linux only - this is the default behavior on OSX). Only enable for testing!],[no])
+PLUMED_CONFIG_ENABLE([absolute-install-name],[store absolute relative (OSX only - disable to have a behavior similar to Linux). Only disable for testing!],[yes])
+PLUMED_CONFIG_ENABLE([loader-path],[use @loader_path to find libplumedKernel.dylib (OSX only)],[yes])
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
@@ -249,6 +252,7 @@ PLUMED_CONFIG_ENABLE([zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([readdir-r],[search for readdir_r (threadsafe)],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
+PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
@@ -309,7 +313,11 @@ AC_LANG(C++)
 
 # log the initial flags
 LD="$CXX"
-LDSHARED="$CXX"
+
+if test -z "$LDSHARED" ; then
+  LDSHARED="$CXX"
+fi
+
 AC_MSG_NOTICE([Initial CXX:         $CXX])
 AC_MSG_NOTICE([Initial CXXFLAGS:    $CXXFLAGS])
 AC_MSG_NOTICE([Initial CPPFLAGS:    $CPPFLAGS])
@@ -342,7 +350,8 @@ fi
 
 if test $gcov == true
 then
-  PLUMED_CHECK_CXXFLAG([--coverage])
+  CXX="$CXX --coverage"
+  LDSHARED="$LDSHARED --coverage"
   CFLAGS="$CFLAGS --coverage"
   LDFLAGS="$CFLAGS --coverage"
   STATIC_LIBS="$STATIC_LIBS --coverage"
@@ -597,6 +606,19 @@ fi
 if test $dlopen == true ; then
   PLUMED_CHECK_PACKAGE([dlfcn.h],[dlopen],[__PLUMED_HAS_DLOPEN])
 fi
+
+if test $rtld_default == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([RTLD_DEFAULT],[
+#include <dlfcn.h>
+int
+main ()
+{
+  void* f=dlsym(RTLD_DEFAULT,"path");
+  return 0;
+}
+  ], [__PLUMED_HAS_RTLD_DEFAULT])
+fi
+
 if test $execinfo == true ; then
   PLUMED_CHECK_PACKAGE([execinfo.h],[backtrace],[__PLUMED_HAS_EXECINFO])
 fi
@@ -742,7 +764,7 @@ if test "$shared" == true ; then
     AC_MSG_NOTICE([Dynamic library extension is 'dylib'])
     AC_MSG_NOTICE([LDSHARED needs special flags])
     SOEXT=dylib
-    LDSHARED="$LDSHARED -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
+    LDSHARED="$LDSHARED -dynamiclib -Wl,-headerpad_max_install_names"
     if test "$rpath" = true ; then
       AC_MSG_NOTICE([Switching off rpath on OSX])
       rpath=false
@@ -907,6 +929,42 @@ if test $mpi_found == ok ; then
   else
     AC_MSG_NOTICE([Regtest suite will use env var PLUMED_MPIRUN to run MPI tests (default: mpirun)])
   fi
+fi
+
+if test "$SOEXT" == "dylib" ; then
+  use_absolute_soname=yes
+else
+  use_absolute_soname=no
+fi
+
+AC_SUBST(use_absolute_soname)
+if test "$absolute_soname" == true ; then
+  if test "$SOEXT" == "dylib" ; then
+    AC_MSG_WARN([--enable-absolute-soname has no effect on OSX])
+  else
+    AC_MSG_NOTICE([enabling absolute soname. Full path will be hardcoded in plumed library soname])
+    use_absolute_soname=yes
+  fi
+fi
+
+if test "$absolute_install_name" == false ; then
+  if test "$SOEXT" == "so" ; then
+    AC_MSG_WARN([--disable-absolute-install-name has no effect on Linux])
+  else
+    AC_MSG_NOTICE([enabling relative install_name. You will have to set DYLD_LIBRARY_PATH yor plumed libraries to be found at runtime])
+    use_absolute_soname=no
+  fi
+fi
+
+AC_SUBST(use_loader_path)
+if test "$SOEXT" == "dylib" ; then
+  if test "$loader_path" == true ; then
+    use_loader_path=yes
+  else
+    use_loader_path=no
+  fi
+else
+  use_loader_path=no
 fi
 
 #### This further tests are required to allow linking with non c++ compiler

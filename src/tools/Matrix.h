@@ -95,6 +95,10 @@ public:
   inline unsigned nrows() const { return rw; }
   /// Return the number of columns
   inline unsigned ncols() const { return cl; }
+  /// Return the contents of the matrix as a vector of length rw*cl
+  inline std::vector<T>& getVector() { return data; }
+  /// Set the matrix from a vector input
+  inline void setFromVector( const std::vector<T>& vecin ) { plumed_assert( vecin.size()==sz ); for(unsigned i=0; i<sz; ++i) data[i]=vecin[i]; }
   /// Return element i,j of the matrix
   inline T operator () (const unsigned& i, const unsigned& j) const { return data[j+i*cl]; }
   /// Return a referenre to element i,j of the matrix

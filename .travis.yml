@@ -29,7 +29,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.81
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.84
 # test using external blas with internal lapack
   - os: linux
     if: branch =~ ^test- OR type IN(pull_request)

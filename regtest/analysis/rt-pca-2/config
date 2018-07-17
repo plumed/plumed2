@@ -1,2 +1,0 @@
-type=driver
-arg="--plumed plumed.dat --ixyz diala_traj_nm.xyz"

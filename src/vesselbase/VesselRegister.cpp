@@ -62,14 +62,13 @@ bool VesselRegister::check(std::string key) {
   return false;
 }
 
-Vessel* VesselRegister::create(std::string keyword, const VesselOptions&da) {
-  Vessel* df;
+std::unique_ptr<Vessel> VesselRegister::create(std::string keyword, const VesselOptions&da) {
+  std::unique_ptr<Vessel> df;
   if(check(keyword)) {
     Keywords keys; mk[keyword](keys);
     VesselOptions nda( da,keys );
     df=m[keyword](nda);
   }
-  else df=NULL;
   return df;
 }
 

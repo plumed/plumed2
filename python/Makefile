@@ -16,10 +16,16 @@ else
 
 ifdef python_bin
 
+ifeq ($(SOEXT),dylib)
+PYTHON_EXTRA_LDFLAGS=-undefined dynamic_lookup
+else
+PYTHON_EXTRA_LDFLAGS=
+endif
+
 all:
 	@echo Building python interface for PLUMED 
 	CC="$(CC)" \
-          LDSHARED="$(LDSHARED)" \
+          LDSHARED="$(LDSHARED) $(PYTHON_EXTRA_LDFLAGS)" \
           CXX="$(CXX)" \
           program_name=plumed \
           plumedexe=../src/lib/plumed \

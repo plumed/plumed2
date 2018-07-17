@@ -54,6 +54,8 @@ readInputLine RESTRAINT ARG=x(d) KAPPA=5 AT=0
 +++ catched
 readInputLine RESTRAINT ARG=(d)x KAPPA=5 AT=0
 +++ catched
+readInputLine RESTRAINT ARG=([a) KAPPA=5 AT=0
++++ catched
 readInputLine EXTERNAL ARG=d FILE=potential LABEL=ext
 +++ catched
 readInputLine METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1 RESTART=WHAT

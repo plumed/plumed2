@@ -139,7 +139,6 @@ PathTools::PathTools(const CLToolOptions& co ):
 }
 
 int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
-
   std::string mtype; parse("--metric",mtype);
   std::string ifilename; parse("--path",ifilename);
   std::string ofmt; parse("--arg-fmt",ofmt);
@@ -147,14 +146,14 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   if( ifilename.length()>0 ) {
     fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
     FILE* fp=fopen(ifilename.c_str(),"r");
-    bool do_read=true; std::vector<ReferenceConfiguration*> frames;
+    bool do_read=true; std::vector<std::unique_ptr<ReferenceConfiguration>> frames;
     while (do_read) {
       PDB mypdb;
       // Read the pdb file
       do_read=mypdb.readFromFilepointer(fp,false,0.1);
       if( do_read ) {
-        ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
-        frames.push_back( mymsd ); mymsd->checkRead();
+        std::unique_ptr<ReferenceConfiguration> mymsd(metricRegister().create<ReferenceConfiguration>( mtype, mypdb ));
+        frames.emplace_back( std::move(mymsd) );
       }
     }
     std::vector<unsigned> fixed; parseVector("--fixed",fixed);
@@ -174,12 +173,16 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
       frames[i]->getArgumentRequests( arg_names );
     }
     // Generate stuff to reparameterize
-    Pbc fake_pbc; std::vector<Value*> vals;
+    Pbc fake_pbc; std::vector<std::unique_ptr<Value>> vals;
     for(unsigned i=0; i<frames[0]->getNumberOfReferenceArguments(); ++i) {
-      vals.push_back(new Value()); vals[vals.size()-1]->setNotPeriodic();
+      vals.emplace_back(new Value()); vals[vals.size()-1]->setNotPeriodic();
     }
+
+    // temporary pointes used to make the conversion once
+
+    auto vals_ptr=Tools::unique2raw(vals);
     // And reparameterize
-    PathReparameterization myparam( fake_pbc, vals, frames );
+    PathReparameterization myparam( fake_pbc, vals_ptr, frames );
     // And make all points equally spaced
     double tol; parse("--tolerance",tol); myparam.reparameterize( fixed[0], fixed[1], tol );
 
@@ -188,7 +191,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     MultiValue myvpack( 1, frames[0]->getNumberOfReferenceArguments() + 3*frames[0]->getNumberOfReferencePositions() + 9 );
     ReferenceValuePack mypack( frames[0]->getNumberOfReferenceArguments(), frames[0]->getNumberOfReferencePositions(), myvpack );
     for(unsigned i=1; i<frames.size(); ++i) {
-      double len = frames[i]->calc( frames[i-1]->getReferencePositions(), fake_pbc, vals, frames[i-1]->getReferenceArguments(), mypack, false );
+      double len = frames[i]->calc( frames[i-1]->getReferencePositions(), fake_pbc, vals_ptr, frames[i-1]->getReferenceArguments(), mypack, false );
       printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
       mean+=len;
     }
@@ -196,9 +199,17 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 
     // Delete all the frames
     OFile ofile; ofile.open(ofilename);
-    for(unsigned i=0; i<frames.size(); ++i) { frames[i]->print( ofile, ofmt, 10. ); delete frames[i]; }
+    std::vector<std::string> argnames; frames[0]->getArgumentRequests( argnames );
+    std::vector<AtomNumber> atindices; frames[0]->getAtomRequests( atindices );
+    PDB mypdb; mypdb.setAtomNumbers( atindices ); mypdb.setArgumentNames( argnames );
+    for(unsigned i=0; i<frames.size(); ++i) {
+      mypdb.setAtomPositions( frames[i]->getReferencePositions() );
+      for(unsigned j=0; j<argnames.size(); ++j) mypdb.setArgumentValue( argnames[j], frames[i]->getReferenceArguments()[j] );
+      ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
+      mypdb.print( 10, NULL, ofile, ofmt );
+    }
     // Delete the vals as we don't need them
-    for(unsigned i=0; i<vals.size(); ++i) delete vals[i];
+    // for(unsigned i=0; i<vals.size(); ++i) delete vals[i];
     // Return as we are done
     return 0;
   }
@@ -216,7 +227,6 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
   std::unique_ptr<ReferenceConfiguration> eframe( metricRegister().create<ReferenceConfiguration>( mtype, myendpdb ) );
   fclose(fp1);
-
 // Get atoms and arg requests
   std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;
   sframe->getAtomRequests( atoms); eframe->getAtomRequests( atoms);
@@ -231,62 +241,66 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
           "and %u frames after the final structure will be created \n",nbefore,nbetween,nafter);
 
 // Create a vector of arguments to use for calculating displacements
-  Pbc fpbc; std::vector<Value*> args;
+  Pbc fpbc;
+  std::vector<std::unique_ptr<Value>> args;
   for(unsigned i=0; i<eframe->getNumberOfReferenceArguments(); ++i) {
-    args.push_back(new Value()); args[args.size()-1]->setNotPeriodic();
+    args.emplace_back(new Value()); args[args.size()-1]->setNotPeriodic();
   }
+
+  // convert pointer once:
+  auto args_ptr=Tools::unique2raw(args);
 
 // Calculate the distance between the start and the end
   MultiValue myvpack( 1, sframe->getNumberOfReferenceArguments() + 3*sframe->getNumberOfReferencePositions() + 9);
   ReferenceValuePack mypack( sframe->getNumberOfReferenceArguments(), sframe->getNumberOfReferencePositions(), myvpack );
-  double pathlen = sframe->calc( eframe->getReferencePositions(), fpbc, args, eframe->getReferenceArguments(), mypack, false );
+  double pathlen = sframe->calc( eframe->getReferencePositions(), fpbc, args_ptr, eframe->getReferenceArguments(), mypack, false );
 // And the spacing between frames
   double delr = 1.0 / static_cast<double>( nbetween );
 // Calculate the vector connecting the start to the end
-  Direction mydir(ReferenceConfigurationOptions("DIRECTION")); sframe->setupPCAStorage( mypack );
-  mydir.setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() ); mydir.zeroDirection();
-  sframe->extractDisplacementVector( eframe->getReferencePositions(), args, eframe->getReferenceArguments(), false, mydir );
-
+  PDB mypdb; mypdb.setAtomNumbers( sframe->getAbsoluteIndexes() ); mypdb.addBlockEnd( sframe->getAbsoluteIndexes().size() );
+  if( sframe->getArgumentNames().size()>0 ) mypdb.setArgumentNames( sframe->getArgumentNames() );
+  Direction mydir(ReferenceConfigurationOptions("DIRECTION")); sframe->setupPCAStorage( mypack ); mydir.read( mypdb ); mydir.zeroDirection();
+  sframe->extractDisplacementVector( eframe->getReferencePositions(), args_ptr, eframe->getReferenceArguments(), false, mydir );
 
 // Now create frames
-  std::vector<ReferenceConfiguration*> final_path;
-  Direction pos(ReferenceConfigurationOptions("DIRECTION"));
-  pos.setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
+  OFile ofile; ofile.open(ofilename); unsigned nframes=0;
+  Direction pos(ReferenceConfigurationOptions("DIRECTION")); pos.read( mypdb );
   for(int i=0; i<nbefore; ++i) {
     pos.setDirection( sframe->getReferencePositions(), sframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( -i*delr, mydir );
-    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) );
-    final_path[final_path.size()-1]->setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
-    final_path[final_path.size()-1]->setReferenceConfig( pos.getReferencePositions(), pos.getReferenceArguments(), sframe->getReferenceMetric() );
+    mypdb.setAtomPositions( pos.getReferencePositions() );
+    for(unsigned j=0; j<pos.getReferenceArguments().size(); ++j) mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
+    ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
+    mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
   }
   for(unsigned i=1; i<nbetween; ++i) {
     pos.setDirection( sframe->getReferencePositions(), sframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( i*delr, mydir );
-    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) );
-    final_path[final_path.size()-1]->setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
-    final_path[final_path.size()-1]->setReferenceConfig( pos.getReferencePositions(), pos.getReferenceArguments(), sframe->getReferenceMetric() );
+    mypdb.setAtomPositions( pos.getReferencePositions() );
+    for(unsigned j=0; j<pos.getReferenceArguments().size(); ++j) mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
+    ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
+    mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
   }
   for(unsigned i=0; i<nafter; ++i) {
     pos.setDirection( eframe->getReferencePositions(), eframe->getReferenceArguments() );
     pos.displaceReferenceConfiguration( i*delr, mydir );
-    final_path.push_back( metricRegister().create<ReferenceConfiguration>(mtype) );
-    final_path[final_path.size()-1]->setNamesAndAtomNumbers( sframe->getAbsoluteIndexes(), sframe->getArgumentNames() );
-    final_path[final_path.size()-1]->setReferenceConfig( pos.getReferencePositions(), pos.getReferenceArguments(), sframe->getReferenceMetric() );
+    mypdb.setAtomPositions( pos.getReferencePositions() );
+    for(unsigned j=0; j<pos.getReferenceArguments().size(); ++j) mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
+    ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
+    mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
   }
 
-  double mean=0; printf("DISTANCE BETWEEN ORIGINAL FRAMES %f \n",pathlen);
-  for(unsigned i=1; i<final_path.size(); ++i) {
-    double len = final_path[i]->calc( final_path[i-1]->getReferencePositions(), fpbc, args, final_path[i-1]->getReferenceArguments(), mypack, false );
-    printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
-    mean+=len;
-  }
-  printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );
+// double mean=0; printf("DISTANCE BETWEEN ORIGINAL FRAMES %f \n",pathlen);
+// for(unsigned i=1;i<final_path.size();++i){
+//    double len = final_path[i]->calc( final_path[i-1]->getReferencePositions(), fpbc, args, final_path[i-1]->getReferenceArguments(), mypack, false );
+//    printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
+//    mean+=len;
+// }
+// printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );
 
-  OFile ofile; ofile.open(ofilename);
-  for(unsigned i=0; i<final_path.size(); ++i) { final_path[i]->print( ofile, ofmt, 10. ); delete final_path[i]; }
 // Delete the args as we don't need them anymore
-  for(unsigned i=0; i<args.size(); ++i) delete args[i];
-  return 0;
+//  for(unsigned i=0; i<args.size(); ++i) delete args[i];
+  ofile.close(); return 0;
 }
 
 } // End of namespace
