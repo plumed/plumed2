@@ -44,10 +44,6 @@ class Difference :
   public Function
 {
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   explicit Difference(const ActionOptions&);
   void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys);
@@ -55,114 +51,6 @@ public:
 
 
 PLUMED_REGISTER_ACTION(Difference,"DIFFERENCE")
-PLUMED_REGISTER_SHORTCUT(Difference,"DRMSD")
-
-void Difference::shortcutKeywords( Keywords& keys ) {
-  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
-  keys.add("compulsory","LOWER_CUTOFF","only pairs of atoms further than LOWER_CUTOFF are considered in the calculation.");
-  keys.add("compulsory","UPPER_CUTOFF","only pairs of atoms closer than UPPER_CUTOFF are considered in the calculation.");
-  keys.add("compulsory","TYPE","DRMSD","what kind of DRMSD would you like to calculate.  You can use either the normal DRMSD involving all the distances between "
-           "the atoms in your molecule.  Alternatively, if you have multiple molecules you can use the type INTER-DRMSD "
-           "to compute DRMSD values involving only those distances between the atoms at least two molecules or the type INTRA-DRMSD "
-           "to compute DRMSD values involving only those distances between atoms in the same molecule");
-  keys.addFlag("SQUARED",false,"This should be setted if you want MSD instead of RMSD ");
-  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-}
-
-void Difference::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                 const std::map<std::string,std::string>& keys,
-                                 std::vector<std::vector<std::string> >& actions ) {
-  if( words[0]=="DRMSD" ) {
-      // Read in the reference configuration
-      std::vector<std::string> ref_str; ref_str.push_back(lab + "_atoms:"); ref_str.push_back("READ_ATOMS");
-      ref_str.push_back("REFERENCE=" + keys.find("REFERENCE")->second ); actions.push_back( ref_str );
-      // First bit of input for reference values
-      std::vector<std::string> ref_vals; ref_vals.push_back(lab + "_ref:"); ref_vals.push_back("CALCULATE_REFERENCE");
-      ref_vals.push_back("ATOMS=" + lab + "_atoms"); std::string din = "INPUT=DISTANCE NOPBC";
-      // First bit of input for the instantaneous distances
-      std::vector<std::string> mat_inp; mat_inp.push_back( lab + "_mat:"); mat_inp.push_back("DISTANCE");
-      if( keys.count("NOPBC") ) mat_inp.push_back("NOPBC");
-      // Get cutoff information
-      double lcut, ucut=std::numeric_limits<double>::max();
-      if( keys.count("LOWER_CUTOFF") ) Tools::convert( keys.find("LOWER_CUTOFF")->second, lcut );
-      if( keys.count("UPPER_CUTOFF") ) Tools::convert( keys.find("UPPER_CUTOFF")->second, ucut ); 
-      PDB pdb;  std::string reference = keys.find("REFERENCE")->second;
-      // This is a potential problem if the user is using units
-      if( !pdb.read(reference,false,0.1) ) plumed_merror("missing input file " + reference ); 
-      std::vector<AtomNumber> atoms( pdb.getAtomNumbers() ); std::vector<Vector> pos( pdb.getPositions() );
-      // Work out what distances we need to calculate from the reference configuration
-      std::string drmsd_type = keys.find("TYPE")->second; unsigned nn=1; std::string istr, jstr, num;
-      if( drmsd_type=="DRMSD" ) {
-          for(unsigned i=0;i<atoms.size()-1;++i) {
-              Tools::convert( atoms[i].serial(), istr );
-              for(unsigned j=i+1; j<atoms.size(); ++j) {
-                  Tools::convert( atoms[j].serial(), jstr );
-                  double distance = delta( pos[i], pos[j] ).modulo();
-                  if( distance < ucut && distance > lcut ) { 
-                      Tools::convert( nn, num );
-                      std::string dinstr = "ATOMS" + num + "=" + istr + "," + jstr;
-                      mat_inp.push_back( dinstr ); din += " " + dinstr; nn++;
-                  }
-              }
-          }
-      } else { 
-          unsigned nblocks = pdb.getNumberOfAtomBlocks(); std::vector<unsigned> blocks( nblocks+1 );
-          if( nblocks==1 ) plumed_merror("Trying to compute intermolecular rmsd but found no TERs in input PDB");
-          blocks[0]=0; for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
-          if( drmsd_type=="INTRA-DRMSD" ) { 
-              for(unsigned i=0; i<nblocks; ++i) {
-                for(unsigned iatom=blocks[i]+1; iatom<blocks[i+1]; ++iatom) {
-                  Tools::convert( atoms[iatom].serial(), istr );
-                  for(unsigned jatom=blocks[i]; jatom<iatom; ++jatom) {
-                    Tools::convert( atoms[jatom].serial(), jstr );
-                    double distance = delta( pos[iatom], pos[jatom] ).modulo();
-                    if(distance < ucut && distance > lcut ) {
-                       Tools::convert( nn, num );
-                       std::string dinstr = "ATOMS" + num + "=" + istr + "," + jstr;
-                       mat_inp.push_back( dinstr ); din += " " + dinstr; nn++;
-                    }
-                  }
-                }
-              }
-          } else if( drmsd_type=="INTER-DRMSD" ) {
-              for(unsigned i=1; i<nblocks; ++i) {
-                for(unsigned j=0; j<i; ++j) {
-                  for(unsigned iatom=blocks[i]; iatom<blocks[i+1]; ++iatom) {
-                    Tools::convert( atoms[iatom].serial(), istr );
-                    for(unsigned jatom=blocks[j]; jatom<blocks[j+1]; ++jatom) {
-                      Tools::convert( atoms[jatom].serial(), jstr );
-                      double distance = delta( pos[iatom], pos[jatom] ).modulo();
-                      if(distance < ucut && distance > lcut ) {
-                         Tools::convert( nn, num );
-                         std::string dinstr = "ATOMS" + num + "=" + istr + "," + jstr;
-                         mat_inp.push_back( dinstr ); din += " " + dinstr; nn++; 
-                      }
-                    }
-                  }
-                } 
-              }
-          } else plumed_error();
-      }
-      // Put this information into the reference matrix
-      ref_vals.push_back( din ); actions.push_back( ref_vals ); actions.push_back( mat_inp );
-      // And the difference between these two sets of matrices
-      std::vector<std::string> diff_mat; diff_mat.push_back( lab + "_diffm:"); diff_mat.push_back("DIFFERENCE");
-      diff_mat.push_back("ARG1=" + lab + "_mat"); diff_mat.push_back("ARG2=" + lab + "_ref");
-      actions.push_back( diff_mat );
-      // And the total difference
-      std::vector<std::string> comb_inp; 
-      if( keys.count("SQUARED") ) comb_inp.push_back( lab + ":"); else comb_inp.push_back( lab + "_2:"); 
-      comb_inp.push_back("COMBINE"); comb_inp.push_back("ARG=" + lab + "_diffm"); std::string powstr ="POWERS=2";
-      for(unsigned i=1;i<nn-1;++i) powstr += ",2"; comb_inp.push_back( powstr );
-      comb_inp.push_back("NORMALIZE"); comb_inp.push_back("PERIODIC=NO"); actions.push_back( comb_inp );
-      // And the square root of the distance if required
-      if( !keys.count("SQUARED") ) {
-          std::vector<std::string> fval; fval.push_back( lab + ":" ); fval.push_back("MATHEVAL");
-          fval.push_back("ARG=" + lab + "_2"); fval.push_back("FUNC=sqrt(x)"); fval.push_back("PERIODIC=NO");
-          actions.push_back( fval );
-      }
-  }
-}
 
 void Difference::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys); keys.use("ARG");

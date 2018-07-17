@@ -57,7 +57,6 @@ ActionAtomistic(ao)
 {
    std::string lab; std::vector<AtomNumber> atom_list; parseAtomList("ATOMS",atom_list); bool safe=true;
    for(unsigned i=0;i<atom_list.size();++i) {
-       printf("READ ATOMS %d \n", atom_list[i].serial() );
        if( atoms.isVirtualAtom(atom_list[i]) ) {
            ReadReferenceConfiguration* as = dynamic_cast<ReadReferenceConfiguration*>( atoms.getVirtualAtomsAction(atom_list[i]) );
            if( !as ) safe=false;
