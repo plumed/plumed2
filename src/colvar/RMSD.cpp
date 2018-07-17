@@ -53,10 +53,6 @@ public:
   virtual void calculate();
   void apply();
   static void registerKeywords(Keywords& keys);
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
 };
 
 
@@ -167,115 +163,10 @@ RMSD REFERENCE=file.pdb TYPE=OPTIMAL
 //+ENDPLUMEDOC
 
 PLUMED_REGISTER_ACTION(RMSD,"RMSD")
-PLUMED_REGISTER_SHORTCUT(RMSD,"RMSD")
-PLUMED_REGISTER_SHORTCUT(RMSD,"PCAVARS")
-
-void RMSD::shortcutKeywords(Keywords& keys ) { 
-  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
-}
-
-void RMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                           const std::map<std::string,std::string>& keys,
-                           std::vector<std::vector<std::string> >& actions ) {
-  if( words[0]=="RMSD") {
-      // Create the reference object
-      std::vector<std::string> ref_line; ref_line.push_back( lab + "_ref:" );
-      ref_line.push_back("READ_ATOMS"); ref_line.push_back("REFERENCE=" + keys.find("REFERENCE")->second );
-      actions.push_back( ref_line );
-      // And now create the rmsd object
-      std::vector<std::string> rmsd_line; rmsd_line.push_back( lab + ":");
-      rmsd_line.push_back("RMSD"); rmsd_line.push_back("REFERENCE_ATOMS=" + lab + "_ref"); 
-      // Read the reference pdb file
-      PDB pdb; std::string reference=keys.find("REFERENCE")->second;
-      if( !pdb.read(reference,false,0.1) ) plumed_merror("missing file " + reference );
-      // Get the atom numbers
-      std::vector<AtomNumber> atoms( pdb.getAtomNumbers() ); 
-      std::string atnum; Tools::convert( atoms[0].serial(), atnum ); std::string atlstr="ATOMS=" + atnum;
-      for(unsigned i=1;i<atoms.size();++i){ Tools::convert( atoms[i].serial(), atnum ); atlstr += "," + atnum; }
-      rmsd_line.push_back( atlstr );
-      // Get the align values 
-      std::vector<double> alig( pdb.getOccupancy() ); 
-      std::string anum; Tools::convert( alig[0], anum ); std::string alstr="ALIGN=" + anum;
-      for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); alstr += "," + anum; }
-      rmsd_line.push_back( alstr );
-      // Get the displace values
-      std::vector<double> disp( pdb.getBeta() );
-      std::string dnum; Tools::convert( disp[0], dnum ); std::string dlstr="DISPLACE=" + dnum;
-      for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); dlstr += "," + dnum; }
-      rmsd_line.push_back( dlstr );
-      // And add everything else from the input
-      for(unsigned i=1;i<words.size();++i) rmsd_line.push_back( words[i] );
-      actions.push_back( rmsd_line );
-  } else if( words[0]=="PCAVARS" ) {
-      // Create the reference object
-      std::vector<std::string> ref_line; ref_line.push_back( lab + "_ref:" );
-      ref_line.push_back("READ_ATOMS"); ref_line.push_back("REFERENCE=" + keys.find("REFERENCE")->second );
-      actions.push_back( ref_line );
-      // And now create the rmsd object
-      std::vector<std::string> rmsd_line; rmsd_line.push_back( lab + ":");
-      rmsd_line.push_back("RMSD"); rmsd_line.push_back("REFERENCE_ATOMS=" + lab + "_ref");
-      // Read the reference pdb file
-      PDB pdb; std::string reference=keys.find("REFERENCE")->second;
-      FILE* fp=std::fopen(reference.c_str(),"r");
-      if(!fp) plumed_merror("could not open reference file " + reference );
-      bool do_read=pdb.readFromFilepointer(fp,false,0.1); 
-      if( !do_read ) plumed_merror("missing file " + reference );
-      // Get the atom numbers
-      std::vector<AtomNumber> atoms( pdb.getAtomNumbers() );
-      std::string atnum; Tools::convert( atoms[0].serial(), atnum ); std::string atlstr="ATOMS=" + atnum;
-      for(unsigned i=1;i<atoms.size();++i){ Tools::convert( atoms[i].serial(), atnum ); atlstr += "," + atnum; }
-      rmsd_line.push_back( atlstr ); rmsd_line.push_back("DISPLACEMENT"); rmsd_line.push_back("SQUARED"); 
-      // And add everything else from the input
-      for(unsigned i=1;i<words.size();++i) rmsd_line.push_back( words[i] );
-      actions.push_back( rmsd_line );
-      // Now read in the directions and create matheval objects to compute the pca components
-      unsigned nfram=1;
-      while( do_read ) {
-        PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,0.1);
-        if( do_read ) {
-            std::string num; Tools::convert( nfram, num ); nfram++;
-            std::vector<std::string> comb_inp; comb_inp.push_back( lab + "_eig-" + num + ":" ); 
-            comb_inp.push_back("COMBINE"); comb_inp.push_back("ARG=" + lab + ".disp" );
-            // Normalize the eigenvector in the input
-            double norm=0; 
-            for(unsigned i=0;i<mypdb.getPositions().size();++i) { 
-                norm += mypdb.getPositions()[i][0]*mypdb.getPositions()[i][0];
-                norm += mypdb.getPositions()[i][1]*mypdb.getPositions()[i][1];
-                norm += mypdb.getPositions()[i][2]*mypdb.getPositions()[i][2];
-            }
-            norm = sqrt( norm ); std::vector<double> normed_coeffs( 3*mypdb.getPositions().size() );
-            for(unsigned i=0;i<mypdb.getPositions().size();++i) {
-                normed_coeffs[3*i+0] = mypdb.getPositions()[i][0] / norm;
-                normed_coeffs[3*i+1] = mypdb.getPositions()[i][1] / norm;
-                normed_coeffs[3*i+2] = mypdb.getPositions()[i][2] / norm;
-            }
-            std::string coeff1; Tools::convert( normed_coeffs[0], coeff1 ); 
-            std::string coeff_inp="COEFFICIENTS=" + coeff1;
-            for(unsigned i=1;i<normed_coeffs.size();++i) {
-                Tools::convert( normed_coeffs[i], coeff1 );
-                coeff_inp += "," + coeff1; 
-            }
-            comb_inp.push_back( coeff_inp ); comb_inp.push_back("PERIODIC=NO"); 
-            actions.push_back( comb_inp );
-        } else { break; }
-      }
-      std::fclose(fp);
-      std::vector<std::string> resid_inp; resid_inp.push_back( lab + "_residual_2:" ); resid_inp.push_back("COMBINE");
-      std::string arg_inp="ARG=" + lab + ".dist", coeff_inp2 = "COEFFICIENTS=1", pow_inp = "POWERS=1";
-      for(unsigned i=0;i<nfram-1;++i) { 
-          std::string num; Tools::convert( i+1, num );
-          arg_inp += "," + lab + "_eig-" + num; coeff_inp2 += ",-1"; pow_inp += ",2";
-      }
-      resid_inp.push_back( arg_inp ); resid_inp.push_back( coeff_inp2 ); resid_inp.push_back( pow_inp );
-      resid_inp.push_back("PERIODIC=NO"); actions.push_back( resid_inp );
-      std::vector<std::string> fresid; fresid.push_back( lab + "_residual:"); fresid.push_back("MATHEVAL");
-      fresid.push_back("ARG=" + lab + "_residual_2"); fresid.push_back("FUNC=sqrt(x)"); fresid.push_back("PERIODIC=NO"); 
-      actions.push_back( fresid );  
-  }
-}
 
 void RMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
+  keys.add("optional","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV");
   keys.add("atoms","REFERENCE_ATOMS","the atom numbers for the reference configuration");
   keys.add("atoms","ATOMS","the atom numbers that you would like to consider");
   keys.add("compulsory","ALIGN","1.0","the weights to use when aligning to the reference structure");
@@ -293,17 +184,31 @@ RMSD::RMSD(const ActionOptions&ao):
   nopbc(false),
   displacement(false)
 {
-  type.assign("SIMPLE");
-  parse("TYPE",type);
-  parseFlag("SQUARED",squared);
-  parseFlag("NOPBC",nopbc);
-  parseFlag("DISPLACEMENT",displacement);
+  // Check for shorcut 
+  std::vector<AtomNumber> atoms_ref, atoms_conf;
+  std::string reference; parse("REFERENCE",reference);
+  if( reference!="") {
+      // Create the input reference position
+      readInputLine( getLabel() + "_ref: READ_ATOMS REFERENCE=" + reference );
+      // Now create the input for the real RMSD object
+      std::string rmsd_line = getLabel() + ": RMSD REFERENCE_ATOMS=" + getLabel() + "_ref";
+      // Read the reference pdb file
+      PDB pdb; 
+      if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) ) plumed_merror("missing file " + reference );
+      // Get the reference atoms
+      std::vector<std::string> refname(1); refname[0]=getLabel() + "_ref"; interpretAtomList( refname, atoms_ref ); 
+      // Get the atom numbers
+      atoms_conf = pdb.getAtomNumbers(); align = pdb.getOccupancy(); displace= pdb.getBeta();
+  } else {
+      parseAtomList("REFERENCE_ATOMS",atoms_ref); parseAtomList("ATOMS",atoms_conf);
+      align.resize( atoms_ref.size() ); parseVector("ALIGN",align);
+      displace.resize( atoms_ref.size() ); parseVector("DISPLACE",displace);
+  }
 
-  std::vector<AtomNumber> atoms_ref; parseAtomList("REFERENCE_ATOMS",atoms_ref);
-  std::vector<AtomNumber> atoms_conf; parseAtomList("ATOMS",atoms_conf);
+  type.assign("SIMPLE"); parse("TYPE",type);
+  parseFlag("SQUARED",squared); parseFlag("NOPBC",nopbc); parseFlag("DISPLACEMENT",displacement);
+
   if( atoms_ref.size()!=atoms_conf.size() ) error("size mismatch between reference atoms and atoms involved");
-  align.resize( atoms_ref.size() ); parseVector("ALIGN",align);
-  displace.resize( atoms_ref.size() ); parseVector("DISPLACE",displace); 
   double wa=0, wd=0; for(unsigned i=0; i<align.size(); ++i) { wa+=align[i]; wd+=displace[i]; }
   for(unsigned i=0; i<align.size(); ++i){ align[i] /= wa; displace[i] /= wd; }
 

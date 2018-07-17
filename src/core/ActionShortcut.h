@@ -40,8 +40,6 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ActionShortcut(const ActionOptions&ao);
-/// Read a line of input and create appropriate actions
-  void readInputLine( const std::string& input );
 /// Do nothing.
   void calculate() {}
 /// Do nothing.
