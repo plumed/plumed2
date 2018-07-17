@@ -9,3 +9,6 @@ PRINT ARG=p2.s,p2.z,p3.sss,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 # dummy action to activate the virtual atom every ten frames, as a check
 p3b: PATHMSD REFERENCE=all1.pdb LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=5
 PRINT ARG=p3b.sss,p3b.zzz FILE=colvarc STRIDE=500 FMT=%8.4f
+PRINT ARG=p2_s,p2_z,p3.sss,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
+
+vv: BIASVALUE ARG=p2_s,p2_z
