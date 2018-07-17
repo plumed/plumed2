@@ -101,7 +101,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
     Wavelet_Grid_->writeToFile(wavelet_gridfile);
   }
   setType("daubechies_wavelets");
-  setDescription("Daubechies Wavelets (minimum phase type)");
+  setDescription("Daubechies Wavelets (maximum phase type)");
   setLabelPrefix("k");
   setupBF();
   checkRead();
@@ -111,24 +111,27 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
 void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
   // plumed_assert(values.size()==numberOfBasisFunctions());
   // plumed_assert(derivs.size()==numberOfBasisFunctions());
-  //inside_range=true;
-  //argT=checkIfArgumentInsideInterval(arg,inside_range);
+  argT=checkIfArgumentInsideInterval(arg,inside_range);
   //
   values[0]=1.0;
   derivs[0]=0.0;
   //
-  // Wavelets are 0 outside the defined range
-  //else {
-    for(unsigned int i=1; i < getNumberOfBasisFunctions()-1; i++) {
-      double x = arg+1-i;
-      if (x < 0 || x > getNumberOfBasisFunctions()-1) {
-        derivs[i] = 0.0; values[i] = 0.0;
-        continue;
-      }
-      std::vector<double> temp_deriv;
-      values[i] = Wavelet_Grid_->getValueAndDerivatives(x, temp_deriv);
-      derivs[i] = temp_deriv.at(0);
+  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
+    double x = arg - ((i-1)/intervalDerivf()); // shift argument by scaled i
+    log << x << "\n";
+    if (x < 0 || x > intervalRange()) { // Wavelets are 0 outside the defined range
+      values[i] = 0.0; derivs[i] = 0.0;
     }
+    else {
+      // declaring vectors and calling first a function to get the index is a bit cumbersome and might be slow
+      std::vector<double> temp_deriv;
+      std::vector<double> x_vec {x};
+      values[i] = Wavelet_Grid_->getValueAndDerivatives(Wavelet_Grid_->getIndex(x_vec), temp_deriv);
+      derivs[i] = temp_deriv[0];
+    }
+  }
+  if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
+  return;
 }
 
 
@@ -136,7 +139,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
 void BF_DbWavelets::setupLabels() {
   setLabel(0,"const");
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    std::string is; Tools::convert(i-1,is);
+    std::string is; Tools::convert((i-1)/intervalDerivf(),is);
     setLabel(i,"i = "+is);
   }
 }
@@ -144,16 +147,16 @@ void BF_DbWavelets::setupLabels() {
 
 // Creates and fills the Grid with the Wavelet values
 void BF_DbWavelets::setup_Wavelet_Grid(const unsigned gridsize) {
-  // NumberOfBasisFunctions -1 is equal to the maximum support of the Wavelet scaling function
-  std::string maxsupport; Tools::convert(getNumberOfBasisFunctions()-1, maxsupport);
+  // NumberOfBasisFunctions -1 is equal to the maximum support (intrinsicIntervalMax() is double --> type casting would be needed)
+  unsigned maxsupport = getNumberOfBasisFunctions() - 1;
   // determine needed recursion depth for specified size
   unsigned recursion_number = 0;
-  while ((getNumberOfBasisFunctions()-1)*(1<<recursion_number) < gridsize) recursion_number++;
+  while (maxsupport*(1<<recursion_number) < gridsize) recursion_number++;
   unsigned bins_per_int = 1<<recursion_number;
   // define number of grid bins
-  const std::vector<unsigned> gridbins {(getNumberOfBasisFunctions()-1)* (bins_per_int)};
+  const std::vector<unsigned> gridbins {maxsupport * bins_per_int};
   // set up Grid
-  Wavelet_Grid_.reset(new Grid("db_wavelet", {"position"}, {"0"}, {maxsupport}, gridbins, false, true, true, {false}, {"0."}, {"0."}));
+  Wavelet_Grid_.reset(new Grid("db_wavelet", {"position"}, {intervalMinStr()}, {intervalMaxStr()}, gridbins, false, true, true, {false}, {"0."}, {"0."}));
 
   // Filter coefficients
   std::vector<double> h_coeffs = get_filter_coefficients(getOrder());
@@ -164,23 +167,24 @@ void BF_DbWavelets::setup_Wavelet_Grid(const unsigned gridsize) {
   std::vector<double> values_at_integers = calc_integer_values(Matvec[0], 0);
   std::vector<double> derivs_at_integers = calc_integer_values(Matvec[0], 1);
 
-
   // do the cascade algorithm
   std::unordered_map<std::string, std::vector<double>> valuesmap = cascade(Matvec, values_at_integers, recursion_number, bins_per_int, 0);
   std::unordered_map<std::string, std::vector<double>> derivsmap = cascade(Matvec, derivs_at_integers, recursion_number, bins_per_int, 1);
 
+  // rescaling factor for the derivatives: same as argT_derivf_ but has not been set yet
+  double deriv_scaling_factor = maxsupport / (intervalMax() - intervalMin());
   // Fill the Grid with the values of the unordered maps
   // this is somewhat complicated… not sure if the unordered_map way is the best way for c++
   for (const auto& value_element: valuesmap) {
     // get decimal of binary key
     int decimal = std::stoi(value_element.first, nullptr, 2);
-    // corresponding iterator of deriv 
+    // corresponding iterator of deriv
     auto deriv_iter = derivsmap.find(value_element.first);
     // calculate first grid element (this looks too complicated)
     unsigned first_grid_element = decimal * 1<<(recursion_number - value_element.first.length());
     for (unsigned j=0; j<value_element.second.size(); ++j) {
-      // derivative(s) has to be in vector
-      std::vector<double> deriv {deriv_iter->second.at(j)};
+      // rescale derivative and put in in vector
+      std::vector<double> deriv {deriv_iter->second.at(j) * deriv_scaling_factor};
       Wavelet_Grid_->setValueAndDerivatives(first_grid_element + bins_per_int*j, value_element.second[j], deriv);
     }
   }
@@ -311,7 +315,7 @@ std::unordered_map<std::string, std::vector<double>> BF_DbWavelets::cascade(std:
   // vector used as result of the matrix multiplications
   std::vector<double> new_values; // better name?!
 
-  // multiply matrices by 2 if derivatives are calculated (assumes chronologic order)
+  // multiply matrices by 2 if derivatives are calculated (assumes ascending order)
   if (derivnum != 0) for (auto& M : Matvec) M *= 2;
 
   // fill the first two datasets by hand
