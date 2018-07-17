@@ -22,6 +22,7 @@
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
+#include "ParallelPlumedActions.h"
 #include "tools/PDB.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
@@ -546,6 +547,8 @@ void ActionWithArguments::setForcesOnArguments( const std::vector<double>& force
     for(unsigned i=0; i<distinct_arguments.size(); ++i) {
       if( distinct_arguments[i].second==0 ) {
         plumed_dbg_massert( start<forces.size(), "not enough forces have been saved in " + getLabel() );
+        ParallelPlumedActions* pp = dynamic_cast<ParallelPlumedActions*>( distinct_arguments[i].first );
+        if( pp ) pp->setForcesOnPlumedActions( forces, start ); 
         ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( distinct_arguments[i].first );
         if( aarg ) aarg->setForcesOnArguments( forces, start );
         ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( distinct_arguments[i].first );

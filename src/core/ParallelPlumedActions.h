@@ -28,19 +28,32 @@ namespace PLMD {
 
 class ParallelPlumedActions : public ActionWithValue {
 private:
+///
+  unsigned nderivatives;
+///
+  std::vector<unsigned> der_starts;
+///
+  std::vector<double> forcesToApply;
+///
   std::vector<std::pair<unsigned,unsigned> > action_lists;
 public:
 /// Constructor
   explicit ParallelPlumedActions(const ActionOptions&ao);
 /// Creator of keywords
   static void registerKeywords( Keywords& keys );
+///
+  void turnOnDerivatives();
 /// Get the number of derivatives we need to store
   unsigned getNumberOfDerivatives() const ;
+/// Clear the derivatives in all the underlying actions
+  void clearDerivatives( const bool& force );
 /// Calculate the vector
   void calculate();
 /// Calculate an element of the vector
   void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
-/// Do nothing.
+/// This adds forces if the act is in a chain
+  void setForcesOnPlumedActions( const std::vector<double>& forces, unsigned& start );
+/// Apply forces
   void apply();
 };
 
