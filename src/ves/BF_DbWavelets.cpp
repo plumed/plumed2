@@ -20,16 +20,12 @@
    along with the VES code module.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "BasisFunctions.h"
+#include "BF_DbWavelets.h"
 
-#include "core/ActionRegister.h"
-#include "../lapack/lapack.h"
-#include "tools/Grid.h"
-#include "tools/Matrix.h"
-#include <unordered_map>
 
 namespace PLMD {
 namespace ves {
+
 
 //+PLUMEDOC VES_BASISF BF_DB_WAVELETS
 /*
@@ -50,24 +46,6 @@ Method of construction: Strang, Nguyen - Vector cascade algorithm
 
 */
 //+ENDPLUMEDOC
-
-class BF_DbWavelets : public BasisFunctions {
-  // Grid that holds the Wavelet values and its derivative
-  std::unique_ptr<Grid> Wavelet_Grid_;
-  virtual void setupLabels();
-  void setup_Wavelet_Grid(const unsigned recursion_number);
-  // helper functions to set up Grid
-  static std::vector<double> get_filter_coefficients(const unsigned order);
-  static std::vector<Matrix<double>> setup_Matrices(const std::vector<double>& h);
-  static std::vector<double> calc_integer_values(const Matrix<double>& M, const int deriv);
-  static std::vector<double> get_eigenvector(const Matrix<double>& A, const double eigenvalue);
-  static std::unordered_map<std::string, std::vector<double>> cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum);
-
-public:
-  static void registerKeywords( Keywords&);
-  explicit BF_DbWavelets(const ActionOptions&);
-  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
-};
 
 
 PLUMED_REGISTER_ACTION(BF_DbWavelets,"BF_DB_WAVELETS")
@@ -118,7 +96,6 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
   //
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
     double x = arg - ((i-1)/intervalDerivf()); // shift argument by scaled i
-    log << x << "\n";
     if (x < 0 || x > intervalRange()) { // Wavelets are 0 outside the defined range
       values[i] = 0.0; derivs[i] = 0.0;
     }
@@ -145,7 +122,6 @@ void BF_DbWavelets::setupLabels() {
 }
 
 
-// Creates and fills the Grid with the Wavelet values
 void BF_DbWavelets::setup_Wavelet_Grid(const unsigned gridsize) {
   // NumberOfBasisFunctions -1 is equal to the maximum support (intrinsicIntervalMax() is double --> type casting would be needed)
   unsigned maxsupport = getNumberOfBasisFunctions() - 1;
@@ -192,43 +168,6 @@ void BF_DbWavelets::setup_Wavelet_Grid(const unsigned gridsize) {
 }
 
 
-// returns the filter coefficients, at the moment simply a lookup table (copied from Mathematica)
-std::vector<double> BF_DbWavelets::get_filter_coefficients(const unsigned order) {
-  std::vector<double> h;
-  switch(order) {
-  case 4:
-    h = { 0.16290171402564917413726008653520,
-          0.50547285754591443144136667385662,
-          0.44610006912337981158583475265059,
-          -0.019787513117822321547681334086982,
-          -0.13225358368451986802584241445340,
-          0.021808150237088626328869997057481,
-          0.023251800535490882302747575267605,
-          -0.0074934946651807362225553368271239
-        };
-    break;
-  case 6:
-    h = { 0.078871216001450708360703821762941,
-          0.34975190703761783105607104498368,
-          0.53113187994086898454751440735467,
-          0.22291566146501775627367242887952,
-          -0.15999329944606139494194938783162,
-          -0.091759032030147576133204962992087,
-          0.068944046487372298805285738485360,
-          0.019461604854164664143361603520751,
-          -0.022331874165094534628441049888253,
-          0.00039162557614857788770574331926167,
-          0.0033780311814639378568864701169004,
-          -0.00076176690280125322760585771112944
-        };
-    break;
-  default:
-    plumed_merror("Specified order currently not implemented");
-  }
-  return h;
-}
-
-// Fills the coefficient matrices needed for the cascade algorithm
 std::vector<Matrix<double>> BF_DbWavelets::setup_Matrices(const std::vector<double>& h_coeffs) {
   Matrix<double> M0, M1;
   const int N = h_coeffs.size() -1;
@@ -248,7 +187,6 @@ std::vector<Matrix<double>> BF_DbWavelets::setup_Matrices(const std::vector<doub
 }
 
 
-// calculates the values of the Wavelet or its derivatives at the Integer points
 std::vector<double> BF_DbWavelets::calc_integer_values(const Matrix<double> &M, const int deriv) {
   // corresponding eigenvalue of the matrix
   double eigenvalue = pow(0.5, deriv);
@@ -270,7 +208,8 @@ std::vector<double> BF_DbWavelets::calc_integer_values(const Matrix<double> &M, 
 
 
 // maybe move this to the tools/matrix.h file?
-// get eigenvector of square matrix A corresponding to some eigenvalue via SVD decomposition; this works reliably only for singular eigenvalues
+// this works reliably only for singular eigenvalues
+//
 std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, const double eigenvalue) {
   // mostly copied from tools/matrix.h
   int info, N = A.ncols(); // ncols == nrows
@@ -305,7 +244,6 @@ std::vector<double> BF_DbWavelets::get_eigenvector(const Matrix<double> &A, cons
 }
 
 
-// Calculate the values of the Wavelet or its derivative via the vector cascade algorithm
 std::unordered_map<std::string, std::vector<double>> BF_DbWavelets::cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum) {
   // map of all values with binary representation of the decimal part as keys
   std::unordered_map<std::string, std::vector<double>> binarymap;
