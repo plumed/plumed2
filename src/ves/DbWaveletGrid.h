@@ -19,12 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with the VES code module.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_ves_BF_DbWavelets_h
-#define __PLUMED_ves_BF_DbWavelets_h
+#ifndef __PLUMED_ves_DbWaveletsGrid_h
+#define __PLUMED_ves_DbWaveletsGrid_h
 
-#include "BasisFunctions.h"
-
-#include "core/ActionRegister.h"
 #include "../lapack/lapack.h"
 #include "tools/Grid.h"
 #include "tools/Matrix.h"
@@ -35,12 +32,9 @@ namespace PLMD {
 namespace ves {
 
 
-class BF_DbWavelets : public BasisFunctions {
+class DbWaveletGrid : public Grid {
   // Grid that holds the Wavelet values and its derivative
-  std::unique_ptr<Grid> Wavelet_Grid_;
   virtual void setupLabels();
-  // creates and fills the Grid with the Wavelet values
-  void setup_Wavelet_Grid(const unsigned recursion_number);
   // helper functions to set up Grid
   // lookup function for the filter coefficients
   static std::vector<double> get_filter_coefficients(const unsigned order);
@@ -54,9 +48,7 @@ class BF_DbWavelets : public BasisFunctions {
   static std::unordered_map<std::string, std::vector<double>> cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum);
 
 public:
-  static void registerKeywords( Keywords&);
-  explicit BF_DbWavelets(const ActionOptions&);
-  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
+  DbWaveletGrid(const unsigned order, const unsigned gridsize);
 };
 
 

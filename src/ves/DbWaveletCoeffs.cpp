@@ -1,10 +1,10 @@
-#include "BF_DbWavelets.h"
+#include "DbWaveletGrid.h"
 
 namespace PLMD {
 namespace ves {
 
 // returns the filter coefficients, at the moment simply a lookup table (calculated with python script)
-std::vector<double> BF_DbWavelets::get_filter_coefficients(const unsigned order) {
+std::vector<double> DbWaveletGrid::get_filter_coefficients(const unsigned order) {
   std::vector<double> h;
   switch(order) {
   case 4:
