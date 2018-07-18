@@ -20,13 +20,13 @@
    along with the VES code module.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "DbWavelets.h"
+#include "DbWaveletGrid.h"
 
 namespace PLMD {
 namespace ves {
 
 
-DbWaveletGrid::DbWaveletGrid(const unsigned order, const unsigned gridsize) {
+void DbWaveletGrid::setup_Grid(const unsigned order, const unsigned gridsize) {
   // NumberOfBasisFunctions -1 is equal to the maximum support (intrinsicIntervalMax() is double --> type casting would be needed)
   unsigned maxsupport = order*2 -1;
   // determine needed recursion depth for specified size
@@ -36,7 +36,7 @@ DbWaveletGrid::DbWaveletGrid(const unsigned order, const unsigned gridsize) {
   // define number of grid bins
   const std::vector<unsigned> gridbins {maxsupport * bins_per_int};
   // set up Grid
-  Wavelet_Grid_.reset(new Grid("db_wavelet", {"position"}, {"0"}, {std::to_string(maxsupport)}, gridbins, false, true, true, {false}, {"0."}, {"0."}));
+  Grid("db_wavelet", {"position"}, {"0"}, {std::to_string(maxsupport)}, gridbins, false, true, true, {false}, {"0."}, {"0."});
 
   // Filter coefficients
   std::vector<double> h_coeffs = get_filter_coefficients(order);
@@ -63,7 +63,7 @@ DbWaveletGrid::DbWaveletGrid(const unsigned order, const unsigned gridsize) {
     for (unsigned j=0; j<value_element.second.size(); ++j) {
       // derivative has to be passed as vector
       std::vector<double> deriv {deriv_iter->second.at(j)};
-      Wavelet_Grid_->setValueAndDerivatives(first_grid_element + bins_per_int*j, value_element.second[j], deriv);
+      this->setValueAndDerivatives(first_grid_element + bins_per_int*j, value_element.second[j], deriv);
     }
   }
 

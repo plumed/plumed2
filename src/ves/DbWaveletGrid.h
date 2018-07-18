@@ -32,9 +32,8 @@ namespace PLMD {
 namespace ves {
 
 
+// Grid that holds the values and 1st derivative of Daubechies wavelets
 class DbWaveletGrid : public Grid {
-  // Grid that holds the Wavelet values and its derivative
-  virtual void setupLabels();
   // helper functions to set up Grid
   // lookup function for the filter coefficients
   static std::vector<double> get_filter_coefficients(const unsigned order);
@@ -48,7 +47,8 @@ class DbWaveletGrid : public Grid {
   static std::unordered_map<std::string, std::vector<double>> cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum);
 
 public:
-  DbWaveletGrid(const unsigned order, const unsigned gridsize);
+  void setup_Grid(const unsigned order, const unsigned gridsize);
+  //DbWaveletGrid(const unsigned order, const unsigned gridsize) : Grid(){};
 };
 
 

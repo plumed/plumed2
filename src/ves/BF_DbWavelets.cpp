@@ -89,13 +89,13 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
   if(gridsize!=1000) {addKeywordToList("GRID_SIZE",gridsize);}
-  Wavelet_Grid_(getOrder, gridsize);
+  Wavelet_Grid_.setup_Grid(getOrder(), gridsize);
   bool dump_wavelet_grid=false;
   parseFlag("DUMP_WAVELET_GRID", dump_wavelet_grid);
   if (dump_wavelet_grid) {
     OFile wavelet_gridfile;
     wavelet_gridfile.open("wavelet_grid.data");
-    Wavelet_Grid_->writeToFile(wavelet_gridfile);
+    Wavelet_Grid_.writeToFile(wavelet_gridfile);
   }
   setType("daubechies_wavelets");
   setDescription("Daubechies Wavelets (maximum phase type)");
@@ -122,7 +122,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
       // declaring vectors and calling first a function to get the index is a bit cumbersome and might be slow
       std::vector<double> temp_deriv;
       std::vector<double> x_vec {x};
-      values[i] = Wavelet_Grid_->getValueAndDerivatives(x_vec, temp_deriv);
+      values[i] = Wavelet_Grid_.getValueAndDerivatives(x_vec, temp_deriv);
       derivs[i] = temp_deriv[0];
     }
   }
