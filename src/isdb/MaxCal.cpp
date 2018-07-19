@@ -89,6 +89,7 @@ void Caliber::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("x0","default","the instantaneous value of the center of the potential");
   keys.addOutputComponent("mean","default","the current average value of the calculated observable");
   keys.addOutputComponent("kappa","default","the current force constant");
+  keys.addOutputComponent("scale","REGRES_ZERO","the current scaling constant");
 }
 
 Caliber::Caliber(const ActionOptions&ao):
