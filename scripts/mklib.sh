@@ -32,7 +32,11 @@ fi
 
 rm -f "$obj" "$lib"
 
-eval "$compile" "$obj" "$file" && $link "$lib" "$obj"
+if test "$PLUMED_IS_INSTALLED" = yes ; then
+  eval "$compile" "$obj" "$file" && eval "$link_installed" "$lib" "$obj"
+else
+  eval "$compile" "$obj" "$file" && eval "$link_uninstalled" "$lib" "$obj"
+fi
 
 
 

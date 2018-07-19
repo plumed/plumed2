@@ -14,6 +14,9 @@ set soext  "@_SOEXT_@"
 # this is the name of the plumed program
 # it is usually plumed
 set progname "@_program_name_@"
+# if yes, soname is absolute - does not require setting (DY)LD_LIBRARY_PATH
+# otherwise, soname is relative - requires require setting (DY)LD_LIBRARY_PATH (common in Linux)
+set use_absolute_soname "@_use_absolute_soname_@"
 
 # everything past this line should not need any editing
 
@@ -30,10 +33,16 @@ prepend-path  PATH               $bindir
 prepend-path  CPATH              $includedir
 prepend-path  INCLUDE            $includedir
 
+# library path, can also be useful when soext is not defined in order to link lib$progname.a
+prepend-path  LIBRARY_PATH       $libdir
+
 # path for VIM syntax
 setenv        PLUMED_VIMPATH     $libdir/$progname/vim
 
-# paths for libraries are only set if plumed is compiled as a dynamic library
+# path for pkgconfig
+prepend-path  PKG_CONFIG_PATH    $libdir/pkgconfig/
+
+# some paths are only set if plumed is compiled as a dynamic library
 if { [ string length $soext ]  != 0 } {
 
 # this is checking if PLUMED_KERNEL is already set
@@ -42,10 +51,19 @@ if { [module-info mode load] && [ info exists ::env(PLUMED_KERNEL) ] } {
     puts stderr " (typically means that you are loading two plumed modules, both defining dynamic libraries)"
 }
 
-# library path
-prepend-path  LIBRARY_PATH       $libdir
-prepend-path  LD_LIBRARY_PATH    $libdir
+# if we use a relative soname (as it is common in Linux) then the (DY)LD_LIBRARY_PATH should be set.
+if { $use_absolute_soname != "yes" } {
+  if { $soext == "dylib"  } {
+    prepend-path  DYLD_LIBRARY_PATH    $libdir
+  } else {
+    prepend-path  LD_LIBRARY_PATH    $libdir
+  }
+}
+
+# python path
 prepend-path  PYTHONPATH         $libdir/$progname/python
-prepend-path  PKG_CONFIG_PATH    $libdir/pkgconfig/
+
+# plumed kernel
 setenv        PLUMED_KERNEL      $libdir/lib${progname}Kernel.$soext
+
 }

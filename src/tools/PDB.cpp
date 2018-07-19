@@ -22,8 +22,10 @@
 #include "PDB.h"
 #include "Tools.h"
 #include "Log.h"
+#include "h36.h"
 #include <cstdio>
 #include <iostream>
+#include "core/SetupMolInfo.h"
 
 using namespace std;
 
@@ -116,6 +118,7 @@ ATOM  A0001  Ar      X   1      46.189  38.631  17.636  1.00  1.00
 \endverbatim
 There are tools that can be found to translate from integers to strings and back using hybrid 36 format
 (a simple python script can be found [here](https://sourceforge.net/p/cctbx/code/HEAD/tree/trunk/iotbx/pdb/hybrid_36.py)).
+In addition, as of PLUMED 2.5, we provide a \ref pdbrenumber "command line tool" that can be used to renumber atoms in a PDB file.
 
 */
 //+ENDPLUMEDOC
@@ -123,316 +126,59 @@ There are tools that can be found to translate from integers to strings and back
 
 namespace PLMD {
 
-/// Tiny namespace for hybrid36 format.
-/// This namespace includes freely available tools for h36 format.
-/// I place them here for usage within PDB class. In case we need them
-/// in other places they might be better encapsulated in a c++ class
-/// and placed in a separate file.
-namespace h36 {
-
-
-/*! C port of the hy36encode() and hy36decode() functions in the
-    hybrid_36.py Python prototype/reference implementation.
-    See the Python script for more information.
-
-    This file has no external dependencies, NOT even standard C headers.
-    Optionally, use hybrid_36_c.h, or simply copy the declarations
-    into your code.
-
-    This file is unrestricted Open Source (cctbx.sf.net).
-    Please send corrections and enhancements to cctbx@cci.lbl.gov .
-
-    See also: http://cci.lbl.gov/hybrid_36/
-
-    Ralf W. Grosse-Kunstleve, Feb 2007.
- */
-
-/* The following #include may be commented out.
-   It is here only to enforce consistency of the declarations
-   and the definitions.
- */
-// #include <iotbx/pdb/hybrid_36_c.h>
-
-/* All static functions below are implementation details
-   (and not accessible from other translation units).
- */
-
-static
-const char*
-digits_upper() { return "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"; }
-
-static
-const char*
-digits_lower() { return "0123456789abcdefghijklmnopqrstuvwxyz"; }
-
-static
-const char*
-value_out_of_range() { return "value out of range."; }
-
-static
-const char* invalid_number_literal() { return "invalid number literal."; }
-
-static
-const char* unsupported_width() { return "unsupported width."; }
-
-static
-void
-fill_with_stars(unsigned width, char* result)
-{
-  while (width) {
-    *result++ = '*';
-    width--;
-  }
-  *result = '\0';
+void PDB::setAtomNumbers( const std::vector<AtomNumber>& atoms ) {
+  positions.resize( atoms.size() ); occupancy.resize( atoms.size() );
+  beta.resize( atoms.size() ); numbers.resize( atoms.size() );
+  for(unsigned i=0; i<atoms.size(); ++i) { numbers[i]=atoms[i]; beta[i]=1.0; occupancy[i]=1.0; }
 }
 
-static
-void
-encode_pure(
-  const char* digits,
-  unsigned digits_size,
-  unsigned width,
-  int value,
-  char* result)
-{
-  char buf[16];
-  int rest;
-  unsigned i, j;
-  i = 0;
-  j = 0;
-  if (value < 0) {
-    j = 1;
-    value = -value;
+void PDB::setArgumentNames( const std::vector<std::string>& argument_names ) {
+  argnames.resize( argument_names.size() );
+  for(unsigned i=0; i<argument_names.size(); ++i) {
+    argnames[i]=argument_names[i];
+    arg_data.insert( std::pair<std::string,double>( argnames[i], 0.0 ) );
   }
-  while (1) {
-    rest = value / digits_size;
-    buf[i++] = digits[value - rest * digits_size];
-    if (rest == 0) break;
-    value = rest;
-  }
-  if (j) buf[i++] = '-';
-  for(j=i; j<width; j++) *result++ = ' ';
-  while (i != 0) *result++ = buf[--i];
-  *result = '\0';
 }
 
-static
-const char*
-decode_pure(
-  const int* digits_values,
-  unsigned digits_size,
-  const char* s,
-  unsigned s_size,
-  int* result)
-{
-  int si, dv;
-  int have_minus = 0;
-  int have_non_blank = 0;
-  int value = 0;
-  unsigned i = 0;
-  for(; i<s_size; i++) {
-    si = s[i];
-    if (si < 0 || si > 127) {
-      *result = 0;
-      return invalid_number_literal();
-    }
-    if (si == ' ') {
-      if (!have_non_blank) continue;
-      value *= digits_size;
-    }
-    else if (si == '-') {
-      if (have_non_blank) {
-        *result = 0;
-        return invalid_number_literal();
-      }
-      have_non_blank = 1;
-      have_minus = 1;
-      continue;
-    }
-    else {
-      have_non_blank = 1;
-      dv = digits_values[si];
-      if (dv < 0 || dv >= digits_size) {
-        *result = 0;
-        return invalid_number_literal();
-      }
-      value *= digits_size;
-      value += dv;
-    }
-  }
-  if (have_minus) value = -value;
-  *result = value;
-  return 0;
+bool PDB::getArgumentValue( const std::string& name, double& value ) const {
+  std::map<std::string,double>::const_iterator it = arg_data.find(name);
+  if( it!=arg_data.end() ) { value = it->second; return true; }
+  return false;
 }
 
-/*! hybrid-36 encoder: converts integer value to string result
-
-      width: must be 4 (e.g. for residue sequence numbers)
-                  or 5 (e.g. for atom serial numbers)
-
-      value: integer value to be converted
-
-      result: pointer to char array of size width+1 or greater
-              on return result is null-terminated
-
-      return value: pointer to error message, if any,
-                    or 0 on success
-
-    Example usage (from C++):
-      char result[4+1];
-      const char* errmsg = hy36encode(4, 12345, result);
-      if (errmsg) throw std::runtime_error(errmsg);
- */
-const char*
-hy36encode(unsigned width, int value, char* result)
-{
-  int i = value;
-  if (width == 4U) {
-    if (i >= -999) {
-      if (i < 10000) {
-        encode_pure(digits_upper(), 10U, 4U, i, result);
-        return 0;
-      }
-      i -= 10000;
-      if (i < 1213056 /* 26*36**3 */) {
-        i += 466560 /* 10*36**3 */;
-        encode_pure(digits_upper(), 36U, 0U, i, result);
-        return 0;
-      }
-      i -= 1213056;
-      if (i < 1213056) {
-        i += 466560;
-        encode_pure(digits_lower(), 36U, 0U, i, result);
-        return 0;
-      }
-    }
-  }
-  else if (width == 5U) {
-    if (i >= -9999) {
-      if (i < 100000) {
-        encode_pure(digits_upper(), 10U, 5U, i, result);
-        return 0;
-      }
-      i -= 100000;
-      if (i < 43670016 /* 26*36**4 */) {
-        i += 16796160 /* 10*36**4 */;
-        encode_pure(digits_upper(), 36U, 0U, i, result);
-        return 0;
-      }
-      i -= 43670016;
-      if (i < 43670016) {
-        i += 16796160;
-        encode_pure(digits_lower(), 36U, 0U, i, result);
-        return 0;
-      }
-    }
-  }
-  else {
-    fill_with_stars(width, result);
-    return unsupported_width();
-  }
-  fill_with_stars(width, result);
-  return value_out_of_range();
+void PDB::setAtomPositions( const std::vector<Vector>& pos ) {
+  plumed_assert( pos.size()==positions.size() );
+  for(unsigned i=0; i<positions.size(); ++i) positions[i]=pos[i];
 }
 
-/*! hybrid-36 decoder: converts string s to integer result
-
-      width: must be 4 (e.g. for residue sequence numbers)
-                  or 5 (e.g. for atom serial numbers)
-
-      s: string to be converted
-         does not have to be null-terminated
-
-      s_size: size of s
-              must be equal to width, or an error message is
-              returned otherwise
-
-      result: integer holding the conversion result
-
-      return value: pointer to error message, if any,
-                    or 0 on success
-
-    Example usage (from C++):
-      int result;
-      const char* errmsg = hy36decode(width, "A1T5", 4, &result);
-      if (errmsg) throw std::runtime_error(errmsg);
- */
-const char*
-hy36decode(unsigned width, const char* s, unsigned s_size, int* result)
-{
-  static int first_call = 1;
-  static int digits_values_upper[128U];
-  static int digits_values_lower[128U];
-  static const char*
-  ie_range = "internal error hy36decode: integer value out of range.";
-  unsigned i;
-  int di;
-  const char* errmsg;
-  if (first_call) {
-    first_call = 0;
-    for(i=0; i<128U; i++) digits_values_upper[i] = -1;
-    for(i=0; i<128U; i++) digits_values_lower[i] = -1;
-    for(i=0; i<36U; i++) {
-      di = digits_upper()[i];
-      if (di < 0 || di > 127) {
-        *result = 0;
-        return ie_range;
-      }
-      digits_values_upper[di] = i;
-    }
-    for(i=0; i<36U; i++) {
-      di = digits_lower()[i];
-      if (di < 0 || di > 127) {
-        *result = 0;
-        return ie_range;
-      }
-      digits_values_lower[di] = i;
-    }
-  }
-  if (s_size == width) {
-    di = s[0];
-    if (di >= 0 && di <= 127) {
-      if (digits_values_upper[di] >= 10) {
-        errmsg = decode_pure(digits_values_upper, 36U, s, s_size, result);
-        if (errmsg == 0) {
-          /* result - 10*36**(width-1) + 10**width */
-          if      (width == 4U) (*result) -= 456560;
-          else if (width == 5U) (*result) -= 16696160;
-          else {
-            *result = 0;
-            return unsupported_width();
-          }
-          return 0;
-        }
-      }
-      else if (digits_values_lower[di] >= 10) {
-        errmsg = decode_pure(digits_values_lower, 36U, s, s_size, result);
-        if (errmsg == 0) {
-          /* result + 16*36**(width-1) + 10**width */
-          if      (width == 4U) (*result) += 756496;
-          else if (width == 5U) (*result) += 26973856;
-          else {
-            *result = 0;
-            return unsupported_width();
-          }
-          return 0;
-        }
-      }
-      else {
-        errmsg = decode_pure(digits_values_upper, 10U, s, s_size, result);
-        if (errmsg) return errmsg;
-        if (!(width == 4U || width == 5U)) {
-          *result = 0;
-          return unsupported_width();
-        }
-        return 0;
-      }
-    }
-  }
-  *result = 0;
-  return invalid_number_literal();
+void PDB::setArgumentValue( const std::string& argname, const double& val ) {
+  // First set the value of the value of the argument in the map
+  arg_data.find(argname)->second = val;
 }
 
+// bool PDB::hasRequiredProperties( const std::vector<std::string>& inproperties ){
+//   bool hasprop=false;
+//   for(unsigned i=0;i<remark.size();++i){
+//       if( remark[i].find("PROPERTIES=")!=std::string::npos){ hasprop=true; break; }
+//   }
+//   if( !hasprop ){
+//       std::string mypropstr="PROPERTIES=" + inproperties[0];
+//       for(unsigned i=1;i<inproperties.size();++i) mypropstr += "," + inproperties[i];
+//       remark.push_back( mypropstr );
+//   }
+//   // Now check that all required properties are there
+//   for(unsigned i=0;i<inproperties.size();++i){
+//       hasprop=false;
+//       for(unsigned j=0;j<remark.size();++j){
+//           if( remark[j].find(inproperties[i]+"=")!=std::string::npos){ hasprop=true; break; }
+//       }
+//       if( !hasprop ) return false;
+//   }
+//   return true;
+// }
+
+void PDB::addBlockEnd( const unsigned& end ) {
+  block_ends.push_back( end );
 }
 
 unsigned PDB::getNumberOfAtomBlocks()const {
@@ -460,13 +206,29 @@ const std::vector<double> & PDB::getBeta()const {
   return beta;
 }
 
-const std::vector<std::string> & PDB::getRemark()const {
-  return remark;
+void PDB::addRemark( std::vector<std::string>& v1 ) {
+  Tools::parse(v1,"TYPE",mtype);
+  Tools::parseVector(v1,"ARG",argnames);
+  for(unsigned i=0; i<v1.size(); ++i) {
+    if( v1[i].find("=")!=std::string::npos ) {
+      std::size_t eq=v1[i].find_first_of('=');
+      std::string name=v1[i].substr(0,eq);
+      std::string sval=v1[i].substr(eq+1);
+      double val; Tools::convert( sval, val );
+      arg_data.insert( std::pair<std::string,double>( name, val ) );
+    } else {
+      flags.push_back(v1[i]);
+    }
+  }
 }
 
-void PDB::addRemark( const std::vector<std::string>& v1 ) {
-  remark.insert(remark.begin(),v1.begin(),v1.end());
+bool PDB::hasFlag( const std::string& fname ) const {
+  for(unsigned i=0; i<flags.size(); ++i) {
+    if( flags[i]==fname ) return true;
+  }
+  return false;
 }
+
 
 const std::vector<AtomNumber> & PDB::getAtomNumbers()const {
   return numbers;
@@ -563,16 +325,6 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
   }
   if( between_ters ) block_ends.push_back( positions.size() );
   return file_is_alive;
-}
-
-void PDB::setArgKeyword( const std::string& new_args ) {
-  bool replaced=false;
-  for(unsigned i=0; i<remark.size(); ++i) {
-    if( remark[i].find("ARG=")!=std::string::npos) {
-      remark[i]=new_args; replaced=true;
-    }
-  }
-  plumed_assert( replaced );
 }
 
 bool PDB::read(const std::string&file,bool naturalUnits,double scale) {
@@ -717,6 +469,49 @@ Vector PDB::getPosition(AtomNumber a)const {
   else return positions[p->second];
 }
 
+std::vector<std::string> PDB::getArgumentNames()const {
+  return argnames;
+}
+
+std::string PDB::getMtype() const {
+  return mtype;
+}
+
+void PDB::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, const std::string& fmt ) {
+  if( argnames.size()>0 ) {
+    ofile.printf("REMARK ARG=%s", argnames[0].c_str() );
+    for(unsigned i=1; i<argnames.size(); ++i) ofile.printf(",%s",argnames[i].c_str() );
+    ofile.printf("\n"); ofile.printf("REMARK ");
+  }
+  std::string descr2;
+  if(fmt.find("-")!=std::string::npos) {
+    descr2="%s=" + fmt + " ";
+  } else {
+    // This ensures numbers are left justified (i.e. next to the equals sign
+    std::size_t psign=fmt.find("%");
+    plumed_assert( psign!=std::string::npos );
+    descr2="%s=%-" + fmt.substr(psign+1) + " ";
+  }
+  for(std::map<std::string,double>::iterator it=arg_data.begin(); it!=arg_data.end(); ++it) ofile.printf( descr2.c_str(),it->first.c_str(), it->second );
+  if( argnames.size()>0 ) ofile.printf("\n");
+  if( !mymoldat ) {
+    for(unsigned i=0; i<positions.size(); ++i) {
+      ofile.printf("ATOM  %5d  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                   numbers[i].serial(), i,
+                   lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
+                   occupancy[i], beta[i] );
+    }
+  } else {
+    for(unsigned i=0; i<positions.size(); ++i) {
+      ofile.printf("ATOM  %5d %-4s %3s  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                   numbers[i].serial(), mymoldat->getAtomName(numbers[i]).c_str(),
+                   mymoldat->getResidueName(numbers[i]).c_str(), mymoldat->getResidueNumber(numbers[i]),
+                   lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
+                   occupancy[i], beta[i] );
+    }
+  }
+  ofile.printf("END\n");
+}
 
 
 }

@@ -65,7 +65,7 @@ position.  This grid is then output to a file called contour2.dat.
 Notice that the commands below calculate the instantaneous position of the surface separating the solid and liquid and that as such the accumulated average is cleared
 on every step.
 
-\verbatim
+\plumedfile
 UNITS NATURAL
 FCCUBIC ...
   SPECIES=1-96000 SWITCH={CUBIC D_0=1.2 D_MAX=1.5}
@@ -76,7 +76,7 @@ dens2: MULTICOLVARDENS DATA=fcc ORIGIN=1 DIR=xyz NBINS=14,14,50 ZREDUCED ZLOWER=
 
 ss2: FIND_CONTOUR_SURFACE GRID=dens2 CONTOUR=0.42 SEARCHDIR=z STRIDE=1 CLEAR=1
 DUMPGRID GRID=ss2 FILE=contour2.dat FMT=%8.4f STRIDE=1
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -144,8 +144,8 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   for(unsigned i=1; i<gdirs.size(); ++i) {
     if( ingrid->isPeriodic(gdirs[i]) ) vstring+=",T"; else vstring+=",F";
   }
-  createGrid( "grid", vstring ); mygrid->setNoDerivatives();
-  setAveragingAction( mygrid, true );
+  auto grid=createGrid( "grid", vstring ); grid->setNoDerivatives();
+  setAveragingAction( std::move(grid), true );
 }
 
 void FindContourSurface::clearAverage() {
@@ -209,7 +209,7 @@ void FindContourSurface::finishAveraging() {
 }
 
 void FindContourSurface::compute( const unsigned& current, MultiValue& myvals ) const {
-  std::vector<unsigned> neighbours; unsigned num_neighbours; unsigned nfound=0; double minv=0, minp=0;
+  std::vector<unsigned> neighbours; unsigned num_neighbours; unsigned nfound=0; double minp=0;
   std::vector<unsigned> bins_n( ingrid->getNbin() ); unsigned shiftn=current;
   std::vector<unsigned> ind( ingrid->getDimension() ); std::vector<double> point( ingrid->getDimension() );
 #ifndef DNDEBUG

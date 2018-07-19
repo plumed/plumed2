@@ -174,8 +174,13 @@ complete -F _plumed_mpi -o default plumed_mpi
 For the impatients:
 - Add the following to your .vimrc file:
 \verbatim
+" Enable syntax
+:syntax on
 " This allows including the proper PLUMED syntax file:
 :let &runtimepath.=','.$PLUMED_VIMPATH
+" The former command requires PLUMED_VIMPATH to be set. Alternatively, use this:
+" let &runtimepath.=',/usr/local/lib/plumed/vim'
+" properly adjusted to the path where PLUMED is installed.
 " This makes autocompletion work in the expected way:
 :set completeopt=longest,menuone
 " This enables bindings of F2/F3/F4 to plumed specific commands:
@@ -235,9 +240,19 @@ enable to proper syntax by just typing
 :set ft=plumed
 \endverbatim
 in VIM.
-Notice that the variable PLUMED_VIMPATH is also set in the `sourceme.sh` script in the build directory.
-This, if you modify your `.vimrc` file as suggested, you will be able to use the correct syntax both
+Notice that the variable `PLUMED_VIMPATH` is also set in the `sourceme.sh` script in the build directory.
+Thus, if you modify your `.vimrc` file as suggested, you will be able to use the correct syntax both
 when using an installed PLUMED and when running from a just compiled copy.
+Finally, in case you have both a preinstalled PLUMED **and** you have your development version
+the following command would give you the optimal flexibility:
+\verbatim
+:let &runtimepath.=','.$PLUMED_VIMPATH.',/opt/local/lib/plumed/vim/'
+\endverbatim
+The environment variable `PLUMED_VIMPATH`, if set, will take the precedence.
+Otherwise, vim will resort to the hardcoded path.
+In this case we assumed that there is a PLUMED installed in `/opt/local/` (e.g. using MacPorts),
+but you can override it sourcing a `sourceme.sh` file in the compilation directory
+or loading a PLUMED module with `module load plumed`.
 
 If you are tired of typing `:set ft=plumed`, you can use a modeline.
 Add to your `.vimrc` file the following commands

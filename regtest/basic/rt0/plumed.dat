@@ -31,6 +31,8 @@ PRINT ...
 ##  DUMPDERIVATIVES ARG=rmsd3,rmsd3n FILE=check3
 ##  DUMPDERIVATIVES ARG=rmsd4,rmsd4n FILE=check4
 
+DEBUG DETAILED_TIMERS
+
 ENDPLUMED
 
 text here should be ignored

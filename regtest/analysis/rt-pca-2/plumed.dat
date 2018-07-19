@@ -1,4 +1,0 @@
-c1: READ FILE=colvar.in VALUES=cv1
-c2: READ FILE=colvar.in VALUES=cv2
-
-PCA METRIC=EUCLIDEAN ARG=c1,c2 NLOW_DIM=2 OFILE=pca-comp.pdb FMT=%8.4f

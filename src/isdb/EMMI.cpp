@@ -897,7 +897,7 @@ void EMMI::get_GMM_d(string GMM_file)
   VectorGeneric<6> cov;
 
 // open file
-  IFile *ifile = new IFile();
+  std::unique_ptr<IFile> ifile(new IFile);
   if(ifile->FileExist(GMM_file)) {
     ifile->open(GMM_file);
     int idcomp;
@@ -930,11 +930,9 @@ void EMMI::get_GMM_d(string GMM_file)
       // new line
       ifile->scanField();
     }
-    ifile->close();
   } else {
     error("Cannot find GMM_FILE "+GMM_file+"\n");
   }
-  delete ifile;
   // now create a set from beta (unique set of values)
   set<int> bu(GMM_d_beta_.begin(), GMM_d_beta_.end());
   // now prepare the group vector

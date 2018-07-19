@@ -626,6 +626,8 @@ pkgconfig_bin
 make_static_archive
 AR_CR
 LD_RO
+use_loader_path
+use_absolute_soname
 program_can_run_mpi
 program_can_run
 xxd
@@ -713,6 +715,9 @@ enable_debug_glibcxx
 enable_shared
 enable_dependency_tracking
 enable_rpath
+enable_absolute_soname
+enable_absolute_install_name
+enable_loader_path
 enable_ld_r
 enable_ar_cr
 enable_static_archive
@@ -725,11 +730,13 @@ enable_zlib
 enable_readdir_r
 enable_cregex
 enable_dlopen
+enable_rtld_default
 enable_execinfo
 enable_gsl
 enable_xdrfile
 enable_boost_graph
 enable_boost_serialization
+enable_asmjit
 enable_fftw
 enable_python
 enable_openmp
@@ -1383,6 +1390,16 @@ Optional Features:
   --enable-dependency-tracking
                           enable dependency tracking, default: yes
   --enable-rpath          enable store rpath, default: no
+  --enable-absolute-soname
+                          enable store absolute soname (Linux only - this is
+                          the default behavior on OSX). Only enable for
+                          testing!, default: no
+  --enable-absolute-install-name
+                          enable store absolute relative (OSX only - disable
+                          to have a behavior similar to Linux). Only disable
+                          for testing!, default: yes
+  --enable-loader-path    enable use @loader_path to find
+                          libplumedKernel.dylib (OSX only), default: yes
   --enable-ld-r           enable group object files, default: yes
   --enable-ar-cr          enable use ar to build libplumedWrapper.a, default:
                           yes
@@ -1402,12 +1419,14 @@ Optional Features:
                           yes
   --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
+  --enable-rtld_default   enable search for RTLD_DEFAULT macro, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
   --enable-gsl            enable search for gsl, default: yes
   --enable-xdrfile        enable search for xdrfile, default: yes
   --enable-boost_graph    enable search for boost graph, default: no
   --enable-boost_serialization
                           enable search for boost serialization, default: no
+  --enable-asmjit         enable search for asmjit, default: no
   --enable-fftw           enable search for fftw, default: no
   --enable-python         enable search for python, default: yes
   --disable-openmp        do not use OpenMP
@@ -2679,6 +2698,60 @@ fi
 
 
 
+absolute_soname=
+# Check whether --enable-absolute-soname was given.
+if test "${enable_absolute_soname+set}" = set; then :
+  enableval=$enable_absolute_soname; case "${enableval}" in
+             (yes) absolute_soname=true ;;
+             (no)  absolute_soname=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-absolute-soname" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) absolute_soname=true ;;
+             (no)  absolute_soname=false ;;
+  esac
+
+fi
+
+
+
+absolute_install_name=
+# Check whether --enable-absolute-install-name was given.
+if test "${enable_absolute_install_name+set}" = set; then :
+  enableval=$enable_absolute_install_name; case "${enableval}" in
+             (yes) absolute_install_name=true ;;
+             (no)  absolute_install_name=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-absolute-install-name" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) absolute_install_name=true ;;
+             (no)  absolute_install_name=false ;;
+  esac
+
+fi
+
+
+
+loader_path=
+# Check whether --enable-loader-path was given.
+if test "${enable_loader_path+set}" = set; then :
+  enableval=$enable_loader_path; case "${enableval}" in
+             (yes) loader_path=true ;;
+             (no)  loader_path=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-loader-path" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) loader_path=true ;;
+             (no)  loader_path=false ;;
+  esac
+
+fi
+
+
+
 ld_r=
 # Check whether --enable-ld-r was given.
 if test "${enable_ld_r+set}" = set; then :
@@ -2895,6 +2968,24 @@ fi
 
 
 
+rtld_default=
+# Check whether --enable-rtld_default was given.
+if test "${enable_rtld_default+set}" = set; then :
+  enableval=$enable_rtld_default; case "${enableval}" in
+             (yes) rtld_default=true ;;
+             (no)  rtld_default=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-rtld_default" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) rtld_default=true ;;
+             (no)  rtld_default=false ;;
+  esac
+
+fi
+
+
+
 execinfo=
 # Check whether --enable-execinfo was given.
 if test "${enable_execinfo+set}" = set; then :
@@ -2979,6 +3070,24 @@ else
   case "no" in
              (yes) boost_serialization=true ;;
              (no)  boost_serialization=false ;;
+  esac
+
+fi
+
+
+
+asmjit=
+# Check whether --enable-asmjit was given.
+if test "${enable_asmjit+set}" = set; then :
+  enableval=$enable_asmjit; case "${enableval}" in
+             (yes) asmjit=true ;;
+             (no)  asmjit=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-asmjit" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) asmjit=true ;;
+             (no)  asmjit=false ;;
   esac
 
 fi
@@ -4331,7 +4440,11 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 # log the initial flags
 LD="$CXX"
-LDSHARED="$CXX"
+
+if test -z "$LDSHARED" ; then
+  LDSHARED="$CXX"
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXX:         $CXX" >&5
 $as_echo "$as_me: Initial CXX:         $CXX" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXXFLAGS:    $CXXFLAGS" >&5
@@ -4658,52 +4771,8 @@ fi
 
 if test $gcov == true
 then
-
-  save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS --coverage"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts --coverage" >&5
-$as_echo_n "checking whether $CXX accepts --coverage... " >&6; }
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
-$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
+  CXX="$CXX --coverage"
+  LDSHARED="$LDSHARED --coverage"
   CFLAGS="$CFLAGS --coverage"
   LDFLAGS="$CFLAGS --coverage"
   STATIC_LIBS="$STATIC_LIBS --coverage"
@@ -7163,6 +7232,67 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_DLOPEN" >&2;}
     fi
 
 fi
+
+if test $rtld_default == true ; then
+
+    found=ko
+    __PLUMED_HAS_RTLD_DEFAULT=no
+    if test "${libsearch}" == true ; then
+      testlibs=""
+    else
+      testlibs=""
+    fi
+    for testlib in "" $testlibs
+    do
+      save_LIBS="$LIBS"
+      if test -n "$testlib" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT with -l$testlib" >&5
+$as_echo_n "checking RTLD_DEFAULT with -l$testlib... " >&6; }
+        LIBS="-l$testlib $LIBS"
+      else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT without extra libs" >&5
+$as_echo_n "checking RTLD_DEFAULT without extra libs... " >&6; }
+      fi
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <dlfcn.h>
+int
+main ()
+{
+  void* f=dlsym(RTLD_DEFAULT,"path");
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      if test $found == ok ; then
+        break
+      fi
+      LIBS="$save_LIBS"
+    done
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_RTLD_DEFAULT 1" >>confdefs.h
+
+      __PLUMED_HAS_RTLD_DEFAULT=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_RTLD_DEFAULT" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_RTLD_DEFAULT" >&2;}
+      LIBS="$save_LIBS"
+    fi
+
+fi
+
 if test $execinfo == true ; then
 
     found=ko
@@ -8080,6 +8210,78 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_BOOST_SERIALIZATION" >&2;}
 # notice: macports install libraries with -mt suffix
 fi
 
+if test $asmjit == true ; then
+
+    found=ko
+    __PLUMED_HAS_ASMJIT=no
+    if test "${libsearch}" == true ; then
+      testlibs="asmjit"
+    else
+      testlibs=""
+    fi
+    for testlib in "" $testlibs
+    do
+      save_LIBS="$LIBS"
+      if test -n "$testlib" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking asmjit with -l$testlib" >&5
+$as_echo_n "checking asmjit with -l$testlib... " >&6; }
+        LIBS="-l$testlib $LIBS"
+      else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking asmjit without extra libs" >&5
+$as_echo_n "checking asmjit without extra libs... " >&6; }
+      fi
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <asmjit/asmjit.h>
+#include <stdio.h>
+using namespace asmjit;
+typedef int (*Func)(void);
+int main(int argc, char* argv[]) {
+  JitRuntime rt;
+  CodeHolder code;
+  code.init(rt.getCodeInfo());
+  X86Assembler a(&code);
+  a.mov(x86::eax, 1);
+  a.ret();
+  Func fn;
+  Error err = rt.add(&fn, &code);
+  if (err) return 1;
+  int result = fn();
+  printf("%d\n", result);
+  rt.release(fn);
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      if test $found == ok ; then
+        break
+      fi
+      LIBS="$save_LIBS"
+    done
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_ASMJIT 1" >>confdefs.h
+
+      __PLUMED_HAS_ASMJIT=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ASMJIT" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ASMJIT" >&2;}
+      LIBS="$save_LIBS"
+    fi
+
+fi
+
 if test $fftw == true ; then
 
     found=ko
@@ -8340,7 +8542,7 @@ $as_echo "$as_me: Dynamic library extension is 'dylib'" >&6;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: LDSHARED needs special flags" >&5
 $as_echo "$as_me: LDSHARED needs special flags" >&6;}
     SOEXT=dylib
-    LDSHARED="$LDSHARED -undefined suppress -flat_namespace -dynamiclib -Wl,-headerpad_max_install_names"
+    LDSHARED="$LDSHARED -dynamiclib -Wl,-headerpad_max_install_names"
     if test "$rpath" = true ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: Switching off rpath on OSX" >&5
 $as_echo "$as_me: Switching off rpath on OSX" >&6;}
@@ -8730,6 +8932,46 @@ $as_echo "$as_me: Regtest suite will use env var PLUMED_MPIRUN to run MPI tests 
   fi
 fi
 
+if test "$SOEXT" == "dylib" ; then
+  use_absolute_soname=yes
+else
+  use_absolute_soname=no
+fi
+
+
+if test "$absolute_soname" == true ; then
+  if test "$SOEXT" == "dylib" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --enable-absolute-soname has no effect on OSX" >&5
+$as_echo "$as_me: WARNING: --enable-absolute-soname has no effect on OSX" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: enabling absolute soname. Full path will be hardcoded in plumed library soname" >&5
+$as_echo "$as_me: enabling absolute soname. Full path will be hardcoded in plumed library soname" >&6;}
+    use_absolute_soname=yes
+  fi
+fi
+
+if test "$absolute_install_name" == false ; then
+  if test "$SOEXT" == "so" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --disable-absolute-install-name has no effect on Linux" >&5
+$as_echo "$as_me: WARNING: --disable-absolute-install-name has no effect on Linux" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: enabling relative install_name. You will have to set DYLD_LIBRARY_PATH yor plumed libraries to be found at runtime" >&5
+$as_echo "$as_me: enabling relative install_name. You will have to set DYLD_LIBRARY_PATH yor plumed libraries to be found at runtime" >&6;}
+    use_absolute_soname=no
+  fi
+fi
+
+
+if test "$SOEXT" == "dylib" ; then
+  if test "$loader_path" == true ; then
+    use_loader_path=yes
+  else
+    use_loader_path=no
+  fi
+else
+  use_loader_path=no
+fi
+
 #### This further tests are required to allow linking with non c++ compiler
 { $as_echo "$as_me:${as_lineno-$LINENO}: PLUMED seems to be configured properly!" >&5
 $as_echo "$as_me: PLUMED seems to be configured properly!" >&6;}
@@ -8963,6 +9205,9 @@ if test "$prefix" == NONE
 then
   prefix=/usr/local
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking If prefix is equal to present working directory" >&5
+$as_echo_n "checking If prefix is equal to present working directory... " >&6; }
 
 pkgconfig_bin=""
 

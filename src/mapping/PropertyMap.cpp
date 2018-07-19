@@ -117,9 +117,8 @@ PropertyMap::PropertyMap(const ActionOptions& ao):
 
   std::string empty;
   if(!nos) {
-    for(unsigned i=0; i<getNumberOfProperties(); ++i) {
-      empty="LABEL="+getPropertyName(i);
-      addVessel( "SPATH", empty, 0 );
+    for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end(); ++it) {
+      empty="LABEL="+it->first; addVessel( "SPATH", empty, 0 );
     }
   }
   readVesselKeywords();
