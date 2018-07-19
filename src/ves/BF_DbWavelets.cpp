@@ -148,7 +148,7 @@ void BF_DbWavelets::setupLabels() {
 
 // Calculate the needed recursion number and the resulting grid size
 // There are 2**recursion_number grid bins per integer
-void calc_grid_parameters(unsigned& gridsize, unsigned recursion_number, unsigned order){
+void BF_DbWavelets::calc_grid_parameters(unsigned& gridsize, unsigned& recursion_number, unsigned order){
   // the range of the grid is from 0 to maxsupport
   unsigned maxsupport = order*2 -1;
   // determine needed recursion depth for specified size
