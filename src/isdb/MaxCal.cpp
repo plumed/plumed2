@@ -52,19 +52,26 @@ private:
   vector< vector<double> > var;
   vector< vector<double> > dvar;
   double   mult;
+  double   scale_;
   bool     master;
   unsigned replica_;
   unsigned nrep_;
+  // scale and offset regression
+  bool doregres_zero_;
+  int  nregres_zero_;
+  // force constant
   unsigned optsigmamean_stride_;
   vector<double> sigma_mean2_;
   vector< vector<double> > sigma_mean2_last_;
   vector<Value*> x0comp;
   vector<Value*> kcomp;
   vector<Value*> mcomp;
+  Value* valueScale;
 
   void get_sigma_mean(const double fact, const vector<double> &mean);
   void replica_averaging(const double fact, vector<double> &mean);
   double getSpline(const unsigned iarg);
+  void do_regression_zero(const vector<double> &mean);
 };
 
 PLUMED_REGISTER_ACTION(Caliber,"CALIBER")
@@ -75,8 +82,10 @@ void Caliber::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
   keys.add("compulsory","FILE","the name of the file containing the time-resolved values");
   keys.add("compulsory","KAPPA","a force constant, this can be use to scale a constant estimanted on-the-fly using AVERAGING");
-  keys.add("compulsory","TSCALE","1.0","Apply a time scaling on the experimental time scale");
   keys.add("optional","AVERAGING", "Stride for calculation of the optimum kappa, if 0 only KAPPA is used.");
+  keys.add("compulsory","TSCALE","1.0","Apply a time scaling on the experimental time scale");
+  keys.add("compulsory","SCALE","1.0","Apply a constant scaling on the data provided as arguments");
+  keys.add("optional","REGRES_ZERO","stride for regression with zero offset");
   keys.addOutputComponent("x0","default","the instantaneous value of the center of the potential");
   keys.addOutputComponent("mean","default","the current average value of the calculated observable");
   keys.addOutputComponent("kappa","default","the current force constant");
@@ -85,6 +94,9 @@ void Caliber::registerKeywords( Keywords& keys ) {
 Caliber::Caliber(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
   mult(0),
+  scale_(1),
+  doregres_zero_(false),
+  nregres_zero_(0),
   optsigmamean_stride_(0)
 {
   parse("KAPPA",mult);
@@ -97,6 +109,16 @@ Caliber::Caliber(const ActionOptions&ao):
   double tscale=1.0;
   parse("TSCALE", tscale);
   if(tscale<=0.) error("The time scale factor must be greater than 0.");
+  parse("SCALE", scale_);
+  if(scale_==0.) error("The time scale factor cannot be 0.");
+  // regression with zero intercept
+  parse("REGRES_ZERO", nregres_zero_);
+  if(nregres_zero_>0) {
+    // set flag
+    doregres_zero_=true;
+    log.printf("  doing regression with zero intercept with stride: %d\n", nregres_zero_);
+  }
+
 
   bool noensemble = false;
   parseFlag("NOENSEMBLE", noensemble);
@@ -150,6 +172,12 @@ Caliber::Caliber(const ActionOptions&ao):
     addComponent("x0_"+num); componentIsNotPeriodic("x0_"+num); x0comp.push_back(getPntrToComponent("x0_"+num));
     addComponent("kappa_"+num); componentIsNotPeriodic("kappa_"+num); kcomp.push_back(getPntrToComponent("kappa_"+num));
     addComponent("mean_"+num); componentIsNotPeriodic("mean_"+num); mcomp.push_back(getPntrToComponent("mean_"+num));
+  }
+
+  if(doregres_zero_) {
+    addComponent("scale");
+    componentIsNotPeriodic("scale");
+    valueScale=getPntrToComponent("scale");
   }
 }
 
@@ -215,6 +243,22 @@ double Caliber::getSpline(const unsigned iarg)
   return value;
 }
 
+void Caliber::do_regression_zero(const vector<double> &mean)
+{
+// parameters[i] = scale_ * mean[i]: find scale_ with linear regression
+  double num = 0.0;
+  double den = 0.0;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    num += mean[i] * getSpline(i);
+    den += mean[i] * mean[i];
+  }
+  if(den>0) {
+    scale_ = num / den;
+  } else {
+    scale_ = 1.0;
+  }
+}
+
 void Caliber::calculate()
 {
   const unsigned narg = getNumberOfArguments();
@@ -226,18 +270,23 @@ void Caliber::calculate()
   replica_averaging(fact, mean);
   if(optsigmamean_stride_>0) get_sigma_mean(fact, mean);
 
+  // in case of regression with zero intercept, calculate scale
+  if(doregres_zero_ && getStep()%nregres_zero_==0) do_regression_zero(mean);
+
   double ene=0;
   for(unsigned i=0; i<narg; ++i) {
     const double x0 = getSpline(i);
     const double kappa = mult*dnrep/sigma_mean2_[i];
-    const double cv=difference(i,x0,mean[i]);
-    const double f=-kappa*cv*dmean_x[i];
+    const double cv=difference(i,x0,scale_*mean[i]);
+    const double f=-kappa*cv*dmean_x[i]/scale_;
     setOutputForce(i,f);
     ene+=0.5*kappa*cv*cv;
     x0comp[i]->set(x0);
     kcomp[i]->set(kappa);
     mcomp[i]->set(mean[i]);
   }
+
+  if(doregres_zero_) valueScale->set(scale_);
 
   setBias(ene);
 }
