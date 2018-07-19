@@ -26,22 +26,35 @@ namespace PLMD {
 namespace ves {
 
 
-void DbWaveletGrid::setup_Grid(const unsigned order, const unsigned gridsize) {
+Grid DbWaveletGrid::create_Grid(Log& log, const unsigned order, const unsigned gridsize) {
   // NumberOfBasisFunctions -1 is equal to the maximum support (intrinsicIntervalMax() is double --> type casting would be needed)
   unsigned maxsupport = order*2 -1;
   // determine needed recursion depth for specified size
   unsigned recursion_number = 0;
+  log << "Setup running\n";
   while (maxsupport*(1<<recursion_number) < gridsize) recursion_number++;
   unsigned bins_per_int = 1<<recursion_number;
   // define number of grid bins
   const std::vector<unsigned> gridbins {maxsupport * bins_per_int};
   // set up Grid
-  Grid("db_wavelet", {"position"}, {"0"}, {std::to_string(maxsupport)}, gridbins, false, true, true, {false}, {"0."}, {"0."});
+  return Grid("db_wavelet", {"position"}, {"0"}, {std::to_string(maxsupport)}, gridbins, false, true, true, {false}, {"0."}, {"0."});
+  log << "successfully created base grid\n";
+}
+
+
+DbWaveletGrid::DbWaveletGrid(Log& log, const unsigned order, const unsigned gridsize) : Grid(create_Grid(log, order, gridsize)) {
+  log << "WaveletGrid constructor running\n";
+  // need to recalculate recursion number again (easier way?)…
+  unsigned maxsupport = order*2 -1;
+  unsigned recursion_number = 0;
+  while (maxsupport*(1<<recursion_number) < gridsize) recursion_number++;
+  unsigned bins_per_int = 1<<recursion_number;
 
   // Filter coefficients
   std::vector<double> h_coeffs = get_filter_coefficients(order);
   // Vector with the Matrices M0 and M1 for the cascade
   std::vector<Matrix<double>> Matvec = setup_Matrices(h_coeffs);
+  log << "Got coeffs and matrices\n";
 
   // get the values at integers
   std::vector<double> values_at_integers = calc_integer_values(Matvec[0], 0);
@@ -63,10 +76,10 @@ void DbWaveletGrid::setup_Grid(const unsigned order, const unsigned gridsize) {
     for (unsigned j=0; j<value_element.second.size(); ++j) {
       // derivative has to be passed as vector
       std::vector<double> deriv {deriv_iter->second.at(j)};
+      log << "looped the first time\n";
       this->setValueAndDerivatives(first_grid_element + bins_per_int*j, value_element.second[j], deriv);
     }
   }
-
 }
 
 
