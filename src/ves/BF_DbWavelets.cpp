@@ -113,14 +113,15 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
 void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
   // plumed_assert(values.size()==numberOfBasisFunctions());
   // plumed_assert(derivs.size()==numberOfBasisFunctions());
+  //
   argT=checkIfArgumentInsideInterval(arg,inside_range);
   //
   values[0]=1.0;
   derivs[0]=0.0;
   //
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    double x = arg - ((i-1)/intervalDerivf()); // shift argument by scaled i
-    if (x < intervalMin() || x > intervalMax()) { // Wavelets are 0 outside the defined range
+    double x = arg*intervalDerivf() - (i-1); // scale and shift argument
+    if (x < 0 || x > intrinsicIntervalMax()) { // Wavelets are 0 outside the defined range
       values[i] = 0.0; derivs[i] = 0.0;
     }
     else {
@@ -128,7 +129,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
       std::vector<double> temp_deriv;
       std::vector<double> x_vec {x};
       values[i] = Wavelet_Grid_->getValueAndDerivatives(x_vec, temp_deriv);
-      derivs[i] = temp_deriv[0];
+      derivs[i] = temp_deriv[0] * intervalDerivf(); // scale derivative
     }
   }
   if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
