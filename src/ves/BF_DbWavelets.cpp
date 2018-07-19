@@ -59,6 +59,8 @@ class BF_DbWavelets : public BasisFunctions {
   // Grid that holds the Wavelet values and its derivative
   std::unique_ptr<DbWaveletGrid> Wavelet_Grid_;
   virtual void setupLabels();
+  // function to calculates the arguments for the Grid creation
+  void calc_grid_parameters(unsigned& gridsize, unsigned& recursion_number, unsigned order);
 
 public:
   static void registerKeywords( Keywords&);
@@ -88,8 +90,11 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   setIntervalBounded();
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
+  unsigned recursion_number;
+  calc_grid_parameters(gridsize, recursion_number, getOrder());
   if(gridsize!=1000) {addKeywordToList("GRID_SIZE",gridsize);}
-  Wavelet_Grid_.reset(new DbWaveletGrid(log, getOrder(), gridsize));
+  Wavelet_Grid_.reset(new DbWaveletGrid(log, getOrder(), gridsize, recursion_number));
+  log << "Constructor returned without errors\n";
   bool dump_wavelet_grid=false;
   parseFlag("DUMP_WAVELET_GRID", dump_wavelet_grid);
   if (dump_wavelet_grid) {
@@ -138,6 +143,19 @@ void BF_DbWavelets::setupLabels() {
     std::string is; Tools::convert((i-1)/intervalDerivf(),is);
     setLabel(i,"i = "+is);
   }
+}
+
+
+// Calculate the needed recursion number and the resulting grid size
+// There are 2**recursion_number grid bins per integer
+void calc_grid_parameters(unsigned& gridsize, unsigned recursion_number, unsigned order){
+  // the range of the grid is from 0 to maxsupport
+  unsigned maxsupport = order*2 -1;
+  // determine needed recursion depth for specified size
+  recursion_number = 0;
+  while (maxsupport*(1<<recursion_number) < gridsize) recursion_number++;
+  gridsize = maxsupport*(1<<recursion_number);
+  return;
 }
 
 
