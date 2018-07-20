@@ -35,7 +35,7 @@ namespace ves {
 // Grid that holds the values and 1st derivative of Daubechies wavelets
 // mustn't be an inherited class at the moment, but that way new interpolation options can be added easily
 class DbWaveletGrid : public Grid {
-  void setup_Grid(const unsigned order, const unsigned gridsize, const unsigned recursion_number);
+  void setup_Grid(const unsigned order, const unsigned gridsize);
   // helper functions to set up Grid
   // lookup function for the filter coefficients
   static std::vector<double> get_filter_coefficients(const unsigned order);
@@ -50,8 +50,8 @@ class DbWaveletGrid : public Grid {
 
 public:
   // constructor that directly creates Grid with right properties
-  DbWaveletGrid(Log& log, const unsigned order, const unsigned gridsize, const unsigned recursion_number) : Grid("db_wavelet", {"position"}, {"0"}, {std::to_string(order*2-1)}, {gridsize}, false, true, true, {false}, {"0."}, {"0."}) {
-    this->setup_Grid(order, gridsize, recursion_number);
+  DbWaveletGrid(const unsigned order, const unsigned gridsize) : Grid("db_wavelet", {"position"}, {"0"}, {std::to_string(order*2-1)}, {gridsize}, false, true, true, {false}, {"0."}, {"0."}) {
+    this->setup_Grid(order, gridsize);
   };
 
 };

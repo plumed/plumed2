@@ -26,12 +26,17 @@ namespace PLMD {
 namespace ves {
 
 
-void DbWaveletGrid::setup_Grid(const unsigned order, const unsigned gridsize, const unsigned recursion_number) {
-  //log << "WaveletGrid constructor running\n";
-  //log << "Checking created base grid\n";
-  //log.printf("Size: %d (%s - %s)\n", this->getDx()[0], this->getMin()[0], this->getMax()[0]);
-  // helper variable
-  unsigned bins_per_int = 1<<recursion_number;
+void DbWaveletGrid::setup_Grid(const unsigned order, const unsigned gridsize) {
+  // helper variable, find recursion number
+  unsigned bins_per_int = gridsize/(order*2-1);
+  // check if it is a power of two
+  if ((bins_per_int & (bins_per_int -1)) != 0) {
+    plumed_merror("Trying to set up wavelet grid with bad size");
+  }
+  // get recursion number
+  unsigned recursion_number = 0;
+  while (bins_per_int >>= 1) recursion_number++;
+
 
   // Filter coefficients
   std::vector<double> h_coeffs = get_filter_coefficients(order);
