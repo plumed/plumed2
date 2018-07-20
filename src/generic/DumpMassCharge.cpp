@@ -96,10 +96,12 @@ class DumpMassCharge:
 {
   string file;
   bool first;
+  bool second;
 public:
   explicit DumpMassCharge(const ActionOptions&);
   ~DumpMassCharge();
   static void registerKeywords( Keywords& keys );
+  void prepare();
   void calculate() {}
   void apply() {}
   void update();
@@ -120,7 +122,8 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionPilot(ao),
-  first(true)
+  first(true),
+  second(true)
 {
   vector<AtomNumber> atoms;
   parse("FILE",file);
@@ -140,6 +143,13 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
   requestAtoms(atoms);
+}
+
+void DumpMassCharge::prepare() {
+  if(!first && second) {
+    requestAtoms(vector<AtomNumber>());
+    second=false;
+  }
 }
 
 void DumpMassCharge::update() {
