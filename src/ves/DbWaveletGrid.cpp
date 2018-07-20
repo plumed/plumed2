@@ -33,9 +33,10 @@ void DbWaveletGrid::setup_Grid(const unsigned order, const unsigned gridsize) {
   if ((bins_per_int & (bins_per_int -1)) != 0) {
     plumed_merror("Trying to set up wavelet grid with bad size");
   }
-  // get recursion number
+  // get recursion number; use temporary variable because it gets changed
   unsigned recursion_number = 0;
-  while (bins_per_int >>= 1) recursion_number++;
+  unsigned temp_bins = bins_per_int;
+  while (temp_bins >>= 1) recursion_number++;
 
 
   // Filter coefficients
