@@ -960,7 +960,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       }
     }
 
-    if(noatoms && plumedStopCondition) break;
+    if(plumedStopCondition) break;
 
     step+=stride;
   }
