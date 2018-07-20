@@ -253,6 +253,8 @@ PLUMED_CONFIG_ENABLE([readdir-r],[search for readdir_r (threadsafe)],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
+PLUMED_CONFIG_ENABLE([chdir],[search for chdir function],[yes])
+PLUMED_CONFIG_ENABLE([getcwd],[search for getcwd function],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
@@ -617,6 +619,14 @@ main ()
   return 0;
 }
   ], [__PLUMED_HAS_RTLD_DEFAULT])
+fi
+
+if test $chdir == true ; then
+  PLUMED_CHECK_PACKAGE([unistd.h],[chdir],[__PLUMED_HAS_CHDIR])
+fi
+
+if test $getcwd == true ; then
+  PLUMED_CHECK_PACKAGE([unistd.h],[getcwd],[__PLUMED_HAS_GETCWD])
 fi
 
 if test $execinfo == true ; then
