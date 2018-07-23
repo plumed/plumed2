@@ -26,4 +26,13 @@
   so as to further check compatibilities
 */
 #define __PLUMED_STATIC_KERNEL
-#include "Plumed.c"
+/*
+  Make sure the inline C++ interface is not included here.
+  Should not be necessary, but it doesn't hurt.
+*/
+#define __PLUMED_WRAPPER_CXX 0
+/*
+  Tell Plumed.h to emit the whole implementation
+*/
+#define __PLUMED_WRAPPER_IMPLEMENTATION 1
+#include "Plumed.h"
