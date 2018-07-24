@@ -58,14 +58,14 @@ Method of construction: Strang, Nguyen - Vector cascade algorithm
 class BF_DbWavelets : public BasisFunctions {
   // Grid that holds the Wavelet values and its derivative
   std::unique_ptr<DbWaveletGrid> Wavelet_Grid_;
-  virtual void setupLabels();
+  void setupLabels() override;
   // function to calculates the "true" grid size
   void calc_grid_size(unsigned& gridsize, unsigned order);
 
 public:
   static void registerKeywords( Keywords&);
   explicit BF_DbWavelets(const ActionOptions&);
-  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
+  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const override;
 };
 
 
@@ -130,7 +130,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
       derivs[i] = temp_deriv[0] * intervalDerivf(); // scale derivative
     }
   }
-  if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
+  if(!inside_range) {for(auto& deriv : derivs) {deriv=0.0;}}
   return;
 }
 

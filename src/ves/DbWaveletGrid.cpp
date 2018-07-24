@@ -53,7 +53,7 @@ void DbWaveletGrid::setup_Grid(const unsigned order, const unsigned gridsize) {
   // this is somewhat complicated… not sure if the unordered_map way is the best way for c++
   for (const auto& value_element: valuesmap) {
     // get decimal of binary key
-    int decimal = std::stoi(value_element.first, nullptr, 2);
+    unsigned decimal = std::stoi(value_element.first, nullptr, 2);
     // corresponding iterator of deriv
     auto deriv_iter = derivsmap.find(value_element.first);
     // calculate first grid element (this looks too complicated)
@@ -136,8 +136,8 @@ std::vector<double> DbWaveletGrid::get_eigenvector(const Matrix<double> &A, cons
   plumed_lapack_dgesdd( "A", &N, &N, da.data(), &N, S.data(), U.data(), &N, VT.data(), &N, work.data(), &lwork, iwork.data(), &info );
 
   // fill eigenvector with last column of VT
-  std::vector<double> eigenvector;
-  for (int i=0; i<N; ++i) eigenvector.push_back(VT[N-1 + i*N]);
+  std::vector<double> eigenvector(N);
+  for (int i=0; i<N; ++i) eigenvector[i] = VT[N-1 + i*N];
 
   return eigenvector;
 }
@@ -161,10 +161,10 @@ std::unordered_map<std::string, std::vector<double>> DbWaveletGrid::cascade(std:
   binarymap["1"] = new_values;
 
   // now do the cascade
-  binaryvec.push_back("1");
+  binaryvec.emplace_back("1");
   for (unsigned i=1; i<recursion_number; ++i) {
     std::vector<std::string> new_binaryvec;
-    for (auto binary : binaryvec) {
+    for (const auto& binary : binaryvec) {
       for (int k=0; k<2; ++k) {
         // prepend the new bit
         std::string new_binary = std::to_string(k) + binary;
