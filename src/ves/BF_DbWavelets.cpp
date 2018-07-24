@@ -124,7 +124,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
     }
     else {
       // declaring vectors and calling first a function to get the index is a bit cumbersome and might be slow
-      std::vector<double> temp_deriv;
+      std::vector<double> temp_deriv(1);
       std::vector<double> x_vec {x};
       values[i] = Wavelet_Grid_->getValueAndDerivatives(x_vec, temp_deriv);
       derivs[i] = temp_deriv[0] * intervalDerivf(); // scale derivative
