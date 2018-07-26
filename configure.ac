@@ -280,16 +280,15 @@ then
   CXXFLAGS=-O3
 fi
 
-# this is list if copied from a generated ./configure script
-# the reason why I put it here explicitly is that I want a
-# correct fallback list to be searched after preferred choices
-# (e.g. MPI) have been checked.
-compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+# this is a list of common compilers
+compilers="g++ c++ cxx icpc"
+c_compilers="gcc cc icc"
 
 # on OSX, prefer clang++
 case `(uname)` in
   (Darwin)
     compilers="clang++ $compilers"
+    c_compilers="clang $c_compilers"
   ;;
 esac
 
@@ -300,9 +299,7 @@ fi
 
 # do the actual search
 AC_PROG_CXX([$compilers])
-
-# for c, the standard list is used
-AC_PROG_CC
+AC_PROG_CC([$c_compilers])
 
 # also setup Fortran compiler
 # this is optional, and can be used in the late part of this 
