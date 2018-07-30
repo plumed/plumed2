@@ -414,22 +414,14 @@ This is done using
 This will allow you to remove the original compilation directory,
 or to recompile a different PLUMED version in the same place.
 
-To install PLUMED one should first decide the location.
-The standard way to do it is during the configure step:
+To install PLUMED one should first decide the location:
 \verbatim
 > ./configure --prefix=$HOME/opt
 > make
 > make install
 \endverbatim
-However, you can also change it after compilation setting
-the variable `prefix`.
-\verbatim
-> ./configure
-> make
-> make install prefix=$HOME/opt
-\endverbatim
-If you didn't specify the `--prefix` option during configure, and you did not set the `prefix`
-variable when installing, PLUMED will be installed in /usr/local.
+As of PLUMED 2.5 you cannot anymore change the location during install.
+If you didn't specify the `--prefix` option during configure PLUMED will be installed in /usr/local.
 The install command should be executed with root permissions (e.g. "sudo make install")
 if you want to install PLUMED on a system directory.
 
@@ -704,6 +696,21 @@ ld: TOC section size exceeds 64k
   please configure plumed again with the following flag
 \verbatim
 ./configure --disable-ld-r
+\endverbatim
+- On Cray machines, you might have to set the following environment variable
+  before configuring and building both PLUMED and the MD code that you want
+  to patch with PLUMED (kindly reported by Marco De La Pierre):
+\verbatim
+export CRAYPE_LINK_TYPE=dynamic
+\endverbatim
+- Intel MPI seems to require the flags `-lmpi_mt -mt_mpi` for compiling and linking and the flag `-DMPICH_IGNORE_CXX_SEEK` for compiling
+  (kindly reported by Abhishek Acharya).
+  You might want to try to configure using
+\verbatim
+./configure LDFLAGS=-lmpi_mt CXXFLAGS="-DMPICH_IGNORE_CXX_SEEK -mt_mpi" STATIC_LIBS=-mt_mpi
+\endverbatim
+  Adding libraries to `STATIC_LIBS` uses them for all the linking steps, whereas those in `LIBS` are only used when linking the PLUMED kernel library.
+  See more at [this thread](https://groups.google.com/d/msgid/plumed-users/CAB1aw3y0m%3D5qwzsZY4ZB-aBevsL5iuS%3DmQuSWK_cw527zCMqzg%40mail.gmail.com?utm_medium=email&utm_source=footer).
 \endverbatim
 
 \page CodeSpecificNotes Code specific notes

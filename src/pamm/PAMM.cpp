@@ -59,13 +59,13 @@ looking through the example given below.
 
 In this example I will explain in detail what the following input is computing:
 
-\verbatim
+\plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=M1d.pdb
 psi: TORSIONS ATOMS1=@psi-2 ATOMS2=@psi-3 ATOMS3=@psi-4
 phi: TORSIONS ATOMS1=@phi-2 ATOMS2=@phi-3 ATOMS3=@phi-4
 p: PAMM DATA=phi,psi CLUSTERS=clusters.dat MEAN1={COMPONENT=1} MEAN2={COMPONENT=2}
 PRINT ARG=p.mean-1,mean-2 FILE=colvar
-\endverbatim
+\endplumedfile
 
 The best place to start our explanation is to look at the contents of the clusters.dat file
 

@@ -35,7 +35,7 @@ Direction::Direction( const ReferenceConfigurationOptions& ro ):
 }
 
 void Direction::read( const PDB& pdb ) {
-  readAtomsFromPDB( pdb );
+  readAtomsFromPDB( pdb, true );
   readArgumentsFromPDB( pdb );
 }
 

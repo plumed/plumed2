@@ -317,15 +317,20 @@ void JCoupling::calculate() {
   {
     #pragma omp for
     // Loop through atoms, with steps of 6 atoms (one iteration per datapoint)
-    for (unsigned r = 0; r < (ncoupl_ * 6); r += 6) {
+    for (unsigned r=0; r<ncoupl_; r++) {
       // Index is the datapoint index
-      const unsigned index = r / 6;
+      const unsigned index = 6*r;
 
       // 6 atoms -> 3 vectors
-      Vector d0, d1, d2;
-      d0 = delta(getPosition(r + 1), getPosition(r + 0));
-      d1 = delta(getPosition(r + 3), getPosition(r + 2));
-      d2 = delta(getPosition(r + 5), getPosition(r + 4));
+      const unsigned a0=index;
+      const unsigned a1=index+1;
+      const unsigned a2=index+2;
+      const unsigned a3=index+3;
+      const unsigned a4=index+4;
+      const unsigned a5=index+5;
+      Vector d0 = delta(getPosition(a1), getPosition(a0));
+      Vector d1 = delta(getPosition(a3), getPosition(a2));
+      Vector d2 = delta(getPosition(a5), getPosition(a4));
 
       // Calculate dihedral with 3 vectors, get the derivatives
       Vector dd0, dd1, dd2;
@@ -335,34 +340,40 @@ void JCoupling::calculate() {
       // Calculate the Karplus relation and its derivative
       const double theta = torsion + kshift_;
       const double cos_theta = cos(theta);
-      const double j = ka_ * cos_theta * cos_theta + kb_ * cos_theta + kc_;
-      const double derj = sin(theta) * (-1.0 * (2.0 * ka_ * cos_theta + kb_));
-      string num; Tools::convert(index,num);
+      const double pder = ka_*cos_theta + kb_;
+      const double j = pder*cos_theta + kc_;
+      const double derj = -sin(theta)*(2.*pder - kb_);
+
+      string num; Tools::convert(r,num);
       Value* val=getPntrToComponent("j_"+num);
       val->set(j);
-      if(getDoScore()) {
-        setCalcData(index, j);
-        deriv[r+0] = derj * dd0;
-        deriv[r+1] = derj * -dd0;
-        deriv[r+2] = derj * dd1;
-        deriv[r+3] = derj * -dd1;
-        deriv[r+4] = derj * dd2;
-        deriv[r+5] = derj * -dd2;
-      } else {
-        setAtomsDerivatives(val, r + 0, derj * dd0);
-        setAtomsDerivatives(val, r + 1, derj * -dd0);
-        setAtomsDerivatives(val, r + 2, derj * dd1);
-        setAtomsDerivatives(val, r + 3, derj * -dd1);
-        setAtomsDerivatives(val, r + 4, derj * dd2);
-        setAtomsDerivatives(val, r + 5, derj * -dd2);
 
-        Tensor virial;
-        virial-=Tensor(getPosition(r+0),derj * dd0);
-        virial-=Tensor(getPosition(r+1),derj * -dd0);
-        virial-=Tensor(getPosition(r+2),derj * dd1);
-        virial-=Tensor(getPosition(r+3),derj * -dd1);
-        virial-=Tensor(getPosition(r+4),derj * dd2);
-        virial-=Tensor(getPosition(r+5),derj * -dd2);
+      dd0 *= derj;
+      dd1 *= derj;
+      dd2 *= derj;
+
+      if(getDoScore()) {
+        setCalcData(r, j);
+        deriv[a0] =  dd0;
+        deriv[a1] = -dd0;
+        deriv[a2] =  dd1;
+        deriv[a3] = -dd1;
+        deriv[a4] =  dd2;
+        deriv[a5] = -dd2;
+      } else {
+        setAtomsDerivatives(val, a0,  dd0);
+        setAtomsDerivatives(val, a1, -dd0);
+        setAtomsDerivatives(val, a2,  dd1);
+        setAtomsDerivatives(val, a3, -dd1);
+        setAtomsDerivatives(val, a4,  dd2);
+        setAtomsDerivatives(val, a5, -dd2);
+
+        Tensor virial = -Tensor(getPosition(a0),  dd0);
+        virial -= Tensor(getPosition(a1), -dd0);
+        virial -= Tensor(getPosition(a2),  dd1);
+        virial -= Tensor(getPosition(a3), -dd1);
+        virial -= Tensor(getPosition(a4),  dd2);
+        virial -= Tensor(getPosition(a5), -dd2);
         setBoxDerivatives(val,virial);
       }
     }
@@ -376,20 +387,26 @@ void JCoupling::calculate() {
     /* calculate final derivatives */
     Tensor virial;
     Value* val=getPntrToComponent("score");
-    for (unsigned r = 0; r < (ncoupl_ * 6); r += 6) {
-      const unsigned index = r / 6;
-      setAtomsDerivatives(val, r + 0, deriv[r+0]*getMetaDer(index));
-      virial-=Tensor(getPosition(r+0), deriv[r+0]*getMetaDer(index));
-      setAtomsDerivatives(val, r + 1, deriv[r+1]*getMetaDer(index));
-      virial-=Tensor(getPosition(r+1), deriv[r+1]*getMetaDer(index));
-      setAtomsDerivatives(val, r + 2, deriv[r+2]*getMetaDer(index));
-      virial-=Tensor(getPosition(r+2), deriv[r+2]*getMetaDer(index));
-      setAtomsDerivatives(val, r + 3, deriv[r+3]*getMetaDer(index));
-      virial-=Tensor(getPosition(r+3), deriv[r+3]*getMetaDer(index));
-      setAtomsDerivatives(val, r + 4, deriv[r+4]*getMetaDer(index));
-      virial-=Tensor(getPosition(r+4), deriv[r+4]*getMetaDer(index));
-      setAtomsDerivatives(val, r + 5, deriv[r+5]*getMetaDer(index));
-      virial-=Tensor(getPosition(r+5), deriv[r+5]*getMetaDer(index));
+    for (unsigned r=0; r<ncoupl_; r++) {
+      const unsigned index = 6*r;
+      const unsigned a0=index;
+      const unsigned a1=index+1;
+      const unsigned a2=index+2;
+      const unsigned a3=index+3;
+      const unsigned a4=index+4;
+      const unsigned a5=index+5;
+      setAtomsDerivatives(val, a0, deriv[a0]*getMetaDer(r));
+      setAtomsDerivatives(val, a1, deriv[a1]*getMetaDer(r));
+      setAtomsDerivatives(val, a2, deriv[a2]*getMetaDer(r));
+      setAtomsDerivatives(val, a3, deriv[a3]*getMetaDer(r));
+      setAtomsDerivatives(val, a4, deriv[a4]*getMetaDer(r));
+      setAtomsDerivatives(val, a5, deriv[a5]*getMetaDer(r));
+      virial-=Tensor(getPosition(a0), deriv[a0]*getMetaDer(r));
+      virial-=Tensor(getPosition(a1), deriv[a1]*getMetaDer(r));
+      virial-=Tensor(getPosition(a2), deriv[a2]*getMetaDer(r));
+      virial-=Tensor(getPosition(a3), deriv[a3]*getMetaDer(r));
+      virial-=Tensor(getPosition(a4), deriv[a4]*getMetaDer(r));
+      virial-=Tensor(getPosition(a5), deriv[a5]*getMetaDer(r));
     }
     setBoxDerivatives(val, virial);
   }

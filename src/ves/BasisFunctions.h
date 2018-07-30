@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2017 The VES code team
+   Copyright (c) 2016-2018 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -183,7 +183,7 @@ public:
   double getValue(const double, const unsigned int, double&, bool&) const;
   // calcuate the values for all basis functions
   virtual void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const = 0;
-  //virtual void get2ndDerivaties(const double, std::vector<double>&)=0;
+  //virtual void get2ndDerivatives(const double, std::vector<double>&)=0;
   void printInfo() const;
   //
   void getMultipleValue(const std::vector<double>&, std::vector<double>&, std::vector<std::vector<double> >&, std::vector<std::vector<double> >&, const bool numerical_deriv=false) const;

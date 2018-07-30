@@ -51,7 +51,7 @@ scripts) and the method that can be used to retrieve them from C++ code.
 When using plumed from its build directory (without installing it) these paths will be set to the
 value reported below:
 - `PLUMED_ROOT=/build/directory`
-- `PLUMED_INCLUDEDIR=$PLUMED_ROOT/include` (this works thanks to a symlink of `/build/directory/src` to `/build/directory/include/plumed`)
+- `PLUMED_INCLUDEDIR=$PLUMED_ROOT/src/include` (this works thanks to a symlink of `/build/directory/src` to `/build/directory/src/include/plumed`)
 - `PLUMED_HTMLDIR=$PLUMED_ROOT`
 - `PLUMED_PROGRAM_NAME=plumed`
 

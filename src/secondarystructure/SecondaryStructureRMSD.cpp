@@ -45,6 +45,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD. "
            "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD. For more details on the "
            "DRMSD method see \\ref DRMSD.");
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions");
   keys.add("compulsory","R_0","0.08","The r_0 parameter of the switching function.");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","NN","8","The n parameter of the switching function");
@@ -74,12 +75,13 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
   ActionAtomistic(ao),
   ActionWithValue(ao),
   ActionWithVessel(ao),
+  nopbc(false),
   align_strands(false),
   s_cutoff2(0),
   align_atom_1(0),
   align_atom_2(0)
 {
-  parse("TYPE",alignType);
+  parse("TYPE",alignType); parseFlag("NOPBC",nopbc);
   log.printf("  distances from secondary structure elements are calculated using %s algorithm\n",alignType.c_str() );
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)"); log<<"\n";
 
@@ -193,7 +195,9 @@ void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsi
   for(unsigned i=0; i<n; ++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(current,i) );
 
   // This does strands cutoff
-  Vector distance=pbcDistance( pos[align_atom_1],pos[align_atom_2] );
+  Vector distance;
+  if( nopbc ) distance=delta( pos[align_atom_1],pos[align_atom_2] );
+  else distance=pbcDistance( pos[align_atom_1],pos[align_atom_2] );
   if( s_cutoff2>0 ) {
     if( distance.modulo2()>s_cutoff2 ) {
       myvals.setValue( 0, 0.0 );
@@ -202,11 +206,27 @@ void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsi
   }
 
   // This aligns the two strands if this is required
-  if( alignType!="DRMSD" && align_strands ) {
+  if( alignType!="DRMSD" && align_strands && !nopbc ) {
+    for(unsigned i=0; i<14; ++i) {
+      const Vector & first (pos[i]);
+      Vector & second (pos[i+1]);
+      second=first+pbcDistance(first,second);
+    }
+    for(unsigned i=16; i<n-1; ++i) {
+      const Vector & first (pos[i]);
+      Vector & second (pos[i+1]);
+      second=first+pbcDistance(first,second);
+    }
     Vector origin_old, origin_new; origin_old=pos[align_atom_2];
     origin_new=pos[align_atom_1]+distance;
     for(unsigned i=15; i<30; ++i) {
       pos[i]+=( origin_new - origin_old );
+    }
+  } else if( alignType!="DRMSD" && !nopbc ) {
+    for(unsigned i=0; i<n-1; ++i) {
+      const Vector & first (pos[i]);
+      Vector & second (pos[i+1]);
+      second=first+pbcDistance(first,second);
     }
   }
   // Create a holder for the derivatives

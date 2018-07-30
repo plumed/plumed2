@@ -10,7 +10,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=673dcefa
 # coverage scan
   - os: linux
     dist: trusty
@@ -29,7 +29,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.81
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.84
 # test using external blas with internal lapack
   - os: linux
     if: branch =~ ^test- OR type IN(pull_request)
@@ -114,6 +114,11 @@ install:
 # install some package - these are fast, we install them anyway
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libfftw3-dev gsl-bin libgsl0-dev  libboost-serialization-dev ; fi
   - if test "$PLUMED_CXX" ; then ./.travis/install.xdrfile ; fi
+# a specific old version of asmjit is required:
+  - if test -n "$ASMJIT" ; then ./.travis/install.asmjit $ASMJIT ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      ./.travis/install.ccache v3.4.2 ;
+    fi
 # cppcheck:
 # I use 1.71 since 1.72 seems to report a lot of false positive
   - if test "$CPPCHECK" == yes ; then  ./.travis/install.cppcheck $CPPCHECK_VERSION ; fi
@@ -167,6 +172,8 @@ script:
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-fftw"
 # enable boost_serialization to test drr module
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-boost_serialization"
+# enable asmjit used in lepton
+  - if test -n "$ASMJIT" ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-asmjit" ; fi
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
   - if test "$MAKECOVERAGE" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
 # when running lcov plumed should be compiled with -O0
@@ -176,9 +183,9 @@ script:
 # this is done only if PLUMED_CXX is defined
   - if test "$PLUMED_CXX" ; then
       ccache -s ;
-      ./configure CXX="ccache $(which $PLUMED_CXX)" CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $CONFIG_FLAGS ;
+      ./configure CXX="ccache $(which $PLUMED_CXX)" CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $CONFIG_FLAGS --prefix="$HOME/opt" ;
       make -j 4 ;
-      make install prefix="$HOME/opt" ;
+      make install ;
       ccache -s ;
     fi
 
@@ -217,4 +224,5 @@ script:
   - if test "$CPPCHECK" == yes ; then make codecheck ; fi
 after_success:
   - if test "$MAKEDOC" == yes ; then ./.travis/push doc ; fi 
+  - if test "$MAKECOVERAGE" == yes ; then bash <(curl -s https://codecov.io/bash) ; fi
   - if test "$MAKECOVERAGE" == yes ; then ./.travis/push coverage ; fi 

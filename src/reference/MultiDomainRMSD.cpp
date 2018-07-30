@@ -35,10 +35,6 @@ MultiDomainRMSD::MultiDomainRMSD( const ReferenceConfigurationOptions& ro ):
 {
 }
 
-MultiDomainRMSD::~MultiDomainRMSD() {
-  for(unsigned i=0; i<domains.size(); ++i) delete domains[i];
-}
-
 void MultiDomainRMSD::read( const PDB& pdb ) {
   unsigned nblocks =  pdb.getNumberOfAtomBlocks();
   if( nblocks<2 ) error("multidomain RMSD only has one block of atoms");
@@ -47,20 +43,22 @@ void MultiDomainRMSD::read( const PDB& pdb ) {
   std::string num; blocks.resize( nblocks+1 ); blocks[0]=0;
   for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
 
-  double lower=0.0, upper=std::numeric_limits<double>::max( );
-  parse("LOWER_CUTOFF",lower,true);
-  parse("UPPER_CUTOFF",upper,true);
-  bool nopbc=false; parseFlag("NOPBC",nopbc);
+  double tmp, lower=0.0, upper=std::numeric_limits<double>::max( );
+  if( pdb.getArgumentValue("LOWER_CUTOFF",tmp) ) lower=tmp;
+  if( pdb.getArgumentValue("UPPER_CUTOFF",tmp) ) upper=tmp;
+  bool nopbc=pdb.hasFlag("NOPBC");
 
+  domains.resize(0); weights.resize(0);
   for(unsigned i=1; i<=nblocks; ++i) {
     Tools::convert(i,num);
     if( ftype=="RMSD" ) {
-      parse("TYPE"+num, ftype );
-      parse("LOWER_CUTOFF"+num,lower,true);
-      parse("UPPER_CUTOFF"+num,upper,true);
-      nopbc=false; parseFlag("NOPBC"+num,nopbc);
+      // parse("TYPE"+num, ftype );
+      lower=0.0; upper=std::numeric_limits<double>::max( );
+      if( pdb.getArgumentValue("LOWER_CUTOFF"+num,tmp) ) lower=tmp;
+      if( pdb.getArgumentValue("UPPER_CUTOFF"+num,tmp) ) upper=tmp;
+      nopbc=pdb.hasFlag("NOPBC");
     }
-    domains.push_back( metricRegister().create<SingleDomainRMSD>( ftype ) );
+    domains.emplace_back( metricRegister().create<SingleDomainRMSD>( ftype ) );
     positions.resize( blocks[i] - blocks[i-1] );
     align.resize( blocks[i] - blocks[i-1] );
     displace.resize( blocks[i] - blocks[i-1] );
@@ -75,12 +73,14 @@ void MultiDomainRMSD::read( const PDB& pdb ) {
     domains[i-1]->setReferenceAtoms( positions, align, displace );
     domains[i-1]->setupRMSDObject();
 
-    double ww=0; parse("WEIGHT"+num, ww, true );
-    if( ww==0 ) weights.push_back( 1.0 );
+    double ww=0;
+    if( !pdb.getArgumentValue("WEIGHT"+num,ww) ) weights.push_back( 1.0 );
     else weights.push_back( ww );
   }
   // And set the atom numbers for this object
-  setAtomNumbers( pdb.getAtomNumbers() );
+  indices.resize(0); atom_der_index.resize(0);
+  for(unsigned i=0; i<pdb.size(); ++i) { indices.push_back( pdb.getAtomNumbers()[i] ); atom_der_index.push_back(i); }
+  // setAtomNumbers( pdb.getAtomNumbers() );
 }
 
 void MultiDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ) {

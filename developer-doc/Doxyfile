@@ -763,6 +763,7 @@ INPUT                  = ./Intro.md \
                          ./AddingAColvar.md \
                          ./AddingAFunction.md \
                          ./AddingACLTool.md \
+                         ./AddingAnAnalysis.md \
                          ./AddingAMeasure.md \
                          ./AddingAMultColvar.md \
                          ./InstallationLayout.md \

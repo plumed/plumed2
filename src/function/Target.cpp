@@ -137,7 +137,7 @@ Target::Target(const ActionOptions&ao):
   expandArgKeywordInPDB( pdb );
 
   // Generate the reference structure
-  target.reset(metricRegister().create<ArgumentOnlyDistance>( type, pdb ));
+  target=metricRegister().create<ArgumentOnlyDistance>( type, pdb );
 
   // Get the argument names
   std::vector<std::string> args_to_retrieve;

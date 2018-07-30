@@ -72,9 +72,9 @@ public:
 /// Find the cell index in which this position is contained
   unsigned findCell( const Vector& pos ) const ;
 /// Find the cell in which this position is contained
-  std::vector<unsigned> findMyCell( const Vector& pos ) const ;
+  std::array<unsigned,3> findMyCell( const Vector& pos ) const ;
 /// Get the list of cells we need to surround the a particular cell
-  void addRequiredCells( const std::vector<unsigned>& celn, unsigned& ncells_required,
+  void addRequiredCells( const std::array<unsigned,3>& celn, unsigned& ncells_required,
                          std::vector<unsigned>& cells_required ) const ;
 /// Retrieve the atoms in a list of cells
   void retrieveAtomsInCells( const unsigned& ncells_required,

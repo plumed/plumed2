@@ -921,7 +921,6 @@ MetaD::MetaD(const ActionOptions& ao):
         acc_rfile.scanField(acclabel, acc_rmean);
         acc_rfile.scanField();
       }
-      acc_rfile.close();
       acc_restart_mean_ = acc_rmean;
       // Set component based on the read values.
       getPntrToComponent("acc")->set(acc_rmean);
@@ -1001,7 +1000,6 @@ MetaD::MetaD(const ActionOptions& ao):
     }
     std::string funcl=getLabel() + ".bias";
     BiasGrid_=Grid::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true);
-    gridfile.close();
     if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
@@ -1059,8 +1057,9 @@ MetaD::MetaD(const ActionOptions& ao):
         fname = hillsfname;
       }
     }
-    IFile *ifile = new IFile();
-    ifiles.emplace_back(ifile);
+    ifiles.emplace_back(new IFile());
+    // this is just a shortcut pointer to the last element:
+    IFile *ifile = ifiles.back().get();
     ifilesnames.push_back(fname);
     ifile->link(*this);
     if(ifile->FileExist(fname)) {
@@ -1072,6 +1071,9 @@ MetaD::MetaD(const ActionOptions& ao):
       ifiles[i]->reset(false);
       // close only the walker own hills file for later writing
       if(i==mw_id_) ifiles[i]->close();
+    } else {
+      // in case a file does not exist and we are restarting, complain that the file was not found
+      if(getRestart()) log<<"  WARNING: restart file "<<fname<<" not found\n";
     }
   }
 
@@ -1088,7 +1090,6 @@ MetaD::MetaD(const ActionOptions& ao):
     IFile gridfile; gridfile.open(targetfilename_);
     std::string funcl=getLabel() + ".target";
     TargetGrid_=Grid::create(funcl,getArguments(),gridfile,false,false,true);
-    gridfile.close();
     if(TargetGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->isPeriodic()!=TargetGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
@@ -1795,8 +1796,8 @@ void MetaD::computeReweightingFactor()
   if( !welltemp_ ) error("cannot compute the c(t) reweighting factors for non well-tempered metadynamics");
 
   if(biasf_==1.0) {
-// in this case we have no bias, so reweight factor is 1.0
-    getPntrToComponent("rct")->set(1.0);
+// in this case we have no bias, so reweight factor is 0.0
+    getPntrToComponent("rct")->set(0.0);
     return;
   }
 

@@ -75,6 +75,7 @@ do
     (--list-engines|-l) test -n "$action" && multiple_actions=yes ; action=list ;;
     (--info|-i)         test -n "$action" && multiple_actions=yes ; action=info ;;
     (--new=*)           test -n "$action" && multiple_actions=yes ; action=new ; newpatch="${prefix_option#--new=}" ;;
+    (--options)         test -n "$action" && multiple_actions=yes ; action=options ;;
     (--description)     echo "patch an MD engine" ; exit ;;
     (--engine=*) engine="${prefix_option#--engine=}" ;;
     (--mdroot=*) mdroot="${prefix_option#--mdroot=}" ;;
@@ -112,6 +113,11 @@ fi
 if [ -z "$action" ] ; then
   echo "Nothing to do. -h for help"
   exit
+fi
+
+if [ "$action" = options ] ; then
+  echo "--help -h --patch -p --save -s --save-originals --revert -R -r --list-engines -l --info -i --new --options --description --engine --mdroot --mode --diff --engine -e --mdroot --root --diff -d --mode -m --new -n --static --shared --runtime --force -f --quiet -q"
+  exit 0
 fi
 
 test -n "$quiet" || echo "PLUMED patching tool"
@@ -174,6 +180,25 @@ then
       echo "ERROR: choose in the list above or interrupt (^c)"
     fi
   done
+fi
+
+if [[ "$action" == patch || "$action" == revert ]]
+then
+  found=no
+  for engine_try in $mdlist ; do
+    if [[ "$engine" == "$engine_try" ]] ; then
+      found=yes
+    fi
+  done
+  if [[ "$found" == no ]] ; then
+    echo "WARNING: engine $engine not found, I will search for a close match"
+    for engine_try in $mdlist ; do
+      if [[ "${engine%.*}" == "${engine_try%.*}" ]] ; then
+        echo "WARNING: found $engine_try"
+        engine="$engine_try"
+      fi
+    done
+  fi
 fi
 
 if [ -z "$diff" ]

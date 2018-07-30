@@ -25,6 +25,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <memory>
 
 #include "Vessel.h"
 #include "core/Value.h"
@@ -34,7 +35,9 @@ namespace vesselbase {
 
 class ValueVessel : public Vessel {
 private:
-  bool no_output_value;
+// unique pointer with the same scope as final_value
+  std::unique_ptr<Value> final_value_ptr;
+// this pointer either points to a non-owned Value or to final_value_ptr
   Value* final_value;
 protected:
 /// The component that is being averaged/accumulated whatever
@@ -44,7 +47,6 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ValueVessel( const VesselOptions& da );
-  ~ValueVessel();
   std::string description();
   virtual std::string value_descriptor()=0;
   bool applyForce( std::vector<double>& forces );
