@@ -1,4 +1,5 @@
 #include "DbWaveletGrid.h"
+#include "tools/Exception.h"
 
 namespace PLMD {
 namespace ves {
