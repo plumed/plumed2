@@ -97,7 +97,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   parseFlag("DUMP_WAVELET_GRID", dump_wavelet_grid);
   if (dump_wavelet_grid) {
     OFile wavelet_gridfile;
-    wavelet_gridfile.open("wavelet_grid.data");
+    wavelet_gridfile.open(getLabel()+"wavelet_grid.data");
     waveletGrid_->writeToFile(wavelet_gridfile);
   }
   setType("daubechies_wavelets");
