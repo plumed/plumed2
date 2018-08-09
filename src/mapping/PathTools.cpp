@@ -152,7 +152,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
       // Read the pdb file
       do_read=mypdb.readFromFilepointer(fp,false,0.1);
       if( do_read ) {
-        std::unique_ptr<ReferenceConfiguration> mymsd(metricRegister().create<ReferenceConfiguration>( mtype, mypdb ));
+        auto mymsd(metricRegister().create<ReferenceConfiguration>( mtype, mypdb ));
         frames.emplace_back( std::move(mymsd) );
       }
     }
@@ -218,14 +218,14 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   std::string istart; parse("--start",istart); FILE* fp2=fopen(istart.c_str(),"r"); PDB mystartpdb;
   if( istart.length()==0 ) error("input is missing use --istart + --iend or --path");
   if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) error("could not read fila " + istart);
-  std::unique_ptr<ReferenceConfiguration> sframe( metricRegister().create<ReferenceConfiguration>( mtype, mystartpdb ) );
+  auto sframe=metricRegister().create<ReferenceConfiguration>( mtype, mystartpdb );
   fclose(fp2);
 
 // Read final frame
   std::string iend; parse("--end",iend); FILE* fp1=fopen(iend.c_str(),"r"); PDB myendpdb;
   if( iend.length()==0 ) error("input is missing using --istart + --iend or --path");
   if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
-  std::unique_ptr<ReferenceConfiguration> eframe( metricRegister().create<ReferenceConfiguration>( mtype, myendpdb ) );
+  auto eframe=metricRegister().create<ReferenceConfiguration>( mtype, myendpdb );
   fclose(fp1);
 // Get atoms and arg requests
   std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;

@@ -253,6 +253,8 @@ PLUMED_CONFIG_ENABLE([readdir-r],[search for readdir_r (threadsafe)],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
+PLUMED_CONFIG_ENABLE([chdir],[search for chdir function],[yes])
+PLUMED_CONFIG_ENABLE([getcwd],[search for getcwd function],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
@@ -278,16 +280,15 @@ then
   CXXFLAGS=-O3
 fi
 
-# this is list if copied from a generated ./configure script
-# the reason why I put it here explicitly is that I want a
-# correct fallback list to be searched after preferred choices
-# (e.g. MPI) have been checked.
-compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+# this is a list of common compilers
+compilers="g++ c++ cxx icpc"
+c_compilers="gcc cc icc"
 
 # on OSX, prefer clang++
 case `(uname)` in
   (Darwin)
     compilers="clang++ $compilers"
+    c_compilers="clang $c_compilers"
   ;;
 esac
 
@@ -298,9 +299,7 @@ fi
 
 # do the actual search
 AC_PROG_CXX([$compilers])
-
-# for c, the standard list is used
-AC_PROG_CC
+AC_PROG_CC([$c_compilers])
 
 # also setup Fortran compiler
 # this is optional, and can be used in the late part of this 
@@ -617,6 +616,14 @@ main ()
   return 0;
 }
   ], [__PLUMED_HAS_RTLD_DEFAULT])
+fi
+
+if test $chdir == true ; then
+  PLUMED_CHECK_PACKAGE([unistd.h],[chdir],[__PLUMED_HAS_CHDIR])
+fi
+
+if test $getcwd == true ; then
+  PLUMED_CHECK_PACKAGE([unistd.h],[getcwd],[__PLUMED_HAS_GETCWD])
 fi
 
 if test $execinfo == true ; then

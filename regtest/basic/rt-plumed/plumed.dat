@@ -1,0 +1,6 @@
+DEBUG logRequestedAtoms
+d: DISTANCE ATOMS=1,10
+r: RESTRAINT ARG=d KAPPA=4 AT=2
+p: PLUMED FILE=plumed2.dat
+PRINT ARG=d FILE=colvar1
+PRINT ARG=r.bias,p.bias FILE=biases

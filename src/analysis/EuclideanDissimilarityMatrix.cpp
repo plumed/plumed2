@@ -1,8 +1,8 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2015-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
    This file is part of plumed, version 2.
 
@@ -131,8 +131,10 @@ double EuclideanDissimilarityMatrix::getDissimilarity( const unsigned& iframe, c
   }
   if( iframe!=jframe ) {
     double dd;
-    getStoredData( iframe, true ).transferDataToPDB( mypdb ); std::unique_ptr<ReferenceConfiguration> myref1=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
-    getStoredData( jframe, true ).transferDataToPDB( mypdb ); std::unique_ptr<ReferenceConfiguration> myref2=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+    getStoredData( iframe, true ).transferDataToPDB( mypdb );
+    auto myref1=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+    getStoredData( jframe, true ).transferDataToPDB( mypdb );
+    auto myref2=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
     if( !usingLowMem() ) dd=dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = distance( getPbc(), getArguments(), myref1.get(), myref2.get(), true );
     else dd=distance( getPbc(), getArguments(), myref1.get(), myref2.get(), true );
     return dd;
