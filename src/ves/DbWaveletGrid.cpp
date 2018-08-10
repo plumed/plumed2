@@ -33,7 +33,7 @@ namespace PLMD {
 namespace ves {
 
 
-  std::unique_ptr<Grid> DbWaveletGrid::setup_Grid(const unsigned order, unsigned gridsize) {
+std::unique_ptr<Grid> DbWaveletGrid::setup_Grid(const unsigned order, unsigned gridsize) {
   // calculate the grid properties
   // the range of the grid is from 0 to maxsupport
   unsigned maxsupport = order*2 -1;
