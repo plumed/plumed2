@@ -81,18 +81,18 @@ std::unique_ptr<Grid> DbWaveletGrid::setup_Grid(const unsigned order, unsigned g
 }
 
 
-std::vector<Matrix<double>> DbWaveletGrid::setup_Matrices(const std::vector<double>& h_coeffs) {
+std::vector<Matrix<double>> DbWaveletGrid::setup_Matrices(const std::vector<double>& coeffs) {
   Matrix<double> M0, M1;
-  const int N = h_coeffs.size() -1;
+  const int N = coeffs.size() -1;
   M0.resize(N,N); M1.resize(N,N);
   for (int i = 0; i < N; ++i) { // not very elegant, maybe change this later
     for (int j = 0; j < N; ++j) {
       int shift = 2*i -j;
       if (0 <= shift && shift <= N) {
-        M0[i][j] = 2 * h_coeffs[2*i -j];
+        M0[i][j] = 2 * coeffs[2*i -j];
       }
       if (-1 <= shift && shift <= N -1) {
-        M1[i][j] = 2 * h_coeffs[2*i -j + 1];
+        M1[i][j] = 2 * coeffs[2*i -j + 1];
       }
     }
   }
