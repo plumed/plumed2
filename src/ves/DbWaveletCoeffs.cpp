@@ -23,13 +23,15 @@
 #include "DbWaveletGrid.h"
 #include "tools/Exception.h"
 
+#include <algorithm>
 #include <vector>
 
 namespace PLMD {
 namespace ves {
 
 // returns the filter coefficients, at the moment simply a lookup table (calculated with python script)
-std::vector<double> DbWaveletGrid::get_filter_coefficients(const unsigned order) {
+// lowpass coefficients are for the scaling function, highpass for the actual wavelets
+std::vector<double> DbWaveletGrid::get_filter_coefficients(const unsigned order, bool lowpass) {
   std::vector<double> h;
   switch(order) {
   case 4:
@@ -494,6 +496,15 @@ std::vector<double> DbWaveletGrid::get_filter_coefficients(const unsigned order)
   default:
     plumed_merror("Specified order currently not implemented");
   }
+
+  // to get highpass: reverse order and inverse sign of every second
+  if (!lowpass) {
+    std::reverse(h.begin(), h.end());
+    for (unsigned i=1; i < h.size(); i += 2) {
+      h[i] = -h[i];
+    }
+  }
+
   return h;
 }
 

@@ -50,7 +50,7 @@ std::unique_ptr<Grid> DbWaveletGrid::setup_Grid(const unsigned order, unsigned g
   grid.reset(new Grid("db_wavelet", {"position"}, {"0"}, {std::to_string(maxsupport)}, {gridsize}, false, true, true, {false}, {"0."}, {"0."}));
 
   // Filter coefficients
-  std::vector<double> h_coeffs = get_filter_coefficients(order);
+  std::vector<double> h_coeffs = get_filter_coefficients(order, true);
   // Vector with the Matrices M0 and M1 for the cascade
   std::vector<Matrix<double>> Matvec = setup_Matrices(h_coeffs);
 
