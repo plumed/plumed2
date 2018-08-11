@@ -72,6 +72,7 @@ class ActionWithValue :
   public virtual Action
 {
   friend class ActionWithArguments;
+  friend class ParallelPlumedActions;
 private:
 /// An array containing the values for this action
   std::vector<std::unique_ptr<Value>> values;

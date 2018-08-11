@@ -65,6 +65,7 @@ ActionAtomistic(ao)
        } else safe=false;
    }
    if( !safe ) error("input must be to reference atom positions that are read in using READ_ATOMS"); 
+   log.printf("  calculating reference values for positions read in by action with label %s \n", lab.c_str() );
    // And request the atoms
    requestAtoms( atom_list );
    // Create a PlumedMain object to do the calculation
@@ -83,7 +84,7 @@ ActionAtomistic(ao)
    // Now read the PLUMED command that we have to execute
    std::string inp; parse("INPUT",inp); const char* cinp=inp.c_str();
    std::vector<std::string> input=Tools::getWords(inp);
-   if( input.size()==1 ) {
+   if( input.size()==1 && !actionRegister().check(input[0]) ) {
        p.cmd("setPlumedDat",cinp); p.cmd("init");
    } else {
        p.cmd("init"); p.cmd("readInputLine",cinp);

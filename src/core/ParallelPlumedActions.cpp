@@ -50,13 +50,33 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
       // Read the input to this command
       std::vector<std::string> input_words=Tools::getWords(input);
       if( input_words.size()==1 ) plumed.readInputFile(input);
-      else plumed.readInputLine( input );
+      else {
+        std::string remainder = input;
+        while( remainder.find(";")!=std::string::npos ) {
+            std::size_t semi = remainder.find_first_of(';');
+            plumed.readInputLine( remainder.substr(0,semi) ); 
+            remainder = remainder.substr(semi+1); 
+        }
+        plumed.readInputLine( remainder );
+      } 
       // Now copy the actions that were just created to local storage
       action_lists.push_back( std::pair<unsigned,unsigned>( a_start, plumed.getActionSet().size() ) );
+      // Remove any actions that are in the chain
+      ActionWithValue* avv = dynamic_cast<ActionWithValue*>( plumed.getActionSet()[a_start].get() );
+      if( avv ) { 
+          if( avv->action_to_do_before ) { avv->action_to_do_before->action_to_do_after=NULL; avv->action_to_do_before = NULL; }
+      }
       // Make sure these actions are not run by the PlumedMain object
       for(unsigned j=a_start;j<plumed.getActionSet().size();++j) {
-          plumed.getActionSet()[j].get()->setCallingAction( getLabel() );
-          ActionWithValue* av=dynamic_cast<ActionWithValue*>( plumed.getActionSet()[j].get() );
+          plumed.getActionSet()[j].get()->caller = getLabel();
+          // Add in any dependencies on other actions
+          for(const auto & p : plumed.getActionSet()[j].get()->getDependencies() ) {
+              if( p->caller=="plumedmain" ) {
+                  addDependency(p);
+                  ActionWithValue* aav=dynamic_cast<ActionWithValue*>(p);
+                  if( aav ) for(unsigned i=0;i<aav->getNumberOfComponents();++i) (aav->values[i])->buildDataStore( getLabel() ); 
+              }
+          } 
       }
       // Check that final command in input is just a scalar
       const ActionWithValue* av=dynamic_cast<const ActionWithValue*>( plumed.getActionSet()[action_lists[i-1].second-1].get() );
@@ -121,7 +141,11 @@ void ParallelPlumedActions::calculate() {
 
 void ParallelPlumedActions::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   // Run calculate for these actions
-  for(unsigned i=action_lists[task_index].first;i<action_lists[task_index].second;++i)  plumed.getActionSet()[i].get()->calculate();
+  for(unsigned i=action_lists[task_index].first;i<action_lists[task_index].second;++i) plumed.getActionSet()[i].get()->activate();
+  for(unsigned i=action_lists[task_index].first;i<action_lists[task_index].second;++i) {
+      Action* aa = plumed.getActionSet()[i].get(); aa->calculate(); aa->deactivate();
+      
+  }
   // Retrieve the value
   const ActionWithValue* av=dynamic_cast<const ActionWithValue*>( plumed.getActionSet()[action_lists[task_index].second-1].get() );
   myvals.setValue( getPntrToOutput(0)->getPositionInStream(), av->copyOutput(0)->get() );

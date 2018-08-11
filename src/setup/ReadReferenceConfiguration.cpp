@@ -67,6 +67,13 @@ ActionAtomistic(ao)
              atoms.setVatomPosition( index, pdb.getPositions()[i] );
          }
          atoms.insertGroup( getLabel(), mygroup );
+         // Get the block extents 
+         nblocks = pdb.getNumberOfAtomBlocks(); blocks.resize( nblocks+1 );
+         if( nblocks==1 ) { 
+            blocks[0]=0; blocks[1]=natoms;
+         } else {
+            blocks[0]=0; for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
+         } 
          // Set the box size if this information was read
          if( pdb.cellWasRead() ) {
              Tensor box( pdb.getBox() );

@@ -160,7 +160,7 @@ bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels,
           if( !av1->canBeAfterInChain( av2 ) ) error("must calculate " + mylabels[j] + " before " + mylabels[i] );
       }
   }
-  action_to_do_after=act; act->addDependency( this ); act->action_to_do_before=this;
+  action_to_do_after=act; act->action_to_do_before=this;
   return true;
 }
 

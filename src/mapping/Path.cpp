@@ -21,6 +21,10 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
+#include "core/ActionWithValue.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "setup/DRMSD.h"
 #include "tools/PDB.h"
 
 using namespace std;
@@ -78,26 +82,34 @@ Path::Path( const ActionOptions& ao ):
   std::string refname; parse("REFERENCE",refname); FILE* fp=std::fopen(refname.c_str(),"r");
   if(!fp) plumed_merror("could not open reference file " + refname );
   bool do_read=true; double fake_unit=0.1; unsigned nfram = 0; 
+  std::string mtype, distances_str; parse("TYPE",mtype); 
   while (do_read ) {
       PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
       // Break if we are done
       if( !do_read ) break ;
       std::string num; Tools::convert( nfram+1, num );
       readInputLine( getShortcutLabel() + "_ref" + num + ": READ_ATOMS REFERENCE=" + refname  + " NUMBER=" + num );
-      if( nfram==0 ) {
-          indices.resize( mypdb.getAtomNumbers().size() );
-          for(unsigned i=0;i<indices.size();++i) indices[i]=mypdb.getAtomNumbers()[i];
-          alig.resize( mypdb.getOccupancy().size() );
-          for(unsigned i=0;i<alig.size();++i) alig[i]=mypdb.getOccupancy()[i];
-          disp.resize( mypdb.getBeta().size() );
-          for(unsigned i=0;i<disp.size();++i) disp[i]=mypdb.getBeta()[i]; 
-      } else {
-          if( indices.size()!=mypdb.getAtomNumbers().size() ) plumed_merror("mismatch between numbers of atoms in frames of path");
-          for(unsigned i=0;i<indices.size();++i) {
-              if( indices[i]!=mypdb.getAtomNumbers()[i] ) plumed_merror("mismatch between atom numbers in frames of path");
-              if( alig[i]!=mypdb.getOccupancy()[i] ) plumed_merror("mismatch between occupancies in frames of path");
-              if( disp[i]!=mypdb.getBeta()[i] ) plumed_merror("mismatch between beta values in frames of path");
+      if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
+          if( nfram==0 ) {
+              indices.resize( mypdb.getAtomNumbers().size() );
+              for(unsigned i=0;i<indices.size();++i) indices[i]=mypdb.getAtomNumbers()[i];
+              alig.resize( mypdb.getOccupancy().size() );
+              for(unsigned i=0;i<alig.size();++i) alig[i]=mypdb.getOccupancy()[i];
+              disp.resize( mypdb.getBeta().size() );
+              for(unsigned i=0;i<disp.size();++i) disp[i]=mypdb.getBeta()[i]; 
+          } else {
+              if( indices.size()!=mypdb.getAtomNumbers().size() ) plumed_merror("mismatch between numbers of atoms in frames of path");
+              for(unsigned i=0;i<indices.size();++i) {
+                  if( indices[i]!=mypdb.getAtomNumbers()[i] ) plumed_merror("mismatch between atom numbers in frames of path");
+                  if( alig[i]!=mypdb.getOccupancy()[i] ) plumed_merror("mismatch between occupancies in frames of path");
+                  if( disp[i]!=mypdb.getBeta()[i] ) plumed_merror("mismatch between beta values in frames of path");
+              }
           }
+      } else if( mtype.find("DRMSD")!=std::string::npos ) {
+          distances_str = setup::DRMSD::getDistancesString( plumed, getShortcutLabel() + "_ref" + num, mtype );
+          readInputLine( getShortcutLabel() + "_refv" + num + ": CALCULATE_REFERENCE ATOMS=" + getShortcutLabel() + "_ref" + num + " INPUT={DISTANCE " + distances_str + "}" );
+      } else {
+          readInputLine( getShortcutLabel()  + "_refv" + num + ": CALCULATE_REFERENCE ATOMS=" + getShortcutLabel() + "_ref" + num + " INPUT=" + mtype );
       }
       if( pnames.size()>0 ) {
           std::vector<std::string> remarks( mypdb.getRemark() );
@@ -112,8 +124,15 @@ Path::Path( const ActionOptions& ao ):
       }
       nfram++;   
   }
+  unsigned nquantities=0;
+  if( mtype!="OPTIMAL-FAST" && mtype!="OPTIMAL" && mtype!="SIMPLE" ) { 
+      if( mtype.find("DRMSD")!=std::string::npos ) readInputLine( getShortcutLabel() + "_instantaneous: DISTANCE " + distances_str );
+      else readInputLine( getShortcutLabel() + "_instantaneous: " + mtype );
+      ActionWithValue* aval = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_instantaneous" );
+      nquantities = aval->copyOutput(0)->getNumberOfValues( getShortcutLabel() + "_instantaneous" );
+  }
   // Now create PLUMED object that computes all distances
-  std::string mtype; parse("TYPE",mtype); std::string ref_line =  getShortcutLabel() + "_data: PLUMED_VECTOR";
+  std::string ref_line =  getShortcutLabel() + "_data: PLUMED_VECTOR ";
   for(unsigned i=0;i<nfram;++i) {
       std::string num; Tools::convert(i+1, num );
       if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
@@ -129,7 +148,10 @@ Path::Path( const ActionOptions& ao ):
           // Set the type
           ref_line += " TYPE=" + mtype + " SQUARED}";
       } else {
-           plumed_merror("TYPE " + mtype + " is not defined in shortcut for PATH");
+          std::string powstr = "POWERS=2"; for(unsigned i=1;i<nquantities;++i) powstr += ",2";
+          ref_line += "INPUT" + num + "={" + getShortcutLabel() + "_diff" + num + ": DIFFERENCE ARG1=" + getShortcutLabel() + "_refv" + num;
+          ref_line += " ARG2=" + getShortcutLabel() + "_instantaneous; ";
+          ref_line += "COMBINE ARG=" + getShortcutLabel() + "_diff" + num + " NORMALIZE PERIODIC=NO " + powstr + "} ";
       } 
   }
   readInputLine( ref_line ); std::string lambda; parse("LAMBDA",lambda);

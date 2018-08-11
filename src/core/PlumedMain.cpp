@@ -696,7 +696,7 @@ void PlumedMain::justCalculate() {
     if(p->isActiveForPlumedMain()) {
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-      std::string actionNumberLabel;
+      Stopwatch::Handler sw; 
       if(detailedTimers) {
         std::string actionNumberLabel;
         Tools::convert(iaction,actionNumberLabel);
@@ -714,7 +714,7 @@ void PlumedMain::justCalculate() {
       }
       {
         if(aa) aa->clearOutputForces();
-        if(aa) if(aa->isActiveForPlumedMain()) aa->retrieveAtoms();
+        if(aa) if(aa->isActive()) aa->retrieveAtoms();
       }
       if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
       else p->calculate();
@@ -742,7 +742,7 @@ void PlumedMain::backwardPropagate() {
 // apply them in reverse order
   for(auto pp=actionSet.rbegin(); pp!=actionSet.rend(); ++pp) {
     const auto & p(pp->get());
-    if(p->isActiveForPlumedMain()) {
+    if(p->isActive()) {
 
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.

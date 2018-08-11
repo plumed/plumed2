@@ -58,7 +58,8 @@ public:
 /// The input Actions are more or less corresponding to the directives
 /// in the plumed.dat file and are applied in order at each time-step.
 class Action {
-  friend class ActionShortcut;
+friend class ActionShortcut;
+friend class ParallelPlumedActions;
 
 /// Name of the directive in the plumed.dat file.
   const std::string name;
@@ -258,7 +259,6 @@ public:
 
 /// Check if action is active
   bool isActive()const;
-  bool isActiveForPlumedMain()const;
 
 /// Check if an option is on
   bool isOptionOn(const std::string &s)const;
@@ -297,9 +297,6 @@ public:
 
 /// Cite a paper see PlumedMain::cite
   std::string cite(const std::string&s);
-
-/// Set the name of the action that calls this action to be calculated
-  void setCallingAction( const std::string& aa );
 };
 
 /////////////////////
@@ -423,11 +420,6 @@ inline
 void Action::deactivate() {
   options.clear();
   active=false;
-}
-
-inline
-bool Action::isActiveForPlumedMain() const {
-  return (caller=="plumedmain" && active);
 }
 
 inline

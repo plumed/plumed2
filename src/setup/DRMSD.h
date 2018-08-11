@@ -19,37 +19,20 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_setup_ReadReferenceConfiguration_h
-#define __PLUMED_setup_ReadReferenceConfiguration_h
+#ifndef __PLUMED_setup_DRMSD_h
+#define __PLUMED_setup_DRMSD_h
 
-#include "core/ActionSetup.h"
-#include "core/ActionAtomistic.h"
+#include "core/ActionShortcut.h"
 
 namespace PLMD {
 namespace setup {
 
-class ReadReferenceConfiguration : 
-public ActionSetup, 
-public ActionAtomistic
-{
-friend class DRMSD;
-friend class CalculateReferenceValue;
-private:
-  unsigned nblocks;
-  std::vector<unsigned> blocks;
-  std::vector<AtomNumber> myindices;
-public: 
-  static void registerKeywords( Keywords& keys );
-  explicit ReadReferenceConfiguration(const ActionOptions&ao);
-  ~ReadReferenceConfiguration();
-  /// The number of virtual atoms that are calculated by this action
-  unsigned getNumberOfVirtualAtoms() const ;
+class DRMSD : public ActionShortcut {
+public:
+  static void registerKeywords(Keywords& keys);
+  static std::string getDistancesString( PlumedMain& pp, const std::string& reflab, const std::string& drmsd_input );
+  explicit DRMSD(const ActionOptions&);
 };
-
-inline
-unsigned ReadReferenceConfiguration::getNumberOfVirtualAtoms() const {
-  return myindices.size();
-}
 
 }
 }

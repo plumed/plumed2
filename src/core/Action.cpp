@@ -305,9 +305,5 @@ bool Action::getCPT()const {
   return plumed.getCPT();
 }
 
-void Action::setCallingAction( const std::string& aa ) {
-  caller=aa;
-}
-
 }
 

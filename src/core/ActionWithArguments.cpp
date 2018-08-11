@@ -22,6 +22,7 @@
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
+#include "ActionSetup.h"
 #include "ParallelPlumedActions.h"
 #include "tools/PDB.h"
 #include "PlumedMain.h"
@@ -335,21 +336,26 @@ unsigned ActionWithArguments::setupActionInChain() {
     if( !found ) alabels.push_back( mylab );
 
     found=false; ActionWithValue* myact = (arguments[i]->getPntrToAction())->getActionThatCalculates();
-    for(unsigned j=0; j<f_actions.size(); ++j) {
-      if( f_actions[j]==myact ) { found=true; break; }
-    }
-    if( !found ) {
-      bool storing_for_this=false;
-      for(unsigned j=0;j<arguments[i]->store_data_for.size();++j) {
-          if( arguments[i]->store_data_for[j].first==getLabel() ) { storing_for_this=true; break; }
-      }   
-      if( f_actions.size()==0 || !storing_for_this ) f_actions.push_back( myact );
+    ActionSetup* as = dynamic_cast<ActionSetup*>( myact ); // If this is calculated in setup we never need to add to chain 
+    if( !as ) {
+        for(unsigned j=0; j<f_actions.size(); ++j) {
+          if( f_actions[j]==myact ) { found=true; break; }
+        }
+        if( !found ) {
+          bool storing_for_this=false;
+          for(unsigned j=0;j<arguments[i]->store_data_for.size();++j) {
+              if( arguments[i]->store_data_for[j].first==getLabel() ) { storing_for_this=true; break; }
+          }   
+          if( f_actions.size()==0 || !storing_for_this ) f_actions.push_back( myact );
+        }
     }
   }
 
-  // Now make sure that everything we need is in the chain
-  std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
-  for(unsigned i=1; i<f_actions.size(); ++i) f_actions[0]->addActionToChain( empty, f_actions[i] );
+  if( f_actions.size()>0 ) {
+      // Now make sure that everything we need is in the chain
+      std::vector<std::string> empty(1); empty[0] = f_actions[0]->getLabel();
+      for(unsigned i=1; i<f_actions.size(); ++i) f_actions[0]->addActionToChain( empty, f_actions[i] );
+  }
 
   // Now add this argument to the chain
   bool added=false; ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );

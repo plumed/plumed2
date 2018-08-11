@@ -19,16 +19,17 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionShortcut.h"
+#include "DRMSD.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "core/Atoms.h"
-#include "tools/PDB.h"
+#include "ReadReferenceConfiguration.h"
 
 using namespace std;
 
 namespace PLMD {
-namespace colvar {
+namespace setup {
 
 //+PLUMEDOC FUNCTION DRMSD
 /*
@@ -37,14 +38,6 @@ namespace colvar {
 
 */
 //+ENDPLUMEDOC
-
-
-class DRMSD : public ActionShortcut {
-public:
-  static void registerKeywords(Keywords& keys);
-  explicit DRMSD(const ActionOptions&);
-};
-
 
 PLUMED_REGISTER_ACTION(DRMSD,"DRMSD")
 
@@ -71,81 +64,90 @@ DRMSD::DRMSD( const ActionOptions& ao ):
   std::string reference; parse("REFERENCE",reference);
   readInputLine( getShortcutLabel() + "_atoms: READ_ATOMS REFERENCE=" + reference ); 
   // First bit of input for reference values
-  std::string ref_vals = getShortcutLabel() + "_ref: CALCULATE_REFERENCE ATOMS=" + getShortcutLabel() + "_atoms INPUT={DISTANCE NOPBC"; 
   // First bit of input for the instantaneous distances
-  std::string mat_inp = getShortcutLabel() + "_mat: DISTANCE";
-  bool nopbc; parseFlag("NOPBC",nopbc); if( nopbc ) mat_inp += " NOPBC";
   bool numder; parseFlag("NUMERICAL_DERIVATIVES",numder); 
   // Get cutoff information
-  double lcut; parse("LOWER_CUTOFF",lcut); PDB pdb;
+  double lcut=0; parse("LOWER_CUTOFF",lcut); 
   double ucut=std::numeric_limits<double>::max(); parse("UPPER_CUTOFF",ucut);
-  // This is a potential problem if the user is using units
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) ) plumed_merror("missing input file " + reference );
-  std::vector<AtomNumber> atoms( pdb.getAtomNumbers() ); std::vector<Vector> pos( pdb.getPositions() );
+  std::string drmsd_input, str_min, str_max, drmsd_type; 
+  Tools::convert( lcut, str_min ); Tools::convert( ucut, str_max ); parse("TYPE",drmsd_type);
+  drmsd_input = "LOWER_CUTOFF=" + str_min + " UPPER_CUTOFF=" + str_max + " TYPE=" + drmsd_type; 
   // Work out what distances we need to calculate from the reference configuration
-  std::string drmsd_type; parse("TYPE",drmsd_type); unsigned nn=1; std::string istr, jstr, num;
-  if( drmsd_type=="DRMSD" ) {
+  std::string distances_str = getDistancesString( plumed, getShortcutLabel() + "_atoms", drmsd_input );
+  // Put this information into the reference matrix
+  readInputLine( getShortcutLabel() + "_ref: CALCULATE_REFERENCE ATOMS=" + getShortcutLabel() + "_atoms INPUT={DISTANCE NOPBC" + distances_str + "}" ); 
+  // Setup the thing that calculates the instantaneous values of the distances
+  bool nopbc; parseFlag("NOPBC",nopbc); 
+  if( nopbc ) readInputLine( getShortcutLabel() + "_mat: DISTANCE NOPBC" + distances_str );
+  else readInputLine( getShortcutLabel() + "_mat: DISTANCE" + distances_str ); 
+  // And the difference between these two sets of matrices
+  readInputLine( getShortcutLabel() + "_diffm: DIFFERENCE ARG1=" + getShortcutLabel() + "_mat ARG2=" + getShortcutLabel() + "_ref"); 
+  unsigned nn = Tools::getWords( distances_str ).size();
+  // And the total difference
+  bool squared; parseFlag("SQUARED",squared); std::string comb_inp; 
+  if( !squared ) comb_inp = getShortcutLabel() + "_2:"; else comb_inp = getShortcutLabel() + ":";
+  comb_inp += " COMBINE NORMALIZE PERIODIC=NO ARG=" + getShortcutLabel() + "_diffm POWERS=2";
+  for(unsigned i=1;i<nn;++i) comb_inp += ",2"; readInputLine( comb_inp );
+  // And the square root of the distance if required
+  if( !squared ) readInputLine( getShortcutLabel() + ": MATHEVAL ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
+}
+
+std::string DRMSD::getDistancesString( PlumedMain& pp, const std::string& reflab, const std::string& drmsd_input ) {
+  std::vector<std::string> drmsd_words=Tools::getWords( drmsd_input ); 
+  double lcut=0; Tools::parse( drmsd_words, "LOWER_CUTOFF", lcut );
+  double ucut=std::numeric_limits<double>::max(); Tools::parse( drmsd_words, "UPPER_CUTOFF", ucut );
+  std::string drmsd_type="DRMSD"; Tools::parse( drmsd_words, "TYPE", drmsd_type );
+  setup::ReadReferenceConfiguration* myref=pp.getActionSet().selectWithLabel<setup::ReadReferenceConfiguration*>( reflab ); plumed_assert( myref );
+  std::vector<AtomNumber> atoms( myref->myindices ), vatoms( pp.getAtoms().getAllGroups().find(reflab)->second ); 
+  plumed_assert( vatoms.size()==atoms.size() ); std::vector<Vector> pos( atoms.size() );
+  for(unsigned i=0;i<pos.size();++i) pos[i] = pp.getAtoms().getVatomPosition( vatoms[i] );
+  std::string dist_str, num, istr, jstr; unsigned nn=1;
+  if( drmsd_type=="DRMSD" ) { 
       for(unsigned i=0;i<atoms.size()-1;++i) {
           Tools::convert( atoms[i].serial(), istr );
           for(unsigned j=i+1; j<atoms.size(); ++j) {
               Tools::convert( atoms[j].serial(), jstr );
               double distance = delta( pos[i], pos[j] ).modulo();
               if( distance < ucut && distance > lcut ) {
-                  Tools::convert( nn, num ); nn++;
-                  ref_vals += " ATOMS" + num + "=" + istr + "," + jstr;
-                  mat_inp  += " ATOMS" + num + "=" + istr + "," + jstr;
+                  Tools::convert( nn, num ); nn++; 
+                  dist_str += " ATOMS" + num + "=" + istr + "," + jstr;
               }
-          }
-      }
-  } else {
-      unsigned nblocks = pdb.getNumberOfAtomBlocks(); std::vector<unsigned> blocks( nblocks+1 );
-      if( nblocks==1 ) plumed_merror("Trying to compute intermolecular rmsd but found no TERs in input PDB");
-      blocks[0]=0; for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
-      if( drmsd_type=="INTRA-DRMSD" ) {
-          for(unsigned i=0; i<nblocks; ++i) {
-            for(unsigned iatom=blocks[i]+1; iatom<blocks[i+1]; ++iatom) {
+          }     
+      }         
+  } else {  
+      if( drmsd_type=="INTRA-DRMSD" ) { 
+          for(unsigned i=0; i<myref->nblocks; ++i) {
+            for(unsigned iatom=myref->blocks[i]+1; iatom<myref->blocks[i+1]; ++iatom) {
               Tools::convert( atoms[iatom].serial(), istr );
-              for(unsigned jatom=blocks[i]; jatom<iatom; ++jatom) {
+              for(unsigned jatom=myref->blocks[i]; jatom<iatom; ++jatom) {
                 Tools::convert( atoms[jatom].serial(), jstr );
                 double distance = delta( pos[iatom], pos[jatom] ).modulo();
                 if(distance < ucut && distance > lcut ) {
                    Tools::convert( nn, num ); nn++;
-                   ref_vals += " ATOMS" + num + "=" + istr + "," + jstr;
-                   mat_inp  += " ATOMS" + num + "=" + istr + "," + jstr;
+                   dist_str += " ATOMS" + num + "=" + istr + "," + jstr;
                 }
               }
             }
           }
       } else if( drmsd_type=="INTER-DRMSD" ) {
-          for(unsigned i=1; i<nblocks; ++i) {
+          for(unsigned i=1; i<myref->nblocks; ++i) {
             for(unsigned j=0; j<i; ++j) {
-              for(unsigned iatom=blocks[i]; iatom<blocks[i+1]; ++iatom) {
+              for(unsigned iatom=myref->blocks[i]; iatom<myref->blocks[i+1]; ++iatom) {
                 Tools::convert( atoms[iatom].serial(), istr );
-                for(unsigned jatom=blocks[j]; jatom<blocks[j+1]; ++jatom) {
+                for(unsigned jatom=myref->blocks[j]; jatom<myref->blocks[j+1]; ++jatom) {
                   Tools::convert( atoms[jatom].serial(), jstr );
                   double distance = delta( pos[iatom], pos[jatom] ).modulo();
                   if(distance < ucut && distance > lcut ) {
                      Tools::convert( nn, num ); nn++;
-                     ref_vals += " ATOMS" + num + "=" + istr + "," + jstr;
-                     mat_inp  += " ATOMS" + num + "=" + istr + "," + jstr;
+                     dist_str += " ATOMS" + num + "=" + istr + "," + jstr;
                   }
                 }
               }
             }
           }
-      } else error( drmsd_type + " is not valid input to TYPE keyword");
+      } else plumed_merror( drmsd_type + " is not valid input to TYPE keyword");
   }
-  // Put this information into the reference matrix
-  readInputLine( ref_vals + "}" ); readInputLine( mat_inp ); 
-  // And the difference between these two sets of matrices
-  readInputLine( getShortcutLabel() + "_diffm: DIFFERENCE ARG1=" + getShortcutLabel() + "_mat ARG2=" + getShortcutLabel() + "_ref"); 
-  // And the total difference
-  bool squared; parseFlag("SQUARED",squared); std::string comb_inp; 
-  if( !squared ) comb_inp = getShortcutLabel() + "_2:"; else comb_inp = getShortcutLabel() + ":";
-  comb_inp += " COMBINE NORMALIZE PERIODIC=NO ARG=" + getShortcutLabel() + "_diffm POWERS=2";
-  for(unsigned i=1;i<nn-1;++i) comb_inp += ",2"; readInputLine( comb_inp );
-  // And the square root of the distance if required
-  if( !squared ) readInputLine( getShortcutLabel() + ": MATHEVAL ARG=" + getShortcutLabel() + "_2 FUNC=sqrt(x) PERIODIC=NO");
+  return dist_str;
 }
 
 }
