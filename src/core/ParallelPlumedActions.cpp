@@ -54,28 +54,18 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
         std::string remainder = input;
         while( remainder.find(";")!=std::string::npos ) {
             std::size_t semi = remainder.find_first_of(';');
-            plumed.readInputLine( remainder.substr(0,semi) ); 
+            plumed.readInputLine( remainder.substr(0,semi) + " CALLER=" + getLabel() ); 
             remainder = remainder.substr(semi+1); 
         }
         plumed.readInputLine( remainder );
       } 
       // Now copy the actions that were just created to local storage
       action_lists.push_back( std::pair<unsigned,unsigned>( a_start, plumed.getActionSet().size() ) );
-      // Remove any actions that are in the chain
-      ActionWithValue* avv = dynamic_cast<ActionWithValue*>( plumed.getActionSet()[a_start].get() );
-      if( avv ) { 
-          if( avv->action_to_do_before ) { avv->action_to_do_before->action_to_do_after=NULL; avv->action_to_do_before = NULL; }
-      }
       // Make sure these actions are not run by the PlumedMain object
       for(unsigned j=a_start;j<plumed.getActionSet().size();++j) {
-          plumed.getActionSet()[j].get()->caller = getLabel();
           // Add in any dependencies on other actions
           for(const auto & p : plumed.getActionSet()[j].get()->getDependencies() ) {
-              if( p->caller=="plumedmain" ) {
-                  addDependency(p);
-                  ActionWithValue* aav=dynamic_cast<ActionWithValue*>(p);
-                  if( aav ) for(unsigned i=0;i<aav->getNumberOfComponents();++i) (aav->values[i])->buildDataStore( getLabel() ); 
-              }
+              if( p->getCaller()=="plumedmain" ) addDependency(p); 
           } 
       }
       // Check that final command in input is just a scalar
@@ -84,6 +74,8 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
       if( av->getNumberOfComponents()!=1 ) error("final action in each created set of actions should calculate only one scalar");
       if( av->copyOutput(0)->isPeriodic() ) error("final action should not have periodic domain");
       if( av->copyOutput(0)->getRank()!=0 ) error("final action should calculate a scalar");
+      // Now store the value that we need
+      valuesToGet.push_back( av->copyOutput(0) );
   } 
   // Create a value to hold the output from the plumed inputs
   std::vector<unsigned> shape(1); shape[0]=action_lists.size();
@@ -102,11 +94,15 @@ void ParallelPlumedActions::turnOnDerivatives() {
   ActionWithValue::turnOnDerivatives();
   // Check all action lists have the same size (ultimately what to check for single chains in each action)
   for(unsigned i=0;i<action_lists.size();++i) {
-      if( 1!=(action_lists[i].second - action_lists[i].first) ) error("cannot use derivatives with multiple actions in input"); 
       // Turn on derivatives for all associated actions
       for(unsigned j=action_lists[i].first;j<action_lists[i].second;++j) {
           ActionWithValue* av=dynamic_cast<ActionWithValue*>( plumed.getActionSet()[j].get() );
-          if(av) av->turnOnDerivatives(); 
+          if(av) {
+             av->turnOnDerivatives();
+             if( j>action_lists[i].first && !av->actionInChain() ) {
+                 error("cannot use derivatives with multiple chains in input");
+             }
+          } 
       }
   }
 }
@@ -147,13 +143,12 @@ void ParallelPlumedActions::performTask( const unsigned& task_index, MultiValue&
       
   }
   // Retrieve the value
-  const ActionWithValue* av=dynamic_cast<const ActionWithValue*>( plumed.getActionSet()[action_lists[task_index].second-1].get() );
-  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), av->copyOutput(0)->get() );
+  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), valuesToGet[task_index]->get() );
   // Set the derivatives
   if( !doNotCalculateDerivatives() ) {
-      unsigned nstart=der_starts[task_index]; Value* theval = av->copyOutput(0); unsigned jval = getPntrToOutput(0)->getPositionInStream();
-      for(unsigned i=0;i<av->getNumberOfDerivatives();++i){
-         myvals.addDerivative( jval, nstart + i, theval->getDerivative(i) ); myvals.updateIndex( jval, nstart + i );
+      unsigned nstart=der_starts[task_index]; unsigned jval = getPntrToOutput(0)->getPositionInStream();
+      for(unsigned i=0;i<valuesToGet[task_index]->getNumberOfDerivatives();++i){
+         myvals.addDerivative( jval, nstart + i, valuesToGet[task_index]->getDerivative(i) ); myvals.updateIndex( jval, nstart + i );
       }
   }
 }

@@ -33,6 +33,8 @@ private:
 ///
   std::vector<unsigned> der_starts;
 ///
+  std::vector<Value*> valuesToGet;
+///
   std::vector<double> forcesToApply;
 ///
   std::vector<std::pair<unsigned,unsigned> > action_lists;

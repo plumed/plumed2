@@ -72,7 +72,6 @@ class ActionWithValue :
   public virtual Action
 {
   friend class ActionWithArguments;
-  friend class ParallelPlumedActions;
 private:
 /// An array containing the values for this action
   std::vector<std::unique_ptr<Value>> values;
@@ -139,8 +138,6 @@ public:
   void setPeriodic( const std::string& min, const std::string& max );
   virtual void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize );
 protected:
-///
-  bool actionInChain() const ;
 /// Get a pointer to the default value
   Value* getPntrToValue();
 /// Set the default value (the one without name)
@@ -225,6 +222,8 @@ public:
 
 /// Returns the number of values defined
   int getNumberOfComponents() const ;
+///
+  bool actionInChain() const ;
 /// Clear the forces on the values
   void clearInputForces();
 /// Clear the derivatives of values wrt parameters

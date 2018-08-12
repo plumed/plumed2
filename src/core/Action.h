@@ -59,7 +59,6 @@ public:
 /// in the plumed.dat file and are applied in order at each time-step.
 class Action {
 friend class ActionShortcut;
-friend class ParallelPlumedActions;
 
 /// Name of the directive in the plumed.dat file.
   const std::string name;
@@ -246,6 +245,9 @@ public:
 /// Returns the name
   const std::string & getName()const;
 
+/// Get the object that calls this action
+  const std::string & getCaller()const;
+
 /// Set action to active
   virtual void activate();
 
@@ -310,6 +312,11 @@ const std::string & Action::getLabel()const {
 inline
 const std::string & Action::getName()const {
   return name;
+}
+
+inline
+const std::string & Action::getCaller()const {
+  return caller;
 }
 
 template<class T>

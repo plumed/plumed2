@@ -211,6 +211,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
     if( arguments[i]->getRank()>0 ) allrankzero=false;
     Average* av=dynamic_cast<Average*>( arguments[i]->getPntrToAction() );
     if( av || arguments[i]->alwaysstore || arguments[i]->columnsums || !arguments[i]->usingAllVals( getLabel() ) ) { storing=true; break; }
+    if( this->getCaller()!="plumedmain" && (arguments[i]->getPntrToAction())->getCaller()=="plumedmain" ) { storing=true; break; }
   }
   std::string fullname,name;
   std::vector<ActionWithValue*> f_actions;
