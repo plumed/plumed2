@@ -75,7 +75,8 @@ PLUMED_REGISTER_ACTION(BF_DbWavelets,"BF_DB_WAVELETS")
 void BF_DbWavelets::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
   keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value will be used as guiding value only, while the true number will be \"(ORDER*2 - 1) * 2**n\" with the smallest n such that the grid is at least as large as the specified number. Defaults to 1000"); // Change the commentary a bit?
-  keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\". Default is false.");
+  keys.addFlag("SCALING_FUNCTION", false, "If this flag is set the scaling function (mother wavelet) will be used instead of the \"true\" wavelet function (father wavelet).");
+  keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
   // why is this removed?
   keys.remove("NUMERICAL_INTEGRALS");
 }
@@ -88,9 +89,11 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   setIntrinsicInterval("0",std::to_string(getNumberOfBasisFunctions()-1));
   setNonPeriodic();
   setIntervalBounded();
+  bool use_scaling_function=false;
+  parseFlag("SCALING_FUNCTION", use_scaling_function);
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
-  waveletGrid_ = DbWaveletGrid::setup_Grid(getOrder(), gridsize, false);
+  waveletGrid_ = DbWaveletGrid::setup_Grid(getOrder(), gridsize, !use_scaling_function);
   unsigned true_gridsize = waveletGrid_->getNbin()[0];
   if(true_gridsize != 1000) {addKeywordToList("GRID_SIZE",true_gridsize);}
   bool dump_wavelet_grid=false;
