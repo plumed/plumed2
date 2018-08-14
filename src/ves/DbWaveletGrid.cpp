@@ -34,7 +34,7 @@ namespace ves {
 
 
 // construction of Wavelet grid according l
-DbWaveletGrid::DbWaveletGrid(const unsigned order, unsigned gridsize, bool doscaling, bool dowavelet) {
+std::unique_ptr<Grid> DbWaveletGrid::setup_Grid(const unsigned order, unsigned gridsize, bool dowavelet) {
   // calculate the grid properties of the scaling grid
   // the range of the grid is from 0 to maxsupport
   unsigned maxsupport = order*2 -1;
@@ -45,21 +45,23 @@ DbWaveletGrid::DbWaveletGrid(const unsigned order, unsigned gridsize, bool dosca
   unsigned bins_per_int = 1<<recursion_number;
   gridsize = maxsupport*bins_per_int;
 
-  // instantiate grid with right properties
-  scalingGrid_.reset(new Grid("db"+std::to_string(order)+"_phi", {"position"}, {"0"}, {std::to_string(maxsupport)},
-                                 {gridsize}, false, true, true, {false}, {"0."}, {"0."}));
 
   // Filter coefficients
   std::vector<double> h_coeffs = get_filter_coefficients(order, true);
   // Vector with the Matrices M0 and M1 for the cascade
   std::vector<Matrix<double>> h_Matvec = setup_Matrices(h_coeffs);
 
-  // Set up the wavelet grid as well if wanted
+  // Set up the wavelet grid if wanted as well as the needed coefficients or just the scaling grid
+  std::unique_ptr<Grid> grid;
   if (dowavelet) {
-    scalingGrid_.reset(new Grid("db"+std::to_string(order)+"_psi", {"position"}, {"0"}, {std::to_string(maxsupport)},
+    grid.reset(new Grid("db"+std::to_string(order)+"_psi", {"position"}, {"0"}, {std::to_string(maxsupport)},
                                    {gridsize}, false, true, true, {false}, {"0."}, {"0."}));
     std::vector<double> g_coeffs = get_filter_coefficients(order, false);
     std::vector<Matrix<double>> g_Matvec = setup_Matrices(g_coeffs);
+  }
+  else {
+    grid.reset(new Grid("db"+std::to_string(order)+"_phi", {"position"}, {"0"}, {std::to_string(maxsupport)},
+                                 {gridsize}, false, true, true, {false}, {"0."}, {"0."}));
   }
 
   // get the values at integers
@@ -69,7 +71,9 @@ DbWaveletGrid::DbWaveletGrid(const unsigned order, unsigned gridsize, bool dosca
   // do the cascade algorithm
   std::unordered_map<std::string, std::vector<double>> valuesmap = cascade(h_Matvec, values_at_integers, recursion_number, bins_per_int, 0);
   std::unordered_map<std::string, std::vector<double>> derivsmap = cascade(h_Matvec, derivs_at_integers, recursion_number, bins_per_int, 1);
-  fill_grid_from_map(scalingGrid_, valuesmap, derivsmap);
+  fill_grid_from_map(grid, valuesmap, derivsmap);
+
+  return grid;
 }
 
 
