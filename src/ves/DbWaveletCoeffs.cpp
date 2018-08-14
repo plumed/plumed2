@@ -31,7 +31,7 @@ namespace ves {
 
 // returns the filter coefficients, at the moment simply a lookup table (calculated with python script)
 // lowpass coefficients are for the scaling function, highpass for the actual wavelets
-std::vector<double> DbWaveletGrid::get_filter_coefficients(const unsigned order, bool lowpass) {
+std::vector<double> DbWaveletGrid::getFilterCoefficients(const unsigned order, bool lowpass) {
   std::vector<double> h;
   switch(order) {
   case 4:
