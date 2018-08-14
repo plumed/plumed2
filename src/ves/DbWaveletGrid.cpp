@@ -33,8 +33,9 @@ namespace PLMD {
 namespace ves {
 
 
-std::unique_ptr<Grid> DbWaveletGrid::setup_Grid(const unsigned order, unsigned gridsize) {
-  // calculate the grid properties
+// construction of Wavelet grid according l
+DbWaveletGrid::DbWaveletGrid(const unsigned order, unsigned gridsize, bool doscaling, bool dowavelet) {
+  // calculate the grid properties of the scaling grid
   // the range of the grid is from 0 to maxsupport
   unsigned maxsupport = order*2 -1;
   // determine needed recursion depth for specified size
@@ -43,42 +44,34 @@ std::unique_ptr<Grid> DbWaveletGrid::setup_Grid(const unsigned order, unsigned g
   // set "true" gridsize
   unsigned bins_per_int = 1<<recursion_number;
   gridsize = maxsupport*bins_per_int;
-  // helper variable
 
   // instantiate grid with right properties
-  std::unique_ptr<Grid> grid;
-  grid.reset(new Grid("db_wavelet", {"position"}, {"0"}, {std::to_string(maxsupport)}, {gridsize}, false, true, true, {false}, {"0."}, {"0."}));
+  scalingGrid_.reset(new Grid("db"+std::to_string(order)+"_phi", {"position"}, {"0"}, {std::to_string(maxsupport)},
+                                 {gridsize}, false, true, true, {false}, {"0."}, {"0."}));
 
   // Filter coefficients
   std::vector<double> h_coeffs = get_filter_coefficients(order, true);
   // Vector with the Matrices M0 and M1 for the cascade
-  std::vector<Matrix<double>> Matvec = setup_Matrices(h_coeffs);
+  std::vector<Matrix<double>> h_Matvec = setup_Matrices(h_coeffs);
+
+  // Set up the wavelet grid as well if wanted
+  if (dowavelet) {
+    scalingGrid_.reset(new Grid("db"+std::to_string(order)+"_psi", {"position"}, {"0"}, {std::to_string(maxsupport)},
+                                   {gridsize}, false, true, true, {false}, {"0."}, {"0."}));
+    std::vector<double> g_coeffs = get_filter_coefficients(order, false);
+    std::vector<Matrix<double>> g_Matvec = setup_Matrices(g_coeffs);
+  }
 
   // get the values at integers
-  std::vector<double> values_at_integers = calc_integer_values(Matvec[0], 0);
-  std::vector<double> derivs_at_integers = calc_integer_values(Matvec[0], 1);
+  std::vector<double> values_at_integers = calc_integer_values(h_Matvec[0], 0);
+  std::vector<double> derivs_at_integers = calc_integer_values(h_Matvec[0], 1);
 
   // do the cascade algorithm
-  std::unordered_map<std::string, std::vector<double>> valuesmap = cascade(Matvec, values_at_integers, recursion_number, bins_per_int, 0);
-  std::unordered_map<std::string, std::vector<double>> derivsmap = cascade(Matvec, derivs_at_integers, recursion_number, bins_per_int, 1);
-
-  // Fill the Grid with the values of the unordered maps
-  // this is somewhat complicated… not sure if the unordered_map way is the best way for c++
-  for (const auto& value_element: valuesmap) {
-    // get decimal of binary key
-    unsigned decimal = std::stoi(value_element.first, nullptr, 2);
-    // corresponding iterator of deriv
-    auto deriv_iter = derivsmap.find(value_element.first);
-    // calculate first grid element (this looks too complicated)
-    unsigned first_grid_element = decimal * 1<<(recursion_number - value_element.first.length());
-    for (unsigned j=0; j<value_element.second.size(); ++j) {
-      // derivative has to be passed as vector
-      std::vector<double> deriv {deriv_iter->second.at(j)};
-      grid->setValueAndDerivatives(first_grid_element + bins_per_int*j, value_element.second[j], deriv);
-    }
-  }
-  return grid;
+  std::unordered_map<std::string, std::vector<double>> valuesmap = cascade(h_Matvec, values_at_integers, recursion_number, bins_per_int, 0);
+  std::unordered_map<std::string, std::vector<double>> derivsmap = cascade(h_Matvec, derivs_at_integers, recursion_number, bins_per_int, 1);
+  fill_grid_from_map(scalingGrid_, valuesmap, derivsmap);
 }
+
 
 
 std::vector<Matrix<double>> DbWaveletGrid::setup_Matrices(const std::vector<double>& coeffs) {
@@ -193,6 +186,24 @@ std::unordered_map<std::string, std::vector<double>> DbWaveletGrid::cascade(std:
   return binarymap;
 }
 
+// Fill the Grid with the values of the unordered maps
+void DbWaveletGrid::fill_grid_from_map(std::unique_ptr<Grid>& grid, const std::unordered_map<std::string, std::vector<double>>& valuesmap, const std::unordered_map<std::string, std::vector<double>>& derivsmap) {
+  unsigned bins_per_int = valuesmap.size();
+  // this is somewhat complicated… not sure if the unordered_map way is the best way for c++
+  for (const auto& value_iter : valuesmap) {
+    // get decimal of binary key
+    unsigned decimal = std::stoi(value_iter.first, nullptr, 2);
+    // corresponding iterator of deriv
+    auto deriv_iter = derivsmap.find(value_iter.first);
+    // calculate first grid element
+    unsigned first_grid_element = decimal * (bins_per_int >> value_iter.first.length());
+    for (unsigned j=0; j<value_iter.second.size(); ++j) {
+      // derivative has to be passed as vector
+      std::vector<double> deriv {deriv_iter->second.at(j)};
+      grid->setValueAndDerivatives(first_grid_element + bins_per_int*j, value_iter.second[j], deriv);
+    }
+  }
+}
 
 }
 }

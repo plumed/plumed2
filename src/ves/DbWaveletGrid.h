@@ -39,8 +39,12 @@ class Grid;
 
 // factory class to set up a Grid with DbWavelets
 class DbWaveletGrid {
+private:
+  std::unique_ptr<Grid> scalingGrid_;
+  std::unique_ptr<Grid> waveletGrid_;
+
   // lookup function for the filter coefficients
-  static std::vector<double> get_filter_coefficients(const unsigned order);
+  static std::vector<double> get_filter_coefficients(const unsigned order, bool lowpass);
   // Fills the coefficient matrices needed for the cascade algorithm
   static std::vector<Matrix<double>> setup_Matrices(const std::vector<double>& h);
   // calculates the values of the Wavelet or its derivatives at the Integer points
@@ -49,9 +53,12 @@ class DbWaveletGrid {
   static std::vector<double> get_eigenvector(const Matrix<double>& A, const double eigenvalue);
   // calculate the values of the Wavelet or its derivative via the vector cascade algorithm
   static std::unordered_map<std::string, std::vector<double>> cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum);
+  void fill_grid_from_map(std::unique_ptr<Grid>& grid, const std::unordered_map<std::string, std::vector<double>>& valuesmap, const std::unordered_map<std::string, std::vector<double>>& derivsmap);
 public:
-  // constructor that directly creates Grid with right properties
+  // constructor that fills one ore both of the grids
+  DbWaveletGrid(const unsigned order, unsigned gridsize, bool doscaling, bool dowavelet);
   static std::unique_ptr<Grid> setup_Grid(const unsigned order, unsigned gridsize);
+  // calculate wavelet grid from a previously calculated scaling grid
 };
 
 
