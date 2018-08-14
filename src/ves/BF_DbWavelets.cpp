@@ -90,7 +90,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   setIntervalBounded();
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
-  waveletGrid_ = DbWaveletGrid::setup_Grid(getOrder(), gridsize);
+  waveletGrid_ = DbWaveletGrid::setup_Grid(getOrder(), gridsize, false);
   unsigned true_gridsize = waveletGrid_->getNbin()[0];
   if(true_gridsize != 1000) {addKeywordToList("GRID_SIZE",true_gridsize);}
   bool dump_wavelet_grid=false;

@@ -50,27 +50,33 @@ std::unique_ptr<Grid> DbWaveletGrid::setup_Grid(const unsigned order, unsigned g
   std::vector<double> h_coeffs = get_filter_coefficients(order, true);
   // Vector with the Matrices M0 and M1 for the cascade
   std::vector<Matrix<double>> h_Matvec = setup_Matrices(h_coeffs);
-
-  // Set up the wavelet grid if wanted as well as the needed coefficients or just the scaling grid
-  std::unique_ptr<Grid> grid;
-  if (dowavelet) {
-    grid.reset(new Grid("db"+std::to_string(order)+"_psi", {"position"}, {"0"}, {std::to_string(maxsupport)},
-                                   {gridsize}, false, true, true, {false}, {"0."}, {"0."}));
-    std::vector<double> g_coeffs = get_filter_coefficients(order, false);
-    std::vector<Matrix<double>> g_Matvec = setup_Matrices(g_coeffs);
-  }
-  else {
-    grid.reset(new Grid("db"+std::to_string(order)+"_phi", {"position"}, {"0"}, {std::to_string(maxsupport)},
-                                 {gridsize}, false, true, true, {false}, {"0."}, {"0."}));
-  }
+  std::vector<Matrix<double>> g_Matvec; // only filled if needed for wavelet
 
   // get the values at integers
   std::vector<double> values_at_integers = calc_integer_values(h_Matvec[0], 0);
   std::vector<double> derivs_at_integers = calc_integer_values(h_Matvec[0], 1);
 
-  // do the cascade algorithm
-  std::unordered_map<std::string, std::vector<double>> valuesmap = cascade(h_Matvec, values_at_integers, recursion_number, bins_per_int, 0);
-  std::unordered_map<std::string, std::vector<double>> derivsmap = cascade(h_Matvec, derivs_at_integers, recursion_number, bins_per_int, 1);
+
+  std::unique_ptr<Grid> grid;
+  if (!dowavelet) {
+    // Set up the scaling grid with correct properties
+    grid.reset(new Grid("db"+std::to_string(order)+"_phi", {"position"}, {"0"},
+                           {std::to_string(maxsupport)}, {gridsize}, false, true, true,
+                           {false}, {"0."}, {"0."}));
+  }
+  else {
+    // if wavelet is wanted: get the needed coefficients as well
+    std::vector<double> g_coeffs = get_filter_coefficients(order, false);
+    g_Matvec = setup_Matrices(g_coeffs);
+
+    grid.reset(new Grid("db"+std::to_string(order)+"_psi", {"position"}, {std::to_string(1-order)},
+                           {std::to_string(order)}, {gridsize}, false, true, true,
+                           {false}, {"0."}, {"0."}));
+  }
+
+  BinaryMap valuesmap = cascade(h_Matvec, g_Matvec, values_at_integers, recursion_number, bins_per_int, 0, dowavelet);
+  BinaryMap derivsmap = cascade(h_Matvec, g_Matvec, derivs_at_integers, recursion_number, bins_per_int, 1, dowavelet);
+
   fill_grid_from_map(grid, valuesmap, derivsmap);
 
   return grid;
@@ -154,40 +160,57 @@ std::vector<double> DbWaveletGrid::get_eigenvector(const Matrix<double> &A, cons
 }
 
 
-std::unordered_map<std::string, std::vector<double>> DbWaveletGrid::cascade(std::vector<Matrix<double>>& Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum) {
-  // map of all values with binary representation of the decimal part as keys
-  std::unordered_map<std::string, std::vector<double>> binarymap;
-  binarymap.reserve(bins_per_int);
+DbWaveletGrid::BinaryMap DbWaveletGrid::cascade(std::vector<Matrix<double>>& h_Matvec, std::vector<Matrix<double>>& g_Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum, bool dowavelet) {
+  BinaryMap scalingmap, waveletmap;
+  scalingmap.reserve(bins_per_int);
   // vector to store the binary representation of all the decimal parts
   std::vector<std::string> binaryvec;
   // vector used as result of the matrix multiplications
-  std::vector<double> new_values; // better name?!
+  std::vector<double> temp_scaling_values; // better name?!
+  std::vector<double> temp_wavelet_values; // better name?!
 
   // multiply matrices by 2 if derivatives are calculated (assumes ascending order)
-  if (derivnum != 0) for (auto& M : Matvec) M *= 2;
+  if (derivnum != 0) for (auto& M : h_Matvec) M *= 2;
+
+  if (dowavelet) {
+    waveletmap.reserve(bins_per_int);
+    if (derivnum != 0) for (auto& M : g_Matvec) M *= 2;
+  }
 
   // fill the first two datasets by hand
-  binarymap["0"] = values_at_integers;
-  mult(Matvec[1], values_at_integers, new_values);
-  binarymap["1"] = new_values;
+  scalingmap["0"] = values_at_integers;
+  mult(h_Matvec[1], values_at_integers, temp_scaling_values);
+  scalingmap["1"] = temp_scaling_values;
+
+  if (dowavelet) {
+    mult(g_Matvec[0], values_at_integers, temp_scaling_values);
+    waveletmap["0"] = temp_scaling_values;
+    mult(g_Matvec[1], values_at_integers, temp_scaling_values);
+    scalingmap["1"] = temp_scaling_values;
+  }
+
 
   // now do the cascade
   binaryvec.emplace_back("1");
   for (unsigned i=1; i<recursion_number; ++i) {
     std::vector<std::string> new_binaryvec;
     for (const auto& binary : binaryvec) {
-      for (int k=0; k<2; ++k) {
+      for (unsigned k=0; k<2; ++k) {
         // prepend the new bit
         std::string new_binary = std::to_string(k) + binary;
-        mult(Matvec[k], binarymap[binary], new_values);
-        binarymap.insert(std::pair<std::string, std::vector<double>>(new_binary, new_values));
+        mult(h_Matvec[k], scalingmap[binary], temp_scaling_values);
+        scalingmap.insert(std::pair<std::string, std::vector<double>>(new_binary, temp_scaling_values));
+        if (dowavelet) {
+          mult(g_Matvec[k], scalingmap[binary], temp_wavelet_values);
+          waveletmap.insert(std::pair<std::string, std::vector<double>>(new_binary, temp_wavelet_values));
+        }
         new_binaryvec.push_back(new_binary);
       }
     }
     binaryvec = new_binaryvec;
   }
 
-  return binarymap;
+  return dowavelet ? waveletmap : scalingmap;
 }
 
 // Fill the Grid with the values of the unordered maps
