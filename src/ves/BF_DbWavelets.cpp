@@ -93,7 +93,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   parseFlag("SCALING_FUNCTION", use_scaling_function);
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
-  waveletGrid_ = DbWaveletGrid::setup_Grid(getOrder(), gridsize, !use_scaling_function);
+  waveletGrid_ = DbWaveletGrid::setupGrid(getOrder(), gridsize, !use_scaling_function);
   unsigned true_gridsize = waveletGrid_->getNbin()[0];
   if(true_gridsize != 1000) {addKeywordToList("GRID_SIZE",true_gridsize);}
   bool dump_wavelet_grid=false;
@@ -141,8 +141,11 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
 // label according to positions?
 void BF_DbWavelets::setupLabels() {
   setLabel(0,"const");
+  double min = intervalMin();
+  double spacing = intervalDerivf();
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    std::string is; Tools::convert((i-1)/intervalDerivf(),is);
+    double pos = min + (i-1) / spacing;
+    std::string is; Tools::convert(pos, is);
     setLabel(i,"i = "+is);
   }
 }
