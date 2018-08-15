@@ -77,7 +77,6 @@ std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gr
 
   BinaryMap values = cascade(h_Matvec, g_Matvec, values_at_integers, recursion_number, bins_per_int, 0, do_wavelet);
   BinaryMap derivs = cascade(h_Matvec, g_Matvec, derivs_at_integers, recursion_number, bins_per_int, 1, do_wavelet);
-  plumed_massert(bins_per_int == values.size(), "Returned binary map has wrong size");
 
   fillGridFromMaps(grid, values, derivs);
 
