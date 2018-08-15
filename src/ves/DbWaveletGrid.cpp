@@ -69,8 +69,8 @@ std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gr
     std::vector<double> g_coeffs = getFilterCoefficients(order, false);
     g_Matvec = setupMatrices(g_coeffs);
 
-    grid.reset(new Grid("db"+std::to_string(order)+"_psi", {"position"}, {std::to_string(1-order)},
-                           {std::to_string(order)}, {gridsize}, false, true, true,
+    grid.reset(new Grid("db"+std::to_string(order)+"_psi", {"position"}, {"0"},
+                           {std::to_string(maxsupport)}, {gridsize}, false, true, true,
                            {false}, {"0."}, {"0."}));
   }
 
