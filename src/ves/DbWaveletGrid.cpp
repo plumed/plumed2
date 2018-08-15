@@ -33,7 +33,8 @@ namespace PLMD {
 namespace ves {
 
 
-// construction of Wavelet grid according l
+// construction of Wavelet grid according to the "Vector recursion" method
+// c.f. Strang, Nguyen "Wavelets and Filter Banks" chapter 6.3
 std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gridsize, bool do_wavelet) {
   // calculate the grid properties of the scaling grid
   // the range of the grid is from 0 to maxsupport
@@ -76,6 +77,7 @@ std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gr
 
   BinaryMap values = cascade(h_Matvec, g_Matvec, values_at_integers, recursion_number, bins_per_int, 0, do_wavelet);
   BinaryMap derivs = cascade(h_Matvec, g_Matvec, derivs_at_integers, recursion_number, bins_per_int, 1, do_wavelet);
+  plumed_massert(bins_per_int == values.size(), "Returned binary map has wrong size");
 
   fillGridFromMaps(grid, values, derivs);
 
@@ -185,7 +187,7 @@ DbWaveletGrid::BinaryMap DbWaveletGrid::cascade(std::vector<Matrix<double>>& h_M
     mult(g_Matvec[0], values_at_integers, temp_values);
     wavelet_map["0"] = temp_values;
     mult(g_Matvec[1], values_at_integers, temp_values);
-    scaling_map["1"] = temp_values;
+    wavelet_map["1"] = temp_values;
   }
 
   // now do the cascade
