@@ -33,7 +33,7 @@ namespace PLMD {
 namespace ves {
 
 
-// construction of Wavelet grid according to the "Vector recursion" method
+// construction of Wavelet grid according to the Daubechies-Lagarias method
 // c.f. Strang, Nguyen "Wavelets and Filter Banks" chapter 6.3
 std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gridsize, bool do_wavelet) {
   // calculate the grid properties of the scaling grid

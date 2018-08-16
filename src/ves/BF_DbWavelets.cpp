@@ -40,14 +40,18 @@ Note: at the moment only the scaling function and not the wavelet function is us
 It should nevertheless form an orthogonal basis set and will be needed for multiscale.
 The Wavelet function can be easily implemented by an additional matrix multiplication and a translation of the position axis.
 
-order: number of vanishing moments
+order N: number of vanishing moments
 
-Support (of the scaling function) is then from 0 to 2*order - 1
+Support is then [0, 2*N-1), each basis function is a translate by an integer value k.
 
-Number of basis functions is therefore also 2*order - 1 + 1 constant
+If the support is scaled to match the desired range of the CV exactly there would be 4*N -3 basis functions whose support is at least partially in this region: k = {(-2*N)+2, … , 0, … 2*N-1}
+Especially for the scaling function the translates with support in negative regions do not have significant contributions in the desired range if k <= -order, so these are omitted by default. (could cut maybe one more)
 
+The default range of k is therefore only k = {-N+1, -N+2, …, 0, …, 2*N-1}.
+Including a constant basis function this sums to N*3-1 used basis functions by default.
+This could be lowered by scaling the wavelets less so that their support is larger than the desired CV range.
 
-Method of construction: Strang, Nguyen - Vector cascade algorithm
+Method of construction: Strang, Nguyen - Vector cascade algorithm (Daubechies-Lagarias method)
 
 \par Examples
 
@@ -60,6 +64,7 @@ Method of construction: Strang, Nguyen - Vector cascade algorithm
 class BF_DbWavelets : public BasisFunctions {
   // Grid that holds the Wavelet values and its derivative
   std::unique_ptr<Grid> waveletGrid_;
+  bool use_scaling_function_;
   void setupLabels() override;
 
 public:
@@ -83,17 +88,16 @@ void BF_DbWavelets::registerKeywords(Keywords& keys) {
 
 
 BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
-  PLUMED_VES_BASISFUNCTIONS_INIT(ao)
+  PLUMED_VES_BASISFUNCTIONS_INIT(ao),
+  use_scaling_function_(false)
 {
-  setNumberOfBasisFunctions((getOrder()*2));
-  setIntrinsicInterval("0",std::to_string(getNumberOfBasisFunctions()-1));
-  setNonPeriodic();
-  setIntervalBounded();
-  bool use_scaling_function=false;
-  parseFlag("SCALING_FUNCTION", use_scaling_function);
+  setNumberOfBasisFunctions((getOrder()*3)-1);
+
+  // parse grid properties and set it up
+  parseFlag("SCALING_FUNCTION", use_scaling_function_);
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
-  waveletGrid_ = DbWaveletGrid::setupGrid(getOrder(), gridsize, !use_scaling_function);
+  waveletGrid_ = DbWaveletGrid::setupGrid(getOrder(), gridsize, !use_scaling_function_);
   unsigned true_gridsize = waveletGrid_->getNbin()[0];
   if(true_gridsize != 1000) {addKeywordToList("GRID_SIZE",true_gridsize);}
   bool dump_wavelet_grid=false;
@@ -103,6 +107,11 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
     wavelet_gridfile.open(getLabel()+".wavelet_grid.data");
     waveletGrid_->writeToFile(wavelet_gridfile);
   }
+
+  // set some properties
+  setIntrinsicInterval("0",std::to_string(getNumberOfBasisFunctions()-1));
+  setNonPeriodic();
+  setIntervalBounded();
   setType("daubechies_wavelets");
   setDescription("Daubechies Wavelets (maximum phase type)");
   setLabelPrefix("k");
@@ -119,22 +128,24 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
   //
   values[0]=1.0;
   derivs[0]=0.0;
-  //
-  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    double x = (arg-intervalMin()) * intervalDerivf() - (i-1); // scale and shift argument
+  for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
+    // calculate translation of wavelet
+    int k = i - getOrder();
+    // scale and shift argument to match current wavelet
+    double x = (arg-intervalMin())*intervalDerivf() - k;
+
     if (x < 0 || x > intrinsicIntervalMax()) { // Wavelets are 0 outside the defined range
       values[i] = 0.0; derivs[i] = 0.0;
     }
     else {
       // declaring vectors and calling first a function to get the index is a bit cumbersome and might be slow
-      std::vector<double> temp_deriv(1);
+      std::vector<double> temp_deriv;
       std::vector<double> x_vec {x};
       values[i] = waveletGrid_->getValueAndDerivatives(x_vec, temp_deriv);
       derivs[i] = temp_deriv[0] * intervalDerivf(); // scale derivative
     }
   }
   if(!inside_range) {for(auto& deriv : derivs) {deriv=0.0;}}
-  return;
 }
 
 
