@@ -40,6 +40,7 @@ class Function:
 {
 private:
   bool firststep;
+  bool matinp, matout;
   unsigned nderivatives;
   std::vector<double> forcesToApply;
   bool hasGridOutput() const ;

@@ -22,6 +22,7 @@
 #include "Function.h"
 #include "ActionRegister.h"
 #include "tools/PDB.h"
+#include "core/ActionSetup.h"
 
 #include <cmath>
 
@@ -62,11 +63,22 @@ Difference::Difference(const ActionOptions&ao):
 {
   if( getNumberOfArguments()!=2 ) error("difference can only take two arguments as input");
   if( getPntrToArgument(0)->isPeriodic() ) {
-      if( !getPntrToArgument(1)->isPeriodic() ) error("period for input variables should be the same"); 
-      std::string min0, max0; getPntrToArgument(0)->getDomain( min0, max0 );
-      std::string min1, max1; getPntrToArgument(1)->getDomain( min1, max1 );
-      if( min0!=max0 || max0!=max1 ) error("period for input variables should be the same");
-  } else if( getPntrToArgument(1)->isPeriodic() ) error("period for input variables should be the same");
+      ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(1)->getPntrToAction() );
+      if( !as && !getPntrToArgument(1)->isPeriodic() ) error("period for input variables should be the same"); 
+      if( !as ) {
+          std::string min0, max0; getPntrToArgument(0)->getDomain( min0, max0 );
+          std::string min1, max1; getPntrToArgument(1)->getDomain( min1, max1 );
+          if( min0!=max0 || max0!=max1 ) error("period for input variables should be the same");
+      }
+  } else if( getPntrToArgument(1)->isPeriodic() ) {
+      ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(0)->getPntrToAction() );
+      if( !as ) {
+          error("period for input variables should be the same");
+      } else {
+          std::string min0, max0; getPntrToArgument(1)->getDomain( min0, max0 );
+          getPntrToArgument(0)->setDomain( min0, max0 );
+      }
+  }
 
   getPeriodFromArg=true; addValueWithDerivatives();
   checkRead();

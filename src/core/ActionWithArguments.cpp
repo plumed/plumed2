@@ -202,15 +202,19 @@ void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
 
 void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool& allow_streams ) {
   plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
+  thisAsActionWithValue = dynamic_cast<const ActionWithValue*>(this);
   bool firstcall=(arguments.size()==0);
   arguments=arg;
   clearDependencies();
   distinct_arguments.resize(0);
   bool storing=false; allrankzero=true;
+  // This allows us to do some optimizing in getting values
+  for(unsigned i=0; i<arguments.size(); ++i) usingAllArgs.push_back( arguments[i]->usingAllVals( getLabel() ) );
+  // Now check if we need to store data
   for(unsigned i=0; i<arguments.size(); ++i) {
     if( arguments[i]->getRank()>0 ) allrankzero=false;
-    Average* av=dynamic_cast<Average*>( arguments[i]->getPntrToAction() );
-    if( av || arguments[i]->alwaysstore || arguments[i]->columnsums || !arguments[i]->usingAllVals( getLabel() ) ) { storing=true; break; }
+    Average* av=dynamic_cast<Average*>( arguments[i]->getPntrToAction() ); 
+    if( av || arguments[i]->alwaysstore || arguments[i]->columnsums || !usingAllArgs[i] ) { storing=true; break; }
     if( this->getCaller()!="plumedmain" && (arguments[i]->getPntrToAction())->getCaller()=="plumedmain" ) { storing=true; break; }
   }
   std::string fullname,name;
@@ -381,6 +385,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
   allrankzero(true),
   lockRequestArguments(false),
+  thisAsActionWithValue(NULL),
   numberedkeys(false),
   done_over_stream(false)
 {
@@ -518,7 +523,7 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
     plumed_dbg_assert( args.size()==arguments.size() );
     for(unsigned i=0; i<args.size(); ++i) {
       plumed_dbg_massert( i<arguments.size(), "cannot retrieve in " + getLabel() );
-      plumed_dbg_massert( arguments[i]->usingAllVals( getLabel() ), "cannot stream in " + getLabel() );
+      plumed_dbg_massert( usingAllArgs[i], "cannot stream in " + getLabel() );
       if( !arguments[i]->value_set ) args[i]=myvals.get( arguments[i]->streampos );
       else if( arguments[i]->getRank()==0 ) args[i]=arguments[i]->get();
       else args[i]=arguments[i]->get( myvals.getTaskIndex() );
@@ -527,23 +532,26 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
   }
   if( arg_ends.size()==0 ) {
     for(unsigned i=0; i<arguments.size(); ++i) {
-      for(unsigned j=0; j<arguments[i]->getNumberOfValues( getLabel() ); ++j) arguments[i]->getRequiredValue( getLabel(), j, args );
+      unsigned narg_v = arguments[i]->getNumberOfValues( getLabel() );
+      for(unsigned j=0; j<narg_v; ++j) arguments[i]->getRequiredValue( getLabel(), j, args );
     }
   } else {
-    unsigned nt=0, nn=0;
     for(unsigned i=0; i<arg_ends.size()-1; ++i) {
       unsigned k=arg_ends[i];
       if( arg_ends[i+1]==(k+1) && arguments[k]->getRank()==0 ) {
         args[i] = arguments[k]->get();
       } else {
-        const ActionWithValue* av=dynamic_cast<const ActionWithValue*>( this ); unsigned nt=0, nn=0; unsigned mycode;
-        if( av ) mycode = av->getTaskCode( myvals.getTaskIndex() ); else mycode = myvals.getTaskIndex();
-        for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
-          nt += arguments[j]->getNumberOfValues( getLabel() );
-          if( mycode<nt ) { k=j; break; }
-          nn += arguments[j]->getNumberOfValues( getLabel() ); k++;
+        unsigned nt=0, nn=0; unsigned mycode;
+        if( thisAsActionWithValue ) mycode = thisAsActionWithValue->getTaskCode( myvals.getTaskIndex() ); else mycode = myvals.getTaskIndex();
+        if( (arg_ends[i+1]-arg_ends[i])>1 ) {
+            for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
+              unsigned nv = arguments[j]->getNumberOfValues( getLabel() );
+              nt += nv; if( mycode<nt ) { k=j; break; }
+              nn += nv; k++;
+            }
         }
-        args[i] = arguments[k]->getRequiredValue( getLabel(), mycode - nn );
+        if( usingAllArgs[k] ) args[i] = arguments[k]->get( mycode - nn );
+        else args[i] = arguments[k]->getRequiredValue( getLabel(), mycode - nn );
       }
     }
   }
@@ -567,7 +575,8 @@ void ActionWithArguments::setForcesOnArguments( const std::vector<double>& force
             if( arguments[j]->store_data_for[k].first==getLabel() ) { hasstored=true; break; }
           }
           if( hasstored && arguments[j]->getPntrToAction()==distinct_arguments[i].first ) {
-            for(unsigned k=0; k<arguments[j]->getNumberOfValues( getLabel() ); ++k) {
+            unsigned narg_v = arguments[j]->getNumberOfValues( getLabel() );
+            for(unsigned k=0; k<narg_v; ++k) {
               plumed_dbg_assert( start<forces.size() );
               arguments[j]->addForce( k, forces[start] ); start++;
             }
@@ -577,11 +586,12 @@ void ActionWithArguments::setForcesOnArguments( const std::vector<double>& force
     }
   } else {
     for(unsigned i=0; i<arguments.size(); ++i) {
-      if( arguments[i]->usingAllVals( getLabel() ) ) {
-        for(unsigned j=0; j<arguments[i]->getNumberOfValues( getLabel() ); ++j) { arguments[i]->addForce( j, forces[start] ); start++; }
+      unsigned narg_v = arguments[i]->getNumberOfValues( getLabel() );
+      if( usingAllArgs[i] ) {
+        for(unsigned j=0; j<narg_v; ++j) { arguments[i]->addForce( j, forces[start] ); start++; }
       } else {
         std::vector<std::pair<int,int> > & indices( arguments[i]->userdata.find( getLabel() )->second );
-        for(unsigned j=0; j<arguments[i]->getNumberOfValues( getLabel() ); ++j) { arguments[i]->addForce( indices[j].first, forces[start] ); start++; }
+        for(unsigned j=0; j<narg_v; ++j) { arguments[i]->addForce( indices[j].first, forces[start] ); start++; }
       }
     }
   }

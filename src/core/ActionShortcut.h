@@ -40,6 +40,8 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ActionShortcut(const ActionOptions&ao);
+/// It is a shortcut it should never need to be activated
+  void activate() {}
 /// Do nothing.
   void calculate() {}
 /// Do nothing.

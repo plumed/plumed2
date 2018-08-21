@@ -37,6 +37,7 @@ public ActionAtomistic
 public:
   static void registerKeywords( Keywords& keys );
   explicit CalculateReferenceValue(const ActionOptions&ao); 
+  void activate() {}
   void clearDerivatives( const bool& force=false ) {}
   unsigned getNumberOfDerivatives() const { return 0; }
 };

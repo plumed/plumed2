@@ -44,8 +44,10 @@ class ActionWithArguments : public virtual Action {
   friend class ActionWithValue;
 private:
   bool allrankzero;
+  std::vector<bool> usingAllArgs;
   std::vector<Value*> arguments;
   bool lockRequestArguments;
+  const ActionWithValue* thisAsActionWithValue;
   ActionWithValue* getFirstNonStream();
 protected:
   bool numberedkeys, done_over_stream;

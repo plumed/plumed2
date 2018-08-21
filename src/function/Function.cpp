@@ -42,6 +42,8 @@ Function::Function(const ActionOptions&ao):
   ActionWithValue(ao),
   ActionWithArguments(ao),
   firststep(true),
+  matinp(false),
+  matout(false),
   nderivatives(getNumberOfScalarArguments()),
   forcesToApply(getNumberOfScalarArguments()),
   getPeriodFromArg(false)
@@ -128,6 +130,12 @@ Function::Function(const ActionOptions&ao):
     if( myat_group!="none" ) {
       const auto m=plumed.getAtoms().getAllGroups().find(myat_group );
       plumed.getAtoms().insertGroup( getLabel(), m->second );
+    }
+  }
+  if( actionInChain() ) {
+    matinp=getPntrToArgument(0)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives();
+    if( matinp ) {
+      for(unsigned i=1; i<getNumberOfArguments(); ++i) plumed_dbg_assert( getPntrToArgument(i)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives() );
     }
   }
 }
@@ -218,6 +226,7 @@ void Function::addValueWithDerivatives() {
       if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
     }
   }
+  if( actionInChain() && matinp ) matout=getPntrToOutput(0)->getRank()==2;
 }
 
 void Function::addComponentWithDerivatives( const std::string& name ) {
@@ -264,6 +273,12 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
       if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
     }
   }
+  if( actionInChain() && matinp ) {
+    matout=getPntrToOutput(0)->getRank()==2;
+    if( matout ) { 
+      for(unsigned i=1; i<getNumberOfComponents(); ++i) plumed_dbg_assert( getPntrToOutput(i)->getRank()==2 );
+    } 
+  } 
 }
 
 void Function::evaluateAllFunctions() {
@@ -332,24 +347,6 @@ void Function::getGridPointAsCoordinate( const unsigned& ind, const bool& setlen
 }
 
 void Function::performTask( const unsigned& current, MultiValue& myvals ) const {
-  // Get the values of all the arguments
-  bool matout=false, matinp=false;
-  if( actionInChain() ) {
-    matinp=getPntrToArgument(0)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives();
-#ifdef DNDEBUG
-    if( matinp ) {
-      for(unsigned i=1; i<getNumberOfArguments(); ++i) plumed_dbg_assert( getPntrToArgument(i)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives() );
-    }
-#endif
-    if( matinp ) {
-      matout=getPntrToOutput(0)->getRank()==2;
-#ifdef DNDEBUG
-      if( matout ) {
-        for(unsigned i=1; i<getNumberOfComponents(); ++i) plumed_dbg_assert( getPntrToOutput(i)->getRank()==2 );
-      }
-#endif
-    }
-  }
   // Calculate whatever we are calculating
   if( (matinp && !myvals.inVectorCall()) || !matinp ) {
     std::vector<double> args( getNumberOfArgumentsPerTask() ); retrieveArguments( myvals, args );

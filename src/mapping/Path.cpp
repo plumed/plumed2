@@ -87,8 +87,16 @@ Path::Path( const ActionOptions& ao ):
       PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
       // Break if we are done
       if( !do_read ) break ;
-      std::string num; Tools::convert( nfram+1, num );
-      readInputLine( getShortcutLabel() + "_ref" + num + ": READ_ATOMS REFERENCE=" + refname  + " NUMBER=" + num );
+      std::string num; Tools::convert( nfram+1, num ); bool read_atoms=false;
+      if( mypdb.getAtomNumbers().size()>0 ) {
+          read_atoms=true; readInputLine( getShortcutLabel() + "_ref" + num + ": READ_ATOMS REFERENCE=" + refname  + " NUMBER=" + num );
+      }
+      std::vector<std::string> remark( mypdb.getRemark() ); std::string stri; bool read_args=false; 
+      if( Tools::parse( remark, "ARG", stri ) ) {
+          read_args=true; readInputLine( getShortcutLabel() + "_refv" + num + ": READ_ARGS REFERENCE=" + refname + " NUMBER=" + num );;
+      }
+      if( read_atoms && read_args ) error("cannot read atoms and arguments from reference pdb file yet");
+
       if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
           if( nfram==0 ) {
               indices.resize( mypdb.getAtomNumbers().size() );
@@ -108,7 +116,7 @@ Path::Path( const ActionOptions& ao ):
       } else if( mtype.find("DRMSD")!=std::string::npos ) {
           distances_str = setup::DRMSD::getDistancesString( plumed, getShortcutLabel() + "_ref" + num, mtype );
           readInputLine( getShortcutLabel() + "_refv" + num + ": CALCULATE_REFERENCE ATOMS=" + getShortcutLabel() + "_ref" + num + " INPUT={DISTANCE " + distances_str + "}" );
-      } else {
+      } else if( read_atoms && !read_args ) {
           readInputLine( getShortcutLabel()  + "_refv" + num + ": CALCULATE_REFERENCE ATOMS=" + getShortcutLabel() + "_ref" + num + " INPUT=" + mtype );
       }
       if( pnames.size()>0 ) {
@@ -149,9 +157,10 @@ Path::Path( const ActionOptions& ao ):
           ref_line += " TYPE=" + mtype + " SQUARED}";
       } else {
           std::string powstr = "POWERS=2"; for(unsigned i=1;i<nquantities;++i) powstr += ",2";
+          if( mtype=="DRMSD" ) powstr += " NORMALIZE";
           ref_line += "INPUT" + num + "={" + getShortcutLabel() + "_diff" + num + ": DIFFERENCE ARG1=" + getShortcutLabel() + "_refv" + num;
           ref_line += " ARG2=" + getShortcutLabel() + "_instantaneous; ";
-          ref_line += "COMBINE ARG=" + getShortcutLabel() + "_diff" + num + " NORMALIZE PERIODIC=NO " + powstr + "} ";
+          ref_line += "COMBINE ARG=" + getShortcutLabel() + "_diff" + num + " PERIODIC=NO " + powstr + "} ";
       } 
   }
   readInputLine( ref_line ); std::string lambda; parse("LAMBDA",lambda);

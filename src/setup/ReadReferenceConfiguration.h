@@ -42,6 +42,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ReadReferenceConfiguration(const ActionOptions&ao);
   ~ReadReferenceConfiguration();
+  void activate() {} 
   /// The number of virtual atoms that are calculated by this action
   unsigned getNumberOfVirtualAtoms() const ;
 };

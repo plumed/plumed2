@@ -713,7 +713,8 @@ void ActionWithValue::finishComputations( const std::vector<double>& buffer ) {
       unsigned bufstart = values[i]->bufstart;
       if( values[i]->reset ) values[i]->data.assign( values[i]->data.size(), 0 );
       if( (values[i]->getRank()>0 && values[i]->hasDerivatives()) || values[i]->storedata ) {
-        for(unsigned j=0; j<values[i]->getSize(); ++j) values[i]->add( j, buffer[bufstart+j] );
+        unsigned sz_v = values[i]->getSize();
+        for(unsigned j=0; j<sz_v; ++j) values[i]->add( j, buffer[bufstart+j] );
       }
       if( !doNotCalculateDerivatives() && values[i]->hasDeriv && values[i]->getRank()==0 ) {
         for(unsigned j=0; j<values[i]->getNumberOfDerivatives(); ++j) values[i]->setDerivative( j, buffer[bufstart+1+j] );
