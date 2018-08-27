@@ -22,81 +22,40 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
-#include "reference/ReferenceValuePack.h"
-#include "reference/ReferenceConfiguration.h"
-#include "reference/Direction.h"
-#include "tools/OpenMP.h"
-#include "tools/PDB.h"
-#include "Mapping.h"
-
-using namespace std;
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/Atoms.h"
+#include "tools/Pbc.h"
 
 namespace PLMD {
 namespace mapping {
 
-//+PLUMEDOC FUNCTION GPATH
-/*
-Calculate path collective variable given a set of distances from a collection of waymarkers.
-
-\par Examples
-
-*/
-//+ENDPLUMEDOC
-
-
 class GeometricPath : public ActionWithValue, public ActionWithArguments {
 private:
-  Direction projdir;
-  std::vector<double> framep;
-  std::vector<double> forcesToApply;
-  MultiValue mydpack1, mydpack2, mydpack3;
-  ReferenceValuePack mypack1, mypack2, mypack3;
-  std::vector<double> mypack1_stashd_args;
-  std::vector<Vector> mypack1_stashd_atoms;
-  ReferenceConfiguration* getReferenceConfiguration( const unsigned& iframe );
-  void retrieveReferenceValuePackData( const unsigned& iframe, ReferenceValuePack& mypack );
-  void extractDisplacementVector( const unsigned & iframe, const std::vector<Vector>& pos, const std::vector<double>& args, Direction& mydir );
-  double calculateDistanceFromPosition( const unsigned & iframe, const std::vector<Vector>& pos, const std::vector<double>& args, ReferenceValuePack& mypack );
-  double projectDisplacementOnVector( const unsigned & iframe, const Direction& dir, ReferenceValuePack& mypack );
+  PlumedMain metric;
+  std::vector<double> masses;
+  std::vector<double> charges;
+  std::vector<Vector> positions;
+  std::vector<Vector> forces;
+  std::vector<double> pcoords;
+  std::vector<double> data;
+  std::vector<std::vector<AtomNumber> > atind_for_frames;
+  double getProjectionOnPath( const unsigned& ifrom, const unsigned& ito, const unsigned& closest, double& len ); 
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords(Keywords& keys);
   explicit GeometricPath(const ActionOptions&);
   void calculate();
-  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const { plumed_error(); }
   unsigned getNumberOfDerivatives() const ;
-  void apply();
+  void apply() {}
 };
 
-PLUMED_REGISTER_ACTION(GeometricPath,"GPATH")
-PLUMED_REGISTER_SHORTCUT(GeometricPath,"GPATH")
-
-void GeometricPath::shortcutKeywords( Keywords& keys ) {
-  keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
-  keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
-           "metrics that are available in PLUMED can be found in the section of the manual on "
-           "\\ref dists");
-}
-
-void GeometricPath::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                    const std::map<std::string,std::string>& keys,
-                                    std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> ref_line; ref_line.push_back( lab + "_data:" );
-  ref_line.push_back("EUCLIDEAN_DISSIMILARITIES_VECTOR");
-  for(const auto & p : keys ) ref_line.push_back( p.first + "=" + p.second );
-  ref_line.push_back("SQUARED"); actions.push_back( ref_line );
-  std::vector<std::string> path_line; unsigned nfram = 0;
-  path_line.push_back( lab + ":" );
-  for(unsigned i=0; i<words.size(); ++i) path_line.push_back(words[i]);
-  path_line.push_back("ARG=" + lab + "_data" ); actions.push_back( path_line );
-}
+PLUMED_REGISTER_ACTION(GeometricPath,"GEOMETRIC_PATH")
 
 void GeometricPath::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys); ActionWithValue::registerKeywords(keys); ActionWithArguments::registerKeywords(keys); keys.use("ARG");
-  keys.add("optional","COORDINATES","a vector of coordinates describing the position of each point along the path.  The default "
+  keys.add("compulsory","METRIC","the method to use for computing the displacement vectors between the reference frames");
+  keys.add("compulsory","REFFRAMES","labels for actions that contain reference coordinates for each point on the path");
+  keys.add("compulsory","COORDINATES","a vector of coordinates describing the position of each point along the path.  The default "
            "is to place these coordinates at 1, 2, 3, ...");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("s","default","the position on the path");
@@ -106,230 +65,122 @@ void GeometricPath::registerKeywords(Keywords& keys) {
 GeometricPath::GeometricPath(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
-  ActionWithArguments(ao),
-  projdir(ReferenceConfigurationOptions("DIRECTION")),
-  mydpack1( 1, 0 ),
-  mydpack2( 1, 0 ),
-  mydpack3( 1, 0 ),
-  mypack1( 0, 0, mydpack1 ),
-  mypack2( 0, 0, mydpack2 ),
-  mypack3( 0, 0, mydpack3 )
+  ActionWithArguments(ao)
 {
   // Ensure that values are stored in base calculation and that PLUMED doesn't try to calculate this in the stream
   plumed_assert( !actionInChain() ); getPntrToArgument(0)->buildDataStore( getLabel() );
-  // Some sanity checks
-  bool rankOneOutput = getPntrToArgument(0)->getRank()>0;
-  if( getPntrToArgument(0)->getRank()>1 ) error("input arguments should be rank 0 or rank 1");
-  if( rankOneOutput && getNumberOfArguments()>1 ) error("cannot calculate path for more than one one vector at a time");
   if( arg_ends.size()>0 ) error("makes no sense to use ARG1, ARG2... with this action use single ARG keyword");
-
-  unsigned maxargs=0, maxatoms=0; std::vector<AtomNumber> myatoms; std::vector<std::string> myargs;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->isPeriodic() ) error("cannot use this function on periodic functions");
-    // Now get number of atoms
-    ActionAtomistic* aa = dynamic_cast<ActionAtomistic*>( getPntrToArgument(i)->getPntrToAction() );
-    if( aa->getNumberOfAtoms()>maxatoms ) { maxatoms = aa->getNumberOfAtoms(); myatoms = aa->getAbsoluteIndexes(); }
-    // And number of arguments
-    ActionWithArguments* aw = dynamic_cast<ActionWithArguments*>( getPntrToArgument(i)->getPntrToAction() );
-    if( aw->getNumberOfArguments()>maxargs ) {
-      maxargs = aw->getNumberOfArguments();
-      myargs.resize( maxargs ); for(unsigned i=0; i<maxargs; ++i) myargs[i] = (aw->getPntrToArgument(i))->getName();
-    }
+  // Check that we have only one argument as input
+  if( getNumberOfArguments()!=1 ) error("should only have one argument to this function");
+  // Check that the input is a matrix
+  if( getPntrToArgument(0)->getRank()!=2 ) error("the input to this action should be a matrix");
+  // Check none of the arguments are periodic
+  if( getPntrToArgument(0)->isPeriodic() ) error("cannot use this function on periodic functions");
+  // Get the labels for the reference points
+  std::vector<std::string> reflabs( getPntrToArgument(0)->getShape()[0] ); parseVector("REFFRAMES", reflabs );
+  if( plumed.getAtoms().getAllGroups().count(reflabs[0]) ) {
+      for(unsigned i=0;i<reflabs.size();++i) {
+          if( !plumed.getAtoms().getAllGroups().count(reflabs[i]) ) error("count not find group with name " + reflabs[i] );
+          atind_for_frames.push_back( plumed.getAtoms().getAllGroups().find(reflabs[i])->second );
+          if( i>0 && atind_for_frames[i].size()!=atind_for_frames[0].size() ) error("mismatched numbers of atoms in reference frames");
+      }
   }
-  parseVector("COORDINATES",framep);
-  if( framep.size()>0 ) {
-    if( framep.size()!=getNumberOfArguments() ) {
-      if( framep.size()!=getPntrToArgument(0)->getShape()[0] ) error("wrong number of input coordinates");
-    }
-  } else {
-    if( getNumberOfArguments()==1 ) framep.resize( getPntrToArgument(0)->getShape()[0] );
-    else framep.resize( getNumberOfArguments() );
-    for(unsigned i=0; i<framep.size(); ++i) framep[i] = static_cast<double>(i+1);
-  }
-  log.printf("  coordinates of points on path : ");
-  for(unsigned i=0; i<framep.size(); ++i) log.printf("%f ",framep[i] );
-  log.printf("\n");
-  mypack1_stashd_atoms.resize( maxatoms ); mypack1_stashd_args.resize( maxargs );
-  Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(0)->getPntrToAction() );
-  unsigned maxderiv=maxargs; if( maxatoms>0 ) maxderiv += 3*maxatoms + 9;
-  mydpack1.resize( 1, maxderiv, 0, 0 ); mypack1.resize( maxargs, maxatoms ); (am->getReferenceConfiguration(0))->setupPCAStorage( mypack1 );
-  mydpack2.resize( 1, maxderiv, 0, 0 ); mypack2.resize( maxargs, maxatoms ); (am->getReferenceConfiguration(0))->setupPCAStorage( mypack2 );
-  mydpack3.resize( 1, maxderiv, 0, 0 ); mypack3.resize( maxargs, maxatoms ); forcesToApply.resize( maxderiv );
-  for(unsigned i=0; i<maxatoms; ++i) { mypack1.setAtomIndex(i,i); mypack2.setAtomIndex(i,i); mypack3.setAtomIndex(i,i); }
-
-  checkRead();
+  // Get the coordinates in the low dimensional space
+  pcoords.resize( getPntrToArgument(0)->getShape()[0] ); parseVector("COORDINATES", pcoords );
+  for(unsigned i=0;i<reflabs.size();++i) log.printf("  projecting frame read in by action %s at %f \n", reflabs[i].c_str(), pcoords[i] );
+  // Create the values to store the output
   addComponentWithDerivatives("s"); componentIsNotPeriodic("s");
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+  // Create a plumed main object to compute distances between reference configurations
+  int s=sizeof(double);
+  metric.cmd("setRealPrecision",&s);
+  metric.cmd("setNoVirial"); 
+  metric.cmd("setMDEngine","plumed");
+  int natoms=0; if( atind_for_frames.size()>0 ) natoms = 2*atind_for_frames[0].size();
+  metric.cmd("setNatoms",&natoms);
+  positions.resize(natoms); masses.resize(natoms); forces.resize(natoms); charges.resize(natoms);
+  double tstep=1.0; metric.cmd("setTimestep",&tstep);
+  std::string inp; parse("METRIC",inp); const char* cinp=inp.c_str();
+  std::vector<std::string> input=Tools::getWords(inp);
+  if( input.size()==1 && !actionRegister().check(input[0]) ) {
+      metric.cmd("setPlumedDat",cinp); metric.cmd("init");
+  } else {
+      metric.cmd("init"); metric.cmd("readInputLine",cinp);
+  }
+  // Now setup stuff to retrieve the final displacement
+  ActionWithValue* fav = dynamic_cast<ActionWithValue*>( metric.getActionSet()[metric.getActionSet().size()-1].get() );
+  if( !fav ) error("final value should calculate relevant value that you want as reference");
+  std::string name = (fav->copyOutput(0))->getName(); long rank; metric.cmd("getDataRank " + name, &rank );
+  if( rank==0 ) rank=1;
+  std::vector<long> ishape( rank ); metric.cmd("getDataShape " + name, &ishape[0] );
+  unsigned nvals=1; for(unsigned i=0;i<ishape.size();++i) nvals *= ishape[i]; 
+  data.resize( nvals ); metric.cmd("setMemoryForData " + name, &data[0] );
 }
 
 unsigned GeometricPath::getNumberOfDerivatives() const {
-  unsigned nder=0;
-  if( mypack1_stashd_atoms.size()>0 ) nder = 3*mypack1_stashd_atoms.size() + 9;
-  return nder + mypack1_stashd_args.size();
+  return 0;
 }
 
-void GeometricPath::retrieveReferenceValuePackData( const unsigned& iframe, ReferenceValuePack& mypack ) {
-  mypack.clear();
-  if( getNumberOfArguments()>1 ) {
-    Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(iframe)->getPntrToAction() );
-    double ig=am->calculateDistanceFromReference( 0, mypack );
+double GeometricPath::getProjectionOnPath( const unsigned& ifrom, const unsigned& ito, const unsigned& closest, double& len ) {
+  if( atind_for_frames.size()>0 ) {
+      unsigned nref_at = atind_for_frames[0].size();
+      Atoms& atoms( plumed.getAtoms() ); int istep=0; metric.cmd("setStep",&istep);
+      // Set the atomic positions of the coordinates
+      for(unsigned i=0;i<nref_at;++i) {
+          // masses[i] = m[atind_for_frames[ifrom][i].index()]; masses[nref_at + i] = m[atind_for_frames[ito][i].index()]; 
+          // charges[i] = c[atind_for_frames[ifrom][i].index()]; charges[nref_at + i] = c[atind_for_frames[ito][i].index()]; 
+          positions[i] = atoms.getVatomPosition(atind_for_frames[ifrom][i]); positions[nref_at + i] = atoms.getVatomPosition(atind_for_frames[ito][i]);
+      }
+      metric.cmd("setMasses",&masses[0]);
+      metric.cmd("setCharges",&charges[0]);
+      metric.cmd("setPositions",&positions[0]);
+      metric.cmd("setForces",&forces[0]);
+      Tensor box( plumed.getAtoms().getPbc().getBox() ); metric.cmd("setBox",&box[0][0]);
+  } else {
+      plumed_error();
   }
-  Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(0)->getPntrToAction() );
-  double ig=am->calculateDistanceFromReference( iframe, mypack );
-}
-
-ReferenceConfiguration* GeometricPath::getReferenceConfiguration( const unsigned& iframe ) {
-  if( getNumberOfArguments()>1 ) {
-    Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(iframe)->getPntrToAction() );
-    return am->getReferenceConfiguration( iframe );
-  }
-  Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(0)->getPntrToAction() );
-  return am->getReferenceConfiguration( iframe );
-}
-
-double GeometricPath::calculateDistanceFromPosition( const unsigned & iframe, const std::vector<Vector>& pos, const std::vector<double>& args, ReferenceValuePack& mypack ) {
-  mypack.clear();
-  if( getNumberOfArguments()>1 ) {
-    Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(iframe)->getPntrToAction() );
-    return am->calculateDistanceBetweenReferenceAndThisPoint( 0, pos, args, mypack );
-  }
-  Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(0)->getPntrToAction() );
-  return am->calculateDistanceBetweenReferenceAndThisPoint( iframe, pos, args, mypack );
-}
-
-double GeometricPath::projectDisplacementOnVector( const unsigned & iframe, const Direction& dir, ReferenceValuePack& mypack ) {
-  if( getNumberOfArguments()>1 ) {
-    Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(iframe)->getPntrToAction() );
-    return am->projectDisplacementOnVector( 0, dir, mypack );
-  }
-  Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(0)->getPntrToAction() );
-  return am->projectDisplacementOnVector( iframe, dir, mypack );
-}
-
-void GeometricPath::extractDisplacementVector( const unsigned & iframe, const std::vector<Vector>& pos, const std::vector<double>& args, Direction& mydir ) {
-  if( getNumberOfArguments()>1 ) {
-    Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(iframe)->getPntrToAction() );
-    am->extractDisplacementVector( 0, pos, args, mydir ); return;
-  }
-  Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(0)->getPntrToAction() );
-  am->extractDisplacementVector( iframe, pos, args, mydir );
+  metric.cmd("calc");  
+  double fval=0; len=0; Value* arg=getPntrToArgument(0); unsigned k=arg->getShape()[1]*closest;
+  for(unsigned i=0;i<data.size();++i) { len += data[i]*data[i]; fval += data[i]*arg->get(k+i); }
+  return fval;
 }
 
 void GeometricPath::calculate() {
-  // Find two closest points
-  unsigned iclose1 = 0, iclose2 = 1;
-  double v1v1 = getArgumentScalar(0);
-  double v3v3 = getArgumentScalar(1);
-  if( v1v1>v3v3 ) {
-    double tmp=v1v1; v1v1=v3v3; v3v3=tmp;
-    iclose1 = 1; iclose2 = 0;
-  }
-  for(unsigned i=2; i<getNumberOfScalarArguments(); ++i) {
-    double ndist=getArgumentScalar(i);
-    if( ndist<v1v1 ) {
-      v3v3=v1v1; iclose2=iclose1;
-      v1v1=ndist; iclose1=i;
-    } else if( ndist<v3v3 ) {
-      v3v3=ndist; iclose2=i;
-    }
+  unsigned k=0, iclose1, iclose2; double v1v1, v3v3;
+  unsigned nrows = getPntrToArgument(0)->getShape()[0];
+  unsigned ncols = getPntrToArgument(0)->getShape()[1];
+  for(unsigned i=0;i<nrows;++i) {
+      double dist = 0;
+      for(unsigned j=0;j<ncols;++j) {
+          double tmp = getPntrToArgument(0)->get(k);
+          dist += tmp*tmp; k++; 
+      }
+      if( i==0 ) { v1v1 = dist; iclose1 = 0; }
+      else if( dist<v1v1 ) { v3v3=v1v1; v1v1=dist; iclose2=iclose1; iclose1=i; } 
+      else if( i==1 ) { v3v3=dist; iclose2=1; }
+      else if( dist<v3v3 ) { v3v3=dist; iclose2=i; }
   }
   // And find third closest point
   int isign = iclose1 - iclose2;
   if( isign>1 ) isign=1; else if( isign<-1 ) isign=-1;
-  int iclose3 = iclose1 + isign; double v2v2;
+  int iclose3 = iclose1 + isign;
+  unsigned ifrom=iclose1, ito=iclose3; if( iclose3<0 || iclose3>=nrows ) { ifrom=iclose2; ito=iclose1; }
 
-  retrieveReferenceValuePackData( iclose1, mypack1 );
-  retrieveReferenceValuePackData( iclose2, mypack3 );
-  if( iclose3<0 || iclose3>=getNumberOfScalarArguments() ) {
-    ReferenceConfiguration* conf2=getReferenceConfiguration( iclose1 );
-    v2v2=calculateDistanceFromPosition( iclose2, conf2->getReferencePositions(), conf2->getReferenceArguments(), mypack2 );
-    extractDisplacementVector( iclose2, conf2->getReferencePositions(), conf2->getReferenceArguments(), projdir );
-  } else {
-    ReferenceConfiguration* conf2=getReferenceConfiguration( iclose3 );
-    v2v2=calculateDistanceFromPosition( iclose1, conf2->getReferencePositions(), conf2->getReferenceArguments(), mypack2 );
-    extractDisplacementVector( iclose1, conf2->getReferencePositions(), conf2->getReferenceArguments(), projdir );
-  }
-
-  // Stash derivatives of v1v1
-  if( !doNotCalculateDerivatives() ) {
-    for(unsigned i=0; i<mypack1_stashd_args.size(); ++i) mypack1_stashd_args[i]=mypack1.getArgumentDerivative(i);
-    for(unsigned i=0; i<mypack1_stashd_atoms.size(); ++i) mypack1_stashd_atoms[i]=mypack1.getAtomDerivative(i);
-  }
-  if( mypack1_stashd_atoms.size()>0 ) {
-    ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( getReferenceConfiguration( iclose1 ) );
-    const std::vector<double> & displace( at->getDisplace() );
-    for(unsigned i=0; i<mypack1_stashd_atoms.size(); ++i) mypack1.getAtomsDisplacementVector()[i] /= displace[i];
-  }
-  // Calculate the dot product of v1 with v2
-  double v1v2 = projectDisplacementOnVector( iclose1, projdir, mypack1 );
+  // And calculate projection of vector connecting current point to closest frame on vector connecting nearest two frames
+  double v2v2, v1v2 = getProjectionOnPath( ifrom, ito, iclose1, v2v2 ); 
 
   // This computes s value
-  double spacing = framep[iclose1] - framep[iclose2];
+  double spacing = pcoords[iclose1] - pcoords[iclose2];
   double root = sqrt( v1v2*v1v2 - v2v2 * ( v1v1 - v3v3) );
   double dx = 0.5 * ( (root + v1v2) / v2v2 - 1.);
-  double path_s = framep[iclose1] + spacing * dx;
+  double path_s = pcoords[iclose1] + spacing * dx;
   double fact = 0.25*spacing / v2v2; Value* sp = getPntrToComponent(0); sp->set( path_s );
-  if( !doNotCalculateDerivatives() ) {
-    // Derivative of s wrt arguments
-    for(unsigned i=0; i<mypack1_stashd_args.size(); ++i) {
-      sp->setDerivative( i, fact*( mypack2.getArgumentDerivative(i) + (v2v2 * (-mypack1_stashd_args[i] + mypack3.getArgumentDerivative(i))
-                                   + v1v2*mypack2.getArgumentDerivative(i) )/root ) );
-    }
-    // Derivative of s wrt atoms
-    if( mypack1_stashd_atoms.size()>0 ) {
-      unsigned narg=mypack1_stashd_args.size(); Tensor vir; vir.zero(); fact = 0.5*spacing / v2v2;
-      ActionAtomistic* mymap = dynamic_cast<ActionAtomistic*>( getPntrToArgument(0)->getPntrToAction() );
-      for(unsigned i=0; i<mypack1_stashd_atoms.size(); ++i) {
-        Vector ader = fact*(( v1v2*mypack1.getAtomDerivative(i) + 0.5*v2v2*(-mypack1_stashd_atoms[i] + mypack3.getAtomDerivative(i) ) )/root + mypack1.getAtomDerivative(i) );
-        for(unsigned k=0; k<3; ++k) sp->setDerivative( narg+3*i+k, ader[k] );
-        vir-=Tensor( mymap->getPosition(i), ader );
-      }
-      // Set the virial
-      unsigned nbase=narg+3*mypack1_stashd_atoms.size();
-      for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) sp->setDerivative( nbase+3*i+j, vir(i,j) );
-    }
-  }
 
-  // Now compute z value
-  ReferenceConfiguration* conf2=getReferenceConfiguration( iclose1 );
-  double v4v4=calculateDistanceFromPosition( iclose2, conf2->getReferencePositions(), conf2->getReferenceArguments(), mypack2 );
-  // Extract vector connecting frames
-  extractDisplacementVector( iclose2, conf2->getReferencePositions(), conf2->getReferenceArguments(), projdir );
-  // Calculate projection of vector on line connnecting frames
-  double proj = projectDisplacementOnVector( iclose1, projdir, mypack1 ); double path_z = v1v1 + dx*dx*v4v4 - 2*dx*proj;
-
-  // Derivatives for z path
-  path_z = sqrt(path_z); Value* zp = getPntrToComponent(1); zp->set( path_z );
-  if( !doNotCalculateDerivatives() ) {
-    for(unsigned i=0; i<mypack1_stashd_args.size(); ++i) zp->setDerivative( i, (mypack1_stashd_args[i] - 2*dx*mypack1.getArgumentDerivative(i))/(2.0*path_z) );
-    // Derivative wrt atoms
-    if( mypack1_stashd_atoms.size()>0 ) {
-      unsigned narg=mypack1_stashd_args.size(); Tensor vir; vir.zero();
-      ActionAtomistic* mymap = dynamic_cast<ActionAtomistic*>( getPntrToArgument(0)->getPntrToAction() );
-      for(unsigned i=0; i<mypack1_stashd_atoms.size(); ++i) {
-        Vector dxder; for(unsigned k=0; k<3; ++k) dxder[k] = ( 2*v4v4*dx - 2*proj )*spacing*sp->getDerivative( narg + 3*i+k );
-        Vector ader = ( mypack1_stashd_atoms[i] - 2.*dx*mypack1.getAtomDerivative(i) + dxder )/ (2.0*path_z);
-        for(unsigned k=0; k<3; ++k) zp->setDerivative( narg+3*i+k, ader[k] );
-        vir-=Tensor( mymap->getPosition(i), ader );
-      }
-      // Set the virial
-      unsigned nbase=narg+3*mypack1_stashd_atoms.size();
-      for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) zp->setDerivative( nbase+3*i+j, vir(i,j) );
-    }
-  }
-}
-
-void GeometricPath::apply() {
-  if( doNotCalculateDerivatives() ) return;
-  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
-  if( getForcesFromValues( forcesToApply ) ) {
-    Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(0)->getPntrToAction() );
-    unsigned mm=0; am->setForcesOnArguments( forcesToApply, mm );
-    am->setForcesOnAtoms( forcesToApply, mm );
-  }
+  // This computes z value
+  double v4v4, proj = getProjectionOnPath( iclose2, iclose1, iclose1, v4v4 ); 
+  double path_z = v1v1 + dx*dx*v4v4 - 2*dx*proj; path_z = sqrt(path_z);
+  Value* zp = getPntrToComponent(1); zp->set( path_z );
 }
 
 }
 }
-
-

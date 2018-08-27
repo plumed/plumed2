@@ -42,6 +42,7 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
   nderivatives(0)
 {
   // Read the plumed input
+  unsigned ncols=0;
   for(int i=1;; i++) {
       std::string input;
       if( !parseNumbered("INPUT",i,input) ) break;
@@ -71,14 +72,22 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
       // Check that final command in input is just a scalar
       const ActionWithValue* av=dynamic_cast<const ActionWithValue*>( plumed.getActionSet()[action_lists[i-1].second-1].get() );
       if( !av ) error("final action in each created set of action should have a value");
-      if( av->getNumberOfComponents()!=1 ) error("final action in each created set of actions should calculate only one scalar");
+      if( av->getNumberOfComponents()!=1 && av->getName()!="RMSD" ) error("final action in each created set of actions should calculate only one scalar");
       if( av->copyOutput(0)->isPeriodic() ) error("final action should not have periodic domain");
-      if( av->copyOutput(0)->getRank()!=0 ) error("final action should calculate a scalar");
+      if( av->copyOutput(0)->getRank()!=0 ) {
+          av->copyOutput(0)->buildDataStore( getLabel() );
+          if( i==1 ) ncols = av->copyOutput(0)->getNumberOfValues( getLabel() );
+          else if( ncols!=av->copyOutput(0)->getNumberOfValues( getLabel() ) ) {
+             error("mismatched sizes of values");
+          }
+      }
       // Now store the value that we need
       valuesToGet.push_back( av->copyOutput(0) );
   } 
   // Create a value to hold the output from the plumed inputs
-  std::vector<unsigned> shape(1); shape[0]=action_lists.size();
+  std::vector<unsigned> shape; 
+  if( ncols==0 ){ shape.resize(1); shape[0]=action_lists.size(); }
+  else { shape.resize(2); shape[0]=action_lists.size(); shape[1]=ncols; }
   addValue( shape ); setNotPeriodic(); forcesToApply.resize( action_lists.size() );
   // Now create some tasks
   for(unsigned i=0;i<action_lists.size();++i) addTaskToList(i);
@@ -124,10 +133,18 @@ void ParallelPlumedActions::clearDerivatives( const bool& force ) {
           }
           {
             if(aa) aa->clearOutputForces();
-            if(aa) aa->retrieveAtoms();
+            if(aa) aa->retrieveAtoms(); 
           }
       }
   }
+}
+
+void ParallelPlumedActions::activate() {
+  // Activate all actions here so that atoms are collected for all actions
+  for(unsigned i=0;i<action_lists.size();++i) {
+      for(unsigned j=action_lists[i].first;j<action_lists[i].second;++j) plumed.getActionSet()[j].get()->activate();
+  }
+  Action::activate();
 }
 
 void ParallelPlumedActions::calculate() {
@@ -135,21 +152,38 @@ void ParallelPlumedActions::calculate() {
   runAllTasks();
 }
 
+void ParallelPlumedActions::prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {
+  // Deactivate all actions that are called by this thing -- currently all are active on all nodes (was done in activate)
+  for(unsigned i=0;i<action_lists.size();++i) {
+      for(unsigned j=action_lists[i].first;j<action_lists[i].second;++j) plumed.getActionSet()[j].get()->deactivate();
+  }
+  // Now activate tasks that are actually on this node
+  unsigned stride=comm.Get_size(); unsigned rank=comm.Get_rank();
+  if( runInSerial() ) { stride=1; rank=0; }
+  for(unsigned i=rank;i<nactive;i+=stride) {
+      unsigned itask = pTaskList[i];
+      for(unsigned j=action_lists[itask].first;j<action_lists[itask].second;++j) plumed.getActionSet()[j].get()->activate();
+  }
+}
+
 void ParallelPlumedActions::performTask( const unsigned& task_index, MultiValue& myvals ) const {
   // Run calculate for these actions
-  for(unsigned i=action_lists[task_index].first;i<action_lists[task_index].second;++i) plumed.getActionSet()[i].get()->activate();
   for(unsigned i=action_lists[task_index].first;i<action_lists[task_index].second;++i) {
       Action* aa = plumed.getActionSet()[i].get(); aa->calculate(); aa->deactivate();
-      
   }
   // Retrieve the value
-  myvals.setValue( getPntrToOutput(0)->getPositionInStream(), valuesToGet[task_index]->get() );
-  // Set the derivatives
-  if( !doNotCalculateDerivatives() ) {
-      unsigned nstart=der_starts[task_index]; unsigned jval = getPntrToOutput(0)->getPositionInStream();
-      for(unsigned i=0;i<valuesToGet[task_index]->getNumberOfDerivatives();++i){
-         myvals.addDerivative( jval, nstart + i, valuesToGet[task_index]->getDerivative(i) ); myvals.updateIndex( jval, nstart + i );
+  if( getPntrToOutput(0)->getRank()==1 ) { 
+      myvals.setValue( getPntrToOutput(0)->getPositionInStream(), valuesToGet[task_index]->get() );
+      // Set the derivatives
+      if( !doNotCalculateDerivatives() ) {
+          unsigned nstart=der_starts[task_index]; unsigned jval = getPntrToOutput(0)->getPositionInStream();
+          for(unsigned i=0;i<valuesToGet[task_index]->getNumberOfDerivatives();++i){
+             myvals.addDerivative( jval, nstart + i, valuesToGet[task_index]->getDerivative(i) ); myvals.updateIndex( jval, nstart + i );
+          }
       }
+  } else {
+      unsigned nvals = getPntrToOutput(0)->getShape()[1], matind = getPntrToOutput(0)->getPositionInMatrixStash();
+      for(unsigned i=0;i<nvals;++i) { myvals.stashMatrixElement( matind, i, valuesToGet[task_index]->get(i) ); }
   }
 }
 

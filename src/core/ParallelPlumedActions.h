@@ -45,6 +45,10 @@ public:
   static void registerKeywords( Keywords& keys );
 ///
   void turnOnDerivatives();
+///
+  void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
+///
+  void activate();
 /// Get the number of derivatives we need to store
   unsigned getNumberOfDerivatives() const ;
 /// Clear the derivatives in all the underlying actions

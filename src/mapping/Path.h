@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018 The plumed team
+   Copyright (c) 2013-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,35 +19,24 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_core_ActionShortcut_h
-#define __PLUMED_core_ActionShortcut_h
+#ifndef __PLUMED_mapping_Path_h
+#define __PLUMED_mapping_Path_h
 
-#include "Action.h"
+#include "core/ActionShortcut.h"
 
 namespace PLMD {
+namespace mapping {
 
-/**
-\ingroup MULTIINHERIT
-Action used to create a command that expands to multiple PLMD::Action commands when read in during input
-*/
-class ActionShortcut :
-  public virtual Action {
-private:
-  std::string shortcutlabel;
+class Path : public ActionShortcut {
 public:
-  static void registerKeywords( Keywords& keys );
-/// Constructor
-  explicit ActionShortcut(const ActionOptions&ao);
-/// Get the label for the shortcut
-  const std::string & getShortcutLabel() const ;
-/// It is a shortcut it should never need to be activated
-  void activate() {}
-/// Do nothing.
-  void calculate() {}
-/// Do nothing.
-  void apply() {}
+  static void registerKeywords(Keywords& keys);
+  static void createActionsToComputeDistances( const std::string mytype, const std::string& refname, const bool& geometric, 
+                                               ActionShortcut* action, std::vector<std::string>& refactions );
+  explicit Path(const ActionOptions&);
 };
 
 }
+}
+
 
 #endif

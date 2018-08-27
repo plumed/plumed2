@@ -75,6 +75,9 @@ PCAVars::PCAVars( const ActionOptions& ao ):
   std::vector<AtomNumber> at_ind( pdb.getAtomNumbers() );
   std::string atnum; Tools::convert( at_ind[0].serial(), atnum ); rmsd_line += " ATOMS=" + atnum;
   for(unsigned i=1;i<at_ind.size();++i){ Tools::convert( at_ind[i].serial(), atnum ); rmsd_line += "," + atnum; }
+  std::vector<double> displace( pdb.getBeta() ); double dtot = 0;
+  for(unsigned i=0;i<displace.size();++i) dtot += displace[i];
+  for(unsigned i=0;i<displace.size();++i) displace[i] = displace[i] / dtot;
   // Now create the RMSD object
   std::string mtype; parse("TYPE",mtype); bool nopbc; parseFlag("NOPBC",nopbc);
   if( nopbc ) readInputLine( rmsd_line + " NOPBC TYPE=" + mtype );
@@ -95,9 +98,15 @@ PCAVars::PCAVars( const ActionOptions& ao ):
         }
         norm = sqrt( norm ); std::vector<double> normed_coeffs( 3*mypdb.getPositions().size() );
         for(unsigned i=0;i<mypdb.getPositions().size();++i) {
-            normed_coeffs[3*i+0] = mypdb.getPositions()[i][0] / norm;
-            normed_coeffs[3*i+1] = mypdb.getPositions()[i][1] / norm;
-            normed_coeffs[3*i+2] = mypdb.getPositions()[i][2] / norm;
+            if( mtype=="SIMPLE" ) {
+                normed_coeffs[3*i+0] = mypdb.getPositions()[i][0] / norm;
+                normed_coeffs[3*i+1] = mypdb.getPositions()[i][1] / norm;
+                normed_coeffs[3*i+2] = mypdb.getPositions()[i][2] / norm;
+            } else {
+                normed_coeffs[3*i+0] = sqrt(displace[i])*mypdb.getPositions()[i][0] / norm;
+                normed_coeffs[3*i+1] = sqrt(displace[i])*mypdb.getPositions()[i][1] / norm;
+                normed_coeffs[3*i+2] = sqrt(displace[i])*mypdb.getPositions()[i][2] / norm;
+            }
         }
         std::string coeff1; Tools::convert( normed_coeffs[0], coeff1 );
         comb_inp +=" COEFFICIENTS=" + coeff1;

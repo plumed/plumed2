@@ -693,10 +693,10 @@ void PlumedMain::justCalculate() {
 // calculate the active actions in order (assuming *backward* dependence)
   for(const auto & pp : actionSet) {
     Action* p(pp.get());
-    if(p->isActiveForPlumedMain()) {
+    if(p->isActive() && p->getCaller()=="plumedmain" ) {
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-      Stopwatch::Handler sw; 
+      Stopwatch::Handler sw;
       if(detailedTimers) {
         std::string actionNumberLabel;
         Tools::convert(iaction,actionNumberLabel);

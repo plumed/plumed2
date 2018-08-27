@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/ActionShortcut.h"
+#include "Path.h"
 #include "core/ActionRegister.h"
 #include "core/ActionWithValue.h"
 #include "core/PlumedMain.h"
@@ -45,14 +45,6 @@ perpendicular distance from the curvilinear path ("z" component).
 */
 //+ENDPLUMEDOC
 
-
-class Path : public ActionShortcut {
-public:
-  static void registerKeywords(Keywords& keys);
-  explicit Path(const ActionOptions&);
-};
-
-
 PLUMED_REGISTER_ACTION(Path,"PATH")
 PLUMED_REGISTER_ACTION(Path,"GPROPERTYMAP")
 
@@ -77,25 +69,76 @@ Path::Path( const ActionOptions& ao ):
   } else {
       plumed_assert(getName()=="PATH"); properties.resize( 1 );
   }
+  std::vector<std::string> refactions;
+  std::string mtype; parse("TYPE",mtype);
+  std::string refname; parse("REFERENCE",refname); 
   // Create list of reference configurations that PLUMED will use
-  std::vector<AtomNumber> indices; std::vector<double> alig, disp; 
-  std::string refname; parse("REFERENCE",refname); FILE* fp=std::fopen(refname.c_str(),"r");
-  if(!fp) plumed_merror("could not open reference file " + refname );
-  bool do_read=true; double fake_unit=0.1; unsigned nfram = 0; 
-  std::string mtype, distances_str; parse("TYPE",mtype); 
+  createActionsToComputeDistances( mtype, refname, false, this, refactions );
+  // Now create all other parts of the calculation
+  std::string lambda; parse("LAMBDA",lambda);
+  // Now create MATHEVAL object to compute exponential functions
+  readInputLine( getShortcutLabel() + "_weights: MATHEVAL ARG1=" + getShortcutLabel() + "_data  FUNC=exp(-x*" + lambda + ") PERIODIC=NO" );
+  // Create denominator
+  readInputLine( getShortcutLabel() + "_denom: COMBINE ARG=" + getShortcutLabel() + "_weights PERIODIC=NO");
+  // Now compte zpath variable
+  readInputLine( getShortcutLabel() + "_z: MATHEVAL ARG=" + getShortcutLabel() + "_denom FUNC=-log(x)/" + lambda + " PERIODIC=NO");
+  // Now get coefficients for properies for spath
+  FILE* fp=std::fopen(refname.c_str(),"r"); bool do_read=true; double fake_unit=0.1; unsigned nfram = 0;
+  while (do_read ) {
+      PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
+      // Break if we are done
+      if( !do_read ) break ;
+      // This creates the coefficients
+      if( pnames.size()>0 ) {
+          std::vector<std::string> remarks( mypdb.getRemark() );
+          for(unsigned i=0; i<pnames.size(); ++i) {
+              std::string propstr; bool found=Tools::parse( remarks, pnames[i], propstr );
+              if( !found ) plumed_merror("could not find property named " + pnames[i] + " in input file " + refname );
+              if( nfram==0 ) { properties[i] = "COEFFICIENTS=" + propstr; } else { properties[i] += "," + propstr; }
+          }
+      } else {
+          std::string propstr; Tools::convert( nfram+1, propstr );
+          if( nfram==0 ) { properties[0] = "COEFFICIENTS=" + propstr; } else { properties[0] += "," + propstr; }
+      }
+      nfram++;
+  }
+  // Now create COMBINE objects to compute numerator of path
+  for(unsigned i=0;i<properties.size();++i) {
+      std::string numer_input, path_input; 
+      if( pnames.size()>0 ) {
+          numer_input = pnames[i] + "_numer:";
+          path_input = pnames[i] + ": MATHEVAL ARG1=" + pnames[i] + "_numer";
+      } else {
+          numer_input = getShortcutLabel()  + "_numer:";
+          path_input = getShortcutLabel() + "_s: MATHEVAL ARG1=" + getShortcutLabel() + "_numer";
+      }
+      // Create numerators for SPATH variables
+      readInputLine( numer_input + " COMBINE ARG=" + getShortcutLabel() + "_weights PERIODIC=NO " + properties[i] );
+      // Create final values of SPATH variables
+      readInputLine( path_input + " ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+  }
+}
+
+void Path::createActionsToComputeDistances( const std::string mtype, const std::string& refname, const bool& geometric, 
+                                            ActionShortcut* action, std::vector<std::string>& refactions ) {
+  std::vector<AtomNumber> indices; std::vector<double> alig, disp; std::string distances_str;
+  FILE* fp=std::fopen(refname.c_str(),"r"); std::string scut_lab = action->getShortcutLabel();
+  if(!fp) action->error("could not open reference file " + refname );
+  bool do_read=true; double fake_unit=0.1; unsigned nfram = 0;
   while (do_read ) {
       PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
       // Break if we are done
       if( !do_read ) break ;
       std::string num; Tools::convert( nfram+1, num ); bool read_atoms=false;
       if( mypdb.getAtomNumbers().size()>0 ) {
-          read_atoms=true; readInputLine( getShortcutLabel() + "_ref" + num + ": READ_ATOMS REFERENCE=" + refname  + " NUMBER=" + num );
+          read_atoms=true; action->readInputLine( scut_lab + "_ref" + num + ": READ_ATOMS REFERENCE=" + refname  + " NUMBER=" + num );
       }
       std::vector<std::string> remark( mypdb.getRemark() ); std::string stri; bool read_args=false; 
       if( Tools::parse( remark, "ARG", stri ) ) {
-          read_args=true; readInputLine( getShortcutLabel() + "_refv" + num + ": READ_ARGS REFERENCE=" + refname + " NUMBER=" + num );;
+          refactions.push_back( scut_lab + "_refv" + num );
+          read_args=true; action->readInputLine( scut_lab + "_refv" + num + ": READ_ARGS REFERENCE=" + refname + " NUMBER=" + num );;
       }
-      if( read_atoms && read_args ) error("cannot read atoms and arguments from reference pdb file yet");
+      if( read_atoms && read_args ) action->error("cannot read atoms and arguments from reference pdb file yet");
 
       if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
           if( nfram==0 ) {
@@ -113,38 +156,31 @@ Path::Path( const ActionOptions& ao ):
                   if( disp[i]!=mypdb.getBeta()[i] ) plumed_merror("mismatch between beta values in frames of path");
               }
           }
+          refactions.push_back( scut_lab + "_ref" + num );
       } else if( mtype.find("DRMSD")!=std::string::npos ) {
-          distances_str = setup::DRMSD::getDistancesString( plumed, getShortcutLabel() + "_ref" + num, mtype );
-          readInputLine( getShortcutLabel() + "_refv" + num + ": CALCULATE_REFERENCE ATOMS=" + getShortcutLabel() + "_ref" + num + " INPUT={DISTANCE " + distances_str + "}" );
+          distances_str = setup::DRMSD::getDistancesString( action->plumed, scut_lab + "_ref" + num, mtype );
+          action->readInputLine( scut_lab + "_refv" + num + ": CALCULATE_REFERENCE ATOMS=" + scut_lab + "_ref" + num + " INPUT={DISTANCE " + distances_str + "}" );
+          refactions.push_back( scut_lab + "_refv" + num );
       } else if( read_atoms && !read_args ) {
-          readInputLine( getShortcutLabel()  + "_refv" + num + ": CALCULATE_REFERENCE ATOMS=" + getShortcutLabel() + "_ref" + num + " INPUT=" + mtype );
+          action->readInputLine( scut_lab + "_refv" + num + ": CALCULATE_REFERENCE ATOMS=" + scut_lab + "_ref" + num + " INPUT=" + mtype );
+          refactions.push_back( scut_lab + "_refv" + num );
       }
-      if( pnames.size()>0 ) {
-          std::vector<std::string> remarks( mypdb.getRemark() );
-          for(unsigned i=0; i<pnames.size(); ++i) {
-              std::string propstr; bool found=Tools::parse( remarks, pnames[i], propstr );
-              if( !found ) plumed_merror("could not find property named " + pnames[i] + " in input file " + refname );
-              if( nfram==0 ) { properties[i] = "COEFFICIENTS=" + propstr; } else { properties[i] += "," + propstr; }
-          }
-      } else {
-          std::string propstr; Tools::convert( nfram+1, propstr );
-          if( nfram==0 ) { properties[0] = "COEFFICIENTS=" + propstr; } else { properties[0] += "," + propstr; }
-      }
-      nfram++;   
+      nfram++; if( refactions.size()!=nfram ) action->error("mismatch between number of reference action labels and number of frames");
   }
   unsigned nquantities=0;
   if( mtype!="OPTIMAL-FAST" && mtype!="OPTIMAL" && mtype!="SIMPLE" ) { 
-      if( mtype.find("DRMSD")!=std::string::npos ) readInputLine( getShortcutLabel() + "_instantaneous: DISTANCE " + distances_str );
-      else readInputLine( getShortcutLabel() + "_instantaneous: " + mtype );
-      ActionWithValue* aval = plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_instantaneous" );
-      nquantities = aval->copyOutput(0)->getNumberOfValues( getShortcutLabel() + "_instantaneous" );
+      if( mtype.find("DRMSD")!=std::string::npos ) action->readInputLine( scut_lab + "_instantaneous: DISTANCE " + distances_str );
+      else action->readInputLine( scut_lab + "_instantaneous: " + mtype );
+      ActionWithValue* aval = action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( scut_lab + "_instantaneous" );
+      nquantities = aval->copyOutput(0)->getNumberOfValues( scut_lab + "_instantaneous" );
   }
   // Now create PLUMED object that computes all distances
-  std::string ref_line =  getShortcutLabel() + "_data: PLUMED_VECTOR ";
+  std::string ref_line =  scut_lab + "_data: PLUMED_VECTOR ";
   for(unsigned i=0;i<nfram;++i) {
       std::string num; Tools::convert(i+1, num );
       if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
-          ref_line += " INPUT" + num + "={RMSD REFERENCE_ATOMS=" + getShortcutLabel() + "_ref" + num;
+          ref_line += " INPUT" + num + "={RMSD REFERENCE_ATOMS=" + scut_lab + "_ref" + num;
+          if( geometric ) ref_line += " DISPLACEMENT";
           std::string atnum; Tools::convert( indices[0].serial(), atnum ); ref_line += " ATOMS=" + atnum;
           for(unsigned i=1;i<indices.size();++i){ Tools::convert( indices[i].serial(), atnum ); ref_line += "," + atnum; } 
           // Get the align values 
@@ -158,33 +194,12 @@ Path::Path( const ActionOptions& ao ):
       } else {
           std::string powstr = "POWERS=2"; for(unsigned i=1;i<nquantities;++i) powstr += ",2";
           if( mtype=="DRMSD" ) powstr += " NORMALIZE";
-          ref_line += "INPUT" + num + "={" + getShortcutLabel() + "_diff" + num + ": DIFFERENCE ARG1=" + getShortcutLabel() + "_refv" + num;
-          ref_line += " ARG2=" + getShortcutLabel() + "_instantaneous; ";
-          ref_line += "COMBINE ARG=" + getShortcutLabel() + "_diff" + num + " PERIODIC=NO " + powstr + "} ";
+          ref_line += "INPUT" + num + "={" + scut_lab + "_diff" + num + ": DIFFERENCE ARG1=" + scut_lab + "_refv" + num;
+          ref_line += " ARG2=" + scut_lab + "_instantaneous";
+          if( !geometric) ref_line += "; COMBINE ARG=" + scut_lab + "_diff" + num + " PERIODIC=NO " + powstr + "} ";
       } 
   }
-  readInputLine( ref_line ); std::string lambda; parse("LAMBDA",lambda);
-  // Now create MATHEVAL object to compute exponential functions
-  readInputLine( getShortcutLabel() + "_weights: MATHEVAL ARG1=" + getShortcutLabel() + "_data  FUNC=exp(-x*" + lambda + ") PERIODIC=NO" );
-  // Create denominator
-  readInputLine( getShortcutLabel() + "_denom: COMBINE ARG=" + getShortcutLabel() + "_weights PERIODIC=NO");
-  // Now compte zpath variable
-  readInputLine( getShortcutLabel() + "_z: MATHEVAL ARG=" + getShortcutLabel() + "_denom FUNC=-log(x)/" + lambda + " PERIODIC=NO");
-  // Now create COMBINE objects to compute numerator of path
-  for(unsigned i=0;i<properties.size();++i) {
-      std::string numer_input, path_input;  
-      if( pnames.size()>0 ) { 
-          numer_input = pnames[i] + "_numer:"; 
-          path_input = pnames[i] + ": MATHEVAL ARG1=" + pnames[i] + "_numer"; 
-      } else { 
-          numer_input = getShortcutLabel()  + "_numer:"; 
-          path_input = getShortcutLabel() + "_s: MATHEVAL ARG1=" + getShortcutLabel() + "_numer"; 
-      }
-      // Create numerators for SPATH variables
-      readInputLine( numer_input + " COMBINE ARG=" + getShortcutLabel() + "_weights PERIODIC=NO " + properties[i] );
-      // Create final values of SPATH variables
-      readInputLine( path_input + " ARG2=" + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
-  }
+  action->readInputLine( ref_line ); 
 }
 
 }

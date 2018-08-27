@@ -43,7 +43,7 @@ private:
   bool nopbc;
   bool displacement;
   std::string type;
-  std::vector<double> align,displace;
+  std::vector<double> align,displace,sqrtdisplace;
   PLMD::RMSD myrmsd;
   std::vector<Vector> forcesToApply;
   void makeStructureWhole();
@@ -209,8 +209,9 @@ RMSD::RMSD(const ActionOptions&ao):
   parseFlag("SQUARED",squared); parseFlag("NOPBC",nopbc); parseFlag("DISPLACEMENT",displacement);
 
   if( atoms_ref.size()!=atoms_conf.size() ) error("size mismatch between reference atoms and atoms involved");
-  double wa=0, wd=0; for(unsigned i=0; i<align.size(); ++i) { wa+=align[i]; wd+=displace[i]; }
-  for(unsigned i=0; i<align.size(); ++i){ align[i] /= wa; displace[i] /= wd; }
+  double wa=0, wd=0; sqrtdisplace.resize( displace.size() );
+  for(unsigned i=0; i<align.size(); ++i) { wa+=align[i]; wd+=displace[i]; }
+  for(unsigned i=0; i<align.size(); ++i){ align[i] /= wa; displace[i] /= wd; sqrtdisplace[i] = sqrt(displace[i]); }
 
   if( displacement ) {
      std::vector<unsigned> shape(1); shape[0] = 3*atoms_conf.size();
@@ -261,7 +262,7 @@ void RMSD::setReferenceConfiguration() {
   if( !fixed_reference && !nopbc ) makeStructureWhole();
 
   Vector center;
-  for(unsigned i=0; i<pos.size(); ++i) center+=pos[i]*align[i]; 
+  for(unsigned i=0; i<pos.size(); ++i) center+=pos[i]*align[i];
   for(unsigned i=0; i<pos.size(); ++i) pos[i] -= center;
   myrmsd.clear(); myrmsd.set(align,displace,pos,type);
 }
@@ -290,7 +291,7 @@ void RMSD::calculate() {
          d = myrmsd.simpleAlignment( align, displace, pos, myrmsd.getReference(), der, direction, squared );
       } else {
          d = myrmsd.calc_PCAelements( pos, der, rot, DRotDPos, direction, centeredpos, centeredreference, squared );
-         for(unsigned i=0;i<direction.size();++i) direction[i] = displace[i]*( direction[i] - myrmsd.getReference()[i] );
+         for(unsigned i=0;i<direction.size();++i) direction[i] = sqrtdisplace[i]*( direction[i] - myrmsd.getReference()[i] );
       }
       Value* val=getPntrToComponent(0);
       for(unsigned i=0;i<pos.size();++i) {
@@ -342,13 +343,13 @@ void RMSD::apply() {
       }
       for(unsigned i=0; i<pos.size(); i++) { 
           Vector ff; ff[0] = dval->getForce( 3*i+0 ); ff[1] = dval->getForce( 3*i+1 ); ff[2] = dval->getForce( 3*i+2 );
-          forcesToApply[i] = displace[i]*( matmul(trot,ff) - v1 );
+          forcesToApply[i] = sqrtdisplace[i]*( matmul(trot,ff) - v1 );
       }
       for(unsigned a=0; a<3; a++) {
         for(unsigned b=0; b<3; b++) {
           for(unsigned i=0; i<pos.size(); i++) {
             double tmp1=0.; for(unsigned m=0; m<pos.size(); m++) tmp1+=centeredpos[m][b]*dval->getForce( 3*m+a );
-            forcesToApply[i] += displace[i]*tmp1*DRotDPos[a][b][i]; 
+            forcesToApply[i] += sqrtdisplace[i]*tmp1*DRotDPos[a][b][i];
           }
         }
       }
