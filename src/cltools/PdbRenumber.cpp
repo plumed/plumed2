@@ -179,7 +179,7 @@ int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {
       std::array<char,6> at;
       unsigned ii=iat;
       if(serials.size()>0) {
-        plumed_assert(iat<serials.size()) << "there are more atoms in the PDB che serials in the file";
+        plumed_assert(iat<serials.size()) << "there are more atoms in the PDB than serials in the file";
         ii=serials[iat];
       }
       const char* msg = h36::hy36encode(5,ii,&at[0]);
