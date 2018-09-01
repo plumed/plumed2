@@ -109,7 +109,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   }
 
   // set some properties
-  setIntrinsicInterval("0",std::to_string(getNumberOfBasisFunctions()-1));
+  setIntrinsicInterval("0",std::to_string(getOrder()*2-1));
   setNonPeriodic();
   setIntervalBounded();
   setType("daubechies_wavelets");
@@ -121,8 +121,8 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
 
 
 void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
-  // plumed_assert(values.size()==numberOfBasisFunctions());
-  // plumed_assert(derivs.size()==numberOfBasisFunctions());
+   plumed_assert(values.size()==numberOfBasisFunctions()); // comment these two lines out again later
+   plumed_assert(derivs.size()==numberOfBasisFunctions());
   //
   argT=checkIfArgumentInsideInterval(arg,inside_range);
   //
@@ -134,12 +134,12 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
     // scale and shift argument to match current wavelet
     double x = (arg-intervalMin())*intervalDerivf() - k;
 
-    if (x < 0 || x > intrinsicIntervalMax()) { // Wavelets are 0 outside the defined range
+    if (x < 0 || x >= intrinsicIntervalMax()) { // Wavelets are 0 outside the defined range
       values[i] = 0.0; derivs[i] = 0.0;
     }
     else {
-      // declaring vectors and calling first a function to get the index is a bit cumbersome and might be slow
-      std::vector<double> temp_deriv;
+      // declare vectors and fill them with value
+      std::vector<double> temp_deriv (1);
       std::vector<double> x_vec {x};
       values[i] = waveletGrid_->getValueAndDerivatives(x_vec, temp_deriv);
       derivs[i] = temp_deriv[0] * intervalDerivf(); // scale derivative
