@@ -514,14 +514,23 @@ inline
 Plumed::Plumed(Plumed&& p):
   main(p.main),
   reference(p.reference)
-{}
+{
+  p.main.p=nullptr;
+  p.reference=true; // make sure the moved plumed is not finalized
+}
 
 inline
 Plumed& Plumed::operator=(Plumed&& p) {
-  main=p.main;
-  reference=p.reference;
+  if(this != &p) {
+    if(!reference) plumed_finalize(main);
+    main=p.main;
+    reference=p.reference;
+    p.main.p=nullptr;
+    p.reference=true; // make sure the moved plumed is not finalized
+  }
   return *this;
 }
+
 #endif
 
 inline
