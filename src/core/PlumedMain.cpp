@@ -207,6 +207,20 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         step=(*static_cast<long int*>(val));
         atoms.startStep();
         break;
+      /* ADDED WITH API=7 */
+      case cmd_setValue:
+        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2);
+        { 
+           Value* vv=getPntrToValue(words[1]); unsigned nvals=vv->getSize();
+           if( atoms.getRealPrecision()==sizeof(double)) {
+               double* dval=static_cast<double*>(val);
+               for(unsigned i=0;i<nvals;++i) vv->data[i]=dval[i];
+           } else if( atoms.getRealPrecision()==sizeof(float)) {
+               float* dval=static_cast<float*>(val);
+               for(unsigned i=0;i<nvals;++i) vv->data[i]=dval[i]; 
+           } else plumed_merror("invalid real precision size");
+        }
+        break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
@@ -477,6 +491,30 @@ void PlumedMain::cmd(const std::string & word,void*val) {
           cltool->cmd(kk.c_str(),val);
         }
         break;
+      /* ADDED WITH API=7 */
+      case cmd_createValue:
+        CHECK_NOTINIT(initialized,words[0]); plumed_assert(nw==2);
+        {
+           int* srank = (static_cast<int*>(val));
+           std::vector<unsigned> shape(srank[0]); 
+           for(unsigned i=0;i<srank[0];++i) shape[i]=srank[i+1];
+           values.emplace_back(new Value(NULL, words[1], false, shape) );
+           values[values.size()-1]->created_in_plumedmain=true;
+        }
+        break;
+      case cmd_setValueNotPeriodic:
+        CHECK_NOTINIT(initialized,words[0]); plumed_assert(nw==2);
+        getPntrToValue(words[1])->min=0; 
+        getPntrToValue(words[1])->max=0; 
+        getPntrToValue(words[1])->setupPeriodicity();
+        break;
+      case cmd_setValueDomain:
+        CHECK_NOTINIT(initialized,words[0]); plumed_assert(nw==2);
+        {
+           std::vector<std::string> domain=Tools::getWords( static_cast<char*>(val) );
+           getPntrToValue(words[1])->setDomain( domain[0], domain[1] );
+        }
+        break; 
       default:
         plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
         break;
@@ -881,6 +919,15 @@ void PlumedMain::eraseFile(FileBase&f) {
 
 void PlumedMain::stop() {
   stopNow=true;
+}
+
+Value* PlumedMain::getPntrToValue( const std::string& name ) {
+  int outval=-1;
+  for(unsigned i=0; i<values.size(); ++i) {
+    if (values[i]->getName()==name) { outval = i; break; }
+  }
+  if( outval<0 ) return NULL;
+  return values[outval].get();
 }
 
 void PlumedMain::runJobsAtEndOfCalculation() {

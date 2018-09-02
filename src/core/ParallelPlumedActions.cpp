@@ -42,7 +42,7 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
   nderivatives(0)
 {
   // Read the plumed input
-  unsigned ncols=0;
+  unsigned ncols=0; bool periodic=false; std::string pmin, pmax;
   for(int i=1;; i++) {
       std::string input;
       if( !parseNumbered("INPUT",i,input) ) break;
@@ -58,7 +58,7 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
             plumed.readInputLine( remainder.substr(0,semi) + " CALLER=" + getLabel() ); 
             remainder = remainder.substr(semi+1); 
         }
-        plumed.readInputLine( remainder );
+        plumed.readInputLine( remainder + " CALLER=" + getLabel() );
       } 
       // Now copy the actions that were just created to local storage
       action_lists.push_back( std::pair<unsigned,unsigned>( a_start, plumed.getActionSet().size() ) );
@@ -73,7 +73,13 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
       const ActionWithValue* av=dynamic_cast<const ActionWithValue*>( plumed.getActionSet()[action_lists[i-1].second-1].get() );
       if( !av ) error("final action in each created set of action should have a value");
       if( av->getNumberOfComponents()!=1 && av->getName()!="RMSD" ) error("final action in each created set of actions should calculate only one scalar");
-      if( av->copyOutput(0)->isPeriodic() ) error("final action should not have periodic domain");
+      if( i==1 && av->copyOutput(0)->isPeriodic() ) { periodic=true; av->copyOutput(0)->getDomain( pmin, pmax ); }
+      else if( !periodic && av->copyOutput(0)->isPeriodic() ) error("mismatched periodicities in inputs");
+      else if( periodic && !av->copyOutput(0)->isPeriodic() ) error("mismatched periodicities in inputs");
+      else if( periodic ) { 
+         std::string cmin, cmax; av->copyOutput(0)->getDomain( cmin, cmax ); 
+         if( cmin!=pmin || cmax!=pmax ) error("mismatched domains in inputs");
+      }
       if( av->copyOutput(0)->getRank()!=0 ) {
           av->copyOutput(0)->buildDataStore( getLabel() );
           if( i==1 ) ncols = av->copyOutput(0)->getNumberOfValues( getLabel() );
@@ -88,7 +94,8 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
   std::vector<unsigned> shape; 
   if( ncols==0 ){ shape.resize(1); shape[0]=action_lists.size(); }
   else { shape.resize(2); shape[0]=action_lists.size(); shape[1]=ncols; }
-  addValue( shape ); setNotPeriodic(); forcesToApply.resize( action_lists.size() );
+  addValue( shape ); if( periodic ) setPeriodic( pmin, pmax ); else setNotPeriodic(); 
+  forcesToApply.resize( action_lists.size() );
   // Now create some tasks
   for(unsigned i=0;i<action_lists.size();++i) addTaskToList(i);
   // Now work out the number of derivatives we have in this action

@@ -129,16 +129,10 @@ void Path::createActionsToComputeDistances( const std::string mtype, const std::
       PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
       // Break if we are done
       if( !do_read ) break ;
-      std::string num; Tools::convert( nfram+1, num ); bool read_atoms=false;
-      if( mypdb.getAtomNumbers().size()>0 ) {
-          read_atoms=true; action->readInputLine( scut_lab + "_ref" + num + ": READ_ATOMS REFERENCE=" + refname  + " NUMBER=" + num );
-      }
+      std::string num; Tools::convert( nfram+1, num );
+      action->readInputLine( scut_lab + "_ref" + num + ": READ_CONFIG REFERENCE=" + refname  + " NUMBER=" + num );
       std::vector<std::string> remark( mypdb.getRemark() ); std::string stri; bool read_args=false; 
-      if( Tools::parse( remark, "ARG", stri ) ) {
-          refactions.push_back( scut_lab + "_refv" + num );
-          read_args=true; action->readInputLine( scut_lab + "_refv" + num + ": READ_ARGS REFERENCE=" + refname + " NUMBER=" + num );;
-      }
-      if( read_atoms && read_args ) action->error("cannot read atoms and arguments from reference pdb file yet");
+      if( Tools::parse( remark, "ARG", stri ) ) read_args=true; 
 
       if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
           if( nfram==0 ) {
@@ -161,9 +155,11 @@ void Path::createActionsToComputeDistances( const std::string mtype, const std::
           distances_str = setup::DRMSD::getDistancesString( action->plumed, scut_lab + "_ref" + num, mtype );
           action->readInputLine( scut_lab + "_refv" + num + ": CALCULATE_REFERENCE ATOMS=" + scut_lab + "_ref" + num + " INPUT={DISTANCE " + distances_str + "}" );
           refactions.push_back( scut_lab + "_refv" + num );
-      } else if( read_atoms && !read_args ) {
+      } else if( !read_args ) {
           action->readInputLine( scut_lab + "_refv" + num + ": CALCULATE_REFERENCE ATOMS=" + scut_lab + "_ref" + num + " INPUT=" + mtype );
           refactions.push_back( scut_lab + "_refv" + num );
+      } else {
+          refactions.push_back( scut_lab + "_ref" + num ); 
       }
       nfram++; if( refactions.size()!=nfram ) action->error("mismatch between number of reference action labels and number of frames");
   }
@@ -193,10 +189,11 @@ void Path::createActionsToComputeDistances( const std::string mtype, const std::
           ref_line += " TYPE=" + mtype + " SQUARED}";
       } else {
           std::string powstr = "POWERS=2"; for(unsigned i=1;i<nquantities;++i) powstr += ",2";
-          if( mtype=="DRMSD" ) powstr += " NORMALIZE";
-          ref_line += "INPUT" + num + "={" + scut_lab + "_diff" + num + ": DIFFERENCE ARG1=" + scut_lab + "_refv" + num;
+          if( mtype=="DRMSD" ) powstr += " NORMALIZE"; 
+          ref_line += "INPUT" + num + "={" + scut_lab + "_diff" + num + ": DIFFERENCE ARG1=" + refactions[i]; 
           ref_line += " ARG2=" + scut_lab + "_instantaneous";
           if( !geometric) ref_line += "; COMBINE ARG=" + scut_lab + "_diff" + num + " PERIODIC=NO " + powstr + "} ";
+          else ref_line += "} ";
       } 
   }
   action->readInputLine( ref_line ); 

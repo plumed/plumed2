@@ -189,7 +189,7 @@ RMSD::RMSD(const ActionOptions&ao):
   std::string reference; parse("REFERENCE",reference);
   if( reference!="") {
       // Create the input reference position
-      readInputLine( getLabel() + "_ref: READ_ATOMS REFERENCE=" + reference );
+      readInputLine( getLabel() + "_ref: READ_CONFIG REFERENCE=" + reference );
       // Now create the input for the real RMSD object
       std::string rmsd_line = getLabel() + ": RMSD REFERENCE_ATOMS=" + getLabel() + "_ref";
       // Read the reference pdb file

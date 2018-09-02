@@ -24,27 +24,35 @@
 
 #include "core/ActionSetup.h"
 #include "core/ActionAtomistic.h"
+#include "core/ActionWithValue.h"
 
 namespace PLMD {
 namespace setup {
 
 class ReadReferenceConfiguration : 
 public ActionSetup, 
-public ActionAtomistic
+public ActionAtomistic,
+public ActionWithValue
 {
 friend class DRMSD;
 friend class CalculateReferenceValue;
 private:
+  bool hasatoms;
   unsigned nblocks;
   std::vector<unsigned> blocks;
-  std::vector<AtomNumber> myindices;
+  std::vector<AtomNumber> myindices, mygroup;
 public: 
   static void registerKeywords( Keywords& keys );
   explicit ReadReferenceConfiguration(const ActionOptions&ao);
   ~ReadReferenceConfiguration();
   void activate() {} 
-  /// The number of virtual atoms that are calculated by this action
+  void clearDerivatives( const bool& force=false ) {}
+  unsigned getNumberOfDerivatives() const { return 0; }
+/// The number of virtual atoms that are calculated by this action
   unsigned getNumberOfVirtualAtoms() const ;
+  void getNatomsAndNargs( unsigned& natoms, unsigned& nargs ) const ;
+  void transferDataToPlumed( const unsigned& npos, std::vector<double>& masses, std::vector<double>& charges, 
+                             std::vector<Vector>& positions, const std::string& argname, PlumedMain& plmd ) const ;
 };
 
 inline

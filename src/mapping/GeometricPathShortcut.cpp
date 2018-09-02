@@ -94,7 +94,7 @@ GeometricPathShortcut::GeometricPathShortcut( const ActionOptions& ao ):
       for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); metric += "," + dnum; }
       metric += " TYPE=" + mtype + " DISPLACEMENT}";
   } else {
-      error("not implemented other metrics yet"); 
+      metric = " METRIC={DIFFERENCE ARG1=arg1 ARG2=arg2}";
   }
   // Create action that computes the geometric path variables
   readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data " + coord_str + ref_str + metric ); 

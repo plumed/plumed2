@@ -46,7 +46,7 @@ PLUMED_REGISTER_ACTION(CalculateReferenceValue,"CALCULATE_REFERENCE")
 
 void CalculateReferenceValue::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  keys.add("atoms","ATOMS","the label of the READ_ATOMS command for which we are doing this calculation");
+  keys.add("atoms","ATOMS","the label of the READ_CONFIG command for which we are doing this calculation");
   keys.add("compulsory","INPUT","the file to use as input to PLUMED");
 }
 
@@ -65,7 +65,7 @@ ActionAtomistic(ao)
            if( i==0 ) lab=as->getLabel(); else if( lab!=as->getLabel() ) safe=false;
        } else safe=false;
    }
-   if( !safe ) error("input must be to reference atom positions that are read in using READ_ATOMS"); 
+   if( !safe ) error("input must be to reference atom positions that are read in using READ_CONFIG"); 
    log.printf("  calculating reference values for positions read in by action with label %s \n", lab.c_str() );
    // And request the atoms
    requestAtoms( atom_list );

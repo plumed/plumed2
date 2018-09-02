@@ -188,6 +188,8 @@ public:
   void setPositions(void*,int);
   void setVatomPosition( const AtomNumber&, const Vector& );
   Vector getVatomPosition( const AtomNumber& ) const ;
+  double getVatomMass( const AtomNumber& ) const ;
+  double getVatomCharge( const AtomNumber& ) const ;
   void setVatomMass( const AtomNumber&, const double& );
   void setVatomCharge( const AtomNumber&, const double& );
   Vector & getVatomForces( const AtomNumber& );
@@ -316,6 +318,16 @@ Vector & Atoms::getVatomForces( const AtomNumber& ind ) {
 inline
 Vector Atoms::getVatomPosition( const AtomNumber& ind ) const {
   return positions[ind.index()];
+}
+
+inline
+double Atoms::getVatomMass( const AtomNumber& ind ) const {
+  return masses[ind.index()];
+} 
+
+inline
+double Atoms::getVatomCharge( const AtomNumber& ind ) const {
+  return charges[ind.index()];
 }
 
 inline

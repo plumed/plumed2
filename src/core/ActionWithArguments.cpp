@@ -176,16 +176,22 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         } else {
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
           if(!action) {
-            std::string str=" (hint! the actions in this ActionSet are: ";
-            str+=plumed.getActionSet().getLabelList()+")";
-            error("cannot find action named " + c[i] + str );
+            // Search for value in PlumedMain
+            Value* plmd_val = plumed.getPntrToValue( c[i] );
+            if( !plmd_val ) {
+                std::string str=" (hint! the actions in this ActionSet are: ";
+                str+=plumed.getActionSet().getLabelList()+")";
+                error("cannot find action named " + c[i] + str );
+            }
+            arg.push_back( plmd_val ); nargs++;
+          } else {
+            unsigned carg=arg.size(); action->interpretDataLabel( "", this, nargs, arg );
+            if( arg.size()!=carg+1 ) {
+              std::string str=" (hint! the components in this actions are: ";
+              str+=action->getComponentsList()+")";
+              error("action " + c[i] + " has no component named " + c[i] +str);
+            };
           }
-          unsigned carg=arg.size(); action->interpretDataLabel( "", this, nargs, arg );
-          if( arg.size()!=carg+1 ) {
-            std::string str=" (hint! the components in this actions are: ";
-            str+=action->getComponentsList()+")";
-            error("action " + c[i] + " has no component named " + c[i] +str);
-          };
         }
       }
     }
@@ -221,34 +227,36 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
   std::vector<ActionWithValue*> f_actions;
   for(unsigned i=0; i<arguments.size(); i++) {
     fullname=arguments[i]->getName();
-    if(fullname.find(".")!=string::npos) {
-      std::size_t dot=fullname.find_first_of('.');
-      name=fullname.substr(0,dot);
-    } else {
-      name=fullname;
-    }
-    ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
-    plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
-    addDependency(action);
-    if( storing ) arguments[i]->buildDataStore( getLabel() );
-    if( arguments[i]->getRank()>0 ) {
-      // This checks if we have used the data in this value to calculate any of the other arguments in the input
-      for(unsigned j=0; j<arguments[i]->store_data_for.size(); ++j) {
-        bool found=false;
-        for(unsigned k=0; k<arguments.size(); ++k) {
-          if( arguments[i]->store_data_for[j].first==(arguments[k]->getPntrToAction())->getLabel() ) { found=true; break; }
+    if( !plumed.getPntrToValue(fullname) ) {
+        if(fullname.find(".")!=string::npos) {
+          std::size_t dot=fullname.find_first_of('.');
+          name=fullname.substr(0,dot);
+        } else {
+          name=fullname;
         }
-        if( found ) { arguments[i]->buildDataStore( getLabel() ); break; }
-      }
-      // Check if we already have this argument in the stream
-      bool found=false; ActionWithValue* myact = (arguments[i]->getPntrToAction())->getActionThatCalculates();
-      for(unsigned k=0; k<f_actions.size(); ++k) {
-        if( f_actions[k]==myact ) { found=true; break; }
-      }
-      if( !found ) {
-        if( f_actions.size()==0 ) f_actions.push_back( myact );
-        else if( !arguments[i]->storedata ) f_actions.push_back( myact );
-      }
+        ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
+        plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
+        addDependency(action);
+        if( storing ) arguments[i]->buildDataStore( getLabel() );
+        if( arguments[i]->getRank()>0 ) {
+          // This checks if we have used the data in this value to calculate any of the other arguments in the input
+          for(unsigned j=0; j<arguments[i]->store_data_for.size(); ++j) {
+            bool found=false;
+            for(unsigned k=0; k<arguments.size(); ++k) {
+              if( arguments[i]->store_data_for[j].first==(arguments[k]->getPntrToAction())->getLabel() ) { found=true; break; }
+            }
+            if( found ) { arguments[i]->buildDataStore( getLabel() ); break; }
+          }
+          // Check if we already have this argument in the stream
+          bool found=false; ActionWithValue* myact = (arguments[i]->getPntrToAction())->getActionThatCalculates();
+          for(unsigned k=0; k<f_actions.size(); ++k) {
+            if( f_actions[k]==myact ) { found=true; break; }
+          }
+          if( !found ) {
+            if( f_actions.size()==0 ) f_actions.push_back( myact );
+            else if( !arguments[i]->storedata ) f_actions.push_back( myact );
+          }
+        }
     }
   }
   // This is a way of checking if we are in an ActionWithValue by looking at the keywords -- is there better fix?
@@ -365,8 +373,10 @@ unsigned ActionWithArguments::setupActionInChain() {
   // Now add this argument to the chain
   bool added=false; ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    // Ensures we don't add actions to setup chains
+    ActionSetup* as = dynamic_cast<ActionSetup*>( arguments[i]->getPntrToAction() );
     // Add this function to jobs to do in recursive loop in previous action
-    if( arguments[i]->getRank()>0 ) {
+    if( !as && arguments[i]->getRank()>0 ) {
       if( (arguments[i]->getPntrToAction())->addActionToChain( alabels, av ) ) { added=true; break; }
     }
   }

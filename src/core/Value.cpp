@@ -32,6 +32,7 @@
 namespace PLMD {
 
 Value::Value():
+  created_in_plumedmain(false),
   action(NULL),
   value_set(false),
   reset(true),
@@ -55,6 +56,7 @@ Value::Value():
 }
 
 Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss):
+  created_in_plumedmain(false),
   action(av),
   value_set(false),
   reset(true),
@@ -246,6 +248,7 @@ double Value::projection(const Value& v1,const Value&v2) {
 }
 
 ActionWithValue* Value::getPntrToAction() {
+  if( created_in_plumedmain ) return NULL;
   plumed_assert( action!=NULL );
   return action;
 }

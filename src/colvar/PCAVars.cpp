@@ -63,7 +63,7 @@ PCAVars::PCAVars( const ActionOptions& ao ):
 {
   std::string reference; parse("REFERENCE",reference);
   // Create the reference object
-  readInputLine( getShortcutLabel() + "_ref: READ_ATOMS REFERENCE=" + reference );
+  readInputLine( getShortcutLabel() + "_ref: READ_CONFIG REFERENCE=" + reference );
   // And now create the rmsd object
   std::string rmsd_line =  getShortcutLabel() + ": RMSD DISPLACEMENT SQUARED REFERENCE_ATOMS=" + getShortcutLabel() + "_ref";
   // Read the reference pdb file

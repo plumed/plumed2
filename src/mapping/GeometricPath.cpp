@@ -26,6 +26,7 @@
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
 #include "tools/Pbc.h"
+#include "setup/ReadReferenceConfiguration.h"
 
 namespace PLMD {
 namespace mapping {
@@ -39,7 +40,7 @@ private:
   std::vector<Vector> forces;
   std::vector<double> pcoords;
   std::vector<double> data;
-  std::vector<std::vector<AtomNumber> > atind_for_frames;
+  std::vector<setup::ReadReferenceConfiguration*> reference_frames;
   double getProjectionOnPath( const unsigned& ifrom, const unsigned& ito, const unsigned& closest, double& len ); 
 public:
   static void registerKeywords(Keywords& keys);
@@ -74,16 +75,14 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   if( getNumberOfArguments()!=1 ) error("should only have one argument to this function");
   // Check that the input is a matrix
   if( getPntrToArgument(0)->getRank()!=2 ) error("the input to this action should be a matrix");
-  // Check none of the arguments are periodic
-  if( getPntrToArgument(0)->isPeriodic() ) error("cannot use this function on periodic functions");
   // Get the labels for the reference points
-  std::vector<std::string> reflabs( getPntrToArgument(0)->getShape()[0] ); parseVector("REFFRAMES", reflabs );
-  if( plumed.getAtoms().getAllGroups().count(reflabs[0]) ) {
-      for(unsigned i=0;i<reflabs.size();++i) {
-          if( !plumed.getAtoms().getAllGroups().count(reflabs[i]) ) error("count not find group with name " + reflabs[i] );
-          atind_for_frames.push_back( plumed.getAtoms().getAllGroups().find(reflabs[i])->second );
-          if( i>0 && atind_for_frames[i].size()!=atind_for_frames[0].size() ) error("mismatched numbers of atoms in reference frames");
-      }
+  unsigned natoms, nargs; std::vector<std::string> reflabs( getPntrToArgument(0)->getShape()[0] ); parseVector("REFFRAMES", reflabs );
+  for(unsigned i=0;i<reflabs.size();++i) {
+      setup::ReadReferenceConfiguration* rv = plumed.getActionSet().selectWithLabel<setup::ReadReferenceConfiguration*>( reflabs[i] );
+      if( !rv ) error("input " + reflabs[i] + " is not a READ_CONFIG action");
+      reference_frames.push_back( rv ); unsigned tatoms, targs; rv->getNatomsAndNargs( tatoms, targs );
+      if( i==0 ) { natoms=tatoms; nargs=targs; }
+      else if( natoms!=tatoms || nargs!=targs ) error("mismatched reference configurations");
   }
   // Get the coordinates in the low dimensional space
   pcoords.resize( getPntrToArgument(0)->getShape()[0] ); parseVector("COORDINATES", pcoords );
@@ -96,9 +95,22 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   metric.cmd("setRealPrecision",&s);
   metric.cmd("setNoVirial"); 
   metric.cmd("setMDEngine","plumed");
-  int natoms=0; if( atind_for_frames.size()>0 ) natoms = 2*atind_for_frames[0].size();
-  metric.cmd("setNatoms",&natoms);
-  positions.resize(natoms); masses.resize(natoms); forces.resize(natoms); charges.resize(natoms);
+  int nat=2*natoms; metric.cmd("setNatoms",&nat);
+  positions.resize(nat); masses.resize(nat); forces.resize(nat); charges.resize(nat);
+  if( nargs>0 ) {
+      std::vector<int> size(2); size[0]=1; size[1]=nargs; 
+      metric.cmd("createValue arg1",&size[0]);
+      metric.cmd("createValue arg2",&size[0]);
+      if( !getPntrToArgument(0)->isPeriodic() ) {
+          metric.cmd("setValueNotPeriodic arg1"); metric.cmd("setValueNotPeriodic arg2");
+      } else {
+          std::string min, max; getPntrToArgument(0)->getDomain( min, max );
+          std::string dom( min + " " + max ); unsigned doml = dom.length();
+          char domain[doml+1]; strcpy( domain, dom.c_str());
+          metric.cmd("setValueDomain arg1", domain );
+          metric.cmd("setValueDomain arg2", domain ); 
+      }
+  }
   double tstep=1.0; metric.cmd("setTimestep",&tstep);
   std::string inp; parse("METRIC",inp); const char* cinp=inp.c_str();
   std::vector<std::string> input=Tools::getWords(inp);
@@ -122,23 +134,12 @@ unsigned GeometricPath::getNumberOfDerivatives() const {
 }
 
 double GeometricPath::getProjectionOnPath( const unsigned& ifrom, const unsigned& ito, const unsigned& closest, double& len ) {
-  if( atind_for_frames.size()>0 ) {
-      unsigned nref_at = atind_for_frames[0].size();
-      Atoms& atoms( plumed.getAtoms() ); int istep=0; metric.cmd("setStep",&istep);
-      // Set the atomic positions of the coordinates
-      for(unsigned i=0;i<nref_at;++i) {
-          // masses[i] = m[atind_for_frames[ifrom][i].index()]; masses[nref_at + i] = m[atind_for_frames[ito][i].index()]; 
-          // charges[i] = c[atind_for_frames[ifrom][i].index()]; charges[nref_at + i] = c[atind_for_frames[ito][i].index()]; 
-          positions[i] = atoms.getVatomPosition(atind_for_frames[ifrom][i]); positions[nref_at + i] = atoms.getVatomPosition(atind_for_frames[ito][i]);
-      }
-      metric.cmd("setMasses",&masses[0]);
-      metric.cmd("setCharges",&charges[0]);
-      metric.cmd("setPositions",&positions[0]);
-      metric.cmd("setForces",&forces[0]);
-      Tensor box( plumed.getAtoms().getPbc().getBox() ); metric.cmd("setBox",&box[0][0]);
-  } else {
-      plumed_error();
-  }
+  int step = getStep(); metric.cmd("setStep",&step);
+  reference_frames[ifrom]->transferDataToPlumed( 0, masses, charges, positions, "arg1", metric ); 
+  reference_frames[ito]->transferDataToPlumed( positions.size()/2, masses, charges, positions, "arg2", metric );
+  metric.cmd("setMasses",&masses[0]); metric.cmd("setCharges",&charges[0]);
+  metric.cmd("setPositions",&positions[0]); metric.cmd("setForces",&forces[0]);
+  Tensor box( plumed.getAtoms().getPbc().getBox() ); metric.cmd("setBox",&box[0][0]);
   metric.cmd("calc");  
   double fval=0; len=0; Value* arg=getPntrToArgument(0); unsigned k=arg->getShape()[1]*closest;
   for(unsigned i=0;i<data.size();++i) { len += data[i]*data[i]; fval += data[i]*arg->get(k+i); }

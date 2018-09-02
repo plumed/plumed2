@@ -397,7 +397,7 @@ void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionL
                                          std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   buildCurrentTaskList( forceAllTasks, actionsThatSelectTasks, tflags );
   // Check which actions are using the values calculated by this action
-  bool usedOutsideOfChain=false;
+  bool usedOutsideOfChain=false; bool usedByPython=false;
   for(unsigned i=0;i<values.size();++i) {
       for(const auto & p : values[i]->userdata) {
           // Check if the action is only being used within the chain
@@ -407,11 +407,16 @@ void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionL
           }
           // If the action we are using is not in the chain check if it is safe to deactivate some stuff 
           if( !inchain ) usedOutsideOfChain=true; 
+          // Check if it is used by a data gatherer
+          if( p.first=="python" ) usedByPython=true;
       }
   }
+  // Check if a data gather is getting all the data 
+  if( usedByPython ) { 
+      forceAllTasks=true;
   // Now check if we can deactivate tasks with this action by checking if it is one of the actions that 
   // allows deactivated tasks
-  if( usedOutsideOfChain ) {
+  } else if( usedOutsideOfChain ) {
       bool OKToDeactivate=false;
       for(unsigned i=0;i<actionsThatSelectTasks.size();++i) {
           if( getLabel()==actionsThatSelectTasks[i] ){ OKToDeactivate=true; break; }

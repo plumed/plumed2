@@ -62,7 +62,7 @@ DRMSD::DRMSD( const ActionOptions& ao ):
 {
   // Read in the reference configuration
   std::string reference; parse("REFERENCE",reference);
-  readInputLine( getShortcutLabel() + "_atoms: READ_ATOMS REFERENCE=" + reference ); 
+  readInputLine( getShortcutLabel() + "_atoms: READ_CONFIG REFERENCE=" + reference ); 
   // First bit of input for reference values
   // First bit of input for the instantaneous distances
   bool numder; parseFlag("NUMERICAL_DERIVATIVES",numder); 

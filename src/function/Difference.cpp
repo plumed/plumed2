@@ -68,7 +68,7 @@ Difference::Difference(const ActionOptions&ao):
       if( !as ) {
           std::string min0, max0; getPntrToArgument(0)->getDomain( min0, max0 );
           std::string min1, max1; getPntrToArgument(1)->getDomain( min1, max1 );
-          if( min0!=max0 || max0!=max1 ) error("period for input variables should be the same");
+          if( min0!=min0 || max0!=max1 ) error("domain for input variables should be the same");
       }
   } else if( getPntrToArgument(1)->isPeriodic() ) {
       ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(0)->getPntrToAction() );

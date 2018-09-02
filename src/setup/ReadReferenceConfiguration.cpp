@@ -28,7 +28,7 @@
 namespace PLMD {
 namespace setup {
 
-PLUMED_REGISTER_ACTION(ReadReferenceConfiguration,"READ_ATOMS")
+PLUMED_REGISTER_ACTION(ReadReferenceConfiguration,"READ_CONFIG")
 
 void ReadReferenceConfiguration::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
@@ -39,7 +39,9 @@ void ReadReferenceConfiguration::registerKeywords( Keywords& keys ) {
 ReadReferenceConfiguration::ReadReferenceConfiguration(const ActionOptions&ao):
 Action(ao),
 ActionSetup(ao),
-ActionAtomistic(ao)
+ActionAtomistic(ao),
+ActionWithValue(ao),
+hasatoms(false)
 {
   
   std::string reference; parse("REFERENCE",reference); 
@@ -49,31 +51,49 @@ ActionAtomistic(ao)
   for(unsigned i=0;i<number;++i) {
       PDB pdb; bool do_read=pdb.readFromFilepointer(fp,atoms.usingNaturalUnits(),0.1/atoms.getUnits().getLength()); 
       if(i==number-1) {
+         std::vector<std::string> remark( pdb.getRemark() ); std::vector<std::string> argnames; Tools::parseVector( remark, "ARG", argnames );
          log.printf("  reading %dth reference structure from file %s \n", number, reference.c_str());
-         log.printf("  which contains %d atoms \n", pdb.getPositions().size() ); 
-         log.printf("  indices of atoms are : ");
-         for(unsigned i=0;i<pdb.getPositions().size();++i) log.printf("%d ",pdb.getAtomNumbers()[i].serial() );
-         log.printf("\n"); fclose(fp);
-
+         log.printf("  which contains %d atoms and %d arguments \n", pdb.getPositions().size(), argnames.size() ); 
+         if( pdb.getPositions().size()>0 ) {
+             log.printf("  indices of atoms are : ");
+             for(unsigned i=0;i<pdb.getPositions().size();++i) log.printf("%d ",pdb.getAtomNumbers()[i].serial() );
+             log.printf("\n"); 
+         }
+         if( argnames.size()>0 ) {
+             log.printf("  labels of arguments are : ");
+             for(unsigned i=0;i<argnames.size();++i) log.printf("%s ", argnames[i].c_str() );
+             log.printf("\n");
+         }
+         fclose(fp);
+         
          // Now make virtual atoms for all these positions and set them to the pdb positions
          unsigned natoms=pdb.getPositions().size(); 
-         std::vector<AtomNumber> mygroup; myindices.resize( natoms ); 
-         for(unsigned i=0;i<natoms;++i){
-             myindices[i] = pdb.getAtomNumbers()[i];
-             AtomNumber index = atoms.addVirtualAtom( this );
-             mygroup.push_back( index ); 
-             atoms.setVatomMass( index, pdb.getOccupancy()[i] );
-             atoms.setVatomCharge( index, pdb.getBeta()[i] );
-             atoms.setVatomPosition( index, pdb.getPositions()[i] );
+         if( natoms>0 ) {
+             hasatoms=true; myindices.resize( natoms ); 
+             for(unsigned i=0;i<natoms;++i){
+                 myindices[i] = pdb.getAtomNumbers()[i];
+                 AtomNumber index = atoms.addVirtualAtom( this );
+                 mygroup.push_back( index ); 
+                 atoms.setVatomMass( index, pdb.getOccupancy()[i] );
+                 atoms.setVatomCharge( index, pdb.getBeta()[i] );
+                 atoms.setVatomPosition( index, pdb.getPositions()[i] );
+             }
+             atoms.insertGroup( getLabel(), mygroup );
+             // Get the block extents 
+             nblocks = pdb.getNumberOfAtomBlocks(); blocks.resize( nblocks+1 );
+             if( nblocks==1 ) { 
+                blocks[0]=0; blocks[1]=natoms;
+             } else {
+                blocks[0]=0; for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
+             } 
          }
-         atoms.insertGroup( getLabel(), mygroup );
-         // Get the block extents 
-         nblocks = pdb.getNumberOfAtomBlocks(); blocks.resize( nblocks+1 );
-         if( nblocks==1 ) { 
-            blocks[0]=0; blocks[1]=natoms;
-         } else {
-            blocks[0]=0; for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
-         } 
+         if( argnames.size()>0 ) {
+             std::vector<unsigned> shape( 1 ); shape[0] = argnames.size();
+             addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore( getLabel() );
+             for(unsigned i=0;i<argnames.size();++i) {
+                 double val; Tools::parse( remark, argnames[i], val ); getPntrToComponent(0)->set( i, val );
+             }
+         }
          // Set the box size if this information was read
          if( pdb.cellWasRead() ) {
              Tensor box( pdb.getBox() );
@@ -86,7 +106,29 @@ ActionAtomistic(ao)
 }
 
 ReadReferenceConfiguration::~ReadReferenceConfiguration() {
-  atoms.removeVirtualAtom( this ); atoms.removeGroup( getLabel() );
+  if( hasatoms ) { atoms.removeVirtualAtom( this ); atoms.removeGroup( getLabel() ); }
+}
+
+void ReadReferenceConfiguration::getNatomsAndNargs( unsigned& natoms, unsigned& nargs ) const {
+  // Get the number of atoms
+  natoms = mygroup.size();
+  // Get the number of arguments
+  nargs=0; if( getNumberOfComponents()>0 ) nargs = getPntrToOutput(0)->getNumberOfValues( getLabel() );
+}
+
+void ReadReferenceConfiguration::transferDataToPlumed( const unsigned& npos, std::vector<double>& masses, std::vector<double>& charges, 
+                                                       std::vector<Vector>& positions, const std::string& argname, PlumedMain& plmd ) const {
+  for(unsigned i=0;i<myindices.size();++i) {
+      masses[npos + i] = atoms.getVatomMass(mygroup[i]);
+      charges[npos + i] = atoms.getVatomCharge(mygroup[i]);
+      positions[npos + i] = atoms.getVatomPosition(mygroup[i]);
+  }
+  if( getNumberOfComponents()>0 ) {
+      unsigned nvals = getPntrToOutput(0)->getSize(); 
+      std::vector<double> valdata( nvals );
+      for(unsigned i=0;i<nvals;++i) valdata[i] = getPntrToOutput(0)->get(i);
+      plmd.cmd("setValue " + argname, &valdata[0] );
+  }
 }
 
 }

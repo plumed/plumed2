@@ -122,8 +122,11 @@ Function::Function(const ActionOptions&ao):
     std::string myat_group="none";
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->getRank()>0 && !getPntrToArgument(i)->hasDerivatives() ) {
-        if( plumed.getAtoms().getAllGroups().count(getPntrToArgument(i)->getPntrToAction()->getLabel()) ) {
-          myat_group = getPntrToArgument(i)->getPntrToAction()->getLabel(); break;
+        Action* act = getPntrToArgument(i)->getPntrToAction();
+        if( act ) {
+          if( plumed.getAtoms().getAllGroups().count(act->getLabel()) ) {
+             myat_group = getPntrToArgument(i)->getPntrToAction()->getLabel(); break;
+          }
         }
       }
     }
@@ -296,11 +299,14 @@ void Function::evaluateAllFunctions() {
 void Function::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   bool safeToChain=true;
   for(unsigned i=0;i<getNumberOfArguments();++i) {
-      std::string argact = getPntrToArgument(i)->getPntrToAction()->getLabel(); bool found=false;
-      for(unsigned j=0;j<actionsThatSelectTasks.size();++j) {
-          if( argact==actionsThatSelectTasks[j] ){ found=true; break; }
+      Action* myact = getPntrToArgument(i)->getPntrToAction();
+      if( myact ) {
+          std::string argact = myact->getLabel(); bool found=false;
+          for(unsigned j=0;j<actionsThatSelectTasks.size();++j) {
+              if( argact==actionsThatSelectTasks[j] ){ found=true; break; }
+          }
+          if( !found ) safeToChain=false;
       }
-      if( !found ) safeToChain=false;
   }
   if( safeToChain ) actionsThatSelectTasks.push_back( getLabel() );
 }

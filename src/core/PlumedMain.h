@@ -23,6 +23,7 @@
 #define __PLUMED_core_PlumedMain_h
 
 #include "WithCmd.h"
+#include "Value.h"
 #include "tools/ForwardDecl.h"
 #include <cstdio>
 #include <string>
@@ -144,6 +145,9 @@ private:
 
 /// Name of the input file
   std::string plumedDat;
+
+/// An array containing values that were passed from the MD code to PLUMED
+  std::vector<std::unique_ptr<Value>> values;
 
 /// Object containing data we would like to grab and pass back
   std::unique_ptr<DataFetchingObject> mydatafetcher;
@@ -393,6 +397,8 @@ public:
 /// Should only be called from \ref plumed_plumedmain_cmd().
 /// If the error handler was not set, returns false.
   bool callErrorHandler(int code,const char* msg)const;
+/// Get pointer to value that was passed from MD code to PLUMED
+  Value* getPntrToValue( const std::string& name );
 };
 
 /////
