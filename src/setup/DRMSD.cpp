@@ -24,7 +24,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
-#include "ReadReferenceConfiguration.h"
+#include "SetupReferenceBase.h"
 
 using namespace std;
 
@@ -75,7 +75,7 @@ DRMSD::DRMSD( const ActionOptions& ao ):
   // Work out what distances we need to calculate from the reference configuration
   std::string distances_str = getDistancesString( plumed, getShortcutLabel() + "_atoms", drmsd_input );
   // Put this information into the reference matrix
-  readInputLine( getShortcutLabel() + "_ref: CALCULATE_REFERENCE ATOMS=" + getShortcutLabel() + "_atoms INPUT={DISTANCE NOPBC" + distances_str + "}" ); 
+  readInputLine( getShortcutLabel() + "_ref: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_atoms INPUT={DISTANCE NOPBC" + distances_str + "}" ); 
   // Setup the thing that calculates the instantaneous values of the distances
   bool nopbc; parseFlag("NOPBC",nopbc); 
   if( nopbc ) readInputLine( getShortcutLabel() + "_mat: DISTANCE NOPBC" + distances_str );
@@ -97,7 +97,7 @@ std::string DRMSD::getDistancesString( PlumedMain& pp, const std::string& reflab
   double lcut=0; Tools::parse( drmsd_words, "LOWER_CUTOFF", lcut );
   double ucut=std::numeric_limits<double>::max(); Tools::parse( drmsd_words, "UPPER_CUTOFF", ucut );
   std::string drmsd_type="DRMSD"; Tools::parse( drmsd_words, "TYPE", drmsd_type );
-  setup::ReadReferenceConfiguration* myref=pp.getActionSet().selectWithLabel<setup::ReadReferenceConfiguration*>( reflab ); plumed_assert( myref );
+  setup::SetupReferenceBase * myref=pp.getActionSet().selectWithLabel<setup::SetupReferenceBase*>( reflab ); plumed_assert( myref );
   std::vector<AtomNumber> atoms( myref->myindices ), vatoms( pp.getAtoms().getAllGroups().find(reflab)->second ); 
   plumed_assert( vatoms.size()==atoms.size() ); std::vector<Vector> pos( atoms.size() );
   for(unsigned i=0;i<pos.size();++i) pos[i] = pp.getAtoms().getVatomPosition( vatoms[i] );

@@ -26,7 +26,7 @@
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
 #include "tools/Pbc.h"
-#include "setup/ReadReferenceConfiguration.h"
+#include "setup/SetupReferenceBase.h"
 
 namespace PLMD {
 namespace mapping {
@@ -40,7 +40,7 @@ private:
   std::vector<Vector> forces;
   std::vector<double> pcoords;
   std::vector<double> data;
-  std::vector<setup::ReadReferenceConfiguration*> reference_frames;
+  std::vector<setup::SetupReferenceBase*> reference_frames;
   double getProjectionOnPath( const unsigned& ifrom, const unsigned& ito, const unsigned& closest, double& len ); 
 public:
   static void registerKeywords(Keywords& keys);
@@ -78,7 +78,7 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   // Get the labels for the reference points
   unsigned natoms, nargs; std::vector<std::string> reflabs( getPntrToArgument(0)->getShape()[0] ); parseVector("REFFRAMES", reflabs );
   for(unsigned i=0;i<reflabs.size();++i) {
-      setup::ReadReferenceConfiguration* rv = plumed.getActionSet().selectWithLabel<setup::ReadReferenceConfiguration*>( reflabs[i] );
+      setup::SetupReferenceBase* rv = plumed.getActionSet().selectWithLabel<setup::SetupReferenceBase*>( reflabs[i] );
       if( !rv ) error("input " + reflabs[i] + " is not a READ_CONFIG action");
       reference_frames.push_back( rv ); unsigned tatoms, targs; rv->getNatomsAndNargs( tatoms, targs );
       if( i==0 ) { natoms=tatoms; nargs=targs; }

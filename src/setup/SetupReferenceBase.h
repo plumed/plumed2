@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_setup_ReadReferenceConfiguration_h
-#define __PLUMED_setup_ReadReferenceConfiguration_h
+#ifndef __PLUMED_setup_SetupReferenceBase_h
+#define __PLUMED_setup_SetupReferenceBase_h
 
 #include "core/ActionSetup.h"
 #include "core/ActionAtomistic.h"
@@ -29,22 +29,21 @@
 namespace PLMD {
 namespace setup {
 
-class ReadReferenceConfiguration : 
+class SetupReferenceBase : 
 public ActionSetup, 
 public ActionAtomistic,
 public ActionWithValue
 {
 friend class DRMSD;
-friend class CalculateReferenceValue;
-private:
+protected:
   bool hasatoms;
   unsigned nblocks;
   std::vector<unsigned> blocks;
   std::vector<AtomNumber> myindices, mygroup;
 public: 
   static void registerKeywords( Keywords& keys );
-  explicit ReadReferenceConfiguration(const ActionOptions&ao);
-  ~ReadReferenceConfiguration();
+  explicit SetupReferenceBase(const ActionOptions&ao);
+  ~SetupReferenceBase();
   void activate() {} 
   void clearDerivatives( const bool& force=false ) {}
   unsigned getNumberOfDerivatives() const { return 0; }
@@ -56,7 +55,7 @@ public:
 };
 
 inline
-unsigned ReadReferenceConfiguration::getNumberOfVirtualAtoms() const {
+unsigned SetupReferenceBase::getNumberOfVirtualAtoms() const {
   return myindices.size();
 }
 

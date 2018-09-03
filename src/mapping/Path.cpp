@@ -153,10 +153,10 @@ void Path::createActionsToComputeDistances( const std::string mtype, const std::
           refactions.push_back( scut_lab + "_ref" + num );
       } else if( mtype.find("DRMSD")!=std::string::npos ) {
           distances_str = setup::DRMSD::getDistancesString( action->plumed, scut_lab + "_ref" + num, mtype );
-          action->readInputLine( scut_lab + "_refv" + num + ": CALCULATE_REFERENCE ATOMS=" + scut_lab + "_ref" + num + " INPUT={DISTANCE " + distances_str + "}" );
+          action->readInputLine( scut_lab + "_refv" + num + ": CALCULATE_REFERENCE CONFIG=" + scut_lab + "_ref" + num + " INPUT={DISTANCE " + distances_str + "}" );
           refactions.push_back( scut_lab + "_refv" + num );
       } else if( !read_args ) {
-          action->readInputLine( scut_lab + "_refv" + num + ": CALCULATE_REFERENCE ATOMS=" + scut_lab + "_ref" + num + " INPUT=" + mtype );
+          action->readInputLine( scut_lab + "_refv" + num + ": CALCULATE_REFERENCE CONFIG=" + scut_lab + "_ref" + num + " INPUT=" + mtype );
           refactions.push_back( scut_lab + "_refv" + num );
       } else {
           refactions.push_back( scut_lab + "_ref" + num ); 

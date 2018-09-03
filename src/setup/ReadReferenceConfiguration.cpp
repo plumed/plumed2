@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ReadReferenceConfiguration.h"
+#include "SetupReferenceBase.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
@@ -28,20 +28,23 @@
 namespace PLMD {
 namespace setup {
 
+class ReadReferenceConfiguration : public SetupReferenceBase {
+public: 
+  static void registerKeywords( Keywords& keys );
+  explicit ReadReferenceConfiguration(const ActionOptions&ao);
+};
+
 PLUMED_REGISTER_ACTION(ReadReferenceConfiguration,"READ_CONFIG")
 
 void ReadReferenceConfiguration::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
+  SetupReferenceBase::registerKeywords( keys ); 
   keys.add("compulsory","REFERENCE","a file in pdb format containing the positions of the atoms in the reference structure.");
   keys.add("compulsory","NUMBER","1","if there are multiple frames in the input file which structure would you like to read in here");
 }
 
 ReadReferenceConfiguration::ReadReferenceConfiguration(const ActionOptions&ao):
 Action(ao),
-ActionSetup(ao),
-ActionAtomistic(ao),
-ActionWithValue(ao),
-hasatoms(false)
+SetupReferenceBase(ao)
 {
   
   std::string reference; parse("REFERENCE",reference); 
@@ -102,32 +105,6 @@ hasatoms(false)
          break;
       }
       if( !do_read ) error("not enough frames input input file " + reference );
-  }
-}
-
-ReadReferenceConfiguration::~ReadReferenceConfiguration() {
-  if( hasatoms ) { atoms.removeVirtualAtom( this ); atoms.removeGroup( getLabel() ); }
-}
-
-void ReadReferenceConfiguration::getNatomsAndNargs( unsigned& natoms, unsigned& nargs ) const {
-  // Get the number of atoms
-  natoms = mygroup.size();
-  // Get the number of arguments
-  nargs=0; if( getNumberOfComponents()>0 ) nargs = getPntrToOutput(0)->getNumberOfValues( getLabel() );
-}
-
-void ReadReferenceConfiguration::transferDataToPlumed( const unsigned& npos, std::vector<double>& masses, std::vector<double>& charges, 
-                                                       std::vector<Vector>& positions, const std::string& argname, PlumedMain& plmd ) const {
-  for(unsigned i=0;i<myindices.size();++i) {
-      masses[npos + i] = atoms.getVatomMass(mygroup[i]);
-      charges[npos + i] = atoms.getVatomCharge(mygroup[i]);
-      positions[npos + i] = atoms.getVatomPosition(mygroup[i]);
-  }
-  if( getNumberOfComponents()>0 ) {
-      unsigned nvals = getPntrToOutput(0)->getSize(); 
-      std::vector<double> valdata( nvals );
-      for(unsigned i=0;i<nvals;++i) valdata[i] = getPntrToOutput(0)->get(i);
-      plmd.cmd("setValue " + argname, &valdata[0] );
   }
 }
 
