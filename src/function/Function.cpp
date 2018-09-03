@@ -87,9 +87,14 @@ Function::Function(const ActionOptions&ao):
     for(unsigned j=0; j<npoints; ++j) addTaskToList(j);
   } else {
     bool hasscalar=false, hasrank=false; nderivatives = getNumberOfScalarArguments(); firststep=false;
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      if( getPntrToArgument(i)->getRank()==0 ) hasscalar=true;
-      else hasrank=true;
+    if( arg_ends.size()>0 ) {
+        for(unsigned i=0; i<arg_ends.size()-1; ++i ) {
+            if( arg_ends[i+1]-arg_ends[i]==1 ) {
+                plumed_assert( arg_ends[i]<getNumberOfArguments() );
+                if( getPntrToArgument(arg_ends[i])->getRank()==0 ) hasscalar=true;
+                else hasrank=true;
+            } else hasrank=true;
+        }
     }
     if( hasscalar && hasrank ) {
       unsigned nscalars=0, nranks=0;

@@ -54,6 +54,7 @@ void Path::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
            "metrics that are available in PLUMED can be found in the section of the manual on "
            "\\ref dists");
+  keys.add("optional","ARG","the list of arguments you would like to use in your definition of the path");
   keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
 }
@@ -69,11 +70,14 @@ Path::Path( const ActionOptions& ao ):
   } else {
       plumed_assert(getName()=="PATH"); properties.resize( 1 );
   }
-  std::vector<std::string> refactions;
+  std::vector<std::string> argnames; parseVector("ARG",argnames);
   std::string mtype; parse("TYPE",mtype);
+  if( argnames.size()>0 && mtype=="OPTIMAL_FAST" ) mtype="EUCLIDEAN";
+
   std::string refname; parse("REFERENCE",refname); 
   // Create list of reference configurations that PLUMED will use
-  createActionsToComputeDistances( mtype, refname, false, this, refactions );
+  std::vector<std::string> refactions;
+  createActionsToComputeDistances( mtype, refname, false, this, argnames, refactions );
   // Now create all other parts of the calculation
   std::string lambda; parse("LAMBDA",lambda);
   // Now create MATHEVAL object to compute exponential functions
@@ -120,19 +124,21 @@ Path::Path( const ActionOptions& ao ):
 }
 
 void Path::createActionsToComputeDistances( const std::string mtype, const std::string& refname, const bool& geometric, 
-                                            ActionShortcut* action, std::vector<std::string>& refactions ) {
+                                            ActionShortcut* action, const std::vector<std::string>& argnames, std::vector<std::string>& refactions ) {
   std::vector<AtomNumber> indices; std::vector<double> alig, disp; std::string distances_str;
   FILE* fp=std::fopen(refname.c_str(),"r"); std::string scut_lab = action->getShortcutLabel();
   if(!fp) action->error("could not open reference file " + refname );
-  bool do_read=true; double fake_unit=0.1; unsigned nfram = 0;
+  bool do_read=true; double fake_unit=0.1; unsigned nfram = 0; std::string argstr; 
+  if( argnames.size()>0 ) {
+      argstr=" ARG=" + argnames[0]; for(unsigned i=1;i<argnames.size();++i) argstr += "," + argnames[i];
+  }
   while (do_read ) {
       PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
       // Break if we are done
       if( !do_read ) break ;
       std::string num; Tools::convert( nfram+1, num );
-      action->readInputLine( scut_lab + "_ref" + num + ": READ_CONFIG REFERENCE=" + refname  + " NUMBER=" + num );
-      std::vector<std::string> remark( mypdb.getRemark() ); std::string stri; bool read_args=false; 
-      if( Tools::parse( remark, "ARG", stri ) ) read_args=true; 
+      action->readInputLine( scut_lab + "_ref" + num + ": READ_CONFIG REFERENCE=" + refname  + " NUMBER=" + num  + argstr );
+      std::vector<std::string> remark( mypdb.getRemark() ); std::string stri; 
 
       if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
           if( nfram==0 ) {
@@ -155,7 +161,7 @@ void Path::createActionsToComputeDistances( const std::string mtype, const std::
           distances_str = setup::DRMSD::getDistancesString( action->plumed, scut_lab + "_ref" + num, mtype );
           action->readInputLine( scut_lab + "_refv" + num + ": CALCULATE_REFERENCE CONFIG=" + scut_lab + "_ref" + num + " INPUT={DISTANCE " + distances_str + "}" );
           refactions.push_back( scut_lab + "_refv" + num );
-      } else if( !read_args ) {
+      } else if( argnames.size()==0 ) {
           action->readInputLine( scut_lab + "_refv" + num + ": CALCULATE_REFERENCE CONFIG=" + scut_lab + "_ref" + num + " INPUT=" + mtype );
           refactions.push_back( scut_lab + "_refv" + num );
       } else {
@@ -164,7 +170,7 @@ void Path::createActionsToComputeDistances( const std::string mtype, const std::
       nfram++; if( refactions.size()!=nfram ) action->error("mismatch between number of reference action labels and number of frames");
   }
   unsigned nquantities=0;
-  if( mtype!="OPTIMAL-FAST" && mtype!="OPTIMAL" && mtype!="SIMPLE" ) { 
+  if( mtype!="OPTIMAL-FAST" && mtype!="OPTIMAL" && mtype!="SIMPLE" && mtype!="EUCLIDEAN" ) { 
       if( mtype.find("DRMSD")!=std::string::npos ) action->readInputLine( scut_lab + "_instantaneous: DISTANCE " + distances_str );
       else action->readInputLine( scut_lab + "_instantaneous: " + mtype );
       ActionWithValue* aval = action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( scut_lab + "_instantaneous" );
@@ -188,10 +194,16 @@ void Path::createActionsToComputeDistances( const std::string mtype, const std::
           // Set the type
           ref_line += " TYPE=" + mtype + " SQUARED}";
       } else {
+          ref_line += "INPUT" + num + "={" + scut_lab + "_diff" + num + ": DIFFERENCE ARG1=" + refactions[i]; 
+          if( mtype!="EUCLIDEAN" ) {
+            ref_line += " ARG2=" + scut_lab + "_instantaneous";
+          } else {
+            ActionWithValue* av = action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( refactions[i] );
+            plumed_assert( av ); nquantities = av->copyOutput(0)->getNumberOfValues( av->getLabel() ); 
+            ref_line +=" ARG2=" + argnames[0]; for(unsigned i=1;i<argnames.size();++i) ref_line += "," + argnames[i]; 
+          }
           std::string powstr = "POWERS=2"; for(unsigned i=1;i<nquantities;++i) powstr += ",2";
           if( mtype=="DRMSD" ) powstr += " NORMALIZE"; 
-          ref_line += "INPUT" + num + "={" + scut_lab + "_diff" + num + ": DIFFERENCE ARG1=" + refactions[i]; 
-          ref_line += " ARG2=" + scut_lab + "_instantaneous";
           if( !geometric) ref_line += "; COMBINE ARG=" + scut_lab + "_diff" + num + " PERIODIC=NO " + powstr + "} ";
           else ref_line += "} ";
       } 

@@ -61,7 +61,7 @@ Difference::Difference(const ActionOptions&ao):
   Action(ao),
   Function(ao)
 {
-  if( getNumberOfArguments()!=2 ) error("difference can only take two arguments as input");
+  if( arg_ends.size()!=3 ) error("difference can only take two arguments as input");
   if( getPntrToArgument(0)->isPeriodic() ) {
       ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(1)->getPntrToAction() );
       if( !as && !getPntrToArgument(1)->isPeriodic() ) error("period for input variables should be the same"); 

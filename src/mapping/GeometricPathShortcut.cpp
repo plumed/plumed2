@@ -42,6 +42,7 @@ void GeometricPathShortcut::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
            "metrics that are available in PLUMED can be found in the section of the manual on "
            "\\ref dists");
+  keys.add("optional","ARG","the list of arguments you would like to use in your definition of the path");
   keys.add("optional","PROPERTY","read in path coordinates by finding option with this label in remark of pdb frames");
 }
 
@@ -52,8 +53,10 @@ GeometricPathShortcut::GeometricPathShortcut( const ActionOptions& ao ):
   std::vector<std::string> refactions;
   std::string mtype; parse("TYPE",mtype);
   std::string refname; parse("REFERENCE",refname); 
+  std::vector<std::string> argnames; parseVector("ARG",argnames);
+  if( argnames.size()>0 && mtype=="OPTIMAL_FAST" ) mtype="EUCLIDEAN";
   // Create list of reference configurations that PLUMED will use
-  Path::createActionsToComputeDistances( mtype, refname, true, this, refactions );
+  Path::createActionsToComputeDistances( mtype, refname, true, this, argnames, refactions );
   // Now get coordinates on spath
   std::string pname, ref_str, coord_str; parse("PROPERTY",pname);
   std::vector<AtomNumber> indices; std::vector<double> alig, disp; 

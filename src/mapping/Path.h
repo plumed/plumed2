@@ -31,7 +31,7 @@ class Path : public ActionShortcut {
 public:
   static void registerKeywords(Keywords& keys);
   static void createActionsToComputeDistances( const std::string mytype, const std::string& refname, const bool& geometric, 
-                                               ActionShortcut* action, std::vector<std::string>& refactions );
+                                               ActionShortcut* action, const std::vector<std::string>& argnames, std::vector<std::string>& refactions );
   explicit Path(const ActionOptions&);
 };
 

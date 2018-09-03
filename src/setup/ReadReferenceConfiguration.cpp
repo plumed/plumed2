@@ -54,17 +54,18 @@ SetupReferenceBase(ao)
   for(unsigned i=0;i<number;++i) {
       PDB pdb; bool do_read=pdb.readFromFilepointer(fp,atoms.usingNaturalUnits(),0.1/atoms.getUnits().getLength()); 
       if(i==number-1) {
-         std::vector<std::string> remark( pdb.getRemark() ); std::vector<std::string> argnames; Tools::parseVector( remark, "ARG", argnames );
+         if( pdb.getPositions().size()==0 && getNumberOfArguments()==0 ) error("found no atoms in input and names of arguments to read in were not specified in input.  Use ARG");
          log.printf("  reading %dth reference structure from file %s \n", number, reference.c_str());
-         log.printf("  which contains %d atoms and %d arguments \n", pdb.getPositions().size(), argnames.size() ); 
+         log.printf("  which contains %d atoms and %d arguments \n", pdb.getPositions().size(), getNumberOfArguments() ); 
          if( pdb.getPositions().size()>0 ) {
              log.printf("  indices of atoms are : ");
              for(unsigned i=0;i<pdb.getPositions().size();++i) log.printf("%d ",pdb.getAtomNumbers()[i].serial() );
              log.printf("\n"); 
          }
-         if( argnames.size()>0 ) {
+         std::vector<std::string> remark( pdb.getRemark() );
+         if( getNumberOfArguments()>0 ) {
              log.printf("  labels of arguments are : ");
-             for(unsigned i=0;i<argnames.size();++i) log.printf("%s ", argnames[i].c_str() );
+             for(unsigned i=0;i<getNumberOfArguments();++i) log.printf("%s ", getPntrToArgument(i)->getName().c_str() );
              log.printf("\n");
          }
          fclose(fp);
@@ -90,11 +91,30 @@ SetupReferenceBase(ao)
                 blocks[0]=0; for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
              } 
          }
-         if( argnames.size()>0 ) {
-             std::vector<unsigned> shape( 1 ); shape[0] = argnames.size();
+         if( getNumberOfArguments()>0 ) {
+             std::vector<unsigned> shape( 1 ); shape[0] = 0; unsigned n=0;
+             for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );
              addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore( getLabel() );
-             for(unsigned i=0;i<argnames.size();++i) {
-                 double val; Tools::parse( remark, argnames[i], val ); getPntrToComponent(0)->set( i, val );
+             for(unsigned i=0;i<getNumberOfArguments();++i) {
+                 if( getPntrToArgument(i)->getRank()==0 ) {
+                     double val; Tools::parse( remark, getPntrToArgument(i)->getName(), val );
+                     getPntrToComponent(0)->set( n, val ); n++;
+                 } else if( getPntrToArgument(i)->getRank()==1 ) {
+                     for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
+                         double val; std::string num; Tools::convert( j+1, num );
+                         Tools::parse( remark, getPntrToArgument(i)->getName() + "." + num, val ); 
+                         getPntrToComponent(0)->set( n, val ); n++;
+                     }
+                 } else if( getPntrToArgument(i)->getRank()==2 ) { 
+                     for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
+                         std::string jnum; Tools::convert( j+1, jnum );
+                         for(unsigned k=0;k<getPntrToArgument(k)->getShape()[2];++k) {
+                             double val; std::string knum; Tools::convert( k+1, knum );
+                             Tools::parse( remark, getPntrToArgument(i)->getName() + "." + jnum + "." + knum, val );
+                             getPntrToComponent(0)->set( n, val ); n++;
+                         }
+                     }
+                 } else error("cannot deal with objects with ranks greater than 2");
              }
          }
          // Set the box size if this information was read

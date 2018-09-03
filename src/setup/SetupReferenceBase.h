@@ -24,6 +24,7 @@
 
 #include "core/ActionSetup.h"
 #include "core/ActionAtomistic.h"
+#include "core/ActionWithArguments.h"
 #include "core/ActionWithValue.h"
 
 namespace PLMD {
@@ -32,6 +33,7 @@ namespace setup {
 class SetupReferenceBase : 
 public ActionSetup, 
 public ActionAtomistic,
+public ActionWithArguments,
 public ActionWithValue
 {
 friend class DRMSD;
@@ -47,6 +49,9 @@ public:
   void activate() {} 
   void clearDerivatives( const bool& force=false ) {}
   unsigned getNumberOfDerivatives() const { return 0; }
+  void lockRequests();
+  void unlockRequests();
+  void calculateNumericalDerivatives( ActionWithValue* a );
 /// The number of virtual atoms that are calculated by this action
   unsigned getNumberOfVirtualAtoms() const ;
   void getNatomsAndNargs( unsigned& natoms, unsigned& nargs ) const ;

@@ -26,13 +26,17 @@ namespace PLMD {
 namespace setup {
 
 void SetupReferenceBase::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
+  // ActionSetup is not registered as we don't want to remove LABEL
+  // ActionWithValue is not registered as nothing useful is in that register
+  Action::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys ); ActionWithArguments::registerKeywords( keys );
+  keys.use("ARG"); keys.reset_style("ARG","optional");
 }
 
 SetupReferenceBase::SetupReferenceBase(const ActionOptions&ao):
 Action(ao),
 ActionSetup(ao),
 ActionAtomistic(ao),
+ActionWithArguments(ao),
 ActionWithValue(ao),
 hasatoms(false)
 {
@@ -40,6 +44,20 @@ hasatoms(false)
 
 SetupReferenceBase::~SetupReferenceBase() {
   if( hasatoms ) { atoms.removeVirtualAtom( this ); atoms.removeGroup( getLabel() ); }
+}
+
+void SetupReferenceBase::lockRequests() {
+  ActionWithArguments::lockRequests();
+  ActionAtomistic::lockRequests();
+}
+
+void SetupReferenceBase::unlockRequests() {
+  ActionWithArguments::unlockRequests();
+  ActionAtomistic::unlockRequests();
+}
+
+void SetupReferenceBase::calculateNumericalDerivatives( ActionWithValue* a ) {
+  error("this should never be called");
 }
 
 void SetupReferenceBase::getNatomsAndNargs( unsigned& natoms, unsigned& nargs ) const {
