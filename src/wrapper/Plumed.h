@@ -382,7 +382,7 @@ public:
                  but for some choice of key it can change the content
      \note Equivalent to plumed_gcmd()
   */
-  static void gcmd(const char* key,const void* val);
+  static void gcmd(const char* key,const void* val=NULL);
   /**
      Finalize global-plumed
   */
