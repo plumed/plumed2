@@ -267,7 +267,7 @@ PLUMED: 4A  2 dfast                                      108     0.135210     0.
 ...
 \endverbatim
 
-Notice the usage of `x2` as a variable for the switching function (see \switchingfunction).
+Notice the usage of `x2` as a variable for the switching function (see \ref switchingfunction).
 
 \page Time Time your Input
 

@@ -41,6 +41,8 @@ of the system.  The following methods can thus be used to calculate weights for 
 frames so that the final ensemble average is an average for the cannonical ensemble at the appropriate 
 temperature.
 
+\section analysisbias Unbiasing and Averaging
+
 @REWEIGHTING@
 
 You can then calculate ensemble averages using the following actions.
@@ -178,7 +180,7 @@ OUTPUT_COLVAR_FILE USE_OUTPUT_DATA_FROM=ll2 FILE=mylandmarks
 When landmark selection is performed in this way a weight is ascribed to each of the landmark configurations.  This weight is
 calculated by summing the weights of all the trajectory frames in each of the landmarks Voronoi polyhedra 
 (https://en.wikipedia.org/wiki/Voronoi_diagram).  The weight of each trajectory frame is one unless you are reweighting using the
-formula described in the \ref analysisbas to counteract the fact of a simulation bias or an elevated temperature.  If you are reweighting
+formula described in the \ref analysisbias to counteract the fact of a simulation bias or an elevated temperature.  If you are reweighting
 using these formula the weight of each of the points is equal to the exponential term in the numerator of these expressions.
 
 \section dimred Dimensionality Reduction

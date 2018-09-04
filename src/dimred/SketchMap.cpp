@@ -25,7 +25,7 @@
 namespace PLMD {
 namespace dimred {
 
-//+PLUMEDOC ANALYSIS SKETCH_MAP
+//+PLUMEDOC DIMRED SKETCH_MAP
 /*
 This can be used to output the data that has been stored in an Analysis object.
 

@@ -55,7 +55,7 @@ eRMSD measures the distance between structures by considering only the relative 
 
 2. Calculate all pairwise distance vectors \f$ \vec{r}_{i,j} \f$ among base centers.
 
-3. Rescale distance vectors as \f$ \tilde{\vec{r}}_{i,j} = (r_x/a,r_y/a,r_z/b) \f$, where  a=b=5 \AA, c= 3 \AA. This rescaling has the effect of weghting more deviations on the z-axis with respect to the x/y directions.
+3. Rescale distance vectors as \f$ \tilde{\vec{r}}_{i,j} = (r_x/a,r_y/a,r_z/b) \f$, where  a=b=5 \f$\r{A}\f$, c=3 \f$\r{A}\f$. This rescaling has the effect of weghting more deviations on the z-axis with respect to the x/y directions.
 
 4. Calculate the G vectors
 
