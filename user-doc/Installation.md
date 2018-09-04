@@ -711,7 +711,6 @@ export CRAYPE_LINK_TYPE=dynamic
 \endverbatim
   Adding libraries to `STATIC_LIBS` uses them for all the linking steps, whereas those in `LIBS` are only used when linking the PLUMED kernel library.
   See more at [this thread](https://groups.google.com/d/msgid/plumed-users/CAB1aw3y0m%3D5qwzsZY4ZB-aBevsL5iuS%3DmQuSWK_cw527zCMqzg%40mail.gmail.com?utm_medium=email&utm_source=footer).
-\endverbatim
 
 \page CodeSpecificNotes Code specific notes
 

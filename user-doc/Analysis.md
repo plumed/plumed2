@@ -41,6 +41,8 @@ of the system.  The following methods can thus be used to calculate weights for 
 frames so that the final ensemble average is an average for the cannonical ensemble at the appropriate 
 temperature.
 
+\section analysisbias Unbiasing and Averaging
+
 @REWEIGHTING@
 
 You can then calculate ensemble averages using the following actions.
