@@ -35,8 +35,7 @@
 
 using namespace std;
 
-namespace PLMD
-{
+namespace PLMD {
 namespace generic {
 
 //+PLUMEDOC GENERIC PLUMED

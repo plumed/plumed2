@@ -370,7 +370,7 @@ possible kinds of innocuous errors:
   some feature introduced in PLUMED in a newer version.
 - If `plumed` executable is newer than the test suite, the tests might fail since some
   non-backward compatible change was made in PLUMED. We try to keep the number
-  of non-backward compatible changes small, but as you can see in the \ref Changelog there
+  of non-backward compatible changes small, but as you can see in the \ref ChangeLog there
   are typically a few of them at every new major release.
 
 \attention
