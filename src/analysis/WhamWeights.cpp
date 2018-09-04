@@ -25,7 +25,7 @@
 namespace PLMD {
 namespace analysis {
 
-//+PLUMEDOC ANALYSIS WHAM_WEIGHTS
+//+PLUMEDOC REWEIGHTING WHAM_WEIGHTS
 /*
 This can be used to output the data that has been stored in an Analysis object.
 
