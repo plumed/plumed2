@@ -29,6 +29,7 @@
 #include "tools/ForwardDecl.h"
 #include <vector>
 #include <set>
+#include <map>
 
 namespace PLMD {
 
@@ -58,6 +59,10 @@ class ActionAtomistic :
   std::vector<Vector>   forces;          // forces on the needed atoms
   double                forceOnEnergy;
 
+  double                forceOnExtraCV;
+
+  std::string           extraCV;
+
   bool                  lockRequestAtoms; // forbid changes to request atoms
 
   bool                  donotretrieve;
@@ -65,6 +70,8 @@ class ActionAtomistic :
 
 protected:
   Atoms&                atoms;
+
+  void setExtraCV(const std::string &name);
 
 public:
 /// Request an array of atoms.
@@ -118,6 +125,8 @@ public:
   Tensor & modifyVirial();
 /// Get a reference to force on energy
   double & modifyForceOnEnergy();
+/// Get a reference to force on extraCV
+  double & modifyForceOnExtraCV();
 /// Get number of available atoms
   unsigned getNumberOfAtoms()const {return indexes.size();}
 /// Compute the pbc distance between two positions
@@ -262,6 +271,11 @@ double & ActionAtomistic::modifyForceOnEnergy() {
 }
 
 inline
+double & ActionAtomistic::modifyForceOnExtraCV() {
+  return forceOnExtraCV;
+}
+
+inline
 const Pbc & ActionAtomistic::getPbc() const {
   return pbc;
 }
@@ -294,6 +308,11 @@ unsigned ActionAtomistic::getTotAtoms()const {
 inline
 Pbc & ActionAtomistic::modifyGlobalPbc() {
   return atoms.pbc;
+}
+
+inline
+void ActionAtomistic::setExtraCV(const std::string &name) {
+  extraCV=name;
 }
 
 
