@@ -20,14 +20,13 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "h36.h"
+#include <vector>
+#include "Exception.h"
 
 namespace PLMD {
 
 /// Tiny namespace for hybrid36 format.
 /// This namespace includes freely available tools for h36 format.
-/// I place them here for usage within PDB class. In case we need them
-/// in other places they might be better encapsulated in a c++ class
-/// and placed in a separate file.
 namespace h36 {
 
 
@@ -260,35 +259,32 @@ hy36encode(unsigned width, int value, char* result)
 const char*
 hy36decode(unsigned width, const char* s, unsigned s_size, int* result)
 {
-  static int first_call = 1;
-  static int digits_values_upper[128U];
-  static int digits_values_lower[128U];
-  static const char*
-  ie_range = "internal error hy36decode: integer value out of range.";
-  unsigned i;
+  static const std::vector<int> digits_values_upper_vector([]() {
+    std::vector<int> ret(128U,-1);
+    for(unsigned i=0; i<36U; i++) {
+      int di = digits_upper()[i];
+      if (di < 0 || di > 127) {
+        plumed_error()<<"internal error hy36decode: integer value out of range";
+      }
+      ret[di] = i;
+    }
+    return ret;
+  }());
+  static const int* digits_values_upper=digits_values_upper_vector.data();
+  static const std::vector<int> digits_values_lower_vector([]() {
+    std::vector<int> ret(128U,-1);
+    for(unsigned i=0; i<36U; i++) {
+      int di = digits_lower()[i];
+      if (di < 0 || di > 127) {
+        plumed_error()<<"internal error hy36decode: integer value out of range";
+      }
+      ret[di] = i;
+    }
+    return ret;
+  }());
+  static const int* digits_values_lower=digits_values_lower_vector.data();
   int di;
   const char* errmsg;
-  if (first_call) {
-    first_call = 0;
-    for(i=0; i<128U; i++) digits_values_upper[i] = -1;
-    for(i=0; i<128U; i++) digits_values_lower[i] = -1;
-    for(i=0; i<36U; i++) {
-      di = digits_upper()[i];
-      if (di < 0 || di > 127) {
-        *result = 0;
-        return ie_range;
-      }
-      digits_values_upper[di] = i;
-    }
-    for(i=0; i<36U; i++) {
-      di = digits_lower()[i];
-      if (di < 0 || di > 127) {
-        *result = 0;
-        return ie_range;
-      }
-      digits_values_lower[di] = i;
-    }
-  }
   if (s_size == width) {
     di = s[0];
     if (di >= 0 && di <= 127) {

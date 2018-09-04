@@ -155,7 +155,7 @@ PCA::PCA(const ActionOptions&ao):
 void PCA::performAnalysis() {
   // Align everything to the first frame
   my_input_data->getStoredData( 0, false ).transferDataToPDB( mypdb );
-  std::unique_ptr<ReferenceConfiguration> myconf0=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+  auto myconf0=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
   MultiValue myval( 1, myconf0->getNumberOfReferenceArguments() + 3*myconf0->getNumberOfReferencePositions() + 9 );
   ReferenceValuePack mypack( myconf0->getNumberOfReferenceArguments(), myconf0->getNumberOfReferencePositions(), myval );
   for(unsigned i=0; i<myconf0->getNumberOfReferencePositions(); ++i) mypack.setAtomIndex( i, i );

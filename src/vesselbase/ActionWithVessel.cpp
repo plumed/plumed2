@@ -99,7 +99,7 @@ ActionWithVessel::~ActionWithVessel() {
 
 void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab ) {
   VesselOptions da(name,"",numlab,input,this);
-  std::unique_ptr<Vessel> vv=vesselRegister().create(name,da);
+  auto vv=vesselRegister().create(name,da);
   FunctionVessel* fv=dynamic_cast<FunctionVessel*>(vv.get());
   if( fv ) {
     std::string mylabel=Vessel::transformName( name );

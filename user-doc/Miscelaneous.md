@@ -502,6 +502,10 @@ LOAD FILE=library.so
 N.B.  If your system uses a different suffix for dynamic libraries (e.g. macs use .dylib) then PLUMED will try to 
 automatically adjust the suffix accordingly.
 
+\page embed Embed a separate PLUMED instance
+
+\subpage PLUMED
+
 \page degub Debugging the code
 
 The \subpage DEBUG action provides some functionality for debugging the code that may be useful if you are doing 

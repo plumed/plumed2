@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2016-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
-   See http://www.plumed-code.org for more information.
+   See http://www.plumed.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -174,8 +174,10 @@ double SketchMapRead::getDissimilarity( const unsigned& i, const unsigned& j ) {
   plumed_assert( i<myframes.size() && j<myframes.size() );
   if( i!=j ) {
     double dd;
-    getStoredData( i, true ).transferDataToPDB( mypdb ); std::unique_ptr<ReferenceConfiguration> myref1=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
-    getStoredData( j, true ).transferDataToPDB( mypdb ); std::unique_ptr<ReferenceConfiguration> myref2=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+    getStoredData( i, true ).transferDataToPDB( mypdb );
+    auto myref1=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
+    getStoredData( j, true ).transferDataToPDB( mypdb );
+    auto myref2=metricRegister().create<ReferenceConfiguration>(mtype, mypdb);
     dd=distance( getPbc(), ActionWithArguments::getArguments(), myref1.get(), myref2.get(), true );
     return dd;
   }

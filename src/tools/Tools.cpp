@@ -28,11 +28,14 @@
 #include <dirent.h>
 #include <iostream>
 #include <map>
+#if defined(__PLUMED_HAS_CHDIR) || defined(__PLUMED_HAS_GETCWD)
+#include <unistd.h>
+#endif
 
 using namespace std;
 namespace PLMD {
 
-static std::map<string, double> leptonConstants= {
+const static std::map<string, double> leptonConstants= {
   {"e", std::exp(1.0)},
   {"log2e", 1.0/std::log(2.0)},
   {"log10e", 1.0/std::log(10.0)},
@@ -377,6 +380,31 @@ bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&ke
   return false;
 }
 
+Tools::DirectoryChanger::DirectoryChanger(const char*path) {
+  if(!path) return;
+  if(std::strlen(path)==0) return;
+#ifdef __PLUMED_HAS_GETCWD
+  char* ret=getcwd(cwd,buffersize);
+  plumed_assert(ret)<<"Name of current directory too long, increase buffer size";
+#else
+  plumed_error()<<"You are trying to use DirectoryChanger but your system does not support getcwd";
+#endif
+#ifdef __PLUMED_HAS_CHDIR
+  int r=chdir(path);
+  plumed_assert(r==0) <<"Cannot chdir to directory "<<path<<". The directory must exist!";
+#else
+  plumed_error()<<"You are trying to use DirectoryChanger but your system does not support chdir";
+#endif
+}
 
+Tools::DirectoryChanger::~DirectoryChanger() {
+#ifdef __PLUMED_HAS_CHDIR
+  if(strlen(cwd)==0) return;
+  int ret=chdir(cwd);
+// we cannot put an assertion here (in a destructor) otherwise cppcheck complains
+// we thus just report the problem
+  if(ret!=0) fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",cwd);
+#endif
+}
 
 }
