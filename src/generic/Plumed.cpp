@@ -207,7 +207,7 @@ p([&]() {
     return PlumedHandle();
   } else {
     log<<"  using the kernel "<<kernel<<"\n";
-    return PlumedHandle::DL(kernel.c_str());
+    return PlumedHandle::dlopen(kernel.c_str());
   }
 }()),
 API([&]() {
