@@ -6,6 +6,7 @@
 - \subpage BashAutocompletion
 - \subpage includes
 - \subpage load
+- \subpage embed
 - \subpage degub
 - \subpage exchange-patterns
 - \subpage mymodules

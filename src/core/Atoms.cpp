@@ -581,4 +581,20 @@ void Atoms::getLocalMDForces(std::vector<Vector>& localForces) {
   }
 }
 
+void Atoms::setExtraCV(const std::string &name,void*p) {
+  mdatoms->setExtraCV(name,p);
+}
+
+void Atoms::setExtraCVForce(const std::string &name,void*p) {
+  mdatoms->setExtraCVForce(name,p);
+}
+
+double Atoms::getExtraCV(const std::string &name) {
+  return mdatoms->getExtraCV(name);
+}
+
+void Atoms::updateExtraCVForce(const std::string &name,double f) {
+  mdatoms->updateExtraCVForce(name,f);
+}
+
 }

@@ -1,0 +1,80 @@
+bias_pre: -4987.88
+extracvf_pre: 0
+extracvf2_pre: 100
+f_pre: 2.5 3 3 -2.5 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias: 13.5
+extracvf: 0
+extracvf2: 0
+f: 3 3 3 -3 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias_pre: -4987.38
+extracvf_pre: -1
+extracvf2_pre: 100
+f_pre: 2.5 3 3 -2.5 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias: 14
+extracvf: -1
+extracvf2: 0
+f: 3 3 3 -3 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias_pre: -4985.88
+extracvf_pre: -2
+extracvf2_pre: 100
+f_pre: 2.5 3 3 -2.5 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias: 15.5
+extracvf: -2
+extracvf2: 0
+f: 3 3 3 -3 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias_pre: -4983.38
+extracvf_pre: -3
+extracvf2_pre: 100
+f_pre: 2.5 3 3 -2.5 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias: 18
+extracvf: -3
+extracvf2: 0
+f: 3 3 3 -3 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias_pre: -4979.88
+extracvf_pre: -4
+extracvf2_pre: 100
+f_pre: 2.5 3 3 -2.5 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias: 21.5
+extracvf: -4
+extracvf2: 0
+f: 3 3 3 -3 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias_pre: -4975.38
+extracvf_pre: -5
+extracvf2_pre: 100
+f_pre: 2.5 3 3 -2.5 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias: 26
+extracvf: -5
+extracvf2: 0
+f: 3 3 3 -3 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias_pre: -4969.88
+extracvf_pre: -6
+extracvf2_pre: 100
+f_pre: 2.5 3 3 -2.5 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias: 31.5
+extracvf: -6
+extracvf2: 0
+f: 3 3 3 -3 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias_pre: -4963.38
+extracvf_pre: -7
+extracvf2_pre: 100
+f_pre: 2.5 3 3 -2.5 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias: 38
+extracvf: -7
+extracvf2: 0
+f: 3 3 3 -3 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias_pre: -4955.88
+extracvf_pre: -8
+extracvf2_pre: 100
+f_pre: 2.5 3 3 -2.5 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias: 45.5
+extracvf: -8
+extracvf2: 0
+f: 3 3 3 -3 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias_pre: -4947.38
+extracvf_pre: -9
+extracvf2_pre: 100
+f_pre: 2.5 3 3 -2.5 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+bias: 54
+extracvf: -9
+extracvf2: 0
+f: 3 3 3 -3 -3 -3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
