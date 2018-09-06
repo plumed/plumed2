@@ -155,7 +155,7 @@ void BF_DbWavelets::setupLabels() {
   double min = intervalMin();
   double spacing = intervalDerivf();
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    double pos = min + (i-1) / spacing;
+    double pos = min + static_cast<signed>(i-getOrder()) / spacing;
     std::string is; Tools::convert(pos, is);
     setLabel(i,"i = "+is);
   }
