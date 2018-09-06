@@ -528,12 +528,12 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
     string z=line.substr(46,8);
     string occ=line.substr(54,6);
     string bet=line.substr(60,6);
-    string BoxX=line.substr(7,8);
-    string BoxY=line.substr(16,8);
-    string BoxZ=line.substr(25,8);
-    string BoxA=line.substr(34,6);
-    string BoxB=line.substr(41,6);
-    string BoxG=line.substr(48,6);
+    string BoxX=line.substr(6,9);
+    string BoxY=line.substr(15,9);
+    string BoxZ=line.substr(24,9);
+    string BoxA=line.substr(33,7);
+    string BoxB=line.substr(40,7);
+    string BoxG=line.substr(47,7);
     Tools::trim(record);
     if(record=="TER") { between_ters=false; block_ends.push_back( positions.size() ); }
     if(record=="END") { file_is_alive=true;  break;}

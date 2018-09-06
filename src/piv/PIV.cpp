@@ -726,6 +726,7 @@ void PIV::calculate()
   // Local varaibles
   // The following are probably needed as static arrays
   static int prev_stp=-1;
+  static int init_stp=1;
   static std:: vector<std:: vector<Vector> > prev_pos(Nlist);
   static std:: vector<std:: vector<double> > cPIV(Nlist);
   static std:: vector<std:: vector<int> > Atom0(Nlist);
@@ -754,7 +755,8 @@ void PIV::calculate()
   }
 
   // Transform (and sort) the rPIV before starting the dynamics
-  if ((prev_stp==-1||(prev_stp==0&&getStep()==0))&&!CompDer) {
+  if ((prev_stp==-1||init_stp==1)&&!CompDer) {
+    if(prev_stp!=-1){init_stp==0;}
     // Calculate the volume scaling factor
     if(Svol) {
       Fvol=cbrt(Vol0/getBox().determinant());
