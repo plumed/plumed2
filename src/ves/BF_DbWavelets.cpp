@@ -121,9 +121,6 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
 
 
 void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
-   plumed_assert(values.size()==numberOfBasisFunctions()); // comment these two lines out again later
-   plumed_assert(derivs.size()==numberOfBasisFunctions());
-  //
   argT=checkIfArgumentInsideInterval(arg,inside_range);
   //
   values[0]=1.0;
