@@ -550,24 +550,17 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       Tools::convert(BoxB,BoxABG[1]);
       Tools::convert(BoxG,BoxABG[2]);
       BoxXYZ*=scale;
-      Vector Vcos;
-      double tmpr;
-      for (unsigned i=0; i<3; i++) {
-        Vcos[i]=cos(BoxABG[i]*3.1415926535/180.);
-        Box[i][0]=0.; Box[i][1]=0.; Box[i][2]=0.;
-      }
-      BoxXYZ[1]=BoxXYZ[1]/BoxXYZ[0];
-      BoxXYZ[2]=BoxXYZ[2]/BoxXYZ[0];
-      tmpr=sqrt(1.-Vcos[2]*Vcos[2]);
+      double cosA=cos(BoxABG[0]*pi/180.);
+      double cosB=cos(BoxABG[1]*pi/180.);
+      double cosG=cos(BoxABG[2]*pi/180.);
+      double sinG=sin(BoxABG[2]*pi/180.);
+      for (unsigned i=0; i<3; i++) {Box[i][0]=0.; Box[i][1]=0.; Box[i][2]=0.;}
       Box[0][0]=BoxXYZ[0];
-      Box[1][0]=BoxXYZ[0]*BoxXYZ[1]*Vcos[2];
-      Box[1][1]=BoxXYZ[0]*BoxXYZ[1]*tmpr;
-      Box[2][0]=BoxXYZ[0]*BoxXYZ[2]*Vcos[1];
-      Box[2][1]=BoxXYZ[0]*BoxXYZ[2]*(Vcos[0]-Vcos[1]*Vcos[2])/tmpr;
-      tmpr=(1.+2.*Vcos[0]*Vcos[1]*Vcos[2]-Vcos[0]*Vcos[0]-Vcos[1]*Vcos[1]-Vcos[2]*Vcos[2]);
-      Box[2][2]=BoxXYZ[0]*BoxXYZ[2]*sqrt(tmpr/(1.-Vcos[2]*Vcos[2]));
-      BoxXYZ[1]=BoxXYZ[1]*BoxXYZ[0];
-      BoxXYZ[2]=BoxXYZ[2]*BoxXYZ[0];
+      Box[1][0]=BoxXYZ[1]*cosG;
+      Box[1][1]=BoxXYZ[1]*sinG;
+      Box[2][0]=BoxXYZ[2]*cosB;
+      Box[2][1]=(BoxXYZ[2]*BoxXYZ[1]*cosA-Box[2][0]*Box[1][0])/Box[1][1];
+      Box[2][2]=sqrt(BoxXYZ[2]*BoxXYZ[2]-Box[2][0]*Box[2][0]-Box[2][1]*Box[2][1]);
     }
     if(record=="ATOM" || record=="HETATM") {
       between_ters=true;
