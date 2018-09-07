@@ -1,6 +1,9 @@
 # this is just to check if charges are read properly from mc file
 DUMPMASSCHARGE FILE=mcnew
 
+DUMPMASSCHARGE ONLY_MASSES FILE=mcnew_onlymasses
+DUMPMASSCHARGE ONLY_CHARGES FILE=mcnew_onlycharges
+
 c1: CENTER MASS ATOMS=1-10
 c2: CENTER MASS ATOMS=11-20
 d:  DISTANCE ATOMS=c1,c2
