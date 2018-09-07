@@ -65,6 +65,7 @@ class BF_DbWavelets : public BasisFunctions {
   // Grid that holds the Wavelet values and its derivative
   std::unique_ptr<Grid> waveletGrid_;
   bool use_scaling_function_;
+  unsigned int shift_;
   void setupLabels() override;
 
 public:
@@ -108,6 +109,9 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
     waveletGrid_->writeToFile(wavelet_gridfile);
   }
 
+  // set left shift of first basis function
+  use_scaling_function_ ? shift_ = getOrder()
+                        : shift_ = getOrder() - (getOrder()+1)/2 + 2; // for odd order this is not perfect
   // set some properties
   setIntrinsicInterval("0",std::to_string(getOrder()*2-1));
   setNonPeriodic();
@@ -126,10 +130,8 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
   values[0]=1.0;
   derivs[0]=0.0;
   for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
-    // calculate translation of wavelet
-    int k = i - getOrder();
     // scale and shift argument to match current wavelet
-    double x = (arg-intervalMin())*intervalDerivf() - k;
+    double x = (arg-intervalMin())*intervalDerivf() - i + shift_;
 
     if (x < 0 || x >= intrinsicIntervalMax()) { // Wavelets are 0 outside the defined range
       values[i] = 0.0; derivs[i] = 0.0;
