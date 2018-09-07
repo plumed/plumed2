@@ -149,22 +149,22 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
     print_charges = false;
     log.printf("  only masses will be written to file\n");
   }
-  
-  bool only_charges = false; 
+
+  bool only_charges = false;
   parseFlag("ONLY_CHARGES",only_charges);
   if(only_charges) {
     print_masses = false;
     log.printf("  only charges will be written to file\n");
   }
-  
-  
+
+
   checkRead();
 
   log.printf("  printing the following atoms:" );
   for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
   requestAtoms(atoms);
-  
+
   if(only_masses && only_charges) {
     plumed_merror("using both ONLY_MASSES and ONLY_CHARGES doesn't make sense");
   }
