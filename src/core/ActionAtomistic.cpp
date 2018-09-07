@@ -216,7 +216,8 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
           }
       }
     }
-    if(!ok) error("it was not possible to interpret atom name " + strings[i]);
+    ActionSetup* as=plumed.getActionSet().selectWithLabel<ActionSetup*>(strings[i]); 
+    if( !ok && (!as || getName()!="PRINT") ) error("it was not possible to interpret atom name " + strings[i]);
     // plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
   }
 }

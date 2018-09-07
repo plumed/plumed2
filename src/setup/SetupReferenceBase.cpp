@@ -60,6 +60,13 @@ void SetupReferenceBase::calculateNumericalDerivatives( ActionWithValue* a ) {
   error("this should never be called");
 }
 
+AtomNumber SetupReferenceBase::getAtomNumber( const AtomNumber& anum ) const {
+  for(unsigned i=0;i<mygroup.size();++i) {
+      if( anum==mygroup[i] ) return myindices[i];
+  }
+  plumed_error(); return myindices[0];
+}
+
 void SetupReferenceBase::getNatomsAndNargs( unsigned& natoms, unsigned& nargs ) const {
   // Get the number of atoms
   natoms=0;
@@ -83,6 +90,42 @@ void SetupReferenceBase::transferDataToPlumed( const unsigned& npos, std::vector
       for(unsigned i=0;i<nvals;++i) valdata[i] = getPntrToOutput(0)->get(i);
       plmd.cmd("setValue " + argname, &valdata[0] );
   }
+}
+
+void SetupReferenceBase::displaceReferenceConfiguration( const double& val, const std::vector<double>& dir ) {
+  unsigned n=0;
+  for(unsigned i=0;i<mygroup.size();++i) {
+      Vector cpos( atoms.getVatomPosition(mygroup[i]) );
+      for(unsigned k=0;k<3;++k) { cpos[k] = cpos[k] + val*dir[n+k]; }
+      atoms.setVatomPosition( mygroup[i], cpos ); n += 3;
+  }
+  if( getNumberOfComponents()>0 ) { 
+      Value* myval=getPntrToOutput(0);
+      unsigned nvals = myval->getNumberOfValues( getLabel() );
+      for(unsigned i=0;i<nvals;++i) { myval->set( i, myval->get(i) + val*dir[n]) ; n++; }
+  }
+}
+
+std::string SetupReferenceBase::getArgName( const unsigned& k ) const {
+  unsigned nn=0;
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      unsigned nvals = getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      if( k<nn+nvals ) {
+          if( getPntrToArgument(i)->getRank()==0 ) return getPntrToArgument(i)->getName();
+          if( getPntrToArgument(i)->getRank()==1 ) {
+              std::string num; Tools::convert( k-nn+1, num );
+              return getPntrToArgument(i)->getName() + "." + num;
+          }
+          if( getPntrToArgument(i)->getRank()==2 ) {
+              unsigned rown = std::floor( (k-nn) / getPntrToArgument(i)->getShape()[1] );
+              unsigned coln = k - nn - rown*getPntrToArgument(i)->getShape()[1]; 
+              std::string rnum, cnum; Tools::convert( rown + 1, rnum ); Tools::convert( coln + 1,  cnum );
+              return getPntrToArgument(i)->getName() + "." + rnum + "." + cnum;
+          }
+      }
+      nn += nvals;
+  }
+  plumed_error(); return "";
 }
 
 }

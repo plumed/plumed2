@@ -23,8 +23,12 @@
 #include "cltools/CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/Pbc.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionSet.h"
 #include "core/Value.h"
+#include "core/PlumedMain.h"
 #include "reference/ReferenceConfiguration.h"
+#include "setup/SetupReferenceBase.h"
 #include "PathReparameterization.h"
 #include "reference/MetricRegister.h"
 #include <cstdio>
@@ -122,6 +126,7 @@ void PathTools::registerKeywords( Keywords& keys ) {
   keys.add("atoms","--start","a pdb file that contains the structure for the initial frame of your path");
   keys.add("atoms","--end","a pdb file that contains the structure for the final frame of your path");
   keys.add("atoms-1","--path","a pdb file that contains an initial path in which the frames are not equally spaced");
+  keys.add("optional","--arg","the arguments that should be read in from the pdb files");
   keys.add("compulsory","--fixed","0","the frames to fix when constructing the path using --path");
   keys.add("compulsory","--metric","the measure to use to calculate the distance between frames");
   keys.add("compulsory","--out","the name of the file on which to output your path");
@@ -139,10 +144,23 @@ PathTools::PathTools(const CLToolOptions& co ):
 }
 
 int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
+  // Create a PLUMED object
+  PlumedMain plmd; int s=sizeof(double);
+  plmd.cmd("setRealPrecision",&s);
+  plmd.cmd("setNoVirial"); 
+  plmd.cmd("setMDEngine","pathtools");
+  int natoms = 0; plmd.cmd("setNatoms",&natoms);
+  double tstep=1.0; plmd.cmd("setTimestep",&tstep);
+  plmd.cmd("init");
+  int step=1; plmd.cmd("setStep",&step);
+  std::vector<double> mass(1); plmd.cmd("setMasses",&mass[0]); 
+  std::vector<double> charge(1); plmd.cmd("setCharges",&charge[0]);
+ 
   std::string mtype; parse("--metric",mtype);
   std::string ifilename; parse("--path",ifilename);
   std::string ofmt; parse("--arg-fmt",ofmt);
   std::string ofilename; parse("--out",ofilename);
+  std::string argstr; parse("--arg",argstr);
   if( ifilename.length()>0 ) {
     fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
     FILE* fp=fopen(ifilename.c_str(),"r");
@@ -215,93 +233,101 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     return 0;
   }
 
-// Read initial frame
-  std::string istart; parse("--start",istart); FILE* fp2=fopen(istart.c_str(),"r"); PDB mystartpdb;
-  if( istart.length()==0 ) error("input is missing use --istart + --iend or --path");
-  if( !mystartpdb.readFromFilepointer(fp2,false,0.1) ) error("could not read fila " + istart);
-  auto sframe=metricRegister().create<ReferenceConfiguration>( mtype, mystartpdb );
-  fclose(fp2);
-
-// Read final frame
-  std::string iend; parse("--end",iend); FILE* fp1=fopen(iend.c_str(),"r"); PDB myendpdb;
-  if( iend.length()==0 ) error("input is missing using --istart + --iend or --path");
-  if( !myendpdb.readFromFilepointer(fp1,false,0.1) ) error("could not read fila " + iend);
-  auto eframe=metricRegister().create<ReferenceConfiguration>( mtype, myendpdb );
-  fclose(fp1);
-// Get atoms and arg requests
-  std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;
-  sframe->getAtomRequests( atoms); eframe->getAtomRequests( atoms);
-  sframe->getArgumentRequests( arg_names ); eframe->getArgumentRequests( arg_names );
-
-// Now read in the rest of the instructions
+// Read in the instructions
   unsigned nbefore, nbetween, nafter;
+  std::string istart; parse("--start",istart); std::string iend; parse("--end",iend); 
   parse("--nframes-before-start",nbefore); parse("--nframes",nbetween); parse("--nframes-after-end",nafter);
   nbetween++;
   fprintf(out,"Generating linear path connecting structure in file named %s to structure in file named %s \n",istart.c_str(),iend.c_str() );
   fprintf(out,"A path consisting of %u equally-spaced frames before the initial structure, %u frames between the intial and final structures "
           "and %u frames after the final structure will be created \n",nbefore,nbetween,nafter);
 
-// Create a vector of arguments to use for calculating displacements
-  Pbc fpbc;
-  std::vector<std::unique_ptr<Value>> args;
-  for(unsigned i=0; i<eframe->getNumberOfReferenceArguments(); ++i) {
-    args.emplace_back(new Value()); args[args.size()-1]->setNotPeriodic();
+// Read initial frame
+  std::string iinput = "start: READ_CONFIG REFERENCE=" + istart;
+  if( argstr.length()>0 ) iinput += " READ_ARG=" + argstr;
+  const char* icinp=iinput.c_str(); plmd.cmd("readInputLine",icinp);
+
+// Read final frame
+  std::string finput = "end: READ_CONFIG REFERENCE=" + iend;
+  if( argstr.length()>0 ) finput += " READ_ARG=" + argstr;
+  const char* fcinp=finput.c_str(); plmd.cmd("readInputLine",fcinp);
+
+// Now create the metric object
+  if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
+      PDB pdb; pdb.read(istart,false,0.1); 
+      std::vector<double> alig( pdb.getOccupancy() ), disp( pdb.getBeta() );
+      std::string minput = "RMSD DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype + " REFERENCE_ATOMS=start ATOMS=end";
+      // Get the align values 
+      std::string anum; Tools::convert( alig[0], anum ); minput += " ALIGN=" + anum;
+      for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); minput += "," + anum; }
+      // Get the displace values
+      std::string dnum; Tools::convert( disp[0], dnum ); minput += " DISPLACE=" + dnum;
+      for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); minput += "," + dnum; }   
+      const char* mcinp=minput.c_str(); plmd.cmd("readInputLine",mcinp); 
+  } else if( mtype=="EUCLIDEAN" ) {
+      std::string minput = "DIFFERENCE ARG1=end ARG2=start";
+      const char* mcinp=minput.c_str(); plmd.cmd("readInputLine",mcinp);
+  } else {
+     // Add functionality to read plumed input here
+     plumed_merror("metric type " + mtype + " has not been implemented");
   }
 
-  // convert pointer once:
-  auto args_ptr=Tools::unique2raw(args);
+// Retrieve final displacement vector
+  ActionWithValue* av=dynamic_cast<ActionWithValue*>( plmd.getActionSet()[plmd.getActionSet().size()-1].get() );
+  if( !av ) error("invalid input for metric" );
+  if( av->getNumberOfComponents()!=1 && av->getName()!="RMSD" ) error("cannot use multi component actions as metric");
+  std::string mydisp = av->copyOutput(0)->getName();
+// Now add calls so we can grab the data from plumed
+  long rank; plmd.cmd("getDataRank " + mydisp, &rank );
+  if( rank!=1 ) error("displacement must be a vector quantity");
+  std::vector<long> ishape( rank ); plmd.cmd("getDataShape " + mydisp, &ishape[0] );
+  std::vector<double> displacement( ishape[0] ); plmd.cmd("setMemoryForData " + mydisp, &displacement[0] );
+// And calculate the displacement
+  plmd.cmd("calc");
 
-// Calculate the distance between the start and the end
-  MultiValue myvpack( 1, sframe->getNumberOfReferenceArguments() + 3*sframe->getNumberOfReferencePositions() + 9);
-  ReferenceValuePack mypack( sframe->getNumberOfReferenceArguments(), sframe->getNumberOfReferencePositions(), myvpack );
-  double pathlen = sframe->calc( eframe->getReferencePositions(), fpbc, args_ptr, eframe->getReferenceArguments(), mypack, false );
-// And the spacing between frames
-  double delr = 1.0 / static_cast<double>( nbetween );
-// Calculate the vector connecting the start to the end
-  PDB mypdb; mypdb.setAtomNumbers( sframe->getAbsoluteIndexes() ); mypdb.addBlockEnd( sframe->getAbsoluteIndexes().size() );
-  if( sframe->getArgumentNames().size()>0 ) mypdb.setArgumentNames( sframe->getArgumentNames() );
-  Direction mydir(ReferenceConfigurationOptions("DIRECTION")); sframe->setupPCAStorage( mypack ); mydir.read( mypdb ); mydir.zeroDirection();
-  sframe->extractDisplacementVector( eframe->getReferencePositions(), args_ptr, eframe->getReferenceArguments(), false, mydir );
-
-// Now create frames
-  OFile ofile; ofile.open(ofilename); unsigned nframes=0;
-  Direction pos(ReferenceConfigurationOptions("DIRECTION")); pos.read( mypdb );
+  // Now create frames
+  double delr = 1.0 / static_cast<double>( nbetween ); unsigned nframes=0;
   for(int i=0; i<nbefore; ++i) {
-    pos.setDirection( sframe->getReferencePositions(), sframe->getReferenceArguments() );
-    pos.displaceReferenceConfiguration( -i*delr, mydir );
-    mypdb.setAtomPositions( pos.getReferencePositions() );
-    for(unsigned j=0; j<pos.getReferenceArguments().size(); ++j) mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
-    ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
-    mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
+      std::string num; Tools::convert( nframes+1, num ); nframes++;
+      std::string fstr = "frame" + num + ": READ_CONFIG REFERENCE=" + istart;
+      if( argstr.length()>0 ) fstr += " READ_ARG=" + argstr;
+      const char* ifstr=fstr.c_str(); plmd.cmd("readInputLine",ifstr); 
+      setup::SetupReferenceBase* sb = dynamic_cast<setup::SetupReferenceBase*>( plmd.getActionSet()[plmd.getActionSet().size()-1].get() );
+      sb->displaceReferenceConfiguration( -i*delr, displacement );
   }
   for(unsigned i=1; i<nbetween; ++i) {
-    pos.setDirection( sframe->getReferencePositions(), sframe->getReferenceArguments() );
-    pos.displaceReferenceConfiguration( i*delr, mydir );
-    mypdb.setAtomPositions( pos.getReferencePositions() );
-    for(unsigned j=0; j<pos.getReferenceArguments().size(); ++j) mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
-    ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
-    mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
+    std::string num; Tools::convert( nframes+1, num ); nframes++;
+    std::string fstr = "frame" + num + ": READ_CONFIG REFERENCE=" + istart;
+    if( argstr.length()>0 ) fstr += " READ_ARG=" + argstr;
+    const char* ifstr=fstr.c_str(); plmd.cmd("readInputLine",ifstr); 
+    setup::SetupReferenceBase* sb = dynamic_cast<setup::SetupReferenceBase*>( plmd.getActionSet()[plmd.getActionSet().size()-1].get() );
+    sb->displaceReferenceConfiguration( i*delr, displacement );
   }
   for(unsigned i=0; i<nafter; ++i) {
-    pos.setDirection( eframe->getReferencePositions(), eframe->getReferenceArguments() );
-    pos.displaceReferenceConfiguration( i*delr, mydir );
-    mypdb.setAtomPositions( pos.getReferencePositions() );
-    for(unsigned j=0; j<pos.getReferenceArguments().size(); ++j) mypdb.setArgumentValue( sframe->getArgumentNames()[j], pos.getReferenceArgument(j) );
-    ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
-    mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
+    std::string num; Tools::convert( nframes+1, num ); nframes++;
+    std::string fstr = "frame" + num + ": READ_CONFIG REFERENCE=" + iend;
+    if( argstr.length()>0 ) fstr += " READ_ARG=" + argstr;
+    const char* ifstr=fstr.c_str(); plmd.cmd("readInputLine",ifstr);
+    setup::SetupReferenceBase* sb = dynamic_cast<setup::SetupReferenceBase*>( plmd.getActionSet()[plmd.getActionSet().size()-1].get() );
+    sb->displaceReferenceConfiguration( i*delr, displacement );
   }
 
-// double mean=0; printf("DISTANCE BETWEEN ORIGINAL FRAMES %f \n",pathlen);
-// for(unsigned i=1;i<final_path.size();++i){
-//    double len = final_path[i]->calc( final_path[i-1]->getReferencePositions(), fpbc, args, final_path[i-1]->getReferenceArguments(), mypack, false );
-//    printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
-//    mean+=len;
-// }
-// printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );
+  // double mean=0; printf("DISTANCE BETWEEN ORIGINAL FRAMES %f \n",pathlen);
+  // for(unsigned i=1; i<final_path.size(); ++i) {
+  //   mypack.clear(); double len = final_path[i]->calc( final_path[i-1]->getReferencePositions(), fpbc, args, final_path[i-1]->getReferenceArguments(), mypack, false );
+  //   printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
+  //   mean+=len;
+  // }
+  // printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );
 
-// Delete the args as we don't need them anymore
-//  for(unsigned i=0; i<args.size(); ++i) delete args[i];
-  ofile.close(); return 0;
+  // This prints out our final reference configurations
+  std::string pinput="PRINT FILE=" + ofilename + " FMT=" + ofmt; 
+  for(unsigned i=0;i<nframes;++i){ std::string num; Tools::convert( i+1, num ); pinput += " CONFIG" + num + "=frame" + num; }
+  const char* pcinp=pinput.c_str(); plmd.cmd("readInputLine",pcinp); 
+  Action* paction = plmd.getActionSet()[plmd.getActionSet().size()-1].get();
+  ActionAtomistic* aact = dynamic_cast<ActionAtomistic*>( paction ); 
+  aact->retrieveAtoms(); paction->update();
+  return 0;
 }
 
 } // End of namespace

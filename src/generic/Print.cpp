@@ -28,6 +28,7 @@
 #include "core/Average.h"
 #include "core/SetupMolInfo.h"
 #include "core/ActionSet.h"
+#include "setup/SetupReferenceBase.h"
 
 using namespace std;
 
@@ -99,6 +100,8 @@ class Print :
   vector<double> lower, upper;
 /////////////////////////////////////////
   double dot_connection_cutoff;
+  std::vector<unsigned> refarg_ends;
+  std::vector<std::vector<AtomNumber> > reference_atoms;
   bool isInTargetRange( const std::vector<double>& argvals ) const ;
 public:
   void calculate() {}
@@ -126,6 +129,7 @@ void Print::registerKeywords(Keywords& keys) {
   keys.add("compulsory","UNITS","PLUMED","the length units you would like to use when outputting atoms in you xyz file");
   keys.add("compulsory","STRIDE","0","the frequency with which the quantities of interest should be output");
   keys.add("compulsory","CONNECTION_TOL","epsilson","if value of matrix element between i and j is greater than this value they are not connected");
+  keys.add("numbered","CONFIG","label of the reference configuration that you would like to print out.  Only used with pdb option");
   keys.add("optional","FILE","the name of the file on which to output these quantities");
   keys.add("optional","FMT","the format that should be used to output real numbers");
   keys.add("atoms","ORIGIN","You can use this keyword to specify the position of an atom as an origin. The positions output will then be displayed relative to that origin");
@@ -155,7 +159,7 @@ Print::Print(const ActionOptions&ao):
   if(file.length()>0) {
     std::size_t dot=file.find_first_of(".");
     if( dot!=std::string::npos ) tstyle=file.substr(dot+1);
-    if( tstyle!="xyz" && tstyle!="ndx" && tstyle!="grid" && tstyle!="cube" && tstyle!="dot" ) tstyle="colvar";
+    if( tstyle!="xyz" && tstyle!="ndx" && tstyle!="grid" && tstyle!="cube" && tstyle!="dot" && tstyle!="pdb" ) tstyle="colvar";
     log.printf("  on file %s\n",file.c_str());
     if( tstyle!="grid" && tstyle!="cube" ) { ofile.link(*this); ofile.open(file); }
   } else {
@@ -310,6 +314,30 @@ Print::Print(const ActionOptions&ao):
     if( ctol=="epsilon" ) dot_connection_cutoff = epsilon;
     else Tools::convert( ctol, dot_connection_cutoff );
     log.printf("  elements in graph are shown connected if matrix element is greater than %f \n", dot_connection_cutoff );
+  } else if( tstyle=="pdb" ) {
+    log.printf("  printing configurations to a pdb file \n");
+    std::vector<AtomNumber> all_atoms; std::vector<Value*> all_args; refarg_ends.push_back(0);
+    for(unsigned i=1;;++i) {
+        std::vector<std::string> confstr;
+        if( !parseNumberedVector("CONFIG",i,confstr) ) break;
+        std::vector<AtomNumber> atlist; interpretAtomList( confstr, atlist );
+        log.printf("  %dth configuration involves ", i ); std::vector<AtomNumber> at_flist;
+        if( atlist.size()>0 ) log.printf("atoms :");
+        for(unsigned j=0;j<atlist.size();++j) { 
+            all_atoms.push_back( atlist[j] ); log.printf(" %d", atlist[j].serial() ); 
+            setup::SetupReferenceBase* myset=dynamic_cast<setup::SetupReferenceBase*>( atoms.getVirtualAtomsAction(atlist[j]) );
+            if( myset ) at_flist.push_back( myset->getAtomNumber( atlist[j] ) );
+            else at_flist.push_back( atlist[j] );
+        }
+        reference_atoms.push_back( at_flist );
+        // Now see if there are any arguments 
+        std::vector<Value*> myargs; interpretArgumentList( confstr, myargs );
+        if( atlist.size()>0 && myargs.size()>0 ) log.printf(" and arguments :");
+        else if( myargs.size()>0 ) log.printf("arguments :");
+        for(unsigned j=0;j<myargs.size();++j) { all_args.push_back( myargs[j] );  log.printf(" %s", myargs[j]->getName().c_str() ); }
+        log.printf("\n"); refarg_ends.push_back( all_args.size() );
+    }  
+    requestAtoms( all_atoms ); requestArguments( all_args, false );
   } else {
     error("expected output does not exist");
   }
@@ -349,7 +377,7 @@ bool Print::isInTargetRange( const std::vector<double>& argvals ) const {
 
 void Print::update() {
   if( getStep()==0 ) {
-    bool dontprint=true;
+    bool dontprint=getNumberOfArguments()>0;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       Average* av = dynamic_cast<Average*>( getPntrToArgument(i)->getPntrToAction() );
       if( !av ) { dontprint=false; break; }
@@ -536,6 +564,53 @@ void Print::update() {
       }
     }
     ogfile.printf("} \n"); ogfile.close();
+  } else if( tstyle=="pdb" ) {
+    OFile opdbf; opdbf.link(*this);
+    opdbf.setBackupString("analysis");
+    opdbf.open( file ); unsigned n=0; 
+    std::size_t psign=fmt.find("%"); plumed_assert( psign!=std::string::npos ); 
+    std::string descr2="%s=%-" + fmt.substr(psign+1) + " ";
+    double lenunits = atoms.getUnits().getLength()/0.1;
+    for(unsigned i=0;i<reference_atoms.size();++i) {
+        if( getNumberOfArguments()>0 ) {
+            for(unsigned j=refarg_ends[i];j<refarg_ends[i+1];++j) {
+                Value* thisarg = getPntrToArgument(j); opdbf.printf("REMARK ");
+                setup::SetupReferenceBase* myset = dynamic_cast<setup::SetupReferenceBase*>( thisarg->getPntrToAction() );
+                if( myset ) {
+                    for(unsigned k=0;k<thisarg->getShape()[0];++k) {
+                        opdbf.printf( descr2.c_str(), myset->getArgName(k).c_str(), thisarg->get(k) ); 
+                    }
+                } else {
+                    if( thisarg->getRank()==0 ) {
+                        opdbf.printf( descr2.c_str(), thisarg->getName().c_str(), thisarg->get() ); 
+                    } else if( thisarg->getRank()==1 ) {
+                        for(unsigned k=0;k<thisarg->getShape()[0];++k) {
+                            std::string knum; Tools::convert( k+1, knum ); 
+                            opdbf.printf( descr2.c_str(), (thisarg->getName() + "." + knum).c_str(), thisarg->get(k) );
+                        }
+                    } else if( thisarg->getRank()==2 ) { 
+                        unsigned m=0;
+                        for(unsigned k=0;k<thisarg->getShape()[0];++k) {
+                            std::string knum; Tools::convert( k+1, knum ); 
+                            for(unsigned n=0;n<thisarg->getShape()[1];++n) {
+                                std::string nnum; Tools::convert( n+1, nnum );
+                                opdbf.printf( descr2.c_str(), (thisarg->getName() + "." + knum + "." + nnum).c_str(), thisarg->get(m) ); m++;
+                            }
+                        }
+                    } else plumed_merror("do not know how to output this data");
+                }
+            }
+        }
+        for(unsigned j=0;j<reference_atoms[i].size();++j) {
+            Vector pos=getPosition(n); 
+            opdbf.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                         reference_atoms[i][j].serial(), j,
+                         lenunits*pos[0], lenunits*pos[1], lenunits*pos[2], getMass(n), getCharge(n) ); 
+            n++;
+        }
+        opdbf.printf("\nEND\n");
+    }
+    opdbf.close();
   }
 }
 

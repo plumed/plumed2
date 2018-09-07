@@ -29,9 +29,12 @@ namespace PLMD {
 namespace setup {
 
 class ReadReferenceConfiguration : public SetupReferenceBase {
+private:
+  std::vector<std::string> read_args;
 public: 
   static void registerKeywords( Keywords& keys );
   explicit ReadReferenceConfiguration(const ActionOptions&ao);
+  std::string getArgName( const unsigned& k ) const ;
 };
 
 PLUMED_REGISTER_ACTION(ReadReferenceConfiguration,"READ_CONFIG")
@@ -40,32 +43,51 @@ void ReadReferenceConfiguration::registerKeywords( Keywords& keys ) {
   SetupReferenceBase::registerKeywords( keys ); 
   keys.add("compulsory","REFERENCE","a file in pdb format containing the positions of the atoms in the reference structure.");
   keys.add("compulsory","NUMBER","1","if there are multiple frames in the input file which structure would you like to read in here");
+  keys.addFlag("NOALIGN",false,"when this flag is NOT present the geometric center of the molecule is calculated using the align column as weights.  This geometric center is then placed at the origin.");
+  keys.add("hidden","READ_ARG","this is used by pathtool to get the arguments that must be read in");
 }
 
 ReadReferenceConfiguration::ReadReferenceConfiguration(const ActionOptions&ao):
 Action(ao),
 SetupReferenceBase(ao)
 {
-  
+  if( getNumberOfArguments()==0 ) parseVector("READ_ARG",read_args);
   std::string reference; parse("REFERENCE",reference); 
   FILE* fp=fopen(reference.c_str(),"r");
   if(!fp) error("could not open reference file " + reference );
-  unsigned number; parse("NUMBER",number);
+  unsigned number; parse("NUMBER",number); Vector center; center.zero();
+  bool noalign=false; parseFlag("NOALIGN",noalign);
   for(unsigned i=0;i<number;++i) {
       PDB pdb; bool do_read=pdb.readFromFilepointer(fp,atoms.usingNaturalUnits(),0.1/atoms.getUnits().getLength()); 
       if(i==number-1) {
-         if( pdb.getPositions().size()==0 && getNumberOfArguments()==0 ) error("found no atoms in input and names of arguments to read in were not specified in input.  Use ARG");
+         if( pdb.getPositions().size()==0 && getNumberOfArguments()==0 && read_args.size()==0 ) { 
+             error("found no atoms in input and names of arguments to read in were not specified in input.  Use ARG");
+         }
          log.printf("  reading %dth reference structure from file %s \n", number, reference.c_str());
-         log.printf("  which contains %d atoms and %d arguments \n", pdb.getPositions().size(), getNumberOfArguments() ); 
+         log.printf("  which contains %d atoms and", pdb.getPositions().size() );
+         if( read_args.size()>0 ) log.printf(" %d arguments \n", read_args.size() );
+         else log.printf(" %d arguments \n", getNumberOfArguments() );
          if( pdb.getPositions().size()>0 ) {
              log.printf("  indices of atoms are : ");
              for(unsigned i=0;i<pdb.getPositions().size();++i) log.printf("%d ",pdb.getAtomNumbers()[i].serial() );
              log.printf("\n"); 
+
+             // Compute position of center of molecule
+             if( !noalign ) {
+                 std::vector<double> align( pdb.getOccupancy() ); double asum=0;
+                 for(unsigned i=0;i<align.size();++i) asum += align[i];
+                 for(unsigned i=0;i<pdb.getPositions().size();++i) center += align[i]*pdb.getPositions()[i] / asum;
+             }
          }
          std::vector<std::string> remark( pdb.getRemark() );
          if( getNumberOfArguments()>0 ) {
              log.printf("  labels of arguments are : ");
              for(unsigned i=0;i<getNumberOfArguments();++i) log.printf("%s ", getPntrToArgument(i)->getName().c_str() );
+             log.printf("\n");
+         } 
+         if( read_args.size()>0 ) {
+             log.printf("  labels of arguments are : ");
+             for(unsigned i=0;i<read_args.size();++i) log.printf("%s ", read_args[i].c_str() );
              log.printf("\n");
          }
          fclose(fp);
@@ -73,14 +95,15 @@ SetupReferenceBase(ao)
          // Now make virtual atoms for all these positions and set them to the pdb positions
          unsigned natoms=pdb.getPositions().size(); 
          if( natoms>0 ) {
-             hasatoms=true; myindices.resize( natoms ); 
+             hasatoms=true; myindices.resize( natoms ); double mtot=0, qtot=0;
+             for(unsigned i=0;i<natoms;++i) { mtot += pdb.getOccupancy()[i]; qtot += pdb.getBeta()[i]; }
              for(unsigned i=0;i<natoms;++i){
                  myindices[i] = pdb.getAtomNumbers()[i];
                  AtomNumber index = atoms.addVirtualAtom( this );
                  mygroup.push_back( index ); 
-                 atoms.setVatomMass( index, pdb.getOccupancy()[i] );
-                 atoms.setVatomCharge( index, pdb.getBeta()[i] );
-                 atoms.setVatomPosition( index, pdb.getPositions()[i] );
+                 atoms.setVatomMass( index, pdb.getOccupancy()[i]/mtot );
+                 atoms.setVatomCharge( index, pdb.getBeta()[i]/qtot );
+                 atoms.setVatomPosition( index, pdb.getPositions()[i] - center );
              }
              atoms.insertGroup( getLabel(), mygroup );
              // Get the block extents 
@@ -117,6 +140,13 @@ SetupReferenceBase(ao)
                  } else error("cannot deal with objects with ranks greater than 2");
              }
          }
+         if( read_args.size()>0 ) {
+             std::vector<unsigned> shape( 1 ); shape[0] = read_args.size();
+             addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore( getLabel() );
+             for(unsigned i=0;i<read_args.size();++i) {
+                 double val; Tools::parse( remark, read_args[i], val ); getPntrToComponent(0)->set( i, val );
+             }
+         }
          // Set the box size if this information was read
          if( pdb.cellWasRead() ) {
              Tensor box( pdb.getBox() );
@@ -126,6 +156,11 @@ SetupReferenceBase(ao)
       }
       if( !do_read ) error("not enough frames input input file " + reference );
   }
+}
+
+std::string ReadReferenceConfiguration::getArgName( const unsigned& k ) const {
+  if( read_args.size()>0 ) return read_args[k];
+  return SetupReferenceBase::getArgName(k);
 }
 
 }

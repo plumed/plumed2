@@ -71,6 +71,12 @@ bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vec
 void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg) {
   unsigned nargs = 0;
   for(unsigned i=0; i<c.size(); i++) {
+    // Skip this option if this is a refernece configuration that only gives the positions of atoms
+    ActionSetup* setup=plumed.getActionSet().selectWithLabel<ActionSetup*>(c[i]);
+    if( setup ) { 
+        ActionWithValue* avs=dynamic_cast<ActionWithValue*>( setup );
+        if( avs->getNumberOfComponents()==0 && getName()=="PRINT") continue; 
+    }
     // is a regex? then just interpret it. The signal is ()
     if(!c[i].compare(0,1,"(")) {
       unsigned l=c[i].length();
@@ -339,7 +345,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
 }
 
 unsigned ActionWithArguments::setupActionInChain() {
-  plumed_assert( done_over_stream );
+  plumed_assert( done_over_stream ); 
   std::vector<std::string> alabels; std::vector<ActionWithValue*> f_actions;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     bool found=false; std::string mylab = (arguments[i]->getPntrToAction())->getLabel();
@@ -371,7 +377,8 @@ unsigned ActionWithArguments::setupActionInChain() {
   }
 
   // Now add this argument to the chain
-  bool added=false; ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );
+  bool added=false, all_setup=true; 
+  ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     // Ensures we don't add actions to setup chains
     ActionSetup* as = dynamic_cast<ActionSetup*>( arguments[i]->getPntrToAction() );
@@ -379,8 +386,9 @@ unsigned ActionWithArguments::setupActionInChain() {
     if( !as && arguments[i]->getRank()>0 ) {
       if( (arguments[i]->getPntrToAction())->addActionToChain( alabels, av ) ) { added=true; break; }
     }
+    if( !as ) all_setup=false;
   }
-  plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
+  if( !all_setup ) plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
 
   // Now make sure we have the derivative size correct
   unsigned nderivatives=0;

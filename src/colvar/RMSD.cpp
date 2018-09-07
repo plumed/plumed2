@@ -42,6 +42,7 @@ private:
   bool squared;
   bool nopbc;
   bool displacement;
+  bool norm_weights;
   std::string type;
   std::vector<double> align,displace,sqrtdisplace;
   PLMD::RMSD myrmsd;
@@ -172,6 +173,7 @@ void RMSD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","ALIGN","1.0","the weights to use when aligning to the reference structure");
   keys.add("compulsory","DISPLACE","1.0","the weights to use when calculating the displacement from the reference structure");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
+  keys.addFlag("UNORMALIZED",false,"by default the mean sequare deviation or root mean square deviation is calculated.  If this option is given no averaging is done");
   keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
   keys.addFlag("DISPLACEMENT",false,"Calculate the vector of displacements instead of the length of this vector");
 }
@@ -187,6 +189,7 @@ RMSD::RMSD(const ActionOptions&ao):
   // Check for shorcut 
   std::vector<AtomNumber> atoms_ref, atoms_conf;
   std::string reference; parse("REFERENCE",reference);
+  bool unorm=false; parseFlag("UNORMALIZED",unorm); norm_weights=!unorm;
   if( reference!="") {
       // Create the input reference position
       readInputLine( getLabel() + "_ref: READ_CONFIG REFERENCE=" + reference );
@@ -198,7 +201,7 @@ RMSD::RMSD(const ActionOptions&ao):
       // Get the reference atoms
       std::vector<std::string> refname(1); refname[0]=getLabel() + "_ref"; interpretAtomList( refname, atoms_ref ); 
       // Get the atom numbers
-      atoms_conf = pdb.getAtomNumbers(); align = pdb.getOccupancy(); displace= pdb.getBeta();
+      atoms_conf = pdb.getAtomNumbers(); align = pdb.getOccupancy(); displace = pdb.getBeta();
   } else {
       parseAtomList("REFERENCE_ATOMS",atoms_ref); parseAtomList("ATOMS",atoms_conf);
       align.resize( atoms_ref.size() ); parseVector("ALIGN",align);
@@ -211,6 +214,7 @@ RMSD::RMSD(const ActionOptions&ao):
   if( atoms_ref.size()!=atoms_conf.size() ) error("size mismatch between reference atoms and atoms involved");
   double wa=0, wd=0; sqrtdisplace.resize( displace.size() );
   for(unsigned i=0; i<align.size(); ++i) { wa+=align[i]; wd+=displace[i]; }
+  if( unorm ) { wd = 1; }
   for(unsigned i=0; i<align.size(); ++i){ align[i] /= wa; displace[i] /= wd; sqrtdisplace[i] = sqrt(displace[i]); }
 
   if( displacement ) {
@@ -264,7 +268,7 @@ void RMSD::setReferenceConfiguration() {
   Vector center;
   for(unsigned i=0; i<pos.size(); ++i) center+=pos[i]*align[i];
   for(unsigned i=0; i<pos.size(); ++i) pos[i] -= center;
-  myrmsd.clear(); myrmsd.set(align,displace,pos,type);
+  myrmsd.clear(); myrmsd.set(align,displace,pos,type,true,norm_weights);
 }
 
 void RMSD::makeStructureWhole() {
