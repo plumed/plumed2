@@ -113,8 +113,8 @@ void DumpMassCharge::registerKeywords( Keywords& keys ) {
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
-  keys.add("atoms", "ATOMS", "the atom indices whose positions you would like to print out");
-  keys.add("compulsory", "FILE", "file on which to output coordinates. .gro extension is automatically detected");
+  keys.add("atoms", "ATOMS", "the atom indices whose charges and masses you would like to print out");
+  keys.add("compulsory", "FILE", "file on which to output charges and masses.");
 }
 
 DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
@@ -126,7 +126,8 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
 {
   vector<AtomNumber> atoms;
   parse("FILE",file);
-  if(file.length()==0) error("name out output file was not specified");
+  if(file.length()==0) error("name of output file was not specified");
+  log.printf("  output written to file %s\n",file.c_str());
 
   parseAtomList("ATOMS",atoms);
 
