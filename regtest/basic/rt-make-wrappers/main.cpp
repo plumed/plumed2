@@ -164,6 +164,14 @@ int main(){
       if(p) return 0;
     }
 
+// test conversions to void
+    {
+      PLMD::Plumed p;
+      void* x=plumed_c2v(p);
+      PLMD::Plumed q(x);
+      testmecpp(q);
+    }
+
     {
 // test move semantics
       PLMD::Plumed p;
@@ -253,6 +261,15 @@ int main(){
     {
       plumed p=plumed_create_invalid();
       if(plumed_valid(p)) return 0;
+      plumed_finalize(p);
+    }
+// test conversion to void
+    {
+      plumed p=plumed_create();
+      void* x=plumed_c2v(p);
+      plumed q=plumed_create_reference_v(x);
+      testme(q,plumed_cmd);
+      plumed_finalize(q);
       plumed_finalize(p);
     }
     plumed p=plumed_create();
