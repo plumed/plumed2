@@ -50,6 +50,9 @@ void Units::setEnergy(const std::string &s) {
     energy=0.001;
   } else if(s=="eV") {
     energy=96.48530749925792;
+  } else if(s=="Hartree" || s =="Ha") {
+    energyString="Hartree";
+    energy=2625.499638;
   } else {
     energy=-1.0;
     energyString="";
@@ -66,6 +69,8 @@ void Units::setLength(const std::string &s) {
     length=0.1;
   } else if(s=="um") {
     length=1000.0;
+  } else if(s=="Bohr") {
+    length=0.052917721067;
   } else {
     length=-1.0;
     lengthString="";
@@ -82,6 +87,8 @@ void Units::setTime(const std::string &s) {
     time=1000.0;
   } else if(s=="fs") {
     time=0.001;
+  } else if(s=="atomic") {
+    time=2.418884326509e-5;
   } else {
     time=-1.0;
     timeString="";
@@ -142,4 +149,3 @@ void Units::setMass(const double s) {
 
 
 }
-
