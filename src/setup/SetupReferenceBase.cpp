@@ -92,17 +92,44 @@ void SetupReferenceBase::transferDataToPlumed( const unsigned& npos, std::vector
   }
 }
 
+void SetupReferenceBase::getReferenceConfiguration( std::vector<double>& ref ) const {
+  unsigned n=0;
+  if( getNumberOfComponents()>0 ) {
+      Value* myval=getPntrToOutput(0);
+      unsigned nvals = myval->getNumberOfValues( getLabel() );
+      for(unsigned i=0;i<nvals;++i) { ref[n] = myval->get(i); n++; }
+  }
+  for(unsigned i=0;i<mygroup.size();++i) {
+      Vector cpos( atoms.getVatomPosition(mygroup[i]) );
+      for(unsigned k=0;k<3;++k) { ref[n] = cpos[k]; n++; } 
+  }
+}
+
+void SetupReferenceBase::setReferenceConfiguration( std::vector<double>& ref ) {
+  unsigned n=0;
+  if( getNumberOfComponents()>0 ) {
+      Value* myval=getPntrToOutput(0);
+      unsigned nvals = myval->getNumberOfValues( getLabel() );
+      for(unsigned i=0;i<nvals;++i) { myval->set( i, ref[n]) ; n++; }
+  }
+  for(unsigned i=0;i<mygroup.size();++i) {
+      Vector cpos( atoms.getVatomPosition(mygroup[i]) );
+      for(unsigned k=0;k<3;++k) { cpos[k] = ref[n]; n++; }
+      atoms.setVatomPosition( mygroup[i], cpos ); 
+  }
+}
+
 void SetupReferenceBase::displaceReferenceConfiguration( const double& val, const std::vector<double>& dir ) {
   unsigned n=0;
+  if( getNumberOfComponents()>0 ) {
+      Value* myval=getPntrToOutput(0);
+      unsigned nvals = myval->getNumberOfValues( getLabel() );
+      for(unsigned i=0;i<nvals;++i) { myval->set( i, myval->get(i) + val*dir[n]) ; n++; }
+  }
   for(unsigned i=0;i<mygroup.size();++i) {
       Vector cpos( atoms.getVatomPosition(mygroup[i]) );
       for(unsigned k=0;k<3;++k) { cpos[k] = cpos[k] + val*dir[n+k]; }
       atoms.setVatomPosition( mygroup[i], cpos ); n += 3;
-  }
-  if( getNumberOfComponents()>0 ) { 
-      Value* myval=getPntrToOutput(0);
-      unsigned nvals = myval->getNumberOfValues( getLabel() );
-      for(unsigned i=0;i<nvals;++i) { myval->set( i, myval->get(i) + val*dir[n]) ; n++; }
   }
 }
 

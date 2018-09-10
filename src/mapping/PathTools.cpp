@@ -164,72 +164,90 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   if( ifilename.length()>0 ) {
     fprintf(out,"Reparameterising path in file named %s so that all frames are equally spaced \n",ifilename.c_str() );
     FILE* fp=fopen(ifilename.c_str(),"r");
-    bool do_read=true; std::vector<std::unique_ptr<ReferenceConfiguration>> frames;
+    bool do_read=true; unsigned nfram=0;
+    std::vector<double> alig, disp; std::vector<AtomNumber> indices;
     while (do_read) {
       PDB mypdb;
       // Read the pdb file
       do_read=mypdb.readFromFilepointer(fp,false,0.1);
       if( do_read ) {
-        auto mymsd(metricRegister().create<ReferenceConfiguration>( mtype, mypdb ));
-        frames.emplace_back( std::move(mymsd) );
+          std::string num; Tools::convert( nfram+1, num ); nfram++;
+          std::string iinput = "ref_" + num + ": READ_CONFIG REFERENCE=" + ifilename + " NUMBER=" + num;
+          if( argstr.length()>0 ) iinput += " READ_ARG=" + argstr;
+          const char* icinp=iinput.c_str(); plmd.cmd("readInputLine",icinp);
+          if( nfram==1 ) {
+              indices.resize( mypdb.getAtomNumbers().size() );
+              for(unsigned i=0;i<indices.size();++i) indices[i]=mypdb.getAtomNumbers()[i];
+              alig.resize( mypdb.getOccupancy().size() );
+              for(unsigned i=0;i<alig.size();++i) alig[i]=mypdb.getOccupancy()[i];
+              disp.resize( mypdb.getBeta().size() );
+              for(unsigned i=0;i<disp.size();++i) disp[i]=mypdb.getBeta()[i];
+          }
       }
     }
+    std::string reparam_str = "REPARAMETERIZE_PATH"; 
+    for(unsigned i=0;i<nfram;++i){ std::string num; Tools::convert(i+1,num); reparam_str += " FRAME" + num + "=ref_" + num; } 
     std::vector<unsigned> fixed; parseVector("--fixed",fixed);
     if( fixed.size()==1 ) {
       if( fixed[0]!=0 ) error("input to --fixed should be two integers");
-      fixed.resize(2); fixed[0]=0; fixed[1]=frames.size()-1;
+      fixed.resize(2); fixed[0]=0; fixed[1]=nfram-1;
     } else if( fixed.size()==2 ) {
-      if( fixed[0]<0 || fixed[1]<0 || fixed[0]>(frames.size()-1) || fixed[1]>(frames.size()-1) ) {
+      if( fixed[0]<0 || fixed[1]<0 || fixed[0]>(nfram-1) || fixed[1]>(nfram-1) ) {
         error("input to --fixed should be two numbers between 0 and the number of frames-1");
       }
+    } else error("input to --fixed should be two integers");
+    std::string fix1, fix2; Tools::convert( fixed[0], fix1 ); Tools::convert( fixed[1], fix2 );
+    reparam_str += " FIXED=" + fix1 + "," + fix2;
+    std::string tol; parse("--tolerance",tol); reparam_str += " TOL=" + tol; 
+// Now create the metric object
+    reparam_str += " METRIC={";
+    if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
+        std::string atnum; Tools::convert( indices[0].serial(), atnum ); 
+        reparam_str += "RMSD DISPLACEMENT SQUARED UNORMALIZED TYPE=" + mtype + " REFERENCE_ATOMS=" + atnum;
+        for(unsigned i=1;i<indices.size();++i){ Tools::convert( indices[i].serial(), atnum ); reparam_str += "," + atnum; }       
+        natoms=indices[0].serial(); 
+        for(unsigned i=1;i<indices.size();++i) {
+          if( indices[i].serial()>natoms ) natoms = indices[i].serial();
+        }
+        Tools::convert( natoms+indices[0].serial(), atnum ); reparam_str += " ATOMS=" + atnum;
+        for(unsigned i=1;i<alig.size();++i){ Tools::convert( natoms + indices[i].serial(), atnum ); reparam_str += "," + atnum; }  
+        // Get the align values 
+        std::string anum; Tools::convert( alig[0], anum ); reparam_str += " ALIGN=" + anum;
+        for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); reparam_str += "," + anum; }
+        // Get the displace values
+        std::string dnum; Tools::convert( disp[0], dnum ); reparam_str += " DISPLACE=" + dnum;
+        for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); reparam_str += "," + dnum; }
+    } else if( mtype=="EUCLIDEAN" ) {
+        // std::string minput = "DIFFERENCE ARG1=end ARG2=start";
     } else {
-      error("input to --fixed should be two integers");
+       // Add functionality to read plumed input here
+       plumed_merror("metric type " + mtype + " has not been implemented");
     }
-    std::vector<AtomNumber> atoms; std::vector<std::string> arg_names;
-    for(unsigned i=0; i<frames.size(); ++i) {
-      frames[i]->getAtomRequests( atoms);
-      frames[i]->getArgumentRequests( arg_names );
-    }
-    // Generate stuff to reparameterize
-    Pbc fake_pbc; std::vector<std::unique_ptr<Value>> vals;
-    for(unsigned i=0; i<frames[0]->getNumberOfReferenceArguments(); ++i) {
-      vals.emplace_back(new Value()); vals[vals.size()-1]->setNotPeriodic();
-    }
+    reparam_str += "}";
 
-    // temporary pointes used to make the conversion once
+    // Now do the reparameterization
+    const char* icinp= reparam_str.c_str(); plmd.cmd("readInputLine",icinp);
+    Action* raction = plmd.getActionSet()[plmd.getActionSet().size()-1].get();
+    raction->update();
 
-    auto vals_ptr=Tools::unique2raw(vals);
-    // And reparameterize
-    PathReparameterization myparam( fake_pbc, vals_ptr, frames );
-    // And make all points equally spaced
-    double tol; parse("--tolerance",tol); myparam.reparameterize( fixed[0], fixed[1], tol );
+    // And print the final reference configurations
+    std::string pinput="PRINT FILE=" + ofilename + " FMT=" + ofmt;
+    for(unsigned i=0;i<nfram;++i){ std::string num; Tools::convert( i+1, num ); pinput += " CONFIG" + num + "=ref_" + num; }
+    const char* pcinp=pinput.c_str(); plmd.cmd("readInputLine",pcinp);
+    Action* paction = plmd.getActionSet()[plmd.getActionSet().size()-1].get();
+    ActionAtomistic* aact = dynamic_cast<ActionAtomistic*>( paction );
+    aact->retrieveAtoms(); paction->update();
 
-    // Ouput data on spacings
-    double mean=0;
-    MultiValue myvpack( 1, frames[0]->getNumberOfReferenceArguments() + 3*frames[0]->getNumberOfReferencePositions() + 9 );
-    ReferenceValuePack mypack( frames[0]->getNumberOfReferenceArguments(), frames[0]->getNumberOfReferencePositions(), myvpack );
-    for(unsigned i=1; i<frames.size(); ++i) {
-      mypack.clear(); double len=0; // double len = frames[i]->calc( frames[i-1]->getReferencePositions(), fake_pbc, vals, frames[i-1]->getReferenceArguments(), mypack, false );
-      printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
-      mean+=len;
-    }
-    printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( frames.size()-1 ) );
-
-    // Delete all the frames
-    OFile ofile; ofile.open(ofilename);
-    //for(unsigned i=0; i<frames.size(); ++i) { frames[i]->print( ofile, ofmt, 10. ); }
-    std::vector<std::string> argnames; frames[0]->getArgumentRequests( argnames );
-    std::vector<AtomNumber> atindices; frames[0]->getAtomRequests( atindices );
-    PDB mypdb; mypdb.setAtomNumbers( atindices ); mypdb.setArgumentNames( argnames );
-    for(unsigned i=0; i<frames.size(); ++i) {
-      mypdb.setAtomPositions( frames[i]->getReferencePositions() );
-      for(unsigned j=0; j<argnames.size(); ++j) mypdb.setArgumentValue( argnames[j], frames[i]->getReferenceArguments()[j] );
-      ofile.printf("REMARK TYPE=%s\n",mtype.c_str() );
-      mypdb.print( 10, NULL, ofile, ofmt );
-    }
-    // Delete the vals as we don't need them
-    // for(unsigned i=0; i<vals.size(); ++i) delete vals[i];
-    // Return as we are done
+//     // Ouput data on spacings
+//     double mean=0;
+//     MultiValue myvpack( 1, frames[0]->getNumberOfReferenceArguments() + 3*frames[0]->getNumberOfReferencePositions() + 9 );
+//     ReferenceValuePack mypack( frames[0]->getNumberOfReferenceArguments(), frames[0]->getNumberOfReferencePositions(), myvpack );
+//     for(unsigned i=1; i<frames.size(); ++i) {
+//       mypack.clear(); double len = frames[i]->calc( frames[i-1]->getReferencePositions(), fake_pbc, vals, frames[i-1]->getReferenceArguments(), mypack, false );
+//       printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
+//       mean+=len;
+//     }
+//     printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( frames.size()-1 ) );
     return 0;
   }
 
@@ -311,14 +329,6 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     setup::SetupReferenceBase* sb = dynamic_cast<setup::SetupReferenceBase*>( plmd.getActionSet()[plmd.getActionSet().size()-1].get() );
     sb->displaceReferenceConfiguration( i*delr, displacement );
   }
-
-  // double mean=0; printf("DISTANCE BETWEEN ORIGINAL FRAMES %f \n",pathlen);
-  // for(unsigned i=1; i<final_path.size(); ++i) {
-  //   mypack.clear(); double len = final_path[i]->calc( final_path[i-1]->getReferencePositions(), fpbc, args, final_path[i-1]->getReferenceArguments(), mypack, false );
-  //   printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
-  //   mean+=len;
-  // }
-  // printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );
 
   // This prints out our final reference configurations
   std::string pinput="PRINT FILE=" + ofilename + " FMT=" + ofmt; 

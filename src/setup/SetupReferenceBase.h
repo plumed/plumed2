@@ -58,6 +58,8 @@ public:
   void transferDataToPlumed( const unsigned& npos, std::vector<double>& masses, std::vector<double>& charges, 
                              std::vector<Vector>& positions, const std::string& argname, PlumedMain& plmd ) const ;
   void displaceReferenceConfiguration( const double& val, const std::vector<double>& dir );
+  void setReferenceConfiguration( std::vector<double>& ref );
+  void getReferenceConfiguration( std::vector<double>& ref ) const ;
   AtomNumber getAtomNumber( const AtomNumber& anum ) const ;
   virtual std::string getArgName( const unsigned& k ) const ;
 };
