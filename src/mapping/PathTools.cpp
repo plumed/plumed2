@@ -218,7 +218,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
         std::string dnum; Tools::convert( disp[0], dnum ); reparam_str += " DISPLACE=" + dnum;
         for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); reparam_str += "," + dnum; }
     } else if( mtype=="EUCLIDEAN" ) {
-        // std::string minput = "DIFFERENCE ARG1=end ARG2=start";
+        reparam_str += "DIFFERENCE ARG1=arg2 ARG2=arg1";
     } else {
        // Add functionality to read plumed input here
        plumed_merror("metric type " + mtype + " has not been implemented");
