@@ -19,27 +19,30 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionSetup.h"
-#include "PlumedMain.h"
-#include "ActionSet.h"
-#include "tools/Exception.h"
-#include "ActionAnyorder.h"
+#ifndef __PLUMED_core_ActionAnyorder_h
+#define __PLUMED_core_ActionAnyorder_h
+
+#include "Action.h"
 
 namespace PLMD {
 
-ActionSetup::ActionSetup(const ActionOptions&ao):
-  Action(ao)
-{
-  const ActionSet& actionset(plumed.getActionSet());
-  for(const auto & p : actionset) {
-// check that all the preceeding actions are ActionSetup
-    if( !dynamic_cast<ActionSetup*>(p.get()) && !dynamic_cast<ActionAnyorder*>(p.get()) ) error("Action " + getLabel() + " is a setup action, and should be only preceeded by other setup actions or by actions that can be used in any order.");
-  }
+/**
+\ingroup MULTIINHERIT
+Action used to create a PLMD::Action that can go both before and after ActionSetup actions.
+*/
+class ActionAnyorder :
+  public virtual Action {
+public:
+/// Constructor
+  explicit ActionAnyorder(const ActionOptions&ao);
+/// Creator of keywords
+  static void registerKeywords( Keywords& keys );
+/// Do nothing.
+  void calculate() {}
+/// Do nothing.
+  void apply() {}
+};
+
 }
 
-void ActionSetup::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords(keys);
-  keys.remove("LABEL");
-}
-
-}
+#endif

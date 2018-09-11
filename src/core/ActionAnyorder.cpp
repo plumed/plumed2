@@ -19,27 +19,20 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionSetup.h"
+#include "ActionAnyorder.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "tools/Exception.h"
-#include "ActionAnyorder.h"
 
 namespace PLMD {
 
-ActionSetup::ActionSetup(const ActionOptions&ao):
+ActionAnyorder::ActionAnyorder(const ActionOptions&ao):
   Action(ao)
 {
-  const ActionSet& actionset(plumed.getActionSet());
-  for(const auto & p : actionset) {
-// check that all the preceeding actions are ActionSetup
-    if( !dynamic_cast<ActionSetup*>(p.get()) && !dynamic_cast<ActionAnyorder*>(p.get()) ) error("Action " + getLabel() + " is a setup action, and should be only preceeded by other setup actions or by actions that can be used in any order.");
-  }
 }
 
-void ActionSetup::registerKeywords( Keywords& keys ) {
+void ActionAnyorder::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
-  keys.remove("LABEL");
 }
 
 }
