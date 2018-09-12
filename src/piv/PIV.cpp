@@ -33,11 +33,7 @@ using namespace std;
 
 namespace PLMD
 {
-<<<<<<< HEAD
-namespace colvar
-=======
 namespace piv
->>>>>>> upstream/master
 {
 
 //+PLUMEDOC COLVAR PIV
@@ -192,11 +188,7 @@ private:
   int updatePIV;
   unsigned Nprec,Natm,Nlist,NLsize;
   // Fvol: volume scaling factor for distances
-<<<<<<< HEAD
-  double Fvol,Vol0;
-=======
   double Fvol,Vol0,m_PIVdistance;
->>>>>>> upstream/master
   std::string ref_file;
   // std:: vector<string> atype;
   NeighborList *nlall;
@@ -211,11 +203,8 @@ private:
   //std::vector<std:: vector<unsigned> > com2atoms;
   std::vector<NeighborList *> nl;
   std::vector<NeighborList *> nlcom;
-<<<<<<< HEAD
-=======
   std::vector<Vector> m_deriv;
   Tensor m_virial;
->>>>>>> upstream/master
   bool Svol,Sfac,cross,direct,doneigh,test,CompDer,com;
 public:
   static void registerKeywords( Keywords& keys );
@@ -277,11 +266,8 @@ PIV::PIV(const ActionOptions&ao):
   Nlist(1),
   Fvol(1.),
   Vol0(0.),
-<<<<<<< HEAD
-=======
   m_PIVdistance(0.),
   m_deriv(std:: vector<Vector>(1)),
->>>>>>> upstream/master
   nl(std:: vector<NeighborList *>(Nlist)),
   rPIV(std:: vector<std:: vector<double> >(Nlist)),
   scaling(std:: vector<double>(Nlist)),
@@ -635,22 +621,14 @@ PIV::PIV(const ActionOptions&ao):
     std::string errors;
     for (unsigned j=0; j<Nlist; j++) {
       if(Svol) {
-<<<<<<< HEAD
-	double r0;
-=======
         double r0;
->>>>>>> upstream/master
         vector<string> data=Tools::getWords(sw[j]);
         data.erase(data.begin());
         bool tmp=Tools::parse(data,"R_0",r0);
         std::string old_r0; Tools::convert(r0,old_r0);
         r0*=Fvol;
         std::string new_r0; Tools::convert(r0,new_r0);
-<<<<<<< HEAD
-	std::size_t pos = sw[j].find("R_0");
-=======
         std::size_t pos = sw[j].find("R_0");
->>>>>>> upstream/master
         sw[j].replace(pos+4,old_r0.size(),new_r0);
       }
       sfs[j].set(sw[j],errors);
@@ -729,13 +707,9 @@ PIV::PIV(const ActionOptions&ao):
   addValueWithDerivatives();
   requestAtoms(nlall->getFullAtomList());
   setNotPeriodic();
-<<<<<<< HEAD
-//  getValue()->setPeridodicity(false);
-=======
   // getValue()->setPeridodicity(false);
   // set size of derivative vector
   m_deriv.resize(getNumberOfAtoms());
->>>>>>> upstream/master
 }
 
 // The following deallocates pointers
@@ -763,20 +737,6 @@ void PIV::calculate()
   static std:: vector<std:: vector<double> > cPIV(Nlist);
   static std:: vector<std:: vector<int> > Atom0(Nlist);
   static std:: vector<std:: vector<int> > Atom1(Nlist);
-<<<<<<< HEAD
-  // PIV Derivatives for forces on atoms
-  static std:: vector<Vector> deriv1(getNumberOfAtoms());
-  static std:: vector<Vector> deriv2(getNumberOfAtoms());
-  // Distance between reference (rPIV) and current (cPIV) PIV
-  static double PIVdistance1;
-  static double PIVdistance2;
-  // Virial compontent relative to PIV forces
-  static Tensor virial1;
-  static Tensor virial2;
-  // The following are probably not needed as static arrays
-=======
-  //
->>>>>>> upstream/master
   std:: vector<std:: vector<int> > A0(Nprec);
   std:: vector<std:: vector<int> > A1(Nprec);
   unsigned stride=1;
@@ -791,14 +751,9 @@ void PIV::calculate()
   }
 
   // Transform (and sort) the rPIV before starting the dynamics
-<<<<<<< HEAD
-  if ((prev_stp==-1||init_stp==1)&&!CompDer) {
-    if(prev_stp!=-1){init_stp==0;}
-=======
   if (((prev_stp==-1) || (init_stp==1)) &&!CompDer) {
-    if(prev_stp!=-1) {init_stp=0;}
+    if(prev_stp!=-1){init_stp=0;}
     log << "Debug " << prev_stp << " " << init_stp << "\n";
->>>>>>> upstream/master
     // Calculate the volume scaling factor
     if(Svol) {
       Fvol=cbrt(Vol0/getBox().determinant());
@@ -813,22 +768,14 @@ void PIV::calculate()
     std::string errors;
     for (unsigned j=0; j<Nlist; j++) {
       if(Svol) {
-<<<<<<< HEAD
-	double r0;
-=======
         double r0;
->>>>>>> upstream/master
         vector<string> data=Tools::getWords(sw[j]);
         data.erase(data.begin());
         bool tmp=Tools::parse(data,"R_0",r0);
         std::string old_r0; Tools::convert(r0,old_r0);
         r0*=Fvol;
         std::string new_r0; Tools::convert(r0,new_r0);
-<<<<<<< HEAD
-	std::size_t pos = sw[j].find("R_0");
-=======
         std::size_t pos = sw[j].find("R_0");
->>>>>>> upstream/master
         sw[j].replace(pos+4,old_r0.size(),new_r0);
       }
       sfs[j].set(sw[j],errors);
@@ -933,10 +880,6 @@ void PIV::calculate()
     if(Svol) {
       Fvol=cbrt(Vol0/getBox().determinant());
     }
-<<<<<<< HEAD
-    if(timer) stopwatch.start("1 Build cPIV");
-=======
->>>>>>> upstream/master
     Vector ddist;
     // Global to local variables
     bool doserial=serial;
@@ -952,10 +895,7 @@ void PIV::calculate()
         Atom0[j].resize(0);
         Atom1[j].resize(0);
         // Building distances for the PIV vector at time t
-<<<<<<< HEAD
-=======
         if(timer) stopwatch.start("1 Build cPIV");
->>>>>>> upstream/master
         for(unsigned i=rank; i<nl[j]->size(); i+=stride) {
           unsigned i0=(nl[j]->getClosePairAtomNumber(i).first).index();
           unsigned i1=(nl[j]->getClosePairAtomNumber(i).second).index();
@@ -982,11 +922,8 @@ void PIV::calculate()
           A0[Vint].push_back(i0);
           A1[Vint].push_back(i1);
         }
-<<<<<<< HEAD
-=======
         if(timer) stopwatch.stop("1 Build cPIV");
         if(timer) stopwatch.start("2 Sort cPIV");
->>>>>>> upstream/master
         if(!doserial) {
           // Vectors keeping track of the dimension and the starting-position of the rank-specific pair vector in the big pair vector.
           std:: vector<int> Vdim(stride,0);
@@ -1062,10 +999,7 @@ void PIV::calculate()
               }
             }
           }
-<<<<<<< HEAD
-=======
           if(timer) stopwatch.stop("2 Sort cPIV");
->>>>>>> upstream/master
         } else {
           for(unsigned i=1; i<Nprec; i++) {
             for(unsigned m=0; m<OrdVec[i]; m++) {
@@ -1077,10 +1011,6 @@ void PIV::calculate()
         }
       }
     }
-<<<<<<< HEAD
-    if(timer) stopwatch.stop("1 Build cPIV");
-=======
->>>>>>> upstream/master
   }
 
   Vector distance;
@@ -1141,7 +1071,6 @@ void PIV::calculate()
     exit();
   }
 
-<<<<<<< HEAD
   if(timer) stopwatch.start("2 Build For Derivatives");
   std:: vector<Vector> deriv(getNumberOfAtoms());
   double PIVdistance=0.;
@@ -1151,15 +1080,11 @@ void PIV::calculate()
       virial[j][k]=0.;
     }
   }
-=======
   if(timer) stopwatch.start("3 Build For Derivatives");
->>>>>>> upstream/master
   // non-global variables Nder and Scalevol defined to speedup if structures in cycles
   bool Nder=CompDer;
   bool Scalevol=Svol;
   if(getStep()%updatePIV==0) {
-<<<<<<< HEAD
-=======
     // set to zero PIVdistance, derivatives and virial when they are calculated
     for(unsigned j=0; j<m_deriv.size(); j++) {
       for(unsigned k=0; k<3; k++) {m_deriv[j][k]=0.;}
@@ -1170,7 +1095,6 @@ void PIV::calculate()
       }
     }
     m_PIVdistance=0.;
->>>>>>> upstream/master
     // Re-compute atomic distances for derivatives and compute PIV-PIV distance
     for(unsigned j=0; j<Nlist; j++) {
       unsigned limit=0;
@@ -1226,11 +1150,7 @@ void PIV::calculate()
           Vector dist;
           for(unsigned k=0; k<nlcom[i0]->getFullAtomList().size(); k++) {
             unsigned x0=nlcom[i0]->getFullAtomList()[k].index();
-<<<<<<< HEAD
-            deriv[x0] -= tmpder*fmass[x0];
-=======
             m_deriv[x0] -= tmpder*fmass[x0];
->>>>>>> upstream/master
             for(unsigned l=0; l<3; l++) {
               dist[l]=0.;
             }
@@ -1253,19 +1173,11 @@ void PIV::calculate()
                 dist+=delta(P0,P1);
               }
             }
-<<<<<<< HEAD
-            virial    -= 0.25*fmass[x0]*Tensor(dist,tmpder);
-          }
-          for(unsigned k=0; k<nlcom[i1]->getFullAtomList().size(); k++) {
-            unsigned x1=nlcom[i1]->getFullAtomList()[k].index();
-            deriv[x1] += tmpder*fmass[x1];
-=======
             m_virial    -= 0.25*fmass[x0]*Tensor(dist,tmpder);
           }
           for(unsigned k=0; k<nlcom[i1]->getFullAtomList().size(); k++) {
             unsigned x1=nlcom[i1]->getFullAtomList()[k].index();
             m_deriv[x1] += tmpder*fmass[x1];
->>>>>>> upstream/master
             for(unsigned l=0; l<3; l++) {
               dist[l]=0.;
             }
@@ -1288,19 +1200,6 @@ void PIV::calculate()
                 dist+=delta(P1,P0);
               }
             }
-<<<<<<< HEAD
-            virial    += 0.25*fmass[x1]*Tensor(dist,tmpder);
-          }
-        } else {
-          deriv[i0] -= tmpder;
-          deriv[i1] += tmpder;
-          virial    -= tmp*Tensor(distance,distance);
-        }
-        if(Scalevol) {
-          virial+=1./3.*tmp*dm*dm*Tensor::identity();
-        }
-        PIVdistance    += scaling[j]*coord*coord;
-=======
             m_virial    += 0.25*fmass[x1]*Tensor(dist,tmpder);
           }
         } else {
@@ -1312,101 +1211,29 @@ void PIV::calculate()
           m_virial+=1./3.*tmp*dm*dm*Tensor::identity();
         }
         m_PIVdistance    += scaling[j]*coord*coord;
->>>>>>> upstream/master
       }
     }
 
     if (!serial) {
       comm.Barrier();
-<<<<<<< HEAD
-      comm.Sum(&PIVdistance,1);
-      if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
-      comm.Sum(&virial[0][0],9);
-    }
-
-    // Store CV deriv and virial for REF1 and REF2
-    if (getStep()>prev_stp) {
-      for(unsigned j=0; j<getNumberOfAtoms(); j++) {
-        for(unsigned i=0; i<3; i++) {
-          deriv2[j][i]=deriv[j][i];
-        }
-      };
-      for(unsigned j=0; j<3; j++) {
-        for(unsigned i=0; i<3; i++) {
-          virial2[j][i]=virial[j][i];
-        }
-      };
-      PIVdistance2=PIVdistance;
-    } else {
-      for(unsigned j=0; j<getNumberOfAtoms(); j++) {
-        for(unsigned i=0; i<3; i++) {
-          deriv1[j][i]=deriv[j][i];
-        }
-      };
-      for(unsigned j=0; j<3; j++) {
-        for(unsigned i=0; i<3; i++) {
-          virial1[j][i]=virial[j][i];
-        }
-      };
-      PIVdistance1=PIVdistance;
-    }
-  } else {
-    if (getStep()>prev_stp) {
-      for(unsigned j=0; j<getNumberOfAtoms(); j++) {
-        for(unsigned i=0; i<3; i++) {
-          deriv[j][i]=deriv2[j][i];
-        }
-      };
-      for(unsigned j=0; j<3; j++) {
-        for(unsigned i=0; i<3; i++) {
-          virial[j][i]=virial2[j][i];
-        }
-      };
-      PIVdistance=PIVdistance2;
-    } else {
-      for(unsigned j=0; j<getNumberOfAtoms(); j++) {
-        for(unsigned i=0; i<3; i++) {
-          deriv[j][i]=deriv1[j][i];
-        }
-      };
-      for(unsigned j=0; j<3; j++) {
-        for(unsigned i=0; i<3; i++) {
-          virial[j][i]=virial1[j][i];
-        }
-      };
-      PIVdistance=PIVdistance1;
-    }
-=======
       comm.Sum(&m_PIVdistance,1);
       if(!m_deriv.empty()) comm.Sum(&m_deriv[0][0],3*m_deriv.size());
       comm.Sum(&m_virial[0][0],9);
     }
-
->>>>>>> upstream/master
   }
   prev_stp=getStep();
 
   //Timing
-<<<<<<< HEAD
-  if(timer) stopwatch.stop("2 Build For Derivatives");
-=======
   if(timer) stopwatch.stop("3 Build For Derivatives");
->>>>>>> upstream/master
   if(timer) {
     log.printf("Timings for action %s with label %s \n", getName().c_str(), getLabel().c_str() );
     log<<stopwatch;
   }
 
   // Update derivatives, virial, and variable (PIV-distance^2)
-<<<<<<< HEAD
-  for(unsigned i=0; i<deriv.size(); ++i) setAtomsDerivatives(i,deriv[i]);
-  setValue           (PIVdistance);
-  setBoxDerivatives  (virial);
-=======
   for(unsigned i=0; i<m_deriv.size(); ++i) setAtomsDerivatives(i,m_deriv[i]);
   setValue           (m_PIVdistance);
   setBoxDerivatives  (m_virial);
->>>>>>> upstream/master
 }
 //Close Namespaces at the very beginning
 }
