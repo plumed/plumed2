@@ -94,6 +94,47 @@ p1: FUNCPATHMSD ARG=c1,c2,c3 LAMBDA=500.0
 PRINT ARG=c1,c2,c3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
 \endplumedfile
 
+In this third example is shown how to define a PATH in the \ref PIV space:
+
+\plumedfile
+PIV ...
+LABEL=c1
+PRECISION=1000
+NLIST
+REF_FILE=Ref1.pdb
+PIVATOMS=2
+ATOMTYPES=A,B
+ONLYDIRECT
+SFACTOR=1.0,0.2
+SORT=1,1
+SWITCH1={RATIONAL R_0=0.6 MM=12 NN=4}
+SWITCH2={RATIONAL R_0=0.5 MM=10 NN=5}
+NL_CUTOFF=1.2,1.2
+NL_STRIDE=10,10
+NL_SKIN=0.1,0.1
+... PIV
+PIV ...
+LABEL=c2
+PRECISION=1000
+NLIST
+REF_FILE=Ref2.pdb
+PIVATOMS=2
+ATOMTYPES=A,B
+ONLYDIRECT
+SFACTOR=1.0,0.2
+SORT=1,1
+SWITCH1={RATIONAL R_0=0.6 MM=12 NN=4}
+SWITCH2={RATIONAL R_0=0.4 MM=10 NN=5}
+NL_CUTOFF=1.2,1.2
+NL_STRIDE=10,10
+NL_SKIN=0.1,0.1
+... PIV
+
+p1: FUNCPATHMSD ARG=c1,c2 LAMBDA=0.180338
+METAD ARG=p1.s,p1.z SIGMA=0.01,0.2 HEIGHT=0.8 PACE=500   LABEL=res
+PRINT ARG=c1,c2,p1.s,p1.z,res.bias STRIDE=500  FILE=colvar FMT=%15.6f
+\endplumedfile
+
 */
 //+ENDPLUMEDOC
 
@@ -173,7 +214,7 @@ FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
   log.printf("  lambda is %f\n",lambda);
   // list the action involved and check the type
   std::string myname=getPntrToArgument(0)->getPntrToAction()->getName();
-  if(myname!="RMSD"&&myname!="CONTACTMAP"&&myname!="DISTANCE") error("One or more of your arguments is not of RMSD/CONTACTMAP/DISTANCE type!!!");
+  if(myname!="RMSD"&&myname!="CONTACTMAP"&&myname!="DISTANCE"&&myname!="PIV") error("One or more of your arguments is not of RMSD/CONTACTMAP/DISTANCE/PIV type!!!");
   for(unsigned i=1; i<getNumberOfArguments(); i++) {
     // for each value get the name and the label of the corresponding action
     if( getPntrToArgument(i)->getPntrToAction()->getName()!=myname ) error("mismatch between the types of arguments");
