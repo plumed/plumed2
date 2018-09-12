@@ -68,8 +68,8 @@ double GridLinearInterpolation::getGridValueWithLinearInterpolation_2D(Grid* gri
   i00[0] = i01[0] = unsigned( std::floor( (arg[0]-grid_min[0])/grid_delta[0] ) );
   i10[0] = i11[0] = unsigned( std::ceil(  (arg[0]-grid_min[0])/grid_delta[0] ) );
 
-  i00[1] = i10[1] = unsigned( std::floor( (arg[1]-grid_min[1])/grid_delta[0] ) );
-  i01[1] = i11[1] = unsigned( std::ceil(  (arg[1]-grid_min[1])/grid_delta[0] ) );
+  i00[1] = i10[1] = unsigned( std::floor( (arg[1]-grid_min[1])/grid_delta[1] ) );
+  i01[1] = i11[1] = unsigned( std::ceil(  (arg[1]-grid_min[1])/grid_delta[1] ) );
 
   // https://en.wikipedia.org/wiki/Bilinear_interpolation
   double x = arg[0];

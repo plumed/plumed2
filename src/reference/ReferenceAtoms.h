@@ -46,6 +46,7 @@ class ReferenceAtoms :
 {
   friend class Direction;
   friend class SingleDomainRMSD;
+  friend class MultiDomainRMSD;
   friend class ReferenceConfiguration;
 private:
 /// This flag tells us if the user has disabled checking of the input in order to
@@ -90,12 +91,8 @@ public:
   unsigned getAtomIndex( const unsigned& ) const ;
 /// Get the atoms required (additional checks are required when we have multiple domains)
   virtual void getAtomRequests( std::vector<AtomNumber>&, bool disable_checks=false );
-/// Set the indices of the reference atoms
-  void setAtomNumbers( const std::vector<AtomNumber>& numbers );
 /// Set the positions of the reference atoms
   virtual void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in )=0;
-/// Print the atomic positions
-  void printAtoms( OFile& ofile, const double& lunits ) const ;
 /// Return all atom indexes
   const std::vector<AtomNumber>& getAbsoluteIndexes();
 /// This returns how many atoms there should be
@@ -134,7 +131,7 @@ unsigned ReferenceAtoms::getNumberOfReferencePositions() const {
 
 inline
 unsigned ReferenceAtoms::getNumberOfAtoms() const {
-  return reference_atoms.size();
+  return atom_der_index.size(); // reference_atoms.size();
 }
 
 inline
@@ -154,21 +151,6 @@ inline
 const std::vector<Vector> & ReferenceAtoms::getReferencePositions() const {
   return reference_atoms;
 }
-
-// inline
-// void ReferenceAtoms::addAtomicDerivatives( const unsigned& iatom, const Vector& der ){
-//   atom_ders[ getAtomIndex(iatom) ]+=der;
-// }
-
-// inline
-// Vector ReferenceAtoms::retrieveAtomicDerivatives( const unsigned& iatom ) const {
-//   return atom_ders[ getAtomIndex(iatom) ];
-// }
-
-// inline
-// void ReferenceAtoms::addBoxDerivatives( const Tensor& vir ){
-//   virialWasSet=true; virial+=vir;
-// }
 
 inline
 const std::vector<AtomNumber>& ReferenceAtoms::getAbsoluteIndexes() {

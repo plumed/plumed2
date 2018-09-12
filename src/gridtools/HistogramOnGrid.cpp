@@ -115,9 +115,8 @@ void HistogramOnGrid::calculate( const unsigned& current, MultiValue& myvals, st
     plumed_dbg_assert( myvals.getNumberOfValues()==dimension+2 );
     std::vector<double> point( dimension ); double weight=myvals.get(0)*myvals.get( 1+dimension );
     for(unsigned i=0; i<dimension; ++i) point[i]=myvals.get( 1+i );
-
     // Get the kernel
-    unsigned num_neigh; std::vector<unsigned> neighbors;
+    unsigned num_neigh; std::vector<unsigned> neighbors(1);
     std::vector<double> der( dimension );
     std::unique_ptr<KernelFunctions> kernel=getKernelAndNeighbors( point, num_neigh, neighbors );
 

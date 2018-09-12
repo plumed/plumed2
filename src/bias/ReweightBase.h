@@ -39,8 +39,12 @@ public:
   static void registerKeywords(Keywords&);
   explicit ReweightBase(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() { return 0; }
+  virtual bool buildsWeightStore() const { return false; }
   void calculate();
-  virtual double getLogWeight() const = 0;
+  virtual void calculateWeights( const unsigned& nframes ) {}
+  virtual double getLogWeight() = 0;
+  virtual double getWeight( const unsigned& iweight ) const { plumed_error(); }
+  virtual void clearData() {}
   void apply() {}
 };
 

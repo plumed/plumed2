@@ -69,7 +69,7 @@ class ReweightMetad : public ReweightBase {
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightMetad(const ActionOptions&ao);
-  double getLogWeight() const ;
+  double getLogWeight();
 };
 
 PLUMED_REGISTER_ACTION(ReweightMetad,"REWEIGHT_METAD")
@@ -85,7 +85,7 @@ ReweightMetad::ReweightMetad(const ActionOptions&ao):
 {
 }
 
-double ReweightMetad::getLogWeight() const {
+double ReweightMetad::getLogWeight() {
   // Retrieve the bias
   double bias=0.0; for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgument(i);
   return bias / simtemp;

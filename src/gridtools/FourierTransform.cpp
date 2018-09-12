@@ -163,9 +163,9 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
 
 
   // Create a grid on which to store the fourier transform of the input grid
-  createGrid( "grid", vstring );
-  if( ingrid->noDerivatives() ) mygrid->setNoDerivatives();
-  setAveragingAction( mygrid, false );
+  auto grid=createGrid( "grid", vstring );
+  if( ingrid->noDerivatives() ) grid->setNoDerivatives();
+  setAveragingAction( std::move(grid), false );
 
   checkRead();
 #endif

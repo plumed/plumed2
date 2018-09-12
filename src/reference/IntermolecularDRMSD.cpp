@@ -47,7 +47,7 @@ void IntermolecularDRMSD::read( const PDB& pdb ) {
   readAtomsFromPDB( pdb, true ); nblocks = pdb.getNumberOfAtomBlocks(); blocks.resize( nblocks+1 );
   if( nblocks==1 ) error("Trying to compute intermolecular rmsd but found no TERs in input PDB");
   blocks[0]=0; for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
-  readBounds(); setup_targets();
+  readBounds( pdb ); setup_targets();
 }
 
 void IntermolecularDRMSD::setup_targets() {

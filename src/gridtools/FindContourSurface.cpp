@@ -144,8 +144,8 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   for(unsigned i=1; i<gdirs.size(); ++i) {
     if( ingrid->isPeriodic(gdirs[i]) ) vstring+=",T"; else vstring+=",F";
   }
-  createGrid( "grid", vstring ); mygrid->setNoDerivatives();
-  setAveragingAction( mygrid, true );
+  auto grid=createGrid( "grid", vstring ); grid->setNoDerivatives();
+  setAveragingAction( std::move(grid), true );
 }
 
 void FindContourSurface::clearAverage() {
