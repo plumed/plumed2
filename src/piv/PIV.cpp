@@ -33,7 +33,7 @@ using namespace std;
 
 namespace PLMD
 {
-namespace colvar
+namespace piv
 {
 
 //+PLUMEDOC COLVAR PIV
@@ -621,14 +621,14 @@ PIV::PIV(const ActionOptions&ao):
     std::string errors;
     for (unsigned j=0; j<Nlist; j++) {
       if(Svol) {
-	double r0;
+        double r0;
         vector<string> data=Tools::getWords(sw[j]);
         data.erase(data.begin());
         bool tmp=Tools::parse(data,"R_0",r0);
         std::string old_r0; Tools::convert(r0,old_r0);
         r0*=Fvol;
         std::string new_r0; Tools::convert(r0,new_r0);
-	std::size_t pos = sw[j].find("R_0");
+        std::size_t pos = sw[j].find("R_0");
         sw[j].replace(pos+4,old_r0.size(),new_r0);
       }
       sfs[j].set(sw[j],errors);
@@ -737,7 +737,6 @@ void PIV::calculate()
   static std:: vector<std:: vector<double> > cPIV(Nlist);
   static std:: vector<std:: vector<int> > Atom0(Nlist);
   static std:: vector<std:: vector<int> > Atom1(Nlist);
-  //
   std:: vector<std:: vector<int> > A0(Nprec);
   std:: vector<std:: vector<int> > A1(Nprec);
   unsigned stride=1;
@@ -769,14 +768,14 @@ void PIV::calculate()
     std::string errors;
     for (unsigned j=0; j<Nlist; j++) {
       if(Svol) {
-	double r0;
+        double r0;
         vector<string> data=Tools::getWords(sw[j]);
         data.erase(data.begin());
         bool tmp=Tools::parse(data,"R_0",r0);
         std::string old_r0; Tools::convert(r0,old_r0);
         r0*=Fvol;
         std::string new_r0; Tools::convert(r0,new_r0);
-	std::size_t pos = sw[j].find("R_0");
+        std::size_t pos = sw[j].find("R_0");
         sw[j].replace(pos+4,old_r0.size(),new_r0);
       }
       sfs[j].set(sw[j],errors);
@@ -1002,7 +1001,7 @@ void PIV::calculate()
               }
             }
           }
-        if(timer) stopwatch.stop("3 Reconstruct cPIV");
+          if(timer) stopwatch.stop("3 Reconstruct cPIV");
         } else {
           for(unsigned i=1; i<Nprec; i++) {
             for(unsigned m=0; m<OrdVec[i]; m++) {
@@ -1214,8 +1213,7 @@ void PIV::calculate()
       if(!m_deriv.empty()) comm.Sum(&m_deriv[0][0],3*m_deriv.size());
       comm.Sum(&m_virial[0][0],9);
     }
-
-  } 
+  }
   prev_stp=getStep();
 
   //Timing

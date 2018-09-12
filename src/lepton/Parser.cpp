@@ -74,11 +74,35 @@ namespace PLMD {
 using namespace lepton;
 using namespace std;
 
+namespace lepton {
+
 static const string Digits = "0123456789";
 static const string Operators = "+-*/^";
 static const bool LeftAssociative[] = {true, true, true, true, false};
 static const int Precedence[] = {0, 0, 1, 1, 3};
 static const Operation::Id OperationId[] = {Operation::ADD, Operation::SUBTRACT, Operation::MULTIPLY, Operation::DIVIDE, Operation::POWER};
+
+const std::map<std::string, double> & Constants() {
+  static const std::map<std::string, double> constants = {
+  {"e", std::exp(1.0)},
+  {"log2e", 1.0/std::log(2.0)},
+  {"log10e", 1.0/std::log(10.0)},
+  {"ln2", std::log(2.0)},
+  {"ln10", std::log(10.0)},
+  {"pi", 3.14159265358979323844},
+  {"pi_2", 3.14159265358979323844*0.5},
+  {"pi_4", 3.14159265358979323844*0.25},
+//  {"1_pi", 1.0/pi},
+//  {"2_pi", 2.0/pi},
+//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
+  {"sqrt2", std::sqrt(2.0)},
+  {"sqrt1_2", std::sqrt(0.5)}
+  };
+  return constants;
+};
+
+}
+
 
 class lepton::ParseToken {
 public:
@@ -332,37 +356,36 @@ Operation* Parser::getOperatorOperation(const std::string& name) {
 
 Operation* Parser::getFunctionOperation(const std::string& name, const map<string, CustomFunction*>& customFunctions) {
 
-    static map<string, Operation::Id> opMap;
-    if (opMap.size() == 0) {
-        opMap["sqrt"] = Operation::SQRT;
-        opMap["exp"] = Operation::EXP;
-        opMap["log"] = Operation::LOG;
-        opMap["sin"] = Operation::SIN;
-        opMap["cos"] = Operation::COS;
-        opMap["sec"] = Operation::SEC;
-        opMap["csc"] = Operation::CSC;
-        opMap["tan"] = Operation::TAN;
-        opMap["cot"] = Operation::COT;
-        opMap["asin"] = Operation::ASIN;
-        opMap["acos"] = Operation::ACOS;
-        opMap["atan"] = Operation::ATAN;
-        opMap["sinh"] = Operation::SINH;
-        opMap["cosh"] = Operation::COSH;
-        opMap["tanh"] = Operation::TANH;
-        opMap["erf"] = Operation::ERF;
-        opMap["erfc"] = Operation::ERFC;
-        opMap["step"] = Operation::STEP;
-        opMap["delta"] = Operation::DELTA;
-        opMap["square"] = Operation::SQUARE;
-        opMap["cube"] = Operation::CUBE;
-        opMap["recip"] = Operation::RECIPROCAL;
-        opMap["min"] = Operation::MIN;
-        opMap["max"] = Operation::MAX;
-        opMap["abs"] = Operation::ABS;
-        opMap["floor"] = Operation::FLOOR;
-        opMap["ceil"] = Operation::CEIL;
-        opMap["select"] = Operation::SELECT;
-    }
+    const static map<string, Operation::Id> opMap ={
+        { "sqrt" , Operation::SQRT },
+        { "exp" , Operation::EXP },
+        { "log" , Operation::LOG },
+        { "sin" , Operation::SIN },
+        { "cos" , Operation::COS },
+        { "sec" , Operation::SEC },
+        { "csc" , Operation::CSC },
+        { "tan" , Operation::TAN },
+        { "cot" , Operation::COT },
+        { "asin" , Operation::ASIN },
+        { "acos" , Operation::ACOS },
+        { "atan" , Operation::ATAN },
+        { "sinh" , Operation::SINH },
+        { "cosh" , Operation::COSH },
+        { "tanh" , Operation::TANH },
+        { "erf" , Operation::ERF },
+        { "erfc" , Operation::ERFC },
+        { "step" , Operation::STEP },
+        { "delta" , Operation::DELTA },
+        { "square" , Operation::SQUARE },
+        { "cube", Operation::CUBE },
+        { "recip" , Operation::RECIPROCAL },
+        { "min" , Operation::MIN },
+        { "max" , Operation::MAX },
+        { "abs" , Operation::ABS },
+        { "floor" , Operation::FLOOR },
+        { "ceil" , Operation::CEIL },
+        { "select" , Operation::SELECT },
+    };
     string trimmed = name.substr(0, name.size()-1);
 
     // First check custom functions.

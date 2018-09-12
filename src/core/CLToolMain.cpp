@@ -37,19 +37,7 @@
 
 using namespace std;
 
-#include "CLToolMainEnum.inc"
-
 namespace PLMD {
-
-const std::unordered_map<std::string, int> & clToolMainWordMap() {
-  static std::unordered_map<std::string, int> word_map;
-  static bool init=false;
-  if(!init) {
-#include "CLToolMainMap.inc"
-  }
-  init=true;
-  return word_map;
-}
 
 CLToolMain::CLToolMain():
   argc(0),
@@ -66,6 +54,16 @@ CLToolMain::~CLToolMain() {
 
 void CLToolMain::cmd(const std::string& word,void*val) {
 
+// Enumerate all possible commands:
+  enum {
+#include "CLToolMainEnum.inc"
+  };
+
+// Static object (initialized once) containing the map of commands:
+  const static std::unordered_map<std::string, int> word_map = {
+#include "CLToolMainMap.inc"
+  };
+
   std::vector<std::string> words=Tools::getWords(word);
   unsigned nw=words.size();
   if(nw==0) {
@@ -74,8 +72,8 @@ void CLToolMain::cmd(const std::string& word,void*val) {
     int iword=-1;
     char**v;
     char*vv;
-    const auto it=clToolMainWordMap().find(words[0]);
-    if(it!=clToolMainWordMap().end()) iword=it->second;
+    const auto it=word_map.find(words[0]);
+    if(it!=word_map.end()) iword=it->second;
     switch(iword) {
     case cmd_setArgc:
       CHECK_NULL(val,word);
@@ -237,7 +235,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       "Commands:\n";
     fprintf(out,"%s",msg.c_str());
     for(unsigned j=0; j<availableCxx.size(); ++j) {
-      std::unique_ptr<CLTool> cl(cltoolRegister().create(CLToolOptions(availableCxx[j])));
+      auto cl=cltoolRegister().create(CLToolOptions(availableCxx[j]));
       plumed_assert(cl);
       string manual=availableCxx[j]+" : "+cl->description();
       fprintf(out,"  plumed %s\n", manual.c_str());
@@ -262,7 +260,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   string command(argv[i]);
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()) {
-    std::unique_ptr<CLTool> cl(cltoolRegister().create(CLToolOptions(command)));
+    auto cl=cltoolRegister().create(CLToolOptions(command));
     plumed_assert(cl);
     // Read the command line options (returns false if we are just printing help)
     if( !cl->readInput( argc-i,&argv[i],in,out ) ) { return 0; }

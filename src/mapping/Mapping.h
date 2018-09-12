@@ -26,8 +26,9 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "vesselbase/ActionWithVessel.h"
-#include "reference/PointWiseMapping.h"
+#include "reference/ReferenceConfiguration.h"
 #include <vector>
+#include <map>
 #include <memory>
 
 namespace PLMD {
@@ -42,14 +43,20 @@ class Mapping :
   public ActionWithValue,
   public vesselbase::ActionWithVessel
 {
+  friend class PropertyMap;
   friend class TrigonometricPathVessel;
+  friend class AdaptivePath;
 private:
 //  The derivative wrt to the distance from the frame
   std::vector<double> dfframes;
 /// This holds all the reference information
-  std::unique_ptr<PointWiseMapping> mymap;
+  std::vector<std::unique_ptr<ReferenceConfiguration> > myframes;
 /// The forces on each of the derivatives (used in apply)
   std::vector<double> forcesToApply;
+/// The weights of the various configurations
+  std::vector<double> weights;
+/// The list of properties in the property map
+  std::map<std::string,std::vector<double> > property;
 protected:
 /// The (transformed) distance from each frame
   std::vector<double> fframes;
@@ -59,12 +66,10 @@ protected:
   void finishPackSetup( const unsigned& ifunc, ReferenceValuePack& mypack ) const ;
 /// Calculate the value of the distance from the ith frame
   double calculateDistanceFunction( const unsigned& ifunc, ReferenceValuePack& myder, const bool& squared ) const ;
-/// Store the distance function
-  void storeDistanceFunction( const unsigned& ifunc );
 /// Get the value of the weight
   double getWeight( const unsigned& weight ) const ;
 /// Return the vector of refernece configurations
-  const std::vector<std::unique_ptr<ReferenceConfiguration>>& getAllReferenceConfigurations();
+  std::vector<std::unique_ptr<ReferenceConfiguration>>& getAllReferenceConfigurations();
 /// Return a pointer to one of the reference configurations
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& ifunc );
 public:
@@ -85,23 +90,17 @@ public:
   virtual double transformHD( const double& dist, double& df ) const=0;
 /// Get the number of properties we are projecting onto
   unsigned getNumberOfProperties() const ;
-/// Get the name of the ith property we are projecting
-  std::string getPropertyName( const unsigned& iprop ) const ;
-/// Get the index of a particular named property
-  unsigned getPropertyIndex( const std::string& name ) const ;
-/// Set the value of one of the projection coordinates
-  void setPropertyValue( const unsigned& iframe, const unsigned& iprop, const double& property );
 /// Get the name of the ith argument
   std::string getArgumentName( unsigned& iarg );
 /// Get the value of the ith property for the current frame
-  double getPropertyValue( const unsigned& current, const unsigned& iprop ) const ;
+  double getPropertyValue( const unsigned& current, const std::string& name ) const ;
 /// Apply the forces
   void apply();
 };
 
 inline
 unsigned Mapping::getNumberOfReferencePoints() const {
-  return mymap->getNumberOfMappedPoints();
+  return myframes.size();
 }
 
 inline
@@ -124,37 +123,23 @@ void Mapping::unlockRequests() {
 }
 
 inline
-unsigned Mapping::getNumberOfProperties() const {
-  return mymap->getNumberOfProperties();
-}
-
-inline
-std::string Mapping::getPropertyName( const unsigned& iprop ) const {
-  return mymap->getPropertyName(iprop);
-}
-
-inline
-double Mapping::getPropertyValue( const unsigned& cur, const unsigned& iprop ) const {
-  plumed_dbg_assert( iprop<getNumberOfProperties() );
-  return mymap->getPropertyValue( cur, iprop );
+double Mapping::getPropertyValue( const unsigned& cur, const std::string& name ) const {
+  return property.find(name)->second[cur];
 }
 
 inline
 double Mapping::getWeight( const unsigned& current ) const {
-  return mymap->getWeight( current );
+  return weights[current];
 }
 
 inline
-void Mapping::storeDistanceFunction( const unsigned& ifunc ) {
-  plumed_dbg_assert( ifunc<getNumberOfReferencePoints() );
-  unsigned storef=getNumberOfReferencePoints()+ifunc;
-  fframes[storef]=fframes[ifunc]; dfframes[storef]=dfframes[ifunc];
-  mymap->copyFrameDerivatives( ifunc, storef );
+std::vector<std::unique_ptr<ReferenceConfiguration>>& Mapping::getAllReferenceConfigurations() {
+  return myframes;
 }
 
 inline
-const std::vector<std::unique_ptr<ReferenceConfiguration>>& Mapping::getAllReferenceConfigurations() {
-  return mymap->getReferenceConfigurations();
+unsigned Mapping::getNumberOfProperties() const {
+  return property.size();
 }
 
 }

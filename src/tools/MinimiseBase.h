@@ -108,7 +108,6 @@ double MinimiseBase<FCLASS>::linemin( const std::vector<double>& dir, std::vecto
 
 template <class FCLASS>
 double MinimiseBase<FCLASS>::calcDerivatives( const std::vector<double>& p, std::vector<double>& der, engf_pointer myfunc ) {
-
   return (myclass_func->*myfunc)( p, der );
 }
 

@@ -55,19 +55,15 @@ Mapping::Mapping(const ActionOptions&ao):
   // Read the input
   std::string mtype; parse("TYPE",mtype);
   bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
-  // Setup the object that does the mapping
-  mymap.reset( new PointWiseMapping( mtype, skipchecks ) );
 
   // Read the properties we require
+  bool ispath=false;
   if( keywords.exists("PROPERTY") ) {
-    std::vector<std::string> property;
-    parseVector("PROPERTY",property);
-    if(property.size()==0) error("no properties were specified");
-    mymap->setPropertyNames( property, false );
+    std::vector<std::string> propnames; parseVector("PROPERTY",propnames);
+    if(propnames.size()==0) error("no properties were specified");
+    for(unsigned i=0; i<propnames.size(); ++i) property.insert( std::pair<std::string,std::vector<double> >( propnames[i], std::vector<double>() ) );
   } else {
-    std::vector<std::string> property(1);
-    property[0]="spath";
-    mymap->setPropertyNames( property, true );
+    property.insert( std::pair<std::string,std::vector<double> >( "spath", std::vector<double>() ) ); ispath=true;
   }
 
   // Open reference file
@@ -76,33 +72,39 @@ Mapping::Mapping(const ActionOptions&ao):
   if(!fp) error("could not open reference file " + reference );
 
   // Read all reference configurations
-  bool do_read=true; std::vector<double> weights;
-  unsigned nfram=0, wnorm=0., ww;
+  bool do_read=true; unsigned nfram=0; double wnorm=0., ww;
   while (do_read) {
-    PDB mypdb;
     // Read the pdb file
-    do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+    PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+    // Break if we are done
+    if( !do_read ) break ;
+    // Check for required properties
+    if( !ispath ) {
+      double prop;
+      for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end(); ++it) {
+        if( !mypdb.getArgumentValue( it->first, prop ) ) error("pdb input does not have contain property named " + it->first );
+        it->second.push_back(prop);
+      }
+    } else {
+      property.find("spath")->second.push_back( myframes.size()+1 );
+    }
     // Fix argument names
     expandArgKeywordInPDB( mypdb );
-    if(do_read) {
-      mymap->readFrame( mypdb ); ww=mymap->getWeight( nfram );
-      weights.push_back( ww );
-      wnorm+=ww; nfram++;
-    } else {
-      break;
-    }
+    // And read the frame
+    myframes.emplace_back( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
+    if( !mypdb.getArgumentValue( "WEIGHT", ww ) ) ww=1.0;
+    weights.push_back( ww ); wnorm+=ww; nfram++;
   }
   fclose(fp);
 
   if(nfram==0 ) error("no reference configurations were specified");
   log.printf("  found %u configurations in file %s\n",nfram,reference.c_str() );
-  for(unsigned i=0; i<weights.size(); ++i) weights[i] /= wnorm;
-  mymap->setWeights( weights );
+  for(unsigned i=0; i<weights.size(); ++i) weights[i] = weights[i]/wnorm;
 
   // Finish the setup of the mapping object
   // Get the arguments and atoms that are required
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
-  mymap->getAtomAndArgumentRequirements( atoms, args );
+  for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
   std::vector<Value*> req_args; interpretArgumentList( args, req_args );
   if( req_args.size()>0 && atoms.size()>0 ) error("cannot mix atoms and arguments");
   if( req_args.size()>0 ) requestArguments( req_args );
@@ -126,14 +128,6 @@ void Mapping::turnOnDerivatives() {
   needsDerivatives();
 }
 
-unsigned Mapping::getPropertyIndex( const std::string& name ) const {
-  return mymap->getPropertyIndex( name );
-}
-
-void Mapping::setPropertyValue( const unsigned& iframe, const unsigned& jprop, const double& property ) {
-  mymap->setProjectionCoordinate( iframe, jprop, property );
-}
-
 double Mapping::getLambda() {
   plumed_merror("lambda is not defined in this mapping type");
 }
@@ -149,18 +143,19 @@ std::string Mapping::getArgumentName( unsigned& iarg ) {
 }
 
 void Mapping::finishPackSetup( const unsigned& ifunc, ReferenceValuePack& mypack ) const {
-  ReferenceConfiguration* myref=mymap->getFrame(ifunc); mypack.setValIndex(0);
-  unsigned nargs2=myref->getNumberOfReferenceArguments(); unsigned nat2=myref->getNumberOfReferencePositions();
+  mypack.setValIndex(0);
+  unsigned nargs2=myframes[ifunc]->getNumberOfReferenceArguments();
+  unsigned nat2=myframes[ifunc]->getNumberOfReferencePositions();
   if( mypack.getNumberOfAtoms()!=nat2 || mypack.getNumberOfArguments()!=nargs2 ) mypack.resize( nargs2, nat2 );
   if( nat2>0 ) {
-    ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myref ); plumed_dbg_assert( myat2 );
+    ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myframes[ifunc].get() ); plumed_dbg_assert( myat2 );
     for(unsigned i=0; i<nat2; ++i) mypack.setAtomIndex( i, myat2->getAtomIndex(i) );
   }
 }
 
 double Mapping::calculateDistanceFunction( const unsigned& ifunc, ReferenceValuePack& myder, const bool& squared ) const {
   // Calculate the distance
-  double dd = mymap->calcDistanceFromConfiguration( ifunc, getPositions(), getPbc(), getArguments(), myder, squared );
+  double dd = myframes[ifunc]->calculate( getPositions(), getPbc(), getArguments(), myder, squared );
   // Transform distance by whatever
   double df, ff=transformHD( dd, df ); myder.scaleAllDerivatives( df );
   // And the virial
@@ -173,7 +168,7 @@ double Mapping::calculateDistanceFunction( const unsigned& ifunc, ReferenceValue
 }
 
 ReferenceConfiguration* Mapping::getReferenceConfiguration( const unsigned& ifunc ) {
-  return mymap->getFrame( ifunc );
+  return myframes[ifunc].get();
 }
 
 void Mapping::calculateNumericalDerivatives( ActionWithValue* a ) {

@@ -648,7 +648,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         if(getPntrToArgument(i)->isPeriodic() != BiasGrid_->getIsPeriodic()[0]) {
           error("periodicity mismatch between arguments and input bias");
         }
-        log.printf("  Restarting from %s:",gridreadfilenames_[i].c_str());
+        log.printf("  Restarting from %s:\n",gridreadfilenames_[i].c_str());
         if(getRestart()) restartedFromGrid=true;
       } else {
         if(!sparsegrid) {BiasGrid_.reset( new Grid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true) );}
@@ -688,8 +688,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           fname = hillsfname[i];
         }
       }
-      IFile *ifile = new IFile();
-      ifiles.emplace_back(ifile);
+      ifiles.emplace_back(new IFile());
+      // this is just a shortcut pointer to the last element:
+      IFile *ifile = ifiles.back().get();
       ifile->link(*this);
       ifilesnames.push_back(fname);
       if(ifile->FileExist(fname)) {

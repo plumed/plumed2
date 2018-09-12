@@ -137,13 +137,26 @@ int main(){
       testmecpp(p);
     }
 
+    {
+// test move semantics
+      PLMD::Plumed p;
+      PLMD::Plumed q(std::move(p));
+      testmecpp(q);
+    }
+
+    {
+      PLMD::Plumed p,q;
+      q=std::move(p);
+      testmecpp(q);
+    }
+
     if(PLMD::Plumed::ginitialized()) return 0;
     PLMD::Plumed::gcreate();
     if(!PLMD::Plumed::ginitialized()) return 0;
     // this requires move semantics and only works with C++11
-    //PLMD::Plumed fromglobal(PLMD::Plumed::global());
+    PLMD::Plumed fromglobal(PLMD::Plumed::global());
     // here's a workaround for plumed 2.3:
-    PLMD::Plumed fromglobal(plumed_global());
+    //PLMD::Plumed fromglobal(plumed_global());
     testmecpp(fromglobal);
     PLMD::Plumed::gfinalize();
     if(PLMD::Plumed::ginitialized()) return 0;

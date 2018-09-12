@@ -19,6 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "PlumedMainInitializer.h"
 #include "PlumedMain.h"
 #include "tools/Exception.h"
 #include <cstdlib>
@@ -27,32 +28,6 @@
 #endif
 
 using namespace std;
-
-// !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
-// THE FOLLOWING ARE UTILITIES WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
-// This section should be consistent with the Plumed.h file.
-// Since the Plumed.h file may be included in host MD codes, **NEVER** MODIFY THE CODE IN THIS FILE
-// unless you know exactly what you are doing
-
-/**
-  Container for plumedmain function pointers (create, cmd and finalize).
-*/
-typedef struct {
-  void*(*create)();
-  void(*cmd)(void*,const char*,const void*);
-  void(*finalize)(void*);
-} plumed_plumedmain_function_holder;
-
-/**
-  Container for symbol table. Presently only contains a version number and a plumed_plumedmain_function_holder object.
-*/
-typedef struct {
-  int version;
-  plumed_plumedmain_function_holder functions;
-} plumed_symbol_table_type;
-
-/* These functions should be accessible from C, since they might be statically
-   used from Plumed.c (for static binding) */
 
 extern "C" void*plumed_plumedmain_create() {
   return new PLMD::PlumedMain;
@@ -70,15 +45,11 @@ extern "C" void plumed_plumedmain_finalize(void*plumed) {
   delete static_cast<PLMD::PlumedMain*>(plumed);
 }
 
-/// This is a static structure that is searched by the plumed loader, so it should be here.
-extern "C" plumed_symbol_table_type plumed_symbol_table;
+// values here should be consistent with those in plumed_symbol_table_init !!!!
+plumed_symbol_table_type plumed_symbol_table=
+{1,{plumed_plumedmain_create,plumed_plumedmain_cmd,plumed_plumedmain_finalize}};
 
-
-/// Notice that this object is only searched with dlsym after a dlopen on libplumedKernel
-/// has completed. Thus, it should not suffer for any static initialization problem.
-/// It is initialized using the plumed_symbol_table_init
-plumed_symbol_table_type plumed_symbol_table;
-
+// values here should be consistent with those above !!!!
 extern "C" void plumed_symbol_table_init() {
   plumed_symbol_table.version=1;
   plumed_symbol_table.functions.create=plumed_plumedmain_create;
@@ -133,7 +104,7 @@ public:
     if(handle) dlclose(handle);
 #endif
   }
-} RegisterMe;
+} PlumedMainInitializerRegisterMe;
 
 }
 

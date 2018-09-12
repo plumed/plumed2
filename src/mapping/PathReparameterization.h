@@ -24,6 +24,8 @@
 
 #include "reference/ReferenceConfiguration.h"
 #include "reference/Direction.h"
+#include "tools/PDB.h"
+#include <memory>
 
 
 namespace PLMD {
@@ -34,6 +36,8 @@ namespace mapping {
 
 class PathReparameterization {
 private:
+/// This is used when setting up frames
+  PDB mypdb;
 /// Packs that we use to store the vectors connecting frames
   MultiValue mydpack;
   ReferenceValuePack mypack;
@@ -56,7 +60,7 @@ private:
 /// Reparameterize the frames of the path between istart and iend and make the spacing equal to target
   void reparameterizePart( const int& istart, const int& iend, const double& target, const double& TOL );
 public:
-  PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, const std::vector<std::unique_ptr<ReferenceConfiguration>>& pp );
+  PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<std::unique_ptr<ReferenceConfiguration>>& pp );
 /// Reparameterize the frames of the path between istart and iend so as to make the spacing constant
   void reparameterize( const int& istart, const int& iend, const double& TOL );
 };

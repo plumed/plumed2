@@ -32,23 +32,6 @@
 namespace PLMD {
 namespace ves {
 
-static std::map<std::string, double> leptonConstants= {
-  {"e", std::exp(1.0)},
-  {"log2e", 1.0/std::log(2.0)},
-  {"log10e", 1.0/std::log(10.0)},
-  {"ln2", std::log(2.0)},
-  {"ln10", std::log(10.0)},
-  {"pi", pi},
-  {"pi_2", pi*0.5},
-  {"pi_4", pi*0.25},
-//  {"1_pi", 1.0/pi},
-//  {"2_pi", 2.0/pi},
-//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
-  {"sqrt2", std::sqrt(2.0)},
-  {"sqrt1_2", std::sqrt(0.5)}
-};
-
-
 //+PLUMEDOC VES_TARGETDIST TD_CUSTOM
 /*
 Target distribution given by an arbitrary mathematical expression (static or dynamic).
@@ -186,7 +169,7 @@ TD_Custom::TD_Custom(const ActionOptions& ao):
   checkRead();
   //
   try {
-    lepton::ParsedExpression pe=lepton::Parser::parse(func_str).optimize(leptonConstants);
+    lepton::ParsedExpression pe=lepton::Parser::parse(func_str).optimize(lepton::Constants());
     log<<"  function as parsed by lepton: "<<pe<<"\n";
     expression=pe.createCompiledExpression();
   }

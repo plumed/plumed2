@@ -60,6 +60,8 @@ class Keywords {
 private:
 /// Is this an action or driver (this bool affects what style==atoms does in print)
   bool isaction;
+/// This allows us to overwrite the behavior of the atoms type in analysis actions
+  bool isatoms;
 /// The names of the allowed keywords
   std::vector<std::string> keys;
 /// The names of the reserved keywords
@@ -92,9 +94,11 @@ private:
   void printKeyword( const std::string& j, FILE* out ) const ;
 public:
 /// Constructor
-  Keywords() : isaction(true) {}
+  Keywords() : isaction(true), isatoms(true) {}
 ///
   void isDriver() { isaction=false; }
+///
+  void isAnalysis() { isatoms=false; }
 /// find out whether flag key is on or off by default.
   bool getLogicalDefault( std::string key, bool& def ) const ;
 /// Get the value of the default for the keyword named key

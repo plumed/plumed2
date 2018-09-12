@@ -29,23 +29,6 @@ using namespace std;
 namespace PLMD {
 namespace function {
 
-static std::map<string, double> leptonConstants= {
-  {"e", std::exp(1.0)},
-  {"log2e", 1.0/std::log(2.0)},
-  {"log10e", 1.0/std::log(10.0)},
-  {"ln2", std::log(2.0)},
-  {"ln10", std::log(10.0)},
-  {"pi", pi},
-  {"pi_2", pi*0.5},
-  {"pi_4", pi*0.25},
-//  {"1_pi", 1.0/pi},
-//  {"2_pi", 2.0/pi},
-//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
-  {"sqrt2", std::sqrt(2.0)},
-  {"sqrt1_2", std::sqrt(0.5)}
-};
-
-
 //+PLUMEDOC FUNCTION MATHEVAL
 /*
 Calculate a combination of variables using a matheval expression.
@@ -253,7 +236,7 @@ Matheval::Matheval(const ActionOptions&ao):
   for(unsigned i=0; i<var.size(); i++) log.printf(" %s",var[i].c_str());
   log.printf("\n");
 
-  lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(leptonConstants);
+  lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(lepton::Constants());
   log<<"  function as parsed by lepton: "<<pe<<"\n";
   expression=pe.createCompiledExpression();
   for(auto &p: expression.getVariables()) {
@@ -263,7 +246,7 @@ Matheval::Matheval(const ActionOptions&ao):
   }
   log<<"  derivatives as computed by lepton:\n";
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(leptonConstants);
+    lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(lepton::Constants());
     log<<"    "<<pe<<"\n";
     expression_deriv[i]=pe.createCompiledExpression();
   }

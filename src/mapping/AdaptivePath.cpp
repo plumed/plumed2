@@ -25,6 +25,8 @@
 #include "reference/Direction.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/SetupMolInfo.h"
 
 //+PLUMEDOC COLVAR ADAPTIVE_PATH
 /*
@@ -129,21 +131,24 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
   log.printf("  updating path every %u MD steps \n",update_str);
 
   double halflife; parse("HALFLIFE",halflife);
-  log.printf("  weight of contribution to frame halves every %f steps \n",halflife);
   if( halflife<0 ) fadefact=1.0;
-  else fadefact = exp( -0.693147180559945 / static_cast<double>(halflife) );
+  else {
+    fadefact = exp( -0.693147180559945 / static_cast<double>(halflife) );
+    log.printf("  weight of contribution to frame halves every %f steps \n",halflife);
+  }
 
   // Create the list of tasks (and reset projections of frames)
+  PDB mypdb; mypdb.setAtomNumbers( getAbsoluteIndexes() ); mypdb.addBlockEnd( getAbsoluteIndexes().size() );
   std::vector<std::string> argument_names( getNumberOfArguments() );
   for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i] = getPntrToArgument(i)->getName();
-  displacement.setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
-  displacement2.setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
+  if( argument_names.size()>0 ) mypdb.setArgumentNames( argument_names );
+  displacement.read( mypdb ); displacement2.read( mypdb );
   for(int i=0; i<getNumberOfReferencePoints(); ++i) {
     addTaskToList( i ); pdisplacements.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")) );
-    setPropertyValue( i, 0, static_cast<double>( i - static_cast<int>(fixedn[0]) ) / static_cast<double>( fixedn[1] - fixedn[0] ) );
-    pdisplacements[i].setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names ); wsum.push_back( 0.0 );
+    property.find("spath")->second[i] = static_cast<double>( i - static_cast<int>(fixedn[0]) ) / static_cast<double>( fixedn[1] - fixedn[0] );
+    pdisplacements[i].read( mypdb ); wsum.push_back( 0.0 );
   }
-  plumed_assert( getPropertyValue( fixedn[0], 0 )==0.0 && getPropertyValue( fixedn[1], 0 )==1.0 );
+  plumed_assert( getPropertyValue( fixedn[0], "spath" )==0.0 && getPropertyValue( fixedn[1], "spath" )==1.0 );
   // And activate them all
   deactivateAllTasks();
   for(unsigned i=0; i<getFullNumberOfTasks(); ++i) taskFlags[i]=1;
@@ -226,8 +231,19 @@ void AdaptivePath::update() {
   }
   if( (getStep()>0) && (getStep()%wstride==0) ) {
     pathfile.printf("# PATH AT STEP %d TIME %f \n", getStep(), getTime() );
-    const auto& myconfs=getAllReferenceConfigurations();
-    for(unsigned i=0; i<myconfs.size(); ++i) myconfs[i]->print( pathfile, ofmt, atoms.getUnits().getLength()/0.1 );
+    std::vector<std::unique_ptr<ReferenceConfiguration>>& myconfs=getAllReferenceConfigurations();
+    std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+    if( moldat.size()>1 ) error("you should only have one MOLINFO action in your input file");
+    SetupMolInfo* mymoldat=NULL; if( moldat.size()==1 ) mymoldat=moldat[0];
+    std::vector<std::string> argument_names( getNumberOfArguments() );
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i] = getPntrToArgument(i)->getName();
+    PDB mypdb; mypdb.setArgumentNames( argument_names );
+    for(unsigned i=0; i<myconfs.size(); ++i) {
+      pathfile.printf("REMARK TYPE=%s\n", myconfs[i]->getName().c_str() );
+      mypdb.setAtomPositions( myconfs[i]->getReferencePositions() );
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) mypdb.setArgumentValue( getPntrToArgument(j)->getName(), myconfs[i]->getReferenceArgument(j) );
+      mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, pathfile, ofmt );
+    }
     pathfile.flush();
   }
 }
