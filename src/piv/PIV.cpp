@@ -987,6 +987,8 @@ void PIV::calculate()
           // Loop on blocks
           //for(unsigned m=0;m<Nlist;m++) {
           // Loop on Ordering Vector size excluding zeros (i=1)
+          if(timer) stopwatch.stop("2 Sort cPIV");
+          if(timer) stopwatch.start("3 Reconstruct cPIV");
           for(unsigned i=1; i<Nprec; i++) {
             // Loop on the ranks
             for(unsigned l=0; l<stride; l++) {
@@ -1000,7 +1002,7 @@ void PIV::calculate()
               }
             }
           }
-        if(timer) stopwatch.stop("2 Sort cPIV");
+        if(timer) stopwatch.stop("3 Reconstruct cPIV");
         } else {
           for(unsigned i=1; i<Nprec; i++) {
             for(unsigned m=0; m<OrdVec[i]; m++) {
@@ -1072,7 +1074,7 @@ void PIV::calculate()
     exit();
   }
 
-  if(timer) stopwatch.start("3 Build For Derivatives");
+  if(timer) stopwatch.start("4 Build For Derivatives");
   // non-global variables Nder and Scalevol defined to speedup if structures in cycles
   bool Nder=CompDer;
   bool Scalevol=Svol;
@@ -1217,7 +1219,7 @@ void PIV::calculate()
   prev_stp=getStep();
 
   //Timing
-  if(timer) stopwatch.stop("3 Build For Derivatives");
+  if(timer) stopwatch.stop("4 Build For Derivatives");
   if(timer) {
     log.printf("Timings for action %s with label %s \n", getName().c_str(), getLabel().c_str() );
     log<<stopwatch;
