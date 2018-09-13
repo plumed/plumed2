@@ -284,7 +284,7 @@ void CompiledExpression::generateJitCode() {
         else if (op.getId() == Operation::STEP)
             value = 1.0;
         else if (op.getId() == Operation::DELTA)
-            value = 1.0;
+            value = 1.0/0.0;
         else
             continue;
         

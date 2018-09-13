@@ -1,7 +1,10 @@
-a: DISTANCE ATOMS=1,2
+aa: POSITION ATOM=1
+a: COMBINE ARG=aa.z PERIODIC=NO
 
 # commented functions are not implemented in lepton
 
+f0: MATHEVAL ARG=a FUNC=x PERIODIC=NO
+# Not available in libmatheval, should be commented out for comparisons:
 f1: MATHEVAL ARG=a FUNC={x+sin+sin(0); sin=0} PERIODIC=NO
 f2: MATHEVAL ARG=a FUNC=x+pi PERIODIC=NO
 f3: MATHEVAL ARG=a FUNC=x*2 PERIODIC=NO
@@ -46,7 +49,7 @@ f32: MATHEVAL ARG=a FUNC=tanh(x) PERIODIC=NO
 f42: MATHEVAL ARG=a FUNC=abs(x-1.5) PERIODIC=NO
 f43: MATHEVAL ARG=a FUNC=step(x) PERIODIC=NO
 f44: MATHEVAL ARG=a FUNC=delta(x) PERIODIC=NO
-# f45: MATHEVAL ARG=a FUNC=nandelta(x) PERIODIC=NO
+f45: MATHEVAL ARG=a FUNC=nandelta(x) PERIODIC=NO
 f46: MATHEVAL ARG=a FUNC=erf(x) PERIODIC=NO
 
 c1: CONSTANT VALUE=pi    # this uses the ad hoc plumed implementation (no lepton)
