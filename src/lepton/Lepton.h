@@ -64,6 +64,16 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
  * -------------------------------------------------------------------------- */
 
+#include <map>
+#include <cmath>
+#include <string>
+
+namespace PLMD {
+namespace lepton {
+const std::map<std::string, double> & Constants();
+}
+}
+
 #include "CompiledExpression.h"
 #include "CustomFunction.h"
 #include "ExpressionProgram.h"

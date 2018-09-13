@@ -82,7 +82,27 @@ static const bool LeftAssociative[] = {true, true, true, true, false};
 static const int Precedence[] = {0, 0, 1, 1, 3};
 static const Operation::Id OperationId[] = {Operation::ADD, Operation::SUBTRACT, Operation::MULTIPLY, Operation::DIVIDE, Operation::POWER};
 
+const std::map<std::string, double> & Constants() {
+  static const std::map<std::string, double> constants = {
+  {"e", std::exp(1.0)},
+  {"log2e", 1.0/std::log(2.0)},
+  {"log10e", 1.0/std::log(10.0)},
+  {"ln2", std::log(2.0)},
+  {"ln10", std::log(10.0)},
+  {"pi", 3.14159265358979323844},
+  {"pi_2", 3.14159265358979323844*0.5},
+  {"pi_4", 3.14159265358979323844*0.25},
+//  {"1_pi", 1.0/pi},
+//  {"2_pi", 2.0/pi},
+//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
+  {"sqrt2", std::sqrt(2.0)},
+  {"sqrt1_2", std::sqrt(0.5)}
+  };
+  return constants;
+};
+
 }
+
 
 class lepton::ParseToken {
 public:
