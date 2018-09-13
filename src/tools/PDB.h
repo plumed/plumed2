@@ -49,13 +49,10 @@ class PDB {
   std::vector<AtomNumber> numbers;
   std::map<AtomNumber,unsigned> number2index;
   std::vector<std::string> residuenames;
-<<<<<<< HEAD
-=======
   std::string mtype;
   std::vector<std::string> flags;
   std::vector<std::string> argnames;
   std::map<std::string,double> arg_data;
->>>>>>> upstream/master
   Vector BoxXYZ,BoxABG;
   Tensor Box;
 public:

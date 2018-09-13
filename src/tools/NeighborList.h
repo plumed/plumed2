@@ -78,11 +78,7 @@ public:
   std::pair<unsigned,unsigned> getClosePair(unsigned i) const;
 /// Get the list of neighbors of the i-th atom
   std::vector<unsigned> getNeighbors(unsigned i);
-<<<<<<< HEAD
-  ~NeighborList() {};
-=======
   ~NeighborList() {}
->>>>>>> upstream/master
 /// Get the i-th pair of AtomNumbers from the neighbor list
   std::pair<AtomNumber,AtomNumber> getClosePairAtomNumber(unsigned i) const;
 };
