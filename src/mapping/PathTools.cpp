@@ -114,6 +114,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit PathTools(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc);
+  void printLambda( const std::string& mtype, const std::string& argstr, const std::string& ofile );
   string description()const {
     return "print out a description of the keywords for an action in html";
   }
@@ -238,16 +239,8 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     ActionAtomistic* aact = dynamic_cast<ActionAtomistic*>( paction );
     aact->retrieveAtoms(); paction->update();
 
-//     // Ouput data on spacings
-//     double mean=0;
-//     MultiValue myvpack( 1, frames[0]->getNumberOfReferenceArguments() + 3*frames[0]->getNumberOfReferencePositions() + 9 );
-//     ReferenceValuePack mypack( frames[0]->getNumberOfReferenceArguments(), frames[0]->getNumberOfReferencePositions(), myvpack );
-//     for(unsigned i=1; i<frames.size(); ++i) {
-//       mypack.clear(); double len = frames[i]->calc( frames[i-1]->getReferencePositions(), fake_pbc, vals, frames[i-1]->getReferenceArguments(), mypack, false );
-//       printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
-//       mean+=len;
-//     }
-//     printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( frames.size()-1 ) );
+    // Ouput data on spacings
+    printLambda( mtype, argstr, ofilename );
     return 0;
   }
 
@@ -337,7 +330,86 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   Action* paction = plmd.getActionSet()[plmd.getActionSet().size()-1].get();
   ActionAtomistic* aact = dynamic_cast<ActionAtomistic*>( paction ); 
   aact->retrieveAtoms(); paction->update();
+  // And output suggestions on the value of Lambda
+  printLambda( mtype, argstr, ofilename );
   return 0;
+}
+
+void PathTools::printLambda( const std::string& mtype, const std::string& argstr, const std::string& ofile ) {
+  // Create a PLUMED object
+  PlumedMain plmd; int s=sizeof(double);
+  plmd.cmd("setRealPrecision",&s);
+  plmd.cmd("setNoVirial");
+  plmd.cmd("setMDEngine","pathtools");
+  int natoms = 0; plmd.cmd("setNatoms",&natoms);
+  double tstep=1.0; plmd.cmd("setTimestep",&tstep);
+  plmd.cmd("init");
+  int step=1; plmd.cmd("setStep",&step);
+  std::vector<double> mass(1); plmd.cmd("setMasses",&mass[0]); 
+  std::vector<double> charge(1); plmd.cmd("setCharges",&charge[0]);
+
+  FILE* fp=fopen(ofile.c_str(),"r");
+  bool do_read=true; unsigned nfram=0;
+  std::vector<double> alig, disp; 
+  while (do_read ) {
+    PDB mypdb;
+      // Read the pdb file
+      do_read=mypdb.readFromFilepointer(fp,false,0.1);
+      if( do_read ) {
+          std::string num; Tools::convert( nfram+1, num ); nfram++;
+          std::string iinput = "ref_" + num + ": READ_CONFIG REFERENCE=" + ofile + " NUMBER=" + num;
+          if( argstr.length()>0 ) iinput += " READ_ARG=" + argstr;
+          const char* icinp=iinput.c_str(); plmd.cmd("readInputLine",icinp);
+          if( nfram==1 ) {
+              alig.resize( mypdb.getOccupancy().size() );
+              for(unsigned i=0;i<alig.size();++i) alig[i]=mypdb.getOccupancy()[i];
+              disp.resize( mypdb.getBeta().size() );
+              for(unsigned i=0;i<disp.size();++i) disp[i]=mypdb.getBeta()[i];
+          }
+      }
+    }
+    // Now create the objects to measure the distances between the frames
+    std::vector<double> data( nfram );
+    for(unsigned j=1;j<nfram;++j) {
+        std::string istr, jstr; Tools::convert( j, istr); Tools::convert( j+1, jstr );
+        if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
+            std::string dstring = "d" + istr + ": RMSD TYPE=" + mtype + " REFERENCE_ATOMS=ref_" + istr +  " ATOMS=ref_" + jstr;
+            // Get the align values 
+            std::string anum; Tools::convert( alig[0], anum ); dstring += " ALIGN=" + anum;
+            for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); dstring += "," + anum; }
+            // Get the displace values
+            std::string dnum; Tools::convert( disp[0], dnum ); dstring += " DISPLACE=" + dnum;
+            for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); dstring += "," + dnum; }
+            const char* icinp=dstring.c_str(); plmd.cmd("readInputLine",icinp);
+        } else if( mtype=="EUCLIDEAN" ) {
+            // Difference between args
+            std::string diff_string = "diff" + istr + ": DIFFERENCE ARG1=ref_" + istr +  " ARG2=ref_" + jstr;
+            const char* icinp=diff_string.c_str(); plmd.cmd("readInputLine",icinp);
+            // Retrieve number of quantities so we can make the powers vector
+            ActionWithValue* aval = plmd.getActionSet().selectWithLabel<ActionWithValue*>( "diff" + istr );
+            unsigned nquantities = aval->copyOutput(0)->getShape()[0];
+            // SUM OF SQUARED
+            std::string comb_string = "comb" + istr + ": COMBINE ARG=diff" + istr + " PERIODIC=NO POWERS=2";
+            for(unsigned i=1;i<nquantities;++i) comb_string += ",2";
+            const char* icinp2=comb_string.c_str(); plmd.cmd("readInputLine",icinp2);
+            // SQUARE ROOT
+            std::string fstr = "d" + istr + ": MATHEVAL ARG=comb" + istr + " FUNC=sqrt(x) PERIODIC=NO";
+            const char* icinp3=fstr.c_str(); plmd.cmd("readInputLine",icinp3); 
+        } else {
+            plumed_merror("metric type " + mtype + " has not been implemented");
+        }
+        long rank; plmd.cmd("getDataRank d" + istr, &rank );
+        if( rank!=0 ) error("distance should be of rank 1");
+        std::vector<long> ishape(1); plmd.cmd("getDataShape d" + istr, &ishape[0] );  
+        plmd.cmd("setMemoryForData d" + istr, &data[j-1] );
+    }
+    plmd.cmd("calc"); double mean=0;
+    printf("N.B. THIS CODE ALWAYS AIMS TO CREATE EQUALLY SPACED FRAMES");
+    printf("THERE MAY BE SMALL DESCREPENCIES IN THE NUMBERS BELOW, HOWEVER, BECAUSE OF ROUNDING ERRORS");
+    for(unsigned i=1; i<nfram; ++i) {
+        printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,data[i-1]); mean += data[i-1];
+    }
+    printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( nfram-1 ) );
 }
 
 } // End of namespace
