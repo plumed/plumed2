@@ -96,7 +96,7 @@ bool Tools::convertToReal(const string & str,T & t) {
     std::string remains; nstr>>remains;
     return remains.length()==0;
   } else if(str=="NAN") {
-    t=NAN;
+    t=std::numeric_limits<double>::quiet_NaN();
     return true;
   }
   return false;
