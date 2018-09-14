@@ -46,23 +46,38 @@ bool Tools::convertToAny(const string & str,T & t) {
 }
 
 bool Tools::convert(const string & str,int & t) {
-  return convertToAny(str,t);
+  return convertToInt(str,t);
 }
 
 bool Tools::convert(const string & str,long int & t) {
-  return convertToAny(str,t);
+  return convertToInt(str,t);
 }
 
 bool Tools::convert(const string & str,unsigned & t) {
-  return convertToAny(str,t);
+  return convertToInt(str,t);
 }
 
 bool Tools::convert(const string & str,AtomNumber &a) {
   unsigned i;
-  bool r=convert(str,i);
+  bool r=convertToAny(str,i);
   if(r) a.setSerial(i);
   return r;
 }
+
+template<class T>
+bool Tools::convertToInt(const string & str,T & t) {
+  if(convertToAny(str,t)) return true;
+  try {
+    double r=lepton::Parser::parse(str).evaluate(lepton::Constants());
+    if(std::round(r)==r) {
+      t=static_cast<T>(r);
+      return true;
+    }
+  } catch(PLMD::lepton::Exception& exc) {
+  }
+  return false;
+}
+
 
 template<class T>
 bool Tools::convertToReal(const string & str,T & t) {
@@ -264,15 +279,15 @@ void Tools::interpretRanges(std::vector<std::string>&s) {
     size_t dash=p.find("-");
     if(dash==string::npos) continue;
     int first;
-    if(!Tools::convert(p.substr(0,dash),first)) continue;
+    if(!Tools::convertToAny(p.substr(0,dash),first)) continue;
     int stride=1;
     int second;
     size_t colon=p.substr(dash+1).find(":");
     if(colon!=string::npos) {
-      if(!Tools::convert(p.substr(dash+1).substr(0,colon),second) ||
-          !Tools::convert(p.substr(dash+1).substr(colon+1),stride)) continue;
+      if(!Tools::convertToAny(p.substr(dash+1).substr(0,colon),second) ||
+          !Tools::convertToAny(p.substr(dash+1).substr(colon+1),stride)) continue;
     } else {
-      if(!Tools::convert(p.substr(dash+1),second)) continue;
+      if(!Tools::convertToAny(p.substr(dash+1),second)) continue;
     }
     news.resize(news.size()-1);
     if(first<=second) {

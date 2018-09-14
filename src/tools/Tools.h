@@ -59,6 +59,9 @@ class Tools {
 /// T should be either float, double, or long double
   template<class T>
   static bool convertToReal(const std::string & str,T &t);
+/// class to convert a string to a int type T
+  template<class T>
+  static bool convertToInt(const std::string & str,T &t);
 public:
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
