@@ -77,6 +77,9 @@ public:
   typedef size_t index_t;
 // to restore old implementation (unsigned) use the following instead:
 // typedef unsigned index_t;
+/// Maximum dimension (exaggerated value).
+/// Can be used to replace local std::vectors with std::arrays (allocated on stack).
+  static constexpr size_t maxdim=64;
 private:
   double contour_location;
   std::vector<double> grid_;

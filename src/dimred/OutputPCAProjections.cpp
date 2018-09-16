@@ -33,7 +33,7 @@
 namespace PLMD {
 namespace dimred {
 
-//+PLUMEDOC ANALYSIS OUTPUT_PCA_PROJECTION
+//+PLUMEDOC DIMRED OUTPUT_PCA_PROJECTION
 /*
 This is used to output the projection calculated by principle component analysis
 

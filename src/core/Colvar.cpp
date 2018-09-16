@@ -31,7 +31,8 @@ Colvar::Colvar(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
-  isEnergy(false)
+  isEnergy(false),
+  isExtraCV(false)
 {
 }
 
@@ -67,7 +68,7 @@ void Colvar::apply() {
   unsigned nt=OpenMP::getNumThreads();
   if(nt>ncp/(4*stride)) nt=1;
 
-  if(!isEnergy) {
+  if(!isEnergy && !isExtraCV) {
     #pragma omp parallel num_threads(nt)
     {
       vector<Vector> omp_f(fsz);
@@ -107,6 +108,9 @@ void Colvar::apply() {
   } else if( isEnergy ) {
     vector<double> forces(1);
     if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnEnergy()+=forces[0];
+  } else if( isExtraCV ) {
+    vector<double> forces(1);
+    if(getPntrToComponent(0)->applyForce(forces)) modifyForceOnExtraCV()+=forces[0];
   }
 }
 

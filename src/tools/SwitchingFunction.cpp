@@ -29,22 +29,6 @@
 using namespace std;
 namespace PLMD {
 
-const static std::map<string, double> leptonConstants= {
-  {"e", std::exp(1.0)},
-  {"log2e", 1.0/std::log(2.0)},
-  {"log10e", 1.0/std::log(10.0)},
-  {"ln2", std::log(2.0)},
-  {"ln10", std::log(10.0)},
-  {"pi", pi},
-  {"pi_2", pi*0.5},
-  {"pi_4", pi*0.25},
-//  {"1_pi", 1.0/pi},
-//  {"2_pi", 2.0/pi},
-//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
-  {"sqrt2", std::sqrt(2.0)},
-  {"sqrt1_2", std::sqrt(0.5)}
-};
-
 //+PLUMEDOC INTERNAL switchingfunction
 /*
 Functions that measure whether values are less than a certain quantity.
@@ -263,7 +247,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     type=leptontype;
     std::string func;
     Tools::parse(data,"FUNC",func);
-    lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(leptonConstants);
+    lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(lepton::Constants());
     lepton_func=func;
     expression.resize(OpenMP::getNumThreads());
     for(auto & e : expression) e=pe.createCompiledExpression();
@@ -284,7 +268,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     }
     std::string arg="x";
     if(leptonx2) arg="x2";
-    lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate(arg).optimize(leptonConstants);
+    lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate(arg).optimize(lepton::Constants());
     expression_deriv.resize(OpenMP::getNumThreads());
     for(auto & e : expression_deriv) e=ped.createCompiledExpression();
     lepton_ref_deriv.resize(expression_deriv.size());

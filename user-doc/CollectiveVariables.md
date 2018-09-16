@@ -181,7 +181,7 @@ forcefield.
 \section usingbase Extracting all the base quantities
 
 There may be occasions where you want to get information on all the individual colvar values that you have calculated.
-For example you might want to output the values of all the coordination numbers calculated by a \ref COORDINATIONNUMERS 
+For example you might want to output the values of all the coordination numbers calculated by a \ref COORDINATIONNUMBER 
 action.  You can thus use the following commands to extract this sort of information.
 
 @MCOLVARA@ 

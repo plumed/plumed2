@@ -6,6 +6,7 @@
 - \subpage BashAutocompletion
 - \subpage includes
 - \subpage load
+- \subpage embed
 - \subpage degub
 - \subpage exchange-patterns
 - \subpage mymodules
@@ -501,6 +502,10 @@ LOAD FILE=library.so
  
 N.B.  If your system uses a different suffix for dynamic libraries (e.g. macs use .dylib) then PLUMED will try to 
 automatically adjust the suffix accordingly.
+
+\page embed Embed a separate PLUMED instance
+
+\subpage PLUMED
 
 \page degub Debugging the code
 

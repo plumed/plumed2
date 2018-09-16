@@ -36,7 +36,7 @@ parameters corrected to be used with long-range Coulomb solvers \cite Price-JCP-
 The system contains 1 Na, 1 Cl, and 106 water molecules (total 320 atoms).
 
 \anchor ves-school-2017-metad-NaCl
-\image html ves-lugano2017-metad_nacl.png "NaCl in water"
+\image html ves-lugano2017-metad_NaCl.png "NaCl in water"
 
 
 \subsection ves-lugano2017-metad-subsection-2 Perform an unbiased simulation and control the distance Na-Cl
