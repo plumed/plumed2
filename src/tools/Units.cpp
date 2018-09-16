@@ -55,8 +55,10 @@ void Units::setEnergy(const std::string &s) {
   } else {
     energy=-1.0;
     energyString="";
-    Tools::convert(s,energy);
-    plumed_massert(energy>0.0,"energy units should be positive");
+    if(!Tools::convert(s,energy)) {
+      plumed_merror("problem with setting the energy unit, either use give an numerical value or use one of the defined units: kj/mol, kcal/mol, j/mol, eV, Ha (case senstive)");
+    }
+    plumed_massert(energy>0.0,"energy unit should be positive");
   }
 }
 
@@ -73,8 +75,10 @@ void Units::setLength(const std::string &s) {
   } else {
     length=-1.0;
     lengthString="";
-    Tools::convert(s,length);
-    plumed_massert(length>0.0,"length units should be positive");
+    if(!Tools::convert(s,length)) {
+      plumed_merror("problem with setting the length unit, either use give an numerical value or use one of the defined units: nm, A, um, Bohr (case senstive)");
+    }
+    plumed_massert(length>0.0,"length unit should be positive");
   }
 }
 
@@ -91,8 +95,10 @@ void Units::setTime(const std::string &s) {
   } else {
     time=-1.0;
     timeString="";
-    Tools::convert(s,time);
-    plumed_massert(time>0.0,"time units should be positive");
+    if(!Tools::convert(s,time)) {
+      plumed_merror("problem with setting the time unit, either use give an numerical value or use one of the defined units: ps, fs, atomic (case senstive)");
+    }
+    plumed_massert(time>0.0,"time unit should be positive");
   }
 }
 
@@ -103,8 +109,10 @@ void Units::setCharge(const std::string &s) {
   } else {
     charge=-1.0;
     chargeString="";
-    Tools::convert(s,charge);
-    plumed_massert(charge>0.0,"charge units should be positive");
+    if(!Tools::convert(s,charge)) {
+      plumed_merror("problem with setting the charge unit, either use give an numerical value or use one of the defined units: e (case senstive)");
+    }
+    plumed_massert(charge>0.0,"charge unit should be positive");
   }
 }
 
@@ -115,8 +123,10 @@ void Units::setMass(const std::string &s) {
   } else {
     mass=-1.0;
     massString="";
-    Tools::convert(s,mass);
-    plumed_massert(mass>0.0,"mass units should be positive");
+    if(!Tools::convert(s,mass)) {
+      plumed_merror("problem with setting the mass unit, either use give an numerical value or use one of the defined units: amu (case senstive)");
+    }
+    plumed_massert(mass>0.0,"mass unit should be positive");
   }
 }
 
