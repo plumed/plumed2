@@ -76,7 +76,7 @@ void Units::setLength(const std::string &s) {
     length=-1.0;
     lengthString="";
     if(!Tools::convert(s,length)) {
-      plumed_merror("problem with setting the length unit, either use give an numerical value or use one of the defined units: nm, A, um, Bohr (case senstive)");
+      plumed_merror("problem with setting the length unit, either use a numerical value or use one of the defined units: nm, A, um, Bohr (case sensitive)");
     }
     plumed_massert(length>0.0,"length unit should be positive");
   }
@@ -96,7 +96,7 @@ void Units::setTime(const std::string &s) {
     time=-1.0;
     timeString="";
     if(!Tools::convert(s,time)) {
-      plumed_merror("problem with setting the time unit, either use give an numerical value or use one of the defined units: ps, fs, atomic (case senstive)");
+      plumed_merror("problem with setting the time unit, either use a numerical value or use one of the defined units: ps, fs, atomic (case sensitive)");
     }
     plumed_massert(time>0.0,"time unit should be positive");
   }
@@ -110,7 +110,7 @@ void Units::setCharge(const std::string &s) {
     charge=-1.0;
     chargeString="";
     if(!Tools::convert(s,charge)) {
-      plumed_merror("problem with setting the charge unit, either use give an numerical value or use one of the defined units: e (case senstive)");
+      plumed_merror("problem with setting the charge unit, either use a numerical value or use one of the defined units: e (case sensitive)");
     }
     plumed_massert(charge>0.0,"charge unit should be positive");
   }
@@ -124,7 +124,7 @@ void Units::setMass(const std::string &s) {
     mass=-1.0;
     massString="";
     if(!Tools::convert(s,mass)) {
-      plumed_merror("problem with setting the mass unit, either use give an numerical value or use one of the defined units: amu (case senstive)");
+      plumed_merror("problem with setting the mass unit, either use a numerical value or use one of the defined units: amu (case sensitive)");
     }
     plumed_massert(mass>0.0,"mass unit should be positive");
   }
