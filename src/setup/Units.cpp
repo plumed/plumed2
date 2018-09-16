@@ -89,9 +89,9 @@ PLUMED_REGISTER_ACTION(Units,"UNITS")
 
 void Units::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);
-  keys.add("optional","LENGTH","the units of lengths.  Either specify a conversion factor from the default, nm, or A (for angstroms) or um");
-  keys.add("optional","ENERGY","the units of energy.  Either specify a conversion factor from the default, kj/mol, or use j/mol or kcal/mol");
-  keys.add("optional","TIME","the units of time.  Either specify a conversion factor from the default, ps, or use ns or fs");
+  keys.add("optional","LENGTH","the units of lengths.  Either specify a conversion factor from the default, nm, or use one of the defined units, A (for angstroms), um, and Bohr.");
+  keys.add("optional","ENERGY","the units of energy.  Either specify a conversion factor from the default, kj/mol, or use one of the defined units, j/mol, kcal/mol and Ha (for Hartree)");
+  keys.add("optional","TIME","the units of time.  Either specify a conversion factor from the default, ps, or use one of the defined units, ns, fs, and atomic");
   keys.add("optional","MASS","the units of masses.  Specify a conversion factor from the default, amu");
   keys.add("optional","CHARGE","the units of charges.  Specify a conversion factor from the default, e");
   keys.addFlag("NATURAL",false,"use natural units");
@@ -152,4 +152,3 @@ Units::Units(const ActionOptions&ao):
 
 }
 }
-
