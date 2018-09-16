@@ -109,27 +109,27 @@ Units::Units(const ActionOptions&ao):
   parse("LENGTH",s);
   if(s.length()>0) u.setLength(s);
   if(u.getLengthString().length()>0 && u.getLengthString()=="nm") {
-    log.printf("  length: %s\n",u.getLengthString().c_str());  
+    log.printf("  length: %s\n",u.getLengthString().c_str());
   }
   else if(u.getLengthString().length()>0 && u.getLengthString()!="nm") {
     log.printf("  length: %s = %g nm\n",u.getLengthString().c_str(),u.getLength());
   }
   else {
     log.printf("  length: %g nm\n",u.getLength());
-  }                              
+  }
 
   s="";
   parse("ENERGY",s);
   if(s.length()>0) u.setEnergy(s);
   if(u.getEnergyString().length()>0 && u.getEnergyString()=="kj/mol") {
     log.printf("  energy: %s\n",u.getEnergyString().c_str());
-  } 
+  }
   else if(u.getEnergyString().length()>0 && u.getEnergyString()!="kj/mol") {
     log.printf("  energy: %s = %g kj/mol\n",u.getEnergyString().c_str(),u.getEnergy());
   }
   else {
     log.printf("  energy: %g kj/mol\n",u.getEnergy());
-  }                               
+  }
 
   s="";
   parse("TIME",s);
@@ -162,10 +162,10 @@ Units::Units(const ActionOptions&ao):
   if(s.length()>0) u.setMass(s);
   if(u.getMassString().length()>0 && u.getMassString()=="amu") {
     log.printf("  mass: %s\n",u.getMassString().c_str());
-  } 
+  }
   else if(u.getMassString().length()>0 && u.getMassString()!="amu") {
     log.printf("  mass: %s = %g amu\n",u.getMassString().c_str(),u.getMass());
-  } 
+  }
   else {
     log.printf("  mass: %g amu\n",u.getMass());
   }
