@@ -50,8 +50,7 @@ void Units::setEnergy(const std::string &s) {
     energy=0.001;
   } else if(s=="eV") {
     energy=96.48530749925792;
-  } else if(s=="Hartree" || s =="Ha") {
-    energyString="Hartree";
+  } else if(s =="Ha") {
     energy=2625.499638;
   } else {
     energy=-1.0;
