@@ -25,237 +25,6 @@
   the declarations and the definitions. The guards are thus placed below.
 */
 
-/*
-  Here there are a number of cpp macros that can be used to control the behavior.
-  Notice that the macros defined by the user are not modified. This is required
-  to allow multiple inclusions of the header.
-
-  The macros set here, that is those ending with an underscore, should be undefined at
-  the end of this file!
-*/
-
-/*
-  1: enable C++ wrapper (default)
-  0: disable C++ wrapper
-*/
-
-#ifdef __PLUMED_WRAPPER_CXX
-#define __PLUMED_WRAPPER_CXX_ __PLUMED_WRAPPER_CXX
-#else
-#define __PLUMED_WRAPPER_CXX_ 1
-#endif
-
-/*
-  1: using cmd on an invalid object throws an exception
-  0: using cmd on an invalid object aborts (default)
-
-  It is set to zero by default for backward compatibility.
-  Notice that setting it to 1 the C++ interface will not be compatible with
-  PLUMED < 2.5 library since it will require plumed_valid().
-  The default value might change in the future.
-*/
-
-#ifdef __PLUMED_WRAPPER_CXX_THROWS
-#define __PLUMED_WRAPPER_CXX_THROWS_ __PLUMED_WRAPPER_CXX_THROWS
-#else
-#define __PLUMED_WRAPPER_CXX_THROWS_ 0
-#endif
-
-/*
-  If __PLUMED_WRAPPER_CXX_THROWS==1, use this command to throw an exception when acting on invalid objects.
-  By default, throws a std::runtime_error.
-*/
-
-#ifdef __PLUMED_WRAPPER_CXX_THROW_CMD
-#define __PLUMED_WRAPPER_CXX_THROW_CMD_ __PLUMED_WRAPPER_CXX_THROW_CMD
-#else
-#define __PLUMED_WRAPPER_CXX_THROW_CMD_(x) throw ::std::runtime_error(x)
-#endif
-
-/*
-  1: new headers such as cstdlib are included in C++ (default)
-  0: old headers such as stdlib.h are included in C++
-
-  Should only be set to zero when including the Plumed.h file in a file using the
-  old (stdlib.h) convention.
-*/
-
-#ifdef __PLUMED_WRAPPER_CXX_STD
-#define __PLUMED_WRAPPER_CXX_STD_ __PLUMED_WRAPPER_CXX_STD
-#else
-#define __PLUMED_WRAPPER_CXX_STD_ 1
-#endif
-
-/*
-  1: if __PLUMED_WRAPPER_EXTERN==0, it makes the C wrapper functions inline instead of static when using C++.
-  0: C wrapper functions are never inline.
-
-  This macro is only useful with __PLUMED_WRAPPER_EXTERN==0. In that case, if __PLUMED_WRAPPER_CXX_INLINE==1,
-  the whole interface is declared inline rather than static when compiling with C++.
-  As a result, calls to the C interface in different translation units will be merged.
-
-  It is experimental and might produce errors.
-*/
-
-#ifdef __PLUMED_WRAPPER_CXX_INLINE
-#define __PLUMED_WRAPPER_CXX_INLINE_ __PLUMED_WRAPPER_CXX_INLINE
-#else
-#define __PLUMED_WRAPPER_CXX_INLINE_ 0
-#endif
-
-/*
-  1: place C++ wrappers in an anonymous namespace
-  0: place C++ wrappers in the PLMD namespace (default)
-
-  It will make PLMD::Plumed a different class (though with the same name)
-  in each of the translation units in which `Plumed.h` is included.
-
-  Note: anonymous namespace is experimental and might produce errors.
-*/
-
-#ifdef __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE
-#define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_ __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE
-#else
-#define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_ 0
-#endif
-
-/*
-  1: make PLMD::Plumed class polymorphic (default)
-  0: make PLMD::Plumed class non-polymorphic
-*/
-
-#ifdef __PLUMED_WRAPPER_CXX_POLYMORPHIC
-#define __PLUMED_WRAPPER_CXX_POLYMORPHIC_ __PLUMED_WRAPPER_CXX_POLYMORPHIC
-#else
-#define __PLUMED_WRAPPER_CXX_POLYMORPHIC_ 1
-#endif
-
-/*
-  1: write on stderr changes in reference counters
-  0: do not write changes in reference counters
-
-  Used for debugging.
-*/
-
-#ifdef __PLUMED_WRAPPER_DEBUG_REFCOUNT
-#define __PLUMED_WRAPPER_DEBUG_REFCOUNT_ __PLUMED_WRAPPER_DEBUG_REFCOUNT
-#else
-#define __PLUMED_WRAPPER_DEBUG_REFCOUNT_ 0
-#endif
-
-/*
-  1: make the wrapper functions extern (default)
-  0: make the wrapper functions static or inline (see also __PLUMED_WRAPPER_CXX_INLINE)
-
-  If set to zero, it disables all functions that only make sense as extern, such as
-  Fortran wrappers, global objects, and plumed_kernel_register.
-
-  It can be set to zero to include multiple copies of the wrapper implementation without worrying
-  about duplicated symbols.
-*/
-
-#ifdef __PLUMED_WRAPPER_EXTERN
-#define __PLUMED_WRAPPER_EXTERN_ __PLUMED_WRAPPER_EXTERN
-#else
-#define __PLUMED_WRAPPER_EXTERN_ 1
-#endif
-
-/*
-  1: emit plumed_kernel_register function (default)
-  0: do not emit plumed_kernel_register function
-
-  This function is only needed to avoid an extra warning when loading old (<=2.4) kernels.
-  We might change its default in the future.
-*/
-
-#ifdef __PLUMED_WRAPPER_KERNEL_REGISTER
-#define __PLUMED_WRAPPER_KERNEL_REGISTER_ __PLUMED_WRAPPER_KERNEL_REGISTER
-#else
-#define __PLUMED_WRAPPER_KERNEL_REGISTER_ 1
-#endif
-
-/*
-  1: emit Fortran wrappers (default)
-  0: do not emit Fortran wrappers
-*/
-
-#ifdef __PLUMED_WRAPPER_FORTRAN
-#define __PLUMED_WRAPPER_FORTRAN_ __PLUMED_WRAPPER_FORTRAN
-#else
-#define __PLUMED_WRAPPER_FORTRAN_ 1
-#endif
-
-/*
-  1: emit global plumed object (default)
-  0: do not emit global plumed object
-*/
-
-#ifdef __PLUMED_WRAPPER_GLOBAL
-#define __PLUMED_WRAPPER_GLOBAL_ __PLUMED_WRAPPER_GLOBAL
-#else
-#define __PLUMED_WRAPPER_GLOBAL_ 1
-#endif
-
-/*
-  1: emit implementation
-  0: do not emit implementation
-
-  Allows an implementation to be emitted together with the declarations.
-
-*/
-
-#ifdef __PLUMED_WRAPPER_IMPLEMENTATION
-#define __PLUMED_WRAPPER_IMPLEMENTATION_ __PLUMED_WRAPPER_IMPLEMENTATION
-#else
-#define __PLUMED_WRAPPER_IMPLEMENTATION_ 0
-#endif
-
-#if !__PLUMED_WRAPPER_IMPLEMENTATION_ && !__PLUMED_WRAPPER_EXTERN_
-#error "If you configure Plumed.h with internal linkage you should emit implementation as well"
-#endif
-
-#if __PLUMED_WRAPPER_EXTERN_
-
-#define __PLUMED_WRAPPER_VISIBILITY_ extern
-
-#else
-
-#if __PLUMED_WRAPPER_CXX_INLINE_
-#define __PLUMED_WRAPPER_VISIBILITY_ inline
-#else
-#define __PLUMED_WRAPPER_VISIBILITY_ static
-#endif
-
-#undef __PLUMED_WRAPPER_KERNEL_REGISTER_
-#define __PLUMED_WRAPPER_KERNEL_REGISTER_ 0
-#undef __PLUMED_WRAPPER_FORTRAN_
-#define __PLUMED_WRAPPER_FORTRAN_ 0
-#undef __PLUMED_WRAPPER_GLOBAL_
-#define __PLUMED_WRAPPER_GLOBAL_ 0
-
-#endif
-
-#ifndef __cplusplus
-#undef __PLUMED_WRAPPER_CXX_STD_
-#define __PLUMED_WRAPPER_CXX_STD_ 0
-#endif
-
-#if __PLUMED_WRAPPER_CXX_STD_
-#define __PLUMED_WRAPPER_STD ::std::
-#else
-#define __PLUMED_WRAPPER_STD
-#endif
-
-#if __cplusplus > 199711L
-#define __PLUMED_WRAPPER_CXX_NOEXCEPT_ noexcept
-#else
-#define __PLUMED_WRAPPER_CXX_NOEXCEPT_
-#endif
-
-
-#ifndef __PLUMED_wrapper_Plumed_h
-#define __PLUMED_wrapper_Plumed_h
-
 /**
 \page ReferencePlumedH Reference for interfacing MD codes with PLUMED
 
@@ -280,7 +49,7 @@
   manner, we do not need to know which C++ compiler will be used to compile plumed.
   The C++ library is only linked to the "rest" of plumed, which actually uses it.
   Anyway, Plumed.c is written in such a manner to allow its compilation also in C++
-  (C++ is a bit stricter than C) This will
+  (C++ is a bit stricter than C). This will
   allow e.g. MD codes written in C++ to just incorporate Plumed.c (maybe renamed into
   Plumed.cpp), without the need of configuring a plain C compiler.
 
@@ -312,13 +81,13 @@
   The global object should still be initialized and finalized properly.
   This global object is obviously not usable in a multithread context.
 
-  As of PLUMED 2.5, the interfaces contains a reference counter that allows
+  As of PLUMED 2.5, the interface contains a reference counter that allows
   for a better control of plumed initializations and deallocations.
   This is particularly useful for the C++ interface that now
   behaves similarly to a primitive shared pointer and can be thus copied.
   In other languages, to use the reference counter correctly it is sufficient to
   remember the following rule: for any `plumed_create*` call, there should be a corresponding
-  `plumed_finalize` call.
+  `plumed_finalize` call. More examples can be found below.
 
   The basic method to send a message to plumed is
 \verbatim
@@ -365,7 +134,7 @@
 
   Notice that when using runtime binding the plumed library might be not available.
   In this case, plumed_create (and plumed_gcreate) will still succeed, but a subsequent
-  call to plumed_cmd (or plumed_gcmd) would abort. In order to avoid this
+  call to plumed_cmd (or plumed_gcmd) would exit. In order to avoid this
   unpleasant situation you have two options.
 
   First, you can check if plumed library is available before actually creating an object
@@ -385,7 +154,7 @@
 \endverbatim
 
   If you want to create on purpose an invalid Plumed object (useful in C++ to postpone
-  the loading of the library) you can use `Plumed p(Plumed::invalid);`.
+  the loading of the library) you can use `Plumed p(Plumed::invalid());`.
 
   To know if the global object is valid instead you should use the following function:
 \verbatim
@@ -414,7 +183,7 @@
   (C++)      Plumed(void*) constructor  (void* to C++)
   (C++)      toVoid()                   (C++ to void*)
 \endverbatim
-  Using the functions above is much safer than using directly the pointer contained in the \ref plumed struct
+  Using the functions above is much safer than accessing directly the pointer contained in the \ref plumed struct
   since, when compiling with debug options, it will check if the void pointer actually points to a plumed object.
 
   As of PLUMED 2.5, we added a reference count. It is in practice possible
@@ -482,7 +251,7 @@
   When you compile the FORTRAN interface, wrapper functions are added with several possible
   name mangligs, so you should not experience problems linking the plumed library with a FORTRAN file.
 
-\section ReferencePlumedH-2-5 New in PLUMED 2.5
+\paragraph ReferencePlumedH-2-5 New in PLUMED 2.5
 
   The wrappers in PLUMED 2.5 have been completely rewritten with several improvements.
   The interface is almost perfectly backward compatible, although the behavior of C++ constructors
@@ -493,15 +262,15 @@
   an older PLUMED library at runtime). In addition, the reference counter changes slightly
   the behavior of the C++ methods used to interoperate with C and FORTRAN.
 
-  An important novelty is that the way the runtime loader is implemented changed drastically.
-  Now, the loader is not anymore relying on an initializer function present in the kernel
-  to be executed. This will allow the loader to work also if this function is not exported.
+  An important novelty is in the way the runtime loader is implemented.
+  In particular, the loader works also if the symbols of the main executable are not exported.
   The proper functions from the kernel are indeed searched explicitly now using `dlsym`.
 
   Some additional features can be enabled using suitable environment variables. In particular:
   - `PLUMED_LOAD_DEBUG` can be set to report more information about the loading process.
   - `PLUMED_LOAD_NAMESPACE` can be set to `LOCAL` to load the PLUMED kernel in a separate
-    namespace. The default is global namespace, which is the same behavior of PLUMED <=2.4.
+    namespace. The default is global namespace, which is the same behavior of PLUMED <=2.4,
+    and is consistent with what happens when linking PLUMED as a shared library.
   - `PLUMED_LOAD_NODEEPBIND` can be set to load the PLUMED kernel in not-deepbind mode. Deepbind
     mode implies that the symbols defined in the library are preferred to other symbols with the same name.
     Only works on systems supporting `RTLD_DEEPBIND` and is mostly for debugging purposes.
@@ -509,19 +278,9 @@
   Another difference is that the implementation of the wrappers is now completely contained in the `Plumed.h`
   file. You can see that the `Plumed.c` is much simpler now and just includes `Plumed.h`. With a similar
   procedure you could compile the wrappers directly into your code making it unnecessary to link
-  the libplumedWrapper.a library. Here's some example cpp macro that can be used to this aim:
-  - `-D__PLUMED_WRAPPER_IMPLEMENTATION=1 -D__PLUMED_HAS_DLOPEN` allows to obtain a full implementation of the PLUMED
-    interface in the current translation unit. This should be done at most in a single file.
-    `-D__PLUMED_HAS_DLOPEN` makes sure PLUMED can be later loaded. This is how `Plumed.o` is produced.
-  - `-D__PLUMED_WRAPPER_IMPLEMENTATION=1 -D__PLUMED_STATIC_KERNEL` allows to obtain a full implementation of the PLUMED
-    interface in the current translation unit. This should be done at most in a single file. The PLUMED kernel
-    should be availabe at link time. This is how `PlumedStatic.o` is produced.
-  - `-D__PLUMED_WRAPPER_IMPLEMENTATION=1 -D__PLUMED_HAS_DLOPEN -D__PLUMED_WRAPPER_EXTERN=0` allows to obtain a light
-    implementation of the PLUMED interface in the current translation unit. This interface is not exported, so it
-    might be repeated in all the files where you need it. As a limitation, it does not contain the PLUMED global instance and
-    does not implement the FORTRAN wrappers.
+  the libplumedWrapper.a library. The corresponding macros are still subject to change and are not documented here.
 
-  In addition, the plumed object now implements a reference counter.  Consider the following example
+  As written above, the plumed object now implements a reference counter.  Consider the following example
 \verbatim
   plumed p=plumed_create();
   plumed_cmd(p,"init",NULL);
@@ -576,9 +335,193 @@
 
 */
 
-#ifdef __cplusplus
-extern "C" {
+/* BEGINNING OF DECLARATIONS */
+
+#ifndef __PLUMED_wrapper_Plumed_h /*{*/
+#define __PLUMED_wrapper_Plumed_h
+
+/* SETTING DEFAULT VALUES FOR CONTROL MACROS */
+
+/*
+  1: make the C wrapper functions extern (default)
+  0: make the C wrapper functions static (C) or inline (C++)
+
+  If set to zero, it disables all functions that only make sense as extern, such as
+  Fortran wrappers, global objects, and plumed_kernel_register.
+
+  It can be set to zero to include multiple copies of the wrapper implementation without worrying
+  about duplicated symbols.
+
+  Notice that C++ wrappers are always inline. What this function controls is if the C wrappers
+  (called by the C++ wrappers) is inline or not. Also consider that if this header is compiled
+  with C++ and inline C wrappers, the C wrappers will be actually compiled with C++ linkage
+  in the root namespace.
+
+  Used both in declarations (to know which functions to declare) and definitions (to know which functions to define).
+*/
+
+#ifndef __PLUMED_WRAPPER_EXTERN
+#define __PLUMED_WRAPPER_EXTERN 1
 #endif
+
+/*
+  1: emit global plumed object and related functions (default)
+  0: do not emit global plumed object and related functions
+
+  Used both in declarations (to know which functions to declare) and definitions (to know which functions to define).
+*/
+
+#ifndef __PLUMED_WRAPPER_GLOBAL
+#define __PLUMED_WRAPPER_GLOBAL 1
+#endif
+
+/*
+  1: enable C++ wrapper (default)
+  0: disable C++ wrapper
+
+  Only used in declarations, but affects the scope of the C interface also in definitions.
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX
+#define __PLUMED_WRAPPER_CXX 1
+#endif
+
+/*
+  1: new headers such as cstdlib are included in C++ (default)
+  0: old headers such as stdlib.h are included in C++
+
+  Should only be set to zero when including the Plumed.h file in a file using the
+  old (stdlib.h) convention.
+
+  Used both in declarations and definitions.
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX_STD
+#define __PLUMED_WRAPPER_CXX_STD 1
+#endif
+
+/*
+  1: place C++ wrappers in an anonymous namespace
+  0: place C++ wrappers in the PLMD namespace (default)
+
+  It will make PLMD::Plumed a different class (though with the same name)
+  in each of the translation units in which `Plumed.h` is included.
+
+  Can be used to completey separate C++ implementations. However, it will make
+  it impossible to transfer Plumed objects between different translation units
+  without converting to a void* or plumed object.
+
+  Only used in declarations, but affects the scope of the C interface also in definitions.
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE
+#define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE 0
+#endif
+
+/*
+  1: using cmd on an invalid object throws an exception
+  0: using cmd on an invalid object exits (default)
+
+  It is set to zero by default for backward compatibility.
+  Notice that setting it to 1 the C++ interface will not be compatible with
+  PLUMED < 2.5 library since it will require plumed_valid().
+  The default value might change in the future.
+
+  Only used in declarations.
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX_THROWS
+#define __PLUMED_WRAPPER_CXX_THROWS 0
+#endif
+
+/*
+  If __PLUMED_WRAPPER_CXX_THROWS==1, use this command to throw an exception when acting on invalid objects.
+  By default, throws a std::runtime_error.
+
+  Only used in declarations.
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX_THROW_CMD
+#define __PLUMED_WRAPPER_CXX_THROW_CMD throw ::std::runtime_error(x)
+#endif
+
+/*
+  1: make PLMD::Plumed class polymorphic (default)
+  0: make PLMD::Plumed class non-polymorphic
+
+  Only used in declarations.
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX_POLYMORPHIC
+#define __PLUMED_WRAPPER_CXX_POLYMORPHIC 1
+#endif
+
+
+/* The following macros are just to define shortcuts */
+
+/* Simplify addition of extern "C" blocks.  */
+#ifdef __cplusplus
+#define __PLUMED_WRAPPER_EXTERN_C_BEGIN extern "C" {
+#define __PLUMED_WRAPPER_EXTERN_C_END }
+#else
+#define __PLUMED_WRAPPER_EXTERN_C_BEGIN
+#define __PLUMED_WRAPPER_EXTERN_C_END
+#endif
+
+/* Without C++, stdlib functions should not be prepended with ::std:: */
+#ifndef __cplusplus
+#undef __PLUMED_WRAPPER_CXX_STD
+#define __PLUMED_WRAPPER_CXX_STD 0
+#endif
+
+/* Set prefix for stdlib functions */
+#if __PLUMED_WRAPPER_CXX_STD
+#define __PLUMED_WRAPPER_STD ::std::
+#else
+#define __PLUMED_WRAPPER_STD
+#endif
+
+/* Allow using noexcept with C++11 compilers */
+#if __cplusplus > 199711L
+#define __PLUMED_WRAPPER_CXX_NOEXCEPT noexcept
+#else
+#define __PLUMED_WRAPPER_CXX_NOEXCEPT
+#endif
+
+/* Macros for anonymous namespace */
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE && defined(__cplusplus) /*{*/
+#define __PLUMED_WRAPPER_ANONYMOUS_BEGIN namespace {
+#define __PLUMED_WRAPPER_ANONYMOUS_END }
+#else
+#define __PLUMED_WRAPPER_ANONYMOUS_BEGIN
+#define __PLUMED_WRAPPER_ANONYMOUS_END
+#endif /*}*/
+
+#if __PLUMED_WRAPPER_EXTERN /*{*/
+
+#define __PLUMED_WRAPPER_C_BEGIN __PLUMED_WRAPPER_EXTERN_C_BEGIN extern
+#define __PLUMED_WRAPPER_C_END __PLUMED_WRAPPER_EXTERN_C_END
+#define __PLUMED_WRAPPER_INTERNALS_BEGIN __PLUMED_WRAPPER_EXTERN_C_BEGIN static
+#define __PLUMED_WRAPPER_INTERNALS_END __PLUMED_WRAPPER_EXTERN_C_END
+
+#else
+
+#ifdef __cplusplus
+#define __PLUMED_WRAPPER_C_BEGIN  __PLUMED_WRAPPER_ANONYMOUS_BEGIN inline
+#define __PLUMED_WRAPPER_C_END __PLUMED_WRAPPER_ANONYMOUS_END
+#else
+#define __PLUMED_WRAPPER_C_BEGIN static
+#define __PLUMED_WRAPPER_C_END
+#endif
+
+#define __PLUMED_WRAPPER_INTERNALS_BEGIN __PLUMED_WRAPPER_C_BEGIN
+#define __PLUMED_WRAPPER_INTERNALS_END __PLUMED_WRAPPER_C_END
+
+/* with an not-external interface, it does not make sense to define global functions */
+#undef __PLUMED_WRAPPER_GLOBAL
+#define __PLUMED_WRAPPER_GLOBAL 0
+
+#endif /*}*/
 
 /**
   \brief Main plumed object
@@ -614,7 +557,7 @@ typedef struct {
     object. In particular, this could happen if the `PLUMED_KERNEL` environment
     variable is not set or set incorrectly. In order to detect an incorrect
     plumed object you might use \ref plumed_valid() on the resulting object.
-    Alternatively, if you use \ref plumed_cmd() on an invalid plumed object the code will abort.
+    Alternatively, if you use \ref plumed_cmd() on an invalid plumed object the code will exit.
     Also notice that to avoid memory leaks you should call \ref plumed_finalize()
     to finalize a plumed object even if it is invalid:
 \verbatim
@@ -628,8 +571,9 @@ typedef struct {
 
     \return The constructed plumed object
 */
-__PLUMED_WRAPPER_VISIBILITY_
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create(void);
+__PLUMED_WRAPPER_C_END
 
 /** \relates plumed
     \brief Constructor from path. Available as of PLUMED 2.5
@@ -638,7 +582,7 @@ plumed plumed_create(void);
     Notice that it could leave the resulting object in an invalid state.
     In order to detect an invalid
     plumed object you might use \ref plumed_valid() on the resulting object.
-    Alternatively, if you use \ref plumed_cmd() on an invalid plumed object the code will abort.
+    Alternatively, if you use \ref plumed_cmd() on an invalid plumed object the code will exit.
 
     Also notice that to avoid memory leaks you should call \ref plumed_finalize()
     to finalize a plumed object even if it is invalid.
@@ -653,8 +597,22 @@ plumed plumed_create(void);
 
     \return The constructed plumed object
 */
-__PLUMED_WRAPPER_VISIBILITY_
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_dlopen(const char*path);
+__PLUMED_WRAPPER_C_END
+
+
+/**
+  \brief Constructor from path. Available as of PLUMED 2.5
+
+  Same as \ref plumed_create_dlopen, but also allows to specify the mode for dlopen.
+
+  \warning
+  Use with care, since not all the possible modes work correctly with PLUMED.
+*/
+__PLUMED_WRAPPER_C_BEGIN
+plumed plumed_create_dlopen2(const char*path,int mode);
+__PLUMED_WRAPPER_C_END
 
 /** \relates plumed
     Create a new reference to an existing object, increasing its reference count. Available as of PLUMED 2.5
@@ -681,24 +639,29 @@ plumed plumed_create_dlopen(const char*path);
     \return The constructed plumed object
 */
 
-__PLUMED_WRAPPER_VISIBILITY_
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_reference(plumed p);
+__PLUMED_WRAPPER_C_END
 
 /** \relates plumed
     \brief Create a new reference to an existing object passed as a void pointer, increasing its reference count. Available as of PLUMED 2.5
 
   \return The constructed plumed object
 */
-__PLUMED_WRAPPER_VISIBILITY_
+
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_reference_v(void*v);
+__PLUMED_WRAPPER_C_END
 
 /** \relates plumed
     \brief Create a new reference to an existing object passed as a fortran string, increasing its reference count. Available as of PLUMED 2.5
 
   \return The constructed plumed object
 */
-__PLUMED_WRAPPER_VISIBILITY_
+
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_reference_f(const char*f);
+__PLUMED_WRAPPER_C_END
 
 /** \relates plumed
     \brief Constructor as invalid. Available as of PLUMED 2.5
@@ -721,13 +684,15 @@ plumed plumed_create_reference_f(const char*f);
 
     \return The constructed plumed object
 */
-__PLUMED_WRAPPER_VISIBILITY_
+
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_invalid();
+__PLUMED_WRAPPER_C_END
 
 /** \relates plumed
     \brief Tells p to execute a command.
 
-    If the object is not valid (see \ref plumed_valid), this command will abort.
+    If the object is not valid (see \ref plumed_valid), this command will exit.
 
     \param p The plumed object on which command is acting
     \param key The name of the command to be executed
@@ -742,8 +707,10 @@ plumed plumed_create_invalid();
     The set of possible keys is the real API of the plumed library, and will be expanded with time.
     New commands will be added, but backward compatibility will be retained as long as possible.
 */
-__PLUMED_WRAPPER_VISIBILITY_
+
+__PLUMED_WRAPPER_C_BEGIN
 void plumed_cmd(plumed p,const char*key,const void*val);
+__PLUMED_WRAPPER_C_END
 
 /** \relates plumed
     \brief Destructor.
@@ -753,8 +720,10 @@ void plumed_cmd(plumed p,const char*key,const void*val);
 
     \param p The plumed object to be deallocated
 */
-__PLUMED_WRAPPER_VISIBILITY_
+
+__PLUMED_WRAPPER_C_BEGIN
 void plumed_finalize(plumed p);
+__PLUMED_WRAPPER_C_END
 
 /** \relates plumed
     \brief Check if plumed is installed (for runtime binding).
@@ -778,8 +747,10 @@ void plumed_finalize(plumed p);
 
     \return 1 if plumed is installed, 0 otherwise
 */
-__PLUMED_WRAPPER_VISIBILITY_
+
+__PLUMED_WRAPPER_C_BEGIN
 int plumed_installed(void);
+__PLUMED_WRAPPER_C_END
 
 /** \relates plumed
     \brief Check if plumed object is valid. Available as of PLUMED 2.5
@@ -788,16 +759,110 @@ int plumed_installed(void);
 
     \return 1 if plumed is valid, 0 otherwise
 */
-__PLUMED_WRAPPER_VISIBILITY_
+
+__PLUMED_WRAPPER_C_BEGIN
 int plumed_valid(plumed p);
+__PLUMED_WRAPPER_C_END
 
 /** \relates plumed
     \brief Returns the number of references to the underlying object. Available as of PLUMED 2.5.
 */
-__PLUMED_WRAPPER_VISIBILITY_
-int plumed_use_count(plumed p);
 
-#if __PLUMED_WRAPPER_GLOBAL_
+__PLUMED_WRAPPER_C_BEGIN
+int plumed_use_count(plumed p);
+__PLUMED_WRAPPER_C_END
+
+
+/* routines to convert char handler from/to plumed objects */
+
+/** \related plumed
+    \brief Converts a C handler to a FORTRAN handler
+
+    \param p The C handler
+    \param c The FORTRAN handler (a char[32])
+
+    This function can be used to convert a plumed object created in C to
+    a plumed handler that can be used in FORTRAN. Notice that the reference counter
+    is not incremented. In other words, the FORTRAN object will be a weak reference.
+    If you later finalize the C handler, the FORTRAN handler will be invalid.
+\verbatim
+#include <plumed/wrapper/Plumed.h>
+int main(int argc,char*argv[]){
+  plumed p;
+  p=plumed_create();
+  char fortran_handler[32];
+  plumed_c2f(p,fortran_handler);
+  printf("DEBUG: this is a string representation for the plumed handler: %s\n",fortran_handler);
+  fortran_routine(fortran_handler);
+  plumed_finalize(p);
+  return 0;
+}
+\endverbatim
+  Here `fortran_routine` is a routine implemented in FORTRAN that manipulates the
+  fortran_handler.
+*/
+
+__PLUMED_WRAPPER_C_BEGIN
+void   plumed_c2f(plumed p,char* c);
+__PLUMED_WRAPPER_C_END
+
+/** \related plumed
+    \brief Converts a FORTRAN handler to a C handler
+    \param c The FORTRAN handler (a char[32])
+    \return The C handler
+
+    This function can be used to convert a plumed object created in FORTRAN
+    to a plumed handler that can be used in C.  Notice that the reference counter
+    is not incremented. In other words, the C object will be a weak reference.
+    If you later finalize the FORTRAN handler, the C handler will be invalid.
+\verbatim
+void c_routine(char handler[32]){
+  plumed p;
+  p=plumed_f2c(handler);
+  plumed_cmd(p,"init",NULL);
+}
+\endverbatim
+  Here `c_routine` is a C function that can be called from FORTRAN
+  and interact with the provided plumed handler.
+*/
+
+__PLUMED_WRAPPER_C_BEGIN
+plumed plumed_f2c(const char* c);
+__PLUMED_WRAPPER_C_END
+
+/** \related plumed
+    \brief Converts a plumed object to a void pointer. Available as of PLUMED 2.5.
+
+    It returns a void pointer that can be converted back to a plumed object using \ref plumed_v2c.
+    When compiling without NDEBUG, it checks if the plumed object was properly created.
+    Notice that an invalid object (see \ref plumed_valid) can be converted to void* and back.
+
+    Can be used to store a reference to a plumed object without including the Plumed.h header.
+*/
+
+__PLUMED_WRAPPER_C_BEGIN
+void* plumed_c2v(plumed p);
+__PLUMED_WRAPPER_C_END
+
+
+/** \related plumed
+    \brief Converts a void pointer to a plumed object. Available as of PLUMED 2.5.
+
+    It returns a plumed object from a void pointer obtained with \ref plumed_c2v.
+    When compiling without NDEBUG, it checks if the plumed object was properly created.
+
+    Can be used to store a reference to a plumed object without including the Plumed.h header.
+*/
+
+__PLUMED_WRAPPER_C_BEGIN
+plumed plumed_v2c(void*);
+__PLUMED_WRAPPER_C_END
+
+
+#if __PLUMED_WRAPPER_GLOBAL /*{*/
+
+/* Global C functions are always extern */
+__PLUMED_WRAPPER_EXTERN_C_BEGIN /*{*/
 
 /** \relates plumed
     \brief Retrieves an handler to the global structure.
@@ -861,108 +926,29 @@ void plumed_gfinalize(void);
 extern
 int plumed_gvalid();
 
-#endif
+__PLUMED_WRAPPER_EXTERN_C_END /*}*/
 
-/* routines to convert char handler from/to plumed objects */
+#endif /*}*/
 
-/** \related plumed
-    \brief Converts a C handler to a FORTRAN handler
-
-    \param p The C handler
-    \param c The FORTRAN handler (a char[32])
-
-    This function can be used to convert a plumed object created in C to
-    a plumed handler that can be used in FORTRAN. Notice that the reference counter
-    is not incremented. In other words, the FORTRAN object will be a weak reference.
-    If you later finalize the C handler, the FORTRAN handler will be invalid.
-\verbatim
-#include <plumed/wrapper/Plumed.h>
-int main(int argc,char*argv[]){
-  plumed p;
-  p=plumed_create();
-  char fortran_handler[32];
-  plumed_c2f(p,fortran_handler);
-  printf("DEBUG: this is a string representation for the plumed handler: %s\n",fortran_handler);
-  fortran_routine(fortran_handler);
-  plumed_finalize(p);
-  return 0;
-}
-\endverbatim
-  Here `fortran_routine` is a routine implemented in FORTRAN that manipulates the
-  fortran_handler.
-*/
-__PLUMED_WRAPPER_VISIBILITY_
-void   plumed_c2f(plumed p,char* c);
-
-/** \related plumed
-    \brief Converts a FORTRAN handler to a C handler
-    \param c The FORTRAN handler (a char[32])
-    \return The C handler
-
-    This function can be used to convert a plumed object created in FORTRAN
-    to a plumed handler that can be used in C.  Notice that the reference counter
-    is not incremented. In other words, the C object will be a weak reference.
-    If you later finalize the FORTRAN handler, the C handler will be invalid.
-\verbatim
-void c_routine(char handler[32]){
-  plumed p;
-  p=plumed_f2c(handler);
-  plumed_cmd(p,"init",NULL);
-}
-\endverbatim
-  Here `c_routine` is a C function that can be called from FORTRAN
-  and interact with the provided plumed handler.
-*/
-__PLUMED_WRAPPER_VISIBILITY_
-plumed plumed_f2c(const char* c);
-
-/** \related plumed
-    \brief Converts a plumed object to a void pointer
-
-    It returns a void pointer that can be converted back to a plumed object using \ref plumed_v2c.
-    When compiling without NDEBUG, it checks if the plumed object was properly created.
-    Notice that an invalid object (see \ref plumed_valid) can be converted to void* and back.
-
-    Can be used to store a reference to a plumed object without including the Plumed.h header.
-*/
-__PLUMED_WRAPPER_VISIBILITY_
-void* plumed_c2v(plumed p);
-
-
-/** \related plumed
-    \brief Converts a void pointer to a plumed object.
-
-    It returns a plumed object from a void pointer obtained with \ref plumed_c2v.
-    When compiling without NDEBUG, it checks if the plumed object was properly created.
-
-    Can be used to store a reference to a plumed object without including the Plumed.h header.
-*/
-__PLUMED_WRAPPER_VISIBILITY_
-plumed plumed_v2c(void*);
-
-#ifdef __cplusplus
-}
-#endif
-
-#if defined( __cplusplus) && __PLUMED_WRAPPER_CXX_
+#if defined( __cplusplus) && __PLUMED_WRAPPER_CXX /*{*/
 
 /* this is to include the NULL pointer */
-#if __PLUMED_WRAPPER_CXX_STD_
+#if __PLUMED_WRAPPER_CXX_STD
 #include <cstdlib>
 #else
 #include <stdlib.h>
 #endif
-#if __PLUMED_WRAPPER_CXX_THROWS_
+#if __PLUMED_WRAPPER_CXX_THROWS
 #include <exception>
 #include <stdexcept>
 #endif
 
-#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_
-namespace {
-#endif
-
 /* C++ interface is hidden in PLMD namespace (same as plumed library) */
 namespace PLMD {
+
+/* Optionally, it is further hidden in an anonymous namespace */
+
+__PLUMED_WRAPPER_ANONYMOUS_BEGIN /*{*/
 
 /**
   C++ wrapper for \ref plumed.
@@ -978,22 +964,13 @@ class Plumed {
     C structure.
   */
   plumed main;
-  /**
-    Dummy class
-  */
-  class invalid_t {
-  };
 public:
-  /**
-    Used to construct an invalid Plumed object.
-  */
-  static const invalid_t invalid;
   /**
      Check if plumed is installed (for runtime binding)
      \return true if plumed is installed, false otherwise
      \note Equivalent to plumed_installed() but returns a bool
   */
-  static bool installed() __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  static bool installed() __PLUMED_WRAPPER_CXX_NOEXCEPT {
     return plumed_installed();
   }
   /**
@@ -1001,11 +978,12 @@ public:
      \return true if plumed is valid, false otherwise
      \note Equivalent to plumed_valid() but returns a bool
   */
-  bool valid() const __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  bool valid() const __PLUMED_WRAPPER_CXX_NOEXCEPT {
     return plumed_valid(main);
   }
+#if __cplusplus > 199711L
   /**
-     Same as \ref valid()
+     Same as \ref valid(). Available as of PLUMED 2.5.
 
   Allow code such as
   \verbatim
@@ -1013,26 +991,32 @@ public:
   if(!p) raise_error();
   p.cmd("init");
   \endverbatim
+
+  In order to avoid ambiguous conversions, this is only allowed when compiling with C++11
+  where it is marked as explicit.
   */
-  operator bool() const __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  explicit
+  operator bool() const __PLUMED_WRAPPER_CXX_NOEXCEPT {
     return plumed_valid(main);
   }
+#endif
+
   /**
-     Returns the number of references to this object.
+     Returns the number of references to this object. Available as of PLUMED 2.5.
     \note Equivalent to plumed_use_count()
   */
-  int use_count() const __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  int useCount() const __PLUMED_WRAPPER_CXX_NOEXCEPT {
     return plumed_use_count(main);
   }
 
-#if __PLUMED_WRAPPER_GLOBAL_
+#if __PLUMED_WRAPPER_GLOBAL /*{*/
   /**
      Check if global-plumed has been initialized
      \return true if global plumed object (see global()) is initialized (i.e. if gcreate() has been
              called), false otherwise.
      \note Equivalent to plumed_ginitialized() but returns a bool
   */
-  static bool ginitialized() __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  static bool ginitialized() __PLUMED_WRAPPER_CXX_NOEXCEPT {
     return plumed_ginitialized();
   }
   /**
@@ -1040,14 +1024,14 @@ public:
      \return true if global plumed object (see global()) is valid.
      \note Equivalent to plumed_gvalid() but returns a bool
   */
-  static bool gvalid() __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  static bool gvalid() __PLUMED_WRAPPER_CXX_NOEXCEPT {
     return plumed_gvalid();
   }
   /**
      Initialize global-plumed.
      \note Equivalent to plumed_gcreate()
   */
-  static void gcreate() __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  static void gcreate() __PLUMED_WRAPPER_CXX_NOEXCEPT {
     plumed_gcreate();
   }
   /**
@@ -1059,14 +1043,14 @@ public:
   */
   static void gcmd(const char* key,const void* val=NULL) {
 #if __PLUMED_WRAPPER_CXX_THROWS
-    if(!plumed_gvalid()) __PLUMED_WRAPPER_CXX_THROW_CMD_("accessing an invalid global object, check your PLUMED_KERNEL variable.");
+    if(!plumed_gvalid()) __PLUMED_WRAPPER_CXX_THROW_CMD("accessing an invalid global object, check your PLUMED_KERNEL variable.");
 #endif
     plumed_gcmd(key,val);
   }
   /**
      Finalize global-plumed
   */
-  static void gfinalize() __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  static void gfinalize() __PLUMED_WRAPPER_CXX_NOEXCEPT {
     plumed_gfinalize();
   }
   /**
@@ -1078,10 +1062,10 @@ public:
 
      \return The Plumed global object
   */
-  static Plumed global() __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  static Plumed global() __PLUMED_WRAPPER_CXX_NOEXCEPT {
     return plumed_global();
   }
-#endif
+#endif /*}*/
   /**
      Constructor.
 
@@ -1090,7 +1074,7 @@ public:
 
     \note Performs the same task a plumed_create()
   */
-Plumed()__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
+Plumed()__PLUMED_WRAPPER_CXX_NOEXCEPT :
   main(plumed_create())
   {
   }
@@ -1108,18 +1092,18 @@ Plumed()__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
 // to have maximum portability of this file I do not use the explicit keyword here
 // I thus add a suppress command for cppcheck
 // cppcheck-suppress noExplicitConstructor
-Plumed(const char*c)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
+Plumed(const char*c)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   main(plumed_create_reference_f(c))
   {
   }
 
   /**
-    Create a reference from a void* pointer.
+    Create a reference from a void* pointer. Available as of PLUMED 2.5.
   */
 // to have maximum portability of this file I do not use the explicit keyword here
 // I thus add a suppress command for cppcheck
 // cppcheck-suppress noExplicitConstructor
-Plumed(void*v)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
+Plumed(void*v)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   main(plumed_create_reference_v(v))
   {
   }
@@ -1136,40 +1120,8 @@ Plumed(void*v)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
 // to have maximum portability of this file I do not use the explicit keyword here
 // I thus add a suppress command for cppcheck
 // cppcheck-suppress noExplicitConstructor
-Plumed(plumed p)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
+Plumed(plumed p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   main(plumed_create_reference(p))
-  {
-  }
-
-  /** Invalid constructor.
-
-    Can be used to initialize an invalid object. It might be useful to postpone
-    the initialization of a Plumed object. Consider the following case
-  \verbatim
-    Plumed p;
-    setenv("PLUMED_KERNEL","/path/to/kernel/libplumedKernel.so",1);
-    p.cmd("init")
-  \endverbatim
-    Here the `p` object will be initialized *before* the `PLUMED_KERNEL` env var has been set.
-    This can be particularly problematic if `p` is stored in some high level class.
-    The following case would do the job
-  \verbatim
-    Plumed p;
-    setenv("PLUMED_KERNEL","/path/to/kernel/libplumedKernel.so",1);
-    p=Plumed();
-    p.cmd("init")
-  \endverbatim
-    However, there will be some error reported related to the attempt to load the kernel
-    when `p` is initialized. The following solution is the optimal one:
-  \verbatim
-    Plumed p(Plumed::invalid);
-    setenv("PLUMED_KERNEL","/path/to/kernel/libplumedKernel.so",1);
-    p=Plumed();
-    p.cmd("init")
-  \endverbatim
-  */
-Plumed(invalid_t)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
-  main(plumed_create_invalid())
   {
   }
 
@@ -1177,18 +1129,19 @@ Plumed(invalid_t)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
 
     Takes a reference, incrementing the reference counter of the corresponding object.
   */
-Plumed(const Plumed& p)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
+Plumed(const Plumed& p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   main(plumed_create_reference(p.main))
   {
   }
 
-  /** Assignment operator.
+  /** Assignment operator. Available as of PLUMED 2.5.
 
     Takes a reference,incrementing the reference counter of the corresponding object.
   */
-  Plumed&operator=(const Plumed&p) __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  Plumed&operator=(const Plumed&p) __PLUMED_WRAPPER_CXX_NOEXCEPT {
     if(this != &p) {
-      if(main.p) plumed_finalize(main);
+// the check is needed to avoid calling plumed_finalize on moved objects
+      if(main.p) decref();
       main=plumed_create_reference(p.main);
     }
     return *this;
@@ -1201,20 +1154,21 @@ Plumed(const Plumed& p)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
     we here explicitly check if C+11 is available before enabling move semantics.
   */
 #if __cplusplus > 199711L
-  /** Move constructor.
+  /** Move constructor. Available as of PLUMED 2.5.
     Only if move semantics is enabled.
   */
-Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
+Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   main(p.main)
   {
     p.main.p=nullptr;
   }
-  /** Move assignment.
+  /** Move assignment. Available as of PLUMED 2.5.
     Only if move semantics is enabled.
   */
-  Plumed& operator=(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT_  {
+  Plumed& operator=(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
     if(this != &p) {
-      if(main.p) plumed_finalize(main);
+// the check is needed to avoid calling plumed_finalize on moved objects
+      if(main.p) decref();
       main=p.main;
       p.main.p=nullptr;
     }
@@ -1238,11 +1192,51 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
     p.cmd("init");
   \endverbatim
   */
-  static Plumed dlopen(const char* path)__PLUMED_WRAPPER_CXX_NOEXCEPT_  {
+  static Plumed dlopen(const char* path)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
 // use decref to remove the extra reference
     return Plumed(plumed_create_dlopen(path)).decref();
   }
 
+  /**
+    Create a PLUMED object loading a specific kernel. Available as of PLUMED 2.5.
+
+    Same as \ref dlopen(const char* path), but allows a dlopen mode to be chosen explicitly.
+  */
+  static Plumed dlopen(const char* path,int mode)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
+// use decref to remove the extra reference
+    return Plumed(plumed_create_dlopen2(path,mode)).decref();
+  }
+  /** Invalid constructor. Available as of PLUMED 2.5.
+
+    Can be used to initialize an invalid object. It might be useful to postpone
+    the initialization of a Plumed object. Consider the following case
+  \verbatim
+    Plumed p;
+    setenv("PLUMED_KERNEL","/path/to/kernel/libplumedKernel.so",1);
+    p.cmd("init")
+  \endverbatim
+    Here the `p` object will be initialized *before* the `PLUMED_KERNEL` env var has been set.
+    This can be particularly problematic if `p` is stored in some high level class.
+    The following case would do the job
+  \verbatim
+    Plumed p;
+    setenv("PLUMED_KERNEL","/path/to/kernel/libplumedKernel.so",1);
+    p=Plumed();
+    p.cmd("init")
+  \endverbatim
+    However, there will be some error reported related to the attempt to load the kernel
+    when `p` is initialized. The following solution is the optimal one:
+  \verbatim
+    Plumed p(Plumed::invalid());
+    setenv("PLUMED_KERNEL","/path/to/kernel/libplumedKernel.so",1);
+    p=Plumed();
+    p.cmd("init")
+  \endverbatim
+  */
+  static Plumed invalid() __PLUMED_WRAPPER_CXX_NOEXCEPT  {
+// use decref to remove the extra reference
+    return Plumed(plumed_create_invalid()).decref();
+  }
 
   /**
      Retrieve the C plumed structure for this object.
@@ -1260,7 +1254,7 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
   plumed_finalize(c); // <- this is right
   \endverbatim
   */
-  operator plumed()const __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  operator plumed()const __PLUMED_WRAPPER_CXX_NOEXCEPT {
     return main;
   }
 
@@ -1270,21 +1264,21 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
     Notice that the resulting plumed structure is a weak reference and
     should NOT be finalized, unless a new reference is explicitly added.
   */
-  void toFortran(char*c)const __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  void toFortran(char*c)const __PLUMED_WRAPPER_CXX_NOEXCEPT {
     plumed_c2f(main,c);
   }
 
   /**
-     Retrieve a void* handler for this object
+     Retrieve a void* handler for this object. Available as of PLUMED 2.5.
     Notice that the resulting plumed structure is a weak reference and
     should NOT be finalized, unless a new reference is explicitly added.
   */
-  void* toVoid()const __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  void* toVoid()const __PLUMED_WRAPPER_CXX_NOEXCEPT {
     return plumed_c2v(main);
   }
 
   /**
-    Increase reference counter.
+    Increase reference counter. Available as of PLUMED 2.5.
 
     Using this method improperly might interfere with correct object construction
     and destruction.
@@ -1301,19 +1295,20 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
   \endverbatim
 
   */
-  Plumed& incref() __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  Plumed& incref() __PLUMED_WRAPPER_CXX_NOEXCEPT {
     plumed_create_reference(main);
     return *this;
   }
 
   /**
-    Decrease reference counter.
+    Decrease reference counter. Available as of PLUMED 2.5.
 
     Using this method improperly might interfere with correct object construction
     and destruction.
     If you want to play with this, also try to compile using `-D__PLUMED_WRAPPER_DEBUG_REFCOUNT=1` and see what happens.
   */
-  Plumed& decref() __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
+  Plumed& decref() __PLUMED_WRAPPER_CXX_NOEXCEPT {
+// calling decref on a moved plumed object should give an error, so we do not check if main.p!=NULL here:
     plumed_finalize(main);
     return *this;
   }
@@ -1327,7 +1322,7 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
   */
   void cmd(const char*key,const void*val=NULL) {
 #if __PLUMED_WRAPPER_CXX_THROWS
-    if(!plumed_valid(main)) __PLUMED_WRAPPER_CXX_THROW_CMD_("accessing an invalid plumed object");
+    if(!plumed_valid(main)) __PLUMED_WRAPPER_CXX_THROW_CMD("accessing an invalid plumed object");
 #endif
     plumed_cmd(main,key,val);
   }
@@ -1341,33 +1336,174 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
 
      Destructor is virtual so as to allow correct inheritance from Plumed object.
   */
-#if __PLUMED_WRAPPER_CXX_POLYMORPHIC_
+#if __PLUMED_WRAPPER_CXX_POLYMORPHIC
   virtual
 #endif
-  ~Plumed() __PLUMED_WRAPPER_CXX_NOEXCEPT_ {
-    if(main.p)plumed_finalize(main);
+  ~Plumed() __PLUMED_WRAPPER_CXX_NOEXCEPT {
+// the check is needed to avoid calling plumed_finalize on moved objects
+    if(main.p) decref();
   }
 };
 
+/**
+  \related Plumed
+  Comparison operator. Available as of PLUMED 2.5.
+*/
+inline
+bool operator==(const Plumed&a,const Plumed&b) {
+  return a.toVoid()==b.toVoid();
 }
 
-#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_
+/**
+  \related Plumed
+  Comparison operator. Available as of PLUMED 2.5.
+*/
+inline
+bool operator!=(const Plumed&a,const Plumed&b) {
+  return a.toVoid()!=b.toVoid();
 }
+
+/**
+  \related Plumed
+  Comparison operator. Available as of PLUMED 2.5.
+*/
+inline
+bool operator<=(const Plumed&a,const Plumed&b) {
+  return a.toVoid()<=b.toVoid();
+}
+
+/**
+  \related Plumed
+  Comparison operator. Available as of PLUMED 2.5.
+*/
+inline
+bool operator<(const Plumed&a,const Plumed&b) {
+  return a.toVoid()<b.toVoid();
+}
+
+/**
+  \related Plumed
+  Comparison operator. Available as of PLUMED 2.5.
+*/
+inline
+bool operator>=(const Plumed&a,const Plumed&b) {
+  return a.toVoid()>=b.toVoid();
+}
+
+/**
+  \related Plumed
+  Comparison operator. Available as of PLUMED 2.5.
+*/
+inline
+bool operator>(const Plumed&a,const Plumed&b) {
+  return a.toVoid()>b.toVoid();
+}
+
+__PLUMED_WRAPPER_ANONYMOUS_END /*}*/
+
+}
+
+#endif /*}*/
+
+#endif /*}*/
+
+/* END OF DECLARATIONS */
+
+/*
+
+  1: emit implementation
+  0: do not emit implementation
+
+  Allows an implementation to be emitted together with the declarations.
+
+  Used to decide if definitions should be emitted. This macro could have a different
+  value when Plumed.h is reincluded. As a consequence, we map it to a local
+  macro (__PLUMED_WRAPPER_IMPLEMENTATION_) that is reset at the end of this file.
+*/
+
+#ifdef __PLUMED_WRAPPER_IMPLEMENTATION
+#define __PLUMED_WRAPPER_IMPLEMENTATION_ __PLUMED_WRAPPER_IMPLEMENTATION
+#else
+#define __PLUMED_WRAPPER_IMPLEMENTATION_ 0
 #endif
 
-#endif
+/* BEGINNING OF DEFINITIONS */
 
-#endif
-
-#if __PLUMED_WRAPPER_IMPLEMENTATION_
-#ifndef __PLUMED_wrapper_Plumed_implementation
+#if __PLUMED_WRAPPER_IMPLEMENTATION_  /*{*/
+#ifndef __PLUMED_wrapper_Plumed_implementation /*{*/
 #define __PLUMED_wrapper_Plumed_implementation
+
+/*
+  the following macros only control the implementation
+*/
+
+/*
+  1: enable the definition of plumed_symbol_table_reexport
+  0: does not enable the definition of plumed_symbol_table_reexport
+
+  This is only needed in the official plumed library to make
+  the symbol table available. This is a hack to reexport the function table
+  and is only needed when creating the library libplumed.so.
+*/
+
+#ifndef __PLUMED_WRAPPER_REEXPORT_SYMBOL_TABLE
+#define __PLUMED_WRAPPER_REEXPORT_SYMBOL_TABLE 0
+#endif
+
+/*
+  1: write on stderr changes in reference counters
+  0: do not write changes in reference counters
+
+  Used for debugging.
+
+  Only used in definitions.
+*/
+
+#ifndef __PLUMED_WRAPPER_DEBUG_REFCOUNT
+#define __PLUMED_WRAPPER_DEBUG_REFCOUNT 0
+#endif
+
+/*
+  1: emit plumed_kernel_register function (default)
+  0: do not emit plumed_kernel_register function
+
+  This function is only needed to avoid an extra warning when loading old (<=2.4) kernels.
+  We might change its default in the future.
+
+  Used only in definitions.
+*/
+
+#ifndef __PLUMED_WRAPPER_KERNEL_REGISTER
+#define __PLUMED_WRAPPER_KERNEL_REGISTER 1
+#endif
+
+/*
+  1: emit Fortran wrappers
+  0: do not emit Fortran wrappers (default)
+
+  Used only in definitions.
+*/
+
+#ifndef __PLUMED_WRAPPER_FORTRAN
+#define __PLUMED_WRAPPER_FORTRAN 0
+#endif
+
+/*
+  With internal interface, it does not make sence to emit kernel register or fortran interfaces
+*/
+
+#if ! __PLUMED_WRAPPER_EXTERN /*{*/
+#undef __PLUMED_WRAPPER_KERNEL_REGISTER
+#define __PLUMED_WRAPPER_KERNEL_REGISTER 0
+#undef __PLUMED_WRAPPER_FORTRAN
+#define __PLUMED_WRAPPER_FORTRAN 0
+#endif /*}*/
 
 #ifdef __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
 #endif
 
-#if __PLUMED_WRAPPER_CXX_STD_
+#if __PLUMED_WRAPPER_CXX_STD
 #include <cstdio>
 #include <cstring>
 #include <cassert>
@@ -1379,10 +1515,6 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT_ :
 #include <assert.h>
 #include <stdlib.h>
 #include <limits.h>
-#endif
-
-#ifdef __cplusplus
-extern "C" {
 #endif
 
 /**
@@ -1431,8 +1563,9 @@ typedef struct {
   something. It always returns NULL. The function should be here anyway to allow an incomplete
   libplumedKernel (<=2.4), expecting this function to be present, to be loaded correctly.
 */
-#if __PLUMED_WRAPPER_KERNEL_REGISTER_
+#if __PLUMED_WRAPPER_KERNEL_REGISTER
 /* Since it is only called from outside, it must be hardcoded to be extern */
+__PLUMED_WRAPPER_EXTERN_C_BEGIN /*{*/
 extern plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmain_function_holder*);
 plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmain_function_holder* f) {
   void* tmpptr;
@@ -1449,9 +1582,10 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
   }
   return NULL;
 }
+__PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #endif
 
-#if defined( __PLUMED_HAS_DLOPEN)
+#if defined( __PLUMED_HAS_DLOPEN) /*{*/
 /**
 Try to dlopen a path with a given mode.
 If the dlopen command fails, it tries to strip the `Kernel` part of the name.
@@ -1460,8 +1594,8 @@ This function is declared static (internal linkage) so that it is not visible fr
 It is first declared then defined to make sure it is a regular C static function.
 */
 
-static void* plumed_attempt_dlopen(const char*path,int mode);
-static void* plumed_attempt_dlopen(const char*path,int mode) {
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+void* plumed_attempt_dlopen(const char*path,int mode) {
   char* pathcopy;
   void* p;
   char* pc;
@@ -1497,6 +1631,7 @@ static void* plumed_attempt_dlopen(const char*path,int mode) {
   }
   return p;
 }
+__PLUMED_WRAPPER_INTERNALS_END
 
 /**
   Utility to search for a function.
@@ -1513,13 +1648,12 @@ static void* plumed_attempt_dlopen(const char*path,int mode) {
   }
 
 /**
-Search symbolds in a dlopened library.
+Search symbols in a dlopened library.
 
 This function is declared static (internal linkage) so that it is not visible from outside.
-It is first declared then defined to make sure it is a regular C static function.
 */
-static void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,plumed_symbol_table_type** table);
-static void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,plumed_symbol_table_type** table) {
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,plumed_symbol_table_type** table) {
   plumed_plumedmain_function_holder functions;
   plumed_symbol_table_type* table_ptr;
   void* tmpptr;
@@ -1575,8 +1709,52 @@ static void plumed_search_symbols(void* handle, plumed_plumedmain_function_holde
     if(table) *table=NULL;
   }
 }
+__PLUMED_WRAPPER_INTERNALS_END
 
+#endif /*}*/
+
+
+#if __PLUMED_WRAPPER_REEXPORT_SYMBOL_TABLE
+
+/*
+  Here is the case where plumed_symbol_table is
+  visible as extern. We first declare it (together with plumed_symbol_table_init) ...
+*/
+
+__PLUMED_WRAPPER_EXTERN_C_BEGIN
+extern
+plumed_symbol_table_type plumed_symbol_table;
+__PLUMED_WRAPPER_EXTERN_C_END
+__PLUMED_WRAPPER_EXTERN_C_BEGIN
+extern
+void plumed_symbol_table_init(void);
+__PLUMED_WRAPPER_EXTERN_C_END
+
+/*
+  ... and then make available a function that returns the address
+  of the symbol table.
+*/
+__PLUMED_WRAPPER_C_BEGIN
+plumed_symbol_table_type* plumed_symbol_table_reexport() {
+  /* make sure the table is initialized */
+  plumed_symbol_table_init();
+  return &plumed_symbol_table;
+}
+__PLUMED_WRAPPER_C_END
+
+#else
+
+/*
+  Here is the case where plumed_symbol_table is not
+  visible as extern. We thus assume that plumed_symbol_table_reexport is
+  available.
+*/
+
+__PLUMED_WRAPPER_EXTERN_C_BEGIN
+extern plumed_symbol_table_type* plumed_symbol_table_reexport();
+__PLUMED_WRAPPER_EXTERN_C_END
 #endif
+
 
 /*
   Returns the global pointers, either those available at link time or those
@@ -1587,25 +1765,17 @@ static void plumed_search_symbols(void* handle, plumed_plumedmain_function_holde
   On the other hand, the symbol table pointer might be NULL just because the plumed version is <=2.4.
   If handle is not NULL, it is used to return a dlopen handle that could be subsequently dlclosed.
 */
-static void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plumed_symbol_table_type** plumed_symbol_table_ptr,void** handle);
-static void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plumed_symbol_table_type** plumed_symbol_table_ptr,void** handle) {
-#if defined(__PLUMED_STATIC_KERNEL)
-  /* Real interface */
-  /* These functions are defined in the plumedKernel library */
-  /* They should always be extern, disregarding __PLUMED_WRAPPER_VISIBILITY */
-  extern void*plumed_plumedmain_create(void);
-  extern void plumed_plumedmain_cmd(void*,const char*,const void*);
-  extern void plumed_plumedmain_finalize(void*);
-  extern plumed_symbol_table_type plumed_symbol_table;
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plumed_symbol_table_type** plumed_symbol_table_ptr,void** handle) {
+#if ! __PLUMED_WRAPPER_LINK_RUNTIME
   /*
-    When __PLUMED_STATIC_KERNEL is defined, the function holder is initialized
-    to statically bound plumed_plumedmain_create, plumed_plumedmain_cmd, plumed_plumedmain_finalize and
-    cannot be changed. This saves from mis-set values for PLUMED_KERNEL.
+    Real interface, constructed using the symbol table obtained with plumed_symbol_table_reexport.
+    This makes the symbols hardcoded and independent of a mis-set PLUMED_KERNEL variable.
   */
-  plumed_plumedmain_function_holder g= {&plumed_plumedmain_create,&plumed_plumedmain_cmd,&plumed_plumedmain_finalize};
-  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=&plumed_symbol_table;
+  plumed_symbol_table_type* ptr=plumed_symbol_table_reexport();
+  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=ptr;
   if(handle) *handle=NULL;
-  if(functions) *functions=g;
+  if(functions) *functions=ptr->functions;
 #elif ! defined(__PLUMED_HAS_DLOPEN)
   /*
     When dlopen is not available, we hard code them to NULL
@@ -1673,6 +1843,7 @@ static void plumed_retrieve_functions(plumed_plumedmain_function_holder* functio
   if(functions) *functions=g;
 #endif
 }
+__PLUMED_WRAPPER_INTERNALS_END
 
 /**
   Implementation.
@@ -1700,9 +1871,8 @@ typedef struct {
   void* p;
 } plumed_implementation;
 
-static plumed_implementation* plumed_malloc_pimpl();
-
-static plumed_implementation* plumed_malloc_pimpl() {
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+plumed_implementation* plumed_malloc_pimpl() {
   plumed_implementation* pimpl;
   /* allocate space for implementation object. this is free-ed in plumed_finalize(). */
   pimpl=(plumed_implementation*) __PLUMED_MALLOC(sizeof(plumed_implementation));
@@ -1712,7 +1882,7 @@ static plumed_implementation* plumed_malloc_pimpl() {
   }
   __PLUMED_WRAPPER_STD memcpy(pimpl->magic,"pLuMEd",6);
   pimpl->refcount=1;
-#if __PLUMED_WRAPPER_DEBUG_REFCOUNT_
+#if __PLUMED_WRAPPER_DEBUG_REFCOUNT
   fprintf(stderr,"refcount: new at %p\n",(void*)pimpl);
 #endif
   pimpl->dlhandle=NULL;
@@ -1724,19 +1894,22 @@ static plumed_implementation* plumed_malloc_pimpl() {
   pimpl->p=NULL;
   return pimpl;
 }
+__PLUMED_WRAPPER_INTERNALS_END
 
 #ifndef NDEBUG
-static int plumed_check_pimpl(plumed_implementation*pimpl);
 
-static int plumed_check_pimpl(plumed_implementation*pimpl) {
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+int plumed_check_pimpl(plumed_implementation*pimpl) {
   if(!pimpl) return 0;
   if(__PLUMED_WRAPPER_STD memcmp(pimpl->magic,"pLuMEd",6)) return 0;
   return 1;
 }
+__PLUMED_WRAPPER_INTERNALS_END
 #endif
 
 /* C wrappers: */
 
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create(void) {
   /* returned object */
   plumed p;
@@ -1769,24 +1942,34 @@ plumed plumed_create(void) {
   p.p=pimpl;
   return p;
 }
+__PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_dlopen(const char*path) {
-  /* returned object */
-  plumed p;
-  /* pointer to implementation */
-  plumed_implementation* pimpl;
-#ifdef __PLUMED_HAS_DLOPEN
   int dlopenmode;
-#endif
-  /* allocate space for implementation object. this is free-ed in plumed_finalize(). */
-  pimpl=plumed_malloc_pimpl();
   /* plumed_create_dlopen always uses RTLD_LOCAL and, when possible, RTLD_DEEPBIND to allow multiple versions */
 #ifdef __PLUMED_HAS_DLOPEN
   dlopenmode=RTLD_NOW|RTLD_LOCAL;
 #ifdef RTLD_DEEPBIND
   dlopenmode=dlopenmode|RTLD_DEEPBIND;
 #endif
-  if(path) pimpl->dlhandle=plumed_attempt_dlopen(path,dlopenmode);
+#else
+  dlopenmode=0;
+#endif
+  return plumed_create_dlopen2(path,dlopenmode);
+}
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+plumed plumed_create_dlopen2(const char*path,int mode) {
+  /* returned object */
+  plumed p;
+  /* pointer to implementation */
+  plumed_implementation* pimpl;
+  /* allocate space for implementation object. this is free-ed in plumed_finalize(). */
+  pimpl=plumed_malloc_pimpl();
+#ifdef __PLUMED_HAS_DLOPEN
+  if(path) pimpl->dlhandle=plumed_attempt_dlopen(path,mode);
   if(pimpl->dlhandle) plumed_search_symbols(pimpl->dlhandle,&pimpl->functions,&pimpl->table);
 #endif
   if(!pimpl->functions.create) {
@@ -1802,7 +1985,9 @@ plumed plumed_create_dlopen(const char*path) {
   p.p=pimpl;
   return p;
 }
+__PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_reference(plumed p) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
@@ -1810,20 +1995,26 @@ plumed plumed_create_reference(plumed p) {
   assert(plumed_check_pimpl(pimpl));
   /* increase reference count */
   pimpl->refcount++;
-#if __PLUMED_WRAPPER_DEBUG_REFCOUNT_
+#if __PLUMED_WRAPPER_DEBUG_REFCOUNT
   fprintf(stderr,"refcount: increase at %p\n",(void*)pimpl);
 #endif
   return p;
 }
+__PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_reference_v(void*v) {
   return plumed_create_reference(plumed_v2c(v));
 }
+__PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_reference_f(const char*f) {
   return plumed_create_reference(plumed_f2c(f));
 }
+__PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_invalid() {
   plumed p;
   plumed_implementation* pimpl;
@@ -1831,8 +2022,9 @@ plumed plumed_create_invalid() {
   p.p=pimpl;
   return p;
 }
+__PLUMED_WRAPPER_C_END
 
-
+__PLUMED_WRAPPER_C_BEGIN
 void plumed_cmd(plumed p,const char*key,const void*val) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
@@ -1841,7 +2033,7 @@ void plumed_cmd(plumed p,const char*key,const void*val) {
   if(!pimpl->p) {
     __PLUMED_FPRINTF(stderr,"+++ ERROR: you are trying to use plumed, but it is not available +++\n");
     __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable +++\n");
-    __PLUMED_WRAPPER_STD abort();
+    __PLUMED_WRAPPER_STD exit(1);
   }
   assert(pimpl->functions.create);
   assert(pimpl->functions.cmd);
@@ -1849,7 +2041,9 @@ void plumed_cmd(plumed p,const char*key,const void*val) {
   /* execute */
   (*(pimpl->functions.cmd))(pimpl->p,key,val);
 }
+__PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
 void plumed_finalize(plumed p) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
@@ -1857,7 +2051,7 @@ void plumed_finalize(plumed p) {
   assert(plumed_check_pimpl(pimpl));
   /* decrease reference count */
   pimpl->refcount--;
-#if __PLUMED_WRAPPER_DEBUG_REFCOUNT_
+#if __PLUMED_WRAPPER_DEBUG_REFCOUNT
   fprintf(stderr,"refcount: decrease at %p\n",(void*)pimpl);
 #endif
   if(pimpl->refcount>0) return;
@@ -1877,13 +2071,15 @@ void plumed_finalize(plumed p) {
     dlclose(pimpl->dlhandle);
   }
 #endif
-#if __PLUMED_WRAPPER_DEBUG_REFCOUNT_
+#if __PLUMED_WRAPPER_DEBUG_REFCOUNT
   fprintf(stderr,"refcount: delete at %p\n",(void*)pimpl);
 #endif
   /* free pimpl space */
   __PLUMED_FREE(pimpl);
 }
+__PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
 int plumed_valid(plumed p) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
@@ -1892,7 +2088,9 @@ int plumed_valid(plumed p) {
   if(pimpl->p) return 1;
   else return 0;
 }
+__PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
 int plumed_use_count(plumed p) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
@@ -1900,7 +2098,9 @@ int plumed_use_count(plumed p) {
   assert(plumed_check_pimpl(pimpl));
   return pimpl->refcount;
 }
+__PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
 int plumed_installed(void) {
   plumed p;
   int result;
@@ -1909,8 +2109,11 @@ int plumed_installed(void) {
   plumed_finalize(p);
   return result;
 }
+__PLUMED_WRAPPER_C_END
 
-#if __PLUMED_WRAPPER_GLOBAL_
+#if __PLUMED_WRAPPER_GLOBAL /*{*/
+
+__PLUMED_WRAPPER_EXTERN_C_BEGIN
 
 /* we declare a Plumed_g_main object here, in such a way that it is always available */
 
@@ -1945,8 +2148,11 @@ int plumed_gvalid() {
   return plumed_valid(plumed_gmain);
 }
 
-#endif
+__PLUMED_WRAPPER_EXTERN_C_END
 
+#endif /*}*/
+
+__PLUMED_WRAPPER_C_BEGIN
 void plumed_c2f(plumed p,char*c) {
   unsigned i;
   unsigned char* cc;
@@ -1972,7 +2178,9 @@ void plumed_c2f(plumed p,char*c) {
     c[2*i+1]=' ';
   }
 }
+__PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_f2c(const char*c) {
   plumed p;
   unsigned i;
@@ -1984,6 +2192,8 @@ plumed plumed_f2c(const char*c) {
   assert(c);
   cc=(unsigned char*)&p.p;
   for(i=0; i<sizeof(p.p); i++) {
+    assert(c[2*i]>=48 && c[2*i]<48+64);
+    assert(c[2*i+1]>=48 && c[2*i+1]<48+64);
     /*
       perform the reversed transform
     */
@@ -1995,20 +2205,25 @@ plumed plumed_f2c(const char*c) {
   }
   return p;
 }
+__PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
 void* plumed_c2v(plumed p) {
   assert(plumed_check_pimpl((plumed_implementation*)p.p));
   return p.p;
 }
+__PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_v2c(void* v) {
   assert(plumed_check_pimpl((plumed_implementation*)v));
   plumed p;
   p.p=v;
   return p;
 }
+__PLUMED_WRAPPER_C_END
 
-#if __PLUMED_WRAPPER_FORTRAN_
+#if __PLUMED_WRAPPER_FORTRAN /*{*/
 
 /*
   Fortran wrappers
@@ -2034,6 +2249,10 @@ plumed plumed_v2c(void* v) {
   extern void upper ##_  arg1 {lower ## _static arg2;} \
   extern void upper ##__ arg1 {lower ## _static arg2;} \
   static void lower ## _static arg1
+
+/* FORTRAN wrappers would only make sense as extern "C" */
+
+__PLUMED_WRAPPER_EXTERN_C_BEGIN
 
 __PLUMED_IMPLEMENT_FORTRAN(plumed_f_create,PLUMED_F_CREATE,(char*c),(c)) {
   plumed_c2f(plumed_create(),c);
@@ -2075,7 +2294,7 @@ __PLUMED_IMPLEMENT_FORTRAN(plumed_f_use_count,PLUMED_F_USE_COUNT,(char*c,int*i),
   *i=plumed_use_count(plumed_f2c(c));
 }
 
-#if __PLUMED_WRAPPER_GLOBAL_
+#if __PLUMED_WRAPPER_GLOBAL /*{*/
 
 __PLUMED_IMPLEMENT_FORTRAN(plumed_f_global,PLUMED_F_GLOBAL,(char*c),(c)) {
   plumed_c2f(plumed_gmain,c);
@@ -2103,31 +2322,21 @@ __PLUMED_IMPLEMENT_FORTRAN(plumed_f_gvalid,PLUMED_F_GVALID,(int*i),(i)) {
   assert(i);
   *i=plumed_gvalid();
 }
-#endif
 
-#endif /* __PLUMED_WRAPPER_FORTRAN_ */
+#endif /*}*/
 
-#ifdef __cplusplus
-}
-#endif
+__PLUMED_WRAPPER_EXTERN_C_END
 
-#endif
+#endif /*}*/
 
-#endif
+#endif /*}*/
 
-#undef __PLUMED_WRAPPER_CXX_
-#undef __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_
-#undef __PLUMED_WRAPPER_CXX_INLINE_
-#undef __PLUMED_WRAPPER_CXX_NOEXCEPT_
-#undef __PLUMED_WRAPPER_CXX_POLYMORPHIC_
-#undef __PLUMED_WRAPPER_CXX_STD_
-#undef __PLUMED_WRAPPER_CXX_THROWS_
-#undef __PLUMED_WRAPPER_CXX_THROW_CMD_
-#undef __PLUMED_WRAPPER_DEBUG_REFCOUNT_
-#undef __PLUMED_WRAPPER_EXTERN_
-#undef __PLUMED_WRAPPER_FORTRAN_
-#undef __PLUMED_WRAPPER_GLOBAL_
+#endif /*}*/
+
+/* END OF DEFINITIONS */
+
+/* reset variable to allow it to be redefined upon re-inclusion */
+
 #undef __PLUMED_WRAPPER_IMPLEMENTATION_
-#undef __PLUMED_WRAPPER_KERNEL_REGISTER_
-#undef __PLUMED_WRAPPER_VISIBILITY_
+
 

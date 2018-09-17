@@ -19,5 +19,26 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+/*
+  Do not link plumed directly but rather do it at runtime
+*/
+#define __PLUMED_WRAPPER_LINK_RUNTIME 1
+
+/*
+  Make sure the inline C++ interface is not included here.
+  Should not be necessary, but it doesn't hurt.
+*/
+#define __PLUMED_WRAPPER_CXX 0
+
+/*
+  Tell Plumed.h to emit the whole implementation
+*/
 #define __PLUMED_WRAPPER_IMPLEMENTATION 1
+
+/*
+  Emit fortran wrappers
+*/
+#define __PLUMED_WRAPPER_FORTRAN 1
+
 #include "Plumed.h"

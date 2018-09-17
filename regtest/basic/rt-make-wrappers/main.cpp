@@ -1,4 +1,5 @@
 #include "plumed/wrapper/Plumed.h"
+#include "plumed/tools/Exception.h"
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -149,19 +150,19 @@ int main(){
 // C++ version
   {
     of<<"C++\n";
-    if(!PLMD::Plumed::installed()) return 0;
+    if(!PLMD::Plumed::installed()) plumed_error();
  
     {
       PLMD::Plumed p;
-      if(!p) return 0;
-      if(!p.valid()) return 0;
+      if(!p) plumed_error();
+      if(!p.valid()) plumed_error();
       testmecpp(p);
     }
 
 // test valid
     {
-      PLMD::Plumed p(PLMD::Plumed::invalid);
-      if(p) return 0;
+      PLMD::Plumed p(PLMD::Plumed::invalid());
+      if(p) plumed_error();
     }
 
 // test conversions to void
@@ -193,22 +194,22 @@ int main(){
 // test use_count
     {
       std::unique_ptr<PLMD::Plumed> p(new PLMD::Plumed);
-      if(!*p) return 0;
-      if(p->use_count()!=1) return 0;
+      if(!*p) plumed_error();
+      if(p->useCount()!=1) plumed_error();
       auto q=*p;
-      if(p->use_count()!=2) return 0;
+      if(p->useCount()!=2) plumed_error();
       p.reset();
-      if(q.use_count()!=1) return 0;
+      if(q.useCount()!=1) plumed_error();
       testmecpp(q);
     }
 
-    if(PLMD::Plumed::ginitialized()) return 0;
+    if(PLMD::Plumed::ginitialized()) plumed_error();
     PLMD::Plumed::gcreate();
-    if(!PLMD::Plumed::ginitialized()) return 0;
+    if(!PLMD::Plumed::ginitialized()) plumed_error();
     PLMD::Plumed fromglobal(PLMD::Plumed::global());
     testmecpp(fromglobal);
     PLMD::Plumed::gfinalize();
-    if(PLMD::Plumed::ginitialized()) return 0;
+    if(PLMD::Plumed::ginitialized()) plumed_error();
 
     PLMD::Plumed::gcreate();
     testme(PLMD::Plumed::gcmd);
@@ -244,7 +245,7 @@ int main(){
       PLMD::Plumed fromf(ff);
       plumed_f_finalize(ff);
       testmecpp(fromf);
-      if(!fromf || fromf.use_count()!=1) return 0;
+      if(!fromf || fromf.useCount()!=1) plumed_error();
 
       plumed c=plumed_create();
       PLMD::Plumed fromc(c);
@@ -256,11 +257,11 @@ int main(){
   {
 // C version
     of<<"C\n";
-    if(!plumed_installed()) return 0;
+    if(!plumed_installed()) plumed_error();
 // test valid
     {
       plumed p=plumed_create_invalid();
-      if(plumed_valid(p)) return 0;
+      if(plumed_valid(p)) plumed_error();
       plumed_finalize(p);
     }
 // test conversion to void
@@ -285,21 +286,21 @@ int main(){
 // test use_count
     {
       plumed p=plumed_create();
-      if(plumed_use_count(p)!=1) return 0;
+      if(plumed_use_count(p)!=1) plumed_error();
       plumed q=plumed_create_reference(p);
-      if(plumed_use_count(p)!=2) return 0;
+      if(plumed_use_count(p)!=2) plumed_error();
       plumed_finalize(p);
-      if(plumed_use_count(q)!=1) return 0;
+      if(plumed_use_count(q)!=1) plumed_error();
       testme(q,plumed_cmd);
       plumed_finalize(q);
     }
 
-    if(plumed_ginitialized()) return 0;
+    if(plumed_ginitialized()) plumed_error();
     plumed_gcreate();
-    if(!plumed_ginitialized()) return 0;
+    if(!plumed_ginitialized()) plumed_error();
     testme(plumed_global(),plumed_cmd);
     plumed_gfinalize();
-    if(plumed_ginitialized()) return 0;
+    if(plumed_ginitialized()) plumed_error();
 
     plumed_gcreate();
     testme(plumed_gcmd);
@@ -318,7 +319,7 @@ int main(){
 // Fortran version
     of<<"fortran\n";
     int inst=0;
-    plumed_f_installed(&inst); if(!inst) return 0;
+    plumed_f_installed(&inst); if(!inst) plumed_error();
     char p[32];
     plumed_f_create(p);
     testme(p,plumed_f_cmd);
@@ -337,26 +338,26 @@ int main(){
       int count;
       plumed_f_create(p);
       plumed_f_use_count(p,&count);
-      if(count!=1) return 0;
+      if(count!=1) plumed_error();
       plumed_f_create_reference(q,p);
       plumed_f_use_count(p,&count);
-      if(count!=2) return 0;
+      if(count!=2) plumed_error();
       plumed_f_finalize(p);
       plumed_f_use_count(q,&count);
-      if(count!=1) return 0;
+      if(count!=1) plumed_error();
       testme(q,plumed_f_cmd);
       plumed_f_finalize(q);
     }
 
     char p2[32];
     int ini;
-    plumed_f_ginitialized(&ini); if(ini) return 0;
+    plumed_f_ginitialized(&ini); if(ini) plumed_error();
     plumed_f_gcreate();
-    plumed_f_ginitialized(&ini); if(!ini) return 0;
+    plumed_f_ginitialized(&ini); if(!ini) plumed_error();
     plumed_f_global(p2);
     testme(p2,plumed_f_cmd);
     plumed_f_gfinalize();
-    plumed_f_ginitialized(&ini); if(ini) return 0;
+    plumed_f_ginitialized(&ini); if(ini) plumed_error();
 
     plumed_f_gcreate();
     testme(plumed_f_gcmd);
@@ -366,7 +367,7 @@ int main(){
 // Fortran version _
     of<<"fortran_\n";
     int inst=0;
-    plumed_f_installed_(&inst); if(!inst) return 0;
+    plumed_f_installed_(&inst); if(!inst) plumed_error();
     char p[32];
     plumed_f_create_(p);
     testme(p,plumed_f_cmd_);
@@ -385,26 +386,26 @@ int main(){
       int count;
       plumed_f_create_(p);
       plumed_f_use_count_(p,&count);
-      if(count!=1) return 0;
+      if(count!=1) plumed_error();
       plumed_f_create_reference_(q,p);
       plumed_f_use_count_(p,&count);
-      if(count!=2) return 0;
+      if(count!=2) plumed_error();
       plumed_f_finalize_(p);
       plumed_f_use_count_(q,&count);
-      if(count!=1) return 0;
+      if(count!=1) plumed_error();
       testme(q,plumed_f_cmd_);
       plumed_f_finalize_(q);
     }
 
     char p2[32];
     int ini;
-    plumed_f_ginitialized_(&ini); if(ini) return 0;
+    plumed_f_ginitialized_(&ini); if(ini) plumed_error();
     plumed_f_gcreate_();
-    plumed_f_ginitialized_(&ini); if(!ini) return 0;
+    plumed_f_ginitialized_(&ini); if(!ini) plumed_error();
     plumed_f_global_(p2);
     testme(p2,plumed_f_cmd_);
     plumed_f_gfinalize_();
-    plumed_f_ginitialized_(&ini); if(ini) return 0;
+    plumed_f_ginitialized_(&ini); if(ini) plumed_error();
 
     plumed_f_gcreate_();
     testme(plumed_f_gcmd_);
@@ -414,7 +415,7 @@ int main(){
 // Fortran version __
     of<<"fortran__\n";
     int inst=0;
-    plumed_f_installed__(&inst); if(!inst) return 0;
+    plumed_f_installed__(&inst); if(!inst) plumed_error();
     char p[32];
     plumed_f_create__(p);
     testme(p,plumed_f_cmd__);
@@ -433,26 +434,26 @@ int main(){
       int count;
       plumed_f_create__(p);
       plumed_f_use_count__(p,&count);
-      if(count!=1) return 0;
+      if(count!=1) plumed_error();
       plumed_f_create_reference__(q,p);
       plumed_f_use_count__(p,&count);
-      if(count!=2) return 0;
+      if(count!=2) plumed_error();
       plumed_f_finalize__(p);
       plumed_f_use_count__(q,&count);
-      if(count!=1) return 0;
+      if(count!=1) plumed_error();
       testme(q,plumed_f_cmd__);
       plumed_f_finalize__(q);
     }
 
     char p2[32];
     int ini;
-    plumed_f_ginitialized__(&ini); if(ini) return 0;
+    plumed_f_ginitialized__(&ini); if(ini) plumed_error();
     plumed_f_gcreate__();
-    plumed_f_ginitialized__(&ini); if(!ini) return 0;
+    plumed_f_ginitialized__(&ini); if(!ini) plumed_error();
     plumed_f_global__(p2);
     testme(p2,plumed_f_cmd__);
     plumed_f_gfinalize__();
-    plumed_f_ginitialized__(&ini); if(ini) return 0;
+    plumed_f_ginitialized__(&ini); if(ini) plumed_error();
 
     plumed_f_gcreate__();
     testme(plumed_f_gcmd__);
@@ -462,7 +463,7 @@ int main(){
 // Fortran version
     of<<"FORTRAN\n";
     int inst=0;
-    PLUMED_F_INSTALLED(&inst); if(!inst) return 0;
+    PLUMED_F_INSTALLED(&inst); if(!inst) plumed_error();
     char p[32];
     PLUMED_F_CREATE(p);
     testme(p,PLUMED_F_CMD);
@@ -481,26 +482,26 @@ int main(){
       int count;
       PLUMED_F_CREATE(p);
       PLUMED_F_USE_COUNT(p,&count);
-      if(count!=1) return 0;
+      if(count!=1) plumed_error();
       PLUMED_F_CREATE_REFERENCE(q,p);
       PLUMED_F_USE_COUNT(p,&count);
-      if(count!=2) return 0;
+      if(count!=2) plumed_error();
       PLUMED_F_FINALIZE(p);
       PLUMED_F_USE_COUNT(q,&count);
-      if(count!=1) return 0;
+      if(count!=1) plumed_error();
       testme(q,PLUMED_F_CMD);
       PLUMED_F_FINALIZE(q);
     }
 
     char p2[32];
     int ini;
-    PLUMED_F_GINITIALIZED(&ini); if(ini) return 0;
+    PLUMED_F_GINITIALIZED(&ini); if(ini) plumed_error();
     PLUMED_F_GCREATE();
-    PLUMED_F_GINITIALIZED(&ini); if(!ini) return 0;
+    PLUMED_F_GINITIALIZED(&ini); if(!ini) plumed_error();
     PLUMED_F_GLOBAL(p2);
     testme(p2,PLUMED_F_CMD);
     PLUMED_F_GFINALIZE();
-    PLUMED_F_GINITIALIZED(&ini); if(ini) return 0;
+    PLUMED_F_GINITIALIZED(&ini); if(ini) plumed_error();
 
     PLUMED_F_GCREATE();
     testme(PLUMED_F_GCMD);
@@ -510,7 +511,7 @@ int main(){
 // Fortran version _
     of<<"FORTRAN_\n";
     int inst=0;
-    PLUMED_F_INSTALLED_(&inst); if(!inst) return 0;
+    PLUMED_F_INSTALLED_(&inst); if(!inst) plumed_error();
     char p[32];
     PLUMED_F_CREATE_(p);
     testme(p,PLUMED_F_CMD_);
@@ -529,26 +530,26 @@ int main(){
       int count;
       PLUMED_F_CREATE_(p);
       PLUMED_F_USE_COUNT_(p,&count);
-      if(count!=1) return 0;
+      if(count!=1) plumed_error();
       PLUMED_F_CREATE_REFERENCE_(q,p);
       PLUMED_F_USE_COUNT_(p,&count);
-      if(count!=2) return 0;
+      if(count!=2) plumed_error();
       PLUMED_F_FINALIZE_(p);
       PLUMED_F_USE_COUNT_(q,&count);
-      if(count!=1) return 0;
+      if(count!=1) plumed_error();
       testme(q,PLUMED_F_CMD_);
       PLUMED_F_FINALIZE_(q);
     }
 
     char p2[32];
     int ini;
-    PLUMED_F_GINITIALIZED_(&ini); if(ini) return 0;
+    PLUMED_F_GINITIALIZED_(&ini); if(ini) plumed_error();
     PLUMED_F_GCREATE_();
-    PLUMED_F_GINITIALIZED_(&ini); if(!ini) return 0;
+    PLUMED_F_GINITIALIZED_(&ini); if(!ini) plumed_error();
     PLUMED_F_GLOBAL_(p2);
     testme(p2,PLUMED_F_CMD_);
     PLUMED_F_GFINALIZE_();
-    PLUMED_F_GINITIALIZED_(&ini); if(ini) return 0;
+    PLUMED_F_GINITIALIZED_(&ini); if(ini) plumed_error();
 
     PLUMED_F_GCREATE__();
     testme(PLUMED_F_GCMD__);
@@ -558,7 +559,7 @@ int main(){
 // Fortran version __
     of<<"FORTRAN__\n";
     int inst=0;
-    PLUMED_F_INSTALLED__(&inst); if(!inst) return 0;
+    PLUMED_F_INSTALLED__(&inst); if(!inst) plumed_error();
     char p[32];
     PLUMED_F_CREATE__(p);
     testme(p,PLUMED_F_CMD__);
@@ -577,26 +578,26 @@ int main(){
       int count;
       PLUMED_F_CREATE__(p);
       PLUMED_F_USE_COUNT__(p,&count);
-      if(count!=1) return 0;
+      if(count!=1) plumed_error();
       PLUMED_F_CREATE_REFERENCE__(q,p);
       PLUMED_F_USE_COUNT__(p,&count);
-      if(count!=2) return 0;
+      if(count!=2) plumed_error();
       PLUMED_F_FINALIZE__(p);
       PLUMED_F_USE_COUNT__(q,&count);
-      if(count!=1) return 0;
+      if(count!=1) plumed_error();
       testme(q,PLUMED_F_CMD__);
       PLUMED_F_FINALIZE__(q);
     }
 
     char p2[32];
     int ini;
-    PLUMED_F_GINITIALIZED__(&ini); if(ini) return 0;
+    PLUMED_F_GINITIALIZED__(&ini); if(ini) plumed_error();
     PLUMED_F_GCREATE__();
-    PLUMED_F_GINITIALIZED__(&ini); if(!ini) return 0;
+    PLUMED_F_GINITIALIZED__(&ini); if(!ini) plumed_error();
     PLUMED_F_GLOBAL__(p2);
     testme(p2,PLUMED_F_CMD__);
     PLUMED_F_GFINALIZE__();
-    PLUMED_F_GINITIALIZED_(&ini); if(ini) return 0;
+    PLUMED_F_GINITIALIZED_(&ini); if(ini) plumed_error();
 
     PLUMED_F_GCREATE__();
     testme(PLUMED_F_GCMD__);
