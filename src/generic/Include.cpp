@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/Action.h"
+#include "core/ActionAnyorder.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Exception.h"
@@ -33,7 +34,9 @@ namespace generic {
 /*
 Includes an external input file, similar to "#include" in C preprocessor.
 
-Useful to split very large plumed.dat files.
+Useful to split very large plumed.dat files. Notice that in PLUMED 2.4 this action
+cannot be used before the initial setup part of the file (e.g. in the part with \ref UNITS, \ref MOLINFO, etc).
+As of PLUMED 2.5, \ref INCLUDE can be used in any position of the file.
 
 \par Examples
 
@@ -141,7 +144,7 @@ RESTRAINT ARG=t AT=1.2 KAPPA=10
 //+ENDPLUMEDOC
 
 class Include :
-  public Action
+  public ActionAnyorder
 {
 public:
   static void registerKeywords( Keywords& keys );
@@ -158,7 +161,8 @@ void Include::registerKeywords( Keywords& keys ) {
 }
 
 Include::Include(const ActionOptions&ao):
-  Action(ao)
+  Action(ao),
+  ActionAnyorder(ao)
 {
   std::string f;
   parse("FILE",f);
