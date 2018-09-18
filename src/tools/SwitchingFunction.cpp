@@ -503,7 +503,6 @@ double SwitchingFunction::get_dmax2() const {
   return dmax_2;
 }
 
-
 }
 
 
