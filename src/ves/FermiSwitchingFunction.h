@@ -37,35 +37,35 @@ namespace ves {
 /// kept similar to the orignal SwitchingFunction class.
 class FermiSwitchingFunction {
 /// This is to check that switching function has been initialized
-    bool init;
+  bool init;
 /// Type of function
-    enum {fermi} type;
+  enum {fermi} type;
 /// Parameters for fermi function
-    double r0_;
-    double invr0_;
-    double fermi_lambda_;
-    double fermi_exp_max_;
-    FermiSwitchingFunction& operator=(const FermiSwitchingFunction&);
+  double r0_;
+  double invr0_;
+  double fermi_lambda_;
+  double fermi_exp_max_;
+  FermiSwitchingFunction& operator=(const FermiSwitchingFunction&);
 public:
-    static void registerKeywords( Keywords& keys );
+  static void registerKeywords( Keywords& keys );
 /// Constructor
-    FermiSwitchingFunction();
+  FermiSwitchingFunction();
 /// Destructor
-    ~FermiSwitchingFunction();
+  ~FermiSwitchingFunction();
 /// Copy constructor
-    FermiSwitchingFunction(const FermiSwitchingFunction&);
-    //
-    void set(const double, const double, const double fermi_rdist_max=-1.0);
-    //
-    void set(const std::string& definition, std::string& errormsg);
-    //
-    std::string description() const ;
-    // Compute the switching function.
-    // Returns s(x). df will be set to the value of the derivative
-    // of the switching function _divided_by_x
-    double calculate(double x,double&df)const;
-    //
-    double get_r0() const;
+  FermiSwitchingFunction(const FermiSwitchingFunction&);
+  //
+  void set(const double, const double, const double fermi_rdist_max=-1.0);
+  //
+  void set(const std::string& definition, std::string& errormsg);
+  //
+  std::string description() const ;
+  // Compute the switching function.
+  // Returns s(x). df will be set to the value of the derivative
+  // of the switching function _divided_by_x
+  double calculate(double x,double&df)const;
+  //
+  double get_r0() const;
 };
 
 }

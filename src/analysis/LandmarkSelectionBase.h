@@ -28,66 +28,64 @@ namespace PLMD {
 namespace analysis {
 
 class LandmarkSelectionBase : public AnalysisBase {
-    friend class ReselectLandmarks;
+  friend class ReselectLandmarks;
 private:
 /// The number of landmarks we are selecting
-    unsigned nlandmarks;
+  unsigned nlandmarks;
 /// The weights of the landmark points
-    std::vector<double> lweights;
+  std::vector<double> lweights;
 /// The indices of the landmarks in the original data set
-    std::vector<unsigned> landmark_indices;
+  std::vector<unsigned> landmark_indices;
 /// How do we treat weights
-    bool novoronoi, noweights;
+  bool novoronoi, noweights;
 protected:
 /// Transfer frame i in the underlying action to the object we are going to analyze
-    void selectFrame( const unsigned& );
+  void selectFrame( const unsigned& );
 /// Do a voronoi analysis
-    void voronoiAnalysis( const std::vector<unsigned>& myindices, std::vector<double>& lweights, std::vector<unsigned>& assignments ) const ;
+  void voronoiAnalysis( const std::vector<unsigned>& myindices, std::vector<double>& lweights, std::vector<unsigned>& assignments ) const ;
 public:
-    static void registerKeywords( Keywords& keys );
-    LandmarkSelectionBase( const ActionOptions& ao );
+  static void registerKeywords( Keywords& keys );
+  LandmarkSelectionBase( const ActionOptions& ao );
 /// Return the number of data points
-    unsigned getNumberOfDataPoints() const ;
+  unsigned getNumberOfDataPoints() const ;
 /// Return the index of the data point in the base class
-    unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
+  unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
 /// Get the weight
-    double getWeight( const unsigned& idata );
+  double getWeight( const unsigned& idata );
 /// Get a reference configuration
-    DataCollectionObject& getStoredData( const unsigned& idat, const bool& calcdist );
+  DataCollectionObject& getStoredData( const unsigned& idat, const bool& calcdist );
 /// Select landmark configurations
-    void performAnalysis();
-    virtual void selectLandmarks()=0;
+  void performAnalysis();
+  virtual void selectLandmarks()=0;
 /// Get the squared dissimilarity between two reference configurations
-    double getDissimilarity( const unsigned& i, const unsigned& j );
+  double getDissimilarity( const unsigned& i, const unsigned& j );
 /// This does nothing - it just ensures the final class is not abstract
-    void performTask( const unsigned&, const unsigned&, MultiValue& ) const {
-        plumed_error();
-    }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 };
 
 inline
 unsigned LandmarkSelectionBase::getNumberOfDataPoints() const {
-    return nlandmarks;
+  return nlandmarks;
 }
 
 inline
 unsigned LandmarkSelectionBase::getDataPointIndexInBase( const unsigned& idata ) const {
-    return AnalysisBase::getDataPointIndexInBase( landmark_indices[idata] );
+  return AnalysisBase::getDataPointIndexInBase( landmark_indices[idata] );
 }
 
 inline
 double LandmarkSelectionBase::getWeight( const unsigned& idata ) {
-    return lweights[idata];
+  return lweights[idata];
 }
 
 inline
 DataCollectionObject& LandmarkSelectionBase::getStoredData( const unsigned& idat, const bool& calcdist ) {
-    return AnalysisBase::getStoredData( landmark_indices[idat], calcdist );
+  return AnalysisBase::getStoredData( landmark_indices[idat], calcdist );
 }
 
 inline
 double LandmarkSelectionBase::getDissimilarity( const unsigned& i, const unsigned& j ) {
-    return AnalysisBase::getDissimilarity( landmark_indices[i], landmark_indices[j] );
+  return AnalysisBase::getDissimilarity( landmark_indices[i], landmark_indices[j] );
 }
 
 }

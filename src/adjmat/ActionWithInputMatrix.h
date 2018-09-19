@@ -34,41 +34,37 @@ class AdjacencyMatrixVessel;
 class ActionWithInputMatrix : public multicolvar::MultiColvarBase {
 protected:
 /// The vessel that holds the adjacency matrix
-    AdjacencyMatrixVessel* mymatrix;
+  AdjacencyMatrixVessel* mymatrix;
 /// Get number of base multicolvar types
-    unsigned getNumberOfNodeTypes() const ;
+  unsigned getNumberOfNodeTypes() const ;
 /// Get number of atoms in each base multicolvar
-    unsigned getNumberOfAtomsInGroup( const unsigned& igrp ) const ;
+  unsigned getNumberOfAtomsInGroup( const unsigned& igrp ) const ;
 /// Get a pointer to the igrp th base multicolvar
-    multicolvar::MultiColvarBase* getBaseMultiColvar( const unsigned& igrp ) const ;
+  multicolvar::MultiColvarBase* getBaseMultiColvar( const unsigned& igrp ) const ;
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit ActionWithInputMatrix(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  explicit ActionWithInputMatrix(const ActionOptions&);
 /// Retrieve the vessel that holds the adjacency matrix
-    AdjacencyMatrixVessel* getAdjacencyVessel() const ;
+  AdjacencyMatrixVessel* getAdjacencyVessel() const ;
 /// Retrieve the value of the connection
-    double retrieveConnectionValue( const unsigned& i, const unsigned& j, std::vector<double>& vals ) const ;
+  double retrieveConnectionValue( const unsigned& i, const unsigned& j, std::vector<double>& vals ) const ;
 /// Get the vector for task ind
-    virtual void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const ;
+  virtual void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const ;
 /// Add the derivatives on a connection
-    void addConnectionDerivatives( const unsigned& i, const unsigned& j, MultiValue& myvals, MultiValue& myvout ) const ;
+  void addConnectionDerivatives( const unsigned& i, const unsigned& j, MultiValue& myvals, MultiValue& myvout ) const ;
 /// Get vector derivatives
-    virtual MultiValue& getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
-    virtual unsigned getNumberOfDerivatives();
+  virtual MultiValue& getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
+  virtual unsigned getNumberOfDerivatives();
 ///  Get the number of rows/cols in the adjacency matrix vessel
-    virtual unsigned getNumberOfNodes() const ;
-    bool isPeriodic() {
-        return false;
-    }
-    virtual unsigned getNumberOfQuantities() const ;
+  virtual unsigned getNumberOfNodes() const ;
+  bool isPeriodic() { return false; }
+  virtual unsigned getNumberOfQuantities() const ;
 ///
-    virtual AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
+  virtual AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
 /// No loop over tasks for ActionWithInputMatrix
-    double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-        plumed_error();
-    }
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
 ///
-    virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
+  virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
 };
 
 }

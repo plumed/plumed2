@@ -37,25 +37,25 @@ to see whether or not they are within a certain range
 class MultiColvarFilter : public BridgedMultiColvarFunction {
 private:
 /// Are we doing a filtering of the coordinates or a transoformation
-    bool filter;
+  bool filter;
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit MultiColvarFilter(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  explicit MultiColvarFilter(const ActionOptions&);
 /// Do everything required to setup the derivatives
-    void doJobsRequiredBeforeTaskList();
+  void doJobsRequiredBeforeTaskList();
 /// Get the number of quantities in the colvar
-    unsigned getNumberOfQuantities() const ;
+  unsigned getNumberOfQuantities() const ;
 /// Actually do what we are asked
-    void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const ;
+  void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const ;
 /// Do the filtering
-    virtual double applyFilter( const double& val, double& df ) const=0;
+  virtual double applyFilter( const double& val, double& df ) const=0;
 /// Just checks there are no bridging forces
-    void addBridgeForces( const std::vector<double>& bb );
+  void addBridgeForces( const std::vector<double>& bb );
 };
 
 inline
 unsigned MultiColvarFilter::getNumberOfQuantities() const {
-    return getPntrToMultiColvar()->getNumberOfQuantities();
+  return getPntrToMultiColvar()->getNumberOfQuantities();
 }
 
 }

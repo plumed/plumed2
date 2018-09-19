@@ -32,49 +32,45 @@ namespace pamm {
 class PammObject {
 private:
 /// Regularisation parameter to use
-    double regulariser;
+  double regulariser;
 /// Is the domain periodic
-    std::vector<bool> pbc;
+  std::vector<bool> pbc;
 /// The domain of the function
-    std::vector<std::string> min, max;
+  std::vector<std::string> min, max;
 /// List of kernel functions involved
-    std::vector<std::unique_ptr<KernelFunctions>> kernels;
+  std::vector<std::unique_ptr<KernelFunctions>> kernels;
 public:
 // Explicit definitions for constructor, copy constructor and destructor
-    PammObject();
-    PammObject( const PammObject& );
-    PammObject operator=(const PammObject& po) {
-        plumed_error();
-        regulariser=po.regulariser;
-        return PammObject();
-    }
+  PammObject();
+  PammObject( const PammObject& );
+  PammObject operator=(const PammObject& po) { plumed_error(); regulariser=po.regulariser; return PammObject(); }
 /// Setup the Pamm object
-    void setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames,
-                const std::vector<bool>& pbcin, const std::vector<std::string>& imin, const std::vector<std::string>& imax,
-                std::string& errorstr );
+  void setup( const std::string& filename, const double& reg, const std::vector<std::string>& valnames,
+              const std::vector<bool>& pbcin, const std::vector<std::string>& imin, const std::vector<std::string>& imax,
+              std::string& errorstr );
 ///
-    void evaluate( const std::vector<double>& invar, std::vector<double>& outvals, std::vector<std::vector<double> >& der ) const ;
+  void evaluate( const std::vector<double>& invar, std::vector<double>& outvals, std::vector<std::vector<double> >& der ) const ;
 ///
-    unsigned getNumberOfKernels() const ;
+  unsigned getNumberOfKernels() const ;
 ///
-    std::vector<double> getKernelCenter( const unsigned& kno ) const ;
+  std::vector<double> getKernelCenter( const unsigned& kno ) const ;
 ///
-    std::vector<double> getKernelSupport( const unsigned& kno ) const ;
+  std::vector<double> getKernelSupport( const unsigned& kno ) const ;
 };
 
 inline
 unsigned PammObject::getNumberOfKernels() const {
-    return kernels.size();
+  return kernels.size();
 }
 
 inline
 std::vector<double> PammObject::getKernelCenter( const unsigned& kno ) const {
-    return kernels[kno]->getCenter();
+  return kernels[kno]->getCenter();
 }
 
 inline
 std::vector<double> PammObject::getKernelSupport( const unsigned& kno ) const {
-    return kernels[kno]->getContinuousSupport();
+  return kernels[kno]->getContinuousSupport();
 }
 
 }

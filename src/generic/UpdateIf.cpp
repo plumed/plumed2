@@ -79,75 +79,75 @@ UPDATE_IF ARG=coord END
 //+ENDPLUMEDOC
 
 class UpdateIf:
-    public ActionPilot,
-    public ActionWithArguments
+  public ActionPilot,
+  public ActionWithArguments
 {
-    std::vector<double> lower;
-    std::vector<double> upper;
-    bool on;
-    bool end;
+  std::vector<double> lower;
+  std::vector<double> upper;
+  bool on;
+  bool end;
 public:
-    void prepare();
-    void calculate();
-    void beforeUpdate();
-    explicit UpdateIf(const ActionOptions&);
-    static void registerKeywords(Keywords& keys);
-    void apply() {}
-    ~UpdateIf();
+  void prepare();
+  void calculate();
+  void beforeUpdate();
+  explicit UpdateIf(const ActionOptions&);
+  static void registerKeywords(Keywords& keys);
+  void apply() {}
+  ~UpdateIf();
 };
 
 PLUMED_REGISTER_ACTION(UpdateIf,"UPDATE_IF")
 
 void UpdateIf::registerKeywords(Keywords& keys) {
-    Action::registerKeywords(keys);
-    ActionPilot::registerKeywords(keys);
-    ActionWithArguments::registerKeywords(keys);
-    keys.use("ARG");
-    keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
-    keys.addFlag("END",false,"end");
-    keys.add("optional","LESS_THAN","upper bound");
-    keys.add("optional","MORE_THAN","lower bound");
+  Action::registerKeywords(keys);
+  ActionPilot::registerKeywords(keys);
+  ActionWithArguments::registerKeywords(keys);
+  keys.use("ARG");
+  keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
+  keys.addFlag("END",false,"end");
+  keys.add("optional","LESS_THAN","upper bound");
+  keys.add("optional","MORE_THAN","lower bound");
 }
 
 UpdateIf::UpdateIf(const ActionOptions&ao):
-    Action(ao),
-    ActionPilot(ao),
-    ActionWithArguments(ao),
-    on(false),
-    end(false)
+  Action(ao),
+  ActionPilot(ao),
+  ActionWithArguments(ao),
+  on(false),
+  end(false)
 {
-    parseFlag("END",end);
-    parseVector("LESS_THAN",upper);
-    parseVector("MORE_THAN",lower);
-    if(end && upper.size()!=0) error("END and LESS_THAN are not compatible");
-    if(end && lower.size()!=0) error("END and MORE_THAN are not compatible");
-    if(upper.size()==0) upper.assign(getNumberOfArguments(),+std::numeric_limits<double>::max());
-    if(lower.size()==0) lower.assign(getNumberOfArguments(),-std::numeric_limits<double>::max());
-    if(upper.size()!=getNumberOfArguments()) error("LESS_THAN should have the same size as ARG");
-    if(lower.size()!=getNumberOfArguments()) error("MORE_THAN should have the same size as ARG");
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        log<<"  boundaries for argument "<<i<<"    "<<lower[i]<<" "<<upper[i]<<"\n";
-    }
-    checkRead();
+  parseFlag("END",end);
+  parseVector("LESS_THAN",upper);
+  parseVector("MORE_THAN",lower);
+  if(end && upper.size()!=0) error("END and LESS_THAN are not compatible");
+  if(end && lower.size()!=0) error("END and MORE_THAN are not compatible");
+  if(upper.size()==0) upper.assign(getNumberOfArguments(),+std::numeric_limits<double>::max());
+  if(lower.size()==0) lower.assign(getNumberOfArguments(),-std::numeric_limits<double>::max());
+  if(upper.size()!=getNumberOfArguments()) error("LESS_THAN should have the same size as ARG");
+  if(lower.size()!=getNumberOfArguments()) error("MORE_THAN should have the same size as ARG");
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    log<<"  boundaries for argument "<<i<<"    "<<lower[i]<<" "<<upper[i]<<"\n";
+  }
+  checkRead();
 }
 
 void UpdateIf::prepare() {
-    on=false;
+  on=false;
 }
 
 void UpdateIf::calculate() {
-    on=true;
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        if(getArgument(i)>=upper[i] || getArgument(i)<=lower[i]) on=false;
-    }
+  on=true;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if(getArgument(i)>=upper[i] || getArgument(i)<=lower[i]) on=false;
+  }
 }
 
 void UpdateIf::beforeUpdate() {
-    if(end) plumed.updateFlagsPop();
-    else {
-        if(on) plumed.updateFlagsPush(plumed.updateFlagsTop());
-        else   plumed.updateFlagsPush(false);
-    }
+  if(end) plumed.updateFlagsPop();
+  else {
+    if(on) plumed.updateFlagsPush(plumed.updateFlagsTop());
+    else   plumed.updateFlagsPush(false);
+  }
 }
 
 

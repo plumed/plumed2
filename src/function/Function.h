@@ -35,35 +35,35 @@ This is the abstract base class to use for implementing new CV function, within 
 */
 
 class Function:
-    public ActionWithValue,
-    public ActionWithArguments
+  public ActionWithValue,
+  public ActionWithArguments
 {
 protected:
-    void setDerivative(int,double);
-    void setDerivative(Value*,int,double);
-    void addValueWithDerivatives();
-    void addComponentWithDerivatives( const std::string& name );
+  void setDerivative(int,double);
+  void setDerivative(Value*,int,double);
+  void addValueWithDerivatives();
+  void addComponentWithDerivatives( const std::string& name );
 public:
-    explicit Function(const ActionOptions&);
-    virtual ~Function() {}
-    void apply();
-    static void registerKeywords(Keywords&);
-    unsigned getNumberOfDerivatives();
+  explicit Function(const ActionOptions&);
+  virtual ~Function() {}
+  void apply();
+  static void registerKeywords(Keywords&);
+  unsigned getNumberOfDerivatives();
 };
 
 inline
 void Function::setDerivative(Value*v,int i,double d) {
-    v->addDerivative(i,d);
+  v->addDerivative(i,d);
 }
 
 inline
 void Function::setDerivative(int i,double d) {
-    setDerivative(getPntrToValue(),i,d);
+  setDerivative(getPntrToValue(),i,d);
 }
 
 inline
 unsigned Function::getNumberOfDerivatives() {
-    return getNumberOfArguments();
+  return getNumberOfArguments();
 }
 
 }

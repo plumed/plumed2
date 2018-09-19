@@ -35,16 +35,16 @@ namespace colvar {
 
 class PCARMSD : public Colvar {
 
-    std::unique_ptr<PLMD::RMSD> rmsd;
-    bool squared;
-    bool nopbc;
-    std::vector< std::vector<Vector> > eigenvectors;
-    std::vector<PDB> pdbv;
-    std::vector<string> pca_names;
+  std::unique_ptr<PLMD::RMSD> rmsd;
+  bool squared;
+  bool nopbc;
+  std::vector< std::vector<Vector> > eigenvectors;
+  std::vector<PDB> pdbv;
+  std::vector<string> pca_names;
 public:
-    explicit PCARMSD(const ActionOptions&);
-    virtual void calculate();
-    static void registerKeywords(Keywords& keys);
+  explicit PCARMSD(const ActionOptions&);
+  virtual void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 
@@ -70,171 +70,152 @@ The input is taken so to be compatible with the output you get from g_covar util
 PLUMED_REGISTER_ACTION(PCARMSD,"PCARMSD")
 
 void PCARMSD::registerKeywords(Keywords& keys) {
-    Colvar::registerKeywords(keys);
-    keys.add("compulsory","AVERAGE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
-    keys.add("compulsory","EIGENVECTORS","a file in pdb format containing the reference structure and the atoms involved in the CV.");
-    //useCustomisableComponents(keys);
-    keys.addOutputComponent("eig","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
-    keys.addOutputComponent("residual","default","the distance of the present configuration from the configuration supplied as AVERAGE in terms of MSD after optimal alignment ");
-    keys.addFlag("SQUARED-ROOT",false," This should be setted if you want RMSD instead of MSD ");
+  Colvar::registerKeywords(keys);
+  keys.add("compulsory","AVERAGE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
+  keys.add("compulsory","EIGENVECTORS","a file in pdb format containing the reference structure and the atoms involved in the CV.");
+  //useCustomisableComponents(keys);
+  keys.addOutputComponent("eig","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
+  keys.addOutputComponent("residual","default","the distance of the present configuration from the configuration supplied as AVERAGE in terms of MSD after optimal alignment ");
+  keys.addFlag("SQUARED-ROOT",false," This should be setted if you want RMSD instead of MSD ");
 }
 
 PCARMSD::PCARMSD(const ActionOptions&ao):
-    PLUMED_COLVAR_INIT(ao),
-    squared(true),
-    nopbc(false)
+  PLUMED_COLVAR_INIT(ao),
+  squared(true),
+  nopbc(false)
 {
-    string f_average;
-    parse("AVERAGE",f_average);
-    string type;
-    type.assign("OPTIMAL");
-    string f_eigenvectors;
-    parse("EIGENVECTORS",f_eigenvectors);
-    bool sq;
-    parseFlag("SQUARED-ROOT",sq);
-    if (sq) {
-        squared=false;
+  string f_average;
+  parse("AVERAGE",f_average);
+  string type;
+  type.assign("OPTIMAL");
+  string f_eigenvectors;
+  parse("EIGENVECTORS",f_eigenvectors);
+  bool sq;  parseFlag("SQUARED-ROOT",sq);
+  if (sq) { squared=false; }
+  parseFlag("NOPBC",nopbc);
+  checkRead();
+
+  PDB pdb;
+
+  // read everything in ang and transform to nm if we are not in natural units
+  if( !pdb.read(f_average,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+    error("missing input file " + f_average );
+
+  rmsd.reset( new RMSD() );
+  bool remove_com=true;
+  bool normalize_weights=true;
+  // here align and displace are a simple vector of ones
+  std::vector<double> align; align=pdb.getOccupancy(); for(unsigned i=0; i<align.size(); i++) {align[i]=1.;} ;
+  std::vector<double> displace;  displace=pdb.getBeta(); for(unsigned i=0; i<displace.size(); i++) {displace[i]=1.;} ;
+  // reset again to reimpose unifrom weights (safe to disable this)
+  rmsd->set(align,displace,pdb.getPositions(),type,remove_com,normalize_weights);
+  requestAtoms( pdb.getAtomNumbers() );
+
+  addComponentWithDerivatives("residual"); componentIsNotPeriodic("residual");
+
+  log.printf("  average from file %s\n",f_average.c_str());
+  log.printf("  which contains %d atoms\n",getNumberOfAtoms());
+  log.printf("  method for alignment : %s \n",type.c_str() );
+  if(nopbc) log.printf("  without periodic boundary conditions\n");
+  else      log.printf("  using periodic boundary conditions\n");
+
+  log<<"  Bibliography "<<plumed.cite("Spiwok, Lipovova and Kralova, JPCB, 111, 3073 (2007)  ");
+  log<<" "<<plumed.cite( "Sutto, D'Abramo, Gervasio, JCTC, 6, 3640 (2010)");
+
+  // now get the eigenvectors
+  // open the file
+  FILE* fp=fopen(f_eigenvectors.c_str(),"r");
+  std::vector<AtomNumber> aaa;
+  unsigned neigenvects;
+  neigenvects=0;
+  if (fp!=NULL)
+  {
+    log<<"  Opening the eigenvectors file "<<f_eigenvectors.c_str()<<"\n";
+    bool do_read=true;
+    while (do_read) {
+      PDB mypdb;
+      // check the units for reading this file: how can they make sense?
+      do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+      if(do_read) {
+        neigenvects++;
+        if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
+        unsigned nat=mypdb.getAtomNumbers().size();
+        if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
+        if(aaa.empty()) aaa=mypdb.getAtomNumbers();
+        if(aaa!=mypdb.getAtomNumbers()) error("frames should contain same atoms in same order");
+        log<<"  Found eigenvector: "<<neigenvects<<" containing  "<<mypdb.getAtomNumbers().size()<<" atoms\n";
+        pdbv.push_back(mypdb);
+        eigenvectors.push_back(mypdb.getPositions());
+      } else {break ;}
     }
-    parseFlag("NOPBC",nopbc);
-    checkRead();
-
-    PDB pdb;
-
-    // read everything in ang and transform to nm if we are not in natural units
-    if( !pdb.read(f_average,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
-        error("missing input file " + f_average );
-
-    rmsd.reset( new RMSD() );
-    bool remove_com=true;
-    bool normalize_weights=true;
-    // here align and displace are a simple vector of ones
-    std::vector<double> align;
-    align=pdb.getOccupancy();
-    for(unsigned i=0; i<align.size(); i++) {
-        align[i]=1.;
-    } ;
-    std::vector<double> displace;
-    displace=pdb.getBeta();
-    for(unsigned i=0; i<displace.size(); i++) {
-        displace[i]=1.;
-    } ;
-    // reset again to reimpose unifrom weights (safe to disable this)
-    rmsd->set(align,displace,pdb.getPositions(),type,remove_com,normalize_weights);
-    requestAtoms( pdb.getAtomNumbers() );
-
-    addComponentWithDerivatives("residual");
-    componentIsNotPeriodic("residual");
-
-    log.printf("  average from file %s\n",f_average.c_str());
-    log.printf("  which contains %d atoms\n",getNumberOfAtoms());
-    log.printf("  method for alignment : %s \n",type.c_str() );
-    if(nopbc) log.printf("  without periodic boundary conditions\n");
-    else      log.printf("  using periodic boundary conditions\n");
-
-    log<<"  Bibliography "<<plumed.cite("Spiwok, Lipovova and Kralova, JPCB, 111, 3073 (2007)  ");
-    log<<" "<<plumed.cite( "Sutto, D'Abramo, Gervasio, JCTC, 6, 3640 (2010)");
-
-    // now get the eigenvectors
-    // open the file
-    FILE* fp=fopen(f_eigenvectors.c_str(),"r");
-    std::vector<AtomNumber> aaa;
-    unsigned neigenvects;
-    neigenvects=0;
-    if (fp!=NULL)
-    {
-        log<<"  Opening the eigenvectors file "<<f_eigenvectors.c_str()<<"\n";
-        bool do_read=true;
-        while (do_read) {
-            PDB mypdb;
-            // check the units for reading this file: how can they make sense?
-            do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
-            if(do_read) {
-                neigenvects++;
-                if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
-                unsigned nat=mypdb.getAtomNumbers().size();
-                if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
-                if(aaa.empty()) aaa=mypdb.getAtomNumbers();
-                if(aaa!=mypdb.getAtomNumbers()) error("frames should contain same atoms in same order");
-                log<<"  Found eigenvector: "<<neigenvects<<" containing  "<<mypdb.getAtomNumbers().size()<<" atoms\n";
-                pdbv.push_back(mypdb);
-                eigenvectors.push_back(mypdb.getPositions());
-            } else {
-                break ;
-            }
-        }
-        fclose (fp);
-        log<<"  Found total "<<neigenvects<< " eigenvectors in the file "<<f_eigenvectors.c_str()<<" \n";
-        if(neigenvects==0) error("at least one eigenvector is expected");
-    }
-    // the components
-    for(unsigned i=0; i<neigenvects; i++) {
-        std::string num;
-        Tools::convert( i, num );
-        string name;
-        name=string("eig-")+num;
-        pca_names.push_back(name);
-        addComponentWithDerivatives(name);
-        componentIsNotPeriodic(name);
-    }
-    turnOnDerivatives();
+    fclose (fp);
+    log<<"  Found total "<<neigenvects<< " eigenvectors in the file "<<f_eigenvectors.c_str()<<" \n";
+    if(neigenvects==0) error("at least one eigenvector is expected");
+  }
+  // the components
+  for(unsigned i=0; i<neigenvects; i++) {
+    std::string num; Tools::convert( i, num );
+    string name; name=string("eig-")+num;
+    pca_names.push_back(name);
+    addComponentWithDerivatives(name); componentIsNotPeriodic(name);
+  }
+  turnOnDerivatives();
 
 }
 
 // calculator
 void PCARMSD::calculate() {
-    if(!nopbc) makeWhole();
-    Tensor rotation,invrotation;
-    Matrix<std::vector<Vector> > drotdpos(3,3);
-    std::vector<Vector> alignedpos;
-    std::vector<Vector> centeredpos;
-    std::vector<Vector> centeredref;
-    std::vector<Vector> ddistdpos;
-    double r=rmsd->calc_PCAelements( getPositions(), ddistdpos, rotation,  drotdpos, alignedpos,centeredpos, centeredref,squared);
-    invrotation=rotation.transpose();
+  if(!nopbc) makeWhole();
+  Tensor rotation,invrotation;
+  Matrix<std::vector<Vector> > drotdpos(3,3);
+  std::vector<Vector> alignedpos;
+  std::vector<Vector> centeredpos;
+  std::vector<Vector> centeredref;
+  std::vector<Vector> ddistdpos;
+  double r=rmsd->calc_PCAelements( getPositions(), ddistdpos, rotation,  drotdpos, alignedpos,centeredpos, centeredref,squared);
+  invrotation=rotation.transpose();
 
-    Value* verr=getPntrToComponent("residual");
-    verr->set(r);
+  Value* verr=getPntrToComponent("residual");
+  verr->set(r);
+  for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) {
+    setAtomsDerivatives (verr,iat,ddistdpos[iat]);
+  }
+
+  std::vector< Vector > der;
+  der.resize(getNumberOfAtoms());
+
+
+  for(unsigned i=0; i<eigenvectors.size(); i++) {
+    Value* value=getPntrToComponent(pca_names[i].c_str());
+    double val; val=0.;
     for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) {
-        setAtomsDerivatives (verr,iat,ddistdpos[iat]);
+      val+=dotProduct(alignedpos[iat]-centeredref[iat],eigenvectors[i][iat]);	der[iat].zero();
     }
-
-    std::vector< Vector > der;
-    der.resize(getNumberOfAtoms());
-
-
-    for(unsigned i=0; i<eigenvectors.size(); i++) {
-        Value* value=getPntrToComponent(pca_names[i].c_str());
-        double val;
-        val=0.;
-        for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) {
-            val+=dotProduct(alignedpos[iat]-centeredref[iat],eigenvectors[i][iat]);
-            der[iat].zero();
-        }
-        value->set(val);
-        // here the loop is reversed to better suit the structure of the derivative of the rotation matrix
-        double tmp1;
-        for(unsigned a=0; a<3; a++) {
-            for(unsigned b=0; b<3; b++) {
-                tmp1=0.;
-                for(unsigned n=0; n<getNumberOfAtoms(); n++) {
-                    tmp1+=centeredpos[n][b]*eigenvectors[i][n][a];
-                }
-                for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) {
-                    der[iat]+=drotdpos[a][b][iat]*tmp1;
-                }
-            }
-        }
-        Vector v1;
+    value->set(val);
+    // here the loop is reversed to better suit the structure of the derivative of the rotation matrix
+    double tmp1;
+    for(unsigned a=0; a<3; a++) {
+      for(unsigned b=0; b<3; b++) {
+        tmp1=0.;
         for(unsigned n=0; n<getNumberOfAtoms(); n++) {
-            v1+=(1./getNumberOfAtoms())*matmul(invrotation,eigenvectors[i][n]);
+          tmp1+=centeredpos[n][b]*eigenvectors[i][n][a];
         }
         for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) {
-            der[iat]+=matmul(invrotation,eigenvectors[i][iat])-v1;
-            setAtomsDerivatives (value,iat,der[iat]);
+          der[iat]+=drotdpos[a][b][iat]*tmp1;
         }
+      }
     }
+    Vector v1;
+    for(unsigned n=0; n<getNumberOfAtoms(); n++) {
+      v1+=(1./getNumberOfAtoms())*matmul(invrotation,eigenvectors[i][n]);
+    }
+    for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) {
+      der[iat]+=matmul(invrotation,eigenvectors[i][iat])-v1;
+      setAtomsDerivatives (value,iat,der[iat]);
+    }
+  }
 
-    for(int i=0; i<getNumberOfComponents(); ++i) setBoxDerivativesNoPbc( getPntrToComponent(i) );
+  for(int i=0; i<getNumberOfComponents(); ++i) setBoxDerivativesNoPbc( getPntrToComponent(i) );
 
 }
 

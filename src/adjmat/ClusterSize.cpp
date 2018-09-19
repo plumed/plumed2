@@ -62,57 +62,51 @@ namespace adjmat {
 class ClusterSize : public ClusterAnalysisBase {
 private:
 /// The cluster we are looking for
-    unsigned clustr;
+  unsigned clustr;
 public:
 /// Create manual
-    static void registerKeywords( Keywords& keys );
+  static void registerKeywords( Keywords& keys );
 /// Constructor
-    explicit ClusterSize(const ActionOptions&);
+  explicit ClusterSize(const ActionOptions&);
 ///
-    void calculate();
+  void calculate();
 ///
-    void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-        plumed_error();
-    }
+  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 ///
-    void turnOnDerivatives();
+  void turnOnDerivatives();
 };
 
 PLUMED_REGISTER_ACTION(ClusterSize,"CLUSTER_NATOMS")
 
 void ClusterSize::registerKeywords( Keywords& keys ) {
-    ClusterAnalysisBase::registerKeywords( keys );
-    keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
+  ClusterAnalysisBase::registerKeywords( keys );
+  keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
 }
 
 ClusterSize::ClusterSize(const ActionOptions&ao):
-    Action(ao),
-    ClusterAnalysisBase(ao)
+  Action(ao),
+  ClusterAnalysisBase(ao)
 {
-    // Find out which cluster we want
-    parse("CLUSTER",clustr);
+  // Find out which cluster we want
+  parse("CLUSTER",clustr);
 
-    if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
-    if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
+  if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
+  if( clustr>getNumberOfNodes() ) error("cluster selected is invalid - too few atoms in system");
 
-    // Create all tasks by copying those from underlying DFS object (which is actually MultiColvar)
-    for(unsigned i=0; i<getNumberOfNodes(); ++i) addTaskToList(i);
-    // And now finish the setup of everything in the base
-    std::vector<AtomNumber> fake_atoms;
-    setupMultiColvarBase( fake_atoms );
-    addValue();
-    setNotPeriodic();
+  // Create all tasks by copying those from underlying DFS object (which is actually MultiColvar)
+  for(unsigned i=0; i<getNumberOfNodes(); ++i) addTaskToList(i);
+  // And now finish the setup of everything in the base
+  std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
+  addValue(); setNotPeriodic();
 }
 
 void ClusterSize::turnOnDerivatives() {
-    error("cannot calculate derivatives of number of atoms in cluster.  This quantity is not differentiable");
+  error("cannot calculate derivatives of number of atoms in cluster.  This quantity is not differentiable");
 }
 
 void ClusterSize::calculate() {
-    // Retrieve the atoms in the largest cluster
-    std::vector<unsigned> myatoms;
-    retrieveAtomsInCluster( clustr, myatoms );
-    setValue( myatoms.size() );
+  // Retrieve the atoms in the largest cluster
+  std::vector<unsigned> myatoms; retrieveAtomsInCluster( clustr, myatoms ); setValue( myatoms.size() );
 }
 
 }

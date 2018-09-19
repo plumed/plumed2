@@ -32,44 +32,44 @@ namespace multicolvar {
 
 class CatomPack {
 private:
-    std::vector<unsigned> indices;
-    std::vector<Tensor> derivs;
+  std::vector<unsigned> indices;
+  std::vector<Tensor> derivs;
 public:
-    void resize( const unsigned& );
-    void setIndex( const unsigned&, const unsigned& );
-    void setDerivative( const unsigned&, const Tensor& );
-    unsigned getNumberOfAtomsWithDerivatives() const ;
-    unsigned getIndex( const unsigned& ) const ;
-    double getDerivative( const unsigned&, const unsigned&, const Vector& ) const ;
+  void resize( const unsigned& );
+  void setIndex( const unsigned&, const unsigned& );
+  void setDerivative( const unsigned&, const Tensor& );
+  unsigned getNumberOfAtomsWithDerivatives() const ;
+  unsigned getIndex( const unsigned& ) const ;
+  double getDerivative( const unsigned&, const unsigned&, const Vector& ) const ;
 };
 
 inline
 void CatomPack::setIndex( const unsigned& jind, const unsigned& ind ) {
-    plumed_dbg_assert( jind<indices.size() );
-    indices[jind]=ind;
+  plumed_dbg_assert( jind<indices.size() );
+  indices[jind]=ind;
 }
 
 inline
 void CatomPack::setDerivative( const unsigned& jind, const Tensor& der ) {
-    plumed_dbg_assert( jind<indices.size() );
-    derivs[jind]=der;
+  plumed_dbg_assert( jind<indices.size() );
+  derivs[jind]=der;
 }
 
 inline
 unsigned CatomPack::getNumberOfAtomsWithDerivatives() const {
-    return indices.size();
+  return indices.size();
 }
 
 inline
 unsigned CatomPack::getIndex( const unsigned& jind ) const {
-    plumed_dbg_assert( jind<indices.size() );
-    return indices[jind];
+  plumed_dbg_assert( jind<indices.size() );
+  return indices[jind];
 }
 
 inline
 double CatomPack::getDerivative( const unsigned& iatom, const unsigned& jcomp, const Vector& df ) const {
-    plumed_dbg_assert( iatom<indices.size() );
-    return df[jcomp]*derivs[iatom](jcomp,0) + df[jcomp]*derivs[iatom](jcomp,1) + df[jcomp]*derivs[iatom](jcomp,2);
+  plumed_dbg_assert( iatom<indices.size() );
+  return df[jcomp]*derivs[iatom](jcomp,0) + df[jcomp]*derivs[iatom](jcomp,1) + df[jcomp]*derivs[iatom](jcomp,2);
 }
 
 }

@@ -139,145 +139,140 @@ PRINT ARG=c1,c2,p1.s,p1.z,res.bias STRIDE=500  FILE=colvar FMT=%15.6f
 //+ENDPLUMEDOC
 
 class FuncPathMSD : public Function {
-    double lambda;
-    int neigh_size;
-    double neigh_stride;
-    vector< pair<Value *,double> > neighpair;
-    map<Value *,double > indexmap; // use double to allow isomaps
-    vector <Value*> allArguments;
+  double lambda;
+  int neigh_size;
+  double neigh_stride;
+  vector< pair<Value *,double> > neighpair;
+  map<Value *,double > indexmap; // use double to allow isomaps
+  vector <Value*> allArguments;
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // this below is useful when one wants to sort a vector of double and have back the order
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // create a custom sorter
-    typedef vector<double>::const_iterator myiter;
-    struct ordering {
-        bool operator ()(pair<unsigned, myiter> const& a, pair<unsigned, myiter> const& b) {
-            return *(a.second) < *(b.second);
-        }
-    };
-// sorting utility
-    vector<int> increasingOrder( vector<double> &v) {
-        // make a pair
-        vector< pair<unsigned, myiter> > order(v.size());
-        unsigned n = 0;
-        for (myiter it = v.begin(); it != v.end(); ++it, ++n) {
-            order[n] = make_pair(n, it); // note: heere i do not put the values but the addresses that point to the value
-        }
-        // now sort according the second value
-        sort(order.begin(), order.end(), ordering());
-        vector<int> vv(v.size());
-        n=0;
-        for (const auto & it : order) {
-            vv[n]=it.first;
-            n++;
-        }
-        return vv;
+  typedef vector<double>::const_iterator myiter;
+  struct ordering {
+    bool operator ()(pair<unsigned, myiter> const& a, pair<unsigned, myiter> const& b) {
+      return *(a.second) < *(b.second);
     }
+  };
+// sorting utility
+  vector<int> increasingOrder( vector<double> &v) {
+    // make a pair
+    vector< pair<unsigned, myiter> > order(v.size());
+    unsigned n = 0;
+    for (myiter it = v.begin(); it != v.end(); ++it, ++n) {
+      order[n] = make_pair(n, it); // note: heere i do not put the values but the addresses that point to the value
+    }
+    // now sort according the second value
+    sort(order.begin(), order.end(), ordering());
+    vector<int> vv(v.size()); n=0;
+    for (const auto & it : order) {
+      vv[n]=it.first; n++;
+    }
+    return vv;
+  }
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-    struct pairordering {
-        bool operator ()(pair<Value *, double> const& a, pair<Value*, double> const& b) {
-            return (a).second > (b).second;
-        }
-    };
+  struct pairordering {
+    bool operator ()(pair<Value *, double> const& a, pair<Value*, double> const& b) {
+      return (a).second > (b).second;
+    }
+  };
 
 public:
-    explicit FuncPathMSD(const ActionOptions&);
+  explicit FuncPathMSD(const ActionOptions&);
 // active methods:
-    virtual void calculate();
-    virtual void prepare();
-    static void registerKeywords(Keywords& keys);
+  virtual void calculate();
+  virtual void prepare();
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(FuncPathMSD,"FUNCPATHMSD")
 
 void FuncPathMSD::registerKeywords(Keywords& keys) {
-    Function::registerKeywords(keys);
-    keys.use("ARG");
-    keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
-    keys.add("optional","NEIGH_SIZE","size of the neighbor list");
-    keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated in time units");
-    componentsAreNotOptional(keys);
-    keys.addOutputComponent("s","default","the position on the path");
-    keys.addOutputComponent("z","default","the distance from the path");
+  Function::registerKeywords(keys);
+  keys.use("ARG");
+  keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
+  keys.add("optional","NEIGH_SIZE","size of the neighbor list");
+  keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated in time units");
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("s","default","the position on the path");
+  keys.addOutputComponent("z","default","the distance from the path");
 }
 FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
-    Action(ao),
-    Function(ao),
-    neigh_size(-1),
-    neigh_stride(-1.)
+  Action(ao),
+  Function(ao),
+  neigh_size(-1),
+  neigh_stride(-1.)
 {
 
-    parse("LAMBDA",lambda);
-    parse("NEIGH_SIZE",neigh_size);
-    parse("NEIGH_STRIDE",neigh_stride);
-    checkRead();
-    log.printf("  lambda is %f\n",lambda);
-    // list the action involved and check the type
-    std::string myname=getPntrToArgument(0)->getPntrToAction()->getName();
-    if(myname!="RMSD"&&myname!="CONTACTMAP"&&myname!="DISTANCE"&&myname!="PIV") error("One or more of your arguments is not of RMSD/CONTACTMAP/DISTANCE/PIV type!!!");
-    for(unsigned i=1; i<getNumberOfArguments(); i++) {
-        // for each value get the name and the label of the corresponding action
-        if( getPntrToArgument(i)->getPntrToAction()->getName()!=myname ) error("mismatch between the types of arguments");
+  parse("LAMBDA",lambda);
+  parse("NEIGH_SIZE",neigh_size);
+  parse("NEIGH_STRIDE",neigh_stride);
+  checkRead();
+  log.printf("  lambda is %f\n",lambda);
+  // list the action involved and check the type
+  std::string myname=getPntrToArgument(0)->getPntrToAction()->getName();
+  if(myname!="RMSD"&&myname!="CONTACTMAP"&&myname!="DISTANCE"&&myname!="PIV") error("One or more of your arguments is not of RMSD/CONTACTMAP/DISTANCE/PIV type!!!");
+  for(unsigned i=1; i<getNumberOfArguments(); i++) {
+    // for each value get the name and the label of the corresponding action
+    if( getPntrToArgument(i)->getPntrToAction()->getName()!=myname ) error("mismatch between the types of arguments");
+  }
+  log.printf("  Consistency check completed! Your path cvs look good!\n");
+  // do some neighbor printout
+  if(neigh_stride>0. || neigh_size>0) {
+    if(neigh_size>static_cast<int>(getNumberOfArguments())) {
+      log.printf(" List size required ( %d ) is too large: resizing to the maximum number of arg required: %d  \n",neigh_size,getNumberOfArguments());
+      neigh_size=getNumberOfArguments();
     }
-    log.printf("  Consistency check completed! Your path cvs look good!\n");
-    // do some neighbor printout
-    if(neigh_stride>0. || neigh_size>0) {
-        if(neigh_size>static_cast<int>(getNumberOfArguments())) {
-            log.printf(" List size required ( %d ) is too large: resizing to the maximum number of arg required: %d  \n",neigh_size,getNumberOfArguments());
-            neigh_size=getNumberOfArguments();
-        }
-        log.printf("  Neighbor list enabled: \n");
-        log.printf("                size   :  %d elements\n",neigh_size);
-        log.printf("                stride :  %f time \n",neigh_stride);
-    } else {
-        log.printf("  Neighbor list NOT enabled \n");
-    }
+    log.printf("  Neighbor list enabled: \n");
+    log.printf("                size   :  %d elements\n",neigh_size);
+    log.printf("                stride :  %f time \n",neigh_stride);
+  } else {
+    log.printf("  Neighbor list NOT enabled \n");
+  }
 
-    addComponentWithDerivatives("s");
-    componentIsNotPeriodic("s");
-    addComponentWithDerivatives("z");
-    componentIsNotPeriodic("z");
+  addComponentWithDerivatives("s"); componentIsNotPeriodic("s");
+  addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
 
-    // now backup the arguments
-    for(unsigned i=0; i<getNumberOfArguments(); i++)allArguments.push_back(getPntrToArgument(i));
-    double i=1.;
-    for(const auto & it : allArguments) {
-        indexmap[it]=i;
-        i+=1.;
-    }
+  // now backup the arguments
+  for(unsigned i=0; i<getNumberOfArguments(); i++)allArguments.push_back(getPntrToArgument(i));
+  double i=1.;
+  for(const auto & it : allArguments) {
+    indexmap[it]=i; i+=1.;
+  }
 
 }
 // calculator
 void FuncPathMSD::calculate() {
 // log.printf("NOW CALCULATE! \n");
-    double s_path=0.;
-    double partition=0.;
-    if(neighpair.empty()) { // at first step, resize it
-        neighpair.resize(allArguments.size());
-        for(unsigned i=0; i<allArguments.size(); i++)neighpair[i].first=allArguments[i];
-    }
+  double s_path=0.;
+  double partition=0.;
+  if(neighpair.empty()) { // at first step, resize it
+    neighpair.resize(allArguments.size());
+    for(unsigned i=0; i<allArguments.size(); i++)neighpair[i].first=allArguments[i];
+  }
 
-    Value* val_s_path=getPntrToComponent("s");
-    Value* val_z_path=getPntrToComponent("z");
+  Value* val_s_path=getPntrToComponent("s");
+  Value* val_z_path=getPntrToComponent("z");
 
-    for(auto & it : neighpair) {
-        it.second=exp(-lambda*(it.first->get()));
-        s_path+=(indexmap[it.first])*it.second;
-        partition+=it.second;
-    }
-    s_path/=partition;
-    val_s_path->set(s_path);
-    val_z_path->set(-(1./lambda)*std::log(partition));
-    int n=0;
-    for(const auto & it : neighpair) {
-        double expval=it.second;
-        double tmp=lambda*expval*(s_path-(indexmap[it.first]))/partition;
-        setDerivative(val_s_path,n,tmp);
-        setDerivative(val_z_path,n,expval/partition);
-        n++;
-    }
+  for(auto & it : neighpair) {
+    it.second=exp(-lambda*(it.first->get()));
+    s_path+=(indexmap[it.first])*it.second;
+    partition+=it.second;
+  }
+  s_path/=partition;
+  val_s_path->set(s_path);
+  val_z_path->set(-(1./lambda)*std::log(partition));
+  int n=0;
+  for(const auto & it : neighpair) {
+    double expval=it.second;
+    double tmp=lambda*expval*(s_path-(indexmap[it.first]))/partition;
+    setDerivative(val_s_path,n,tmp);
+    setDerivative(val_z_path,n,expval/partition);
+    n++;
+  }
 
 //  log.printf("CALCULATION DONE! \n");
 }
@@ -286,60 +281,57 @@ void FuncPathMSD::calculate() {
 ///
 void FuncPathMSD::prepare() {
 
-    // neighbor list: rank and activate the chain for the next step
+  // neighbor list: rank and activate the chain for the next step
 
-    // neighbor list: if neigh_size<0 never sort and keep the full vector
-    // neighbor list: if neigh_size>0
-    //                if the size is full -> sort the vector and decide the dependencies for next step
-    //                if the size is not full -> check if next step will need the full dependency otherwise keep this dependencies
+  // neighbor list: if neigh_size<0 never sort and keep the full vector
+  // neighbor list: if neigh_size>0
+  //                if the size is full -> sort the vector and decide the dependencies for next step
+  //                if the size is not full -> check if next step will need the full dependency otherwise keep this dependencies
 
-    // here just resize the neighpair. The real resizing of reinit will be done by the prepare stage that will modify the  list of arguments
-    if (neigh_size>0) {
-        if(neighpair.size()==allArguments.size()) { // I just did the complete round: need to sort, shorten and give it a go
-            // sort the values
-            sort(neighpair.begin(),neighpair.end(),pairordering());
-            // resize the effective list
-            neighpair.resize(neigh_size);
-            log.printf("  NEIGH LIST NOW INCLUDE INDEXES: ");
-            for(int i=0; i<neigh_size; ++i) {
-                log.printf(" %f ",indexmap[neighpair[i].first]);
-            }
-            log.printf(" \n");
-        } else {
-            if( int(getStep())%int(neigh_stride/getTimeStep())==0 ) {
-                log.printf(" Time %f : recalculating full neighlist \n",getStep()*getTimeStep());
-                neighpair.resize(allArguments.size());
-                for(unsigned i=0; i<allArguments.size(); i++)neighpair[i].first=allArguments[i];
-            }
-        }
+  // here just resize the neighpair. The real resizing of reinit will be done by the prepare stage that will modify the  list of arguments
+  if (neigh_size>0) {
+    if(neighpair.size()==allArguments.size()) { // I just did the complete round: need to sort, shorten and give it a go
+      // sort the values
+      sort(neighpair.begin(),neighpair.end(),pairordering());
+      // resize the effective list
+      neighpair.resize(neigh_size);
+      log.printf("  NEIGH LIST NOW INCLUDE INDEXES: ");
+      for(int i=0; i<neigh_size; ++i) {log.printf(" %f ",indexmap[neighpair[i].first]);} log.printf(" \n");
     } else {
-        if( int(getStep())==0) {
-            neighpair.resize(allArguments.size());
-            for(unsigned i=0; i<allArguments.size(); i++)neighpair[i].first=allArguments[i];
-        }
+      if( int(getStep())%int(neigh_stride/getTimeStep())==0 ) {
+        log.printf(" Time %f : recalculating full neighlist \n",getStep()*getTimeStep());
+        neighpair.resize(allArguments.size());
+        for(unsigned i=0; i<allArguments.size(); i++)neighpair[i].first=allArguments[i];
+      }
     }
-    vector<Value*> argstocall;
+  } else {
+    if( int(getStep())==0) {
+      neighpair.resize(allArguments.size());
+      for(unsigned i=0; i<allArguments.size(); i++)neighpair[i].first=allArguments[i];
+    }
+  }
+  vector<Value*> argstocall;
 //log.printf("PREPARING \n");
-    argstocall.clear();
-    if(!neighpair.empty()) {
-        for(const auto & it : neighpair) {
-            argstocall.push_back( it.first );
-            //     log.printf("CALLING %p %f ",(*it).first ,indexmap[(*it).first] );
-        }
-    } else {
-        for(unsigned i=0; i<allArguments.size(); i++) {
-            argstocall.push_back(allArguments[i]);
-        }
+  argstocall.clear();
+  if(!neighpair.empty()) {
+    for(const auto & it : neighpair) {
+      argstocall.push_back( it.first );
+      //     log.printf("CALLING %p %f ",(*it).first ,indexmap[(*it).first] );
     }
+  } else {
+    for(unsigned i=0; i<allArguments.size(); i++) {
+      argstocall.push_back(allArguments[i]);
+    }
+  }
 // now the list of argument changes
-    requestArguments(argstocall);
+  requestArguments(argstocall);
 //now resize the derivatives as well
 //for each value in this action
-    for(int i=0; i< getNumberOfComponents(); i++) {
-        //resize the derivative to the number   the
-        getPntrToComponent(i)->clearDerivatives();
-        getPntrToComponent(i)->resizeDerivatives(getNumberOfArguments());
-    }
+  for(int i=0; i< getNumberOfComponents(); i++) {
+    //resize the derivative to the number   the
+    getPntrToComponent(i)->clearDerivatives();
+    getPntrToComponent(i)->resizeDerivatives(getNumberOfArguments());
+  }
 //log.printf("PREPARING DONE! \n");
 }
 

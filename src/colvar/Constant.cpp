@@ -65,73 +65,72 @@ PRINT ARG=sss.1
 using namespace std;
 
 class Constant : public Colvar {
-    vector<double> values;
+  vector<double> values;
 public:
-    explicit Constant(const ActionOptions&);
-    virtual void calculate();
-    static void registerKeywords( Keywords& keys );
+  explicit Constant(const ActionOptions&);
+  virtual void calculate();
+  static void registerKeywords( Keywords& keys );
 };
 
 PLUMED_REGISTER_ACTION(Constant,"CONSTANT")
 
 Constant::Constant(const ActionOptions&ao):
-    PLUMED_COLVAR_INIT(ao)
+  PLUMED_COLVAR_INIT(ao)
 {
-    bool noderiv=false;
-    parseFlag("NODERIV",noderiv);
-    parseVector("VALUES",values);
-    vector<double> value;
-    parseVector("VALUE",value);
-    if(values.size()==0&&value.size()==0) error("One should use either VALUE or VALUES");
-    if(values.size()!=0&&value.size()!=0) error("One should use either VALUE or VALUES");
-    if(value.size()>1) error("VALUE cannot take more than one number");
-    if(values.size()==0) {
-        values.resize(1);
-        values[0]=value[0];
+  bool noderiv=false;
+  parseFlag("NODERIV",noderiv);
+  parseVector("VALUES",values);
+  vector<double> value;
+  parseVector("VALUE",value);
+  if(values.size()==0&&value.size()==0) error("One should use either VALUE or VALUES");
+  if(values.size()!=0&&value.size()!=0) error("One should use either VALUE or VALUES");
+  if(value.size()>1) error("VALUE cannot take more than one number");
+  if(values.size()==0) {
+    values.resize(1);
+    values[0]=value[0];
+  }
+  checkRead();
+  if(values.size()==1) {
+    if(!noderiv) addValueWithDerivatives();
+    else addValue();
+    setNotPeriodic();
+    setValue(values[0]);
+  } else if(values.size()>1) {
+    for(unsigned i=0; i<values.size(); i++) {
+      std::string num; Tools::convert(i,num);
+      if(!noderiv) addComponentWithDerivatives("v_"+num);
+      else addComponent("v_"+num);
+      componentIsNotPeriodic("v_"+num);
+      Value* comp=getPntrToComponent("v_"+num);
+      comp->set(values[i]);
     }
-    checkRead();
-    if(values.size()==1) {
-        if(!noderiv) addValueWithDerivatives();
-        else addValue();
-        setNotPeriodic();
-        setValue(values[0]);
-    } else if(values.size()>1) {
-        for(unsigned i=0; i<values.size(); i++) {
-            std::string num;
-            Tools::convert(i,num);
-            if(!noderiv) addComponentWithDerivatives("v_"+num);
-            else addComponent("v_"+num);
-            componentIsNotPeriodic("v_"+num);
-            Value* comp=getPntrToComponent("v_"+num);
-            comp->set(values[i]);
-        }
-    }
+  }
 // fake request to avoid errors:
-    std::vector<AtomNumber> atoms;
-    requestAtoms(atoms);
+  std::vector<AtomNumber> atoms;
+  requestAtoms(atoms);
 }
 
 void Constant::registerKeywords( Keywords& keys ) {
-    Colvar::registerKeywords( keys );
-    componentsAreNotOptional(keys);
-    useCustomisableComponents(keys);
-    keys.remove("NUMERICAL_DERIVATIVES");
-    keys.add("optional","VALUES","The values of the constants");
-    keys.add("optional","VALUE","The value of the constant");
-    keys.addFlag("NODERIV",false,"Set to TRUE if you want values without derivatives.");
-    keys.addOutputComponent("v","default","the # value");
+  Colvar::registerKeywords( keys );
+  componentsAreNotOptional(keys);
+  useCustomisableComponents(keys);
+  keys.remove("NUMERICAL_DERIVATIVES");
+  keys.add("optional","VALUES","The values of the constants");
+  keys.add("optional","VALUE","The value of the constant");
+  keys.addFlag("NODERIV",false,"Set to TRUE if you want values without derivatives.");
+  keys.addOutputComponent("v","default","the # value");
 }
 
 // calculator
 void Constant::calculate() {
-    if(values.size()==1) {
-        setValue(values[0]);
-        return;
-    }
-    for(unsigned i=0; i<values.size(); i++) {
-        Value* comp=getPntrToComponent(i);
-        comp->set(values[i]);
-    }
+  if(values.size()==1) {
+    setValue(values[0]);
+    return;
+  }
+  for(unsigned i=0; i<values.size(); i++) {
+    Value* comp=getPntrToComponent(i);
+    comp->set(values[i]);
+  }
 }
 
 }

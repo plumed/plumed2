@@ -40,124 +40,124 @@ one can also use strings such as kcal/mol.
 */
 class Units {
 /// Units for energy, expressed in kj/mol (e.g. 4.184 means kcal/mol)
-    double energy;
-    std::string energyString;
+  double energy;
+  std::string energyString;
 /// Units for length, expressed in nm (e.g. 0.1 means A)
-    double length;
-    std::string lengthString;
+  double length;
+  std::string lengthString;
 /// Units for time, expressed in ps (e.g. 0.001 means fs)
-    double time;
-    std::string timeString;
+  double time;
+  std::string timeString;
 /// Units for charges, expressed in proton charge (e.g. 1./18.2223 are sqrt(kcal/mol*A), as used in Amber)
-    double charge;
-    std::string chargeString;
+  double charge;
+  std::string chargeString;
 /// Units for masses, expressed in amu
-    double mass;
-    std::string massString;
+  double mass;
+  std::string massString;
 public:
 /// Constructor, setting default values (1.0)
-    Units();
+  Units();
 /// Set energy units from string.
 /// Also understands the following strings:
 /// kj/mol, kcal/mol, j/mol, and eV.
-    void setEnergy(const std::string &);
+  void setEnergy(const std::string &);
 /// Set time units from string.
 /// Also understands the following strings:
 /// ps, ns, fs.
-    void setTime(const std::string &);
+  void setTime(const std::string &);
 /// Set lengh units from string.
 /// Also understands the following strings:
 /// nm, A, um.
-    void setLength(const std::string &);
+  void setLength(const std::string &);
 /// Set charge units from string.
-    void setCharge(const std::string &);
+  void setCharge(const std::string &);
 /// Set mass units from string.
-    void setMass(const std::string &);
+  void setMass(const std::string &);
 /// Set energy units from double.
 /// Should be specified in units of kj/mol (e.g. 4.184 means kcal/mol)
-    void setEnergy(double);
+  void setEnergy(double);
 /// Set time units from double.
 /// Should be specified in units of ps (e.g. 0.001 means fs)
-    void setTime(double);
+  void setTime(double);
 /// Set lenght units from double.
 /// Should be specified in units of nm (e.g. 0.1 means A)
-    void setLength(double);
+  void setLength(double);
 /// Set charge units from double.
 /// Should be specified in units of proton charge.
-    void setCharge(double);
+  void setCharge(double);
 /// Set mass units from double.
 /// Should be specified in units of amu.
-    void setMass(double);
+  void setMass(double);
 /// Get energy units as double.
-    const double & getEnergy()const;
+  const double & getEnergy()const;
 /// Get length units as double.
-    const double & getLength()const;
+  const double & getLength()const;
 /// Get time units as double.
-    const double & getTime()const;
+  const double & getTime()const;
 /// Get charge units as double.
-    const double & getCharge()const;
+  const double & getCharge()const;
 /// Get mass units as double.
-    const double & getMass()const;
+  const double & getMass()const;
 /// Get energy units as string.
-    const std::string & getEnergyString()const;
+  const std::string & getEnergyString()const;
 /// Get length units as string.
-    const std::string & getLengthString()const;
+  const std::string & getLengthString()const;
 /// Get time units as string.
-    const std::string & getTimeString()const;
+  const std::string & getTimeString()const;
 /// Get charge units as string.
-    const std::string & getChargeString()const;
+  const std::string & getChargeString()const;
 /// Get mass units as string.
-    const std::string & getMassString()const;
+  const std::string & getMassString()const;
 };
 
 inline
 const double & Units::getEnergy()const {
-    return energy;
+  return energy;
 }
 
 inline
 const double & Units::getLength()const {
-    return length;
+  return length;
 }
 
 inline
 const double & Units::getTime()const {
-    return time;
+  return time;
 }
 
 inline
 const double & Units::getCharge()const {
-    return charge;
+  return charge;
 }
 
 inline
 const double & Units::getMass()const {
-    return mass;
+  return mass;
 }
 
 inline
 const std::string & Units::getEnergyString()const {
-    return energyString;
+  return energyString;
 }
 
 inline
 const std::string & Units::getLengthString()const {
-    return lengthString;
+  return lengthString;
 }
 
 inline
 const std::string & Units::getTimeString()const {
-    return timeString;
+  return timeString;
 }
 
 inline
 const std::string & Units::getChargeString()const {
-    return chargeString;
+  return chargeString;
 }
 
 inline
 const std::string & Units::getMassString()const {
-    return massString;
+  return massString;
 }
 
 

@@ -61,68 +61,68 @@ PRINT ARG=restraint.bias
 //+ENDPLUMEDOC
 
 class Restraint : public Bias {
-    std::vector<double> at;
-    std::vector<double> kappa;
-    std::vector<double> slope;
-    Value* valueForce2;
+  std::vector<double> at;
+  std::vector<double> kappa;
+  std::vector<double> slope;
+  Value* valueForce2;
 public:
-    explicit Restraint(const ActionOptions&);
-    void calculate();
-    static void registerKeywords(Keywords& keys);
+  explicit Restraint(const ActionOptions&);
+  void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(Restraint,"RESTRAINT")
 
 void Restraint::registerKeywords(Keywords& keys) {
-    Bias::registerKeywords(keys);
-    keys.use("ARG");
-    keys.add("compulsory","SLOPE","0.0","specifies that the restraint is linear and what the values of the force constants on each of the variables are");
-    keys.add("compulsory","KAPPA","0.0","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
-    keys.add("compulsory","AT","the position of the restraint");
-    keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+  Bias::registerKeywords(keys);
+  keys.use("ARG");
+  keys.add("compulsory","SLOPE","0.0","specifies that the restraint is linear and what the values of the force constants on each of the variables are");
+  keys.add("compulsory","KAPPA","0.0","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
+  keys.add("compulsory","AT","the position of the restraint");
+  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
 }
 
 Restraint::Restraint(const ActionOptions&ao):
-    PLUMED_BIAS_INIT(ao),
-    at(getNumberOfArguments()),
-    kappa(getNumberOfArguments(),0.0),
-    slope(getNumberOfArguments(),0.0)
+  PLUMED_BIAS_INIT(ao),
+  at(getNumberOfArguments()),
+  kappa(getNumberOfArguments(),0.0),
+  slope(getNumberOfArguments(),0.0)
 {
-    parseVector("SLOPE",slope);
-    parseVector("KAPPA",kappa);
-    parseVector("AT",at);
-    checkRead();
+  parseVector("SLOPE",slope);
+  parseVector("KAPPA",kappa);
+  parseVector("AT",at);
+  checkRead();
 
-    log.printf("  at");
-    for(unsigned i=0; i<at.size(); i++) log.printf(" %f",at[i]);
-    log.printf("\n");
-    log.printf("  with harmonic force constant");
-    for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
-    log.printf("\n");
-    log.printf("  and linear force constant");
-    for(unsigned i=0; i<slope.size(); i++) log.printf(" %f",slope[i]);
-    log.printf("\n");
+  log.printf("  at");
+  for(unsigned i=0; i<at.size(); i++) log.printf(" %f",at[i]);
+  log.printf("\n");
+  log.printf("  with harmonic force constant");
+  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
+  log.printf("\n");
+  log.printf("  and linear force constant");
+  for(unsigned i=0; i<slope.size(); i++) log.printf(" %f",slope[i]);
+  log.printf("\n");
 
-    addComponent("force2");
-    componentIsNotPeriodic("force2");
-    valueForce2=getPntrToComponent("force2");
+  addComponent("force2");
+  componentIsNotPeriodic("force2");
+  valueForce2=getPntrToComponent("force2");
 }
 
 
 void Restraint::calculate() {
-    double ene=0.0;
-    double totf2=0.0;
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        const double cv=difference(i,at[i],getArgument(i));
-        const double k=kappa[i];
-        const double m=slope[i];
-        const double f=-(k*cv+m);
-        ene+=0.5*k*cv*cv+m*cv;
-        setOutputForce(i,f);
-        totf2+=f*f;
-    }
-    setBias(ene);
-    valueForce2->set(totf2);
+  double ene=0.0;
+  double totf2=0.0;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    const double cv=difference(i,at[i],getArgument(i));
+    const double k=kappa[i];
+    const double m=slope[i];
+    const double f=-(k*cv+m);
+    ene+=0.5*k*cv*cv+m*cv;
+    setOutputForce(i,f);
+    totf2+=f*f;
+  }
+  setBias(ene);
+  valueForce2->set(totf2);
 }
 
 }

@@ -32,62 +32,61 @@ namespace PLMD {
 class KernelFunctions {
 private:
 /// Is the metric matrix diagonal
-    enum {diagonal,multi,vonmises} dtype;
+  enum {diagonal,multi,vonmises} dtype;
 /// What type of kernel are we using
-    enum {gaussian,truncatedgaussian,uniform,triangular} ktype;
+  enum {gaussian,truncatedgaussian,uniform,triangular} ktype;
 /// The center of the kernel function
-    std::vector<double> center;
+  std::vector<double> center;
 /// The width of the kernel
-    std::vector<double> width;
+  std::vector<double> width;
 /// The height of the kernel
-    double height;
+  double height;
 /// Used to set all the data in the kernel during construction - avoids double coding as this has two constructors
-    void setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
+  void setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
 /// Convert the width into matrix form
-    Matrix<double> getMatrix() const;
+  Matrix<double> getMatrix() const;
 public:
-    explicit KernelFunctions( const std::string& input );
-    KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
-    explicit KernelFunctions( const KernelFunctions* in );
+  explicit KernelFunctions( const std::string& input );
+  KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
+  explicit KernelFunctions( const KernelFunctions* in );
 /// Normalise the function and scale the height accordingly
-    void normalize( const std::vector<Value*>& myvals );
+  void normalize( const std::vector<Value*>& myvals );
 /// Get the dimensionality of the kernel
-    unsigned ndim() const;
+  unsigned ndim() const;
 /// Get the cutoff for a kernel
-    double getCutoff( const double& width ) const ;
+  double getCutoff( const double& width ) const ;
 /// Get the position of the center
-    std::vector<double> getCenter() const;
+  std::vector<double> getCenter() const;
 /// Get the support
-    std::vector<unsigned> getSupport( const std::vector<double>& dx ) const;
+  std::vector<unsigned> getSupport( const std::vector<double>& dx ) const;
 /// get it in continuous form
-    std::vector<double> getContinuousSupport( ) const;
+  std::vector<double> getContinuousSupport( ) const;
 /// Evaluate the kernel function with constant intervals
-    double evaluate( const std::vector<Value*>& pos, std::vector<double>& derivatives, bool usederiv=true, bool doInt=false, double lowI_=-1, double uppI_=-1 ) const;
+  double evaluate( const std::vector<Value*>& pos, std::vector<double>& derivatives, bool usederiv=true, bool doInt=false, double lowI_=-1, double uppI_=-1 ) const;
 /// Read a kernel function from a file
-    static std::unique_ptr<KernelFunctions> read( IFile* ifile, const bool& cholesky, const std::vector<std::string>& valnames );
+  static std::unique_ptr<KernelFunctions> read( IFile* ifile, const bool& cholesky, const std::vector<std::string>& valnames );
 };
 
 inline
 Matrix<double> KernelFunctions::getMatrix() const {
-    unsigned k=0, ncv=ndim();
-    Matrix<double> mymatrix(ncv,ncv);
-    for(unsigned i=0; i<ncv; i++) {
-        for(unsigned j=i; j<ncv; j++) {
-            mymatrix(i,j)=mymatrix(j,i)=width[k]; // recompose the full inverse matrix
-            k++;
-        }
+  unsigned k=0, ncv=ndim(); Matrix<double> mymatrix(ncv,ncv);
+  for(unsigned i=0; i<ncv; i++) {
+    for(unsigned j=i; j<ncv; j++) {
+      mymatrix(i,j)=mymatrix(j,i)=width[k]; // recompose the full inverse matrix
+      k++;
     }
-    return mymatrix;
+  }
+  return mymatrix;
 }
 
 inline
 unsigned KernelFunctions::ndim() const {
-    return center.size();
+  return center.size();
 }
 
 inline
 std::vector<double> KernelFunctions::getCenter() const {
-    return center;
+  return center;
 }
 
 }

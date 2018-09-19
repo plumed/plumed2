@@ -62,31 +62,31 @@ PRINT FILE=COLVAR ARG=* STRIDE=100
 //+ENDPLUMEDOC
 
 class Selector:
-    public Action
+  public Action
 {
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit Selector(const ActionOptions&ao);
-    void calculate() {}
-    void apply() {}
+  static void registerKeywords( Keywords& keys );
+  explicit Selector(const ActionOptions&ao);
+  void calculate() {}
+  void apply() {}
 };
 
 PLUMED_REGISTER_ACTION(Selector,"SELECTOR")
 
 void Selector::registerKeywords( Keywords& keys ) {
-    Action::registerKeywords(keys);
-    keys.add("compulsory","NAME","name of the SELECTOR");
-    keys.add("compulsory","VALUE","set (initial) value of the SELECTOR");
+  Action::registerKeywords(keys);
+  keys.add("compulsory","NAME","name of the SELECTOR");
+  keys.add("compulsory","VALUE","set (initial) value of the SELECTOR");
 }
 
 Selector::Selector(const ActionOptions&ao):
-    Action(ao)
+  Action(ao)
 {
-    string name;
-    parse("NAME", name);
-    double value;
-    parse("VALUE", value);
-    plumed.passMap[name] = value;
+  string name;
+  parse("NAME", name);
+  double value;
+  parse("VALUE", value);
+  plumed.passMap[name] = value;
 }
 
 }

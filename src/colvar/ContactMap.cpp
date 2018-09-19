@@ -110,237 +110,223 @@ PRINT ARG=cmap FILE=colvar
 
 class ContactMap : public Colvar {
 private:
-    bool pbc, serial, docomp, dosum, docmdist;
-    std::unique_ptr<NeighborList> nl;
-    std::vector<SwitchingFunction> sfs;
-    vector<double> reference, weight;
+  bool pbc, serial, docomp, dosum, docmdist;
+  std::unique_ptr<NeighborList> nl;
+  std::vector<SwitchingFunction> sfs;
+  vector<double> reference, weight;
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit ContactMap(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  explicit ContactMap(const ActionOptions&);
 // active methods:
-    virtual void calculate();
-    void checkFieldsAllowed() {}
+  virtual void calculate();
+  void checkFieldsAllowed() {}
 };
 
 PLUMED_REGISTER_ACTION(ContactMap,"CONTACTMAP")
 
 void ContactMap::registerKeywords( Keywords& keys ) {
-    Colvar::registerKeywords( keys );
-    keys.add("numbered","ATOMS","the atoms involved in each of the contacts you wish to calculate. "
-             "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one contact will be "
-             "calculated for each ATOM keyword you specify.");
-    keys.reset_style("ATOMS","atoms");
-    keys.add("numbered","SWITCH","The switching functions to use for each of the contacts in your map. "
-             "You can either specify a global switching function using SWITCH or one "
-             "switching function for each contact. Details of the various switching "
-             "functions you can use are provided on \\ref switchingfunction.");
-    keys.add("numbered","REFERENCE","A reference value for a given contact, by default is 0.0 "
-             "You can either specify a global reference value using REFERENCE or one "
-             "reference value for each contact.");
-    keys.add("numbered","WEIGHT","A weight value for a given contact, by default is 1.0 "
-             "You can either specify a global weight value using WEIGHT or one "
-             "weight value for each contact.");
-    keys.reset_style("SWITCH","compulsory");
-    keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
-    keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contant map");
-    keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-    keys.addOutputComponent("contact","default","By not using SUM or CMDIST each contact will be stored in a component");
+  Colvar::registerKeywords( keys );
+  keys.add("numbered","ATOMS","the atoms involved in each of the contacts you wish to calculate. "
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one contact will be "
+           "calculated for each ATOM keyword you specify.");
+  keys.reset_style("ATOMS","atoms");
+  keys.add("numbered","SWITCH","The switching functions to use for each of the contacts in your map. "
+           "You can either specify a global switching function using SWITCH or one "
+           "switching function for each contact. Details of the various switching "
+           "functions you can use are provided on \\ref switchingfunction.");
+  keys.add("numbered","REFERENCE","A reference value for a given contact, by default is 0.0 "
+           "You can either specify a global reference value using REFERENCE or one "
+           "reference value for each contact.");
+  keys.add("numbered","WEIGHT","A weight value for a given contact, by default is 1.0 "
+           "You can either specify a global weight value using WEIGHT or one "
+           "weight value for each contact.");
+  keys.reset_style("SWITCH","compulsory");
+  keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
+  keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contant map");
+  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
+  keys.addOutputComponent("contact","default","By not using SUM or CMDIST each contact will be stored in a component");
 }
 
 ContactMap::ContactMap(const ActionOptions&ao):
-    PLUMED_COLVAR_INIT(ao),
-    pbc(true),
-    serial(false),
-    docomp(true),
-    dosum(false),
-    docmdist(false)
+  PLUMED_COLVAR_INIT(ao),
+  pbc(true),
+  serial(false),
+  docomp(true),
+  dosum(false),
+  docmdist(false)
 {
-    parseFlag("SERIAL",serial);
-    parseFlag("SUM",dosum);
-    parseFlag("CMDIST",docmdist);
-    if(docmdist==true&&dosum==true) error("You cannot use SUM and CMDIST together");
-    bool nopbc=!pbc;
-    parseFlag("NOPBC",nopbc);
-    pbc=!nopbc;
+  parseFlag("SERIAL",serial);
+  parseFlag("SUM",dosum);
+  parseFlag("CMDIST",docmdist);
+  if(docmdist==true&&dosum==true) error("You cannot use SUM and CMDIST together");
+  bool nopbc=!pbc;
+  parseFlag("NOPBC",nopbc);
+  pbc=!nopbc;
 
-    // Read in the atoms
-    std::vector<AtomNumber> t, ga_lista, gb_lista;
-    for(int i=1;; ++i ) {
-        parseAtomList("ATOMS", i, t );
-        if( t.empty() ) break;
+  // Read in the atoms
+  std::vector<AtomNumber> t, ga_lista, gb_lista;
+  for(int i=1;; ++i ) {
+    parseAtomList("ATOMS", i, t );
+    if( t.empty() ) break;
 
-        if( t.size()!=2 ) {
-            std::string ss;
-            Tools::convert(i,ss);
-            error("ATOMS" + ss + " keyword has the wrong number of atoms");
-        }
-        ga_lista.push_back(t[0]);
-        gb_lista.push_back(t[1]);
-        t.resize(0);
-
-        // Add a value for this contact
-        std::string num;
-        Tools::convert(i,num);
-        if(!dosum&&!docmdist) {
-            addComponentWithDerivatives("contact-"+num);
-            componentIsNotPeriodic("contact-"+num);
-        }
+    if( t.size()!=2 ) {
+      std::string ss; Tools::convert(i,ss);
+      error("ATOMS" + ss + " keyword has the wrong number of atoms");
     }
-    // Create neighbour lists
-    nl.reset(new NeighborList(ga_lista,gb_lista,true,pbc,getPbc()));
+    ga_lista.push_back(t[0]); gb_lista.push_back(t[1]);
+    t.resize(0);
 
-    // Read in switching functions
-    std::string errors;
-    sfs.resize( ga_lista.size() );
-    unsigned nswitch=0;
+    // Add a value for this contact
+    std::string num; Tools::convert(i,num);
+    if(!dosum&&!docmdist) {addComponentWithDerivatives("contact-"+num); componentIsNotPeriodic("contact-"+num);}
+  }
+  // Create neighbour lists
+  nl.reset(new NeighborList(ga_lista,gb_lista,true,pbc,getPbc()));
+
+  // Read in switching functions
+  std::string errors; sfs.resize( ga_lista.size() ); unsigned nswitch=0;
+  for(unsigned i=0; i<ga_lista.size(); ++i) {
+    std::string num, sw1; Tools::convert(i+1, num);
+    if( !parseNumbered( "SWITCH", i+1, sw1 ) ) break;
+    nswitch++; sfs[i].set(sw1,errors);
+    if( errors.length()!=0 ) error("problem reading SWITCH" + num + " keyword : " + errors );
+  }
+  if( nswitch==0 ) {
+    std::string sw; parse("SWITCH",sw);
+    if(sw.length()==0) error("no switching function specified use SWITCH keyword");
     for(unsigned i=0; i<ga_lista.size(); ++i) {
-        std::string num, sw1;
-        Tools::convert(i+1, num);
-        if( !parseNumbered( "SWITCH", i+1, sw1 ) ) break;
-        nswitch++;
-        sfs[i].set(sw1,errors);
-        if( errors.length()!=0 ) error("problem reading SWITCH" + num + " keyword : " + errors );
+      sfs[i].set(sw,errors);
+      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
     }
-    if( nswitch==0 ) {
-        std::string sw;
-        parse("SWITCH",sw);
-        if(sw.length()==0) error("no switching function specified use SWITCH keyword");
-        for(unsigned i=0; i<ga_lista.size(); ++i) {
-            sfs[i].set(sw,errors);
-            if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
-        }
-    } else if( nswitch!=sfs.size()  ) {
-        std::string num;
-        Tools::convert(nswitch+1, num);
-        error("missing SWITCH" + num + " keyword");
-    }
+  } else if( nswitch!=sfs.size()  ) {
+    std::string num; Tools::convert(nswitch+1, num);
+    error("missing SWITCH" + num + " keyword");
+  }
 
-    // Read in reference values
-    nswitch=0;
-    reference.resize(ga_lista.size(), 0.);
-    for(unsigned i=0; i<ga_lista.size(); ++i) {
-        if( !parseNumbered( "REFERENCE", i+1, reference[i] ) ) break;
-        nswitch++;
+  // Read in reference values
+  nswitch=0;
+  reference.resize(ga_lista.size(), 0.);
+  for(unsigned i=0; i<ga_lista.size(); ++i) {
+    if( !parseNumbered( "REFERENCE", i+1, reference[i] ) ) break;
+    nswitch++;
+  }
+  if( nswitch==0 ) {
+    parse("REFERENCE",reference[0]);
+    for(unsigned i=1; i<ga_lista.size(); ++i) {
+      reference[i]=reference[0];
+      nswitch++;
     }
-    if( nswitch==0 ) {
-        parse("REFERENCE",reference[0]);
-        for(unsigned i=1; i<ga_lista.size(); ++i) {
-            reference[i]=reference[0];
-            nswitch++;
-        }
-    }
-    if(nswitch == 0 && docmdist) error("with CMDIST one must use REFERENCE to setup the reference contact map");
+  }
+  if(nswitch == 0 && docmdist) error("with CMDIST one must use REFERENCE to setup the reference contact map");
 
-    // Read in weight values
-    nswitch=0;
-    weight.resize(ga_lista.size(), 1.0);
-    for(unsigned i=0; i<ga_lista.size(); ++i) {
-        if( !parseNumbered( "WEIGHT", i+1, weight[i] ) ) break;
-        nswitch++;
+  // Read in weight values
+  nswitch=0;
+  weight.resize(ga_lista.size(), 1.0);
+  for(unsigned i=0; i<ga_lista.size(); ++i) {
+    if( !parseNumbered( "WEIGHT", i+1, weight[i] ) ) break;
+    nswitch++;
+  }
+  if( nswitch==0 ) {
+    parse("WEIGHT",weight[0]);
+    for(unsigned i=1; i<ga_lista.size(); ++i) {
+      weight[i]=weight[0];
     }
-    if( nswitch==0 ) {
-        parse("WEIGHT",weight[0]);
-        for(unsigned i=1; i<ga_lista.size(); ++i) {
-            weight[i]=weight[0];
-        }
-        nswitch = ga_lista.size();
-    }
+    nswitch = ga_lista.size();
+  }
 
-    // Ouput details of all contacts
-    for(unsigned i=0; i<sfs.size(); ++i) {
-        log.printf("  The %uth contact is calculated from atoms : %d %d. Inflection point of switching function is at %s. Reference contact value is %f\n",
-                   i+1, ga_lista[i].serial(), gb_lista[i].serial(), ( sfs[i].description() ).c_str(), reference[i] );
-    }
+  // Ouput details of all contacts
+  for(unsigned i=0; i<sfs.size(); ++i) {
+    log.printf("  The %uth contact is calculated from atoms : %d %d. Inflection point of switching function is at %s. Reference contact value is %f\n",
+               i+1, ga_lista[i].serial(), gb_lista[i].serial(), ( sfs[i].description() ).c_str(), reference[i] );
+  }
 
-    if(dosum) {
-        addValueWithDerivatives();
-        setNotPeriodic();
-        log.printf("  colvar is sum of all contacts in contact map\n");
-    }
-    if(docmdist) {
-        addValueWithDerivatives();
-        setNotPeriodic();
-        log.printf("  colvar is distance between the contact map matrix and the provided reference matrix\n");
-    }
+  if(dosum) {
+    addValueWithDerivatives(); setNotPeriodic();
+    log.printf("  colvar is sum of all contacts in contact map\n");
+  }
+  if(docmdist) {
+    addValueWithDerivatives(); setNotPeriodic();
+    log.printf("  colvar is distance between the contact map matrix and the provided reference matrix\n");
+  }
 
-    if(dosum || docmdist) {
-        docomp=false;
-    } else {
-        serial=true;
-        docomp=true;
-    }
+  if(dosum || docmdist) {
+    docomp=false;
+  } else {
+    serial=true;
+    docomp=true;
+  }
 
-    // Set up if it is just a list of contacts
-    requestAtoms(nl->getFullAtomList());
-    checkRead();
+  // Set up if it is just a list of contacts
+  requestAtoms(nl->getFullAtomList());
+  checkRead();
 }
 
 void ContactMap::calculate() {
 
-    double ncoord=0.;
-    Tensor virial;
-    std::vector<Vector> deriv(getNumberOfAtoms());
+  double ncoord=0.;
+  Tensor virial;
+  std::vector<Vector> deriv(getNumberOfAtoms());
 
-    unsigned stride=comm.Get_size();
-    unsigned rank=comm.Get_rank();
-    if(serial) {
-        // when using components the parallelisation do not work
-        stride=1;
-        rank=0;
-    } else {
-        stride=comm.Get_size();
-        rank=comm.Get_rank();
-    }
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  if(serial) {
+    // when using components the parallelisation do not work
+    stride=1;
+    rank=0;
+  } else {
+    stride=comm.Get_size();
+    rank=comm.Get_rank();
+  }
 
 // sum over close pairs
-    for(unsigned i=rank; i<nl->size(); i+=stride) {
-        Vector distance;
-        unsigned i0=nl->getClosePair(i).first;
-        unsigned i1=nl->getClosePair(i).second;
-        if(pbc) {
-            distance=pbcDistance(getPosition(i0),getPosition(i1));
-        } else {
-            distance=delta(getPosition(i0),getPosition(i1));
-        }
-
-        double dfunc=0.;
-        double coord = weight[i]*(sfs[i].calculate(distance.modulo(), dfunc) - reference[i]);
-        Vector tmpder = weight[i]*dfunc*distance;
-        Tensor tmpvir = weight[i]*dfunc*Tensor(distance,distance);
-        if(!docmdist) {
-            deriv[i0] -= tmpder;
-            deriv[i1] += tmpder;
-            virial    -= tmpvir;
-            ncoord    += coord;
-        } else {
-            tmpder *= 2.*coord;
-            tmpvir *= 2.*coord;
-            deriv[i0] -= tmpder;
-            deriv[i1] += tmpder;
-            virial    -= tmpvir;
-            ncoord    += coord*coord;
-        }
-
-        if(docomp) {
-            Value* val=getPntrToComponent( i );
-            setAtomsDerivatives( val, i0, deriv[i0] );
-            setAtomsDerivatives( val, i1, deriv[i1] );
-            setBoxDerivatives( val, -tmpvir );
-            val->set(coord);
-        }
+  for(unsigned i=rank; i<nl->size(); i+=stride) {
+    Vector distance;
+    unsigned i0=nl->getClosePair(i).first;
+    unsigned i1=nl->getClosePair(i).second;
+    if(pbc) {
+      distance=pbcDistance(getPosition(i0),getPosition(i1));
+    } else {
+      distance=delta(getPosition(i0),getPosition(i1));
     }
 
-    if(!serial) {
-        comm.Sum(&ncoord,1);
-        if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
-        comm.Sum(&virial[0][0],9);
+    double dfunc=0.;
+    double coord = weight[i]*(sfs[i].calculate(distance.modulo(), dfunc) - reference[i]);
+    Vector tmpder = weight[i]*dfunc*distance;
+    Tensor tmpvir = weight[i]*dfunc*Tensor(distance,distance);
+    if(!docmdist) {
+      deriv[i0] -= tmpder;
+      deriv[i1] += tmpder;
+      virial    -= tmpvir;
+      ncoord    += coord;
+    } else {
+      tmpder *= 2.*coord;
+      tmpvir *= 2.*coord;
+      deriv[i0] -= tmpder;
+      deriv[i1] += tmpder;
+      virial    -= tmpvir;
+      ncoord    += coord*coord;
     }
 
-    if( !docomp ) {
-        for(unsigned i=0; i<deriv.size(); ++i) setAtomsDerivatives(i,deriv[i]);
-        setValue           (ncoord);
-        setBoxDerivatives  (virial);
+    if(docomp) {
+      Value* val=getPntrToComponent( i );
+      setAtomsDerivatives( val, i0, deriv[i0] );
+      setAtomsDerivatives( val, i1, deriv[i1] );
+      setBoxDerivatives( val, -tmpvir );
+      val->set(coord);
     }
+  }
+
+  if(!serial) {
+    comm.Sum(&ncoord,1);
+    if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
+    comm.Sum(&virial[0][0],9);
+  }
+
+  if( !docomp ) {
+    for(unsigned i=0; i<deriv.size(); ++i) setAtomsDerivatives(i,deriv[i]);
+    setValue           (ncoord);
+    setBoxDerivatives  (virial);
+  }
 }
 
 }

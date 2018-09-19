@@ -30,14 +30,14 @@ namespace vesselbase {
 
 class Between : public FunctionVessel {
 private:
-    HistogramBead hist;
+  HistogramBead hist;
 public:
-    static void registerKeywords( Keywords& keys );
-    static void reserveKeyword( Keywords& keys );
-    explicit Between( const VesselOptions& da );
-    std::string value_descriptor();
-    double calcTransform( const double& val, double& dv ) const ;
-    double getCutoff();
+  static void registerKeywords( Keywords& keys );
+  static void reserveKeyword( Keywords& keys );
+  explicit Between( const VesselOptions& da );
+  std::string value_descriptor();
+  double calcTransform( const double& val, double& dv ) const ;
+  double getCutoff();
 };
 
 }

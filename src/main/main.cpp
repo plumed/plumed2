@@ -38,32 +38,32 @@ using namespace std;
 */
 int main(int argc,char**argv) {
 #ifdef __PLUMED_HAS_MPI
-    bool nompi=false;
-    for(unsigned iarg=1; iarg<argc; iarg++) {
-        if(!strcmp(argv[iarg],"--no-mpi")) nompi=true;
-        if(!strcmp(argv[iarg],"--mpi"))    nompi=false;
+  bool nompi=false;
+  for(unsigned iarg=1; iarg<argc; iarg++) {
+    if(!strcmp(argv[iarg],"--no-mpi")) nompi=true;
+    if(!strcmp(argv[iarg],"--mpi"))    nompi=false;
 // stop at first non-option
-        if(argv[iarg] && argv[iarg][0]!='-') break;
-    }
-    if(!nompi) MPI_Init(&argc,&argv);
+    if(argv[iarg] && argv[iarg][0]!='-') break;
+  }
+  if(!nompi) MPI_Init(&argc,&argv);
 #endif
-    int ret=0;
+  int ret=0;
 
-    std::unique_ptr<PLMD::Plumed> p(new PLMD::Plumed);
-    p->cmd("CLTool setArgc",&argc);
-    p->cmd("CLTool setArgv",argv);
+  std::unique_ptr<PLMD::Plumed> p(new PLMD::Plumed);
+  p->cmd("CLTool setArgc",&argc);
+  p->cmd("CLTool setArgv",argv);
 #ifdef __PLUMED_HAS_MPI
-    if(!nompi) {
-        MPI_Comm comm;
-        MPI_Comm_dup(MPI_COMM_WORLD,&comm);
-        p->cmd("CLTool setMPIComm",&comm);
-    }
+  if(!nompi) {
+    MPI_Comm comm;
+    MPI_Comm_dup(MPI_COMM_WORLD,&comm);
+    p->cmd("CLTool setMPIComm",&comm);
+  }
 #endif
-    p->cmd("CLTool run",&ret);
-    p.reset(); // this is to delete p here
+  p->cmd("CLTool run",&ret);
+  p.reset(); // this is to delete p here
 
 #ifdef __PLUMED_HAS_MPI
-    if(!nompi) MPI_Finalize();
+  if(!nompi) MPI_Finalize();
 #endif
-    return ret;
+  return ret;
 }

@@ -100,13 +100,13 @@ td_welltemp: TD_WELLTEMPERED BIASFACTOR=10
 
 class TD_WellTempered: public TargetDistribution {
 private:
-    double bias_factor_;
+  double bias_factor_;
 public:
-    static void registerKeywords(Keywords&);
-    explicit TD_WellTempered(const ActionOptions& ao);
-    void updateGrid();
-    double getValue(const std::vector<double>&) const;
-    ~TD_WellTempered() {}
+  static void registerKeywords(Keywords&);
+  explicit TD_WellTempered(const ActionOptions& ao);
+  void updateGrid();
+  double getValue(const std::vector<double>&) const;
+  ~TD_WellTempered() {}
 };
 
 
@@ -114,49 +114,49 @@ PLUMED_REGISTER_ACTION(TD_WellTempered,"TD_WELLTEMPERED")
 
 
 void TD_WellTempered::registerKeywords(Keywords& keys) {
-    TargetDistribution::registerKeywords(keys);
-    keys.add("compulsory","BIASFACTOR","The bias factor used for the well-tempered distribution.");
+  TargetDistribution::registerKeywords(keys);
+  keys.add("compulsory","BIASFACTOR","The bias factor used for the well-tempered distribution.");
 }
 
 
 TD_WellTempered::TD_WellTempered(const ActionOptions& ao):
-    PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
-    bias_factor_(0.0)
+  PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
+  bias_factor_(0.0)
 {
-    log.printf("  Well-tempered target distribution, see and cite ");
-    log << plumed.cite("Valsson and Parrinello, J. Chem. Theory Comput. 11, 1996-2002 (2015)");
-    log << plumed.cite("Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
-    log.printf("\n");
-    parse("BIASFACTOR",bias_factor_);
-    if(bias_factor_<=1.0) {
-        plumed_merror("TD_WELLTEMPERED target distribution: the value of the bias factor doesn't make sense, it should be larger than 1.0");
-    }
-    setDynamic();
-    setFesGridNeeded();
-    checkRead();
+  log.printf("  Well-tempered target distribution, see and cite ");
+  log << plumed.cite("Valsson and Parrinello, J. Chem. Theory Comput. 11, 1996-2002 (2015)");
+  log << plumed.cite("Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
+  log.printf("\n");
+  parse("BIASFACTOR",bias_factor_);
+  if(bias_factor_<=1.0) {
+    plumed_merror("TD_WELLTEMPERED target distribution: the value of the bias factor doesn't make sense, it should be larger than 1.0");
+  }
+  setDynamic();
+  setFesGridNeeded();
+  checkRead();
 }
 
 
 double TD_WellTempered::getValue(const std::vector<double>& argument) const {
-    plumed_merror("getValue not implemented for TD_WellTempered");
-    return 0.0;
+  plumed_merror("getValue not implemented for TD_WellTempered");
+  return 0.0;
 }
 
 
 void TD_WellTempered::updateGrid() {
-    double beta_prime = getBeta()/bias_factor_;
-    plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to use TD_WellTempered!");
-    std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
-    double norm = 0.0;
-    for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
-        double value = beta_prime * getFesGridPntr()->getValue(l);
-        logTargetDistGrid().setValue(l,value);
-        value = exp(-value);
-        norm += integration_weights[l]*value;
-        targetDistGrid().setValue(l,value);
-    }
-    targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
-    logTargetDistGrid().setMinToZero();
+  double beta_prime = getBeta()/bias_factor_;
+  plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to use TD_WellTempered!");
+  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
+  double norm = 0.0;
+  for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
+    double value = beta_prime * getFesGridPntr()->getValue(l);
+    logTargetDistGrid().setValue(l,value);
+    value = exp(-value);
+    norm += integration_weights[l]*value;
+    targetDistGrid().setValue(l,value);
+  }
+  targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
+  logTargetDistGrid().setMinToZero();
 }
 
 

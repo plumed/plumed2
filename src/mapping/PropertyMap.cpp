@@ -97,34 +97,32 @@ namespace mapping {
 
 class PropertyMap : public PathBase {
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit PropertyMap(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  explicit PropertyMap(const ActionOptions&);
 };
 
 PLUMED_REGISTER_ACTION(PropertyMap,"GPROPERTYMAP")
 
 void PropertyMap::registerKeywords( Keywords& keys ) {
-    PathBase::registerKeywords( keys );
-    ActionWithValue::useCustomisableComponents( keys );
-    keys.addFlag("NOMAPPING",false,"do not calculate the position on the manifold");
+  PathBase::registerKeywords( keys );
+  ActionWithValue::useCustomisableComponents( keys );
+  keys.addFlag("NOMAPPING",false,"do not calculate the position on the manifold");
 }
 
 PropertyMap::PropertyMap(const ActionOptions& ao):
-    Action(ao),
-    PathBase(ao)
+  Action(ao),
+  PathBase(ao)
 {
-    bool nos;
-    parseFlag("NOMAPPING",nos);
+  bool nos; parseFlag("NOMAPPING",nos);
 
-    std::string empty;
-    if(!nos) {
-        for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end(); ++it) {
-            empty="LABEL="+it->first;
-            addVessel( "SPATH", empty, 0 );
-        }
+  std::string empty;
+  if(!nos) {
+    for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end(); ++it) {
+      empty="LABEL="+it->first; addVessel( "SPATH", empty, 0 );
     }
-    readVesselKeywords();
-    checkRead();
+  }
+  readVesselKeywords();
+  checkRead();
 }
 
 }

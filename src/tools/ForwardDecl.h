@@ -33,20 +33,20 @@ namespace PLMD {
 */
 template <class T>
 class ForwardDecl:
-    std::unique_ptr<T>
+  std::unique_ptr<T>
 {
 public:
 // Construction with arbitrary argument.
-    template<typename ...Args>
-    explicit ForwardDecl(Args &&...args);
+  template<typename ...Args>
+  explicit ForwardDecl(Args &&...args);
 // Dereference operator is inherited from std::unique_ptr<T>
-    using std::unique_ptr<T>::operator *;
+  using std::unique_ptr<T>::operator *;
 };
 
 template <class T>
 template<typename ...Args>
 ForwardDecl<T>::ForwardDecl(Args &&...args):
-    std::unique_ptr<T>(new T(std::forward<Args>(args)...))
+  std::unique_ptr<T>(new T(std::forward<Args>(args)...))
 {}
 
 

@@ -100,87 +100,80 @@ molecule are computed.
 
 class DRMSD : public Colvar {
 
-    bool pbc_;
-    MultiValue myvals;
-    ReferenceValuePack mypack;
-    std::unique_ptr<PLMD::DRMSD> drmsd_;
+  bool pbc_;
+  MultiValue myvals;
+  ReferenceValuePack mypack;
+  std::unique_ptr<PLMD::DRMSD> drmsd_;
 
 public:
-    explicit DRMSD(const ActionOptions&);
-    virtual void calculate();
-    static void registerKeywords(Keywords& keys);
+  explicit DRMSD(const ActionOptions&);
+  virtual void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(DRMSD,"DRMSD")
 
 void DRMSD::registerKeywords(Keywords& keys) {
-    Colvar::registerKeywords(keys);
-    keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
-    keys.add("compulsory","LOWER_CUTOFF","only pairs of atoms further than LOWER_CUTOFF are considered in the calculation.");
-    keys.add("compulsory","UPPER_CUTOFF","only pairs of atoms closer than UPPER_CUTOFF are considered in the calculation.");
-    keys.add("compulsory","TYPE","DRMSD","what kind of DRMSD would you like to calculate.  You can use either the normal DRMSD involving all the distances between "
-             "the atoms in your molecule.  Alternatively, if you have multiple molecules you can use the type INTER-DRMSD "
-             "to compute DRMSD values involving only those distances between the atoms at least two molecules or the type INTRA-DRMSD "
-             "to compute DRMSD values involving only those distances between atoms in the same molecule");
+  Colvar::registerKeywords(keys);
+  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
+  keys.add("compulsory","LOWER_CUTOFF","only pairs of atoms further than LOWER_CUTOFF are considered in the calculation.");
+  keys.add("compulsory","UPPER_CUTOFF","only pairs of atoms closer than UPPER_CUTOFF are considered in the calculation.");
+  keys.add("compulsory","TYPE","DRMSD","what kind of DRMSD would you like to calculate.  You can use either the normal DRMSD involving all the distances between "
+           "the atoms in your molecule.  Alternatively, if you have multiple molecules you can use the type INTER-DRMSD "
+           "to compute DRMSD values involving only those distances between the atoms at least two molecules or the type INTRA-DRMSD "
+           "to compute DRMSD values involving only those distances between atoms in the same molecule");
 }
 
 DRMSD::DRMSD(const ActionOptions&ao):
-    PLUMED_COLVAR_INIT(ao), pbc_(true), myvals(1,0), mypack(0,0,myvals)
+  PLUMED_COLVAR_INIT(ao), pbc_(true), myvals(1,0), mypack(0,0,myvals)
 {
-    string reference;
-    parse("REFERENCE",reference);
-    double lcutoff;
-    parse("LOWER_CUTOFF",lcutoff);
-    double ucutoff;
-    parse("UPPER_CUTOFF",ucutoff);
-    bool nopbc(false);
-    parseFlag("NOPBC",nopbc);
-    pbc_=!nopbc;
+  string reference;
+  parse("REFERENCE",reference);
+  double lcutoff;
+  parse("LOWER_CUTOFF",lcutoff);
+  double ucutoff;
+  parse("UPPER_CUTOFF",ucutoff);
+  bool nopbc(false);
+  parseFlag("NOPBC",nopbc);
+  pbc_=!nopbc;
 
-    addValueWithDerivatives();
-    setNotPeriodic();
+  addValueWithDerivatives(); setNotPeriodic();
 
-    // read everything in ang and transform to nm if we are not in natural units
-    PDB pdb;
-    if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
-        error("missing input file " + reference );
+  // read everything in ang and transform to nm if we are not in natural units
+  PDB pdb;
+  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+    error("missing input file " + reference );
 
-    // store target_ distance
-    std::string type;
-    parse("TYPE",type);
-    drmsd_=metricRegister().create<PLMD::DRMSD>( type );
-    drmsd_->setBoundsOnDistances( !nopbc, lcutoff, ucutoff );
-    drmsd_->read( pdb );
-    checkRead();
+  // store target_ distance
+  std::string type; parse("TYPE",type);
+  drmsd_=metricRegister().create<PLMD::DRMSD>( type );
+  drmsd_->setBoundsOnDistances( !nopbc, lcutoff, ucutoff );
+  drmsd_->read( pdb );
+  checkRead();
 
-    std::vector<AtomNumber> atoms;
-    drmsd_->getAtomRequests( atoms );
+  std::vector<AtomNumber> atoms;
+  drmsd_->getAtomRequests( atoms );
 //   drmsd_->setNumberOfAtoms( atoms.size() );
-    requestAtoms( atoms );
+  requestAtoms( atoms );
 
-    // Setup the derivative pack
-    myvals.resize( 1, 3*atoms.size()+9 );
-    mypack.resize( 0, atoms.size() );
-    for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
+  // Setup the derivative pack
+  myvals.resize( 1, 3*atoms.size()+9 ); mypack.resize( 0, atoms.size() );
+  for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
 
-    log.printf("  reference from file %s\n",reference.c_str());
-    log.printf("  which contains %d atoms\n",getNumberOfAtoms());
+  log.printf("  reference from file %s\n",reference.c_str());
+  log.printf("  which contains %d atoms\n",getNumberOfAtoms());
 
 }
 
 // calculator
 void DRMSD::calculate() {
 
-    double drmsd;
-    Tensor virial;
-    mypack.clear();
-    drmsd=drmsd_->calculate(getPositions(), getPbc(), mypack, false);
+  double drmsd; Tensor virial; mypack.clear();
+  drmsd=drmsd_->calculate(getPositions(), getPbc(), mypack, false);
 
-    setValue(drmsd);
-    for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
-        if( myvals.isActive(3*i) ) setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
-    }
-    setBoxDerivatives( mypack.getBoxDerivatives() );
+  setValue(drmsd);
+  for(unsigned i=0; i<getNumberOfAtoms(); ++i) { if( myvals.isActive(3*i) ) setAtomsDerivatives( i, mypack.getAtomDerivative(i) ); }
+  setBoxDerivatives( mypack.getBoxDerivatives() );
 }
 
 }

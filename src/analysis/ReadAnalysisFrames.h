@@ -31,76 +31,74 @@ namespace analysis {
 class ReadAnalysisFrames : public AnalysisBase {
 private:
 /// The frequency with which to clear the data stash
-    unsigned clearstride;
-    bool clearonnextstep;
+  unsigned clearstride;
+  bool clearonnextstep;
 /// The list of argument names that we are storing
-    std::vector<std::string> argument_names;
+  std::vector<std::string> argument_names;
 /// The list of atom numbers that we are storing
-    std::vector<AtomNumber> atom_numbers;
+  std::vector<AtomNumber> atom_numbers;
 /// The biases we are using in reweighting and the args we store them separately
-    std::vector<Value*> weight_vals;
+  std::vector<Value*> weight_vals;
 /// The object that calculates weights using WHAM
-    bias::ReweightBase* wham_pointer;
+  bias::ReweightBase* wham_pointer;
 /// The weights of all the data points
-    bool weights_calculated;
-    std::vector<double> logweights, weights;
+  bool weights_calculated;
+  std::vector<double> logweights, weights;
 /// The data that has been collected from the trajectory
-    std::vector<DataCollectionObject> my_data_stash;
+  std::vector<DataCollectionObject> my_data_stash;
 /// Calculate the weights of the various points from the logweights
-    void calculateWeights();
+  void calculateWeights();
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit ReadAnalysisFrames( const ActionOptions& ao );
-    void update();
+  static void registerKeywords( Keywords& keys );
+  explicit ReadAnalysisFrames( const ActionOptions& ao );
+  void update();
 /// This does nothing
-    void performAnalysis() {}
+  void performAnalysis() {}
 /// This does nothing - it just ensures the final class is not abstract
-    void performTask( const unsigned&, const unsigned&, MultiValue& ) const {
-        plumed_error();
-    }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 /// Get the number of data points
-    unsigned getNumberOfDataPoints() const ;
+  unsigned getNumberOfDataPoints() const ;
 /// Get the index of the data point
-    unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
+  unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
 /// Get the input arguments
-    std::vector<Value*> getArgumentList();
+  std::vector<Value*> getArgumentList();
 /// Have dissimilarities between thses objects been calculated
-    bool dissimilaritiesWereSet() const ;
+  bool dissimilaritiesWereSet() const ;
 /// How are dissimilarities calcualted is not known
-    std::string getDissimilarityInstruction() const ;
+  std::string getDissimilarityInstruction() const ;
 /// Get the weight of one of the objects
-    double getWeight( const unsigned& idat );
+  double getWeight( const unsigned& idat );
 /// Get the reference configuration
-    DataCollectionObject & getStoredData( const unsigned& idata, const bool& calcdist );
+  DataCollectionObject & getStoredData( const unsigned& idata, const bool& calcdist );
 /// Get the list of atoms that are being stored
-    const std::vector<AtomNumber>& getAtomIndexes() const ;
+  const std::vector<AtomNumber>& getAtomIndexes() const ;
 };
 
 inline
 unsigned ReadAnalysisFrames::getNumberOfDataPoints() const {
-    return my_data_stash.size();
+  return my_data_stash.size();
 }
 
 inline
 unsigned ReadAnalysisFrames::getDataPointIndexInBase( const unsigned& idata ) const {
-    return idata;
+  return idata;
 }
 
 inline
 bool ReadAnalysisFrames::dissimilaritiesWereSet() const {
-    return false;
+  return false;
 }
 
 inline
 double ReadAnalysisFrames::getWeight( const unsigned& idat ) {
-    if( !weights_calculated ) calculateWeights();
-    return weights[idat];
+  if( !weights_calculated ) calculateWeights();
+  return weights[idat];
 }
 
 inline
 DataCollectionObject & ReadAnalysisFrames::getStoredData( const unsigned& idata, const bool& calcdist ) {
-    plumed_dbg_assert( idata<my_data_stash.size() );
-    return my_data_stash[idata];
+  plumed_dbg_assert( idata<my_data_stash.size() );
+  return my_data_stash[idata];
 }
 
 }

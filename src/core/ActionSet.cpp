@@ -25,36 +25,36 @@ using namespace std;
 namespace PLMD {
 
 ActionSet::ActionSet(PlumedMain&p):
-    plumed(p) {
-    (void) plumed; // to suppress warning about "unused plumed"
+  plumed(p) {
+  (void) plumed; // to suppress warning about "unused plumed"
 }
 
 ActionSet::~ActionSet()
 {
 // required in order to deallocate in reverse order:
-    for(int i=size()-1; i>=0; i--) (*this)[i].reset();
+  for(int i=size()-1; i>=0; i--) (*this)[i].reset();
 }
 
 void ActionSet::clearDelete() {
-    for(int i=size()-1; i>=0; i--) (*this)[i].reset();
-    clear();
+  for(int i=size()-1; i>=0; i--) (*this)[i].reset();
+  clear();
 }
 
 
 std::string ActionSet::getLabelList() const {
-    std::string outlist;
-    for(const auto & p : (*this)) {
-        outlist+=dynamic_cast<Action*>(p.get())->getLabel()+" ";
-    };
-    return  outlist;
+  std::string outlist;
+  for(const auto & p : (*this)) {
+    outlist+=dynamic_cast<Action*>(p.get())->getLabel()+" ";
+  };
+  return  outlist;
 }
 
 std::vector<std::string> ActionSet::getLabelVector() const {
-    std::vector<std::string> outlist;
-    for(const auto & p : (*this)) {
-        outlist.push_back(dynamic_cast<Action*>(p.get())->getLabel());
-    };
-    return  outlist;
+  std::vector<std::string> outlist;
+  for(const auto & p : (*this)) {
+    outlist.push_back(dynamic_cast<Action*>(p.get())->getLabel());
+  };
+  return  outlist;
 }
 
 

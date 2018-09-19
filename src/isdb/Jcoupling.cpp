@@ -91,334 +91,330 @@ PRINT ARG=jhanst.*,jhan.* FILE=COLVAR STRIDE=100
 //+ENDPLUMEDOC
 
 class JCoupling :
-    public MetainferenceBase
+  public MetainferenceBase
 {
 private:
-    bool pbc;
-    enum { HAN, HAHN, CCG, NCG, CUSTOM };
-    unsigned ncoupl_;
-    double ka_;
-    double kb_;
-    double kc_;
-    double kshift_;
+  bool pbc;
+  enum { HAN, HAHN, CCG, NCG, CUSTOM };
+  unsigned ncoupl_;
+  double ka_;
+  double kb_;
+  double kc_;
+  double kshift_;
 
 public:
-    static void registerKeywords(Keywords& keys);
-    explicit JCoupling(const ActionOptions&);
-    void calculate();
-    void update();
+  static void registerKeywords(Keywords& keys);
+  explicit JCoupling(const ActionOptions&);
+  void calculate();
+  void update();
 };
 
 PLUMED_REGISTER_ACTION(JCoupling, "JCOUPLING")
 
 void JCoupling::registerKeywords(Keywords& keys) {
-    componentsAreNotOptional(keys);
-    useCustomisableComponents(keys);
-    MetainferenceBase::registerKeywords(keys);
-    keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-    keys.add("numbered", "ATOMS", "the 4 atoms involved in each of the bonds for which you wish to calculate the J-coupling. "
-             "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one J-coupling will be "
-             "calculated for each ATOMS keyword you specify.");
-    keys.reset_style("ATOMS", "atoms");
-    keys.addFlag("ADDCOUPLINGS", false, "Set this flag if you want to have fixed components with the experimental values.");
-    keys.add("compulsory", "TYPE", "Type of J-coupling to compute (HAN,HAHN,CCG,NCG,CUSTOM)");
-    keys.add("optional", "A", "Karplus parameter A");
-    keys.add("optional", "B", "Karplus parameter B");
-    keys.add("optional", "C", "Karplus parameter C");
-    keys.add("optional", "SHIFT", "Angle shift in radians");
-    keys.add("numbered", "COUPLING", "Add an experimental value for each coupling");
-    keys.addOutputComponent("j", "default", "the calculated J-coupling");
-    keys.addOutputComponent("exp", "ADDCOUPLINGS", "the experimental J-coupling");
+  componentsAreNotOptional(keys);
+  useCustomisableComponents(keys);
+  MetainferenceBase::registerKeywords(keys);
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+  keys.add("numbered", "ATOMS", "the 4 atoms involved in each of the bonds for which you wish to calculate the J-coupling. "
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one J-coupling will be "
+           "calculated for each ATOMS keyword you specify.");
+  keys.reset_style("ATOMS", "atoms");
+  keys.addFlag("ADDCOUPLINGS", false, "Set this flag if you want to have fixed components with the experimental values.");
+  keys.add("compulsory", "TYPE", "Type of J-coupling to compute (HAN,HAHN,CCG,NCG,CUSTOM)");
+  keys.add("optional", "A", "Karplus parameter A");
+  keys.add("optional", "B", "Karplus parameter B");
+  keys.add("optional", "C", "Karplus parameter C");
+  keys.add("optional", "SHIFT", "Angle shift in radians");
+  keys.add("numbered", "COUPLING", "Add an experimental value for each coupling");
+  keys.addOutputComponent("j", "default", "the calculated J-coupling");
+  keys.addOutputComponent("exp", "ADDCOUPLINGS", "the experimental J-coupling");
 }
 
 JCoupling::JCoupling(const ActionOptions&ao):
-    PLUMED_METAINF_INIT(ao),
-    pbc(true)
+  PLUMED_METAINF_INIT(ao),
+  pbc(true)
 {
-    bool nopbc = !pbc;
-    parseFlag("NOPBC", nopbc);
-    pbc =! nopbc;
+  bool nopbc = !pbc;
+  parseFlag("NOPBC", nopbc);
+  pbc =! nopbc;
 
-    // Read in the atoms
-    vector<AtomNumber> t, atoms;
-    for (int i = 1; ; ++i) {
-        parseAtomList("ATOMS", i, t );
-        if (t.empty()) {
-            break;
-        }
-
-        if (t.size() != 4) {
-            std::string ss;
-            Tools::convert(i, ss);
-            error("ATOMS" + ss + " keyword has the wrong number of atoms");
-        }
-
-        // This makes the distance calculation easier later on (see Torsion implementation)
-        atoms.push_back(t[0]);
-        atoms.push_back(t[1]);
-        atoms.push_back(t[1]);
-        atoms.push_back(t[2]);
-        atoms.push_back(t[2]);
-        atoms.push_back(t[3]);
-        t.resize(0);
+  // Read in the atoms
+  vector<AtomNumber> t, atoms;
+  for (int i = 1; ; ++i) {
+    parseAtomList("ATOMS", i, t );
+    if (t.empty()) {
+      break;
     }
 
-    // We now have 6 atoms per datapoint
-    ncoupl_ = atoms.size()/6;
-
-    // Parse J-Coupling type, this will determine the Karplus parameters
-    unsigned jtype_ = CUSTOM;
-    string string_type;
-    parse("TYPE", string_type);
-    if(string_type == "HAN") {
-        jtype_ = HAN;
-    } else if(string_type == "HAHN") {
-        jtype_ = HAHN;
-    } else if(string_type == "CCG") {
-        jtype_ = CCG;
-    } else if(string_type == "NCG") {
-        jtype_ = NCG;
-    } else if(string_type == "CUSTOM") {
-        jtype_ = CUSTOM;
-    } else {
-        error("Unknown J-coupling type!");
+    if (t.size() != 4) {
+      std::string ss;
+      Tools::convert(i, ss);
+      error("ATOMS" + ss + " keyword has the wrong number of atoms");
     }
 
-    // Optionally add an experimental value (like with RDCs)
-    vector<double> coupl;
-    bool addcoupling = false;
-    parseFlag("ADDCOUPLINGS", addcoupling);
-    if (addcoupling||getDoScore()) {
-        coupl.resize(ncoupl_);
-        unsigned ntarget = 0;
-        for (unsigned i = 0; i < ncoupl_; ++i) {
-            if (!parseNumbered("COUPLING", i+1, coupl[i])) {
-                break;
-            }
-            ntarget++;
-        }
-        if (ntarget != ncoupl_) {
-            error("found wrong number of COUPLING values");
-        }
-    }
+    // This makes the distance calculation easier later on (see Torsion implementation)
+    atoms.push_back(t[0]);
+    atoms.push_back(t[1]);
+    atoms.push_back(t[1]);
+    atoms.push_back(t[2]);
+    atoms.push_back(t[2]);
+    atoms.push_back(t[3]);
+    t.resize(0);
+  }
 
-    // For custom types we allow use of custom Karplus parameters
-    if (jtype_ == CUSTOM) {
-        parse("A", ka_);
-        parse("B", kb_);
-        parse("C", kc_);
-        parse("SHIFT", kshift_);
-    }
+  // We now have 6 atoms per datapoint
+  ncoupl_ = atoms.size()/6;
 
-    log << "  Bibliography ";
+  // Parse J-Coupling type, this will determine the Karplus parameters
+  unsigned jtype_ = CUSTOM;
+  string string_type;
+  parse("TYPE", string_type);
+  if(string_type == "HAN") {
+    jtype_ = HAN;
+  } else if(string_type == "HAHN") {
+    jtype_ = HAHN;
+  } else if(string_type == "CCG") {
+    jtype_ = CCG;
+  } else if(string_type == "NCG") {
+    jtype_ = NCG;
+  } else if(string_type == "CUSTOM") {
+    jtype_ = CUSTOM;
+  } else {
+    error("Unknown J-coupling type!");
+  }
 
-    // Set Karplus parameters
-    switch (jtype_) {
-    case HAN:
-        ka_ = -0.88;
-        kb_ = -0.61;
-        kc_ = -0.27;
-        kshift_ = pi / 3.0;
-        log.printf("J-coupling type is HAN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-        log << plumed.cite("Wang A C, Bax A, J. Am. Chem. Soc. 117, 1810 (1995)");
-        break;
-    case HAHN:
-        ka_ = 7.09;
-        kb_ = -1.42;
-        kc_ = 1.55;
-        kshift_ = -pi / 3.0;
-        log.printf("J-coupling type is HAHN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-        log << plumed.cite("Hu J-S, Bax A, J. Am. Chem. Soc. 119, 6360 (1997)");
-        break;
-    case CCG:
-        ka_ = 2.31;
-        kb_ = -0.87;
-        kc_ = 0.55;
-        kshift_ = (2.0 * pi) / 3.0;
-        log.printf("J-coupling type is CCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-        log << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)");
-        break;
-    case NCG:
-        ka_ = 1.29;
-        kb_ = -0.49;
-        kc_ = 0.37;
-        kshift_ = 0.0;
-        log.printf("J-coupling type is NCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-        log << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)");
-        break;
-    case CUSTOM:
-        log.printf("J-coupling type is custom, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
-        break;
-    }
-    log<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
-    log<<"\n";
-
+  // Optionally add an experimental value (like with RDCs)
+  vector<double> coupl;
+  bool addcoupling = false;
+  parseFlag("ADDCOUPLINGS", addcoupling);
+  if (addcoupling||getDoScore()) {
+    coupl.resize(ncoupl_);
+    unsigned ntarget = 0;
     for (unsigned i = 0; i < ncoupl_; ++i) {
-        log.printf("  The %uth J-Coupling is calculated from atoms : %d %d %d %d.",
-                   i+1, atoms[2*i].serial(), atoms[2*i+1].serial(), atoms[2*i+2].serial(), atoms[2*i+3].serial());
-        if (addcoupling) {
-            log.printf(" Experimental J-Coupling is %f.", coupl[i]);
-        }
-        log.printf("\n");
+      if (!parseNumbered("COUPLING", i+1, coupl[i])) {
+        break;
+      }
+      ntarget++;
     }
+    if (ntarget != ncoupl_) {
+      error("found wrong number of COUPLING values");
+    }
+  }
 
-    if (pbc) {
-        log.printf("  using periodic boundary conditions\n");
-    } else {
-        log.printf("  without periodic boundary conditions\n");
-    }
+  // For custom types we allow use of custom Karplus parameters
+  if (jtype_ == CUSTOM) {
+    parse("A", ka_);
+    parse("B", kb_);
+    parse("C", kc_);
+    parse("SHIFT", kshift_);
+  }
 
-    if(!getDoScore()) {
-        for (unsigned i = 0; i < ncoupl_; i++) {
-            std::string num;
-            Tools::convert(i, num);
-            addComponentWithDerivatives("j_" + num);
-            componentIsNotPeriodic("j_" + num);
-        }
-    } else {
-        for (unsigned i = 0; i < ncoupl_; i++) {
-            std::string num;
-            Tools::convert(i, num);
-            addComponent("j_" + num);
-            componentIsNotPeriodic("j_" + num);
-        }
-    }
+  log << "  Bibliography ";
 
-    if (addcoupling||getDoScore()) {
-        for (unsigned i = 0; i < ncoupl_; i++) {
-            std::string num;
-            Tools::convert(i, num);
-            addComponent("exp_" + num);
-            componentIsNotPeriodic("exp_" + num);
-            Value* comp = getPntrToComponent("exp_" + num);
-            comp->set(coupl[i]);
-        }
-    }
+  // Set Karplus parameters
+  switch (jtype_) {
+  case HAN:
+    ka_ = -0.88;
+    kb_ = -0.61;
+    kc_ = -0.27;
+    kshift_ = pi / 3.0;
+    log.printf("J-coupling type is HAN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
+    log << plumed.cite("Wang A C, Bax A, J. Am. Chem. Soc. 117, 1810 (1995)");
+    break;
+  case HAHN:
+    ka_ = 7.09;
+    kb_ = -1.42;
+    kc_ = 1.55;
+    kshift_ = -pi / 3.0;
+    log.printf("J-coupling type is HAHN, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
+    log << plumed.cite("Hu J-S, Bax A, J. Am. Chem. Soc. 119, 6360 (1997)");
+    break;
+  case CCG:
+    ka_ = 2.31;
+    kb_ = -0.87;
+    kc_ = 0.55;
+    kshift_ = (2.0 * pi) / 3.0;
+    log.printf("J-coupling type is CCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
+    log << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)");
+    break;
+  case NCG:
+    ka_ = 1.29;
+    kb_ = -0.49;
+    kc_ = 0.37;
+    kshift_ = 0.0;
+    log.printf("J-coupling type is NCG, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
+    log << plumed.cite("Perez C, Löhr F, Rüterjans H, Schmidt J, J. Am. Chem. Soc. 123, 7081 (2001)");
+    break;
+  case CUSTOM:
+    log.printf("J-coupling type is custom, with A: %f, B: %f, C: %f, angle shift: %f\n", ka_, kb_, kc_, kshift_);
+    break;
+  }
+  log<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
+  log<<"\n";
 
-    requestAtoms(atoms);
-    if(getDoScore()) {
-        setParameters(coupl);
-        Initialise(ncoupl_);
+  for (unsigned i = 0; i < ncoupl_; ++i) {
+    log.printf("  The %uth J-Coupling is calculated from atoms : %d %d %d %d.",
+               i+1, atoms[2*i].serial(), atoms[2*i+1].serial(), atoms[2*i+2].serial(), atoms[2*i+3].serial());
+    if (addcoupling) {
+      log.printf(" Experimental J-Coupling is %f.", coupl[i]);
     }
-    setDerivatives();
-    checkRead();
+    log.printf("\n");
+  }
+
+  if (pbc) {
+    log.printf("  using periodic boundary conditions\n");
+  } else {
+    log.printf("  without periodic boundary conditions\n");
+  }
+
+  if(!getDoScore()) {
+    for (unsigned i = 0; i < ncoupl_; i++) {
+      std::string num; Tools::convert(i, num);
+      addComponentWithDerivatives("j_" + num);
+      componentIsNotPeriodic("j_" + num);
+    }
+  } else {
+    for (unsigned i = 0; i < ncoupl_; i++) {
+      std::string num; Tools::convert(i, num);
+      addComponent("j_" + num);
+      componentIsNotPeriodic("j_" + num);
+    }
+  }
+
+  if (addcoupling||getDoScore()) {
+    for (unsigned i = 0; i < ncoupl_; i++) {
+      std::string num; Tools::convert(i, num);
+      addComponent("exp_" + num);
+      componentIsNotPeriodic("exp_" + num);
+      Value* comp = getPntrToComponent("exp_" + num);
+      comp->set(coupl[i]);
+    }
+  }
+
+  requestAtoms(atoms);
+  if(getDoScore()) {
+    setParameters(coupl);
+    Initialise(ncoupl_);
+  }
+  setDerivatives();
+  checkRead();
 }
 
 void JCoupling::calculate() {
-    if (pbc) {
-        makeWhole();
+  if (pbc) {
+    makeWhole();
+  }
+
+  vector<Vector> deriv;
+  if(getDoScore()) {
+    deriv.resize(ncoupl_*6, Vector{0.,0.,0.});
+  }
+
+  const double omp_dummy = 0.0;
+  const unsigned nt = OpenMP::getGoodNumThreads(&omp_dummy, ncoupl_ / 6);
+  #pragma omp parallel num_threads(nt)
+  {
+    #pragma omp for
+    // Loop through atoms, with steps of 6 atoms (one iteration per datapoint)
+    for (unsigned r=0; r<ncoupl_; r++) {
+      // Index is the datapoint index
+      const unsigned index = 6*r;
+
+      // 6 atoms -> 3 vectors
+      const unsigned a0=index;
+      const unsigned a1=index+1;
+      const unsigned a2=index+2;
+      const unsigned a3=index+3;
+      const unsigned a4=index+4;
+      const unsigned a5=index+5;
+      Vector d0 = delta(getPosition(a1), getPosition(a0));
+      Vector d1 = delta(getPosition(a3), getPosition(a2));
+      Vector d2 = delta(getPosition(a5), getPosition(a4));
+
+      // Calculate dihedral with 3 vectors, get the derivatives
+      Vector dd0, dd1, dd2;
+      PLMD::Torsion t;
+      const double torsion = t.compute(d0, d1, d2, dd0, dd1, dd2);
+
+      // Calculate the Karplus relation and its derivative
+      const double theta = torsion + kshift_;
+      const double cos_theta = cos(theta);
+      const double pder = ka_*cos_theta + kb_;
+      const double j = pder*cos_theta + kc_;
+      const double derj = -sin(theta)*(2.*pder - kb_);
+
+      string num; Tools::convert(r,num);
+      Value* val=getPntrToComponent("j_"+num);
+      val->set(j);
+
+      dd0 *= derj;
+      dd1 *= derj;
+      dd2 *= derj;
+
+      if(getDoScore()) {
+        setCalcData(r, j);
+        deriv[a0] =  dd0;
+        deriv[a1] = -dd0;
+        deriv[a2] =  dd1;
+        deriv[a3] = -dd1;
+        deriv[a4] =  dd2;
+        deriv[a5] = -dd2;
+      } else {
+        setAtomsDerivatives(val, a0,  dd0);
+        setAtomsDerivatives(val, a1, -dd0);
+        setAtomsDerivatives(val, a2,  dd1);
+        setAtomsDerivatives(val, a3, -dd1);
+        setAtomsDerivatives(val, a4,  dd2);
+        setAtomsDerivatives(val, a5, -dd2);
+
+        Tensor virial = -Tensor(getPosition(a0),  dd0);
+        virial -= Tensor(getPosition(a1), -dd0);
+        virial -= Tensor(getPosition(a2),  dd1);
+        virial -= Tensor(getPosition(a3), -dd1);
+        virial -= Tensor(getPosition(a4),  dd2);
+        virial -= Tensor(getPosition(a5), -dd2);
+        setBoxDerivatives(val,virial);
+      }
     }
+  }
 
-    vector<Vector> deriv;
-    if(getDoScore()) {
-        deriv.resize(ncoupl_*6, Vector{0.,0.,0.});
+  if(getDoScore()) {
+    /* Metainference */
+    double score = getScore();
+    setScore(score);
+
+    /* calculate final derivatives */
+    Tensor virial;
+    Value* val=getPntrToComponent("score");
+    for (unsigned r=0; r<ncoupl_; r++) {
+      const unsigned index = 6*r;
+      const unsigned a0=index;
+      const unsigned a1=index+1;
+      const unsigned a2=index+2;
+      const unsigned a3=index+3;
+      const unsigned a4=index+4;
+      const unsigned a5=index+5;
+      setAtomsDerivatives(val, a0, deriv[a0]*getMetaDer(r));
+      setAtomsDerivatives(val, a1, deriv[a1]*getMetaDer(r));
+      setAtomsDerivatives(val, a2, deriv[a2]*getMetaDer(r));
+      setAtomsDerivatives(val, a3, deriv[a3]*getMetaDer(r));
+      setAtomsDerivatives(val, a4, deriv[a4]*getMetaDer(r));
+      setAtomsDerivatives(val, a5, deriv[a5]*getMetaDer(r));
+      virial-=Tensor(getPosition(a0), deriv[a0]*getMetaDer(r));
+      virial-=Tensor(getPosition(a1), deriv[a1]*getMetaDer(r));
+      virial-=Tensor(getPosition(a2), deriv[a2]*getMetaDer(r));
+      virial-=Tensor(getPosition(a3), deriv[a3]*getMetaDer(r));
+      virial-=Tensor(getPosition(a4), deriv[a4]*getMetaDer(r));
+      virial-=Tensor(getPosition(a5), deriv[a5]*getMetaDer(r));
     }
-
-    const double omp_dummy = 0.0;
-    const unsigned nt = OpenMP::getGoodNumThreads(&omp_dummy, ncoupl_ / 6);
-    #pragma omp parallel num_threads(nt)
-    {
-        #pragma omp for
-        // Loop through atoms, with steps of 6 atoms (one iteration per datapoint)
-        for (unsigned r=0; r<ncoupl_; r++) {
-            // Index is the datapoint index
-            const unsigned index = 6*r;
-
-            // 6 atoms -> 3 vectors
-            const unsigned a0=index;
-            const unsigned a1=index+1;
-            const unsigned a2=index+2;
-            const unsigned a3=index+3;
-            const unsigned a4=index+4;
-            const unsigned a5=index+5;
-            Vector d0 = delta(getPosition(a1), getPosition(a0));
-            Vector d1 = delta(getPosition(a3), getPosition(a2));
-            Vector d2 = delta(getPosition(a5), getPosition(a4));
-
-            // Calculate dihedral with 3 vectors, get the derivatives
-            Vector dd0, dd1, dd2;
-            PLMD::Torsion t;
-            const double torsion = t.compute(d0, d1, d2, dd0, dd1, dd2);
-
-            // Calculate the Karplus relation and its derivative
-            const double theta = torsion + kshift_;
-            const double cos_theta = cos(theta);
-            const double pder = ka_*cos_theta + kb_;
-            const double j = pder*cos_theta + kc_;
-            const double derj = -sin(theta)*(2.*pder - kb_);
-
-            string num;
-            Tools::convert(r,num);
-            Value* val=getPntrToComponent("j_"+num);
-            val->set(j);
-
-            dd0 *= derj;
-            dd1 *= derj;
-            dd2 *= derj;
-
-            if(getDoScore()) {
-                setCalcData(r, j);
-                deriv[a0] =  dd0;
-                deriv[a1] = -dd0;
-                deriv[a2] =  dd1;
-                deriv[a3] = -dd1;
-                deriv[a4] =  dd2;
-                deriv[a5] = -dd2;
-            } else {
-                setAtomsDerivatives(val, a0,  dd0);
-                setAtomsDerivatives(val, a1, -dd0);
-                setAtomsDerivatives(val, a2,  dd1);
-                setAtomsDerivatives(val, a3, -dd1);
-                setAtomsDerivatives(val, a4,  dd2);
-                setAtomsDerivatives(val, a5, -dd2);
-
-                Tensor virial = -Tensor(getPosition(a0),  dd0);
-                virial -= Tensor(getPosition(a1), -dd0);
-                virial -= Tensor(getPosition(a2),  dd1);
-                virial -= Tensor(getPosition(a3), -dd1);
-                virial -= Tensor(getPosition(a4),  dd2);
-                virial -= Tensor(getPosition(a5), -dd2);
-                setBoxDerivatives(val,virial);
-            }
-        }
-    }
-
-    if(getDoScore()) {
-        /* Metainference */
-        double score = getScore();
-        setScore(score);
-
-        /* calculate final derivatives */
-        Tensor virial;
-        Value* val=getPntrToComponent("score");
-        for (unsigned r=0; r<ncoupl_; r++) {
-            const unsigned index = 6*r;
-            const unsigned a0=index;
-            const unsigned a1=index+1;
-            const unsigned a2=index+2;
-            const unsigned a3=index+3;
-            const unsigned a4=index+4;
-            const unsigned a5=index+5;
-            setAtomsDerivatives(val, a0, deriv[a0]*getMetaDer(r));
-            setAtomsDerivatives(val, a1, deriv[a1]*getMetaDer(r));
-            setAtomsDerivatives(val, a2, deriv[a2]*getMetaDer(r));
-            setAtomsDerivatives(val, a3, deriv[a3]*getMetaDer(r));
-            setAtomsDerivatives(val, a4, deriv[a4]*getMetaDer(r));
-            setAtomsDerivatives(val, a5, deriv[a5]*getMetaDer(r));
-            virial-=Tensor(getPosition(a0), deriv[a0]*getMetaDer(r));
-            virial-=Tensor(getPosition(a1), deriv[a1]*getMetaDer(r));
-            virial-=Tensor(getPosition(a2), deriv[a2]*getMetaDer(r));
-            virial-=Tensor(getPosition(a3), deriv[a3]*getMetaDer(r));
-            virial-=Tensor(getPosition(a4), deriv[a4]*getMetaDer(r));
-            virial-=Tensor(getPosition(a5), deriv[a5]*getMetaDer(r));
-        }
-        setBoxDerivatives(val, virial);
-    }
+    setBoxDerivatives(val, virial);
+  }
 }
 
 void JCoupling::update() {
-    // write status file
-    if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
+  // write status file
+  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
 }

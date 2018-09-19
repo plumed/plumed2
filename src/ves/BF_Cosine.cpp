@@ -82,12 +82,12 @@ BF_COSINE MINIMUM=-pi MAXIMUM=+pi ORDER=10 LABEL=bf1
 
 
 class BF_Cosine : public BasisFunctions {
-    virtual void setupLabels();
-    virtual void setupUniformIntegrals();
+  virtual void setupLabels();
+  virtual void setupUniformIntegrals();
 public:
-    static void registerKeywords(Keywords&);
-    explicit BF_Cosine(const ActionOptions&);
-    void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
+  static void registerKeywords(Keywords&);
+  explicit BF_Cosine(const ActionOptions&);
+  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
 };
 
 
@@ -95,59 +95,56 @@ PLUMED_REGISTER_ACTION(BF_Cosine,"BF_COSINE")
 
 
 void BF_Cosine::registerKeywords(Keywords& keys) {
-    BasisFunctions::registerKeywords(keys);
+  BasisFunctions::registerKeywords(keys);
 }
 
 
 BF_Cosine::BF_Cosine(const ActionOptions&ao):
-    PLUMED_VES_BASISFUNCTIONS_INIT(ao)
+  PLUMED_VES_BASISFUNCTIONS_INIT(ao)
 {
-    setNumberOfBasisFunctions(getOrder()+1);
-    setIntrinsicInterval("-pi","+pi");
-    setPeriodic();
-    setIntervalBounded();
-    setType("trigonometric_cos");
-    setDescription("Cosine");
-    setupBF();
-    checkRead();
+  setNumberOfBasisFunctions(getOrder()+1);
+  setIntrinsicInterval("-pi","+pi");
+  setPeriodic();
+  setIntervalBounded();
+  setType("trigonometric_cos");
+  setDescription("Cosine");
+  setupBF();
+  checkRead();
 }
 
 
 void BF_Cosine::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
-    // plumed_assert(values.size()==numberOfBasisFunctions());
-    // plumed_assert(derivs.size()==numberOfBasisFunctions());
-    inside_range=true;
-    argT=translateArgument(arg, inside_range);
-    values[0]=1.0;
-    derivs[0]=0.0;
-    for(unsigned int i=1; i < getOrder()+1; i++) {
-        double io = i;
-        double cos_tmp = cos(io*argT);
-        double sin_tmp = sin(io*argT);
-        values[i] = cos_tmp;
-        derivs[i] = -io*sin_tmp*intervalDerivf();
-    }
-    if(!inside_range) {
-        for(unsigned int i=0; i<derivs.size(); i++) {
-            derivs[i]=0.0;
-        }
-    }
+  // plumed_assert(values.size()==numberOfBasisFunctions());
+  // plumed_assert(derivs.size()==numberOfBasisFunctions());
+  inside_range=true;
+  argT=translateArgument(arg, inside_range);
+  values[0]=1.0;
+  derivs[0]=0.0;
+  for(unsigned int i=1; i < getOrder()+1; i++) {
+    double io = i;
+    double cos_tmp = cos(io*argT);
+    double sin_tmp = sin(io*argT);
+    values[i] = cos_tmp;
+    derivs[i] = -io*sin_tmp*intervalDerivf();
+  }
+  if(!inside_range) {
+    for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}
+  }
 }
 
 
 void BF_Cosine::setupLabels() {
-    setLabel(0,"1");
-    for(unsigned int i=1; i < getOrder()+1; i++) {
-        std::string is;
-        Tools::convert(i,is);
-        setLabel(i,"cos("+is+"*s)");
-    }
+  setLabel(0,"1");
+  for(unsigned int i=1; i < getOrder()+1; i++) {
+    std::string is; Tools::convert(i,is);
+    setLabel(i,"cos("+is+"*s)");
+  }
 }
 
 
 void BF_Cosine::setupUniformIntegrals() {
-    setAllUniformIntegralsToZero();
-    setUniformIntegral(0,1.0);
+  setAllUniformIntegralsToZero();
+  setUniformIntegral(0,1.0);
 }
 
 

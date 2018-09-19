@@ -72,12 +72,12 @@ td_pd: TD_PRODUCT_DISTRIBUTION DISTRIBUTIONS=td_uni,td_exp
 //+ENDPLUMEDOC
 
 class TD_Exponential: public TargetDistribution {
-    std::vector<double> minima_;
-    std::vector<double> lambda_;
+  std::vector<double> minima_;
+  std::vector<double> lambda_;
 public:
-    static void registerKeywords(Keywords&);
-    explicit TD_Exponential(const ActionOptions& ao);
-    double getValue(const std::vector<double>&) const;
+  static void registerKeywords(Keywords&);
+  explicit TD_Exponential(const ActionOptions& ao);
+  double getValue(const std::vector<double>&) const;
 };
 
 
@@ -85,50 +85,42 @@ PLUMED_REGISTER_ACTION(TD_Exponential,"TD_EXPONENTIAL")
 
 
 void TD_Exponential::registerKeywords(Keywords& keys) {
-    TargetDistribution::registerKeywords(keys);
-    keys.add("compulsory","MINIMUM","The minimum of the exponential distribution.");
-    keys.add("compulsory","LAMBDA","The \\f$\\lambda\\f$ parameter of the exponential distribution given as postive number.");
-    keys.use("WELLTEMPERED_FACTOR");
-    keys.use("SHIFT_TO_ZERO");
-    keys.use("NORMALIZE");
+  TargetDistribution::registerKeywords(keys);
+  keys.add("compulsory","MINIMUM","The minimum of the exponential distribution.");
+  keys.add("compulsory","LAMBDA","The \\f$\\lambda\\f$ parameter of the exponential distribution given as postive number.");
+  keys.use("WELLTEMPERED_FACTOR");
+  keys.use("SHIFT_TO_ZERO");
+  keys.use("NORMALIZE");
 }
 
 
 TD_Exponential::TD_Exponential(const ActionOptions& ao):
-    PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
-    minima_(0),
-    lambda_(0)
+  PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
+  minima_(0),
+  lambda_(0)
 {
-    parseVector("MINIMUM",minima_);
-    parseVector("LAMBDA",lambda_);
-    for(unsigned int k=0; k<lambda_.size(); k++) {
-        if(lambda_[k] < 0.0) {
-            plumed_merror(getName()+": the value given in LAMBDA should be postive.");
-        }
-    }
+  parseVector("MINIMUM",minima_);
+  parseVector("LAMBDA",lambda_);
+  for(unsigned int k=0; k<lambda_.size(); k++) {
+    if(lambda_[k] < 0.0) {plumed_merror(getName()+": the value given in LAMBDA should be postive.");}
+  }
 
 
-    setDimension(minima_.size());
-    if(getDimension()>1) {
-        plumed_merror(getName()+": only defined for one dimension, for multiple dimensions it should be used in combination with the TD_PRODUCT_DISTRIBUTION action.");
-    }
-    if(lambda_.size()!=getDimension()) {
-        plumed_merror(getName()+": the LAMBDA keyword does not match the given dimension in MINIMUM");
-    }
-    checkRead();
+  setDimension(minima_.size());
+  if(getDimension()>1) {plumed_merror(getName()+": only defined for one dimension, for multiple dimensions it should be used in combination with the TD_PRODUCT_DISTRIBUTION action.");}
+  if(lambda_.size()!=getDimension()) {plumed_merror(getName()+": the LAMBDA keyword does not match the given dimension in MINIMUM");}
+  checkRead();
 }
 
 
 double TD_Exponential::getValue(const std::vector<double>& argument) const {
-    double value = 1.0;
-    for(unsigned int k=0; k<argument.size(); k++) {
-        double arg = (argument[k]-minima_[k])*lambda_[k];
-        if(arg<0.0) {
-            plumed_merror(getName()+": the exponential distribution is not defined for values less that ones given in MINIMUM");
-        }
-        value *= lambda_[k]*exp(-arg);
-    }
-    return value;
+  double value = 1.0;
+  for(unsigned int k=0; k<argument.size(); k++) {
+    double arg = (argument[k]-minima_[k])*lambda_[k];
+    if(arg<0.0) {plumed_merror(getName()+": the exponential distribution is not defined for values less that ones given in MINIMUM");}
+    value *= lambda_[k]*exp(-arg);
+  }
+  return value;
 }
 
 

@@ -67,57 +67,41 @@ namespace adjmat {
 
 class MatrixRowSums : public ActionWithInputMatrix {
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit MatrixRowSums(const ActionOptions&);
-    double compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const ;
+  static void registerKeywords( Keywords& keys );
+  explicit MatrixRowSums(const ActionOptions&);
+  double compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const ;
 };
 
 PLUMED_REGISTER_ACTION(MatrixRowSums,"ROWSUMS")
 
 void MatrixRowSums::registerKeywords( Keywords& keys ) {
-    ActionWithInputMatrix::registerKeywords( keys );
-    keys.use("ALT_MIN");
-    keys.use("LOWEST");
-    keys.use("HIGHEST");
-    keys.use("MEAN");
-    keys.use("MEAN");
-    keys.use("MIN");
-    keys.use("MAX");
-    keys.use("LESS_THAN");
-    keys.use("MORE_THAN");
-    keys.use("BETWEEN");
-    keys.use("HISTOGRAM");
-    keys.use("MOMENTS");
+  ActionWithInputMatrix::registerKeywords( keys );
+  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("MEAN");
+  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN");
+  keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
 }
 
 MatrixRowSums::MatrixRowSums(const ActionOptions& ao):
-    Action(ao),
-    ActionWithInputMatrix(ao)
+  Action(ao),
+  ActionWithInputMatrix(ao)
 {
-    if( (mymatrix->getMatrixAction())->mybasemulticolvars.size()>0 ) error("matrix row sums should only be calculated when inputs are atoms");
-    // Setup the tasks
-    unsigned nrows = mymatrix->getNumberOfRows();
-    ablocks.resize(1);
-    ablocks[0].resize( nrows );
-    for(unsigned i=0; i<nrows; ++i) {
-        ablocks[0][i]=i;
-        addTaskToList( i );
-    }
-    std::vector<AtomNumber> fake_atoms;
-    setupMultiColvarBase( fake_atoms );
+  if( (mymatrix->getMatrixAction())->mybasemulticolvars.size()>0 ) error("matrix row sums should only be calculated when inputs are atoms");
+  // Setup the tasks
+  unsigned nrows = mymatrix->getNumberOfRows();
+  ablocks.resize(1); ablocks[0].resize( nrows );
+  for(unsigned i=0; i<nrows; ++i) { ablocks[0][i]=i; addTaskToList( i ); }
+  std::vector<AtomNumber> fake_atoms; setupMultiColvarBase( fake_atoms );
 }
 
 double MatrixRowSums::compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const {
-    std::vector<double> tvals( mymatrix->getNumberOfComponents() );
-    getInputData( tinded, false, myatoms, tvals );
-    double fval=tvals[1];
+  std::vector<double> tvals( mymatrix->getNumberOfComponents() );
+  getInputData( tinded, false, myatoms, tvals ); double fval=tvals[1];
 
-    if( !doNotCalculateDerivatives() ) {
-        tvals.assign( tvals.size(), 0 );
-        tvals[1]=1.0;
-        mergeInputDerivatives( 1, 1, 2, tinded, tvals, getInputDerivatives( tinded, false, myatoms ), myatoms );
-    }
-    return fval;
+  if( !doNotCalculateDerivatives() ) {
+    tvals.assign( tvals.size(), 0 ); tvals[1]=1.0;
+    mergeInputDerivatives( 1, 1, 2, tinded, tvals, getInputDerivatives( tinded, false, myatoms ), myatoms );
+  }
+  return fval;
 }
 
 }

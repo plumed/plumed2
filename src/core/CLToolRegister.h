@@ -38,36 +38,36 @@ class CLToolOptions;
 /// Same as ActionRegister, but for CLTools
 class CLToolRegister {
 /// Write on a stream the list of registered directives
-    friend std::ostream &operator<<(std::ostream &,const CLToolRegister&);
+  friend std::ostream &operator<<(std::ostream &,const CLToolRegister&);
 /// Pointer to a function which, given the options, create an CLTool
-    typedef std::unique_ptr<CLTool>(*creator_pointer)(const CLToolOptions&);
+  typedef std::unique_ptr<CLTool>(*creator_pointer)(const CLToolOptions&);
 /// Pointer to a function which, returns the keywords allowed
-    typedef void(*keywords_pointer)(Keywords&);
+  typedef void(*keywords_pointer)(Keywords&);
 /// Map cltool to a function which creates the related object
-    std::map<std::string,creator_pointer> m;
+  std::map<std::string,creator_pointer> m;
 /// Map cltool name to the keywords for this function
-    std::map<std::string,Keywords> mk;
+  std::map<std::string,Keywords> mk;
 /// Set of disabled cltools (which were registered more than once)
-    std::set<std::string> disabled;
+  std::set<std::string> disabled;
 public:
 /// Register a new class.
 /// \param key The name of the directive to be used in the input file
 /// \param cp  A pointer to a function which creates an object of that class
 /// \param kp  A pointer to a function which returns the allowed keywords
-    void add(std::string key,creator_pointer cp,keywords_pointer kp);
+  void add(std::string key,creator_pointer cp,keywords_pointer kp);
 /// Verify if a directive is present in the register
-    bool check(std::string cltool)const;
+  bool check(std::string cltool)const;
 /// Create an CLTool of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
-    std::unique_ptr<CLTool> create(const CLToolOptions&ao);
-    void remove(creator_pointer);
-    ~CLToolRegister();
+  std::unique_ptr<CLTool> create(const CLToolOptions&ao);
+  void remove(creator_pointer);
+  ~CLToolRegister();
 /// Returns a list of the allowed CLTools
-    std::vector<std::string> list()const;
+  std::vector<std::string> list()const;
 /// Print out the instructions for using the tool in html ready for input into the manual
-    bool printManual(const std::string& cltool);
+  bool printManual(const std::string& cltool);
 /// Return all the keys of this cltool
-    std::vector<std::string> getKeys(const std::string& cltool)const;
+  std::vector<std::string> getKeys(const std::string& cltool)const;
 };
 
 /// Function returning a reference to the CLToolRegister.

@@ -43,143 +43,135 @@ This is the abstract base class to use for implementing new methods for analyzin
 */
 
 class AnalysisBase :
-    public ActionPilot,
-    public ActionWithValue,
-    public ActionAtomistic,
-    public ActionWithArguments,
-    public vesselbase::ActionWithVessel
+  public ActionPilot,
+  public ActionWithValue,
+  public ActionAtomistic,
+  public ActionWithArguments,
+  public vesselbase::ActionWithVessel
 {
-    friend class ReselectLandmarks;
-    friend class ReadDissimilarityMatrix;
+  friend class ReselectLandmarks;
+  friend class ReadDissimilarityMatrix;
 protected:
 /// The Analysis action that we are reusing data from
-    AnalysisBase* my_input_data;
+  AnalysisBase* my_input_data;
 public:
-    static void registerKeywords( Keywords& keys );
-    AnalysisBase(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  AnalysisBase(const ActionOptions&);
 /// These are required because we inherit from both ActionAtomistic and ActionWithArguments
-    void lockRequests();
-    void unlockRequests();
+  void lockRequests();
+  void unlockRequests();
 /// Return the number of data points
-    virtual unsigned getNumberOfDataPoints() const ;
+  virtual unsigned getNumberOfDataPoints() const ;
 /// Return the index of the data point in the base class
-    virtual unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
+  virtual unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
 /// Return the weight of the ith point
-    virtual double getWeight( const unsigned& idata );
+  virtual double getWeight( const unsigned& idata );
 /// Get the name of the metric that is being used
-    virtual std::string getMetricName() const ;
+  virtual std::string getMetricName() const ;
 /// Are we using memory in this calculation this affects the weights of points
-    virtual bool usingMemory() const ;
+  virtual bool usingMemory() const ;
 /// Return the normalisation constant for the calculation
-    virtual double getNormalization() const ;
+  virtual double getNormalization() const ;
 /// Ensures that dissimilarities were set somewhere
-    virtual bool dissimilaritiesWereSet() const ;
+  virtual bool dissimilaritiesWereSet() const ;
 /// Get the information on how dissimilarities were calculated for output PDB
-    virtual std::string getDissimilarityInstruction() const ;
+  virtual std::string getDissimilarityInstruction() const ;
 /// Get the squared dissimilarity between two reference configurations
-    virtual double getDissimilarity( const unsigned& i, const unsigned& j );
+  virtual double getDissimilarity( const unsigned& i, const unsigned& j );
 /// Get the indices of the atoms that have been stored
-    virtual const std::vector<AtomNumber>& getAtomIndexes() const ;
+  virtual const std::vector<AtomNumber>& getAtomIndexes() const ;
 /// Overwrite getArguments so we get arguments from underlying class
-    virtual std::vector<Value*> getArgumentList();
+  virtual std::vector<Value*> getArgumentList();
 /// Get the list of argument names in the base
-    std::vector<std::string> getArgumentNames();
+  std::vector<std::string> getArgumentNames();
 /// Get a reference configuration (in dimensionality reduction this returns the projection)
-    virtual DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist );
+  virtual DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist );
 /// This actually performs the analysis
-    virtual void performAnalysis()=0;
+  virtual void performAnalysis()=0;
 /// These overwrite things from inherited classes (this is a bit of a fudge)
-    bool isPeriodic() {
-        plumed_error();
-        return false;
-    }
-    unsigned getNumberOfDerivatives() {
-        plumed_error();
-        return 0;
-    }
-    void calculateNumericalDerivatives( ActionWithValue* a=NULL ) {
-        plumed_error();
-    }
+  bool isPeriodic() { plumed_error(); return false; }
+  unsigned getNumberOfDerivatives() { plumed_error(); return 0; }
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) { plumed_error(); }
 /// Calculate and apply do nothing all analysis is done during update step
-    void calculate() {}
-    void apply() {}
+  void calculate() {}
+  void apply() {}
 /// This will call the analysis to be performed
-    virtual void update();
+  virtual void update();
 /// This calls the analysis to be performed in the final step of the calculation
 /// i.e. when use_all_data is true
-    virtual void runFinalJobs();
+  virtual void runFinalJobs();
 };
 
 inline
 void AnalysisBase::lockRequests() {
-    ActionAtomistic::lockRequests();
-    ActionWithArguments::lockRequests();
+  ActionAtomistic::lockRequests();
+  ActionWithArguments::lockRequests();
 }
 
 inline
 void AnalysisBase::unlockRequests() {
-    ActionAtomistic::unlockRequests();
-    ActionWithArguments::unlockRequests();
+  ActionAtomistic::unlockRequests();
+  ActionWithArguments::unlockRequests();
 }
 
 inline
 unsigned AnalysisBase::getNumberOfDataPoints() const {
-    return my_input_data->getNumberOfDataPoints();
+  return my_input_data->getNumberOfDataPoints();
 }
 
 inline
 unsigned AnalysisBase::getDataPointIndexInBase( const unsigned& idata ) const {
-    return my_input_data->getDataPointIndexInBase( idata );
+  return my_input_data->getDataPointIndexInBase( idata );
 }
 
 inline
 std::string AnalysisBase::getMetricName() const {
-    return my_input_data->getMetricName();
+  return my_input_data->getMetricName();
 }
 
 inline
 double AnalysisBase::getWeight( const unsigned& idata ) {
-    return my_input_data->getWeight( idata );
+  return my_input_data->getWeight( idata );
 }
 
 inline
 bool AnalysisBase::usingMemory() const {
-    return my_input_data->usingMemory();
+  return my_input_data->usingMemory();
 }
 
 inline
 double AnalysisBase::getNormalization() const {
-    return my_input_data->getNormalization();
+  return my_input_data->getNormalization();
 }
 
 inline
 bool AnalysisBase::dissimilaritiesWereSet() const {
-    return my_input_data->dissimilaritiesWereSet();
+  return my_input_data->dissimilaritiesWereSet();
 }
 
 inline
 double AnalysisBase::getDissimilarity( const unsigned& i, const unsigned& j ) {
-    return my_input_data->getDissimilarity( i, j );
+  return my_input_data->getDissimilarity( i, j );
 }
 
 inline
 std::vector<Value*> AnalysisBase::getArgumentList() {
-    return my_input_data->getArgumentList();
+  return my_input_data->getArgumentList();
 }
 
 inline
 DataCollectionObject& AnalysisBase::getStoredData( const unsigned& idata, const bool& calcdist ) {
-    return my_input_data->getStoredData( idata, calcdist );
+  return my_input_data->getStoredData( idata, calcdist );
 }
 
 inline
 const std::vector<AtomNumber>& AnalysisBase::getAtomIndexes() const {
-    return my_input_data->getAtomIndexes();
+  return my_input_data->getAtomIndexes();
 }
 
 inline
 std::string AnalysisBase::getDissimilarityInstruction() const {
-    return my_input_data->getDissimilarityInstruction();
+  return my_input_data->getDissimilarityInstruction();
 }
 
 }

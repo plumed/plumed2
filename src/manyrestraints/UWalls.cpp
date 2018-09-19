@@ -61,50 +61,50 @@ UWALLS DATA=d1 AT=2.5 KAPPA=0.2 LABEL=sr
 
 class UWalls : public ManyRestraintsBase {
 private:
-    double at;
-    double kappa;
-    double exp;
-    double eps;
-    double offset;
+  double at;
+  double kappa;
+  double exp;
+  double eps;
+  double offset;
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit UWalls( const ActionOptions& );
-    double calcPotential( const double& val, double& df ) const ;
+  static void registerKeywords( Keywords& keys );
+  explicit UWalls( const ActionOptions& );
+  double calcPotential( const double& val, double& df ) const ;
 };
 
 PLUMED_REGISTER_ACTION(UWalls,"UWALLS")
 
 void UWalls::registerKeywords( Keywords& keys ) {
-    ManyRestraintsBase::registerKeywords( keys );
-    keys.add("compulsory","AT","the radius of the sphere");
-    keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
-    keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
-    keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
-    keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
+  ManyRestraintsBase::registerKeywords( keys );
+  keys.add("compulsory","AT","the radius of the sphere");
+  keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
+  keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
+  keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
+  keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
 }
 
 UWalls::UWalls(const ActionOptions& ao):
-    Action(ao),
-    ManyRestraintsBase(ao)
+  Action(ao),
+  ManyRestraintsBase(ao)
 {
-    parse("AT",at);
-    parse("OFFSET",offset);
-    parse("EPS",eps);
-    parse("EXP",exp);
-    parse("KAPPA",kappa);
-    checkRead();
+  parse("AT",at);
+  parse("OFFSET",offset);
+  parse("EPS",eps);
+  parse("EXP",exp);
+  parse("KAPPA",kappa);
+  checkRead();
 }
 
 double UWalls::calcPotential( const double& val, double& df ) const {
-    double uscale = (val - at + offset)/eps;
-    if( uscale > 0. ) {
-        double power = pow( uscale, exp );
-        df = ( kappa / eps ) * exp * power / uscale;
+  double uscale = (val - at + offset)/eps;
+  if( uscale > 0. ) {
+    double power = pow( uscale, exp );
+    df = ( kappa / eps ) * exp * power / uscale;
 
-        return kappa*power;
-    }
+    return kappa*power;
+  }
 
-    return 0.0;
+  return 0.0;
 }
 
 }

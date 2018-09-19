@@ -36,28 +36,28 @@ It just collect static methods in a separate namespace.
 */
 class LatticeReduction {
 /// Gaussian reduction
-    static void reduce(Vector&a,Vector&b);
+  static void reduce(Vector&a,Vector&b);
 /// Obtain three reduce-2 vectors (Algorithm 1 in the paper), equivalent to reduce2(Tensor&t)
-    static void reduce2(Vector&a,Vector&b,Vector&c);
+  static void reduce2(Vector&a,Vector&b,Vector&c);
 /// Check if two vectors are reduced
-    static bool isReduced(const Vector&a,const Vector&b);
+  static bool isReduced(const Vector&a,const Vector&b);
 /// Check if three vectors are reduced
-    static bool isReduced(const Vector&a,const Vector&b,const Vector &c);
+  static bool isReduced(const Vector&a,const Vector&b,const Vector &c);
 /// Check if three vectors are reduced-2
-    static bool isReduced2(const Vector&a,const Vector&b,const Vector &c);
+  static bool isReduced2(const Vector&a,const Vector&b,const Vector &c);
 /// Obtain three reduce-2 vectors (Algorithm 1 in the paper), equivalent to reduce2(Vector&a,Vector&b,Vector&c)
-    static void reduce2(Tensor&t);
+  static void reduce2(Tensor&t);
 /// Sort three vectors by modulo
-    static void sort(Vector v[3]);
+  static void sort(Vector v[3]);
 public:
 /// Reduce a basis in place, maps to reduceFast()
-    static void reduce(Tensor&t);
+  static void reduce(Tensor&t);
 /// Reduce a basis in place using the slow algorithm (Algorithm 2 in the paper)
-    static void reduceSlow(Tensor&t);
+  static void reduceSlow(Tensor&t);
 /// Reduce a basis in place using the fast algorithm (Algorithm 3 in the paper)
-    static void reduceFast(Tensor&t);
+  static void reduceFast(Tensor&t);
 /// Check if a basis is reduced
-    static bool isReduced(const Tensor&t);
+  static bool isReduced(const Tensor&t);
 };
 
 }

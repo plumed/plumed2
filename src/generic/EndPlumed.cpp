@@ -54,27 +54,27 @@ PRINT ARG=d FILE=COLVAR STRIDE=1
 */
 //+ENDPLUMEDOC
 class EndPlumed:
-    public Action
+  public Action
 {
 public:
-    explicit EndPlumed(const ActionOptions&ao);
+  explicit EndPlumed(const ActionOptions&ao);
 /// Register all the relevant keywords for the action
-    static void registerKeywords( Keywords& keys );
-    void calculate() {}
-    void apply() {}
+  static void registerKeywords( Keywords& keys );
+  void calculate() {}
+  void apply() {}
 };
 
 PLUMED_REGISTER_ACTION(EndPlumed,"ENDPLUMED")
 
 void EndPlumed::registerKeywords( Keywords& keys ) {
-    Action::registerKeywords( keys );
+  Action::registerKeywords( keys );
 }
 
 EndPlumed::EndPlumed(const ActionOptions&ao):
-    Action(ao)
+  Action(ao)
 {
-    checkRead();
-    plumed.setEndPlumed();
+  checkRead();
+  plumed.setEndPlumed();
 }
 
 }

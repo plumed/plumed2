@@ -37,113 +37,113 @@ namespace PLMD {
  "from 1" (serial) numbering (names as in VMD convention).
 */
 class AtomNumber {
-    unsigned index_;
+  unsigned index_;
 /// Construct with a given index.
 /// This constructor is kept private to avoid implicit cast.
-    explicit AtomNumber(unsigned);
+  explicit AtomNumber(unsigned);
 public:
 /// Initialize to index=0 (serial=1)
-    AtomNumber();
+  AtomNumber();
 /// Returns the serial number
-    unsigned serial()const;
+  unsigned serial()const;
 /// Returns the index number
-    unsigned index()const;
+  unsigned index()const;
 /// Sets the atom number by serial, returning a reference to the AtomNumber itself.
-    AtomNumber & setSerial(unsigned);
+  AtomNumber & setSerial(unsigned);
 /// Sets the atom number by index, returning a reference to the AtomNumber itself.
-    AtomNumber & setIndex(unsigned);
+  AtomNumber & setIndex(unsigned);
 /// Returns an AtomNumber with a specified serial.
-    static AtomNumber serial(unsigned);
+  static AtomNumber serial(unsigned);
 /// Returns an AtomNumber with a specified index.
-    static AtomNumber index(unsigned);
+  static AtomNumber index(unsigned);
 /// Comparison operators
-    friend bool operator<(const AtomNumber&,const AtomNumber&);
+  friend bool operator<(const AtomNumber&,const AtomNumber&);
 /// Comparison operators
-    friend bool operator>(const AtomNumber&,const AtomNumber&);
+  friend bool operator>(const AtomNumber&,const AtomNumber&);
 /// Comparison operators
-    friend bool operator<=(const AtomNumber&,const AtomNumber&);
+  friend bool operator<=(const AtomNumber&,const AtomNumber&);
 /// Comparison operators
-    friend bool operator>=(const AtomNumber&,const AtomNumber&);
+  friend bool operator>=(const AtomNumber&,const AtomNumber&);
 /// Comparison operators
-    friend bool operator==(const AtomNumber&,const AtomNumber&);
+  friend bool operator==(const AtomNumber&,const AtomNumber&);
 /// Comparison operators
-    friend bool operator!=(const AtomNumber&,const AtomNumber&);
+  friend bool operator!=(const AtomNumber&,const AtomNumber&);
 };
 
 inline
 AtomNumber::AtomNumber() {
-    index_=0;
+  index_=0;
 }
 
 inline
 AtomNumber::AtomNumber(unsigned i) {
-    index_=i;
+  index_=i;
 }
 
 inline
 unsigned AtomNumber::serial()const {
-    return index_+1;
+  return index_+1;
 }
 
 inline
 unsigned AtomNumber::index()const {
-    return index_;
+  return index_;
 }
 
 inline
 AtomNumber & AtomNumber::setSerial(unsigned i) {
-    plumed_massert(i>0,"serial of an atom cannot be zero");
-    plumed_massert(i<std::numeric_limits<unsigned>::max()/2,"serial cannot be negative");
-    index_=i-1;
-    return *this;
+  plumed_massert(i>0,"serial of an atom cannot be zero");
+  plumed_massert(i<std::numeric_limits<unsigned>::max()/2,"serial cannot be negative");
+  index_=i-1;
+  return *this;
 }
 
 inline
 AtomNumber & AtomNumber::setIndex(unsigned i) {
-    index_=i;
-    return *this;
+  index_=i;
+  return *this;
 }
 
 inline
 AtomNumber AtomNumber::serial(unsigned i) {
-    plumed_massert(i>0,"serial of an atom cannot be zero");
-    plumed_massert(i<std::numeric_limits<unsigned>::max()/2,"serial cannot be negative");
-    return AtomNumber(i-1);
+  plumed_massert(i>0,"serial of an atom cannot be zero");
+  plumed_massert(i<std::numeric_limits<unsigned>::max()/2,"serial cannot be negative");
+  return AtomNumber(i-1);
 }
 
 inline
 AtomNumber AtomNumber::index(unsigned i) {
-    return AtomNumber(i);
+  return AtomNumber(i);
 }
 
 inline
 bool operator<(const AtomNumber&a,const AtomNumber&b) {
-    return a.index_<b.index_;
+  return a.index_<b.index_;
 }
 
 inline
 bool operator>(const AtomNumber&a,const AtomNumber&b) {
-    return a.index_>b.index_;
+  return a.index_>b.index_;
 }
 
 inline
 bool operator<=(const AtomNumber&a,const AtomNumber&b) {
-    return a.index_<=b.index_;
+  return a.index_<=b.index_;
 }
 
 inline
 bool operator>=(const AtomNumber&a,const AtomNumber&b) {
-    return a.index_>=b.index_;
+  return a.index_>=b.index_;
 }
 
 inline
 bool operator==(const AtomNumber&a,const AtomNumber&b) {
-    return a.index_==b.index_;
+  return a.index_==b.index_;
 }
 
 inline
 bool operator!=(const AtomNumber&a,const AtomNumber&b) {
-    return a.index_!=b.index_;
+  return a.index_!=b.index_;
 }
 
 }

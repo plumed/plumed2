@@ -30,19 +30,19 @@
 using namespace std;
 
 extern "C" void*plumed_plumedmain_create() {
-    return new PLMD::PlumedMain;
+  return new PLMD::PlumedMain;
 }
 
 extern "C" void plumed_plumedmain_cmd(void*plumed,const char*key,const void*val) {
-    plumed_massert(plumed,"trying to use a plumed object which is not initialized");
-    static_cast<PLMD::PlumedMain*>(plumed)->cmd(key,val);
+  plumed_massert(plumed,"trying to use a plumed object which is not initialized");
+  static_cast<PLMD::PlumedMain*>(plumed)->cmd(key,val);
 }
 
 extern "C" void plumed_plumedmain_finalize(void*plumed) {
-    plumed_massert(plumed,"trying to deallocate a plumed object which is not initialized");
+  plumed_massert(plumed,"trying to deallocate a plumed object which is not initialized");
 // I think it is not possible to replace this delete with a smart pointer
 // since the ownership of this pointer is in a C structure. GB
-    delete static_cast<PLMD::PlumedMain*>(plumed);
+  delete static_cast<PLMD::PlumedMain*>(plumed);
 }
 
 // values here should be consistent with those in plumed_symbol_table_init !!!!
@@ -51,10 +51,10 @@ plumed_symbol_table_type plumed_symbol_table=
 
 // values here should be consistent with those above !!!!
 extern "C" void plumed_symbol_table_init() {
-    plumed_symbol_table.version=1;
-    plumed_symbol_table.functions.create=plumed_plumedmain_create;
-    plumed_symbol_table.functions.cmd=plumed_plumedmain_cmd;
-    plumed_symbol_table.functions.finalize=plumed_plumedmain_finalize;
+  plumed_symbol_table.version=1;
+  plumed_symbol_table.functions.create=plumed_plumedmain_create;
+  plumed_symbol_table.functions.cmd=plumed_plumedmain_cmd;
+  plumed_symbol_table.functions.finalize=plumed_plumedmain_finalize;
 }
 
 namespace PLMD {
@@ -69,41 +69,41 @@ namespace PLMD {
 /// the plumed_kernel_register symbol is not available.
 static class PlumedMainInitializer {
 public:
-    PlumedMainInitializer() {
+  PlumedMainInitializer() {
 #if defined(__PLUMED_HAS_DLOPEN)
-        bool debug=std::getenv("PLUMED_LOAD_DEBUG");
-        if(std::getenv("PLUMED_LOAD_SKIP_REGISTRATION")) {
-            if(debug) fprintf(stderr,"+++ Skipping registration +++\n");
-            return;
-        }
-        typedef plumed_plumedmain_function_holder* (*plumed_kernel_register_type)(const plumed_plumedmain_function_holder*);
-        plumed_kernel_register_type plumed_kernel_register=nullptr;
-        void* handle=nullptr;
+    bool debug=std::getenv("PLUMED_LOAD_DEBUG");
+    if(std::getenv("PLUMED_LOAD_SKIP_REGISTRATION")) {
+      if(debug) fprintf(stderr,"+++ Skipping registration +++\n");
+      return;
+    }
+    typedef plumed_plumedmain_function_holder* (*plumed_kernel_register_type)(const plumed_plumedmain_function_holder*);
+    plumed_kernel_register_type plumed_kernel_register=nullptr;
+    void* handle=nullptr;
 #if defined(__PLUMED_HAS_RTLD_DEFAULT)
-        if(debug) fprintf(stderr,"+++ Registering functions. Looking in RTLD_DEFAULT +++\n");
-        plumed_kernel_register=(plumed_kernel_register_type) dlsym(RTLD_DEFAULT,"plumed_kernel_register");
+    if(debug) fprintf(stderr,"+++ Registering functions. Looking in RTLD_DEFAULT +++\n");
+    plumed_kernel_register=(plumed_kernel_register_type) dlsym(RTLD_DEFAULT,"plumed_kernel_register");
 #else
-        handle=dlopen(NULL,RTLD_LOCAL);
-        if(debug) fprintf(stderr,"+++ Registering functions. dlopen handle at %p +++\n",handle);
-        plumed_kernel_register=(plumed_kernel_register_type) dlsym(handle,"plumed_kernel_register");
+    handle=dlopen(NULL,RTLD_LOCAL);
+    if(debug) fprintf(stderr,"+++ Registering functions. dlopen handle at %p +++\n",handle);
+    plumed_kernel_register=(plumed_kernel_register_type) dlsym(handle,"plumed_kernel_register");
 #endif
-        if(debug) {
-            if(plumed_kernel_register) {
-                fprintf(stderr,"+++ plumed_kernel_register found at %p +++\n",(void*)plumed_kernel_register);
-            }
-            else fprintf(stderr,"+++ plumed_kernel_register not found +++\n");
-        }
+    if(debug) {
+      if(plumed_kernel_register) {
+        fprintf(stderr,"+++ plumed_kernel_register found at %p +++\n",(void*)plumed_kernel_register);
+      }
+      else fprintf(stderr,"+++ plumed_kernel_register not found +++\n");
+    }
 // make sure static plumed_function_pointers is initialized here
-        plumed_symbol_table_init();
-        if(plumed_kernel_register && debug) fprintf(stderr,"+++ Registering functions at %p (%p,%p,%p) +++\n",
-                    (void*)&plumed_symbol_table.functions,(void*)plumed_symbol_table.functions.create,(void*)plumed_symbol_table.functions.cmd,(void*)plumed_symbol_table.functions.finalize);
-        if(plumed_kernel_register) (*plumed_kernel_register)(&plumed_symbol_table.functions);
+    plumed_symbol_table_init();
+    if(plumed_kernel_register && debug) fprintf(stderr,"+++ Registering functions at %p (%p,%p,%p) +++\n",
+          (void*)&plumed_symbol_table.functions,(void*)plumed_symbol_table.functions.create,(void*)plumed_symbol_table.functions.cmd,(void*)plumed_symbol_table.functions.finalize);
+    if(plumed_kernel_register) (*plumed_kernel_register)(&plumed_symbol_table.functions);
 // Notice that handle could be null in the following cases:
 // - if we use RTLD_DEFAULT
 // - on Linux if we don't use RTLD_DEFAULT, since dlopen(NULL,RTLD_LOCAL) returns a null pointer.
-        if(handle) dlclose(handle);
+    if(handle) dlclose(handle);
 #endif
-    }
+  }
 } PlumedMainInitializerRegisterMe;
 
 }

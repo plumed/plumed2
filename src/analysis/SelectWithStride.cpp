@@ -36,26 +36,26 @@ namespace analysis {
 
 class SelectWithStride : public LandmarkSelectionBase {
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit SelectWithStride( const ActionOptions& ao );
-    void selectLandmarks();
+  static void registerKeywords( Keywords& keys );
+  explicit SelectWithStride( const ActionOptions& ao );
+  void selectLandmarks();
 };
 
 PLUMED_REGISTER_ACTION(SelectWithStride,"LANDMARK_SELECT_STRIDE")
 
 void SelectWithStride::registerKeywords( Keywords& keys ) {
-    LandmarkSelectionBase::registerKeywords( keys );
+  LandmarkSelectionBase::registerKeywords( keys );
 }
 
 SelectWithStride::SelectWithStride( const ActionOptions& ao ):
-    Action(ao),
-    LandmarkSelectionBase(ao)
+  Action(ao),
+  LandmarkSelectionBase(ao)
 {
 }
 
 void SelectWithStride::selectLandmarks() {
-    unsigned stride = std::floor( my_input_data->getNumberOfDataPoints() / getNumberOfDataPoints() ), max=stride*getNumberOfDataPoints();
-    for(unsigned i=0; i<max; i+=stride) selectFrame( i );
+  unsigned stride = std::floor( my_input_data->getNumberOfDataPoints() / getNumberOfDataPoints() ), max=stride*getNumberOfDataPoints();
+  for(unsigned i=0; i<max; i+=stride) selectFrame( i );
 }
 
 }

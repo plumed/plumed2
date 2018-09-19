@@ -78,13 +78,13 @@ BF_POWERS MINIMUM=-2.0 MAXIMUM=2.0 ORDER=5 LABEL=bf_pow
 //+ENDPLUMEDOC
 
 class BF_Powers : public BasisFunctions {
-    double inv_normfactor_;
-    virtual void setupLabels();
+  double inv_normfactor_;
+  virtual void setupLabels();
 public:
-    static void registerKeywords( Keywords&);
-    explicit BF_Powers(const ActionOptions&);
-    double getValue(const double, const unsigned int, double&, bool&) const;
-    void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
+  static void registerKeywords( Keywords&);
+  explicit BF_Powers(const ActionOptions&);
+  double getValue(const double, const unsigned int, double&, bool&) const;
+  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
 };
 
 
@@ -92,61 +92,54 @@ PLUMED_REGISTER_ACTION(BF_Powers,"BF_POWERS")
 
 
 void BF_Powers::registerKeywords(Keywords& keys) {
-    BasisFunctions::registerKeywords(keys);
-    keys.add("optional","NORMALIZATION","The normalization factor that is used to normalize the basis functions. By default it is 1.0.");
-    keys.remove("NUMERICAL_INTEGRALS");
+  BasisFunctions::registerKeywords(keys);
+  keys.add("optional","NORMALIZATION","The normalization factor that is used to normalize the basis functions. By default it is 1.0.");
+  keys.remove("NUMERICAL_INTEGRALS");
 }
 
 BF_Powers::BF_Powers(const ActionOptions&ao):
-    PLUMED_VES_BASISFUNCTIONS_INIT(ao)
+  PLUMED_VES_BASISFUNCTIONS_INIT(ao)
 {
-    setNumberOfBasisFunctions(getOrder()+1);
-    setIntrinsicInterval(intervalMin(),intervalMax());
-    double normfactor_=1.0;
-    parse("NORMALIZATION",normfactor_);
-    if(normfactor_!=1.0) {
-        addKeywordToList("NORMALIZATION",normfactor_);
-    }
-    inv_normfactor_=1.0/normfactor_;
-    setNonPeriodic();
-    setIntervalBounded();
-    setType("polynom_powers");
-    setDescription("Polynomial Powers");
-    setupBF();
-    log.printf("   normalization factor: %f\n",normfactor_);
-    checkRead();
+  setNumberOfBasisFunctions(getOrder()+1);
+  setIntrinsicInterval(intervalMin(),intervalMax());
+  double normfactor_=1.0;
+  parse("NORMALIZATION",normfactor_);
+  if(normfactor_!=1.0) {addKeywordToList("NORMALIZATION",normfactor_);}
+  inv_normfactor_=1.0/normfactor_;
+  setNonPeriodic();
+  setIntervalBounded();
+  setType("polynom_powers");
+  setDescription("Polynomial Powers");
+  setupBF();
+  log.printf("   normalization factor: %f\n",normfactor_);
+  checkRead();
 }
 
 
 void BF_Powers::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
-    inside_range=true;
-    argT=checkIfArgumentInsideInterval(arg,inside_range);
-    //
-    values[0]=1.0;
-    derivs[0]=0.0;
-    //
-    for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-        // double io = static_cast<double>(i);
-        // values[i] = pow(argT,io);
-        // derivs[i] = io*pow(argT,io-1.0);
-        values[i] = argT*values[i-1];
-        derivs[i]=values[i-1]+argT*derivs[i-1];
-    }
-    if(!inside_range) {
-        for(unsigned int i=0; i<derivs.size(); i++) {
-            derivs[i]=0.0;
-        }
-    }
+  inside_range=true;
+  argT=checkIfArgumentInsideInterval(arg,inside_range);
+  //
+  values[0]=1.0;
+  derivs[0]=0.0;
+  //
+  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
+    // double io = static_cast<double>(i);
+    // values[i] = pow(argT,io);
+    // derivs[i] = io*pow(argT,io-1.0);
+    values[i] = argT*values[i-1];
+    derivs[i]=values[i-1]+argT*derivs[i-1];
+  }
+  if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
 }
 
 
 void BF_Powers::setupLabels() {
-    setLabel(0,"1");
-    for(unsigned int i=1; i < getOrder()+1; i++) {
-        std::string is;
-        Tools::convert(i,is);
-        setLabel(i,"s^"+is);
-    }
+  setLabel(0,"1");
+  for(unsigned int i=1; i < getOrder()+1; i++) {
+    std::string is; Tools::convert(i,is);
+    setLabel(i,"s^"+is);
+  }
 }
 
 }

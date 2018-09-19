@@ -31,9 +31,9 @@
   Container for plumedmain function pointers (create, cmd and finalize).
 */
 typedef struct {
-    void*(*create)();
-    void(*cmd)(void*,const char*,const void*);
-    void(*finalize)(void*);
+  void*(*create)();
+  void(*cmd)(void*,const char*,const void*);
+  void(*finalize)(void*);
 } plumed_plumedmain_function_holder;
 
 /**
@@ -42,8 +42,8 @@ typedef struct {
   new fields. However, in that case the version number should be updated as well.
 */
 typedef struct {
-    int version;
-    plumed_plumedmain_function_holder functions;
+  int version;
+  plumed_plumedmain_function_holder functions;
 } plumed_symbol_table_type;
 
 

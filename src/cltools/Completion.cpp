@@ -52,70 +52,70 @@ plumed completion
 //+ENDPLUMEDOC
 
 class Completion:
-    public CLTool
+  public CLTool
 {
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit Completion(const CLToolOptions& co );
-    int main(FILE* in, FILE*out,Communicator& pc);
-    string description()const {
-        return "dump a function usable for programmable completion";
-    }
+  static void registerKeywords( Keywords& keys );
+  explicit Completion(const CLToolOptions& co );
+  int main(FILE* in, FILE*out,Communicator& pc);
+  string description()const {
+    return "dump a function usable for programmable completion";
+  }
 };
 
 PLUMED_REGISTER_CLTOOL(Completion,"completion")
 
 void Completion::registerKeywords( Keywords& keys ) {
-    CLTool::registerKeywords( keys );
+  CLTool::registerKeywords( keys );
 }
 
 Completion::Completion(const CLToolOptions& co ):
-    CLTool(co)
+  CLTool(co)
 {
-    inputdata=commandline;
+  inputdata=commandline;
 }
 
 int Completion::main(FILE* in, FILE*out,Communicator& pc) {
-    static const char completion [] = {
+  static const char completion [] = {
 #include "completion.xxd"
-        , 0x00
-    };
-    fprintf(out,"local cmds=\"help -h --help");
+    , 0x00
+  };
+  fprintf(out,"local cmds=\"help -h --help");
 // Build list of available C++ tools:
-    std::vector<string> availableCxx=cltoolRegister().list();
+  std::vector<string> availableCxx=cltoolRegister().list();
 // Build list of available shell tools:
-    vector<string> tmp=Tools::ls(string(config::getPlumedRoot()+"/scripts"));
-    for(unsigned j=0; j<tmp.size(); ++j) {
-        size_t ff=tmp[j].find(".sh");
-        if(ff==string::npos) tmp[j].erase();
-        else                 tmp[j].erase(ff);
-    }
-    for(unsigned j=0; j<availableCxx.size(); j++) fprintf(out," %s",availableCxx[j].c_str());
-    for(unsigned j=0; j<tmp.size(); ++j) if(tmp[j].length()>0) fprintf(out," %s",tmp[j].c_str());
-    fprintf(out,"\"\n");
+  vector<string> tmp=Tools::ls(string(config::getPlumedRoot()+"/scripts"));
+  for(unsigned j=0; j<tmp.size(); ++j) {
+    size_t ff=tmp[j].find(".sh");
+    if(ff==string::npos) tmp[j].erase();
+    else                 tmp[j].erase(ff);
+  }
+  for(unsigned j=0; j<availableCxx.size(); j++) fprintf(out," %s",availableCxx[j].c_str());
+  for(unsigned j=0; j<tmp.size(); ++j) if(tmp[j].length()>0) fprintf(out," %s",tmp[j].c_str());
+  fprintf(out,"\"\n");
 
-    for(unsigned j=0; j<availableCxx.size(); j++) {
-        std::string s=availableCxx[j];
+  for(unsigned j=0; j<availableCxx.size(); j++) {
+    std::string s=availableCxx[j];
 // handle - sign (convert to underscore)
-        for(;;) {
-            size_t n=s.find("-");
-            if(n==std::string::npos) break;
-            s[n]='_';
-        }
-        fprintf(out,"local cmd_keys_%s=\"",s.c_str());
-        std::vector<std::string> keys=cltoolRegister().getKeys(availableCxx[j]);
-        for(unsigned k=0; k<keys.size(); k++) {
-// handle --help/-h
-            std::string s=keys[k];
-            for(;;) {
-                size_t n=s.find("/");
-                if(n==std::string::npos) break;
-                s[n]=' ';
-            }
-            fprintf(out," %s",s.c_str());
-        }
-        fprintf(out,"\"\n");
+    for(;;) {
+      size_t n=s.find("-");
+      if(n==std::string::npos) break;
+      s[n]='_';
     }
+    fprintf(out,"local cmd_keys_%s=\"",s.c_str());
+    std::vector<std::string> keys=cltoolRegister().getKeys(availableCxx[j]);
+    for(unsigned k=0; k<keys.size(); k++) {
+// handle --help/-h
+      std::string s=keys[k];
+      for(;;) {
+        size_t n=s.find("/");
+        if(n==std::string::npos) break;
+        s[n]=' ';
+      }
+      fprintf(out," %s",s.c_str());
+    }
+    fprintf(out,"\"\n");
+  }
 
 ////  ALTERNATIVE IMPLEMENTATION
 ////  checking tools on the fly
@@ -147,19 +147,19 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
 ////       fprintf(out,"\"\n");
 ////     }
 
-    fprintf(out,"%s\n",completion);
-    std::string name=config::getPlumedProgramName();
+  fprintf(out,"%s\n",completion);
+  std::string name=config::getPlumedProgramName();
 
-    fprintf(out,
-            "############################################\n"
-            "## ADD THESE COMMANDS TO YOUR .bashrc FILE:\n"
-            "############################################\n"
-            "# _%s() { eval \"$(%s --no-mpi completion 2>/dev/null)\";}\n"
-            "# complete -F _%s -o default %s\n"
-            "############################################\n",
-            name.c_str(),name.c_str(),name.c_str(),name.c_str());
+  fprintf(out,
+          "############################################\n"
+          "## ADD THESE COMMANDS TO YOUR .bashrc FILE:\n"
+          "############################################\n"
+          "# _%s() { eval \"$(%s --no-mpi completion 2>/dev/null)\";}\n"
+          "# complete -F _%s -o default %s\n"
+          "############################################\n",
+          name.c_str(),name.c_str(),name.c_str(),name.c_str());
 
-    return 0;
+  return 0;
 }
 
 } // End of namespace

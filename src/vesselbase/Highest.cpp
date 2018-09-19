@@ -27,35 +27,35 @@ namespace vesselbase {
 
 class Highest : public OrderingVessel {
 public:
-    static void registerKeywords( Keywords& keys );
-    static void reserveKeyword( Keywords& keys );
-    explicit Highest( const VesselOptions& da );
-    std::string value_descriptor();
-    bool compare( const double&, const double& );
+  static void registerKeywords( Keywords& keys );
+  static void reserveKeyword( Keywords& keys );
+  explicit Highest( const VesselOptions& da );
+  std::string value_descriptor();
+  bool compare( const double&, const double& );
 };
 
 PLUMED_REGISTER_VESSEL(Highest,"HIGHEST")
 
 void Highest::registerKeywords( Keywords& keys ) {
-    OrderingVessel::registerKeywords( keys );
+  OrderingVessel::registerKeywords( keys );
 }
 
 void Highest::reserveKeyword( Keywords& keys ) {
-    keys.reserve("vessel","HIGHEST","this flag allows you to recover the highest of these variables.");
-    keys.addOutputComponent("highest","HIGHEST","the lowest of the quantitities calculated by this action");
+  keys.reserve("vessel","HIGHEST","this flag allows you to recover the highest of these variables.");
+  keys.addOutputComponent("highest","HIGHEST","the lowest of the quantitities calculated by this action");
 }
 
 Highest::Highest( const VesselOptions& da ) :
-    OrderingVessel(da)
+  OrderingVessel(da)
 {
 }
 
 std::string Highest::value_descriptor() {
-    return "the highest of the individual colvar values";
+  return "the highest of the individual colvar values";
 }
 
 bool Highest::compare( const double& val1, const double& val2 ) {
-    return val1>val2;
+  return val1>val2;
 }
 
 }

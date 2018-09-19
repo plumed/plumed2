@@ -148,130 +148,130 @@ statement.
 */
 
 class OFile:
-    public virtual FileBase {
+  public virtual FileBase {
 /// Pointer to a linked OFile.
 /// see link(OFile&)
-    OFile* linked;
+  OFile* linked;
 /// Internal buffer for printf
-    std::unique_ptr<char[]> buffer_string;
+  std::unique_ptr<char[]> buffer_string;
 /// Internal buffer (generic use)
-    std::unique_ptr<char[]> buffer;
+  std::unique_ptr<char[]> buffer;
 /// Internal buffer length
-    int buflen;
+  int buflen;
 /// This variables stores the actual buffer length
-    int actual_buffer_length;
+  int actual_buffer_length;
 /// Class identifying a single field for fielded output
-    class Field:
-        public FieldBase {
-    };
+  class Field:
+    public FieldBase {
+  };
 /// Low-level write
-    size_t llwrite(const char*,size_t);
+  size_t llwrite(const char*,size_t);
 /// True if fields has changed.
 /// This could be due to a change in the list of fields or a reset
 /// of a nominally constant field
-    bool fieldChanged;
+  bool fieldChanged;
 /// Format for fields writing
-    std::string fieldFmt;
+  std::string fieldFmt;
 /// All the previously defined variable fields
-    std::vector<Field> previous_fields;
+  std::vector<Field> previous_fields;
 /// All the defined variable fields
-    std::vector<Field> fields;
+  std::vector<Field> fields;
 /// All the defined constant fields
-    std::vector<Field> const_fields;
+  std::vector<Field> const_fields;
 /// Prefix for line (e.g. "PLUMED: ")
-    std::string linePrefix;
+  std::string linePrefix;
 /// Temporary ostringstream for << output
-    std::ostringstream oss;
+  std::ostringstream oss;
 /// The string used for backing up files
-    std::string backstring;
+  std::string backstring;
 /// Find field index given name
-    unsigned findField(const std::string&name)const;
+  unsigned findField(const std::string&name)const;
 /// check if we are restarting
-    bool checkRestart()const;
+  bool checkRestart()const;
 /// True if restart behavior should be forced
-    bool enforceRestart_;
+  bool enforceRestart_;
 /// True if backup behavior (i.e. non restart) should be forced
-    bool enforceBackup_;
+  bool enforceBackup_;
 public:
 /// Constructor
-    OFile();
+  OFile();
 /// Allows overloading of link
-    using FileBase::link;
+  using FileBase::link;
 /// Allows overloading of open
-    using FileBase::open;
+  using FileBase::open;
 /// Allows linking this OFile to another one.
 /// In this way, everything written to this OFile will be immediately
 /// written on the linked OFile. Notice that a OFile should
 /// be either opened explicitly, linked to a FILE or linked to a OFile
-    OFile& link(OFile&);
+  OFile& link(OFile&);
 /// Set the string name to be used for automatic backup
-    void setBackupString( const std::string& );
+  void setBackupString( const std::string& );
 /// Backup a file by giving it a different name
-    void backupFile( const std::string& bstring, const std::string& fname );
+  void backupFile( const std::string& bstring, const std::string& fname );
 /// This backs up all the files that would have been created with the
 /// name str.  It is used in analysis when you are not restarting.  Analysis
 /// output files at different times, which are names analysis.0.<filename>,
 /// analysis.1.<filename> and <filename>, are backed up to bck.0.analysis.0.<filename>,
 /// bck.0.analysis.1.<filename> and bck.0.<filename>
-    void backupAllFiles( const std::string& str );
+  void backupAllFiles( const std::string& str );
 /// Opens the file using automatic append/backup
-    OFile& open(const std::string&name);
+  OFile& open(const std::string&name);
 /// Set the prefix for output.
 /// Typically "PLUMED: ". Notice that lines with a prefix cannot
 /// be parsed using fields in a IFile.
-    OFile& setLinePrefix(const std::string&);
+  OFile& setLinePrefix(const std::string&);
 /// Set the format for writing double precision fields
-    OFile& fmtField(const std::string&);
+  OFile& fmtField(const std::string&);
 /// Reset the format for writing double precision fields to its default
-    OFile& fmtField();
+  OFile& fmtField();
 /// Set the value of a double precision field
-    OFile& printField(const std::string&,double);
+  OFile& printField(const std::string&,double);
 /// Set the value of a int field
-    OFile& printField(const std::string&,int);
+  OFile& printField(const std::string&,int);
 /// Set the value of a string field
-    OFile& printField(const std::string&,const std::string&);
+  OFile& printField(const std::string&,const std::string&);
 ///
-    OFile& addConstantField(const std::string&);
+  OFile& addConstantField(const std::string&);
 /// Used to setup printing of values
-    OFile& setupPrintValue( Value *val );
+  OFile& setupPrintValue( Value *val );
 /// Print a value
-    OFile& printField( Value* val, const double& v );
-    /** Close a line.
-    Typically used as
-    \verbatim
-      of.printField("a",a).printField("b",b).printField();
-    \endverbatim
-    */
-    OFile& printField();
-    /**
-    Resets the list of fields.
-    As it is only possible to add new constant fields (addConstantField()),
-    this method can be used to clean the field list.
-    */
-    OFile& clearFields();
+  OFile& printField( Value* val, const double& v );
+  /** Close a line.
+  Typically used as
+  \verbatim
+    of.printField("a",a).printField("b",b).printField();
+  \endverbatim
+  */
+  OFile& printField();
+  /**
+  Resets the list of fields.
+  As it is only possible to add new constant fields (addConstantField()),
+  this method can be used to clean the field list.
+  */
+  OFile& clearFields();
 /// Formatted output with explicit format - a la printf
-    int printf(const char*fmt,...);
+  int printf(const char*fmt,...);
 /// Formatted output with << operator
-    template <class T>
-    friend OFile& operator<<(OFile&,const T &);
+  template <class T>
+  friend OFile& operator<<(OFile&,const T &);
 /// Rewind a file
-    OFile&rewind();
+  OFile&rewind();
 /// Flush a file
-    virtual FileBase&flush();
+  virtual FileBase&flush();
 /// Enforce restart, also if the attached plumed object is not restarting.
 /// Useful for tests
-    OFile&enforceRestart();
+  OFile&enforceRestart();
 /// Enforce backup, even if the attached plumed object is restarting.
-    OFile&enforceBackup();
+  OFile&enforceBackup();
 };
 
 /// Write using << syntax
 template <class T>
 OFile& operator<<(OFile&of,const T &t) {
-    of.oss<<t;
-    of.printf("%s",of.oss.str().c_str());
-    of.oss.str("");
-    return of;
+  of.oss<<t;
+  of.printf("%s",of.oss.str().c_str());
+  of.oss.str("");
+  return of;
 }
 
 

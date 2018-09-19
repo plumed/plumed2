@@ -45,34 +45,31 @@ PRINT ARG=t1
 
 class Time : public ActionWithValue {
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit Time(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  explicit Time(const ActionOptions&);
 // active methods:
-    virtual void calculate();
-    virtual void apply() {}
-    unsigned getNumberOfDerivatives() {
-        return 0;
-    }
+  virtual void calculate();
+  virtual void apply() {}
+  unsigned getNumberOfDerivatives() { return 0; }
 };
 
 PLUMED_REGISTER_ACTION(Time,"TIME")
 
 void Time::registerKeywords( Keywords& keys ) {
-    Action::registerKeywords( keys );
-    ActionWithValue::registerKeywords( keys );
+  Action::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
 }
 
 Time::Time(const ActionOptions&ao):
-    Action(ao),ActionWithValue(ao)
+  Action(ao),ActionWithValue(ao)
 {
-    addValueWithDerivatives();
-    setNotPeriodic();
-    // resize derivative by hand to a nonzero value
-    getPntrToValue()->resizeDerivatives(1);
+  addValueWithDerivatives(); setNotPeriodic();
+  // resize derivative by hand to a nonzero value
+  getPntrToValue()->resizeDerivatives(1);
 }
 
 void Time::calculate() {
-    setValue           (getTime());
+  setValue           (getTime());
 }
 
 }

@@ -41,24 +41,24 @@ and return one single value.
 class FunctionVessel : public ValueVessel {
 protected:
 /// Are the derivatives differentiable
-    bool diffweight;
+  bool diffweight;
 /// Are we normalising by the weight
-    bool norm;
+  bool norm;
 /// Are we using the tolerance
-    bool usetol;
+  bool usetol;
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit FunctionVessel( const VesselOptions& );
+  static void registerKeywords( Keywords& keys );
+  explicit FunctionVessel( const VesselOptions& );
 /// This does the resizing of the buffer
-    virtual void resize();
+  virtual void resize();
 /// Do the calcualtion
-    virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  virtual void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
 /// Do any transformations of the value that are required
-    virtual double calcTransform( const double& val, double& df ) const ;
+  virtual double calcTransform( const double& val, double& df ) const ;
 /// Finish the calculation of the quantity
-    virtual void finish( const std::vector<double>& buffer );
+  virtual void finish( const std::vector<double>& buffer );
 /// Finish with any transforms required
-    virtual double finalTransform( const double& val, double& dv );
+  virtual double finalTransform( const double& val, double& dv );
 };
 
 }

@@ -37,32 +37,32 @@ namespace mapping {
 class PathReparameterization {
 private:
 /// This is used when setting up frames
-    PDB mypdb;
+  PDB mypdb;
 /// Packs that we use to store the vectors connecting frames
-    MultiValue mydpack;
-    ReferenceValuePack mypack;
+  MultiValue mydpack;
+  ReferenceValuePack mypack;
 /// Direction that is used to reparameterize configurations
-    Direction mydir;
+  Direction mydir;
 /// The PBC object that you would like to use to calculate distances
-    const Pbc& pbc;
+  const Pbc& pbc;
 /// The underlying value object for the arguments
-    const std::vector<Value*>& args;
+  const std::vector<Value*>& args;
 /// Reference to path that we are reparameterizing
-    const std::vector<std::unique_ptr<ReferenceConfiguration>>& mypath;
+  const std::vector<std::unique_ptr<ReferenceConfiguration>>& mypath;
 /// These are the current separations and the total length of the path
-    std::vector<double> len, sumlen, sfrac;
+  std::vector<double> len, sumlen, sfrac;
 /// Maximum number of cycles in path reparameterization
-    unsigned MAXCYCLES;
+  unsigned MAXCYCLES;
 /// This function is used to work out when we are at loop ends as we go through them in positive and negative order
-    bool loopEnd( const int& index, const int& end, const int& inc ) const ;
+  bool loopEnd( const int& index, const int& end, const int& inc ) const ;
 /// Calculate the current spacings for the frames between istart and iend and return the average spacing
-    void calcCurrentPathSpacings( const int& istart, const int& iend );
+  void calcCurrentPathSpacings( const int& istart, const int& iend );
 /// Reparameterize the frames of the path between istart and iend and make the spacing equal to target
-    void reparameterizePart( const int& istart, const int& iend, const double& target, const double& TOL );
+  void reparameterizePart( const int& istart, const int& iend, const double& target, const double& TOL );
 public:
-    PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<std::unique_ptr<ReferenceConfiguration>>& pp );
+  PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<std::unique_ptr<ReferenceConfiguration>>& pp );
 /// Reparameterize the frames of the path between istart and iend so as to make the spacing constant
-    void reparameterize( const int& istart, const int& iend, const double& TOL );
+  void reparameterize( const int& istart, const int& iend, const double& TOL );
 };
 
 }

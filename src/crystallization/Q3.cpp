@@ -170,8 +170,8 @@ namespace crystallization {
 
 class Q3 : public Steinhardt {
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit Q3( const ActionOptions& ao );
+  static void registerKeywords( Keywords& keys );
+  explicit Q3( const ActionOptions& ao );
 };
 
 PLUMED_REGISTER_ACTION(Q3,"Q3")
@@ -179,32 +179,32 @@ typedef LocalSteinhardt<Q3> LOCAL_Q3;
 PLUMED_REGISTER_ACTION(LOCAL_Q3,"LOCAL_Q3")
 
 void Q3::registerKeywords( Keywords& keys ) {
-    Steinhardt::registerKeywords( keys );
+  Steinhardt::registerKeywords( keys );
 }
 
 Q3::Q3(const ActionOptions& ao ):
-    Action(ao),
-    Steinhardt(ao)
+  Action(ao),
+  Steinhardt(ao)
 {
-    setAngularMomentum(3);
+  setAngularMomentum(3);
 
 // Spherical harmonics normalization:
 // even =  sqrt ( ((2l+1)*(l-m)!) / (4*pi*(l+m)!) )
 // odd  = -sqrt ( ((2l+1)*(l-m)!) / (4*pi*(l+m)!) )
 
-    normaliz.resize( 4 );
-    normaliz[0] = sqrt( ( 7.0*6.0 ) / (4.0*pi*6.0) );
-    normaliz[1] = -sqrt( ( 7.0*2.0 ) / (4.0*pi*24.0) );
-    normaliz[2] = sqrt( ( 7.0*1.0) / (4.0*pi*120.0) );
-    normaliz[3] = -sqrt( ( 7.0*1.0) / (4.0*pi*720.0) );
+  normaliz.resize( 4 );
+  normaliz[0] = sqrt( ( 7.0*6.0 ) / (4.0*pi*6.0) );
+  normaliz[1] = -sqrt( ( 7.0*2.0 ) / (4.0*pi*24.0) );
+  normaliz[2] = sqrt( ( 7.0*1.0) / (4.0*pi*120.0) );
+  normaliz[3] = -sqrt( ( 7.0*1.0) / (4.0*pi*720.0) );
 
 // Legendre polynomial coefficients of order three
 
-    coeff_poly.resize( 4 );
-    coeff_poly[0]=0.0;
-    coeff_poly[1]=-1.5;
-    coeff_poly[2]=0.0;
-    coeff_poly[3]=2.5;
+  coeff_poly.resize( 4 );
+  coeff_poly[0]=0.0;
+  coeff_poly[1]=-1.5;
+  coeff_poly[2]=0.0;
+  coeff_poly[3]=2.5;
 
 }
 

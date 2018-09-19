@@ -29,41 +29,38 @@ namespace PLMD {
 namespace gridtools {
 
 class ActionWithInputGrid : public ActionWithGrid {
-    friend class DumpGrid;
+  friend class DumpGrid;
 private:
-    unsigned mycomp;
+  unsigned mycomp;
 protected:
-    GridVessel* ingrid;
-    double getFunctionValue( const unsigned& ipoint ) const ;
-    double getFunctionValue( const std::vector<unsigned>& ip ) const ;
-    double getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const ;
+  GridVessel* ingrid;
+  double getFunctionValue( const unsigned& ipoint ) const ;
+  double getFunctionValue( const std::vector<unsigned>& ip ) const ;
+  double getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const ;
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit ActionWithInputGrid(const ActionOptions&ao);
-    virtual void clearAverage();
-    virtual void prepareForAveraging();
-    virtual bool checkAllActive() const {
-        return true;
-    }
-    virtual void performOperations( const bool& from_update );
-    virtual void apply() {};
+  static void registerKeywords( Keywords& keys );
+  explicit ActionWithInputGrid(const ActionOptions&ao);
+  virtual void clearAverage();
+  virtual void prepareForAveraging();
+  virtual bool checkAllActive() const { return true; }
+  virtual void performOperations( const bool& from_update );
+  virtual void apply() {};
 };
 
 inline
 double ActionWithInputGrid::getFunctionValue( const unsigned& ipoint ) const {
-    unsigned dim=ingrid->getDimension();
-    if( ingrid->noderiv ) dim=0;
-    return ingrid->getGridElement( ipoint, mycomp*(1+dim) );
+  unsigned dim=ingrid->getDimension(); if( ingrid->noderiv ) dim=0;
+  return ingrid->getGridElement( ipoint, mycomp*(1+dim) );
 }
 
 inline
 double ActionWithInputGrid::getFunctionValue( const std::vector<unsigned>& ip ) const {
-    return getFunctionValue( ingrid->getIndex(ip) );
+  return getFunctionValue( ingrid->getIndex(ip) );
 }
 
 inline
 double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const {
-    return ingrid->getValueAndDerivatives( x, mycomp, der );
+  return ingrid->getValueAndDerivatives( x, mycomp, der );
 }
 
 }

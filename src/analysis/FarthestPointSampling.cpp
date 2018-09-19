@@ -37,61 +37,54 @@ namespace analysis {
 
 class FarthestPointSampling : public LandmarkSelectionBase {
 private:
-    unsigned seed;
+  unsigned seed;
 public:
-    static void registerKeywords( Keywords& keys );
-    FarthestPointSampling( const ActionOptions& ao );
-    void selectLandmarks();
+  static void registerKeywords( Keywords& keys );
+  FarthestPointSampling( const ActionOptions& ao );
+  void selectLandmarks();
 };
 
 PLUMED_REGISTER_ACTION(FarthestPointSampling,"LANDMARK_SELECT_FPS")
 
 void FarthestPointSampling::registerKeywords( Keywords& keys ) {
-    LandmarkSelectionBase::registerKeywords(keys);
-    keys.add("compulsory","SEED","1234","a random number seed");
+  LandmarkSelectionBase::registerKeywords(keys);
+  keys.add("compulsory","SEED","1234","a random number seed");
 }
 
 FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):
-    Action(ao),
-    LandmarkSelectionBase(ao)
+  Action(ao),
+  LandmarkSelectionBase(ao)
 {
-    if( !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input action");
-    parse("SEED",seed);
+  if( !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input action");
+  parse("SEED",seed);
 }
 
 void FarthestPointSampling::selectLandmarks() {
-    std::vector<unsigned> landmarks( getNumberOfDataPoints() );
+  std::vector<unsigned> landmarks( getNumberOfDataPoints() );
 
-    // Select first point at random
-    Random random;
-    random.setSeed(-seed);
-    double rand=random.RandU01();
-    landmarks[0] = std::floor( my_input_data->getNumberOfDataPoints()*rand );
-    selectFrame( landmarks[0] );
+  // Select first point at random
+  Random random; random.setSeed(-seed); double rand=random.RandU01();
+  landmarks[0] = std::floor( my_input_data->getNumberOfDataPoints()*rand );
+  selectFrame( landmarks[0] );
 
-    // Now find distance to all other points (N.B. We can use squared distances here for speed)
-    Matrix<double> distances( getNumberOfDataPoints(), my_input_data->getNumberOfDataPoints() );
-    for(unsigned i=0; i<my_input_data->getNumberOfDataPoints(); ++i) distances(0,i) = my_input_data->getDissimilarity( landmarks[0], i );
+  // Now find distance to all other points (N.B. We can use squared distances here for speed)
+  Matrix<double> distances( getNumberOfDataPoints(), my_input_data->getNumberOfDataPoints() );
+  for(unsigned i=0; i<my_input_data->getNumberOfDataPoints(); ++i) distances(0,i) = my_input_data->getDissimilarity( landmarks[0], i );
 
-    // Now find all other landmarks
-    for(unsigned i=1; i<getNumberOfDataPoints(); ++i) {
-        // Find point that has the largest minimum distance from the landmarks selected thus far
-        double maxd=0;
-        for(unsigned j=0; j<my_input_data->getNumberOfDataPoints(); ++j) {
-            double mind=distances(0,j);
-            for(unsigned k=1; k<i; ++k) {
-                if( distances(k,j)<mind ) {
-                    mind=distances(k,j);
-                }
-            }
-            if( mind>maxd ) {
-                maxd=mind;
-                landmarks[i]=j;
-            }
-        }
-        selectFrame( landmarks[i] );
-        for(unsigned k=0; k<my_input_data->getNumberOfDataPoints(); ++k) distances(i,k) = my_input_data->getDissimilarity( landmarks[i], k );
+  // Now find all other landmarks
+  for(unsigned i=1; i<getNumberOfDataPoints(); ++i) {
+    // Find point that has the largest minimum distance from the landmarks selected thus far
+    double maxd=0;
+    for(unsigned j=0; j<my_input_data->getNumberOfDataPoints(); ++j) {
+      double mind=distances(0,j);
+      for(unsigned k=1; k<i; ++k) {
+        if( distances(k,j)<mind ) { mind=distances(k,j); }
+      }
+      if( mind>maxd ) { maxd=mind; landmarks[i]=j; }
     }
+    selectFrame( landmarks[i] );
+    for(unsigned k=0; k<my_input_data->getNumberOfDataPoints(); ++k) distances(i,k) = my_input_data->getDissimilarity( landmarks[i], k );
+  }
 }
 
 }

@@ -31,25 +31,25 @@ namespace gridtools {
 class ActionWithGrid : public vesselbase::ActionWithAveraging {
 private:
 /// The total number of bins
-    std::vector<unsigned> nbins;
+  std::vector<unsigned> nbins;
 /// The spacing between grid points
-    std::vector<double> gspacing;
+  std::vector<double> gspacing;
 /// The weights we are going to use for reweighting
-    std::vector<Value*> weights;
+  std::vector<Value*> weights;
 protected:
 /// The grid vessel
-    GridVessel* mygrid;
+  GridVessel* mygrid;
 /// Read in stuff that is specifically for the grid and create it.
 /// Notice that this not only returns a unique_ptr but also set the protected
 /// member mygrid as an alias to that unique_ptr.
-    std::unique_ptr<GridVessel> createGrid( const std::string& type, const std::string& inputstr );
+  std::unique_ptr<GridVessel> createGrid( const std::string& type, const std::string& inputstr );
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit ActionWithGrid( const ActionOptions& );
-    virtual void turnOnDerivatives();
-    void calculate();
-    void runTask( const unsigned& current, MultiValue& myvals ) const ;
-    virtual void compute( const unsigned& current, MultiValue& myvals ) const = 0;
+  static void registerKeywords( Keywords& keys );
+  explicit ActionWithGrid( const ActionOptions& );
+  virtual void turnOnDerivatives();
+  void calculate();
+  void runTask( const unsigned& current, MultiValue& myvals ) const ;
+  virtual void compute( const unsigned& current, MultiValue& myvals ) const = 0;
 };
 
 }

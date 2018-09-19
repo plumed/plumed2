@@ -30,29 +30,27 @@ namespace adjmat {
 
 class ClusterAnalysisBase : public multicolvar::MultiColvarBase {
 private:
-    MultiValue myfvals;
-    multicolvar::AtomValuePack myfatoms;
-    ClusteringBase* myclusters;
+  MultiValue myfvals;
+  multicolvar::AtomValuePack myfatoms;
+  ClusteringBase* myclusters;
 protected:
-    unsigned getNumberOfNodes() const ;
-    unsigned getNumberOfClusters() const ;
-    void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
-    bool nodeIsActive( const unsigned& ind ) const ;
-    double getCutoffForConnection() const ;
-    bool areConnected( const unsigned& ind1, const unsigned& ind2 ) const ;
-    void getPropertiesOfNode( const unsigned& ind, std::vector<double>& vals ) const ;
-    void getNodePropertyDerivatives( const unsigned& ind, MultiValue& myvals ) const ;
+  unsigned getNumberOfNodes() const ;
+  unsigned getNumberOfClusters() const ;
+  void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
+  bool nodeIsActive( const unsigned& ind ) const ;
+  double getCutoffForConnection() const ;
+  bool areConnected( const unsigned& ind1, const unsigned& ind2 ) const ;
+  void getPropertiesOfNode( const unsigned& ind, std::vector<double>& vals ) const ;
+  void getNodePropertyDerivatives( const unsigned& ind, MultiValue& myvals ) const ;
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit ClusterAnalysisBase(const ActionOptions&);
-    unsigned getNumberOfQuantities() const ;
-    bool isPeriodic();
-    void turnOnDerivatives();
-    void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ) {}
-    Vector getPositionOfAtomForLinkCells( const unsigned& ) const ;
-    double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-        plumed_error();
-    }
+  static void registerKeywords( Keywords& keys );
+  explicit ClusterAnalysisBase(const ActionOptions&);
+  unsigned getNumberOfQuantities() const ;
+  bool isPeriodic();
+  void turnOnDerivatives();
+  void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ) {}
+  Vector getPositionOfAtomForLinkCells( const unsigned& ) const ;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
 };
 
 }

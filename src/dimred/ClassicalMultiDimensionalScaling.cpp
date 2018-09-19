@@ -164,54 +164,49 @@ namespace dimred {
 
 class ClassicalMultiDimensionalScaling : public DimensionalityReductionBase {
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit ClassicalMultiDimensionalScaling( const ActionOptions& ao );
-    void calculateProjections( const Matrix<double>&, Matrix<double>& );
+  static void registerKeywords( Keywords& keys );
+  explicit ClassicalMultiDimensionalScaling( const ActionOptions& ao );
+  void calculateProjections( const Matrix<double>&, Matrix<double>& );
 };
 
 PLUMED_REGISTER_ACTION(ClassicalMultiDimensionalScaling,"CLASSICAL_MDS")
 
 void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ) {
-    DimensionalityReductionBase::registerKeywords( keys );
+  DimensionalityReductionBase::registerKeywords( keys );
 }
 
 ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const ActionOptions& ao):
-    Action(ao),
-    DimensionalityReductionBase(ao)
+  Action(ao),
+  DimensionalityReductionBase(ao)
 {
-    if( dimredbase ) error("input to CLASSICAL_MDS should not be output from dimensionality reduction object");
+  if( dimredbase ) error("input to CLASSICAL_MDS should not be output from dimensionality reduction object");
 }
 
 void ClassicalMultiDimensionalScaling::calculateProjections( const Matrix<double>& targets, Matrix<double>& projections ) {
-    // Retrieve the distances from the dimensionality reduction object
-    double half=(-0.5);
-    Matrix<double> distances( half*targets );
+  // Retrieve the distances from the dimensionality reduction object
+  double half=(-0.5); Matrix<double> distances( half*targets );
 
-    // Apply centering transtion
-    unsigned n=distances.nrows();
-    double sum;
-    // First HM
-    for(unsigned i=0; i<n; ++i) {
-        sum=0;
-        for(unsigned j=0; j<n; ++j) sum+=distances(i,j);
-        for(unsigned j=0; j<n; ++j) distances(i,j) -= sum/n;
-    }
-    // Now (HM)H
-    for(unsigned i=0; i<n; ++i) {
-        sum=0;
-        for(unsigned j=0; j<n; ++j) sum+=distances(j,i);
-        for(unsigned j=0; j<n; ++j) distances(j,i) -= sum/n;
-    }
+  // Apply centering transtion
+  unsigned n=distances.nrows(); double sum;
+  // First HM
+  for(unsigned i=0; i<n; ++i) {
+    sum=0; for(unsigned j=0; j<n; ++j) sum+=distances(i,j);
+    for(unsigned j=0; j<n; ++j) distances(i,j) -= sum/n;
+  }
+  // Now (HM)H
+  for(unsigned i=0; i<n; ++i) {
+    sum=0; for(unsigned j=0; j<n; ++j) sum+=distances(j,i);
+    for(unsigned j=0; j<n; ++j) distances(j,i) -= sum/n;
+  }
 
-    // Diagonalize matrix
-    std::vector<double> eigval(n);
-    Matrix<double> eigvec(n,n);
-    diagMat( distances, eigval, eigvec );
+  // Diagonalize matrix
+  std::vector<double> eigval(n); Matrix<double> eigvec(n,n);
+  diagMat( distances, eigval, eigvec );
 
-    // Pass final projections to map object
-    for(unsigned i=0; i<n; ++i) {
-        for(unsigned j=0; j<projections.ncols(); ++j) projections(i,j)=sqrt(eigval[n-1-j])*eigvec(n-1-j,i);
-    }
+  // Pass final projections to map object
+  for(unsigned i=0; i<n; ++i) {
+    for(unsigned j=0; j<projections.ncols(); ++j) projections(i,j)=sqrt(eigval[n-1-j])*eigvec(n-1-j,i);
+  }
 }
 
 }

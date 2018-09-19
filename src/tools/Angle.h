@@ -40,9 +40,9 @@ class Angle {
 // still empty, but may accomodate some options in the future
 public:
 /// Compute the angle between vectors v1 and v2
-    double compute(const Vector& v1,const Vector& v2)const;
+  double compute(const Vector& v1,const Vector& v2)const;
 /// Compute the angle between vectors v1 and v2 and its derivatives wrt v1 and v2
-    double compute(const Vector& v1,const Vector& v2,Vector& d1,Vector& d2)const;
+  double compute(const Vector& v1,const Vector& v2,Vector& d1,Vector& d2)const;
 };
 
 }

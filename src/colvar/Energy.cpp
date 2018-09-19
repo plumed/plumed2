@@ -61,12 +61,12 @@ PRINT ARG=ene
 class Energy : public Colvar {
 
 public:
-    explicit Energy(const ActionOptions&);
+  explicit Energy(const ActionOptions&);
 // active methods:
-    void prepare();
-    virtual void calculate();
-    unsigned getNumberOfDerivatives();
-    static void registerKeywords( Keywords& keys );
+  void prepare();
+  virtual void calculate();
+  unsigned getNumberOfDerivatives();
+  static void registerKeywords( Keywords& keys );
 };
 
 
@@ -76,39 +76,38 @@ using namespace std;
 PLUMED_REGISTER_ACTION(Energy,"ENERGY")
 
 Energy::Energy(const ActionOptions&ao):
-    PLUMED_COLVAR_INIT(ao)
+  PLUMED_COLVAR_INIT(ao)
 {
 //  if(checkNumericalDerivatives())
 //    error("Cannot use NUMERICAL_DERIVATIVES with ENERGY");
-    isEnergy=true;
-    addValueWithDerivatives();
-    setNotPeriodic();
-    getPntrToValue()->resizeDerivatives(1);
-    log<<"  Bibliography ";
-    log<<plumed.cite("Bartels and Karplus, J. Phys. Chem. B 102, 865 (1998)");
-    log<<plumed.cite("Bonomi and Parrinello, J. Comp. Chem. 30, 1615 (2009)");
-    log<<"\n";
+  isEnergy=true;
+  addValueWithDerivatives(); setNotPeriodic();
+  getPntrToValue()->resizeDerivatives(1);
+  log<<"  Bibliography ";
+  log<<plumed.cite("Bartels and Karplus, J. Phys. Chem. B 102, 865 (1998)");
+  log<<plumed.cite("Bonomi and Parrinello, J. Comp. Chem. 30, 1615 (2009)");
+  log<<"\n";
 }
 
 void Energy::registerKeywords( Keywords& keys ) {
-    Action::registerKeywords( keys );
-    ActionAtomistic::registerKeywords( keys );
-    ActionWithValue::registerKeywords( keys );
-    keys.remove("NUMERICAL_DERIVATIVES");
+  Action::registerKeywords( keys );
+  ActionAtomistic::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  keys.remove("NUMERICAL_DERIVATIVES");
 }
 
 unsigned Energy::getNumberOfDerivatives() {
-    return 1;
+  return 1;
 }
 
 void Energy::prepare() {
-    plumed.getAtoms().setCollectEnergy(true);
+  plumed.getAtoms().setCollectEnergy(true);
 }
 
 // calculator
 void Energy::calculate() {
-    setValue( getEnergy() );
-    getPntrToComponent(0)->addDerivative(0,1.0);
+  setValue( getEnergy() );
+  getPntrToComponent(0)->addDerivative(0,1.0);
 }
 
 }

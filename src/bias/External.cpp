@@ -96,78 +96,71 @@ the order of arguments in the header of the grid file.
 class External : public Bias {
 
 private:
-    std::unique_ptr<Grid> BiasGrid_;
-    double scale_;
+  std::unique_ptr<Grid> BiasGrid_;
+  double scale_;
 
 public:
-    explicit External(const ActionOptions&);
-    void calculate();
-    static void registerKeywords(Keywords& keys);
+  explicit External(const ActionOptions&);
+  void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(External,"EXTERNAL")
 
 void External::registerKeywords(Keywords& keys) {
-    Bias::registerKeywords(keys);
-    keys.use("ARG");
-    keys.add("compulsory","FILE","the name of the file containing the external potential.");
-    keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
-    keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
-    keys.add("compulsory","SCALE","1.0","a factor that multiplies the external potential, usefull to invert free energies");
+  Bias::registerKeywords(keys);
+  keys.use("ARG");
+  keys.add("compulsory","FILE","the name of the file containing the external potential.");
+  keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
+  keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
+  keys.add("compulsory","SCALE","1.0","a factor that multiplies the external potential, usefull to invert free energies");
 }
 
 External::External(const ActionOptions& ao):
-    PLUMED_BIAS_INIT(ao)
+  PLUMED_BIAS_INIT(ao)
 {
-    string filename;
-    parse("FILE",filename);
-    if( filename.length()==0 ) error("No external potential file was specified");
-    bool sparsegrid=false;
-    parseFlag("SPARSE",sparsegrid);
-    bool nospline=false;
-    parseFlag("NOSPLINE",nospline);
-    bool spline=!nospline;
-    parse("SCALE",scale_);
+  string filename;
+  parse("FILE",filename);
+  if( filename.length()==0 ) error("No external potential file was specified");
+  bool sparsegrid=false;
+  parseFlag("SPARSE",sparsegrid);
+  bool nospline=false;
+  parseFlag("NOSPLINE",nospline);
+  bool spline=!nospline;
+  parse("SCALE",scale_);
 
-    checkRead();
+  checkRead();
 
-    log.printf("  External potential from file %s\n",filename.c_str());
-    log.printf("  Multiplied by %lf\n",scale_);
-    if(spline) {
-        log.printf("  External potential uses spline interpolation\n");
-    }
-    if(sparsegrid) {
-        log.printf("  External potential uses sparse grid\n");
-    }
+  log.printf("  External potential from file %s\n",filename.c_str());
+  log.printf("  Multiplied by %lf\n",scale_);
+  if(spline) {log.printf("  External potential uses spline interpolation\n");}
+  if(sparsegrid) {log.printf("  External potential uses sparse grid\n");}
 
 // read grid
-    IFile gridfile;
-    gridfile.open(filename);
-    std::string funcl=getLabel() + ".bias";
-    BiasGrid_=Grid::create(funcl,getArguments(),gridfile,sparsegrid,spline,true);
-    if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
-    }
+  IFile gridfile; gridfile.open(filename);
+  std::string funcl=getLabel() + ".bias";
+  BiasGrid_=Grid::create(funcl,getArguments(),gridfile,sparsegrid,spline,true);
+  if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
+  }
 }
 
 void External::calculate()
 {
-    unsigned ncv=getNumberOfArguments();
-    vector<double> cv(ncv), der(ncv);
+  unsigned ncv=getNumberOfArguments();
+  vector<double> cv(ncv), der(ncv);
 
-    for(unsigned i=0; i<ncv; ++i) {
-        cv[i]=getArgument(i);
-    }
+  for(unsigned i=0; i<ncv; ++i) {cv[i]=getArgument(i);}
 
-    double ene=scale_*BiasGrid_->getValueAndDerivatives(cv,der);
+  double ene=scale_*BiasGrid_->getValueAndDerivatives(cv,der);
 
-    setBias(ene);
+  setBias(ene);
 
-    for(unsigned i=0; i<ncv; ++i) {
-        const double f=-scale_*der[i];
-        setOutputForce(i,f);
-    }
+  for(unsigned i=0; i<ncv; ++i) {
+    const double f=-scale_*der[i];
+    setOutputForce(i,f);
+  }
 }
 
 }

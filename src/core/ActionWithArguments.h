@@ -40,90 +40,90 @@ This is used in PLMD::Function and PLMD::Bias
 */
 
 class ActionWithArguments:
-    public virtual Action
+  public virtual Action
 {
-    std::vector<Value*> arguments;
-    bool lockRequestArguments;
+  std::vector<Value*> arguments;
+  bool lockRequestArguments;
 protected:
 /// This changes the arg keyword in the pdb file
-    void expandArgKeywordInPDB( PDB& pdb );
+  void expandArgKeywordInPDB( PDB& pdb );
 public:
 /// Get the scalar product between the gradients of two variables
-    double getProjection(unsigned i,unsigned j)const;
+  double getProjection(unsigned i,unsigned j)const;
 /// Registers the list of keywords
-    static void registerKeywords( Keywords& keys );
+  static void registerKeywords( Keywords& keys );
 /// Returns the value of an argument
-    double getArgument( const unsigned n ) const;
+  double getArgument( const unsigned n ) const;
 /// Return a pointer to specific argument
-    Value* getPntrToArgument( const unsigned n );
+  Value* getPntrToArgument( const unsigned n );
 /// Returns the number of arguments
-    virtual unsigned getNumberOfArguments() const ;
+  virtual unsigned getNumberOfArguments() const ;
 /// Takes the difference taking into account pbc for arg i
-    double difference(int, double, double) const;
+  double difference(int, double, double) const;
 /// Takes one value and brings it back into the pbc of argument i
-    double bringBackInPbc(int i,double d1)const;
+  double bringBackInPbc(int i,double d1)const;
 /// Parse a list of arguments
-    void parseArgumentList(const std::string&key,std::vector<Value*>&args);
+  void parseArgumentList(const std::string&key,std::vector<Value*>&args);
 /// Parse a numbered list of arguments
-    bool parseArgumentList(const std::string&key,int i,std::vector<Value*>&args);
+  bool parseArgumentList(const std::string&key,int i,std::vector<Value*>&args);
 /// Setup the dependencies
-    void requestArguments(const std::vector<Value*> &arg);
+  void requestArguments(const std::vector<Value*> &arg);
 /// Add forces to arguments (used in apply)
-    void addForcesOnArguments( const std::vector<double>& forces );
+  void addForcesOnArguments( const std::vector<double>& forces );
 public:
-    explicit ActionWithArguments(const ActionOptions&);
-    virtual ~ActionWithArguments() {}
+  explicit ActionWithArguments(const ActionOptions&);
+  virtual ~ActionWithArguments() {}
 /// Calculate the numerical derivatives
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you
 /// are doing.  The default will be correct for the vast majority of cases
-    virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
-    void lockRequests();
-    void unlockRequests();
+  virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
+  void lockRequests();
+  void unlockRequests();
 /// Returns an array of pointers to the arguments
-    virtual const std::vector<Value*>    & getArguments() const ;
+  virtual const std::vector<Value*>    & getArguments() const ;
 /// Convert a list of argument names into a list of pointers to the values
-    void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
+  void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
 };
 
 
 inline
 Value* ActionWithArguments::getPntrToArgument( const unsigned n ) {
-    return arguments[n];
+  return arguments[n];
 }
 
 inline
 double ActionWithArguments::getArgument(const unsigned n) const {
-    return arguments[n]->get();
+  return arguments[n]->get();
 }
 
 inline
 unsigned ActionWithArguments::getNumberOfArguments()const {
-    return arguments.size();
+  return arguments.size();
 }
 
 inline
 double ActionWithArguments::difference(int i,double d1,double d2)const {
-    return arguments[i]->difference(d1,d2);
+  return arguments[i]->difference(d1,d2);
 }
 
 inline
 double ActionWithArguments::bringBackInPbc(int i,double d1)const {
-    return arguments[i]->bringBackInPbc(d1);
+  return arguments[i]->bringBackInPbc(d1);
 }
 
 inline
 void ActionWithArguments::lockRequests() {
-    lockRequestArguments=true;
+  lockRequestArguments=true;
 }
 
 inline
 void ActionWithArguments::unlockRequests() {
-    lockRequestArguments=false;
+  lockRequestArguments=false;
 }
 
 inline
 const std::vector<Value*> & ActionWithArguments::getArguments() const {
-    return arguments;
+  return arguments;
 }
 
 }

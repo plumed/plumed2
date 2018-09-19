@@ -31,24 +31,24 @@ namespace adjmat {
 
 class AlignedMatrixBase : public AdjacencyMatrixBase {
 private:
-    unsigned ncol_t;
+  unsigned ncol_t;
 /// switching function
-    Matrix<SwitchingFunction> switchingFunction;
+  Matrix<SwitchingFunction> switchingFunction;
 public:
 /// Create manual
-    static void registerKeywords( Keywords& keys );
+  static void registerKeywords( Keywords& keys );
 /// Constructor
-    explicit AlignedMatrixBase(const ActionOptions&);
+  explicit AlignedMatrixBase(const ActionOptions&);
 ///
-    void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
-    virtual void readOrientationConnector( const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) = 0;
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
+  virtual void readOrientationConnector( const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) = 0;
 /// This actually calculates the value of the contact function
-    double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
-    double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
 /// This transforms the dot product
-    virtual double computeVectorFunction( const unsigned& iv, const unsigned& jv,
-                                          const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
-                                          Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const = 0;
+  virtual double computeVectorFunction( const unsigned& iv, const unsigned& jv,
+                                        const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
+                                        Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const = 0;
 };
 
 

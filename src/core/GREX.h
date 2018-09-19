@@ -34,29 +34,29 @@ class Atoms;
 class Communicator;
 
 class GREX:
-    public WithCmd
+  public WithCmd
 {
-    bool initialized;
-    ForwardDecl<Communicator> intracomm_fwd;
-    Communicator& intracomm=*intracomm_fwd;
-    ForwardDecl<Communicator> intercomm_fwd;
-    Communicator& intercomm=*intercomm_fwd;
-    PlumedMain& plumedMain;
-    Atoms&      atoms;
-    int partner;
-    double localDeltaBias;
-    double foreignDeltaBias;
-    double localUNow;
-    double localUSwap;
-    std::vector<double> allDeltaBias;
-    std::string buffer;
-    int myreplica;
+  bool initialized;
+  ForwardDecl<Communicator> intracomm_fwd;
+  Communicator& intracomm=*intracomm_fwd;
+  ForwardDecl<Communicator> intercomm_fwd;
+  Communicator& intercomm=*intercomm_fwd;
+  PlumedMain& plumedMain;
+  Atoms&      atoms;
+  int partner;
+  double localDeltaBias;
+  double foreignDeltaBias;
+  double localUNow;
+  double localUSwap;
+  std::vector<double> allDeltaBias;
+  std::string buffer;
+  int myreplica;
 public:
-    explicit GREX(PlumedMain&);
-    ~GREX();
-    void cmd(const std::string&key,void*val=NULL);
-    void calculate();
-    void savePositions();
+  explicit GREX(PlumedMain&);
+  ~GREX();
+  void cmd(const std::string&key,void*val=NULL);
+  void calculate();
+  void savePositions();
 };
 
 }

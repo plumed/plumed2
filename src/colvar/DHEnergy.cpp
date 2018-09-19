@@ -67,24 +67,24 @@ PRINT ARG=dh
 //+ENDPLUMEDOC
 
 class DHEnergy : public CoordinationBase {
-    double k; // Inverse Debye screening length
-    double constant;
-    double epsilon;
+  double k; // Inverse Debye screening length
+  double constant;
+  double epsilon;
 
 public:
-    explicit DHEnergy(const ActionOptions&);
+  explicit DHEnergy(const ActionOptions&);
 // active methods:
-    static void registerKeywords( Keywords& keys );
-    virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const;
+  static void registerKeywords( Keywords& keys );
+  virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const;
 };
 
 PLUMED_REGISTER_ACTION(DHEnergy,"DHENERGY")
 
 void DHEnergy::registerKeywords( Keywords& keys ) {
-    CoordinationBase::registerKeywords(keys);
-    keys.add("compulsory","I","1.0","Ionic strength (M)");
-    keys.add("compulsory","TEMP","300.0","Simulation temperature (K)");
-    keys.add("compulsory","EPSILON","80.0","Dielectric constant of solvent");
+  CoordinationBase::registerKeywords(keys);
+  keys.add("compulsory","I","1.0","Ionic strength (M)");
+  keys.add("compulsory","TEMP","300.0","Simulation temperature (K)");
+  keys.add("compulsory","EPSILON","80.0","Dielectric constant of solvent");
 }
 
 /*
@@ -111,38 +111,38 @@ To speed up the loop calculation, constant can be modified as followed:
 */
 
 DHEnergy::DHEnergy(const ActionOptions&ao):
-    Action(ao),
-    CoordinationBase(ao),
-    k(0.0),
-    constant(0.0)
+  Action(ao),
+  CoordinationBase(ao),
+  k(0.0),
+  constant(0.0)
 {
-    double I,T;
-    parse("I",I);
-    parse("TEMP",T);
-    parse("EPSILON",epsilon);
-    checkRead();
-    if( plumed.getAtoms().usingNaturalUnits() ) error("DHENERGY cannot be used for calculations performed with natural units");
-    constant=138.935458111/atoms.getUnits().getEnergy()/atoms.getUnits().getLength()*atoms.getUnits().getCharge()*atoms.getUnits().getCharge();
-    k=sqrt(I/(epsilon*T))*502.903741125*atoms.getUnits().getLength();
-    checkRead();
-    log<<"  with solvent dielectric constant "<<epsilon<<"\n";
-    log<<"  at temperature "<<T<<" K\n";
-    log<<"  at ionic strength "<<I<< "M\n";
-    log<<"  these parameters correspond to a screening length of "<<(1.0/k)<<"\n";
-    log<<"  Bibliography "<<plumed.cite("Do, Carloni, Varani and Bussi, J. Chem. Theory Comput. 9, 1720 (2013)")<<" \n";
+  double I,T;
+  parse("I",I);
+  parse("TEMP",T);
+  parse("EPSILON",epsilon);
+  checkRead();
+  if( plumed.getAtoms().usingNaturalUnits() ) error("DHENERGY cannot be used for calculations performed with natural units");
+  constant=138.935458111/atoms.getUnits().getEnergy()/atoms.getUnits().getLength()*atoms.getUnits().getCharge()*atoms.getUnits().getCharge();
+  k=sqrt(I/(epsilon*T))*502.903741125*atoms.getUnits().getLength();
+  checkRead();
+  log<<"  with solvent dielectric constant "<<epsilon<<"\n";
+  log<<"  at temperature "<<T<<" K\n";
+  log<<"  at ionic strength "<<I<< "M\n";
+  log<<"  these parameters correspond to a screening length of "<<(1.0/k)<<"\n";
+  log<<"  Bibliography "<<plumed.cite("Do, Carloni, Varani and Bussi, J. Chem. Theory Comput. 9, 1720 (2013)")<<" \n";
 }
 
 double DHEnergy::pairing(double distance2,double&dfunc,unsigned i,unsigned j)const {
-    double distance=std::sqrt(distance2);
-    if(getAbsoluteIndex(i)==getAbsoluteIndex(j)) {
-        dfunc=0.0;
-        return 0.0;
-    }
-    double invdistance=1.0/distance;
-    double tmp=exp(-k*distance)*invdistance*constant*getCharge(i)*getCharge(j)/epsilon;
-    double dtmp=-(k+invdistance)*tmp;
-    dfunc=dtmp*invdistance;
-    return tmp;
+  double distance=std::sqrt(distance2);
+  if(getAbsoluteIndex(i)==getAbsoluteIndex(j)) {
+    dfunc=0.0;
+    return 0.0;
+  }
+  double invdistance=1.0/distance;
+  double tmp=exp(-k*distance)*invdistance*constant*getCharge(i)*getCharge(j)/epsilon;
+  double dtmp=-(k+invdistance)*tmp;
+  dfunc=dtmp*invdistance;
+  return tmp;
 }
 
 }

@@ -28,24 +28,22 @@
 namespace PLMD {
 
 class Direction :
-    public ReferenceAtoms,
-    public ReferenceArguments
+  public ReferenceAtoms,
+  public ReferenceArguments
 {
 public:
-    bool normalized;
-    explicit Direction( const ReferenceConfigurationOptions& ro );
-    void read( const PDB& );
-    double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args,
-                 ReferenceValuePack& myder, const bool& squared ) const ;
-    void setDirection( const std::vector<Vector>& conf, const std::vector<double>& args );
-    void addDirection( const double& weight, const Direction& dir );
-    void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ) {
-        plumed_error();
-    }
+  bool normalized;
+  explicit Direction( const ReferenceConfigurationOptions& ro );
+  void read( const PDB& );
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args,
+               ReferenceValuePack& myder, const bool& squared ) const ;
+  void setDirection( const std::vector<Vector>& conf, const std::vector<double>& args );
+  void addDirection( const double& weight, const Direction& dir );
+  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ) { plumed_error(); }
 /// This allows us to extract the reference positions, which are the direction in this case
-    void extractArgumentDisplacement( const std::vector<Value*>& vals, const std::vector<double>& arg, std::vector<double>& dirout ) const ;
-    void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& dirout ) const ;
-    void zeroDirection();
+  void extractArgumentDisplacement( const std::vector<Value*>& vals, const std::vector<double>& arg, std::vector<double>& dirout ) const ;
+  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& dirout ) const ;
+  void zeroDirection();
 };
 
 }

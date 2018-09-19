@@ -84,93 +84,91 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 class DihedralCorrelation : public MultiColvarBase {
 private:
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit DihedralCorrelation(const ActionOptions&);
-    virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-    bool isPeriodic() {
-        return false;
-    }
+  static void registerKeywords( Keywords& keys );
+  explicit DihedralCorrelation(const ActionOptions&);
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  bool isPeriodic() { return false; }
 };
 
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
 
 void DihedralCorrelation::registerKeywords( Keywords& keys ) {
-    MultiColvarBase::registerKeywords( keys );
-    keys.add("numbered","ATOMS","the atoms involved in each of the dihedral correlation values you wish to calculate. "
-             "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dihedral correlation will be "
-             "calculated for each ATOM keyword you specify (all ATOM keywords should "
-             "specify the indices of 8 atoms).  The eventual number of quantities calculated by this "
-             "action will depend on what functions of the distribution you choose to calculate.");
-    keys.reset_style("ATOMS","atoms");
+  MultiColvarBase::registerKeywords( keys );
+  keys.add("numbered","ATOMS","the atoms involved in each of the dihedral correlation values you wish to calculate. "
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dihedral correlation will be "
+           "calculated for each ATOM keyword you specify (all ATOM keywords should "
+           "specify the indices of 8 atoms).  The eventual number of quantities calculated by this "
+           "action will depend on what functions of the distribution you choose to calculate.");
+  keys.reset_style("ATOMS","atoms");
 }
 
 DihedralCorrelation::DihedralCorrelation(const ActionOptions&ao):
-    Action(ao),
-    MultiColvarBase(ao)
+  Action(ao),
+  MultiColvarBase(ao)
 {
-    // Read in the atoms
-    std::vector<AtomNumber> all_atoms;
-    readAtomsLikeKeyword( "ATOMS", 8, all_atoms );
-    setupMultiColvarBase( all_atoms );
-    // Stuff for central atoms
-    std::vector<bool> catom_ind(8, false);
-    catom_ind[1]=catom_ind[2]=catom_ind[5]=catom_ind[6]=true;
-    setAtomsForCentralAtom( catom_ind );
+  // Read in the atoms
+  std::vector<AtomNumber> all_atoms;
+  readAtomsLikeKeyword( "ATOMS", 8, all_atoms );
+  setupMultiColvarBase( all_atoms );
+  // Stuff for central atoms
+  std::vector<bool> catom_ind(8, false);
+  catom_ind[1]=catom_ind[2]=catom_ind[5]=catom_ind[6]=true;
+  setAtomsForCentralAtom( catom_ind );
 
-    // And setup the ActionWithVessel
-    if( getNumberOfVessels()==0 ) {
-        std::string fake_input;
-        addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
-        readVesselKeywords();  // This makes sure resizing is done
-    }
+  // And setup the ActionWithVessel
+  if( getNumberOfVessels()==0 ) {
+    std::string fake_input;
+    addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
+    readVesselKeywords();  // This makes sure resizing is done
+  }
 
-    // And check everything has been read in correctly
-    checkRead();
+  // And check everything has been read in correctly
+  checkRead();
 }
 
 double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-    const Vector d10=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
-    const Vector d11=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
-    const Vector d12=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
+  const Vector d10=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
+  const Vector d11=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
+  const Vector d12=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
 
-    Vector dd10,dd11,dd12;
-    PLMD::Torsion t1;
-    const double phi1  = t1.compute(d10,d11,d12,dd10,dd11,dd12);
+  Vector dd10,dd11,dd12;
+  PLMD::Torsion t1;
+  const double phi1  = t1.compute(d10,d11,d12,dd10,dd11,dd12);
 
-    const Vector d20=getSeparation(myatoms.getPosition(5),myatoms.getPosition(4));
-    const Vector d21=getSeparation(myatoms.getPosition(6),myatoms.getPosition(5));
-    const Vector d22=getSeparation(myatoms.getPosition(7),myatoms.getPosition(6));
+  const Vector d20=getSeparation(myatoms.getPosition(5),myatoms.getPosition(4));
+  const Vector d21=getSeparation(myatoms.getPosition(6),myatoms.getPosition(5));
+  const Vector d22=getSeparation(myatoms.getPosition(7),myatoms.getPosition(6));
 
-    Vector dd20,dd21,dd22;
-    PLMD::Torsion t2;
-    const double phi2 = t2.compute( d20, d21, d22, dd20, dd21, dd22 );
+  Vector dd20,dd21,dd22;
+  PLMD::Torsion t2;
+  const double phi2 = t2.compute( d20, d21, d22, dd20, dd21, dd22 );
 
-    // Calculate value
-    const double diff = phi2 - phi1;
-    const double value = 0.5*(1.+cos(diff));
-    // Derivatives wrt phi1
-    const double dval = 0.5*sin(diff);
-    dd10 *= dval;
-    dd11 *= dval;
-    dd12 *= dval;
-    // And add
-    addAtomDerivatives(1, 0, dd10, myatoms );
-    addAtomDerivatives(1, 1, dd11-dd10, myatoms );
-    addAtomDerivatives(1, 2, dd12-dd11, myatoms );
-    addAtomDerivatives(1, 3, -dd12, myatoms );
-    myatoms.addBoxDerivatives  (1, -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)));
-    // Derivative wrt phi2
-    dd20 *= -dval;
-    dd21 *= -dval;
-    dd22 *= -dval;
-    // And add
-    addAtomDerivatives(1, 4, dd20, myatoms );
-    addAtomDerivatives(1, 5, dd21-dd20, myatoms );
-    addAtomDerivatives(1, 6, dd22-dd21, myatoms );
-    addAtomDerivatives(1, 7, -dd22, myatoms );
-    myatoms.addBoxDerivatives(1, -(extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)));
+  // Calculate value
+  const double diff = phi2 - phi1;
+  const double value = 0.5*(1.+cos(diff));
+  // Derivatives wrt phi1
+  const double dval = 0.5*sin(diff);
+  dd10 *= dval;
+  dd11 *= dval;
+  dd12 *= dval;
+  // And add
+  addAtomDerivatives(1, 0, dd10, myatoms );
+  addAtomDerivatives(1, 1, dd11-dd10, myatoms );
+  addAtomDerivatives(1, 2, dd12-dd11, myatoms );
+  addAtomDerivatives(1, 3, -dd12, myatoms );
+  myatoms.addBoxDerivatives  (1, -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)));
+  // Derivative wrt phi2
+  dd20 *= -dval;
+  dd21 *= -dval;
+  dd22 *= -dval;
+  // And add
+  addAtomDerivatives(1, 4, dd20, myatoms );
+  addAtomDerivatives(1, 5, dd21-dd20, myatoms );
+  addAtomDerivatives(1, 6, dd22-dd21, myatoms );
+  addAtomDerivatives(1, 7, -dd22, myatoms );
+  myatoms.addBoxDerivatives(1, -(extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)));
 
-    return value;
+  return value;
 }
 
 }

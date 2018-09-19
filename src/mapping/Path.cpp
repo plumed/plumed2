@@ -148,36 +148,33 @@ namespace mapping {
 
 class Path : public PathBase {
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit Path(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  explicit Path(const ActionOptions&);
 };
 
 PLUMED_REGISTER_ACTION(Path,"PATH")
 
 void Path::registerKeywords( Keywords& keys ) {
-    PathBase::registerKeywords( keys );
-    keys.remove("PROPERTY");
-    keys.addFlag("NOSPATH",false,"do not calculate the spath position");
-    keys.remove("LOWMEM");
-    keys.use("GPATH");
+  PathBase::registerKeywords( keys ); keys.remove("PROPERTY");
+  keys.addFlag("NOSPATH",false,"do not calculate the spath position");
+  keys.remove("LOWMEM"); keys.use("GPATH");
 }
 
 Path::Path(const ActionOptions& ao):
-    Action(ao),
-    PathBase(ao)
+  Action(ao),
+  PathBase(ao)
 {
-    setLowMemOption( true );
-    bool nos;
-    parseFlag("NOSPATH",nos);
+  setLowMemOption( true );
+  bool nos; parseFlag("NOSPATH",nos);
 
-    std::string empty;
-    if(!nos) {
-        if( getLambda()==0 ) error("you must set LAMBDA parameter in order to calculate spath position.  Use LAMBDA/NOSPATH keyword");
-        empty="LABEL=spath";
-        addVessel("SPATH",empty,0);
-    }
-    readVesselKeywords();
-    checkRead();
+  std::string empty;
+  if(!nos) {
+    if( getLambda()==0 ) error("you must set LAMBDA parameter in order to calculate spath position.  Use LAMBDA/NOSPATH keyword");
+    empty="LABEL=spath";
+    addVessel("SPATH",empty,0);
+  }
+  readVesselKeywords();
+  checkRead();
 }
 
 }

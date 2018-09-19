@@ -28,19 +28,19 @@ namespace PLMD {
 class Random;
 
 class ExchangePatterns {
-    int    PatternFlag;
-    int    NumberOfReplicas;
-    ForwardDecl<Random> random_fwd;
-    Random& random=*random_fwd;
+  int    PatternFlag;
+  int    NumberOfReplicas;
+  ForwardDecl<Random> random_fwd;
+  Random& random=*random_fwd;
 public:
-    ExchangePatterns();
-    ~ExchangePatterns();
-    enum PatternFlags { NONE, RANDOM, NEIGHBOR, TOTAL };
-    void setNofR(const int);
-    void setSeed(const int);
-    void setFlag(const int);
-    void getList(int *ind);
-    void getFlag(int&);
+  ExchangePatterns();
+  ~ExchangePatterns();
+  enum PatternFlags { NONE, RANDOM, NEIGHBOR, TOTAL };
+  void setNofR(const int);
+  void setSeed(const int);
+  void setFlag(const int);
+  void getList(int *ind);
+  void getFlag(int&);
 };
 }
 #endif

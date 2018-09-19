@@ -33,39 +33,37 @@ namespace gridtools {
 
 class HistogramOnGrid : public GridVessel {
 private:
-    unsigned neigh_tot;
-    bool addOneKernelAtATime;
-    std::string kerneltype;
-    std::vector<double> bandwidths;
-    std::vector<unsigned> nneigh;
+  unsigned neigh_tot;
+  bool addOneKernelAtATime;
+  std::string kerneltype;
+  std::vector<double> bandwidths;
+  std::vector<unsigned> nneigh;
 protected:
-    bool discrete;
+  bool discrete;
 public:
-    double  von_misses_norm;
-    double von_misses_concentration;
-    static void registerKeywords( Keywords& keys );
-    explicit HistogramOnGrid( const vesselbase::VesselOptions& da );
-    void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
-                    const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
-    void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
-    void finish( const std::vector<double>& buffer );
-    virtual void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
-    virtual void accumulateForce( const unsigned& ipoint, const double& weight, const std::vector<double>& der, std::vector<double>& intforce ) const ;
-    unsigned getNumberOfBufferPoints() const ;
-    std::unique_ptr<KernelFunctions> getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const;
-    std::vector<std::unique_ptr<Value>> getVectorOfValues() const ;
-    void addOneKernelEachTimeOnly() {
-        addOneKernelAtATime=true;
-    }
-    virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces );
-    bool noDiscreteKernels() const ;
-    double getFibonacciCutoff() const ;
+  double  von_misses_norm;
+  double von_misses_concentration;
+  static void registerKeywords( Keywords& keys );
+  explicit HistogramOnGrid( const vesselbase::VesselOptions& da );
+  void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax,
+                  const std::vector<unsigned>& nbins, const std::vector<double>& spacing );
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void finish( const std::vector<double>& buffer );
+  virtual void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
+  virtual void accumulateForce( const unsigned& ipoint, const double& weight, const std::vector<double>& der, std::vector<double>& intforce ) const ;
+  unsigned getNumberOfBufferPoints() const ;
+  std::unique_ptr<KernelFunctions> getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const;
+  std::vector<std::unique_ptr<Value>> getVectorOfValues() const ;
+  void addOneKernelEachTimeOnly() { addOneKernelAtATime=true; }
+  virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces );
+  bool noDiscreteKernels() const ;
+  double getFibonacciCutoff() const ;
 };
 
 inline
 unsigned HistogramOnGrid::getNumberOfBufferPoints() const {
-    if( addOneKernelAtATime ) return neigh_tot;
-    return GridVessel::getNumberOfBufferPoints();
+  if( addOneKernelAtATime ) return neigh_tot;
+  return GridVessel::getNumberOfBufferPoints();
 }
 
 }

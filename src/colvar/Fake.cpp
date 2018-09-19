@@ -49,78 +49,78 @@ FAKE ATOMS=1 PERIODIC=-3.14,3.14   LABEL=d2
 class ColvarFake : public Colvar {
 
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit ColvarFake(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  explicit ColvarFake(const ActionOptions&);
 // active methods:
-    virtual void calculate();
+  virtual void calculate();
 };
 
 PLUMED_REGISTER_ACTION(ColvarFake,"FAKE")
 
 void ColvarFake::registerKeywords( Keywords& keys ) {
-    Colvar::registerKeywords( keys );
-    keys.add("atoms","ATOMS","the fake atom index, a number is enough");
-    keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO,NO (one for the lower and the other for the upper boundary). For multicomponents then it is PERIODIC=mincomp1,maxcomp1,mincomp2,maxcomp2  etc ");
-    keys.use("PERIODIC");
-    keys.add("optional","COMPONENTS","additional components that this variable is supposed to have. Periodicity is ruled by PERIODIC keyword ");
+  Colvar::registerKeywords( keys );
+  keys.add("atoms","ATOMS","the fake atom index, a number is enough");
+  keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO,NO (one for the lower and the other for the upper boundary). For multicomponents then it is PERIODIC=mincomp1,maxcomp1,mincomp2,maxcomp2  etc ");
+  keys.use("PERIODIC");
+  keys.add("optional","COMPONENTS","additional components that this variable is supposed to have. Periodicity is ruled by PERIODIC keyword ");
 }
 
 ColvarFake::ColvarFake(const ActionOptions&ao):
-    PLUMED_COLVAR_INIT(ao)
+  PLUMED_COLVAR_INIT(ao)
 {
-    vector<AtomNumber> atoms;
-    parseAtomList("ATOMS",atoms);
+  vector<AtomNumber> atoms;
+  parseAtomList("ATOMS",atoms);
 
-    vector<string> comps;
-    // multiple components for this variable
-    parseVector("COMPONENTS",comps);
+  vector<string> comps;
+  // multiple components for this variable
+  parseVector("COMPONENTS",comps);
+  if(comps.size()!=0) {
+    for(unsigned i=0; i<comps.size(); i++) {
+      addComponentWithDerivatives(comps[i]);
+    }
+    // periodicity
+  } else {
+    // only one component for this variable
+    addValueWithDerivatives();
+  }
+  std::vector<std::string> period;
+  parseVector("PERIODIC",period);
+  if(period.size()!=0) {
+    plumed_massert(static_cast<unsigned>(getNumberOfComponents()*2)==period.size(),"the periodicty should coincide with the number of components");
     if(comps.size()!=0) {
-        for(unsigned i=0; i<comps.size(); i++) {
-            addComponentWithDerivatives(comps[i]);
-        }
-        // periodicity
-    } else {
-        // only one component for this variable
-        addValueWithDerivatives();
-    }
-    std::vector<std::string> period;
-    parseVector("PERIODIC",period);
-    if(period.size()!=0) {
-        plumed_massert(static_cast<unsigned>(getNumberOfComponents()*2)==period.size(),"the periodicty should coincide with the number of components");
-        if(comps.size()!=0) {
-            for(int i=0; i<getNumberOfComponents(); i++) {
-                string pp=comps[i];
-                if(period[i*2]!="none" && period[i*2+1]!="none" ) {
-                    componentIsPeriodic(pp,period[i*2],period[i*2+1]);
-                } else {
-                    componentIsNotPeriodic(pp);
-                }
-            }
+      for(int i=0; i<getNumberOfComponents(); i++) {
+        string pp=comps[i];
+        if(period[i*2]!="none" && period[i*2+1]!="none" ) {
+          componentIsPeriodic(pp,period[i*2],period[i*2+1]);
         } else {
-            if(period[0]!="none" && period[1]!="none" ) {
-                setPeriodic(period[0],period[1]);
-            } else {
-                setNotPeriodic();
-            }
+          componentIsNotPeriodic(pp);
         }
+      }
     } else {
-        if(comps.size()!=0) {
-            for(int i=0; i<getNumberOfComponents(); i++) {
-                componentIsNotPeriodic(getPntrToComponent(i)->getName());
-            }
-        } else {
-            setNotPeriodic();
-        }
+      if(period[0]!="none" && period[1]!="none" ) {
+        setPeriodic(period[0],period[1]);
+      } else {
+        setNotPeriodic();
+      }
     }
-    checkRead();
-    requestAtoms(atoms);
+  } else {
+    if(comps.size()!=0) {
+      for(int i=0; i<getNumberOfComponents(); i++) {
+        componentIsNotPeriodic(getPntrToComponent(i)->getName());
+      }
+    } else {
+      setNotPeriodic();
+    }
+  }
+  checkRead();
+  requestAtoms(atoms);
 
 }
 
 
 // calculator
 void ColvarFake::calculate() {
-    plumed_merror("you should never have got here");
+  plumed_merror("you should never have got here");
 }
 
 }

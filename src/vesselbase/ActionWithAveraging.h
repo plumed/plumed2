@@ -45,93 +45,89 @@ been collected.
 */
 
 class ActionWithAveraging :
-    public ActionPilot,
-    public ActionAtomistic,
-    public ActionWithArguments,
-    public ActionWithValue,
-    public ActionWithVessel
+  public ActionPilot,
+  public ActionAtomistic,
+  public ActionWithArguments,
+  public ActionWithValue,
+  public ActionWithVessel
 {
-    friend class AveragingVessel;
+  friend class AveragingVessel;
 private:
 /// The vessel which is used to compute averages
-    AveragingVessel* myaverage;
+  AveragingVessel* myaverage;
 /// The weights we are going to use for reweighting
-    std::vector<Value*> weights;
+  std::vector<Value*> weights;
 /// Are we accumulated the unormalized quantity
-    bool activated;
+  bool activated;
 /// An object in which analysis data has been stored
-    analysis::AnalysisBase* my_analysis_object;
-    enum {t,f,ndata} normalization;
+  analysis::AnalysisBase* my_analysis_object;
+  enum {t,f,ndata} normalization;
 protected:
 /// This ensures runAllTasks is used
-    bool useRunAllTasks;
+  bool useRunAllTasks;
 /// The frequency with which to clear the grid
-    unsigned clearstride;
+  unsigned clearstride;
 /// The current weight and its logarithm
-    double lweight, cweight;
+  double lweight, cweight;
 /// Set the averaging action
-    void setAveragingAction( std::unique_ptr<AveragingVessel> av_vessel, const bool& usetasks );
+  void setAveragingAction( std::unique_ptr<AveragingVessel> av_vessel, const bool& usetasks );
 /// Check if we are using the normalization condition when calculating this quantity
-    bool noNormalization() const ;
+  bool noNormalization() const ;
 /// Are we storing data then averaging
-    bool storeThenAverage() const ;
+  bool storeThenAverage() const ;
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit ActionWithAveraging( const ActionOptions& );
-    void lockRequests();
-    void unlockRequests();
-    void calculateNumericalDerivatives(PLMD::ActionWithValue*);
-    virtual unsigned getNumberOfDerivatives() {
-        return 0;
-    }
-    virtual unsigned getNumberOfQuantities() const ;
-    unsigned getNumberOfArguments() const ;
+  static void registerKeywords( Keywords& keys );
+  explicit ActionWithAveraging( const ActionOptions& );
+  void lockRequests();
+  void unlockRequests();
+  void calculateNumericalDerivatives(PLMD::ActionWithValue*);
+  virtual unsigned getNumberOfDerivatives() { return 0; }
+  virtual unsigned getNumberOfQuantities() const ;
+  unsigned getNumberOfArguments() const ;
 /// Overwrite ActionWithArguments getArguments() so that we don't return the bias
-    std::vector<Value*> getArguments();
-    void update();
+  std::vector<Value*> getArguments();
+  void update();
 /// This does the clearing of the action
-    virtual void clearAverage();
+  virtual void clearAverage();
 /// This is done before the averaging comences
-    virtual void prepareForAveraging() {}
+  virtual void prepareForAveraging() {}
 /// This does the averaging operation
-    virtual void performOperations( const bool& from_update );
+  virtual void performOperations( const bool& from_update );
 /// Does the calculation
-    virtual void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+  virtual void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
 ///
-    virtual void runTask( const unsigned& current, MultiValue& myvals ) const {
-        plumed_error();
-    }
+  virtual void runTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 ///
-    virtual void accumulateAverage( MultiValue& myvals ) const {}
+  virtual void accumulateAverage( MultiValue& myvals ) const {}
 /// This is done once the averaging is finished
-    virtual void finishAveraging() {}
+  virtual void finishAveraging() {}
 ///
-    void runFinalJobs();
+  void runFinalJobs();
 ///
-    bool ignoreNormalization() const ;
+  bool ignoreNormalization() const ;
 };
 
 inline
 unsigned ActionWithAveraging::getNumberOfArguments() const {
-    return ActionWithArguments::getNumberOfArguments() - weights.size();
+  return ActionWithArguments::getNumberOfArguments() - weights.size();
 }
 
 inline
 std::vector<Value*> ActionWithAveraging::getArguments() {
-    std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
-    for(unsigned i=0; i<weights.size(); ++i) arg_vals.erase(arg_vals.end()-1);
-    return arg_vals;
+  std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
+  for(unsigned i=0; i<weights.size(); ++i) arg_vals.erase(arg_vals.end()-1);
+  return arg_vals;
 }
 
 inline
 bool ActionWithAveraging::noNormalization() const {
-    return normalization==f;
+  return normalization==f;
 }
 
 inline
 bool ActionWithAveraging::storeThenAverage() const {
-    if( my_analysis_object ) return true;
-    return false;
+  if( my_analysis_object ) return true;
+  return false;
 }
 
 }

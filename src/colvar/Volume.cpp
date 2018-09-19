@@ -49,39 +49,38 @@ PRINT ARG=vol
 class Volume : public Colvar {
 
 public:
-    explicit Volume(const ActionOptions&);
+  explicit Volume(const ActionOptions&);
 // active methods:
-    virtual void calculate();
+  virtual void calculate();
 /// Register all the keywords for this action
-    static void registerKeywords( Keywords& keys );
+  static void registerKeywords( Keywords& keys );
 };
 
 PLUMED_REGISTER_ACTION(Volume,"VOLUME")
 
 Volume::Volume(const ActionOptions&ao):
-    PLUMED_COLVAR_INIT(ao)
+  PLUMED_COLVAR_INIT(ao)
 {
-    std::vector<AtomNumber> atoms;
-    checkRead();
+  std::vector<AtomNumber> atoms;
+  checkRead();
 
-    addValueWithDerivatives();
-    setNotPeriodic();
-    requestAtoms(atoms);
+  addValueWithDerivatives(); setNotPeriodic();
+  requestAtoms(atoms);
 }
 
 void Volume::registerKeywords( Keywords& keys ) {
-    Action::registerKeywords( keys );
-    ActionWithValue::registerKeywords( keys );
-    ActionAtomistic::registerKeywords( keys );
+  Action::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  ActionAtomistic::registerKeywords( keys );
 }
 
 
 // calculator
 void Volume::calculate() {
 
-    double v=getBox().determinant();
-    setBoxDerivatives(-v*Tensor::identity());
-    setValue         (v);
+  double v=getBox().determinant();
+  setBoxDerivatives(-v*Tensor::identity());
+  setValue         (v);
 }
 
 }

@@ -58,120 +58,110 @@ namespace h36 {
 
 static
 const char*
-digits_upper() {
-    return "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-}
+digits_upper() { return "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"; }
 
 static
 const char*
-digits_lower() {
-    return "0123456789abcdefghijklmnopqrstuvwxyz";
-}
+digits_lower() { return "0123456789abcdefghijklmnopqrstuvwxyz"; }
 
 static
 const char*
-value_out_of_range() {
-    return "value out of range.";
-}
+value_out_of_range() { return "value out of range."; }
 
 static
-const char* invalid_number_literal() {
-    return "invalid number literal.";
-}
+const char* invalid_number_literal() { return "invalid number literal."; }
 
 static
-const char* unsupported_width() {
-    return "unsupported width.";
-}
+const char* unsupported_width() { return "unsupported width."; }
 
 static
 void
 fill_with_stars(unsigned width, char* result)
 {
-    while (width) {
-        *result++ = '*';
-        width--;
-    }
-    *result = '\0';
+  while (width) {
+    *result++ = '*';
+    width--;
+  }
+  *result = '\0';
 }
 
 static
 void
 encode_pure(
-    const char* digits,
-    unsigned digits_size,
-    unsigned width,
-    int value,
-    char* result)
+  const char* digits,
+  unsigned digits_size,
+  unsigned width,
+  int value,
+  char* result)
 {
-    char buf[16];
-    int rest;
-    unsigned i, j;
-    i = 0;
-    j = 0;
-    if (value < 0) {
-        j = 1;
-        value = -value;
-    }
-    while (1) {
-        rest = value / digits_size;
-        buf[i++] = digits[value - rest * digits_size];
-        if (rest == 0) break;
-        value = rest;
-    }
-    if (j) buf[i++] = '-';
-    for(j=i; j<width; j++) *result++ = ' ';
-    while (i != 0) *result++ = buf[--i];
-    *result = '\0';
+  char buf[16];
+  int rest;
+  unsigned i, j;
+  i = 0;
+  j = 0;
+  if (value < 0) {
+    j = 1;
+    value = -value;
+  }
+  while (1) {
+    rest = value / digits_size;
+    buf[i++] = digits[value - rest * digits_size];
+    if (rest == 0) break;
+    value = rest;
+  }
+  if (j) buf[i++] = '-';
+  for(j=i; j<width; j++) *result++ = ' ';
+  while (i != 0) *result++ = buf[--i];
+  *result = '\0';
 }
 
 static
 const char*
 decode_pure(
-    const int* digits_values,
-    unsigned digits_size,
-    const char* s,
-    unsigned s_size,
-    int* result)
+  const int* digits_values,
+  unsigned digits_size,
+  const char* s,
+  unsigned s_size,
+  int* result)
 {
-    int si, dv;
-    int have_minus = 0;
-    int have_non_blank = 0;
-    int value = 0;
-    unsigned i = 0;
-    for(; i<s_size; i++) {
-        si = s[i];
-        if (si < 0 || si > 127) {
-            *result = 0;
-            return invalid_number_literal();
-        }
-        if (si == ' ') {
-            if (!have_non_blank) continue;
-            value *= digits_size;
-        }
-        else if (si == '-') {
-            if (have_non_blank) {
-                *result = 0;
-                return invalid_number_literal();
-            }
-            have_non_blank = 1;
-            have_minus = 1;
-            continue;
-        }
-        else {
-            have_non_blank = 1;
-            dv = digits_values[si];
-            if (dv < 0 || dv >= digits_size) {
-                *result = 0;
-                return invalid_number_literal();
-            }
-            value *= digits_size;
-            value += dv;
-        }
+  int si, dv;
+  int have_minus = 0;
+  int have_non_blank = 0;
+  int value = 0;
+  unsigned i = 0;
+  for(; i<s_size; i++) {
+    si = s[i];
+    if (si < 0 || si > 127) {
+      *result = 0;
+      return invalid_number_literal();
     }
-    if (have_minus) value = -value;
-    *result = value;
-    return 0;
+    if (si == ' ') {
+      if (!have_non_blank) continue;
+      value *= digits_size;
+    }
+    else if (si == '-') {
+      if (have_non_blank) {
+        *result = 0;
+        return invalid_number_literal();
+      }
+      have_non_blank = 1;
+      have_minus = 1;
+      continue;
+    }
+    else {
+      have_non_blank = 1;
+      dv = digits_values[si];
+      if (dv < 0 || dv >= digits_size) {
+        *result = 0;
+        return invalid_number_literal();
+      }
+      value *= digits_size;
+      value += dv;
+    }
+  }
+  if (have_minus) value = -value;
+  *result = value;
+  return 0;
 }
 
 /*! hybrid-36 encoder: converts integer value to string result
@@ -195,53 +185,53 @@ decode_pure(
 const char*
 hy36encode(unsigned width, int value, char* result)
 {
-    int i = value;
-    if (width == 4U) {
-        if (i >= -999) {
-            if (i < 10000) {
-                encode_pure(digits_upper(), 10U, 4U, i, result);
-                return 0;
-            }
-            i -= 10000;
-            if (i < 1213056 /* 26*36**3 */) {
-                i += 466560 /* 10*36**3 */;
-                encode_pure(digits_upper(), 36U, 0U, i, result);
-                return 0;
-            }
-            i -= 1213056;
-            if (i < 1213056) {
-                i += 466560;
-                encode_pure(digits_lower(), 36U, 0U, i, result);
-                return 0;
-            }
-        }
+  int i = value;
+  if (width == 4U) {
+    if (i >= -999) {
+      if (i < 10000) {
+        encode_pure(digits_upper(), 10U, 4U, i, result);
+        return 0;
+      }
+      i -= 10000;
+      if (i < 1213056 /* 26*36**3 */) {
+        i += 466560 /* 10*36**3 */;
+        encode_pure(digits_upper(), 36U, 0U, i, result);
+        return 0;
+      }
+      i -= 1213056;
+      if (i < 1213056) {
+        i += 466560;
+        encode_pure(digits_lower(), 36U, 0U, i, result);
+        return 0;
+      }
     }
-    else if (width == 5U) {
-        if (i >= -9999) {
-            if (i < 100000) {
-                encode_pure(digits_upper(), 10U, 5U, i, result);
-                return 0;
-            }
-            i -= 100000;
-            if (i < 43670016 /* 26*36**4 */) {
-                i += 16796160 /* 10*36**4 */;
-                encode_pure(digits_upper(), 36U, 0U, i, result);
-                return 0;
-            }
-            i -= 43670016;
-            if (i < 43670016) {
-                i += 16796160;
-                encode_pure(digits_lower(), 36U, 0U, i, result);
-                return 0;
-            }
-        }
+  }
+  else if (width == 5U) {
+    if (i >= -9999) {
+      if (i < 100000) {
+        encode_pure(digits_upper(), 10U, 5U, i, result);
+        return 0;
+      }
+      i -= 100000;
+      if (i < 43670016 /* 26*36**4 */) {
+        i += 16796160 /* 10*36**4 */;
+        encode_pure(digits_upper(), 36U, 0U, i, result);
+        return 0;
+      }
+      i -= 43670016;
+      if (i < 43670016) {
+        i += 16796160;
+        encode_pure(digits_lower(), 36U, 0U, i, result);
+        return 0;
+      }
     }
-    else {
-        fill_with_stars(width, result);
-        return unsupported_width();
-    }
+  }
+  else {
     fill_with_stars(width, result);
-    return value_out_of_range();
+    return unsupported_width();
+  }
+  fill_with_stars(width, result);
+  return value_out_of_range();
 }
 
 /*! hybrid-36 decoder: converts string s to integer result
@@ -269,76 +259,74 @@ hy36encode(unsigned width, int value, char* result)
 const char*
 hy36decode(unsigned width, const char* s, unsigned s_size, int* result)
 {
-    static const std::vector<int> digits_values_upper_vector([]() {
-        std::vector<int> ret(128U,-1);
-        for(unsigned i=0; i<36U; i++) {
-            int di = digits_upper()[i];
-            if (di < 0 || di > 127) {
-                plumed_error()<<"internal error hy36decode: integer value out of range";
-            }
-            ret[di] = i;
-        }
-        return ret;
+  static const std::vector<int> digits_values_upper_vector([]() {
+    std::vector<int> ret(128U,-1);
+    for(unsigned i=0; i<36U; i++) {
+      int di = digits_upper()[i];
+      if (di < 0 || di > 127) {
+        plumed_error()<<"internal error hy36decode: integer value out of range";
+      }
+      ret[di] = i;
     }
-    ());
-    static const int* digits_values_upper=digits_values_upper_vector.data();
-    static const std::vector<int> digits_values_lower_vector([]() {
-        std::vector<int> ret(128U,-1);
-        for(unsigned i=0; i<36U; i++) {
-            int di = digits_lower()[i];
-            if (di < 0 || di > 127) {
-                plumed_error()<<"internal error hy36decode: integer value out of range";
-            }
-            ret[di] = i;
-        }
-        return ret;
+    return ret;
+  }());
+  static const int* digits_values_upper=digits_values_upper_vector.data();
+  static const std::vector<int> digits_values_lower_vector([]() {
+    std::vector<int> ret(128U,-1);
+    for(unsigned i=0; i<36U; i++) {
+      int di = digits_lower()[i];
+      if (di < 0 || di > 127) {
+        plumed_error()<<"internal error hy36decode: integer value out of range";
+      }
+      ret[di] = i;
     }
-    ());
-    static const int* digits_values_lower=digits_values_lower_vector.data();
-    int di;
-    const char* errmsg;
-    if (s_size == width) {
-        di = s[0];
-        if (di >= 0 && di <= 127) {
-            if (digits_values_upper[di] >= 10) {
-                errmsg = decode_pure(digits_values_upper, 36U, s, s_size, result);
-                if (errmsg == 0) {
-                    /* result - 10*36**(width-1) + 10**width */
-                    if      (width == 4U) (*result) -= 456560;
-                    else if (width == 5U) (*result) -= 16696160;
-                    else {
-                        *result = 0;
-                        return unsupported_width();
-                    }
-                    return 0;
-                }
-            }
-            else if (digits_values_lower[di] >= 10) {
-                errmsg = decode_pure(digits_values_lower, 36U, s, s_size, result);
-                if (errmsg == 0) {
-                    /* result + 16*36**(width-1) + 10**width */
-                    if      (width == 4U) (*result) += 756496;
-                    else if (width == 5U) (*result) += 26973856;
-                    else {
-                        *result = 0;
-                        return unsupported_width();
-                    }
-                    return 0;
-                }
-            }
-            else {
-                errmsg = decode_pure(digits_values_upper, 10U, s, s_size, result);
-                if (errmsg) return errmsg;
-                if (!(width == 4U || width == 5U)) {
-                    *result = 0;
-                    return unsupported_width();
-                }
-                return 0;
-            }
+    return ret;
+  }());
+  static const int* digits_values_lower=digits_values_lower_vector.data();
+  int di;
+  const char* errmsg;
+  if (s_size == width) {
+    di = s[0];
+    if (di >= 0 && di <= 127) {
+      if (digits_values_upper[di] >= 10) {
+        errmsg = decode_pure(digits_values_upper, 36U, s, s_size, result);
+        if (errmsg == 0) {
+          /* result - 10*36**(width-1) + 10**width */
+          if      (width == 4U) (*result) -= 456560;
+          else if (width == 5U) (*result) -= 16696160;
+          else {
+            *result = 0;
+            return unsupported_width();
+          }
+          return 0;
         }
+      }
+      else if (digits_values_lower[di] >= 10) {
+        errmsg = decode_pure(digits_values_lower, 36U, s, s_size, result);
+        if (errmsg == 0) {
+          /* result + 16*36**(width-1) + 10**width */
+          if      (width == 4U) (*result) += 756496;
+          else if (width == 5U) (*result) += 26973856;
+          else {
+            *result = 0;
+            return unsupported_width();
+          }
+          return 0;
+        }
+      }
+      else {
+        errmsg = decode_pure(digits_values_upper, 10U, s, s_size, result);
+        if (errmsg) return errmsg;
+        if (!(width == 4U || width == 5U)) {
+          *result = 0;
+          return unsupported_width();
+        }
+        return 0;
+      }
     }
-    *result = 0;
-    return invalid_number_literal();
+  }
+  *result = 0;
+  return invalid_number_literal();
 }
 
 }

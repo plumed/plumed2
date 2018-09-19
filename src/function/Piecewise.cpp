@@ -71,90 +71,90 @@ PRINT ARG=pw,ppww.dist1_pfunc,ppww.dist2_pfunc
 
 
 class Piecewise :
-    public Function
+  public Function
 {
-    std::vector<std::pair<double,double> > points;
+  std::vector<std::pair<double,double> > points;
 public:
-    explicit Piecewise(const ActionOptions&);
-    void calculate();
-    static void registerKeywords(Keywords& keys);
+  explicit Piecewise(const ActionOptions&);
+  void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 
 PLUMED_REGISTER_ACTION(Piecewise,"PIECEWISE")
 
 void Piecewise::registerKeywords(Keywords& keys) {
-    Function::registerKeywords(keys);
-    keys.use("ARG");
-    keys.add("numbered","POINT","This keyword is used to specify the various points in the function above.");
-    keys.reset_style("POINT","compulsory");
-    componentsAreNotOptional(keys);
-    keys.addOutputComponent("_pfunc","default","one or multiple instances of this quantity will be referenceable elsewhere "
-                            "in the input file.  These quantities will be named with the arguments of the "
-                            "function followed by the character string _pfunc.  These quantities tell the "
-                            "user the values of the piecewise functions of each of the arguments.");
+  Function::registerKeywords(keys);
+  keys.use("ARG");
+  keys.add("numbered","POINT","This keyword is used to specify the various points in the function above.");
+  keys.reset_style("POINT","compulsory");
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("_pfunc","default","one or multiple instances of this quantity will be referenceable elsewhere "
+                          "in the input file.  These quantities will be named with the arguments of the "
+                          "function followed by the character string _pfunc.  These quantities tell the "
+                          "user the values of the piecewise functions of each of the arguments.");
 }
 
 Piecewise::Piecewise(const ActionOptions&ao):
-    Action(ao),
-    Function(ao)
+  Action(ao),
+  Function(ao)
 {
-    for(int i=0;; i++) {
-        std::vector<double> pp;
-        if(!parseNumberedVector("POINT",i,pp) ) break;
-        if(pp.size()!=2) error("points should be in x,y format");
-        points.push_back(std::pair<double,double>(pp[0],pp[1]));
-        if(i>0 && points[i].first<=points[i-1].first) error("points abscissas should be monotonously increasing");
+  for(int i=0;; i++) {
+    std::vector<double> pp;
+    if(!parseNumberedVector("POINT",i,pp) ) break;
+    if(pp.size()!=2) error("points should be in x,y format");
+    points.push_back(std::pair<double,double>(pp[0],pp[1]));
+    if(i>0 && points[i].first<=points[i-1].first) error("points abscissas should be monotonously increasing");
+  }
+
+  for(unsigned i=0; i<getNumberOfArguments(); i++)
+    if(getPntrToArgument(i)->isPeriodic())
+      error("Cannot use PIECEWISE on periodic arguments");
+
+  if(getNumberOfArguments()==1) {
+    addValueWithDerivatives();
+    setNotPeriodic();
+  } else {
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+      addComponentWithDerivatives( getPntrToArgument(i)->getName()+"_pfunc" );
+      getPntrToComponent(i)->setNotPeriodic();
     }
+  }
+  checkRead();
 
-    for(unsigned i=0; i<getNumberOfArguments(); i++)
-        if(getPntrToArgument(i)->isPeriodic())
-            error("Cannot use PIECEWISE on periodic arguments");
-
-    if(getNumberOfArguments()==1) {
-        addValueWithDerivatives();
-        setNotPeriodic();
-    } else {
-        for(unsigned i=0; i<getNumberOfArguments(); i++) {
-            addComponentWithDerivatives( getPntrToArgument(i)->getName()+"_pfunc" );
-            getPntrToComponent(i)->setNotPeriodic();
-        }
-    }
-    checkRead();
-
-    log.printf("  on points:");
-    for(unsigned i=0; i<points.size(); i++) log.printf("   (%f,%f)",points[i].first,points[i].second);
-    log.printf("\n");
+  log.printf("  on points:");
+  for(unsigned i=0; i<points.size(); i++) log.printf("   (%f,%f)",points[i].first,points[i].second);
+  log.printf("\n");
 }
 
 void Piecewise::calculate() {
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
-        double val=getArgument(i);
-        unsigned p=0;
-        for(; p<points.size(); p++) {
-            if(val<points[p].first) break;
-        }
-        double f,d;
-        if(p==0) {
-            f=points[0].second;
-            d=0.0;
-        } else if(p==points.size()) {
-            f=points[points.size()-1].second;
-            d=0.0;
-        } else {
-            double m=(points[p].second-points[p-1].second) / (points[p].first-points[p-1].first);
-            f=m*(val-points[p-1].first)+points[p-1].second;
-            d=m;
-        }
-        if(getNumberOfArguments()==1) {
-            setValue(f);
-            setDerivative(i,d);
-        } else {
-            Value* v=getPntrToComponent(i);
-            v->set(f);
-            v->addDerivative(i,d);
-        }
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    double val=getArgument(i);
+    unsigned p=0;
+    for(; p<points.size(); p++) {
+      if(val<points[p].first) break;
     }
+    double f,d;
+    if(p==0) {
+      f=points[0].second;
+      d=0.0;
+    } else if(p==points.size()) {
+      f=points[points.size()-1].second;
+      d=0.0;
+    } else {
+      double m=(points[p].second-points[p-1].second) / (points[p].first-points[p-1].first);
+      f=m*(val-points[p-1].first)+points[p-1].second;
+      d=m;
+    }
+    if(getNumberOfArguments()==1) {
+      setValue(f);
+      setDerivative(i,d);
+    } else {
+      Value* v=getPntrToComponent(i);
+      v->set(f);
+      v->addDerivative(i,d);
+    }
+  }
 }
 
 }

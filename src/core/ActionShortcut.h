@@ -31,21 +31,21 @@ namespace PLMD {
 Action used to create a command that expands to multiple PLMD::Action commands when read in during input
 */
 class ActionShortcut :
-    public virtual Action {
+  public virtual Action {
 private:
-    std::string shortcutlabel;
+  std::string shortcutlabel;
 protected:
-    const std::string & getShortcutLabel() const ;
+  const std::string & getShortcutLabel() const ;
 public:
-    static void registerKeywords( Keywords& keys );
+  static void registerKeywords( Keywords& keys );
 /// Constructor
-    explicit ActionShortcut(const ActionOptions&ao);
+  explicit ActionShortcut(const ActionOptions&ao);
 /// Read a line of input and create appropriate actions
-    void readInputLine( const std::string& input );
+  void readInputLine( const std::string& input );
 /// Do nothing.
-    void calculate() {}
+  void calculate() {}
 /// Do nothing.
-    void apply() {}
+  void apply() {}
 };
 
 }

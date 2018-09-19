@@ -67,40 +67,35 @@ namespace crystallization {
 
 class PolymerAngles : public OrientationSphere {
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit PolymerAngles(const ActionOptions& ao);
-    double computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
-                                  Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const ;
+  static void registerKeywords( Keywords& keys );
+  explicit PolymerAngles(const ActionOptions& ao);
+  double computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
+                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const ;
 };
 
 PLUMED_REGISTER_ACTION(PolymerAngles,"POLYMER_ANGLES")
 
 void PolymerAngles::registerKeywords( Keywords& keys ) {
-    OrientationSphere::registerKeywords(keys);
+  OrientationSphere::registerKeywords(keys);
 }
 
 PolymerAngles::PolymerAngles(const ActionOptions& ao):
-    Action(ao),
-    OrientationSphere(ao)
+  Action(ao),
+  OrientationSphere(ao)
 {
-    if( mybasemulticolvars.size()==0 ) error("SMAC must take multicolvar as input");
-    for(unsigned i=0; i<mybasemulticolvars.size(); ++i) {
-        if( (mybasemulticolvars[i]->getNumberOfQuantities()-2)%3!=0 ) error("POLYMER_ANGLES is only possible with three dimensional vectors");
-    }
+  if( mybasemulticolvars.size()==0 ) error("SMAC must take multicolvar as input");
+  for(unsigned i=0; i<mybasemulticolvars.size(); ++i) {
+    if( (mybasemulticolvars[i]->getNumberOfQuantities()-2)%3!=0 ) error("POLYMER_ANGLES is only possible with three dimensional vectors");
+  }
 }
 
 double PolymerAngles::computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
-        Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const {
+    Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const {
 
-    plumed_assert( (vec1.size()-2)==3 );
-    double dot = 0;
-    for(unsigned k=0; k<3; ++k) dot += vec1[2+k]*vec2[2+k];
-    double ans = 1.5*dot*dot - 0.5;
-    for(unsigned k=0; k<3; ++k) {
-        dvec1[2+k]=3*dot*vec2[2+k];
-        dvec2[2+k]=3*dot*vec1[2+k];
-    }
-    return ans;
+  plumed_assert( (vec1.size()-2)==3 );
+  double dot = 0; for(unsigned k=0; k<3; ++k) dot += vec1[2+k]*vec2[2+k];
+  double ans = 1.5*dot*dot - 0.5; for(unsigned k=0; k<3; ++k) { dvec1[2+k]=3*dot*vec2[2+k]; dvec2[2+k]=3*dot*vec1[2+k]; }
+  return ans;
 }
 
 }

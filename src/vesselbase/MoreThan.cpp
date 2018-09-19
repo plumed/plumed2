@@ -30,49 +30,46 @@ namespace vesselbase {
 
 class MoreThan : public FunctionVessel {
 private:
-    SwitchingFunction sf;
+  SwitchingFunction sf;
 public:
-    static void registerKeywords( Keywords& keys );
-    static void reserveKeyword( Keywords& keys );
-    explicit MoreThan( const VesselOptions& da );
-    std::string value_descriptor();
-    double calcTransform( const double& val, double& dv ) const ;
+  static void registerKeywords( Keywords& keys );
+  static void reserveKeyword( Keywords& keys );
+  explicit MoreThan( const VesselOptions& da );
+  std::string value_descriptor();
+  double calcTransform( const double& val, double& dv ) const ;
 };
 
 PLUMED_REGISTER_VESSEL(MoreThan,"MORE_THAN")
 
 void MoreThan::registerKeywords( Keywords& keys ) {
-    FunctionVessel::registerKeywords( keys );
-    SwitchingFunction::registerKeywords( keys );
+  FunctionVessel::registerKeywords( keys );
+  SwitchingFunction::registerKeywords( keys );
 }
 
 void MoreThan::reserveKeyword( Keywords& keys ) {
-    keys.reserve("vessel","MORE_THAN","calculate the number of variables more than a certain target value. "
-                 "This quantity is calculated using \\f$\\sum_i 1.0 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
-                 "is a \\ref switchingfunction.");
-    keys.addOutputComponent("morethan","MORE_THAN","the number of values more than a target value. This is calculated using one of the "
-                            "formula described in the description of the keyword so as to make it continuous. "
-                            "You can calculate this quantity multiple times using different parameters.");
+  keys.reserve("vessel","MORE_THAN","calculate the number of variables more than a certain target value. "
+               "This quantity is calculated using \\f$\\sum_i 1.0 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
+               "is a \\ref switchingfunction.");
+  keys.addOutputComponent("morethan","MORE_THAN","the number of values more than a target value. This is calculated using one of the "
+                          "formula described in the description of the keyword so as to make it continuous. "
+                          "You can calculate this quantity multiple times using different parameters.");
 }
 
 MoreThan::MoreThan( const VesselOptions& da ) :
-    FunctionVessel(da)
+  FunctionVessel(da)
 {
-    usetol=true;
-    if( getAction()->isPeriodic() ) error("more than is not a meaningful option for periodic variables");
-    std::string errormsg;
-    sf.set( getAllInput(), errormsg );
-    if( errormsg.size()!=0 ) error( errormsg );
+  usetol=true;
+  if( getAction()->isPeriodic() ) error("more than is not a meaningful option for periodic variables");
+  std::string errormsg; sf.set( getAllInput(), errormsg );
+  if( errormsg.size()!=0 ) error( errormsg );
 }
 
 std::string MoreThan::value_descriptor() {
-    return "the number of values more than " + sf.description();
+  return "the number of values more than " + sf.description();
 }
 
 double MoreThan::calcTransform( const double& val, double& dv ) const {
-    double f = 1.0 - sf.calculate(val, dv);
-    dv*=-val;
-    return f;
+  double f = 1.0 - sf.calculate(val, dv); dv*=-val; return f;
 }
 
 }

@@ -34,44 +34,43 @@ class PDB;
 namespace analysis {
 
 class DataCollectionObject {
-    friend class ReadAnalysisFrames;
+  friend class ReadAnalysisFrames;
 private:
 /// The label of the action in which the data is stored
-    std::string myaction;
+  std::string myaction;
 /// The list of atom numbers that are stored in the object
-    std::vector<AtomNumber> indices;
+  std::vector<AtomNumber> indices;
 /// The list of atomic positions
-    std::vector<Vector> positions;
+  std::vector<Vector> positions;
 /// The map containing the arguments that we are storing
-    std::map<std::string,double> args;
+  std::map<std::string,double> args;
 public:
 /// Set the names and atom numbers
-    void setAtomNumbersAndArgumentNames( const std::string& action_label, const std::vector<AtomNumber>& ind, const std::vector<std::string>& arg_names );
+  void setAtomNumbersAndArgumentNames( const std::string& action_label, const std::vector<AtomNumber>& ind, const std::vector<std::string>& arg_names );
 /// Set the positions of all the atoms
-    void setAtomPositions( const std::vector<Vector>& pos );
+  void setAtomPositions( const std::vector<Vector>& pos );
 /// Set the value of one of the arguments
-    void setArgument( const std::string& name, const double& value );
+  void setArgument( const std::string& name, const double& value );
 /// Return one of the atomic positions
-    Vector getAtomPosition( const AtomNumber& ind ) const ;
+  Vector getAtomPosition( const AtomNumber& ind ) const ;
 /// Get the value of one of the arguments
-    double getArgumentValue( const std::string& name ) const ;
+  double getArgumentValue( const std::string& name ) const ;
 /// Transfer the data inside the object to a PDB object
-    bool transferDataToPDB( PDB& mypdb );
+  bool transferDataToPDB( PDB& mypdb );
 };
 
 inline
 Vector DataCollectionObject::getAtomPosition( const AtomNumber& ind ) const {
-    return positions[ind.index()];
+  return positions[ind.index()];
 }
 
 inline
 double DataCollectionObject::getArgumentValue( const std::string& name ) const {
-    std::map<std::string,double>::const_iterator it = args.find(name);
-    if( it != args.end() ) return it->second;
-    std::size_t dot=name.find_first_of('.');
-    std::string a=name.substr(0,dot);
-    if( a==myaction ) return args.find( name.substr(dot+1) )->second;
-    else plumed_merror("could not find required data in collection object");
+  std::map<std::string,double>::const_iterator it = args.find(name);
+  if( it != args.end() ) return it->second;
+  std::size_t dot=name.find_first_of('.'); std::string a=name.substr(0,dot);
+  if( a==myaction ) return args.find( name.substr(dot+1) )->second;
+  else plumed_merror("could not find required data in collection object");
 }
 
 }

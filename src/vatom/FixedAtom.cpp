@@ -74,65 +74,65 @@ PRINT ARG=d FILE=colvar
 
 
 class FixedAtom:
-    public ActionWithVirtualAtom
+  public ActionWithVirtualAtom
 {
-    Vector coord;
-    double mass,charge;
-    bool scaled_components;
+  Vector coord;
+  double mass,charge;
+  bool scaled_components;
 public:
-    explicit FixedAtom(const ActionOptions&ao);
-    void calculate();
-    static void registerKeywords( Keywords& keys );
+  explicit FixedAtom(const ActionOptions&ao);
+  void calculate();
+  static void registerKeywords( Keywords& keys );
 };
 
 PLUMED_REGISTER_ACTION(FixedAtom,"FIXEDATOM")
 
 void FixedAtom::registerKeywords(Keywords& keys) {
-    ActionWithVirtualAtom::registerKeywords(keys);
-    keys.add("compulsory","AT","coordinates of the virtual atom");
-    keys.add("compulsory","SET_MASS","1","mass of the virtual atom");
-    keys.add("compulsory","SET_CHARGE","0","charge of the virtual atom");
-    keys.addFlag("SCALED_COMPONENTS",false,"use scaled components");
+  ActionWithVirtualAtom::registerKeywords(keys);
+  keys.add("compulsory","AT","coordinates of the virtual atom");
+  keys.add("compulsory","SET_MASS","1","mass of the virtual atom");
+  keys.add("compulsory","SET_CHARGE","0","charge of the virtual atom");
+  keys.addFlag("SCALED_COMPONENTS",false,"use scaled components");
 }
 
 FixedAtom::FixedAtom(const ActionOptions&ao):
-    Action(ao),
-    ActionWithVirtualAtom(ao)
+  Action(ao),
+  ActionWithVirtualAtom(ao)
 {
-    vector<AtomNumber> atoms;
-    parseAtomList("ATOMS",atoms);
-    if(atoms.size()!=0) error("ATOMS should be empty");
+  vector<AtomNumber> atoms;
+  parseAtomList("ATOMS",atoms);
+  if(atoms.size()!=0) error("ATOMS should be empty");
 
-    parseFlag("SCALED_COMPONENTS",scaled_components);
+  parseFlag("SCALED_COMPONENTS",scaled_components);
 
-    vector<double> at;
-    parseVector("AT",at);
-    if(at.size()!=3) error("AT should be a list of three real numbers");
+  vector<double> at;
+  parseVector("AT",at);
+  if(at.size()!=3) error("AT should be a list of three real numbers");
 
-    parse("SET_MASS",mass);
-    parse("SET_CHARGE",charge);
+  parse("SET_MASS",mass);
+  parse("SET_CHARGE",charge);
 
-    coord[0]=at[0];
-    coord[1]=at[1];
-    coord[2]=at[2];
+  coord[0]=at[0];
+  coord[1]=at[1];
+  coord[2]=at[2];
 
-    checkRead();
-    log<<"  AT position "<<coord[0]<<" "<<coord[1]<<" "<<coord[2]<<"\n";
-    if(scaled_components) log<<"  position is in scaled components\n";
+  checkRead();
+  log<<"  AT position "<<coord[0]<<" "<<coord[1]<<" "<<coord[2]<<"\n";
+  if(scaled_components) log<<"  position is in scaled components\n";
 }
 
 void FixedAtom::calculate() {
-    vector<Tensor> deriv(getNumberOfAtoms());
-    if(scaled_components) {
-        setPosition(getPbc().scaledToReal(coord));
-    } else {
-        setPosition(coord);
-    }
-    setMass(mass);
-    setCharge(charge);
-    setAtomsDerivatives(deriv);
+  vector<Tensor> deriv(getNumberOfAtoms());
+  if(scaled_components) {
+    setPosition(getPbc().scaledToReal(coord));
+  } else {
+    setPosition(coord);
+  }
+  setMass(mass);
+  setCharge(charge);
+  setAtomsDerivatives(deriv);
 // Virial contribution
-    if(!scaled_components) setBoxDerivativesNoPbc();
+  if(!scaled_components) setBoxDerivativesNoPbc();
 // notice that with scaled components there is no additional virial contribution
 }
 

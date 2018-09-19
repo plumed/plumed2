@@ -31,27 +31,27 @@ class Pbc;
 class MultiDomainRMSD : public ReferenceAtoms {
 private:
 /// The type of RMSD we are using
-    std::string ftype;
+  std::string ftype;
 /// The weight of a block
-    std::vector<double> weights;
+  std::vector<double> weights;
 /// Blocks containing start and end points for all the domains
-    std::vector<unsigned> blocks;
+  std::vector<unsigned> blocks;
 /// Each of the domains we are calculating the distance from
-    std::vector<std::unique_ptr<SingleDomainRMSD>> domains;
+  std::vector<std::unique_ptr<SingleDomainRMSD>> domains;
 public:
-    explicit MultiDomainRMSD( const ReferenceConfigurationOptions& ro );
+  explicit MultiDomainRMSD( const ReferenceConfigurationOptions& ro );
 /// Read in the input from a pdb
-    void read( const PDB& );
+  void read( const PDB& );
 /// Set the input from an analysis object (don't know how this will work yet so currently just a plumed_error)
-    void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
+  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
 /// Calculate
-    double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
-    double calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const ;
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
+  double calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const ;
 ///
-    bool pcaIsEnabledForThisReference();
-    void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const ;
-    double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const ;
-    void setupPCAStorage( ReferenceValuePack& mypack );
+  bool pcaIsEnabledForThisReference();
+  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const ;
+  double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const ;
+  void setupPCAStorage( ReferenceValuePack& mypack );
 };
 
 }

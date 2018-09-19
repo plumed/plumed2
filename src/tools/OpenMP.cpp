@@ -30,22 +30,22 @@
 namespace PLMD {
 
 unsigned OpenMP::getCachelineSize() {
-    static unsigned cachelineSize=512;
-    if(std::getenv("PLUMED_CACHELINE_SIZE")) Tools::convert(std::getenv("PLUMED_CACHELINE_SIZE"),cachelineSize);
-    return cachelineSize;
+  static unsigned cachelineSize=512;
+  if(std::getenv("PLUMED_CACHELINE_SIZE")) Tools::convert(std::getenv("PLUMED_CACHELINE_SIZE"),cachelineSize);
+  return cachelineSize;
 }
 
 unsigned OpenMP::getNumThreads() {
-    static unsigned numThreads=1;
-    if(std::getenv("PLUMED_NUM_THREADS")) Tools::convert(std::getenv("PLUMED_NUM_THREADS"),numThreads);
-    return numThreads;
+  static unsigned numThreads=1;
+  if(std::getenv("PLUMED_NUM_THREADS")) Tools::convert(std::getenv("PLUMED_NUM_THREADS"),numThreads);
+  return numThreads;
 }
 
 unsigned OpenMP::getThreadNum() {
 #if defined(_OPENMP)
-    return omp_get_thread_num();
+  return omp_get_thread_num();
 #else
-    return 0;
+  return 0;
 #endif
 }
 

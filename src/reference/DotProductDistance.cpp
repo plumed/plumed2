@@ -27,29 +27,29 @@ namespace PLMD {
 
 class DotProductDistance : public ArgumentOnlyDistance {
 public:
-    explicit DotProductDistance( const ReferenceConfigurationOptions& ro );
-    void read( const PDB& );
-    double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
+  explicit DotProductDistance( const ReferenceConfigurationOptions& ro );
+  void read( const PDB& );
+  double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
 };
 
 PLUMED_REGISTER_METRIC(DotProductDistance,"DOTPRODUCT")
 
 DotProductDistance::DotProductDistance( const ReferenceConfigurationOptions& ro ):
-    ReferenceConfiguration(ro),
-    ArgumentOnlyDistance(ro)
+  ReferenceConfiguration(ro),
+  ArgumentOnlyDistance(ro)
 {
 }
 
 void DotProductDistance::read( const PDB& pdb ) {
-    readArgumentsFromPDB( pdb );
+  readArgumentsFromPDB( pdb );
 }
 
 double DotProductDistance::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg,
-        ReferenceValuePack& myder, const bool& squared ) const {
-    double dot=0.0;
-    for (unsigned long i=0; i<vals.size(); ++i) dot+=getReferenceArgument(i)*arg[i];
-    for (unsigned long i=0; i<vals.size(); ++i) myder.setArgumentDerivatives( i, -getReferenceArgument(i)/dot );
-    return -log(dot);
+    ReferenceValuePack& myder, const bool& squared ) const {
+  double dot=0.0;
+  for (unsigned long i=0; i<vals.size(); ++i) dot+=getReferenceArgument(i)*arg[i];
+  for (unsigned long i=0; i<vals.size(); ++i) myder.setArgumentDerivatives( i, -getReferenceArgument(i)/dot );
+  return -log(dot);
 }
 
 

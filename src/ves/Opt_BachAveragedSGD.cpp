@@ -181,20 +181,18 @@ OPT_AVERAGED_SGD ...
 
 class Opt_BachAveragedSGD : public Optimizer {
 private:
-    std::vector<CoeffsVector*> combinedgradient_pntrs_;
-    unsigned int combinedgradient_wstride_;
-    std::vector<OFile*> combinedgradientOFiles_;
-    double decaying_aver_tau_;
+  std::vector<CoeffsVector*> combinedgradient_pntrs_;
+  unsigned int combinedgradient_wstride_;
+  std::vector<OFile*> combinedgradientOFiles_;
+  double decaying_aver_tau_;
 private:
-    CoeffsVector& CombinedGradient(const unsigned int c_id) const {
-        return *combinedgradient_pntrs_[c_id];
-    }
-    double getAverDecay() const;
+  CoeffsVector& CombinedGradient(const unsigned int c_id) const {return *combinedgradient_pntrs_[c_id];}
+  double getAverDecay() const;
 public:
-    static void registerKeywords(Keywords&);
-    explicit Opt_BachAveragedSGD(const ActionOptions&);
-    ~Opt_BachAveragedSGD();
-    void coeffsUpdate(const unsigned int c_id = 0);
+  static void registerKeywords(Keywords&);
+  explicit Opt_BachAveragedSGD(const ActionOptions&);
+  ~Opt_BachAveragedSGD();
+  void coeffsUpdate(const unsigned int c_id = 0);
 };
 
 
@@ -202,113 +200,113 @@ PLUMED_REGISTER_ACTION(Opt_BachAveragedSGD,"OPT_AVERAGED_SGD")
 
 
 void Opt_BachAveragedSGD::registerKeywords(Keywords& keys) {
-    Optimizer::registerKeywords(keys);
-    Optimizer::useFixedStepSizeKeywords(keys);
-    Optimizer::useMultipleWalkersKeywords(keys);
-    Optimizer::useHessianKeywords(keys);
-    Optimizer::useMaskKeywords(keys);
-    Optimizer::useRestartKeywords(keys);
-    Optimizer::useMonitorAverageGradientKeywords(keys);
-    Optimizer::useDynamicTargetDistributionKeywords(keys);
-    keys.add("hidden","COMBINED_GRADIENT_FILE","the name of output file for the combined gradient (gradient + Hessian term)");
-    keys.add("hidden","COMBINED_GRADIENT_OUTPUT","how often the combined gradient should be written to file. This parameter is given as the number of bias iterations. It is by default 100 if COMBINED_GRADIENT_FILE is specficed");
-    keys.add("hidden","COMBINED_GRADIENT_FMT","specify format for combined gradient file(s) (useful for decrease the number of digits in regtests)");
-    keys.add("optional","EXP_DECAYING_AVER","calculate the averaged coefficients using exponentially decaying averaging using the decaying constant given here in the number of iterations");
+  Optimizer::registerKeywords(keys);
+  Optimizer::useFixedStepSizeKeywords(keys);
+  Optimizer::useMultipleWalkersKeywords(keys);
+  Optimizer::useHessianKeywords(keys);
+  Optimizer::useMaskKeywords(keys);
+  Optimizer::useRestartKeywords(keys);
+  Optimizer::useMonitorAverageGradientKeywords(keys);
+  Optimizer::useDynamicTargetDistributionKeywords(keys);
+  keys.add("hidden","COMBINED_GRADIENT_FILE","the name of output file for the combined gradient (gradient + Hessian term)");
+  keys.add("hidden","COMBINED_GRADIENT_OUTPUT","how often the combined gradient should be written to file. This parameter is given as the number of bias iterations. It is by default 100 if COMBINED_GRADIENT_FILE is specficed");
+  keys.add("hidden","COMBINED_GRADIENT_FMT","specify format for combined gradient file(s) (useful for decrease the number of digits in regtests)");
+  keys.add("optional","EXP_DECAYING_AVER","calculate the averaged coefficients using exponentially decaying averaging using the decaying constant given here in the number of iterations");
 }
 
 
 Opt_BachAveragedSGD::~Opt_BachAveragedSGD() {
-    for(unsigned int i=0; i<combinedgradient_pntrs_.size(); i++) {
-        delete combinedgradient_pntrs_[i];
-    }
-    for(unsigned int i=0; i<combinedgradientOFiles_.size(); i++) {
-        combinedgradientOFiles_[i]->close();
-        delete combinedgradientOFiles_[i];
-    }
+  for(unsigned int i=0; i<combinedgradient_pntrs_.size(); i++) {
+    delete combinedgradient_pntrs_[i];
+  }
+  for(unsigned int i=0; i<combinedgradientOFiles_.size(); i++) {
+    combinedgradientOFiles_[i]->close();
+    delete combinedgradientOFiles_[i];
+  }
 }
 
 
 Opt_BachAveragedSGD::Opt_BachAveragedSGD(const ActionOptions&ao):
-    PLUMED_VES_OPTIMIZER_INIT(ao),
-    combinedgradient_pntrs_(0),
-    combinedgradient_wstride_(100),
-    combinedgradientOFiles_(0),
-    decaying_aver_tau_(0.0)
+  PLUMED_VES_OPTIMIZER_INIT(ao),
+  combinedgradient_pntrs_(0),
+  combinedgradient_wstride_(100),
+  combinedgradientOFiles_(0),
+  decaying_aver_tau_(0.0)
 {
-    log.printf("  Averaged stochastic gradient decent, see and cite ");
-    log << plumed.cite("Bach and Moulines, NIPS 26, 773-781 (2013)");
+  log.printf("  Averaged stochastic gradient decent, see and cite ");
+  log << plumed.cite("Bach and Moulines, NIPS 26, 773-781 (2013)");
+  log.printf("\n");
+  unsigned int decaying_aver_tau_int=0;
+  parse("EXP_DECAYING_AVER",decaying_aver_tau_int);
+  if(decaying_aver_tau_int>0) {
+    decaying_aver_tau_ = static_cast<double>(decaying_aver_tau_int);
+    log.printf("  Coefficients calculated using an exponentially decaying average with a decaying constant of %u iterations, see and cite ",decaying_aver_tau_int);
+    log << plumed.cite("Invernizzi, Valsson, and Parrinello, Proc. Natl. Acad. Sci. USA 114, 3370-3374 (2017)");
     log.printf("\n");
-    unsigned int decaying_aver_tau_int=0;
-    parse("EXP_DECAYING_AVER",decaying_aver_tau_int);
-    if(decaying_aver_tau_int>0) {
-        decaying_aver_tau_ = static_cast<double>(decaying_aver_tau_int);
-        log.printf("  Coefficients calculated using an exponentially decaying average with a decaying constant of %u iterations, see and cite ",decaying_aver_tau_int);
-        log << plumed.cite("Invernizzi, Valsson, and Parrinello, Proc. Natl. Acad. Sci. USA 114, 3370-3374 (2017)");
-        log.printf("\n");
+  }
+  //
+  std::vector<std::string> combinedgradient_fnames;
+  parseFilenames("COMBINED_GRADIENT_FILE",combinedgradient_fnames);
+  parse("COMBINED_GRADIENT_OUTPUT",combinedgradient_wstride_);
+  setupOFiles(combinedgradient_fnames,combinedgradientOFiles_,useMultipleWalkers());
+  std::string combinedgradient_fmt="";
+  parse("COMBINED_GRADIENT_FMT",combinedgradient_fmt);
+  if(combinedgradient_fnames.size()>0) {
+    for(unsigned int i=0; i<numberOfCoeffsSets(); i++) {
+      CoeffsVector* combinedgradient_tmp = new CoeffsVector(*getGradientPntrs()[i]);
+      std::string label = getGradientPntrs()[i]->getLabel();
+      if(label.find("gradient")!=std::string::npos) {
+        label.replace(label.find("gradient"), std::string("gradient").length(), "combined_gradient");
+      }
+      else {
+        label += "_combined";
+      }
+      combinedgradient_tmp->setLabels(label);
+      if(combinedgradient_fmt.size()>0) {
+        combinedgradient_tmp->setOutputFmt(combinedgradient_fmt);
+      }
+      combinedgradient_pntrs_.push_back(combinedgradient_tmp);
     }
     //
-    std::vector<std::string> combinedgradient_fnames;
-    parseFilenames("COMBINED_GRADIENT_FILE",combinedgradient_fnames);
-    parse("COMBINED_GRADIENT_OUTPUT",combinedgradient_wstride_);
-    setupOFiles(combinedgradient_fnames,combinedgradientOFiles_,useMultipleWalkers());
-    std::string combinedgradient_fmt="";
-    parse("COMBINED_GRADIENT_FMT",combinedgradient_fmt);
-    if(combinedgradient_fnames.size()>0) {
-        for(unsigned int i=0; i<numberOfCoeffsSets(); i++) {
-            CoeffsVector* combinedgradient_tmp = new CoeffsVector(*getGradientPntrs()[i]);
-            std::string label = getGradientPntrs()[i]->getLabel();
-            if(label.find("gradient")!=std::string::npos) {
-                label.replace(label.find("gradient"), std::string("gradient").length(), "combined_gradient");
-            }
-            else {
-                label += "_combined";
-            }
-            combinedgradient_tmp->setLabels(label);
-            if(combinedgradient_fmt.size()>0) {
-                combinedgradient_tmp->setOutputFmt(combinedgradient_fmt);
-            }
-            combinedgradient_pntrs_.push_back(combinedgradient_tmp);
-        }
-        //
-        if(numberOfCoeffsSets()==1) {
-            log.printf("  Combined gradient (gradient + Hessian term) will be written out to file %s every %u iterations\n",combinedgradientOFiles_[0]->getPath().c_str(),combinedgradient_wstride_);
-        }
-        else {
-            log.printf("  Combined gradient (gradient + Hessian term) will be written out to the following files every %u iterations:\n",combinedgradient_wstride_);
-            for(unsigned int i=0; i<combinedgradientOFiles_.size(); i++) {
-                log.printf("   coefficient set %u: %s\n",i,combinedgradientOFiles_[i]->getPath().c_str());
-            }
-        }
+    if(numberOfCoeffsSets()==1) {
+      log.printf("  Combined gradient (gradient + Hessian term) will be written out to file %s every %u iterations\n",combinedgradientOFiles_[0]->getPath().c_str(),combinedgradient_wstride_);
     }
-    //
+    else {
+      log.printf("  Combined gradient (gradient + Hessian term) will be written out to the following files every %u iterations:\n",combinedgradient_wstride_);
+      for(unsigned int i=0; i<combinedgradientOFiles_.size(); i++) {
+        log.printf("   coefficient set %u: %s\n",i,combinedgradientOFiles_[i]->getPath().c_str());
+      }
+    }
+  }
+  //
 
-    turnOnHessian();
-    checkRead();
+  turnOnHessian();
+  checkRead();
 }
 
 
 void Opt_BachAveragedSGD::coeffsUpdate(const unsigned int c_id) {
-    //
-    if(combinedgradientOFiles_.size()>0 && (getIterationCounter()+1)%combinedgradient_wstride_==0) {
-        CombinedGradient(c_id).setValues( ( Gradient(c_id) + Hessian(c_id)*(AuxCoeffs(c_id)-Coeffs(c_id)) ) );
-        combinedgradient_pntrs_[c_id]->setIterationCounterAndTime(getIterationCounter()+1,getTime());
-        combinedgradient_pntrs_[c_id]->writeToFile(*combinedgradientOFiles_[c_id]);
-    }
-    //
-    double aver_decay = getAverDecay();
-    AuxCoeffs(c_id) += - StepSize(c_id)*CoeffsMask(c_id) * ( Gradient(c_id) + Hessian(c_id)*(AuxCoeffs(c_id)-Coeffs(c_id)) );
-    //AuxCoeffs() = AuxCoeffs() - StepSize() * ( Gradient() + Hessian()*(AuxCoeffs()-Coeffs()) );
-    Coeffs(c_id) += aver_decay * ( AuxCoeffs(c_id)-Coeffs(c_id) );
+  //
+  if(combinedgradientOFiles_.size()>0 && (getIterationCounter()+1)%combinedgradient_wstride_==0) {
+    CombinedGradient(c_id).setValues( ( Gradient(c_id) + Hessian(c_id)*(AuxCoeffs(c_id)-Coeffs(c_id)) ) );
+    combinedgradient_pntrs_[c_id]->setIterationCounterAndTime(getIterationCounter()+1,getTime());
+    combinedgradient_pntrs_[c_id]->writeToFile(*combinedgradientOFiles_[c_id]);
+  }
+  //
+  double aver_decay = getAverDecay();
+  AuxCoeffs(c_id) += - StepSize(c_id)*CoeffsMask(c_id) * ( Gradient(c_id) + Hessian(c_id)*(AuxCoeffs(c_id)-Coeffs(c_id)) );
+  //AuxCoeffs() = AuxCoeffs() - StepSize() * ( Gradient() + Hessian()*(AuxCoeffs()-Coeffs()) );
+  Coeffs(c_id) += aver_decay * ( AuxCoeffs(c_id)-Coeffs(c_id) );
 }
 
 
 inline
 double Opt_BachAveragedSGD::getAverDecay() const {
-    double aver_decay = 1.0 / ( getIterationCounterDbl() + 1.0 );
-    if(decaying_aver_tau_ > 0.0 && (getIterationCounterDbl() + 1.0) > decaying_aver_tau_) {
-        aver_decay = 1.0 / decaying_aver_tau_;
-    }
-    return aver_decay;
+  double aver_decay = 1.0 / ( getIterationCounterDbl() + 1.0 );
+  if(decaying_aver_tau_ > 0.0 && (getIterationCounterDbl() + 1.0) > decaying_aver_tau_) {
+    aver_decay = 1.0 / decaying_aver_tau_;
+  }
+  return aver_decay;
 }
 
 

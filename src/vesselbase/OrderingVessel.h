@@ -34,14 +34,14 @@ namespace vesselbase {
 
 class OrderingVessel : public ValueVessel {
 private:
-    StoreDataVessel* mydata;
+  StoreDataVessel* mydata;
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit OrderingVessel( const VesselOptions& da );
-    void resize();
-    void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {}
-    void finish( const std::vector<double>& buffer );
-    virtual bool compare( const double&, const double& )=0;
+  static void registerKeywords( Keywords& keys );
+  explicit OrderingVessel( const VesselOptions& da );
+  void resize();
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {}
+  void finish( const std::vector<double>& buffer );
+  virtual bool compare( const double&, const double& )=0;
 };
 
 }

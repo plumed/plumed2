@@ -153,111 +153,107 @@ it later with a fixed size array placed on the stack.
 class Exception : public std::exception
 {
 /// Reported message
-    std::string msg;
+  std::string msg;
 /// Stack trace at exception
-    std::string stackString;
+  std::string stackString;
 /// Flag to remembed if we have to write the `+++ message follows +++` string.
 /// Needed so that the string appears only at the beginning of the message.
-    bool note;
+  bool note;
 /// Stream used to insert objects.
 /// It is not copied when the Exception is copied.
-    std::stringstream stream;
+  std::stringstream stream;
 
 public:
 
 /// Auxiliary containing the location of the exception in the file.
 /// Typically used from the macros below.
-    class Location {
-    public:
-        const char*file;
-        const unsigned line;
-        const char* pretty;
-        explicit Location(const char*file,unsigned line,const char* pretty=nullptr):
-            file(file),
-            line(line),
-            pretty(pretty)
-        {}
-    };
+  class Location {
+  public:
+    const char*file;
+    const unsigned line;
+    const char* pretty;
+    explicit Location(const char*file,unsigned line,const char* pretty=nullptr):
+      file(file),
+      line(line),
+      pretty(pretty)
+    {}
+  };
 
 /// Auxiliary containing the failed assertion.
 /// Typically used from the macros below.
-    class Assertion {
-    public:
-        const char*assertion;
-        explicit Assertion(const char*assertion=nullptr):
-            assertion(assertion)
-        {}
-    };
+  class Assertion {
+  public:
+    const char*assertion;
+    explicit Assertion(const char*assertion=nullptr):
+      assertion(assertion)
+    {}
+  };
 
 /// Default constructor with no message.
 /// Only records the stack trace.
-    Exception();
+  Exception();
 
 /// Constructor compatible with PLUMED <=2.4.
-    explicit Exception(const std::string & msg):
-        Exception()
-    {
-        *this << msg;
-    }
+  explicit Exception(const std::string & msg):
+    Exception()
+  {
+    *this << msg;
+  }
 
 /// Copy constructor.
 /// Needed to make sure stream is not copied
-    Exception(const Exception & e):
-        msg(e.msg),
-        stackString(e.stackString),
-        note(e.note)
-    {
-    }
+  Exception(const Exception & e):
+    msg(e.msg),
+    stackString(e.stackString),
+    note(e.note)
+  {
+  }
 
 /// Assignment.
 /// Needed to make sure stream is not copied
-    Exception & operator=(const Exception & e) {
-        msg=e.msg;
-        stackString=e.stackString;
-        note=e.note;
-        stream.str("");
-        return *this;
-    }
+  Exception & operator=(const Exception & e) {
+    msg=e.msg;
+    stackString=e.stackString;
+    note=e.note;
+    stream.str("");
+    return *this;
+  }
 
 /// Returns the error message.
 /// In case the environment variable PLUMED_STACK_TRACE was defined
 /// and equal to `yes` when the exception was raised,
 /// the error message will contain the stack trace as well.
-    virtual const char* what() const noexcept {
-        return msg.c_str();
-    }
+  virtual const char* what() const noexcept {return msg.c_str();}
 
 /// Returns the stack trace.
 /// Stack trace stored only if the required functions were found at configure time.
-    virtual const char* stack() const noexcept {
-        return stackString.c_str();
-    }
+  virtual const char* stack() const noexcept {return stackString.c_str();}
 
 /// Destructor should be defined and should not throw other exceptions
-    virtual ~Exception() noexcept {}
+  virtual ~Exception() noexcept {}
 
 /// Insert location.
 /// Format the location properly.
-    Exception& operator<<(const Location&);
+  Exception& operator<<(const Location&);
 
 /// Insert assertion.
 /// Format the assertion properly
-    Exception& operator<<(const Assertion&);
+  Exception& operator<<(const Assertion&);
 
 /// Insert string.
 /// Append this string to the message.
-    Exception& operator<<(const std::string&);
+  Exception& operator<<(const std::string&);
 
 /// Insert anything else.
 /// This allows to dump also other types (e.g. double, or even Vector).
 /// Anything that can be written on a stream can go here.
-    template<typename T>
-    Exception& operator<<(const T & x) {
-        stream<<x;
-        (*this)<<stream.str();
-        stream.str("");
-        return *this;
-    }
+  template<typename T>
+  Exception& operator<<(const T & x) {
+    stream<<x;
+    (*this)<<stream.str();
+    stream.str("");
+    return *this;
+  }
 };
 
 // With GNU compiler, we can use __PRETTY_FUNCTION__ to get the function name

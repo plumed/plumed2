@@ -65,87 +65,86 @@ PRINT ARG=uwall.bias,lwall.bias
 //+ENDPLUMEDOC
 
 class UWalls : public Bias {
-    std::vector<double> at;
-    std::vector<double> kappa;
-    std::vector<double> exp;
-    std::vector<double> eps;
-    std::vector<double> offset;
+  std::vector<double> at;
+  std::vector<double> kappa;
+  std::vector<double> exp;
+  std::vector<double> eps;
+  std::vector<double> offset;
 public:
-    explicit UWalls(const ActionOptions&);
-    void calculate();
-    static void registerKeywords(Keywords& keys);
+  explicit UWalls(const ActionOptions&);
+  void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(UWalls,"UPPER_WALLS")
 
 void UWalls::registerKeywords(Keywords& keys) {
-    Bias::registerKeywords(keys);
-    keys.use("ARG");
-    keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
-    keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
-    keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
-    keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
-    keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
-    keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+  Bias::registerKeywords(keys);
+  keys.use("ARG");
+  keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
+  keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
+  keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
+  keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
+  keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
+  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
 }
 
 UWalls::UWalls(const ActionOptions&ao):
-    PLUMED_BIAS_INIT(ao),
-    at(getNumberOfArguments(),0),
-    kappa(getNumberOfArguments(),0.0),
-    exp(getNumberOfArguments(),2.0),
-    eps(getNumberOfArguments(),1.0),
-    offset(getNumberOfArguments(),0.0)
+  PLUMED_BIAS_INIT(ao),
+  at(getNumberOfArguments(),0),
+  kappa(getNumberOfArguments(),0.0),
+  exp(getNumberOfArguments(),2.0),
+  eps(getNumberOfArguments(),1.0),
+  offset(getNumberOfArguments(),0.0)
 {
-    // Note : the sizes of these vectors are checked automatically by parseVector
-    parseVector("OFFSET",offset);
-    parseVector("EPS",eps);
-    parseVector("EXP",exp);
-    parseVector("KAPPA",kappa);
-    parseVector("AT",at);
-    checkRead();
+  // Note : the sizes of these vectors are checked automatically by parseVector
+  parseVector("OFFSET",offset);
+  parseVector("EPS",eps);
+  parseVector("EXP",exp);
+  parseVector("KAPPA",kappa);
+  parseVector("AT",at);
+  checkRead();
 
-    log.printf("  at");
-    for(unsigned i=0; i<at.size(); i++) log.printf(" %f",at[i]);
-    log.printf("\n");
-    log.printf("  with an offset");
-    for(unsigned i=0; i<offset.size(); i++) log.printf(" %f",offset[i]);
-    log.printf("\n");
-    log.printf("  with force constant");
-    for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
-    log.printf("\n");
-    log.printf("  and exponent");
-    for(unsigned i=0; i<exp.size(); i++) log.printf(" %f",exp[i]);
-    log.printf("\n");
-    log.printf("  rescaled");
-    for(unsigned i=0; i<eps.size(); i++) log.printf(" %f",eps[i]);
-    log.printf("\n");
+  log.printf("  at");
+  for(unsigned i=0; i<at.size(); i++) log.printf(" %f",at[i]);
+  log.printf("\n");
+  log.printf("  with an offset");
+  for(unsigned i=0; i<offset.size(); i++) log.printf(" %f",offset[i]);
+  log.printf("\n");
+  log.printf("  with force constant");
+  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
+  log.printf("\n");
+  log.printf("  and exponent");
+  for(unsigned i=0; i<exp.size(); i++) log.printf(" %f",exp[i]);
+  log.printf("\n");
+  log.printf("  rescaled");
+  for(unsigned i=0; i<eps.size(); i++) log.printf(" %f",eps[i]);
+  log.printf("\n");
 
-    addComponent("force2");
-    componentIsNotPeriodic("force2");
+  addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
 void UWalls::calculate() {
-    double ene=0.0;
-    double totf2=0.0;
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        double f = 0.0;
-        const double cv=difference(i,at[i],getArgument(i));
-        const double off=offset[i];
-        const double epsilon=eps[i];
-        const double uscale = (cv+off)/epsilon;
-        if( uscale > 0.) {
-            const double k=kappa[i];
-            const double exponent=exp[i];
-            double power = pow( uscale, exponent );
-            f = -( k / epsilon ) * exponent * power / uscale;
-            ene += k * power;
-            totf2 += f * f;
-        }
-        setOutputForce(i,f);
+  double ene=0.0;
+  double totf2=0.0;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    double f = 0.0;
+    const double cv=difference(i,at[i],getArgument(i));
+    const double off=offset[i];
+    const double epsilon=eps[i];
+    const double uscale = (cv+off)/epsilon;
+    if( uscale > 0.) {
+      const double k=kappa[i];
+      const double exponent=exp[i];
+      double power = pow( uscale, exponent );
+      f = -( k / epsilon ) * exponent * power / uscale;
+      ene += k * power;
+      totf2 += f * f;
     }
-    setBias(ene);
-    getPntrToComponent("force2")->set(totf2);
+    setOutputForce(i,f);
+  }
+  setBias(ene);
+  getPntrToComponent("force2")->set(totf2);
 }
 
 }

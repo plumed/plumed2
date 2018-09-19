@@ -67,79 +67,79 @@ PRINT ARG=d1
 
 
 class COM:
-    public ActionWithVirtualAtom
+  public ActionWithVirtualAtom
 {
-    bool nopbc;
-    bool first;
+  bool nopbc;
+  bool first;
 public:
-    explicit COM(const ActionOptions&ao);
-    void calculate();
-    static void registerKeywords( Keywords& keys );
+  explicit COM(const ActionOptions&ao);
+  void calculate();
+  static void registerKeywords( Keywords& keys );
 };
 
 PLUMED_REGISTER_ACTION(COM,"COM")
 
 void COM::registerKeywords(Keywords& keys) {
-    ActionWithVirtualAtom::registerKeywords(keys);
-    keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+  ActionWithVirtualAtom::registerKeywords(keys);
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
 COM::COM(const ActionOptions&ao):
-    Action(ao),
-    ActionWithVirtualAtom(ao),
-    nopbc(false),
-    first(true)
+  Action(ao),
+  ActionWithVirtualAtom(ao),
+  nopbc(false),
+  first(true)
 {
-    vector<AtomNumber> atoms;
-    parseAtomList("ATOMS",atoms);
-    if(atoms.size()==0) error("at least one atom should be specified");
-    parseFlag("NOPBC",nopbc);
-    checkRead();
-    log.printf("  of atoms");
-    for(unsigned i=0; i<atoms.size(); ++i) {
-        if(i%25==0) log<<"\n";
-        log.printf(" %d",atoms[i].serial());
-    }
-    log.printf("\n");
-    if(nopbc) {
-        log<<"  PBC will be ignored\n";
-    } else {
-        log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
-    }
-    requestAtoms(atoms);
+  vector<AtomNumber> atoms;
+  parseAtomList("ATOMS",atoms);
+  if(atoms.size()==0) error("at least one atom should be specified");
+  parseFlag("NOPBC",nopbc);
+  checkRead();
+  log.printf("  of atoms");
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf(" %d",atoms[i].serial());
+  }
+  log.printf("\n");
+  if(nopbc) {
+    log<<"  PBC will be ignored\n";
+  } else {
+    log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
+  }
+  requestAtoms(atoms);
 }
 
 void COM::calculate() {
-    Vector pos;
-    if(!nopbc) makeWhole();
-    double mass(0.0);
-    if( first ) {
-        for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-            if(std::isnan(getMass(i))) {
-                error(
-                    "You are trying to compute a COM but masses are not known.\n"
-                    "        If you are using plumed driver, please use the --mc option"
-                );
-            }
-        }
-        first=false;
-    }
-    vector<Tensor> deriv(getNumberOfAtoms());
-    for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
-    if( plumed.getAtoms().chargesWereSet() ) {
-        double charge(0.0);
-        for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
-        setCharge(charge);
-    } else {
-        setCharge(0.0);
-    }
+  Vector pos;
+  if(!nopbc) makeWhole();
+  double mass(0.0);
+  if( first ) {
     for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-        pos+=(getMass(i)/mass)*getPosition(i);
-        deriv[i]=(getMass(i)/mass)*Tensor::identity();
+      if(std::isnan(getMass(i))) {
+        error(
+          "You are trying to compute a COM but masses are not known.\n"
+          "        If you are using plumed driver, please use the --mc option"
+        );
+      }
     }
-    setPosition(pos);
-    setMass(mass);
-    setAtomsDerivatives(deriv);
+    first=false;
+  }
+  vector<Tensor> deriv(getNumberOfAtoms());
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
+  if( plumed.getAtoms().chargesWereSet() ) {
+    double charge(0.0);
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
+    setCharge(charge);
+  } else {
+    setCharge(0.0);
+  }
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+    pos+=(getMass(i)/mass)*getPosition(i);
+    deriv[i]=(getMass(i)/mass)*Tensor::identity();
+  }
+  setPosition(pos);
+  setMass(mass);
+  setAtomsDerivatives(deriv);
 }
 
 }

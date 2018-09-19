@@ -31,20 +31,20 @@ class NeighborList;
 namespace colvar {
 
 class CoordinationBase : public Colvar {
-    bool pbc;
-    bool serial;
-    std::unique_ptr<NeighborList> nl;
-    bool invalidateList;
-    bool firsttime;
+  bool pbc;
+  bool serial;
+  std::unique_ptr<NeighborList> nl;
+  bool invalidateList;
+  bool firsttime;
 
 public:
-    explicit CoordinationBase(const ActionOptions&);
-    ~CoordinationBase();
+  explicit CoordinationBase(const ActionOptions&);
+  ~CoordinationBase();
 // active methods:
-    virtual void calculate();
-    virtual void prepare();
-    virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const=0;
-    static void registerKeywords( Keywords& keys );
+  virtual void calculate();
+  virtual void prepare();
+  virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const=0;
+  static void registerKeywords( Keywords& keys );
 };
 
 }

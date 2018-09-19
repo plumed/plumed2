@@ -76,24 +76,24 @@ See the file \ref main.cpp for a similar example.
 
 */
 class CLToolMain:
-    public WithCmd
+  public WithCmd
 {
 /// arguments for command-line mode:
-    int argc;
+  int argc;
 /// arguments for command-line mode:
-    std::vector<std::string> argv;
-    FILE*in;
-    FILE*out;
-    ForwardDecl<Communicator> comm_fwd;
-    Communicator&comm=*comm_fwd;
-    static int run(int argc, char **argv,FILE*in,FILE*out,Communicator&pc);
+  std::vector<std::string> argv;
+  FILE*in;
+  FILE*out;
+  ForwardDecl<Communicator> comm_fwd;
+  Communicator&comm=*comm_fwd;
+  static int run(int argc, char **argv,FILE*in,FILE*out,Communicator&pc);
 public:
-    CLToolMain();
-    ~CLToolMain();
-    /**
-    Send messages to the CLToolMain.
-    */
-    void cmd(const std::string& key,void*val=NULL);
+  CLToolMain();
+  ~CLToolMain();
+  /**
+  Send messages to the CLToolMain.
+  */
+  void cmd(const std::string& key,void*val=NULL);
 };
 
 }

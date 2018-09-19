@@ -97,17 +97,17 @@ TD_GENERALIZED_NORMAL ...
 //+ENDPLUMEDOC
 
 class TD_GeneralizedNormal: public TargetDistribution {
-    std::vector< std::vector<double> > centers_;
-    std::vector< std::vector<double> > alphas_;
-    std::vector< std::vector<double> > betas_;
-    std::vector< std::vector<double> > normalization_;
-    std::vector<double> weights_;
-    unsigned int ncenters_;
-    double ExponentialPowerDiagonal(const std::vector<double>&, const std::vector<double>&, const std::vector<double>&, const std::vector<double>&, const std::vector<double>&) const;
+  std::vector< std::vector<double> > centers_;
+  std::vector< std::vector<double> > alphas_;
+  std::vector< std::vector<double> > betas_;
+  std::vector< std::vector<double> > normalization_;
+  std::vector<double> weights_;
+  unsigned int ncenters_;
+  double ExponentialPowerDiagonal(const std::vector<double>&, const std::vector<double>&, const std::vector<double>&, const std::vector<double>&, const std::vector<double>&) const;
 public:
-    static void registerKeywords(Keywords&);
-    explicit TD_GeneralizedNormal(const ActionOptions& ao);
-    double getValue(const std::vector<double>&) const;
+  static void registerKeywords(Keywords&);
+  explicit TD_GeneralizedNormal(const ActionOptions& ao);
+  double getValue(const std::vector<double>&) const;
 };
 
 
@@ -115,126 +115,110 @@ PLUMED_REGISTER_ACTION(TD_GeneralizedNormal,"TD_GENERALIZED_NORMAL")
 
 
 void TD_GeneralizedNormal::registerKeywords(Keywords& keys) {
-    TargetDistribution::registerKeywords(keys);
-    keys.add("numbered","CENTER","The center of each generalized normal distribution.");
-    keys.add("numbered","ALPHA","The alpha parameters for each generalized normal distribution.");
-    keys.add("numbered","BETA","The beta parameters for each generalized normal distribution.");
-    keys.add("optional","WEIGHTS","The weights of the generalized normal distribution. By default all are weighted equally.");
-    keys.use("WELLTEMPERED_FACTOR");
-    keys.use("SHIFT_TO_ZERO");
-    keys.use("NORMALIZE");
+  TargetDistribution::registerKeywords(keys);
+  keys.add("numbered","CENTER","The center of each generalized normal distribution.");
+  keys.add("numbered","ALPHA","The alpha parameters for each generalized normal distribution.");
+  keys.add("numbered","BETA","The beta parameters for each generalized normal distribution.");
+  keys.add("optional","WEIGHTS","The weights of the generalized normal distribution. By default all are weighted equally.");
+  keys.use("WELLTEMPERED_FACTOR");
+  keys.use("SHIFT_TO_ZERO");
+  keys.use("NORMALIZE");
 }
 
 
 TD_GeneralizedNormal::TD_GeneralizedNormal(const ActionOptions& ao):
-    PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
-    centers_(0),
-    alphas_(0),
-    betas_(0),
-    normalization_(0),
-    weights_(0),
-    ncenters_(0)
+  PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
+  centers_(0),
+  alphas_(0),
+  betas_(0),
+  normalization_(0),
+  weights_(0),
+  ncenters_(0)
 {
-    for(unsigned int i=1;; i++) {
-        std::vector<double> tmp_center;
-        if(!parseNumberedVector("CENTER",i,tmp_center) ) {
-            break;
-        }
-        centers_.push_back(tmp_center);
+  for(unsigned int i=1;; i++) {
+    std::vector<double> tmp_center;
+    if(!parseNumberedVector("CENTER",i,tmp_center) ) {break;}
+    centers_.push_back(tmp_center);
+  }
+  for(unsigned int i=1;; i++) {
+    std::vector<double> tmp_alpha;
+    if(!parseNumberedVector("ALPHA",i,tmp_alpha) ) {break;}
+    for(unsigned int k=0; k<tmp_alpha.size(); k++) {
+      if(tmp_alpha[k]<=0.0) {plumed_merror(getName()+": the values given in ALPHA should be postive");}
     }
-    for(unsigned int i=1;; i++) {
-        std::vector<double> tmp_alpha;
-        if(!parseNumberedVector("ALPHA",i,tmp_alpha) ) {
-            break;
-        }
-        for(unsigned int k=0; k<tmp_alpha.size(); k++) {
-            if(tmp_alpha[k]<=0.0) {
-                plumed_merror(getName()+": the values given in ALPHA should be postive");
-            }
-        }
-        alphas_.push_back(tmp_alpha);
+    alphas_.push_back(tmp_alpha);
+  }
+  for(unsigned int i=1;; i++) {
+    std::vector<double> tmp_beta;
+    if(!parseNumberedVector("BETA",i,tmp_beta) ) {break;}
+    for(unsigned int k=0; k<tmp_beta.size(); k++) {
+      if(tmp_beta[k]<=0.0) {plumed_merror(getName()+": the values given in BETA should be postive");}
     }
-    for(unsigned int i=1;; i++) {
-        std::vector<double> tmp_beta;
-        if(!parseNumberedVector("BETA",i,tmp_beta) ) {
-            break;
-        }
-        for(unsigned int k=0; k<tmp_beta.size(); k++) {
-            if(tmp_beta[k]<=0.0) {
-                plumed_merror(getName()+": the values given in BETA should be postive");
-            }
-        }
-        betas_.push_back(tmp_beta);
+    betas_.push_back(tmp_beta);
+  }
+  //
+  if(centers_.size()==0) {
+    plumed_merror(getName()+": CENTER keywords seem to be missing. Note that numbered keywords start at CENTER1.");
+  }
+  //
+  if(centers_.size()!=alphas_.size() || centers_.size()!=betas_.size() ) {
+    plumed_merror(getName()+": there has to be an equal amount of CENTER, ALPHA, and BETA keywords");
+  }
+  //
+  setDimension(centers_[0].size());
+  ncenters_ = centers_.size();
+  //
+  // check centers and sigmas
+  for(unsigned int i=0; i<ncenters_; i++) {
+    if(centers_[i].size()!=getDimension()) {
+      plumed_merror(getName()+": one of the CENTER keyword does not match the given dimension");
     }
-    //
-    if(centers_.size()==0) {
-        plumed_merror(getName()+": CENTER keywords seem to be missing. Note that numbered keywords start at CENTER1.");
+    if(alphas_[i].size()!=getDimension()) {
+      plumed_merror(getName()+": one of the ALPHA keyword does not match the given dimension");
     }
-    //
-    if(centers_.size()!=alphas_.size() || centers_.size()!=betas_.size() ) {
-        plumed_merror(getName()+": there has to be an equal amount of CENTER, ALPHA, and BETA keywords");
+    if(betas_[i].size()!=getDimension()) {
+      plumed_merror(getName()+": one of the BETA keyword does not match the given dimension");
     }
-    //
-    setDimension(centers_[0].size());
-    ncenters_ = centers_.size();
-    //
-    // check centers and sigmas
-    for(unsigned int i=0; i<ncenters_; i++) {
-        if(centers_[i].size()!=getDimension()) {
-            plumed_merror(getName()+": one of the CENTER keyword does not match the given dimension");
-        }
-        if(alphas_[i].size()!=getDimension()) {
-            plumed_merror(getName()+": one of the ALPHA keyword does not match the given dimension");
-        }
-        if(betas_[i].size()!=getDimension()) {
-            plumed_merror(getName()+": one of the BETA keyword does not match the given dimension");
-        }
+  }
+  //
+  parseVector("WEIGHTS",weights_);
+  if(weights_.size()==0) {weights_.assign(centers_.size(),1.0);}
+  if(centers_.size()!=weights_.size()) {
+    plumed_merror(getName()+": there has to be as many weights given in WEIGHTS as numbered CENTER keywords");
+  }
+  //
+  double sum_weights=0.0;
+  for(unsigned int i=0; i<weights_.size(); i++) {sum_weights+=weights_[i];}
+  for(unsigned int i=0; i<weights_.size(); i++) {weights_[i]/=sum_weights;}
+  //
+  normalization_.resize(ncenters_);
+  for(unsigned int i=0; i<ncenters_; i++) {
+    normalization_[i].resize(getDimension());
+    for(unsigned int k=0; k<getDimension(); k++) {
+      normalization_[i][k] = 0.5*betas_[i][k]/(alphas_[i][k]*tgamma(1.0/betas_[i][k]));
     }
-    //
-    parseVector("WEIGHTS",weights_);
-    if(weights_.size()==0) {
-        weights_.assign(centers_.size(),1.0);
-    }
-    if(centers_.size()!=weights_.size()) {
-        plumed_merror(getName()+": there has to be as many weights given in WEIGHTS as numbered CENTER keywords");
-    }
-    //
-    double sum_weights=0.0;
-    for(unsigned int i=0; i<weights_.size(); i++) {
-        sum_weights+=weights_[i];
-    }
-    for(unsigned int i=0; i<weights_.size(); i++) {
-        weights_[i]/=sum_weights;
-    }
-    //
-    normalization_.resize(ncenters_);
-    for(unsigned int i=0; i<ncenters_; i++) {
-        normalization_[i].resize(getDimension());
-        for(unsigned int k=0; k<getDimension(); k++) {
-            normalization_[i][k] = 0.5*betas_[i][k]/(alphas_[i][k]*tgamma(1.0/betas_[i][k]));
-        }
-    }
-    checkRead();
+  }
+  checkRead();
 }
 
 
 double TD_GeneralizedNormal::getValue(const std::vector<double>& argument) const {
-    double value=0.0;
-    for(unsigned int i=0; i<ncenters_; i++) {
-        value+=weights_[i]*ExponentialPowerDiagonal(argument,centers_[i],alphas_[i],betas_[i],normalization_[i]);
-    }
-    return value;
+  double value=0.0;
+  for(unsigned int i=0; i<ncenters_; i++) {
+    value+=weights_[i]*ExponentialPowerDiagonal(argument,centers_[i],alphas_[i],betas_[i],normalization_[i]);
+  }
+  return value;
 }
 
 
 double TD_GeneralizedNormal::ExponentialPowerDiagonal(const std::vector<double>& argument, const std::vector<double>& center, const std::vector<double>& alpha, const std::vector<double>& beta, const std::vector<double>& normalization) const {
-    double value = 1.0;
-    for(unsigned int k=0; k<argument.size(); k++) {
-        double arg=(std::abs(argument[k]-center[k]))/alpha[k];
-        arg = pow(arg,beta[k]);
-        value*=normalization[k]*exp(-arg);
-    }
-    return value;
+  double value = 1.0;
+  for(unsigned int k=0; k<argument.size(); k++) {
+    double arg=(std::abs(argument[k]-center[k]))/alpha[k];
+    arg = pow(arg,beta[k]);
+    value*=normalization[k]*exp(-arg);
+  }
+  return value;
 }
 
 

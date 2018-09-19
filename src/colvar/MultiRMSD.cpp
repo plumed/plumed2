@@ -36,16 +36,16 @@ namespace colvar {
 
 class MultiRMSD : public Colvar {
 
-    std::unique_ptr<PLMD::MultiDomainRMSD> rmsd;
-    bool squared;
-    MultiValue myvals;
-    ReferenceValuePack mypack;
-    bool nopbc;
+  std::unique_ptr<PLMD::MultiDomainRMSD> rmsd;
+  bool squared;
+  MultiValue myvals;
+  ReferenceValuePack mypack;
+  bool nopbc;
 
 public:
-    explicit MultiRMSD(const ActionOptions&);
-    virtual void calculate();
-    static void registerKeywords(Keywords& keys);
+  explicit MultiRMSD(const ActionOptions&);
+  virtual void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 
@@ -150,60 +150,58 @@ END
 PLUMED_REGISTER_ACTION(MultiRMSD,"MULTI-RMSD")
 
 void MultiRMSD::registerKeywords(Keywords& keys) {
-    Colvar::registerKeywords(keys);
-    keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
-    keys.add("compulsory","TYPE","MULTI-SIMPLE","the manner in which RMSD alignment is performed.  Should be MULTI-OPTIMAL, MULTI-OPTIMAL-FAST,  MULTI-SIMPLE or MULTI-DRMSD.");
-    keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
+  Colvar::registerKeywords(keys);
+  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
+  keys.add("compulsory","TYPE","MULTI-SIMPLE","the manner in which RMSD alignment is performed.  Should be MULTI-OPTIMAL, MULTI-OPTIMAL-FAST,  MULTI-SIMPLE or MULTI-DRMSD.");
+  keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
 }
 
 MultiRMSD::MultiRMSD(const ActionOptions&ao):
-    PLUMED_COLVAR_INIT(ao),squared(false),myvals(1,0), mypack(0,0,myvals),nopbc(false)
+  PLUMED_COLVAR_INIT(ao),squared(false),myvals(1,0), mypack(0,0,myvals),nopbc(false)
 {
-    string reference;
-    parse("REFERENCE",reference);
-    string type;
-    type.assign("SIMPLE");
-    parse("TYPE",type);
-    parseFlag("SQUARED",squared);
-    parseFlag("NOPBC",nopbc);
-    checkRead();
+  string reference;
+  parse("REFERENCE",reference);
+  string type;
+  type.assign("SIMPLE");
+  parse("TYPE",type);
+  parseFlag("SQUARED",squared);
+  parseFlag("NOPBC",nopbc);
+  checkRead();
 
-    addValueWithDerivatives();
-    setNotPeriodic();
-    PDB pdb;
+  addValueWithDerivatives(); setNotPeriodic();
+  PDB pdb;
 
-    // read everything in ang and transform to nm if we are not in natural units
-    if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
-        error("missing input file " + reference );
+  // read everything in ang and transform to nm if we are not in natural units
+  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+    error("missing input file " + reference );
 
-    rmsd=metricRegister().create<MultiDomainRMSD>(type,pdb);
-    // Do not align molecule if we are doing DRMSD for domains and NOPBC has been specified in input
-    if( pdb.hasFlag("NOPBC") ) nopbc=true;
+  rmsd=metricRegister().create<MultiDomainRMSD>(type,pdb);
+  // Do not align molecule if we are doing DRMSD for domains and NOPBC has been specified in input
+  if( pdb.hasFlag("NOPBC") ) nopbc=true;
 
-    std::vector<AtomNumber> atoms;
-    rmsd->getAtomRequests( atoms );
-    requestAtoms( atoms );
+  std::vector<AtomNumber> atoms;
+  rmsd->getAtomRequests( atoms );
+  requestAtoms( atoms );
 
-    myvals.resize( 1, 3*atoms.size()+9 );
-    mypack.resize( 0, atoms.size() );
-    for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
+  myvals.resize( 1, 3*atoms.size()+9 ); mypack.resize( 0, atoms.size() );
+  for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
 
-    log.printf("  reference from file %s\n",reference.c_str());
-    log.printf("  which contains %d atoms\n",getNumberOfAtoms());
-    log.printf("  method for alignment : %s \n",type.c_str() );
-    if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
+  log.printf("  reference from file %s\n",reference.c_str());
+  log.printf("  which contains %d atoms\n",getNumberOfAtoms());
+  log.printf("  method for alignment : %s \n",type.c_str() );
+  if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
 }
 
 // calculator
 void MultiRMSD::calculate() {
-    if(!nopbc) makeWhole();
-    double r=rmsd->calculate( getPositions(), getPbc(), mypack, squared );
+  if(!nopbc) makeWhole();
+  double r=rmsd->calculate( getPositions(), getPbc(), mypack, squared );
 
-    setValue(r);
-    for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
+  setValue(r);
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
 
-    if( !mypack.virialWasSet() ) setBoxDerivativesNoPbc();
-    else setBoxDerivatives( mypack.getBoxDerivatives() );
+  if( !mypack.virialWasSet() ) setBoxDerivativesNoPbc();
+  else setBoxDerivatives( mypack.getBoxDerivatives() );
 }
 
 }

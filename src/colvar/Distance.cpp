@@ -109,128 +109,121 @@ with domain (-0.5,+0.5).
 //+ENDPLUMEDOC
 
 class Distance : public Colvar {
-    bool components;
-    bool scaled_components;
-    bool pbc;
+  bool components;
+  bool scaled_components;
+  bool pbc;
 
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit Distance(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  explicit Distance(const ActionOptions&);
 // active methods:
-    virtual void calculate();
+  virtual void calculate();
 };
 
 PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
 
 void Distance::registerKeywords( Keywords& keys ) {
-    Colvar::registerKeywords( keys );
-    keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
-    keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
-    keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
-    keys.addOutputComponent("x","COMPONENTS","the x-component of the vector connecting the two atoms");
-    keys.addOutputComponent("y","COMPONENTS","the y-component of the vector connecting the two atoms");
-    keys.addOutputComponent("z","COMPONENTS","the z-component of the vector connecting the two atoms");
-    keys.addOutputComponent("a","SCALED_COMPONENTS","the normalized projection on the first lattice vector of the vector connecting the two atoms");
-    keys.addOutputComponent("b","SCALED_COMPONENTS","the normalized projection on the second lattice vector of the vector connecting the two atoms");
-    keys.addOutputComponent("c","SCALED_COMPONENTS","the normalized projection on the third lattice vector of the vector connecting the two atoms");
+  Colvar::registerKeywords( keys );
+  keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
+  keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
+  keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
+  keys.addOutputComponent("x","COMPONENTS","the x-component of the vector connecting the two atoms");
+  keys.addOutputComponent("y","COMPONENTS","the y-component of the vector connecting the two atoms");
+  keys.addOutputComponent("z","COMPONENTS","the z-component of the vector connecting the two atoms");
+  keys.addOutputComponent("a","SCALED_COMPONENTS","the normalized projection on the first lattice vector of the vector connecting the two atoms");
+  keys.addOutputComponent("b","SCALED_COMPONENTS","the normalized projection on the second lattice vector of the vector connecting the two atoms");
+  keys.addOutputComponent("c","SCALED_COMPONENTS","the normalized projection on the third lattice vector of the vector connecting the two atoms");
 }
 
 Distance::Distance(const ActionOptions&ao):
-    PLUMED_COLVAR_INIT(ao),
-    components(false),
-    scaled_components(false),
-    pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  components(false),
+  scaled_components(false),
+  pbc(true)
 {
-    vector<AtomNumber> atoms;
-    parseAtomList("ATOMS",atoms);
-    if(atoms.size()!=2)
-        error("Number of specified atoms should be 2");
-    parseFlag("COMPONENTS",components);
-    parseFlag("SCALED_COMPONENTS",scaled_components);
-    bool nopbc=!pbc;
-    parseFlag("NOPBC",nopbc);
-    pbc=!nopbc;
-    checkRead();
+  vector<AtomNumber> atoms;
+  parseAtomList("ATOMS",atoms);
+  if(atoms.size()!=2)
+    error("Number of specified atoms should be 2");
+  parseFlag("COMPONENTS",components);
+  parseFlag("SCALED_COMPONENTS",scaled_components);
+  bool nopbc=!pbc;
+  parseFlag("NOPBC",nopbc);
+  pbc=!nopbc;
+  checkRead();
 
-    log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());
-    if(pbc) log.printf("  using periodic boundary conditions\n");
-    else    log.printf("  without periodic boundary conditions\n");
+  log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());
+  if(pbc) log.printf("  using periodic boundary conditions\n");
+  else    log.printf("  without periodic boundary conditions\n");
 
-    if(components && scaled_components) error("COMPONENTS and SCALED_COMPONENTS are not compatible");
+  if(components && scaled_components) error("COMPONENTS and SCALED_COMPONENTS are not compatible");
 
-    if(components) {
-        addComponentWithDerivatives("x");
-        componentIsNotPeriodic("x");
-        addComponentWithDerivatives("y");
-        componentIsNotPeriodic("y");
-        addComponentWithDerivatives("z");
-        componentIsNotPeriodic("z");
-        log<<"  WARNING: components will not have the proper periodicity - see manual\n";
-    } else if(scaled_components) {
-        addComponentWithDerivatives("a");
-        componentIsPeriodic("a","-0.5","+0.5");
-        addComponentWithDerivatives("b");
-        componentIsPeriodic("b","-0.5","+0.5");
-        addComponentWithDerivatives("c");
-        componentIsPeriodic("c","-0.5","+0.5");
-    } else {
-        addValueWithDerivatives();
-        setNotPeriodic();
-    }
+  if(components) {
+    addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
+    addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
+    addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+    log<<"  WARNING: components will not have the proper periodicity - see manual\n";
+  } else if(scaled_components) {
+    addComponentWithDerivatives("a"); componentIsPeriodic("a","-0.5","+0.5");
+    addComponentWithDerivatives("b"); componentIsPeriodic("b","-0.5","+0.5");
+    addComponentWithDerivatives("c"); componentIsPeriodic("c","-0.5","+0.5");
+  } else {
+    addValueWithDerivatives(); setNotPeriodic();
+  }
 
 
-    requestAtoms(atoms);
+  requestAtoms(atoms);
 }
 
 
 // calculator
 void Distance::calculate() {
 
-    if(pbc) makeWhole();
+  if(pbc) makeWhole();
 
-    Vector distance=delta(getPosition(0),getPosition(1));
-    const double value=distance.modulo();
-    const double invvalue=1.0/value;
+  Vector distance=delta(getPosition(0),getPosition(1));
+  const double value=distance.modulo();
+  const double invvalue=1.0/value;
 
-    if(components) {
-        Value* valuex=getPntrToComponent("x");
-        Value* valuey=getPntrToComponent("y");
-        Value* valuez=getPntrToComponent("z");
+  if(components) {
+    Value* valuex=getPntrToComponent("x");
+    Value* valuey=getPntrToComponent("y");
+    Value* valuez=getPntrToComponent("z");
 
-        setAtomsDerivatives (valuex,0,Vector(-1,0,0));
-        setAtomsDerivatives (valuex,1,Vector(+1,0,0));
-        setBoxDerivativesNoPbc(valuex);
-        valuex->set(distance[0]);
+    setAtomsDerivatives (valuex,0,Vector(-1,0,0));
+    setAtomsDerivatives (valuex,1,Vector(+1,0,0));
+    setBoxDerivativesNoPbc(valuex);
+    valuex->set(distance[0]);
 
-        setAtomsDerivatives (valuey,0,Vector(0,-1,0));
-        setAtomsDerivatives (valuey,1,Vector(0,+1,0));
-        setBoxDerivativesNoPbc(valuey);
-        valuey->set(distance[1]);
+    setAtomsDerivatives (valuey,0,Vector(0,-1,0));
+    setAtomsDerivatives (valuey,1,Vector(0,+1,0));
+    setBoxDerivativesNoPbc(valuey);
+    valuey->set(distance[1]);
 
-        setAtomsDerivatives (valuez,0,Vector(0,0,-1));
-        setAtomsDerivatives (valuez,1,Vector(0,0,+1));
-        setBoxDerivativesNoPbc(valuez);
-        valuez->set(distance[2]);
-    } else if(scaled_components) {
-        Value* valuea=getPntrToComponent("a");
-        Value* valueb=getPntrToComponent("b");
-        Value* valuec=getPntrToComponent("c");
-        Vector d=getPbc().realToScaled(distance);
-        setAtomsDerivatives (valuea,0,matmul(getPbc().getInvBox(),Vector(-1,0,0)));
-        setAtomsDerivatives (valuea,1,matmul(getPbc().getInvBox(),Vector(+1,0,0)));
-        valuea->set(Tools::pbc(d[0]));
-        setAtomsDerivatives (valueb,0,matmul(getPbc().getInvBox(),Vector(0,-1,0)));
-        setAtomsDerivatives (valueb,1,matmul(getPbc().getInvBox(),Vector(0,+1,0)));
-        valueb->set(Tools::pbc(d[1]));
-        setAtomsDerivatives (valuec,0,matmul(getPbc().getInvBox(),Vector(0,0,-1)));
-        setAtomsDerivatives (valuec,1,matmul(getPbc().getInvBox(),Vector(0,0,+1)));
-        valuec->set(Tools::pbc(d[2]));
-    } else {
-        setAtomsDerivatives(0,-invvalue*distance);
-        setAtomsDerivatives(1,invvalue*distance);
-        setBoxDerivativesNoPbc();
-        setValue           (value);
-    }
+    setAtomsDerivatives (valuez,0,Vector(0,0,-1));
+    setAtomsDerivatives (valuez,1,Vector(0,0,+1));
+    setBoxDerivativesNoPbc(valuez);
+    valuez->set(distance[2]);
+  } else if(scaled_components) {
+    Value* valuea=getPntrToComponent("a");
+    Value* valueb=getPntrToComponent("b");
+    Value* valuec=getPntrToComponent("c");
+    Vector d=getPbc().realToScaled(distance);
+    setAtomsDerivatives (valuea,0,matmul(getPbc().getInvBox(),Vector(-1,0,0)));
+    setAtomsDerivatives (valuea,1,matmul(getPbc().getInvBox(),Vector(+1,0,0)));
+    valuea->set(Tools::pbc(d[0]));
+    setAtomsDerivatives (valueb,0,matmul(getPbc().getInvBox(),Vector(0,-1,0)));
+    setAtomsDerivatives (valueb,1,matmul(getPbc().getInvBox(),Vector(0,+1,0)));
+    valueb->set(Tools::pbc(d[1]));
+    setAtomsDerivatives (valuec,0,matmul(getPbc().getInvBox(),Vector(0,0,-1)));
+    setAtomsDerivatives (valuec,1,matmul(getPbc().getInvBox(),Vector(0,0,+1)));
+    valuec->set(Tools::pbc(d[2]));
+  } else {
+    setAtomsDerivatives(0,-invvalue*distance);
+    setAtomsDerivatives(1,invvalue*distance);
+    setBoxDerivativesNoPbc();
+    setValue           (value);
+  }
 
 }
 

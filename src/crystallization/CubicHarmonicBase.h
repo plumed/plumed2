@@ -32,20 +32,18 @@ namespace crystallization {
 class CubicHarmonicBase : public multicolvar::MultiColvarBase {
 private:
 //  double nl_cut;
-    double rcut2;
-    double rotationmatrix[3][3];
-    bool unormalized;
-    SwitchingFunction switchingFunction;
+  double rcut2;
+  double rotationmatrix[3][3];
+  bool unormalized;
+  SwitchingFunction switchingFunction;
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit CubicHarmonicBase(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  explicit CubicHarmonicBase(const ActionOptions&);
 // active methods:
-    double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
-    virtual double calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const = 0;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+  virtual double calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const = 0;
 /// Returns the number of coordinates of the field
-    bool isPeriodic() {
-        return false;
-    }
+  bool isPeriodic() { return false; }
 };
 
 }

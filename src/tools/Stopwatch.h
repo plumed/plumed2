@@ -168,232 +168,232 @@ class Log;
 class Stopwatch {
 /// Simple function returning an empty string.
 /// Used to simplify Stopwatch interface.
-    static const std::string & emptyString() {
-        static std::string s;
-        return s;
-    }
+  static const std::string & emptyString() {
+    static std::string s;
+    return s;
+  }
 
 public:
 /// Forward declaration
-    class Watch;
+  class Watch;
 /// Auxiliary class for handling exception-safe start/pause and start/stop.
-    class Handler {
-        Watch* watch=nullptr;
-        /// stop (true) or pause (false).
-        /// might be changed to an enum if clearer.
-        bool stop=false;
-        /// Private constructor.
-        /// This is kept private to avoid misuse. Handler objects should
-        /// only be created using startPause() or startStop().
-        /// stop is required to know if the destructor should stop or pause the watch.
-        Handler(Watch* watch,bool stop);
-        /// Allows usage of private constructor
-        friend class Stopwatch;
-    public:
-        /// Default constructor
-        Handler() = default;
-        /// Default copy constructor is deleted (not copyable)
-        Handler(const Handler & handler) = delete;
-        /// Default copy assignment is deleted (not copyable)
-        Handler & operator=(const Handler & handler) = delete;
-        /// Move constructor.
-        Handler(Handler && handler) noexcept;
-        /// Move assignemnt.
-        Handler & operator=(Handler && handler) noexcept;
-        /// Destructor either stops or pauses the watch
-        ~Handler();
-    };
+  class Handler {
+    Watch* watch=nullptr;
+    /// stop (true) or pause (false).
+    /// might be changed to an enum if clearer.
+    bool stop=false;
+    /// Private constructor.
+    /// This is kept private to avoid misuse. Handler objects should
+    /// only be created using startPause() or startStop().
+    /// stop is required to know if the destructor should stop or pause the watch.
+    Handler(Watch* watch,bool stop);
+    /// Allows usage of private constructor
+    friend class Stopwatch;
+  public:
+    /// Default constructor
+    Handler() = default;
+    /// Default copy constructor is deleted (not copyable)
+    Handler(const Handler & handler) = delete;
+    /// Default copy assignment is deleted (not copyable)
+    Handler & operator=(const Handler & handler) = delete;
+    /// Move constructor.
+    Handler(Handler && handler) noexcept;
+    /// Move assignemnt.
+    Handler & operator=(Handler && handler) noexcept;
+    /// Destructor either stops or pauses the watch
+    ~Handler();
+  };
 
 /// Class to store a single stopwatch.
 /// Class Stopwatch contains a collection of them
-    class Watch {
+  class Watch {
 /// Instant in time when Watch was started last time
-        std::chrono::time_point<std::chrono::high_resolution_clock> lastStart;
+    std::chrono::time_point<std::chrono::high_resolution_clock> lastStart;
 /// Total accumulated time, in nanoseconds
-        long long int total = 0;
+    long long int total = 0;
 /// Accumulated time for this lap, in nanoseconds
-        long long int lap = 0;
+    long long int lap = 0;
 /// Slowest lap so far, in nanoseconds
-        long long int max = 0;
+    long long int max = 0;
 /// Fastest lap so far, in nanoseconds
-        long long int min = 0;
+    long long int min = 0;
 /// Total number of cycles
-        unsigned cycles = 0;
+    unsigned cycles = 0;
 /// count how many times Watch was started (+1) or stopped/paused (-1).
-        unsigned running = 0;
-        enum class State {started, stopped, paused};
+    unsigned running = 0;
+    enum class State {started, stopped, paused};
 /// keep track of state
-        State state = State::stopped;
+    State state = State::stopped;
 /// Allows access to internal data
-        friend class Stopwatch;
-    public:
+    friend class Stopwatch;
+  public:
 /// start the watch
-        Watch & start();
+    Watch & start();
 /// stop the watch
-        Watch & stop();
+    Watch & stop();
 /// pause the watch
-        Watch & pause();
+    Watch & pause();
 /// returns a start-stop handler
-        Handler startStop();
+    Handler startStop();
 /// returns a start-pause handler
-        Handler startPause();
-    };
+    Handler startPause();
+  };
 
 private:
 
 /// Pointer to a log file.
 /// If set, the stopwatch is logged in its destructor.
-    Log*mylog=nullptr;
+  Log*mylog=nullptr;
 
 /// List of watches.
 /// Each watch is labeled with a string.
-    std::unordered_map<std::string,Watch> watches;
+  std::unordered_map<std::string,Watch> watches;
 
 /// Log over stream os.
-    std::ostream& log(std::ostream& os)const;
+  std::ostream& log(std::ostream& os)const;
 
 public:
 // Constructor.
-    explicit Stopwatch() = default;
+  explicit Stopwatch() = default;
 // Constructor.
 // When destructing, stopwatch is logged.
 // Make sure that log survives stopwatch. Typically, it should be declared earlier, in order
 // to be destroyed later.
-    Stopwatch(Log&log): mylog(&log) {}
+  Stopwatch(Log&log): mylog(&log) {}
 // Destructor.
-    ~Stopwatch();
+  ~Stopwatch();
 /// Start timer named "name"
-    Stopwatch& start(const std::string&name=emptyString());
+  Stopwatch& start(const std::string&name=emptyString());
 /// Stop timer named "name"
-    Stopwatch& stop(const std::string&name=emptyString());
+  Stopwatch& stop(const std::string&name=emptyString());
 /// Pause timer named "name"
-    Stopwatch& pause(const std::string&name=emptyString());
+  Stopwatch& pause(const std::string&name=emptyString());
 /// Dump all timers on an ostream
-    friend std::ostream& operator<<(std::ostream&,const Stopwatch&);
+  friend std::ostream& operator<<(std::ostream&,const Stopwatch&);
 /// Start with exception safety, then stop.
 /// Starts the Stopwatch and returns an object that, when goes out of scope,
 /// stops the watch. This allows Stopwatch to be started and stopped in
 /// an exception safe manner.
-    Handler startStop(const std::string&name=emptyString());
+  Handler startStop(const std::string&name=emptyString());
 /// Start with exception safety, then pause.
 /// Starts the Stopwatch and returns an object that, when goes out of scope,
 /// pauses the watch. This allows Stopwatch to be started and paused in
 /// an exception safe manner.
-    Handler startPause(const std::string&name=emptyString());
+  Handler startPause(const std::string&name=emptyString());
 };
 
 inline
 Stopwatch::Handler::Handler(Watch* watch,bool stop) :
-    watch(watch),
-    stop(stop)
+  watch(watch),
+  stop(stop)
 {
-    watch->start();
+  watch->start();
 }
 
 inline
 Stopwatch::Handler::~Handler() {
-    if(watch) {
-        if(stop) watch->stop();
-        else watch->pause();
-    }
+  if(watch) {
+    if(stop) watch->stop();
+    else watch->pause();
+  }
 }
 
 inline
 Stopwatch& Stopwatch::start(const std::string & name) {
-    watches[name].start();
-    return *this;
+  watches[name].start();
+  return *this;
 }
 
 inline
 Stopwatch& Stopwatch::stop(const std::string & name) {
-    watches[name].stop();
-    return *this;
+  watches[name].stop();
+  return *this;
 }
 
 inline
 Stopwatch& Stopwatch::pause(const std::string & name) {
-    watches[name].pause();
-    return *this;
+  watches[name].pause();
+  return *this;
 }
 
 inline
 Stopwatch::Handler Stopwatch::startStop(const std::string&name) {
-    return watches[name].startStop();
+  return watches[name].startStop();
 }
 
 inline
 Stopwatch::Handler Stopwatch::startPause(const std::string&name) {
-    return watches[name].startPause();
+  return watches[name].startPause();
 }
 
 inline
 Stopwatch::Handler::Handler(Handler && handler) noexcept :
-    watch(handler.watch),
-    stop(handler.stop)
+  watch(handler.watch),
+  stop(handler.stop)
 {
-    handler.watch=nullptr;
+  handler.watch=nullptr;
 }
 
 inline
 Stopwatch::Handler & Stopwatch::Handler::operator=(Handler && handler) noexcept {
-    if(this!=&handler) {
-        if(watch) {
-            if(stop) watch->stop();
-            else watch->pause();
-        }
+  if(this!=&handler) {
+    if(watch) {
+      if(stop) watch->stop();
+      else watch->pause();
+    }
 // cppcheck complains about this:
 // cppcheck-suppress uselessAssignmentPtrArg
-        watch=handler.watch;
-        stop=handler.stop;
-        handler.watch=nullptr;
-    }
-    return *this;
+    watch=handler.watch;
+    stop=handler.stop;
+    handler.watch=nullptr;
+  }
+  return *this;
 }
 
 inline
 Stopwatch::Watch & Stopwatch::Watch::start() {
-    state=State::started;
-    running++;
-    lastStart=std::chrono::high_resolution_clock::now();
-    return *this;
+  state=State::started;
+  running++;
+  lastStart=std::chrono::high_resolution_clock::now();
+  return *this;
 }
 
 inline
 Stopwatch::Watch & Stopwatch::Watch::stop() {
-    pause();
-    state=State::stopped;
-    cycles++;
-    total+=lap;
-    if(lap>max)max=lap;
-    if(min>lap || cycles==1)min=lap;
-    lap=0;
-    return *this;
+  pause();
+  state=State::stopped;
+  cycles++;
+  total+=lap;
+  if(lap>max)max=lap;
+  if(min>lap || cycles==1)min=lap;
+  lap=0;
+  return *this;
 }
 
 inline
 Stopwatch::Watch & Stopwatch::Watch::pause() {
-    state=State::paused;
+  state=State::paused;
 // In case of an internal bug (non matching start stop within the startStop or startPause interface)
 // this assertion could fail in a destructor.
 // If this happens, the program should crash immediately
-    plumed_assert(running>0) << "Non matching start/pause or start/stop commands in a Stopwatch";
-    running--;
+  plumed_assert(running>0) << "Non matching start/pause or start/stop commands in a Stopwatch";
+  running--;
 // notice: with exception safety the following might be converted to a plain error.
 // I leave it like this for now:
-    if(running!=0) return *this;
-    auto t=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-lastStart);
-    lap+=t.count();
-    return *this;
+  if(running!=0) return *this;
+  auto t=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-lastStart);
+  lap+=t.count();
+  return *this;
 }
 
 inline
 Stopwatch::Handler Stopwatch::Watch::startStop() {
-    return Handler( this,true );
+  return Handler( this,true );
 }
 
 inline
 Stopwatch::Handler Stopwatch::Watch::startPause() {
-    return Handler( this,false );
+  return Handler( this,false );
 }
 
 

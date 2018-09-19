@@ -28,58 +28,54 @@ namespace vesselbase {
 
 class Max : public FunctionVessel {
 private:
-    double beta;
+  double beta;
 public:
-    static void registerKeywords( Keywords& keys );
-    static void reserveKeyword( Keywords& keys );
-    explicit Max( const VesselOptions& da );
-    std::string value_descriptor();
-    double calcTransform( const double& val, double& dv ) const ;
-    double finalTransform( const double& val, double& dv );
+  static void registerKeywords( Keywords& keys );
+  static void reserveKeyword( Keywords& keys );
+  explicit Max( const VesselOptions& da );
+  std::string value_descriptor();
+  double calcTransform( const double& val, double& dv ) const ;
+  double finalTransform( const double& val, double& dv );
 };
 
 PLUMED_REGISTER_VESSEL(Max,"MAX")
 
 void Max::registerKeywords( Keywords& keys ) {
-    FunctionVessel::registerKeywords( keys );
-    keys.add("compulsory","BETA","the value of beta for the equation in the manual");
+  FunctionVessel::registerKeywords( keys );
+  keys.add("compulsory","BETA","the value of beta for the equation in the manual");
 }
 
 void Max::reserveKeyword( Keywords& keys ) {
-    keys.reserve("vessel","MAX","calculate the maximum value. "
-                 "To make this quantity continuous the maximum is calculated using "
-                 "\\f$ \\textrm{max} = \\beta \\log \\sum_i \\exp\\left( \\frac{s_i}{\\beta}\\right) \\f$ "
-                 "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
-    keys.addOutputComponent("max","MAX","the maximum value. This is calculated using the formula described in the description of the "
-                            "keyword so as to make it continuous.");
+  keys.reserve("vessel","MAX","calculate the maximum value. "
+               "To make this quantity continuous the maximum is calculated using "
+               "\\f$ \\textrm{max} = \\beta \\log \\sum_i \\exp\\left( \\frac{s_i}{\\beta}\\right) \\f$ "
+               "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
+  keys.addOutputComponent("max","MAX","the maximum value. This is calculated using the formula described in the description of the "
+                          "keyword so as to make it continuous.");
 
 }
 
 Max::Max( const VesselOptions& da ) :
-    FunctionVessel(da)
+  FunctionVessel(da)
 {
-    if( getAction()->isPeriodic() ) error("max is not a meaningful option for periodic variables");
-    parse("BETA",beta);
+  if( getAction()->isPeriodic() ) error("max is not a meaningful option for periodic variables");
+  parse("BETA",beta);
 
-    if( diffweight ) error("can't calculate max if weight is differentiable");
+  if( diffweight ) error("can't calculate max if weight is differentiable");
 }
 
 std::string Max::value_descriptor() {
-    std::string str_beta;
-    Tools::convert( beta, str_beta );
-    return "the maximum value. Beta is equal to " + str_beta;
+  std::string str_beta; Tools::convert( beta, str_beta );
+  return "the maximum value. Beta is equal to " + str_beta;
 }
 
 double Max::calcTransform( const double& val, double& dv ) const {
-    double f = exp(val/beta);
-    dv=f/beta;
-    return f;
+  double f = exp(val/beta); dv=f/beta; return f;
 }
 
 double Max::finalTransform( const double& val, double& dv ) {
-    double dist=beta*std::log( val );
-    dv = beta/val;
-    return dist;
+  double dist=beta*std::log( val );
+  dv = beta/val; return dist;
 }
 
 }

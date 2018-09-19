@@ -75,55 +75,51 @@ PRINT ARG=tt.* FILE=colvar
 
 class Tetrahedral : public CubicHarmonicBase {
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit Tetrahedral(const ActionOptions&);
-    double calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const ;
+  static void registerKeywords( Keywords& keys );
+  explicit Tetrahedral(const ActionOptions&);
+  double calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const ;
 };
 
 PLUMED_REGISTER_ACTION(Tetrahedral,"TETRAHEDRAL")
 
 void Tetrahedral::registerKeywords( Keywords& keys ) {
-    CubicHarmonicBase::registerKeywords( keys );
+  CubicHarmonicBase::registerKeywords( keys );
 }
 
 Tetrahedral::Tetrahedral(const ActionOptions&ao):
-    Action(ao),
-    CubicHarmonicBase(ao)
+  Action(ao),
+  CubicHarmonicBase(ao)
 {
-    checkRead();
+  checkRead();
 }
 
 double Tetrahedral::calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const {
-    double sp1 = +distance[0]+distance[1]+distance[2];
-    double sp2 = +distance[0]-distance[1]-distance[2];
-    double sp3 = -distance[0]+distance[1]-distance[2];
-    double sp4 = -distance[0]-distance[1]+distance[2];
+  double sp1 = +distance[0]+distance[1]+distance[2];
+  double sp2 = +distance[0]-distance[1]-distance[2];
+  double sp3 = -distance[0]+distance[1]-distance[2];
+  double sp4 = -distance[0]-distance[1]+distance[2];
 
-    double sp1c = pow( sp1, 3 );
-    double sp2c = pow( sp2, 3 );
-    double sp3c = pow( sp3, 3 );
-    double sp4c = pow( sp4, 3 );
+  double sp1c = pow( sp1, 3 );
+  double sp2c = pow( sp2, 3 );
+  double sp3c = pow( sp3, 3 );
+  double sp4c = pow( sp4, 3 );
 
-    double d1 = distance.modulo();
-    double r3 = pow( d1, 3 );
-    double r5 = pow( d1, 5 );
+  double d1 = distance.modulo();
+  double r3 = pow( d1, 3 );
+  double r5 = pow( d1, 5 );
 
-    double tmp = sp1c/r3 + sp2c/r3 + sp3c/r3 + sp4c/r3;
+  double tmp = sp1c/r3 + sp2c/r3 + sp3c/r3 + sp4c/r3;
 
-    double t1=(3*sp1c)/r5;
-    double tt1=((3*sp1*sp1)/r3);
-    double t2=(3*sp2c)/r5;
-    double tt2=((3*sp2*sp2)/r3);
-    double t3=(3*sp3c)/r5;
-    double tt3=((3*sp3*sp3)/r3);
-    double t4=(3*sp4c)/r5;
-    double tt4=((3*sp4*sp4)/r3);
+  double t1=(3*sp1c)/r5; double tt1=((3*sp1*sp1)/r3);
+  double t2=(3*sp2c)/r5; double tt2=((3*sp2*sp2)/r3);
+  double t3=(3*sp3c)/r5; double tt3=((3*sp3*sp3)/r3);
+  double t4=(3*sp4c)/r5; double tt4=((3*sp4*sp4)/r3);
 
-    myder[0] = (tt1-(distance[0]*t1))  + (tt2-(distance[0]*t2))  + (-tt3-(distance[0]*t3))  + (-tt4-(distance[0]*t4));
-    myder[1] = (tt1-(distance[1]*t1))  + (-tt2-(distance[1]*t2))  + (tt3-(distance[1]*t3))  + (-tt4-(distance[1]*t4));
-    myder[2] = (tt1-(distance[2]*t1))  + (-tt2-(distance[2]*t2))  + (-tt3-(distance[2]*t3))  + (tt4-(distance[2]*t4));
+  myder[0] = (tt1-(distance[0]*t1))  + (tt2-(distance[0]*t2))  + (-tt3-(distance[0]*t3))  + (-tt4-(distance[0]*t4));
+  myder[1] = (tt1-(distance[1]*t1))  + (-tt2-(distance[1]*t2))  + (tt3-(distance[1]*t3))  + (-tt4-(distance[1]*t4));
+  myder[2] = (tt1-(distance[2]*t1))  + (-tt2-(distance[2]*t2))  + (-tt3-(distance[2]*t3))  + (tt4-(distance[2]*t4));
 
-    return tmp;
+  return tmp;
 }
 
 }

@@ -28,48 +28,46 @@ namespace mapping {
 
 class ZpathVessel : public vesselbase::FunctionVessel {
 private:
-    double invlambda;
+  double invlambda;
 public:
-    static void registerKeywords( Keywords& keys );
-    static void reserveKeyword( Keywords& keys );
-    explicit ZpathVessel( const vesselbase::VesselOptions& da );
-    std::string value_descriptor();
-    double calcTransform( const double& val, double& dv ) const ;
-    double finalTransform( const double& val, double& dv );
+  static void registerKeywords( Keywords& keys );
+  static void reserveKeyword( Keywords& keys );
+  explicit ZpathVessel( const vesselbase::VesselOptions& da );
+  std::string value_descriptor();
+  double calcTransform( const double& val, double& dv ) const ;
+  double finalTransform( const double& val, double& dv );
 };
 
 PLUMED_REGISTER_VESSEL(ZpathVessel,"ZPATH")
 
 void ZpathVessel::registerKeywords( Keywords& keys ) {
-    FunctionVessel::registerKeywords(keys);
+  FunctionVessel::registerKeywords(keys);
 }
 
 void ZpathVessel::reserveKeyword( Keywords& keys ) {
-    keys.reserve("vessel","ZPATH","calculate the distance from the low dimensionality manifold");
-    keys.addOutputComponent("zpath","ZPATH","the distance from the path");
+  keys.reserve("vessel","ZPATH","calculate the distance from the low dimensionality manifold");
+  keys.addOutputComponent("zpath","ZPATH","the distance from the path");
 }
 
 ZpathVessel::ZpathVessel( const vesselbase::VesselOptions& da ):
-    FunctionVessel(da)
+  FunctionVessel(da)
 {
-    Mapping* mymap=dynamic_cast<Mapping*>( getAction() );
-    plumed_massert( mymap, "ZpathVessel should only be used with mappings");
-    invlambda = 1.0 / mymap->getLambda();
-    usetol=true;
+  Mapping* mymap=dynamic_cast<Mapping*>( getAction() );
+  plumed_massert( mymap, "ZpathVessel should only be used with mappings");
+  invlambda = 1.0 / mymap->getLambda(); usetol=true;
 }
 
 std::string ZpathVessel::value_descriptor() {
-    return "the distance from the low-dimensional manifold";
+  return "the distance from the low-dimensional manifold";
 }
 
 double ZpathVessel::calcTransform( const double& val, double& dv ) const {
-    dv=0.0;
-    return 1.0;
+  dv=0.0; return 1.0;
 }
 
 double ZpathVessel::finalTransform( const double& val, double& dv ) {
-    dv = -invlambda / val;
-    return -invlambda*std::log( val );
+  dv = -invlambda / val;
+  return -invlambda*std::log( val );
 }
 
 }

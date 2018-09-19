@@ -28,30 +28,30 @@ namespace PLMD {
 namespace crystallization {
 
 class Gradient : public multicolvar::VolumeGradientBase {
-    friend class GradientVessel;
+  friend class GradientVessel;
 private:
 /// The value of sigma
-    double sigma;
+  double sigma;
 /// Number of quantities in use in this colvar
-    unsigned vend, nquantities;
+  unsigned vend, nquantities;
 /// Number of bins in each direction
-    std::vector<unsigned> nbins;
+  std::vector<unsigned> nbins;
 /// The type of kernel for the histogram
-    std::string kerneltype;
+  std::string kerneltype;
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit Gradient(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  explicit Gradient(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
-    virtual unsigned getNumberOfQuantities() const ;
+  virtual unsigned getNumberOfQuantities() const ;
 /// Check on pbc - is it orthorhombic
-    void setupRegions();
+  void setupRegions();
 /// Calculate whats in the volume
-    void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
+  void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
 };
 
 inline
 unsigned Gradient::getNumberOfQuantities() const {
-    return nquantities;
+  return nquantities;
 }
 
 }

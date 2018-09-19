@@ -82,71 +82,71 @@ properties:
 //+ENDPLUMEDOC
 
 class FretEfficiency : public Colvar {
-    bool pbc;
-    double R0_;
+  bool pbc;
+  double R0_;
 
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit FretEfficiency(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  explicit FretEfficiency(const ActionOptions&);
 // active methods:
-    virtual void calculate();
+  virtual void calculate();
 };
 
 PLUMED_REGISTER_ACTION(FretEfficiency,"FRET")
 
 void FretEfficiency::registerKeywords( Keywords& keys ) {
-    Colvar::registerKeywords( keys );
-    keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
-    keys.add("compulsory","R0","The value of the Forster radius.");
+  Colvar::registerKeywords( keys );
+  keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
+  keys.add("compulsory","R0","The value of the Forster radius.");
 }
 
 FretEfficiency::FretEfficiency(const ActionOptions&ao):
-    PLUMED_COLVAR_INIT(ao),
-    pbc(true)
+  PLUMED_COLVAR_INIT(ao),
+  pbc(true)
 {
-    vector<AtomNumber> atoms;
-    parseAtomList("ATOMS",atoms);
-    if(atoms.size()!=2)
-        error("Number of specified atoms should be 2");
-    parse("R0",R0_);
-    bool nopbc=!pbc;
-    parseFlag("NOPBC",nopbc);
-    pbc=!nopbc;
-    checkRead();
+  vector<AtomNumber> atoms;
+  parseAtomList("ATOMS",atoms);
+  if(atoms.size()!=2)
+    error("Number of specified atoms should be 2");
+  parse("R0",R0_);
+  bool nopbc=!pbc;
+  parseFlag("NOPBC",nopbc);
+  pbc=!nopbc;
+  checkRead();
 
-    log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());
-    log.printf("  with Forster radius set to %lf\n",R0_);
+  log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());
+  log.printf("  with Forster radius set to %lf\n",R0_);
 
-    if(pbc) log.printf("  using periodic boundary conditions\n");
-    else    log.printf("  without periodic boundary conditions\n");
+  if(pbc) log.printf("  using periodic boundary conditions\n");
+  else    log.printf("  without periodic boundary conditions\n");
 
-    log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
+  log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
 
-    addValueWithDerivatives();
-    setNotPeriodic();
+  addValueWithDerivatives();
+  setNotPeriodic();
 
-    requestAtoms(atoms);
+  requestAtoms(atoms);
 }
 
 
 // calculator
 void FretEfficiency::calculate() {
 
-    if(pbc) makeWhole();
+  if(pbc) makeWhole();
 
-    Vector distance=delta(getPosition(0),getPosition(1));
-    const double dist_mod=distance.modulo();
-    const double inv_dist_mod=1.0/dist_mod;
+  Vector distance=delta(getPosition(0),getPosition(1));
+  const double dist_mod=distance.modulo();
+  const double inv_dist_mod=1.0/dist_mod;
 
-    const double ratiosix=pow(dist_mod/R0_,6);
-    const double fret_eff = 1.0/(1.0+ratiosix);
+  const double ratiosix=pow(dist_mod/R0_,6);
+  const double fret_eff = 1.0/(1.0+ratiosix);
 
-    const double der = -6.0*fret_eff*fret_eff*ratiosix*inv_dist_mod;
+  const double der = -6.0*fret_eff*fret_eff*ratiosix*inv_dist_mod;
 
-    setAtomsDerivatives(0,-inv_dist_mod*der*distance);
-    setAtomsDerivatives(1, inv_dist_mod*der*distance);
-    setBoxDerivativesNoPbc();
-    setValue(fret_eff);
+  setAtomsDerivatives(0,-inv_dist_mod*der*distance);
+  setAtomsDerivatives(1, inv_dist_mod*der*distance);
+  setBoxDerivativesNoPbc();
+  setValue(fret_eff);
 
 }
 

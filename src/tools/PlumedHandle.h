@@ -71,62 +71,62 @@ Thus, once constructed the object is guaranteed to be functional.
 class PlumedHandle {
 /// Automatically dlclosing auxiliary class.
 /// Just used to make sure that handle is dlclosed correctly.
-    class DlHandle {
-        void *handle=nullptr;
-    public:
+  class DlHandle {
+    void *handle=nullptr;
+  public:
 /// Default construct as nullptr
-        DlHandle() {}
+    DlHandle() {}
 /// Construct from a void*
-        DlHandle(void*h): handle(h) {}
+    DlHandle(void*h): handle(h) {}
 /// Destructor will call dlclose if necessary
-        ~DlHandle();
+    ~DlHandle();
 /// Covertible to void* so that it can be used directly
-        operator void*() const {
-            return handle;
-        }
-    };
+    operator void*() const {
+      return handle;
+    }
+  };
 /// Pointer to PlumedMain.
 /// Used when using the current kernel in order to avoid unneeded indirections.
-    std::unique_ptr<PlumedMain> local;
+  std::unique_ptr<PlumedMain> local;
 /// Pointer to dlsym handle used to open the kernel.
 /// Null when using current kernel.
-    DlHandle handle;
+  DlHandle handle;
 /// Pointer to symbol table.
 /// Used for kernels>=2.5. We store it here since it is needed
 /// in constructor to initialize create_/cmd_/finalize_.
 /// Later on we might use the additional version information that it carries.
-    plumed_symbol_table_type* const symbol_=nullptr;
+  plumed_symbol_table_type* const symbol_=nullptr;
 /// Pointer to create function.
 /// Used when kernel is dlopened.
-    const plumed_create_pointer create_=nullptr;
+  const plumed_create_pointer create_=nullptr;
 /// Pointer to cmd function.
 /// Used when kernel is dlopened.
-    const plumed_cmd_pointer cmd_=nullptr;
+  const plumed_cmd_pointer cmd_=nullptr;
 /// Pointer to finalize function.
 /// Used when kernel is dlopened.
-    const plumed_finalize_pointer finalize_=nullptr;
+  const plumed_finalize_pointer finalize_=nullptr;
 /// Pointer to the plumed object.
 /// Used when kernel is dlopened.
-    void* const p=nullptr;
+  void* const p=nullptr;
 /// Constructor using the path to a kernel.
 /// I keep it private to avoid confusion wrt the
 /// similar constructor of PLMD::Plumed that accepts a string (conversion from FORTRAN).
-    explicit PlumedHandle(const char* path);
+  explicit PlumedHandle(const char* path);
 public:
 /// Default constructor.
 /// Maps following commands to the current kernel.
-    PlumedHandle();
+  PlumedHandle();
 /// Construct a PlumedHandle given the path to a kernel.
 /// It just uses the private constructor PlumedHandle(const char* path).
-    static PlumedHandle DL(const char* path);
+  static PlumedHandle DL(const char* path);
 /// Destructor.
 /// In case a kernel was dlopened, it dlcloses it.
 /// I make it virtual for future extensibility, though this is not necessary now.
-    virtual ~PlumedHandle();
+  virtual ~PlumedHandle();
 /// Move constructor.
-    PlumedHandle(PlumedHandle &&) = default;
+  PlumedHandle(PlumedHandle &&) = default;
 /// Execute cmd.
-    void cmd(const char*key,const void*ptr=nullptr);
+  void cmd(const char*key,const void*ptr=nullptr);
 };
 
 }

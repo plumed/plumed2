@@ -26,65 +26,65 @@ namespace PLMD {
 namespace bias {
 
 Bias::Bias(const ActionOptions&ao):
-    Action(ao),
-    ActionPilot(ao),
-    ActionWithValue(ao),
-    ActionWithArguments(ao),
-    outputForces(getNumberOfArguments(),0.0)
+  Action(ao),
+  ActionPilot(ao),
+  ActionWithValue(ao),
+  ActionWithArguments(ao),
+  outputForces(getNumberOfArguments(),0.0)
 {
-    addComponentWithDerivatives("bias");
-    componentIsNotPeriodic("bias");
-    valueBias=getPntrToComponent("bias");
+  addComponentWithDerivatives("bias");
+  componentIsNotPeriodic("bias");
+  valueBias=getPntrToComponent("bias");
 
-    if(getStride()>1) {
-        log<<"  multiple time step "<<getStride()<<" ";
-        log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
-    }
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
-    }
+  if(getStride()>1) {
+    log<<"  multiple time step "<<getStride()<<" ";
+    log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
+  }
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
+  }
 
-    turnOnDerivatives();
+  turnOnDerivatives();
 }
 
 void Bias::registerKeywords( Keywords& keys ) {
-    Action::registerKeywords(keys);
-    ActionPilot::registerKeywords(keys);
-    ActionWithValue::registerKeywords(keys);
-    ActionWithArguments::registerKeywords(keys);
-    keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
-    componentsAreNotOptional(keys);
-    keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+  Action::registerKeywords(keys);
+  ActionPilot::registerKeywords(keys);
+  ActionWithValue::registerKeywords(keys);
+  ActionWithArguments::registerKeywords(keys);
+  keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
 void Bias::apply() {
-    const unsigned noa=getNumberOfArguments();
-    const unsigned ncp=getNumberOfComponents();
+  const unsigned noa=getNumberOfArguments();
+  const unsigned ncp=getNumberOfComponents();
 
-    if(onStep()) {
-        double gstr = static_cast<double>(getStride());
-        for(unsigned i=0; i<noa; ++i) {
-            getPntrToArgument(i)->addForce(gstr*outputForces[i]);
-        }
+  if(onStep()) {
+    double gstr = static_cast<double>(getStride());
+    for(unsigned i=0; i<noa; ++i) {
+      getPntrToArgument(i)->addForce(gstr*outputForces[i]);
     }
+  }
 
-    // additional forces on the bias component
-    std::vector<double> f(noa,0.0);
-    std::vector<double> forces(noa);
+  // additional forces on the bias component
+  std::vector<double> f(noa,0.0);
+  std::vector<double> forces(noa);
 
-    bool at_least_one_forced=false;
-    for(unsigned i=0; i<ncp; ++i) {
-        if(getPntrToComponent(i)->applyForce(forces)) {
-            at_least_one_forced=true;
-            for(unsigned j=0; j<noa; j++) f[j]+=forces[j];
-        }
+  bool at_least_one_forced=false;
+  for(unsigned i=0; i<ncp; ++i) {
+    if(getPntrToComponent(i)->applyForce(forces)) {
+      at_least_one_forced=true;
+      for(unsigned j=0; j<noa; j++) f[j]+=forces[j];
     }
+  }
 
-    if(at_least_one_forced && !onStep()) error("you are biasing a bias with an inconsistent STRIDE");
+  if(at_least_one_forced && !onStep()) error("you are biasing a bias with an inconsistent STRIDE");
 
-    if(at_least_one_forced) for(unsigned i=0; i<noa; ++i) {
-            getPntrToArgument(i)->addForce(f[i]);
-        }
+  if(at_least_one_forced) for(unsigned i=0; i<noa; ++i) {
+      getPntrToArgument(i)->addForce(f[i]);
+    }
 
 }
 

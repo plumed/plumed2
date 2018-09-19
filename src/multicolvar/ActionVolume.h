@@ -38,48 +38,48 @@ coordination number inside that part of the cell.
 class ActionVolume : public VolumeGradientBase {
 private:
 /// Number of quantities in use in this colvar
-    unsigned nquantities;
+  unsigned nquantities;
 /// The value of sigma
-    double sigma;
+  double sigma;
 /// Are we interested in the area outside the colvar
-    bool not_in;
+  bool not_in;
 /// The kernel type for this histogram
-    std::string kerneltype;
+  std::string kerneltype;
 protected:
-    double getSigma() const ;
-    std::string getKernelType() const ;
+  double getSigma() const ;
+  std::string getKernelType() const ;
 public:
-    static void registerKeywords( Keywords& keys );
-    explicit ActionVolume(const ActionOptions&);
+  static void registerKeywords( Keywords& keys );
+  explicit ActionVolume(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
-    virtual unsigned getNumberOfQuantities() const ;
+  virtual unsigned getNumberOfQuantities() const ;
 /// Calculate whats in the volume
-    void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
+  void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
 /// This calculates whether or not a particular is inside the box of interest
 /// this is used for neighbour list with volumes
-    bool inVolumeOfInterest( const unsigned& curr ) const ;
-    virtual double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const=0;
-    unsigned getCentralAtomElementIndex();
+  bool inVolumeOfInterest( const unsigned& curr ) const ;
+  virtual double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const=0;
+  unsigned getCentralAtomElementIndex();
 };
 
 inline
 unsigned ActionVolume::getNumberOfQuantities() const {
-    return nquantities;
+  return nquantities;
 }
 
 inline
 double ActionVolume::getSigma() const {
-    return sigma;
+  return sigma;
 }
 
 inline
 std::string ActionVolume::getKernelType() const {
-    return kerneltype;
+  return kerneltype;
 }
 
 inline
 unsigned ActionVolume::getCentralAtomElementIndex() {
-    return 1;
+  return 1;
 }
 
 }

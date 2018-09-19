@@ -68,60 +68,60 @@ int main(){
 template<class T,class C,class I=unsigned,class J=unsigned>
 class MatrixSquareBracketsAccess {
 /// Small utility class which just contains a pointer to the T and the row number
-    class Const_row {
-        friend class MatrixSquareBracketsAccess; // this so as to allow only T to instantiate Const_row
-        // the user should not manipulate it directly
-        const MatrixSquareBracketsAccess& t;
-        const I i;
-        Const_row(const MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
-    public:
-        /// access element
-        const C & operator[] (J j)const;
-    };
+  class Const_row {
+    friend class MatrixSquareBracketsAccess; // this so as to allow only T to instantiate Const_row
+    // the user should not manipulate it directly
+    const MatrixSquareBracketsAccess& t;
+    const I i;
+    Const_row(const MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
+  public:
+    /// access element
+    const C & operator[] (J j)const;
+  };
 /// Small utility class which just contains a pointer to the T and the row number
-    class Row {
-        friend class MatrixSquareBracketsAccess; // this so as to allow only T to instantiate Const_row
-        // the user should not manipulate it directly
-        MatrixSquareBracketsAccess& t;
-        const I i;
-        Row(MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
-    public:
-        /// access element
-        C & operator[] (J j);
-    };
+  class Row {
+    friend class MatrixSquareBracketsAccess; // this so as to allow only T to instantiate Const_row
+    // the user should not manipulate it directly
+    MatrixSquareBracketsAccess& t;
+    const I i;
+    Row(MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
+  public:
+    /// access element
+    C & operator[] (J j);
+  };
 public:
 /// access element (with [][] syntax)
-    Row operator[] (I i);
+  Row operator[] (I i);
 /// access element (with [][] syntax)
-    Const_row operator[] (I i)const;
+  Const_row operator[] (I i)const;
 };
 
 template<class T,class C,class I,class J>
 MatrixSquareBracketsAccess<T,C,I,J>::Const_row::Const_row(const MatrixSquareBracketsAccess&t,I i):
-    t(t),i(i) {}
+  t(t),i(i) {}
 
 template<class T,class C,class I,class J>
 MatrixSquareBracketsAccess<T,C,I,J>::Row::Row(MatrixSquareBracketsAccess&t,I i):
-    t(t),i(i) {}
+  t(t),i(i) {}
 
 template<class T,class C,class I,class J>
 const C & MatrixSquareBracketsAccess<T,C,I,J>::Const_row::operator[] (J j)const {
-    return (*static_cast<const T*>(&t))(i,j);
+  return (*static_cast<const T*>(&t))(i,j);
 }
 
 template<class T,class C,class I,class J>
 C & MatrixSquareBracketsAccess<T,C,I,J>::Row::operator[] (J j) {
-    return (*static_cast<T*>(&t))(i,j);
+  return (*static_cast<T*>(&t))(i,j);
 }
 
 template<class T,class C,class I,class J>
 typename MatrixSquareBracketsAccess<T,C,I,J>::Row MatrixSquareBracketsAccess<T,C,I,J>::operator[] (I i) {
-    return Row(*this,i);
+  return Row(*this,i);
 }
 
 template<class T,class C,class I,class J>
 typename MatrixSquareBracketsAccess<T,C,I,J>::Const_row MatrixSquareBracketsAccess<T,C,I,J>::operator[] (I i)const {
-    return Const_row(*this,i);
+  return Const_row(*this,i);
 }
 
 }

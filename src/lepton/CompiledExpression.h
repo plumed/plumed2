@@ -80,20 +80,20 @@ namespace lepton {
 // Needed to decouple asmjit header file from this one.
 class AsmJitRuntimePtr {
 /// if ASMJIT is not defined, just set the pointer to null
-    void* ptr=nullptr;
+  void* ptr=nullptr;
 public:
 /// constructor
-    AsmJitRuntimePtr();
+  AsmJitRuntimePtr();
 /// destructor
-    ~AsmJitRuntimePtr();
+  ~AsmJitRuntimePtr();
 /// deleted copy constructor
-    AsmJitRuntimePtr(const AsmJitRuntimePtr&) = delete;
+  AsmJitRuntimePtr(const AsmJitRuntimePtr&) = delete;
 /// deleted assignment
-    AsmJitRuntimePtr & operator=(const AsmJitRuntimePtr&) = delete;
+  AsmJitRuntimePtr & operator=(const AsmJitRuntimePtr&) = delete;
 /// get the pointer
-    void* get() {
-        return ptr;
-    }
+  void* get() {
+    return ptr;
+  }
 };
 
 class Operation;
@@ -103,9 +103,9 @@ class ParsedExpression;
  * A CompiledExpression is a highly optimized representation of an expression for cases when you want to evaluate
  * it many times as quickly as possible.  You should treat it as an opaque object; none of the internal representation
  * is visible.
- *
+ * 
  * A CompiledExpression is created by calling createCompiledExpression() on a ParsedExpression.
- *
+ * 
  * WARNING: CompiledExpression is NOT thread safe.  You should never access a CompiledExpression from two threads at
  * the same time.
  */

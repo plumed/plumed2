@@ -24,19 +24,19 @@
 namespace PLMD {
 
 RMSDBase::RMSDBase( const ReferenceConfigurationOptions& ro ):
-    ReferenceConfiguration(ro),
-    SingleDomainRMSD(ro)
+  ReferenceConfiguration(ro),
+  SingleDomainRMSD(ro)
 {
 }
 
 double RMSDBase::calculate( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
 //  clearDerivatives();
-    return calc( pos, myder, squared );
+  return calc( pos, myder, squared );
 }
 
 double RMSDBase::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {
-    plumed_dbg_assert( pos.size()==getNumberOfAtoms() );
-    return calc( pos, myder, squared );
+  plumed_dbg_assert( pos.size()==getNumberOfAtoms() );
+  return calc( pos, myder, squared );
 }
 
 }

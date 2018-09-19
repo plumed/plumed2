@@ -37,82 +37,80 @@ This is the abstract base class to use for implementing new collective variables
 */
 
 class Colvar :
-    public ActionAtomistic,
-    public ActionWithValue
+  public ActionAtomistic,
+  public ActionWithValue
 {
 private:
 protected:
-    bool isEnergy;
-    bool isExtraCV;
-    void requestAtoms(const std::vector<AtomNumber> & a);
+  bool isEnergy;
+  bool isExtraCV;
+  void requestAtoms(const std::vector<AtomNumber> & a);
 // Set the derivatives for a particular atom equal to the input Vector
 // This routine is called setAtomsDerivatives because not because you
 // are setting the derivative of many atoms but because you are setting
 // the derivatives of a particular atom.  The s is an apostrophe s
 // but you can't put apostrophes in function names
-    void           setAtomsDerivatives(int,const Vector&);
-    void           setAtomsDerivatives(Value*,int,const Vector&);
-    void           setBoxDerivatives(const Tensor&);
-    void           setBoxDerivatives(Value*,const Tensor&);
-    const Tensor & getBoxDerivatives()const;
-    const double & getForce()const;
-    void apply();
+  void           setAtomsDerivatives(int,const Vector&);
+  void           setAtomsDerivatives(Value*,int,const Vector&);
+  void           setBoxDerivatives(const Tensor&);
+  void           setBoxDerivatives(Value*,const Tensor&);
+  const Tensor & getBoxDerivatives()const;
+  const double & getForce()const;
+  void apply();
 /// Set box derivatives automatically.
 /// It should be called after the setAtomsDerivatives has been used for all
 /// single atoms.
 /// \warning It only works for collective variable NOT using PBCs!
-    void           setBoxDerivativesNoPbc();
-    void           setBoxDerivativesNoPbc(Value*);
+  void           setBoxDerivativesNoPbc();
+  void           setBoxDerivativesNoPbc(Value*);
 public:
-    bool checkIsEnergy() {
-        return isEnergy;
-    }
-    explicit Colvar(const ActionOptions&);
-    ~Colvar() {}
-    static void registerKeywords( Keywords& keys );
-    virtual unsigned getNumberOfDerivatives();
+  bool checkIsEnergy() {return isEnergy;}
+  explicit Colvar(const ActionOptions&);
+  ~Colvar() {}
+  static void registerKeywords( Keywords& keys );
+  virtual unsigned getNumberOfDerivatives();
 };
 
 inline
 void Colvar::setAtomsDerivatives(Value*v,int i,const Vector&d) {
-    v->addDerivative(3*i+0,d[0]);
-    v->addDerivative(3*i+1,d[1]);
-    v->addDerivative(3*i+2,d[2]);
+  v->addDerivative(3*i+0,d[0]);
+  v->addDerivative(3*i+1,d[1]);
+  v->addDerivative(3*i+2,d[2]);
 }
 
 
 inline
 void Colvar::setBoxDerivatives(Value* v,const Tensor&d) {
-    unsigned nat=getNumberOfAtoms();
-    v->addDerivative(3*nat+0,d(0,0));
-    v->addDerivative(3*nat+1,d(0,1));
-    v->addDerivative(3*nat+2,d(0,2));
-    v->addDerivative(3*nat+3,d(1,0));
-    v->addDerivative(3*nat+4,d(1,1));
-    v->addDerivative(3*nat+5,d(1,2));
-    v->addDerivative(3*nat+6,d(2,0));
-    v->addDerivative(3*nat+7,d(2,1));
-    v->addDerivative(3*nat+8,d(2,2));
+  unsigned nat=getNumberOfAtoms();
+  v->addDerivative(3*nat+0,d(0,0));
+  v->addDerivative(3*nat+1,d(0,1));
+  v->addDerivative(3*nat+2,d(0,2));
+  v->addDerivative(3*nat+3,d(1,0));
+  v->addDerivative(3*nat+4,d(1,1));
+  v->addDerivative(3*nat+5,d(1,2));
+  v->addDerivative(3*nat+6,d(2,0));
+  v->addDerivative(3*nat+7,d(2,1));
+  v->addDerivative(3*nat+8,d(2,2));
 }
 
 inline
 void Colvar::setAtomsDerivatives(int i,const Vector&d) {
-    setAtomsDerivatives(getPntrToValue(),i,d);
+  setAtomsDerivatives(getPntrToValue(),i,d);
 }
 
 inline
 void Colvar::setBoxDerivatives(const Tensor&d) {
-    setBoxDerivatives(getPntrToValue(),d);
+  setBoxDerivatives(getPntrToValue(),d);
 }
 
 inline
 void Colvar::setBoxDerivativesNoPbc() {
-    setBoxDerivativesNoPbc(getPntrToValue());
+  setBoxDerivativesNoPbc(getPntrToValue());
 }
 
 inline
 unsigned Colvar::getNumberOfDerivatives() {
-    return 3*getNumberOfAtoms() + 9;
+  return 3*getNumberOfAtoms() + 9;
 }
 
 
