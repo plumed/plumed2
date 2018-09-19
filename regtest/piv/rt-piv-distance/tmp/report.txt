@@ -1,0 +1,2 @@
+Thu 13 Sep 17:10:00 CEST 2018
+Running regtest in /home/silvio/Work/Codes/Plumed_PIV/plumed2/regtest/piv/rt-piv-distance

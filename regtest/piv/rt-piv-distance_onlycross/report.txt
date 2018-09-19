@@ -1,0 +1,21 @@
+Thu 13 Sep 17:10:01 CEST 2018
+Running regtest in /home/silvio/Work/Codes/Plumed_PIV/plumed2/regtest/piv/rt-piv-distance_onlycross
+++ Test type: driver
+++ Arguments: --plumed plumed.dat --mf_pdb Ice.pdb
+++ Processors: 0
+WARNING using plumed from /home/silvio/Work/Software/Installed/lib/plumed2_master
+/home/silvio/Work/Codes/Plumed_PIV/plumed2/regtest/piv/rt-piv-distance_onlycross/tmp
+Checking for piv
+FAILURE: exit code 134
+terminate called after throwing an instance of 'PLMD::Exception'
+  what():  
++++ PLUMED error
++++ at Communicator.cpp:177
++++ assertion failed: initialized()
++++ message follows +++
+you are trying to use an MPI function, but MPI is not initialized
+FAILURE
+Diff for colvar:
+1,2d0
+< #! FIELDS time c1 c2
+<  0.000000           34.32            0.00

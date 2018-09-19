@@ -1,0 +1,7 @@
+terminate called after throwing an instance of 'PLMD::Exception'
+  what():  
++++ PLUMED error
++++ at Communicator.cpp:177
++++ assertion failed: initialized()
++++ message follows +++
+you are trying to use an MPI function, but MPI is not initialized
