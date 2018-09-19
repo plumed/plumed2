@@ -61,70 +61,86 @@ namespace gridtools {
 
 class ConvertToFES : public ActionWithInputGrid {
 private:
-  double simtemp;
-  bool activated;
+    double simtemp;
+    bool activated;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit ConvertToFES(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const ;
-  void prepare() { activated=true; }
-  void prepareForAveraging() { ActionWithInputGrid::prepareForAveraging(); activated=false; }
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
-  bool isPeriodic() { return false; }
-  bool onStep() const { return activated; }
-  void runFinalJobs();
+    static void registerKeywords( Keywords& keys );
+    explicit ConvertToFES(const ActionOptions&ao);
+    unsigned getNumberOfQuantities() const ;
+    void prepare() {
+        activated=true;
+    }
+    void prepareForAveraging() {
+        ActionWithInputGrid::prepareForAveraging();
+        activated=false;
+    }
+    void compute( const unsigned& current, MultiValue& myvals ) const ;
+    bool isPeriodic() {
+        return false;
+    }
+    bool onStep() const {
+        return activated;
+    }
+    void runFinalJobs();
 };
 
 PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
 
 void ConvertToFES::registerKeywords( Keywords& keys ) {
-  ActionWithInputGrid::registerKeywords( keys );
-  keys.add("optional","TEMP","the temperature at which you are operating");
-  keys.remove("STRIDE"); keys.remove("KERNEL"); keys.remove("BANDWIDTH");
-  keys.remove("LOGWEIGHTS"); keys.remove("CLEAR"); keys.remove("NORMALIZATION");
+    ActionWithInputGrid::registerKeywords( keys );
+    keys.add("optional","TEMP","the temperature at which you are operating");
+    keys.remove("STRIDE");
+    keys.remove("KERNEL");
+    keys.remove("BANDWIDTH");
+    keys.remove("LOGWEIGHTS");
+    keys.remove("CLEAR");
+    keys.remove("NORMALIZATION");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
-  Action(ao),
-  ActionWithInputGrid(ao),
-  activated(false)
+    Action(ao),
+    ActionWithInputGrid(ao),
+    activated(false)
 {
-  plumed_assert( ingrid->getNumberOfComponents()==1 );
+    plumed_assert( ingrid->getNumberOfComponents()==1 );
 
-  // Create a grid
-  auto grid=createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString() );
-  if( ingrid->noDerivatives() ) grid->setNoDerivatives();
-  std::vector<double> fspacing;
-  grid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing);
-  setAveragingAction( std::move(grid), true );
+    // Create a grid
+    auto grid=createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString() );
+    if( ingrid->noDerivatives() ) grid->setNoDerivatives();
+    std::vector<double> fspacing;
+    grid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing);
+    setAveragingAction( std::move(grid), true );
 
-  simtemp=0.; parse("TEMP",simtemp);
-  if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-  else simtemp=plumed.getAtoms().getKbT();
-  if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
+    simtemp=0.;
+    parse("TEMP",simtemp);
+    if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
+    else simtemp=plumed.getAtoms().getKbT();
+    if( simtemp==0 ) error("TEMP not set - use keyword TEMP");
 
-  // Now create task list
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) addTaskToList(i);
-  // And activate all tasks
-  deactivateAllTasks();
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) taskFlags[i]=1;
-  lockContributors();
+    // Now create task list
+    for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) addTaskToList(i);
+    // And activate all tasks
+    deactivateAllTasks();
+    for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) taskFlags[i]=1;
+    lockContributors();
 }
 
 unsigned ConvertToFES::getNumberOfQuantities() const {
-  if( mygrid->noDerivatives() ) return 2;
-  return 2 + mygrid->getDimension();
+    if( mygrid->noDerivatives() ) return 2;
+    return 2 + mygrid->getDimension();
 }
 
 void ConvertToFES::compute( const unsigned& current, MultiValue& myvals ) const {
-  double val=getFunctionValue( current ); myvals.setValue(1, -simtemp*std::log(val) );
-  if( !mygrid->noDerivatives() && val>0 ) {
-    for(unsigned i=0; i<mygrid->getDimension(); ++i) myvals.setValue( 2+i, -(simtemp/val)*ingrid->getGridElement(current,i+1) );
-  }
+    double val=getFunctionValue( current );
+    myvals.setValue(1, -simtemp*std::log(val) );
+    if( !mygrid->noDerivatives() && val>0 ) {
+        for(unsigned i=0; i<mygrid->getDimension(); ++i) myvals.setValue( 2+i, -(simtemp/val)*ingrid->getGridElement(current,i+1) );
+    }
 }
 
 void ConvertToFES::runFinalJobs() {
-  activated=true; update();
+    activated=true;
+    update();
 }
 
 }

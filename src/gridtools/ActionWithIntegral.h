@@ -29,29 +29,31 @@ namespace gridtools {
 
 class ActionWithIntegral : public ActionWithInputGrid {
 private:
-  double volume;
-  std::vector<double> forcesToApply;
+    double volume;
+    std::vector<double> forcesToApply;
 protected:
 /// Get the volume of a grid box
-  double getVolume() const ;
+    double getVolume() const ;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit ActionWithIntegral(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives();
-  void turnOnDerivatives();
+    static void registerKeywords( Keywords& keys );
+    explicit ActionWithIntegral(const ActionOptions&ao);
+    unsigned getNumberOfDerivatives();
+    void turnOnDerivatives();
 /// Unless I am mistaken an integral should never be a periodic function
-  bool isPeriodic() { return false; }
-  void apply();
+    bool isPeriodic() {
+        return false;
+    }
+    void apply();
 };
 
 inline
 double ActionWithIntegral::getVolume() const {
-  return volume;
+    return volume;
 }
 
 inline
 unsigned ActionWithIntegral::getNumberOfDerivatives() {
-  return ingrid->getNumberOfPoints();
+    return ingrid->getNumberOfPoints();
 }
 
 }

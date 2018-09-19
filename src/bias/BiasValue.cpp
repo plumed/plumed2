@@ -78,43 +78,45 @@ PRINT ARG=t,cos,sin,d.x,d.y,d.z,mycos,mysin,cc.bias.vv1 STRIDE=1 FILE=colvar FMT
 
 class BiasValue : public Bias {
 public:
-  explicit BiasValue(const ActionOptions&);
-  void calculate();
-  static void registerKeywords(Keywords& keys);
+    explicit BiasValue(const ActionOptions&);
+    void calculate();
+    static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(BiasValue,"BIASVALUE")
 
 void BiasValue::registerKeywords(Keywords& keys) {
-  Bias::registerKeywords(keys);
-  keys.use("ARG");
-  // Should be _bias below
-  keys.addOutputComponent("_bias","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
-                          "these quantities will named with  the arguments of the bias followed by "
-                          "the character string _bias. These quantities tell the user how much the bias is "
-                          "due to each of the colvars.");
+    Bias::registerKeywords(keys);
+    keys.use("ARG");
+    // Should be _bias below
+    keys.addOutputComponent("_bias","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+                            "these quantities will named with  the arguments of the bias followed by "
+                            "the character string _bias. These quantities tell the user how much the bias is "
+                            "due to each of the colvars.");
 }
 
 BiasValue::BiasValue(const ActionOptions&ao):
-  PLUMED_BIAS_INIT(ao)
+    PLUMED_BIAS_INIT(ao)
 {
-  checkRead();
-  // add one bias for each argument
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    string ss=getPntrToArgument(i)->getName()+"_bias";
-    addComponent(ss); componentIsNotPeriodic(ss);
-  }
+    checkRead();
+    // add one bias for each argument
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        string ss=getPntrToArgument(i)->getName()+"_bias";
+        addComponent(ss);
+        componentIsNotPeriodic(ss);
+    }
 }
 
 void BiasValue::calculate() {
-  double bias=0.0;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    double val; val=getArgument(i);
-    getPntrToComponent(i+1)->set(val);
-    setOutputForce(i,-1.);
-    bias+=val;
-  }
-  setBias(bias);
+    double bias=0.0;
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        double val;
+        val=getArgument(i);
+        getPntrToComponent(i+1)->set(val);
+        setOutputForce(i,-1.);
+        bias+=val;
+    }
+    setBias(bias);
 }
 
 }

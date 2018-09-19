@@ -53,63 +53,63 @@ DUMPFORCES ARG=distance STRIDE=1 FILE=forces
 //+ENDPLUMEDOC
 
 class DumpForces :
-  public ActionPilot,
-  public ActionWithArguments
+    public ActionPilot,
+    public ActionWithArguments
 {
-  string file;
-  string fmt;
-  OFile of;
+    string file;
+    string fmt;
+    OFile of;
 public:
-  void calculate() {}
-  explicit DumpForces(const ActionOptions&);
-  static void registerKeywords(Keywords& keys);
-  void apply() {}
-  void update();
-  ~DumpForces();
+    void calculate() {}
+    explicit DumpForces(const ActionOptions&);
+    static void registerKeywords(Keywords& keys);
+    void apply() {}
+    void update();
+    ~DumpForces();
 };
 
 PLUMED_REGISTER_ACTION(DumpForces,"DUMPFORCES")
 
 void DumpForces::registerKeywords(Keywords& keys) {
-  Action::registerKeywords(keys);
-  ActionPilot::registerKeywords(keys);
-  ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
-  keys.add("compulsory","STRIDE","1","the frequency with which the forces should be output");
-  keys.add("compulsory","FILE","the name of the file on which to output the forces");
-  keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
-  keys.use("RESTART");
-  keys.use("UPDATE_FROM");
-  keys.use("UPDATE_UNTIL");
+    Action::registerKeywords(keys);
+    ActionPilot::registerKeywords(keys);
+    ActionWithArguments::registerKeywords(keys);
+    keys.use("ARG");
+    keys.add("compulsory","STRIDE","1","the frequency with which the forces should be output");
+    keys.add("compulsory","FILE","the name of the file on which to output the forces");
+    keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
+    keys.use("RESTART");
+    keys.use("UPDATE_FROM");
+    keys.use("UPDATE_UNTIL");
 }
 
 DumpForces::DumpForces(const ActionOptions&ao):
-  Action(ao),
-  ActionPilot(ao),
-  ActionWithArguments(ao),
-  fmt("%15.10f")
+    Action(ao),
+    ActionPilot(ao),
+    ActionWithArguments(ao),
+    fmt("%15.10f")
 {
-  parse("FILE",file);
-  if( file.length()==0 ) error("name of file was not specified");
-  parse("FMT",fmt);
-  fmt=" "+fmt;
-  of.link(*this);
-  of.open(file);
-  log.printf("  on file %s\n",file.c_str());
-  log.printf("  with format %s\n",fmt.c_str());
-  if( getNumberOfArguments()==0 ) error("no arguments have been specified");
-  checkRead();
+    parse("FILE",file);
+    if( file.length()==0 ) error("name of file was not specified");
+    parse("FMT",fmt);
+    fmt=" "+fmt;
+    of.link(*this);
+    of.open(file);
+    log.printf("  on file %s\n",file.c_str());
+    log.printf("  with format %s\n",fmt.c_str());
+    if( getNumberOfArguments()==0 ) error("no arguments have been specified");
+    checkRead();
 }
 
 
 void DumpForces::update() {
-  of.fmtField(" %f");
-  of.printField("time",getTime());
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    of.fmtField(fmt);
-    of.printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getForce());
-  }
-  of.printField();
+    of.fmtField(" %f");
+    of.printField("time",getTime());
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+        of.fmtField(fmt);
+        of.printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getForce());
+    }
+    of.printField();
 }
 
 DumpForces::~DumpForces() {

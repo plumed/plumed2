@@ -31,37 +31,37 @@ namespace adjmat {
 class ClusteringBase : public ActionWithInputMatrix {
 protected:
 /// Vector that stores the sizes of the current set of clusters
-  std::vector< std::pair<unsigned,unsigned> > cluster_sizes;
+    std::vector< std::pair<unsigned,unsigned> > cluster_sizes;
 /// Used to identify the cluster we are working on
-  int number_of_cluster;
+    int number_of_cluster;
 /// Vector that identifies the cluster each atom belongs to
-  std::vector<unsigned> which_cluster;
+    std::vector<unsigned> which_cluster;
 public:
 /// Create manual
-  static void registerKeywords( Keywords& keys );
+    static void registerKeywords( Keywords& keys );
 /// Constructor
-  explicit ClusteringBase(const ActionOptions&);
+    explicit ClusteringBase(const ActionOptions&);
 /// This checks whether derivatives can be computed given the base multicolvar
-  void turnOnDerivatives();
+    void turnOnDerivatives();
 /// Are these two atoms connected
-  bool areConnected( const unsigned& iatom, const unsigned& jatom ) const ;
+    bool areConnected( const unsigned& iatom, const unsigned& jatom ) const ;
 /// Do the calculation
-  void calculate();
+    void calculate();
 /// Do the clustering
-  virtual void performClustering()=0;
+    virtual void performClustering()=0;
 /// Get the number of clusters that have been found
-  unsigned getNumberOfClusters() const ;
+    unsigned getNumberOfClusters() const ;
 /// Get the atoms in one of the clusters
-  virtual void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
+    virtual void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
 /// Do nothing for apply here
-  void apply() {}
+    void apply() {}
 /// Get the cutoff
-  virtual double getCutoffForConnection() const ;
+    virtual double getCutoffForConnection() const ;
 };
 
 inline
 unsigned ClusteringBase::getNumberOfClusters() const {
-  return number_of_cluster + 1;
+    return number_of_cluster + 1;
 }
 
 }

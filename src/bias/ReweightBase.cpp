@@ -27,30 +27,32 @@ namespace PLMD {
 namespace bias {
 
 void ReweightBase::registerKeywords(Keywords& keys) {
-  Action::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys );
-  keys.setComponentsIntroduction("This action calculates the logarithm of a weight for reweighting");
-  keys.add("optional","TEMP","the system temperature.  This is not required if your MD code passes this quantity to PLUMED");
-  keys.remove("NUMERICAL_DERIVATIVES");
+    Action::registerKeywords( keys );
+    ActionWithValue::registerKeywords( keys );
+    ActionWithArguments::registerKeywords( keys );
+    keys.setComponentsIntroduction("This action calculates the logarithm of a weight for reweighting");
+    keys.add("optional","TEMP","the system temperature.  This is not required if your MD code passes this quantity to PLUMED");
+    keys.remove("NUMERICAL_DERIVATIVES");
 }
 
 ReweightBase::ReweightBase(const ActionOptions&ao):
-  Action(ao),
-  ActionWithValue(ao),
-  ActionWithArguments(ao)
+    Action(ao),
+    ActionWithValue(ao),
+    ActionWithArguments(ao)
 {
-  simtemp=0.; parse("TEMP",simtemp);
-  if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-  else simtemp=plumed.getAtoms().getKbT();
-  if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
-  // Create something to hold the weight
-  addValue(); setNotPeriodic();
+    simtemp=0.;
+    parse("TEMP",simtemp);
+    if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
+    else simtemp=plumed.getAtoms().getKbT();
+    if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
+    // Create something to hold the weight
+    addValue();
+    setNotPeriodic();
 }
 
 void ReweightBase::calculate() {
-  double weight = getLogWeight();
-  setValue( weight );
+    double weight = getLogWeight();
+    setValue( weight );
 }
 
 }

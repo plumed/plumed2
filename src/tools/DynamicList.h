@@ -134,244 +134,265 @@ the dynamic list is used correctly.
 template <typename T>
 class DynamicList {
 /// This gathers data split across nodes list of Dynamic lists
-  template <typename U>
-  friend void mpi_gatherActiveMembers(Communicator&, std::vector< DynamicList<U> >& );
+    template <typename U>
+    friend void mpi_gatherActiveMembers(Communicator&, std::vector< DynamicList<U> >& );
 private:
 /// This is the list of all the relevent members
-  std::vector<T> all;
+    std::vector<T> all;
 /// This tells us what members of all are on/off at any given time
-  std::vector<unsigned> onoff;
+    std::vector<unsigned> onoff;
 /// The current number of active members
-  unsigned nactive;
+    unsigned nactive;
 /// This is the list of active members
-  std::vector<unsigned> active;
+    std::vector<unsigned> active;
 /// the number of processors the jobs in the Dynamic list are distributed across
-  unsigned nprocessors;
+    unsigned nprocessors;
 /// The rank of the node we are on
-  unsigned rank;
+    unsigned rank;
 /// These are flags that are used internally to ensure that dynamic lists are being used properly
-  bool allWereActivated, allWereDeactivated;
+    bool allWereActivated, allWereDeactivated;
 public:
 /// Constructor
-  DynamicList():nactive(0),nprocessors(1),rank(0),allWereActivated(false),allWereDeactivated(false) {}
+    DynamicList():nactive(0),nprocessors(1),rank(0),allWereActivated(false),allWereDeactivated(false) {}
 /// An operator that returns the element from the current active list
-  inline T operator [] (const unsigned& i) const {
-    plumed_dbg_assert( i<nactive );
-    return all[ active[i] ];
-  }
+    inline T operator [] (const unsigned& i) const {
+        plumed_dbg_assert( i<nactive );
+        return all[ active[i] ];
+    }
 /// An operator that returns the element from the full list (used in neighbour lists)
-  inline T operator () (const unsigned& i) const {
-    plumed_dbg_assert( i<all.size() );
-    return all[i];
-  }
+    inline T operator () (const unsigned& i) const {
+        plumed_dbg_assert( i<all.size() );
+        return all[i];
+    }
 /// Clear the list
-  void clear();
+    void clear();
 /// Return the total number of elements in the list
-  unsigned fullSize() const;
+    unsigned fullSize() const;
 /// Return the number of elements that are currently active
-  unsigned getNumberActive() const;
+    unsigned getNumberActive() const;
 /// Find out if a member is active
-  bool isActive(const unsigned& ) const;
+    bool isActive(const unsigned& ) const;
 /// Setup MPI communication if things are activated/deactivated on different nodes
-  void setupMPICommunication( Communicator& comm );
+    void setupMPICommunication( Communicator& comm );
 /// Add something to the active list
-  void addIndexToList( const T & ii );
+    void addIndexToList( const T & ii );
 /// Create the list from a vector
-  void createIndexListFromVector( const std::vector<T>& myind );
+    void createIndexListFromVector( const std::vector<T>& myind );
 /// Find the index of in the list which has value t
-  int getIndexOfElement( const T& t ) const ;
+    int getIndexOfElement( const T& t ) const ;
 /// Make a particular element inactive
-  void deactivate( const T& t );
+    void deactivate( const T& t );
 /// Make everything in the list inactive
-  void deactivateAll();
+    void deactivateAll();
 /// Make something active
-  void activate( const unsigned ii );
+    void activate( const unsigned ii );
 /// Make everything in the list active
-  void activateAll();
+    void activateAll();
 /// Do updateActiveMembers for a loop that has been distributed over multiple nodes
-  void mpi_gatherActiveMembers(Communicator& comm);
+    void mpi_gatherActiveMembers(Communicator& comm);
 /// Get the list of active members
-  void updateActiveMembers();
+    void updateActiveMembers();
 /// Empty the list of active members
-  void emptyActiveMembers();
+    void emptyActiveMembers();
 /// This can be used for a fast version of updateActiveMembers in which only a subset of the
 /// indexes are checked
-  void putIndexInActiveArray( const unsigned& ii );
+    void putIndexInActiveArray( const unsigned& ii );
 /// This can be called on once update is complete
-  void completeUpdate();
+    void completeUpdate();
 /// This tells one if an update has been completed
-  bool updateComplete() const ;
+    bool updateComplete() const ;
 /// This sorts the elements in the active list
-  void sortActiveList();
+    void sortActiveList();
 /// Retriee the list of active objects
-  std::vector<T> retrieveActiveList();
+    std::vector<T> retrieveActiveList();
 };
 
 template <typename T>
 std::vector<T> DynamicList<T>::retrieveActiveList() {
-  std::vector<T> this_active(nactive);
-  for(unsigned k=0; k<nactive; ++k) this_active[k]=all[ active[k] ];
-  return this_active;
+    std::vector<T> this_active(nactive);
+    for(unsigned k=0; k<nactive; ++k) this_active[k]=all[ active[k] ];
+    return this_active;
 }
 
 template <typename T>
 void DynamicList<T>::clear() {
-  all.resize(0);
-  onoff.resize(0); active.resize(0);
+    all.resize(0);
+    onoff.resize(0);
+    active.resize(0);
 }
 
 template <typename T>
 bool DynamicList<T>::isActive( const unsigned& i ) const {
-  return (onoff[i]>0 && onoff[i]%nprocessors==0);
+    return (onoff[i]>0 && onoff[i]%nprocessors==0);
 }
 
 template <typename T>
 unsigned DynamicList<T>::fullSize() const {
-  return all.size();
+    return all.size();
 }
 
 template <typename T>
 unsigned DynamicList<T>::getNumberActive() const {
-  return nactive;
+    return nactive;
 }
 
 template <typename T>
 void DynamicList<T>::addIndexToList( const T & ii ) {
-  all.push_back(ii); active.resize( all.size() ); onoff.push_back(0);
+    all.push_back(ii);
+    active.resize( all.size() );
+    onoff.push_back(0);
 }
 
 template <typename T>
 void DynamicList<T>::createIndexListFromVector( const std::vector<T>& myind ) {
-  plumed_dbg_assert( all.size()==0 ); onoff.resize( myind.size(), 0 );
-  active.resize( myind.size() );
-  all.insert( all.end(), myind.begin(), myind.end() );
+    plumed_dbg_assert( all.size()==0 );
+    onoff.resize( myind.size(), 0 );
+    active.resize( myind.size() );
+    all.insert( all.end(), myind.begin(), myind.end() );
 }
 
 template <typename T>
 void DynamicList<T>::setupMPICommunication( Communicator& comm ) {
-  nprocessors=comm.Get_size(); rank=comm.Get_rank();
+    nprocessors=comm.Get_size();
+    rank=comm.Get_rank();
 }
 
 template <typename T>
 int DynamicList<T>::getIndexOfElement( const T& t ) const {
-  for(unsigned i=0; i<all.size(); ++i) {
-    if( t==all[i] ) {return i; }
-  }
-  plumed_merror("Could not find an element in the dynamic list");
-  return 0;
+    for(unsigned i=0; i<all.size(); ++i) {
+        if( t==all[i] ) {
+            return i;
+        }
+    }
+    plumed_merror("Could not find an element in the dynamic list");
+    return 0;
 }
 
 template <typename T>
 void DynamicList<T>::deactivate( const T& t ) {
-  plumed_dbg_assert( allWereActivated );
-  unsigned ii=getIndexOfElement( t );
-  if( onoff[ii]==0 || onoff[ii]%nprocessors!=0 ) return;
-  // Deactivates the component
-  if( rank==0 ) onoff[ii]=nprocessors-1;
-  else onoff[ii]=nprocessors-rank;
+    plumed_dbg_assert( allWereActivated );
+    unsigned ii=getIndexOfElement( t );
+    if( onoff[ii]==0 || onoff[ii]%nprocessors!=0 ) return;
+    // Deactivates the component
+    if( rank==0 ) onoff[ii]=nprocessors-1;
+    else onoff[ii]=nprocessors-rank;
 }
 
 template <typename T>
 void DynamicList<T>::deactivateAll() {
-  allWereDeactivated=true; allWereActivated=false;
-  for(unsigned i=0; i<nactive; ++i) onoff[ active[i] ]= 0;
-  nactive=0;
+    allWereDeactivated=true;
+    allWereActivated=false;
+    for(unsigned i=0; i<nactive; ++i) onoff[ active[i] ]= 0;
+    nactive=0;
 #ifndef NDEBUG
-  for(unsigned i=0; i<onoff.size(); ++i) plumed_dbg_assert( onoff[i]==0 );
+    for(unsigned i=0; i<onoff.size(); ++i) plumed_dbg_assert( onoff[i]==0 );
 #endif
 }
 
 template <typename T>
 void DynamicList<T>::activate( const unsigned ii ) {
-  plumed_dbg_massert(ii<all.size(),"ii is out of bounds");
-  plumed_dbg_assert( !allWereActivated );
-  onoff[ii]=nprocessors;
+    plumed_dbg_massert(ii<all.size(),"ii is out of bounds");
+    plumed_dbg_assert( !allWereActivated );
+    onoff[ii]=nprocessors;
 }
 
 template <typename T>
 void DynamicList<T>::activateAll() {
-  for(unsigned i=0; i<onoff.size(); ++i) onoff[i]=nprocessors;
-  allWereActivated=true; updateActiveMembers(); allWereActivated=true;
+    for(unsigned i=0; i<onoff.size(); ++i) onoff[i]=nprocessors;
+    allWereActivated=true;
+    updateActiveMembers();
+    allWereActivated=true;
 
 }
 
 template <typename T>
 void DynamicList<T>::mpi_gatherActiveMembers(Communicator& comm) {
-  plumed_massert( comm.Get_size()==nprocessors, "error missing a call to DynamicList::setupMPICommunication");
-  comm.Sum(&onoff[0],onoff.size());
-  // When we mpi gather onoff to be on it should be active on ALL nodes
-  for(unsigned i=0; i<all.size(); ++i) if( onoff[i]>0 && onoff[i]%nprocessors==0 ) { onoff[i]=nprocessors; }
-  updateActiveMembers();
+    plumed_massert( comm.Get_size()==nprocessors, "error missing a call to DynamicList::setupMPICommunication");
+    comm.Sum(&onoff[0],onoff.size());
+    // When we mpi gather onoff to be on it should be active on ALL nodes
+    for(unsigned i=0; i<all.size(); ++i) if( onoff[i]>0 && onoff[i]%nprocessors==0 ) {
+            onoff[i]=nprocessors;
+        }
+    updateActiveMembers();
 }
 
 template <typename T>
 void DynamicList<T>::updateActiveMembers() {
-  plumed_dbg_assert( allWereActivated || allWereDeactivated );
-  unsigned kk=0; allWereActivated=allWereDeactivated=false;
-  for(unsigned i=0; i<all.size(); ++i) {
-    if( onoff[i]>0 && onoff[i]%nprocessors==0 ) { active[kk]=i; kk++; }
-  }
-  nactive=kk;
+    plumed_dbg_assert( allWereActivated || allWereDeactivated );
+    unsigned kk=0;
+    allWereActivated=allWereDeactivated=false;
+    for(unsigned i=0; i<all.size(); ++i) {
+        if( onoff[i]>0 && onoff[i]%nprocessors==0 ) {
+            active[kk]=i;
+            kk++;
+        }
+    }
+    nactive=kk;
 }
 
 template <typename T>
 void DynamicList<T>::emptyActiveMembers() {
-  plumed_dbg_assert( allWereActivated || allWereDeactivated );
-  nactive=0;
+    plumed_dbg_assert( allWereActivated || allWereDeactivated );
+    nactive=0;
 }
 
 template <typename T>
 void DynamicList<T>::putIndexInActiveArray( const unsigned& ii ) {
-  plumed_dbg_assert( allWereActivated || allWereDeactivated );
-  plumed_dbg_assert( onoff[ii]>0 && onoff[ii]%nprocessors==0 );
-  active[nactive]=ii; nactive++;
+    plumed_dbg_assert( allWereActivated || allWereDeactivated );
+    plumed_dbg_assert( onoff[ii]>0 && onoff[ii]%nprocessors==0 );
+    active[nactive]=ii;
+    nactive++;
 }
 
 template <typename T>
 void DynamicList<T>::completeUpdate() {
-  plumed_dbg_assert( allWereActivated || allWereDeactivated );
-  allWereActivated=allWereDeactivated=false;
+    plumed_dbg_assert( allWereActivated || allWereDeactivated );
+    allWereActivated=allWereDeactivated=false;
 }
 
 template <typename T>
 void DynamicList<T>::sortActiveList() {
-  plumed_dbg_assert( allWereActivated || allWereDeactivated );
-  allWereActivated=allWereDeactivated=false;
-  std::sort( active.begin(), active.begin()+nactive );
+    plumed_dbg_assert( allWereActivated || allWereDeactivated );
+    allWereActivated=allWereDeactivated=false;
+    std::sort( active.begin(), active.begin()+nactive );
 }
 
 template <typename T>
 bool DynamicList<T>::updateComplete() const {
-  if( !allWereActivated && !allWereDeactivated ) return true;
-  return false;
+    if( !allWereActivated && !allWereDeactivated ) return true;
+    return false;
 }
 
 template <typename U>
 void mpi_gatherActiveMembers(Communicator& comm, std::vector< DynamicList<U> >& ll ) {
-  // Setup an array to hold all data
-  unsigned bufsize=0; unsigned size=comm.Get_size();
-  for(unsigned i=0; i<ll.size(); ++i) {
-    plumed_dbg_massert( ll[i].nprocessors==size, "missing a call to DynamicList::setupMPICommunication" );
-    bufsize+=ll[i].onoff.size();
-  }
-  std::vector<unsigned> buffer( bufsize );
-  // Gather all onoff data into a single array
-  bufsize=0;
-  for(unsigned i=0; i<ll.size(); ++i) {
-    for(unsigned j=0; j<ll[i].onoff.size(); ++j) { buffer[bufsize]=ll[i].onoff[j]; bufsize++; }
-  }
-  // GATHER from all nodes
-  comm.Sum(&buffer[0],buffer.size());
-  // distribute back to original lists
-  bufsize=0;
-  for(unsigned i=0; i<ll.size(); ++i) {
-    for(unsigned j=0; j<ll[i].onoff.size(); ++j) {
-      if( buffer[bufsize]>0 && buffer[bufsize]%size==0 ) ll[i].onoff[j]=size;
-      else ll[i].onoff[j]=size-1;
-      bufsize++;
+    // Setup an array to hold all data
+    unsigned bufsize=0;
+    unsigned size=comm.Get_size();
+    for(unsigned i=0; i<ll.size(); ++i) {
+        plumed_dbg_massert( ll[i].nprocessors==size, "missing a call to DynamicList::setupMPICommunication" );
+        bufsize+=ll[i].onoff.size();
     }
-  }
-  for(unsigned i=0; i<ll.size(); ++i) ll[i].updateActiveMembers();
+    std::vector<unsigned> buffer( bufsize );
+    // Gather all onoff data into a single array
+    bufsize=0;
+    for(unsigned i=0; i<ll.size(); ++i) {
+        for(unsigned j=0; j<ll[i].onoff.size(); ++j) {
+            buffer[bufsize]=ll[i].onoff[j];
+            bufsize++;
+        }
+    }
+    // GATHER from all nodes
+    comm.Sum(&buffer[0],buffer.size());
+    // distribute back to original lists
+    bufsize=0;
+    for(unsigned i=0; i<ll.size(); ++i) {
+        for(unsigned j=0; j<ll[i].onoff.size(); ++j) {
+            if( buffer[bufsize]>0 && buffer[bufsize]%size==0 ) ll[i].onoff[j]=size;
+            else ll[i].onoff[j]=size-1;
+            bufsize++;
+        }
+    }
+    for(unsigned i=0; i<ll.size(); ++i) ll[i].updateActiveMembers();
 }
 
 }

@@ -50,13 +50,13 @@ class SetupMolInfo;
 class Direction;
 
 class ReferenceConfigurationOptions {
-  friend class ReferenceConfiguration;
+    friend class ReferenceConfiguration;
 private:
-  std::string tt;
+    std::string tt;
 public:
-  explicit ReferenceConfigurationOptions( const std::string& type );
-  bool usingFastOption() const ;
-  std::string getMultiRMSDType() const ;
+    explicit ReferenceConfigurationOptions( const std::string& type );
+    bool usingFastOption() const ;
+    std::string getMultiRMSDType() const ;
 };
 
 /// \ingroup INHERIT
@@ -70,103 +70,110 @@ public:
 /// calculating the distance between a pair of configurations
 
 class ReferenceConfiguration {
-  friend class SingleDomainRMSD;
-  friend double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration*, ReferenceConfiguration*, const bool& squared );
+    friend class SingleDomainRMSD;
+    friend double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration*, ReferenceConfiguration*, const bool& squared );
 private:
 /// The name of this particular config
-  std::string name;
+    std::string name;
 /// A vector containing all the remarks from the pdb input
-  std::vector<std::string> line;
+    std::vector<std::string> line;
 /// These are used to do fake things when we copy frames
-  std::vector<AtomNumber> fake_atom_numbers;
-  std::vector<std::string> fake_arg_names;
+    std::vector<AtomNumber> fake_atom_numbers;
+    std::vector<std::string> fake_arg_names;
 /// These are use by the distance function above
-  std::vector<Vector> fake_refatoms;
-  std::vector<double> fake_refargs;
-  std::vector<double> fake_metric;
+    std::vector<Vector> fake_refatoms;
+    std::vector<double> fake_refargs;
+    std::vector<double> fake_metric;
 protected:
 /// Crash with an error
-  void error(const std::string& msg);
+    void error(const std::string& msg);
 public:
-  explicit ReferenceConfiguration( const ReferenceConfigurationOptions& ro );
+    explicit ReferenceConfiguration( const ReferenceConfigurationOptions& ro );
 /// Destructor
-  virtual ~ReferenceConfiguration();
+    virtual ~ReferenceConfiguration();
 /// Return the name of this metric
-  std::string getName() const ;
+    std::string getName() const ;
 ///
-  virtual unsigned getNumberOfReferencePositions() const ;
-  virtual unsigned getNumberOfReferenceArguments() const ;
+    virtual unsigned getNumberOfReferencePositions() const ;
+    virtual unsigned getNumberOfReferenceArguments() const ;
 /// Retrieve the atoms that are required for this guy
-  virtual void getAtomRequests( std::vector<AtomNumber>&, bool disable_checks=false ) {}
+    virtual void getAtomRequests( std::vector<AtomNumber>&, bool disable_checks=false ) {}
 /// Retrieve the arguments that are required for this guy
-  virtual void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false ) {}
+    virtual void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false ) {}
 /// Do all local business for setting the configuration
-  virtual void read( const PDB& )=0;
+    virtual void read( const PDB& )=0;
 /// Calculate the distance from the reference configuration
-  double calculate( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, ReferenceValuePack& myder, const bool& squared=false ) const ;
+    double calculate( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, ReferenceValuePack& myder, const bool& squared=false ) const ;
 /// Calculate the distance from the reference configuration
-  virtual double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args,
-                       ReferenceValuePack& myder, const bool& squared ) const=0;
+    virtual double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args,
+                         ReferenceValuePack& myder, const bool& squared ) const=0;
 /// Parse something from the pdb remarks
 /// Copy derivatives from one frame to this frame
-  void copyDerivatives( const ReferenceConfiguration* );
+    void copyDerivatives( const ReferenceConfiguration* );
 /// Get one of the referene arguments
-  virtual double getReferenceArgument( const unsigned& i ) const { plumed_error(); return 0.0; }
+    virtual double getReferenceArgument( const unsigned& i ) const {
+        plumed_error();
+        return 0.0;
+    }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here
 /// to make PLMD::distance work
-  virtual const std::vector<Vector>& getReferencePositions() const ;
-  virtual const std::vector<double>& getReferenceArguments() const ;
-  virtual const std::vector<double>& getReferenceMetric();
+    virtual const std::vector<Vector>& getReferencePositions() const ;
+    virtual const std::vector<double>& getReferenceArguments() const ;
+    virtual const std::vector<double>& getReferenceMetric();
 /// These are overwritten in ReferenceArguments and ReferenceAtoms to make frame copying work
-  virtual const std::vector<AtomNumber>& getAbsoluteIndexes();
-  virtual const std::vector<std::string>& getArgumentNames();
+    virtual const std::vector<AtomNumber>& getAbsoluteIndexes();
+    virtual const std::vector<std::string>& getArgumentNames();
 /// Extract a Direction giving you the displacement from some position
-  void extractDisplacementVector( const std::vector<Vector>& pos, const std::vector<Value*>& vals,
-                                  const std::vector<double>& arg, const bool& nflag,
-                                  Direction& mydir ) const ;
+    void extractDisplacementVector( const std::vector<Vector>& pos, const std::vector<Value*>& vals,
+                                    const std::vector<double>& arg, const bool& nflag,
+                                    Direction& mydir ) const ;
 /// Stuff for pca
-  virtual bool pcaIsEnabledForThisReference() { return false; }
-  double projectDisplacementOnVector( const Direction& mydir, const std::vector<Value*>& vals,
-                                      const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
+    virtual bool pcaIsEnabledForThisReference() {
+        return false;
+    }
+    double projectDisplacementOnVector( const Direction& mydir, const std::vector<Value*>& vals,
+                                        const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
 /// Stuff to setup pca
-  virtual void setupPCAStorage( ReferenceValuePack& mypack ) { plumed_error(); }
+    virtual void setupPCAStorage( ReferenceValuePack& mypack ) {
+        plumed_error();
+    }
 /// Move the reference configuration by an ammount specified using a Direction
-  void displaceReferenceConfiguration( const double& weight, Direction& dir );
+    void displaceReferenceConfiguration( const double& weight, Direction& dir );
 };
 
 inline
 const std::vector<Vector>& ReferenceConfiguration::getReferencePositions() const {
-  return fake_refatoms;
+    return fake_refatoms;
 }
 
 inline
 const std::vector<double>& ReferenceConfiguration::getReferenceArguments() const {
-  return fake_refargs;
+    return fake_refargs;
 }
 
 inline
 const std::vector<double>& ReferenceConfiguration::getReferenceMetric() {
-  return fake_metric;
+    return fake_metric;
 }
 
 inline
 const std::vector<AtomNumber>& ReferenceConfiguration::getAbsoluteIndexes() {
-  return fake_atom_numbers;
+    return fake_atom_numbers;
 }
 
 inline
 const std::vector<std::string>& ReferenceConfiguration::getArgumentNames() {
-  return fake_arg_names;
+    return fake_arg_names;
 }
 
 inline
 unsigned ReferenceConfiguration::getNumberOfReferencePositions() const {
-  return 0;
+    return 0;
 }
 
 inline
 unsigned ReferenceConfiguration::getNumberOfReferenceArguments() const {
-  return 0;
+    return 0;
 }
 
 }

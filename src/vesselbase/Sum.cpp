@@ -27,35 +27,36 @@ namespace vesselbase {
 
 class Sum : public FunctionVessel {
 public:
-  static void registerKeywords( Keywords& keys );
-  static void reserveKeyword( Keywords& keys );
-  explicit Sum( const VesselOptions& da );
-  std::string value_descriptor();
-  double calcTransform( const double& val, double& dv ) const ;
+    static void registerKeywords( Keywords& keys );
+    static void reserveKeyword( Keywords& keys );
+    explicit Sum( const VesselOptions& da );
+    std::string value_descriptor();
+    double calcTransform( const double& val, double& dv ) const ;
 };
 
 PLUMED_REGISTER_VESSEL(Sum,"SUM")
 
 void Sum::registerKeywords( Keywords& keys ) {
-  FunctionVessel::registerKeywords( keys );
+    FunctionVessel::registerKeywords( keys );
 }
 
 void Sum::reserveKeyword( Keywords& keys ) {
-  keys.reserve("vessel","SUM","calculate the sum of all the quantities.");
-  keys.addOutputComponent("sum","SUM","the sum of values");
+    keys.reserve("vessel","SUM","calculate the sum of all the quantities.");
+    keys.addOutputComponent("sum","SUM","the sum of values");
 }
 
 Sum::Sum( const VesselOptions& da ) :
-  FunctionVessel(da)
+    FunctionVessel(da)
 {
 }
 
 std::string Sum::value_descriptor() {
-  return "the sum of all the values";
+    return "the sum of all the values";
 }
 
 double Sum::calcTransform( const double& val, double& dv ) const {
-  dv=1.0; return val;
+    dv=1.0;
+    return val;
 }
 
 }

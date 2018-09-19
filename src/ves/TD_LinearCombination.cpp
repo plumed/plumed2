@@ -125,24 +125,24 @@ class VesBias;
 
 class TD_LinearCombination: public TargetDistribution {
 private:
-  std::vector<TargetDistribution*> distribution_pntrs_;
-  std::vector<Grid*> grid_pntrs_;
-  std::vector<double> weights_;
-  unsigned int ndist_;
-  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&);
+    std::vector<TargetDistribution*> distribution_pntrs_;
+    std::vector<Grid*> grid_pntrs_;
+    std::vector<double> weights_;
+    unsigned int ndist_;
+    void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&);
 public:
-  static void registerKeywords(Keywords&);
-  explicit TD_LinearCombination(const ActionOptions& ao);
-  void updateGrid();
-  double getValue(const std::vector<double>&) const;
-  //
-  void linkVesBias(VesBias*);
-  void linkAction(Action*);
-  //
-  void linkBiasGrid(Grid*);
-  void linkBiasWithoutCutoffGrid(Grid*);
-  void linkFesGrid(Grid*);
-  //
+    static void registerKeywords(Keywords&);
+    explicit TD_LinearCombination(const ActionOptions& ao);
+    void updateGrid();
+    double getValue(const std::vector<double>&) const;
+    //
+    void linkVesBias(VesBias*);
+    void linkAction(Action*);
+    //
+    void linkBiasGrid(Grid*);
+    void linkBiasWithoutCutoffGrid(Grid*);
+    void linkFesGrid(Grid*);
+    //
 };
 
 
@@ -150,123 +150,141 @@ PLUMED_REGISTER_ACTION(TD_LinearCombination,"TD_LINEAR_COMBINATION")
 
 
 void TD_LinearCombination::registerKeywords(Keywords& keys) {
-  TargetDistribution::registerKeywords(keys);
-  keys.add("compulsory","DISTRIBUTIONS","The labels of the target distribution actions to be used in the linear combination.");
-  keys.add("optional","WEIGHTS","The weights of target distributions. Have to be as many as the number of target distribution labels given in DISTRIBUTIONS. If no weights are given the distributions are weighted equally. The weights are automatically normalized to 1.");
-  keys.use("WELLTEMPERED_FACTOR");
-  //keys.use("SHIFT_TO_ZERO");
-  keys.use("NORMALIZE");
+    TargetDistribution::registerKeywords(keys);
+    keys.add("compulsory","DISTRIBUTIONS","The labels of the target distribution actions to be used in the linear combination.");
+    keys.add("optional","WEIGHTS","The weights of target distributions. Have to be as many as the number of target distribution labels given in DISTRIBUTIONS. If no weights are given the distributions are weighted equally. The weights are automatically normalized to 1.");
+    keys.use("WELLTEMPERED_FACTOR");
+    //keys.use("SHIFT_TO_ZERO");
+    keys.use("NORMALIZE");
 }
 
 
 TD_LinearCombination::TD_LinearCombination(const ActionOptions& ao):
-  PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
-  distribution_pntrs_(0),
-  grid_pntrs_(0),
-  weights_(0),
-  ndist_(0)
+    PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
+    distribution_pntrs_(0),
+    grid_pntrs_(0),
+    weights_(0),
+    ndist_(0)
 {
-  std::vector<std::string> targetdist_labels;
-  parseVector("DISTRIBUTIONS",targetdist_labels);
+    std::vector<std::string> targetdist_labels;
+    parseVector("DISTRIBUTIONS",targetdist_labels);
 
-  std::string error_msg = "";
-  distribution_pntrs_ = VesTools::getPointersFromLabels<TargetDistribution*>(targetdist_labels,plumed.getActionSet(),error_msg);
-  if(error_msg.size()>0) {plumed_merror("Error in keyword DISTRIBUTIONS of "+getName()+": "+error_msg);}
+    std::string error_msg = "";
+    distribution_pntrs_ = VesTools::getPointersFromLabels<TargetDistribution*>(targetdist_labels,plumed.getActionSet(),error_msg);
+    if(error_msg.size()>0) {
+        plumed_merror("Error in keyword DISTRIBUTIONS of "+getName()+": "+error_msg);
+    }
 
-  for(unsigned int i=0; i<distribution_pntrs_.size(); i++) {
-    if(distribution_pntrs_[i]->isDynamic()) {setDynamic();}
-    if(distribution_pntrs_[i]->fesGridNeeded()) {setFesGridNeeded();}
-    if(distribution_pntrs_[i]->biasGridNeeded()) {setBiasGridNeeded();}
-  }
+    for(unsigned int i=0; i<distribution_pntrs_.size(); i++) {
+        if(distribution_pntrs_[i]->isDynamic()) {
+            setDynamic();
+        }
+        if(distribution_pntrs_[i]->fesGridNeeded()) {
+            setFesGridNeeded();
+        }
+        if(distribution_pntrs_[i]->biasGridNeeded()) {
+            setBiasGridNeeded();
+        }
+    }
 
-  ndist_ = distribution_pntrs_.size();
-  grid_pntrs_.assign(ndist_,NULL);
-  if(ndist_==0) {plumed_merror(getName()+ ": no distributions are given.");}
-  if(ndist_==1) {plumed_merror(getName()+ ": giving only one distribution does not make sense.");}
-  //
-  parseVector("WEIGHTS",weights_);
-  if(weights_.size()==0) {weights_.assign(distribution_pntrs_.size(),1.0);}
-  if(distribution_pntrs_.size()!=weights_.size()) {
-    plumed_merror(getName()+ ": there has to be as many weights given in WEIGHTS as the number of target distribution labels given in DISTRIBUTIONS");
-  }
-  //
-  double sum_weights=0.0;
-  for(unsigned int i=0; i<weights_.size(); i++) {sum_weights+=weights_[i];}
-  for(unsigned int i=0; i<weights_.size(); i++) {weights_[i]/=sum_weights;}
-  checkRead();
+    ndist_ = distribution_pntrs_.size();
+    grid_pntrs_.assign(ndist_,NULL);
+    if(ndist_==0) {
+        plumed_merror(getName()+ ": no distributions are given.");
+    }
+    if(ndist_==1) {
+        plumed_merror(getName()+ ": giving only one distribution does not make sense.");
+    }
+    //
+    parseVector("WEIGHTS",weights_);
+    if(weights_.size()==0) {
+        weights_.assign(distribution_pntrs_.size(),1.0);
+    }
+    if(distribution_pntrs_.size()!=weights_.size()) {
+        plumed_merror(getName()+ ": there has to be as many weights given in WEIGHTS as the number of target distribution labels given in DISTRIBUTIONS");
+    }
+    //
+    double sum_weights=0.0;
+    for(unsigned int i=0; i<weights_.size(); i++) {
+        sum_weights+=weights_[i];
+    }
+    for(unsigned int i=0; i<weights_.size(); i++) {
+        weights_[i]/=sum_weights;
+    }
+    checkRead();
 }
 
 
 double TD_LinearCombination::getValue(const std::vector<double>& argument) const {
-  plumed_merror("getValue not implemented for TD_LinearCombination");
-  return 0.0;
+    plumed_merror("getValue not implemented for TD_LinearCombination");
+    return 0.0;
 }
 
 
 void TD_LinearCombination::setupAdditionalGrids(const std::vector<Value*>& arguments, const std::vector<std::string>& min, const std::vector<std::string>& max, const std::vector<unsigned int>& nbins) {
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->setupGrids(arguments,min,max,nbins);
-    if(distribution_pntrs_[i]->getDimension()!=this->getDimension()) {
-      plumed_merror(getName() + ": all target distribution must have the same dimension");
+    for(unsigned int i=0; i<ndist_; i++) {
+        distribution_pntrs_[i]->setupGrids(arguments,min,max,nbins);
+        if(distribution_pntrs_[i]->getDimension()!=this->getDimension()) {
+            plumed_merror(getName() + ": all target distribution must have the same dimension");
+        }
+        grid_pntrs_[i]=distribution_pntrs_[i]->getTargetDistGridPntr();
     }
-    grid_pntrs_[i]=distribution_pntrs_[i]->getTargetDistGridPntr();
-  }
 }
 
 
 void TD_LinearCombination::updateGrid() {
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->updateTargetDist();
-  }
-  for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
-    double value = 0.0;
     for(unsigned int i=0; i<ndist_; i++) {
-      value += weights_[i]*grid_pntrs_[i]->getValue(l);
+        distribution_pntrs_[i]->updateTargetDist();
     }
-    targetDistGrid().setValue(l,value);
-    logTargetDistGrid().setValue(l,-std::log(value));
-  }
-  logTargetDistGrid().setMinToZero();
+    for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
+        double value = 0.0;
+        for(unsigned int i=0; i<ndist_; i++) {
+            value += weights_[i]*grid_pntrs_[i]->getValue(l);
+        }
+        targetDistGrid().setValue(l,value);
+        logTargetDistGrid().setValue(l,-std::log(value));
+    }
+    logTargetDistGrid().setMinToZero();
 }
 
 
 void TD_LinearCombination::linkVesBias(VesBias* vesbias_pntr_in) {
-  TargetDistribution::linkVesBias(vesbias_pntr_in);
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->linkVesBias(vesbias_pntr_in);
-  }
+    TargetDistribution::linkVesBias(vesbias_pntr_in);
+    for(unsigned int i=0; i<ndist_; i++) {
+        distribution_pntrs_[i]->linkVesBias(vesbias_pntr_in);
+    }
 }
 
 
 void TD_LinearCombination::linkAction(Action* action_pntr_in) {
-  TargetDistribution::linkAction(action_pntr_in);
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->linkAction(action_pntr_in);
-  }
+    TargetDistribution::linkAction(action_pntr_in);
+    for(unsigned int i=0; i<ndist_; i++) {
+        distribution_pntrs_[i]->linkAction(action_pntr_in);
+    }
 }
 
 
 void TD_LinearCombination::linkBiasGrid(Grid* bias_grid_pntr_in) {
-  TargetDistribution::linkBiasGrid(bias_grid_pntr_in);
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->linkBiasGrid(bias_grid_pntr_in);
-  }
+    TargetDistribution::linkBiasGrid(bias_grid_pntr_in);
+    for(unsigned int i=0; i<ndist_; i++) {
+        distribution_pntrs_[i]->linkBiasGrid(bias_grid_pntr_in);
+    }
 }
 
 
 void TD_LinearCombination::linkBiasWithoutCutoffGrid(Grid* bias_withoutcutoff_grid_pntr_in) {
-  TargetDistribution::linkBiasWithoutCutoffGrid(bias_withoutcutoff_grid_pntr_in);
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->linkBiasWithoutCutoffGrid(bias_withoutcutoff_grid_pntr_in);
-  }
+    TargetDistribution::linkBiasWithoutCutoffGrid(bias_withoutcutoff_grid_pntr_in);
+    for(unsigned int i=0; i<ndist_; i++) {
+        distribution_pntrs_[i]->linkBiasWithoutCutoffGrid(bias_withoutcutoff_grid_pntr_in);
+    }
 }
 
 
 void TD_LinearCombination::linkFesGrid(Grid* fes_grid_pntr_in) {
-  TargetDistribution::linkFesGrid(fes_grid_pntr_in);
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->linkFesGrid(fes_grid_pntr_in);
-  }
+    TargetDistribution::linkFesGrid(fes_grid_pntr_in);
+    for(unsigned int i=0; i<ndist_; i++) {
+        distribution_pntrs_[i]->linkFesGrid(fes_grid_pntr_in);
+    }
 }
 
 

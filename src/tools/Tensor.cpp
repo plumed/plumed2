@@ -32,10 +32,10 @@ namespace PLMD {
 /// accessing a vector of tensors as a 9 times longer array of doubles.
 static class TensorChecks {
 public:
-  TensorChecks() {
-    if(sizeof(Tensor)==9*sizeof(double)) return;
-    plumed_merror("sizeof(Tensor)!=9*sizeof(double). PLUMED cannot work properly in these conditions.");
-  }
+    TensorChecks() {
+        if(sizeof(Tensor)==9*sizeof(double)) return;
+        plumed_merror("sizeof(Tensor)!=9*sizeof(double). PLUMED cannot work properly in these conditions.");
+    }
 } checks;
 
 void TensorGenericAux::local_dsyevr(const char *jobz, const char *range, const char *uplo, int *n,
@@ -43,7 +43,7 @@ void TensorGenericAux::local_dsyevr(const char *jobz, const char *range, const c
                                     il, int *iu, double *abstol, int *m, double *w,
                                     double *z__, int *ldz, int *isuppz, double *work,
                                     int *lwork, int *iwork, int *liwork, int *info) {
-  plumed_lapack_dsyevr(jobz,range,uplo,n,a,lda,vl,vu,il,iu,abstol,m,w,z__,ldz,isuppz,work,lwork,iwork,liwork,info);
+    plumed_lapack_dsyevr(jobz,range,uplo,n,a,lda,vl,vu,il,iu,abstol,m,w,z__,ldz,isuppz,work,lwork,iwork,liwork,info);
 }
 
 

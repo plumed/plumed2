@@ -1,0 +1,8 @@
+Thu 13 Sep 17:10:03 CEST 2018
+Running regtest in /home/silvio/Work/Codes/Plumed_PIV/plumed2/regtest/piv/rt-piv-derivatives
+++ Test type: driver
+++ Arguments: --plumed plumed.dat --mf_pdb Ice8.pdb
+++ Processors: 0
+WARNING using plumed from /home/silvio/Work/Software/Installed/lib/plumed2_master
+/home/silvio/Work/Codes/Plumed_PIV/plumed2/regtest/piv/rt-piv-derivatives/tmp
+Checking for piv

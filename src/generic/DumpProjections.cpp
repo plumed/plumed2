@@ -50,67 +50,69 @@ DUMPPROJECTIONS ARG=d FILE=proj STRIDE=20
 //+ENDPLUMEDOC
 
 class DumpProjections :
-  public ActionPilot,
-  public ActionWithArguments
+    public ActionPilot,
+    public ActionWithArguments
 {
-  string file;
-  string fmt;
-  OFile of;
+    string file;
+    string fmt;
+    OFile of;
 public:
-  void calculate() {}
-  explicit DumpProjections(const ActionOptions&);
-  static void registerKeywords(Keywords& keys);
-  void apply() {}
-  void update();
-  bool checkNeedsGradients()const {return true;}
-  ~DumpProjections();
+    void calculate() {}
+    explicit DumpProjections(const ActionOptions&);
+    static void registerKeywords(Keywords& keys);
+    void apply() {}
+    void update();
+    bool checkNeedsGradients()const {
+        return true;
+    }
+    ~DumpProjections();
 };
 
 PLUMED_REGISTER_ACTION(DumpProjections,"DUMPPROJECTIONS")
 
 void DumpProjections::registerKeywords(Keywords& keys) {
-  Action::registerKeywords(keys);
-  ActionPilot::registerKeywords(keys);
-  ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
-  keys.add("compulsory","STRIDE","1","the frequency with which the derivatives should be output");
-  keys.add("compulsory","FILE","the name of the file on which to output the derivatives");
-  keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
-  keys.use("RESTART");
-  keys.use("UPDATE_FROM");
-  keys.use("UPDATE_UNTIL");
+    Action::registerKeywords(keys);
+    ActionPilot::registerKeywords(keys);
+    ActionWithArguments::registerKeywords(keys);
+    keys.use("ARG");
+    keys.add("compulsory","STRIDE","1","the frequency with which the derivatives should be output");
+    keys.add("compulsory","FILE","the name of the file on which to output the derivatives");
+    keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
+    keys.use("RESTART");
+    keys.use("UPDATE_FROM");
+    keys.use("UPDATE_UNTIL");
 }
 
 DumpProjections::DumpProjections(const ActionOptions&ao):
-  Action(ao),
-  ActionPilot(ao),
-  ActionWithArguments(ao),
-  fmt("%15.10f")
+    Action(ao),
+    ActionPilot(ao),
+    ActionWithArguments(ao),
+    fmt("%15.10f")
 {
-  parse("FILE",file);
-  if( file.length()==0 ) error("filename not specified");
-  parse("FMT",fmt);
-  fmt=" "+fmt;
-  of.open(file);
-  log.printf("  on file %s\n",file.c_str());
-  log.printf("  with format %s\n",fmt.c_str());
-  checkRead();
+    parse("FILE",file);
+    if( file.length()==0 ) error("filename not specified");
+    parse("FMT",fmt);
+    fmt=" "+fmt;
+    of.open(file);
+    log.printf("  on file %s\n",file.c_str());
+    log.printf("  with format %s\n",fmt.c_str());
+    checkRead();
 
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
-  }
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
+    }
 }
 
 
 void DumpProjections::update() {
-  of.fmtField(" %f").printField("time",getTime());
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    for(unsigned j=0; j<getNumberOfArguments(); j++) {
-      of.fmtField(fmt);
-      of.printField(getPntrToArgument(i)->getName()+"-"+getPntrToArgument(j)->getName(),getProjection(i,j));
+    of.fmtField(" %f").printField("time",getTime());
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+        for(unsigned j=0; j<getNumberOfArguments(); j++) {
+            of.fmtField(fmt);
+            of.printField(getPntrToArgument(i)->getName()+"-"+getPntrToArgument(j)->getName(),getProjection(i,j));
+        }
     }
-  }
-  of.printField();
+    of.printField();
 }
 
 DumpProjections::~DumpProjections() {

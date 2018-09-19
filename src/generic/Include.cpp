@@ -141,29 +141,29 @@ RESTRAINT ARG=t AT=1.2 KAPPA=10
 //+ENDPLUMEDOC
 
 class Include :
-  public Action
+    public Action
 {
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit Include(const ActionOptions&ao);
-  void calculate() {}
-  void apply() {}
+    static void registerKeywords( Keywords& keys );
+    explicit Include(const ActionOptions&ao);
+    void calculate() {}
+    void apply() {}
 };
 
 PLUMED_REGISTER_ACTION(Include,"INCLUDE")
 
 void Include::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords(keys);
-  keys.add("compulsory","FILE","file to be included");
+    Action::registerKeywords(keys);
+    keys.add("compulsory","FILE","file to be included");
 }
 
 Include::Include(const ActionOptions&ao):
-  Action(ao)
+    Action(ao)
 {
-  std::string f;
-  parse("FILE",f);
-  checkRead();
-  plumed.readInputFile(f);
+    std::string f;
+    parse("FILE",f);
+    checkRead();
+    plumed.readInputFile(f);
 }
 
 }

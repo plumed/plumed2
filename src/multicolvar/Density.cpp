@@ -52,46 +52,57 @@ PRINT ARG=d1.* FILE=colvar1 FMT=%8.4f
 
 class Density : public MultiColvarBase {
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit Density(const ActionOptions&);
+    static void registerKeywords( Keywords& keys );
+    explicit Density(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
-  bool isDensity() const { return true; }
-  bool hasDifferentiableOrientation() const { return true; }
+    virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+    /// Returns the number of coordinates of the field
+    bool isPeriodic() {
+        return false;
+    }
+    bool isDensity() const {
+        return true;
+    }
+    bool hasDifferentiableOrientation() const {
+        return true;
+    }
 //  void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no,
 //                                        const std::vector<double>& weight, MultiColvarFunction* func ){}
-  void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
+    void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 //  unsigned getNumberOfQuantities();
-  void getValueForTask( const unsigned& iatom, std::vector<double>& vals );
+    void getValueForTask( const unsigned& iatom, std::vector<double>& vals );
 };
 
 PLUMED_REGISTER_ACTION(Density,"DENSITY")
 
 void Density::registerKeywords( Keywords& keys ) {
-  MultiColvarBase::registerKeywords( keys );
-  keys.use("SPECIES");
+    MultiColvarBase::registerKeywords( keys );
+    keys.use("SPECIES");
 }
 
 Density::Density(const ActionOptions&ao):
-  Action(ao),
-  MultiColvarBase(ao)
+    Action(ao),
+    MultiColvarBase(ao)
 {
-  std::vector<AtomNumber> all_atoms; parseMultiColvarAtomList("SPECIES", -1, all_atoms);
-  ablocks.resize(1); ablocks[0].resize( atom_lab.size() );
-  for(unsigned i=0; i<atom_lab.size(); ++i) { addTaskToList(i); ablocks[0][i]=i; }
-  setupMultiColvarBase( all_atoms );
-  // And check everything has been read in correctly
-  checkRead();
+    std::vector<AtomNumber> all_atoms;
+    parseMultiColvarAtomList("SPECIES", -1, all_atoms);
+    ablocks.resize(1);
+    ablocks[0].resize( atom_lab.size() );
+    for(unsigned i=0; i<atom_lab.size(); ++i) {
+        addTaskToList(i);
+        ablocks[0][i]=i;
+    }
+    setupMultiColvarBase( all_atoms );
+    // And check everything has been read in correctly
+    checkRead();
 }
 
 double Density::compute( const unsigned& tindex, AtomValuePack& myvals ) const {
-  return 1.0;
+    return 1.0;
 }
 
 void Density::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ) {
-  indices[jstore]=0;
+    indices[jstore]=0;
 }
 
 // unsigned Density::getNumberOfQuantities(){
@@ -99,7 +110,8 @@ void Density::getIndexList( const unsigned& ntotal, const unsigned& jstore, cons
 // }
 
 void Density::getValueForTask( const unsigned& iatom, std::vector<double>& vals ) {
-  plumed_dbg_assert( vals.size()==2 ); vals[0]=vals[1]=1.0;
+    plumed_dbg_assert( vals.size()==2 );
+    vals[0]=vals[1]=1.0;
 }
 
 }

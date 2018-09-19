@@ -35,33 +35,33 @@ namespace vesselbase {
 
 class ActionWithInputVessel : public virtual Action {
 private:
-  Vessel* arguments;
-  BridgeVessel* myBridgeVessel;
+    Vessel* arguments;
+    BridgeVessel* myBridgeVessel;
 protected:
 /// What type of arguments are we reading in
-  void readArgument( const std::string& type );
+    void readArgument( const std::string& type );
 /// Return a pointer to specific argument
-  Vessel* getPntrToArgument();
+    Vessel* getPntrToArgument();
 /// Add forces to arguments (used in apply)
-  void addForcesOnArguments( const std::vector<double>& forces );
+    void addForcesOnArguments( const std::vector<double>& forces );
 public:
 /// Registers the list of keywords
-  static void registerKeywords( Keywords& keys );
-  explicit ActionWithInputVessel(const ActionOptions&);
-  virtual ~ActionWithInputVessel() {}
+    static void registerKeywords( Keywords& keys );
+    explicit ActionWithInputVessel(const ActionOptions&);
+    virtual ~ActionWithInputVessel() {}
 /// Calculate the numerical derivatives
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you
 /// are doing.  The default will be correct for the vast majority of cases
-  virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
+    virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 /// Apply forces from the bridge
-  void applyBridgeForces( const std::vector<double>& bb );
+    void applyBridgeForces( const std::vector<double>& bb );
 /// Apply forces from the bridge
-  virtual void addBridgeForces( const std::vector<double>& bb ) {}
+    virtual void addBridgeForces( const std::vector<double>& bb ) {}
 };
 
 inline
 Vessel* ActionWithInputVessel::getPntrToArgument() {
-  return arguments;
+    return arguments;
 }
 
 }

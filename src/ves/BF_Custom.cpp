@@ -104,246 +104,282 @@ BF_CUSTOM ...
 
 class BF_Custom : public BasisFunctions {
 private:
-  lepton::CompiledExpression transf_value_expression_;
-  lepton::CompiledExpression transf_deriv_expression_;
-  std::vector<lepton::CompiledExpression> bf_values_expressions_;
-  std::vector<lepton::CompiledExpression> bf_derivs_expressions_;
-  std::string variable_str_;
-  std::string transf_variable_str_;
-  bool do_transf_;
-  bool check_nan_inf_;
+    lepton::CompiledExpression transf_value_expression_;
+    lepton::CompiledExpression transf_deriv_expression_;
+    std::vector<lepton::CompiledExpression> bf_values_expressions_;
+    std::vector<lepton::CompiledExpression> bf_derivs_expressions_;
+    std::string variable_str_;
+    std::string transf_variable_str_;
+    bool do_transf_;
+    bool check_nan_inf_;
 public:
-  static void registerKeywords( Keywords&);
-  explicit BF_Custom(const ActionOptions&);
-  ~BF_Custom() {};
-  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
+    static void registerKeywords( Keywords&);
+    explicit BF_Custom(const ActionOptions&);
+    ~BF_Custom() {};
+    void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
 };
 
 PLUMED_REGISTER_ACTION(BF_Custom,"BF_CUSTOM")
 
 void BF_Custom::registerKeywords(Keywords& keys) {
-  BasisFunctions::registerKeywords(keys);
-  keys.remove("ORDER");
-  keys.add("numbered","FUNC","The basis functions f_i(x) given in mathematical expressions using _x_ as a variable.");
-  keys.add("optional","TRANSFORM","An optional function that can be used to transform the argument before calculating the basis function values. You should use _t_ as a variable. You can use the variables _min_ and _max_ to give the minimum and the maximum of the interval.");
-  keys.addFlag("PERIODIC",false,"Indicate that the basis functions are periodic.");
-  keys.addFlag("CHECK_NAN_INF",false,"Check that the basis functions do not result in a not a number (nan) or infinity (inf).");
-  keys.remove("NUMERICAL_INTEGRALS");
+    BasisFunctions::registerKeywords(keys);
+    keys.remove("ORDER");
+    keys.add("numbered","FUNC","The basis functions f_i(x) given in mathematical expressions using _x_ as a variable.");
+    keys.add("optional","TRANSFORM","An optional function that can be used to transform the argument before calculating the basis function values. You should use _t_ as a variable. You can use the variables _min_ and _max_ to give the minimum and the maximum of the interval.");
+    keys.addFlag("PERIODIC",false,"Indicate that the basis functions are periodic.");
+    keys.addFlag("CHECK_NAN_INF",false,"Check that the basis functions do not result in a not a number (nan) or infinity (inf).");
+    keys.remove("NUMERICAL_INTEGRALS");
 }
 
 
 BF_Custom::BF_Custom(const ActionOptions&ao):
-  PLUMED_VES_BASISFUNCTIONS_INIT(ao),
-  bf_values_expressions_(0),
-  bf_derivs_expressions_(0),
-  variable_str_("x"),
-  transf_variable_str_("t"),
-  do_transf_(false),
-  check_nan_inf_(false)
+    PLUMED_VES_BASISFUNCTIONS_INIT(ao),
+    bf_values_expressions_(0),
+    bf_derivs_expressions_(0),
+    variable_str_("x"),
+    transf_variable_str_("t"),
+    do_transf_(false),
+    check_nan_inf_(false)
 {
-  std::vector<std::string> bf_str;
-  std::string str_t1="1";
-  bf_str.push_back(str_t1);
-  for(int i=1;; i++) {
-    std::string str_t2;
-    if(!parseNumbered("FUNC",i,str_t2)) {break;}
-    std::string is; Tools::convert(i,is);
-    addKeywordToList("FUNC"+is,str_t2);
-    bf_str.push_back(str_t2);
-  }
-  //
-  if(bf_str.size()==1) {plumed_merror(getName()+" with label "+getLabel()+": No FUNC keywords given");}
-
-  setOrder(bf_str.size()-1);
-  setNumberOfBasisFunctions(getOrder()+1);
-  setIntrinsicInterval(intervalMin(),intervalMax());
-  bool periodic = false;
-  parseFlag("PERIODIC",periodic); addKeywordToList("PERIODIC",periodic);
-  if(periodic) {setPeriodic();}
-  else {setNonPeriodic();}
-  setIntervalBounded();
-  setType("custom_functions");
-  setDescription("Custom Functions");
-  //
-  std::vector<std::string> bf_values_parsed(getNumberOfBasisFunctions());
-  std::vector<std::string> bf_derivs_parsed(getNumberOfBasisFunctions());
-  bf_values_parsed[0] = "1";
-  bf_derivs_parsed[0] = "0";
-  //
-  bf_values_expressions_.resize(getNumberOfBasisFunctions());
-  bf_derivs_expressions_.resize(getNumberOfBasisFunctions());
-  //
-  for(unsigned int i=1; i<getNumberOfBasisFunctions(); i++) {
-    std::string is; Tools::convert(i,is);
-    try {
-      lepton::ParsedExpression pe_value = lepton::Parser::parse(bf_str[i]).optimize(lepton::Constants());
-      std::ostringstream tmp_stream; tmp_stream << pe_value;
-      bf_values_parsed[i] = tmp_stream.str();
-      bf_values_expressions_[i] = pe_value.createCompiledExpression();
+    std::vector<std::string> bf_str;
+    std::string str_t1="1";
+    bf_str.push_back(str_t1);
+    for(int i=1;; i++) {
+        std::string str_t2;
+        if(!parseNumbered("FUNC",i,str_t2)) {
+            break;
+        }
+        std::string is;
+        Tools::convert(i,is);
+        addKeywordToList("FUNC"+is,str_t2);
+        bf_str.push_back(str_t2);
     }
-    catch(PLMD::lepton::Exception& exc) {
-      plumed_merror("There was some problem in parsing the function "+bf_str[i]+" given in FUNC"+is + " with lepton");
+    //
+    if(bf_str.size()==1) {
+        plumed_merror(getName()+" with label "+getLabel()+": No FUNC keywords given");
     }
 
-    std::vector<std::string> var_str;
-    for(auto &p: bf_values_expressions_[i].getVariables()) {
-      var_str.push_back(p);
+    setOrder(bf_str.size()-1);
+    setNumberOfBasisFunctions(getOrder()+1);
+    setIntrinsicInterval(intervalMin(),intervalMax());
+    bool periodic = false;
+    parseFlag("PERIODIC",periodic);
+    addKeywordToList("PERIODIC",periodic);
+    if(periodic) {
+        setPeriodic();
     }
-    if(var_str.size()!=1) {
-      plumed_merror("Problem with function "+bf_str[i]+" given in FUNC"+is+": there should only be one variable");
+    else {
+        setNonPeriodic();
     }
-    if(var_str[0]!=variable_str_) {
-      plumed_merror("Problem with function "+bf_str[i]+" given in FUNC"+is+": you should use "+variable_str_+" as a variable");
+    setIntervalBounded();
+    setType("custom_functions");
+    setDescription("Custom Functions");
+    //
+    std::vector<std::string> bf_values_parsed(getNumberOfBasisFunctions());
+    std::vector<std::string> bf_derivs_parsed(getNumberOfBasisFunctions());
+    bf_values_parsed[0] = "1";
+    bf_derivs_parsed[0] = "0";
+    //
+    bf_values_expressions_.resize(getNumberOfBasisFunctions());
+    bf_derivs_expressions_.resize(getNumberOfBasisFunctions());
+    //
+    for(unsigned int i=1; i<getNumberOfBasisFunctions(); i++) {
+        std::string is;
+        Tools::convert(i,is);
+        try {
+            lepton::ParsedExpression pe_value = lepton::Parser::parse(bf_str[i]).optimize(lepton::Constants());
+            std::ostringstream tmp_stream;
+            tmp_stream << pe_value;
+            bf_values_parsed[i] = tmp_stream.str();
+            bf_values_expressions_[i] = pe_value.createCompiledExpression();
+        }
+        catch(PLMD::lepton::Exception& exc) {
+            plumed_merror("There was some problem in parsing the function "+bf_str[i]+" given in FUNC"+is + " with lepton");
+        }
+
+        std::vector<std::string> var_str;
+        for(auto &p: bf_values_expressions_[i].getVariables()) {
+            var_str.push_back(p);
+        }
+        if(var_str.size()!=1) {
+            plumed_merror("Problem with function "+bf_str[i]+" given in FUNC"+is+": there should only be one variable");
+        }
+        if(var_str[0]!=variable_str_) {
+            plumed_merror("Problem with function "+bf_str[i]+" given in FUNC"+is+": you should use "+variable_str_+" as a variable");
+        }
+
+        try {
+            lepton::ParsedExpression pe_deriv = lepton::Parser::parse(bf_str[i]).differentiate(variable_str_).optimize(lepton::Constants());
+            std::ostringstream tmp_stream2;
+            tmp_stream2 << pe_deriv;
+            bf_derivs_parsed[i] = tmp_stream2.str();
+            bf_derivs_expressions_[i] = pe_deriv.createCompiledExpression();
+        }
+        catch(PLMD::lepton::Exception& exc) {
+            plumed_merror("There was some problem in parsing the derivative of the function "+bf_str[i]+" given in FUNC"+is + " with lepton");
+        }
+
     }
 
-    try {
-      lepton::ParsedExpression pe_deriv = lepton::Parser::parse(bf_str[i]).differentiate(variable_str_).optimize(lepton::Constants());
-      std::ostringstream tmp_stream2; tmp_stream2 << pe_deriv;
-      bf_derivs_parsed[i] = tmp_stream2.str();
-      bf_derivs_expressions_[i] = pe_deriv.createCompiledExpression();
+    std::string transf_value_parsed;
+    std::string transf_deriv_parsed;
+    std::string transf_str;
+    parse("TRANSFORM",transf_str);
+    if(transf_str.size()>0) {
+        do_transf_ = true;
+        addKeywordToList("TRANSFORM",transf_str);
+        for(unsigned int k=0;; k++) {
+            if(transf_str.find("min")!=std::string::npos) {
+                transf_str.replace(transf_str.find("min"), std::string("min").length(),intervalMinStr());
+            }
+            else {
+                break;
+            }
+        }
+        for(unsigned int k=0;; k++) {
+            if(transf_str.find("max")!=std::string::npos) {
+                transf_str.replace(transf_str.find("max"), std::string("max").length(),intervalMaxStr());
+            }
+            else {
+                break;
+            }
+        }
+
+        try {
+            lepton::ParsedExpression pe_value = lepton::Parser::parse(transf_str).optimize(lepton::Constants());;
+            std::ostringstream tmp_stream;
+            tmp_stream << pe_value;
+            transf_value_parsed = tmp_stream.str();
+            transf_value_expression_ = pe_value.createCompiledExpression();
+        }
+        catch(PLMD::lepton::Exception& exc) {
+            plumed_merror("There was some problem in parsing the function "+transf_str+" given in TRANSFORM with lepton");
+        }
+
+        std::vector<std::string> var_str;
+        for(auto &p: transf_value_expression_.getVariables()) {
+            var_str.push_back(p);
+        }
+        if(var_str.size()!=1) {
+            plumed_merror("Problem with function "+transf_str+" given in TRANSFORM: there should only be one variable");
+        }
+        if(var_str[0]!=transf_variable_str_) {
+            plumed_merror("Problem with function "+transf_str+" given in TRANSFORM: you should use "+transf_variable_str_+" as a variable");
+        }
+
+        try {
+            lepton::ParsedExpression pe_deriv = lepton::Parser::parse(transf_str).differentiate(transf_variable_str_).optimize(lepton::Constants());;
+            std::ostringstream tmp_stream2;
+            tmp_stream2 << pe_deriv;
+            transf_deriv_parsed = tmp_stream2.str();
+            transf_deriv_expression_ = pe_deriv.createCompiledExpression();
+        }
+        catch(PLMD::lepton::Exception& exc) {
+            plumed_merror("There was some problem in parsing the derivative of the function "+transf_str+" given in TRANSFORM with lepton");
+        }
     }
-    catch(PLMD::lepton::Exception& exc) {
-      plumed_merror("There was some problem in parsing the derivative of the function "+bf_str[i]+" given in FUNC"+is + " with lepton");
+    //
+    log.printf("  Using the following functions [lepton parsed function and derivative]:\n");
+    for(unsigned int i=0; i<getNumberOfBasisFunctions(); i++) {
+        log.printf("   %u:  %s   [   %s   |   %s   ] \n",i,bf_str[i].c_str(),bf_values_parsed[i].c_str(),bf_derivs_parsed[i].c_str());
+
+    }
+    //
+    if(do_transf_) {
+        log.printf("  Arguments are transformed using the following function [lepton parsed function and derivative]:\n");
+        log.printf("   %s   [   %s   |   %s   ] \n",transf_str.c_str(),transf_value_parsed.c_str(),transf_deriv_parsed.c_str());
+    }
+    else {
+        log.printf("  Arguments are not transformed\n");
+    }
+    //
+
+    parseFlag("CHECK_NAN_INF",check_nan_inf_);
+    addKeywordToList("CHECK_NAN_INF",check_nan_inf_);
+    if(check_nan_inf_) {
+        log.printf("  The code will check that values given are numercially stable, e.g. do not result in a not a number (nan) or infinity (inf).\n");
+    }
+    else {
+        log.printf("  The code will NOT check that values given are numercially stable, e.g. do not result in a not a number (nan) or infinity (inf).\n");
     }
 
-  }
-
-  std::string transf_value_parsed;
-  std::string transf_deriv_parsed;
-  std::string transf_str;
-  parse("TRANSFORM",transf_str);
-  if(transf_str.size()>0) {
-    do_transf_ = true;
-    addKeywordToList("TRANSFORM",transf_str);
-    for(unsigned int k=0;; k++) {
-      if(transf_str.find("min")!=std::string::npos) {transf_str.replace(transf_str.find("min"), std::string("min").length(),intervalMinStr());}
-      else {break;}
-    }
-    for(unsigned int k=0;; k++) {
-      if(transf_str.find("max")!=std::string::npos) {transf_str.replace(transf_str.find("max"), std::string("max").length(),intervalMaxStr());}
-      else {break;}
-    }
-
-    try {
-      lepton::ParsedExpression pe_value = lepton::Parser::parse(transf_str).optimize(lepton::Constants());;
-      std::ostringstream tmp_stream; tmp_stream << pe_value;
-      transf_value_parsed = tmp_stream.str();
-      transf_value_expression_ = pe_value.createCompiledExpression();
-    }
-    catch(PLMD::lepton::Exception& exc) {
-      plumed_merror("There was some problem in parsing the function "+transf_str+" given in TRANSFORM with lepton");
-    }
-
-    std::vector<std::string> var_str;
-    for(auto &p: transf_value_expression_.getVariables()) {
-      var_str.push_back(p);
-    }
-    if(var_str.size()!=1) {
-      plumed_merror("Problem with function "+transf_str+" given in TRANSFORM: there should only be one variable");
-    }
-    if(var_str[0]!=transf_variable_str_) {
-      plumed_merror("Problem with function "+transf_str+" given in TRANSFORM: you should use "+transf_variable_str_+" as a variable");
-    }
-
-    try {
-      lepton::ParsedExpression pe_deriv = lepton::Parser::parse(transf_str).differentiate(transf_variable_str_).optimize(lepton::Constants());;
-      std::ostringstream tmp_stream2; tmp_stream2 << pe_deriv;
-      transf_deriv_parsed = tmp_stream2.str();
-      transf_deriv_expression_ = pe_deriv.createCompiledExpression();
-    }
-    catch(PLMD::lepton::Exception& exc) {
-      plumed_merror("There was some problem in parsing the derivative of the function "+transf_str+" given in TRANSFORM with lepton");
-    }
-  }
-  //
-  log.printf("  Using the following functions [lepton parsed function and derivative]:\n");
-  for(unsigned int i=0; i<getNumberOfBasisFunctions(); i++) {
-    log.printf("   %u:  %s   [   %s   |   %s   ] \n",i,bf_str[i].c_str(),bf_values_parsed[i].c_str(),bf_derivs_parsed[i].c_str());
-
-  }
-  //
-  if(do_transf_) {
-    log.printf("  Arguments are transformed using the following function [lepton parsed function and derivative]:\n");
-    log.printf("   %s   [   %s   |   %s   ] \n",transf_str.c_str(),transf_value_parsed.c_str(),transf_deriv_parsed.c_str());
-  }
-  else {
-    log.printf("  Arguments are not transformed\n");
-  }
-  //
-
-  parseFlag("CHECK_NAN_INF",check_nan_inf_); addKeywordToList("CHECK_NAN_INF",check_nan_inf_);
-  if(check_nan_inf_) {
-    log.printf("  The code will check that values given are numercially stable, e.g. do not result in a not a number (nan) or infinity (inf).\n");
-  }
-  else {
-    log.printf("  The code will NOT check that values given are numercially stable, e.g. do not result in a not a number (nan) or infinity (inf).\n");
-  }
-
-  setupBF();
-  checkRead();
+    setupBF();
+    checkRead();
 }
 
 
 void BF_Custom::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
-  inside_range=true;
-  argT=checkIfArgumentInsideInterval(arg,inside_range);
-  double transf_derivf=1.0;
-  //
-  if(do_transf_) {
-    // has to copy as the function is const
-    lepton::CompiledExpression ce_value = transf_value_expression_;
-    try {
-      ce_value.getVariableReference(transf_variable_str_) = argT;
-    } catch(PLMD::lepton::Exception& exc) {}
+    inside_range=true;
+    argT=checkIfArgumentInsideInterval(arg,inside_range);
+    double transf_derivf=1.0;
+    //
+    if(do_transf_) {
+        // has to copy as the function is const
+        lepton::CompiledExpression ce_value = transf_value_expression_;
+        try {
+            ce_value.getVariableReference(transf_variable_str_) = argT;
+        } catch(PLMD::lepton::Exception& exc) {}
 
-    lepton::CompiledExpression ce_deriv = transf_deriv_expression_;
-    try {
-      ce_deriv.getVariableReference(transf_variable_str_) = argT;
-    } catch(PLMD::lepton::Exception& exc) {}
+        lepton::CompiledExpression ce_deriv = transf_deriv_expression_;
+        try {
+            ce_deriv.getVariableReference(transf_variable_str_) = argT;
+        } catch(PLMD::lepton::Exception& exc) {}
 
-    argT = ce_value.evaluate();
-    transf_derivf = ce_deriv.evaluate();
+        argT = ce_value.evaluate();
+        transf_derivf = ce_deriv.evaluate();
 
-    if(check_nan_inf_ && (std::isnan(argT) || std::isinf(argT)) ) {
-      std::string vs; Tools::convert(argT,vs);
-      plumed_merror(getName()+" with label "+getLabel()+": problem with the transform function, it gives " + vs);
-    }
+        if(check_nan_inf_ && (std::isnan(argT) || std::isinf(argT)) ) {
+            std::string vs;
+            Tools::convert(argT,vs);
+            plumed_merror(getName()+" with label "+getLabel()+": problem with the transform function, it gives " + vs);
+        }
 
-    if(check_nan_inf_ && (std::isnan(transf_derivf) || std::isinf(transf_derivf)) ) {
-      std::string vs; Tools::convert(transf_derivf,vs);
-      plumed_merror(getName()+" with label "+getLabel()+": problem with the transform function, its derivative gives " + vs);
-    }
-  }
-  //
-  values[0]=1.0;
-  derivs[0]=0.0;
-  for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    lepton::CompiledExpression ce_value = bf_values_expressions_[i];
-    try {
-      ce_value.getVariableReference(variable_str_) = argT;
-    } catch(PLMD::lepton::Exception& exc) {}
-    values[i] = ce_value.evaluate();
-
-    lepton::CompiledExpression ce_deriv = bf_derivs_expressions_[i];
-    try {
-      ce_deriv.getVariableReference(variable_str_) = argT;
-    } catch(PLMD::lepton::Exception& exc) {}
-    derivs[i] = ce_deriv.evaluate();
-    if(do_transf_) {derivs[i]*=transf_derivf;}
-    // NaN checks
-    if(check_nan_inf_ && (std::isnan(values[i]) || std::isinf(values[i])) ) {
-      std::string vs; Tools::convert(values[i],vs);
-      std::string is; Tools::convert(i,is);
-      plumed_merror(getName()+" with label "+getLabel()+": problem with the basis function given in FUNC"+is+", it gives "+vs);
+        if(check_nan_inf_ && (std::isnan(transf_derivf) || std::isinf(transf_derivf)) ) {
+            std::string vs;
+            Tools::convert(transf_derivf,vs);
+            plumed_merror(getName()+" with label "+getLabel()+": problem with the transform function, its derivative gives " + vs);
+        }
     }
     //
-    if(check_nan_inf_ && (std::isnan(derivs[i])|| std::isinf(derivs[i])) ) {
-      std::string vs; Tools::convert(derivs[i],vs);
-      std::string is; Tools::convert(i,is);
-      plumed_merror(getName()+" with label "+getLabel()+": problem with derivative of the basis function given in FUNC"+is+", it gives "+vs);
+    values[0]=1.0;
+    derivs[0]=0.0;
+    for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
+        lepton::CompiledExpression ce_value = bf_values_expressions_[i];
+        try {
+            ce_value.getVariableReference(variable_str_) = argT;
+        } catch(PLMD::lepton::Exception& exc) {}
+        values[i] = ce_value.evaluate();
+
+        lepton::CompiledExpression ce_deriv = bf_derivs_expressions_[i];
+        try {
+            ce_deriv.getVariableReference(variable_str_) = argT;
+        } catch(PLMD::lepton::Exception& exc) {}
+        derivs[i] = ce_deriv.evaluate();
+        if(do_transf_) {
+            derivs[i]*=transf_derivf;
+        }
+        // NaN checks
+        if(check_nan_inf_ && (std::isnan(values[i]) || std::isinf(values[i])) ) {
+            std::string vs;
+            Tools::convert(values[i],vs);
+            std::string is;
+            Tools::convert(i,is);
+            plumed_merror(getName()+" with label "+getLabel()+": problem with the basis function given in FUNC"+is+", it gives "+vs);
+        }
+        //
+        if(check_nan_inf_ && (std::isnan(derivs[i])|| std::isinf(derivs[i])) ) {
+            std::string vs;
+            Tools::convert(derivs[i],vs);
+            std::string is;
+            Tools::convert(i,is);
+            plumed_merror(getName()+" with label "+getLabel()+": problem with derivative of the basis function given in FUNC"+is+", it gives "+vs);
+        }
     }
-  }
-  if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
+    if(!inside_range) {
+        for(unsigned int i=0; i<derivs.size(); i++) {
+            derivs[i]=0.0;
+        }
+    }
 }
 
 

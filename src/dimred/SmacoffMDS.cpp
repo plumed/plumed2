@@ -37,45 +37,46 @@ namespace dimred {
 
 class SmacofMDS : public DimensionalityReductionBase {
 private:
-  unsigned maxloops;
-  double tol;
+    unsigned maxloops;
+    double tol;
 public:
-  static void registerKeywords( Keywords& keys );
-  SmacofMDS( const ActionOptions& );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& );
+    static void registerKeywords( Keywords& keys );
+    SmacofMDS( const ActionOptions& );
+    void calculateProjections( const Matrix<double>&, Matrix<double>& );
 };
 
 PLUMED_REGISTER_ACTION(SmacofMDS,"SMACOF_MDS")
 
 void SmacofMDS::registerKeywords( Keywords& keys ) {
-  DimensionalityReductionBase::registerKeywords( keys );
-  keys.remove("NLOW_DIM");
-  keys.add("compulsory","SMACOF_TOL","1E-4","tolerance for the SMACOF optimization algorith");
-  keys.add("compulsory","SMACOF_MAXCYC","1000","maximum number of optimization cycles for SMACOF algorithm");
+    DimensionalityReductionBase::registerKeywords( keys );
+    keys.remove("NLOW_DIM");
+    keys.add("compulsory","SMACOF_TOL","1E-4","tolerance for the SMACOF optimization algorith");
+    keys.add("compulsory","SMACOF_MAXCYC","1000","maximum number of optimization cycles for SMACOF algorithm");
 }
 
 SmacofMDS::SmacofMDS( const ActionOptions& ao):
-  Action(ao),
-  DimensionalityReductionBase(ao)
+    Action(ao),
+    DimensionalityReductionBase(ao)
 {
-  if( !dimredbase ) error("SMACOF must be initialised using output from dimensionality reduction object");
+    if( !dimredbase ) error("SMACOF must be initialised using output from dimensionality reduction object");
 
-  parse("SMACOF_TOL",tol); parse("SMACOF_MAXCYC",maxloops);
-  log.printf("  running smacof to convergence at %f or for a maximum of %u steps \n",tol,maxloops);
+    parse("SMACOF_TOL",tol);
+    parse("SMACOF_MAXCYC",maxloops);
+    log.printf("  running smacof to convergence at %f or for a maximum of %u steps \n",tol,maxloops);
 }
 
 void SmacofMDS::calculateProjections( const Matrix<double>& targets, Matrix<double>& projections ) {
-  // Take the square root of all the distances and the weights
-  Matrix<double> weights( targets.nrows(), targets.ncols() );
-  Matrix<double> distances( targets.nrows(), targets.ncols() );
-  for(unsigned i=1; i<distances.ncols(); ++i) {
-    for(unsigned j=0; j<i; ++j) {
-      distances(i,j)=distances(j,i)=sqrt( targets(i,j) );
-      weights(i,j)=weights(j,i)=getWeight(i)*getWeight(j);
+    // Take the square root of all the distances and the weights
+    Matrix<double> weights( targets.nrows(), targets.ncols() );
+    Matrix<double> distances( targets.nrows(), targets.ncols() );
+    for(unsigned i=1; i<distances.ncols(); ++i) {
+        for(unsigned j=0; j<i; ++j) {
+            distances(i,j)=distances(j,i)=sqrt( targets(i,j) );
+            weights(i,j)=weights(j,i)=getWeight(i)*getWeight(j);
+        }
     }
-  }
-  // And run SMACOF
-  SMACOF::run( weights, targets, tol, maxloops, projections );
+    // And run SMACOF
+    SMACOF::run( weights, targets, tol, maxloops, projections );
 }
 
 }

@@ -31,17 +31,28 @@ namespace ves {
 
 class MarginalWeight:public WeightBase {
 public:
-  explicit MarginalWeight() {}
-  double projectInnerLoop(double &input, double &v) {return  input+v;}
-  double projectOuterLoop(double &v) {return v;}
+    explicit MarginalWeight() {}
+    double projectInnerLoop(double &input, double &v) {
+        return  input+v;
+    }
+    double projectOuterLoop(double &v) {
+        return v;
+    }
 };
 
 class FesWeight:public WeightBase {
 public:
-  double beta,invbeta;
-  explicit FesWeight(double v) {beta=v; invbeta=1./beta;}
-  double projectInnerLoop(double &input, double &v) {return  input+exp(-beta*v);}
-  double projectOuterLoop(double &v) {return -invbeta*std::log(v);}
+    double beta,invbeta;
+    explicit FesWeight(double v) {
+        beta=v;
+        invbeta=1./beta;
+    }
+    double projectInnerLoop(double &input, double &v) {
+        return  input+exp(-beta*v);
+    }
+    double projectOuterLoop(double &v) {
+        return -invbeta*std::log(v);
+    }
 };
 
 }

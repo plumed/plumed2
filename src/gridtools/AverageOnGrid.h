@@ -29,19 +29,23 @@ namespace gridtools {
 
 class AverageOnGrid : public HistogramOnGrid {
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit AverageOnGrid( const vesselbase::VesselOptions& da );
-  void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
-  void accumulateForce( const unsigned& ipoint, const double& weight, const std::vector<double>& der, std::vector<double>& intforce ) const { plumed_error(); }
-  double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
-  unsigned getNumberOfComponents() const ;
-  void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ) { plumed_error(); }
+    static void registerKeywords( Keywords& keys );
+    explicit AverageOnGrid( const vesselbase::VesselOptions& da );
+    void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
+    void accumulateForce( const unsigned& ipoint, const double& weight, const std::vector<double>& der, std::vector<double>& intforce ) const {
+        plumed_error();
+    }
+    double getGridElement( const unsigned& ipoint, const unsigned& jelement ) const ;
+    unsigned getNumberOfComponents() const ;
+    void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces ) {
+        plumed_error();
+    }
 };
 
 inline
 unsigned AverageOnGrid::getNumberOfComponents() const {
-  if( noderiv ) return nper - 1;
-  return nper / ( dimension + 1 ) - 1;
+    if( noderiv ) return nper - 1;
+    return nper / ( dimension + 1 ) - 1;
 }
 
 }

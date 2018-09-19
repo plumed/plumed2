@@ -124,296 +124,299 @@ PLUMED FILE=plumed.dat CHDIR=dir2
 //+ENDPLUMEDOC
 
 class Plumed:
-  public ActionAtomistic,
-  public ActionWithValue,
-  public ActionPilot
+    public ActionAtomistic,
+    public ActionWithValue,
+    public ActionPilot
 {
 /// True on root processor
-  const bool root;
+    const bool root;
 /// Separate directory.
-  const std::string directory;
+    const std::string directory;
 /// Interface to underlying plumed object.
-  PlumedHandle p;
+    PlumedHandle p;
 /// API number.
-  const int API;
+    const int API;
 /// Self communicator
-  Communicator comm_self;
+    Communicator comm_self;
 /// Intercommunicator
-  Communicator intercomm;
+    Communicator intercomm;
 /// Detect first usage.
-  bool first=true;
+    bool first=true;
 /// Stop flag, used to stop e.g. in committor analysis
-  int stop=0;
+    int stop=0;
 /// Index of requested atoms.
-  std::vector<int> index;
+    std::vector<int> index;
 /// Masses of requested atoms.
-  std::vector<double> masses;
+    std::vector<double> masses;
 /// Charges of requested atoms.
-  std::vector<double> charges;
+    std::vector<double> charges;
 /// Forces on requested atoms.
-  std::vector<double> forces;
+    std::vector<double> forces;
 /// Requested positions.
-  std::vector<double> positions;
+    std::vector<double> positions;
 /// Applied virial.
-  Tensor virial;
+    Tensor virial;
 public:
 /// Constructor.
-  explicit Plumed(const ActionOptions&);
+    explicit Plumed(const ActionOptions&);
 /// Documentation.
-  static void registerKeywords( Keywords& keys );
-  void prepare() override;
-  void calculate() override;
-  void apply() override;
-  void update() override;
-  unsigned getNumberOfDerivatives() override {
-    return 0;
-  }
+    static void registerKeywords( Keywords& keys );
+    void prepare() override;
+    void calculate() override;
+    void apply() override;
+    void update() override;
+    unsigned getNumberOfDerivatives() override {
+        return 0;
+    }
 };
 
 PLUMED_REGISTER_ACTION(Plumed,"PLUMED")
 
 void Plumed::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  keys.add("compulsory","STRIDE","1","stride different from 1 are not supported yet");
-  keys.add("optional","FILE","input file for the guest PLUMED instance");
-  keys.add("optional","KERNEL","kernel to be used for the guest PLUMED instance (USE WITH CAUTION!)");
-  keys.add("optional","LOG","logfile for the guest PLUMED instance. By default the host log is used");
-  keys.add("optional","CHDIR","run guest in a separate directory");
-  keys.addFlag("NOREPLICAS",false,"run multiple replicas as isolated ones, without letting them know that the host has multiple replicas");
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+    Action::registerKeywords( keys );
+    ActionPilot::registerKeywords( keys );
+    ActionAtomistic::registerKeywords( keys );
+    keys.add("compulsory","STRIDE","1","stride different from 1 are not supported yet");
+    keys.add("optional","FILE","input file for the guest PLUMED instance");
+    keys.add("optional","KERNEL","kernel to be used for the guest PLUMED instance (USE WITH CAUTION!)");
+    keys.add("optional","LOG","logfile for the guest PLUMED instance. By default the host log is used");
+    keys.add("optional","CHDIR","run guest in a separate directory");
+    keys.addFlag("NOREPLICAS",false,"run multiple replicas as isolated ones, without letting them know that the host has multiple replicas");
+    keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
 Plumed::Plumed(const ActionOptions&ao):
-  Action(ao),
-  ActionAtomistic(ao),
-  ActionWithValue(ao),
-  ActionPilot(ao),
-  root(comm.Get_rank()==0),
-  directory([&]() {
-  std::string directory;
-  parse("CHDIR",directory);
-  if(directory.length()>0) {
-    log<<"  running on separate directory "<<directory<<"\n";
-  }
-  return directory;
+    Action(ao),
+    ActionAtomistic(ao),
+    ActionWithValue(ao),
+    ActionPilot(ao),
+    root(comm.Get_rank()==0),
+    directory([&]() {
+    std::string directory;
+    parse("CHDIR",directory);
+    if(directory.length()>0) {
+        log<<"  running on separate directory "<<directory<<"\n";
+    }
+    return directory;
 }()),
 p([&]() {
-  std::string kernel;
-  parse("KERNEL",kernel);
-  if(kernel.length()==0) {
-    log<<"  using the current kernel\n";
-    return PlumedHandle();
-  } else {
-    log<<"  using the kernel "<<kernel<<"\n";
-    return PlumedHandle::DL(kernel.c_str());
-  }
+    std::string kernel;
+    parse("KERNEL",kernel);
+    if(kernel.length()==0) {
+        log<<"  using the current kernel\n";
+        return PlumedHandle();
+    } else {
+        log<<"  using the kernel "<<kernel<<"\n";
+        return PlumedHandle::DL(kernel.c_str());
+    }
 }()),
 API([&]() {
-  int api=0;
-  p.cmd("getApiVersion",&api);
-  log<<"  reported API version is "<<api<<"\n";
-  // note: this is required in order to have cmd performCalcNoUpdate and cmd update
-  // as a matter of fact, any version <2.5 will not even load due to namespace pollution
-  plumed_assert(api>3) << "API>3 is required for the PLUMED action to work correctly\n";
-  return api;
+    int api=0;
+    p.cmd("getApiVersion",&api);
+    log<<"  reported API version is "<<api<<"\n";
+    // note: this is required in order to have cmd performCalcNoUpdate and cmd update
+    // as a matter of fact, any version <2.5 will not even load due to namespace pollution
+    plumed_assert(api>3) << "API>3 is required for the PLUMED action to work correctly\n";
+    return api;
 }())
 {
-  Tools::DirectoryChanger directoryChanger(directory.c_str());
+    Tools::DirectoryChanger directoryChanger(directory.c_str());
 
-  bool noreplicas;
-  parseFlag("NOREPLICAS",noreplicas);
-  int nreps;
-  if(root) nreps=multi_sim_comm.Get_size();
-  comm.Bcast(nreps,0);
-  if(nreps>1) {
-    if(noreplicas) {
-      log<<"  running replicas as independent (no suffix used)\n";
+    bool noreplicas;
+    parseFlag("NOREPLICAS",noreplicas);
+    int nreps;
+    if(root) nreps=multi_sim_comm.Get_size();
+    comm.Bcast(nreps,0);
+    if(nreps>1) {
+        if(noreplicas) {
+            log<<"  running replicas as independent (no suffix used)\n";
+        } else {
+            log<<"  running replicas as standard multi replic (with suffix)\n";
+            if(root) {
+                intercomm.Set_comm(&multi_sim_comm.Get_comm());
+                p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
+                p.cmd("GREX setMPIIntracomm",&comm_self.Get_comm());
+                p.cmd("GREX init");
+            }
+        }
     } else {
-      log<<"  running replicas as standard multi replic (with suffix)\n";
-      if(root) {
-        intercomm.Set_comm(&multi_sim_comm.Get_comm());
-        p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
-        p.cmd("GREX setMPIIntracomm",&comm_self.Get_comm());
-        p.cmd("GREX init");
-      }
+        if(noreplicas) {
+            log<<"  WARNING: flag NOREPLICAS ignored since we are running without replicas\n";
+        }
     }
-  } else {
-    if(noreplicas) {
-      log<<"  WARNING: flag NOREPLICAS ignored since we are running without replicas\n";
+
+    int natoms=plumed.getAtoms().getNatoms();
+
+    plumed_assert(getStride()==1) << "currently only supports STRIDE=1";
+
+    double dt=getTimeStep();
+
+    std::string file;
+    parse("FILE",file);
+    if(file.length()>0) {
+        log<<"  with input file "<<file<<"\n";
+    } else plumed_error() << "you must provide an input file\n";
+
+    bool inherited_logfile=false;
+    std::string logfile;
+    parse("LOG",logfile);
+    if(logfile.length()>0) {
+        log<<"  with log file "<<logfile<<"\n";
+        if(root) p.cmd("setLogFile",logfile.c_str());
+    } else if(log.getFILE()) {
+        log<<"  with inherited log file\n";
+        if(root) p.cmd("setLog",log.getFILE());
+        inherited_logfile=true;
+    } else {
+        log<<"  with log on stdout\n";
+        if(root) p.cmd("setLog",stdout);
     }
-  }
 
-  int natoms=plumed.getAtoms().getNatoms();
+    checkRead();
 
-  plumed_assert(getStride()==1) << "currently only supports STRIDE=1";
+    if(root) p.cmd("setMDEngine","plumed");
 
-  double dt=getTimeStep();
+    double engunits=plumed.getAtoms().getUnits().getEnergy();
+    if(root) p.cmd("setMDEnergyUnits",&engunits);
 
-  std::string file;
-  parse("FILE",file);
-  if(file.length()>0) {
-    log<<"  with input file "<<file<<"\n";
-  } else plumed_error() << "you must provide an input file\n";
+    double lenunits=plumed.getAtoms().getUnits().getLength();
+    if(root) p.cmd("setMDLengthUnits",&lenunits);
 
-  bool inherited_logfile=false;
-  std::string logfile;
-  parse("LOG",logfile);
-  if(logfile.length()>0) {
-    log<<"  with log file "<<logfile<<"\n";
-    if(root) p.cmd("setLogFile",logfile.c_str());
-  } else if(log.getFILE()) {
-    log<<"  with inherited log file\n";
-    if(root) p.cmd("setLog",log.getFILE());
-    inherited_logfile=true;
-  } else {
-    log<<"  with log on stdout\n";
-    if(root) p.cmd("setLog",stdout);
-  }
+    double timunits=plumed.getAtoms().getUnits().getTime();
+    if(root) p.cmd("setMDTimeUnits",&timunits);
 
-  checkRead();
+    double chaunits=plumed.getAtoms().getUnits().getCharge();
+    if(root) p.cmd("setMDChargeUnits",&chaunits);
+    double masunits=plumed.getAtoms().getUnits().getMass();
+    if(root) p.cmd("setMDMassUnits",&masunits);
 
-  if(root) p.cmd("setMDEngine","plumed");
+    double kbt=plumed.getAtoms().getKbT();
+    if(root) p.cmd("setKbT",&kbt);
 
-  double engunits=plumed.getAtoms().getUnits().getEnergy();
-  if(root) p.cmd("setMDEnergyUnits",&engunits);
+    int res=0;
+    if(getRestart()) res=1;
+    if(root) p.cmd("setRestart",&res);
 
-  double lenunits=plumed.getAtoms().getUnits().getLength();
-  if(root) p.cmd("setMDLengthUnits",&lenunits);
+    if(root) p.cmd("setNatoms",&natoms);
+    if(root) p.cmd("setTimestep",&dt);
+    if(root) p.cmd("setPlumedDat",file.c_str());
 
-  double timunits=plumed.getAtoms().getUnits().getTime();
-  if(root) p.cmd("setMDTimeUnits",&timunits);
+    addComponentWithDerivatives("bias");
+    componentIsNotPeriodic("bias");
 
-  double chaunits=plumed.getAtoms().getUnits().getCharge();
-  if(root) p.cmd("setMDChargeUnits",&chaunits);
-  double masunits=plumed.getAtoms().getUnits().getMass();
-  if(root) p.cmd("setMDMassUnits",&masunits);
-
-  double kbt=plumed.getAtoms().getKbT();
-  if(root) p.cmd("setKbT",&kbt);
-
-  int res=0;
-  if(getRestart()) res=1;
-  if(root) p.cmd("setRestart",&res);
-
-  if(root) p.cmd("setNatoms",&natoms);
-  if(root) p.cmd("setTimestep",&dt);
-  if(root) p.cmd("setPlumedDat",file.c_str());
-
-  addComponentWithDerivatives("bias");
-  componentIsNotPeriodic("bias");
-
-  if(inherited_logfile) log<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
-  if(root) p.cmd("init");
-  if(inherited_logfile) log<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+    if(inherited_logfile) log<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+    if(root) p.cmd("init");
+    if(inherited_logfile) log<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
 }
 
 void Plumed::prepare() {
-  Tools::DirectoryChanger directoryChanger(directory.c_str());
-  int step=getStep();
-  if(root) p.cmd("setStep",&step);
-  if(root) p.cmd("prepareDependencies");
-  int ene=0;
-  if(root) p.cmd("isEnergyNeeded",&ene);
-  if(ene) plumed_error()<<"It is not currently possible to use ENERGY in a guest PLUMED";
-  int n=0;
-  if(root) p.cmd("createFullList",&n);
-  int *pointer=nullptr;
-  if(root) p.cmd("getFullList",&pointer);
-  bool redo=(index.size()!=n);
-  if(first) redo=true;
-  first=false;
-  if(!redo) for(int i=0; i<n; i++) if(index[i]!=pointer[i]) { redo=true; break;};
-  if(root && redo) {
-    index.resize(n);
-    masses.resize(n);
-    forces.resize(3*n);
-    positions.resize(3*n);
-    charges.resize(n);
-    for(int i=0; i<n; i++) {
-      index[i]=pointer[i];
-    };
-    p.cmd("setAtomsNlocal",&n);
-    p.cmd("setAtomsGatindex",index.data());
-  }
-  if(root) p.cmd("clearFullList");
-  int tmp=0;
-  if(root && redo) {
-    tmp=1;
-  }
-  comm.Bcast(tmp,0);
-  if(tmp) {
-    int s=index.size();
-    comm.Bcast(s,0);
-    if(!root) index.resize(s);
-    comm.Bcast(index,0);
-    std::vector<AtomNumber> numbers;
-    numbers.reserve(index.size());
-    for(auto i : index) numbers.emplace_back(AtomNumber::index(i));
-    requestAtoms(numbers);
-  }
+    Tools::DirectoryChanger directoryChanger(directory.c_str());
+    int step=getStep();
+    if(root) p.cmd("setStep",&step);
+    if(root) p.cmd("prepareDependencies");
+    int ene=0;
+    if(root) p.cmd("isEnergyNeeded",&ene);
+    if(ene) plumed_error()<<"It is not currently possible to use ENERGY in a guest PLUMED";
+    int n=0;
+    if(root) p.cmd("createFullList",&n);
+    int *pointer=nullptr;
+    if(root) p.cmd("getFullList",&pointer);
+    bool redo=(index.size()!=n);
+    if(first) redo=true;
+    first=false;
+    if(!redo) for(int i=0; i<n; i++) if(index[i]!=pointer[i]) {
+                redo=true;
+                break;
+            };
+    if(root && redo) {
+        index.resize(n);
+        masses.resize(n);
+        forces.resize(3*n);
+        positions.resize(3*n);
+        charges.resize(n);
+        for(int i=0; i<n; i++) {
+            index[i]=pointer[i];
+        };
+        p.cmd("setAtomsNlocal",&n);
+        p.cmd("setAtomsGatindex",index.data());
+    }
+    if(root) p.cmd("clearFullList");
+    int tmp=0;
+    if(root && redo) {
+        tmp=1;
+    }
+    comm.Bcast(tmp,0);
+    if(tmp) {
+        int s=index.size();
+        comm.Bcast(s,0);
+        if(!root) index.resize(s);
+        comm.Bcast(index,0);
+        std::vector<AtomNumber> numbers;
+        numbers.reserve(index.size());
+        for(auto i : index) numbers.emplace_back(AtomNumber::index(i));
+        requestAtoms(numbers);
+    }
 }
 
 void Plumed::calculate() {
-  Tools::DirectoryChanger directoryChanger(directory.c_str());
-  if(root) p.cmd("setStopFlag",&stop);
-  Tensor box=getPbc().getBox();
-  if(root) p.cmd("setBox",&box[0][0]);
+    Tools::DirectoryChanger directoryChanger(directory.c_str());
+    if(root) p.cmd("setStopFlag",&stop);
+    Tensor box=getPbc().getBox();
+    if(root) p.cmd("setBox",&box[0][0]);
 
-  virial.zero();
-  for(int i=0; i<forces.size(); i++) forces[i]=0.0;
-  for(int i=0; i<masses.size(); i++) masses[i]=getMass(i);
-  for(int i=0; i<charges.size(); i++) charges[i]=getCharge(i);
+    virial.zero();
+    for(int i=0; i<forces.size(); i++) forces[i]=0.0;
+    for(int i=0; i<masses.size(); i++) masses[i]=getMass(i);
+    for(int i=0; i<charges.size(); i++) charges[i]=getCharge(i);
 
-  if(root) p.cmd("setMasses",masses.data());
-  if(root) p.cmd("setCharges",charges.data());
-  if(root) p.cmd("setPositions",positions.data());
-  if(root) p.cmd("setForces",forces.data());
-  if(root) p.cmd("setVirial",&virial[0][0]);
+    if(root) p.cmd("setMasses",masses.data());
+    if(root) p.cmd("setCharges",charges.data());
+    if(root) p.cmd("setPositions",positions.data());
+    if(root) p.cmd("setForces",forces.data());
+    if(root) p.cmd("setVirial",&virial[0][0]);
 
 
-  if(root) for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-      positions[3*i+0]=getPosition(i)[0];
-      positions[3*i+1]=getPosition(i)[1];
-      positions[3*i+2]=getPosition(i)[2];
-    }
+    if(root) for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+            positions[3*i+0]=getPosition(i)[0];
+            positions[3*i+1]=getPosition(i)[1];
+            positions[3*i+2]=getPosition(i)[2];
+        }
 
-  if(root) p.cmd("shareData");
-  if(root) p.cmd("performCalcNoUpdate");
+    if(root) p.cmd("shareData");
+    if(root) p.cmd("performCalcNoUpdate");
 
-  int s=forces.size();
-  comm.Bcast(s,0);
-  if(!root) forces.resize(s);
-  comm.Bcast(forces,0);
-  comm.Bcast(virial,0);
+    int s=forces.size();
+    comm.Bcast(s,0);
+    if(!root) forces.resize(s);
+    comm.Bcast(forces,0);
+    comm.Bcast(virial,0);
 
-  double bias=0.0;
-  if(root) p.cmd("getBias",&bias);
-  comm.Bcast(bias,0);
-  getPntrToComponent("bias")->set(bias);
+    double bias=0.0;
+    if(root) p.cmd("getBias",&bias);
+    comm.Bcast(bias,0);
+    getPntrToComponent("bias")->set(bias);
 }
 
 void Plumed::apply() {
-  Tools::DirectoryChanger directoryChanger(directory.c_str());
-  auto & f(modifyForces());
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    f[i][0]+=forces[3*i+0];
-    f[i][1]+=forces[3*i+1];
-    f[i][2]+=forces[3*i+2];
-  }
-  auto & v(modifyVirial());
-  v+=virial;
+    Tools::DirectoryChanger directoryChanger(directory.c_str());
+    auto & f(modifyForces());
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+        f[i][0]+=forces[3*i+0];
+        f[i][1]+=forces[3*i+1];
+        f[i][2]+=forces[3*i+2];
+    }
+    auto & v(modifyVirial());
+    v+=virial;
 }
 
 void Plumed::update() {
-  Tools::DirectoryChanger directoryChanger(directory.c_str());
-  if(root) p.cmd("update");
-  comm.Bcast(stop,0);
-  if(stop) {
-    log<<"  Action " << getLabel()<<" asked to stop\n";
-    plumed.stop();
-  }
+    Tools::DirectoryChanger directoryChanger(directory.c_str());
+    if(root) p.cmd("update");
+    comm.Bcast(stop,0);
+    if(stop) {
+        log<<"  Action " << getLabel()<<" asked to stop\n";
+        plumed.stop();
+    }
 }
 
 }

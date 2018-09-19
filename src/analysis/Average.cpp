@@ -91,59 +91,68 @@ namespace analysis {
 
 class Average : public vesselbase::ActionWithAveraging {
 private:
-  AverageVessel* myaverage;
+    AverageVessel* myaverage;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit Average( const ActionOptions& );
-  void calculate() {}
-  void apply() {}
-  void performOperations( const bool& from_update );
-  void finishAveraging();
-  bool isPeriodic() { return false; }
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
-  void accumulateAverage( MultiValue& myvals ) const ;
+    static void registerKeywords( Keywords& keys );
+    explicit Average( const ActionOptions& );
+    void calculate() {}
+    void apply() {}
+    void performOperations( const bool& from_update );
+    void finishAveraging();
+    bool isPeriodic() {
+        return false;
+    }
+    void performTask( const unsigned&, const unsigned&, MultiValue& ) const {
+        plumed_error();
+    }
+    void accumulateAverage( MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")
 
 void Average::registerKeywords( Keywords& keys ) {
-  vesselbase::ActionWithAveraging::registerKeywords( keys ); keys.use("ARG");
-  keys.remove("SERIAL"); keys.remove("LOWMEM");
+    vesselbase::ActionWithAveraging::registerKeywords( keys );
+    keys.use("ARG");
+    keys.remove("SERIAL");
+    keys.remove("LOWMEM");
 }
 
 Average::Average( const ActionOptions& ao ):
-  Action(ao),
-  ActionWithAveraging(ao)
+    Action(ao),
+    ActionWithAveraging(ao)
 {
-  addValue(); // Create a value so that we can output the average
-  if( getNumberOfArguments()!=1 ) error("only one quantity can be averaged at a time");
-  std::string instring;
-  if( getPntrToArgument(0)->isPeriodic() ) {
-    std::string min, max; getPntrToArgument(0)->getDomain(min,max);
-    instring = "PERIODIC=" + min + "," + max; setPeriodic( min, max );
-  } else {
-    setNotPeriodic();
-  }
-  // Create a vessel to hold the average
-  vesselbase::VesselOptions da("myaverage","",-1,instring,this);
-  Keywords keys; AverageVessel::registerKeywords( keys );
-  vesselbase::VesselOptions dar( da, keys );
-  std::unique_ptr<AverageVessel> average( new AverageVessel(dar) );
-  myaverage = average.get();
-  setAveragingAction( std::move(average), false );
+    addValue(); // Create a value so that we can output the average
+    if( getNumberOfArguments()!=1 ) error("only one quantity can be averaged at a time");
+    std::string instring;
+    if( getPntrToArgument(0)->isPeriodic() ) {
+        std::string min, max;
+        getPntrToArgument(0)->getDomain(min,max);
+        instring = "PERIODIC=" + min + "," + max;
+        setPeriodic( min, max );
+    } else {
+        setNotPeriodic();
+    }
+    // Create a vessel to hold the average
+    vesselbase::VesselOptions da("myaverage","",-1,instring,this);
+    Keywords keys;
+    AverageVessel::registerKeywords( keys );
+    vesselbase::VesselOptions dar( da, keys );
+    std::unique_ptr<AverageVessel> average( new AverageVessel(dar) );
+    myaverage = average.get();
+    setAveragingAction( std::move(average), false );
 }
 
 void Average::performOperations( const bool& from_update ) {
-  myaverage->accumulate( cweight, getArgument(0) );
+    myaverage->accumulate( cweight, getArgument(0) );
 }
 
 void Average::accumulateAverage( MultiValue& myvals ) const {
-  plumed_dbg_assert( myvals.getNumberOfValues()==3 );
-  myaverage->accumulate( myvals.get(0), myvals.get(1) );
+    plumed_dbg_assert( myvals.getNumberOfValues()==3 );
+    myaverage->accumulate( myvals.get(0), myvals.get(1) );
 }
 
 void Average::finishAveraging() {
-  setValue( myaverage->getAverage() );
+    setValue( myaverage->getAverage() );
 }
 
 }

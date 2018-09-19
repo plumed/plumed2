@@ -31,31 +31,35 @@ namespace gridtools {
 class ContourFindingBase : public ActionWithInputGrid {
 private:
 /// This is the object that does the root finding
-  RootFindingBase<ContourFindingBase> mymin;
+    RootFindingBase<ContourFindingBase> mymin;
 protected:
 /// Where you would like to find the contour
-  double contour;
+    double contour;
 /// Find a contour along line specified by direction
-  void findContour( const std::vector<double>& direction, std::vector<double>& point ) const ;
+    void findContour( const std::vector<double>& direction, std::vector<double>& point ) const ;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit ContourFindingBase(const ActionOptions&ao);
+    static void registerKeywords( Keywords& keys );
+    explicit ContourFindingBase(const ActionOptions&ao);
 /// Get the contour value
-  double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const ;
+    double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const ;
 /// Overwrite not needed stuff
-  unsigned getNumberOfDerivatives() { return 0; }
+    unsigned getNumberOfDerivatives() {
+        return 0;
+    }
 /// This is not periodic
-  bool isPeriodic() { return false; }
+    bool isPeriodic() {
+        return false;
+    }
 };
 
 inline
 void ContourFindingBase::findContour( const std::vector<double>& direction, std::vector<double>& point ) const {
-  mymin.linesearch( direction, point, &ContourFindingBase::getDifferenceFromContour );
+    mymin.linesearch( direction, point, &ContourFindingBase::getDifferenceFromContour );
 }
 
 inline
 double ContourFindingBase::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const {
-  return getFunctionValueAndDerivatives( x, der ) - contour;
+    return getFunctionValueAndDerivatives( x, der ) - contour;
 }
 
 }

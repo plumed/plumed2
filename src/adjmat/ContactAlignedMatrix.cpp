@@ -72,48 +72,55 @@ namespace adjmat {
 
 class ContactAlignedMatrix : public AlignedMatrixBase {
 private:
-  Matrix<SwitchingFunction> sf;
+    Matrix<SwitchingFunction> sf;
 public:
-  ///
-  static void registerKeywords( Keywords& keys );
-  ///
-  explicit ContactAlignedMatrix(const ActionOptions&);
-  void readOrientationConnector( const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
-  double computeVectorFunction( const unsigned& iv, const unsigned& jv,
-                                const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
-                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const ;
+    ///
+    static void registerKeywords( Keywords& keys );
+    ///
+    explicit ContactAlignedMatrix(const ActionOptions&);
+    void readOrientationConnector( const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
+    double computeVectorFunction( const unsigned& iv, const unsigned& jv,
+                                  const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
+                                  Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const ;
 };
 
 PLUMED_REGISTER_ACTION(ContactAlignedMatrix,"ALIGNED_MATRIX")
 
 void ContactAlignedMatrix::registerKeywords( Keywords& keys ) {
-  AlignedMatrixBase::registerKeywords( keys );
-  keys.add("numbered","ORIENTATION_SWITCH","A switching function that transforms the dot product of the input vectors.");
+    AlignedMatrixBase::registerKeywords( keys );
+    keys.add("numbered","ORIENTATION_SWITCH","A switching function that transforms the dot product of the input vectors.");
 }
 
 ContactAlignedMatrix::ContactAlignedMatrix( const ActionOptions& ao ):
-  Action(ao),
-  AlignedMatrixBase(ao)
+    Action(ao),
+    AlignedMatrixBase(ao)
 {
-  unsigned nrows, ncols, ig; retrieveTypeDimensions( nrows, ncols, ig );
-  sf.resize( nrows, ncols );
-  parseConnectionDescriptions("ORIENTATION_SWITCH",false,0);
+    unsigned nrows, ncols, ig;
+    retrieveTypeDimensions( nrows, ncols, ig );
+    sf.resize( nrows, ncols );
+    parseConnectionDescriptions("ORIENTATION_SWITCH",false,0);
 }
 
 void ContactAlignedMatrix::readOrientationConnector( const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) {
-  plumed_assert( desc.size()==1 ); std::string errors; sf(j,i).set(desc[0],errors);
-  if( j!=i ) sf(i,j).set(desc[0],errors);
-  log.printf("  vectors in %u th and %u th groups must have a dot product that is greater than %s \n",i+1,j+1,(sf(i,j).description()).c_str() );
+    plumed_assert( desc.size()==1 );
+    std::string errors;
+    sf(j,i).set(desc[0],errors);
+    if( j!=i ) sf(i,j).set(desc[0],errors);
+    log.printf("  vectors in %u th and %u th groups must have a dot product that is greater than %s \n",i+1,j+1,(sf(i,j).description()).c_str() );
 }
 
 double ContactAlignedMatrix::computeVectorFunction( const unsigned& iv, const unsigned& jv,
-    const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
-    Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const {
-  double dot_df, dot=0; dconn.zero();
-  for(unsigned k=2; k<vec1.size(); ++k) dot+=vec1[k]*vec2[k];
-  double f_dot = sf(iv,jv).calculate( dot, dot_df );
-  for(unsigned k=2; k<vec1.size(); ++k) { dvec1[k]=dot_df*vec2[k]; dvec2[k]=dot_df*vec1[k]; }
-  return f_dot;
+        const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
+        Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const {
+    double dot_df, dot=0;
+    dconn.zero();
+    for(unsigned k=2; k<vec1.size(); ++k) dot+=vec1[k]*vec2[k];
+    double f_dot = sf(iv,jv).calculate( dot, dot_df );
+    for(unsigned k=2; k<vec1.size(); ++k) {
+        dvec1[k]=dot_df*vec2[k];
+        dvec2[k]=dot_df*vec1[k];
+    }
+    return f_dot;
 }
 
 }

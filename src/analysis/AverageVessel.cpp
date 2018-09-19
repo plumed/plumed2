@@ -25,38 +25,39 @@ namespace PLMD {
 namespace analysis {
 
 void AverageVessel::registerKeywords( Keywords& keys ) {
-  vesselbase::AveragingVessel::registerKeywords( keys );
-  keys.add("optional","PERIODIC","is the quantity being averaged periodic and what is its domain");
+    vesselbase::AveragingVessel::registerKeywords( keys );
+    keys.add("optional","PERIODIC","is the quantity being averaged periodic and what is its domain");
 }
 
 AverageVessel::AverageVessel( const vesselbase::VesselOptions& da):
-  AveragingVessel(da)
+    AveragingVessel(da)
 {
-  parseVector("PERIODIC",domain);
-  plumed_assert( domain.size()==2 || domain.size()==0 );
+    parseVector("PERIODIC",domain);
+    plumed_assert( domain.size()==2 || domain.size()==0 );
 }
 
 void AverageVessel::resize() {
-  resizeBuffer(0);
-  if( domain.size()==2 ) setDataSize(2);
-  else setDataSize(1);
+    resizeBuffer(0);
+    if( domain.size()==2 ) setDataSize(2);
+    else setDataSize(1);
 }
 
 void AverageVessel::accumulate( const double& weight, const double& val ) {
-  if( domain.size()==2 ) {
-    // Average with Berry Phase
-    double tval = 2*pi*( val - domain[0] ) / ( domain[1] - domain[0] );
-    addDataElement( 0, weight*sin(tval) ); addDataElement( 1, weight*cos(tval) );
-  } else addDataElement( 0, weight*val );
+    if( domain.size()==2 ) {
+        // Average with Berry Phase
+        double tval = 2*pi*( val - domain[0] ) / ( domain[1] - domain[0] );
+        addDataElement( 0, weight*sin(tval) );
+        addDataElement( 1, weight*cos(tval) );
+    } else addDataElement( 0, weight*val );
 }
 
 double AverageVessel::getAverage() const {
-  if( domain.size()==2 ) return domain[0] + (( domain[1] - domain[0] )*atan2( getDataElement(0), getDataElement(1) ) / (2*pi));
-  return getDataElement(0);
+    if( domain.size()==2 ) return domain[0] + (( domain[1] - domain[0] )*atan2( getDataElement(0), getDataElement(1) ) / (2*pi));
+    return getDataElement(0);
 }
 
 void AverageVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
-  plumed_error();
+    plumed_error();
 }
 
 }

@@ -26,69 +26,70 @@ namespace PLMD {
 namespace manyrestraints {
 
 void ManyRestraintsBase::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
-  ActionWithVessel::registerKeywords( keys );
-  ActionWithInputVessel::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys );
-  keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
-  keys.remove("TOL");
-  keys.addOutputComponent("bias","default","the instantaneous value of the bias potentials");
+    Action::registerKeywords( keys );
+    ActionWithValue::registerKeywords( keys );
+    ActionWithVessel::registerKeywords( keys );
+    ActionWithInputVessel::registerKeywords( keys );
+    ActionPilot::registerKeywords( keys );
+    keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
+    keys.remove("TOL");
+    keys.addOutputComponent("bias","default","the instantaneous value of the bias potentials");
 }
 
 ManyRestraintsBase::ManyRestraintsBase(const ActionOptions& ao):
-  Action(ao),
-  ActionWithValue(ao),
-  ActionPilot(ao),
-  ActionWithVessel(ao),
-  ActionWithInputVessel(ao)
+    Action(ao),
+    ActionWithValue(ao),
+    ActionPilot(ao),
+    ActionWithVessel(ao),
+    ActionWithInputVessel(ao)
 {
-  // Read in the vessel we are action on
-  readArgument("bridge");
-  aves=dynamic_cast<ActionWithVessel*>( getDependencies()[0] );
+    // Read in the vessel we are action on
+    readArgument("bridge");
+    aves=dynamic_cast<ActionWithVessel*>( getDependencies()[0] );
 
-  plumed_assert( getDependencies().size()==1 && aves );
-  log.printf("  adding restraints on variables calculated by %s action with label %s\n",
-             aves->getName().c_str(),aves->getLabel().c_str());
+    plumed_assert( getDependencies().size()==1 && aves );
+    log.printf("  adding restraints on variables calculated by %s action with label %s\n",
+               aves->getName().c_str(),aves->getLabel().c_str());
 
-  // Add a task list in order to avoid problems
-  for(unsigned i=0; i<aves->getFullNumberOfTasks(); ++i) addTaskToList( aves->getTaskCode(i) );
-  // And turn on the derivatives (note problems here because of ActionWithValue)
-  turnOnDerivatives(); needsDerivatives();
+    // Add a task list in order to avoid problems
+    for(unsigned i=0; i<aves->getFullNumberOfTasks(); ++i) addTaskToList( aves->getTaskCode(i) );
+    // And turn on the derivatives (note problems here because of ActionWithValue)
+    turnOnDerivatives();
+    needsDerivatives();
 
-  // Now create the vessel
-  std::string fake_input="LABEL=bias";
-  addVessel( "SUM", fake_input, 0 );
-  readVesselKeywords();
+    // Now create the vessel
+    std::string fake_input="LABEL=bias";
+    addVessel( "SUM", fake_input, 0 );
+    readVesselKeywords();
 }
 
 void ManyRestraintsBase::doJobsRequiredBeforeTaskList() {
-  ActionWithVessel::doJobsRequiredBeforeTaskList();
-  ActionWithValue::clearDerivatives();
+    ActionWithVessel::doJobsRequiredBeforeTaskList();
+    ActionWithValue::clearDerivatives();
 }
 
 void ManyRestraintsBase::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const {
-  outvals.setValue( 0, invals.get(0) );
+    outvals.setValue( 0, invals.get(0) );
 
-  // Get the potential
-  double dval=0, val=calcPotential( invals.get(1), dval );
+    // Get the potential
+    double dval=0, val=calcPotential( invals.get(1), dval );
 
-  outvals.setValue( 1, val );
-  for(unsigned i=0; i<invals.getNumberActive(); ++i) {
-    unsigned jder=invals.getActiveIndex(i);
-    outvals.addDerivative( 1, jder, dval*invals.getDerivative( 1, jder ) );
-  }
+    outvals.setValue( 1, val );
+    for(unsigned i=0; i<invals.getNumberActive(); ++i) {
+        unsigned jder=invals.getActiveIndex(i);
+        outvals.addDerivative( 1, jder, dval*invals.getDerivative( 1, jder ) );
+    }
 
-  // Now update the outvals derivatives lists
-  outvals.emptyActiveMembers();
-  for(unsigned j=0; j<invals.getNumberActive(); ++j) outvals.updateIndex( invals.getActiveIndex(j) );
-  outvals.completeUpdate();
-  return;
+    // Now update the outvals derivatives lists
+    outvals.emptyActiveMembers();
+    for(unsigned j=0; j<invals.getNumberActive(); ++j) outvals.updateIndex( invals.getActiveIndex(j) );
+    outvals.completeUpdate();
+    return;
 }
 
 void ManyRestraintsBase::apply() {
-  plumed_dbg_assert( getNumberOfComponents()==1 );
-  getPntrToComponent(0)->addForce( -1.0*getStride() );
+    plumed_dbg_assert( getNumberOfComponents()==1 );
+    getPntrToComponent(0)->addForce( -1.0*getStride() );
 }
 
 }

@@ -76,9 +76,9 @@ OPT_DUMMY ...
 class Opt_Dummy : public Optimizer {
 
 public:
-  static void registerKeywords(Keywords&);
-  explicit Opt_Dummy(const ActionOptions&);
-  void coeffsUpdate(const unsigned int c_id = 0);
+    static void registerKeywords(Keywords&);
+    explicit Opt_Dummy(const ActionOptions&);
+    void coeffsUpdate(const unsigned int c_id = 0);
 };
 
 
@@ -86,31 +86,31 @@ PLUMED_REGISTER_ACTION(Opt_Dummy,"OPT_DUMMY")
 
 
 void Opt_Dummy::registerKeywords(Keywords& keys) {
-  Optimizer::registerKeywords(keys);
-  //
-  Optimizer::useMultipleWalkersKeywords(keys);
-  Optimizer::useHessianKeywords(keys);
-  Optimizer::useMonitorAverageGradientKeywords(keys);
-  keys.addFlag("MONITOR_HESSIAN",false,"also monitor the Hessian");
+    Optimizer::registerKeywords(keys);
+    //
+    Optimizer::useMultipleWalkersKeywords(keys);
+    Optimizer::useHessianKeywords(keys);
+    Optimizer::useMonitorAverageGradientKeywords(keys);
+    keys.addFlag("MONITOR_HESSIAN",false,"also monitor the Hessian");
 }
 
 
 Opt_Dummy::Opt_Dummy(const ActionOptions&ao):
-  PLUMED_VES_OPTIMIZER_INIT(ao)
+    PLUMED_VES_OPTIMIZER_INIT(ao)
 {
-  log.printf("  fake optimizer that does not update coefficients\n");
-  log.printf("  can be used to monitor gradient and Hessian for debugging purposes\n");
-  bool monitor_hessian = false;
-  parseFlag("MONITOR_HESSIAN",monitor_hessian);
-  if(monitor_hessian) {
-    turnOnHessian();
-    log.printf("  the Hessian will also be monitored\n");
-  }
-  else {
-    turnOffHessian();
-  }
-  turnOffCoeffsOutputFiles();
-  checkRead();
+    log.printf("  fake optimizer that does not update coefficients\n");
+    log.printf("  can be used to monitor gradient and Hessian for debugging purposes\n");
+    bool monitor_hessian = false;
+    parseFlag("MONITOR_HESSIAN",monitor_hessian);
+    if(monitor_hessian) {
+        turnOnHessian();
+        log.printf("  the Hessian will also be monitored\n");
+    }
+    else {
+        turnOffHessian();
+    }
+    turnOffCoeffsOutputFiles();
+    checkRead();
 }
 
 

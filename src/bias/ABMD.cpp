@@ -82,104 +82,111 @@ PRINT ARG=abmd.bias,abmd.d1_min,abmd.d2_min
 //+ENDPLUMEDOC
 
 class ABMD : public Bias {
-  std::vector<double> to;
-  std::vector<double> min;
-  std::vector<double> kappa;
-  std::vector<double> temp;
-  std::vector<int> seed;
-  vector<Random> random;
+    std::vector<double> to;
+    std::vector<double> min;
+    std::vector<double> kappa;
+    std::vector<double> temp;
+    std::vector<int> seed;
+    vector<Random> random;
 public:
-  explicit ABMD(const ActionOptions&);
-  void calculate();
-  static void registerKeywords(Keywords& keys);
+    explicit ABMD(const ActionOptions&);
+    void calculate();
+    static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(ABMD,"ABMD")
 
 void ABMD::registerKeywords(Keywords& keys) {
-  Bias::registerKeywords(keys);
-  keys.use("ARG");
-  keys.add("compulsory","TO","The array of target values");
-  keys.add("compulsory","KAPPA","The array of force constants.");
-  keys.add("optional","MIN","Array of starting values for the bias (set rho_m(t), otherwise it is set using the current value of ARG)");
-  keys.add("optional","NOISE","Array of white noise intensities (add a temperature to the ABMD)");
-  keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the ABMD)");
-  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
-  keys.addOutputComponent("_min","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
-                          " These quantities will be named with the arguments of the bias followed by "
-                          "the character string _min. These quantities tell the user the minimum value assumed by rho_m(t).");
+    Bias::registerKeywords(keys);
+    keys.use("ARG");
+    keys.add("compulsory","TO","The array of target values");
+    keys.add("compulsory","KAPPA","The array of force constants.");
+    keys.add("optional","MIN","Array of starting values for the bias (set rho_m(t), otherwise it is set using the current value of ARG)");
+    keys.add("optional","NOISE","Array of white noise intensities (add a temperature to the ABMD)");
+    keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the ABMD)");
+    keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+    keys.addOutputComponent("_min","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+                            " These quantities will be named with the arguments of the bias followed by "
+                            "the character string _min. These quantities tell the user the minimum value assumed by rho_m(t).");
 }
 
 ABMD::ABMD(const ActionOptions&ao):
-  PLUMED_BIAS_INIT(ao),
-  to(getNumberOfArguments(),0.0),
-  min(getNumberOfArguments(),-1.0),
-  kappa(getNumberOfArguments(),0.0),
-  temp(getNumberOfArguments(),0.0),
-  seed(getNumberOfArguments(),time(0)),
-  random(getNumberOfArguments())
+    PLUMED_BIAS_INIT(ao),
+    to(getNumberOfArguments(),0.0),
+    min(getNumberOfArguments(),-1.0),
+    kappa(getNumberOfArguments(),0.0),
+    temp(getNumberOfArguments(),0.0),
+    seed(getNumberOfArguments(),time(0)),
+    random(getNumberOfArguments())
 {
-  // Note : parseVector will check that number of arguments is correct
-  parseVector("KAPPA",kappa);
-  parseVector("MIN",min);
-  if(min.size()==0) min.assign(getNumberOfArguments(),-1.0);
-  if(min.size()!=getNumberOfArguments()) error("MIN array should have the same size as ARG array");
-  parseVector("NOISE",temp);
-  parseVector("SEED",seed);
-  parseVector("TO",to);
-  checkRead();
+    // Note : parseVector will check that number of arguments is correct
+    parseVector("KAPPA",kappa);
+    parseVector("MIN",min);
+    if(min.size()==0) min.assign(getNumberOfArguments(),-1.0);
+    if(min.size()!=getNumberOfArguments()) error("MIN array should have the same size as ARG array");
+    parseVector("NOISE",temp);
+    parseVector("SEED",seed);
+    parseVector("TO",to);
+    checkRead();
 
-  log.printf("  min");
-  for(unsigned i=0; i<min.size(); i++) log.printf(" %f",min[i]);
-  log.printf("\n");
-  log.printf("  to");
-  for(unsigned i=0; i<to.size(); i++) log.printf(" %f",to[i]);
-  log.printf("\n");
-  log.printf("  with force constant");
-  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
-  log.printf("\n");
+    log.printf("  min");
+    for(unsigned i=0; i<min.size(); i++) log.printf(" %f",min[i]);
+    log.printf("\n");
+    log.printf("  to");
+    for(unsigned i=0; i<to.size(); i++) log.printf(" %f",to[i]);
+    log.printf("\n");
+    log.printf("  with force constant");
+    for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
+    log.printf("\n");
 
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    std::string str_min=getPntrToArgument(i)->getName()+"_min";
-    addComponent(str_min); componentIsNotPeriodic(str_min);
-    if(min[i]!=-1.0) getPntrToComponent(str_min)->set(min[i]);
-  }
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {random[i].setSeed(-seed[i]);}
-  addComponent("force2"); componentIsNotPeriodic("force2");
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+        std::string str_min=getPntrToArgument(i)->getName()+"_min";
+        addComponent(str_min);
+        componentIsNotPeriodic(str_min);
+        if(min[i]!=-1.0) getPntrToComponent(str_min)->set(min[i]);
+    }
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+        random[i].setSeed(-seed[i]);
+    }
+    addComponent("force2");
+    componentIsNotPeriodic("force2");
 }
 
 
 void ABMD::calculate() {
-  double ene=0.0;
-  double totf2=0.0;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    const double cv=difference(i,to[i],getArgument(i));
-    const double cv2=cv*cv;
-    const double k=kappa[i];
-    double noise=0.;
-    double diff=temp[i];
-    if(diff>0) {
-      noise = 2.*random[i].Gaussian()*diff;
-      if(cv2<=diff) { diff=0.; temp[i]=0.; }
-    }
+    double ene=0.0;
+    double totf2=0.0;
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        const double cv=difference(i,to[i],getArgument(i));
+        const double cv2=cv*cv;
+        const double k=kappa[i];
+        double noise=0.;
+        double diff=temp[i];
+        if(diff>0) {
+            noise = 2.*random[i].Gaussian()*diff;
+            if(cv2<=diff) {
+                diff=0.;
+                temp[i]=0.;
+            }
+        }
 
-    // min < 0 means that the variable has not been used in the input file, so the current position of the CV is used
-    // cv2 < min means that the collective variable is nearer to the target value than at any other previous time so
-    // min is set to the CV value
-    if(min[i]<0.||cv2<min[i]) {
-      min[i] = cv2;
-    } else {
-      // otherwise a noise is added to the minimum value
-      min[i] += noise;
-      const double f = -2.*k*(cv2-min[i])*cv;
-      setOutputForce(i,f);
-      ene += 0.5*k*(cv2-min[i])*(cv2-min[i]);
-      totf2+=f*f;
+        // min < 0 means that the variable has not been used in the input file, so the current position of the CV is used
+        // cv2 < min means that the collective variable is nearer to the target value than at any other previous time so
+        // min is set to the CV value
+        if(min[i]<0.||cv2<min[i]) {
+            min[i] = cv2;
+        } else {
+            // otherwise a noise is added to the minimum value
+            min[i] += noise;
+            const double f = -2.*k*(cv2-min[i])*cv;
+            setOutputForce(i,f);
+            ene += 0.5*k*(cv2-min[i])*(cv2-min[i]);
+            totf2+=f*f;
+        }
+        getPntrToComponent(i+1)->set(min[i]);
     }
-    getPntrToComponent(i+1)->set(min[i]);
-  }
-  setBias(ene);
-  getPntrToComponent("force2")->set(totf2);
+    setBias(ene);
+    getPntrToComponent("force2")->set(totf2);
 }
 
 }

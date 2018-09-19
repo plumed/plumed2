@@ -32,27 +32,27 @@ namespace PLMD {
 namespace mapping {
 
 class TrigonometricPathVessel : public vesselbase::StoreDataVessel {
-  friend class AdaptivePath;
+    friend class AdaptivePath;
 private:
-  Value* sp;
-  Value* zp;
-  Mapping* mymap;
-  double dx;
-  std::vector<double> cargs;
-  unsigned iclose1, iclose2;
-  Direction projdir;
-  std::vector<double> mypack1_stashd_args;
-  std::vector<Vector> mypack1_stashd_atoms;
-  MultiValue mydpack1, mydpack2, mydpack3;
-  ReferenceValuePack mypack1, mypack2, mypack3;
+    Value* sp;
+    Value* zp;
+    Mapping* mymap;
+    double dx;
+    std::vector<double> cargs;
+    unsigned iclose1, iclose2;
+    Direction projdir;
+    std::vector<double> mypack1_stashd_args;
+    std::vector<Vector> mypack1_stashd_atoms;
+    MultiValue mydpack1, mydpack2, mydpack3;
+    ReferenceValuePack mypack1, mypack2, mypack3;
 public:
-  static void registerKeywords( Keywords& keys );
-  static void reserveKeyword( Keywords& keys );
-  explicit TrigonometricPathVessel( const vesselbase::VesselOptions& da );
-  std::string description();
-  void resize();
-  void finish( const std::vector<double>& buffer );
-  bool applyForce(std::vector<double>&);
+    static void registerKeywords( Keywords& keys );
+    static void reserveKeyword( Keywords& keys );
+    explicit TrigonometricPathVessel( const vesselbase::VesselOptions& da );
+    std::string description();
+    void resize();
+    void finish( const std::vector<double>& buffer );
+    bool applyForce(std::vector<double>&);
 };
 
 }

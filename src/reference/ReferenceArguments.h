@@ -41,78 +41,78 @@ namespace PLMD {
 /// \ref PLMD::ActionAtomistic respectively but for distances.
 
 class ReferenceArguments :
-  virtual public ReferenceConfiguration
+    virtual public ReferenceConfiguration
 {
-  friend class Direction;
-  friend class ReferenceConfiguration;
+    friend class Direction;
+    friend class ReferenceConfiguration;
 private:
 /// The weights for normed euclidean distance
-  std::vector<double> weights, sqrtweight;
+    std::vector<double> weights, sqrtweight;
 /// The N X N matrix we are using to calculate our Malanobius distance
-  Matrix<double> metric;
-  std::vector<double> trig_metric;
+    Matrix<double> metric;
+    std::vector<double> trig_metric;
 /// The values of the colvars in the reference configuration
-  std::vector<double> reference_args;
+    std::vector<double> reference_args;
 /// The names of the arguments
-  std::vector<std::string> arg_names;
+    std::vector<std::string> arg_names;
 /// The indices for setting derivatives
-  std::vector<unsigned> arg_der_index;
+    std::vector<unsigned> arg_der_index;
 protected:
 /// Are we reading weights from input
-  bool hasweights;
+    bool hasweights;
 /// Are we calculating a Malanobius distance
-  bool hasmetric;
+    bool hasmetric;
 /// Read in the atoms from the pdb file
-  void readArgumentsFromPDB( const PDB& pdb );
+    void readArgumentsFromPDB( const PDB& pdb );
 /// Set the values of the colvars based on their current instantanous values (used in Analysis)
-  void setReferenceArguments();
+    void setReferenceArguments();
 public:
-  explicit ReferenceArguments( const ReferenceConfigurationOptions& ro );
+    explicit ReferenceArguments( const ReferenceConfigurationOptions& ro );
 /// Get the number of reference arguments
-  unsigned getNumberOfReferenceArguments() const ;
+    unsigned getNumberOfReferenceArguments() const ;
 /// Get the arguments required
-  void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false );
+    void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false );
 /// Set the positions of the refernce arguments
-  void setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma );
+    void setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma );
 /// Set the positions of the reference arguments
-  void moveReferenceArguments( const std::vector<double>& arg_vals );
+    void moveReferenceArguments( const std::vector<double>& arg_vals );
 /// Get the value of the ith reference argument
-  double getReferenceArgument( const unsigned& i ) const ;
+    double getReferenceArgument( const unsigned& i ) const ;
 /// Return all the reference arguments
-  const std::vector<double>& getReferenceArguments() const ;
-  const std::vector<double>& getReferenceMetric();
+    const std::vector<double>& getReferenceArguments() const ;
+    const std::vector<double>& getReferenceMetric();
 /// Return names
-  const std::vector<std::string>& getArgumentNames();
+    const std::vector<std::string>& getArgumentNames();
 /// Calculate the euclidean/malanobius distance the atoms have moved from the reference
 /// configuration in CV space
-  virtual double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
+    virtual double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
 /// Displace the positions of the reference atoms
-  void displaceReferenceArguments( const double& weight, const std::vector<double>& displace );
+    void displaceReferenceArguments( const double& weight, const std::vector<double>& displace );
 /// Extract the displacement from a position in a space
-  virtual void extractArgumentDisplacement( const std::vector<Value*>& vals, const std::vector<double>& arg, std::vector<double>& dirout ) const ;
+    virtual void extractArgumentDisplacement( const std::vector<Value*>& vals, const std::vector<double>& arg, std::vector<double>& dirout ) const ;
 /// Project the displacement of the arguments on a vector
-  double projectArgDisplacementOnVector( const std::vector<double>& eigv, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
+    double projectArgDisplacementOnVector( const std::vector<double>& eigv, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& mypack ) const ;
 };
 
 inline
 double ReferenceArguments::getReferenceArgument( const unsigned& i ) const {
-  plumed_dbg_assert( i<reference_args.size() );
-  return reference_args[i];
+    plumed_dbg_assert( i<reference_args.size() );
+    return reference_args[i];
 }
 
 inline
 const std::vector<double>& ReferenceArguments::getReferenceArguments() const {
-  return reference_args;
+    return reference_args;
 }
 
 inline
 const std::vector<std::string>& ReferenceArguments::getArgumentNames() {
-  return arg_names;
+    return arg_names;
 }
 
 inline
 unsigned ReferenceArguments::getNumberOfReferenceArguments() const {
-  return reference_args.size();
+    return reference_args.size();
 }
 
 }

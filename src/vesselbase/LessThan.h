@@ -31,14 +31,14 @@ namespace vesselbase {
 
 class LessThan : public FunctionVessel {
 private:
-  SwitchingFunction sf;
+    SwitchingFunction sf;
 public:
-  static void registerKeywords( Keywords& keys );
-  static void reserveKeyword( Keywords& keys );
-  explicit LessThan( const VesselOptions& da );
-  std::string value_descriptor();
-  double calcTransform( const double& val, double& dv ) const ;
-  double getCutoff();
+    static void registerKeywords( Keywords& keys );
+    static void reserveKeyword( Keywords& keys );
+    explicit LessThan( const VesselOptions& da );
+    std::string value_descriptor();
+    double calcTransform( const double& val, double& dv ) const ;
+    double getCutoff();
 };
 
 }

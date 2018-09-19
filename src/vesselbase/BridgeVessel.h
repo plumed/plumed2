@@ -40,48 +40,48 @@ it is created in a different Action however.  At the moment this is used for reg
 
 class BridgeVessel : public Vessel {
 private:
-  unsigned inum;
-  // bool in_normal_calculate;
-  std::vector<double> mynumerical_values;
-  ActionWithVessel* myOutputAction;
-  ActionWithValue* myOutputValues;
-  // We create a tempory multivalue here so as to avoid vector resizing
-  MultiValue my_tmp_val;
+    unsigned inum;
+    // bool in_normal_calculate;
+    std::vector<double> mynumerical_values;
+    ActionWithVessel* myOutputAction;
+    ActionWithValue* myOutputValues;
+    // We create a tempory multivalue here so as to avoid vector resizing
+    MultiValue my_tmp_val;
 public:
-  explicit BridgeVessel( const VesselOptions& );
+    explicit BridgeVessel( const VesselOptions& );
 /// Does this have derivatives
-  bool hasDerivatives();
+    bool hasDerivatives();
 /// Resize the quantities in the vessel
-  void resize();
+    void resize();
 /// Get the action that reads the command in
-  ActionWithVessel* getOutputAction();
+    ActionWithVessel* getOutputAction();
 /// Setup the action we are outputting to
-  void setOutputAction( ActionWithVessel* myOutputAction );
+    void setOutputAction( ActionWithVessel* myOutputAction );
 /// Apply some force
-  bool applyForce( std::vector<double>& forces );
+    bool applyForce( std::vector<double>& forces );
 /// Should not be called
-  std::string description();
+    std::string description();
 /// Jobs to do before the task list starts
-  void prepare();
+    void prepare();
 /// Set the start of the buffer
-  void setBufferStart( unsigned& start );
+    void setBufferStart( unsigned& start );
 /// This transforms the derivatives using the output value
-  MultiValue& transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals );
+    MultiValue& transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals );
 /// Actually do the calculation
-  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
+    void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 /// Finish the calculation
-  void finish( const std::vector<double>& buffer );
+    void finish( const std::vector<double>& buffer );
 /// Calculate numerical derivatives
-  void completeNumericalDerivatives();
+    void completeNumericalDerivatives();
 /// Set the task flags in the bridged class the same as in the original class
-  void copyTaskFlags();
+    void copyTaskFlags();
 /// Return a tempory multi value - we do this so as to avoid vector resizing
-  MultiValue& getTemporyMultiValue();
+    MultiValue& getTemporyMultiValue();
 };
 
 inline
 ActionWithVessel* BridgeVessel::getOutputAction() {
-  return myOutputAction;
+    return myOutputAction;
 }
 
 }

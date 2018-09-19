@@ -174,326 +174,342 @@ PRINT ARG=st.corr,pcse.bias FILE=colvar
 //+ENDPLUMEDOC
 
 class RDC :
-  public MetainferenceBase
+    public MetainferenceBase
 {
 private:
-  double         Const;
-  double         mu_s;
-  double         scale;
-  vector<double> coupl;
-  bool           svd;
-  bool           pbc;
+    double         Const;
+    double         mu_s;
+    double         scale;
+    vector<double> coupl;
+    bool           svd;
+    bool           pbc;
 
-  void do_svd();
+    void do_svd();
 public:
-  explicit RDC(const ActionOptions&);
-  static void registerKeywords( Keywords& keys );
-  virtual void calculate();
-  void update();
+    explicit RDC(const ActionOptions&);
+    static void registerKeywords( Keywords& keys );
+    virtual void calculate();
+    void update();
 };
 
 PLUMED_REGISTER_ACTION(RDC,"RDC")
 PLUMED_REGISTER_ACTION(RDC,"PCS")
 
 void RDC::registerKeywords( Keywords& keys ) {
-  componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
-  MetainferenceBase::registerKeywords(keys);
-  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-  keys.add("numbered","ATOMS","the couple of atoms involved in each of the bonds for which you wish to calculate the RDC. "
-           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dipolar coupling will be "
-           "calculated for each ATOMS keyword you specify.");
-  keys.reset_style("ATOMS","atoms");
-  keys.add("compulsory","GYROM","1.","Add the product of the gyromagnetic constants for the bond. ");
-  keys.add("compulsory","SCALE","1.","Add the scaling factor to take into account concentration and other effects. ");
-  keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time).");
-  keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
-  keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and usefull for \ref STATS).");
-  keys.addOutputComponent("rdc","default","the calculated # RDC");
-  keys.addOutputComponent("exp","SVD/ADDCOUPLINGS","the experimental # RDC");
+    componentsAreNotOptional(keys);
+    useCustomisableComponents(keys);
+    MetainferenceBase::registerKeywords(keys);
+    keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+    keys.add("numbered","ATOMS","the couple of atoms involved in each of the bonds for which you wish to calculate the RDC. "
+             "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one dipolar coupling will be "
+             "calculated for each ATOMS keyword you specify.");
+    keys.reset_style("ATOMS","atoms");
+    keys.add("compulsory","GYROM","1.","Add the product of the gyromagnetic constants for the bond. ");
+    keys.add("compulsory","SCALE","1.","Add the scaling factor to take into account concentration and other effects. ");
+    keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time).");
+    keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
+    keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and usefull for \ref STATS).");
+    keys.addOutputComponent("rdc","default","the calculated # RDC");
+    keys.addOutputComponent("exp","SVD/ADDCOUPLINGS","the experimental # RDC");
 }
 
 RDC::RDC(const ActionOptions&ao):
-  PLUMED_METAINF_INIT(ao),
-  Const(1.),
-  mu_s(1.),
-  scale(1.),
-  pbc(true)
+    PLUMED_METAINF_INIT(ao),
+    Const(1.),
+    mu_s(1.),
+    scale(1.),
+    pbc(true)
 {
-  bool nopbc=!pbc;
-  parseFlag("NOPBC",nopbc);
-  pbc=!nopbc;
+    bool nopbc=!pbc;
+    parseFlag("NOPBC",nopbc);
+    pbc=!nopbc;
 
-  const double RDCConst = 0.3356806;
-  const double PCSConst = 1.0;
+    const double RDCConst = 0.3356806;
+    const double PCSConst = 1.0;
 
-  if( getName().find("RDC")!=std::string::npos) { Const *= RDCConst; }
-  else if( getName().find("PCS")!=std::string::npos) { Const *= PCSConst; }
-
-  // Read in the atoms
-  vector<AtomNumber> t, atoms;
-  for(int i=1;; ++i ) {
-    parseAtomList("ATOMS", i, t );
-    if( t.empty() ) break;
-    if( t.size()!=2 ) {
-      std::string ss; Tools::convert(i,ss);
-      error("ATOMS" + ss + " keyword has the wrong number of atoms");
+    if( getName().find("RDC")!=std::string::npos) {
+        Const *= RDCConst;
     }
-    atoms.push_back(t[0]);
-    atoms.push_back(t[1]);
-    t.resize(0);
-  }
+    else if( getName().find("PCS")!=std::string::npos) {
+        Const *= PCSConst;
+    }
 
-  const unsigned ndata = atoms.size()/2;
+    // Read in the atoms
+    vector<AtomNumber> t, atoms;
+    for(int i=1;; ++i ) {
+        parseAtomList("ATOMS", i, t );
+        if( t.empty() ) break;
+        if( t.size()!=2 ) {
+            std::string ss;
+            Tools::convert(i,ss);
+            error("ATOMS" + ss + " keyword has the wrong number of atoms");
+        }
+        atoms.push_back(t[0]);
+        atoms.push_back(t[1]);
+        t.resize(0);
+    }
 
-  // Read in GYROMAGNETIC constants
-  parse("GYROM", mu_s);
-  if(mu_s==0.) error("GYROM cannot be 0");
+    const unsigned ndata = atoms.size()/2;
 
-  // Read in SCALING factors
-  parse("SCALE", scale);
-  if(scale==0.) error("SCALE cannot be 0");
+    // Read in GYROMAGNETIC constants
+    parse("GYROM", mu_s);
+    if(mu_s==0.) error("GYROM cannot be 0");
 
-  svd=false;
-  parseFlag("SVD",svd);
+    // Read in SCALING factors
+    parse("SCALE", scale);
+    if(scale==0.) error("SCALE cannot be 0");
+
+    svd=false;
+    parseFlag("SVD",svd);
 #ifndef __PLUMED_HAS_GSL
-  if(svd) error("You CANNOT use SVD without GSL. Recompile PLUMED with GSL!\n");
+    if(svd) error("You CANNOT use SVD without GSL. Recompile PLUMED with GSL!\n");
 #endif
-  if(svd&&getDoScore()) error("It is not possible to use SVD and METAINFERENCE together");
+    if(svd&&getDoScore()) error("It is not possible to use SVD and METAINFERENCE together");
 
-  bool addexp=false;
-  parseFlag("ADDCOUPLINGS",addexp);
-  if(getDoScore()||svd) addexp=true;
+    bool addexp=false;
+    parseFlag("ADDCOUPLINGS",addexp);
+    if(getDoScore()||svd) addexp=true;
 
-  if(addexp) {
-    coupl.resize( ndata );
-    unsigned ntarget=0;
-    for(unsigned i=0; i<ndata; ++i) {
-      if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
-      ntarget++;
-    }
-    if( ntarget!=ndata ) error("found wrong number of COUPLING values");
-  }
-
-  // Ouput details of all contacts
-  log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.",mu_s,scale);
-  for(unsigned i=0; i<ndata; ++i) {
-    log.printf("  The %uth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial());
-    if(addexp) log.printf(" Experimental coupling is %f.", coupl[i]);
-    log.printf("\n");
-  }
-
-  log<<"  Bibliography "
-     <<plumed.cite("Camilloni C, Vendruscolo M, J. Phys. Chem. B 119, 653 (2015)")
-     <<plumed.cite("Camilloni C, Vendruscolo M, Biochemistry 54, 7470 (2015)");
-  log<< plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
-
-
-  if(!getDoScore()&&!svd) {
-    for(unsigned i=0; i<ndata; i++) {
-      std::string num; Tools::convert(i,num);
-      addComponentWithDerivatives("rdc_"+num);
-      componentIsNotPeriodic("rdc_"+num);
-    }
     if(addexp) {
-      for(unsigned i=0; i<ndata; i++) {
-        std::string num; Tools::convert(i,num);
-        addComponent("exp_"+num);
-        componentIsNotPeriodic("exp_"+num);
-        Value* comp=getPntrToComponent("exp_"+num);
-        comp->set(coupl[i]);
-      }
+        coupl.resize( ndata );
+        unsigned ntarget=0;
+        for(unsigned i=0; i<ndata; ++i) {
+            if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
+            ntarget++;
+        }
+        if( ntarget!=ndata ) error("found wrong number of COUPLING values");
     }
-  } else {
-    for(unsigned i=0; i<ndata; i++) {
-      std::string num; Tools::convert(i,num);
-      addComponentWithDerivatives("rdc_"+num);
-      componentIsNotPeriodic("rdc_"+num);
-    }
-    for(unsigned i=0; i<ndata; i++) {
-      std::string num; Tools::convert(i,num);
-      addComponent("exp_"+num);
-      componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num);
-      comp->set(coupl[i]);
-    }
-  }
 
-  if(svd) {
-    addComponent("Sxx"); componentIsNotPeriodic("Sxx");
-    addComponent("Syy"); componentIsNotPeriodic("Syy");
-    addComponent("Szz"); componentIsNotPeriodic("Szz");
-    addComponent("Sxy"); componentIsNotPeriodic("Sxy");
-    addComponent("Sxz"); componentIsNotPeriodic("Sxz");
-    addComponent("Syz"); componentIsNotPeriodic("Syz");
-  }
+    // Ouput details of all contacts
+    log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.",mu_s,scale);
+    for(unsigned i=0; i<ndata; ++i) {
+        log.printf("  The %uth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial());
+        if(addexp) log.printf(" Experimental coupling is %f.", coupl[i]);
+        log.printf("\n");
+    }
 
-  requestAtoms(atoms);
-  if(getDoScore()) {
-    setParameters(coupl);
-    Initialise(coupl.size());
-  }
-  setDerivatives();
-  checkRead();
+    log<<"  Bibliography "
+       <<plumed.cite("Camilloni C, Vendruscolo M, J. Phys. Chem. B 119, 653 (2015)")
+       <<plumed.cite("Camilloni C, Vendruscolo M, Biochemistry 54, 7470 (2015)");
+    log<< plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
+
+
+    if(!getDoScore()&&!svd) {
+        for(unsigned i=0; i<ndata; i++) {
+            std::string num;
+            Tools::convert(i,num);
+            addComponentWithDerivatives("rdc_"+num);
+            componentIsNotPeriodic("rdc_"+num);
+        }
+        if(addexp) {
+            for(unsigned i=0; i<ndata; i++) {
+                std::string num;
+                Tools::convert(i,num);
+                addComponent("exp_"+num);
+                componentIsNotPeriodic("exp_"+num);
+                Value* comp=getPntrToComponent("exp_"+num);
+                comp->set(coupl[i]);
+            }
+        }
+    } else {
+        for(unsigned i=0; i<ndata; i++) {
+            std::string num;
+            Tools::convert(i,num);
+            addComponentWithDerivatives("rdc_"+num);
+            componentIsNotPeriodic("rdc_"+num);
+        }
+        for(unsigned i=0; i<ndata; i++) {
+            std::string num;
+            Tools::convert(i,num);
+            addComponent("exp_"+num);
+            componentIsNotPeriodic("exp_"+num);
+            Value* comp=getPntrToComponent("exp_"+num);
+            comp->set(coupl[i]);
+        }
+    }
+
+    if(svd) {
+        addComponent("Sxx");
+        componentIsNotPeriodic("Sxx");
+        addComponent("Syy");
+        componentIsNotPeriodic("Syy");
+        addComponent("Szz");
+        componentIsNotPeriodic("Szz");
+        addComponent("Sxy");
+        componentIsNotPeriodic("Sxy");
+        addComponent("Sxz");
+        componentIsNotPeriodic("Sxz");
+        addComponent("Syz");
+        componentIsNotPeriodic("Syz");
+    }
+
+    requestAtoms(atoms);
+    if(getDoScore()) {
+        setParameters(coupl);
+        Initialise(coupl.size());
+    }
+    setDerivatives();
+    checkRead();
 }
 
 void RDC::do_svd()
 {
 #ifdef __PLUMED_HAS_GSL
-  gsl_vector *rdc_vec, *S, *Stmp, *work, *bc;
-  gsl_matrix *coef_mat, *A, *V;
-  rdc_vec = gsl_vector_alloc(coupl.size());
-  bc = gsl_vector_alloc(coupl.size());
-  Stmp = gsl_vector_alloc(5);
-  S = gsl_vector_alloc(5);
-  work = gsl_vector_alloc(5);
-  coef_mat = gsl_matrix_alloc(coupl.size(),5);
-  A = gsl_matrix_alloc(coupl.size(),5);
-  V = gsl_matrix_alloc(5,5);
-  gsl_matrix_set_zero(coef_mat);
-  gsl_vector_set_zero(bc);
-  unsigned index=0;
-  vector<double> dmax(coupl.size());
-  for(unsigned r=0; r<getNumberOfAtoms(); r+=2) {
-    Vector  distance;
-    if(pbc) distance = pbcDistance(getPosition(r),getPosition(r+1));
-    else    distance = delta(getPosition(r),getPosition(r+1));
-    double d    = distance.modulo();
-    double d2   = d*d;
-    double d3   = d2*d;
-    double id3  = 1./d3;
-    double max  = -Const*mu_s*scale;
-    dmax[index] = id3*max;
-    double mu_x = distance[0]/d;
-    double mu_y = distance[1]/d;
-    double mu_z = distance[2]/d;
-    gsl_vector_set(rdc_vec,index,coupl[index]/dmax[index]);
-    gsl_matrix_set(coef_mat,index,0,gsl_matrix_get(coef_mat,index,0)+(mu_x*mu_x-mu_z*mu_z));
-    gsl_matrix_set(coef_mat,index,1,gsl_matrix_get(coef_mat,index,1)+(mu_y*mu_y-mu_z*mu_z));
-    gsl_matrix_set(coef_mat,index,2,gsl_matrix_get(coef_mat,index,2)+(2.0*mu_x*mu_y));
-    gsl_matrix_set(coef_mat,index,3,gsl_matrix_get(coef_mat,index,3)+(2.0*mu_x*mu_z));
-    gsl_matrix_set(coef_mat,index,4,gsl_matrix_get(coef_mat,index,4)+(2.0*mu_y*mu_z));
-    index++;
-  }
-  gsl_matrix_memcpy(A,coef_mat);
-  gsl_linalg_SV_decomp(A, V, Stmp, work);
-  gsl_linalg_SV_solve(A, V, Stmp, rdc_vec, S);
-  /* tensor */
-  Value* tensor;
-  tensor=getPntrToComponent("Sxx");
-  double Sxx = gsl_vector_get(S,0);
-  tensor->set(Sxx);
-  tensor=getPntrToComponent("Syy");
-  double Syy = gsl_vector_get(S,1);
-  tensor->set(Syy);
-  tensor=getPntrToComponent("Szz");
-  double Szz = -Sxx-Syy;
-  tensor->set(Szz);
-  tensor=getPntrToComponent("Sxy");
-  double Sxy = gsl_vector_get(S,2);
-  tensor->set(Sxy);
-  tensor=getPntrToComponent("Sxz");
-  double Sxz = gsl_vector_get(S,3);
-  tensor->set(Sxz);
-  tensor=getPntrToComponent("Syz");
-  double Syz = gsl_vector_get(S,4);
-  tensor->set(Syz);
+    gsl_vector *rdc_vec, *S, *Stmp, *work, *bc;
+    gsl_matrix *coef_mat, *A, *V;
+    rdc_vec = gsl_vector_alloc(coupl.size());
+    bc = gsl_vector_alloc(coupl.size());
+    Stmp = gsl_vector_alloc(5);
+    S = gsl_vector_alloc(5);
+    work = gsl_vector_alloc(5);
+    coef_mat = gsl_matrix_alloc(coupl.size(),5);
+    A = gsl_matrix_alloc(coupl.size(),5);
+    V = gsl_matrix_alloc(5,5);
+    gsl_matrix_set_zero(coef_mat);
+    gsl_vector_set_zero(bc);
+    unsigned index=0;
+    vector<double> dmax(coupl.size());
+    for(unsigned r=0; r<getNumberOfAtoms(); r+=2) {
+        Vector  distance;
+        if(pbc) distance = pbcDistance(getPosition(r),getPosition(r+1));
+        else    distance = delta(getPosition(r),getPosition(r+1));
+        double d    = distance.modulo();
+        double d2   = d*d;
+        double d3   = d2*d;
+        double id3  = 1./d3;
+        double max  = -Const*mu_s*scale;
+        dmax[index] = id3*max;
+        double mu_x = distance[0]/d;
+        double mu_y = distance[1]/d;
+        double mu_z = distance[2]/d;
+        gsl_vector_set(rdc_vec,index,coupl[index]/dmax[index]);
+        gsl_matrix_set(coef_mat,index,0,gsl_matrix_get(coef_mat,index,0)+(mu_x*mu_x-mu_z*mu_z));
+        gsl_matrix_set(coef_mat,index,1,gsl_matrix_get(coef_mat,index,1)+(mu_y*mu_y-mu_z*mu_z));
+        gsl_matrix_set(coef_mat,index,2,gsl_matrix_get(coef_mat,index,2)+(2.0*mu_x*mu_y));
+        gsl_matrix_set(coef_mat,index,3,gsl_matrix_get(coef_mat,index,3)+(2.0*mu_x*mu_z));
+        gsl_matrix_set(coef_mat,index,4,gsl_matrix_get(coef_mat,index,4)+(2.0*mu_y*mu_z));
+        index++;
+    }
+    gsl_matrix_memcpy(A,coef_mat);
+    gsl_linalg_SV_decomp(A, V, Stmp, work);
+    gsl_linalg_SV_solve(A, V, Stmp, rdc_vec, S);
+    /* tensor */
+    Value* tensor;
+    tensor=getPntrToComponent("Sxx");
+    double Sxx = gsl_vector_get(S,0);
+    tensor->set(Sxx);
+    tensor=getPntrToComponent("Syy");
+    double Syy = gsl_vector_get(S,1);
+    tensor->set(Syy);
+    tensor=getPntrToComponent("Szz");
+    double Szz = -Sxx-Syy;
+    tensor->set(Szz);
+    tensor=getPntrToComponent("Sxy");
+    double Sxy = gsl_vector_get(S,2);
+    tensor->set(Sxy);
+    tensor=getPntrToComponent("Sxz");
+    double Sxz = gsl_vector_get(S,3);
+    tensor->set(Sxz);
+    tensor=getPntrToComponent("Syz");
+    double Syz = gsl_vector_get(S,4);
+    tensor->set(Syz);
 
-  gsl_blas_dgemv(CblasNoTrans, 1.0, coef_mat, S, 0., bc);
-  for(index=0; index<coupl.size(); index++) {
-    double rdc = gsl_vector_get(bc,index)*dmax[index];
-    Value* val=getPntrToComponent(index);
-    val->set(rdc);
-  }
-  gsl_matrix_free(coef_mat);
-  gsl_matrix_free(A);
-  gsl_vector_free(rdc_vec);
-  gsl_vector_free(bc);
-  gsl_vector_free(Stmp);
-  gsl_vector_free(S);
-  gsl_vector_free(work);
+    gsl_blas_dgemv(CblasNoTrans, 1.0, coef_mat, S, 0., bc);
+    for(index=0; index<coupl.size(); index++) {
+        double rdc = gsl_vector_get(bc,index)*dmax[index];
+        Value* val=getPntrToComponent(index);
+        val->set(rdc);
+    }
+    gsl_matrix_free(coef_mat);
+    gsl_matrix_free(A);
+    gsl_vector_free(rdc_vec);
+    gsl_vector_free(bc);
+    gsl_vector_free(Stmp);
+    gsl_vector_free(S);
+    gsl_vector_free(work);
 #endif
 }
 
 void RDC::calculate()
 {
-  if(svd) {
-    do_svd();
-    return;
-  }
-
-  const double max  = -Const*scale*mu_s;
-  const unsigned N=getNumberOfAtoms();
-  vector<Vector> dRDC(N/2, Vector{0.,0.,0.});
-
-  /* RDC Calculations and forces */
-  const double omp_dummy = 0.0;
-  const unsigned nt = OpenMP::getGoodNumThreads(&omp_dummy, N / 2);
-  #pragma omp parallel num_threads(nt)
-  {
-    #pragma omp for
-    for(unsigned r=0; r<N; r+=2)
-    {
-      const unsigned index=r/2;
-      Vector  distance;
-      if(pbc) distance   = pbcDistance(getPosition(r),getPosition(r+1));
-      else    distance   = delta(getPosition(r),getPosition(r+1));
-      const double d2    = distance.modulo2();
-      const double ind   = 1./sqrt(d2);
-      const double ind2  = 1./d2;
-      const double ind3  = ind2*ind;
-      const double x2    = distance[0]*distance[0]*ind2;
-      const double y2    = distance[1]*distance[1]*ind2;
-      const double z2    = distance[2]*distance[2]*ind2;
-      const double dmax  = ind3*max;
-      const double ddmax = dmax*ind2;
-
-      const double rdc   = 0.5*dmax*(3.*z2-1.);
-      const double prod_xy = (x2+y2-4.*z2);
-      const double prod_z =  (3.*x2 + 3.*y2 - 2.*z2);
-
-      dRDC[index] = -1.5*ddmax*distance;
-      dRDC[index][0] *= prod_xy;
-      dRDC[index][1] *= prod_xy;
-      dRDC[index][2] *= prod_z;
-
-      string num; Tools::convert(index,num);
-      Value* val=getPntrToComponent("rdc_"+num);
-      val->set(rdc);
-      if(!getDoScore()) {
-        setBoxDerivatives(val, Tensor(distance,dRDC[index]));
-        setAtomsDerivatives(val, r,  dRDC[index]);
-        setAtomsDerivatives(val, r+1, -dRDC[index]);
-      } else setCalcData(index, rdc);
+    if(svd) {
+        do_svd();
+        return;
     }
-  }
 
-  if(getDoScore()) {
-    /* Metainference */
-    Tensor dervir;
-    double score = getScore();
-    setScore(score);
+    const double max  = -Const*scale*mu_s;
+    const unsigned N=getNumberOfAtoms();
+    vector<Vector> dRDC(N/2, Vector{0.,0.,0.});
 
-    /* calculate final derivatives */
-    Value* val=getPntrToComponent("score");
-    for(unsigned r=0; r<N; r+=2)
+    /* RDC Calculations and forces */
+    const double omp_dummy = 0.0;
+    const unsigned nt = OpenMP::getGoodNumThreads(&omp_dummy, N / 2);
+    #pragma omp parallel num_threads(nt)
     {
-      const unsigned index=r/2;
-      Vector  distance;
-      if(pbc) distance   = pbcDistance(getPosition(r),getPosition(r+1));
-      else    distance   = delta(getPosition(r),getPosition(r+1));
-      const Vector der = dRDC[index]*getMetaDer(index);
-      dervir += Tensor(distance, der);
-      setAtomsDerivatives(val, r,  der);
-      setAtomsDerivatives(val, r+1, -der);
+        #pragma omp for
+        for(unsigned r=0; r<N; r+=2)
+        {
+            const unsigned index=r/2;
+            Vector  distance;
+            if(pbc) distance   = pbcDistance(getPosition(r),getPosition(r+1));
+            else    distance   = delta(getPosition(r),getPosition(r+1));
+            const double d2    = distance.modulo2();
+            const double ind   = 1./sqrt(d2);
+            const double ind2  = 1./d2;
+            const double ind3  = ind2*ind;
+            const double x2    = distance[0]*distance[0]*ind2;
+            const double y2    = distance[1]*distance[1]*ind2;
+            const double z2    = distance[2]*distance[2]*ind2;
+            const double dmax  = ind3*max;
+            const double ddmax = dmax*ind2;
+
+            const double rdc   = 0.5*dmax*(3.*z2-1.);
+            const double prod_xy = (x2+y2-4.*z2);
+            const double prod_z =  (3.*x2 + 3.*y2 - 2.*z2);
+
+            dRDC[index] = -1.5*ddmax*distance;
+            dRDC[index][0] *= prod_xy;
+            dRDC[index][1] *= prod_xy;
+            dRDC[index][2] *= prod_z;
+
+            string num;
+            Tools::convert(index,num);
+            Value* val=getPntrToComponent("rdc_"+num);
+            val->set(rdc);
+            if(!getDoScore()) {
+                setBoxDerivatives(val, Tensor(distance,dRDC[index]));
+                setAtomsDerivatives(val, r,  dRDC[index]);
+                setAtomsDerivatives(val, r+1, -dRDC[index]);
+            } else setCalcData(index, rdc);
+        }
     }
-    setBoxDerivatives(val, dervir);
-  }
+
+    if(getDoScore()) {
+        /* Metainference */
+        Tensor dervir;
+        double score = getScore();
+        setScore(score);
+
+        /* calculate final derivatives */
+        Value* val=getPntrToComponent("score");
+        for(unsigned r=0; r<N; r+=2)
+        {
+            const unsigned index=r/2;
+            Vector  distance;
+            if(pbc) distance   = pbcDistance(getPosition(r),getPosition(r+1));
+            else    distance   = delta(getPosition(r),getPosition(r+1));
+            const Vector der = dRDC[index]*getMetaDer(index);
+            dervir += Tensor(distance, der);
+            setAtomsDerivatives(val, r,  der);
+            setAtomsDerivatives(val, r+1, -der);
+        }
+        setBoxDerivatives(val, dervir);
+    }
 }
 
 void RDC::update() {
-  // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
+    // write status file
+    if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
 }

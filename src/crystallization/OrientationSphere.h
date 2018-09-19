@@ -31,21 +31,24 @@ namespace crystallization {
 
 class OrientationSphere : public multicolvar::MultiColvarBase {
 private:
-  double rcut2;
-  SwitchingFunction switchingFunction;
+    double rcut2;
+    SwitchingFunction switchingFunction;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit OrientationSphere(const ActionOptions&);
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
-  virtual double computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
-                                        Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const = 0;
-  virtual double calculateCoordinationPrefactor( const double& coord, double& df ) const ;
-  bool isPeriodic() { return false; }
+    static void registerKeywords( Keywords& keys );
+    explicit OrientationSphere(const ActionOptions&);
+    double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+    virtual double computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
+                                          Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const = 0;
+    virtual double calculateCoordinationPrefactor( const double& coord, double& df ) const ;
+    bool isPeriodic() {
+        return false;
+    }
 };
 
 inline
 double OrientationSphere::calculateCoordinationPrefactor( const double& coord, double& df ) const {
-  df=0.0; return 1.0;
+    df=0.0;
+    return 1.0;
 }
 
 }

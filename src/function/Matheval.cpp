@@ -160,18 +160,18 @@ progression (S) and distance (Z) variables \cite perez2015atp.
 
 
 class Matheval :
-  public Function
+    public Function
 {
-  lepton::CompiledExpression expression;
-  std::vector<lepton::CompiledExpression> expression_deriv;
-  vector<string> var;
-  string func;
-  vector<double> values;
-  vector<char*> names;
+    lepton::CompiledExpression expression;
+    std::vector<lepton::CompiledExpression> expression_deriv;
+    vector<string> var;
+    string func;
+    vector<double> values;
+    vector<char*> names;
 public:
-  explicit Matheval(const ActionOptions&);
-  void calculate();
-  static void registerKeywords(Keywords& keys);
+    explicit Matheval(const ActionOptions&);
+    void calculate();
+    static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(Matheval,"MATHEVAL")
@@ -197,82 +197,83 @@ RESTRAINT ARG=d AT=0.5 KAPPA=10.0
 //+ENDPLUMEDOC
 
 class Custom :
-  public Matheval {
+    public Matheval {
 };
 
 PLUMED_REGISTER_ACTION(Matheval,"CUSTOM")
 
 void Matheval::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys);
-  keys.use("ARG"); keys.use("PERIODIC");
-  keys.add("compulsory","FUNC","the function you wish to evaluate");
-  keys.add("optional","VAR","the names to give each of the arguments in the function.  If you have up to three arguments in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
+    Function::registerKeywords(keys);
+    keys.use("ARG");
+    keys.use("PERIODIC");
+    keys.add("compulsory","FUNC","the function you wish to evaluate");
+    keys.add("optional","VAR","the names to give each of the arguments in the function.  If you have up to three arguments in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
 }
 
 Matheval::Matheval(const ActionOptions&ao):
-  Action(ao),
-  Function(ao),
-  expression_deriv(getNumberOfArguments()),
-  values(getNumberOfArguments()),
-  names(getNumberOfArguments())
+    Action(ao),
+    Function(ao),
+    expression_deriv(getNumberOfArguments()),
+    values(getNumberOfArguments()),
+    names(getNumberOfArguments())
 {
-  parseVector("VAR",var);
-  if(var.size()==0) {
-    var.resize(getNumberOfArguments());
-    if(getNumberOfArguments()>3)
-      error("Using more than 3 arguments you should explicitly write their names with VAR");
-    if(var.size()>0) var[0]="x";
-    if(var.size()>1) var[1]="y";
-    if(var.size()>2) var[2]="z";
-  }
-  if(var.size()!=getNumberOfArguments())
-    error("Size of VAR array should be the same as number of arguments");
-  parse("FUNC",func);
-  addValueWithDerivatives();
-  checkRead();
-
-  log.printf("  with function : %s\n",func.c_str());
-  log.printf("  with variables :");
-  for(unsigned i=0; i<var.size(); i++) log.printf(" %s",var[i].c_str());
-  log.printf("\n");
-
-  lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(lepton::Constants());
-  log<<"  function as parsed by lepton: "<<pe<<"\n";
-  expression=pe.createCompiledExpression();
-  for(auto &p: expression.getVariables()) {
-    if(std::find(var.begin(),var.end(),p)==var.end()) {
-      error("variable " + p + " is not defined");
+    parseVector("VAR",var);
+    if(var.size()==0) {
+        var.resize(getNumberOfArguments());
+        if(getNumberOfArguments()>3)
+            error("Using more than 3 arguments you should explicitly write their names with VAR");
+        if(var.size()>0) var[0]="x";
+        if(var.size()>1) var[1]="y";
+        if(var.size()>2) var[2]="z";
     }
-  }
-  log<<"  derivatives as computed by lepton:\n";
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(lepton::Constants());
-    log<<"    "<<pe<<"\n";
-    expression_deriv[i]=pe.createCompiledExpression();
-  }
+    if(var.size()!=getNumberOfArguments())
+        error("Size of VAR array should be the same as number of arguments");
+    parse("FUNC",func);
+    addValueWithDerivatives();
+    checkRead();
+
+    log.printf("  with function : %s\n",func.c_str());
+    log.printf("  with variables :");
+    for(unsigned i=0; i<var.size(); i++) log.printf(" %s",var[i].c_str());
+    log.printf("\n");
+
+    lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(lepton::Constants());
+    log<<"  function as parsed by lepton: "<<pe<<"\n";
+    expression=pe.createCompiledExpression();
+    for(auto &p: expression.getVariables()) {
+        if(std::find(var.begin(),var.end(),p)==var.end()) {
+            error("variable " + p + " is not defined");
+        }
+    }
+    log<<"  derivatives as computed by lepton:\n";
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+        lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(lepton::Constants());
+        log<<"    "<<pe<<"\n";
+        expression_deriv[i]=pe.createCompiledExpression();
+    }
 }
 
 void Matheval::calculate() {
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    try {
-      expression.getVariableReference(var[i])=getArgument(i);
-    } catch(PLMD::lepton::Exception& exc) {
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+        try {
+            expression.getVariableReference(var[i])=getArgument(i);
+        } catch(PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
+        }
     }
-  }
-  setValue(expression.evaluate());
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    for(unsigned j=0; j<getNumberOfArguments(); j++) {
-      try {
-        expression_deriv[i].getVariableReference(var[j])=getArgument(j);
-      } catch(PLMD::lepton::Exception& exc) {
+    setValue(expression.evaluate());
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+        for(unsigned j=0; j<getNumberOfArguments(); j++) {
+            try {
+                expression_deriv[i].getVariableReference(var[j])=getArgument(j);
+            } catch(PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
-      }
+            }
+        }
+        setDerivative(i,expression_deriv[i].evaluate());
     }
-    setDerivative(i,expression_deriv[i].evaluate());
-  }
 }
 
 }

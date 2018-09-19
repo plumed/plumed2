@@ -67,28 +67,30 @@ namespace bias {
 
 class ReweightMetad : public ReweightBase {
 public:
-  static void registerKeywords(Keywords&);
-  explicit ReweightMetad(const ActionOptions&ao);
-  double getLogWeight();
+    static void registerKeywords(Keywords&);
+    explicit ReweightMetad(const ActionOptions&ao);
+    double getLogWeight();
 };
 
 PLUMED_REGISTER_ACTION(ReweightMetad,"REWEIGHT_METAD")
 
 void ReweightMetad::registerKeywords(Keywords& keys ) {
-  ReweightBase::registerKeywords( keys ); keys.remove("ARG");
-  keys.add("compulsory","ARG","*.rbias","the biases that must be taken into account when reweighting");
+    ReweightBase::registerKeywords( keys );
+    keys.remove("ARG");
+    keys.add("compulsory","ARG","*.rbias","the biases that must be taken into account when reweighting");
 }
 
 ReweightMetad::ReweightMetad(const ActionOptions&ao):
-  Action(ao),
-  ReweightBase(ao)
+    Action(ao),
+    ReweightBase(ao)
 {
 }
 
 double ReweightMetad::getLogWeight() {
-  // Retrieve the bias
-  double bias=0.0; for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgument(i);
-  return bias / simtemp;
+    // Retrieve the bias
+    double bias=0.0;
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgument(i);
+    return bias / simtemp;
 }
 
 }

@@ -27,48 +27,48 @@ using namespace std;
 namespace PLMD {
 
 ExchangePatterns::ExchangePatterns():
-  PatternFlag(NONE),
-  NumberOfReplicas(1)
+    PatternFlag(NONE),
+    NumberOfReplicas(1)
 {}
 
 ExchangePatterns::~ExchangePatterns() {
 }
 
 void ExchangePatterns::setNofR(const int nrepl) {
-  NumberOfReplicas=nrepl;
+    NumberOfReplicas=nrepl;
 }
 
 void ExchangePatterns::setFlag(const int flag) {
-  PatternFlag=flag;
+    PatternFlag=flag;
 }
 
 void ExchangePatterns::getFlag(int &flag) {
-  flag=PatternFlag;
+    flag=PatternFlag;
 }
 
 void ExchangePatterns::setSeed(const int seed)
 {
-  random.setSeed(seed);
+    random.setSeed(seed);
 }
 
 void ExchangePatterns::getList(int *ind)
 {
-  switch(PatternFlag)
-  {
-  case RANDOM:
-    for(int i=0; i<NumberOfReplicas; i++) {
-      int stat=1;
-      while(stat) {
-        stat=0;
-        ind[i] = (int) (random.U01()*NumberOfReplicas);
-        for(int j=0; j<i; j++) if(ind[i]==ind[j]) stat=1;
-      }
+    switch(PatternFlag)
+    {
+    case RANDOM:
+        for(int i=0; i<NumberOfReplicas; i++) {
+            int stat=1;
+            while(stat) {
+                stat=0;
+                ind[i] = (int) (random.U01()*NumberOfReplicas);
+                for(int j=0; j<i; j++) if(ind[i]==ind[j]) stat=1;
+            }
+        }
+        break;
+    case NEIGHBOR:
+        for(int i=0; i<NumberOfReplicas; i++) ind[i]=i;
+        break;
     }
-    break;
-  case NEIGHBOR:
-    for(int i=0; i<NumberOfReplicas; i++) ind[i]=i;
-    break;
-  }
 }
 
 }

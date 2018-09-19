@@ -73,259 +73,267 @@ PRINT ARG=HN_pre.* FILE=PRE.dat STRIDE=1
 //+ENDPLUMEDOC
 
 class PRE :
-  public MetainferenceBase
+    public MetainferenceBase
 {
 private:
-  bool             pbc;
-  double           constant;
-  double           inept;
-  vector<double>   rtwo;
-  vector<unsigned> nga;
-  std::unique_ptr<NeighborList> nl;
-  unsigned         tot_size;
+    bool             pbc;
+    double           constant;
+    double           inept;
+    vector<double>   rtwo;
+    vector<unsigned> nga;
+    std::unique_ptr<NeighborList> nl;
+    unsigned         tot_size;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit PRE(const ActionOptions&);
-  virtual void calculate();
-  void update();
+    static void registerKeywords( Keywords& keys );
+    explicit PRE(const ActionOptions&);
+    virtual void calculate();
+    void update();
 };
 
 PLUMED_REGISTER_ACTION(PRE,"PRE")
 
 void PRE::registerKeywords( Keywords& keys ) {
-  componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
-  MetainferenceBase::registerKeywords(keys);
-  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-  keys.add("compulsory","INEPT","is the INEPT time (in ms).");
-  keys.add("compulsory","TAUC","is the correlation time (in ns) for this electron-nuclear interaction.");
-  keys.add("compulsory","OMEGA","is the Larmor frequency of the nuclear spin (in MHz).");
-  keys.add("atoms","SPINLABEL","The atom to be used as the paramagnetic center.");
-  keys.add("numbered","GROUPA","the atoms involved in each of the contacts you wish to calculate. "
-           "Keywords like GROUPA1, GROUPA2, GROUPA3,... should be listed and one contact will be "
-           "calculated for each ATOM keyword you specify.");
-  keys.reset_style("GROUPA","atoms");
-  keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
-           "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
-  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
-  keys.add("numbered","PREINT","Add an experimental value for each PRE.");
-  keys.addOutputComponent("pre","default","the # PRE");
-  keys.addOutputComponent("exp","ADDEXP","the # PRE experimental intensity");
+    componentsAreNotOptional(keys);
+    useCustomisableComponents(keys);
+    MetainferenceBase::registerKeywords(keys);
+    keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+    keys.add("compulsory","INEPT","is the INEPT time (in ms).");
+    keys.add("compulsory","TAUC","is the correlation time (in ns) for this electron-nuclear interaction.");
+    keys.add("compulsory","OMEGA","is the Larmor frequency of the nuclear spin (in MHz).");
+    keys.add("atoms","SPINLABEL","The atom to be used as the paramagnetic center.");
+    keys.add("numbered","GROUPA","the atoms involved in each of the contacts you wish to calculate. "
+             "Keywords like GROUPA1, GROUPA2, GROUPA3,... should be listed and one contact will be "
+             "calculated for each ATOM keyword you specify.");
+    keys.reset_style("GROUPA","atoms");
+    keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
+             "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
+    keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
+    keys.add("numbered","PREINT","Add an experimental value for each PRE.");
+    keys.addOutputComponent("pre","default","the # PRE");
+    keys.addOutputComponent("exp","ADDEXP","the # PRE experimental intensity");
 }
 
 PRE::PRE(const ActionOptions&ao):
-  PLUMED_METAINF_INIT(ao),
-  pbc(true)
+    PLUMED_METAINF_INIT(ao),
+    pbc(true)
 {
-  bool nopbc=!pbc;
-  parseFlag("NOPBC",nopbc);
-  pbc=!nopbc;
+    bool nopbc=!pbc;
+    parseFlag("NOPBC",nopbc);
+    pbc=!nopbc;
 
-  vector<AtomNumber> atom;
-  parseAtomList("SPINLABEL",atom);
-  if(atom.size()!=1) error("Number of specified atom should be 1");
+    vector<AtomNumber> atom;
+    parseAtomList("SPINLABEL",atom);
+    if(atom.size()!=1) error("Number of specified atom should be 1");
 
-  // Read in the atoms
-  vector<AtomNumber> t, ga_lista, gb_lista;
-  for(int i=1;; ++i ) {
-    parseAtomList("GROUPA", i, t );
-    if( t.empty() ) break;
-    for(unsigned j=0; j<t.size(); j++) {ga_lista.push_back(t[j]); gb_lista.push_back(atom[0]);}
-    nga.push_back(t.size());
-    t.resize(0);
-  }
+    // Read in the atoms
+    vector<AtomNumber> t, ga_lista, gb_lista;
+    for(int i=1;; ++i ) {
+        parseAtomList("GROUPA", i, t );
+        if( t.empty() ) break;
+        for(unsigned j=0; j<t.size(); j++) {
+            ga_lista.push_back(t[j]);
+            gb_lista.push_back(atom[0]);
+        }
+        nga.push_back(t.size());
+        t.resize(0);
+    }
 
-  // Read in reference values
-  rtwo.resize( nga.size() );
-  unsigned ntarget=0;
-  for(unsigned i=0; i<nga.size(); ++i) {
-    if( !parseNumbered( "RTWO", i+1, rtwo[i] ) ) break;
-    ntarget++;
-  }
-  if( ntarget==0 ) {
-    parse("RTWO",rtwo[0]);
-    for(unsigned i=1; i<nga.size(); ++i) rtwo[i]=rtwo[0];
-  } else if( ntarget!=nga.size() ) error("found wrong number of RTWO values");
-
-  double tauc=0.;
-  parse("TAUC",tauc);
-  if(tauc==0.) error("TAUC must be set");
-
-  double omega=0.;
-  parse("OMEGA",omega);
-  if(omega==0.) error("OMEGA must be set");
-
-  inept=0.;
-  parse("INEPT",inept);
-  if(inept==0.) error("INEPT must be set");
-  inept *= 0.001; // ms2s
-
-  const double ns2s   = 0.000000001;
-  const double MHz2Hz = 1000000.;
-  const double Kappa  = 12300000000.00; // this is 1/15*S*(S+1)*gamma^2*g^2*beta^2
-  // where gamma is the nuclear gyromagnetic ratio,
-  // g is the electronic g factor, and beta is the Bohr magneton
-  // in nm^6/s^2
-  constant = (4.*tauc*ns2s+(3.*tauc*ns2s)/(1+omega*omega*MHz2Hz*MHz2Hz*tauc*tauc*ns2s*ns2s))*Kappa;
-
-  bool addexp=false;
-  parseFlag("ADDEXP",addexp);
-  if(getDoScore()) addexp=true;
-
-  vector<double> exppre;
-  if(addexp) {
-    exppre.resize( nga.size() );
+    // Read in reference values
+    rtwo.resize( nga.size() );
     unsigned ntarget=0;
-
     for(unsigned i=0; i<nga.size(); ++i) {
-      if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
-      ntarget++;
+        if( !parseNumbered( "RTWO", i+1, rtwo[i] ) ) break;
+        ntarget++;
     }
-    if( ntarget!=nga.size() ) error("found wrong number of PREINT values");
-  }
+    if( ntarget==0 ) {
+        parse("RTWO",rtwo[0]);
+        for(unsigned i=1; i<nga.size(); ++i) rtwo[i]=rtwo[0];
+    } else if( ntarget!=nga.size() ) error("found wrong number of RTWO values");
 
-  // Create neighbour lists
-  nl.reset( new NeighborList(gb_lista,ga_lista,true,pbc,getPbc()) );
+    double tauc=0.;
+    parse("TAUC",tauc);
+    if(tauc==0.) error("TAUC must be set");
 
-  // Ouput details of all contacts
-  unsigned index=0;
-  for(unsigned i=0; i<nga.size(); ++i) {
-    log.printf("  The %uth PRE is calculated using %u equivalent atoms:\n", i, nga[i]);
-    log.printf("    %d", ga_lista[index].serial());
-    index++;
-    for(unsigned j=1; j<nga[i]; j++) {
-      log.printf(" %d", ga_lista[index].serial());
-      index++;
-    }
-    log.printf("\n");
-  }
-  tot_size = index;
+    double omega=0.;
+    parse("OMEGA",omega);
+    if(omega==0.) error("OMEGA must be set");
 
-  if(pbc)      log.printf("  using periodic boundary conditions\n");
-  else         log.printf("  without periodic boundary conditions\n");
+    inept=0.;
+    parse("INEPT",inept);
+    if(inept==0.) error("INEPT must be set");
+    inept *= 0.001; // ms2s
 
-  log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
+    const double ns2s   = 0.000000001;
+    const double MHz2Hz = 1000000.;
+    const double Kappa  = 12300000000.00; // this is 1/15*S*(S+1)*gamma^2*g^2*beta^2
+    // where gamma is the nuclear gyromagnetic ratio,
+    // g is the electronic g factor, and beta is the Bohr magneton
+    // in nm^6/s^2
+    constant = (4.*tauc*ns2s+(3.*tauc*ns2s)/(1+omega*omega*MHz2Hz*MHz2Hz*tauc*tauc*ns2s*ns2s))*Kappa;
 
-  if(!getDoScore()) {
-    for(unsigned i=0; i<nga.size(); i++) {
-      string num; Tools::convert(i,num);
-      addComponentWithDerivatives("pre_"+num);
-      componentIsNotPeriodic("pre_"+num);
-    }
+    bool addexp=false;
+    parseFlag("ADDEXP",addexp);
+    if(getDoScore()) addexp=true;
+
+    vector<double> exppre;
     if(addexp) {
-      for(unsigned i=0; i<nga.size(); i++) {
-        string num; Tools::convert(i,num);
-        addComponent("exp_"+num);
-        componentIsNotPeriodic("exp_"+num);
-        Value* comp=getPntrToComponent("exp_"+num);
-        comp->set(exppre[i]);
-      }
-    }
-  } else {
-    for(unsigned i=0; i<nga.size(); i++) {
-      string num; Tools::convert(i,num);
-      addComponent("pre_"+num);
-      componentIsNotPeriodic("pre_"+num);
-    }
-    for(unsigned i=0; i<nga.size(); i++) {
-      string num; Tools::convert(i,num);
-      addComponent("exp_"+num);
-      componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num);
-      comp->set(exppre[i]);
-    }
-  }
+        exppre.resize( nga.size() );
+        unsigned ntarget=0;
 
-  requestAtoms(nl->getFullAtomList());
-  if(getDoScore()) {
-    setParameters(exppre);
-    Initialise(nga.size());
-  }
-  setDerivatives();
-  checkRead();
+        for(unsigned i=0; i<nga.size(); ++i) {
+            if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
+            ntarget++;
+        }
+        if( ntarget!=nga.size() ) error("found wrong number of PREINT values");
+    }
+
+    // Create neighbour lists
+    nl.reset( new NeighborList(gb_lista,ga_lista,true,pbc,getPbc()) );
+
+    // Ouput details of all contacts
+    unsigned index=0;
+    for(unsigned i=0; i<nga.size(); ++i) {
+        log.printf("  The %uth PRE is calculated using %u equivalent atoms:\n", i, nga[i]);
+        log.printf("    %d", ga_lista[index].serial());
+        index++;
+        for(unsigned j=1; j<nga[i]; j++) {
+            log.printf(" %d", ga_lista[index].serial());
+            index++;
+        }
+        log.printf("\n");
+    }
+    tot_size = index;
+
+    if(pbc)      log.printf("  using periodic boundary conditions\n");
+    else         log.printf("  without periodic boundary conditions\n");
+
+    log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
+
+    if(!getDoScore()) {
+        for(unsigned i=0; i<nga.size(); i++) {
+            string num;
+            Tools::convert(i,num);
+            addComponentWithDerivatives("pre_"+num);
+            componentIsNotPeriodic("pre_"+num);
+        }
+        if(addexp) {
+            for(unsigned i=0; i<nga.size(); i++) {
+                string num;
+                Tools::convert(i,num);
+                addComponent("exp_"+num);
+                componentIsNotPeriodic("exp_"+num);
+                Value* comp=getPntrToComponent("exp_"+num);
+                comp->set(exppre[i]);
+            }
+        }
+    } else {
+        for(unsigned i=0; i<nga.size(); i++) {
+            string num;
+            Tools::convert(i,num);
+            addComponent("pre_"+num);
+            componentIsNotPeriodic("pre_"+num);
+        }
+        for(unsigned i=0; i<nga.size(); i++) {
+            string num;
+            Tools::convert(i,num);
+            addComponent("exp_"+num);
+            componentIsNotPeriodic("exp_"+num);
+            Value* comp=getPntrToComponent("exp_"+num);
+            comp->set(exppre[i]);
+        }
+    }
+
+    requestAtoms(nl->getFullAtomList());
+    if(getDoScore()) {
+        setParameters(exppre);
+        Initialise(nga.size());
+    }
+    setDerivatives();
+    checkRead();
 }
 
 void PRE::calculate()
 {
-  vector<Vector> deriv(tot_size, Vector{0,0,0});
-  vector<double> fact(nga.size(), 0.);
+    vector<Vector> deriv(tot_size, Vector{0,0,0});
+    vector<double> fact(nga.size(), 0.);
 
-  // cycle over the number of PRE
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for(unsigned i=0; i<nga.size(); i++) {
-    Tensor dervir;
-    double pre=0;
-    unsigned index=0;
-    for(unsigned k=0; k<i; k++) index+=nga[k];
-    const double c_aver=constant/static_cast<double>(nga[i]);
-    string num; Tools::convert(i,num);
-    Value* val=getPntrToComponent("pre_"+num);
-    // cycle over equivalent atoms
-    for(unsigned j=0; j<nga[i]; j++) {
-      // the first atom is always the same (the paramagnetic group)
-      const unsigned i0=nl->getClosePair(index+j).first;
-      const unsigned i1=nl->getClosePair(index+j).second;
-
-      Vector distance;
-      if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
-      else    distance=delta(getPosition(i0),getPosition(i1));
-
-      const double r2=distance.modulo2();
-      const double r6=r2*r2*r2;
-      const double r8=r6*r2;
-      const double tmpir6=c_aver/r6;
-      const double tmpir8=-6.*c_aver/r8;
-
-      pre += tmpir6;
-      deriv[index+j] = -tmpir8*distance;
-      if(!getDoScore()) dervir   +=  Tensor(distance,deriv[index+j]);
-    }
-    const double ratio = rtwo[i]*exp(-pre*inept) / (rtwo[i]+pre);
-    fact[i] = -ratio*(inept+1./(rtwo[i]+pre));
-    val->set(ratio);
-    if(!getDoScore()) {
-      setBoxDerivatives(val, fact[i]*dervir);
-      for(unsigned j=0; j<nga[i]; j++) {
-        const unsigned i0=nl->getClosePair(index+j).first;
-        const unsigned i1=nl->getClosePair(index+j).second;
-        setAtomsDerivatives(val, i0,  fact[i]*deriv[index+j]);
-        setAtomsDerivatives(val, i1, -fact[i]*deriv[index+j]);
-      }
-    } else setCalcData(i, ratio);
-  }
-
-  if(getDoScore()) {
-    /* Metainference */
-    Tensor dervir;
-    double score = getScore();
-    setScore(score);
-
-    /* calculate final derivatives */
-    Value* val=getPntrToComponent("score");
+    // cycle over the number of PRE
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
     for(unsigned i=0; i<nga.size(); i++) {
-      unsigned index=0;
-      for(unsigned k=0; k<i; k++) index+=nga[k];
-      // cycle over equivalent atoms
-      for(unsigned j=0; j<nga[i]; j++) {
-        const unsigned i0=nl->getClosePair(index+j).first;
-        const unsigned i1=nl->getClosePair(index+j).second;
+        Tensor dervir;
+        double pre=0;
+        unsigned index=0;
+        for(unsigned k=0; k<i; k++) index+=nga[k];
+        const double c_aver=constant/static_cast<double>(nga[i]);
+        string num;
+        Tools::convert(i,num);
+        Value* val=getPntrToComponent("pre_"+num);
+        // cycle over equivalent atoms
+        for(unsigned j=0; j<nga[i]; j++) {
+            // the first atom is always the same (the paramagnetic group)
+            const unsigned i0=nl->getClosePair(index+j).first;
+            const unsigned i1=nl->getClosePair(index+j).second;
 
-        Vector distance;
-        if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
-        else    distance=delta(getPosition(i0),getPosition(i1));
+            Vector distance;
+            if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
+            else    distance=delta(getPosition(i0),getPosition(i1));
 
-        dervir += Tensor(distance,fact[i]*deriv[index+j]*getMetaDer(i));
-        setAtomsDerivatives(val, i0,  fact[i]*deriv[index+j]*getMetaDer(i));
-        setAtomsDerivatives(val, i1, -fact[i]*deriv[index+j]*getMetaDer(i));
-      }
+            const double r2=distance.modulo2();
+            const double r6=r2*r2*r2;
+            const double r8=r6*r2;
+            const double tmpir6=c_aver/r6;
+            const double tmpir8=-6.*c_aver/r8;
+
+            pre += tmpir6;
+            deriv[index+j] = -tmpir8*distance;
+            if(!getDoScore()) dervir   +=  Tensor(distance,deriv[index+j]);
+        }
+        const double ratio = rtwo[i]*exp(-pre*inept) / (rtwo[i]+pre);
+        fact[i] = -ratio*(inept+1./(rtwo[i]+pre));
+        val->set(ratio);
+        if(!getDoScore()) {
+            setBoxDerivatives(val, fact[i]*dervir);
+            for(unsigned j=0; j<nga[i]; j++) {
+                const unsigned i0=nl->getClosePair(index+j).first;
+                const unsigned i1=nl->getClosePair(index+j).second;
+                setAtomsDerivatives(val, i0,  fact[i]*deriv[index+j]);
+                setAtomsDerivatives(val, i1, -fact[i]*deriv[index+j]);
+            }
+        } else setCalcData(i, ratio);
     }
-    setBoxDerivatives(val, dervir);
-  }
+
+    if(getDoScore()) {
+        /* Metainference */
+        Tensor dervir;
+        double score = getScore();
+        setScore(score);
+
+        /* calculate final derivatives */
+        Value* val=getPntrToComponent("score");
+        for(unsigned i=0; i<nga.size(); i++) {
+            unsigned index=0;
+            for(unsigned k=0; k<i; k++) index+=nga[k];
+            // cycle over equivalent atoms
+            for(unsigned j=0; j<nga[i]; j++) {
+                const unsigned i0=nl->getClosePair(index+j).first;
+                const unsigned i1=nl->getClosePair(index+j).second;
+
+                Vector distance;
+                if(pbc) distance=pbcDistance(getPosition(i0),getPosition(i1));
+                else    distance=delta(getPosition(i0),getPosition(i1));
+
+                dervir += Tensor(distance,fact[i]*deriv[index+j]*getMetaDer(i));
+                setAtomsDerivatives(val, i0,  fact[i]*deriv[index+j]*getMetaDer(i));
+                setAtomsDerivatives(val, i1, -fact[i]*deriv[index+j]*getMetaDer(i));
+            }
+        }
+        setBoxDerivatives(val, dervir);
+    }
 }
 
 void PRE::update() {
-  // write status file
-  if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
+    // write status file
+    if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
 }

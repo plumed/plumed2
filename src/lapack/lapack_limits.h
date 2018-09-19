@@ -4,7 +4,7 @@ The source has been modified to (mostly) use modern C formatting, and to get rid
 compiler warnings. Any errors in doing this should be blamed on the GROMACS developers, and
 not the reference LAPACK implementation.
 
-The reference LAPACK implementation is available from http://www.netlib.org/lapack 
+The reference LAPACK implementation is available from http://www.netlib.org/lapack
 
 LAPACK does not come with a formal named "license", but a general statement saying:
 
@@ -31,7 +31,7 @@ Erik Lindahl, 2008-10-07.
 #define DORGBR_CROSSOVER    128
 
 #define DGEQRF_BLOCKSIZE    32
-#define DGEQRF_MINBLOCKSIZE 2  
+#define DGEQRF_MINBLOCKSIZE 2
 #define DGEQRF_CROSSOVER    128
 
 #define DORGQR_BLOCKSIZE    32
@@ -59,7 +59,7 @@ Erik Lindahl, 2008-10-07.
 #define DORMQR_CROSSOVER    128
 
 #define DGELQF_BLOCKSIZE    32
-#define DGELQF_MINBLOCKSIZE 2  
+#define DGELQF_MINBLOCKSIZE 2
 #define DGELQF_CROSSOVER    128
 
 #define DGETRF_BLOCKSIZE    64

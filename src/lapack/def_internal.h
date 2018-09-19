@@ -4,7 +4,7 @@ The source has been modified to (mostly) use modern C formatting, and to get rid
 compiler warnings. Any errors in doing this should be blamed on the GROMACS developers, and
 not the reference LAPACK implementation.
 
-The reference LAPACK implementation is available from http://www.netlib.org/lapack 
+The reference LAPACK implementation is available from http://www.netlib.org/lapack
 
 LAPACK does not come with a formal named "license", but a general statement saying:
 

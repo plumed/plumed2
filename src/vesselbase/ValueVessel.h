@@ -36,37 +36,37 @@ namespace vesselbase {
 class ValueVessel : public Vessel {
 private:
 // unique pointer with the same scope as final_value
-  std::unique_ptr<Value> final_value_ptr;
+    std::unique_ptr<Value> final_value_ptr;
 // this pointer either points to a non-owned Value or to final_value_ptr
-  Value* final_value;
+    Value* final_value;
 protected:
 /// The component that is being averaged/accumulated whatever
-  unsigned mycomp;
+    unsigned mycomp;
 /// Set the final value
-  void setOutputValue( const double& val );
+    void setOutputValue( const double& val );
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit ValueVessel( const VesselOptions& da );
-  std::string description();
-  virtual std::string value_descriptor()=0;
-  bool applyForce( std::vector<double>& forces );
-  double getOutputValue() const ;
-  Value* getFinalValue() const ;
+    static void registerKeywords( Keywords& keys );
+    explicit ValueVessel( const VesselOptions& da );
+    std::string description();
+    virtual std::string value_descriptor()=0;
+    bool applyForce( std::vector<double>& forces );
+    double getOutputValue() const ;
+    Value* getFinalValue() const ;
 };
 
 inline
 Value* ValueVessel::getFinalValue() const {
-  return final_value;
+    return final_value;
 }
 
 inline
 double ValueVessel::getOutputValue() const {
-  return final_value->get();
+    return final_value->get();
 }
 
 inline
 void ValueVessel::setOutputValue( const double& val ) {
-  final_value->set( val );
+    final_value->set( val );
 }
 
 }

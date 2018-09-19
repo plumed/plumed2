@@ -64,54 +64,56 @@ namespace bias {
 class ReweightTemperature : public ReweightBase {
 private:
 ///
-  double rtemp;
+    double rtemp;
 /// The biases we are using in reweighting and the args we store them separately
-  std::vector<Value*> biases;
+    std::vector<Value*> biases;
 public:
-  static void registerKeywords(Keywords&);
-  explicit ReweightTemperature(const ActionOptions&ao);
-  void prepare();
-  double getLogWeight();
+    static void registerKeywords(Keywords&);
+    explicit ReweightTemperature(const ActionOptions&ao);
+    void prepare();
+    double getLogWeight();
 };
 
 PLUMED_REGISTER_ACTION(ReweightTemperature,"REWEIGHT_TEMP")
 
 void ReweightTemperature::registerKeywords(Keywords& keys ) {
-  ReweightBase::registerKeywords( keys );
-  keys.add("compulsory","REWEIGHT_TEMP","reweight data from a trajectory at one temperature and output the probability "
-           "distribution at a second temperature. This is not possible during postprocessing.");
+    ReweightBase::registerKeywords( keys );
+    keys.add("compulsory","REWEIGHT_TEMP","reweight data from a trajectory at one temperature and output the probability "
+             "distribution at a second temperature. This is not possible during postprocessing.");
 }
 
 ReweightTemperature::ReweightTemperature(const ActionOptions&ao):
-  Action(ao),
-  ReweightBase(ao)
+    Action(ao),
+    ReweightBase(ao)
 {
-  parse("REWEIGHT_TEMP",rtemp);
-  log.printf("  reweighting simulation to probabilities at temperature %f\n",rtemp);
-  rtemp*=plumed.getAtoms().getKBoltzmann();
+    parse("REWEIGHT_TEMP",rtemp);
+    log.printf("  reweighting simulation to probabilities at temperature %f\n",rtemp);
+    rtemp*=plumed.getAtoms().getKBoltzmann();
 
-  std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-  if( all.empty() ) error("your input file is not telling plumed to calculate anything");
-  log.printf("  using the following biases in reweighting ");
-  for(unsigned j=0; j<all.size(); j++) {
-    std::string flab; flab=all[j]->getLabel() + ".bias";
-    if( all[j]->exists(flab) ) {
-      biases.push_back( all[j]->copyOutput(flab) );
-      log.printf(" %s", flab.c_str());
+    std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
+    if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+    log.printf("  using the following biases in reweighting ");
+    for(unsigned j=0; j<all.size(); j++) {
+        std::string flab;
+        flab=all[j]->getLabel() + ".bias";
+        if( all[j]->exists(flab) ) {
+            biases.push_back( all[j]->copyOutput(flab) );
+            log.printf(" %s", flab.c_str());
+        }
     }
-  }
-  log.printf("\n");
+    log.printf("\n");
 }
 
 void ReweightTemperature::prepare() {
-  plumed.getAtoms().setCollectEnergy(true);
+    plumed.getAtoms().setCollectEnergy(true);
 }
 
 double ReweightTemperature::getLogWeight() {
-  // Retrieve the bias
-  double bias=0.0; for(unsigned i=0; i<biases.size(); ++i) bias+=biases[i]->get();
-  double energy=plumed.getAtoms().getEnergy()+bias;
-  return -( (1.0/rtemp) - (1.0/simtemp) )*(energy+bias);
+    // Retrieve the bias
+    double bias=0.0;
+    for(unsigned i=0; i<biases.size(); ++i) bias+=biases[i]->get();
+    double energy=plumed.getAtoms().getEnergy()+bias;
+    return -( (1.0/rtemp) - (1.0/simtemp) )*(energy+bias);
 }
 
 }

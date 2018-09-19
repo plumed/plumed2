@@ -38,23 +38,23 @@ namespace PLMD {
 /// contain self-registering classes, they will register themselves
 /// to the ActionRegister object.
 class DLLoader {
-  std::stack<void*> handles;
-  std::string lastError;
+    std::stack<void*> handles;
+    std::string lastError;
 /// Deleted copy constructor
-  DLLoader(const DLLoader&) = delete;
+    DLLoader(const DLLoader&) = delete;
 /// Deleted assignment
-  DLLoader&operator=(const DLLoader&) = delete;
+    DLLoader&operator=(const DLLoader&) = delete;
 public:
 /// Default constructor
-  DLLoader();
+    DLLoader();
 /// Cleanup
-  ~DLLoader();
+    ~DLLoader();
 /// Load a library, returning its handle
-  void* load(const std::string&);
+    void* load(const std::string&);
 /// Returns the last error in dynamic loader
-  const std::string & error();
+    const std::string & error();
 /// Returns true if the dynamic loader is available (on some systems it may not).
-  static bool installed();
+    static bool installed();
 };
 
 }

@@ -74,96 +74,96 @@ PRINT ARG=d1
 
 
 class Center:
-  public ActionWithVirtualAtom
+    public ActionWithVirtualAtom
 {
-  std::vector<double> weights;
-  bool weight_mass;
-  bool nopbc;
+    std::vector<double> weights;
+    bool weight_mass;
+    bool nopbc;
 public:
-  explicit Center(const ActionOptions&ao);
-  void calculate();
-  static void registerKeywords( Keywords& keys );
+    explicit Center(const ActionOptions&ao);
+    void calculate();
+    static void registerKeywords( Keywords& keys );
 };
 
 PLUMED_REGISTER_ACTION(Center,"CENTER")
 
 void Center::registerKeywords(Keywords& keys) {
-  ActionWithVirtualAtom::registerKeywords(keys);
-  keys.add("optional","WEIGHTS","Center is computed as a weighted average.");
-  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-  keys.addFlag("MASS",false,"If set center is mass weighted");
+    ActionWithVirtualAtom::registerKeywords(keys);
+    keys.add("optional","WEIGHTS","Center is computed as a weighted average.");
+    keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+    keys.addFlag("MASS",false,"If set center is mass weighted");
 }
 
 Center::Center(const ActionOptions&ao):
-  Action(ao),
-  ActionWithVirtualAtom(ao),
-  weight_mass(false),
-  nopbc(false)
+    Action(ao),
+    ActionWithVirtualAtom(ao),
+    weight_mass(false),
+    nopbc(false)
 {
-  vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
-  if(atoms.size()==0) error("at least one atom should be specified");
-  parseVector("WEIGHTS",weights);
-  parseFlag("MASS",weight_mass);
-  parseFlag("NOPBC",nopbc);
-  checkRead();
-  log.printf("  of atoms:");
-  for(unsigned i=0; i<atoms.size(); ++i) {
-    if(i%25==0) log<<"\n";
-    log.printf(" %d",atoms[i].serial());
-  }
-  log<<"\n";
-  if(weight_mass) {
-    log<<"  mass weighted\n";
-    if(weights.size()!=0) error("WEIGHTS and MASS keywords should not be used simultaneously");
-  } else {
-    if( weights.size()==0) {
-      log<<" using the geometric center\n";
-      weights.resize( atoms.size() );
-      for(unsigned i=0; i<atoms.size(); i++) weights[i] = 1.;
-    } else {
-      log<<" with weights:";
-      if( weights.size()!=atoms.size() ) error("number of elements in weight vector does not match the number of atoms");
-      for(unsigned i=0; i<weights.size(); ++i) {
+    vector<AtomNumber> atoms;
+    parseAtomList("ATOMS",atoms);
+    if(atoms.size()==0) error("at least one atom should be specified");
+    parseVector("WEIGHTS",weights);
+    parseFlag("MASS",weight_mass);
+    parseFlag("NOPBC",nopbc);
+    checkRead();
+    log.printf("  of atoms:");
+    for(unsigned i=0; i<atoms.size(); ++i) {
         if(i%25==0) log<<"\n";
-        log.printf(" %f",weights[i]);
-      }
-      log.printf("\n");
+        log.printf(" %d",atoms[i].serial());
     }
-  }
-  if(nopbc) {
-    log<<"  PBC will be ignored\n";
-  } else {
-    log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
-  }
-  requestAtoms(atoms);
+    log<<"\n";
+    if(weight_mass) {
+        log<<"  mass weighted\n";
+        if(weights.size()!=0) error("WEIGHTS and MASS keywords should not be used simultaneously");
+    } else {
+        if( weights.size()==0) {
+            log<<" using the geometric center\n";
+            weights.resize( atoms.size() );
+            for(unsigned i=0; i<atoms.size(); i++) weights[i] = 1.;
+        } else {
+            log<<" with weights:";
+            if( weights.size()!=atoms.size() ) error("number of elements in weight vector does not match the number of atoms");
+            for(unsigned i=0; i<weights.size(); ++i) {
+                if(i%25==0) log<<"\n";
+                log.printf(" %f",weights[i]);
+            }
+            log.printf("\n");
+        }
+    }
+    if(nopbc) {
+        log<<"  PBC will be ignored\n";
+    } else {
+        log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
+    }
+    requestAtoms(atoms);
 }
 
 void Center::calculate() {
-  Vector pos;
-  double mass(0.0);
-  if(!nopbc) makeWhole();
-  vector<Tensor> deriv(getNumberOfAtoms());
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
-  if( plumed.getAtoms().chargesWereSet() ) {
-    double charge(0.0);
-    for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
-    setCharge(charge);
-  } else {
-    setCharge(0.0);
-  }
-  double wtot=0.0;
-  for(unsigned i=0; i<weights.size(); i++) wtot+=weights[i];
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    double w=0;
-    if(weight_mass) w=getMass(i)/mass;
-    else w=weights[i]/wtot;
-    pos+=w*getPosition(i);
-    deriv[i]=w*Tensor::identity();
-  }
-  setPosition(pos);
-  setMass(mass);
-  setAtomsDerivatives(deriv);
+    Vector pos;
+    double mass(0.0);
+    if(!nopbc) makeWhole();
+    vector<Tensor> deriv(getNumberOfAtoms());
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
+    if( plumed.getAtoms().chargesWereSet() ) {
+        double charge(0.0);
+        for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
+        setCharge(charge);
+    } else {
+        setCharge(0.0);
+    }
+    double wtot=0.0;
+    for(unsigned i=0; i<weights.size(); i++) wtot+=weights[i];
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+        double w=0;
+        if(weight_mass) w=getMass(i)/mass;
+        else w=weights[i]/wtot;
+        pos+=w*getPosition(i);
+        deriv[i]=w*Tensor::identity();
+    }
+    setPosition(pos);
+    setMass(mass);
+    setAtomsDerivatives(deriv);
 }
 
 }

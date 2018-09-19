@@ -36,26 +36,27 @@ namespace gridtools {
 
 class IntegrateGrid : public ActionWithIntegral {
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit IntegrateGrid(const ActionOptions&ao);
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
+    static void registerKeywords( Keywords& keys );
+    explicit IntegrateGrid(const ActionOptions&ao);
+    void compute( const unsigned& current, MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(IntegrateGrid,"INTEGRATE_GRID")
 
 void IntegrateGrid::registerKeywords( Keywords& keys ) {
-  ActionWithIntegral::registerKeywords( keys );
+    ActionWithIntegral::registerKeywords( keys );
 }
 
 IntegrateGrid::IntegrateGrid(const ActionOptions&ao):
-  Action(ao),
-  ActionWithIntegral(ao)
+    Action(ao),
+    ActionWithIntegral(ao)
 {
 }
 
 void IntegrateGrid::compute( const unsigned& current, MultiValue& myvals ) const {
-  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, getVolume()*getFunctionValue( current ) );
-  if( !doNotCalculateDerivatives() ) myvals.addDerivative( 1, current, getVolume() );
+    myvals.setValue( 0, 1.0 );
+    myvals.setValue( 1, getVolume()*getFunctionValue( current ) );
+    if( !doNotCalculateDerivatives() ) myvals.addDerivative( 1, current, getVolume() );
 }
 
 }

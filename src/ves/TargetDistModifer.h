@@ -30,18 +30,18 @@ namespace ves {
 
 class TargetDistModifer {
 public:
-  virtual double getModifedTargetDistValue(const double targetdist_value, const std::vector<double>& cv_values) const = 0;
-  virtual ~TargetDistModifer() {}
+    virtual double getModifedTargetDistValue(const double targetdist_value, const std::vector<double>& cv_values) const = 0;
+    virtual ~TargetDistModifer() {}
 };
 
 class WellTemperedModifer:public TargetDistModifer {
 private:
-  double invbiasf_;
+    double invbiasf_;
 public:
-  explicit WellTemperedModifer(double biasfactor):invbiasf_(1.0/biasfactor) {}
-  double getModifedTargetDistValue(const double targetdist_value, const std::vector<double>& cv_values) const {
-    return std::pow(targetdist_value,invbiasf_);
-  }
+    explicit WellTemperedModifer(double biasfactor):invbiasf_(1.0/biasfactor) {}
+    double getModifedTargetDistValue(const double targetdist_value, const std::vector<double>& cv_values) const {
+        return std::pow(targetdist_value,invbiasf_);
+    }
 };
 
 

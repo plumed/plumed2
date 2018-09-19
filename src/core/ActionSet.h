@@ -37,34 +37,34 @@ class PlumedMain;
 /// Finally, since it holds pointers, there is a clearDelete() function
 /// which deletes the pointers before deleting the vector
 class ActionSet:
-  public std::vector<std::unique_ptr<Action>>
+    public std::vector<std::unique_ptr<Action>>
 {
-  PlumedMain& plumed;
+    PlumedMain& plumed;
 public:
-  explicit ActionSet(PlumedMain&p);
-  ~ActionSet();
+    explicit ActionSet(PlumedMain&p);
+    ~ActionSet();
 /// Clear and deletes all the included pointers.
-  void clearDelete();
+    void clearDelete();
 
 /// Extract pointers to all Action's of type T
 /// To extract all Colvar , use select<Colvar*>();
-  template <class T>
-  std::vector<T> select()const;
+    template <class T>
+    std::vector<T> select()const;
 /// Extract pointers to all Action's which are not of type T
 /// E.g., to extract all noncolvars, use
 ///    selectNot<Colvar*>();
-  template <class T>
-  std::vector<Action*> selectNot()const;
+    template <class T>
+    std::vector<Action*> selectNot()const;
 /// Extract pointer to an action labeled s, only if it is of
 /// type T. E.g., to extract an action labeled "pippo", use selectWithLabel<Action*>("pippo")
 /// If you want it to be a Colvar, use selectWithLabel<Colvar*>(pippo). If it is
 /// not found, it returns NULL
-  template <class T>
-  T selectWithLabel(const std::string&s)const;
+    template <class T>
+    T selectWithLabel(const std::string&s)const;
 /// get the labels in the list of actions in form of a string (useful to debug)
-  std::string getLabelList() const;
+    std::string getLabelList() const;
 /// get the labels in the form of a vector of strings
-  std::vector<std::string> getLabelVector() const;
+    std::vector<std::string> getLabelVector() const;
 };
 
 /////
@@ -72,31 +72,31 @@ public:
 
 template <class T>
 std::vector<T> ActionSet::select()const {
-  std::vector<T> ret;
-  for(const auto & p : (*this)) {
-    T t=dynamic_cast<T>(p.get());
-    if(t) ret.push_back(t);
-  };
-  return ret;
+    std::vector<T> ret;
+    for(const auto & p : (*this)) {
+        T t=dynamic_cast<T>(p.get());
+        if(t) ret.push_back(t);
+    };
+    return ret;
 }
 
 template <class T>
 T ActionSet::selectWithLabel(const std::string&s)const {
-  for(const auto & p : (*this)) {
-    T t=dynamic_cast<T>(p.get());
-    if(t && dynamic_cast<Action*>(t)->getLabel()==s) return t;
-  };
-  return NULL;
+    for(const auto & p : (*this)) {
+        T t=dynamic_cast<T>(p.get());
+        if(t && dynamic_cast<Action*>(t)->getLabel()==s) return t;
+    };
+    return NULL;
 }
 
 template <class T>
 std::vector<Action*> ActionSet::selectNot()const {
-  std::vector<Action*> ret;
-  for(const auto & p : (*this)) {
-    T t=dynamic_cast<T>(p);
-    if(!t) ret.push_back(p.get());
-  };
-  return ret;
+    std::vector<Action*> ret;
+    for(const auto & p : (*this)) {
+        T t=dynamic_cast<T>(p);
+        if(!t) ret.push_back(p.get());
+    };
+    return ret;
 }
 
 }

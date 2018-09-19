@@ -68,82 +68,82 @@ only when required.
 //+ENDPLUMEDOC
 
 class Print :
-  public ActionPilot,
-  public ActionWithArguments
+    public ActionPilot,
+    public ActionWithArguments
 {
-  string file;
-  OFile ofile;
-  string fmt;
+    string file;
+    OFile ofile;
+    string fmt;
 // small internal utility
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
 // printed argument
-  int rotate;
-  int rotateCountdown;
-  int rotateLast;
-  vector<Value*> rotateArguments;
+    int rotate;
+    int rotateCountdown;
+    int rotateLast;
+    vector<Value*> rotateArguments;
 /////////////////////////////////////////
 public:
-  void calculate() {}
-  void prepare();
-  explicit Print(const ActionOptions&);
-  static void registerKeywords(Keywords& keys);
-  void apply() {}
-  void update();
-  ~Print();
+    void calculate() {}
+    void prepare();
+    explicit Print(const ActionOptions&);
+    static void registerKeywords(Keywords& keys);
+    void apply() {}
+    void update();
+    ~Print();
 };
 
 PLUMED_REGISTER_ACTION(Print,"PRINT")
 
 void Print::registerKeywords(Keywords& keys) {
-  Action::registerKeywords(keys);
-  ActionPilot::registerKeywords(keys);
-  ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
-  keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
-  keys.add("optional","FILE","the name of the file on which to output these quantities");
-  keys.add("optional","FMT","the format that should be used to output real numbers");
-  keys.add("hidden","_ROTATE","some funky thing implemented by GBussi");
-  keys.use("RESTART");
-  keys.use("UPDATE_FROM");
-  keys.use("UPDATE_UNTIL");
+    Action::registerKeywords(keys);
+    ActionPilot::registerKeywords(keys);
+    ActionWithArguments::registerKeywords(keys);
+    keys.use("ARG");
+    keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
+    keys.add("optional","FILE","the name of the file on which to output these quantities");
+    keys.add("optional","FMT","the format that should be used to output real numbers");
+    keys.add("hidden","_ROTATE","some funky thing implemented by GBussi");
+    keys.use("RESTART");
+    keys.use("UPDATE_FROM");
+    keys.use("UPDATE_UNTIL");
 }
 
 Print::Print(const ActionOptions&ao):
-  Action(ao),
-  ActionPilot(ao),
-  ActionWithArguments(ao),
-  fmt("%f"),
-  rotate(0)
+    Action(ao),
+    ActionPilot(ao),
+    ActionWithArguments(ao),
+    fmt("%f"),
+    rotate(0)
 {
-  ofile.link(*this);
-  parse("FILE",file);
-  if(file.length()>0) {
-    ofile.open(file);
-    log.printf("  on file %s\n",file.c_str());
-  } else {
-    log.printf("  on plumed log file\n");
-    ofile.link(log);
-  }
-  parse("FMT",fmt);
-  fmt=" "+fmt;
-  log.printf("  with format %s\n",fmt.c_str());
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) ofile.setupPrintValue( getPntrToArgument(i) );
+    ofile.link(*this);
+    parse("FILE",file);
+    if(file.length()>0) {
+        ofile.open(file);
+        log.printf("  on file %s\n",file.c_str());
+    } else {
+        log.printf("  on plumed log file\n");
+        ofile.link(log);
+    }
+    parse("FMT",fmt);
+    fmt=" "+fmt;
+    log.printf("  with format %s\n",fmt.c_str());
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) ofile.setupPrintValue( getPntrToArgument(i) );
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
 // printed argument
-  parse("_ROTATE",rotate);
-  if(rotate>0) {
-    rotateCountdown=rotate;
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) rotateArguments.push_back( getPntrToArgument(i) );
-    vector<Value*> a(1,rotateArguments[0]);
-    requestArguments(vector<Value*>(1,rotateArguments[0]));
-    rotateLast=0;
-  }
+    parse("_ROTATE",rotate);
+    if(rotate>0) {
+        rotateCountdown=rotate;
+        for(unsigned i=0; i<getNumberOfArguments(); ++i) rotateArguments.push_back( getPntrToArgument(i) );
+        vector<Value*> a(1,rotateArguments[0]);
+        requestArguments(vector<Value*>(1,rotateArguments[0]));
+        rotateLast=0;
+    }
 /////////////////////////////////////////
-  checkRead();
+    checkRead();
 }
 
 void Print::prepare() {
@@ -151,26 +151,26 @@ void Print::prepare() {
 // these are crazy things just for debug:
 // they allow to change regularly the
 // printed argument
-  if(rotate>0) {
-    rotateCountdown--;
-    if(rotateCountdown==0) {
-      rotateCountdown=rotate;
-      rotateLast++;
-      rotateLast%=rotateArguments.size();
-      requestArguments(vector<Value*>(1,rotateArguments[rotateLast]));
+    if(rotate>0) {
+        rotateCountdown--;
+        if(rotateCountdown==0) {
+            rotateCountdown=rotate;
+            rotateLast++;
+            rotateLast%=rotateArguments.size();
+            requestArguments(vector<Value*>(1,rotateArguments[rotateLast]));
+        }
     }
-  }
 /////////////////////////////////////////
 }
 
 void Print::update() {
-  ofile.fmtField(" %f");
-  ofile.printField("time",getTime());
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    ofile.fmtField(fmt);
-    ofile.printField( getPntrToArgument(i), getArgument(i) );
-  }
-  ofile.printField();
+    ofile.fmtField(" %f");
+    ofile.printField("time",getTime());
+    for(unsigned i=0; i<getNumberOfArguments(); i++) {
+        ofile.fmtField(fmt);
+        ofile.printField( getPntrToArgument(i), getArgument(i) );
+    }
+    ofile.printField();
 }
 
 Print::~Print() {

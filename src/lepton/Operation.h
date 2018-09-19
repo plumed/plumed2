@@ -97,7 +97,8 @@ public:
      */
     enum Id {CONSTANT, VARIABLE, CUSTOM, ADD, SUBTRACT, MULTIPLY, DIVIDE, POWER, NEGATE, SQRT, EXP, LOG,
              SIN, COS, SEC, CSC, TAN, COT, ASIN, ACOS, ATAN, SINH, COSH, TANH, ERF, ERFC, STEP, DELTA, SQUARE, CUBE, RECIPROCAL,
-             ADD_CONSTANT, MULTIPLY_CONSTANT, POWER_CONSTANT, MIN, MAX, ABS, FLOOR, CEIL, SELECT};
+             ADD_CONSTANT, MULTIPLY_CONSTANT, POWER_CONSTANT, MIN, MAX, ABS, FLOOR, CEIL, SELECT
+            };
     /**
      * Get the name of this Operation.
      */
@@ -1022,7 +1023,7 @@ public:
     double evaluate(double* args, const std::map<std::string, double>& variables) const {
         if (isIntPower) {
             // Integer powers can be computed much more quickly by repeated multiplication.
-            
+
             int exponent = intValue;
             double base = args[0];
             if (exponent < 0) {
@@ -1035,11 +1036,11 @@ public:
                     result *= base;
                 base *= base;
                 exponent = exponent>>1;
-           }
-           return result;
+            }
+            return result;
         }
         else
-        return std::pow(args[0], value);
+            return std::pow(args[0], value);
     }
     ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const;
     double getValue() const {

@@ -65,7 +65,7 @@
 #include "Operation.h"
 #include "ParsedExpression.h"
 #ifdef __PLUMED_HAS_ASMJIT
-    #include "asmjit/asmjit.h"
+#include "asmjit/asmjit.h"
 #endif
 #include <utility>
 
@@ -73,19 +73,19 @@ namespace PLMD {
 using namespace lepton;
 using namespace std;
 #ifdef __PLUMED_HAS_ASMJIT
-    using namespace asmjit;
+using namespace asmjit;
 #endif
 
 AsmJitRuntimePtr::AsmJitRuntimePtr()
 #ifdef __PLUMED_HAS_ASMJIT
-  : ptr(new asmjit::JitRuntime)
+    : ptr(new asmjit::JitRuntime)
 #endif
 {}
 
 AsmJitRuntimePtr::~AsmJitRuntimePtr()
 {
 #ifdef __PLUMED_HAS_ASMJIT
-  delete static_cast<asmjit::JitRuntime*>(ptr);
+    delete static_cast<asmjit::JitRuntime*>(ptr);
 #endif
 }
 
@@ -133,17 +133,17 @@ CompiledExpression& CompiledExpression::operator=(const CompiledExpression& expr
 void CompiledExpression::compileExpression(const ExpressionTreeNode& node, vector<pair<ExpressionTreeNode, int> >& temps) {
     if (findTempIndex(node, temps) != -1)
         return; // We have already processed a node identical to this one.
-    
+
     // Process the child nodes.
-    
+
     vector<int> args;
     for (int i = 0; i < node.getChildren().size(); i++) {
         compileExpression(node.getChildren()[i], temps);
         args.push_back(findTempIndex(node.getChildren()[i], temps));
     }
-    
+
     // Process this node.
-    
+
     if (node.getOperation().getId() == Operation::VARIABLE) {
         variableIndices[node.getOperation().getName()] = (int) workspace.size();
         variableNames.insert(node.getOperation().getName());
@@ -157,7 +157,7 @@ void CompiledExpression::compileExpression(const ExpressionTreeNode& node, vecto
             arguments[stepIndex].push_back(0); // The value won't actually be used.  We just need something there.
         else {
             // If the arguments are sequential, we can just pass a pointer to the first one.
-            
+
             bool sequential = true;
             for (int i = 1; i < args.size(); i++)
                 if (args[i] != args[i-1]+1)
@@ -197,12 +197,12 @@ void CompiledExpression::setVariableLocations(map<string, double*>& variableLoca
     variablePointers = variableLocations;
 #ifdef __PLUMED_HAS_ASMJIT
     // Rebuild the JIT code.
-    
+
     if (workspace.size() > 0)
         generateJitCode();
 #else
     // Make a list of all variables we will need to copy before evaluating the expression.
-    
+
     variablesToCopy.clear();
     for (map<string, int>::const_iterator iter = variableIndices.begin(); iter != variableIndices.end(); ++iter) {
         map<string, double*>::iterator pointer = variablePointers.find(iter->first);
@@ -220,7 +220,7 @@ double CompiledExpression::evaluate() const {
         *variablesToCopy[i].first = *variablesToCopy[i].second;
 
     // Loop over the operations and evaluate each one.
-    
+
     for (int step = 0; step < operation.size(); step++) {
         const vector<int>& args = arguments[step];
         if (args.size() == 1)
@@ -255,9 +255,9 @@ void CompiledExpression::generateJitCode() {
         workspaceVar[i] = c.newXmmSd();
     X86Gp argsPointer = c.newIntPtr();
     c.mov(argsPointer, imm_ptr(&argValues[0]));
-    
+
     // Load the arguments into variables.
-    
+
     for (set<string>::const_iterator iter = variableNames.begin(); iter != variableNames.end(); ++iter) {
         map<string, int>::iterator index = variableIndices.find(*iter);
         X86Gp variablePointer = c.newIntPtr();
@@ -266,11 +266,11 @@ void CompiledExpression::generateJitCode() {
     }
 
     // Make a list of all constants that will be needed for evaluation.
-    
+
     vector<int> operationConstantIndex(operation.size(), -1);
     for (int step = 0; step < (int) operation.size(); step++) {
         // Find the constant value (if any) used by this operation.
-        
+
         Operation& op = *operation[step];
         double value;
         if (op.getId() == Operation::CONSTANT)
@@ -287,9 +287,9 @@ void CompiledExpression::generateJitCode() {
             value = 1.0;
         else
             continue;
-        
+
         // See if we already have a variable for this constant.
-        
+
         for (int i = 0; i < (int) constants.size(); i++)
             if (value == constants[i]) {
                 operationConstantIndex[step] = i;
@@ -300,9 +300,9 @@ void CompiledExpression::generateJitCode() {
             constants.push_back(value);
         }
     }
-    
+
     // Load constants into variables.
-    
+
     vector<X86Xmm> constantVar(constants.size());
     if (constants.size() > 0) {
         X86Gp constantsPointer = c.newIntPtr();
@@ -312,132 +312,132 @@ void CompiledExpression::generateJitCode() {
             c.movsd(constantVar[i], x86::ptr(constantsPointer, 8*i, 0));
         }
     }
-    
+
     // Evaluate the operations.
-    
+
     for (int step = 0; step < (int) operation.size(); step++) {
         Operation& op = *operation[step];
         vector<int> args = arguments[step];
         if (args.size() == 1) {
             // One or more sequential arguments.  Fill out the list.
-            
+
             for (int i = 1; i < op.getNumArguments(); i++)
                 args.push_back(args[0]+i);
         }
-        
+
         // Generate instructions to execute this operation.
-        
+
         switch (op.getId()) {
-            case Operation::CONSTANT:
-                c.movsd(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
-                break;
-            case Operation::ADD:
-                c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                c.addsd(workspaceVar[target[step]], workspaceVar[args[1]]);
-                break;
-            case Operation::SUBTRACT:
-                c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                c.subsd(workspaceVar[target[step]], workspaceVar[args[1]]);
-                break;
-            case Operation::MULTIPLY:
-                c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                c.mulsd(workspaceVar[target[step]], workspaceVar[args[1]]);
-                break;
-            case Operation::DIVIDE:
-                c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                c.divsd(workspaceVar[target[step]], workspaceVar[args[1]]);
-                break;
-            case Operation::NEGATE:
-                c.xorps(workspaceVar[target[step]], workspaceVar[target[step]]);
-                c.subsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                break;
-            case Operation::SQRT:
-                c.sqrtsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                break;
-            case Operation::EXP:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], exp);
-                break;
-            case Operation::LOG:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], log);
-                break;
-            case Operation::SIN:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], sin);
-                break;
-            case Operation::COS:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], cos);
-                break;
-            case Operation::TAN:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], tan);
-                break;
-            case Operation::ASIN:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], asin);
-                break;
-            case Operation::ACOS:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], acos);
-                break;
-            case Operation::ATAN:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], atan);
-                break;
-            case Operation::SINH:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], sinh);
-                break;
-            case Operation::COSH:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], cosh);
-                break;
-            case Operation::TANH:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], tanh);
-                break;
-            case Operation::STEP:
-                c.xorps(workspaceVar[target[step]], workspaceVar[target[step]]);
-                c.cmpsd(workspaceVar[target[step]], workspaceVar[args[0]], imm(18)); // Comparison mode is _CMP_LE_OQ = 18
-                c.andps(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
-                break;
-            case Operation::DELTA:
-                c.xorps(workspaceVar[target[step]], workspaceVar[target[step]]);
-                c.cmpsd(workspaceVar[target[step]], workspaceVar[args[0]], imm(16)); // Comparison mode is _CMP_EQ_OS = 16
-                c.andps(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
-                break;
-            case Operation::SQUARE:
-                c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                c.mulsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                break;
-            case Operation::CUBE:
-                c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                c.mulsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                c.mulsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                break;
-            case Operation::RECIPROCAL:
-                c.movsd(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
-                c.divsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                break;
-            case Operation::ADD_CONSTANT:
-                c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                c.addsd(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
-                break;
-            case Operation::MULTIPLY_CONSTANT:
-                c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
-                c.mulsd(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
-                break;
-            case Operation::ABS:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], fabs);
-                break;
-            case Operation::FLOOR:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], floor);
-                break;
-            case Operation::CEIL:
-                generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], ceil);
-                break;
-            default:
-                // Just invoke evaluateOperation().
-                
-                for (int i = 0; i < (int) args.size(); i++)
-                    c.movsd(x86::ptr(argsPointer, 8*i, 0), workspaceVar[args[i]]);
-                X86Gp fn = c.newIntPtr();
-                c.mov(fn, imm_ptr((void*) evaluateOperation));
-                CCFuncCall* call = c.call(fn, FuncSignature2<double, Operation*, double*>(CallConv::kIdHost));
-                call->setArg(0, imm_ptr(&op));
-                call->setArg(1, imm_ptr(&argValues[0]));
-                call->setRet(0, workspaceVar[target[step]]);
+        case Operation::CONSTANT:
+            c.movsd(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
+            break;
+        case Operation::ADD:
+            c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            c.addsd(workspaceVar[target[step]], workspaceVar[args[1]]);
+            break;
+        case Operation::SUBTRACT:
+            c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            c.subsd(workspaceVar[target[step]], workspaceVar[args[1]]);
+            break;
+        case Operation::MULTIPLY:
+            c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            c.mulsd(workspaceVar[target[step]], workspaceVar[args[1]]);
+            break;
+        case Operation::DIVIDE:
+            c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            c.divsd(workspaceVar[target[step]], workspaceVar[args[1]]);
+            break;
+        case Operation::NEGATE:
+            c.xorps(workspaceVar[target[step]], workspaceVar[target[step]]);
+            c.subsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            break;
+        case Operation::SQRT:
+            c.sqrtsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            break;
+        case Operation::EXP:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], exp);
+            break;
+        case Operation::LOG:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], log);
+            break;
+        case Operation::SIN:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], sin);
+            break;
+        case Operation::COS:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], cos);
+            break;
+        case Operation::TAN:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], tan);
+            break;
+        case Operation::ASIN:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], asin);
+            break;
+        case Operation::ACOS:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], acos);
+            break;
+        case Operation::ATAN:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], atan);
+            break;
+        case Operation::SINH:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], sinh);
+            break;
+        case Operation::COSH:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], cosh);
+            break;
+        case Operation::TANH:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], tanh);
+            break;
+        case Operation::STEP:
+            c.xorps(workspaceVar[target[step]], workspaceVar[target[step]]);
+            c.cmpsd(workspaceVar[target[step]], workspaceVar[args[0]], imm(18)); // Comparison mode is _CMP_LE_OQ = 18
+            c.andps(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
+            break;
+        case Operation::DELTA:
+            c.xorps(workspaceVar[target[step]], workspaceVar[target[step]]);
+            c.cmpsd(workspaceVar[target[step]], workspaceVar[args[0]], imm(16)); // Comparison mode is _CMP_EQ_OS = 16
+            c.andps(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
+            break;
+        case Operation::SQUARE:
+            c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            c.mulsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            break;
+        case Operation::CUBE:
+            c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            c.mulsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            c.mulsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            break;
+        case Operation::RECIPROCAL:
+            c.movsd(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
+            c.divsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            break;
+        case Operation::ADD_CONSTANT:
+            c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            c.addsd(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
+            break;
+        case Operation::MULTIPLY_CONSTANT:
+            c.movsd(workspaceVar[target[step]], workspaceVar[args[0]]);
+            c.mulsd(workspaceVar[target[step]], constantVar[operationConstantIndex[step]]);
+            break;
+        case Operation::ABS:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], fabs);
+            break;
+        case Operation::FLOOR:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], floor);
+            break;
+        case Operation::CEIL:
+            generateSingleArgCall(c, workspaceVar[target[step]], workspaceVar[args[0]], ceil);
+            break;
+        default:
+            // Just invoke evaluateOperation().
+
+            for (int i = 0; i < (int) args.size(); i++)
+                c.movsd(x86::ptr(argsPointer, 8*i, 0), workspaceVar[args[i]]);
+            X86Gp fn = c.newIntPtr();
+            c.mov(fn, imm_ptr((void*) evaluateOperation));
+            CCFuncCall* call = c.call(fn, FuncSignature2<double, Operation*, double*>(CallConv::kIdHost));
+            call->setArg(0, imm_ptr(&op));
+            call->setArg(1, imm_ptr(&argValues[0]));
+            call->setRet(0, workspaceVar[target[step]]);
         }
     }
     c.ret(workspaceVar[workspace.size()-1]);

@@ -126,86 +126,101 @@ calculated at every step.
 class Distances : public MultiColvarBase {
 private:
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit Distances(const ActionOptions&);
+    static void registerKeywords( Keywords& keys );
+    explicit Distances(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+    virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+    bool isPeriodic() {
+        return false;
+    }
 };
 
 PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
 
 void Distances::registerKeywords( Keywords& keys ) {
-  MultiColvarBase::registerKeywords( keys );
-  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); // keys.use("DHENERGY");
-  keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.add("numbered","ATOMS","the atoms involved in each of the distances you wish to calculate. "
-           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one distance will be "
-           "calculated for each ATOM keyword you specify (all ATOM keywords should "
-           "specify the indices of two atoms).  The eventual number of quantities calculated by this "
-           "action will depend on what functions of the distribution you choose to calculate.");
-  keys.reset_style("ATOMS","atoms");
-  keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
-  keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-           "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
-  keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-           "in GROUPB. This must be used in conjuction with GROUPA.");
+    MultiColvarBase::registerKeywords( keys );
+    keys.use("ALT_MIN");
+    keys.use("LOWEST");
+    keys.use("HIGHEST");
+    keys.use("MEAN");
+    keys.use("MIN");
+    keys.use("MAX");
+    keys.use("LESS_THAN"); // keys.use("DHENERGY");
+    keys.use("MORE_THAN");
+    keys.use("BETWEEN");
+    keys.use("HISTOGRAM");
+    keys.use("MOMENTS");
+    keys.add("numbered","ATOMS","the atoms involved in each of the distances you wish to calculate. "
+             "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one distance will be "
+             "calculated for each ATOM keyword you specify (all ATOM keywords should "
+             "specify the indices of two atoms).  The eventual number of quantities calculated by this "
+             "action will depend on what functions of the distribution you choose to calculate.");
+    keys.reset_style("ATOMS","atoms");
+    keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
+    keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
+             "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+    keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
+             "in GROUPB. This must be used in conjuction with GROUPA.");
 }
 
 Distances::Distances(const ActionOptions&ao):
-  Action(ao),
-  MultiColvarBase(ao)
+    Action(ao),
+    MultiColvarBase(ao)
 {
-  // Read in the atoms
-  std::vector<AtomNumber> all_atoms;
-  readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
-  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
-  setupMultiColvarBase( all_atoms );
-  // And check everything has been read in correctly
-  checkRead();
+    // Read in the atoms
+    std::vector<AtomNumber> all_atoms;
+    readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
+    if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+    setupMultiColvarBase( all_atoms );
+    // And check everything has been read in correctly
+    checkRead();
 
-  // Now check if we can use link cells
-  if( getNumberOfVessels()>0 ) {
-    bool use_link=false; double rcut;
-    vesselbase::LessThan* lt=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(0) );
-    if( lt ) {
-      use_link=true; rcut=lt->getCutoff();
-    } else {
-      vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(0) );
-      if( bt ) { use_link=true; rcut=bt->getCutoff(); }
-    }
-    if( use_link ) {
-      for(unsigned i=1; i<getNumberOfVessels(); ++i) {
-        vesselbase::LessThan* lt2=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(i) );
-        vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(i) );
-        if( lt2 ) {
-          double tcut=lt2->getCutoff();
-          if( tcut>rcut ) rcut=tcut;
-        } else if( bt ) {
-          double tcut=bt->getCutoff();
-          if( tcut>rcut ) rcut=tcut;
+    // Now check if we can use link cells
+    if( getNumberOfVessels()>0 ) {
+        bool use_link=false;
+        double rcut;
+        vesselbase::LessThan* lt=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(0) );
+        if( lt ) {
+            use_link=true;
+            rcut=lt->getCutoff();
         } else {
-          use_link=false;
+            vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(0) );
+            if( bt ) {
+                use_link=true;
+                rcut=bt->getCutoff();
+            }
         }
-      }
+        if( use_link ) {
+            for(unsigned i=1; i<getNumberOfVessels(); ++i) {
+                vesselbase::LessThan* lt2=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(i) );
+                vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(i) );
+                if( lt2 ) {
+                    double tcut=lt2->getCutoff();
+                    if( tcut>rcut ) rcut=tcut;
+                } else if( bt ) {
+                    double tcut=bt->getCutoff();
+                    if( tcut>rcut ) rcut=tcut;
+                } else {
+                    use_link=false;
+                }
+            }
+        }
+        if( use_link ) setLinkCellCutoff( rcut );
     }
-    if( use_link ) setLinkCellCutoff( rcut );
-  }
 }
 
 double Distances::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  Vector distance;
-  distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  const double value=distance.modulo();
-  const double invvalue=1.0/value;
+    Vector distance;
+    distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+    const double value=distance.modulo();
+    const double invvalue=1.0/value;
 
-  // And finish the calculation
-  addAtomDerivatives( 1, 0,-invvalue*distance, myatoms );
-  addAtomDerivatives( 1, 1, invvalue*distance, myatoms );
-  myatoms.addBoxDerivatives( 1, -invvalue*Tensor(distance,distance) );
-  return value;
+    // And finish the calculation
+    addAtomDerivatives( 1, 0,-invvalue*distance, myatoms );
+    addAtomDerivatives( 1, 1, invvalue*distance, myatoms );
+    myatoms.addBoxDerivatives( 1, -invvalue*Tensor(distance,distance) );
+    return value;
 }
 
 }

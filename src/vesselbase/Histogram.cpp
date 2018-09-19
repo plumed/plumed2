@@ -28,35 +28,39 @@ namespace vesselbase {
 
 class Histogram : public ShortcutVessel {
 public:
-  static void registerKeywords( Keywords& keys );
-  static void reserveKeyword( Keywords& keys );
-  explicit Histogram( const VesselOptions& da );
+    static void registerKeywords( Keywords& keys );
+    static void reserveKeyword( Keywords& keys );
+    explicit Histogram( const VesselOptions& da );
 };
 
 PLUMED_REGISTER_VESSEL(Histogram,"HISTOGRAM")
 
 void Histogram::registerKeywords( Keywords& keys ) {
-  ShortcutVessel::registerKeywords( keys );
-  HistogramBead::registerKeywords( keys );
-  keys.add("compulsory","NBINS","The number of equal width bins you want to divide the range into");
-  keys.addFlag("NORM",false,"calculate the fraction of values rather than the number");
-  keys.add("compulsory","COMPONENT","1","the component of the vector for which to calculate this quantity");
+    ShortcutVessel::registerKeywords( keys );
+    HistogramBead::registerKeywords( keys );
+    keys.add("compulsory","NBINS","The number of equal width bins you want to divide the range into");
+    keys.addFlag("NORM",false,"calculate the fraction of values rather than the number");
+    keys.add("compulsory","COMPONENT","1","the component of the vector for which to calculate this quantity");
 }
 
 void Histogram::reserveKeyword( Keywords& keys ) {
-  keys.reserve("vessel","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
-               "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
+    keys.reserve("vessel","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
+                 "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
 }
 
 Histogram::Histogram( const VesselOptions& da ):
-  ShortcutVessel(da)
+    ShortcutVessel(da)
 {
-  bool norm; parseFlag("NORM",norm); std::string normstr="";
-  if(norm) normstr=" NORM";
-  std::string compstr; parse("COMPONENT",compstr);
-  normstr+=" COMPONENT=" + compstr;
-  std::vector<std::string> bins; HistogramBead::generateBins( getAllInput(), bins );
-  for(unsigned i=0; i<bins.size(); ++i) addVessel("BETWEEN",bins[i] + normstr);
+    bool norm;
+    parseFlag("NORM",norm);
+    std::string normstr="";
+    if(norm) normstr=" NORM";
+    std::string compstr;
+    parse("COMPONENT",compstr);
+    normstr+=" COMPONENT=" + compstr;
+    std::vector<std::string> bins;
+    HistogramBead::generateBins( getAllInput(), bins );
+    for(unsigned i=0; i<bins.size(); ++i) addVessel("BETWEEN",bins[i] + normstr);
 }
 
 }

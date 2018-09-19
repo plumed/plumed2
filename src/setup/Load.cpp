@@ -96,28 +96,28 @@ the whole PLUMED.
 //+ENDPLUMEDOC
 
 class Load :
-  public virtual ActionSetup
+    public virtual ActionSetup
 {
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit Load(const ActionOptions&ao);
+    static void registerKeywords( Keywords& keys );
+    explicit Load(const ActionOptions&ao);
 };
 
 PLUMED_REGISTER_ACTION(Load,"LOAD")
 
 void Load::registerKeywords( Keywords& keys ) {
-  ActionSetup::registerKeywords(keys);
-  keys.add("compulsory","FILE","file to be loaded");
+    ActionSetup::registerKeywords(keys);
+    keys.add("compulsory","FILE","file to be loaded");
 }
 
 Load::Load(const ActionOptions&ao):
-  Action(ao),
-  ActionSetup(ao)
+    Action(ao),
+    ActionSetup(ao)
 {
-  std::string f;
-  parse("FILE",f);
-  checkRead();
-  plumed.load(f);
+    std::string f;
+    parse("FILE",f);
+    checkRead();
+    plumed.load(f);
 }
 
 }

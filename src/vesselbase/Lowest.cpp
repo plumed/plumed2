@@ -27,35 +27,35 @@ namespace vesselbase {
 
 class Lowest : public OrderingVessel {
 public:
-  static void registerKeywords( Keywords& keys );
-  static void reserveKeyword( Keywords& keys );
-  explicit Lowest( const VesselOptions& da );
-  std::string value_descriptor();
-  bool compare( const double&, const double& );
+    static void registerKeywords( Keywords& keys );
+    static void reserveKeyword( Keywords& keys );
+    explicit Lowest( const VesselOptions& da );
+    std::string value_descriptor();
+    bool compare( const double&, const double& );
 };
 
 PLUMED_REGISTER_VESSEL(Lowest,"LOWEST")
 
 void Lowest::registerKeywords( Keywords& keys ) {
-  OrderingVessel::registerKeywords( keys );
+    OrderingVessel::registerKeywords( keys );
 }
 
 void Lowest::reserveKeyword( Keywords& keys ) {
-  keys.reserve("vessel","LOWEST","this flag allows you to recover the lowest of these variables.");
-  keys.addOutputComponent("lowest","LOWEST","the lowest of the quantitities calculated by this action");
+    keys.reserve("vessel","LOWEST","this flag allows you to recover the lowest of these variables.");
+    keys.addOutputComponent("lowest","LOWEST","the lowest of the quantitities calculated by this action");
 }
 
 Lowest::Lowest( const VesselOptions& da ) :
-  OrderingVessel(da)
+    OrderingVessel(da)
 {
 }
 
 std::string Lowest::value_descriptor() {
-  return "the lowest of the individual colvar values";
+    return "the lowest of the individual colvar values";
 }
 
 bool Lowest::compare( const double& val1, const double& val2 ) {
-  return val1<val2;
+    return val1<val2;
 }
 
 }

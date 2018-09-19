@@ -76,75 +76,75 @@ res: RESTRAINT ARG=stca.*,stcb.*,stco.*,sthn.*,stnh.* AT=0.,0.,0.,0.,0. KAPPA=0.
 
 
 class LocalEnsemble :
-  public Function
+    public Function
 {
-  unsigned ens_dim;
-  unsigned narg;
+    unsigned ens_dim;
+    unsigned narg;
 public:
-  explicit LocalEnsemble(const ActionOptions&);
-  void     calculate();
-  static void registerKeywords(Keywords& keys);
+    explicit LocalEnsemble(const ActionOptions&);
+    void     calculate();
+    static void registerKeywords(Keywords& keys);
 };
 
 
 PLUMED_REGISTER_ACTION(LocalEnsemble,"LOCALENSEMBLE")
 
 void LocalEnsemble::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys);
-  keys.use("ARG");
-  keys.add("compulsory","NUM","the number of local replicas");
-  ActionWithValue::useCustomisableComponents(keys);
+    Function::registerKeywords(keys);
+    keys.use("ARG");
+    keys.add("compulsory","NUM","the number of local replicas");
+    ActionWithValue::useCustomisableComponents(keys);
 }
 
 LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
-  Action(ao),
-  Function(ao),
-  ens_dim(0)
+    Action(ao),
+    Function(ao),
+    ens_dim(0)
 {
-  parse("NUM",ens_dim);
-  if(ens_dim==0) error("NUM should be greater or equal to 1");
+    parse("NUM",ens_dim);
+    if(ens_dim==0) error("NUM should be greater or equal to 1");
 
-  vector<Value*> arg;
-  int oldsize=-1;
-  for(unsigned i=1; i<=ens_dim; ++i ) {
-    vector<Value*> larg;
-    if(!parseArgumentList("ARG",i,larg)) break;
-    for(unsigned j=0; j<larg.size(); j++) arg.push_back(larg[j]);
-    if(oldsize!=-1&&oldsize!=static_cast<int>(larg.size())) error("In LOCALENSEMBLE you should have the same number of arguments for each ARG keyword");
-    oldsize = larg.size();
-    if(!larg.empty()) {
-      log.printf("  with arguments %u: ", i);
-      for(unsigned j=0; j<larg.size(); j++) log.printf(" %s",larg[j]->getName().c_str());
-      log.printf("\n");
+    vector<Value*> arg;
+    int oldsize=-1;
+    for(unsigned i=1; i<=ens_dim; ++i ) {
+        vector<Value*> larg;
+        if(!parseArgumentList("ARG",i,larg)) break;
+        for(unsigned j=0; j<larg.size(); j++) arg.push_back(larg[j]);
+        if(oldsize!=-1&&oldsize!=static_cast<int>(larg.size())) error("In LOCALENSEMBLE you should have the same number of arguments for each ARG keyword");
+        oldsize = larg.size();
+        if(!larg.empty()) {
+            log.printf("  with arguments %u: ", i);
+            for(unsigned j=0; j<larg.size(); j++) log.printf(" %s",larg[j]->getName().c_str());
+            log.printf("\n");
+        }
     }
-  }
-  requestArguments(arg);
-  narg = arg.size()/ens_dim;
+    requestArguments(arg);
+    narg = arg.size()/ens_dim;
 
-  // these are the averages
-  for(unsigned i=0; i<narg; i++) {
-    std::string s=getPntrToArgument(i)->getName();
-    addComponentWithDerivatives(s);
-    getPntrToComponent(i)->setNotPeriodic();
-  }
+    // these are the averages
+    for(unsigned i=0; i<narg; i++) {
+        std::string s=getPntrToArgument(i)->getName();
+        addComponentWithDerivatives(s);
+        getPntrToComponent(i)->setNotPeriodic();
+    }
 
-  log.printf("  averaging over %u replicas.\n", ens_dim);
+    log.printf("  averaging over %u replicas.\n", ens_dim);
 }
 
 void LocalEnsemble::calculate()
 {
-  const double fact = 1.0/static_cast<double>(ens_dim);
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for(unsigned i=0; i<narg; ++i) {
-    double mean = 0.;
-    Value* v=getPntrToComponent(i);
-    for(unsigned j=0; j<ens_dim; ++j) {
-      const unsigned index = j*narg+i;
-      setDerivative(v, index, fact);
-      mean += fact*getArgument(index);
+    const double fact = 1.0/static_cast<double>(ens_dim);
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+    for(unsigned i=0; i<narg; ++i) {
+        double mean = 0.;
+        Value* v=getPntrToComponent(i);
+        for(unsigned j=0; j<ens_dim; ++j) {
+            const unsigned index = j*narg+i;
+            setDerivative(v, index, fact);
+            mean += fact*getArgument(index);
+        }
+        v->set(mean);
     }
-    v->set(mean);
-  }
 }
 
 }

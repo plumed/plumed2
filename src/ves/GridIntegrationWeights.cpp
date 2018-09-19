@@ -31,76 +31,78 @@ namespace PLMD {
 namespace ves {
 
 std::vector<double> GridIntegrationWeights::getIntegrationWeights(const Grid* grid_pntr, const std::string& fname_weights_grid, const std::string& weights_type) {
-  std::vector<double> dx = grid_pntr->getDx();
-  std::vector<bool> isPeriodic = grid_pntr->getIsPeriodic();
-  std::vector<unsigned int> nbins = grid_pntr->getNbin();
-  std::vector<std::vector<double> > weights_perdim;
-  for(unsigned int k=0; k<grid_pntr->getDimension(); k++) {
-    std::vector<double> weights_tmp;
-    if(weights_type=="trapezoidal") {
-      weights_tmp = getOneDimensionalTrapezoidalWeights(nbins[k],dx[k],isPeriodic[k]);
-    }
-    else {
-      plumed_merror("getIntegrationWeights: unknown weight type, the available type is trapezoidal");
-    }
-    weights_perdim.push_back(weights_tmp);
-  }
-
-  std::vector<double> weights_vector(grid_pntr->getSize(),0.0);
-  for(Grid::index_t l=0; l<grid_pntr->getSize(); l++) {
-    std::vector<unsigned int> ind = grid_pntr->getIndices(l);
-    double value = 1.0;
+    std::vector<double> dx = grid_pntr->getDx();
+    std::vector<bool> isPeriodic = grid_pntr->getIsPeriodic();
+    std::vector<unsigned int> nbins = grid_pntr->getNbin();
+    std::vector<std::vector<double> > weights_perdim;
     for(unsigned int k=0; k<grid_pntr->getDimension(); k++) {
-      value *= weights_perdim[k][ind[k]];
+        std::vector<double> weights_tmp;
+        if(weights_type=="trapezoidal") {
+            weights_tmp = getOneDimensionalTrapezoidalWeights(nbins[k],dx[k],isPeriodic[k]);
+        }
+        else {
+            plumed_merror("getIntegrationWeights: unknown weight type, the available type is trapezoidal");
+        }
+        weights_perdim.push_back(weights_tmp);
     }
-    weights_vector[l] = value;
-  }
 
-  if(fname_weights_grid.size()>0) {
-    Grid weights_grid = Grid(*grid_pntr);
-    for(Grid::index_t l=0; l<weights_grid.getSize(); l++) {
-      weights_grid.setValue(l,weights_vector[l]);
+    std::vector<double> weights_vector(grid_pntr->getSize(),0.0);
+    for(Grid::index_t l=0; l<grid_pntr->getSize(); l++) {
+        std::vector<unsigned int> ind = grid_pntr->getIndices(l);
+        double value = 1.0;
+        for(unsigned int k=0; k<grid_pntr->getDimension(); k++) {
+            value *= weights_perdim[k][ind[k]];
+        }
+        weights_vector[l] = value;
     }
-    OFile ofile;
-    ofile.enforceBackup();
-    ofile.open(fname_weights_grid);
-    weights_grid.writeToFile(ofile);
-    ofile.close();
-  }
-  //
-  return weights_vector;
+
+    if(fname_weights_grid.size()>0) {
+        Grid weights_grid = Grid(*grid_pntr);
+        for(Grid::index_t l=0; l<weights_grid.getSize(); l++) {
+            weights_grid.setValue(l,weights_vector[l]);
+        }
+        OFile ofile;
+        ofile.enforceBackup();
+        ofile.open(fname_weights_grid);
+        weights_grid.writeToFile(ofile);
+        ofile.close();
+    }
+    //
+    return weights_vector;
 }
 
 
 void GridIntegrationWeights::getOneDimensionalIntegrationPointsAndWeights(std::vector<double>& points, std::vector<double>& weights, const unsigned int nbins, const double min, const double max, const std::string& weights_type) {
-  double dx = (max-min)/(static_cast<double>(nbins)-1.0);
-  points.resize(nbins);
-  for(unsigned int i=0; i<nbins; i++) {points[i] = min + i*dx;}
-  if(weights_type=="trapezoidal") {
-    weights = getOneDimensionalTrapezoidalWeights(nbins,dx,false);
-  }
-  else {
-    plumed_merror("getOneDimensionalIntegrationWeights: unknown weight type, the available type is trapezoidal");
-  }
+    double dx = (max-min)/(static_cast<double>(nbins)-1.0);
+    points.resize(nbins);
+    for(unsigned int i=0; i<nbins; i++) {
+        points[i] = min + i*dx;
+    }
+    if(weights_type=="trapezoidal") {
+        weights = getOneDimensionalTrapezoidalWeights(nbins,dx,false);
+    }
+    else {
+        plumed_merror("getOneDimensionalIntegrationWeights: unknown weight type, the available type is trapezoidal");
+    }
 }
 
 
 std::vector<double> GridIntegrationWeights::getOneDimensionalTrapezoidalWeights(const unsigned int nbins, const double dx, const bool periodic) {
-  std::vector<double> weights_1d(nbins);
-  for(unsigned int i=1; i<(nbins-1); i++) {
-    weights_1d[i] = dx;
-  }
-  if(!periodic) {
-    weights_1d[0]= 0.5*dx;
-    weights_1d[(nbins-1)]= 0.5*dx;
-  }
-  else {
-    // as for periodic arguments the first point should be counted twice as the
-    // grid doesn't include its periodic copy
-    weights_1d[0]= dx;
-    weights_1d[(nbins-1)]= dx;
-  }
-  return weights_1d;
+    std::vector<double> weights_1d(nbins);
+    for(unsigned int i=1; i<(nbins-1); i++) {
+        weights_1d[i] = dx;
+    }
+    if(!periodic) {
+        weights_1d[0]= 0.5*dx;
+        weights_1d[(nbins-1)]= 0.5*dx;
+    }
+    else {
+        // as for periodic arguments the first point should be counted twice as the
+        // grid doesn't include its periodic copy
+        weights_1d[0]= dx;
+        weights_1d[(nbins-1)]= dx;
+    }
+    return weights_1d;
 }
 
 

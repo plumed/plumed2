@@ -31,26 +31,32 @@ namespace PLMD {
 namespace dimred {
 
 class PCA : public DimensionalityReductionBase {
-  friend class OutputPCAProjection;
+    friend class OutputPCAProjection;
 private:
 /// The way we are measuring distances
-  std::string mtype;
+    std::string mtype;
 /// The position of the reference configuration (the one we align to)
-  PDB mypdb;
+    PDB mypdb;
 /// The eigenvectors for the displacements in argument space
-  std::string ofilename, fmt;
+    std::string ofilename, fmt;
 /// The eigenvectors that we are using
-  std::unique_ptr<ReferenceConfiguration> myref;
-  std::vector<Direction> directions;
+    std::unique_ptr<ReferenceConfiguration> myref;
+    std::vector<Direction> directions;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit PCA(const ActionOptions&ao);
-  void performAnalysis();
-  void getProjection( const unsigned& idata, std::vector<double>& point, double& weight );
-  void getProjection( analysis::DataCollectionObject& myidata, std::vector<double>& point );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& ) { plumed_error(); }
-  void setTargetDistance( const unsigned&, const double& ) { plumed_error(); }
-  double calculateStress( const std::vector<double>& pp, std::vector<double>& der ) { plumed_error(); }
+    static void registerKeywords( Keywords& keys );
+    explicit PCA(const ActionOptions&ao);
+    void performAnalysis();
+    void getProjection( const unsigned& idata, std::vector<double>& point, double& weight );
+    void getProjection( analysis::DataCollectionObject& myidata, std::vector<double>& point );
+    void calculateProjections( const Matrix<double>&, Matrix<double>& ) {
+        plumed_error();
+    }
+    void setTargetDistance( const unsigned&, const double& ) {
+        plumed_error();
+    }
+    double calculateStress( const std::vector<double>& pp, std::vector<double>& der ) {
+        plumed_error();
+    }
 };
 
 }

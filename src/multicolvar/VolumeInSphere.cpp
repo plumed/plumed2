@@ -72,52 +72,56 @@ namespace multicolvar {
 
 class VolumeInSphere : public ActionVolume {
 private:
-  Vector origin;
-  SwitchingFunction switchingFunction;
+    Vector origin;
+    SwitchingFunction switchingFunction;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit VolumeInSphere(const ActionOptions& ao);
-  void setupRegions();
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
+    static void registerKeywords( Keywords& keys );
+    explicit VolumeInSphere(const ActionOptions& ao);
+    void setupRegions();
+    double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
 };
 
 PLUMED_REGISTER_ACTION(VolumeInSphere,"INSPHERE")
 
 void VolumeInSphere::registerKeywords( Keywords& keys ) {
-  ActionVolume::registerKeywords( keys );
-  keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
-  keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
-  keys.remove("SIGMA");
+    ActionVolume::registerKeywords( keys );
+    keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
+    keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
+    keys.remove("SIGMA");
 }
 
 VolumeInSphere::VolumeInSphere(const ActionOptions& ao):
-  Action(ao),
-  ActionVolume(ao)
+    Action(ao),
+    ActionVolume(ao)
 {
-  std::vector<AtomNumber> atom;
-  parseAtomList("ATOM",atom);
-  if( atom.size()!=1 ) error("should only be one atom specified");
-  log.printf("  center of sphere is at position of atom : %d\n",atom[0].serial() );
+    std::vector<AtomNumber> atom;
+    parseAtomList("ATOM",atom);
+    if( atom.size()!=1 ) error("should only be one atom specified");
+    log.printf("  center of sphere is at position of atom : %d\n",atom[0].serial() );
 
-  std::string sw, errors; parse("RADIUS",sw);
-  if(sw.length()==0) error("missing RADIUS keyword");
-  switchingFunction.set(sw,errors);
-  if( errors.length()!=0 ) error("problem reading RADIUS keyword : " + errors );
-  log.printf("  radius of sphere is given by %s \n", ( switchingFunction.description() ).c_str() );
+    std::string sw, errors;
+    parse("RADIUS",sw);
+    if(sw.length()==0) error("missing RADIUS keyword");
+    switchingFunction.set(sw,errors);
+    if( errors.length()!=0 ) error("problem reading RADIUS keyword : " + errors );
+    log.printf("  radius of sphere is given by %s \n", ( switchingFunction.description() ).c_str() );
 
-  checkRead(); requestAtoms(atom);
+    checkRead();
+    requestAtoms(atom);
 }
 
 void VolumeInSphere::setupRegions() { }
 
 double VolumeInSphere::calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const {
-  // Calculate position of atom wrt to origin
-  Vector fpos=pbcDistance( getPosition(0), cpos );
-  double dfunc, value = switchingFunction.calculateSqr( fpos.modulo2(), dfunc );
-  derivatives.zero(); derivatives = dfunc*fpos; refders[0] = -derivatives;
-  // Add a virial contribution
-  vir -= Tensor(fpos,derivatives);
-  return value;
+    // Calculate position of atom wrt to origin
+    Vector fpos=pbcDistance( getPosition(0), cpos );
+    double dfunc, value = switchingFunction.calculateSqr( fpos.modulo2(), dfunc );
+    derivatives.zero();
+    derivatives = dfunc*fpos;
+    refders[0] = -derivatives;
+    // Add a virial contribution
+    vir -= Tensor(fpos,derivatives);
+    return value;
 }
 
 }

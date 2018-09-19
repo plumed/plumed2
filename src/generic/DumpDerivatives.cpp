@@ -55,75 +55,75 @@ DUMPDERIVATIVES ARG=distance,distanceN STRIDE=1 FILE=deriv
 //+ENDPLUMEDOC
 
 class DumpDerivatives :
-  public ActionPilot,
-  public ActionWithArguments
+    public ActionPilot,
+    public ActionWithArguments
 {
-  string file;
-  string fmt;
-  OFile of;
+    string file;
+    string fmt;
+    OFile of;
 public:
-  void calculate() {}
-  explicit DumpDerivatives(const ActionOptions&);
-  static void registerKeywords(Keywords& keys);
-  void apply() {}
-  void update();
-  ~DumpDerivatives();
+    void calculate() {}
+    explicit DumpDerivatives(const ActionOptions&);
+    static void registerKeywords(Keywords& keys);
+    void apply() {}
+    void update();
+    ~DumpDerivatives();
 };
 
 PLUMED_REGISTER_ACTION(DumpDerivatives,"DUMPDERIVATIVES")
 
 void DumpDerivatives::registerKeywords(Keywords& keys) {
-  Action::registerKeywords(keys);
-  ActionPilot::registerKeywords(keys);
-  ActionWithArguments::registerKeywords(keys);
-  keys.use("ARG");
-  keys.add("compulsory","STRIDE","1","the frequency with which the derivatives should be output");
-  keys.add("compulsory","FILE","the name of the file on which to output the derivatives");
-  keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
-  keys.use("RESTART");
-  keys.use("UPDATE_FROM");
-  keys.use("UPDATE_UNTIL");
+    Action::registerKeywords(keys);
+    ActionPilot::registerKeywords(keys);
+    ActionWithArguments::registerKeywords(keys);
+    keys.use("ARG");
+    keys.add("compulsory","STRIDE","1","the frequency with which the derivatives should be output");
+    keys.add("compulsory","FILE","the name of the file on which to output the derivatives");
+    keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
+    keys.use("RESTART");
+    keys.use("UPDATE_FROM");
+    keys.use("UPDATE_UNTIL");
 }
 
 DumpDerivatives::DumpDerivatives(const ActionOptions&ao):
-  Action(ao),
-  ActionPilot(ao),
-  ActionWithArguments(ao),
-  fmt("%15.10f")
+    Action(ao),
+    ActionPilot(ao),
+    ActionWithArguments(ao),
+    fmt("%15.10f")
 {
-  parse("FILE",file);
-  if( file.length()==0 ) error("name of output file was not specified");
-  parse("FMT",fmt);
-  fmt=" "+fmt;
-  of.link(*this);
-  of.open(file);
-  log.printf("  on file %s\n",file.c_str());
-  log.printf("  with format %s\n",fmt.c_str());
-  unsigned nargs=getNumberOfArguments();
-  if( nargs==0 ) error("no arguments specified");
-  (getPntrToArgument(0)->getPntrToAction())->turnOnDerivatives();
-  unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
-  if( npar==0 ) error("one or more arguments has no derivatives");
-  for(unsigned i=1; i<nargs; i++) {
-    (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
-    if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) error("the number of derivatives must be the same in all values being dumped");
-  }
-  checkRead();
+    parse("FILE",file);
+    if( file.length()==0 ) error("name of output file was not specified");
+    parse("FMT",fmt);
+    fmt=" "+fmt;
+    of.link(*this);
+    of.open(file);
+    log.printf("  on file %s\n",file.c_str());
+    log.printf("  with format %s\n",fmt.c_str());
+    unsigned nargs=getNumberOfArguments();
+    if( nargs==0 ) error("no arguments specified");
+    (getPntrToArgument(0)->getPntrToAction())->turnOnDerivatives();
+    unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
+    if( npar==0 ) error("one or more arguments has no derivatives");
+    for(unsigned i=1; i<nargs; i++) {
+        (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
+        if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) error("the number of derivatives must be the same in all values being dumped");
+    }
+    checkRead();
 }
 
 
 void DumpDerivatives::update() {
-  unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
-  for(unsigned ipar=0; ipar<npar; ipar++) {
-    of.fmtField(" %f");
-    of.printField("time",getTime());
-    of.printField("parameter",(int)ipar);
-    for(unsigned i=0; i<getNumberOfArguments(); i++) {
-      of.fmtField(fmt);
-      of.printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getDerivative(ipar) );
+    unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
+    for(unsigned ipar=0; ipar<npar; ipar++) {
+        of.fmtField(" %f");
+        of.printField("time",getTime());
+        of.printField("parameter",(int)ipar);
+        for(unsigned i=0; i<getNumberOfArguments(); i++) {
+            of.fmtField(fmt);
+            of.printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getDerivative(ipar) );
+        }
+        of.printField();
     }
-    of.printField();
-  }
 }
 
 DumpDerivatives::~DumpDerivatives() {

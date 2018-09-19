@@ -31,18 +31,18 @@ namespace crystallization {
 
 class Steinhardt : public VectorMultiColvar {
 private:
-  unsigned tmom;
-  double rcut,rcut2;
-  SwitchingFunction switchingFunction;
+    unsigned tmom;
+    double rcut,rcut2;
+    SwitchingFunction switchingFunction;
 protected:
-  std::vector<double> coeff_poly;
-  std::vector<double> normaliz;
-  void setAngularMomentum( const unsigned& ang );
+    std::vector<double> coeff_poly;
+    std::vector<double> normaliz;
+    void setAngularMomentum( const unsigned& ang );
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit Steinhardt( const ActionOptions& ao );
-  void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
-  double deriv_poly( const unsigned&, const double&, double& ) const ;
+    static void registerKeywords( Keywords& keys );
+    explicit Steinhardt( const ActionOptions& ao );
+    void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
+    double deriv_poly( const unsigned&, const double&, double& ) const ;
 };
 
 }

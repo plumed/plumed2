@@ -28,54 +28,61 @@ namespace PLMD {
 namespace analysis {
 
 void AnalysisBase::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys ); ActionPilot::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
-  ActionWithVessel::registerKeywords( keys ); keys.remove("TOL"); keys.reset_style("TIMINGS","hidden"); keys.isAnalysis();
-  keys.add("atoms-2","USE_OUTPUT_DATA_FROM","use the ouput of the analysis performed by this object as input to your new analysis object");
+    Action::registerKeywords( keys );
+    ActionPilot::registerKeywords( keys );
+    ActionWithValue::registerKeywords( keys );
+    ActionAtomistic::registerKeywords( keys );
+    ActionWithArguments::registerKeywords( keys );
+    keys.remove("NUMERICAL_DERIVATIVES");
+    ActionWithVessel::registerKeywords( keys );
+    keys.remove("TOL");
+    keys.reset_style("TIMINGS","hidden");
+    keys.isAnalysis();
+    keys.add("atoms-2","USE_OUTPUT_DATA_FROM","use the ouput of the analysis performed by this object as input to your new analysis object");
 }
 
 AnalysisBase::AnalysisBase(const ActionOptions&ao):
-  Action(ao),
-  ActionPilot(ao),
-  ActionWithValue(ao),
-  ActionAtomistic(ao),
-  ActionWithArguments(ao),
-  ActionWithVessel(ao),
-  my_input_data(NULL)
+    Action(ao),
+    ActionPilot(ao),
+    ActionWithValue(ao),
+    ActionAtomistic(ao),
+    ActionWithArguments(ao),
+    ActionWithVessel(ao),
+    my_input_data(NULL)
 {
-  // We have an if statement here so that this doesn't break with READ_DISSIMILARITIES
-  if( keywords.exists("USE_OUTPUT_DATA_FROM") ) {
-    std::string datastr; parse("USE_OUTPUT_DATA_FROM",datastr);
-    if( keywords.style("USE_OUTPUT_DATA_FROM","atoms") && datastr.length()==0 ) error("input analysis action was not specified use USE_OUTPUT_DATA_FROM");
-    if( datastr.length()>0 ) {
-      my_input_data=plumed.getActionSet().selectWithLabel<AnalysisBase*>( datastr );
-      log.printf("  performing analysis on output from %s \n",datastr.c_str() );
-      if( !my_input_data ) error("could not find analysis action named " + datastr );
-      addDependency( my_input_data );
+    // We have an if statement here so that this doesn't break with READ_DISSIMILARITIES
+    if( keywords.exists("USE_OUTPUT_DATA_FROM") ) {
+        std::string datastr;
+        parse("USE_OUTPUT_DATA_FROM",datastr);
+        if( keywords.style("USE_OUTPUT_DATA_FROM","atoms") && datastr.length()==0 ) error("input analysis action was not specified use USE_OUTPUT_DATA_FROM");
+        if( datastr.length()>0 ) {
+            my_input_data=plumed.getActionSet().selectWithLabel<AnalysisBase*>( datastr );
+            log.printf("  performing analysis on output from %s \n",datastr.c_str() );
+            if( !my_input_data ) error("could not find analysis action named " + datastr );
+            addDependency( my_input_data );
+        }
     }
-  }
 }
 
 std::vector<std::string> AnalysisBase::getArgumentNames() {
-  std::vector<Value*> arg_p( getArgumentList() );
-  std::vector<std::string> argn( arg_p.size() );
-  for(unsigned i=0; i<arg_p.size(); ++i) {
-    plumed_assert( i<argn.size() && i<arg_p.size() );
-    argn[i]=arg_p[i]->getName();
-  }
-  return argn;
+    std::vector<Value*> arg_p( getArgumentList() );
+    std::vector<std::string> argn( arg_p.size() );
+    for(unsigned i=0; i<arg_p.size(); ++i) {
+        plumed_assert( i<argn.size() && i<arg_p.size() );
+        argn[i]=arg_p[i]->getName();
+    }
+    return argn;
 }
 
 void AnalysisBase::update() {
-  if( getStep()==0 || ( getStride()>0 && !onStep() ) ) return;
-  // And do the analysis
-  performAnalysis();
+    if( getStep()==0 || ( getStride()>0 && !onStep() ) ) return;
+    // And do the analysis
+    performAnalysis();
 }
 
 void AnalysisBase::runFinalJobs() {
-  if( getStride()>0 ) return;
-  performAnalysis();
+    if( getStride()>0 ) return;
+    performAnalysis();
 }
 
 }

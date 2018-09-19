@@ -45,34 +45,34 @@ class ActionOptions;
 ///
 class ActionRegister {
 /// Write on a stream the list of registered directives
-  friend std::ostream &operator<<(std::ostream &,const ActionRegister&);
+    friend std::ostream &operator<<(std::ostream &,const ActionRegister&);
 /// Pointer to a function which, given the options, create an Action
-  typedef std::unique_ptr<Action>(*creator_pointer)(const ActionOptions&);
+    typedef std::unique_ptr<Action>(*creator_pointer)(const ActionOptions&);
 /// Pointer to a function which, returns the keywords allowed
-  typedef void(*keywords_pointer)(Keywords&);
+    typedef void(*keywords_pointer)(Keywords&);
 /// Map action to a function which creates the related object
-  std::map<std::string,creator_pointer> m;
+    std::map<std::string,creator_pointer> m;
 /// Map action to a function which documents the related object
-  std::map<std::string,keywords_pointer> mk;
+    std::map<std::string,keywords_pointer> mk;
 /// Set of disabled actions (which were registered more than once)
-  std::set<std::string> disabled;
+    std::set<std::string> disabled;
 public:
 /// Register a new class.
 /// \param key The name of the directive to be used in the input file
 /// \param cp A pointer to a function which creates an object of that class
 /// \param kp A pointer to a function which returns the allowed keywords
-  void add(std::string key,creator_pointer cp,keywords_pointer kp);
+    void add(std::string key,creator_pointer cp,keywords_pointer kp);
 /// Verify if a directive is present in the register
-  bool check(std::string action);
+    bool check(std::string action);
 /// Create an Action of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
-  std::unique_ptr<Action> create(const ActionOptions&ao);
+    std::unique_ptr<Action> create(const ActionOptions&ao);
 /// Print out the keywords for an action in html/vim ready for input into the manual
-  bool printManual(const std::string& action, const bool& vimout);
+    bool printManual(const std::string& action, const bool& vimout);
 /// Print out a template command for an action
-  bool printTemplate(const std::string& action, bool include_optional);
-  void remove(creator_pointer);
-  ~ActionRegister();
+    bool printTemplate(const std::string& action, bool include_optional);
+    void remove(creator_pointer);
+    ~ActionRegister();
 };
 
 /// Function returning a reference to the ActionRegister.

@@ -85,17 +85,19 @@ PRINT ARG=d1.min
 
 class XAngles : public MultiColvarBase {
 private:
-  bool use_sf;
-  unsigned myc;
-  SwitchingFunction sf1;
+    bool use_sf;
+    unsigned myc;
+    SwitchingFunction sf1;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit XAngles(const ActionOptions&);
+    static void registerKeywords( Keywords& keys );
+    explicit XAngles(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const ;
+    virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+    double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const ;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+    bool isPeriodic() {
+        return false;
+    }
 };
 
 PLUMED_REGISTER_ACTION(XAngles,"XANGLES")
@@ -103,75 +105,87 @@ PLUMED_REGISTER_ACTION(XAngles,"YANGLES")
 PLUMED_REGISTER_ACTION(XAngles,"ZANGLES")
 
 void XAngles::registerKeywords( Keywords& keys ) {
-  MultiColvarBase::registerKeywords( keys );
-  keys.use("MAX"); keys.use("ALT_MIN");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN");
-  keys.use("LOWEST"); keys.use("HIGHEST");
-  keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.add("numbered","ATOMS","the atoms involved in each of the angles you wish to calculate. "
-           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one angle will be "
-           "calculated for each ATOM keyword you specify (all ATOM keywords should "
-           "specify the indices of two atoms).  The eventual number of quantities calculated by this "
-           "action will depend on what functions of the distribution you choose to calculate.");
-  keys.reset_style("ATOMS","atoms");
-  keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
-  keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-           "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
-  keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-           "in GROUPB. This must be used in conjuction with GROUPA.");
-  keys.add("optional","SWITCH","A switching function that ensures that only angles are only computed when atoms are within "
-           "are within a certain fixed cutoff. The following provides information on the \\ref switchingfunction that are available.");
+    MultiColvarBase::registerKeywords( keys );
+    keys.use("MAX");
+    keys.use("ALT_MIN");
+    keys.use("MEAN");
+    keys.use("MIN");
+    keys.use("LESS_THAN");
+    keys.use("LOWEST");
+    keys.use("HIGHEST");
+    keys.use("MORE_THAN");
+    keys.use("BETWEEN");
+    keys.use("HISTOGRAM");
+    keys.use("MOMENTS");
+    keys.add("numbered","ATOMS","the atoms involved in each of the angles you wish to calculate. "
+             "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one angle will be "
+             "calculated for each ATOM keyword you specify (all ATOM keywords should "
+             "specify the indices of two atoms).  The eventual number of quantities calculated by this "
+             "action will depend on what functions of the distribution you choose to calculate.");
+    keys.reset_style("ATOMS","atoms");
+    keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
+    keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
+             "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+    keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
+             "in GROUPB. This must be used in conjuction with GROUPA.");
+    keys.add("optional","SWITCH","A switching function that ensures that only angles are only computed when atoms are within "
+             "are within a certain fixed cutoff. The following provides information on the \\ref switchingfunction that are available.");
 }
 
 XAngles::XAngles(const ActionOptions&ao):
-  Action(ao),
-  MultiColvarBase(ao),
-  use_sf(false)
+    Action(ao),
+    MultiColvarBase(ao),
+    use_sf(false)
 {
-  if( getName().find("X")!=std::string::npos) myc=0;
-  else if( getName().find("Y")!=std::string::npos) myc=1;
-  else if( getName().find("Z")!=std::string::npos) myc=2;
-  else plumed_error();
+    if( getName().find("X")!=std::string::npos) myc=0;
+    else if( getName().find("Y")!=std::string::npos) myc=1;
+    else if( getName().find("Z")!=std::string::npos) myc=2;
+    else plumed_error();
 
-  // Read in switching function
-  std::string sfinput, errors; parse("SWITCH",sfinput);
-  if( sfinput.length()>0 ) {
-    use_sf=true; weightHasDerivatives=true;
-    sf1.set(sfinput,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
-    log.printf("  only calculating angles for atoms separated by less than %s\n", sf1.description().c_str() );
-    setLinkCellCutoff( sf1.get_dmax() );
-  }
+    // Read in switching function
+    std::string sfinput, errors;
+    parse("SWITCH",sfinput);
+    if( sfinput.length()>0 ) {
+        use_sf=true;
+        weightHasDerivatives=true;
+        sf1.set(sfinput,errors);
+        if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+        log.printf("  only calculating angles for atoms separated by less than %s\n", sf1.description().c_str() );
+        setLinkCellCutoff( sf1.get_dmax() );
+    }
 
-  // Read in the atoms
-  std::vector<AtomNumber> all_atoms;
-  readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
-  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
-  setupMultiColvarBase( all_atoms );
-  // And check everything has been read in correctly
-  checkRead();
+    // Read in the atoms
+    std::vector<AtomNumber> all_atoms;
+    readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
+    if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+    setupMultiColvarBase( all_atoms );
+    // And check everything has been read in correctly
+    checkRead();
 }
 
 double XAngles::calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const {
-  if(!use_sf) return 1.0;
+    if(!use_sf) return 1.0;
 
-  Vector distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  double dw, w = sf1.calculateSqr( distance.modulo2(), dw );
-  addAtomDerivatives( 0, 0, (-dw)*distance, myatoms );
-  addAtomDerivatives( 0, 1, (+dw)*distance, myatoms );
-  myatoms.addBoxDerivatives( 0, (-dw)*Tensor(distance,distance) );
-  return w;
+    Vector distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+    double dw, w = sf1.calculateSqr( distance.modulo2(), dw );
+    addAtomDerivatives( 0, 0, (-dw)*distance, myatoms );
+    addAtomDerivatives( 0, 1, (+dw)*distance, myatoms );
+    myatoms.addBoxDerivatives( 0, (-dw)*Tensor(distance,distance) );
+    return w;
 }
 
 double XAngles::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  Vector ddij, ddik, axis, distance; axis.zero(); axis[myc]=1;
-  distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  PLMD::Angle a; double angle=a.compute( distance, axis, ddij, ddik );
+    Vector ddij, ddik, axis, distance;
+    axis.zero();
+    axis[myc]=1;
+    distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+    PLMD::Angle a;
+    double angle=a.compute( distance, axis, ddij, ddik );
 
-  addAtomDerivatives( 1, 0, -ddij, myatoms );
-  addAtomDerivatives( 1, 1, ddij, myatoms );
-  myatoms.addBoxDerivatives( 1, -Tensor( distance,ddij ) );
-  return angle;
+    addAtomDerivatives( 1, 0, -ddij, myatoms );
+    addAtomDerivatives( 1, 1, ddij, myatoms );
+    myatoms.addBoxDerivatives( 1, -Tensor( distance,ddij ) );
+    return angle;
 }
 
 }

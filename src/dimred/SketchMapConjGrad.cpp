@@ -37,33 +37,33 @@ namespace dimred {
 
 class SketchMapConjGrad : public SketchMapBase {
 private:
-  double cgtol;
+    double cgtol;
 public:
-  static void registerKeywords( Keywords& keys );
-  SketchMapConjGrad( const ActionOptions& ao );
-  void minimise( Matrix<double>& );
+    static void registerKeywords( Keywords& keys );
+    SketchMapConjGrad( const ActionOptions& ao );
+    void minimise( Matrix<double>& );
 };
 
 PLUMED_REGISTER_ACTION(SketchMapConjGrad,"SKETCHMAP_CONJGRAD")
 
 void SketchMapConjGrad::registerKeywords( Keywords& keys ) {
-  SketchMapBase::registerKeywords( keys );
-  keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimisation");
+    SketchMapBase::registerKeywords( keys );
+    keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimisation");
 }
 
 SketchMapConjGrad::SketchMapConjGrad( const ActionOptions& ao ):
-  Action(ao),
-  SketchMapBase(ao)
+    Action(ao),
+    SketchMapBase(ao)
 {
-  parse("CGTOL",cgtol);
-  log.printf("  tolerance for conjugate gradient algorithm equals %f \n",cgtol);
+    parse("CGTOL",cgtol);
+    log.printf("  tolerance for conjugate gradient algorithm equals %f \n",cgtol);
 }
 
 void SketchMapConjGrad::minimise( Matrix<double>& projections ) {
-  ConjugateGradient<SketchMapConjGrad> mycgminimise( this );
-  std::vector<double> myproj( projections.getVector() );
-  mycgminimise.minimise( cgtol, myproj, &SketchMapConjGrad::calculateFullStress );
-  projections.setFromVector( myproj );
+    ConjugateGradient<SketchMapConjGrad> mycgminimise( this );
+    std::vector<double> myproj( projections.getVector() );
+    mycgminimise.minimise( cgtol, myproj, &SketchMapConjGrad::calculateFullStress );
+    projections.setFromVector( myproj );
 }
 
 }

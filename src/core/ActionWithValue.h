@@ -64,153 +64,156 @@ PLMD::Action you should use <b> the routines with the word component in the name
 */
 
 class ActionWithValue :
-  public virtual Action
+    public virtual Action
 {
 private:
 /// An array containing the values for this action
-  std::vector<std::unique_ptr<Value>> values;
+    std::vector<std::unique_ptr<Value>> values;
 /// Are we skipping the calculation of the derivatives
-  bool noderiv;
+    bool noderiv;
 /// Are we using numerical derivatives to differentiate
-  bool numericalDerivatives;
+    bool numericalDerivatives;
 /// Return the index for the component named name
-  int getComponent( const std::string& name ) const;
+    int getComponent( const std::string& name ) const;
 public:
 
 // -------- The action has one value only  ---------------- //
 
 /// Add a value with the name label
-  void addValue();
+    void addValue();
 /// Add a value with the name label that has derivatives
-  void addValueWithDerivatives();
+    void addValueWithDerivatives();
 /// Set your default value to have no periodicity
-  void setNotPeriodic();
+    void setNotPeriodic();
 /// Set the value to be periodic with a particular domain
-  void setPeriodic( const std::string& min, const std::string& max );
+    void setPeriodic( const std::string& min, const std::string& max );
 protected:
 /// Get a pointer to the default value
-  Value* getPntrToValue();
+    Value* getPntrToValue();
 /// Set the default value (the one without name)
-  void setValue(const double& d);
+    void setValue(const double& d);
 
 // -------- The action has multiple components ---------- //
 
 public:
 /// Add a value with a name like label.name
-  void addComponent( const std::string& name );
+    void addComponent( const std::string& name );
 /// Add a value with a name like label.name that has derivatives
-  void addComponentWithDerivatives( const std::string& name );
+    void addComponentWithDerivatives( const std::string& name );
 /// Set your value component to have no periodicity
-  void componentIsNotPeriodic( const std::string& name );
+    void componentIsNotPeriodic( const std::string& name );
 /// Set the value to be periodic with a particular domain
-  void componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max );
+    void componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max );
 protected:
 /// Return a pointer to the component by index
-  Value* getPntrToComponent(int i);
+    Value* getPntrToComponent(int i);
 /// Return a pointer to the value by name
-  Value* getPntrToComponent(const std::string& name);
+    Value* getPntrToComponent(const std::string& name);
 public:
-  explicit ActionWithValue(const ActionOptions&ao);
-  ~ActionWithValue();
+    explicit ActionWithValue(const ActionOptions&ao);
+    ~ActionWithValue();
 
 /// Register all the relevant keywords for the action
-  static void registerKeywords( Keywords& keys );
+    static void registerKeywords( Keywords& keys );
 /// Insist that numerical derivatives should always be used for an action and make this fact appear in the manual
-  static void noAnalyticalDerivatives(Keywords& keys);
+    static void noAnalyticalDerivatives(Keywords& keys);
 /// Puts a message into the manual that the components always output
-  static void componentsAreNotOptional(Keywords& keys);
+    static void componentsAreNotOptional(Keywords& keys);
 /// The components in the action will depend on the user
-  static void useCustomisableComponents(Keywords& keys);
+    static void useCustomisableComponents(Keywords& keys);
 /// Are we not calculating derivatives
-  virtual bool doNotCalculateDerivatives() const ;
+    virtual bool doNotCalculateDerivatives() const ;
 /// Get the value of one of the components of the PLMD::Action
-  double getOutputQuantity( const unsigned j ) const ;
+    double getOutputQuantity( const unsigned j ) const ;
 /// Get the value with a specific name (N.B. if there is no such value this returns zero)
-  double getOutputQuantity( const std::string& name ) const ;
+    double getOutputQuantity( const std::string& name ) const ;
 
 //  --- Routines for passing stuff to ActionWithArguments -- //
 
 /// Check if a value with a particular name is present.  This is only used in PLMD::ActionWithArguments.
 /// You should not use it when manipulating components.
-  bool exists( const std::string& name ) const;
+    bool exists( const std::string& name ) const;
 /// Return a pointer to the value with name (this is used to retrieve values in other PLMD::Actions)
 /// You should NEVER use this routine to refer to the components of your PLMD::Action.  Use
 /// getPntrToComponent instead.
-  Value* copyOutput( const std::string&name ) const;
+    Value* copyOutput( const std::string&name ) const;
 /// Return a pointer to the value with this number (this is used to retrieve values in other PLMD::Actions)
 /// You should NEVER use this routine to refer to the components of your PLMD::Action.  Use
 /// getPntrToComponent instead.
-  Value* copyOutput( const unsigned& n ) const;
+    Value* copyOutput( const unsigned& n ) const;
 /// get a string that contains all the available components
-  std::string getComponentsList( ) const ;
+    std::string getComponentsList( ) const ;
 /// get a vector that contains the label for all the components
-  std::vector<std::string> getComponentsVector( ) const ;
+    std::vector<std::string> getComponentsVector( ) const ;
 
 
 // -- Routines for everything else -- //
 
 /// Returns the number of values defined
-  int getNumberOfComponents() const ;
+    int getNumberOfComponents() const ;
 /// Clear the forces on the values
-  void clearInputForces();
+    void clearInputForces();
 /// Clear the derivatives of values wrt parameters
-  virtual void clearDerivatives();
+    virtual void clearDerivatives();
 /// Calculate the gradients and store them for all the values (need for projections)
-  void setGradientsIfNeeded();
+    void setGradientsIfNeeded();
 /// Set the value
-  void setValue(Value*,double);
+    void setValue(Value*,double);
 /// Check if numerical derivatives should be used
-  bool checkNumericalDerivatives() const ;
+    bool checkNumericalDerivatives() const ;
 /// This forces the class to use numerical derivatives
-  void useNumericalDerivatives();
+    void useNumericalDerivatives();
 // These are things for using vectors of values as fields
-  virtual void checkFieldsAllowed() { error("cannot use this action as a field"); }
-  virtual unsigned getNumberOfDerivatives()=0;
+    virtual void checkFieldsAllowed() {
+        error("cannot use this action as a field");
+    }
+    virtual unsigned getNumberOfDerivatives()=0;
 /// Activate the calculation of derivatives
-  virtual void turnOnDerivatives();
+    virtual void turnOnDerivatives();
 };
 
 inline
 double ActionWithValue::getOutputQuantity(const unsigned j) const {
-  plumed_massert(j<values.size(),"index requested is out of bounds");
-  return values[j]->get();
+    plumed_massert(j<values.size(),"index requested is out of bounds");
+    return values[j]->get();
 }
 
 inline
 double ActionWithValue::getOutputQuantity( const std::string& name ) const {
-  std::string thename; thename=getLabel() + "." + name;
-  for(unsigned i=0; i<values.size(); ++i) {
-    if( values[i]->name==thename ) return values[i]->value;
-  }
-  return 0.0;
+    std::string thename;
+    thename=getLabel() + "." + name;
+    for(unsigned i=0; i<values.size(); ++i) {
+        if( values[i]->name==thename ) return values[i]->value;
+    }
+    return 0.0;
 }
 
 inline
 void ActionWithValue::setValue(const double& d) {
-  plumed_massert(values.size()==1, "cannot use setValue in multi-component actions");
-  plumed_massert(values[0]->name==getLabel(), "The value you are trying to set is not the default");
-  values[0]->set(d);
+    plumed_massert(values.size()==1, "cannot use setValue in multi-component actions");
+    plumed_massert(values[0]->name==getLabel(), "The value you are trying to set is not the default");
+    values[0]->set(d);
 }
 
 inline
 int ActionWithValue::getNumberOfComponents() const {
-  return values.size();
+    return values.size();
 }
 
 inline
 void ActionWithValue::useNumericalDerivatives() {
-  plumed_massert( keywords.exists("NUMERICAL_DERIVATIVES"), "numerical derivatives are not permitted for this action" );
-  numericalDerivatives=true;
+    plumed_massert( keywords.exists("NUMERICAL_DERIVATIVES"), "numerical derivatives are not permitted for this action" );
+    numericalDerivatives=true;
 }
 
 inline
 bool ActionWithValue::checkNumericalDerivatives() const {
-  return numericalDerivatives;
+    return numericalDerivatives;
 }
 
 inline
 bool ActionWithValue::doNotCalculateDerivatives() const {
-  return noderiv;
+    return noderiv;
 }
 
 

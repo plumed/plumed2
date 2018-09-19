@@ -28,38 +28,39 @@ namespace vesselbase {
 
 class Mean : public FunctionVessel {
 public:
-  static void registerKeywords( Keywords& keys );
-  static void reserveKeyword( Keywords& keys );
-  explicit Mean( const vesselbase::VesselOptions& da );
-  std::string value_descriptor();
-  double calcTransform( const double& val, double& dv ) const ;
+    static void registerKeywords( Keywords& keys );
+    static void reserveKeyword( Keywords& keys );
+    explicit Mean( const vesselbase::VesselOptions& da );
+    std::string value_descriptor();
+    double calcTransform( const double& val, double& dv ) const ;
 };
 
 PLUMED_REGISTER_VESSEL(Mean,"MEAN")
 
 void Mean::registerKeywords( Keywords& keys ) {
-  FunctionVessel::registerKeywords(keys);
+    FunctionVessel::registerKeywords(keys);
 }
 
 void Mean::reserveKeyword( Keywords& keys ) {
-  keys.reserve("vessel","MEAN","take the mean of these variables.");
-  keys.addOutputComponent("mean","MEAN","the mean value. The output component can be refererred to elsewhere in the input "
-                          "file by using the label.mean");
+    keys.reserve("vessel","MEAN","take the mean of these variables.");
+    keys.addOutputComponent("mean","MEAN","the mean value. The output component can be refererred to elsewhere in the input "
+                            "file by using the label.mean");
 }
 
 Mean::Mean( const vesselbase::VesselOptions& da ) :
-  FunctionVessel(da)
+    FunctionVessel(da)
 {
-  if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");
-  norm=true;   // Makes sure we calculate the average
+    if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");
+    norm=true;   // Makes sure we calculate the average
 }
 
 std::string Mean::value_descriptor() {
-  return "the mean value";
+    return "the mean value";
 }
 
 double Mean::calcTransform( const double& val, double& dv ) const {
-  dv=1.0; return val;
+    dv=1.0;
+    return val;
 }
 
 }

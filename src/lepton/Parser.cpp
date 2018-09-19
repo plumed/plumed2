@@ -83,22 +83,22 @@ static const int Precedence[] = {0, 0, 1, 1, 3};
 static const Operation::Id OperationId[] = {Operation::ADD, Operation::SUBTRACT, Operation::MULTIPLY, Operation::DIVIDE, Operation::POWER};
 
 const std::map<std::string, double> & Constants() {
-  static const std::map<std::string, double> constants = {
-  {"e", std::exp(1.0)},
-  {"log2e", 1.0/std::log(2.0)},
-  {"log10e", 1.0/std::log(10.0)},
-  {"ln2", std::log(2.0)},
-  {"ln10", std::log(10.0)},
-  {"pi", 3.14159265358979323844},
-  {"pi_2", 3.14159265358979323844*0.5},
-  {"pi_4", 3.14159265358979323844*0.25},
+    static const std::map<std::string, double> constants = {
+        {"e", std::exp(1.0)},
+        {"log2e", 1.0/std::log(2.0)},
+        {"log10e", 1.0/std::log(10.0)},
+        {"ln2", std::log(2.0)},
+        {"ln10", std::log(10.0)},
+        {"pi", 3.14159265358979323844},
+        {"pi_2", 3.14159265358979323844*0.5},
+        {"pi_4", 3.14159265358979323844*0.25},
 //  {"1_pi", 1.0/pi},
 //  {"2_pi", 2.0/pi},
 //  {"2_sqrtpi", 2.0/std::sqrt(pi)},
-  {"sqrt2", std::sqrt(2.0)},
-  {"sqrt1_2", std::sqrt(0.5)}
-  };
-  return constants;
+        {"sqrt2", std::sqrt(2.0)},
+        {"sqrt1_2", std::sqrt(0.5)}
+    };
+    return constants;
 };
 
 }
@@ -123,7 +123,7 @@ private:
 
 string Parser::trim(const string& expression) {
     // Remove leading and trailing spaces.
-    
+
     int start, end;
     for (start = 0; start < (int) expression.size() && isspace(expression[start]); start++)
         ;
@@ -254,7 +254,7 @@ ParsedExpression Parser::parse(const string& expression, const map<string, Custo
 }
 
 ExpressionTreeNode Parser::parsePrecedence(const vector<ParseToken>& tokens, int& pos, const map<string, CustomFunction*>& customFunctions,
-            const map<string, ExpressionTreeNode>& subexpressionDefs, int precedence) {
+        const map<string, ExpressionTreeNode>& subexpressionDefs, int precedence) {
     if (pos == tokens.size())
         throw Exception("unexpected end of expression");
 
@@ -339,52 +339,52 @@ ExpressionTreeNode Parser::parsePrecedence(const vector<ParseToken>& tokens, int
 
 Operation* Parser::getOperatorOperation(const std::string& name) {
     switch (OperationId[Operators.find(name)]) {
-        case Operation::ADD:
-            return new Operation::Add();
-        case Operation::SUBTRACT:
-            return new Operation::Subtract();
-        case Operation::MULTIPLY:
-            return new Operation::Multiply();
-        case Operation::DIVIDE:
-            return new Operation::Divide();
-        case Operation::POWER:
-            return new Operation::Power();
-        default:
-            throw Exception("unknown operator");
+    case Operation::ADD:
+        return new Operation::Add();
+    case Operation::SUBTRACT:
+        return new Operation::Subtract();
+    case Operation::MULTIPLY:
+        return new Operation::Multiply();
+    case Operation::DIVIDE:
+        return new Operation::Divide();
+    case Operation::POWER:
+        return new Operation::Power();
+    default:
+        throw Exception("unknown operator");
     }
 }
 
 Operation* Parser::getFunctionOperation(const std::string& name, const map<string, CustomFunction*>& customFunctions) {
 
-    const static map<string, Operation::Id> opMap ={
-        { "sqrt" , Operation::SQRT },
-        { "exp" , Operation::EXP },
-        { "log" , Operation::LOG },
-        { "sin" , Operation::SIN },
-        { "cos" , Operation::COS },
-        { "sec" , Operation::SEC },
-        { "csc" , Operation::CSC },
-        { "tan" , Operation::TAN },
-        { "cot" , Operation::COT },
-        { "asin" , Operation::ASIN },
-        { "acos" , Operation::ACOS },
-        { "atan" , Operation::ATAN },
-        { "sinh" , Operation::SINH },
-        { "cosh" , Operation::COSH },
-        { "tanh" , Operation::TANH },
-        { "erf" , Operation::ERF },
-        { "erfc" , Operation::ERFC },
-        { "step" , Operation::STEP },
-        { "delta" , Operation::DELTA },
-        { "square" , Operation::SQUARE },
+    const static map<string, Operation::Id> opMap = {
+        { "sqrt", Operation::SQRT },
+        { "exp", Operation::EXP },
+        { "log", Operation::LOG },
+        { "sin", Operation::SIN },
+        { "cos", Operation::COS },
+        { "sec", Operation::SEC },
+        { "csc", Operation::CSC },
+        { "tan", Operation::TAN },
+        { "cot", Operation::COT },
+        { "asin", Operation::ASIN },
+        { "acos", Operation::ACOS },
+        { "atan", Operation::ATAN },
+        { "sinh", Operation::SINH },
+        { "cosh", Operation::COSH },
+        { "tanh", Operation::TANH },
+        { "erf", Operation::ERF },
+        { "erfc", Operation::ERFC },
+        { "step", Operation::STEP },
+        { "delta", Operation::DELTA },
+        { "square", Operation::SQUARE },
         { "cube", Operation::CUBE },
-        { "recip" , Operation::RECIPROCAL },
-        { "min" , Operation::MIN },
-        { "max" , Operation::MAX },
-        { "abs" , Operation::ABS },
-        { "floor" , Operation::FLOOR },
-        { "ceil" , Operation::CEIL },
-        { "select" , Operation::SELECT },
+        { "recip", Operation::RECIPROCAL },
+        { "min", Operation::MIN },
+        { "max", Operation::MAX },
+        { "abs", Operation::ABS },
+        { "floor", Operation::FLOOR },
+        { "ceil", Operation::CEIL },
+        { "select", Operation::SELECT },
     };
     string trimmed = name.substr(0, name.size()-1);
 
@@ -400,64 +400,64 @@ Operation* Parser::getFunctionOperation(const std::string& name, const map<strin
     if (iter == opMap.end())
         throw Exception("unknown function: "+trimmed);
     switch (iter->second) {
-        case Operation::SQRT:
-            return new Operation::Sqrt();
-        case Operation::EXP:
-            return new Operation::Exp();
-        case Operation::LOG:
-            return new Operation::Log();
-        case Operation::SIN:
-            return new Operation::Sin();
-        case Operation::COS:
-            return new Operation::Cos();
-        case Operation::SEC:
-            return new Operation::Sec();
-        case Operation::CSC:
-            return new Operation::Csc();
-        case Operation::TAN:
-            return new Operation::Tan();
-        case Operation::COT:
-            return new Operation::Cot();
-        case Operation::ASIN:
-            return new Operation::Asin();
-        case Operation::ACOS:
-            return new Operation::Acos();
-        case Operation::ATAN:
-            return new Operation::Atan();
-        case Operation::SINH:
-            return new Operation::Sinh();
-        case Operation::COSH:
-            return new Operation::Cosh();
-        case Operation::TANH:
-            return new Operation::Tanh();
-        case Operation::ERF:
-            return new Operation::Erf();
-        case Operation::ERFC:
-            return new Operation::Erfc();
-        case Operation::STEP:
-            return new Operation::Step();
-        case Operation::DELTA:
-            return new Operation::Delta();
-        case Operation::SQUARE:
-            return new Operation::Square();
-        case Operation::CUBE:
-            return new Operation::Cube();
-        case Operation::RECIPROCAL:
-            return new Operation::Reciprocal();
-        case Operation::MIN:
-            return new Operation::Min();
-        case Operation::MAX:
-            return new Operation::Max();
-        case Operation::ABS:
-            return new Operation::Abs();
-        case Operation::FLOOR:
-            return new Operation::Floor();
-        case Operation::CEIL:
-            return new Operation::Ceil();
-        case Operation::SELECT:
-            return new Operation::Select();
-        default:
-            throw Exception("unknown function");
+    case Operation::SQRT:
+        return new Operation::Sqrt();
+    case Operation::EXP:
+        return new Operation::Exp();
+    case Operation::LOG:
+        return new Operation::Log();
+    case Operation::SIN:
+        return new Operation::Sin();
+    case Operation::COS:
+        return new Operation::Cos();
+    case Operation::SEC:
+        return new Operation::Sec();
+    case Operation::CSC:
+        return new Operation::Csc();
+    case Operation::TAN:
+        return new Operation::Tan();
+    case Operation::COT:
+        return new Operation::Cot();
+    case Operation::ASIN:
+        return new Operation::Asin();
+    case Operation::ACOS:
+        return new Operation::Acos();
+    case Operation::ATAN:
+        return new Operation::Atan();
+    case Operation::SINH:
+        return new Operation::Sinh();
+    case Operation::COSH:
+        return new Operation::Cosh();
+    case Operation::TANH:
+        return new Operation::Tanh();
+    case Operation::ERF:
+        return new Operation::Erf();
+    case Operation::ERFC:
+        return new Operation::Erfc();
+    case Operation::STEP:
+        return new Operation::Step();
+    case Operation::DELTA:
+        return new Operation::Delta();
+    case Operation::SQUARE:
+        return new Operation::Square();
+    case Operation::CUBE:
+        return new Operation::Cube();
+    case Operation::RECIPROCAL:
+        return new Operation::Reciprocal();
+    case Operation::MIN:
+        return new Operation::Min();
+    case Operation::MAX:
+        return new Operation::Max();
+    case Operation::ABS:
+        return new Operation::Abs();
+    case Operation::FLOOR:
+        return new Operation::Floor();
+    case Operation::CEIL:
+        return new Operation::Ceil();
+    case Operation::SELECT:
+        return new Operation::Select();
+    default:
+        throw Exception("unknown function");
     }
 }
 }

@@ -37,43 +37,44 @@ namespace analysis {
 
 class SelectRandomFrames : public LandmarkSelectionBase {
 private:
-  unsigned seed;
+    unsigned seed;
 public:
-  static void registerKeywords( Keywords& keys );
-  SelectRandomFrames( const ActionOptions& ao );
-  void selectLandmarks();
+    static void registerKeywords( Keywords& keys );
+    SelectRandomFrames( const ActionOptions& ao );
+    void selectLandmarks();
 };
 
 PLUMED_REGISTER_ACTION(SelectRandomFrames,"LANDMARK_SELECT_RANDOM")
 
 void SelectRandomFrames::registerKeywords( Keywords& keys ) {
-  LandmarkSelectionBase::registerKeywords(keys);
-  keys.add("compulsory","SEED","1234","a random number seed");
+    LandmarkSelectionBase::registerKeywords(keys);
+    keys.add("compulsory","SEED","1234","a random number seed");
 }
 
 SelectRandomFrames::SelectRandomFrames( const ActionOptions& ao ):
-  Action(ao),
-  LandmarkSelectionBase(ao)
+    Action(ao),
+    LandmarkSelectionBase(ao)
 {
-  parse("SEED",seed);
+    parse("SEED",seed);
 }
 
 void SelectRandomFrames::selectLandmarks() {
-  Random r; r.setSeed(-seed);
-  unsigned nframe=my_input_data->getNumberOfDataPoints();
-  unsigned nland=getNumberOfDataPoints();
+    Random r;
+    r.setSeed(-seed);
+    unsigned nframe=my_input_data->getNumberOfDataPoints();
+    unsigned nland=getNumberOfDataPoints();
 
-  std::vector<bool> selected( nframe, false );
+    std::vector<bool> selected( nframe, false );
 
-  unsigned fcount=0;
-  while (fcount<nland) {
-    unsigned iframe = std::floor( r.U01()*nframe );
-    if (!selected[iframe]) {
-      selected[iframe]=true;
-      selectFrame( iframe );
-      ++fcount;
+    unsigned fcount=0;
+    while (fcount<nland) {
+        unsigned iframe = std::floor( r.U01()*nframe );
+        if (!selected[iframe]) {
+            selected[iframe]=true;
+            selectFrame( iframe );
+            ++fcount;
+        }
     }
-  }
 }
 
 }

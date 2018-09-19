@@ -169,8 +169,8 @@ namespace crystallization {
 
 class Q4 : public Steinhardt {
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit Q4( const ActionOptions& ao );
+    static void registerKeywords( Keywords& keys );
+    explicit Q4( const ActionOptions& ao );
 };
 
 PLUMED_REGISTER_ACTION(Q4,"Q4")
@@ -178,26 +178,28 @@ typedef LocalSteinhardt<Q4> LOCAL_Q4;
 PLUMED_REGISTER_ACTION(LOCAL_Q4,"LOCAL_Q4")
 
 void Q4::registerKeywords( Keywords& keys ) {
-  Steinhardt::registerKeywords( keys );
+    Steinhardt::registerKeywords( keys );
 }
 
 Q4::Q4(const ActionOptions& ao ):
-  Action(ao),
-  Steinhardt(ao)
+    Action(ao),
+    Steinhardt(ao)
 {
-  setAngularMomentum(4);
+    setAngularMomentum(4);
 
-  normaliz.resize( 5 );
-  normaliz[0] = sqrt( ( 9.0*24.0 ) / (4.0*pi*24.0) );
-  normaliz[1] = -sqrt( ( 9.0*6.0 ) / (4.0*pi*120.0) );
-  normaliz[2] = sqrt( ( 9.0*2.0) / (4.0*pi*720.0) );
-  normaliz[3] = -sqrt( ( 9.0*1) / (4.0*pi*5040.0) );
-  normaliz[4] = sqrt( (9.0*1) / (4.0*pi*40320.0) );
+    normaliz.resize( 5 );
+    normaliz[0] = sqrt( ( 9.0*24.0 ) / (4.0*pi*24.0) );
+    normaliz[1] = -sqrt( ( 9.0*6.0 ) / (4.0*pi*120.0) );
+    normaliz[2] = sqrt( ( 9.0*2.0) / (4.0*pi*720.0) );
+    normaliz[3] = -sqrt( ( 9.0*1) / (4.0*pi*5040.0) );
+    normaliz[4] = sqrt( (9.0*1) / (4.0*pi*40320.0) );
 
-  coeff_poly.resize( 5 );
-  coeff_poly[0]=0.375; coeff_poly[1]=0.0;
-  coeff_poly[2]=-3.75; coeff_poly[3]=0.0;
-  coeff_poly[4]=4.375;
+    coeff_poly.resize( 5 );
+    coeff_poly[0]=0.375;
+    coeff_poly[1]=0.0;
+    coeff_poly[2]=-3.75;
+    coeff_poly[3]=0.0;
+    coeff_poly[4]=4.375;
 }
 
 }

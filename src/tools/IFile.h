@@ -39,66 +39,66 @@ but only for sequential input. See OFile for sequential output.
 */
 class IFile:
 /// Class identifying a single field for fielded output
-  public virtual FileBase {
-  class Field:
-    public FieldBase {
-  public:
-    bool read;
-    Field(): read(false) {}
-  };
+    public virtual FileBase {
+    class Field:
+        public FieldBase {
+    public:
+        bool read;
+        Field(): read(false) {}
+    };
 /// Low-level read.
 /// Note: in parallel, all processes read
-  size_t llread(char*,size_t);
+    size_t llread(char*,size_t);
 /// All the defined fields
-  std::vector<Field> fields;
+    std::vector<Field> fields;
 /// Flag set in the middle of a field reading
-  bool inMiddleOfField;
+    bool inMiddleOfField;
 /// Set to true if you want to allow fields to be ignored in the read in file
-  bool ignoreFields;
+    bool ignoreFields;
 /// Set to true to allow files without end-of-line at the end
-  bool noEOL;
+    bool noEOL;
 /// Advance to next field (= read one line)
-  IFile& advanceField();
+    IFile& advanceField();
 /// Find field index by name
-  unsigned findField(const std::string&name)const;
+    unsigned findField(const std::string&name)const;
 public:
 /// Constructor
-  IFile();
+    IFile();
 /// Destructor
-  ~IFile();
+    ~IFile();
 /// Opens the file
-  IFile& open(const std::string&name);
+    IFile& open(const std::string&name);
 /// Gets the list of all fields
-  IFile& scanFieldList(std::vector<std::string>&);
+    IFile& scanFieldList(std::vector<std::string>&);
 /// Read a double field
-  IFile& scanField(const std::string&,double&);
+    IFile& scanField(const std::string&,double&);
 /// Read a int field
-  IFile& scanField(const std::string&,int&);
+    IFile& scanField(const std::string&,int&);
 /// Read a string field
-  IFile& scanField(const std::string&,std::string&);
-  /**
-   Ends a field-formatted line.
+    IFile& scanField(const std::string&,std::string&);
+    /**
+     Ends a field-formatted line.
 
-  Typically used as
-  \verbatim
-    if.scanField("a",a).scanField("b",b).scanField();
-  \endverbatim
-  */
-  IFile& scanField();
+    Typically used as
+    \verbatim
+      if.scanField("a",a).scanField("b",b).scanField();
+    \endverbatim
+    */
+    IFile& scanField();
 /// Get a full line as a string
-  IFile& getline(std::string&);
+    IFile& getline(std::string&);
 /// Reset end of file
-  void reset(bool);
+    void reset(bool);
 /// Check if a field exist
-  bool FieldExist(const std::string& s);
+    bool FieldExist(const std::string& s);
 /// Read in a value
-  IFile& scanField(Value* val);
+    IFile& scanField(Value* val);
 /// Allow some of the fields in the input to be ignored
-  void allowIgnoredFields();
+    void allowIgnoredFields();
 /// Allow files without EOL at the end.
 /// This in practice should be only used when opening
 /// plumed input files
-  void allowNoEOL();
+    void allowNoEOL();
 };
 
 }

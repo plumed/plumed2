@@ -36,15 +36,15 @@ class PDB;
 class MolDataClass {
 public:
 /// Return true if the residue name is one of the allowed reisude names e.g. one of the 20 amino acids for proteins
-  static bool allowedResidue( const std::string& type, const std::string& residuename );
+    static bool allowedResidue( const std::string& type, const std::string& residuename );
 /// Return the number of atoms in the backbone per residue e.g. 5 for proteins
-  static unsigned numberOfAtomsPerResidueInBackbone( const std::string& type );
+    static unsigned numberOfAtomsPerResidueInBackbone( const std::string& type );
 /// Return the names of the atoms in the backbone e.g. N, CA, CB, C, O for most protein residues
-  static void getBackboneForResidue( const std::string& type, const unsigned& residuenum, const PDB& mypdb, std::vector<AtomNumber>& atoms );
+    static void getBackboneForResidue( const std::string& type, const unsigned& residuenum, const PDB& mypdb, std::vector<AtomNumber>& atoms );
 /// Return true if the residue is a terminal group e.g. ACE, NME for proteins
-  static bool isTerminalGroup( const std::string& type, const std::string& residuename );
+    static bool isTerminalGroup( const std::string& type, const std::string& residuename );
 /// Used to interpret special symbols - currently phi and psi and omega
-  static void specialSymbol( const std::string& type, const std::string& symbol, const PDB& mypdb, std::vector<AtomNumber>& numbers );
+    static void specialSymbol( const std::string& type, const std::string& symbol, const PDB& mypdb, std::vector<AtomNumber>& numbers );
 };
 
 }

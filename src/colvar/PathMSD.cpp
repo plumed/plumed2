@@ -74,37 +74,41 @@ is shared, as well as most input options.
 
 class PathMSD : public PathMSDBase {
 public:
-  explicit PathMSD(const ActionOptions&);
-  static void registerKeywords(Keywords& keys);
+    explicit PathMSD(const ActionOptions&);
+    static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(PathMSD,"PATHMSD")
 
 void PathMSD::registerKeywords(Keywords& keys) {
-  PathMSDBase::registerKeywords(keys);
-  componentsAreNotOptional(keys);
-  keys.addOutputComponent("sss","default","the position on the path");
-  keys.addOutputComponent("zzz","default","the distance from the path");
+    PathMSDBase::registerKeywords(keys);
+    componentsAreNotOptional(keys);
+    keys.addOutputComponent("sss","default","the position on the path");
+    keys.addOutputComponent("zzz","default","the distance from the path");
 }
 
 PathMSD::PathMSD(const ActionOptions&ao):
-  Action(ao),PathMSDBase(ao)
+    Action(ao),PathMSDBase(ao)
 {
-  checkRead();
+    checkRead();
 
-  log<<"  Bibliography "
-     <<plumed.cite("Branduardi, Gervasio, Parrinello J. Chem. Phys. 126, 054103 (2007)")
-     <<"\n";
-  // no need to read anything
-  addComponentWithDerivatives("sss"); componentIsNotPeriodic("sss");
-  addComponentWithDerivatives("zzz"); componentIsNotPeriodic("zzz");
-  requestAtoms(pdbv[0].getAtomNumbers());
+    log<<"  Bibliography "
+       <<plumed.cite("Branduardi, Gervasio, Parrinello J. Chem. Phys. 126, 054103 (2007)")
+       <<"\n";
+    // no need to read anything
+    addComponentWithDerivatives("sss");
+    componentIsNotPeriodic("sss");
+    addComponentWithDerivatives("zzz");
+    componentIsNotPeriodic("zzz");
+    requestAtoms(pdbv[0].getAtomNumbers());
 
-  double i=1.;
-  for(unsigned it=0 ; it<nframes ; ++it) {
-    vector<double> v; v.push_back(i);
-    indexvec.push_back(v); i+=1.;
-  }
+    double i=1.;
+    for(unsigned it=0 ; it<nframes ; ++it) {
+        vector<double> v;
+        v.push_back(i);
+        indexvec.push_back(v);
+        i+=1.;
+    }
 }
 
 }

@@ -97,14 +97,16 @@ PRINT ARG=d1.min
 
 class XYDistances : public MultiColvarBase {
 private:
-  unsigned myc1, myc2;
+    unsigned myc1, myc2;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit XYDistances(const ActionOptions&);
+    static void registerKeywords( Keywords& keys );
+    explicit XYDistances(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+    virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+    bool isPeriodic() {
+        return false;
+    }
 };
 
 PLUMED_REGISTER_ACTION(XYDistances,"XYDISTANCES")
@@ -112,56 +114,72 @@ PLUMED_REGISTER_ACTION(XYDistances,"XZDISTANCES")
 PLUMED_REGISTER_ACTION(XYDistances,"YZDISTANCES")
 
 void XYDistances::registerKeywords( Keywords& keys ) {
-  MultiColvarBase::registerKeywords( keys );
-  keys.use("MAX"); keys.use("ALT_MIN");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN"); keys.use("LOWEST"); keys.use("HIGHEST");
-  keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.add("numbered","ATOMS","the atoms involved in each of the distances you wish to calculate. "
-           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one distance will be "
-           "calculated for each ATOM keyword you specify (all ATOM keywords should "
-           "specify the incides of two atoms).  The eventual number of quantities calculated by this "
-           "action will depend on what functions of the distribution you choose to calculate.");
-  keys.reset_style("ATOMS","atoms");
-  keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
-  keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-           "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
-  keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-           "in GROUPB. This must be used in conjuction with GROUPA.");
+    MultiColvarBase::registerKeywords( keys );
+    keys.use("MAX");
+    keys.use("ALT_MIN");
+    keys.use("MEAN");
+    keys.use("MIN");
+    keys.use("LESS_THAN");
+    keys.use("LOWEST");
+    keys.use("HIGHEST");
+    keys.use("MORE_THAN");
+    keys.use("BETWEEN");
+    keys.use("HISTOGRAM");
+    keys.use("MOMENTS");
+    keys.add("numbered","ATOMS","the atoms involved in each of the distances you wish to calculate. "
+             "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one distance will be "
+             "calculated for each ATOM keyword you specify (all ATOM keywords should "
+             "specify the incides of two atoms).  The eventual number of quantities calculated by this "
+             "action will depend on what functions of the distribution you choose to calculate.");
+    keys.reset_style("ATOMS","atoms");
+    keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
+    keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
+             "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+    keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
+             "in GROUPB. This must be used in conjuction with GROUPA.");
 }
 
 XYDistances::XYDistances(const ActionOptions&ao):
-  Action(ao),
-  MultiColvarBase(ao)
+    Action(ao),
+    MultiColvarBase(ao)
 {
-  if( getName().find("XY")!=std::string::npos) {
-    myc1=0; myc2=1;
-  } else if( getName().find("XZ")!=std::string::npos) {
-    myc1=0; myc2=2;
-  } else if( getName().find("YZ")!=std::string::npos) {
-    myc1=1; myc2=2;
-  } else plumed_error();
+    if( getName().find("XY")!=std::string::npos) {
+        myc1=0;
+        myc2=1;
+    } else if( getName().find("XZ")!=std::string::npos) {
+        myc1=0;
+        myc2=2;
+    } else if( getName().find("YZ")!=std::string::npos) {
+        myc1=1;
+        myc2=2;
+    } else plumed_error();
 
-  // Read in the atoms
-  std::vector<AtomNumber> all_atoms;
-  readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
-  if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
-  setupMultiColvarBase( all_atoms );
-  // And check everything has been read in correctly
-  checkRead();
+    // Read in the atoms
+    std::vector<AtomNumber> all_atoms;
+    readTwoGroups( "GROUP", "GROUPA", "GROUPB", all_atoms );
+    if( atom_lab.size()==0 ) readAtomsLikeKeyword( "ATOMS", 2, all_atoms );
+    setupMultiColvarBase( all_atoms );
+    // And check everything has been read in correctly
+    checkRead();
 }
 
 double XYDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  Vector distance;
-  distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  const double value=sqrt(distance[myc1]*distance[myc1] + distance[myc2]*distance[myc2] );
-  const double invvalue=1.0/value;
+    Vector distance;
+    distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+    const double value=sqrt(distance[myc1]*distance[myc1] + distance[myc2]*distance[myc2] );
+    const double invvalue=1.0/value;
 
-  Vector myvec; myvec.zero();
-  // And finish the calculation
-  myvec[myc1]=+invvalue*distance[myc1]; myvec[myc2]=+invvalue*distance[myc2]; addAtomDerivatives( 1, 1, myvec, myatoms  );
-  myvec[myc1]=-invvalue*distance[myc1]; myvec[myc2]=-invvalue*distance[myc2]; addAtomDerivatives( 1, 0, myvec, myatoms );
-  myatoms.addBoxDerivatives( 1, Tensor(distance,myvec) );
-  return value;
+    Vector myvec;
+    myvec.zero();
+    // And finish the calculation
+    myvec[myc1]=+invvalue*distance[myc1];
+    myvec[myc2]=+invvalue*distance[myc2];
+    addAtomDerivatives( 1, 1, myvec, myatoms  );
+    myvec[myc1]=-invvalue*distance[myc1];
+    myvec[myc2]=-invvalue*distance[myc2];
+    addAtomDerivatives( 1, 0, myvec, myatoms );
+    myatoms.addBoxDerivatives( 1, Tensor(distance,myvec) );
+    return value;
 }
 
 }

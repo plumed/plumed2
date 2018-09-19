@@ -39,28 +39,28 @@ class VesselOptions;
 class VesselRegister {
 private:
 /// Pointer to a function which, given the keyword for a distribution function, creates it
-  typedef std::unique_ptr<Vessel>(*creator_pointer)(const VesselOptions&);
+    typedef std::unique_ptr<Vessel>(*creator_pointer)(const VesselOptions&);
 /// Pointer to the function that reserves the keyword for the distribution
-  typedef void(*keyword_pointer)(Keywords&);
+    typedef void(*keyword_pointer)(Keywords&);
 /// The set of possible distribution functions we can work with
-  std::map<std::string,creator_pointer> m;
+    std::map<std::string,creator_pointer> m;
 /// Map action to a function which documents the related object
-  std::map<std::string,keyword_pointer> mk;
+    std::map<std::string,keyword_pointer> mk;
 /// A vector of function pointers - this is used to create the documentation
-  Keywords keywords;
+    Keywords keywords;
 public:
 /// The destructor
-  ~VesselRegister();
+    ~VesselRegister();
 /// Add a new distribution function option to the register of distribution functions
-  void add(std::string keyword,creator_pointer,keyword_pointer k,keyword_pointer ik);
+    void add(std::string keyword,creator_pointer,keyword_pointer k,keyword_pointer ik);
 /// Remove a distribution function from the register of distribution functions
-  void remove(creator_pointer f);
+    void remove(creator_pointer f);
 /// Verify if a distribution keyword is present in the register
-  bool check(std::string keyname);
+    bool check(std::string keyname);
 /// Create a distribution function of the specified type
-  std::unique_ptr<Vessel> create(std::string keyword, const VesselOptions&da);
+    std::unique_ptr<Vessel> create(std::string keyword, const VesselOptions&da);
 /// Return the keywords
-  Keywords getKeywords();
+    Keywords getKeywords();
 };
 
 VesselRegister& vesselRegister();

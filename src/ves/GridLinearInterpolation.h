@@ -35,23 +35,23 @@ namespace ves {
 
 class GridLinearInterpolation {
 private:
-  static double getGridValueWithLinearInterpolation_1D(Grid* grid_pntr, const std::vector<double>& arg);
-  static double getGridValueWithLinearInterpolation_2D(Grid* grid_pntr, const std::vector<double>& arg);
-  static double linearInterpolation(const double x, const double x0, const double x1, const double y0, const double y1);
+    static double getGridValueWithLinearInterpolation_1D(Grid* grid_pntr, const std::vector<double>& arg);
+    static double getGridValueWithLinearInterpolation_2D(Grid* grid_pntr, const std::vector<double>& arg);
+    static double linearInterpolation(const double x, const double x0, const double x1, const double y0, const double y1);
 public:
-  static double getGridValueWithLinearInterpolation(Grid* grid_pntr, const std::vector<double>& arg);
+    static double getGridValueWithLinearInterpolation(Grid* grid_pntr, const std::vector<double>& arg);
 };
 
 
 inline
 double GridLinearInterpolation::linearInterpolation(const double x, const double x0, const double x1, const double y0, const double y1) {
-  // https://en.wikipedia.org/wiki/Linear_interpolation
-  if(x1!=x0) {
-    return y0 + (x-x0) * ((y1-y0)/(x1-x0));
-  }
-  else {
-    return y0;
-  }
+    // https://en.wikipedia.org/wiki/Linear_interpolation
+    if(x1!=x0) {
+        return y0 + (x-x0) * ((y1-y0)/(x1-x0));
+    }
+    else {
+        return y0;
+    }
 }
 
 

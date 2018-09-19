@@ -78,76 +78,76 @@ UNITS LENGTH=0.1 TIME=0.001
 //+ENDPLUMEDOC
 
 class Units :
-  public virtual ActionSetup
+    public virtual ActionSetup
 {
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit Units(const ActionOptions&ao);
+    static void registerKeywords( Keywords& keys );
+    explicit Units(const ActionOptions&ao);
 };
 
 PLUMED_REGISTER_ACTION(Units,"UNITS")
 
 void Units::registerKeywords( Keywords& keys ) {
-  ActionSetup::registerKeywords(keys);
-  keys.add("optional","LENGTH","the units of lengths.  Either specify a conversion factor from the default, nm, or A (for angstroms) or um");
-  keys.add("optional","ENERGY","the units of energy.  Either specify a conversion factor from the default, kj/mol, or use j/mol or kcal/mol");
-  keys.add("optional","TIME","the units of time.  Either specify a conversion factor from the default, ps, or use ns or fs");
-  keys.add("optional","MASS","the units of masses.  Specify a conversion factor from the default, amu");
-  keys.add("optional","CHARGE","the units of charges.  Specify a conversion factor from the default, e");
-  keys.addFlag("NATURAL",false,"use natural units");
+    ActionSetup::registerKeywords(keys);
+    keys.add("optional","LENGTH","the units of lengths.  Either specify a conversion factor from the default, nm, or A (for angstroms) or um");
+    keys.add("optional","ENERGY","the units of energy.  Either specify a conversion factor from the default, kj/mol, or use j/mol or kcal/mol");
+    keys.add("optional","TIME","the units of time.  Either specify a conversion factor from the default, ps, or use ns or fs");
+    keys.add("optional","MASS","the units of masses.  Specify a conversion factor from the default, amu");
+    keys.add("optional","CHARGE","the units of charges.  Specify a conversion factor from the default, e");
+    keys.addFlag("NATURAL",false,"use natural units");
 }
 
 Units::Units(const ActionOptions&ao):
-  Action(ao),
-  ActionSetup(ao)
+    Action(ao),
+    ActionSetup(ao)
 {
-  PLMD::Units u;
+    PLMD::Units u;
 
-  std::string s;
+    std::string s;
 
-  s="";
-  parse("LENGTH",s);
-  if(s.length()>0) u.setLength(s);
-  if(u.getLengthString().length()>0) log.printf("  length: %s\n",u.getLengthString().c_str());
-  else                               log.printf("  length: %f nm\n",u.getLength());
+    s="";
+    parse("LENGTH",s);
+    if(s.length()>0) u.setLength(s);
+    if(u.getLengthString().length()>0) log.printf("  length: %s\n",u.getLengthString().c_str());
+    else                               log.printf("  length: %f nm\n",u.getLength());
 
-  s="";
-  parse("ENERGY",s);
-  if(s.length()>0) u.setEnergy(s);
-  if(u.getEnergyString().length()>0) log.printf("  energy: %s\n",u.getEnergyString().c_str());
-  else                               log.printf("  energy: %f kj/mol\n",u.getEnergy());
+    s="";
+    parse("ENERGY",s);
+    if(s.length()>0) u.setEnergy(s);
+    if(u.getEnergyString().length()>0) log.printf("  energy: %s\n",u.getEnergyString().c_str());
+    else                               log.printf("  energy: %f kj/mol\n",u.getEnergy());
 
-  s="";
-  parse("TIME",s);
-  if(s.length()>0) u.setTime(s);
-  if(u.getTimeString().length()>0) log.printf("  time: %s\n",u.getTimeString().c_str());
-  else                             log.printf("  time: %f ps\n",u.getTime());
+    s="";
+    parse("TIME",s);
+    if(s.length()>0) u.setTime(s);
+    if(u.getTimeString().length()>0) log.printf("  time: %s\n",u.getTimeString().c_str());
+    else                             log.printf("  time: %f ps\n",u.getTime());
 
-  s="";
-  parse("CHARGE",s);
-  if(s.length()>0) u.setCharge(s);
-  if(u.getChargeString().length()>0) log.printf("  charge: %s\n",u.getChargeString().c_str());
-  else                               log.printf("  charge: %f e\n",u.getCharge());
+    s="";
+    parse("CHARGE",s);
+    if(s.length()>0) u.setCharge(s);
+    if(u.getChargeString().length()>0) log.printf("  charge: %s\n",u.getChargeString().c_str());
+    else                               log.printf("  charge: %f e\n",u.getCharge());
 
-  s="";
-  parse("MASS",s);
-  if(s.length()>0) u.setMass(s);
-  if(u.getMassString().length()>0) log.printf("  mass: %s\n",u.getMassString().c_str());
-  else                             log.printf("  mass: %f amu\n",u.getMass());
+    s="";
+    parse("MASS",s);
+    if(s.length()>0) u.setMass(s);
+    if(u.getMassString().length()>0) log.printf("  mass: %s\n",u.getMassString().c_str());
+    else                             log.printf("  mass: %f amu\n",u.getMass());
 
-  bool natural=false;
-  parseFlag("NATURAL",natural);
-  plumed.getAtoms().setNaturalUnits(natural);
+    bool natural=false;
+    parseFlag("NATURAL",natural);
+    plumed.getAtoms().setNaturalUnits(natural);
 
-  checkRead();
+    checkRead();
 
-  plumed.getAtoms().setUnits(u);
-  if(natural) {
-    log.printf("  using natural units\n");
-  } else {
-    log.printf("  using physical units\n");
-  }
-  log.printf("  inside PLUMED, Boltzmann constant is %f\n",plumed.getAtoms().getKBoltzmann());
+    plumed.getAtoms().setUnits(u);
+    if(natural) {
+        log.printf("  using natural units\n");
+    } else {
+        log.printf("  using physical units\n");
+    }
+    log.printf("  inside PLUMED, Boltzmann constant is %f\n",plumed.getAtoms().getKBoltzmann());
 }
 
 }

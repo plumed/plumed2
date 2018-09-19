@@ -26,16 +26,16 @@ namespace PLMD {
 
 class MahalanobisDistance : public ArgumentOnlyDistance {
 public:
-  explicit MahalanobisDistance( const ReferenceConfigurationOptions& ro );
+    explicit MahalanobisDistance( const ReferenceConfigurationOptions& ro );
 };
 
 PLUMED_REGISTER_METRIC(MahalanobisDistance,"MAHALANOBIS")
 
 MahalanobisDistance::MahalanobisDistance( const ReferenceConfigurationOptions& ro ):
-  ReferenceConfiguration(ro),
-  ArgumentOnlyDistance(ro)
+    ReferenceConfiguration(ro),
+    ArgumentOnlyDistance(ro)
 {
-  hasmetric=true;
+    hasmetric=true;
 }
 
 }

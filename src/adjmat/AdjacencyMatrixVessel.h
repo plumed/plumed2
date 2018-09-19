@@ -37,45 +37,45 @@ class AdjacencyMatrixBase;
 // these features.
 
 class AdjacencyMatrixVessel : public vesselbase::StoreDataVessel {
-  friend class AdjacencyMatrixBase;
-  friend class ActionWithInputMatrix;
+    friend class AdjacencyMatrixBase;
+    friend class ActionWithInputMatrix;
 private:
 /// Pointer to underlying action
-  AdjacencyMatrixBase* function;
+    AdjacencyMatrixBase* function;
 /// Is the matrix symmetric and are we calculating hbonds
-  bool symmetric, hbonds;
+    bool symmetric, hbonds;
 public:
-  static void registerKeywords( Keywords& keys );
+    static void registerKeywords( Keywords& keys );
 /// Constructor
-  explicit AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
+    explicit AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
 /// Get the underlying adjacency matrix action object
-  AdjacencyMatrixBase* getMatrixAction();
+    AdjacencyMatrixBase* getMatrixAction();
 /// Is an element of the matrix currently active
-  bool matrixElementIsActive( const unsigned& ielem, const unsigned& jelem ) const ;
+    bool matrixElementIsActive( const unsigned& ielem, const unsigned& jelem ) const ;
 /// Get the index that a particular element is stored in from the matrix indices
-  unsigned getStoreIndexFromMatrixIndices( const unsigned& ielem, const unsigned& jelem ) const ;
+    unsigned getStoreIndexFromMatrixIndices( const unsigned& ielem, const unsigned& jelem ) const ;
 /// Get the adjacency matrix
-  void retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix );
+    void retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix );
 /// Get the neighbour list based on the adjacency matrix
-  void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
+    void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
 /// Retrieve the list of edges in the adjacency matrix/graph
-  void retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list );
+    void retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& edge_list );
 ///
-  void getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j ) const ;
+    void getMatrixIndices( const unsigned& code, unsigned& i, unsigned& j ) const ;
 /// Can we think of the matrix as an undirected graph
-  bool undirectedGraph() const ;
+    bool undirectedGraph() const ;
 /// Is the matrix symmetric
-  bool isSymmetric() const ;
+    bool isSymmetric() const ;
 /// Get the number of rows
-  unsigned getNumberOfRows() const ;
+    unsigned getNumberOfRows() const ;
 /// Get the number of columns
-  unsigned getNumberOfColumns() const ;
+    unsigned getNumberOfColumns() const ;
 /// Are these two nodes connected
-  bool nodesAreConnected( const unsigned& iatom, const unsigned& jatom ) const ;
+    bool nodesAreConnected( const unsigned& iatom, const unsigned& jatom ) const ;
 /// Get the cutoff that we are using for connections
-  double getCutoffForConnection() const ;
+    double getCutoffForConnection() const ;
 ///
-  Vector getNodePosition( const unsigned& taskIndex ) const ;
+    Vector getNodePosition( const unsigned& taskIndex ) const ;
 };
 
 }

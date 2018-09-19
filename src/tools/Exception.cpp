@@ -33,62 +33,65 @@ using namespace std;
 namespace PLMD {
 
 Exception::Exception():
-  note(true)
+    note(true)
 {
 #ifdef __PLUMED_HAS_EXECINFO
-  {
-    void* callstack[128];
-    int frames = backtrace(callstack, 128);
-    char** strs = backtrace_symbols(callstack, frames);
-    for (int i = 0; i < frames; ++i) {stackString+=strs[i]; stackString+="\n";}
-    free(strs);
-  }
+    {
+        void* callstack[128];
+        int frames = backtrace(callstack, 128);
+        char** strs = backtrace_symbols(callstack, frames);
+        for (int i = 0; i < frames; ++i) {
+            stackString+=strs[i];
+            stackString+="\n";
+        }
+        free(strs);
+    }
 #endif
-  const char* env=getenv("PLUMED_STACK_TRACE");
-  if(stackString.length()>0 && env && !strcmp(env,"yes")) {
-    msg+="\n\n********** STACK DUMP **********\n";
-    msg+=stackString;
-    msg+="\n********** END STACK DUMP **********\n";
-  }
-  msg+="\n+++ PLUMED error";
+    const char* env=getenv("PLUMED_STACK_TRACE");
+    if(stackString.length()>0 && env && !strcmp(env,"yes")) {
+        msg+="\n\n********** STACK DUMP **********\n";
+        msg+=stackString;
+        msg+="\n********** END STACK DUMP **********\n";
+    }
+    msg+="\n+++ PLUMED error";
 }
 
 Exception& Exception::operator<<(const std::string&msg)
 {
-  if(msg.length()>0) {
-    if(note) this->msg +="\n+++ message follows +++\n";
-    this->msg +=msg;
-    note=false;
-  }
-  return *this;
+    if(msg.length()>0) {
+        if(note) this->msg +="\n+++ message follows +++\n";
+        this->msg +=msg;
+        note=false;
+    }
+    return *this;
 }
 
 Exception& Exception::operator<<(const Location&loc)
 {
-  if(loc.file) {
-    char cline[1000];
-    sprintf(cline,"%u",loc.line);
-    this->msg += "\n+++ at ";
-    this->msg += loc.file;
-    this->msg += ":";
-    this->msg += cline;
-    if(loc.pretty && loc.pretty[0]) {
-      this->msg += ", function ";
-      this->msg += loc.pretty;
+    if(loc.file) {
+        char cline[1000];
+        sprintf(cline,"%u",loc.line);
+        this->msg += "\n+++ at ";
+        this->msg += loc.file;
+        this->msg += ":";
+        this->msg += cline;
+        if(loc.pretty && loc.pretty[0]) {
+            this->msg += ", function ";
+            this->msg += loc.pretty;
+        }
     }
-  }
-  note=true;
-  return *this;
+    note=true;
+    return *this;
 }
 
 Exception& Exception::operator<<(const Assertion&as)
 {
-  if(as.assertion) {
-    this->msg += "\n+++ assertion failed: ";
-    this->msg += as.assertion;
-  }
-  note=true;
-  return *this;
+    if(as.assertion) {
+        this->msg += "\n+++ assertion failed: ";
+        this->msg += as.assertion;
+    }
+    note=true;
+    return *this;
 }
 
 }

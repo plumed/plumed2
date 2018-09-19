@@ -38,40 +38,40 @@ information as to how to go about implementing a new bias.
 */
 
 class Bias :
-  public ActionPilot,
-  public ActionWithValue,
-  public ActionWithArguments
+    public ActionPilot,
+    public ActionWithValue,
+    public ActionWithArguments
 {
 /// the vector of the forces
-  std::vector<double> outputForces;
+    std::vector<double> outputForces;
 /// the pointer to the bias component
-  Value *valueBias;
+    Value *valueBias;
 protected:
 /// set the force from the bias on argument i, this automatically set the partial derivative of the bias with respect to i to -f
-  void setOutputForce(int i,double f);
+    void setOutputForce(int i,double f);
 /// set the value of the bias
-  void setBias(double bias);
+    void setBias(double bias);
 public:
-  static void registerKeywords(Keywords&);
-  explicit Bias(const ActionOptions&ao);
-  void apply();
-  unsigned getNumberOfDerivatives();
+    static void registerKeywords(Keywords&);
+    explicit Bias(const ActionOptions&ao);
+    void apply();
+    unsigned getNumberOfDerivatives();
 };
 
 inline
 void Bias::setOutputForce(int i,double f) {
-  outputForces[i]=f;
-  valueBias->addDerivative(i,-f);
+    outputForces[i]=f;
+    valueBias->addDerivative(i,-f);
 }
 
 inline
 void Bias::setBias(double bias) {
-  valueBias->set(bias);
+    valueBias->set(bias);
 }
 
 inline
 unsigned Bias::getNumberOfDerivatives() {
-  return getNumberOfArguments();
+    return getNumberOfArguments();
 }
 
 }

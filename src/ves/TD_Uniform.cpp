@@ -170,16 +170,16 @@ td: TD_UNIFORM MAXIMA=+7.0
 //+ENDPLUMEDOC
 
 class TD_Uniform : public TargetDistribution {
-  std::vector<double> minima_;
-  std::vector<double> maxima_;
-  std::vector<double> sigma_min_;
-  std::vector<double> sigma_max_;
-  double GaussianSwitchingFunc(const double, const double, const double) const;
-  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&);
+    std::vector<double> minima_;
+    std::vector<double> maxima_;
+    std::vector<double> sigma_min_;
+    std::vector<double> sigma_max_;
+    double GaussianSwitchingFunc(const double, const double, const double) const;
+    void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&);
 public:
-  static void registerKeywords( Keywords&);
-  explicit TD_Uniform(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const;
+    static void registerKeywords( Keywords&);
+    explicit TD_Uniform(const ActionOptions& ao);
+    double getValue(const std::vector<double>&) const;
 };
 
 
@@ -187,105 +187,123 @@ PLUMED_REGISTER_ACTION(TD_Uniform,"TD_UNIFORM")
 
 
 void TD_Uniform::registerKeywords(Keywords& keys) {
-  TargetDistribution::registerKeywords(keys);
-  keys.add("optional","MINIMA","The minima of the intervals where the target distribution is taken as uniform. You should give one value for each argument.");
-  keys.add("optional","MAXIMA","The maxima of the intervals where the target distribution is taken as uniform. You should give one value for each argument.");
-  keys.add("optional","SIGMA_MINIMA","The standard deviation parameters of the Gaussian switching functions for the minima of the intervals. You should give one value for each argument. Value of 0.0 means that switch is done without a smooth switching function, this is the default behavior.");
-  keys.add("optional","SIGMA_MAXIMA","The standard deviation parameters of the Gaussian switching functions for the maxima of the intervals. You should give one value for each argument. Value of 0.0 means that switch is done without a smooth switching function, this is the default behavior.");
+    TargetDistribution::registerKeywords(keys);
+    keys.add("optional","MINIMA","The minima of the intervals where the target distribution is taken as uniform. You should give one value for each argument.");
+    keys.add("optional","MAXIMA","The maxima of the intervals where the target distribution is taken as uniform. You should give one value for each argument.");
+    keys.add("optional","SIGMA_MINIMA","The standard deviation parameters of the Gaussian switching functions for the minima of the intervals. You should give one value for each argument. Value of 0.0 means that switch is done without a smooth switching function, this is the default behavior.");
+    keys.add("optional","SIGMA_MAXIMA","The standard deviation parameters of the Gaussian switching functions for the maxima of the intervals. You should give one value for each argument. Value of 0.0 means that switch is done without a smooth switching function, this is the default behavior.");
 }
 
 
 TD_Uniform::TD_Uniform(const ActionOptions& ao):
-  PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
-  minima_(0),
-  maxima_(0),
-  sigma_min_(0),
-  sigma_max_(0)
+    PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
+    minima_(0),
+    maxima_(0),
+    sigma_min_(0),
+    sigma_max_(0)
 {
-  parseVector("MINIMA",minima_);
-  parseVector("MAXIMA",maxima_);
+    parseVector("MINIMA",minima_);
+    parseVector("MAXIMA",maxima_);
 
-  parseVector("SIGMA_MINIMA",sigma_min_);
-  parseVector("SIGMA_MAXIMA",sigma_max_);
-  if(minima_.size()==0 && sigma_min_.size()>0) {plumed_merror(getName()+": you cannot give SIGMA_MINIMA if MINIMA is not given");}
-  if(maxima_.size()==0 && sigma_max_.size()>0) {plumed_merror(getName()+": you cannot give SIGMA_MAXIMA if MAXIMA is not given");}
-
-  if(minima_.size()>0 && maxima_.size()>0) {
-    // both MINIMA and MAXIMA given, do all checks
-    if(minima_.size()!=maxima_.size()) {plumed_merror(getName()+": MINIMA and MAXIMA do not have the same number of values.");}
-    setDimension(minima_.size());
-    for(unsigned int k=0; k<getDimension(); k++) {
-      if(minima_[k]>maxima_[k]) {
-        plumed_merror(getName()+": error in MINIMA and MAXIMA keywords, one of the MINIMA values is larger than the corresponding MAXIMA values");
-      }
+    parseVector("SIGMA_MINIMA",sigma_min_);
+    parseVector("SIGMA_MAXIMA",sigma_max_);
+    if(minima_.size()==0 && sigma_min_.size()>0) {
+        plumed_merror(getName()+": you cannot give SIGMA_MINIMA if MINIMA is not given");
     }
-  }
-  else if(minima_.size()>0 && maxima_.size()==0) {
-    // only MINIMA given, MAXIMA assigned later on.
-    setDimension(minima_.size());
-  }
-  else if(maxima_.size()>0 && minima_.size()==0) {
-    // only MAXIMA given, MINIMA assigned later on.
-    setDimension(maxima_.size());
-  }
-  else if(maxima_.size()==0 && minima_.size()==0) {
-    // neither MAXIMA nor MINIMA givenm, both assigned later on.
-    setDimension(0);
-  }
+    if(maxima_.size()==0 && sigma_max_.size()>0) {
+        plumed_merror(getName()+": you cannot give SIGMA_MAXIMA if MAXIMA is not given");
+    }
 
-  if(sigma_min_.size()==0) {sigma_min_.assign(getDimension(),0.0);}
-  if(sigma_max_.size()==0) {sigma_max_.assign(getDimension(),0.0);}
-  if(sigma_min_.size()!=getDimension()) {plumed_merror(getName()+": SIGMA_MINIMA has the wrong number of values");}
-  if(sigma_max_.size()!=getDimension()) {plumed_merror(getName()+": SIGMA_MAXIMA has the wrong number of values");}
-  //
-  setForcedNormalization();
-  checkRead();
+    if(minima_.size()>0 && maxima_.size()>0) {
+        // both MINIMA and MAXIMA given, do all checks
+        if(minima_.size()!=maxima_.size()) {
+            plumed_merror(getName()+": MINIMA and MAXIMA do not have the same number of values.");
+        }
+        setDimension(minima_.size());
+        for(unsigned int k=0; k<getDimension(); k++) {
+            if(minima_[k]>maxima_[k]) {
+                plumed_merror(getName()+": error in MINIMA and MAXIMA keywords, one of the MINIMA values is larger than the corresponding MAXIMA values");
+            }
+        }
+    }
+    else if(minima_.size()>0 && maxima_.size()==0) {
+        // only MINIMA given, MAXIMA assigned later on.
+        setDimension(minima_.size());
+    }
+    else if(maxima_.size()>0 && minima_.size()==0) {
+        // only MAXIMA given, MINIMA assigned later on.
+        setDimension(maxima_.size());
+    }
+    else if(maxima_.size()==0 && minima_.size()==0) {
+        // neither MAXIMA nor MINIMA givenm, both assigned later on.
+        setDimension(0);
+    }
+
+    if(sigma_min_.size()==0) {
+        sigma_min_.assign(getDimension(),0.0);
+    }
+    if(sigma_max_.size()==0) {
+        sigma_max_.assign(getDimension(),0.0);
+    }
+    if(sigma_min_.size()!=getDimension()) {
+        plumed_merror(getName()+": SIGMA_MINIMA has the wrong number of values");
+    }
+    if(sigma_max_.size()!=getDimension()) {
+        plumed_merror(getName()+": SIGMA_MAXIMA has the wrong number of values");
+    }
+    //
+    setForcedNormalization();
+    checkRead();
 }
 
 
 void TD_Uniform::setupAdditionalGrids(const std::vector<Value*>& arguments, const std::vector<std::string>& min, const std::vector<std::string>& max, const std::vector<unsigned int>& nbins) {
 
-  if(minima_.size()==0) {
-    minima_.assign(getDimension(),0.0);
-    for(unsigned int k=0; k<getDimension(); k++) {Tools::convert(min[k],minima_[k]);}
-  }
+    if(minima_.size()==0) {
+        minima_.assign(getDimension(),0.0);
+        for(unsigned int k=0; k<getDimension(); k++) {
+            Tools::convert(min[k],minima_[k]);
+        }
+    }
 
-  if(maxima_.size()==0) {
-    maxima_.assign(getDimension(),0.0);
-    for(unsigned int k=0; k<getDimension(); k++) {Tools::convert(max[k],maxima_[k]);}
-  }
+    if(maxima_.size()==0) {
+        maxima_.assign(getDimension(),0.0);
+        for(unsigned int k=0; k<getDimension(); k++) {
+            Tools::convert(max[k],maxima_[k]);
+        }
+    }
 
 }
 
 
 double TD_Uniform::getValue(const std::vector<double>& argument) const {
-  //
-  double value = 1.0;
-  for(unsigned int k=0; k<getDimension(); k++) {
-    double tmp;
-    if(argument[k] < minima_[k]) {
-      tmp = GaussianSwitchingFunc(argument[k],minima_[k],sigma_min_[k]);
+    //
+    double value = 1.0;
+    for(unsigned int k=0; k<getDimension(); k++) {
+        double tmp;
+        if(argument[k] < minima_[k]) {
+            tmp = GaussianSwitchingFunc(argument[k],minima_[k],sigma_min_[k]);
+        }
+        else if(argument[k] > maxima_[k]) {
+            tmp = GaussianSwitchingFunc(argument[k],maxima_[k],sigma_max_[k]);
+        }
+        else {
+            tmp = 1.0;
+        }
+        value *= tmp;
     }
-    else if(argument[k] > maxima_[k]) {
-      tmp = GaussianSwitchingFunc(argument[k],maxima_[k],sigma_max_[k]);
-    }
-    else {
-      tmp = 1.0;
-    }
-    value *= tmp;
-  }
-  return value;
+    return value;
 }
 
 inline
 double TD_Uniform::GaussianSwitchingFunc(const double argument, const double center, const double sigma) const {
-  if(sigma>0.0) {
-    double arg=(argument-center)/sigma;
-    return exp(-0.5*arg*arg);
-  }
-  else {
-    return 0.0;
-  }
+    if(sigma>0.0) {
+        double arg=(argument-center)/sigma;
+        return exp(-0.5*arg*arg);
+    }
+    else {
+        return 0.0;
+    }
 }
 
 

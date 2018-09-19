@@ -4,9 +4,9 @@ The source has been modified to (mostly) use modern C formatting, and to get rid
 compiler warnings. Any errors in doing this should be blamed on the GROMACS developers, and
 not the reference BLAS implementation.
 
-The reference BLAS implementation is available from http://www.netlib.org/blas 
+The reference BLAS implementation is available from http://www.netlib.org/blas
 
-BLAS does not come with a formal named "license", but a general statement that 
+BLAS does not come with a formal named "license", but a general statement that
 
 "The reference BLAS is a freely-available software package. It is available from netlib
 via anonymous ftp and the World Wide Web. Thus, it can be included in commercial software

@@ -29,14 +29,14 @@ namespace mapping {
 
 class PathBase : public Mapping {
 private:
-  double lambda;
+    double lambda;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit PathBase(const ActionOptions&);
-  double getLambda();
-  void calculate();
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
-  double transformHD( const double& dist, double& df ) const ;
+    static void registerKeywords( Keywords& keys );
+    explicit PathBase(const ActionOptions&);
+    double getLambda();
+    void calculate();
+    void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
+    double transformHD( const double& dist, double& df ) const ;
 };
 
 }

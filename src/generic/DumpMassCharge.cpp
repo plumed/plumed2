@@ -90,109 +90,113 @@ plumed driver --mc newmc --plumed plumed.dat --ixyz traj.gro
 //+ENDPLUMEDOC
 
 class DumpMassCharge:
-  public ActionAtomistic,
-  public ActionPilot
+    public ActionAtomistic,
+    public ActionPilot
 {
-  string file;
-  bool first;
-  bool second;
-  bool print_masses;
-  bool print_charges;
+    string file;
+    bool first;
+    bool second;
+    bool print_masses;
+    bool print_charges;
 public:
-  explicit DumpMassCharge(const ActionOptions&);
-  ~DumpMassCharge();
-  static void registerKeywords( Keywords& keys );
-  void prepare();
-  void calculate() {}
-  void apply() {}
-  void update();
+    explicit DumpMassCharge(const ActionOptions&);
+    ~DumpMassCharge();
+    static void registerKeywords( Keywords& keys );
+    void prepare();
+    void calculate() {}
+    void apply() {}
+    void update();
 };
 
 PLUMED_REGISTER_ACTION(DumpMassCharge,"DUMPMASSCHARGE")
 
 void DumpMassCharge::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
-  keys.add("atoms", "ATOMS", "the atom indices whose charges and masses you would like to print out");
-  keys.add("compulsory", "FILE", "file on which to output charges and masses.");
-  keys.addFlag("ONLY_MASSES",false,"Only output masses to file");
-  keys.addFlag("ONLY_CHARGES",false,"Only output charges to file");
+    Action::registerKeywords( keys );
+    ActionPilot::registerKeywords( keys );
+    ActionAtomistic::registerKeywords( keys );
+    keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
+    keys.add("atoms", "ATOMS", "the atom indices whose charges and masses you would like to print out");
+    keys.add("compulsory", "FILE", "file on which to output charges and masses.");
+    keys.addFlag("ONLY_MASSES",false,"Only output masses to file");
+    keys.addFlag("ONLY_CHARGES",false,"Only output charges to file");
 }
 
 DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
-  Action(ao),
-  ActionAtomistic(ao),
-  ActionPilot(ao),
-  first(true),
-  second(true),
-  print_masses(true),
-  print_charges(true)
+    Action(ao),
+    ActionAtomistic(ao),
+    ActionPilot(ao),
+    first(true),
+    second(true),
+    print_masses(true),
+    print_charges(true)
 {
-  vector<AtomNumber> atoms;
-  parse("FILE",file);
-  if(file.length()==0) error("name of output file was not specified");
-  log.printf("  output written to file %s\n",file.c_str());
+    vector<AtomNumber> atoms;
+    parse("FILE",file);
+    if(file.length()==0) error("name of output file was not specified");
+    log.printf("  output written to file %s\n",file.c_str());
 
-  parseAtomList("ATOMS",atoms);
+    parseAtomList("ATOMS",atoms);
 
-  if(atoms.size()==0) {
-    for(int i=0; i<plumed.getAtoms().getNatoms(); i++) {
-      atoms.push_back(AtomNumber::index(i));
+    if(atoms.size()==0) {
+        for(int i=0; i<plumed.getAtoms().getNatoms(); i++) {
+            atoms.push_back(AtomNumber::index(i));
+        }
     }
-  }
 
-  bool only_masses = false;
-  parseFlag("ONLY_MASSES",only_masses);
-  if(only_masses) {
-    print_charges = false;
-    log.printf("  only masses will be written to file\n");
-  }
+    bool only_masses = false;
+    parseFlag("ONLY_MASSES",only_masses);
+    if(only_masses) {
+        print_charges = false;
+        log.printf("  only masses will be written to file\n");
+    }
 
-  bool only_charges = false;
-  parseFlag("ONLY_CHARGES",only_charges);
-  if(only_charges) {
-    print_masses = false;
-    log.printf("  only charges will be written to file\n");
-  }
+    bool only_charges = false;
+    parseFlag("ONLY_CHARGES",only_charges);
+    if(only_charges) {
+        print_masses = false;
+        log.printf("  only charges will be written to file\n");
+    }
 
 
-  checkRead();
+    checkRead();
 
-  log.printf("  printing the following atoms:" );
-  for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
-  log.printf("\n");
-  requestAtoms(atoms);
+    log.printf("  printing the following atoms:" );
+    for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
+    log.printf("\n");
+    requestAtoms(atoms);
 
-  if(only_masses && only_charges) {
-    plumed_merror("using both ONLY_MASSES and ONLY_CHARGES doesn't make sense");
-  }
+    if(only_masses && only_charges) {
+        plumed_merror("using both ONLY_MASSES and ONLY_CHARGES doesn't make sense");
+    }
 
 }
 
 void DumpMassCharge::prepare() {
-  if(!first && second) {
-    requestAtoms(vector<AtomNumber>());
-    second=false;
-  }
+    if(!first && second) {
+        requestAtoms(vector<AtomNumber>());
+        second=false;
+    }
 }
 
 void DumpMassCharge::update() {
-  if(!first) return;
-  first=false;
+    if(!first) return;
+    first=false;
 
-  OFile of;
-  of.link(*this);
-  of.open(file);
+    OFile of;
+    of.link(*this);
+    of.open(file);
 
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    int ii=getAbsoluteIndex(i).index();
-    of.printField("index",ii);
-    if(print_masses) {of.printField("mass",getMass(i));}
-    if(print_charges) {of.printField("charge",getCharge(i));}
-    of.printField();
-  }
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+        int ii=getAbsoluteIndex(i).index();
+        of.printField("index",ii);
+        if(print_masses) {
+            of.printField("mass",getMass(i));
+        }
+        if(print_charges) {
+            of.printField("charge",getCharge(i));
+        }
+        of.printField();
+    }
 }
 
 DumpMassCharge::~DumpMassCharge() {

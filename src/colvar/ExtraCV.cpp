@@ -43,14 +43,14 @@ XX
 
 
 class ExtraCV : public Colvar {
-  std::string name;
+    std::string name;
 public:
-  explicit ExtraCV(const ActionOptions&);
+    explicit ExtraCV(const ActionOptions&);
 // active methods:
-  void prepare();
-  virtual void calculate();
-  unsigned getNumberOfDerivatives();
-  static void registerKeywords( Keywords& keys );
+    void prepare();
+    virtual void calculate();
+    unsigned getNumberOfDerivatives();
+    static void registerKeywords( Keywords& keys );
 };
 
 
@@ -60,26 +60,27 @@ using namespace std;
 PLUMED_REGISTER_ACTION(ExtraCV,"EXTRACV")
 
 ExtraCV::ExtraCV(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao)
+    PLUMED_COLVAR_INIT(ao)
 {
-  addValueWithDerivatives(); setNotPeriodic();
-  getPntrToValue()->resizeDerivatives(1);
-  parse("NAME",name);
-  log<<"  name: "<<name<<"\n";
-  isExtraCV=true;
-  setExtraCV(name);
+    addValueWithDerivatives();
+    setNotPeriodic();
+    getPntrToValue()->resizeDerivatives(1);
+    parse("NAME",name);
+    log<<"  name: "<<name<<"\n";
+    isExtraCV=true;
+    setExtraCV(name);
 }
 
 void ExtraCV::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
-  keys.remove("NUMERICAL_DERIVATIVES");
-  keys.add("compulsory","NAME","name of the CV as computed by the MD engine");
+    Action::registerKeywords( keys );
+    ActionAtomistic::registerKeywords( keys );
+    ActionWithValue::registerKeywords( keys );
+    keys.remove("NUMERICAL_DERIVATIVES");
+    keys.add("compulsory","NAME","name of the CV as computed by the MD engine");
 }
 
 unsigned ExtraCV::getNumberOfDerivatives() {
-  return 1;
+    return 1;
 }
 
 void ExtraCV::prepare() {
@@ -88,9 +89,9 @@ void ExtraCV::prepare() {
 
 // calculator
 void ExtraCV::calculate() {
-  double value=plumed.getAtoms().getExtraCV(name);
-  setValue( value );
-  getPntrToComponent(0)->addDerivative(0,1.0);
+    double value=plumed.getAtoms().getExtraCV(name);
+    setValue( value );
+    getPntrToComponent(0)->addDerivative(0,1.0);
 }
 
 }

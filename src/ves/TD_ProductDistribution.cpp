@@ -83,21 +83,21 @@ distribution for argument 2, which would lead to completely different results.
 
 class TD_ProductDistribution: public TargetDistribution {
 private:
-  std::vector<TargetDistribution*> distribution_pntrs_;
-  std::vector<Grid*> grid_pntrs_;
-  unsigned int ndist_;
-  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&);
+    std::vector<TargetDistribution*> distribution_pntrs_;
+    std::vector<Grid*> grid_pntrs_;
+    unsigned int ndist_;
+    void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&);
 public:
-  static void registerKeywords(Keywords&);
-  explicit TD_ProductDistribution(const ActionOptions& ao);
-  void updateGrid();
-  double getValue(const std::vector<double>&) const;
-  //
-  void linkVesBias(VesBias*);
-  void linkAction(Action*);
-  void linkBiasGrid(Grid*);
-  void linkBiasWithoutCutoffGrid(Grid*);
-  void linkFesGrid(Grid*);
+    static void registerKeywords(Keywords&);
+    explicit TD_ProductDistribution(const ActionOptions& ao);
+    void updateGrid();
+    double getValue(const std::vector<double>&) const;
+    //
+    void linkVesBias(VesBias*);
+    void linkAction(Action*);
+    void linkBiasGrid(Grid*);
+    void linkBiasWithoutCutoffGrid(Grid*);
+    void linkFesGrid(Grid*);
 };
 
 
@@ -105,120 +105,128 @@ PLUMED_REGISTER_ACTION(TD_ProductDistribution,"TD_PRODUCT_DISTRIBUTION")
 
 
 void TD_ProductDistribution::registerKeywords(Keywords& keys) {
-  TargetDistribution::registerKeywords(keys);
-  keys.add("compulsory","DISTRIBUTIONS","Labels of the one-dimensional target distribution actions for each argument to be used in the product distribution. Note that order of the labels is important.");
-  keys.use("WELLTEMPERED_FACTOR");
-  keys.use("SHIFT_TO_ZERO");
-  keys.use("NORMALIZE");
+    TargetDistribution::registerKeywords(keys);
+    keys.add("compulsory","DISTRIBUTIONS","Labels of the one-dimensional target distribution actions for each argument to be used in the product distribution. Note that order of the labels is important.");
+    keys.use("WELLTEMPERED_FACTOR");
+    keys.use("SHIFT_TO_ZERO");
+    keys.use("NORMALIZE");
 }
 
 
 TD_ProductDistribution::TD_ProductDistribution(const ActionOptions& ao):
-  PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
-  distribution_pntrs_(0),
-  grid_pntrs_(0),
-  ndist_(0)
+    PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
+    distribution_pntrs_(0),
+    grid_pntrs_(0),
+    ndist_(0)
 {
-  std::vector<std::string> targetdist_labels;
-  parseVector("DISTRIBUTIONS",targetdist_labels);
+    std::vector<std::string> targetdist_labels;
+    parseVector("DISTRIBUTIONS",targetdist_labels);
 
-  std::string error_msg = "";
-  distribution_pntrs_ = VesTools::getPointersFromLabels<TargetDistribution*>(targetdist_labels,plumed.getActionSet(),error_msg);
-  if(error_msg.size()>0) {plumed_merror("Error in keyword DISTRIBUTIONS of "+getName()+": "+error_msg);}
+    std::string error_msg = "";
+    distribution_pntrs_ = VesTools::getPointersFromLabels<TargetDistribution*>(targetdist_labels,plumed.getActionSet(),error_msg);
+    if(error_msg.size()>0) {
+        plumed_merror("Error in keyword DISTRIBUTIONS of "+getName()+": "+error_msg);
+    }
 
-  for(unsigned int i=0; i<distribution_pntrs_.size(); i++) {
-    if(distribution_pntrs_[i]->isDynamic()) {setDynamic();}
-    if(distribution_pntrs_[i]->fesGridNeeded()) {setFesGridNeeded();}
-    if(distribution_pntrs_[i]->biasGridNeeded()) {setBiasGridNeeded();}
-  }
+    for(unsigned int i=0; i<distribution_pntrs_.size(); i++) {
+        if(distribution_pntrs_[i]->isDynamic()) {
+            setDynamic();
+        }
+        if(distribution_pntrs_[i]->fesGridNeeded()) {
+            setFesGridNeeded();
+        }
+        if(distribution_pntrs_[i]->biasGridNeeded()) {
+            setBiasGridNeeded();
+        }
+    }
 
-  ndist_ = distribution_pntrs_.size();
-  grid_pntrs_.assign(ndist_,NULL);
-  setDimension(ndist_);
+    ndist_ = distribution_pntrs_.size();
+    grid_pntrs_.assign(ndist_,NULL);
+    setDimension(ndist_);
 
-  checkRead();
+    checkRead();
 }
 
 
 double TD_ProductDistribution::getValue(const std::vector<double>& argument) const {
-  plumed_merror("getValue not implemented for TD_ProductDistribution");
-  return 0.0;
+    plumed_merror("getValue not implemented for TD_ProductDistribution");
+    return 0.0;
 }
 
 
 void TD_ProductDistribution::setupAdditionalGrids(const std::vector<Value*>& arguments, const std::vector<std::string>& min, const std::vector<std::string>& max, const std::vector<unsigned int>& nbins) {
-  for(unsigned int i=0; i<ndist_; i++) {
-    std::vector<Value*> arg1d(1);
-    std::vector<std::string> min1d(1);
-    std::vector<std::string> max1d(1);
-    std::vector<unsigned int> nbins1d(1);
-    arg1d[0]=arguments[i];
-    min1d[0]=min[i];
-    max1d[0]=max[i];
-    nbins1d[0]=nbins[i];
-    distribution_pntrs_[i]->setupGrids(arg1d,min1d,max1d,nbins1d);
-    grid_pntrs_[i]=distribution_pntrs_[i]->getTargetDistGridPntr();
-    if(distribution_pntrs_[i]->getDimension()!=1 || grid_pntrs_[i]->getDimension()!=1) {
-      plumed_merror(getName() + ": all target distributions must be one dimensional");
+    for(unsigned int i=0; i<ndist_; i++) {
+        std::vector<Value*> arg1d(1);
+        std::vector<std::string> min1d(1);
+        std::vector<std::string> max1d(1);
+        std::vector<unsigned int> nbins1d(1);
+        arg1d[0]=arguments[i];
+        min1d[0]=min[i];
+        max1d[0]=max[i];
+        nbins1d[0]=nbins[i];
+        distribution_pntrs_[i]->setupGrids(arg1d,min1d,max1d,nbins1d);
+        grid_pntrs_[i]=distribution_pntrs_[i]->getTargetDistGridPntr();
+        if(distribution_pntrs_[i]->getDimension()!=1 || grid_pntrs_[i]->getDimension()!=1) {
+            plumed_merror(getName() + ": all target distributions must be one dimensional");
+        }
     }
-  }
 }
 
 
 void TD_ProductDistribution::updateGrid() {
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->updateTargetDist();
-  }
-  for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
-    std::vector<unsigned int> indices = targetDistGrid().getIndices(l);
-    double value = 1.0;
     for(unsigned int i=0; i<ndist_; i++) {
-      value *= grid_pntrs_[i]->getValue(indices[i]);
+        distribution_pntrs_[i]->updateTargetDist();
     }
-    targetDistGrid().setValue(l,value);
-    logTargetDistGrid().setValue(l,-std::log(value));
-  }
-  logTargetDistGrid().setMinToZero();
+    for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
+        std::vector<unsigned int> indices = targetDistGrid().getIndices(l);
+        double value = 1.0;
+        for(unsigned int i=0; i<ndist_; i++) {
+            value *= grid_pntrs_[i]->getValue(indices[i]);
+        }
+        targetDistGrid().setValue(l,value);
+        logTargetDistGrid().setValue(l,-std::log(value));
+    }
+    logTargetDistGrid().setMinToZero();
 }
 
 
 void TD_ProductDistribution::linkVesBias(VesBias* vesbias_pntr_in) {
-  TargetDistribution::linkVesBias(vesbias_pntr_in);
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->linkVesBias(vesbias_pntr_in);
-  }
+    TargetDistribution::linkVesBias(vesbias_pntr_in);
+    for(unsigned int i=0; i<ndist_; i++) {
+        distribution_pntrs_[i]->linkVesBias(vesbias_pntr_in);
+    }
 }
 
 
 void TD_ProductDistribution::linkAction(Action* action_pntr_in) {
-  TargetDistribution::linkAction(action_pntr_in);
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->linkAction(action_pntr_in);
-  }
+    TargetDistribution::linkAction(action_pntr_in);
+    for(unsigned int i=0; i<ndist_; i++) {
+        distribution_pntrs_[i]->linkAction(action_pntr_in);
+    }
 }
 
 
 void TD_ProductDistribution::linkBiasGrid(Grid* bias_grid_pntr_in) {
-  TargetDistribution::linkBiasGrid(bias_grid_pntr_in);
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->linkBiasGrid(bias_grid_pntr_in);
-  }
+    TargetDistribution::linkBiasGrid(bias_grid_pntr_in);
+    for(unsigned int i=0; i<ndist_; i++) {
+        distribution_pntrs_[i]->linkBiasGrid(bias_grid_pntr_in);
+    }
 }
 
 
 void TD_ProductDistribution::linkBiasWithoutCutoffGrid(Grid* bias_withoutcutoff_grid_pntr_in) {
-  TargetDistribution::linkBiasWithoutCutoffGrid(bias_withoutcutoff_grid_pntr_in);
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->linkBiasWithoutCutoffGrid(bias_withoutcutoff_grid_pntr_in);
-  }
+    TargetDistribution::linkBiasWithoutCutoffGrid(bias_withoutcutoff_grid_pntr_in);
+    for(unsigned int i=0; i<ndist_; i++) {
+        distribution_pntrs_[i]->linkBiasWithoutCutoffGrid(bias_withoutcutoff_grid_pntr_in);
+    }
 }
 
 
 void TD_ProductDistribution::linkFesGrid(Grid* fes_grid_pntr_in) {
-  TargetDistribution::linkFesGrid(fes_grid_pntr_in);
-  for(unsigned int i=0; i<ndist_; i++) {
-    distribution_pntrs_[i]->linkFesGrid(fes_grid_pntr_in);
-  }
+    TargetDistribution::linkFesGrid(fes_grid_pntr_in);
+    for(unsigned int i=0; i<ndist_; i++) {
+        distribution_pntrs_[i]->linkFesGrid(fes_grid_pntr_in);
+    }
 }
 
 

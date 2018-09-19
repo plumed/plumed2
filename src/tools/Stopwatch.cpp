@@ -35,41 +35,41 @@ namespace PLMD {
 
 // this is needed for friend operators
 std::ostream& operator<<(std::ostream&os,const Stopwatch&sw) {
-  return sw.log(os);
+    return sw.log(os);
 }
 
 Stopwatch::~Stopwatch() {
-  if(mylog && mylog->isOpen()) {
+    if(mylog && mylog->isOpen()) {
 // Make sure paused watches are stopped.
 // this is necessary e.g. to make sure the main watch present in PlumedMain
 // is stopped correctly.
-    for(auto & w : watches) {
-      if(w.second.state==Watch::State::paused) w.second.start().stop();
+        for(auto & w : watches) {
+            if(w.second.state==Watch::State::paused) w.second.start().stop();
+        }
+        *mylog << *this;
     }
-    *mylog << *this;
-  }
 }
 
 std::ostream& Stopwatch::log(std::ostream&os)const {
-  char buffer[1000];
-  buffer[0]=0;
-  for(unsigned i=0; i<40; i++) os<<" ";
-  os<<"      Cycles        Total      Average      Minumum      Maximum\n";
+    char buffer[1000];
+    buffer[0]=0;
+    for(unsigned i=0; i<40; i++) os<<" ";
+    os<<"      Cycles        Total      Average      Minumum      Maximum\n";
 
-  std::vector<std::string> names;
-  for(const auto & it : watches) names.push_back(it.first);
-  std::sort(names.begin(),names.end());
+    std::vector<std::string> names;
+    for(const auto & it : watches) names.push_back(it.first);
+    std::sort(names.begin(),names.end());
 
-  const double frac=1.0/1000000000.0;
+    const double frac=1.0/1000000000.0;
 
-  for(const auto & name : names) {
-    const Watch&t(watches.find(name)->second);
-    os<<name;
-    for(unsigned i=name.length(); i<40; i++) os<<" ";
-    std::sprintf(buffer,"%12u %12.6f %12.6f %12.6f %12.6f\n", t.cycles, frac*t.total, frac*t.total/t.cycles, frac*t.min,frac*t.max);
-    os<<buffer;
-  }
-  return os;
+    for(const auto & name : names) {
+        const Watch&t(watches.find(name)->second);
+        os<<name;
+        for(unsigned i=name.length(); i<40; i++) os<<" ";
+        std::sprintf(buffer,"%12u %12.6f %12.6f %12.6f %12.6f\n", t.cycles, frac*t.total, frac*t.total/t.cycles, frac*t.min,frac*t.max);
+        os<<buffer;
+    }
+    return os;
 }
 
 }

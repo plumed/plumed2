@@ -71,45 +71,45 @@ SIMPLECUBIC SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN={RATIONAL R_0=0.8 
 
 class SimpleCubic : public CubicHarmonicBase {
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit SimpleCubic(const ActionOptions&);
-  double calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const ;
+    static void registerKeywords( Keywords& keys );
+    explicit SimpleCubic(const ActionOptions&);
+    double calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const ;
 };
 
 PLUMED_REGISTER_ACTION(SimpleCubic,"SIMPLECUBIC")
 
 void SimpleCubic::registerKeywords( Keywords& keys ) {
-  CubicHarmonicBase::registerKeywords( keys );
+    CubicHarmonicBase::registerKeywords( keys );
 }
 
 SimpleCubic::SimpleCubic(const ActionOptions&ao):
-  Action(ao),
-  CubicHarmonicBase(ao)
+    Action(ao),
+    CubicHarmonicBase(ao)
 {
-  checkRead();
+    checkRead();
 }
 
 double SimpleCubic::calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const {
-  double x2 = distance[0]*distance[0];
-  double x3 = distance[0]*x2;
-  double x4 = distance[0]*x3;
+    double x2 = distance[0]*distance[0];
+    double x3 = distance[0]*x2;
+    double x4 = distance[0]*x3;
 
-  double y2 = distance[1]*distance[1];
-  double y3 = distance[1]*y2;
-  double y4 = distance[1]*y3;
+    double y2 = distance[1]*distance[1];
+    double y3 = distance[1]*y2;
+    double y4 = distance[1]*y3;
 
-  double z2 = distance[2]*distance[2];
-  double z3 = distance[2]*z2;
-  double z4 = distance[2]*z3;
+    double z2 = distance[2]*distance[2];
+    double z3 = distance[2]*z2;
+    double z4 = distance[2]*z3;
 
-  double r4 = pow( d2, 2 );
-  double tmp = ( x4 + y4 + z4 ) / r4;
+    double r4 = pow( d2, 2 );
+    double tmp = ( x4 + y4 + z4 ) / r4;
 
-  double t1=(x2+y2+z2), t2=t1*t1, t3=(x4+y4+z4)/(t1*t2);
-  myder[0] = 4*x3/t2-4*distance[0]*t3;
-  myder[1] = 4*y3/t2-4*distance[1]*t3;
-  myder[2] = 4*z3/t2-4*distance[2]*t3;
-  return tmp;
+    double t1=(x2+y2+z2), t2=t1*t1, t3=(x4+y4+z4)/(t1*t2);
+    myder[0] = 4*x3/t2-4*distance[0]*t3;
+    myder[1] = 4*y3/t2-4*distance[1]*t3;
+    myder[2] = 4*z3/t2-4*distance[2]*t3;
+    return tmp;
 }
 
 }

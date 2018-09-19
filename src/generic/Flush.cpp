@@ -57,34 +57,34 @@ PRINT ARG=d2 STRIDE=10 FILE=colvar2
 //+ENDPLUMEDOC
 
 class Flush:
-  public ActionPilot
+    public ActionPilot
 {
 public:
-  explicit Flush(const ActionOptions&ao):
-    Action(ao),
-    ActionPilot(ao)
-  {
-    checkRead();
-  }
-  static void registerKeywords( Keywords& keys );
-  void calculate() {}
-  void apply() {}
-  void update() {
-    plumed.fflush();
-    log.flush();
-    const ActionSet & actionSet(plumed.getActionSet());
-    for(const auto & p : actionSet)
-      p->fflush();
-  }
+    explicit Flush(const ActionOptions&ao):
+        Action(ao),
+        ActionPilot(ao)
+    {
+        checkRead();
+    }
+    static void registerKeywords( Keywords& keys );
+    void calculate() {}
+    void apply() {}
+    void update() {
+        plumed.fflush();
+        log.flush();
+        const ActionSet & actionSet(plumed.getActionSet());
+        for(const auto & p : actionSet)
+            p->fflush();
+    }
 };
 
 PLUMED_REGISTER_ACTION(Flush,"FLUSH")
 
 void Flush::registerKeywords( Keywords& keys ) {
-  Action::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys );
-  keys.add("compulsory","STRIDE","the frequency with which all the open files should be flushed");
-  keys.remove("LABEL");
+    Action::registerKeywords( keys );
+    ActionPilot::registerKeywords( keys );
+    keys.add("compulsory","STRIDE","the frequency with which all the open files should be flushed");
+    keys.remove("LABEL");
 }
 
 }

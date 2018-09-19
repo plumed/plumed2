@@ -42,7 +42,7 @@ typedef void (*plumed_function_pointer)(void);
 
 /* Holder for function pointer */
 typedef struct {
-  plumed_function_pointer p;
+    plumed_function_pointer p;
 } plumed_function_holder;
 
 // END OF DANGER
@@ -73,309 +73,315 @@ which defines completely the external plumed interface.
 It does not contain any static data.
 */
 class PlumedMain:
-  public WithCmd
+    public WithCmd
 {
 /// Pointers to files opened in actions associated to this object.
 /// Notice that with the current implementation this should be at the top of this
 /// structure. Indeed, this should be destroyed *after* all the actions allocated
 /// in this PlumedMain object have been destroyed.
-  std::set<FileBase*> files;
+    std::set<FileBase*> files;
 /// Forward declaration.
-  ForwardDecl<Communicator> comm_fwd;
+    ForwardDecl<Communicator> comm_fwd;
 public:
 /// Communicator for plumed.
 /// Includes all the processors used by plumed.
-  Communicator&comm=*comm_fwd;
+    Communicator&comm=*comm_fwd;
 
 private:
 /// Forward declaration.
-  ForwardDecl<Communicator> multi_sim_comm_fwd;
+    ForwardDecl<Communicator> multi_sim_comm_fwd;
 public:
-  Communicator&multi_sim_comm=*multi_sim_comm_fwd;
+    Communicator&multi_sim_comm=*multi_sim_comm_fwd;
 
 private:
 /// Forward declaration.
-  ForwardDecl<DLLoader> dlloader_fwd;
-  DLLoader& dlloader=*dlloader_fwd;
+    ForwardDecl<DLLoader> dlloader_fwd;
+    DLLoader& dlloader=*dlloader_fwd;
 
-  std::unique_ptr<WithCmd> cltool;
+    std::unique_ptr<WithCmd> cltool;
 
-  std::unique_ptr<WithCmd> grex;
+    std::unique_ptr<WithCmd> grex;
 /// Flag to avoid double initialization
-  bool  initialized;
+    bool  initialized;
 /// Name of MD engine
-  std::string MDEngine;
+    std::string MDEngine;
 
 /// Forward declaration.
-  ForwardDecl<Log> log_fwd;
+    ForwardDecl<Log> log_fwd;
 /// Log stream
-  Log& log=*log_fwd;
+    Log& log=*log_fwd;
 
 /// Forward declaration.
 /// Should be placed after log since its constructor takes a log reference as an argument.
-  ForwardDecl<Stopwatch> stopwatch_fwd;
-  Stopwatch& stopwatch=*stopwatch_fwd;
+    ForwardDecl<Stopwatch> stopwatch_fwd;
+    Stopwatch& stopwatch=*stopwatch_fwd;
 
 /// Forward declaration.
-  ForwardDecl<Citations> citations_fwd;
+    ForwardDecl<Citations> citations_fwd;
 /// tools/Citations.holder
-  Citations& citations=*citations_fwd;
+    Citations& citations=*citations_fwd;
 
 /// Present step number.
-  long int step;
+    long int step;
 
 /// Condition for plumed to be active.
 /// At every step, PlumedMain is checking if there are Action's requiring some work.
 /// If at least one Action requires some work, this variable is set to true.
-  bool active;
+    bool active;
 
 /// Name of the input file
-  std::string plumedDat;
+    std::string plumedDat;
 
 /// Object containing data we would like to grab and pass back
-  std::unique_ptr<DataFetchingObject> mydatafetcher;
+    std::unique_ptr<DataFetchingObject> mydatafetcher;
 
 /// End of input file.
 /// Set to true to terminate reading
-  bool endPlumed;
+    bool endPlumed;
 
 /// Forward declaration.
-  ForwardDecl<Atoms> atoms_fwd;
+    ForwardDecl<Atoms> atoms_fwd;
 /// Object containing information about atoms (such as positions,...).
-  Atoms&    atoms=*atoms_fwd;           // atomic coordinates
+    Atoms&    atoms=*atoms_fwd;           // atomic coordinates
 
 /// Forward declaration.
-  ForwardDecl<ActionSet> actionSet_fwd;
+    ForwardDecl<ActionSet> actionSet_fwd;
 /// Set of actions found in plumed.dat file
-  ActionSet& actionSet=*actionSet_fwd;
+    ActionSet& actionSet=*actionSet_fwd;
 
 /// Set of Pilot actions.
 /// These are the action the, if they are Pilot::onStep(), can trigger execution
-  std::vector<ActionPilot*> pilots;
+    std::vector<ActionPilot*> pilots;
 
 /// Suffix string for file opening, useful for multiple simulations in the same directory
-  std::string suffix;
+    std::string suffix;
 
 /// The total bias (=total energy of the restraints)
-  double bias;
+    double bias;
 
 /// The total work.
 /// This computed by accumulating the change in external potentials.
-  double work;
+    double work;
 
 /// Forward declaration.
-  ForwardDecl<ExchangePatterns> exchangePatterns_fwd;
+    ForwardDecl<ExchangePatterns> exchangePatterns_fwd;
 /// Class of possible exchange patterns, used for BIASEXCHANGE but also for future parallel tempering
-  ExchangePatterns& exchangePatterns=*exchangePatterns_fwd;
+    ExchangePatterns& exchangePatterns=*exchangePatterns_fwd;
 
 /// Set to true if on an exchange step
-  bool exchangeStep;
+    bool exchangeStep;
 
 /// Flag for restart
-  bool restart;
+    bool restart;
 
 /// Flag for checkpointig
-  bool doCheckPoint;
+    bool doCheckPoint;
 
 
 /// Stuff to make plumed stop the MD code cleanly
-  int* stopFlag;
-  bool stopNow;
+    int* stopFlag;
+    bool stopNow;
 
 /// Stack for update flags.
 /// Store information used in class \ref generic::UpdateIf
-  std::stack<bool> updateFlags;
+    std::stack<bool> updateFlags;
 
 public:
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
-  bool novirial;
+    bool novirial;
 
 /// Flag to switch on detailed timers
-  bool detailedTimers;
+    bool detailedTimers;
 
 /// Generic map string -> double
 /// intended to pass information across Actions
-  std::map<std::string,double> passMap;
+    std::map<std::string,double> passMap;
 
 /// Add a citation, returning a string containing the reference number, something like "[10]"
-  std::string cite(const std::string&);
+    std::string cite(const std::string&);
 
 /// Get number of threads that can be used by openmp
-  unsigned getNumThreads()const;
+    unsigned getNumThreads()const;
 
 /// Get a reasonable number of threads so as to access to an array of size s located at x
-  template<typename T>
-  unsigned getGoodNumThreads(const T*x,unsigned s)const;
+    template<typename T>
+    unsigned getGoodNumThreads(const T*x,unsigned s)const;
 
 /// Get a reasonable number of threads so as to access to vector v;
-  template<typename T>
-  unsigned getGoodNumThreads(const std::vector<T> & v)const;
+    template<typename T>
+    unsigned getGoodNumThreads(const std::vector<T> & v)const;
 
 public:
-  PlumedMain();
+    PlumedMain();
 // this is to access to WithCmd versions of cmd (allowing overloading of a virtual method)
-  using WithCmd::cmd;
-  /**
-   cmd method, accessible with standard Plumed.h interface.
-   \param key The name of the command to be executed.
-   \param val The argument of the command to be executed.
-   It is called as plumed_cmd() or as PLMD::Plumed::cmd()
-   It is the interpreter for plumed commands. It basically contains the definition of the plumed interface.
-   If you want to add a new functionality to the interface between plumed
-   and an MD engine, this is the right place
-   Notice that this interface should always keep retro-compatibility
-  */
-  void cmd(const std::string&key,void*val=NULL);
-  ~PlumedMain();
-  /**
-    Read an input file.
-    \param str name of the file
-  */
-  void readInputFile(std::string str);
-  /**
-    Read an input string.
-    \param str name of the string
-  */
-  void readInputWords(const std::vector<std::string> &  str);
+    using WithCmd::cmd;
+    /**
+     cmd method, accessible with standard Plumed.h interface.
+     \param key The name of the command to be executed.
+     \param val The argument of the command to be executed.
+     It is called as plumed_cmd() or as PLMD::Plumed::cmd()
+     It is the interpreter for plumed commands. It basically contains the definition of the plumed interface.
+     If you want to add a new functionality to the interface between plumed
+     and an MD engine, this is the right place
+     Notice that this interface should always keep retro-compatibility
+    */
+    void cmd(const std::string&key,void*val=NULL);
+    ~PlumedMain();
+    /**
+      Read an input file.
+      \param str name of the file
+    */
+    void readInputFile(std::string str);
+    /**
+      Read an input string.
+      \param str name of the string
+    */
+    void readInputWords(const std::vector<std::string> &  str);
 
-  /**
-    Read an input string.
-    \param str name of the string
-    At variance with readInputWords(), this is splitting the string into words
-  */
-  void readInputLine(const std::string & str);
+    /**
+      Read an input string.
+      \param str name of the string
+      At variance with readInputWords(), this is splitting the string into words
+    */
+    void readInputLine(const std::string & str);
 
-  /**
-    Initialize the object.
-    Should be called once.
-  */
-  void init();
-  /**
-    Prepare the calculation.
-    Here it is checked which are the active Actions and communication of the relevant atoms is initiated.
-    Shortcut for prepareDependencies() + shareData()
-  */
-  void prepareCalc();
-  /**
-    Prepare the list of active Actions and needed atoms.
-    Scan the Actions to see which are active and which are not, so as to prepare a list of
-    the atoms needed at this step.
-  */
-  void prepareDependencies();
-  /**
-    Share the needed atoms.
-    In asynchronous implementations, this method sends the required atoms to all the plumed processes,
-    without waiting for the communication to complete.
-  */
-  void shareData();
-  /**
-    Perform the calculation.
-    Shortcut for waitData() + justCalculate() + justApply().
-    Equivalently: waitData() + justCalculate() + backwardPropagate() + update().
-  */
-  void performCalc();
-  /**
-    Perform the calculation without update()
-    Shortcut for: waitData() + justCalculate() + backwardPropagate()
-  */
-  void performCalcNoUpdate();
-  /**
-    Complete PLUMED calculation.
-    Shortcut for prepareCalc() + performCalc()
-  */
-  void calc();
-  /**
-    Scatters the needed atoms.
-    In asynchronous implementations, this method waits for the communications started in shareData()
-    to be completed. Otherwise, just send around needed atoms.
-  */
-  void waitData();
-  /**
-    Perform the forward loop on active actions.
-  */
-  void justCalculate();
-  /**
-    Backward propagate and update.
-    Shortcut for backwardPropagate() + update()
-    I leave it here for backward compatibility
-  */
-  void justApply();
-  /**
-    Perform the backward loop on active actions.
-    Needed to apply the forces back.
-  */
-  void backwardPropagate();
-  /**
-    Call the update() method.
-  */
-  void update();
-  /**
-    If there are calculations that need to be done at the very end of the calculations this
-    makes sures they are done
-  */
-  void runJobsAtEndOfCalculation();
+    /**
+      Initialize the object.
+      Should be called once.
+    */
+    void init();
+    /**
+      Prepare the calculation.
+      Here it is checked which are the active Actions and communication of the relevant atoms is initiated.
+      Shortcut for prepareDependencies() + shareData()
+    */
+    void prepareCalc();
+    /**
+      Prepare the list of active Actions and needed atoms.
+      Scan the Actions to see which are active and which are not, so as to prepare a list of
+      the atoms needed at this step.
+    */
+    void prepareDependencies();
+    /**
+      Share the needed atoms.
+      In asynchronous implementations, this method sends the required atoms to all the plumed processes,
+      without waiting for the communication to complete.
+    */
+    void shareData();
+    /**
+      Perform the calculation.
+      Shortcut for waitData() + justCalculate() + justApply().
+      Equivalently: waitData() + justCalculate() + backwardPropagate() + update().
+    */
+    void performCalc();
+    /**
+      Perform the calculation without update()
+      Shortcut for: waitData() + justCalculate() + backwardPropagate()
+    */
+    void performCalcNoUpdate();
+    /**
+      Complete PLUMED calculation.
+      Shortcut for prepareCalc() + performCalc()
+    */
+    void calc();
+    /**
+      Scatters the needed atoms.
+      In asynchronous implementations, this method waits for the communications started in shareData()
+      to be completed. Otherwise, just send around needed atoms.
+    */
+    void waitData();
+    /**
+      Perform the forward loop on active actions.
+    */
+    void justCalculate();
+    /**
+      Backward propagate and update.
+      Shortcut for backwardPropagate() + update()
+      I leave it here for backward compatibility
+    */
+    void justApply();
+    /**
+      Perform the backward loop on active actions.
+      Needed to apply the forces back.
+    */
+    void backwardPropagate();
+    /**
+      Call the update() method.
+    */
+    void update();
+    /**
+      If there are calculations that need to be done at the very end of the calculations this
+      makes sures they are done
+    */
+    void runJobsAtEndOfCalculation();
 /// Reference to atoms object
-  Atoms& getAtoms();
+    Atoms& getAtoms();
 /// Reference to the list of Action's
-  const ActionSet & getActionSet()const;
+    const ActionSet & getActionSet()const;
 /// Referenge to the log stream
-  Log & getLog();
+    Log & getLog();
 /// Return the number of the step
-  long int getStep()const {return step;}
+    long int getStep()const {
+        return step;
+    }
 /// Stop the run
-  void exit(int c=0);
+    void exit(int c=0);
 /// Load a shared library
-  void load(const std::string&);
+    void load(const std::string&);
 /// Get the suffix string
-  const std::string & getSuffix()const;
+    const std::string & getSuffix()const;
 /// Set the suffix string
-  void setSuffix(const std::string&);
+    void setSuffix(const std::string&);
 /// get the value of the bias
-  double getBias()const;
+    double getBias()const;
 /// get the value of the work
-  double getWork()const;
+    double getWork()const;
 /// Opens a file.
 /// Similar to plain fopen, but, if it finds an error in opening the file, it also tries with
 /// path+suffix.  This trick is useful for multiple replica simulations.
-  FILE* fopen(const char *path, const char *mode);
+    FILE* fopen(const char *path, const char *mode);
 /// Closes a file opened with PlumedMain::fopen()
-  int fclose(FILE*fp);
+    int fclose(FILE*fp);
 /// Insert a file
-  void insertFile(FileBase&);
+    void insertFile(FileBase&);
 /// Erase a file
-  void eraseFile(FileBase&);
+    void eraseFile(FileBase&);
 /// Flush all files
-  void fflush();
+    void fflush();
 /// Check if restarting
-  bool getRestart()const;
+    bool getRestart()const;
 /// Set restart flag
-  void setRestart(bool f) {restart=f;}
+    void setRestart(bool f) {
+        restart=f;
+    }
 /// Check if checkpointing
-  bool getCPT()const;
+    bool getCPT()const;
 /// Set exchangeStep flag
-  void setExchangeStep(bool f);
+    void setExchangeStep(bool f);
 /// Get exchangeStep flag
-  bool getExchangeStep()const;
+    bool getExchangeStep()const;
 /// Stop the calculation cleanly (both the MD code and plumed)
-  void stop();
+    void stop();
 /// Enforce active flag.
 /// This is a (bit dirty) hack to solve a bug. When there is no active ActionPilot,
 /// several shortcuts are used. However, these shortcuts can block GREX module.
 /// This function allows to enforce active plumed when doing exchanges,
 /// thus fixing the bug.
-  void resetActive(bool active);
+    void resetActive(bool active);
 
 /// Access to exchange patterns
-  ExchangePatterns& getExchangePatterns() {return exchangePatterns;}
+    ExchangePatterns& getExchangePatterns() {
+        return exchangePatterns;
+    }
 
 /// Push a state to update flags
-  void updateFlagsPush(bool);
+    void updateFlagsPush(bool);
 /// Pop a state from update flags
-  void updateFlagsPop();
+    void updateFlagsPop();
 /// Get top of update flags
-  bool updateFlagsTop();
+    bool updateFlagsTop();
 /// Set end of input file
-  void setEndPlumed();
+    void setEndPlumed();
 };
 
 /////
@@ -383,67 +389,67 @@ public:
 
 inline
 const ActionSet & PlumedMain::getActionSet()const {
-  return actionSet;
+    return actionSet;
 }
 
 inline
 Atoms& PlumedMain::getAtoms() {
-  return atoms;
+    return atoms;
 }
 
 inline
 const std::string & PlumedMain::getSuffix()const {
-  return suffix;
+    return suffix;
 }
 
 inline
 void PlumedMain::setSuffix(const std::string&s) {
-  suffix=s;
+    suffix=s;
 }
 
 inline
 bool PlumedMain::getRestart()const {
-  return restart;
+    return restart;
 }
 
 inline
 bool PlumedMain::getCPT()const {
-  return doCheckPoint;
+    return doCheckPoint;
 }
 
 inline
 void PlumedMain::setExchangeStep(bool s) {
-  exchangeStep=s;
+    exchangeStep=s;
 }
 
 inline
 bool PlumedMain::getExchangeStep()const {
-  return exchangeStep;
+    return exchangeStep;
 }
 
 inline
 void PlumedMain::resetActive(bool active) {
-  this->active=active;
+    this->active=active;
 }
 
 inline
 void PlumedMain::updateFlagsPush(bool on) {
-  updateFlags.push(on);
+    updateFlags.push(on);
 }
 
 inline
 void PlumedMain::updateFlagsPop() {
-  updateFlags.pop();
+    updateFlags.pop();
 }
 
 inline
 bool PlumedMain::updateFlagsTop() {
-  return updateFlags.top();
+    return updateFlags.top();
 }
 
 inline
 void PlumedMain::setEndPlumed() {
-  endPlumed=true;
+    endPlumed=true;
 }
 
 }

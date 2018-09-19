@@ -86,137 +86,153 @@ namespace multicolvar {
 
 class CenterOfMultiColvar : public ActionWithVirtualAtom {
 private:
-  unsigned comp;
-  vesselbase::StoreDataVessel* mystash;
-  MultiColvarBase* mycolv;
+    unsigned comp;
+    vesselbase::StoreDataVessel* mystash;
+    MultiColvarBase* mycolv;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit CenterOfMultiColvar(const ActionOptions&ao);
-  void calculate();
+    static void registerKeywords( Keywords& keys );
+    explicit CenterOfMultiColvar(const ActionOptions&ao);
+    void calculate();
 };
 
 PLUMED_REGISTER_ACTION(CenterOfMultiColvar,"CENTER_OF_MULTICOLVAR")
 
 void CenterOfMultiColvar::registerKeywords(Keywords& keys) {
-  ActionWithVirtualAtom::registerKeywords(keys);
-  keys.add("compulsory","DATA","find the average value for a multicolvar");
-  keys.add("optional","COMPONENT","if your input multicolvar is a vector then specify which component you would like to use in calculating the weight");
+    ActionWithVirtualAtom::registerKeywords(keys);
+    keys.add("compulsory","DATA","find the average value for a multicolvar");
+    keys.add("optional","COMPONENT","if your input multicolvar is a vector then specify which component you would like to use in calculating the weight");
 }
 
 CenterOfMultiColvar::CenterOfMultiColvar(const ActionOptions&ao):
-  Action(ao),
-  ActionWithVirtualAtom(ao)
+    Action(ao),
+    ActionWithVirtualAtom(ao)
 {
-  std::string mlab; parse("DATA",mlab);
-  mycolv= plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlab);
-  if(!mycolv) error("action labelled " +  mlab + " does not exist or does not have vessels");
-  // Copy the atoms from the input multicolvar
-  BridgedMultiColvarFunction* mybr=dynamic_cast<BridgedMultiColvarFunction*>( mycolv );
-  if( mybr ) {
-    requestAtoms( (mybr->getPntrToMultiColvar())->getAbsoluteIndexes() ); comp=1;
-  } else {
-    if( mycolv->getNumberOfQuantities()>5 ) {
-      int incomp=-1; parse("COMPONENT",incomp);
-      if( incomp<0 ) error("vector input but component was not specified");
-      comp=incomp;
+    std::string mlab;
+    parse("DATA",mlab);
+    mycolv= plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlab);
+    if(!mycolv) error("action labelled " +  mlab + " does not exist or does not have vessels");
+    // Copy the atoms from the input multicolvar
+    BridgedMultiColvarFunction* mybr=dynamic_cast<BridgedMultiColvarFunction*>( mycolv );
+    if( mybr ) {
+        requestAtoms( (mybr->getPntrToMultiColvar())->getAbsoluteIndexes() );
+        comp=1;
     } else {
-      comp=1;
+        if( mycolv->getNumberOfQuantities()>5 ) {
+            int incomp=-1;
+            parse("COMPONENT",incomp);
+            if( incomp<0 ) error("vector input but component was not specified");
+            comp=incomp;
+        } else {
+            comp=1;
+        }
+        requestAtoms( mycolv->getAbsoluteIndexes () );
     }
-    requestAtoms( mycolv->getAbsoluteIndexes () );
-  }
-  // We need the derivatives
-  mycolv->turnOnDerivatives(); addDependency(mycolv);
-  mystash = mycolv->buildDataStashes( NULL );
-  log.printf("  building center of mass based on weights calculated in multicolvar action named %s \n",mycolv->getLabel().c_str() );
+    // We need the derivatives
+    mycolv->turnOnDerivatives();
+    addDependency(mycolv);
+    mystash = mycolv->buildDataStashes( NULL );
+    log.printf("  building center of mass based on weights calculated in multicolvar action named %s \n",mycolv->getLabel().c_str() );
 }
 
 void CenterOfMultiColvar::calculate() {
-  // Retrieve the periodic boundary conditions
-  const Pbc& pbc=mycolv->getPbc();
-  if( !pbc.isOrthorombic() ) error("Berry phase does not work for non orthorhombic cells");
+    // Retrieve the periodic boundary conditions
+    const Pbc& pbc=mycolv->getPbc();
+    if( !pbc.isOrthorombic() ) error("Berry phase does not work for non orthorhombic cells");
 
-  // Create a multivalue to store the derivatives
-  MultiValue myvals( 7, mycolv->getNumberOfDerivatives() ); myvals.clearAll();
-  MultiValue tvals( mycolv->getNumberOfQuantities(), mycolv->getNumberOfDerivatives() );
-  tvals.clearAll();
+    // Create a multivalue to store the derivatives
+    MultiValue myvals( 7, mycolv->getNumberOfDerivatives() );
+    myvals.clearAll();
+    MultiValue tvals( mycolv->getNumberOfQuantities(), mycolv->getNumberOfDerivatives() );
+    tvals.clearAll();
 
-  // Now loop over all active multicolvars
-  Vector stmp, ctmp, scom, ccom, sder, cder;
-  scom.zero(); ccom.zero(); double norm=0;
-  std::vector<double> cvals( mycolv->getNumberOfQuantities() );
-  for(unsigned i=0; i<mystash->getNumberOfStoredValues(); ++i) {
-    // Retrieve value and derivatives
-    mystash->retrieveSequentialValue( i, false, cvals );
-    mystash->retrieveDerivatives( mycolv->getPositionInFullTaskList(i), false, tvals );
-    // Convert position into fractionals
-    Vector fpos = pbc.realToScaled( mycolv->getCentralAtomPos( mycolv->getPositionInFullTaskList(i) ) );
-    // Now accumulate Berry phase averages
+    // Now loop over all active multicolvars
+    Vector stmp, ctmp, scom, ccom, sder, cder;
+    scom.zero();
+    ccom.zero();
+    double norm=0;
+    std::vector<double> cvals( mycolv->getNumberOfQuantities() );
+    for(unsigned i=0; i<mystash->getNumberOfStoredValues(); ++i) {
+        // Retrieve value and derivatives
+        mystash->retrieveSequentialValue( i, false, cvals );
+        mystash->retrieveDerivatives( mycolv->getPositionInFullTaskList(i), false, tvals );
+        // Convert position into fractionals
+        Vector fpos = pbc.realToScaled( mycolv->getCentralAtomPos( mycolv->getPositionInFullTaskList(i) ) );
+        // Now accumulate Berry phase averages
+        for(unsigned j=0; j<3; ++j) {
+            stmp[j] = sin( 2*pi*fpos[j] );
+            ctmp[j] = cos( 2*pi*fpos[j] );
+            scom[j] += cvals[0]*cvals[comp]*stmp[j];
+            ccom[j] += cvals[0]*cvals[comp]*ctmp[j];
+            double icell = 1.0 / getPbc().getBox().getRow(j).modulo();
+            sder[j] = 2*pi*icell*cvals[0]*cvals[comp]*cos( 2*pi*fpos[j] );
+            cder[j]=-2*pi*icell*cvals[0]*cvals[comp]*sin( 2*pi*fpos[j] );
+        }
+        // Now accumulate derivatives
+        for(unsigned k=0; k<tvals.getNumberActive(); ++k) {
+            unsigned icomp=tvals.getActiveIndex(k);
+            myvals.addDerivative( 0, icomp, cvals[0]*tvals.getDerivative( comp, icomp ) + cvals[comp]*tvals.getDerivative( 0, icomp ) );
+            for(unsigned k=0; k<3; ++k) {
+                myvals.addDerivative( 1+k, icomp, stmp[k]*( cvals[0]*tvals.getDerivative( comp, icomp ) +
+                                      cvals[comp]*tvals.getDerivative( 0, icomp ) ) );
+                myvals.addDerivative( 4+k, icomp, ctmp[k]*( cvals[0]*tvals.getDerivative( comp, icomp ) +
+                                      cvals[comp]*tvals.getDerivative( 0, icomp ) ) );
+            }
+        }
+        // Get the central atom pack
+        CatomPack mypack;
+        mycolv->getCentralAtomPack( 0, mycolv->getPositionInFullTaskList(i), mypack );
+        for(unsigned j=0; j<mypack.getNumberOfAtomsWithDerivatives(); ++j) {
+            unsigned jder=3*mypack.getIndex(j);
+            // Derivatives of sine
+            myvals.addDerivative( 1, jder+0, mypack.getDerivative(j, 0, sder) );
+            myvals.addDerivative( 2, jder+1, mypack.getDerivative(j, 1, sder) );
+            myvals.addDerivative( 3, jder+2, mypack.getDerivative(j, 2, sder) );
+            // Derivatives of cosine
+            myvals.addDerivative( 4, jder+0, mypack.getDerivative(j, 0, cder) );
+            myvals.addDerivative( 5, jder+1, mypack.getDerivative(j, 1, cder) );
+            myvals.addDerivative( 6, jder+2, mypack.getDerivative(j, 2, cder) );
+        }
+        norm += cvals[0]*cvals[comp];
+        tvals.clearAll();
+    }
+
+    // And now finish Berry phase average
+    scom /= norm;
+    ccom /=norm;
+    Vector cpos;
+    for(unsigned j=0; j<3; ++j) cpos[j] = atan2( scom[j], ccom[j] ) / (2*pi);
+    Vector cart_pos = pbc.scaledToReal( cpos );
+    setPosition(cart_pos);
+    setMass(1.0);   // This could be much cleverer but not without changing many things in PLMED
+
+    // And derivatives
+    Vector tander;
+    myvals.updateDynamicList();
+    double inv_weight = 1.0 / norm;
     for(unsigned j=0; j<3; ++j) {
-      stmp[j] = sin( 2*pi*fpos[j] ); ctmp[j] = cos( 2*pi*fpos[j] );
-      scom[j] += cvals[0]*cvals[comp]*stmp[j]; ccom[j] += cvals[0]*cvals[comp]*ctmp[j];
-      double icell = 1.0 / getPbc().getBox().getRow(j).modulo();
-      sder[j] = 2*pi*icell*cvals[0]*cvals[comp]*cos( 2*pi*fpos[j] );
-      cder[j]=-2*pi*icell*cvals[0]*cvals[comp]*sin( 2*pi*fpos[j] );
+        double tmp = scom[j] / ccom[j];
+        tander[j] = getPbc().getBox().getRow(j).modulo() / (2*pi*( 1 + tmp*tmp ));
     }
-    // Now accumulate derivatives
-    for(unsigned k=0; k<tvals.getNumberActive(); ++k) {
-      unsigned icomp=tvals.getActiveIndex(k);
-      myvals.addDerivative( 0, icomp, cvals[0]*tvals.getDerivative( comp, icomp ) + cvals[comp]*tvals.getDerivative( 0, icomp ) );
-      for(unsigned k=0; k<3; ++k) {
-        myvals.addDerivative( 1+k, icomp, stmp[k]*( cvals[0]*tvals.getDerivative( comp, icomp ) +
-                              cvals[comp]*tvals.getDerivative( 0, icomp ) ) );
-        myvals.addDerivative( 4+k, icomp, ctmp[k]*( cvals[0]*tvals.getDerivative( comp, icomp ) +
-                              cvals[comp]*tvals.getDerivative( 0, icomp ) ) );
-      }
+    for(unsigned i=0; i<myvals.getNumberActive(); ++i) {
+        unsigned ider=myvals.getActiveIndex(i);
+        for(unsigned j=0; j<3; ++j) {
+            double sderv = inv_weight*myvals.getDerivative(1+j,ider) - inv_weight*scom[j]*myvals.getDerivative(0,ider);
+            double cderv = inv_weight*myvals.getDerivative(4+j,ider) - inv_weight*ccom[j]*myvals.getDerivative(0,ider);
+            myvals.setDerivative( 1+j, ider, tander[j]*(sderv/ccom[j]  - scom[j]*cderv/(ccom[j]*ccom[j])) );
+            //if( j==2 ) printf("DERIV %d %10.4f %10.4f %10.4f %10.4f \n",i,myvals.getDerivative(0,ider),sderv,cderv,myvals.getDerivative(1+j,ider ) );
+        }
     }
-    // Get the central atom pack
-    CatomPack mypack; mycolv->getCentralAtomPack( 0, mycolv->getPositionInFullTaskList(i), mypack );
-    for(unsigned j=0; j<mypack.getNumberOfAtomsWithDerivatives(); ++j) {
-      unsigned jder=3*mypack.getIndex(j);
-      // Derivatives of sine
-      myvals.addDerivative( 1, jder+0, mypack.getDerivative(j, 0, sder) );
-      myvals.addDerivative( 2, jder+1, mypack.getDerivative(j, 1, sder) );
-      myvals.addDerivative( 3, jder+2, mypack.getDerivative(j, 2, sder) );
-      // Derivatives of cosine
-      myvals.addDerivative( 4, jder+0, mypack.getDerivative(j, 0, cder) );
-      myvals.addDerivative( 5, jder+1, mypack.getDerivative(j, 1, cder) );
-      myvals.addDerivative( 6, jder+2, mypack.getDerivative(j, 2, cder) );
-    }
-    norm += cvals[0]*cvals[comp]; tvals.clearAll();
-  }
 
-  // And now finish Berry phase average
-  scom /= norm; ccom /=norm; Vector cpos;
-  for(unsigned j=0; j<3; ++j) cpos[j] = atan2( scom[j], ccom[j] ) / (2*pi);
-  Vector cart_pos = pbc.scaledToReal( cpos );
-  setPosition(cart_pos); setMass(1.0);   // This could be much cleverer but not without changing many things in PLMED
-
-  // And derivatives
-  Vector tander; myvals.updateDynamicList(); double inv_weight = 1.0 / norm;
-  for(unsigned j=0; j<3; ++j) {
-    double tmp = scom[j] / ccom[j];
-    tander[j] = getPbc().getBox().getRow(j).modulo() / (2*pi*( 1 + tmp*tmp ));
-  }
-  for(unsigned i=0; i<myvals.getNumberActive(); ++i) {
-    unsigned ider=myvals.getActiveIndex(i);
-    for(unsigned j=0; j<3; ++j) {
-      double sderv = inv_weight*myvals.getDerivative(1+j,ider) - inv_weight*scom[j]*myvals.getDerivative(0,ider);
-      double cderv = inv_weight*myvals.getDerivative(4+j,ider) - inv_weight*ccom[j]*myvals.getDerivative(0,ider);
-      myvals.setDerivative( 1+j, ider, tander[j]*(sderv/ccom[j]  - scom[j]*cderv/(ccom[j]*ccom[j])) );
-      //if( j==2 ) printf("DERIV %d %10.4f %10.4f %10.4f %10.4f \n",i,myvals.getDerivative(0,ider),sderv,cderv,myvals.getDerivative(1+j,ider ) );
+    // Atom derivatives
+    std::vector<Tensor> fderiv( getNumberOfAtoms() );
+    for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
+        for(unsigned k=0; k<3; ++k) {
+            if( myvals.isActive(3*j+k) ) for(unsigned n=0; n<3; ++n) fderiv[j](k,n) = myvals.getDerivative( 1+n, 3*j+k );
+            else for(unsigned n=0; n<3; ++n) fderiv[j](k,n) = 0;
+        }
     }
-  }
-
-  // Atom derivatives
-  std::vector<Tensor> fderiv( getNumberOfAtoms() );
-  for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
-    for(unsigned k=0; k<3; ++k) {
-      if( myvals.isActive(3*j+k) ) for(unsigned n=0; n<3; ++n) fderiv[j](k,n) = myvals.getDerivative( 1+n, 3*j+k );
-      else for(unsigned n=0; n<3; ++n) fderiv[j](k,n) = 0;
-    }
-  }
-  setAtomsDerivatives( fderiv );
-  // Box derivatives?
+    setAtomsDerivatives( fderiv );
+    // Box derivatives?
 }
 
 }

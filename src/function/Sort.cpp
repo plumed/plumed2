@@ -58,53 +58,53 @@ PRINT ARG=sort.1,sort.4
 
 
 class Sort :
-  public Function
+    public Function
 {
 public:
-  explicit Sort(const ActionOptions&);
-  void calculate();
-  static void registerKeywords(Keywords& keys);
+    explicit Sort(const ActionOptions&);
+    void calculate();
+    static void registerKeywords(Keywords& keys);
 };
 
 
 PLUMED_REGISTER_ACTION(Sort,"SORT")
 
 void Sort::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys);
-  keys.use("ARG");
-  ActionWithValue::useCustomisableComponents(keys);
+    Function::registerKeywords(keys);
+    keys.use("ARG");
+    ActionWithValue::useCustomisableComponents(keys);
 }
 
 Sort::Sort(const ActionOptions&ao):
-  Action(ao),
-  Function(ao)
+    Action(ao),
+    Function(ao)
 {
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    string s;
-    Tools::convert(i+1,s);
-    if(getPntrToArgument(i)->isPeriodic())
-      error("Cannot sort periodic values (check argument "+s+")");
-    addComponentWithDerivatives(s);
-    getPntrToComponent(i)->setNotPeriodic();
-  }
-  checkRead();
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        string s;
+        Tools::convert(i+1,s);
+        if(getPntrToArgument(i)->isPeriodic())
+            error("Cannot sort periodic values (check argument "+s+")");
+        addComponentWithDerivatives(s);
+        getPntrToComponent(i)->setNotPeriodic();
+    }
+    checkRead();
 
 }
 
 void Sort::calculate() {
-  vector<pair<double,int> > vals(getNumberOfArguments());
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    vals[i].first=getArgument(i);
+    vector<pair<double,int> > vals(getNumberOfArguments());
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        vals[i].first=getArgument(i);
 // In this manner I remember from which argument the component depends:
-    vals[i].second=i;
-  }
+        vals[i].second=i;
+    }
 // STL sort sorts based on first element (value) then second (index)
-  sort(vals.begin(),vals.end());
-  for(int i=0; i<getNumberOfComponents(); ++i) {
-    Value* v=getPntrToComponent(i);
-    v->set(vals[i].first);
-    setDerivative(v,vals[i].second,1.0);
-  }
+    sort(vals.begin(),vals.end());
+    for(int i=0; i<getNumberOfComponents(); ++i) {
+        Value* v=getPntrToComponent(i);
+        v->set(vals[i].first);
+        setDerivative(v,vals[i].second,1.0);
+    }
 }
 
 }

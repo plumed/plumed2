@@ -88,11 +88,11 @@ bfC: BF_CHEBYSHEV MINIMUM=0.0 MAXIMUM=10.0 ORDER=20
 
 
 class BF_Chebyshev : public BasisFunctions {
-  virtual void setupUniformIntegrals();
+    virtual void setupUniformIntegrals();
 public:
-  static void registerKeywords(Keywords&);
-  explicit BF_Chebyshev(const ActionOptions&);
-  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
+    static void registerKeywords(Keywords&);
+    explicit BF_Chebyshev(const ActionOptions&);
+    void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
 };
 
 
@@ -100,55 +100,59 @@ PLUMED_REGISTER_ACTION(BF_Chebyshev,"BF_CHEBYSHEV")
 
 
 void BF_Chebyshev::registerKeywords(Keywords& keys) {
-  BasisFunctions::registerKeywords(keys);
+    BasisFunctions::registerKeywords(keys);
 }
 
 BF_Chebyshev::BF_Chebyshev(const ActionOptions&ao):
-  PLUMED_VES_BASISFUNCTIONS_INIT(ao)
+    PLUMED_VES_BASISFUNCTIONS_INIT(ao)
 {
-  setNumberOfBasisFunctions(getOrder()+1);
-  setIntrinsicInterval("-1.0","+1.0");
-  setNonPeriodic();
-  setIntervalBounded();
-  setType("chebyshev-1st-kind");
-  setDescription("Chebyshev polynomials of the first kind");
-  setLabelPrefix("T");
-  setupBF();
-  checkRead();
+    setNumberOfBasisFunctions(getOrder()+1);
+    setIntrinsicInterval("-1.0","+1.0");
+    setNonPeriodic();
+    setIntervalBounded();
+    setType("chebyshev-1st-kind");
+    setDescription("Chebyshev polynomials of the first kind");
+    setLabelPrefix("T");
+    setupBF();
+    checkRead();
 }
 
 
 void BF_Chebyshev::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
-  // plumed_assert(values.size()==numberOfBasisFunctions());
-  // plumed_assert(derivs.size()==numberOfBasisFunctions());
-  inside_range=true;
-  argT=translateArgument(arg, inside_range);
-  std::vector<double> derivsT(derivs.size());
-  //
-  values[0]=1.0;
-  derivsT[0]=0.0;
-  derivs[0]=0.0;
-  values[1]=argT;
-  derivsT[1]=1.0;
-  derivs[1]=intervalDerivf();
-  for(unsigned int i=1; i < getOrder(); i++) {
-    values[i+1]  = 2.0*argT*values[i]-values[i-1];
-    derivsT[i+1] = 2.0*values[i]+2.0*argT*derivsT[i]-derivsT[i-1];
-    derivs[i+1]  = intervalDerivf()*derivsT[i+1];
-  }
-  if(!inside_range) {for(unsigned int i=0; i<derivs.size(); i++) {derivs[i]=0.0;}}
+    // plumed_assert(values.size()==numberOfBasisFunctions());
+    // plumed_assert(derivs.size()==numberOfBasisFunctions());
+    inside_range=true;
+    argT=translateArgument(arg, inside_range);
+    std::vector<double> derivsT(derivs.size());
+    //
+    values[0]=1.0;
+    derivsT[0]=0.0;
+    derivs[0]=0.0;
+    values[1]=argT;
+    derivsT[1]=1.0;
+    derivs[1]=intervalDerivf();
+    for(unsigned int i=1; i < getOrder(); i++) {
+        values[i+1]  = 2.0*argT*values[i]-values[i-1];
+        derivsT[i+1] = 2.0*values[i]+2.0*argT*derivsT[i]-derivsT[i-1];
+        derivs[i+1]  = intervalDerivf()*derivsT[i+1];
+    }
+    if(!inside_range) {
+        for(unsigned int i=0; i<derivs.size(); i++) {
+            derivs[i]=0.0;
+        }
+    }
 }
 
 
 void BF_Chebyshev::setupUniformIntegrals() {
-  for(unsigned int i=0; i<numberOfBasisFunctions(); i++) {
-    double io = i;
-    double value = 0.0;
-    if(i % 2 == 0) {
-      value = -2.0/( pow(io,2.0)-1.0)*0.5;
+    for(unsigned int i=0; i<numberOfBasisFunctions(); i++) {
+        double io = i;
+        double value = 0.0;
+        if(i % 2 == 0) {
+            value = -2.0/( pow(io,2.0)-1.0)*0.5;
+        }
+        setUniformIntegral(i,value);
     }
-    setUniformIntegral(i,value);
-  }
 }
 
 

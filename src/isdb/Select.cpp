@@ -69,49 +69,50 @@ PRINT ARG=pbactive STRIDE=100 FILE=COLVAR
 
 class Select : public function::Function
 {
-  string selector_;
+    string selector_;
 
 public:
-  explicit Select(const ActionOptions&);
-  void calculate();
-  static void registerKeywords(Keywords& keys);
+    explicit Select(const ActionOptions&);
+    void calculate();
+    static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(Select,"SELECT")
 
 void Select::registerKeywords(Keywords& keys) {
-  Function::registerKeywords(keys);
-  keys.use("ARG");
-  keys.add("compulsory","SELECTOR","name of the variable used to select");
+    Function::registerKeywords(keys);
+    keys.use("ARG");
+    keys.add("compulsory","SELECTOR","name of the variable used to select");
 }
 
 Select::Select(const ActionOptions&ao):
-  Action(ao), Function(ao)
+    Action(ao), Function(ao)
 {
-  // name of selector
-  parse("SELECTOR", selector_);
+    // name of selector
+    parse("SELECTOR", selector_);
 
-  addValueWithDerivatives(); setNotPeriodic();
-  checkRead();
+    addValueWithDerivatives();
+    setNotPeriodic();
+    checkRead();
 
-  log.printf("  select based on %s\n",selector_.c_str());
-  log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
+    log.printf("  select based on %s\n",selector_.c_str());
+    log << " Bibliography" << plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)") << "\n";
 
 }
 
 void Select::calculate()
 {
-  unsigned iselect = static_cast<unsigned>(plumed.passMap[selector_]);
+    unsigned iselect = static_cast<unsigned>(plumed.passMap[selector_]);
 
-  // check if iselect is smaller than the number of arguments
-  if(iselect>=getNumberOfArguments()) error("the value of the SELECTOR is greater than the number of arguments!");
+    // check if iselect is smaller than the number of arguments
+    if(iselect>=getNumberOfArguments()) error("the value of the SELECTOR is greater than the number of arguments!");
 
-  // put all the derivatives to zero
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) setDerivative(i, 0.0);
+    // put all the derivatives to zero
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) setDerivative(i, 0.0);
 
-  // set value and derivative for selected argument
-  setValue(getArgument(iselect));
-  setDerivative(iselect, 1.0);
+    // set value and derivative for selected argument
+    setValue(getArgument(iselect));
+    setDerivative(iselect, 1.0);
 }
 
 }

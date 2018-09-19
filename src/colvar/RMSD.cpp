@@ -35,16 +35,16 @@ namespace colvar {
 
 class RMSD : public Colvar {
 
-  MultiValue myvals;
-  ReferenceValuePack mypack;
-  std::unique_ptr<PLMD::RMSDBase> rmsd;
-  bool squared;
-  bool nopbc;
+    MultiValue myvals;
+    ReferenceValuePack mypack;
+    std::unique_ptr<PLMD::RMSDBase> rmsd;
+    bool squared;
+    bool nopbc;
 
 public:
-  explicit RMSD(const ActionOptions&);
-  virtual void calculate();
-  static void registerKeywords(Keywords& keys);
+    explicit RMSD(const ActionOptions&);
+    virtual void calculate();
+    static void registerKeywords(Keywords& keys);
 };
 
 
@@ -157,67 +157,70 @@ RMSD REFERENCE=file.pdb TYPE=OPTIMAL
 PLUMED_REGISTER_ACTION(RMSD,"RMSD")
 
 void RMSD::registerKeywords(Keywords& keys) {
-  Colvar::registerKeywords(keys);
-  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
-  keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
-  keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
+    Colvar::registerKeywords(keys);
+    keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
+    keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
+    keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
 }
 
 RMSD::RMSD(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),
-  myvals(1,0),
-  mypack(0,0,myvals),
-  squared(false),
-  nopbc(false)
+    PLUMED_COLVAR_INIT(ao),
+    myvals(1,0),
+    mypack(0,0,myvals),
+    squared(false),
+    nopbc(false)
 {
-  string reference;
-  parse("REFERENCE",reference);
-  string type;
-  type.assign("SIMPLE");
-  parse("TYPE",type);
-  parseFlag("SQUARED",squared);
-  parseFlag("NOPBC",nopbc);
+    string reference;
+    parse("REFERENCE",reference);
+    string type;
+    type.assign("SIMPLE");
+    parse("TYPE",type);
+    parseFlag("SQUARED",squared);
+    parseFlag("NOPBC",nopbc);
 
-  checkRead();
+    checkRead();
 
 
-  addValueWithDerivatives(); setNotPeriodic();
-  PDB pdb;
+    addValueWithDerivatives();
+    setNotPeriodic();
+    PDB pdb;
 
-  // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
-    error("missing input file " + reference );
+    // read everything in ang and transform to nm if we are not in natural units
+    if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
+        error("missing input file " + reference );
 
-  rmsd=metricRegister().create<RMSDBase>(type,pdb);
+    rmsd=metricRegister().create<RMSDBase>(type,pdb);
 
-  std::vector<AtomNumber> atoms;
-  rmsd->getAtomRequests( atoms );
+    std::vector<AtomNumber> atoms;
+    rmsd->getAtomRequests( atoms );
 //  rmsd->setNumberOfAtoms( atoms.size() );
-  requestAtoms( atoms );
+    requestAtoms( atoms );
 
-  // Setup the derivative pack
-  myvals.resize( 1, 3*atoms.size()+9 ); mypack.resize( 0, atoms.size() );
-  for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
+    // Setup the derivative pack
+    myvals.resize( 1, 3*atoms.size()+9 );
+    mypack.resize( 0, atoms.size() );
+    for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
 
-  log.printf("  reference from file %s\n",reference.c_str());
-  log.printf("  which contains %d atoms\n",getNumberOfAtoms());
-  log.printf("  method for alignment : %s \n",type.c_str() );
-  if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
-  if(nopbc) log.printf("  without periodic boundary conditions\n");
-  else      log.printf("  using periodic boundary conditions\n");
+    log.printf("  reference from file %s\n",reference.c_str());
+    log.printf("  which contains %d atoms\n",getNumberOfAtoms());
+    log.printf("  method for alignment : %s \n",type.c_str() );
+    if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
+    if(nopbc) log.printf("  without periodic boundary conditions\n");
+    else      log.printf("  using periodic boundary conditions\n");
 }
 
 
 // calculator
 void RMSD::calculate() {
-  if(!nopbc) makeWhole();
-  double r=rmsd->calculate( getPositions(), mypack, squared );
+    if(!nopbc) makeWhole();
+    double r=rmsd->calculate( getPositions(), mypack, squared );
 
-  setValue(r);
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
+    setValue(r);
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
 
-  Tensor virial; plumed_dbg_assert( !mypack.virialWasSet() );
-  setBoxDerivativesNoPbc();
+    Tensor virial;
+    plumed_dbg_assert( !mypack.virialWasSet() );
+    setBoxDerivativesNoPbc();
 }
 
 }

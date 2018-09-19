@@ -36,72 +36,74 @@ namespace secondarystructure {
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
 
 class SecondaryStructureRMSD :
-  public ActionAtomistic,
-  public ActionWithValue,
-  public vesselbase::ActionWithVessel
+    public ActionAtomistic,
+    public ActionWithValue,
+    public vesselbase::ActionWithVessel
 {
 private:
 /// Are we operating without periodic boundary conditions
-  bool nopbc;
+    bool nopbc;
 /// The type of rmsd we are calculating
-  std::string alignType;
+    std::string alignType;
 /// List of all the atoms we require
-  std::vector<AtomNumber> all_atoms;
+    std::vector<AtomNumber> all_atoms;
 /// The atoms involved in each of the secondary structure segments
-  std::vector< std::vector<unsigned> > colvar_atoms;
+    std::vector< std::vector<unsigned> > colvar_atoms;
 /// The list of reference configurations
-  std::vector<std::unique_ptr<SingleDomainRMSD>> references;
+    std::vector<std::unique_ptr<SingleDomainRMSD>> references;
 /// Variables for strands cutoff
-  bool align_strands;
-  double s_cutoff2;
-  unsigned align_atom_1, align_atom_2;
-  bool verbose_output;
+    bool align_strands;
+    double s_cutoff2;
+    unsigned align_atom_1, align_atom_2;
+    bool verbose_output;
 /// Tempory variables for getting positions of atoms and applying forces
-  std::vector<double> forcesToApply;
+    std::vector<double> forcesToApply;
 /// Get the index of an atom
-  unsigned getAtomIndex( const unsigned& current, const unsigned& iatom ) const ;
+    unsigned getAtomIndex( const unsigned& current, const unsigned& iatom ) const ;
 protected:
 /// Get the atoms in the backbone
-  void readBackboneAtoms( const std::string& backnames, std::vector<unsigned>& chain_lengths );
+    void readBackboneAtoms( const std::string& backnames, std::vector<unsigned>& chain_lengths );
 /// Add a set of atoms to calculat ethe rmsd from
-  void addColvar( const std::vector<unsigned>& newatoms );
+    void addColvar( const std::vector<unsigned>& newatoms );
 /// Set a reference configuration
-  void setSecondaryStructure( std::vector<Vector>& structure, double bondlength, double units );
+    void setSecondaryStructure( std::vector<Vector>& structure, double bondlength, double units );
 /// Setup a pair of atoms to use for strands cutoff
-  void setAtomsFromStrands( const unsigned& atom1, const unsigned& atom2 );
+    void setAtomsFromStrands( const unsigned& atom1, const unsigned& atom2 );
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit SecondaryStructureRMSD(const ActionOptions&);
-  virtual ~SecondaryStructureRMSD();
-  unsigned getNumberOfFunctionsInAction();
-  unsigned getNumberOfDerivatives();
-  unsigned getNumberOfQuantities() const ;
-  void turnOnDerivatives();
-  void calculate();
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
-  void apply();
-  bool isPeriodic() { return false; }
+    static void registerKeywords( Keywords& keys );
+    explicit SecondaryStructureRMSD(const ActionOptions&);
+    virtual ~SecondaryStructureRMSD();
+    unsigned getNumberOfFunctionsInAction();
+    unsigned getNumberOfDerivatives();
+    unsigned getNumberOfQuantities() const ;
+    void turnOnDerivatives();
+    void calculate();
+    void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
+    void apply();
+    bool isPeriodic() {
+        return false;
+    }
 };
 
 inline
 unsigned SecondaryStructureRMSD::getNumberOfQuantities() const {
-  return 1 + references.size();
+    return 1 + references.size();
 }
 
 
 inline
 unsigned SecondaryStructureRMSD::getNumberOfFunctionsInAction() {
-  return colvar_atoms.size();
+    return colvar_atoms.size();
 }
 
 inline
 unsigned SecondaryStructureRMSD::getNumberOfDerivatives() {
-  return 3*getNumberOfAtoms()+9;
+    return 3*getNumberOfAtoms()+9;
 }
 
 inline
 unsigned SecondaryStructureRMSD::getAtomIndex( const unsigned& current, const unsigned& iatom ) const {
-  return colvar_atoms[current][iatom];
+    return colvar_atoms[current][iatom];
 }
 
 }

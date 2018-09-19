@@ -30,20 +30,20 @@ class Pbc;
 
 class SingleDomainRMSD : public ReferenceAtoms {
 protected:
-  void readReference( const PDB& pdb );
+    void readReference( const PDB& pdb );
 public:
-  explicit SingleDomainRMSD( const ReferenceConfigurationOptions& ro );
+    explicit SingleDomainRMSD( const ReferenceConfigurationOptions& ro );
 /// Set the reference structure
-  virtual void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
+    virtual void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
 /// Calculate
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const;
-  double calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const;
+    double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const;
+    double calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const;
 /// Calculate the distance using the input position
-  virtual double calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const=0;
+    virtual double calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const=0;
 /// This sets upper and lower bounds on distances to be used in DRMSD (here it does nothing)
-  virtual void setBoundsOnDistances( bool dopbc, double lbound=0.0, double ubound=std::numeric_limits<double>::max( ) ) {};
+    virtual void setBoundsOnDistances( bool dopbc, double lbound=0.0, double ubound=std::numeric_limits<double>::max( ) ) {};
 /// This is used by MultiDomainRMSD to setup the RMSD object in Optimal RMSD type
-  virtual void setupRMSDObject() {};
+    virtual void setupRMSDObject() {};
 };
 
 }

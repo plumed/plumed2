@@ -129,51 +129,56 @@ namespace multicolvar {
 
 class FilterMore : public MultiColvarFilter {
 private:
-  SwitchingFunction sf;
+    SwitchingFunction sf;
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit FilterMore(const ActionOptions& ao);
-  double applyFilter( const double& val, double& df ) const ;
+    static void registerKeywords( Keywords& keys );
+    explicit FilterMore(const ActionOptions& ao);
+    double applyFilter( const double& val, double& df ) const ;
 };
 
 PLUMED_REGISTER_ACTION(FilterMore,"MFILTER_MORE")
 PLUMED_REGISTER_ACTION(FilterMore,"MTRANSFORM_MORE")
 
 void FilterMore::registerKeywords( Keywords& keys ) {
-  MultiColvarFilter::registerKeywords( keys );
-  keys.add("compulsory","NN","6","The n parameter of the switching function ");
-  keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
-  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
-  keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
-           "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+    MultiColvarFilter::registerKeywords( keys );
+    keys.add("compulsory","NN","6","The n parameter of the switching function ");
+    keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
+    keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
+    keys.add("compulsory","R_0","The r_0 parameter of the switching function");
+    keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+             "The following provides information on the \\ref switchingfunction that are available. "
+             "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
 }
 
 FilterMore::FilterMore(const ActionOptions& ao):
-  Action(ao),
-  MultiColvarFilter(ao)
+    Action(ao),
+    MultiColvarFilter(ao)
 {
-  // Read in the switching function
-  std::string sw, errors; parse("SWITCH",sw);
-  if(sw.length()>0) {
-    sf.set(sw,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
-  } else {
-    double r_0=-1.0, d_0; int nn, mm;
-    parse("NN",nn); parse("MM",mm);
-    parse("R_0",r_0); parse("D_0",d_0);
-    if( r_0<0.0 ) error("you must set a value for R_0");
-    sf.set(nn,mm,r_0,d_0);
-  }
-  log.printf("  filtering colvar values and focussing only on those more than %s\n",( sf.description() ).c_str() );
+    // Read in the switching function
+    std::string sw, errors;
+    parse("SWITCH",sw);
+    if(sw.length()>0) {
+        sf.set(sw,errors);
+        if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    } else {
+        double r_0=-1.0, d_0;
+        int nn, mm;
+        parse("NN",nn);
+        parse("MM",mm);
+        parse("R_0",r_0);
+        parse("D_0",d_0);
+        if( r_0<0.0 ) error("you must set a value for R_0");
+        sf.set(nn,mm,r_0,d_0);
+    }
+    log.printf("  filtering colvar values and focussing only on those more than %s\n",( sf.description() ).c_str() );
 
-  checkRead();
+    checkRead();
 }
 
 double FilterMore::applyFilter( const double& val, double& df ) const {
-  double f = 1.0 - sf.calculate( val, df ); df*=-val;
-  return f;
+    double f = 1.0 - sf.calculate( val, df );
+    df*=-val;
+    return f;
 }
 
 }

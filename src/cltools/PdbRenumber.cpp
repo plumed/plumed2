@@ -100,100 +100,100 @@ Additional lines in `list.txt` will just be ignored.
 //+ENDPLUMEDOC
 
 class PdbRenumber:
-  public CLTool
+    public CLTool
 {
 public:
-  static void registerKeywords( Keywords& keys );
-  explicit PdbRenumber(const CLToolOptions& co );
-  int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const {
-    return "Modify atom numbers in a PDB, possibly using hybrid-36 coding";
-  }
+    static void registerKeywords( Keywords& keys );
+    explicit PdbRenumber(const CLToolOptions& co );
+    int main(FILE* in, FILE*out,Communicator& pc);
+    string description()const {
+        return "Modify atom numbers in a PDB, possibly using hybrid-36 coding";
+    }
 };
 
 PLUMED_REGISTER_CLTOOL(PdbRenumber,"pdbrenumber")
 
 void PdbRenumber::registerKeywords( Keywords& keys ) {
-  CLTool::registerKeywords( keys );
-  keys.add("compulsory","--ipdb","specify the name of the input PDB file");
-  keys.add("compulsory","--opdb","specify the name of the output PDB file");
-  keys.add("optional","--firstatomnumber","specify the desired serial number of the first atom of the output file");
-  keys.add("optional","--atomnumbers","specify the desired serial numbers of the atoms of the output file using a separate list");
+    CLTool::registerKeywords( keys );
+    keys.add("compulsory","--ipdb","specify the name of the input PDB file");
+    keys.add("compulsory","--opdb","specify the name of the output PDB file");
+    keys.add("optional","--firstatomnumber","specify the desired serial number of the first atom of the output file");
+    keys.add("optional","--atomnumbers","specify the desired serial numbers of the atoms of the output file using a separate list");
 }
 
 PdbRenumber::PdbRenumber(const CLToolOptions& co ):
-  CLTool(co)
+    CLTool(co)
 {
-  inputdata=commandline;
+    inputdata=commandline;
 }
 
 int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {
 
-  std::string ipdb;
-  parse("--ipdb",ipdb);
-  std::string opdb;
-  parse("--opdb",opdb);
+    std::string ipdb;
+    parse("--ipdb",ipdb);
+    std::string opdb;
+    parse("--opdb",opdb);
 
-  unsigned iat=0;
+    unsigned iat=0;
 
-  parse("--firstatomnumber",iat);
+    parse("--firstatomnumber",iat);
 
-  std::string atomnumbers;
-  parse("--atomnumbers",atomnumbers);
+    std::string atomnumbers;
+    parse("--atomnumbers",atomnumbers);
 
-  plumed_assert(ipdb.length()>0) << "please specify the input PDB with --ipdb";
-  plumed_assert(opdb.length()>0) << "please specify the onput PDB with --opdb";
-  fprintf(out,"  with input PDB: %s\n",ipdb.c_str());
-  fprintf(out,"  with output PDB: %s\n",opdb.c_str());
+    plumed_assert(ipdb.length()>0) << "please specify the input PDB with --ipdb";
+    plumed_assert(opdb.length()>0) << "please specify the onput PDB with --opdb";
+    fprintf(out,"  with input PDB: %s\n",ipdb.c_str());
+    fprintf(out,"  with output PDB: %s\n",opdb.c_str());
 
-  std::vector<unsigned> serials;
+    std::vector<unsigned> serials;
 
-  if(atomnumbers.length()>0) {
-    plumed_assert(iat==0) << "it is not possible to use both --atomnumbers and --firstatomnumber";
-    fprintf(out,"  reading atom numbers from file %s\n",atomnumbers.c_str());
+    if(atomnumbers.length()>0) {
+        plumed_assert(iat==0) << "it is not possible to use both --atomnumbers and --firstatomnumber";
+        fprintf(out,"  reading atom numbers from file %s\n",atomnumbers.c_str());
+        IFile ifile;
+        ifile.open(atomnumbers);
+        std::string line;
+        while(ifile.getline(line)) {
+            int i;
+            Tools::convert(line,i);
+            serials.push_back(i);
+        }
+    } else {
+        if(iat==0) iat=1;
+        fprintf(out,"  with atoms starting from %u\n",iat);
+    }
+
     IFile ifile;
-    ifile.open(atomnumbers);
+    ifile.open(ipdb);
+
+    OFile ofile;
+    ofile.open(opdb);
+
     std::string line;
     while(ifile.getline(line)) {
-      int i;
-      Tools::convert(line,i);
-      serials.push_back(i);
+        std::string record=line.substr(0,6);
+        Tools::trim(record);
+
+        if(record=="ATOM" || record=="HETATM") {
+            std::array<char,6> at;
+            unsigned ii=iat;
+            if(serials.size()>0) {
+                plumed_assert(iat<serials.size()) << "there are more atoms in the PDB than serials in the file";
+                ii=serials[iat];
+            }
+            const char* msg = h36::hy36encode(5,ii,&at[0]);
+            plumed_assert(msg==nullptr) << msg;
+            at[5]=0;
+            ofile << line.substr(0,6) << &at[0] << line.substr(11) << "\n";
+            iat++;
+        } else {
+            if(record=="END" || record=="ENDMDL") iat=0;
+            ofile << line << "\n";
+        }
     }
-  } else {
-    if(iat==0) iat=1;
-    fprintf(out,"  with atoms starting from %u\n",iat);
-  }
 
-  IFile ifile;
-  ifile.open(ipdb);
-
-  OFile ofile;
-  ofile.open(opdb);
-
-  std::string line;
-  while(ifile.getline(line)) {
-    std::string record=line.substr(0,6);
-    Tools::trim(record);
-
-    if(record=="ATOM" || record=="HETATM") {
-      std::array<char,6> at;
-      unsigned ii=iat;
-      if(serials.size()>0) {
-        plumed_assert(iat<serials.size()) << "there are more atoms in the PDB than serials in the file";
-        ii=serials[iat];
-      }
-      const char* msg = h36::hy36encode(5,ii,&at[0]);
-      plumed_assert(msg==nullptr) << msg;
-      at[5]=0;
-      ofile << line.substr(0,6) << &at[0] << line.substr(11) << "\n";
-      iat++;
-    } else {
-      if(record=="END" || record=="ENDMDL") iat=0;
-      ofile << line << "\n";
-    }
-  }
-
-  return 0;
+    return 0;
 }
 }
 

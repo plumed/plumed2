@@ -97,60 +97,60 @@ PRINT ARG=c1,c2 STRIDE=10
 //+ENDPLUMEDOC
 
 class Coordination : public CoordinationBase {
-  SwitchingFunction switchingFunction;
+    SwitchingFunction switchingFunction;
 
 public:
-  explicit Coordination(const ActionOptions&);
+    explicit Coordination(const ActionOptions&);
 // active methods:
-  static void registerKeywords( Keywords& keys );
-  virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const;
+    static void registerKeywords( Keywords& keys );
+    virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const;
 };
 
 PLUMED_REGISTER_ACTION(Coordination,"COORDINATION")
 
 void Coordination::registerKeywords( Keywords& keys ) {
-  CoordinationBase::registerKeywords(keys);
-  keys.add("compulsory","NN","6","The n parameter of the switching function ");
-  keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
-  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
-  keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
-           "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+    CoordinationBase::registerKeywords(keys);
+    keys.add("compulsory","NN","6","The n parameter of the switching function ");
+    keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
+    keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
+    keys.add("compulsory","R_0","The r_0 parameter of the switching function");
+    keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+             "The following provides information on the \\ref switchingfunction that are available. "
+             "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
 }
 
 Coordination::Coordination(const ActionOptions&ao):
-  Action(ao),
-  CoordinationBase(ao)
+    Action(ao),
+    CoordinationBase(ao)
 {
 
-  string sw,errors;
-  parse("SWITCH",sw);
-  if(sw.length()>0) {
-    switchingFunction.set(sw,errors);
-    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
-  } else {
-    int nn=6;
-    int mm=0;
-    double d0=0.0;
-    double r0=0.0;
-    parse("R_0",r0);
-    if(r0<=0.0) error("R_0 should be explicitly specified and positive");
-    parse("D_0",d0);
-    parse("NN",nn);
-    parse("MM",mm);
-    switchingFunction.set(nn,mm,r0,d0);
-  }
+    string sw,errors;
+    parse("SWITCH",sw);
+    if(sw.length()>0) {
+        switchingFunction.set(sw,errors);
+        if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+    } else {
+        int nn=6;
+        int mm=0;
+        double d0=0.0;
+        double r0=0.0;
+        parse("R_0",r0);
+        if(r0<=0.0) error("R_0 should be explicitly specified and positive");
+        parse("D_0",d0);
+        parse("NN",nn);
+        parse("MM",mm);
+        switchingFunction.set(nn,mm,r0,d0);
+    }
 
-  checkRead();
+    checkRead();
 
-  log<<"  contacts are counted with cutoff "<<switchingFunction.description()<<"\n";
+    log<<"  contacts are counted with cutoff "<<switchingFunction.description()<<"\n";
 }
 
 double Coordination::pairing(double distance,double&dfunc,unsigned i,unsigned j)const {
-  (void) i; // avoid warnings
-  (void) j; // avoid warnings
-  return switchingFunction.calculateSqr(distance,dfunc);
+    (void) i; // avoid warnings
+    (void) j; // avoid warnings
+    return switchingFunction.calculateSqr(distance,dfunc);
 }
 
 }

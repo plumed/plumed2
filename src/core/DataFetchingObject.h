@@ -38,28 +38,28 @@ class Value;
 class DataFetchingObject {
 protected:
 /// Pointers to the various actions required by the grabber
-  std::vector<ActionWithValue*> myactions;
+    std::vector<ActionWithValue*> myactions;
 /// The values required by the user
-  std::vector<Value*> myvalues;
+    std::vector<Value*> myvalues;
 /// A copy of the plumed main object
-  PlumedMain & plumed;
+    PlumedMain & plumed;
 public:
-  static std::unique_ptr<DataFetchingObject> create(unsigned n, PlumedMain& p);
+    static std::unique_ptr<DataFetchingObject> create(unsigned n, PlumedMain& p);
 /// A constructor so that we can create the plumed main object
-  explicit DataFetchingObject(PlumedMain&p);
-  virtual ~DataFetchingObject() {}
+    explicit DataFetchingObject(PlumedMain&p);
+    virtual ~DataFetchingObject() {}
 ///
-  bool activate() const ;
+    bool activate() const ;
 /// Return the rank required for a particular key
-  static void get_rank( const ActionSet& a, const std::string& key, const std::string& type, long* rank );
+    static void get_rank( const ActionSet& a, const std::string& key, const std::string& type, long* rank );
 /// Return the shape required for a particular key
-  static void get_shape( const ActionSet& a, const std::string& key, const std::string& type, long* dims );
+    static void get_shape( const ActionSet& a, const std::string& key, const std::string& type, long* dims );
 /// Find the action that calculates a particular value
-  static ActionWithValue* findAction( const ActionSet& a, const std::string& key );
+    static ActionWithValue* findAction( const ActionSet& a, const std::string& key );
 /// Set the pointer to the data
-  virtual void setData( const std::string& key, const std::string& type, void* outval )=0;
+    virtual void setData( const std::string& key, const std::string& type, void* outval )=0;
 /// After calc has been performed grab all the data and put it in the relevant arrays
-  virtual void finishDataGrab()=0;
+    virtual void finishDataGrab()=0;
 };
 
 }

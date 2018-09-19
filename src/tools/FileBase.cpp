@@ -40,101 +40,104 @@
 namespace PLMD {
 
 FileBase& FileBase::link(FILE*fp) {
-  plumed_massert(!this->fp,"cannot link an already open file");
-  this->fp=fp;
-  cloned=true;
-  return *this;
+    plumed_massert(!this->fp,"cannot link an already open file");
+    this->fp=fp;
+    cloned=true;
+    return *this;
 }
 
 FileBase& FileBase::flush() {
-  if(fp) fflush(fp);
-  return *this;
+    if(fp) fflush(fp);
+    return *this;
 }
 
 FileBase& FileBase::link(Communicator&comm) {
-  plumed_massert(!fp,"cannot link an already open file");
-  this->comm=&comm;
-  return *this;
+    plumed_massert(!fp,"cannot link an already open file");
+    this->comm=&comm;
+    return *this;
 }
 
 FileBase& FileBase::link(PlumedMain&plumed) {
-  plumed_massert(!fp,"cannot link an already open file");
-  this->plumed=&plumed;
-  link(plumed.comm);
-  return *this;
+    plumed_massert(!fp,"cannot link an already open file");
+    this->plumed=&plumed;
+    link(plumed.comm);
+    return *this;
 }
 
 FileBase& FileBase::link(Action&action) {
-  plumed_massert(!fp,"cannot link an already open file");
-  this->action=&action;
-  link(action.plumed);
-  return *this;
+    plumed_massert(!fp,"cannot link an already open file");
+    this->action=&action;
+    link(action.plumed);
+    return *this;
 }
 
 bool FileBase::FileExist(const std::string& path) {
-  bool do_exist=false;
-  this->path=appendSuffix(path,getSuffix());
-  mode="r";
-  FILE *ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
-  if(!ff) {
-    this->path=path;
-    ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+    bool do_exist=false;
+    this->path=appendSuffix(path,getSuffix());
     mode="r";
-  }
-  if(ff) {do_exist=true; fclose(ff);}
-  if(comm) comm->Barrier();
-  return do_exist;
+    FILE *ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+    if(!ff) {
+        this->path=path;
+        ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+        mode="r";
+    }
+    if(ff) {
+        do_exist=true;
+        fclose(ff);
+    }
+    if(comm) comm->Barrier();
+    return do_exist;
 }
 
 bool FileBase::isOpen() {
-  bool isopen=false;
-  if(fp) isopen=true;
-  return isopen;
+    bool isopen=false;
+    if(fp) isopen=true;
+    return isopen;
 }
 
 void        FileBase::close() {
-  plumed_assert(!cloned);
-  eof=false;
-  err=false;
-  if(fp)   std::fclose(fp);
+    plumed_assert(!cloned);
+    eof=false;
+    err=false;
+    if(fp)   std::fclose(fp);
 #ifdef __PLUMED_HAS_ZLIB
-  if(gzfp) gzclose(gzFile(gzfp));
+    if(gzfp) gzclose(gzFile(gzfp));
 #endif
-  fp=NULL;
-  gzfp=NULL;
+    fp=NULL;
+    gzfp=NULL;
 }
 
 FileBase::FileBase():
-  fp(NULL),
-  gzfp(NULL),
-  comm(NULL),
-  plumed(NULL),
-  action(NULL),
-  cloned(false),
-  eof(false),
-  err(false),
-  heavyFlush(false),
-  enforcedSuffix_(false)
+    fp(NULL),
+    gzfp(NULL),
+    comm(NULL),
+    plumed(NULL),
+    action(NULL),
+    cloned(false),
+    eof(false),
+    err(false),
+    heavyFlush(false),
+    enforcedSuffix_(false)
 {
 }
 
 FileBase::~FileBase()
 {
-  if(plumed) plumed->eraseFile(*this);
-  if(!cloned && fp)   fclose(fp);
+    if(plumed) plumed->eraseFile(*this);
+    if(!cloned && fp)   fclose(fp);
 #ifdef __PLUMED_HAS_ZLIB
-  if(!cloned && gzfp) gzclose(gzFile(gzfp));
+    if(!cloned && gzfp) gzclose(gzFile(gzfp));
 #endif
 }
 
 FileBase::operator bool()const {
-  return !eof;
+    return !eof;
 }
 
 std::string FileBase::appendSuffix(const std::string&path,const std::string&suffix) {
-  if(path=="/dev/null") return path; // do not append a suffix to /dev/null
-  std::string ret=path;
-  std::string ext=Tools::extension(path);
+    if(path=="/dev/null") return path; // do not append a suffix to /dev/null
+    std::string ret=path;
+    std::string ext=Tools::extension(path);
 
 // These are the recognized extensions so far:
 // gz xtc trr
@@ -144,26 +147,26 @@ std::string FileBase::appendSuffix(const std::string&path,const std::string&suff
 // Removing this line, any extension recognized by Tools::extension() would be considered
 //  if(ext!="gz" && ext!="xtc" && ext!="trr") ext="";
 
-  if(ext.length()>0) {
-    int l=path.length()-(ext.length()+1);
-    plumed_assert(l>=0);
-    ret=ret.substr(0,l);
-  }
-  ret+=suffix;
-  if(ext.length()>0)ret+="."+ext;
-  return ret;
+    if(ext.length()>0) {
+        int l=path.length()-(ext.length()+1);
+        plumed_assert(l>=0);
+        ret=ret.substr(0,l);
+    }
+    ret+=suffix;
+    if(ext.length()>0)ret+="."+ext;
+    return ret;
 }
 
 FileBase& FileBase::enforceSuffix(const std::string&suffix) {
-  enforcedSuffix_=true;
-  enforcedSuffix=suffix;
-  return *this;
+    enforcedSuffix_=true;
+    enforcedSuffix=suffix;
+    return *this;
 }
 
 std::string FileBase::getSuffix()const {
-  if(enforcedSuffix_) return enforcedSuffix;
-  if(plumed) return plumed->getSuffix();
-  return "";
+    if(enforcedSuffix_) return enforcedSuffix;
+    if(plumed) return plumed->getSuffix();
+    return "";
 }
 
 }

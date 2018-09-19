@@ -30,8 +30,8 @@ namespace dimred {
 
 class SMACOF {
 public:
-  static double calculateSigma( const Matrix<double>& Weights, const Matrix<double>& Distances, const Matrix<double>& InitialZ, Matrix<double>& dists );
-  static void run( const Matrix<double>& Weights, const Matrix<double>& Distances, const double& tol, const unsigned& maxloops, Matrix<double>& InitialZ);
+    static double calculateSigma( const Matrix<double>& Weights, const Matrix<double>& Distances, const Matrix<double>& InitialZ, Matrix<double>& dists );
+    static void run( const Matrix<double>& Weights, const Matrix<double>& Distances, const double& tol, const unsigned& maxloops, Matrix<double>& InitialZ);
 };
 
 }

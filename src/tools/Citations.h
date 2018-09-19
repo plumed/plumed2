@@ -52,19 +52,19 @@ int main(int argc,char**argv){
 */
 
 class Citations {
-  std::vector<std::string> items;
+    std::vector<std::string> items;
 public:
 /// Add a citation.
 /// It returns a string containing the reference number, something like "[10]"
-  std::string cite(const std::string &);
+    std::string cite(const std::string &);
 /// Dumps the bibliography.
 /// It writes on the ostream the list of all the bibliographic items
 /// prefixed with their reference number
-  friend std::ostream &operator<<(std::ostream &,const Citations&);
+    friend std::ostream &operator<<(std::ostream &,const Citations&);
 /// Delete all references
-  void clear();
+    void clear();
 /// Check if bibliography is empty
-  bool empty()const;
+    bool empty()const;
 };
 
 std::ostream & operator<<(std::ostream &,const Citations&);
