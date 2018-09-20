@@ -32,6 +32,7 @@ public:
   static void registerKeywords(Keywords& keys);
   static void createActionsToComputeDistances( const std::string mytype, const std::string& refname, const bool& geometric, 
                                                ActionShortcut* action, const std::vector<std::string>& argnames, std::vector<std::string>& refactions );
+  static unsigned getNumberOfFramesAndMetric( const std::string& mtype, const std::string& reffile, std::string& metric );
   explicit Path(const ActionOptions&);
 };
 

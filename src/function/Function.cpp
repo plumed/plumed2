@@ -207,7 +207,7 @@ void Function::addValueWithDerivatives() {
     // Ensure symmetry of matrix is transferred if it is valid
     Value* myval = getPntrToValue();
     if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
-  } else if( arg_ends[1]-arg_ends[0]==1 ) {
+  } else if( arg_ends[1]-arg_ends[0]==1 || getName()=="DIFFERENCE" ) {
     if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
     else if( hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
     else if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape );

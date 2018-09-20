@@ -1,4 +1,4 @@
-USE=bias colvar core reference tools function
+USE=bias colvar core tools function
 
 #generic makefile
 include ../maketools/make.module

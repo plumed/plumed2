@@ -58,22 +58,12 @@ GeometricPathShortcut::GeometricPathShortcut( const ActionOptions& ao ):
   // Create list of reference configurations that PLUMED will use
   Path::createActionsToComputeDistances( mtype, refname, true, this, argnames, refactions );
   // Now get coordinates on spath
-  std::string pname, ref_str, coord_str; parse("PROPERTY",pname);
-  std::vector<AtomNumber> indices; std::vector<double> alig, disp; 
+  std::string pname, coord_str, ref_str; parse("PROPERTY",pname); 
   FILE* fp=std::fopen(refname.c_str(),"r"); bool do_read=true; double fake_unit=0.1; unsigned nfram = 0;
   while (do_read ) {
-      PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
-      // Break if we are done
+      PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
       if( !do_read ) break ;
-      if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
-          indices.resize( mypdb.getAtomNumbers().size() );
-          for(unsigned i=0;i<indices.size();++i) indices[i]=mypdb.getAtomNumbers()[i];
-          alig.resize( mypdb.getOccupancy().size() );
-          for(unsigned i=0;i<alig.size();++i) alig[i]=mypdb.getOccupancy()[i];
-          disp.resize( mypdb.getBeta().size() );
-          for(unsigned i=0;i<disp.size();++i) disp[i]=mypdb.getBeta()[i]; 
-      }
-      // This creates the coefficients
+
       if( nfram==0 ) { ref_str = " REFFRAMES=" + refactions[nfram]; } else { ref_str += "," + refactions[nfram]; }
       if( pname.length()>0 ) {
           std::vector<std::string> remarks( mypdb.getRemark() );
@@ -87,25 +77,7 @@ GeometricPathShortcut::GeometricPathShortcut( const ActionOptions& ao ):
       nfram++;
   }
   // Now setup action to compute distances between configurations
-  std::string metric;
-  if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
-      std::string atnum; Tools::convert( indices[0].serial(), atnum ); metric  = " METRIC={RMSD REFERENCE_ATOMS=" + atnum; 
-      for(unsigned i=1;i<alig.size();++i){ Tools::convert(indices[i].serial(), atnum); metric += "," + atnum; }
-      unsigned natoms=indices[0].serial(); 
-      for(unsigned i=1;i<indices.size();++i) {
-          if( indices[i].serial()>natoms ) natoms = indices[i].serial();
-      }
-      Tools::convert( natoms+indices[0].serial(), atnum ); metric += " ATOMS=" + atnum; 
-      for(unsigned i=1;i<alig.size();++i){ Tools::convert(natoms+indices[i].serial(), atnum); metric += "," + atnum; }
-      std::string anum; Tools::convert( alig[0], anum ); metric += " ALIGN=" + anum;
-      for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); metric += "," + anum; }
-      // Get the displace values
-      std::string dnum; Tools::convert( disp[0], dnum ); metric += " DISPLACE=" + dnum;
-      for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); metric += "," + dnum; }
-      metric += " TYPE=" + mtype + " DISPLACEMENT}";
-  } else {
-      metric = " METRIC={DIFFERENCE ARG1=arg1 ARG2=arg2}";
-  }
+  std::string metric; unsigned nn = Path::getNumberOfFramesAndMetric( mtype, refname, metric );
   // Create action that computes the geometric path variables
   readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data " + coord_str + ref_str + metric ); 
 }

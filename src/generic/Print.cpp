@@ -161,7 +161,7 @@ Print::Print(const ActionOptions&ao):
     if( dot!=std::string::npos ) tstyle=file.substr(dot+1);
     if( tstyle!="xyz" && tstyle!="ndx" && tstyle!="grid" && tstyle!="cube" && tstyle!="dot" && tstyle!="pdb" ) tstyle="colvar";
     log.printf("  on file %s\n",file.c_str());
-    if( tstyle!="grid" && tstyle!="cube" ) { ofile.link(*this); ofile.open(file); }
+    if( tstyle!="grid" && tstyle!="cube" && tstyle!="pdb" ) { ofile.link(*this); ofile.open(file); }
   } else {
     log.printf("  on plumed log file\n");
     ofile.link(log);
@@ -568,6 +568,7 @@ void Print::update() {
     OFile opdbf; opdbf.link(*this);
     opdbf.setBackupString("analysis");
     opdbf.open( file ); unsigned n=0; 
+    opdbf.printf("# PATH AT STEP %d TIME %f \n", getStep(), getTime() ); 
     std::size_t psign=fmt.find("%"); plumed_assert( psign!=std::string::npos ); 
     std::string descr2="%s=%-" + fmt.substr(psign+1) + " ";
     double lenunits = atoms.getUnits().getLength()/0.1;

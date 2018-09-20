@@ -1,4 +1,4 @@
-USE=core tools cltools function reference setup 
+USE=core tools cltools function setup 
 
 # generic makefile
 include ../maketools/make.module

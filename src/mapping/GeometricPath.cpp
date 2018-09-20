@@ -43,7 +43,7 @@ PLUMED_REGISTER_ACTION(GeometricPath,"GEOMETRIC_PATH")
 
 void GeometricPath::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys); ActionWithValue::registerKeywords(keys); 
-  ActionWithArguments::registerKeywords(keys); PathProjectionCalculator::registerKeywords(keys);
+  ActionWithArguments::registerKeywords(keys); keys.use("ARG"); PathProjectionCalculator::registerKeywords(keys);
   keys.add("compulsory","COORDINATES","a vector of coordinates describing the position of each point along the path.  The default "
            "is to place these coordinates at 1, 2, 3, ...");
   componentsAreNotOptional(keys);

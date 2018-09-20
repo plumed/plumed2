@@ -23,14 +23,12 @@
 #include "cltools/CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/Pbc.h"
+#include "tools/Pdb.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionSet.h"
 #include "core/Value.h"
 #include "core/PlumedMain.h"
-#include "reference/ReferenceConfiguration.h"
 #include "setup/SetupReferenceBase.h"
-#include "PathReparameterization.h"
-#include "reference/MetricRegister.h"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -186,14 +184,14 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
           }
       }
     }
-    std::string reparam_str = "REPARAMETERIZE_PATH"; 
-    for(unsigned i=0;i<nfram;++i){ std::string num; Tools::convert(i+1,num); reparam_str += " FRAME" + num + "=ref_" + num; } 
+    std::string reparam_str = "REPARAMETERIZE_PATH REFFRAMES=ref_1"; 
+    for(unsigned i=1;i<nfram;++i){ std::string num; Tools::convert(i+1,num); reparam_str += ",ref_" + num; } 
     std::vector<unsigned> fixed; parseVector("--fixed",fixed);
     if( fixed.size()==1 ) {
       if( fixed[0]!=0 ) error("input to --fixed should be two integers");
-      fixed.resize(2); fixed[0]=0; fixed[1]=nfram-1;
+      fixed.resize(2); fixed[0]=1; fixed[1]=nfram;
     } else if( fixed.size()==2 ) {
-      if( fixed[0]<0 || fixed[1]<0 || fixed[0]>(nfram-1) || fixed[1]>(nfram-1) ) {
+      if( fixed[0]<1 || fixed[1]<1 || fixed[0]>nfram || fixed[1]>nfram ) {
         error("input to --fixed should be two numbers between 0 and the number of frames-1");
       }
     } else error("input to --fixed should be two integers");

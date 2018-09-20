@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_mapping_Mapping_h
-#define __PLUMED_mapping_Mapping_h
+#ifndef __PLUMED_mapping_PathProjectionCalculator_h
+#define __PLUMED_mapping_PathProjectionCalculator_h
 
 #include "core/Value.h"
 #include "core/PlumedMain.h"
@@ -39,14 +39,22 @@ private:
   std::vector<Vector> forces;
   std::vector<double> data;
   std::vector<setup::SetupReferenceBase*> reference_frames; 
+/// Compute the vector connecting two of the frames in the path
+  void computeVectorBetweenFrames( const unsigned& ifrom, const unsigned& ito, const Tensor& box );
 public:
   static void registerKeywords( Keywords& keys );
-  PathProjectionCalculator( ActionWithArguments* act );
+  PathProjectionCalculator( Action* act );
+/// Get the number of frames in the path 
+  unsigned getNumberOfFrames() const ;
 /// Get the label of the reference frame
   std::string getReferenceLabel( const unsigned& iframe ) const ;
 /// Get the projection on the path
   double getProjectionOnPath( const unsigned& ifrom, const unsigned& ito, const unsigned& closest, const Tensor& box, double& len );
-
+/// Get the displacement between two reference frames
+  void getDisplaceVector( const unsigned& ifrom, const unsigned& ito, const Tensor& box, std::vector<double>& displace );
+/// Transfer data in and out of the reference configurations (used for reparamerization)
+  void getReferenceConfiguration( const unsigned& iframe, std::vector<double>& refpos ) const ;
+  void setReferenceConfiguration( const unsigned& iframe, std::vector<double>& refpos );
 };
 
 }

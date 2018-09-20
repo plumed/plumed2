@@ -194,13 +194,13 @@ void Path::createActionsToComputeDistances( const std::string mtype, const std::
           // Set the type
           ref_line += " TYPE=" + mtype + " SQUARED}";
       } else {
-          ref_line += "INPUT" + num + "={" + scut_lab + "_diff" + num + ": DIFFERENCE ARG1=" + refactions[i]; 
+          ref_line += "INPUT" + num + "={" + scut_lab + "_diff" + num + ": DIFFERENCE ARG2=" + refactions[i]; 
           if( mtype!="EUCLIDEAN" ) {
-            ref_line += " ARG2=" + scut_lab + "_instantaneous";
+            ref_line += " ARG1=" + scut_lab + "_instantaneous";
           } else {
             ActionWithValue* av = action->plumed.getActionSet().selectWithLabel<ActionWithValue*>( refactions[i] );
             plumed_assert( av ); nquantities = av->copyOutput(0)->getNumberOfValues( av->getLabel() ); 
-            ref_line +=" ARG2=" + argnames[0]; for(unsigned i=1;i<argnames.size();++i) ref_line += "," + argnames[i]; 
+            ref_line +=" ARG1=" + argnames[0]; for(unsigned i=1;i<argnames.size();++i) ref_line += "," + argnames[i]; 
           }
           std::string powstr = "POWERS=2"; for(unsigned i=1;i<nquantities;++i) powstr += ",2";
           if( mtype=="DRMSD" ) powstr += " NORMALIZE"; 
@@ -209,6 +209,44 @@ void Path::createActionsToComputeDistances( const std::string mtype, const std::
       } 
   }
   action->readInputLine( ref_line ); 
+}
+
+unsigned Path::getNumberOfFramesAndMetric( const std::string& mtype, const std::string& reffile, std::string& metric ) {
+  std::vector<AtomNumber> indices; std::vector<double> alig, disp; 
+  FILE* fp=std::fopen(reffile.c_str(),"r"); bool do_read=true; double fake_unit=0.1; unsigned nframes = 0;
+  while (do_read ) {
+      PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
+      if( !do_read ) break ;
+      if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
+          indices.resize( mypdb.getAtomNumbers().size() );
+          for(unsigned i=0;i<indices.size();++i) indices[i]=mypdb.getAtomNumbers()[i];
+          alig.resize( mypdb.getOccupancy().size() );
+          for(unsigned i=0;i<alig.size();++i) alig[i]=mypdb.getOccupancy()[i]; 
+          disp.resize( mypdb.getBeta().size() );
+          for(unsigned i=0;i<disp.size();++i) disp[i]=mypdb.getBeta()[i];
+      }
+      nframes++;
+  }   
+  // Now setup action to compute distances between configurations
+  if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
+      std::string atnum; Tools::convert( indices[0].serial(), atnum ); metric  = " METRIC={RMSD REFERENCE_ATOMS=" + atnum;
+      for(unsigned i=1;i<alig.size();++i){ Tools::convert(indices[i].serial(), atnum); metric += "," + atnum; }
+      unsigned natoms=indices[0].serial();
+      for(unsigned i=1;i<indices.size();++i) {
+          if( indices[i].serial()>natoms ) natoms = indices[i].serial();
+      }
+      Tools::convert( natoms+indices[0].serial(), atnum ); metric += " ATOMS=" + atnum;
+      for(unsigned i=1;i<alig.size();++i){ Tools::convert(natoms+indices[i].serial(), atnum); metric += "," + atnum; }
+      std::string anum; Tools::convert( alig[0], anum ); metric += " ALIGN=" + anum;
+      for(unsigned i=1;i<alig.size();++i){ Tools::convert( alig[i], anum ); metric += "," + anum; }
+      // Get the displace values
+      std::string dnum; Tools::convert( disp[0], dnum ); metric += " DISPLACE=" + dnum;
+      for(unsigned i=1;i<disp.size();++i){ Tools::convert( disp[i], dnum ); metric += "," + dnum; }
+      metric += " TYPE=" + mtype + " DISPLACEMENT}";
+  } else {
+      metric = " METRIC={DIFFERENCE ARG1=arg2 ARG2=arg1}";
+  }
+  return nframes;
 }
 
 }
