@@ -34,7 +34,9 @@ namespace isdb {
 /*
 Add a time-dependent, harmonic restraint on one or more variables.
 This allows implementing a maximum caliber restraint on one or more experimental time serie by replica-averaged restrained simulations.
-See \cite{}
+See \cite{}.
+
+The time resolved experiments are read from a text file and intermediate values are obtained by splines.
 
 \par Examples
 
@@ -189,6 +191,7 @@ Caliber::Caliber(const ActionOptions&ao):
 
   log.printf("  Time resolved data from file %s\n",filename.c_str());
   std::ifstream varfile(filename.c_str());
+  if(varfile.fail()) error("Cannot open "+filename);
   var.resize(narg);
   dvar.resize(narg);
   while (!varfile.eof()) {
