@@ -26,6 +26,7 @@
 #include "tools/Units.h"
 #include <algorithm>
 #include <string>
+#include <map>
 
 using namespace std;
 
@@ -48,6 +49,8 @@ class MDAtomsTyped:
   T *fx; T *fy; T *fz;
   T *box;
   T *virial;
+  std::map<std::string,T*> extraCV;
+  std::map<std::string,T*> extraCVForce;
 public:
   MDAtomsTyped();
   void setm(void*m);
@@ -59,6 +62,18 @@ public:
   void setp(void*p,int i);
   void setf(void*f,int i);
   void setUnits(const Units&,const Units&);
+  void setExtraCV(const std::string &name,void*p) {
+    extraCV[name]=static_cast<T*>(p);
+  }
+  void setExtraCVForce(const std::string &name,void*p) {
+    extraCVForce[name]=static_cast<T*>(p);
+  }
+  double getExtraCV(const std::string &name) {
+    return static_cast<double>(*extraCV[name]);
+  }
+  void updateExtraCVForce(const std::string &name,double f) {
+    *extraCVForce[name]+=static_cast<T>(f);
+  }
   void MD2double(const void*m,double&d)const {
     d=double(*(static_cast<const T*>(m)));
   }

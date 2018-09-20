@@ -96,8 +96,9 @@ public:
      * can be used when processing or analyzing parsed expressions.
      */
     enum Id {CONSTANT, VARIABLE, CUSTOM, ADD, SUBTRACT, MULTIPLY, DIVIDE, POWER, NEGATE, SQRT, EXP, LOG,
-             SIN, COS, SEC, CSC, TAN, COT, ASIN, ACOS, ATAN, SINH, COSH, TANH, ERF, ERFC, STEP, DELTA, SQUARE, CUBE, RECIPROCAL,
-             ADD_CONSTANT, MULTIPLY_CONSTANT, POWER_CONSTANT, MIN, MAX, ABS, FLOOR, CEIL, SELECT};
+             SIN, COS, SEC, CSC, TAN, COT, ASIN, ACOS, ATAN, SINH, COSH, TANH, ERF, ERFC, STEP, DELTA, NANDELTA, SQUARE, CUBE, RECIPROCAL,
+             ADD_CONSTANT, MULTIPLY_CONSTANT, POWER_CONSTANT, MIN, MAX, ABS, FLOOR, CEIL, SELECT,
+             ACOT, ASEC, ACSC, COTH, SECH, CSCH, ASINH, ACOSH, ATANH, ACOTH, ASECH, ACSCH, ATAN2};
     /**
      * Get the name of this Operation.
      */
@@ -177,6 +178,7 @@ public:
     class Erfc;
     class Step;
     class Delta;
+    class Nandelta;
     class Square;
     class Cube;
     class Reciprocal;
@@ -189,6 +191,19 @@ public:
     class Floor;
     class Ceil;
     class Select;
+    class Acot;
+    class Asec;
+    class Acsc;
+    class Coth;
+    class Sech;
+    class Csch;
+    class Asinh;
+    class Acosh;
+    class Atanh;
+    class Acoth;
+    class Asech;
+    class Acsch;
+    class Atan2;
 };
 
 class LEPTON_EXPORT Operation::Constant : public Operation {
@@ -862,7 +877,29 @@ public:
         return new Delta();
     }
     double evaluate(double* args, const std::map<std::string, double>& variables) const {
-        return (args[0] == 0.0 ? 1.0 : 0.0);
+        return (args[0] == 0.0 ? 1.0/0.0 : 0.0);
+    }
+    ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const;
+};
+
+class LEPTON_EXPORT Operation::Nandelta : public Operation {
+public:
+    Nandelta() {
+    }
+    std::string getName() const {
+        return "nandelta";
+    }
+    Id getId() const {
+        return NANDELTA;
+    }
+    int getNumArguments() const {
+        return 1;
+    }
+    Operation* clone() const {
+        return new Nandelta();
+    }
+    double evaluate(double* args, const std::map<std::string, double>& variables) const {
+        return (args[0] == 0.0 ? std::numeric_limits<double>::quiet_NaN() : 0.0);
     }
     ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const;
 };
@@ -1192,6 +1229,46 @@ public:
     }
     ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const;
 };
+
+#define LEPTON_CLASS_OPERATION(Name,name,NAME,nargs,impl) \
+class LEPTON_EXPORT Operation::Name : public Operation { \
+public: \
+    Name() { \
+    } \
+    std::string getName() const { \
+        return #name; \
+    } \
+    Id getId() const { \
+        return NAME; \
+    } \
+    int getNumArguments() const { \
+        return nargs; \
+    } \
+    Operation* clone() const { \
+        return new Name(); \
+    } \
+    double evaluate(double* args, const std::map<std::string, double>& variables) const { \
+        return impl; \
+    } \
+    ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const; \
+}
+
+LEPTON_CLASS_OPERATION(Acot,acot,ACOT,1,std::atan(1.0/args[0]));
+LEPTON_CLASS_OPERATION(Asec,asec,ASEC,1,std::acos(1.0/args[0]));
+LEPTON_CLASS_OPERATION(Acsc,acsc,ACSC,1,std::asin(1.0/args[0]));
+LEPTON_CLASS_OPERATION(Coth,coth,ACOT,1,1.0/std::tanh(args[0]));
+LEPTON_CLASS_OPERATION(Sech,sech,SECH,1,1.0/std::cosh(args[0]));
+LEPTON_CLASS_OPERATION(Csch,csch,CSCH,1,1.0/std::sinh(args[0]));
+
+LEPTON_CLASS_OPERATION(Asinh,asinh,ASINH,1,std::asinh(args[0]));
+LEPTON_CLASS_OPERATION(Acosh,acosh,ACOSH,1,std::acosh(args[0]));
+LEPTON_CLASS_OPERATION(Atanh,atanh,ATANH,1,std::atanh(args[0]));
+
+LEPTON_CLASS_OPERATION(Acoth,acoth,ACOTH,1,0.5*std::log((args[0]+1.0)/(args[0]-1.0)));
+LEPTON_CLASS_OPERATION(Asech,asech,ASECH,1,std::log(std::sqrt(1.0/args[0]-1.0)*std::sqrt(1.0/args[0]+1.0)+1.0/args[0]));
+LEPTON_CLASS_OPERATION(Acsch,acsch,ACSCH,1,std::log(1.0/args[0]+std::sqrt(1.0/(args[0]*args[0])+1.0)));
+
+LEPTON_CLASS_OPERATION(Atan2,atan2,ATAN2,2,std::atan2(args[0],args[1]));
 
 } // namespace lepton
 } // namespace PLMD

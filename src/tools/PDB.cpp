@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <iostream>
 #include "core/SetupMolInfo.h"
+#include "Tensor.h"
 
 using namespace std;
 
@@ -234,6 +235,18 @@ const std::vector<AtomNumber> & PDB::getAtomNumbers()const {
   return numbers;
 }
 
+const Vector & PDB::getBoxAxs()const {
+  return BoxXYZ;
+}
+
+const Vector & PDB::getBoxAng()const {
+  return BoxABG;
+}
+
+const Tensor & PDB::getBoxVec()const {
+  return Box;
+}
+
 std::string PDB::getAtomName(AtomNumber a)const {
   const auto p=number2index.find(a);
   if(p==number2index.end()) return "";
@@ -277,6 +290,12 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
     string z=line.substr(46,8);
     string occ=line.substr(54,6);
     string bet=line.substr(60,6);
+    string BoxX=line.substr(6,9);
+    string BoxY=line.substr(15,9);
+    string BoxZ=line.substr(24,9);
+    string BoxA=line.substr(33,7);
+    string BoxB=line.substr(40,7);
+    string BoxG=line.substr(47,7);
     Tools::trim(record);
     if(record=="TER") { between_ters=false; block_ends.push_back( positions.size() ); }
     if(record=="END") { file_is_alive=true;  break;}
@@ -284,6 +303,26 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
     if(record=="REMARK") {
       vector<string> v1;  v1=Tools::getWords(line.substr(6));
       addRemark( v1 );
+    }
+    if(record=="CRYST1") {
+      Tools::convert(BoxX,BoxXYZ[0]);
+      Tools::convert(BoxY,BoxXYZ[1]);
+      Tools::convert(BoxZ,BoxXYZ[2]);
+      Tools::convert(BoxA,BoxABG[0]);
+      Tools::convert(BoxB,BoxABG[1]);
+      Tools::convert(BoxG,BoxABG[2]);
+      BoxXYZ*=scale;
+      double cosA=cos(BoxABG[0]*pi/180.);
+      double cosB=cos(BoxABG[1]*pi/180.);
+      double cosG=cos(BoxABG[2]*pi/180.);
+      double sinG=sin(BoxABG[2]*pi/180.);
+      for (unsigned i=0; i<3; i++) {Box[i][0]=0.; Box[i][1]=0.; Box[i][2]=0.;}
+      Box[0][0]=BoxXYZ[0];
+      Box[1][0]=BoxXYZ[1]*cosG;
+      Box[1][1]=BoxXYZ[1]*sinG;
+      Box[2][0]=BoxXYZ[2]*cosB;
+      Box[2][1]=(BoxXYZ[2]*BoxXYZ[1]*cosA-Box[2][0]*Box[1][0])/Box[1][1];
+      Box[2][2]=sqrt(BoxXYZ[2]*BoxXYZ[2]-Box[2][0]*Box[2][0]-Box[2][1]*Box[2][1]);
     }
     if(record=="ATOM" || record=="HETATM") {
       between_ters=true;

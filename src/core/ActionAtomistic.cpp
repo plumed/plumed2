@@ -262,6 +262,7 @@ void ActionAtomistic::applyForces() {
   for(unsigned j=0; j<indexes.size(); j++) f[indexes[j].index()]+=forces[j];
   v+=virial;
   atoms.forceOnEnergy+=forceOnEnergy;
+  if(extraCV.length()>0) atoms.updateExtraCVForce(extraCV,forceOnExtraCV);
 }
 
 void ActionAtomistic::clearOutputForces() {
@@ -269,6 +270,7 @@ void ActionAtomistic::clearOutputForces() {
   if(donotforce) return;
   for(unsigned i=0; i<forces.size(); ++i)forces[i].zero();
   forceOnEnergy=0.0;
+  forceOnExtraCV=0.0;
 }
 
 

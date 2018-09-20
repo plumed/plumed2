@@ -27,6 +27,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include "Tensor.h"
 
 
 namespace PLMD {
@@ -52,6 +53,8 @@ class PDB {
   std::vector<std::string> flags;
   std::vector<std::string> argnames;
   std::map<std::string,double> arg_data;
+  Vector BoxXYZ,BoxABG;
+  Tensor Box;
 public:
 /// Read the pdb from a file, scaling positions by a factor scale
   bool read(const std::string&file,bool naturalUnits,double scale);
@@ -133,6 +136,12 @@ public:
   bool hasFlag( const std::string& fname ) const ;
 /// Get the metric type
   std::string getMtype() const ;
+/// Returns box axis lengths
+  const Vector & getBoxAxs()const;
+/// Returns box axis angles
+  const Vector & getBoxAng()const;
+/// Returns box axis vectors
+  const Tensor & getBoxVec()const;
 };
 
 }

@@ -35,13 +35,17 @@
 #include <sstream>
 #include <cstdio>
 #include <cfloat>
+#include <array>
 
 using namespace std;
 namespace PLMD {
 
+constexpr size_t Grid::maxdim;
+
 Grid::Grid(const std::string& funcl, const std::vector<Value*> & args, const vector<std::string> & gmin,
            const vector<std::string> & gmax, const vector<unsigned> & nbin, bool dospline, bool usederiv, bool doclear) {
 // various checks
+  plumed_assert(args.size()<=maxdim) << "grid dim cannot exceed "<<maxdim;
   plumed_massert(args.size()==gmin.size(),"grid min dimensions in input do not match number of arguments");
   plumed_massert(args.size()==nbin.size(),"number of bins on input do not match number of arguments");
   plumed_massert(args.size()==gmax.size(),"grid max dimensions in input do not match number of arguments");
@@ -79,6 +83,7 @@ void Grid::Init(const std::string& funcl, const std::vector<std::string> &names,
                 const std::vector<bool> &isperiodic, const std::vector<std::string> &pmin, const std::vector<std::string> &pmax ) {
   contour_location=0.0; fmt_="%14.9f";
 // various checks
+  plumed_assert(names.size()<=maxdim) << "grid size cannot exceed "<<maxdim;
   plumed_massert(names.size()==gmin.size(),"grid dimensions in input do not match number of arguments");
   plumed_massert(names.size()==nbin.size(),"grid dimensions in input do not match number of arguments");
   plumed_massert(names.size()==gmax.size(),"grid dimensions in input do not match number of arguments");
@@ -334,7 +339,7 @@ void Grid::getSplineNeighbors(const vector<unsigned> & indices, vector<Grid::ind
   unsigned nneigh=unsigned(pow(2.0,int(dimension_)));
   if (neighbors.size()!=nneigh) neighbors.resize(nneigh);
 
-  static vector<unsigned> nindices; if (nindices.size()!=dimension_) nindices.resize(dimension_);
+  vector<unsigned> nindices(dimension_);
   unsigned inind; nneighbors = 0;
   for(unsigned int i=0; i<nneigh; ++i) {
     unsigned tmp=i; inind=0;
@@ -461,23 +466,20 @@ double Grid::getValueAndDerivatives
 
   if(dospline_) {
     double X,X2,X3,value;
-    static std::vector<double> fd, C, D, dder;
-    if (fd.size() != dimension_) fd.resize(dimension_);
-    if (C.size() != dimension_) C.resize(dimension_);
-    if (D.size() != dimension_) D.resize(dimension_);
-    if (dder.size() != dimension_) dder.resize(dimension_);
+    std::array<double,maxdim> fd, C, D;
+    std::vector<double> dder(dimension_);
 // reset
     value=0.0;
     for(unsigned int i=0; i<dimension_; ++i) der[i]=0.0;
 
-    static vector<unsigned> indices; if (indices.size()!=dimension_) indices.resize(dimension_);
+    vector<unsigned> indices(dimension_);
     getIndices(x, indices);
-    static vector<double> xfloor; if (xfloor.size()!=dimension_) xfloor.resize(dimension_);
+    vector<double> xfloor(dimension_);
     getPoint(indices, xfloor);
-    static vector<index_t> neigh; unsigned nneigh; getSplineNeighbors(indices, neigh, nneigh);
+    vector<index_t> neigh; unsigned nneigh; getSplineNeighbors(indices, neigh, nneigh);
 
 // loop over neighbors
-    static vector<unsigned> nindices;
+    vector<unsigned> nindices;
     for(unsigned int ipoint=0; ipoint<nneigh; ++ipoint) {
       double grid=getValueAndDerivatives(neigh[ipoint],dder);
       getIndices(neigh[ipoint], nindices);

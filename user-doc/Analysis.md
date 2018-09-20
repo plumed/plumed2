@@ -27,10 +27,10 @@ are within particular ranges.  In other words, the above printing commands, in t
 with \ref UPDATE_IF, allow you to identify the frames in your trajectory that satisfy
 some particular criteria and output information on those frames only.
 
-Another useful command is the \ref COMMITTOR command.  This command can only be used when running
-a molecular dynamics trajectory - it cannot be used when analysing a trajectory using \ref driver.
+Another useful command is the \ref COMMITTOR command. 
 As detailed in the documentation for \ref COMMITTOR this command tells PLUMED (and the underlying 
-MD code) to stop the calculation one some criteria is satisfied.
+MD code) to stop the calculation one some criteria is satisfied, alternatively one can use it to keep
+track of the number of times a criteria is satisfied.
 
 A number of more complicated forms of analysis can be performed that take a number of frames from 
 the trajectory as input.  In all these commands the STRIDE keyword is used to tell PLUMED how 
