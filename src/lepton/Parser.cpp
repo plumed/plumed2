@@ -82,7 +82,27 @@ static const bool LeftAssociative[] = {true, true, true, true, false};
 static const int Precedence[] = {0, 0, 1, 1, 3};
 static const Operation::Id OperationId[] = {Operation::ADD, Operation::SUBTRACT, Operation::MULTIPLY, Operation::DIVIDE, Operation::POWER};
 
+const std::map<std::string, double> & Constants() {
+  static const std::map<std::string, double> constants = {
+  {"e", std::exp(1.0)},
+  {"log2e", 1.0/std::log(2.0)},
+  {"log10e", 1.0/std::log(10.0)},
+  {"ln2", std::log(2.0)},
+  {"ln10", std::log(10.0)},
+  {"pi", 3.14159265358979323844},
+  {"pi_2", 3.14159265358979323844*0.5},
+  {"pi_4", 3.14159265358979323844*0.25},
+//  {"1_pi", 1.0/pi},
+//  {"2_pi", 2.0/pi},
+//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
+  {"sqrt2", std::sqrt(2.0)},
+  {"sqrt1_2", std::sqrt(0.5)}
+  };
+  return constants;
 }
+
+}
+
 
 class lepton::ParseToken {
 public:
@@ -356,6 +376,7 @@ Operation* Parser::getFunctionOperation(const std::string& name, const map<strin
         { "erfc" , Operation::ERFC },
         { "step" , Operation::STEP },
         { "delta" , Operation::DELTA },
+        { "nandelta" , Operation::NANDELTA },
         { "square" , Operation::SQUARE },
         { "cube", Operation::CUBE },
         { "recip" , Operation::RECIPROCAL },
@@ -365,6 +386,19 @@ Operation* Parser::getFunctionOperation(const std::string& name, const map<strin
         { "floor" , Operation::FLOOR },
         { "ceil" , Operation::CEIL },
         { "select" , Operation::SELECT },
+        { "acot" , Operation::ACOT },
+        { "asec" , Operation::ASEC },
+        { "acsc" , Operation::ACSC },
+        { "coth" , Operation::COTH },
+        { "sech" , Operation::SECH },
+        { "csch" , Operation::CSCH },
+        { "asinh" , Operation::ASINH },
+        { "acosh" , Operation::ACOSH },
+        { "atanh" , Operation::ATANH },
+        { "acoth" , Operation::ACOTH },
+        { "asech" , Operation::ASECH },
+        { "acsch" , Operation::ACSCH },
+        { "atan2" , Operation::ATAN2 },
     };
     string trimmed = name.substr(0, name.size()-1);
 
@@ -418,6 +452,8 @@ Operation* Parser::getFunctionOperation(const std::string& name, const map<strin
             return new Operation::Step();
         case Operation::DELTA:
             return new Operation::Delta();
+        case Operation::NANDELTA:
+            return new Operation::Nandelta();
         case Operation::SQUARE:
             return new Operation::Square();
         case Operation::CUBE:
@@ -436,6 +472,32 @@ Operation* Parser::getFunctionOperation(const std::string& name, const map<strin
             return new Operation::Ceil();
         case Operation::SELECT:
             return new Operation::Select();
+        case Operation::ACOT:
+            return new Operation::Acot();
+        case Operation::ASEC:
+            return new Operation::Asec();
+        case Operation::ACSC:
+            return new Operation::Acsc();
+        case Operation::COTH:
+            return new Operation::Coth();
+        case Operation::SECH:
+            return new Operation::Sech();
+        case Operation::CSCH:
+            return new Operation::Csch();
+        case Operation::ASINH:
+            return new Operation::Asinh();
+        case Operation::ACOSH:
+            return new Operation::Acosh();
+        case Operation::ATANH:
+            return new Operation::Atanh();
+        case Operation::ACOTH:
+            return new Operation::Acoth();
+        case Operation::ASECH:
+            return new Operation::Asech();
+        case Operation::ACSCH:
+            return new Operation::Acsch();
+        case Operation::ATAN2:
+            return new Operation::Atan2();
         default:
             throw Exception("unknown function");
     }

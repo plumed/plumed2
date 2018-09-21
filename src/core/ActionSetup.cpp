@@ -23,6 +23,7 @@
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "tools/Exception.h"
+#include "ActionAnyorder.h"
 
 namespace PLMD {
 
@@ -32,7 +33,7 @@ ActionSetup::ActionSetup(const ActionOptions&ao):
   const ActionSet& actionset(plumed.getActionSet());
   for(const auto & p : actionset) {
 // check that all the preceeding actions are ActionSetup
-    if( !dynamic_cast<ActionSetup*>(p.get()) ) error("Action " + getLabel() + " is a setup action, and should be only preceeded by other setup actions");
+    if( !dynamic_cast<ActionSetup*>(p.get()) && !dynamic_cast<ActionAnyorder*>(p.get()) ) error("Action " + getLabel() + " is a setup action, and should be only preceeded by other setup actions or by actions that can be used in any order.");
   }
 }
 

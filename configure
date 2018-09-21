@@ -718,6 +718,7 @@ enable_rpath
 enable_absolute_soname
 enable_absolute_install_name
 enable_loader_path
+enable_bsymbolic
 enable_ld_r
 enable_ar_cr
 enable_static_archive
@@ -1402,6 +1403,8 @@ Optional Features:
                           for testing!, default: yes
   --enable-loader-path    enable use @loader_path to find
                           libplumedKernel.dylib (OSX only), default: yes
+  --enable-bsymbolic      enable use -Bsymbolic flag in making shared
+                          libraries (Linux only), default: yes
   --enable-ld-r           enable group object files, default: yes
   --enable-ar-cr          enable use ar to build libplumedWrapper.a, default:
                           yes
@@ -2750,6 +2753,24 @@ else
   case "yes" in
              (yes) loader_path=true ;;
              (no)  loader_path=false ;;
+  esac
+
+fi
+
+
+
+bsymbolic=
+# Check whether --enable-bsymbolic was given.
+if test "${enable_bsymbolic+set}" = set; then :
+  enableval=$enable_bsymbolic; case "${enableval}" in
+             (yes) bsymbolic=true ;;
+             (no)  bsymbolic=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-bsymbolic" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) bsymbolic=true ;;
+             (no)  bsymbolic=false ;;
   esac
 
 fi
@@ -8707,6 +8728,34 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
+    if test "$bsymbolic" == true ; then
+
+  save_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS -Wl,-Bsymbolic"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether LDFLAGS can contain -Wl,-Bsymbolic" >&5
+$as_echo_n "checking whether LDFLAGS can contain -Wl,-Bsymbolic... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; LDFLAGS="$save_LDFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    fi
   ;;
   (*)
     { $as_echo "$as_me:${as_lineno-$LINENO}: *** Dynamic library only enabled on OSX and Linux ***" >&5

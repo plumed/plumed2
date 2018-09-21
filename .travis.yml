@@ -117,13 +117,13 @@ install:
 # a specific old version of asmjit is required:
   - if test -n "$ASMJIT" ; then ./.travis/install.asmjit $ASMJIT ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      ./.travis/install.ccache v3.4.2 ;
+      ./.travis/install.ccache v3.4.3 ;
     fi
 # cppcheck:
 # I use 1.71 since 1.72 seems to report a lot of false positive
   - if test "$CPPCHECK" == yes ; then  ./.travis/install.cppcheck $CPPCHECK_VERSION ; fi
 # for plumedcheck I need latest gawk
-  - if test "$CPPCHECK" == yes ; then  ./.travis/install.gawk 4.1.4 ; fi
+  - if test "$CPPCHECK" == yes ; then  ./.travis/install.gawk 4.2.1 ; fi
 # for plumedcheck I need astyle
   - if test "$CPPCHECK" == yes ; then make -j 4 -C astyle ; fi
 # installation of these packages takes a lot of time

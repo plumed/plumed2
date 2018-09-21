@@ -163,7 +163,7 @@ IFile& IFile::scanField(const std::string&name,int &x) {
 }
 
 IFile& IFile::scanField(Value* val) {
-  double ff=NAN; // this is to be sure a NAN value is replaced upon failure
+  double ff=std::numeric_limits<double>::quiet_NaN(); // this is to be sure a NaN value is replaced upon failure
   scanField(  val->getName(), ff );
   val->set( ff );
   if( FieldExist("min_" + val->getName() ) ) {

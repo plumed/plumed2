@@ -60,6 +60,7 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   keys.add("optional","OFFSET_MIN","minimum value of the offset");
   keys.add("optional","OFFSET_MAX","maximum value of the offset");
   keys.add("optional","DOFFSET","maximum MC move of the offset");
+  keys.add("optional","REGRES_ZERO","stride for regression with zero offset");
   keys.add("compulsory","SIGMA0","1.0","initial value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MIN","0.0","minimum value of the uncertainty parameter");
   keys.add("compulsory","SIGMA_MAX","10.","maximum value of the uncertainty parameter");
@@ -107,6 +108,8 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   offset_min_(1),
   offset_max_(-1),
   Doffset_(-1),
+  doregres_zero_(false),
+  nregres_zero_(0),
   Dftilde_(0.1),
   random(3),
   MCsteps_(1),
@@ -253,6 +256,16 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
       if(Doffset_<0) Doffset_ = 0.05*(offset_max_ - offset_min_);
       if(offset_max_<offset_min_) error("OFFSET_MAX and OFFSET_MIN must be set when using OFFSET_PRIOR=FLAT");
     }
+  }
+
+  // regression with zero intercept
+  parse("REGRES_ZERO", nregres_zero_);
+  if(nregres_zero_>0) {
+    // set flag
+    doregres_zero_=true;
+    // check if already sampling scale and offset
+    if(doscale_)  error("REGRES_ZERO and SCALEDATA are mutually exclusive");
+    if(dooffset_) error("REGRES_ZERO and ADDOFFSET are mutually exclusive");
   }
 
   vector<double> readsigma;
@@ -471,7 +484,7 @@ void MetainferenceBase::Initialise(const unsigned input)
     componentIsNotPeriodic("weight");
   }
 
-  if(doscale_) {
+  if(doscale_ || doregres_zero_) {
     addComponent("scale");
     componentIsNotPeriodic("scale");
     valueScale=getPntrToComponent("scale");
@@ -626,7 +639,7 @@ double MetainferenceBase::getEnergySP(const vector<double> &mean, const vector<d
   }
   // add one single Jeffrey's prior and one normalisation per data point
   ene += 0.5*std::log(sss) + static_cast<double>(narg)*0.5*std::log(0.5*M_PI*M_PI/ss2);
-  if(doscale_)  ene += 0.5*std::log(sss);
+  if(doscale_ || doregres_zero_) ene += 0.5*std::log(sss);
   if(dooffset_) ene += 0.5*std::log(sss);
   return kbt_ * ene;
 }
@@ -646,7 +659,7 @@ double MetainferenceBase::getEnergySPE(const vector<double> &mean, const vector<
       const double dev = scale*mean[i]-parameters[i]+offset;
       const double a2  = 0.5*dev*dev + ss2;
       ene += 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2/(1.0-exp(-a2/sm2)));
-      if(doscale_)  ene += 0.5*std::log(sss);
+      if(doscale_ || doregres_zero_)  ene += 0.5*std::log(sss);
       if(dooffset_) ene += 0.5*std::log(sss);
     }
   }
@@ -674,7 +687,7 @@ double MetainferenceBase::getEnergyMIGEN(const vector<double> &mean, const vecto
       const double normm         = -0.5*std::log(0.5/M_PI*inv_sm2);
       const double jeffreys      = -0.5*std::log(2.*inv_sb2);
       ene += 0.5*devb*devb*inv_sb2 + 0.5*devm*devm*inv_sm2 + normb + normm + jeffreys;
-      if(doscale_)  ene += jeffreys;
+      if(doscale_ || doregres_zero_)  ene += jeffreys;
       if(dooffset_) ene += jeffreys;
     }
   }
@@ -701,7 +714,7 @@ double MetainferenceBase::getEnergyGJ(const vector<double> &mean, const vector<d
   const double jeffreys = -0.5*std::log(2.*inv_sss);
   // add Jeffrey's prior in case one sigma for all data points + one normalisation per datapoint
   ene += jeffreys + static_cast<double>(narg)*normalisation;
-  if(doscale_)  ene += jeffreys;
+  if(doscale_ || doregres_zero_)  ene += jeffreys;
   if(dooffset_) ene += jeffreys;
 
   return kbt_ * ene;
@@ -724,7 +737,7 @@ double MetainferenceBase::getEnergyGJE(const vector<double> &mean, const vector<
       const double normalisation = -0.5*std::log(0.5/M_PI*inv_s2);
       const double jeffreys      = -0.5*std::log(2.*inv_sss);
       ene += 0.5*dev*dev*inv_s2 + normalisation + jeffreys;
-      if(doscale_)  ene += jeffreys;
+      if(doscale_ || doregres_zero_)  ene += jeffreys;
       if(dooffset_) ene += jeffreys;
     }
   }
@@ -973,7 +986,7 @@ void MetainferenceBase::doMonteCarlo(const vector<double> &mean_)
   /* save the result of the sampling */
   double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCtrial_);
   valueAccept->set(accept);
-  if(doscale_) valueScale->set(scale_);
+  if(doscale_ || doregres_zero_) valueScale->set(scale_);
   if(dooffset_) valueOffset->set(offset_);
   if(doscale_||dooffset_) {
     accept = static_cast<double>(MCacceptScale_) / static_cast<double>(MCtrial_);
@@ -1338,6 +1351,22 @@ void MetainferenceBase::replica_averaging(const double fact, vector<double> &mea
   if(firstTime) {ftilde_ = mean; firstTime = false;}
 }
 
+void MetainferenceBase::do_regression_zero(const vector<double> &mean)
+{
+// parameters[i] = scale_ * mean[i]: find scale_ with linear regression
+  double num = 0.0;
+  double den = 0.0;
+  for(unsigned i=0; i<parameters.size(); ++i) {
+    num += mean[i] * parameters[i];
+    den += mean[i] * mean[i];
+  }
+  if(den>0) {
+    scale_ = num / den;
+  } else {
+    scale_ = 1.0;
+  }
+}
+
 double MetainferenceBase::getScore()
 {
   /* Metainference */
@@ -1357,6 +1386,9 @@ double MetainferenceBase::getScore()
 
   /* 3) calculates parameters */
   get_sigma_mean(fact, var_fact, mean);
+
+  // in case of regression with zero intercept, calculate scale
+  if(doregres_zero_ && getStep()%nregres_zero_==0) do_regression_zero(mean);
 
   /* 4) run monte carlo */
   doMonteCarlo(mean);
