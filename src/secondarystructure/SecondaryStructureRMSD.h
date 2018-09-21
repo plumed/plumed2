@@ -29,8 +29,6 @@
 
 namespace PLMD {
 
-class SingleDomainRMSD;
-
 namespace secondarystructure {
 
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
@@ -50,7 +48,7 @@ private:
   std::vector< std::vector<unsigned> > colvar_atoms;
 /// The list of reference configurations
   std::vector<RMSD> myrmsd;
-  std::vector<std::unique_ptr<SingleDomainRMSD>> references;
+  std::vector<std::map<std::pair<unsigned,unsigned>, double> > drmsd_targets;
 /// Variables for strands cutoff
   bool align_strands;
   double s_cutoff2;
