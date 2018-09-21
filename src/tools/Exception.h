@@ -156,7 +156,7 @@ class Exception : public std::exception
   std::string msg;
 /// Stack trace at exception
   std::string stackString;
-/// Flag to remembed if we have to write the `+++ message follows +++` string.
+/// Flag to remember if we have to write the `+++ message follows +++` string.
 /// Needed so that the string appears only at the beginning of the message.
   bool note;
 /// Stream used to insert objects.
@@ -223,14 +223,14 @@ public:
 /// In case the environment variable PLUMED_STACK_TRACE was defined
 /// and equal to `yes` when the exception was raised,
 /// the error message will contain the stack trace as well.
-  virtual const char* what() const noexcept {return msg.c_str();}
+  const char* what() const noexcept override {return msg.c_str();}
 
 /// Returns the stack trace.
 /// Stack trace stored only if the required functions were found at configure time.
-  virtual const char* stack() const noexcept {return stackString.c_str();}
+  const char* stack() const noexcept {return stackString.c_str();}
 
 /// Destructor should be defined and should not throw other exceptions
-  virtual ~Exception() noexcept {}
+  ~Exception() noexcept override {}
 
 /// Insert location.
 /// Format the location properly.
@@ -341,7 +341,7 @@ public:
 
 /// \relates PLMD::Exception
 /// Same as \ref plumed_assert, but only evaluates the condition if NDEBUG is not defined.
-#define plumed_dbg_assert(test) if(!(test)) throw PLMD::ExceptionDebug() << plumed_here << PLMD::Exception::Assertion(#test)
+#define plumed_dbg_assert(test) if(!(test)) throw PLMD::ExceptionDebug() << plumed_here << PLMD::Exception::Assertion(#test) << "(this check is enabled only in debug builds)\n"
 
 /// \relates PLMD::Exception
 /// Same as \ref plumed_massert, but only evaluates the condition if NDEBUG is not defined.
