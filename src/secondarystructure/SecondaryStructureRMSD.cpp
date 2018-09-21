@@ -160,20 +160,31 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   }
 
   // Set the reference structure
-  references.emplace_back( metricRegister().create<SingleDomainRMSD>( alignType ) );
-  unsigned nn=references.size()-1;
-  std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
-  references[nn]->setBoundsOnDistances( true, bondlength );   // We always use pbc
-  references[nn]->setReferenceAtoms( structure, align, displace );
+  if( alignType=="DRMSD" ) {
+      references.emplace_back( metricRegister().create<SingleDomainRMSD>( alignType ) );
+      unsigned nn=references.size()-1;
+      std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
+      references[nn]->setBoundsOnDistances( true, bondlength );   // We always use pbc
+      references[nn]->setReferenceAtoms( structure, align, displace );
+  } else {
+      Vector center; std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
+      for(unsigned i=0; i<structure.size(); ++i) center+=structure[i]*align[i];
+      for(unsigned i=0; i<structure.size(); ++i) structure[i] -= center;
+      RMSD newrmsd; newrmsd.clear(); 
+      newrmsd.set(align,displace,structure,alignType,true,true);
+      myrmsd.push_back( newrmsd );
+  }
 }
 
 void SecondaryStructureRMSD::setupValues() {
-  plumed_assert( references.size()>0 );
+  unsigned nref = myrmsd.size(); if( alignType=="DRMSD" ) nref=references.size();
+
+  plumed_assert( nref>0 );
   std::vector<unsigned> shape(1); shape[0]=getFullNumberOfTasks();
-  if( references.size()==1 ) { addValue( shape ); setNotPeriodic(); }
+  if( nref==1 ) { addValue( shape ); setNotPeriodic(); }
   else {
     std::string num;
-    for(unsigned i=0; i<references.size(); ++i) {
+    for(unsigned i=0; i<nref; ++i) {
       Tools::convert( i+1, num ); addComponent( "struct-" + num, shape );
       componentIsNotPeriodic( "struct-" + num );
     }
@@ -200,7 +211,8 @@ void SecondaryStructureRMSD::performTask( const unsigned& current, MultiValue& m
   unsigned nderi = 3*getNumberOfAtoms()+9;
   if( myvals.getNumberOfDerivatives()!=nderi ) myvals.resize( myvals.getNumberOfValues(), nderi, 0, 0 );
   // Retrieve the positions
-  std::vector<Vector> pos( references[0]->getNumberOfAtoms() );
+  unsigned natoms = colvar_atoms[current].size();
+  std::vector<Vector> pos( natoms ), deriv( natoms );
   const unsigned n=pos.size();
   for(unsigned i=0; i<n; ++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(current,i) );
 
@@ -220,22 +232,47 @@ void SecondaryStructureRMSD::performTask( const unsigned& current, MultiValue& m
     }
   }
   // Create a holder for the derivatives
-  ReferenceValuePack mypack( 0, pos.size(), myvals ); // mypack.setValIndex( 0 );
-  for(unsigned i=0; i<n; ++i) mypack.setAtomIndex( i, getAtomIndex(current,i) );
+  if( alignType=="DRMSD" ) {
+      ReferenceValuePack mypack( 0, pos.size(), myvals ); // mypack.setValIndex( 0 );
+      for(unsigned i=0; i<n; ++i) mypack.setAtomIndex( i, getAtomIndex(current,i) );
 
-  // And now calculate the RMSD
-  const Pbc& pbc=getPbc(); const unsigned rs = references.size();
-  for(unsigned i=0; i<rs; ++i) {
-    mypack.setValIndex( i );
-    double nr=references[i]->calculate( pos, pbc, mypack, false );
-    myvals.setValue( i, nr );
+      // And now calculate the RMSD
+      const Pbc& pbc=getPbc(); const unsigned rs = references.size();
+      for(unsigned i=0; i<rs; ++i) {
+        mypack.setValIndex( i );
+        double nr=references[i]->calculate( pos, pbc, mypack, false );
+        myvals.setValue( i, nr );
 
-    if( !doNotCalculateDerivatives() && !mypack.virialWasSet() ) {
-      Tensor vir; const unsigned cacs = colvar_atoms[current].size();
-      for(unsigned i=0; i<cacs; ++i)  vir+=(-1.0*Tensor( pos[i], mypack.getAtomDerivative(i) ));
-      mypack.addBoxDerivatives( vir );
-    }
-  }
+        if( !doNotCalculateDerivatives() && !mypack.virialWasSet() ) {
+          Tensor vir; const unsigned cacs = colvar_atoms[current].size();
+          for(unsigned i=0; i<cacs; ++i)  vir+=(-1.0*Tensor( pos[i], mypack.getAtomDerivative(i) ));
+          mypack.addBoxDerivatives( vir );
+        }
+      }
+  } else {
+      const unsigned rs = myrmsd.size();
+      for(unsigned i=0;i<rs;++i) {
+          double nr = myrmsd[i].calculate( pos, deriv, false );
+          myvals.setValue( i, nr );
+
+          if( !doNotCalculateDerivatives() ) {
+              Tensor vir; vir.zero(); 
+              for(unsigned j=0;j<natoms;++j) {
+                  myvals.addDerivative( i, 3*colvar_atoms[current][j] + 0, deriv[j][0] ); myvals.updateIndex( i, 3*colvar_atoms[current][j]+0 );
+                  myvals.addDerivative( i, 3*colvar_atoms[current][j] + 1, deriv[j][1] ); myvals.updateIndex( i, 3*colvar_atoms[current][j]+1 );
+                  myvals.addDerivative( i, 3*colvar_atoms[current][j] + 2, deriv[j][2] ); myvals.updateIndex( i, 3*colvar_atoms[current][j]+2 );  
+                  vir+=(-1.0*Tensor( pos[j], deriv[j] ));
+              }
+              unsigned nbase = myvals.getNumberOfDerivatives() - 9;
+              for(unsigned k=0; k<3; ++k) {
+                  for(unsigned j=0; j<3; ++j) {
+                      myvals.addDerivative( i, nbase + 3*k + j, vir(k,j) );
+                      myvals.updateIndex( i, nbase + 3*k + j );
+                  }
+              }
+          }
+      }
+  } 
   return;
 }
 
