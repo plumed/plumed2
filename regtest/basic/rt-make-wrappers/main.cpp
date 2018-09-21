@@ -8,6 +8,7 @@
 extern "C"{
   void plumed_f_installed(int*i);
   void plumed_f_ginitialized(int*i);
+  void plumed_f_gvalid(int*i);
   void plumed_f_gcreate();
   void plumed_f_gcmd(char* key,void* val);
   void plumed_f_gfinalize();
@@ -19,6 +20,7 @@ extern "C"{
   void plumed_f_finalize(char*c);
   void plumed_f_use_count(char*c,int*i);
   void plumed_f_installed_(int*i);
+  void plumed_f_gvalid_(int*i);
   void plumed_f_ginitialized_(int*i);
   void plumed_f_gcreate_();
   void plumed_f_gcmd_(char* key,void* val);
@@ -31,6 +33,7 @@ extern "C"{
   void plumed_f_finalize_(char*c);
   void plumed_f_use_count_(char*c,int*i);
   void plumed_f_installed__(int*i);
+  void plumed_f_gvalid__(int*i);
   void plumed_f_ginitialized__(int*i);
   void plumed_f_gcreate__();
   void plumed_f_gcmd__(char* key,void* val);
@@ -44,6 +47,7 @@ extern "C"{
   void plumed_f_use_count__(char*c,int*i);
   void PLUMED_F_INSTALLED(int*);
   void PLUMED_F_GINITIALIZED(int*);
+  void PLUMED_F_GVALID(int*);
   void PLUMED_F_GCREATE();
   void PLUMED_F_GCMD(char* key,void* val);
   void PLUMED_F_GFINALIZE();
@@ -56,6 +60,7 @@ extern "C"{
   void PLUMED_F_USE_COUNT(char*c,int*i);
   void PLUMED_F_INSTALLED_(int*);
   void PLUMED_F_GINITIALIZED_(int*);
+  void PLUMED_F_GVALID_(int*);
   void PLUMED_F_GCREATE_();
   void PLUMED_F_GCMD_(char* key,void* val);
   void PLUMED_F_GFINALIZE_();
@@ -68,6 +73,7 @@ extern "C"{
   void PLUMED_F_USE_COUNT_(char*c,int*i);
   void PLUMED_F_INSTALLED__(int*);
   void PLUMED_F_GINITIALIZED__(int*);
+  void PLUMED_F_GVALID__(int*);
   void PLUMED_F_GCREATE__();
   void PLUMED_F_GCMD__(char* key,void* val);
   void PLUMED_F_GFINALIZE__();
@@ -168,8 +174,18 @@ int main(){
 // test conversions to void
     {
       PLMD::Plumed p;
-      void* x=plumed_c2v(p);
+      void* x(p.toVoid());
       PLMD::Plumed q(x);
+      testmecpp(q);
+    }
+
+// test copy
+    {
+      std::unique_ptr<PLMD::Plumed> p(new PLMD::Plumed());
+      PLMD::Plumed q;
+      testmecpp(q);
+      q=*p;
+      p.reset();
       testmecpp(q);
     }
 
@@ -212,6 +228,7 @@ int main(){
     if(PLMD::Plumed::ginitialized()) plumed_error();
 
     PLMD::Plumed::gcreate();
+    if(!PLMD::Plumed::gvalid()) plumed_error();
     testme(PLMD::Plumed::gcmd);
     PLMD::Plumed::gfinalize();
   }
@@ -297,6 +314,7 @@ int main(){
 
     if(plumed_ginitialized()) plumed_error();
     plumed_gcreate();
+    if(!plumed_gvalid) plumed_error();
     if(!plumed_ginitialized()) plumed_error();
     testme(plumed_global(),plumed_cmd);
     plumed_gfinalize();
@@ -360,6 +378,7 @@ int main(){
     plumed_f_ginitialized(&ini); if(ini) plumed_error();
 
     plumed_f_gcreate();
+    plumed_f_gvalid(&ini); if(!ini) plumed_error();
     testme(plumed_f_gcmd);
     plumed_f_gfinalize();
   }
@@ -408,6 +427,7 @@ int main(){
     plumed_f_ginitialized_(&ini); if(ini) plumed_error();
 
     plumed_f_gcreate_();
+    plumed_f_gvalid_(&ini); if(!ini) plumed_error();
     testme(plumed_f_gcmd_);
     plumed_f_gfinalize_();
   }
@@ -456,6 +476,7 @@ int main(){
     plumed_f_ginitialized__(&ini); if(ini) plumed_error();
 
     plumed_f_gcreate__();
+    plumed_f_gvalid__(&ini); if(!ini) plumed_error();
     testme(plumed_f_gcmd__);
     plumed_f_gfinalize__();
   }
@@ -504,6 +525,7 @@ int main(){
     PLUMED_F_GINITIALIZED(&ini); if(ini) plumed_error();
 
     PLUMED_F_GCREATE();
+    PLUMED_F_GVALID(&ini); if(!ini) plumed_error();
     testme(PLUMED_F_GCMD);
     PLUMED_F_GFINALIZE();
   }
@@ -551,9 +573,10 @@ int main(){
     PLUMED_F_GFINALIZE_();
     PLUMED_F_GINITIALIZED_(&ini); if(ini) plumed_error();
 
-    PLUMED_F_GCREATE__();
-    testme(PLUMED_F_GCMD__);
-    PLUMED_F_GFINALIZE__();
+    PLUMED_F_GCREATE_();
+    PLUMED_F_GVALID_(&ini); if(!ini) plumed_error();
+    testme(PLUMED_F_GCMD_);
+    PLUMED_F_GFINALIZE_();
   }
   {
 // Fortran version __
@@ -600,6 +623,7 @@ int main(){
     PLUMED_F_GINITIALIZED_(&ini); if(ini) plumed_error();
 
     PLUMED_F_GCREATE__();
+    PLUMED_F_GVALID_(&ini); if(!ini) plumed_error();
     testme(PLUMED_F_GCMD__);
     PLUMED_F_GFINALIZE__();
   }
