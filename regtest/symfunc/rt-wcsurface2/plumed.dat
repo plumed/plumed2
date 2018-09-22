@@ -2,7 +2,7 @@ UNITS NATURAL
 
 fcc: FCCUBIC SPECIES=1-5184 SWITCH={CUBIC D_0=1.2 D_MAX=1.5} ALPHA=27  
 
-dens2_dist: DISTANCE ORIGIN=1 ATOMS=fcc COMPONENTS
+dens2_dist: DISTANCES ORIGIN=1 ATOMS=fcc COMPONENTS
 dens2_numer: KDE HEIGHTS=fcc_n ARG1=dens2_dist.x ARG2=dens2_dist.y ARG3=dens2_dist.z GRID_BIN=14,14,50 GRID_MIN=auto,auto,6.0 GRID_MAX=auto,auto,11.0 BANDWIDTH=1.0,1.0,1.0 UNORMALIZED
 dens2_denom: KDE ARG1=dens2_dist.x ARG2=dens2_dist.y ARG3=dens2_dist.z GRID_BIN=14,14,50 GRID_MIN=auto,auto,6.0 GRID_MAX=auto,auto,11.0 BANDWIDTH=1.0,1.0,1.0 UNORMALIZED
 dens2: MATHEVAL ARG1=dens2_numer ARG2=dens2_denom FUNC=x/y PERIODIC=NO

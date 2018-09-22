@@ -81,6 +81,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase();
+/// Interpret the label.* to get all the actions that are created by the action
+  void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives() const ;
 /// Do the calculation

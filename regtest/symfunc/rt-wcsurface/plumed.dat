@@ -4,7 +4,7 @@ fcc: FCCUBIC SPECIES=1-5184 SWITCH={CUBIC D_0=1.2 D_MAX=1.5} ALPHA=27
 
 PRINT ATOMS=fcc ARG=fcc_n FILE=atoms.xyz FMT=%8.4f 
 
-dens_dist: DISTANCE ORIGIN=1 ATOMS=fcc COMPONENTS 
+dens_dist: DISTANCES ORIGIN=1 ATOMS=fcc COMPONENTS 
 dens_numer: KDE HEIGHTS=fcc_n ARG1=dens_dist.x ARG2=dens_dist.y ARG3=dens_dist.z GRID_BIN=14,14,28 BANDWIDTH=1.0,1.0,1.0 UNORMALIZED
 dens_denom: KDE ARG1=dens_dist.x ARG2=dens_dist.y ARG3=dens_dist.z GRID_BIN=14,14,28 BANDWIDTH=1.0,1.0,1.0 UNORMALIZED
 dens: MATHEVAL ARG1=dens_numer ARG2=dens_denom FUNC=x/y PERIODIC=NO

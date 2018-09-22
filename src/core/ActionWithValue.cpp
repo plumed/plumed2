@@ -370,7 +370,7 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] );
         if( action ) (action->getPntrToValue())->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
       }
-    }
+    } else if( args.size()==nargs ) interpretDotStar( myuser->getLabel(), nargs, args );
   } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
     // Retrieve value with specific name
     copyOutput( mystr )->interpretDataRequest( myuser->getLabel(), nargs, args, "" );

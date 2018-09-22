@@ -428,7 +428,7 @@ void Histogram::expandShortcut( const std::string& lab, const std::vector<std::s
     createAveragingObject( lab + "_kde", lab, keys, actions );
   } else if( words[0]=="MULTICOLVARDENS" ) {
     // Create distance action
-    bool hasheights; std::vector<std::string> dist_words; dist_words.push_back( lab + "_dist:" ); dist_words.push_back("DISTANCE");
+    bool hasheights; std::vector<std::string> dist_words; dist_words.push_back( lab + "_dist:" ); dist_words.push_back("DISTANCES");
     if( keys.count("ATOMS") ) { hasheights=false; dist_words.push_back("ATOMS=" + keys.find("ATOMS")->second ); }
     else { hasheights=true; dist_words.push_back("ATOMS=" + keys.find("DATA")->second ); }
     plumed_massert( keys.count("ORIGIN"), "you must specify the position of the origin" );

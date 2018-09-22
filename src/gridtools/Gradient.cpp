@@ -52,7 +52,7 @@ void Gradient::expandShortcut( const std::string& lab, const std::vector<std::st
                                const std::map<std::string,std::string>& keys,
                                std::vector<std::vector<std::string> >& actions ) {
   // First get positions of all atoms relative to origin
-  std::vector<std::string> dist_vec; dist_vec.push_back( lab + "_dist:"); dist_vec.push_back("DISTANCE");
+  std::vector<std::string> dist_vec; dist_vec.push_back( lab + "_dist:"); dist_vec.push_back("DISTANCES");
   dist_vec.push_back("ORIGIN=" + keys.find("ORIGIN")->second ); dist_vec.push_back("ATOMS=" + keys.find("ATOMS")->second );
   dist_vec.push_back("COMPONENTS"); actions.push_back( dist_vec ); std::string dir = keys.find("DIR")->second;
   // Now constrcut the histograms

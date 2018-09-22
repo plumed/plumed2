@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
 #include "core/ActionShortcut.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 
 namespace PLMD {
 namespace multicolvar {
@@ -118,28 +120,31 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
   std::string amin_string; action->parse("ALT_MIN",amin_string);
   if( amin_string.length()>0 ) {
     if( weights.length()>0 ) plumed_merror("cannot use ALT_MIN with this shortcut");
-    std::size_t dd = amin_string.find("BETA"); 
-    action->readInputLine( labout + "_me_altmin: MATHEVAL ARG1=" + argin + " FUNC=exp(-x*" + amin_string.substr(dd+5) + ") PERIODIC=NO");
-    action->readInputLine( labout + "_mc_altmin: COMBINE ARG=" + labout + "_me_altmin PERIODIC=NO");
-    action->readInputLine( labout + "_altmin: MATHEVAL ARG=" + labout + "_mec_altmin FUNC=-log(x)/" + amin_string.substr(dd+5) + " PERIODIC=NO");
+    std::size_t dd = amin_string.find("BETA"); std::string beta_str = amin_string.substr(dd+5);
+    beta_str.erase(std::remove_if(beta_str.begin(), beta_str.end(), ::isspace), beta_str.end());
+    action->readInputLine( labout + "_me_altmin: MATHEVAL ARG1=" + argin + " FUNC=exp(-x*" + beta_str + ") PERIODIC=NO");
+    action->readInputLine( labout + "_mec_altmin: COMBINE ARG=" + labout + "_me_altmin PERIODIC=NO");
+    action->readInputLine( labout + "_altmin: MATHEVAL ARG=" + labout + "_mec_altmin FUNC=-log(x)/" + beta_str + " PERIODIC=NO");
   }
   // Parse MIN
   std::string min_string; action->parse("MIN",min_string);
   if( min_string.length()>0 ) {
     if( weights.length()>0 ) plumed_merror("cannot use MIN with this shortcut");
-    std::size_t dd = min_string.find("BETA");
-    action->readInputLine( labout + "_me_min: MATHEVAL ARG1=" + argin + " FUNC=exp(" + min_string.substr(dd+5) + "/x) PERIODIC=NO");  
-    action->readInputLine( labout + "_mec_min: COMBINE ARG=" + labout + "_mc_min PERIODIC=NO"); 
-    action->readInputLine( labout + "_min: MATHEVAL ARG=" + labout + "_mec_min FUNC=" + min_string.substr(dd+5) + "/log(x) PERIODIC=NO");
+    std::size_t dd = min_string.find("BETA"); std::string beta_str = min_string.substr(dd+5);
+    beta_str.erase(std::remove_if(beta_str.begin(), beta_str.end(), ::isspace), beta_str.end());
+    action->readInputLine( labout + "_me_min: MATHEVAL ARG1=" + argin + " FUNC=exp(" + beta_str + "/x) PERIODIC=NO");  
+    action->readInputLine( labout + "_mec_min: COMBINE ARG=" + labout + "_me_min PERIODIC=NO"); 
+    action->readInputLine( labout + "_min: MATHEVAL ARG=" + labout + "_mec_min FUNC=" + beta_str + "/log(x) PERIODIC=NO");
   }
   // Parse MAX
-  std::string max_string; action->parse("MIN",max_string);
+  std::string max_string; action->parse("MAX",max_string);
   if( max_string.length()>0 ) {
     if( weights.length()>0 ) plumed_merror("cannot use MAX with this shortcut");
-    std::size_t dd = max_string.find("BETA");
-    action->readInputLine( labout + "_me_max: MATHEVAL ARG1=" + argin + " FUNC=exp(x/" + max_string.substr(dd+5) + ") PERIODIC=NO");
+    std::size_t dd = max_string.find("BETA"); std::string beta_str = max_string.substr(dd+5);
+    beta_str.erase(std::remove_if(beta_str.begin(), beta_str.end(), ::isspace), beta_str.end());
+    action->readInputLine( labout + "_me_max: MATHEVAL ARG1=" + argin + " FUNC=exp(x/" + beta_str + ") PERIODIC=NO");
     action->readInputLine( labout + "_mec_max: COMBINE ARG=" + labout + "_me_max PERIODIC=NO"); 
-    action->readInputLine( labout + "_max: MATHEVAL ARG=" + labout + "_mec_max FUNC=" + max_string.substr(dd+5) + "*log(x) PERIODIC=NO");
+    action->readInputLine( labout + "_max: MATHEVAL ARG=" + labout + "_mec_max FUNC=" + beta_str  + "*log(x) PERIODIC=NO");
   }
   // Parse HIGHEST
   bool high; action->parseFlag("HIGHEST",high);
@@ -465,10 +470,8 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
   if( usepbc ) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 
-  std::vector<AtomNumber> origin; if( getName()=="DISTANCE" ) parseAtomList("ORIGIN",origin);
-  if( origin.size()>1 ) error("should only be one atom specified to ORIGIN keyword");
   std::vector<AtomNumber> catoms, all_atoms; parseAtomList( "ATOMS", all_atoms );
-  if( all_atoms.size()>0 && origin.size()==0 ) {
+  if( all_atoms.size()>0 ) {
     ablocks.resize(all_atoms.size());
     log.printf("  Colvar is calculated from atoms : ");
     for(unsigned j=0; j<ablocks.size(); ++j) { ablocks[j].push_back(j); log.printf("%d ",all_atoms[j].serial() ); }
@@ -483,47 +486,36 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
       log.printf("\n"); mygroup.push_back( atoms.addVirtualAtom( this ) );
     }
   } else {
-    if( origin.size()==1 ) {
-      ablocks.resize(2); all_atoms.insert( all_atoms.begin(), origin[0] );
-      log.printf("  calculating distances from atom %d \n", origin[0].serial() );
-      log.printf("  atoms : ");
-      for(unsigned i=1; i<all_atoms.size(); ++i) {
-        ablocks[0].push_back(0); ablocks[1].push_back( i );
-        log.printf(" %d", all_atoms[i].serial() );
+    std::vector<AtomNumber> t;
+    for(int i=1;; ++i ) {
+      parseAtomList("ATOMS", i, t );
+      if( getName()=="TORSIONS" ) {
+          if( t.empty() ) {
+              std::vector<AtomNumber> v1; parseAtomList("VECTORA", i, v1 );
+              if( v1.empty() ) break; 
+              std::vector<AtomNumber> v2; parseAtomList("VECTORB", i, v2 );               
+              std::vector<AtomNumber> axis; parseAtomList("AXIS", i, axis );
+              if( v1.size()!=2 || v2.size()!=2 || axis.size()!=2 ) error("wrong number of atoms specified to VECTORA, VECTORB or AXIS keyword");
+              t.resize(6); t[0]=v1[1]; t[1]=v1[0]; t[2]=axis[0]; t[3]=axis[1]; t[4]=v2[0]; t[5]=v2[1];
+          } else if( t.size()==4 ) {
+              t.resize(6); t[5]=t[3]; t[4]=t[2]; t[3]=t[2]; t[2]=t[1];
+          } else plumed_error();
       }
+      if( t.empty() ) break;
+
+      log.printf("  Colvar %d is calculated from atoms : ", i);
+      for(unsigned j=0; j<t.size(); ++j) log.printf("%d ",t[j].serial() );
       log.printf("\n");
-    } else {
-      std::vector<AtomNumber> t;
-      for(int i=1;; ++i ) {
-        parseAtomList("ATOMS", i, t );
-        if( getName()=="TORSIONS" ) {
-            if( t.empty() ) {
-                std::vector<AtomNumber> v1; parseAtomList("VECTORA", i, v1 );
-                if( v1.empty() ) break; 
-                std::vector<AtomNumber> v2; parseAtomList("VECTORB", i, v2 );               
-                std::vector<AtomNumber> axis; parseAtomList("AXIS", i, axis );
-                if( v1.size()!=2 || v2.size()!=2 || axis.size()!=2 ) error("wrong number of atoms specified to VECTORA, VECTORB or AXIS keyword");
-                t.resize(6); t[0]=v1[1]; t[1]=v1[0]; t[2]=axis[0]; t[3]=axis[1]; t[4]=v2[0]; t[5]=v2[1];
-            } else if( t.size()==4 ) {
-                t.resize(6); t[5]=t[3]; t[4]=t[2]; t[3]=t[2]; t[2]=t[1];
-            } else plumed_error();
-        }
-        if( t.empty() ) break;
 
-        log.printf("  Colvar %d is calculated from atoms : ", i);
-        for(unsigned j=0; j<t.size(); ++j) log.printf("%d ",t[j].serial() );
-        log.printf("\n");
-
-        if( i==1 ) { ablocks.resize(t.size()); }
-        if( t.size()!=ablocks.size() ) {
-          std::string ss; Tools::convert(i,ss);
-          error("ATOMS" + ss + " keyword has the wrong number of atoms");
-        }
-        for(unsigned j=0; j<ablocks.size(); ++j) {
-          ablocks[j].push_back( ablocks.size()*(i-1)+j ); all_atoms.push_back( t[j] );
-        }
-        t.resize(0);
+      if( i==1 ) { ablocks.resize(t.size()); }
+      if( t.size()!=ablocks.size() ) {
+        std::string ss; Tools::convert(i,ss);
+        error("ATOMS" + ss + " keyword has the wrong number of atoms");
       }
+      for(unsigned j=0; j<ablocks.size(); ++j) {
+        ablocks[j].push_back( ablocks.size()*(i-1)+j ); all_atoms.push_back( t[j] );
+      }
+      t.resize(0);
     }
     parseAtomList("LOCATION", 1, catoms );
     if( catoms.size()>0 ) {
@@ -554,6 +546,26 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
 MultiColvarBase::~MultiColvarBase() {
   if(catom_indices.size()==0 ) atoms.removeVirtualAtom( this );
   atoms.removeGroup( getLabel() );
+}
+
+void MultiColvarBase::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
+  Keywords skeys; MultiColvarBase::shortcutKeywords( skeys ); 
+  std::vector<std::string> out_comps( skeys.getAllOutputComponents() );
+  for(unsigned i=0; i<out_comps.size(); ++i) {
+    std::string keyname; bool donumtest = skeys.getKeywordForThisOutput( out_comps[i], keyname );
+    if( donumtest ) { 
+      if( skeys.numbered( keyname ) ) {
+        for(unsigned j=1;; ++j) {
+          std::string numstr; Tools::convert( j, numstr );
+          ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] + numstr );
+          if( !action ) break;
+          (action->copyOutput(0))->interpretDataRequest( ulab, nargs, myvals, "" );
+        }
+      } 
+    }
+    ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] );
+    if( action ) (action->copyOutput(0))->interpretDataRequest( ulab, nargs, myvals, "" );
+  }
 }
 
 void MultiColvarBase::addValueWithDerivatives() {
