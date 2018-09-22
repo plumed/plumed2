@@ -19,10 +19,14 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifndef __PLUMED_wrapper_Plumed_h
+#define __PLUMED_wrapper_Plumed_h
 
 /*
   This header might be included more than once in order to provide
-  the declarations and the definitions. The guards are thus placed below.
+  the declarations and the definitions. The guard is thus closed before the end of the file
+  (match this brace) {
+  and a new guard is added for the definitions.
 */
 
 /**
@@ -336,9 +340,6 @@
 */
 
 /* BEGINNING OF DECLARATIONS */
-
-#ifndef __PLUMED_wrapper_Plumed_h /*{*/
-#define __PLUMED_wrapper_Plumed_h
 
 /* SETTING DEFAULT VALUES FOR CONTROL MACROS */
 
@@ -2338,5 +2339,4 @@ __PLUMED_WRAPPER_EXTERN_C_END
 /* reset variable to allow it to be redefined upon re-inclusion */
 
 #undef __PLUMED_WRAPPER_IMPLEMENTATION_
-
 
