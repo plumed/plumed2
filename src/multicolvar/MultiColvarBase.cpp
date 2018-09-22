@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
+#include "core/ActionShortcut.h"
 
 namespace PLMD {
 namespace multicolvar {
@@ -62,6 +63,160 @@ void MultiColvarBase::shortcutKeywords( Keywords& keys ) {
   keys.addOutputComponent("_sum","SUM","the sum of the colvars");
   keys.addFlag("MEAN",false,"calculate the mean of all the quantities.");
   keys.addOutputComponent("_mean","MEAN","the mean of the colvars");
+}
+
+void MultiColvarBase::expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights, ActionShortcut* action ) {
+  // Parse LESS_THAN
+  std::string lt_string; action->parse("LESS_THAN",lt_string);
+  if( lt_string.length()>0 ) {
+    std::string sum_arg = labout + "_lt";
+    action->readInputLine( labout + "_lt: LESS_THAN ARG1=" + argin + " SWITCH={" + lt_string + "}"); 
+    if( weights.length()>0 ) {
+        sum_arg = labout + "_wlt";
+        action->readInputLine( labout + "_wlt: MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_lt FUNC=x*y PERIODIC=NO");   
+    }
+    action->readInputLine( labout + "_lessthan: COMBINE ARG=" + sum_arg + " PERIODIC=NO"); 
+  }
+  std::string lt_string1;  
+  if( action->parseNumbered("LESS_THAN",1,lt_string1) ) { 
+    for(unsigned i=1;; ++i) {
+      std::string istr; Tools::convert( i, istr ); std::string sum_arg = labout + "_lt" + istr;
+      action->readInputLine( labout + "_lt" + istr + ": LESS_THAN ARG1=" + argin + " SWITCH={" + lt_string1 + "}");  
+      if( weights.length()>0 ) {
+          sum_arg = labout + "_wlt" + istr;
+          action->readInputLine( labout + "_wlt" + istr + ": MATHEVAL ARG1=" + weights + "ARG2=" + labout + "_lt" + istr + " FUNC=x*y PERIODIC=NO");
+      }
+      action->readInputLine( labout + "_lessthan" + istr + ": COMBINE ARG=" + sum_arg + " PERIODIC=NO");
+      if( !action->parseNumbered("LESS_THAN",i+1,lt_string1) ) { break; }
+    }
+  }
+  // Parse MORE_THAN
+  std::string mt_string; action->parse("MORE_THAN",mt_string);
+  if( mt_string.length()>0 ) {
+    std::string sum_arg=labout + "_mt";
+    action->readInputLine( labout + "_mt: MORE_THAN ARG1=" + argin + " SWITCH={" + mt_string + "}");
+    if( weights.length()>0 ) {
+        sum_arg = labout + "_wmt";
+        action->readInputLine( labout + "_wmt: MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_mt FUNC=x*y PERIODIC=NO" );
+    }
+    action->readInputLine( labout + "_morethan: COMBINE ARG=" + sum_arg + " PERIODIC=NO");
+  }
+  std::string mt_string1;
+  if( action->parseNumbered("MORE_THAN",1,mt_string1) ) {
+    for(unsigned i=1;; ++i) {
+      std::string istr; Tools::convert( i, istr ); std::string sum_arg = labout + "_mt" + istr;
+      action->readInputLine( labout + "_mt" + istr + ": MORE_THAN ARG1=" + argin + " SWITCH={" + mt_string1 + "}");  
+      if( weights.length()>0 ) {
+          sum_arg = labout + "_wmt" + istr;
+          action->readInputLine( labout + "_wmt" + istr + ": MATHEVAL ARG1=" + weights + "ARG2=" + labout + "_lt" + istr + " FUNC=x*y PERIODIC=NO");
+      }
+      action->readInputLine( labout + "_morethan" + istr + ": COMBINE ARG=" + sum_arg + " PERIODIC=NO");
+      if( !action->parseNumbered("MORE_THAN",i+1,mt_string1) ) { break; }
+    }
+  }
+  // Parse ALT_MIN
+  std::string amin_string; action->parse("ALT_MIN",amin_string);
+  if( amin_string.length()>0 ) {
+    if( weights.length()>0 ) plumed_merror("cannot use ALT_MIN with this shortcut");
+    std::size_t dd = amin_string.find("BETA"); 
+    action->readInputLine( labout + "_me_altmin: MATHEVAL ARG1=" + argin + " FUNC=exp(-x*" + amin_string.substr(dd+5) + ") PERIODIC=NO");
+    action->readInputLine( labout + "_mc_altmin: COMBINE ARG=" + labout + "_me_altmin PERIODIC=NO");
+    action->readInputLine( labout + "_altmin: MATHEVAL ARG=" + labout + "_mec_altmin FUNC=-log(x)/" + amin_string.substr(dd+5) + " PERIODIC=NO");
+  }
+  // Parse MIN
+  std::string min_string; action->parse("MIN",min_string);
+  if( min_string.length()>0 ) {
+    if( weights.length()>0 ) plumed_merror("cannot use MIN with this shortcut");
+    std::size_t dd = min_string.find("BETA");
+    action->readInputLine( labout + "_me_min: MATHEVAL ARG1=" + argin + " FUNC=exp(" + min_string.substr(dd+5) + "/x) PERIODIC=NO");  
+    action->readInputLine( labout + "_mec_min: COMBINE ARG=" + labout + "_mc_min PERIODIC=NO"); 
+    action->readInputLine( labout + "_min: MATHEVAL ARG=" + labout + "_mec_min FUNC=" + min_string.substr(dd+5) + "/log(x) PERIODIC=NO");
+  }
+  // Parse MAX
+  std::string max_string; action->parse("MIN",max_string);
+  if( max_string.length()>0 ) {
+    if( weights.length()>0 ) plumed_merror("cannot use MAX with this shortcut");
+    std::size_t dd = max_string.find("BETA");
+    action->readInputLine( labout + "_me_max: MATHEVAL ARG1=" + argin + " FUNC=exp(x/" + max_string.substr(dd+5) + ") PERIODIC=NO");
+    action->readInputLine( labout + "_mec_max: COMBINE ARG=" + labout + "_me_max PERIODIC=NO"); 
+    action->readInputLine( labout + "_max: MATHEVAL ARG=" + labout + "_mec_max FUNC=" + max_string.substr(dd+5) + "*log(x) PERIODIC=NO");
+  }
+  // Parse HIGHEST
+  bool high; action->parseFlag("HIGHEST",high);
+  if( high ) {
+    if( weights.length()>0 ) plumed_merror("cannot use HIGHEST with this shortcut");
+    action->readInputLine( labout + "_highest: HIGHEST ARG=" + argin );
+  }
+  // Parse LOWEST
+  bool low; action->parseFlag("LOWEST",low);
+  if( low ) {
+    if( weights.length()>0 ) plumed_merror("cannot use LOWEST with this shortcut");
+    action->readInputLine( labout + "_lowest: LOWEST ARG=" + argin ); 
+  }
+  // Parse SUM
+  bool sum; action->parseFlag("SUM",sum);
+  if( sum ) {
+    std::string sum_arg=argin;
+    if( weights.length()>0 ) {
+      sum_arg = labout + "_wsum";
+      action->readInputLine( labout + "_wsum: MATHEVAL ARG1=" + weights + " ARG2=" + argin + " FUNC=x*y PERIODIC=NO");
+    }
+    action->readInputLine( labout + "_sum: COMBINE ARG=" + sum_arg + " PERIODIC=NO");
+  }
+  // Parse MEAN
+  bool mean; action->parseFlag("MEAN",mean);
+  if( mean ) {
+    if( weights.length()>0 ) plumed_merror("cannot use LOWEST with this shortcut");
+    action->readInputLine( labout + "_mean: COMBINE ARG=" + argin + " NORMALIZE PERIODIC=NO");
+  }
+  // Parse BETWEEN
+  std::string bt_string; action->parse("BETWEEN",bt_string);
+  if( bt_string.length()>0 ) {
+    std::string sum_arg=labout + "_bt";
+    action->readInputLine( labout + "_bt: BETWEEN ARG1=" + argin + " SWITCH={" + bt_string + "}" );
+    if( weights.length()>0 ) {
+      sum_arg = labout + "_wbt";
+      action->readInputLine( labout + "_wbt: MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_bt FUNC=x*y PERIODIC=NO");
+    }
+    action->readInputLine( labout + "_between: COMBINE ARG=" + sum_arg + " PERIODIC=NO");
+  }
+  std::string bt_string1;
+  if( action->parseNumbered("BETWEEN",1,bt_string1) ) {
+    for(unsigned i=1;; ++i) {
+      std::string istr; Tools::convert( i, istr ); std::string sum_arg=labout + "_bt" + istr;
+      action->readInputLine( labout + "_bt" + istr + ": BETWEEN ARG1=" + argin + " SWITCH={" + bt_string1 + "}" );
+      if( weights.length()>0 ) {
+        sum_arg = labout + "_wbt" + istr;
+        action->readInputLine( labout + "_wbt" + istr + ": MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_bt" + istr + " FUNC=x*y PERIODIC=NO");
+      }
+      action->readInputLine( labout + "_between" + istr + ": COMBINE ARG=" + sum_arg + " PERIODIC=NO");
+      if( !action->parseNumbered("BETWEEN",i+1,bt_string1) ) { break; }
+    }
+  }
+  // Parse HISTOGRAM
+  std::string hist_str; action->parse("HISTOGRAM",hist_str);
+  if( hist_str.length()>0 ) {
+    std::vector<std::string> words=Tools::getWords( hist_str );
+    unsigned nbins; bool found=Tools::parse(words,"NBINS",nbins,0); // Need replica index
+    if( !found ) plumed_merror("did not find NBINS in specification for HISTOGRAM");
+    double lower; found=Tools::parse(words,"LOWER",lower,0);
+    if( !found ) plumed_merror("did not find LOWER in specification for HISTOGRAM");
+    double upper; found=Tools::parse(words,"UPPER",upper,0);
+    if( !found ) plumed_merror("did not find UPPER in specification for HISTOGRAM");
+    double delr = ( upper - lower ) / static_cast<double>( nbins );
+    double smear=0.5; found=Tools::parse(words,"SMEAR",smear,0);
+    if( !found ) smear = 0.5;
+    for(unsigned i=0; i<nbins; ++i) {
+      std::string smstr, istr; Tools::convert( i+1, istr ); Tools::convert( smear, smstr ); std::string sum_arg=labout + "_bt" + istr;
+      std::string low_str, high_str; Tools::convert( lower + i*delr, low_str ); Tools::convert( lower + (i+1)*delr, high_str );
+      action->readInputLine( labout + "_bt" + istr + ": BETWEEN ARG1=" + argin + " SWITCH={" + words[0] + " LOWER=" + low_str + " UPPER=" + high_str + " SMEAR=" + smstr + "}");
+      if( weights.length()>0 ) {
+        sum_arg = labout + "_wbt" + istr;
+        action->readInputLine( labout + "_wbt" + istr + ": MATHEVAL ARG1=" + weights + " ARG2=" + labout + "_bt" + istr + " FUNC=x*y PERIODIC=NO");
+      }
+      action->readInputLine( labout + "_between" + istr + ": COMBINE ARG=" + sum_arg + " PERIODIC=NO"); 
+    }
+  }
 }
 
 void MultiColvarBase::expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights,
@@ -341,6 +496,18 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
       std::vector<AtomNumber> t;
       for(int i=1;; ++i ) {
         parseAtomList("ATOMS", i, t );
+        if( getName()=="TORSIONS" ) {
+            if( t.empty() ) {
+                std::vector<AtomNumber> v1; parseAtomList("VECTORA", i, v1 );
+                if( v1.empty() ) break; 
+                std::vector<AtomNumber> v2; parseAtomList("VECTORB", i, v2 );               
+                std::vector<AtomNumber> axis; parseAtomList("AXIS", i, axis );
+                if( v1.size()!=2 || v2.size()!=2 || axis.size()!=2 ) error("wrong number of atoms specified to VECTORA, VECTORB or AXIS keyword");
+                t.resize(6); t[0]=v1[1]; t[1]=v1[0]; t[2]=axis[0]; t[3]=axis[1]; t[4]=v2[0]; t[5]=v2[1];
+            } else if( t.size()==4 ) {
+                t.resize(6); t[5]=t[3]; t[4]=t[2]; t[3]=t[2]; t[2]=t[1];
+            } else plumed_error();
+        }
         if( t.empty() ) break;
 
         log.printf("  Colvar %d is calculated from atoms : ", i);

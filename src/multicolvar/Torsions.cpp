@@ -128,6 +128,10 @@ void Torsion::expandShortcut( const std::string& lab, const std::vector<std::str
 
 void Torsion::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
+  keys.add("numbered","AXIS","two atoms that define an axis.  You can use this to find the angle in the plane perpendicular to the axis between the vectors specified using the VECTOR1 and VECTOR2 keywords.");
+  keys.add("numbered","VECTORA","two atoms that define a vector.  You can use this in combination with VECTORB and AXIS");
+  keys.add("numbered","VECTORB","two atoms that define a vector.  You can use this in combination with VECTORA and AXIS");
+  keys.reset_style("AXIS","atoms-2"); keys.reset_style("VECTORA","atoms-2"); keys.reset_style("VECTORB","atoms-2"); 
 }
 
 Torsion::Torsion(const ActionOptions&ao):
@@ -139,16 +143,18 @@ Torsion::Torsion(const ActionOptions&ao):
 
 void Torsion::compute( const std::vector<Vector>& pos, MultiValue& myvals ) const {
   const Vector d0=getSeparation(pos[1],pos[0]);
-  const Vector d1=getSeparation(pos[2],pos[1]);
-  const Vector d2=getSeparation(pos[3],pos[2]);
+  const Vector d1=getSeparation(pos[3],pos[2]);
+  const Vector d2=getSeparation(pos[5],pos[4]);
 
   Vector dd0,dd1,dd2; PLMD::Torsion t;
   double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
 
-  addAtomsDerivatives(0, 0, dd0, myvals);
-  addAtomsDerivatives(0, 1, dd1-dd0, myvals);
-  addAtomsDerivatives(0, 2, dd2-dd1, myvals);
-  addAtomsDerivatives(0, 3, -dd2, myvals);
+  addAtomsDerivatives(0, 0,  dd0, myvals);
+  addAtomsDerivatives(0, 1, -dd0, myvals );
+  addAtomsDerivatives(0, 2,  dd1, myvals);
+  addAtomsDerivatives(0, 3, -dd1, myvals);
+  addAtomsDerivatives(0, 4,  dd2, myvals);
+  addAtomsDerivatives(0, 5, -dd2, myvals);
 
   addBoxDerivatives (0, -(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)), myvals);
   setValue( 0, value, myvals );

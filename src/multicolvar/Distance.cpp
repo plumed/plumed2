@@ -130,13 +130,6 @@ PLUMED_REGISTER_SHORTCUT(Distance,"DISTANCES")
 PLUMED_REGISTER_SHORTCUT(Distance,"XANGLES")
 PLUMED_REGISTER_SHORTCUT(Distance,"YANGLES")
 PLUMED_REGISTER_SHORTCUT(Distance,"ZANGLES")
-PLUMED_REGISTER_SHORTCUT(Distance,"XYTORSIONS")
-PLUMED_REGISTER_SHORTCUT(Distance,"XZTORSIONS")
-PLUMED_REGISTER_SHORTCUT(Distance,"YXTORSIONS")
-PLUMED_REGISTER_SHORTCUT(Distance,"YZTORSIONS")
-PLUMED_REGISTER_SHORTCUT(Distance,"ZXTORSIONS")
-PLUMED_REGISTER_SHORTCUT(Distance,"ZYTORSIONS")
-
 
 void Distance::shortcutKeywords( Keywords& keys ) {
   MultiColvarBase::shortcutKeywords( keys );
@@ -165,20 +158,6 @@ void Distance::expandShortcut( const std::string& lab, const std::vector<std::st
     else if( words[0]=="YANGLES" ) ang_input.push_back("ARG1=" + lab + "_norm.y");
     else if( words[0]=="ZANGLES" ) ang_input.push_back("ARG1=" + lab + "_norm.z");
     actions.push_back( ang_input );
-  }
-  // Now do stuff to compute TORSIONS from axis
-  if( words[0].find("TORSIONS")!=std::string::npos ) {
-    // Compute the torsions
-    std::vector<std::string> tor_input; tor_input.push_back( lab + "_tor:"); tor_input.push_back("AXIS_TORSION");
-    tor_input.push_back("ARG1=" + lab + ".x"); tor_input.push_back("ARG2=" + lab + ".y"); tor_input.push_back("ARG3=" + lab + ".z");
-    if( words[0].find("XY")!=std::string::npos ) { tor_input.push_back("VECTOR=0,1,0"); tor_input.push_back("ROTOR=1,0,0"); }
-    else if( words[0].find("XZ")!=std::string::npos ) { tor_input.push_back("VECTOR=0,0,1"); tor_input.push_back("ROTOR=1,0,0"); }
-    else if( words[0].find("YX")!=std::string::npos ) { tor_input.push_back("VECTOR=1,0,0"); tor_input.push_back("ROTOR=0,1,0"); }
-    else if( words[0].find("YZ")!=std::string::npos ) { tor_input.push_back("VECTOR=0,0,1"); tor_input.push_back("ROTOR=0,1,0"); }
-    else if( words[0].find("ZX")!=std::string::npos ) { tor_input.push_back("VECTOR=1,0,0"); tor_input.push_back("ROTOR=0,0,1"); }
-    else if( words[0].find("ZY")!=std::string::npos ) { tor_input.push_back("VECTOR=0,1,0"); tor_input.push_back("ROTOR=0,0,1"); }
-    else plumed_merror("invalid shortcut input");
-    actions.push_back( tor_input ); ilab = lab + "_tor";
   }
   MultiColvarBase::expandFunctions( lab, ilab, "", words, keys, actions );
 }
