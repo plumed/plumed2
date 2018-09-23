@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
 #include "tools/Torsion.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
 #include <string>
@@ -83,28 +84,12 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 class DihedralCorrelation : public MultiColvarBase {
 private:
 public:
-  static void shortcutKeywords( Keywords& keys ) { keys.add("hidden","ALWAYS_EXPAND",""); }
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions  );
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
   void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const ;
 };
 
-PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
-PLUMED_REGISTER_SHORTCUT(DihedralCorrelation,"DIHCOR")
-
-void DihedralCorrelation::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-    const std::map<std::string,std::string>& keys,
-    std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> mc_line; mc_line.push_back( lab + "_data:" );
-  mc_line.push_back("DIHCOR");
-  for(unsigned i=1; i<words.size(); ++i) mc_line.push_back(words[i]);
-  actions.push_back( mc_line );
-  std::vector<std::string> input; input.push_back( lab + ":" ); input.push_back("COMBINE");
-  input.push_back("ARG=" + lab +"_data" ); input.push_back("PERIODIC=NO"); actions.push_back( input );
-}
+PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHEDRAL_CORRELATION")
 
 void DihedralCorrelation::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
@@ -160,6 +145,27 @@ void DihedralCorrelation::compute( const std::vector<Vector>& pos, MultiValue& m
   addBoxDerivatives(0, -(extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)), myvals);
   setValue( 0, value, myvals );
 }
+
+// We have a little helper class here to ensure that we actually do what is required by this action
+class DihedralCorrelationShortcut : public ActionShortcut {
+public:
+  static void registerKeywords( Keywords& keys );
+  DihedralCorrelationShortcut(const ActionOptions&);
+};
+
+PLUMED_REGISTER_ACTION(DihedralCorrelationShortcut,"DIHCOR")
+
+void DihedralCorrelationShortcut::registerKeywords( Keywords& keys ) {
+  DihedralCorrelation::registerKeywords( keys );
+}
+
+DihedralCorrelationShortcut::DihedralCorrelationShortcut(const ActionOptions&ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  readInputLine( getShortcutLabel() +"_data: DIHEDRAL_CORRELATION " + convertInputLineToString() ); 
+  readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_data PERIODIC=NO");
+} 
 
 }
 }

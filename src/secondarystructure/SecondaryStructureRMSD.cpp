@@ -25,33 +25,25 @@
 #include "core/SetupMolInfo.h"
 #include "core/Atoms.h"
 #include "tools/SwitchingFunction.h"
+#include "core/ActionShortcut.h"
 
 namespace PLMD {
 namespace secondarystructure {
 
-void SecondaryStructureRMSD::shortcutKeywords( Keywords& keys ) {
-  keys.add("compulsory","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
-           "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a \\ref switchingfunction.");
-  keys.add("compulsory","R_0","The r_0 parameter of the switching function.");
-  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
-  keys.add("compulsory","NN","8","The n parameter of the switching function");
-  keys.add("compulsory","MM","12","The m parameter of the switching function");
+void SecondaryStructureRMSD::readShortcutWords( std::string& ltmap, ActionShortcut* action ) {
+  action->parse("LESS_THAN",ltmap);
+  if( ltmap.length()==0 ) { 
+      std::string nn, mm, d_0, r_0; action->parse("R_0",r_0); 
+      if( r_0.length()>0 ) { 
+          action->parse("NN",nn); action->parse("D_0",d_0); action->parse("MM",mm);
+          ltmap = "RATIONAL R_0=" + r_0 + " D_0=" + d_0 + " NN=" + nn + " MM=" + mm;
+      }
+  }
 }
 
-void SecondaryStructureRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-    const std::map<std::string,std::string>& keys,
-    std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> lt_line; lt_line.push_back( lab + "_lt:" );
-  lt_line.push_back("LESS_THAN"); lt_line.push_back( "ARG1=" + lab );
-  if( keys.count("LESS_THAN") ) {
-    lt_line.push_back("SWITCH=" + keys.find("LESS_THAN")->second );
-  } else {
-    for(const auto & p : keys ) lt_line.push_back( p.first + "=" + p.second );
-  }
-  actions.push_back( lt_line );
-  std::vector<std::string> sum_line; sum_line.push_back( lab + "_lessthan:" );
-  sum_line.push_back("COMBINE"); sum_line.push_back("ARG=" + lab + "_lt" );
-  sum_line.push_back("PERIODIC=NO"); actions.push_back( sum_line );
+void SecondaryStructureRMSD::expandShortcut( const std::string& labout, const std::string& labin, const std::string& ltmap, ActionShortcut* action ) { 
+  action->readInputLine( labout + "_lt: LESS_THAN ARG1=" + labin + " SWITCH={" + ltmap  +"}");
+  action->readInputLine( labout + "_lessthan: COMBINE ARG=" + labout + "_lt PERIODIC=NO");
 }
 
 void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
@@ -73,6 +65,12 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ) {
                "This keyword speeds up the calculation enormously when you are using the LESS_THAN option. "
                "However, if you are using some other option, then this cannot be used");
   keys.addFlag("VERBOSE",false,"write a more detailed output");
+  keys.add("optional","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
+           "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a \\ref switchingfunction.");
+  keys.add("optional","R_0","The r_0 parameter of the switching function.");
+  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
+  keys.add("compulsory","NN","8","The n parameter of the switching function");
+  keys.add("compulsory","MM","12","The m parameter of the switching function");
 }
 
 SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
@@ -101,6 +99,11 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
 
 SecondaryStructureRMSD::~SecondaryStructureRMSD() {
 // destructor needed to delete forward declarated objects
+}
+
+void SecondaryStructureRMSD::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
+  ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + "_lessthan");
+  if( action ) (action->copyOutput(0))->interpretDataRequest( ulab, nargs, myvals, "" );
 }
 
 void SecondaryStructureRMSD::setAtomsFromStrands( const unsigned& atom1, const unsigned& atom2 ) {

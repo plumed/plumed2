@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SecondaryStructureRMSD.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 
@@ -87,29 +88,10 @@ hh: ANTIBETARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1  STRANDS_CUTOFF=1
 class AntibetaRMSD : public SecondaryStructureRMSD {
 public:
   static void registerKeywords( Keywords& keys );
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   explicit AntibetaRMSD(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(AntibetaRMSD,"ANTIBETARMSD")
-PLUMED_REGISTER_SHORTCUT(AntibetaRMSD,"ANTIBETARMSD")
-
-void AntibetaRMSD::shortcutKeywords( Keywords& keys ) {
-  SecondaryStructureRMSD::shortcutKeywords( keys );
-  keys.addOutputComponent("_lessthan","default","the number of residues that have an rmsd less than a threshold");
-}
-
-void AntibetaRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                   const std::map<std::string,std::string>& keys,
-                                   std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> ss_line; ss_line.push_back( lab + ":" );
-  for(unsigned i=0; i<words.size(); ++i) ss_line.push_back(words[i]);
-  actions.push_back( ss_line );
-  SecondaryStructureRMSD::expandShortcut( lab, words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(AntibetaRMSD,"ANTIBETARMSD_CALC")
 
 void AntibetaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
@@ -118,7 +100,8 @@ void AntibetaRMSD::registerKeywords( Keywords& keys ) {
            "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
            "only sheet-like configurations involving a single chain are counted");
   keys.use("STRANDS_CUTOFF");
-}
+  keys.addOutputComponent("_lessthan","default","the number of residues that have an rmsd less than a threshold");
+} 
 
 AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   Action(ao),
@@ -222,6 +205,30 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
   setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
   setupValues();
+}
+
+class AntibetaRMSDShortcut : public ActionShortcut {
+public:
+  static void registerKeywords( Keywords& keys );
+  AntibetaRMSDShortcut(const ActionOptions&);
+};
+
+PLUMED_REGISTER_ACTION(AntibetaRMSDShortcut,"ANTIBETARMSD")
+
+void AntibetaRMSDShortcut::registerKeywords( Keywords& keys ) {
+  AntibetaRMSD::registerKeywords( keys );
+}
+
+AntibetaRMSDShortcut::AntibetaRMSDShortcut(const ActionOptions&ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  // Read in the input and create a string that describes how to compute the less than
+  std::string ltmap; SecondaryStructureRMSD::readShortcutWords( ltmap, this );
+  // Create the alpharmsd object
+  readInputLine( getShortcutLabel() + ": ANTIBETARMSD_CALC " + convertInputLineToString() );
+  // Create the less than object
+  if( ltmap.length()>0 ) SecondaryStructureRMSD::expandShortcut( getShortcutLabel(), getShortcutLabel(), ltmap, this );
 }
 
 }

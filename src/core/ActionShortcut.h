@@ -34,6 +34,9 @@ class ActionShortcut :
   public virtual Action {
 private:
   std::string shortcutlabel;
+protected:
+/// Take everything that was input to this action and convert it to a string
+  std::string convertInputLineToString();
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor

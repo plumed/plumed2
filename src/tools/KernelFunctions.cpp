@@ -455,10 +455,10 @@ std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool
 std::string KernelFunctions::getInputString() const {
   // Setup the type
   std::string outstring;
-  if( ktype==gaussian ) outstring = "GAUSSIAN";
-  else if( ktype==truncatedgaussian ) outstring = "TRUNCATED-GAUSSIAN";
-  else if( ktype==uniform ) outstring = "UNIFORM";
-  else if( ktype==triangular ) outstring = "TRIANGULAR";
+  if( ktype==gaussian ) outstring = "{GAUSSIAN";
+  else if( ktype==truncatedgaussian ) outstring = "{TRUNCATED-GAUSSIAN";
+  else if( ktype==uniform ) outstring = "{UNIFORM";
+  else if( ktype==triangular ) outstring = "{TRIANGULAR";
   else plumed_error();
 
   // Setup the distance metric type
@@ -476,7 +476,7 @@ std::string KernelFunctions::getInputString() const {
   // Set the height
   Tools::convert( height, numstr ); outstring += " HEIGHT=" + numstr;
   
-  return outstring;
+  return outstring + "}";
 }
 
 }

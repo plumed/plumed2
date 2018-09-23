@@ -44,4 +44,10 @@ const std::string & ActionShortcut::getShortcutLabel() const {
   return shortcutlabel;
 }
 
+std::string ActionShortcut::convertInputLineToString() {
+  std::string output;
+  for(auto p=line.begin(); p!=line.end(); ++p) output += " " + (*p); 
+  line.resize(0); return output;
+}
+
 }

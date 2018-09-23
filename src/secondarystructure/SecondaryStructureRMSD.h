@@ -29,6 +29,8 @@
 
 namespace PLMD {
 
+class ActionShortcut;
+
 namespace secondarystructure {
 
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
@@ -71,25 +73,17 @@ protected:
   void setupValues();
 public:
   static void registerKeywords( Keywords& keys );
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
+  static void readShortcutWords( std::string& ltmap, ActionShortcut* action );
+  static void expandShortcut( const std::string& labout, const std::string& labin, const std::string& ltmap, ActionShortcut* action );
   explicit SecondaryStructureRMSD(const ActionOptions&);
   virtual ~SecondaryStructureRMSD();
-  unsigned getNumberOfFunctionsInAction();
   unsigned getNumberOfDerivatives() const ;
+  void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void calculate();
   void performTask( const unsigned&, MultiValue& ) const ;
   void apply();
-  bool isPeriodic() { return false; }
 };
-
-inline
-unsigned SecondaryStructureRMSD::getNumberOfFunctionsInAction() {
-  return colvar_atoms.size();
-}
 
 inline
 unsigned SecondaryStructureRMSD::getNumberOfDerivatives() const {

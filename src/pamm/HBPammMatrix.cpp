@@ -22,6 +22,7 @@
 #include "adjmat/AdjacencyMatrixBase.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "core/ActionRegister.h"
+#include "core/ActionShortcut.h"
 #include "tools/KernelFunctions.h"
 #include "tools/IFile.h"
 
@@ -45,10 +46,6 @@ private:
   enum {dah,adh,hda} order=dah;
   std::vector<KernelFunctions*> kernels;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -59,63 +56,6 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(HBPammMatrix,"HBPAMM_MATRIX")
-PLUMED_REGISTER_SHORTCUT(HBPammMatrix,"HBPAMM_SD")
-PLUMED_REGISTER_SHORTCUT(HBPammMatrix,"HBPAMM_SA")
-PLUMED_REGISTER_SHORTCUT(HBPammMatrix,"HBPAMM_SH")
-
-void HBPammMatrix::shortcutKeywords( Keywords& keys ) {
-  keys.add("optional","SITES","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
-           "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified"
-           "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
-           "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
-           "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
-           "variety of functions of the contact matrix as described in \\ref contactmatrix");
-  keys.add("optional","DONORS","The list of atoms which can donate a hydrogen bond.  The atoms involved must be specified "
-           "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
-           "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
-           "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
-           "variety of functions of the contact matrix as described in \\ref contactmatrix");
-  keys.add("optional","ACCEPTORS","The list of atoms which can accept a hydrogen bond.  The atoms involved must be specified "
-           "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
-           "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
-           "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
-           "variety of functions of the contact matrix as described in \\ref contactmatrix");
-  keys.add("compulsory","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
-           "an index range or by using a \\ref GROUP");
-  multicolvar::MultiColvarBase::shortcutKeywords( keys );
-}
-
-void HBPammMatrix::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                   const std::map<std::string,std::string>& keys,
-                                   std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> mwords; mwords.push_back( lab + "_mat:"); mwords.push_back("HBPAMM_MATRIX");
-  if( words[0]=="HBPAMM_SD" ) {
-      if( keys.count("SITES") ) {
-          mwords.push_back("GROUP=" + keys.find("SITES")->second ); 
-      } else {
-          mwords.push_back("GROUPA=" + keys.find("DONORS")->second ); mwords.push_back("GROUPB=" + keys.find("ACCEPTORS")->second );
-      }
-      mwords.push_back("GROUPC=" + keys.find("HYDROGENS")->second ); mwords.push_back("ORDER=dah");
-  } else if( words[0]=="HBPAMM_SA" ) {
-      if( keys.count("SITES") ) {  
-          mwords.push_back("GROUP=" + keys.find("SITES")->second ); 
-      } else {
-          mwords.push_back("GROUPA=" + keys.find("ACCEPTORS")->second ); mwords.push_back("GROUPB=" + keys.find("DONORS")->second );
-      }   
-      mwords.push_back("GROUPC=" + keys.find("HYDROGENS")->second ); mwords.push_back("ORDER=adh");
-  } else if( words[0]=="HBPAMM_SH" ) {
-      mwords.push_back("GROUPA=" + keys.find("HYDROGENS")->second ); mwords.push_back("ORDER=hda");
-      if( keys.count("SITES") ) {
-          mwords.push_back("GROUPB=" + keys.find("SITES")->second ); mwords.push_back("GROUPC=" + keys.find("SITES")->second );
-      } else {
-          mwords.push_back("GROUPB=" + keys.find("DONORS")->second ); mwords.push_back("GROUPC=" + keys.find("ACCEPTORS")->second );
-      }
-  }
-  for(unsigned i=1;i<words.size();++i) mwords.push_back( words[i] );
-  actions.push_back( mwords ); std::vector<std::string> cwords; cwords.push_back( lab + ":"); cwords.push_back("COORDINATIONNUMBER");
-  cwords.push_back("WEIGHT=" + lab + "_mat.w"); actions.push_back( cwords );
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
-}
 
 void HBPammMatrix::registerKeywords( Keywords& keys ) {
   adjmat::AdjacencyMatrixBase::registerKeywords( keys ); keys.use("GROUPC");
@@ -124,7 +64,6 @@ void HBPammMatrix::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CLUSTERS","the name of the file that contains the definitions of all the kernels for PAMM");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
 }
-
 
 HBPammMatrix::HBPammMatrix(const ActionOptions& ao):
   Action(ao),
@@ -232,6 +171,77 @@ double HBPammMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, co
     }
   }
   return tot;
+}
+
+class HBPammShortcut : public ActionShortcut {
+public:
+  static void registerKeywords( Keywords& keys );
+  HBPammShortcut(const ActionOptions&);
+};
+
+PLUMED_REGISTER_ACTION(HBPammShortcut,"HBPAMM_SD")
+PLUMED_REGISTER_ACTION(HBPammShortcut,"HBPAMM_SA")
+PLUMED_REGISTER_ACTION(HBPammShortcut,"HBPAMM_SH")
+
+void HBPammShortcut::registerKeywords( Keywords& keys ) {
+  HBPammMatrix::registerKeywords( keys ); keys.remove("GROUP"); keys.remove("GROUPA"); keys.remove("GROUPB"); keys.remove("COMPONENTS");
+  keys.add("optional","SITES","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
+           "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified"
+           "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
+           "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
+           "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
+           "variety of functions of the contact matrix as described in \\ref contactmatrix");
+  keys.add("optional","DONORS","The list of atoms which can donate a hydrogen bond.  The atoms involved must be specified "
+           "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
+           "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
+           "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
+           "variety of functions of the contact matrix as described in \\ref contactmatrix");
+  keys.add("optional","ACCEPTORS","The list of atoms which can accept a hydrogen bond.  The atoms involved must be specified "
+           "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
+           "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
+           "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
+           "variety of functions of the contact matrix as described in \\ref contactmatrix");
+  keys.add("compulsory","HYDROGENS","The list of hydrogen atoms that can form part of a hydrogen bond.  The atoms must be specified using a comma separated list, "
+           "an index range or by using a \\ref GROUP");
+  multicolvar::MultiColvarBase::shortcutKeywords( keys );
+}
+
+HBPammShortcut::HBPammShortcut(const ActionOptions&ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  std::string mwords = getShortcutLabel() + "_mat: HBPAMM_MATRIX";
+  if( getName()=="HBPAMM_SD" ) {
+      std::string site_str; parse("SITES",site_str);
+      if( site_str.length()>0 ) mwords += " GROUP=" + site_str;
+      else {
+          std::string d_str; parse("DONORS",d_str); mwords += " GROUPA=" + d_str;
+          std::string a_str; parse("ACCEPTORS",a_str); mwords += " GROUPB=" + a_str;   
+      }
+      std::string h_str; parse("HYDROGENS",h_str); mwords += " GROUPC=" + h_str + " ORDER=dah";    
+  } else if( getName()=="HBPAMM_SA" ) {
+      std::string site_str; parse("SITES",site_str);
+      if( site_str.length()>0 ) mwords += " GROUP=" + site_str;  
+      else {
+          std::string a_str; parse("ACCEPTORS",a_str); mwords += " GROUPA=" + a_str;
+          std::string d_str; parse("DONORS",d_str); mwords += " GROUPB=" + d_str;
+      }
+      std::string h_str; parse("HYDROGENS",h_str); mwords += " GROUPC=" + h_str + " ORDER=adh";    
+  } else if( getName()=="HBPAMM_SH" ) {
+      std::string h_str; parse("HYDROGENS",h_str); mwords += " GROUPA=" + h_str + " ORDER=hda";
+      std::string site_str; parse("SITES",site_str); 
+      if( site_str.length()>0 ) {
+          mwords += " GROUPB=" + site_str; 
+          mwords += " GROUPC=" + site_str;
+      } else {
+          std::string d_str; parse("DONORS",d_str); mwords += " GROUPB=" + d_str;
+          std::string a_str; parse("ACCEPTORS",a_str); mwords += " GROUPC=" + a_str; 
+      }
+  }
+  std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, this );
+  readInputLine( mwords + " " + convertInputLineToString() );
+  readInputLine( getShortcutLabel() + ": COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_mat.w");
+  multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
 }
 
 }

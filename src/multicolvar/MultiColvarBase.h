@@ -72,6 +72,9 @@ protected:
   void setBoxDerivativesNoPbc( const unsigned& ival, const std::vector<Vector>& fpositions, MultiValue& myvals ) const ;
 public:
   static void shortcutKeywords( Keywords& keys );
+  static void readShortcutKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action );
+  static void expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights,
+                               const std::map<std::string,std::string>& keymap, ActionShortcut* action );
   static void expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights, ActionShortcut* action );
   static void expandFunctions( const std::string& labout, const std::string& argin,
                                const std::string& weights,

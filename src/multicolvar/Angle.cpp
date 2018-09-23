@@ -85,10 +85,6 @@ PRINT ARG=b FILE=COLVAR2
 
 class Angle : public MultiColvarBase {
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   explicit Angle(const ActionOptions&);
 // active methods:
   virtual void compute( const std::vector<Vector>& pos, MultiValue& myvals ) const;
@@ -96,100 +92,6 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(Angle,"ANGLE")
-PLUMED_REGISTER_SHORTCUT(Angle,"ANGLE")
-PLUMED_REGISTER_SHORTCUT(Angle,"ANGLES")
-PLUMED_REGISTER_SHORTCUT(Angle,"INPLANEDISTANCES")
-
-void Angle::shortcutKeywords( Keywords& keys ) {
-  MultiColvarBase::shortcutKeywords( keys );
-  keys.add("atoms","VECTORSTART","The first atom position that is used to define the normal to the plane of interest");
-  keys.add("atoms","VECTOREND","The second atom position that is used to defin the normal to the plane of interest");
-  keys.add("atoms-1","GROUP","Calculate angles for each distinct set of three atoms in the group");
-  keys.add("atoms-2","GROUPA","A group of central atoms about which angles should be calculated");
-  keys.add("atoms-2","GROUPB","When used in conjuction with GROUPA this keyword instructs plumed "
-           "to calculate all distinct angles involving one atom from GROUPA "
-           "and two atoms from GROUPB. The atom from GROUPA is the central atom.");
-  keys.add("atoms-3","GROUPC","This must be used in conjuction with GROUPA and GROUPB.  All angles "
-           "involving one atom from GROUPA, one atom from GROUPB and one atom from "
-           "GROUPC are calculated. The GROUPA atoms are assumed to be the central "
-           "atoms");
-}
-
-void Angle::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                            const std::map<std::string,std::string>& keys,
-                            std::vector<std::vector<std::string> >& actions ) {
-  if( words[0]=="INPLANEDISTANCES" ) {
-    if( !keys.count("VECTORSTART") || !keys.count("VECTOREND") || !keys.count("GROUP") ) plumed_merror("should be VECTORSTART, VECTOREND and GROUP in input to INPLANEDISTANCES");
-
-    std::vector<std::string> str_atomsA( Tools::getWords(keys.find("VECTORSTART")->second) ); Tools::interpretRanges( str_atomsA );
-    std::vector<std::string> str_atomsB( Tools::getWords(keys.find("VECTOREND")->second) ); Tools::interpretRanges( str_atomsB );
-    std::vector<std::string> str_atomsC( Tools::getWords(keys.find("GROUP")->second) ); Tools::interpretRanges( str_atomsC );
-    unsigned n=1;
-    std::vector<std::string> dinput; dinput.push_back( lab + "_dis:"); dinput.push_back("DISTANCE");
-    std::vector<std::string> ainput; ainput.push_back( lab + "_ang:"); ainput.push_back("ANGLE");
-    for(unsigned i=0; i<str_atomsA.size(); ++i ) {
-      for(unsigned j=0; j<str_atomsB.size(); ++j ) {
-        for(unsigned k=0; k<str_atomsC.size(); ++k) {
-          std::string str_n; Tools::convert( n, str_n );
-          dinput.push_back("ATOMS" + str_n + "=" + str_atomsA[j] + "," + str_atomsC[k] );
-          ainput.push_back("ATOMS" + str_n + "=" + str_atomsB[j] + "," + str_atomsA[i] + "," + str_atomsC[k] );
-          n++;
-        }
-      }
-    }
-    actions.push_back( dinput ); actions.push_back( ainput );
-    std::vector<std::string> minput; minput.push_back( lab + ":" ); minput.push_back("MATHEVAL"); minput.push_back("PERIODIC=NO");
-    minput.push_back("ARG1=" + lab + "_dis"); minput.push_back("ARG2=" + lab + "_ang"); minput.push_back("FUNC=x*sin(y)");
-    actions.push_back( minput );
-  } else {
-    if( keys.count("GROUP") ) {
-      if( keys.count("GROUPA") || keys.count("GROUPB") || keys.count("GROUPC") ) plumed_merror("should only be GROUP keyword in input to Angle");
-      std::vector<std::string> str_atoms( Tools::getWords(keys.find("GROUP")->second) ); Tools::interpretRanges( str_atoms );
-      unsigned n=1; std::vector<std::string> ainput; ainput.push_back( lab + ":"); ainput.push_back("ANGLE");
-      // Not sure if this triple sum makes any sense
-      for(unsigned i=2; i<str_atoms.size(); ++i ) {
-        for(unsigned j=1; j<i; ++j ) {
-          for(unsigned k=0; k<j; ++k) {
-            std::string str_n; Tools::convert( n, str_n );
-            ainput.push_back("ATOMS" + str_n + "=" + str_atoms[i] + "," + str_atoms[j] + "," + str_atoms[k] );
-            n++;
-          }
-        }
-      }
-      actions.push_back( ainput );
-    } else if( keys.count("GROUPC") ) {
-      std::vector<std::string> str_atomsA( Tools::getWords(keys.find("GROUPA")->second) ); Tools::interpretRanges( str_atomsA );
-      std::vector<std::string> str_atomsB( Tools::getWords(keys.find("GROUPB")->second) ); Tools::interpretRanges( str_atomsB );
-      std::vector<std::string> str_atomsC( Tools::getWords(keys.find("GROUPC")->second) ); Tools::interpretRanges( str_atomsC );
-      unsigned n=1; std::vector<std::string> ainput; ainput.push_back( lab + ":"); ainput.push_back("ANGLE");
-      for(unsigned i=0; i<str_atomsA.size(); ++i ) {
-        for(unsigned j=0; j<str_atomsB.size(); ++j ) {
-          for(unsigned k=0; k<str_atomsC.size(); ++k) {
-            std::string str_n; Tools::convert( n, str_n );
-            ainput.push_back("ATOMS" + str_n + "=" + str_atomsB[j] + "," + str_atomsA[i] + "," + str_atomsC[k] );
-            n++;
-          }
-        }
-      }
-      actions.push_back( ainput );
-    } else if( keys.count("GROUPA") ) {
-      std::vector<std::string> str_atomsA( Tools::getWords(keys.find("GROUPA")->second) ); Tools::interpretRanges( str_atomsA );
-      std::vector<std::string> str_atomsB( Tools::getWords(keys.find("GROUPB")->second) ); Tools::interpretRanges( str_atomsB );
-      unsigned n=1; std::vector<std::string> ainput; ainput.push_back( lab + ":"); ainput.push_back("ANGLE");
-      for(unsigned i=0; i<str_atomsA.size(); ++i ) {
-        for(unsigned j=1; j<str_atomsB.size(); ++j ) {
-          for(unsigned k=0; k<j; ++k) {
-            std::string str_n; Tools::convert( n, str_n );
-            ainput.push_back("ATOMS" + str_n + "=" + str_atomsB[j] + "," + str_atomsA[i] + "," + str_atomsB[k] );
-            n++;
-          }
-        }
-      }
-      actions.push_back( ainput );
-    }
-  }
-  MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
-}
 
 void Angle::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords(keys);

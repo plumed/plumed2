@@ -79,7 +79,7 @@ int main(){
   test_line(ofs,plumed,"d: PUCKERING ATOMS=1-4");
   test_line(ofs,plumed,"d: ANGLE ATOMS=1,2,3,4,5");
   test_line(ofs,plumed,"d: TORSION ATOMS=1,2,3,4,5");
-  test_line(ofs,plumed,"d: TORSION ATOMS=1,2,3,4 VECTOR1=1,2 VECTOR2=2,3 AXIS=3,4");
+  test_line(ofs,plumed,"d: TORSION ATOMS=1,2,3,4 VECTORA=1,2 VECTORB=2,3 AXIS=3,4");
   test_line(ofs,plumed,"d: COORDINATION GROUPA=1 GROUPB=2 R_0=0.5 NN=1.5");
   test_line(ofs,plumed,"d: COORDINATION GROUPA=1 GROUPB=2 R_0=0.5 NN=1.5");
   test_line(ofs,plumed,"d: CENTER ATOMS=2,3,4,5 WEIGHTS=1,2,3");

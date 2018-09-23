@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SecondaryStructureRMSD.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 
@@ -86,33 +87,15 @@ hh: ALPHARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1
 class AlphaRMSD : public SecondaryStructureRMSD {
 public:
   static void registerKeywords( Keywords& keys );
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   explicit AlphaRMSD(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")
-PLUMED_REGISTER_SHORTCUT(AlphaRMSD,"ALPHARMSD")
-
-void AlphaRMSD::shortcutKeywords( Keywords& keys ) {
-  SecondaryStructureRMSD::shortcutKeywords( keys );
-  keys.addOutputComponent("_lessthan","default","the number of residues that have an rmsd less than a threshold");
-}
-
-void AlphaRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                const std::map<std::string,std::string>& keys,
-                                std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> ss_line; ss_line.push_back( lab + ":" );
-  for(unsigned i=0; i<words.size(); ++i) ss_line.push_back(words[i]);
-  actions.push_back( ss_line );
-  SecondaryStructureRMSD::expandShortcut( lab, words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD_CALC")
 
 void AlphaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
-}
+  keys.addOutputComponent("_lessthan","default","the number of residues that have an rmsd less than a threshold");
+} 
 
 AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   Action(ao),
@@ -170,6 +153,30 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
   setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
   setupValues();
+}
+
+class AlphaRMSDShortcut : public ActionShortcut {
+public:
+  static void registerKeywords( Keywords& keys );
+  AlphaRMSDShortcut(const ActionOptions&);  
+};
+
+PLUMED_REGISTER_ACTION(AlphaRMSDShortcut,"ALPHARMSD")
+
+void AlphaRMSDShortcut::registerKeywords( Keywords& keys ) {
+  AlphaRMSD::registerKeywords( keys ); 
+}
+
+AlphaRMSDShortcut::AlphaRMSDShortcut(const ActionOptions&ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  // Read in the input and create a string that describes how to compute the less than
+  std::string ltmap; SecondaryStructureRMSD::readShortcutWords( ltmap, this );
+  // Create the alpharmsd object
+  readInputLine( getShortcutLabel() + ": ALPHARMSD_CALC " + convertInputLineToString() ); 
+  // Create the less than object
+  if( ltmap.length()>0 ) SecondaryStructureRMSD::expandShortcut( getShortcutLabel(), getShortcutLabel(), ltmap, this );
 }
 
 }

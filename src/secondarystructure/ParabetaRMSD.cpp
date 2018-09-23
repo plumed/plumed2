@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SecondaryStructureRMSD.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 
@@ -87,32 +88,11 @@ hh: PARABETARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1  STRANDS_CUTOFF=1
 
 class ParabetaRMSD : public SecondaryStructureRMSD {
 public:
-  static void registerKeywords( Keywords& keys );
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
+  static void registerKeywords( Keywords& keys ); 
   explicit ParabetaRMSD(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(ParabetaRMSD,"PARABETARMSD")
-PLUMED_REGISTER_SHORTCUT(ParabetaRMSD,"PARABETARMSD")
-
-void ParabetaRMSD::shortcutKeywords( Keywords& keys ) {
-  SecondaryStructureRMSD::shortcutKeywords( keys );
-  keys.addOutputComponent("_low_lessthan","default","the number of residues that have an rmsd less than a threshold");
-}
-
-void ParabetaRMSD::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                   const std::map<std::string,std::string>& keys,
-                                   std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> ss_line; ss_line.push_back( lab + ":" );
-  for(unsigned i=0; i<words.size(); ++i) ss_line.push_back(words[i]);
-  actions.push_back( ss_line );
-  std::vector<std::string> lowest_line; lowest_line.push_back( lab + "_low:"); lowest_line.push_back("LOWEST");
-  lowest_line.push_back("ARG1=" + lab + ".struct-1"); lowest_line.push_back("ARG2=" + lab + ".struct-2");
-  actions.push_back( lowest_line ); SecondaryStructureRMSD::expandShortcut( lab + "_low", words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(ParabetaRMSD,"PARABETARMSD_CALC")
 
 void ParabetaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
@@ -121,9 +101,7 @@ void ParabetaRMSD::registerKeywords( Keywords& keys ) {
            "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
            "only sheet-like configurations involving a single chain are counted");
   keys.use("STRANDS_CUTOFF");
-  keys.addOutputComponent("struct","default","there are two structure for a parallel beta sheet in the PDB database.  As such two numbers are calculated "
-                          "for each segment of secondary structure.  These two numbers give a measure of dissimilarity between the "
-                          "instantaneous structure of the segment and the two reference structures in the PDB database.");
+  keys.addOutputComponent("_lessthan","default","the number of residues that have an rmsd less than a threshold");
 }
 
 ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
@@ -261,6 +239,34 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
   setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
   setupValues();
+}
+
+class ParabetaRMSDShortcut : public ActionShortcut {
+public:
+  static void registerKeywords( Keywords& keys );
+  ParabetaRMSDShortcut(const ActionOptions&);
+};
+
+PLUMED_REGISTER_ACTION(ParabetaRMSDShortcut,"PARABETARMSD")
+
+void ParabetaRMSDShortcut::registerKeywords( Keywords& keys ) {
+  ParabetaRMSD::registerKeywords( keys );
+}
+
+ParabetaRMSDShortcut::ParabetaRMSDShortcut(const ActionOptions&ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  // Read in the input and create a string that describes how to compute the less than
+  std::string ltmap; SecondaryStructureRMSD::readShortcutWords( ltmap, this );
+  // Create the alpharmsd object
+  readInputLine( getShortcutLabel() + ": PARABETARMSD_CALC " + convertInputLineToString() );
+  if( ltmap.length()>0 ) {
+      // Create the lowest line
+      readInputLine( getShortcutLabel() + "_low: LOWEST ARG1=" + getShortcutLabel() + ".struct-1  ARG2=" + getShortcutLabel() + ".struct-2");
+      // Create the less than object
+      SecondaryStructureRMSD::expandShortcut( getShortcutLabel(), getShortcutLabel() + "_low", ltmap, this );
+  }
 }
 
 }

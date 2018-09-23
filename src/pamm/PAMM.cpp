@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"
+#include "core/ActionShortcut.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "tools/IFile.h"
 #include "core/ActionSetup.h"
@@ -107,86 +108,64 @@ and compute these PAMM variables and we can transform the PAMM variables themsel
 namespace PLMD {
 namespace pamm {
 
-class PAMM : public ActionSetup {
+class PAMM : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit PAMM(const ActionOptions&);
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
 };
 
-PLUMED_REGISTER_SHORTCUT(PAMM,"PAMM")
+PLUMED_REGISTER_ACTION(PAMM,"PAMM")
 
-void PAMM:: shortcutKeywords( Keywords& keys ) {
+void PAMM::registerKeywords( Keywords& keys ) {
+  ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","DATA","the vectors from which the pamm coordinates are calculated");
   keys.add("compulsory","CLUSTERS","the name of the file that contains the definitions of all the clusters");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
   multicolvar::MultiColvarBase::shortcutKeywords( keys );
 }
 
-void PAMM::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions ) {
-   plumed_assert( words[0]=="PAMM" );
-   // Must get list of input value names
-   std::vector<std::string> valnames = Tools::getWords( keys.find("DATA")->second,"\t\n ," );
-
+PAMM::PAMM(const ActionOptions& ao) :
+Action(ao),
+ActionShortcut(ao)
+{
+  // Must get list of input value names
+  std::vector<std::string> valnames; parseVector("DATA",valnames);
    // Create actions to calculate all pamm kernels
    unsigned nkernels = 0; 
-   std::string fname = keys.find("CLUSTERS")->second; 
+   std::string fname; parse("CLUSTERS",fname); 
    IFile ifile; ifile.open(fname); ifile.allowIgnoredFields();
    for(unsigned k=0;; ++k) {
       std::unique_ptr<KernelFunctions> kk = KernelFunctions::read( &ifile, false, valnames );
       if( !kk ) break ;
       std::string num; Tools::convert( k+1, num );
-      std::vector<std::string> kinput; kinput.push_back( lab + "_kernel-" + num + ":" );
-      kinput.push_back("KERNEL"); kinput.push_back("NORMALIZED");
+      std::string kinput = getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED KERNEL=" + kk->getInputString();
       for(unsigned j=0;j<valnames.size();++j){ 
-          std::string jstr; Tools::convert(j+1,jstr); kinput.push_back("ARG" + jstr + "=" + valnames[j] );
+          std::string jstr; Tools::convert(j+1,jstr); kinput += " ARG" + jstr + "=" + valnames[j];
       }
-      kinput.push_back("KERNEL=" + kk->getInputString() );
-      actions.push_back(kinput); nkernels++;
+      readInputLine(kinput); nkernels++;
       // meanwhile, I just release the unique_ptr herelease the unique_ptr here. GB
       ifile.scanField();
    }
    ifile.close();
 
    // Now combine all the PAMM objects
-   std::vector<std::string> cinput; cinput.push_back( lab + "_ksum:"); cinput.push_back("COMBINE");
+   std::string cinput = getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO"; 
    for(unsigned k=0;k<nkernels;++k) {
-       std::string num; Tools::convert( k+1, num ); 
-       cinput.push_back("ARG" + num + "=" + lab + "_kernel-" + num );
+       std::string num; Tools::convert( k+1, num ); cinput += " ARG" + num + "=" + getShortcutLabel() + "_kernel-" + num;
    }
-   cinput.push_back("PERIODIC=NO"); actions.push_back( cinput );
+   readInputLine( cinput );
    
    // And add on the regularization 
-   std::vector<std::string> minput; minput.push_back( lab + "_rksum:"); minput.push_back("MATHEVAL");
-   minput.push_back("ARG1=" + lab + "_ksum"); minput.push_back("FUNC=x+" + keys.find("REGULARISE")->second );
-   minput.push_back("PERIODIC=NO"); actions.push_back( minput );
+   std::string regparam; parse("REGULARISE",regparam);
+   readInputLine( getShortcutLabel() + "_rksum: MATHEVAL ARG1=" + getShortcutLabel() + "_ksum FUNC=x+" + regparam + " PERIODIC=NO");   
    
    // And now compute all the pamm kernels
+   std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, this );
    for(unsigned k=0;k<nkernels;++k) {
        std::string num; Tools::convert( k+1, num );
-       std::vector<std::string> finput; finput.push_back( lab + "-" + num + ":" ); 
-       finput.push_back("MATHEVAL"); finput.push_back("ARG1=" + lab + "_kernel-" + num );
-       finput.push_back("ARG2=" + lab + "_rksum"); finput.push_back("FUNC=x/y");
-       finput.push_back("PERIODIC=NO"); actions.push_back( finput );
-       multicolvar::MultiColvarBase::expandFunctions( lab + "-" + num, lab + "-" + num, "", words, keys, actions );
+       readInputLine( getShortcutLabel() + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + " ARG2=" + getShortcutLabel() + "_rksum FUNC=x/y PERIODIC=NO");  
+       multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel() + "-" + num, getShortcutLabel() + "-" + num, "", keymap, this );
    }
-}
-
-
-void PAMM::registerKeywords( Keywords& keys ) {
-  ActionSetup::registerKeywords( keys );
-}
-
-PAMM::PAMM(const ActionOptions&ao):
-Action(ao),
-ActionSetup(ao)
-{
-  plumed_error();
 }
 
 }
