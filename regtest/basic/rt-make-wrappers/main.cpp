@@ -314,7 +314,7 @@ int main(){
 
     if(plumed_ginitialized()) plumed_error();
     plumed_gcreate();
-    if(!plumed_gvalid) plumed_error();
+    if(!plumed_gvalid()) plumed_error();
     if(!plumed_ginitialized()) plumed_error();
     testme(plumed_global(),plumed_cmd);
     plumed_gfinalize();
