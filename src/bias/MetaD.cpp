@@ -36,7 +36,6 @@
 #include <limits>
 #include <ctime>
 #include <memory>
-#include "core/GREX.h"
 
 #define DP2CUTOFF 6.25
 
@@ -429,7 +428,6 @@ private:
   int mw_rstride_;
   bool walkers_mpi;
   bool flying;
-  bool flying_pt;
   unsigned mpi_nw_;
   unsigned mpi_mw_;
   bool acceleration;
@@ -531,7 +529,6 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
   keys.addFlag("FLYING_GAUSSIAN",false,"Switch on flying Gaussian method, must be used with WALKERS_MPI");
-  keys.addFlag("FLYING_GAUSSIAN_PT",false,"Switch on flying Gaussian Parallel Tempering, must be used with WALKERS_MPI");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");
   keys.add("optional","ACCELERATION_RFILE","a data file from which the acceleration should be read at the initial step of the simulation");
   keys.addFlag("CALC_MAX_BIAS", false, "Set to TRUE if you want to compute the maximum of the metadynamics V(s, t)");
@@ -575,7 +572,7 @@ MetaD::MetaD(const ActionOptions& ao):
   mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
   walkers_mpi(false), mpi_nw_(0), mpi_mw_(0),
 // Flying Gaussian
-  flying(false), flying_pt(false),
+  flying(false),
   acceleration(false), acc(0.0), acc_restart_mean_(0.0),
   calc_max_bias_(false), max_bias_(0.0),
   calc_transition_bias_(false), transition_bias_(0.0),
@@ -812,7 +809,6 @@ MetaD::MetaD(const ActionOptions& ao):
 
   // Flying Gaussian
   parseFlag("FLYING_GAUSSIAN", flying);
-  parseFlag("FLYING_GAUSSIAN_PT", flying_pt);
 
   // Inteval keyword
   vector<double> tmpI(2);
@@ -967,17 +963,9 @@ MetaD::MetaD(const ActionOptions& ao):
     }
   }
 
-  plumed.setFlyingPT(0);
-  if(flying_pt) {
-    flying = true;
-    plumed.setFlyingPT(1);
-  }
   if(flying) {
     if(!walkers_mpi) error("Flying Gaussian method must be used with MPI version of multiple walkers");
     log.printf("  Flying Gaussian method with %d walkers active\n",mpi_nw_);
-  }
-  if(flying_pt) {
-    log.printf("  with parallel tempering on\n");
   }
 
   if( rewf_grid_.size()>0 ) {
@@ -1777,12 +1765,7 @@ void MetaD::update() {
         comm.Barrier();
       }
 
-      unsigned si = 0;
-      if (flying_pt) {
-        si = mpi_mw_ + 1;
-      }
-
-      for(unsigned i=si; i<mpi_nw_; i++) {
+      for(unsigned i=0; i<mpi_nw_; i++) {
         // actually add hills one by one
         std::vector<double> cv_now(cv.size());
         std::vector<double> sigma_now(thissigma.size());
