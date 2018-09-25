@@ -226,6 +226,8 @@ Caliber::Caliber(const ActionOptions&ao):
     componentIsNotPeriodic("scale");
     valueScale=getPntrToComponent("scale");
   }
+
+  log<<"  Bibliography "<<plumed.cite("Capelli, Tiana, Camilloni, J Chem Phys, 148, 184114");
 }
 
 void Caliber::get_sigma_mean(const double fact, const vector<double> &mean)
