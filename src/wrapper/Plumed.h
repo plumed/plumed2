@@ -443,7 +443,7 @@
 */
 
 #ifndef __PLUMED_WRAPPER_CXX_THROW_CMD
-#define __PLUMED_WRAPPER_CXX_THROW_CMD throw ::std::runtime_error(x)
+#define __PLUMED_WRAPPER_CXX_THROW_CMD(x) throw ::std::runtime_error(x)
 #endif
 
 /*
