@@ -30,11 +30,11 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC BIAS CALIBER
+//+PLUMEDOC ISDB_BIAS CALIBER
 /*
 Add a time-dependent, harmonic restraint on one or more variables.
 This allows implementing a maximum caliber restraint on one or more experimental time serie by replica-averaged restrained simulations.
-See \cite{}.
+See \cite Capelli:2018jt .
 
 The time resolved experiments are read from a text file and intermediate values are obtained by splines.
 
