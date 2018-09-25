@@ -427,6 +427,7 @@ private:
   int mw_id_;
   int mw_rstride_;
   bool walkers_mpi;
+  bool flying;
   unsigned mpi_nw_;
   unsigned mpi_mw_;
   bool acceleration;
@@ -527,6 +528,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
+  keys.addFlag("FLYING_GAUSSIAN",false,"Switch on flying Gaussian method, must be used with WALKERS_MPI");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");
   keys.add("optional","ACCELERATION_RFILE","a data file from which the acceleration should be read at the initial step of the simulation");
   keys.addFlag("CALC_MAX_BIAS", false, "Set to TRUE if you want to compute the maximum of the metadynamics V(s, t)");
@@ -569,6 +571,8 @@ MetaD::MetaD(const ActionOptions& ao):
 // Multiple walkers initialization
   mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
   walkers_mpi(false), mpi_nw_(0), mpi_mw_(0),
+// Flying Gaussian
+  flying(false),
   acceleration(false), acc(0.0), acc_restart_mean_(0.0),
   calc_max_bias_(false), max_bias_(0.0),
   calc_transition_bias_(false), transition_bias_(0.0),
@@ -803,6 +807,9 @@ MetaD::MetaD(const ActionOptions& ao):
   // MPI version
   parseFlag("WALKERS_MPI",walkers_mpi);
 
+  // Flying Gaussian
+  parseFlag("FLYING_GAUSSIAN", flying);
+
   // Inteval keyword
   vector<double> tmpI(2);
   parseVector("INTERVAL",tmpI);
@@ -954,6 +961,11 @@ MetaD::MetaD(const ActionOptions& ao):
       comm.Bcast(mpi_nw_,0);
       comm.Bcast(mpi_mw_,0);
     }
+  }
+
+  if(flying) {
+    if(!walkers_mpi) error("Flying Gaussian method must be used with MPI version of multiple walkers");
+    log.printf("  Flying Gaussian method with %d walkers active\n",mpi_nw_);
   }
 
   if( rewf_grid_.size()>0 ) {
@@ -1746,6 +1758,13 @@ void MetaD::update() {
       comm.Bcast(all_sigma,0);
       comm.Bcast(all_height,0);
       comm.Bcast(all_multivariate,0);
+
+      // Flying Gaussian
+      if (flying) {
+        hills_.clear();
+        comm.Barrier();
+      }
+
       for(unsigned i=0; i<mpi_nw_; i++) {
         // actually add hills one by one
         std::vector<double> cv_now(cv.size());
@@ -1755,7 +1774,12 @@ void MetaD::update() {
 // notice that if gamma=1 we store directly -F so this scaling is not necessary:
         Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i]*(biasf_>1.0?(biasf_-1.0)/biasf_:1.0),all_multivariate[i]);
         addGaussian(newhill);
-        writeGaussian(newhill,hillsOfile_);
+
+        // Flying Gaussian
+        if (!flying) {
+          writeGaussian(newhill,hillsOfile_);
+        }
+
       }
     } else {
       Gaussian newhill=Gaussian(cv,thissigma,height,multivariate);
