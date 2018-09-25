@@ -39,8 +39,7 @@ GREX::GREX(PlumedMain&p):
   foreignDeltaBias(0),
   localUNow(0),
   localUSwap(0),
-  myreplica(-1), // = unset
-  bflyingpt(0)
+  myreplica(-1) // = unset
 {
   p.setSuffix(".NA");
 }
@@ -121,11 +120,6 @@ void GREX::cmd(const string&key,void*val) {
     case cmd_savePositions:
       CHECK_INIT(initialized,key);
       savePositions();
-      break;
-    case cmd_getFlying:
-      CHECK_INIT(initialized,key);
-      CHECK_NOTNULL(val,key);
-      *static_cast<int*>(val)=bflyingpt;
       break;
     case cmd_calculate:
       CHECK_INIT(initialized,key);
@@ -227,12 +221,6 @@ void GREX::calculate() {
 //fprintf(stderr,">>> %d %d %20.12f %20.12f %20.12f %20.12f\n",intercomm.Get_rank(),partner,localDeltaBias,foreignDeltaBias,localUSwap,localUNow);
   }
   intracomm.Bcast(foreignDeltaBias,0);
-}
-
-// in flying gaussian with parallel tempering only warmer replicas bias
-// cooler ones
-void GREX::setFlyingPT(int b) {
-  bflyingpt = b;
 }
 
 }
