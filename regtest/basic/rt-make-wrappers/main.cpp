@@ -14,8 +14,8 @@ extern "C"{
   void plumed_f_gfinalize();
   void plumed_f_global(char*c);
   void plumed_f_create(char*c);
-  void plumed_f_create_dlopen(char*c,char*p);
-  void plumed_f_create_reference(char*p,char*r);
+  void plumed_f_create_dlopen(char*p,char*c);
+  void plumed_f_create_reference(char*r,char*c);
   void plumed_f_cmd(char*c,char* key,void* val);
   void plumed_f_finalize(char*c);
   void plumed_f_use_count(char*c,int*i);
@@ -27,8 +27,8 @@ extern "C"{
   void plumed_f_gfinalize_();
   void plumed_f_global_(char*c);
   void plumed_f_create_(char*c);
-  void plumed_f_create_dlopen_(char*c,char*p);
-  void plumed_f_create_reference_(char*p,char*r);
+  void plumed_f_create_dlopen_(char*p,char*c);
+  void plumed_f_create_reference_(char*r,char*c);
   void plumed_f_cmd_(char*c,char* key,void* val);
   void plumed_f_finalize_(char*c);
   void plumed_f_use_count_(char*c,int*i);
@@ -40,8 +40,8 @@ extern "C"{
   void plumed_f_gfinalize__();
   void plumed_f_global__(char*c);
   void plumed_f_create__(char*c);
-  void plumed_f_create_dlopen__(char*c,char*p);
-  void plumed_f_create_reference__(char*p,char*r);
+  void plumed_f_create_dlopen__(char*p,char*c);
+  void plumed_f_create_reference__(char*r,char*c);
   void plumed_f_cmd__(char*c,char* key,void* val);
   void plumed_f_finalize__(char*c);
   void plumed_f_use_count__(char*c,int*i);
@@ -53,8 +53,8 @@ extern "C"{
   void PLUMED_F_GFINALIZE();
   void PLUMED_F_GLOBAL(char*c);
   void PLUMED_F_CREATE(char*c);
-  void PLUMED_F_CREATE_DLOPEN(char*c,char*p);
-  void PLUMED_F_CREATE_REFERENCE(char*p,char*r);
+  void PLUMED_F_CREATE_DLOPEN(char*p,char*c);
+  void PLUMED_F_CREATE_REFERENCE(char*r,char*c);
   void PLUMED_F_CMD(char*c,char* key,void* val);
   void PLUMED_F_FINALIZE(char*c);
   void PLUMED_F_USE_COUNT(char*c,int*i);
@@ -66,8 +66,8 @@ extern "C"{
   void PLUMED_F_GFINALIZE_();
   void PLUMED_F_GLOBAL_(char*c);
   void PLUMED_F_CREATE_(char*c);
-  void PLUMED_F_CREATE_DLOPEN_(char*c,char*p);
-  void PLUMED_F_CREATE_REFERENCE_(char*p,char*r);
+  void PLUMED_F_CREATE_DLOPEN_(char*p,char*c);
+  void PLUMED_F_CREATE_REFERENCE_(char*r,char*c);
   void PLUMED_F_CMD_(char*c,char* key,void* val);
   void PLUMED_F_FINALIZE_(char*c);
   void PLUMED_F_USE_COUNT_(char*c,int*i);
@@ -79,8 +79,8 @@ extern "C"{
   void PLUMED_F_GFINALIZE__();
   void PLUMED_F_GLOBAL__(char*c);
   void PLUMED_F_CREATE__(char*c);
-  void PLUMED_F_CREATE_DLOPEN__(char*c,char*p);
-  void PLUMED_F_CREATE_REFERENCE__(char*p,char*r);
+  void PLUMED_F_CREATE_DLOPEN__(char*p,char*c);
+  void PLUMED_F_CREATE_REFERENCE__(char*r,char*c);
   void PLUMED_F_CMD__(char*c,char* key,void* val);
   void PLUMED_F_FINALIZE__(char*c);
   void PLUMED_F_USE_COUNT__(char*c,int*i);
@@ -346,7 +346,7 @@ int main(){
     {
 // test dlopen
       char p[32];
-      plumed_f_create_dlopen(p,std::getenv("PLUMED_KERNEL"));
+      plumed_f_create_dlopen(std::getenv("PLUMED_KERNEL"),p);
       testme(p,plumed_f_cmd);
       plumed_f_finalize(p);
     }
@@ -357,7 +357,7 @@ int main(){
       plumed_f_create(p);
       plumed_f_use_count(p,&count);
       if(count!=1) plumed_error();
-      plumed_f_create_reference(q,p);
+      plumed_f_create_reference(p,q);
       plumed_f_use_count(p,&count);
       if(count!=2) plumed_error();
       plumed_f_finalize(p);
@@ -395,9 +395,9 @@ int main(){
     {
 // test dlopen
       char p[32];
-      plumed_f_create_dlopen(p,std::getenv("PLUMED_KERNEL"));
-      testme(p,plumed_f_cmd);
-      plumed_f_finalize(p);
+      plumed_f_create_dlopen_(std::getenv("PLUMED_KERNEL"),p);
+      testme(p,plumed_f_cmd_);
+      plumed_f_finalize_(p);
     }
 // test use_count
     {
@@ -406,7 +406,7 @@ int main(){
       plumed_f_create_(p);
       plumed_f_use_count_(p,&count);
       if(count!=1) plumed_error();
-      plumed_f_create_reference_(q,p);
+      plumed_f_create_reference_(p,q);
       plumed_f_use_count_(p,&count);
       if(count!=2) plumed_error();
       plumed_f_finalize_(p);
@@ -444,7 +444,7 @@ int main(){
     {
 // test dlopen
       char p[32];
-      plumed_f_create_dlopen__(p,std::getenv("PLUMED_KERNEL"));
+      plumed_f_create_dlopen__(std::getenv("PLUMED_KERNEL"),p);
       testme(p,plumed_f_cmd__);
       plumed_f_finalize__(p);
     }
@@ -455,7 +455,7 @@ int main(){
       plumed_f_create__(p);
       plumed_f_use_count__(p,&count);
       if(count!=1) plumed_error();
-      plumed_f_create_reference__(q,p);
+      plumed_f_create_reference__(p,q);
       plumed_f_use_count__(p,&count);
       if(count!=2) plumed_error();
       plumed_f_finalize__(p);
@@ -493,7 +493,7 @@ int main(){
     {
 // test dlopen
       char p[32];
-      PLUMED_F_CREATE_DLOPEN(p,std::getenv("PLUMED_KERNEL"));
+      PLUMED_F_CREATE_DLOPEN(std::getenv("PLUMED_KERNEL"),p);
       testme(p,PLUMED_F_CMD);
       PLUMED_F_FINALIZE(p);
     }
@@ -504,7 +504,7 @@ int main(){
       PLUMED_F_CREATE(p);
       PLUMED_F_USE_COUNT(p,&count);
       if(count!=1) plumed_error();
-      PLUMED_F_CREATE_REFERENCE(q,p);
+      PLUMED_F_CREATE_REFERENCE(p,q);
       PLUMED_F_USE_COUNT(p,&count);
       if(count!=2) plumed_error();
       PLUMED_F_FINALIZE(p);
@@ -542,7 +542,7 @@ int main(){
     {
 // test dlopen
       char p[32];
-      PLUMED_F_CREATE_DLOPEN_(p,std::getenv("PLUMED_KERNEL"));
+      PLUMED_F_CREATE_DLOPEN_(std::getenv("PLUMED_KERNEL"),p);
       testme(p,PLUMED_F_CMD_);
       PLUMED_F_FINALIZE_(p);
     }
@@ -553,7 +553,7 @@ int main(){
       PLUMED_F_CREATE_(p);
       PLUMED_F_USE_COUNT_(p,&count);
       if(count!=1) plumed_error();
-      PLUMED_F_CREATE_REFERENCE_(q,p);
+      PLUMED_F_CREATE_REFERENCE_(p,q);
       PLUMED_F_USE_COUNT_(p,&count);
       if(count!=2) plumed_error();
       PLUMED_F_FINALIZE_(p);
@@ -591,7 +591,7 @@ int main(){
     {
 // test dlopen
       char p[32];
-      PLUMED_F_CREATE_DLOPEN__(p,std::getenv("PLUMED_KERNEL"));
+      PLUMED_F_CREATE_DLOPEN__(std::getenv("PLUMED_KERNEL"),p);
       testme(p,PLUMED_F_CMD__);
       PLUMED_F_FINALIZE__(p);
     }
@@ -602,7 +602,7 @@ int main(){
       PLUMED_F_CREATE__(p);
       PLUMED_F_USE_COUNT__(p,&count);
       if(count!=1) plumed_error();
-      PLUMED_F_CREATE_REFERENCE__(q,p);
+      PLUMED_F_CREATE_REFERENCE__(p,q);
       PLUMED_F_USE_COUNT__(p,&count);
       if(count!=2) plumed_error();
       PLUMED_F_FINALIZE__(p);

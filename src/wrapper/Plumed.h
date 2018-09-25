@@ -250,7 +250,7 @@
   In addition, all `plumed` objects are replaced by `CHARACTER(LEN=32)` objects
   holding the same information. Finally, whenever a C function returns a value,
   the corresponding FORTRAN subroutine will have an additional `INTENT(OUT)` parameter
-  passed as the its first argument.
+  passed as the its last argument.
 
   When you compile the FORTRAN interface, wrapper functions are added with several possible
   name mangligs, so you should not experience problems linking the plumed library with a FORTRAN file.
@@ -2259,11 +2259,11 @@ __PLUMED_IMPLEMENT_FORTRAN(plumed_f_create,PLUMED_F_CREATE,(char*c),(c)) {
   plumed_c2f(plumed_create(),c);
 }
 
-__PLUMED_IMPLEMENT_FORTRAN(plumed_f_create_dlopen,PLUMED_F_CREATE_DLOPEN,(char*c,char*path),(c,path)) {
+__PLUMED_IMPLEMENT_FORTRAN(plumed_f_create_dlopen,PLUMED_F_CREATE_DLOPEN,(char*path,char*c),(path,c)) {
   plumed_c2f(plumed_create_dlopen(path),c);
 }
 
-__PLUMED_IMPLEMENT_FORTRAN(plumed_f_create_reference,PLUMED_F_CREATE_REFERENCE,(char* c,char*r),(c,r)) {
+__PLUMED_IMPLEMENT_FORTRAN(plumed_f_create_reference,PLUMED_F_CREATE_REFERENCE,(char* r,char*c),(r,c)) {
   plumed_c2f(plumed_create_reference_f(r),c);
 }
 
