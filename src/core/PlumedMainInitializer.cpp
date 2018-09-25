@@ -36,7 +36,16 @@ extern "C" void*plumed_plumedmain_create() {
 
 extern "C" void plumed_plumedmain_cmd(void*plumed,const char*key,const void*val) {
   plumed_massert(plumed,"trying to use a plumed object which is not initialized");
-  static_cast<PLMD::PlumedMain*>(plumed)->cmd(key,val);
+  auto p=static_cast<PLMD::PlumedMain*>(plumed);
+  try {
+    p->cmd(key,val);
+  } catch(std::exception & e) {
+// we are at library boundaries.
+// if a error_handler was provided, we use it to manage this exception.
+// this allows an exception to be catched also if the MD code
+// was linked against a different C++ library
+    if(!p->callErrorHandler(e.what())) throw;
+  }
 }
 
 extern "C" void plumed_plumedmain_finalize(void*plumed) {

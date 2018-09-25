@@ -94,6 +94,14 @@ public:
   Communicator&multi_sim_comm=*multi_sim_comm_fwd;
 
 private:
+/// Error handler.
+/// Pointer to a function that is called an exception thrown within
+/// the library is about to leave the library.
+/// Can be used to remap exceptions in case the plumed wrapper was compiled
+/// with a different version of the C++ standard library.
+/// Should only be called from \ref plumed_plumedmain_cmd().
+  void (*error_handler)(const char*) = nullptr;
+
 /// Forward declaration.
   ForwardDecl<DLLoader> dlloader_fwd;
   DLLoader& dlloader=*dlloader_fwd;
@@ -376,6 +384,10 @@ public:
   bool updateFlagsTop();
 /// Set end of input file
   void setEndPlumed();
+/// Call error handler.
+/// Should only be called from \ref plumed_plumedmain_cmd().
+/// If the error handler was not set, returns false.
+  bool callErrorHandler(const char* msg)const;
 };
 
 /////
@@ -445,6 +457,15 @@ inline
 void PlumedMain::setEndPlumed() {
   endPlumed=true;
 }
+
+inline
+bool PlumedMain::callErrorHandler(const char* msg)const {
+  if(error_handler) {
+    error_handler(msg);
+    return true;
+  } else return false;
+}
+
 
 }
 
