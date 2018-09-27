@@ -281,7 +281,6 @@ PIV::PIV(const ActionOptions&ao):
 //com2atoms(std:: vector<std:: vector<unsigned> >(Nlist))
 {
   log << "Starting PIV Constructor\n";
-  unsigned rank=comm.Get_rank();
 
   // Precision on the real-to-integer transformation for the sorting
   parse("PRECISION",Nprec);
@@ -303,6 +302,7 @@ PIV::PIV(const ActionOptions&ao):
     log << "Serial PIV construction\n";
   } else     {
     log << "Parallel PIV construction\n";
+    unsigned rank=comm.Get_rank();
   }
 
   // Derivatives
@@ -753,7 +753,6 @@ void PIV::calculate()
   // Transform (and sort) the rPIV before starting the dynamics
   if (((prev_stp==-1) || (init_stp==1)) &&!CompDer) {
     if(prev_stp!=-1){init_stp=0;}
-    log << "Debug " << prev_stp << " " << init_stp << "\n";
     // Calculate the volume scaling factor
     if(Svol) {
       Fvol=cbrt(Vol0/getBox().determinant());
@@ -924,7 +923,7 @@ void PIV::calculate()
         }
         if(timer) stopwatch.stop("1 Build cPIV");
         if(timer) stopwatch.start("2 Sort cPIV");
-        if(!doserial) {
+        if(!doserial && comm.initialized()) {
           // Vectors keeping track of the dimension and the starting-position of the rank-specific pair vector in the big pair vector.
           std:: vector<int> Vdim(stride,0);
           std:: vector<int> Vpos(stride,0);
@@ -1207,7 +1206,7 @@ void PIV::calculate()
       }
     }
 
-    if (!serial) {
+    if (!serial && comm.initialized()) {
       comm.Barrier();
       comm.Sum(&m_PIVdistance,1);
       if(!m_deriv.empty()) comm.Sum(&m_deriv[0][0],3*m_deriv.size());
