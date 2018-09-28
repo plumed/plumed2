@@ -648,7 +648,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         if(getPntrToArgument(i)->isPeriodic() != BiasGrid_->getIsPeriodic()[0]) {
           error("periodicity mismatch between arguments and input bias");
         }
-        log.printf("  Restarting from %s:",gridreadfilenames_[i].c_str());
+        log.printf("  Restarting from %s:\n",gridreadfilenames_[i].c_str());
         if(getRestart()) restartedFromGrid=true;
       } else {
         if(!sparsegrid) {BiasGrid_.reset( new Grid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true) );}

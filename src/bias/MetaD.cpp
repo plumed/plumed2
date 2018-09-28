@@ -261,7 +261,39 @@ The kinetics of the transitions between basins can also be analysed on the fly a
 in \cite PRL230602. The flag ACCELERATION turn on accumulation of the acceleration
 factor that can then be used to determine the rate. This method can be used together
 with \ref COMMITTOR analysis to stop the simulation when the system get to the target basin.
-It must be used together with Well-Tempered Metadynamics.
+It must be used together with Well-Tempered Metadynamics. If restarting from a previous
+metadynamics you need to use the ACCELERATION_RFILE keyword to give the name of the
+data file from which the previous value of the acceleration factor should be read, otherwise the
+calculation of the acceleration factor will be wrong.
+
+\par
+By using the flag FREQUENCY_ADAPTIVE the frequency adaptive scheme introduced in \cite Wang-JCP-2018
+is turned on. The frequency for hill addition then changes dynamically based on the acceleration factor
+according to the following equation
+\f[
+\tau_{\mathrm{dep}}(t) =
+\min\left[
+\tau_0 \cdot
+\max\left[\frac{\alpha(t)}{\theta},1\right]
+,\tau_{c}
+\right]
+\f]
+where \f$\tau_0\f$ is the initial hill addition frequency given by the PACE keyword,
+\f$\tau_{c}\f$ is the maximum allowed frequency given by the FA_MAX_PACE keyword,
+\f$\alpha(t)\f$ is the instantaneous acceleration factor at time \f$t\f$,
+and \f$\theta\f$ is a threshold value that acceleration factor has to reach before
+triggering a change in the hill addition frequency given by the FA_MIN_ACCELERATION keyword.
+The frequency for updating the hill addition frequency according to this equation is
+given by the FA_UPDATE_FREQUENCY keyword, by default it is the same as the value given
+in PACE. The hill hill addition frequency increase monotonously such that if the
+instantaneous acceleration factor is lower than in the previous updating step the
+previous \f$\tau_{\mathrm{dep}}\f$ is kept rather than updating it to a lower value.
+The instantaneous hill addition frequency \f$\tau_{\mathrm{dep}}(t)\f$ is outputted
+to pace component. Note that if restarting from a previous metadynamics run you need to
+use the ACCELERATION_RFILE keyword to read in the acceleration factors from the
+previous run, otherwise the hill addition frequency will start from the initial
+frequency.
+
 
 \par
 You can also provide a target distribution using the keyword TARGET
@@ -380,6 +412,13 @@ private:
   double kbt_;
   int stride_;
   bool welltemp_;
+  //
+  int current_stride;
+  bool freq_adaptive_;
+  int fa_update_frequency_;
+  int fa_max_stride_;
+  double fa_min_acceleration_;
+  //
   std::unique_ptr<double[]> dp_;
   int adaptive_;
   std::unique_ptr<FlexibleBin> flexbin;
@@ -388,6 +427,7 @@ private:
   int mw_id_;
   int mw_rstride_;
   bool walkers_mpi;
+  bool flying;
   unsigned mpi_nw_;
   unsigned mpi_mw_;
   bool acceleration;
@@ -425,6 +465,7 @@ private:
   bool   scanOneHill(IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate);
   void   computeReweightingFactor();
   double getTransitionBarrierBias();
+  void updateFrequencyAdaptiveStride();
   string fmt;
 
 public:
@@ -446,6 +487,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.addOutputComponent("maxbias", "CALC_MAX_BIAS", "the maximum of the metadynamics V(s, t)");
   keys.addOutputComponent("transbias", "CALC_TRANSITION_BIAS", "the metadynamics transition bias V*(t)");
+  keys.addOutputComponent("pace","FREQUENCY_ADAPTIVE","the hill addition frequency when employing frequency adaptive metadynamics");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
@@ -486,11 +528,16 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
+  keys.addFlag("FLYING_GAUSSIAN",false,"Switch on flying Gaussian method, must be used with WALKERS_MPI");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");
   keys.add("optional","ACCELERATION_RFILE","a data file from which the acceleration should be read at the initial step of the simulation");
   keys.addFlag("CALC_MAX_BIAS", false, "Set to TRUE if you want to compute the maximum of the metadynamics V(s, t)");
   keys.addFlag("CALC_TRANSITION_BIAS", false, "Set to TRUE if you want to compute a metadynamics transition bias V*(t)");
   keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELLx with x=0,1,2,...,n. Each specifies the coordinates for one well as in transition-tempered metadynamics. At least one must be provided.");
+  keys.addFlag("FREQUENCY_ADAPTIVE",false,"Set to TRUE if you want to enable frequency adaptive metadynamics such that the frequency for hill addition to change dynamically based on the acceleration factor.");
+  keys.add("optional","FA_UPDATE_FREQUENCY","the frequency for updating the hill addition pace in frequency adaptive metadynamics, by default this is equal to the value given in PACE");
+  keys.add("optional","FA_MAX_PACE","the maximum hill addition frequency allowed in frequency adaptive metadynamics. By default there is no maximum value.");
+  keys.add("optional","FA_MIN_ACCELERATION","only update the hill addition pace in frequency adaptive metadynamics after reaching the minimum acceleration factor given here. By default it is 1.0.");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -513,11 +560,19 @@ MetaD::MetaD(const ActionOptions& ao):
   tt_specs_(false, "TT", "Transition Tempered", -1.0, 0.0, 1.0),
   kbt_(0.0),
   stride_(0), welltemp_(false),
+// frequency adaptive
+  current_stride(0),
+  freq_adaptive_(false),
+  fa_update_frequency_(0),
+  fa_max_stride_(0),
+  fa_min_acceleration_(1.0),
 // Other stuff
   adaptive_(FlexibleBin::none),
 // Multiple walkers initialization
   mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
   walkers_mpi(false), mpi_nw_(0), mpi_mw_(0),
+// Flying Gaussian
+  flying(false),
   acceleration(false), acc(0.0), acc_restart_mean_(0.0),
   calc_max_bias_(false), max_bias_(0.0),
   calc_transition_bias_(false), transition_bias_(0.0),
@@ -586,6 +641,7 @@ MetaD::MetaD(const ActionOptions& ao):
   parse("HEIGHT",height0_);
   parse("PACE",stride_);
   if(stride_<=0 ) error("frequency for hill addition is nonsensical");
+  current_stride = stride_;
   string hillsfname="HILLS";
   parse("FILE",hillsfname);
 
@@ -751,6 +807,9 @@ MetaD::MetaD(const ActionOptions& ao):
   // MPI version
   parseFlag("WALKERS_MPI",walkers_mpi);
 
+  // Flying Gaussian
+  parseFlag("FLYING_GAUSSIAN", flying);
+
   // Inteval keyword
   vector<double> tmpI(2);
   parseVector("INTERVAL",tmpI);
@@ -770,6 +829,30 @@ MetaD::MetaD(const ActionOptions& ao):
   string acc_rfilename;
   if (acceleration) {
     parse("ACCELERATION_RFILE", acc_rfilename);
+  }
+
+  freq_adaptive_=false;
+  parseFlag("FREQUENCY_ADAPTIVE",freq_adaptive_);
+  //
+  fa_update_frequency_=0;
+  parse("FA_UPDATE_FREQUENCY",fa_update_frequency_);
+  if(fa_update_frequency_!=0 && !freq_adaptive_) {
+    plumed_merror("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive MetaD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
+  }
+  if(fa_update_frequency_==0 && freq_adaptive_) {
+    fa_update_frequency_=stride_;
+  }
+  //
+  fa_max_stride_=0;
+  parse("FA_MAX_PACE",fa_max_stride_);
+  if(fa_max_stride_!=0 && !freq_adaptive_) {
+    plumed_merror("It doesn't make sense to use the FA_MAX_PACE keyword if frequency adaptive MetaD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
+  }
+  //
+  fa_min_acceleration_=1.0;
+  parse("FA_MIN_ACCELERATION",fa_min_acceleration_);
+  if(fa_min_acceleration_!=1.0 && !freq_adaptive_) {
+    plumed_merror("It doesn't make sense to use the FA_MIN_ACCELERATION keyword if frequency adaptive MetaD hasn't been activated by using the FREQUENCY_ADAPTIVE flag");
   }
 
   checkRead();
@@ -880,6 +963,11 @@ MetaD::MetaD(const ActionOptions& ao):
     }
   }
 
+  if(flying) {
+    if(!walkers_mpi) error("Flying Gaussian method must be used with MPI version of multiple walkers");
+    log.printf("  Flying Gaussian method with %d walkers active\n",mpi_nw_);
+  }
+
   if( rewf_grid_.size()>0 ) {
     addComponent("rbias"); componentIsNotPeriodic("rbias");
     addComponent("rct"); componentIsNotPeriodic("rct");
@@ -892,12 +980,15 @@ MetaD::MetaD(const ActionOptions& ao):
     if (kbt_ == 0.0) {
       error("The calculation of the acceleration works only if simulation temperature has been defined");
     }
-    log.printf("  calculation on the fly of the acceleration factor");
+    log.printf("  calculation on the fly of the acceleration factor\n");
     addComponent("acc"); componentIsNotPeriodic("acc");
     // Set the initial value of the the acceleration.
     // If this is not a restart, set to 1.0.
     if (acc_rfilename.length() == 0) {
       getPntrToComponent("acc")->set(1.0);
+      if(getRestart()) {
+        log.printf("  WARNING: calculating the acceleration factor in a restarted run without reading in the previous value will most likely lead to incorrect results. You should use the ACCELERATION_RFILE keyword.\n");
+      }
       // Otherwise, read and set the restart value.
     } else {
       // Restart of acceleration does not make sense if the restart timestep is zero.
@@ -924,6 +1015,7 @@ MetaD::MetaD(const ActionOptions& ao):
       acc_restart_mean_ = acc_rmean;
       // Set component based on the read values.
       getPntrToComponent("acc")->set(acc_rmean);
+      log.printf("  initial acceleration factor read from file %s: value of %f at time %f\n",acc_rfilename.c_str(),acc_rmean,acc_rtime);
     }
   }
   if (calc_max_bias_) {
@@ -955,6 +1047,30 @@ MetaD::MetaD(const ActionOptions& ao):
         if (transitionwells_[i][j] < min || transitionwells_[i][j] > max) error(" transition well is not in grid");
       }
     }
+  }
+
+  if(freq_adaptive_) {
+    if(!acceleration) {
+      plumed_merror("Frequency adaptive metadynamics only works if the calculation of the acceleration factor is enabled with the ACCELERATION keyword\n");
+    }
+    if(walkers_mpi) {
+      plumed_merror("Combining frequency adaptive metadynamics with MPI multiple walkers is not allowed");
+    }
+
+    log.printf("  Frequency adaptive metadynamics enabled\n");
+    if(getRestart() && acc_rfilename.length() == 0) {
+      log.printf("  WARNING: using the frequency adaptive scheme in a restarted run without reading in the previous value of the acceleration factor will most likely lead to incorrect results. You should use the ACCELERATION_RFILE keyword.\n");
+    }
+    log.printf("  The frequency for hill addition will change dynamically based on the metadynamics acceleration factor\n");
+    log.printf("  The hill addition frequency will be updated every %d steps\n",fa_update_frequency_);
+    if(fa_min_acceleration_>1.0) {
+      log.printf("  The hill addition frequency will only be updated once the metadynamics acceleration factor becomes larger than %.1f \n",fa_min_acceleration_);
+    }
+    if(fa_max_stride_!=0) {
+      log.printf("  The hill addition frequency will not become larger than %d steps\n",fa_max_stride_);
+    }
+    addComponent("pace"); componentIsNotPeriodic("pace");
+    updateFrequencyAdaptiveStride();
   }
 
   // for performance
@@ -1181,6 +1297,9 @@ MetaD::MetaD(const ActionOptions& ao):
     log<<plumed.cite("White, Dama, and Voth, J. Chem. Theory Comput. 11, 2451 (2015)");
     log<<plumed.cite("Marinelli and Faraldo-Gómez,  Biophys. J. 108, 2779 (2015)");
     log<<plumed.cite("Gil-Ley, Bottaro, and Bussi, J. Chem. Theory Comput. 12, 2790 (2016)");
+  }
+  if(freq_adaptive_) {
+    log<<plumed.cite("Wang, Valsson, Tiwary, Parrinello, and Lindorff-Larsen, J. Chem. Phys. 149, 072309 (2018)");
   }
   log<<"\n";
 }
@@ -1573,6 +1692,10 @@ void MetaD::calculate()
     getPntrToComponent("acc")->set(mean_acc);
   } else if (acceleration && isFirstStep && acc_restart_mean_ > 0.0) {
     acc = acc_restart_mean_ * static_cast<double>(getStep());
+    if(freq_adaptive_) {
+      // has to be done here if restarting, as the acc is not defined before
+      updateFrequencyAdaptiveStride();
+    }
   }
 
   getPntrToComponent("work")->set(work_);
@@ -1589,7 +1712,7 @@ void MetaD::update() {
 
   // adding hills criteria (could be more complex though)
   bool nowAddAHill;
-  if(getStep()%stride_==0 && !isFirstStep )nowAddAHill=true;
+  if(getStep()%current_stride==0 && !isFirstStep )nowAddAHill=true;
   else {
     nowAddAHill=false;
     isFirstStep=false;
@@ -1635,6 +1758,13 @@ void MetaD::update() {
       comm.Bcast(all_sigma,0);
       comm.Bcast(all_height,0);
       comm.Bcast(all_multivariate,0);
+
+      // Flying Gaussian
+      if (flying) {
+        hills_.clear();
+        comm.Barrier();
+      }
+
       for(unsigned i=0; i<mpi_nw_; i++) {
         // actually add hills one by one
         std::vector<double> cv_now(cv.size());
@@ -1644,7 +1774,12 @@ void MetaD::update() {
 // notice that if gamma=1 we store directly -F so this scaling is not necessary:
         Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i]*(biasf_>1.0?(biasf_-1.0)/biasf_:1.0),all_multivariate[i]);
         addGaussian(newhill);
-        writeGaussian(newhill,hillsOfile_);
+
+        // Flying Gaussian
+        if (!flying) {
+          writeGaussian(newhill,hillsOfile_);
+        }
+
       }
     } else {
       Gaussian newhill=Gaussian(cv,thissigma,height,multivariate);
@@ -1719,6 +1854,12 @@ void MetaD::update() {
     transition_bias_ = getTransitionBarrierBias();
     getPntrToComponent("transbias")->set(transition_bias_);
   }
+
+  // Frequency adaptive metadynamics - update hill addition frequency
+  if(freq_adaptive_ && getStep()%fa_update_frequency_==0) {
+    updateFrequencyAdaptiveStride();
+  }
+
 }
 
 /// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height
@@ -1869,6 +2010,21 @@ double MetaD::getTransitionBarrierBias() {
     }
     return least_transition_bias;
   }
+}
+
+
+void MetaD::updateFrequencyAdaptiveStride() {
+  plumed_massert(freq_adaptive_,"should only be used if frequency adaptive metadynamics is enabled");
+  plumed_massert(acceleration,"frequency adaptive metadynamics can only be used if the acceleration factor is calculated");
+  const double mean_acc = acc/((double) getStep());
+  int tmp_stride= stride_*floor((mean_acc/fa_min_acceleration_)+0.5);
+  if(mean_acc >= fa_min_acceleration_) {
+    if(tmp_stride > current_stride) {current_stride = tmp_stride;}
+  }
+  if(fa_max_stride_!=0 && current_stride>fa_max_stride_) {
+    current_stride=fa_max_stride_;
+  }
+  getPntrToComponent("pace")->set(current_stride);
 }
 
 }

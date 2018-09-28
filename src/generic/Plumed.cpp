@@ -35,8 +35,7 @@
 
 using namespace std;
 
-namespace PLMD
-{
+namespace PLMD {
 namespace generic {
 
 //+PLUMEDOC GENERIC PLUMED
@@ -53,9 +52,9 @@ However, most of the features are expected to work correctly.
 Notes:
 - The \ref LOAD action will not work correctly since registers will be shared among the two instances.
   In particular, the loaded actions will be visible to both guest and host irrespectively of where they are loaded from.
-  This can be fixed (work in progress).
+  This can be fixed and will probably be fixed in a later version.
 - `CHDIR` is not thread safe.
-   However, in most implementations there will be a single thread running  PLUMED, with perhaps multiple OpenMD threads
+   However, in most implementations there will be a single process running PLUMED, with perhaps multiple OpenMP threads
    spawn in order to parallelize the calculation of individual variables. So, this is likely not a problem.
 - MPI is working correctly. However, notice that the guest PLUMED will always run with a single process.
   Multiple replicas should be handled correctly.
@@ -208,7 +207,7 @@ p([&]() {
     return PlumedHandle();
   } else {
     log<<"  using the kernel "<<kernel<<"\n";
-    return PlumedHandle::DL(kernel.c_str());
+    return PlumedHandle::dlopen(kernel.c_str());
   }
 }()),
 API([&]() {

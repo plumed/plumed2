@@ -88,7 +88,7 @@ we use to calculate our PAMM components are thus:
 In the above \f$N_k\f$ is a normalisation factor that is calculated based on \f$\Sigma\f$.  The vector \f$\mathbf{s}\f$ is a vector of quantities
 that are calculated by the \ref TORSIONS actions.  This vector must be two dimensional and in this case each component is the value of a
 torsion angle.  If we look at the two \ref TORSIONS actions in the above we are calculating the \f$\phi\f$ and \f$\psi\f$ backbone torsional
-angles in a protein (Note the use of \ref MOLFINTO to make specification of atoms straightforward).  We thus calculate the values of our
+angles in a protein (Note the use of \ref MOLINFO to make specification of atoms straightforward).  We thus calculate the values of our
 2 \f$ \{ \phi \} \f$  kernels 3 times.  The first time we use the \f$\phi\f$ and \f$\psi\f$ angles in the 2nd resiude of the protein,
 the second time it is the \f$\phi\f$ and \f$\psi\f$ angles of the 3rd residue of the protein and the third time it is the \f$\phi\f$ and \f$\psi\f$ angles
 of the 4th residue in the protein.  The final two quantities that are output by the print command, p.mean-1 and p.mean-2, are the averages

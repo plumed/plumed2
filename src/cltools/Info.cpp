@@ -73,6 +73,7 @@ void Info::registerKeywords( Keywords& keys ) {
   keys.addFlag("--long-version",false,"print the version number (long version)");
   keys.addFlag("--git-version",false,"print the version number (git version, if available)");
   keys.addFlag("--include-dir",false,"print the location of the include dir");
+  keys.addFlag("--soext",false,"print the extension of shared libraries (so or dylib)");
 }
 
 Info::Info(const CLToolOptions& co ):
@@ -91,6 +92,7 @@ int Info::main(FILE* in, FILE*out,Communicator& pc) {
   bool printlongversion; parseFlag("--long-version",printlongversion);
   bool printgitversion; parseFlag("--git-version",printgitversion);
   bool printincludedir; parseFlag("--include-dir",printincludedir);
+  bool printsoext; parseFlag("--soext",printsoext);
   if(printroot) fprintf(out,"%s\n",config::getPlumedRoot().c_str());
   if(printconfiguration) fprintf(out,"%s",config::getMakefile().c_str());
   if(printincludedir) fprintf(out,"%s\n",config::getPlumedIncludedir().c_str());
@@ -111,6 +113,7 @@ int Info::main(FILE* in, FILE*out,Communicator& pc) {
   if(printversion) fprintf(out,"%s\n",config::getVersion().c_str());
   if(printlongversion) fprintf(out,"%s\n",config::getVersionLong().c_str());
   if(printgitversion) fprintf(out,"%s\n",config::getVersionGit().c_str());
+  if(printsoext) fprintf(out,"%s\n",config::getSoExt().c_str());
 
   return 0;
 }

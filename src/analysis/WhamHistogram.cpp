@@ -25,7 +25,7 @@
 namespace PLMD {
 namespace analysis {
 
-//+PLUMEDOC ANALYSIS WHAM_HISTOGRAM
+//+PLUMEDOC REWEIGHTING WHAM_HISTOGRAM
 /*
 This can be used to output the a histogram using the weighted histogram techinque
 

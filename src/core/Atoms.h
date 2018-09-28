@@ -163,8 +163,8 @@ public:
   double getKbT()const;
 
   void setNatoms(int);
-  const int getNatoms()const;
-  const int getNVirtualAtoms()const;
+  int getNatoms()const;
+  int getNVirtualAtoms()const;
 
   const long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
@@ -232,15 +232,20 @@ public:
   bool usingNaturalUnits()const;
   void setNaturalUnits(bool n) {naturalUnits=n;}
   void setMDNaturalUnits(bool n) {MDnaturalUnits=n;}
+
+  void setExtraCV(const std::string &name,void*p);
+  void setExtraCVForce(const std::string &name,void*p);
+  double getExtraCV(const std::string &name);
+  void updateExtraCVForce(const std::string &name,double f);
 };
 
 inline
-const int Atoms::getNatoms()const {
+int Atoms::getNatoms()const {
   return natoms;
 }
 
 inline
-const int Atoms::getNVirtualAtoms()const {
+int Atoms::getNVirtualAtoms()const {
   return virtualAtomsActions.size();
 }
 

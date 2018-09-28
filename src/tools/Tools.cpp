@@ -35,22 +35,6 @@
 using namespace std;
 namespace PLMD {
 
-static std::map<string, double> leptonConstants= {
-  {"e", std::exp(1.0)},
-  {"log2e", 1.0/std::log(2.0)},
-  {"log10e", 1.0/std::log(10.0)},
-  {"ln2", std::log(2.0)},
-  {"ln10", std::log(10.0)},
-  {"pi", pi},
-  {"pi_2", pi*0.5},
-  {"pi_4", pi*0.25},
-//  {"1_pi", 1.0/pi},
-//  {"2_pi", 2.0/pi},
-//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
-  {"sqrt2", std::sqrt(2.0)},
-  {"sqrt1_2", std::sqrt(0.5)}
-};
-
 template<class T>
 bool Tools::convertToAny(const string & str,T & t) {
   istringstream istr(str.c_str());
@@ -89,7 +73,7 @@ bool Tools::convertToReal(const string & str,T & t) {
     t=-pi; return true;
   }
   try {
-    t=lepton::Parser::parse(str).evaluate(leptonConstants);
+    t=lepton::Parser::parse(str).evaluate(lepton::Constants());
     return true;
   } catch(PLMD::lepton::Exception& exc) {
   }
@@ -112,7 +96,7 @@ bool Tools::convertToReal(const string & str,T & t) {
     std::string remains; nstr>>remains;
     return remains.length()==0;
   } else if(str=="NAN") {
-    t=NAN;
+    t=std::numeric_limits<double>::quiet_NaN();
     return true;
   }
   return false;

@@ -256,9 +256,12 @@ public:
   }
 };
 
+#ifdef __GNUG__
 // With GNU compiler, we can use __PRETTY_FUNCTION__ to get the function name
-#if !defined(__PRETTY_FUNCTION__)
-#define __PRETTY_FUNCTION__ ""
+#define __PLUMED_FUNCNAME __PRETTY_FUNCTION__
+#else
+// Otherwise, we use the standard C++11 variable
+#define __PLUMED_FUNCNAME __func__
 #endif
 
 /// \relates PLMD::Exception
@@ -266,7 +269,7 @@ public:
 /// Might be useful if we want to use derived exceptions that could
 /// be thrown using `throw DerivedException()<<plumed_here<<" "<<other stuff"`.
 /// It is used in the macros below to throw PLMD::Exception.
-#define plumed_here PLMD::Exception::Location(__FILE__,__LINE__,__PRETTY_FUNCTION__)
+#define plumed_here PLMD::Exception::Location(__FILE__,__LINE__,__PLUMED_FUNCNAME)
 
 /// \relates PLMD::Exception
 /// Throw an exception with information about the position in the file.

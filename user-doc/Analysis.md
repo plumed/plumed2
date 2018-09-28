@@ -27,10 +27,10 @@ are within particular ranges.  In other words, the above printing commands, in t
 with \ref UPDATE_IF, allow you to identify the frames in your trajectory that satisfy
 some particular criteria and output information on those frames only.
 
-Another useful command is the \ref COMMITTOR command.  This command can only be used when running
-a molecular dynamics trajectory - it cannot be used when analysing a trajectory using \ref driver.
+Another useful command is the \ref COMMITTOR command. 
 As detailed in the documentation for \ref COMMITTOR this command tells PLUMED (and the underlying 
-MD code) to stop the calculation one some criteria is satisfied.
+MD code) to stop the calculation one some criteria is satisfied, alternatively one can use it to keep
+track of the number of times a criteria is satisfied.
 
 A number of more complicated forms of analysis can be performed that take a number of frames from 
 the trajectory as input.  In all these commands the STRIDE keyword is used to tell PLUMED how 
@@ -40,6 +40,8 @@ to reweight the trajectory frames in order to remove the effect the bias has on 
 of the system.  The following methods can thus be used to calculate weights for the various trajectory
 frames so that the final ensemble average is an average for the cannonical ensemble at the appropriate 
 temperature.
+
+\section analysisbias Unbiasing and Averaging
 
 @REWEIGHTING@
 
@@ -178,7 +180,7 @@ OUTPUT_COLVAR_FILE USE_OUTPUT_DATA_FROM=ll2 FILE=mylandmarks
 When landmark selection is performed in this way a weight is ascribed to each of the landmark configurations.  This weight is
 calculated by summing the weights of all the trajectory frames in each of the landmarks Voronoi polyhedra 
 (https://en.wikipedia.org/wiki/Voronoi_diagram).  The weight of each trajectory frame is one unless you are reweighting using the
-formula described in the \ref analysisbas to counteract the fact of a simulation bias or an elevated temperature.  If you are reweighting
+formula described in the \ref analysisbias to counteract the fact of a simulation bias or an elevated temperature.  If you are reweighting
 using these formula the weight of each of the points is equal to the exponential term in the numerator of these expressions.
 
 \section dimred Dimensionality Reduction
