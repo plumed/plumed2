@@ -65,19 +65,20 @@ class Communicator {
   struct Data {
     void*pointer;
     int size;
+    int nbytes=0;
     MPI_Datatype type;
 /// Init from pointer and size
-    template <typename T> Data(T*p,int s): pointer(p), size(s), type(getMPIType<T>()) {}
+    template <typename T> Data(T*p,int s): pointer(p), size(s), nbytes(sizeof(T)), type(getMPIType<T>()) {}
 /// Init from reference
-    template <typename T> explicit Data(T&p): pointer(&p), size(1), type(getMPIType<T>()) {}
+    template <typename T> explicit Data(T&p): pointer(&p), size(1), nbytes(sizeof(T)), type(getMPIType<T>()) {}
 /// Init from pointer to VectorGeneric
-    template <unsigned n> explicit Data(VectorGeneric<n> *p,int s): pointer(p), size(n*s), type(getMPIType<double>()) {}
+    template <unsigned n> explicit Data(VectorGeneric<n> *p,int s): pointer(p), size(n*s), nbytes(sizeof(double)), type(getMPIType<double>()) {}
 /// Init from reference to VectorGeneric
-    template <unsigned n> explicit Data(VectorGeneric<n> &p): pointer(&p), size(n), type(getMPIType<double>()) {}
+    template <unsigned n> explicit Data(VectorGeneric<n> &p): pointer(&p), size(n), nbytes(sizeof(double)), type(getMPIType<double>()) {}
 /// Init from pointer to TensorGeneric
-    template <unsigned n,unsigned m> explicit Data(TensorGeneric<n,m> *p,int s): pointer(p), size(n*m*s), type(getMPIType<double>()) {}
+    template <unsigned n,unsigned m> explicit Data(TensorGeneric<n,m> *p,int s): pointer(p), size(n*m*s), nbytes(sizeof(double)), type(getMPIType<double>()) {}
 /// Init from reference to TensorGeneric
-    template <unsigned n,unsigned m> explicit Data(TensorGeneric<n,m> &p): pointer(&p), size(n*m), type(getMPIType<double>()) {}
+    template <unsigned n,unsigned m> explicit Data(TensorGeneric<n,m> &p): pointer(&p), size(n*m), nbytes(sizeof(double)), type(getMPIType<double>()) {}
 /// Init from reference to std::vector
     template <typename T> explicit Data(std::vector<T>&v) {
       Data d(v.data(),v.size()); pointer=d.pointer; size=d.size; type=d.type;
@@ -98,13 +99,14 @@ class Communicator {
   struct ConstData {
     const void*pointer;
     int size;
+    int nbytes=0;
     MPI_Datatype type;
-    template <typename T> explicit ConstData(const T*p,int s): pointer(p), size(s), type(getMPIType<T>()) {}
-    template <typename T> explicit ConstData(const T&p): pointer(&p), size(1), type(getMPIType<T>()) {}
-    template <unsigned n> explicit ConstData(const VectorGeneric<n> *p,int s): pointer(p), size(n*s), type(getMPIType<double>()) {}
-    template <unsigned n> explicit ConstData(const VectorGeneric<n> &p): pointer(&p), size(n), type(getMPIType<double>()) {}
-    template <unsigned n,unsigned m> explicit ConstData(const TensorGeneric<n,m> *p,int s): pointer(p), size(n*m*s), type(getMPIType<double>()) {}
-    template <unsigned n,unsigned m> explicit ConstData(const TensorGeneric<n,m> &p): pointer(&p), size(n*m), type(getMPIType<double>()) {}
+    template <typename T> explicit ConstData(const T*p,int s): pointer(p), size(s), nbytes(sizeof(T)), type(getMPIType<T>()) {}
+    template <typename T> explicit ConstData(const T&p): pointer(&p), size(1), nbytes(sizeof(T)), type(getMPIType<T>()) {}
+    template <unsigned n> explicit ConstData(const VectorGeneric<n> *p,int s): pointer(p), size(n*s), nbytes(sizeof(double)), type(getMPIType<double>()) {}
+    template <unsigned n> explicit ConstData(const VectorGeneric<n> &p): pointer(&p), size(n), nbytes(sizeof(double)), type(getMPIType<double>()) {}
+    template <unsigned n,unsigned m> explicit ConstData(const TensorGeneric<n,m> *p,int s): pointer(p), size(n*m*s), nbytes(sizeof(double)), type(getMPIType<double>()) {}
+    template <unsigned n,unsigned m> explicit ConstData(const TensorGeneric<n,m> &p): pointer(&p), size(n*m), nbytes(sizeof(double)), type(getMPIType<double>()) {}
     template <typename T> explicit ConstData(const std::vector<T>&v) {
       ConstData d(v.data(),v.size()); pointer=d.pointer; size=d.size; type=d.type;
     }
