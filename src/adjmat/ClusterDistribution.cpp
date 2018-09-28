@@ -22,6 +22,7 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
+#include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "multicolvar/MultiColvarBase.h"
@@ -73,14 +74,12 @@ private:
 /// The cluster we are looking for
   unsigned clustr;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ClusterDistribution(const ActionOptions&);
+/// Interpret the * keyword for this action
+  void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
 /// The number of derivatives
   unsigned getNumberOfDerivatives() const ;
 /// Work out what needs to be done in this action
@@ -92,22 +91,7 @@ public:
   void apply() {}
 };
 
-PLUMED_REGISTER_ACTION(ClusterDistribution,"CLUSTER_DISTRIBUTION")
-PLUMED_REGISTER_SHORTCUT(ClusterDistribution,"CLUSTER_DISTRIBUTION")
-
-void ClusterDistribution::shortcutKeywords( Keywords& keys ) {
-  multicolvar::MultiColvarBase::shortcutKeywords( keys );
-}
-
-void ClusterDistribution::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-    const std::map<std::string,std::string>& keys,
-    std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("CLUSTER_DISTRIBUTION");
-  for(unsigned i=1; i<words.size(); ++i) input.push_back(words[i]);
-  actions.push_back( input );
-  // Now expand any multicolvar stuff
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(ClusterDistribution,"CLUSTER_DISTRIBUTION_CALC")
 
 void ClusterDistribution::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
@@ -150,6 +134,10 @@ ClusterDistribution::ClusterDistribution(const ActionOptions&ao):
   plumed.getAtoms().insertGroup( getLabel(), m->second );
 }
 
+void ClusterDistribution::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
+  multicolvar::MultiColvarBase::interpretDotStar( getLabel(), ulab, nargs, myvals, plumed.getActionSet() );
+}
+
 void ClusterDistribution::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   plumed_assert( getPntrToArgument(0)->valueHasBeenSet() ); actionsThatSelectTasks.push_back( getLabel() );
   if( getNumberOfArguments()>1 ) plumed_assert( getPntrToArgument(1)->valueHasBeenSet() );
@@ -176,6 +164,28 @@ void ClusterDistribution::performTask( const unsigned& current, MultiValue& myva
       else myvals.addValue( getPntrToOutput(0)->getPositionInStream(), 1.0 );
     }
   }
+}
+
+class ClusterDistributionShortcut : public ActionShortcut {
+public:
+  static void registerKeywords( Keywords& keys );
+  ClusterDistributionShortcut(const ActionOptions&);
+};
+
+PLUMED_REGISTER_ACTION(ClusterDistributionShortcut,"CLUSTER_DISTRIBUTION")
+
+void ClusterDistributionShortcut::registerKeywords( Keywords& keys ) {
+  ActionShortcut::registerKeywords( keys );
+  multicolvar::MultiColvarBase::shortcutKeywords( keys );
+}
+
+ClusterDistributionShortcut::ClusterDistributionShortcut(const ActionOptions&ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, this );
+  readInputLine( getShortcutLabel() + ": CLUSTER_DISTRIBUTION_CALC " + convertInputLineToString() );
+  multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel(),  getShortcutLabel(),  "", keymap, this ); 
 }
 
 }

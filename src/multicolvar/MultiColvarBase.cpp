@@ -581,24 +581,28 @@ MultiColvarBase::~MultiColvarBase() {
   atoms.removeGroup( getLabel() );
 }
 
-void MultiColvarBase::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
-  Keywords skeys; MultiColvarBase::shortcutKeywords( skeys ); 
+void MultiColvarBase::interpretDotStar( const std::string& mylabel, const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals, const ActionSet& actset ) {
+  Keywords skeys; MultiColvarBase::shortcutKeywords( skeys );
   std::vector<std::string> out_comps( skeys.getAllOutputComponents() );
   for(unsigned i=0; i<out_comps.size(); ++i) {
     std::string keyname; bool donumtest = skeys.getKeywordForThisOutput( out_comps[i], keyname );
-    if( donumtest ) { 
+    if( donumtest ) {
       if( skeys.numbered( keyname ) ) {
         for(unsigned j=1;; ++j) {
           std::string numstr; Tools::convert( j, numstr );
-          ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] + numstr );
+          ActionWithValue* action=actset.selectWithLabel<ActionWithValue*>( mylabel + out_comps[i] + numstr );
           if( !action ) break;
           (action->copyOutput(0))->interpretDataRequest( ulab, nargs, myvals, "" );
         }
-      } 
+      }
     }
-    ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] );
+    ActionWithValue* action=actset.selectWithLabel<ActionWithValue*>( mylabel + out_comps[i] );
     if( action ) (action->copyOutput(0))->interpretDataRequest( ulab, nargs, myvals, "" );
   }
+} 
+
+void MultiColvarBase::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
+  MultiColvarBase::interpretDotStar( getLabel(), ulab, nargs, myvals, plumed.getActionSet() );
 }
 
 void MultiColvarBase::addValueWithDerivatives() {

@@ -23,6 +23,7 @@
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "core/Atoms.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "ClusteringBase.h"
@@ -64,19 +65,19 @@ class ClusterWeights :
   public ActionWithArguments,
   public ActionWithValue {
 private:
+/// Is this created from properties
+  bool properties;
 /// The cluster we are looking for
   unsigned clustr;
 /// The forces
   std::vector<double> forcesToApply;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ClusterWeights(const ActionOptions&);
+/// Interpret the label.* to get all the actions that are created by the action if it is a CLUSTER_PROPERTIES 
+  void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
 /// The number of derivatives
   unsigned getNumberOfDerivatives() const ;
 /// Work out what needs to be done in this action
@@ -89,71 +90,6 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(ClusterWeights,"CLUSTER_WEIGHTS")
-PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_WEIGHTS")
-PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_PROPERTIES")
-PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_NATOMS")
-PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_WITHSURFACE")
-PLUMED_REGISTER_SHORTCUT(ClusterWeights,"CLUSTER_DIAMETER")
-
-void ClusterWeights::shortcutKeywords( Keywords& keys ) {
-  keys.add("optional","ARG","calculate the sum of the arguments calculated by this action for the cluster");
-  keys.add("optional","RCUT_SURF","");
-  multicolvar::MultiColvarBase::shortcutKeywords( keys );
-}
-
-void ClusterWeights::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                     const std::map<std::string,std::string>& keys,
-                                     std::vector<std::vector<std::string> >& actions ) {
-  if( words[0]!="CLUSTER_DIAMETER" ) {
-    std::vector<std::string> weights;
-    if( words[0]=="CLUSTER_NATOMS" ) weights.push_back( lab + "_weights:" );
-    else if( words[0]=="CLUSTER_WITHSURFACE" ) weights.push_back( lab + "_wnosurf:");
-    else weights.push_back( lab + ":" );
-    weights.push_back("CLUSTER_WEIGHTS");
-    for(unsigned i=1; i<words.size(); ++i) weights.push_back( words[i] );
-    actions.push_back( weights );
-  }
-  if( words[0]=="CLUSTER_PROPERTIES" ) {
-    multicolvar::MultiColvarBase::expandFunctions( lab, keys.find("ARG")->second, lab, words, keys, actions );
-  } else if( words[0]=="CLUSTER_NATOMS" ) {
-    std::vector<std::string> nat_str; nat_str.push_back( lab + ":" ); nat_str.push_back("COMBINE");
-    nat_str.push_back("ARG=" + lab + "_weights"); nat_str.push_back("PERIODIC=NO"); actions.push_back( nat_str );
-  } else if( words[0]=="CLUSTER_WITHSURFACE" ) {
-    // Contact matrix
-    std::vector<std::string> contact_mat; contact_mat.push_back( lab + "_cmat:"); contact_mat.push_back("CONTACT_MATRIX");
-    contact_mat.push_back("GROUP=" + lab + "_wnosurf"); contact_mat.push_back("SWITCH=" + keys.find("RCUT_SURF")->second );
-    actions.push_back( contact_mat );
-    // Matrix of products of cluster weights
-    std::vector<std::string> cweight_mat; cweight_mat.push_back( lab + "_cwmat:"); cweight_mat.push_back("CUSTOM_MATRIX");
-    cweight_mat.push_back("GROUP1=" + lab + "_wnosurf"); cweight_mat.push_back("FUNC=max");
-    actions.push_back( cweight_mat );
-    // Product of matrices
-    std::vector<std::string> prod_mat; prod_mat.push_back( lab + "_pmat:"); prod_mat.push_back("MATHEVAL");
-    prod_mat.push_back("ARG1=" + lab + "_cmat.w"); prod_mat.push_back("ARG2=" + lab + "_cwmat"); prod_mat.push_back("FUNC=x*y");
-    prod_mat.push_back("PERIODIC=NO"); actions.push_back( prod_mat );
-    // Clusters
-    std::vector<std::string> cluste; cluste.push_back( lab + "_clust:" ); cluste.push_back("DFSCLUSTERING");
-    cluste.push_back("MATRIX=" + lab + "_pmat"); actions.push_back( cluste );
-    // Final weights
-    std::vector<std::string> fweights; fweights.push_back( lab + ":" ); fweights.push_back("CLUSTER_WEIGHTS");
-    fweights.push_back("CLUSTERS=" + lab + "_clust"); fweights.push_back("CLUSTER=1");
-    actions.push_back( fweights );
-  } else if( words[0]=="CLUSTER_DIAMETER" ) {
-    // Distance matrix
-    std::vector<std::string> distance_mat; distance_mat.push_back( lab + "_dmat:" ); distance_mat.push_back("DISTANCE_MATRIX");
-    distance_mat.push_back("GROUP=" + keys.find("ARG")->second ); actions.push_back( distance_mat );
-    // Matrix of bonds in cluster
-    std::vector<std::string> bonds_mat; bonds_mat.push_back( lab + "_bmat:"); bonds_mat.push_back("DOTPRODUCT_MATRIX");
-    bonds_mat.push_back("GROUP1=" + keys.find("ARG")->second ); actions.push_back( bonds_mat );
-    // Product of matrices
-    std::vector<std::string> dcls_mat; dcls_mat.push_back( lab + "_dcls:"); dcls_mat.push_back("MATHEVAL");
-    dcls_mat.push_back("ARG1=" + lab + "_dmat.w" ); dcls_mat.push_back("ARG2=" + lab + "_bmat");
-    dcls_mat.push_back("FUNC=x*y"); dcls_mat.push_back("PERIODIC=NO"); actions.push_back( dcls_mat );
-    // And take the highest value
-    std::vector<std::string> maxrad; maxrad.push_back( lab + ":"); maxrad.push_back("HIGHEST");
-    maxrad.push_back("ARG=" + lab + "_dcls"); actions.push_back( maxrad );
-  }
-}
 
 void ClusterWeights::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
@@ -161,13 +97,18 @@ void ClusterWeights::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
   keys.add("compulsory","CLUSTERS","the label of the action that does the clustering");
   keys.add("compulsory","CLUSTER","1","which cluster would you like to look at 1 is the largest cluster, 2 is the second largest, 3 is the the third largest and so on.");
+  keys.add("hidden","FROM_PROPERTIES","indicates that this is created from CLUSTER_PROPERTIES shortcut");
 }
 
 ClusterWeights::ClusterWeights(const ActionOptions&ao):
   Action(ao),
   ActionWithArguments(ao),
-  ActionWithValue(ao)
+  ActionWithValue(ao),
+  properties(false)
 {
+  // Check if created by cluster properties
+  std::string from_p; parse("FROM_PROPERTIES",from_p);
+  if( from_p.length()>0 ) properties=true;
   // Read in the clustering object
   std::vector<Value*> clusters; parseArgumentList("CLUSTERS",clusters);
   if( clusters.size()!=1 ) error("should pass only one matrix to clustering base");
@@ -188,6 +129,11 @@ ClusterWeights::ClusterWeights(const ActionOptions&ao):
   // Create a group for this action so we can associate atoms to these weights easily
   const auto m=plumed.getAtoms().getAllGroups().find(clusters[0]->getPntrToAction()->getLabel());
   plumed.getAtoms().insertGroup( getLabel(), m->second );
+}
+
+void ClusterWeights::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
+  if( !properties ) return;
+  multicolvar::MultiColvarBase::interpretDotStar( getLabel(), ulab, nargs, myvals, plumed.getActionSet() );
 }
 
 void ClusterWeights::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {

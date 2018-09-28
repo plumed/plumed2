@@ -28,6 +28,7 @@
 
 namespace PLMD {
 
+class ActionSet;
 class ActionShortcut;
 
 namespace multicolvar {
@@ -73,6 +74,7 @@ protected:
 public:
   static void shortcutKeywords( Keywords& keys );
   static void readShortcutKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action );
+  static void interpretDotStar( const std::string& mylabel, const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals, const ActionSet& actset );
   static void expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights,
                                const std::map<std::string,std::string>& keymap, ActionShortcut* action );
   static void expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights, ActionShortcut* action );

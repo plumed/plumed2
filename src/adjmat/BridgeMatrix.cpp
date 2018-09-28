@@ -64,10 +64,6 @@ private:
   SwitchingFunction sf1;
   SwitchingFunction sf2;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit BridgeMatrix(const ActionOptions&);
 // active methods:
@@ -75,26 +71,6 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(BridgeMatrix,"BRIDGE_MATRIX")
-PLUMED_REGISTER_SHORTCUT(BridgeMatrix,"BRIDGE")
-
-void BridgeMatrix::shortcutKeywords( Keywords& keys ) {
-}
-
-void BridgeMatrix::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                   const std::map<std::string,std::string>& keys,
-                                   std::vector<std::vector<std::string> >& actions ) {
-  // Make the matrix object
-  std::vector<std::string> mat_input; mat_input.push_back( lab + "_mat:" );
-  mat_input.push_back("BRIDGE_MATRIX");
-  for(unsigned i=1; i<words.size(); ++i) mat_input.push_back( words[i] );
-  actions.push_back( mat_input );
-
-  // Make the rest of the combine object
-  std::vector<std::string> bb_input; bb_input.push_back( lab + ":" );
-  bb_input.push_back("COMBINE"); bb_input.push_back("ARG=" + lab + "_mat.w");
-  bb_input.push_back("PERIODIC=NO"); actions.push_back( bb_input );
-}
-
 
 void BridgeMatrix::registerKeywords( Keywords& keys ) {
   AdjacencyMatrixBase::registerKeywords( keys );

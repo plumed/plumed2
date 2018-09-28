@@ -97,7 +97,6 @@ Torsion::Torsion(const ActionOptions&ao):
 }
 
 void Torsion::compute( const std::vector<Vector>& pos, MultiValue& myvals ) const {
-  printf("POS %d \n", pos.size() );
   plumed_assert( pos.size()==6 );
   const Vector d0=delta(pos[1],pos[0]);
   const Vector d1=delta(pos[3],pos[2]);
