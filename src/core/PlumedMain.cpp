@@ -261,12 +261,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       /* ADDED WITH API==6 */
       case cmd_setErrorHandler:
       {
-        /* the layout of this structure should not be changed since it is also defined in Plumed.h */
-        typedef struct {
-          void(*error_handler)(const char*);
-        } plumed_error_handler;
-        if(val) error_handler=static_cast<plumed_error_handler*>(val)->error_handler;
-        else error_handler=nullptr;
+        if(val) error_handler=*static_cast<plumed_error_handler*>(val);
+        else error_handler.handler=NULL;
       }
       break;
       case cmd_read:

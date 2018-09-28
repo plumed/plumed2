@@ -100,7 +100,12 @@ private:
 /// Can be used to remap exceptions in case the plumed wrapper was compiled
 /// with a different version of the C++ standard library.
 /// Should only be called from \ref plumed_plumedmain_cmd().
-  void (*error_handler)(const char*) = nullptr;
+  typedef struct {
+    void* ptr;
+    void(*handler)(void* ptr,const char*);
+  } plumed_error_handler;
+
+  plumed_error_handler error_handler= {NULL,NULL};
 
 /// Forward declaration.
   ForwardDecl<DLLoader> dlloader_fwd;
@@ -460,8 +465,8 @@ void PlumedMain::setEndPlumed() {
 
 inline
 bool PlumedMain::callErrorHandler(const char* msg)const {
-  if(error_handler) {
-    error_handler(msg);
+  if(error_handler.handler) {
+    error_handler.handler(error_handler.ptr,msg);
     return true;
   } else return false;
 }

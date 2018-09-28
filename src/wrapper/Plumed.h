@@ -513,6 +513,17 @@ typedef struct {
   void*p;
 } plumed;
 
+/**
+  \brief Small structure for passing error handler.
+
+  (for internal use).
+*/
+
+typedef struct {
+  void* ptr;
+  void(*handler)(void* ptr,const char*);
+} plumed_error_handler;
+
 /** \relates plumed
     \brief Constructor
 
@@ -665,7 +676,7 @@ __PLUMED_WRAPPER_C_END
 */
 
 __PLUMED_WRAPPER_C_BEGIN
-void plumed_set_error_handler(plumed p,void (*error_handler)(const char*));
+void plumed_set_error_handler(plumed p,plumed_error_handler handler);
 __PLUMED_WRAPPER_C_END
 
 /** \relates plumed
@@ -947,21 +958,24 @@ class Plumed {
   /**
     Error handler installed to rethrow exceptions.
   */
-  static void cxx_error_handler(const char*what) {
+  static void cxx_error_handler(void*ptr, const char*what) {
+    (void) ptr;
     throw Plumed::Exception(what);
   }
 
   /**
     Install error handler.
 
-    Called with no argument it installs a C++ handler that allows rethrowing exceptions.
+    It installs a C++ handler that allows rethrowing exceptions.
 
-    Should be used anytime a handler is created (constructor)
+    Should be used anytime a handler is created (constructor).
   */
-  Plumed& set_error_handler(void(*error_handler)(const char*)=NULL) {
-    if(!error_handler) error_handler=cxx_error_handler;
+  Plumed& set_error_handler() {
     try {
-      plumed_set_error_handler(main,error_handler);
+      plumed_error_handler handler;
+      handler.ptr=NULL;
+      handler.handler=cxx_error_handler;
+      plumed_set_error_handler(main,handler);
     } catch(...) {
       /* Don't do anything. This is just to avoid troubles when loading kernels
          between 2.4 and 2.5, that declare api=6 but do not implement setErrorHandler */
@@ -973,6 +987,11 @@ public:
 
   /**
     Class used to rethrow PLUMED exceptions.
+
+    It inherits from ::std::runtime_error so that:
+    - it can store a message
+    - it can be catched as std::exception.
+
   */
 
   class Exception :
@@ -1883,8 +1902,8 @@ typedef struct {
   plumed_symbol_table_type* table;
   /* pointer to plumed object */
   void* p;
-  /* error handler */
-  void (*error_handler)(const char*);
+  /* error handler. only used if error_handler.handler!=NULL */
+  plumed_error_handler error_handler;
 } plumed_implementation;
 
 __PLUMED_WRAPPER_INTERNALS_BEGIN
@@ -1909,7 +1928,8 @@ plumed_implementation* plumed_malloc_pimpl() {
   pimpl->functions.finalize=NULL;
   pimpl->table=NULL;
   pimpl->p=NULL;
-  pimpl->error_handler=NULL;
+  pimpl->error_handler.ptr=NULL;
+  pimpl->error_handler.handler=NULL;
   return pimpl;
 }
 __PLUMED_WRAPPER_INTERNALS_END
@@ -2046,26 +2066,20 @@ plumed plumed_create_invalid() {
 }
 __PLUMED_WRAPPER_C_END
 
-typedef struct {
-  void(*error_handler)(const char*);
-} plumed_error_handler;
-
 __PLUMED_WRAPPER_C_BEGIN
-void plumed_set_error_handler(plumed p,void (*error_handler)(const char*)) {
+void plumed_set_error_handler(plumed p,plumed_error_handler handler) {
   plumed_implementation* pimpl;
   int api;
-  plumed_error_handler h;
   /* obtain pimpl */
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
-  pimpl->error_handler=error_handler;
+  pimpl->error_handler=handler;
   /* if plumed object is valid and recent enough, inject error_handler to rethrow exceptions */
   if(pimpl->p) {
     api=0;
     plumed_cmd(p,"getApiVersion",&api);
     if(api>=6) {
-      h.error_handler=error_handler;
-      plumed_cmd(p,"setErrorHandler",&h);
+      plumed_cmd(p,"setErrorHandler",&handler);
     }
   }
 }
@@ -2078,11 +2092,11 @@ void plumed_cmd(plumed p,const char*key,const void*val) {
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
   if(!pimpl->p) {
-    if(pimpl->error_handler) {
+    if(pimpl->error_handler.handler) {
       if(pimpl->used_plumed_kernel) {
-        pimpl->error_handler("You are trying to use plumed, but it is not available.\nCheck your PLUMED_KERNEL environment variable.");
+        pimpl->error_handler.handler(pimpl->error_handler.ptr,"You are trying to use plumed, but it is not available.\nCheck your PLUMED_KERNEL environment variable.");
       } else {
-        pimpl->error_handler("You are trying to use plumed, but it is not available.");
+        pimpl->error_handler.handler(pimpl->error_handler.ptr,"You are trying to use plumed, but it is not available.");
       }
     } else {
       __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use plumed, but it is not available. +++\n");
