@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SymmetryFunctionBase.h"
+#include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "multicolvar/MultiColvarBase.h"
@@ -28,6 +29,7 @@ namespace PLMD {
 namespace symfunc {
 
 void SymmetryFunctionBase::shortcutKeywords( Keywords& keys ) {
+  ActionShortcut::registerKeywords( keys );
   keys.add("atoms-3","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
            "one coordination number for each of the atoms specified.  Each of these coordination numbers specifies how many of the "
            "other specified atoms are within a certain cutoff of the central atom.  You can specify the atoms here as another multicolvar "
@@ -48,29 +50,50 @@ void SymmetryFunctionBase::shortcutKeywords( Keywords& keys ) {
   multicolvar::MultiColvarBase::shortcutKeywords( keys );
 }
 
-void SymmetryFunctionBase::expandMatrix( const bool& components, const std::string& lab, const std::vector<std::string>& words,
-    const std::map<std::string,std::string>& keys,
-    std::vector<std::vector<std::string> >& actions ) {
-  if( !keys.count("SPECIES") && !keys.count("SPECIESA") ) return;
+void SymmetryFunctionBase::expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str, 
+                                         const std::string& spa_str, const std::string& spb_str, ActionShortcut* action ) {
+  if( sp_str.length()==0 && spa_str.length()==0 ) return;
 
-  std::vector<std::string> matinp; matinp.push_back( lab + "_mat:" ); matinp.push_back("CONTACT_MATRIX");
-  if( keys.count("SPECIES") ) {
-    matinp.push_back("GROUP=" + keys.find("SPECIES")->second );
-  } else if( keys.count("SPECIESA") ) {
-    matinp.push_back("GROUPA=" + keys.find("SPECIESA")->second ); matinp.push_back("GROUPB=" + keys.find("SPECIESB")->second );
-  }
-  if( keys.count("SWITCH") ) {
-    matinp.push_back("SWITCH=" + keys.find("SWITCH")->second );
-  } else if( keys.count("R_0") ) {
-    matinp.push_back("R_0=" + keys.find("R_0")->second );
-    matinp.push_back("D_0=" + keys.find("D_0")->second );
-    matinp.push_back("NN=" + keys.find("NN")->second );
-    matinp.push_back("MM=" + keys.find("MM")->second );
+  std::string matinp = lab  + "_mat: CONTACT_MATRIX";
+  if( sp_str.length()>0 ) matinp += " GROUP=" + sp_str;
+  else if( spa_str.length()>0 ) matinp += " GROUPA=" + spa_str + " GROUPB=" + spb_str;
+
+  std::string sw_str; action->parse("SWITCH",sw_str); 
+  if( sw_str.length()>0 ) {
+      matinp += " SWITCH={" + sw_str + "}";
   } else {
-    plumed_merror("could not interpret switching function definition");
+      std::string r0; action->parse("R_0",r0); std::string d0; action->parse("D_0",d0);
+      if( r0.length()==0 ) action->error("missing switching function parameters use SWITCH/R_0"); 
+      std::string nn; action->parse("NN",nn); std::string mm; action->parse("MM",mm);
+      matinp += " R_0=" + r0 + " D_0=" + d0 + " NN=" + nn + " MM=" + mm;
+  } 
+  if( components ) matinp += " COMPONENTS";
+  action->readInputLine( matinp );
+} 
+
+void SymmetryFunctionBase::createSymmetryFunctionObject( const std::string& lab, const std::string& name, const bool& iscoord, const bool& norm, ActionShortcut* action ) { 
+  // Read species keywords and create matrix
+  std::string sp_str, specA, specB; action->parse("SPECIES",sp_str); action->parse("SPECIESA",specA); action->parse("SPECIESB",specB);
+  std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, action );
+  if( sp_str.length()==0 && specA.length()==0 ) {
+     action->readInputLine( lab + ": " + name + "_MATINP " + action->convertInputLineToString() ); 
+  } else {
+     SymmetryFunctionBase::expandMatrix( true, lab,  sp_str, specA, specB, action );
+     // Create input for symmetry function
+     if( iscoord ) {
+        action->readInputLine( lab + ": " + name + " WEIGHT=" + lab + "_mat.w " + action->convertInputLineToString() ); 
+     } else {
+        action->readInputLine( lab + ": " + name + " WEIGHT=" + lab + "_mat.w VECTORS1=" + lab + "_mat.x VECTORS2=" + lab + "_mat.y VECTORS3=" + lab + "_mat.z " + 
+                       action->convertInputLineToString() );
+     }
+     std::string olab = lab;
+     if( norm ) { 
+         olab = lab + "_n"; action->readInputLine( lab + "_denom: COORDINATIONNUMBER WEIGHT=" + lab + "_mat.w");
+         // Input for matheval action
+         action->readInputLine( lab + "_n: MATHEVAL ARG1=" + lab + " ARG2=" + lab + "_denom FUNC=x/y PERIODIC=NO");
+     }
+     multicolvar::MultiColvarBase::expandFunctions( lab, olab, "", keymap, action );
   }
-  if( components ) matinp.push_back("COMPONENTS");
-  actions.push_back( matinp );
 }
 
 void SymmetryFunctionBase::registerKeywords( Keywords& keys ) {
@@ -147,6 +170,10 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
     const auto m=plumed.getAtoms().getAllGroups().find(wval[0]->getPntrToAction()->getLabel());
     plumed.getAtoms().insertGroup( getLabel(), m->second );
   }
+}
+
+void SymmetryFunctionBase::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
+  multicolvar::MultiColvarBase::interpretDotStar( getLabel(), ulab, nargs, myvals, plumed.getActionSet() );
 }
 
 void SymmetryFunctionBase::addValueWithDerivatives() {

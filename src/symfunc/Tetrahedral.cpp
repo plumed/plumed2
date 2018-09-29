@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SymmetryFunctionBase.h"
 #include "multicolvar/MultiColvarBase.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
 #include <string>
@@ -76,39 +77,12 @@ PRINT ARG=tt.* FILE=colvar
 
 class Tetrahedral : public SymmetryFunctionBase {
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit Tetrahedral(const ActionOptions&);
   void compute( const double& val, const Vector& dir, MultiValue& myvals ) const ;
 };
 
-PLUMED_REGISTER_ACTION(Tetrahedral,"TETRAHEDRAL")
-PLUMED_REGISTER_SHORTCUT(Tetrahedral,"TETRAHEDRAL")
-
-void Tetrahedral::shortcutKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::shortcutKeywords( keys );
-}
-
-void Tetrahedral::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                  const std::map<std::string,std::string>& keys,
-                                  std::vector<std::vector<std::string> >& actions ) {
-  SymmetryFunctionBase::expandMatrix( true, lab, words, keys, actions );
-  std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("TETRAHEDRAL");
-  input.push_back("WEIGHT=" + lab + "_mat.w" ); input.push_back("VECTORS1=" + lab + "_mat.x" );
-  input.push_back("VECTORS2=" + lab + "_mat.y" ); input.push_back("VECTORS3=" + lab + "_mat.z" );
-  actions.push_back( input );
-  // Input for denominator (coord)
-  std::vector<std::string> d_input; d_input.push_back(lab + "_denom:"); d_input.push_back("COORDINATIONNUMBER");
-  d_input.push_back("WEIGHT=" + lab + "_mat.w"); actions.push_back( d_input );
-  // Input for matheval action
-  std::vector<std::string> me_input; me_input.push_back(lab + "_n:"); me_input.push_back("MATHEVAL");
-  me_input.push_back("ARG1=" + lab); me_input.push_back("ARG2=" + lab + "_denom"); me_input.push_back("FUNC=x/y");
-  me_input.push_back("PERIODIC=NO"); actions.push_back(me_input);
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_n", "", words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(Tetrahedral,"TETRAHEDRAL_MATINP")
 
 void Tetrahedral::registerKeywords( Keywords& keys ) {
   SymmetryFunctionBase::registerKeywords( keys );
@@ -153,6 +127,25 @@ void Tetrahedral::compute( const double& val, const Vector& distance, MultiValue
   addWeightDerivative( 0, tmp, myvals );
   addVectorDerivatives( 0, val*myder, myvals );
 }
+
+class TetrahedralShortcut : public ActionShortcut {
+public:
+  static void registerKeywords(Keywords& keys);
+  explicit TetrahedralShortcut(const ActionOptions&);
+};
+
+PLUMED_REGISTER_ACTION(TetrahedralShortcut,"TETRAHEDRAL")
+
+void TetrahedralShortcut::registerKeywords( Keywords& keys ) {
+  SymmetryFunctionBase::shortcutKeywords( keys ); 
+} 
+
+TetrahedralShortcut::TetrahedralShortcut(const ActionOptions& ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  SymmetryFunctionBase::createSymmetryFunctionObject( getShortcutLabel(), "TETRAHEDRAL", false, true, this );
+} 
 
 }
 }

@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithIntegral.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -27,77 +28,12 @@ namespace gridtools {
 
 class Gradient : public ActionWithIntegral {
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit Gradient(const ActionOptions&ao);
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
 };
 
-PLUMED_REGISTER_ACTION(Gradient,"GRADIENT")
-PLUMED_REGISTER_SHORTCUT(Gradient,"GRADIENT")
-
-void Gradient::shortcutKeywords( Keywords& keys ) {
-  keys.add("compulsory","ORIGIN","we will use the position of this atom as the origin in our calculation");
-  keys.add("compulsory","NBINS","number of bins to use in each direction for the calculation of the gradient");
-  keys.add("compulsory","DIR","xyz","the directions in which we are calculating the graident.  Should be x, y, z, xy, xz, yz or xyz");
-  keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
-  keys.add("compulsory","KERNEL","gaussian-bin","the type of kernel function to be used in the grids");
-  keys.add("compulsory","ATOMS","calculate the gradient of these atoms");
-}
-
-void Gradient::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                               const std::map<std::string,std::string>& keys,
-                               std::vector<std::vector<std::string> >& actions ) {
-  // First get positions of all atoms relative to origin
-  std::vector<std::string> dist_vec; dist_vec.push_back( lab + "_dist:"); dist_vec.push_back("DISTANCES");
-  dist_vec.push_back("ORIGIN=" + keys.find("ORIGIN")->second ); dist_vec.push_back("ATOMS=" + keys.find("ATOMS")->second );
-  dist_vec.push_back("COMPONENTS"); actions.push_back( dist_vec ); std::string dir = keys.find("DIR")->second;
-  // Now constrcut the histograms
-  if( dir=="x" || dir=="xy" || dir=="xz" || dir=="xyz" ) {
-    std::vector<std::string> xhisto; xhisto.push_back( lab + "_xhisto:"); xhisto.push_back("KDE");
-    xhisto.push_back("ARG1=" + lab + "_dist.x"); xhisto.push_back("GRID_BIN=" + keys.find("NBINS")->second );
-    xhisto.push_back("KERNEL=" + keys.find("KERNEL")->second ); xhisto.push_back("BANDWIDTH=" + keys.find("SIGMA")->second );
-    xhisto.push_back("UNORMALIZED"); actions.push_back( xhisto );
-    std::vector<std::string> xgrad; if( dir=="x" ) xgrad.push_back( lab + ":" ); else xgrad.push_back( lab + "_xgrad:" );
-    xgrad.push_back("GRADIENT"); xgrad.push_back("ARG=" + lab + "_xhisto"); actions.push_back( xgrad );
-  }
-  if( dir=="y" || dir=="xy" || dir=="yz" || dir=="xyz" ) {
-    std::vector<std::string> xhisto; xhisto.push_back( lab + "_yhisto:"); xhisto.push_back("KDE");
-    xhisto.push_back("ARG1=" + lab + "_dist.y"); xhisto.push_back("GRID_BIN=" + keys.find("NBINS")->second );
-    xhisto.push_back("KERNEL=" + keys.find("KERNEL")->second ); xhisto.push_back("BANDWIDTH=" + keys.find("SIGMA")->second );
-    xhisto.push_back("UNORMALIZED"); actions.push_back( xhisto );
-    std::vector<std::string> xgrad; if( dir=="y" ) xgrad.push_back( lab + ":" ); else xgrad.push_back( lab + "_ygrad:" );
-    xgrad.push_back("GRADIENT"); xgrad.push_back("ARG=" + lab + "_yhisto"); actions.push_back( xgrad );
-  }
-  if( dir=="z" || dir=="yz" || dir=="xz" || dir=="xyz" ) {
-    std::vector<std::string> xhisto; xhisto.push_back( lab + "_zhisto:"); xhisto.push_back("KDE");
-    xhisto.push_back("ARG1=" + lab + "_dist.z"); xhisto.push_back("GRID_BIN=" + keys.find("NBINS")->second );
-    xhisto.push_back("KERNEL=" + keys.find("KERNEL")->second ); xhisto.push_back("BANDWIDTH=" + keys.find("SIGMA")->second );
-    xhisto.push_back("UNORMALIZED"); actions.push_back( xhisto );
-    std::vector<std::string> xgrad; if( dir=="z" ) xgrad.push_back( lab + ":" ); else xgrad.push_back( lab + "_zgrad:" );
-    xgrad.push_back("GRADIENT"); xgrad.push_back("ARG=" + lab + "_zhisto"); actions.push_back( xgrad );
-  }
-  if( dir=="xy" ) {
-    std::vector<std::string> combi; combi.push_back( lab + ":" ); combi.push_back("COMBINE");
-    combi.push_back("ARG=" + lab + "_xgrad," + lab + "_ygrad"); combi.push_back("PERIODIC=NO");
-    actions.push_back( combi );
-  } else if( dir=="xz" ) {
-    std::vector<std::string> combi; combi.push_back( lab + ":" ); combi.push_back("COMBINE");
-    combi.push_back("ARG=" + lab + "_xgrad," + lab + "_zgrad"); combi.push_back("PERIODIC=NO");
-    actions.push_back( combi );
-  } else if( dir=="yz" ) {
-    std::vector<std::string> combi; combi.push_back( lab + ":" ); combi.push_back("COMBINE");
-    combi.push_back("ARG=" + lab + "_ygrad," + lab + "_zgrad"); combi.push_back("PERIODIC=NO");
-    actions.push_back( combi );
-  } else if( dir=="xyz" ) {
-    std::vector<std::string> combi; combi.push_back( lab + ":" ); combi.push_back("COMBINE");
-    combi.push_back("ARG=" + lab + "_xgrad," + lab + "_ygrad," + lab + "_zgrad"); combi.push_back("PERIODIC=NO");
-    actions.push_back( combi );
-  }
-}
+PLUMED_REGISTER_ACTION(Gradient,"INTEGRATE_GRADIENT")
 
 void Gradient::registerKeywords( Keywords& keys ) {
   ActionWithIntegral::registerKeywords( keys );
@@ -125,6 +61,65 @@ void Gradient::performTask( const unsigned& current, MultiValue& myvals ) const 
     myvals.updateIndex( getPntrToOutput(0)->getPositionInStream(), jval );
   }
 }
+
+class GradientShortcut : public ActionShortcut {
+public:
+  static void registerKeywords(Keywords& keys);
+  explicit GradientShortcut(const ActionOptions&);
+};
+    
+PLUMED_REGISTER_ACTION(GradientShortcut,"GRADIENT")
+
+void GradientShortcut::registerKeywords( Keywords& keys ) {
+  ActionShortcut::registerKeywords( keys );
+  keys.add("compulsory","ORIGIN","we will use the position of this atom as the origin in our calculation");
+  keys.add("compulsory","NBINS","number of bins to use in each direction for the calculation of the gradient");
+  keys.add("compulsory","DIR","xyz","the directions in which we are calculating the graident.  Should be x, y, z, xy, xz, yz or xyz");
+  keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
+  keys.add("compulsory","KERNEL","gaussian-bin","the type of kernel function to be used in the grids");
+  keys.add("compulsory","ATOMS","calculate the gradient of these atoms");
+}
+
+GradientShortcut::GradientShortcut(const ActionOptions&ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  std::string atom_str; parse("ATOMS",atom_str);
+  std::string dir; parse("DIR",dir);
+  std::string origin_str; parse("ORIGIN",origin_str);
+  std::string nbin_str; parse("NBINS",nbin_str); 
+  std::string band_str; parse("SIGMA",band_str);
+  std::string kernel_str; parse("KERNEL",kernel_str);
+  // First get positions of all atoms relative to origin
+  readInputLine( getShortcutLabel() + "_dist: DISTANCES ORIGIN=" + origin_str + " ATOMS=" + atom_str + " COMPONENTS"); 
+  // Now constrcut the histograms
+  if( dir=="x" || dir=="xy" || dir=="xz" || dir=="xyz" ) {
+    readInputLine( getShortcutLabel() + "_xhisto: KDE ARG1=" + getShortcutLabel() + "_dist.x GRID_BIN=" + nbin_str + " KERNEL=" + kernel_str + " BANDWIDTH=" + band_str + " UNORMALIZED");
+    std::string thislab = getShortcutLabel() + "_xgrad:"; if( dir=="x" ) thislab = getShortcutLabel() + ":";
+    readInputLine( thislab + " INTEGRATE_GRADIENT ARG=" + getShortcutLabel() + "_xhisto"); 
+  }
+  if( dir=="y" || dir=="xy" || dir=="yz" || dir=="xyz" ) {
+    readInputLine( getShortcutLabel() + "_yhisto: KDE ARG1=" + getShortcutLabel() + "_dist.y GRID_BIN=" + nbin_str + " KERNEL=" + kernel_str + " BANDWIDTH=" + band_str + " UNORMALIZED");
+    std::string thislab = getShortcutLabel() + "_ygrad:"; if( dir=="y" ) thislab = getShortcutLabel() + ":";
+    readInputLine( thislab + " INTEGRATE_GRADIENT ARG=" + getShortcutLabel() + "_yhisto"); 
+  }
+  if( dir=="z" || dir=="yz" || dir=="xz" || dir=="xyz" ) {
+        readInputLine( getShortcutLabel() + "_zhisto: KDE ARG1=" + getShortcutLabel() + "_dist.z GRID_BIN=" + nbin_str + " KERNEL=" + kernel_str + " BANDWIDTH=" + band_str + " UNORMALIZED");
+    std::string thislab = getShortcutLabel() + "_zgrad:"; if( dir=="z" ) thislab = getShortcutLabel() + ":";
+    readInputLine( thislab + " INTEGRATE_GRADIENT ARG=" + getShortcutLabel() + "_zhisto"); 
+  }
+  if( dir=="xy" ) {
+    readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_xgrad," + getShortcutLabel() + "_ygrad PERIODIC=NO");
+  } else if( dir=="xz" ) {
+    readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_xgrad," + getShortcutLabel() + "_zgrad PERIODIC=NO");
+  } else if( dir=="yz" ) {
+    readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_ygrad," + getShortcutLabel() + "_zgrad PERIODIC=NO");
+  } else if( dir=="xyz" ) {
+    readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_xgrad," + getShortcutLabel() + "_ygrad," + getShortcutLabel() + "_zgrad PERIODIC=NO");
+  }
+}
+
+
 
 }
 }

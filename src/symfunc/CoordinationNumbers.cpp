@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SymmetryFunctionBase.h"
 #include "multicolvar/MultiColvarBase.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include <string>
 #include <cmath>
@@ -79,35 +80,12 @@ PRINT ARG=cn0.mean,cn1.mean,cn2.mean STRIDE=1 FILE=cn_out
 
 class CoordinationNumbers : public SymmetryFunctionBase {
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit CoordinationNumbers(const ActionOptions&);
   void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const ;
 };
 
-PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
-PLUMED_REGISTER_SHORTCUT(CoordinationNumbers,"COORDINATIONNUMBER")
-
-void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::shortcutKeywords( keys );
-}
-
-void CoordinationNumbers::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-    const std::map<std::string,std::string>& keys,
-    std::vector<std::vector<std::string> >& actions ) {
-  SymmetryFunctionBase::expandMatrix( false, lab, words, keys, actions );
-  std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("COORDINATIONNUMBER");
-  if( keys.count("SPECIES") || keys.count("SPECIESA") ) {
-    input.push_back("WEIGHT=" + lab + "_mat.w" );
-  } else {
-    for(unsigned i=1; i<words.size(); ++i) input.push_back( words[i] );
-  }
-  actions.push_back( input );
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER_MATINP")
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   SymmetryFunctionBase::registerKeywords( keys ); keys.remove("VECTORS");
@@ -123,6 +101,25 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
 void CoordinationNumbers::compute( const double& val, const Vector& dir, MultiValue& myvals ) const {
   addToValue( 0, val, myvals ); addWeightDerivative( 0, 1.0, myvals );
 }
+
+class CoordinationNumbersShortcut : public ActionShortcut {
+public:
+  static void registerKeywords(Keywords& keys);
+  explicit CoordinationNumbersShortcut(const ActionOptions&);
+};
+
+PLUMED_REGISTER_ACTION(CoordinationNumbersShortcut,"COORDINATIONNUMBER")
+
+void CoordinationNumbersShortcut::registerKeywords( Keywords& keys ) {
+  SymmetryFunctionBase::shortcutKeywords( keys );
+}
+  
+CoordinationNumbersShortcut::CoordinationNumbersShortcut(const ActionOptions& ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  SymmetryFunctionBase::createSymmetryFunctionObject( getShortcutLabel(), "COORDINATIONNUMBER", true, false, this );
+} 
 
 }
 }

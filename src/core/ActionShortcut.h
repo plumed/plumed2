@@ -34,15 +34,14 @@ class ActionShortcut :
   public virtual Action {
 private:
   std::string shortcutlabel;
-protected:
-/// Take everything that was input to this action and convert it to a string
-  std::string convertInputLineToString();
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ActionShortcut(const ActionOptions&ao);
 /// Get the label for the shortcut
   const std::string & getShortcutLabel() const ;
+/// Take everything that was input to this action and convert it to a string
+  std::string convertInputLineToString();
 /// It is a shortcut it should never need to be activated
   void activate() {}
 /// Do nothing.

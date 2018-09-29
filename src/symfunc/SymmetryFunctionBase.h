@@ -28,6 +28,9 @@
 #include "adjmat/AdjacencyMatrixBase.h"
 
 namespace PLMD {
+
+class ActionShortcut;
+
 namespace symfunc {
 
 class SymmetryFunctionBase :
@@ -47,12 +50,13 @@ protected:
   void addVectorDerivatives( const unsigned& ival, const Vector& dvec, MultiValue& myvals ) const ;
 public:
   static void shortcutKeywords( Keywords& keys );
-  static void expandMatrix( const bool& components, const std::string& lab, const std::vector<std::string>& words,
-                            const std::map<std::string,std::string>& keys,
-                            std::vector<std::vector<std::string> >& actions );
+  static void expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
+                            const std::string& spa_str, const std::string& spb_str, ActionShortcut* action );
+  static void createSymmetryFunctionObject( const std::string& lab, const std::string& name, const bool& iscoord, const bool& norm, ActionShortcut* action );
   static void registerKeywords( Keywords& keys );
   explicit SymmetryFunctionBase(const ActionOptions&);
   bool mustBeTreatedAsDistinctArguments() const ;
+  void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
   virtual unsigned getNumberOfDerivatives() const ;
   void calculate() {}
   virtual void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const = 0;

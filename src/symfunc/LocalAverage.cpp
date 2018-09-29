@@ -19,9 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SymmetryFunctionBase.h"
+#include "core/ActionShortcut.h"
+#include "core/ActionRegister.h" 
 #include "multicolvar/MultiColvarBase.h"
-#include "core/ActionRegister.h"
+#include "SymmetryFunctionBase.h"
 #include <string>
 #include <cmath>
 
@@ -84,55 +85,29 @@ PRINT ARG=la.* FILE=colvar
 */
 //+ENDPLUMEDOC
 
-class MatrixTimesVector : public SymmetryFunctionBase {
+class LocalAverage : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
-  explicit MatrixTimesVector(const ActionOptions&);
-  unsigned getNumberOfDerivatives() const ;
-  void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const ;
-  void updateDerivativeIndices( MultiValue& myvals ) const ;
+  explicit LocalAverage(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(MatrixTimesVector,"MATRIX_VECTOR_PRODUCT")
+PLUMED_REGISTER_ACTION(LocalAverage,"LOCAL_AVERAGE")
 
-void MatrixTimesVector::registerKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::registerKeywords( keys ); keys.remove("VECTORS");
-  keys.add("compulsory","VECTOR","the vector that you would like to multiply by the input matrix");
+void LocalAverage::registerKeywords( Keywords& keys ) {
+  SymmetryFunctionBase::shortcutKeywords( keys ); 
 }
 
-MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
-  Action(ao),
-  SymmetryFunctionBase(ao)
+LocalAverage::LocalAverage(const ActionOptions&ao):
+Action(ao),
+ActionShortcut(ao)
 {
-  std::vector<Value*> vecs; parseArgumentList("VECTOR",vecs);
-  if( vecs.size()!=1 ) error("keyword VECTOR shoudl only be provided with the label of a singl action");
-  if( vecs[0]->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("shape of input vector should match second dimension of input WEIGHT matrix");
-  vecs[0]->buildDataStore( getLabel() );
-  log.printf("  calculating product of input weight matrix with vector of weights labelled %s \n",vecs[0]->getName().c_str() );
-  std::vector<Value*> args( getArguments() ); args.push_back( vecs[0] );
-  requestArguments( args, true ); addValueWithDerivatives();
-}
-
-unsigned MatrixTimesVector::getNumberOfDerivatives() const {
-  return SymmetryFunctionBase::getNumberOfDerivatives() + getPntrToArgument(1)->getShape()[0];
-}
-
-void MatrixTimesVector::compute( const double& val, const Vector& dir, MultiValue& myvals ) const {
-  unsigned tindex = myvals.getSecondTaskIndex(); if( tindex>=getFullNumberOfTasks() ) tindex -= getFullNumberOfTasks();
-  double func = getPntrToArgument(1)->get(tindex); addToValue( 0, val*func, myvals );
-  if( doNotCalculateDerivatives() ) return;
-  addWeightDerivative( 0, func, myvals );
-  myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), arg_deriv_starts[1] + tindex, val );
-}
-
-void MatrixTimesVector::updateDerivativeIndices( MultiValue& myvals ) const {
-  SymmetryFunctionBase::updateDerivativeIndices( myvals );
-  for(unsigned i=arg_deriv_starts[1]; i<getNumberOfDerivatives(); ++i) {
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
-      unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
-      myvals.updateIndex( ostrn, i );
-    }
-  }
+  std::string sp_str, specA, specB; parse("SPECIES",sp_str); parse("SPECIESA",specA); parse("SPECIESB",specB); 
+  SymmetryFunctionBase::expandMatrix( false, getShortcutLabel(), sp_str, specA, specB, this );
+  std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, this );
+  readInputLine( getShortcutLabel() + "_coord: COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_mat.w");
+  readInputLine( getShortcutLabel() + "_prod: MATRIX_VECTOR_PRODUCT WEIGHT=" + getShortcutLabel() + "_mat.w " + convertInputLineToString() );
+  readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_prod ARG2=" + sp_str + " ARG3=" + getShortcutLabel() + "_coord FUNC=(x+y)/(1+z) PERIODIC=NO");
+  multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", keymap, this );
 }
 
 }

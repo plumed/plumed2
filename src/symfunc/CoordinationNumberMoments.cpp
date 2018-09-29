@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SymmetryFunctionBase.h"
 #include "multicolvar/MultiColvarBase.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include <string>
 #include <cmath>
@@ -41,33 +42,12 @@ class CoordinationNumberMoments : public SymmetryFunctionBase {
 private:
   unsigned r_power;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit CoordinationNumberMoments(const ActionOptions&);
   void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const ;
 };
 
-PLUMED_REGISTER_ACTION(CoordinationNumberMoments,"COORDINATION_MOMENTS")
-PLUMED_REGISTER_SHORTCUT(CoordinationNumberMoments,"COORDINATION_MOMENTS")
-
-void CoordinationNumberMoments::shortcutKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::shortcutKeywords( keys );
-}
-
-void CoordinationNumberMoments::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-    const std::map<std::string,std::string>& keys,
-    std::vector<std::vector<std::string> >& actions ) {
-  SymmetryFunctionBase::expandMatrix( true, lab, words, keys, actions );
-  std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("COORDINATION_MOMENTS");
-  input.push_back("WEIGHT=" + lab + "_mat.w" ); input.push_back("VECTORS1=" + lab + "_mat.x" );
-  input.push_back("VECTORS2=" + lab + "_mat.y" ); input.push_back("VECTORS3=" + lab + "_mat.z" );
-  for(unsigned i=1; i<words.size(); ++i) input.push_back(words[i]);
-  actions.push_back( input );
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab, "", words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(CoordinationNumberMoments,"COORDINATION_MOMENTS_MATINP")
 
 void CoordinationNumberMoments::registerKeywords( Keywords& keys ) {
   SymmetryFunctionBase::registerKeywords( keys );
@@ -89,6 +69,25 @@ void CoordinationNumberMoments::compute( const double& val, const Vector& distan
   addWeightDerivative( 0, d*raised, myvals );
   addVectorDerivatives( 0, val*r_power*distance, myvals );
 }
+
+class CoordinationNumberMomentsShortcut : public ActionShortcut {
+public:
+  static void registerKeywords(Keywords& keys);
+  explicit CoordinationNumberMomentsShortcut(const ActionOptions&);
+};
+
+PLUMED_REGISTER_ACTION(CoordinationNumberMomentsShortcut,"COORDINATION_MOMENTS")
+
+void CoordinationNumberMomentsShortcut::registerKeywords( Keywords& keys ) {
+  SymmetryFunctionBase::shortcutKeywords( keys );
+}
+
+CoordinationNumberMomentsShortcut::CoordinationNumberMomentsShortcut(const ActionOptions& ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  SymmetryFunctionBase::createSymmetryFunctionObject( getShortcutLabel(), "COORDINATION_MOMENTS", false, false, this );
+} 
 
 }
 }

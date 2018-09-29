@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SymmetryFunctionBase.h"
 #include "multicolvar/MultiColvarBase.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
 #include <string>
@@ -76,40 +77,12 @@ class Fccubic : public SymmetryFunctionBase {
 private:
   double alpha, a1, b1;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit Fccubic(const ActionOptions&);
   void compute( const double& val, const Vector& dir, MultiValue& myvals ) const ;
 };
 
-PLUMED_REGISTER_ACTION(Fccubic,"FCCUBIC")
-PLUMED_REGISTER_SHORTCUT(Fccubic,"FCCUBIC")
-
-void Fccubic::shortcutKeywords( Keywords& keys ) {
-  SymmetryFunctionBase::shortcutKeywords( keys );
-}
-
-void Fccubic::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions ) {
-  SymmetryFunctionBase::expandMatrix( true, lab, words, keys, actions );
-  std::vector<std::string> input; input.push_back(lab + ":"); input.push_back("FCCUBIC");
-  input.push_back("WEIGHT=" + lab + "_mat.w" ); input.push_back("VECTORS1=" + lab + "_mat.x" );
-  input.push_back("VECTORS2=" + lab + "_mat.y" ); input.push_back("VECTORS3=" + lab + "_mat.z" );
-  for(unsigned i=1; i<words.size(); ++i) input.push_back(words[i]);
-  actions.push_back( input );
-  // Input for denominator (coord)
-  std::vector<std::string> d_input; d_input.push_back(lab + "_denom:"); d_input.push_back("COORDINATIONNUMBER");
-  d_input.push_back("WEIGHT=" + lab + "_mat.w"); actions.push_back( d_input );
-  // Input for matheval action
-  std::vector<std::string> me_input; me_input.push_back(lab + "_n:"); me_input.push_back("MATHEVAL");
-  me_input.push_back("ARG1=" + lab); me_input.push_back("ARG2=" + lab + "_denom"); me_input.push_back("FUNC=x/y");
-  me_input.push_back("PERIODIC=NO"); actions.push_back(me_input);
-  multicolvar::MultiColvarBase::expandFunctions( lab, lab + "_n", "", words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(Fccubic,"FCCUBIC_MATINP")
 
 void Fccubic::registerKeywords( Keywords& keys ) {
   SymmetryFunctionBase::registerKeywords( keys );
@@ -158,6 +131,25 @@ void Fccubic::compute( const double& val, const Vector& distance, MultiValue& my
   addToValue( 0, val*(a1*tmp+b1), myvals );
   addWeightDerivative( 0, a1*tmp+b1, myvals );
   addVectorDerivatives( 0, val*myder, myvals );
+}
+
+class FccubicShortcut : public ActionShortcut {
+public:
+  static void registerKeywords(Keywords& keys);
+  explicit FccubicShortcut(const ActionOptions&);
+};
+
+PLUMED_REGISTER_ACTION(FccubicShortcut,"FCCUBIC")
+
+void FccubicShortcut::registerKeywords( Keywords& keys ) {
+  SymmetryFunctionBase::shortcutKeywords( keys );
+}
+
+FccubicShortcut::FccubicShortcut(const ActionOptions& ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  SymmetryFunctionBase::createSymmetryFunctionObject( getShortcutLabel(), "FCCUBIC", false, true, this );
 }
 
 }
