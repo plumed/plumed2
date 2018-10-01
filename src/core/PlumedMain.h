@@ -102,7 +102,7 @@ private:
 /// Should only be called from \ref plumed_plumedmain_cmd().
   typedef struct {
     void* ptr;
-    void(*handler)(void* ptr,const char*);
+    void(*handler)(void* ptr,int code,const char*);
   } plumed_error_handler;
 
   plumed_error_handler error_handler= {NULL,NULL};
@@ -392,7 +392,7 @@ public:
 /// Call error handler.
 /// Should only be called from \ref plumed_plumedmain_cmd().
 /// If the error handler was not set, returns false.
-  bool callErrorHandler(const char* msg)const;
+  bool callErrorHandler(int code,const char* msg)const;
 };
 
 /////
@@ -464,9 +464,9 @@ void PlumedMain::setEndPlumed() {
 }
 
 inline
-bool PlumedMain::callErrorHandler(const char* msg)const {
+bool PlumedMain::callErrorHandler(int code,const char* msg)const {
   if(error_handler.handler) {
-    error_handler.handler(error_handler.ptr,msg);
+    error_handler.handler(error_handler.ptr,code,msg);
     return true;
   } else return false;
 }

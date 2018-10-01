@@ -44,7 +44,7 @@ extern "C" void plumed_plumedmain_cmd(void*plumed,const char*key,const void*val)
 // if a error_handler was provided, we use it to manage this exception.
 // this allows an exception to be catched also if the MD code
 // was linked against a different C++ library
-    if(!p->callErrorHandler(e.what())) throw;
+    if(!p->callErrorHandler(2,e.what())) throw;
   }
 }
 

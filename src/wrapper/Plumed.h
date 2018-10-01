@@ -521,7 +521,7 @@ typedef struct {
 
 typedef struct {
   void* ptr;
-  void(*handler)(void* ptr,const char*);
+  void(*handler)(void* ptr,int code,const char*);
 } plumed_error_handler;
 
 /** \relates plumed
@@ -958,8 +958,9 @@ class Plumed {
   /**
     Error handler installed to rethrow exceptions.
   */
-  static void cxx_error_handler(void*ptr, const char*what) {
+  static void cxx_error_handler(void*ptr, int code, const char*what) {
     (void) ptr;
+    (void) code;
     throw Plumed::Exception(what);
   }
 
@@ -2094,9 +2095,9 @@ void plumed_cmd(plumed p,const char*key,const void*val) {
   if(!pimpl->p) {
     if(pimpl->error_handler.handler) {
       if(pimpl->used_plumed_kernel) {
-        pimpl->error_handler.handler(pimpl->error_handler.ptr,"You are trying to use plumed, but it is not available.\nCheck your PLUMED_KERNEL environment variable.");
+        pimpl->error_handler.handler(pimpl->error_handler.ptr,1,"You are trying to use plumed, but it is not available.\nCheck your PLUMED_KERNEL environment variable.");
       } else {
-        pimpl->error_handler.handler(pimpl->error_handler.ptr,"You are trying to use plumed, but it is not available.");
+        pimpl->error_handler.handler(pimpl->error_handler.ptr,1,"You are trying to use plumed, but it is not available.");
       }
     } else {
       __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use plumed, but it is not available. +++\n");
