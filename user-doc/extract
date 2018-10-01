@@ -34,7 +34,34 @@ do
 done
 
 # Generate all the documentation pages from comments
-cat ../*/*/*cpp |
+{
+cat ../*/*/*cpp
+# documentation for scripts:
+for file in ../scripts/*.sh
+do
+  name=$(basename ${file%.sh})
+  cat << EOF
+//+PLUMEDOC TOOLS $name
+/*
+EOF
+  ../src/lib/plumed $name --description
+
+  cat << EOF
+
+\note This command line tool is implemented as a shell script. It's help message is pasted below:
+
+\verbatim
+EOF
+  ../src/lib/plumed --no-mpi $name --help
+  cat << EOF
+\endverbatim
+*/
+//+ENDPLUMEDOC
+EOF
+
+done
+
+} |
 awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }{
   if($1=="//+ENDPLUMEDOC" && inside){
      inside=0;
