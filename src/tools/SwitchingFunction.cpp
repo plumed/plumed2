@@ -109,7 +109,7 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 </td> <td>
 {TANH R_0=\f$r_0\f$ D_0=\f$d_0\f$}
 </td> <td> </td>
-</tr> <tr> 
+</tr> <tr>
 <td> COSINUS </td> <td>
 \f$
 s(r) &= 1  & if r<=d0
@@ -331,7 +331,7 @@ std::string SwitchingFunction::description() const {
   } else if(type==tanh) {
     ostr<<"tanh";
   } else if(type==cosinus) {
-     ostr<<"cosinus";
+    ostr<<"cosinus";
   } else if(type==leptontype) {
     ostr<<"lepton";
   } else {
@@ -461,11 +461,11 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
       result = 1.0 - tmp1;
       dfunc=-(1-tmp1*tmp1);
     } else if(type==cosinus) {
-      if(rdist<=0.0){
+      if(rdist<=0.0) {
 // rdist = (r-r1)/(r2-r1) ; rdist<=0.0 if r <=r1
         result=1.;
         dfunc=0.0;
-      }else if(rdist<=1.0){
+      } else if(rdist<=1.0) {
 // rdist = (r-r1)/(r2-r1) ; 0.0<=rdist<=1.0 if r1 <= r <=r2; (r2-r1)/(r2-r1)=1
         double tmpcos = cos ( rdist * PI );
         double tmpsin = sin ( rdist * PI );
