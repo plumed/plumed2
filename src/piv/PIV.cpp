@@ -496,7 +496,6 @@ PIV::PIV(const ActionOptions&ao):
     parseVector("SFACTOR",scaling);
     //if(scaling.size()!=getNumberOfArguments() && scaling.size()!=0) error("not enough values for SFACTOR");
   }
-
   // Neighbour Lists option
   parseFlag("NLIST",doneigh);
   nl.resize(Nlist);
@@ -1013,7 +1012,6 @@ void PIV::calculate()
       }
     }
   }
-
   Vector distance;
   double dfunc=0.;
   // Calculate volume scaling factor
