@@ -281,7 +281,6 @@ PIV::PIV(const ActionOptions&ao):
 //com2atoms(std:: vector<std:: vector<unsigned> >(Nlist))
 {
   log << "Starting PIV Constructor\n";
-  unsigned rank=comm.Get_rank();
 
   // Precision on the real-to-integer transformation for the sorting
   parse("PRECISION",Nprec);
@@ -303,6 +302,7 @@ PIV::PIV(const ActionOptions&ao):
     log << "Serial PIV construction\n";
   } else     {
     log << "Parallel PIV construction\n";
+    unsigned rank=comm.Get_rank();
   }
 
   // Derivatives
@@ -496,7 +496,6 @@ PIV::PIV(const ActionOptions&ao):
     parseVector("SFACTOR",scaling);
     //if(scaling.size()!=getNumberOfArguments() && scaling.size()!=0) error("not enough values for SFACTOR");
   }
-
   // Neighbour Lists option
   parseFlag("NLIST",doneigh);
   nl.resize(Nlist);
@@ -737,7 +736,6 @@ void PIV::calculate()
   static std:: vector<std:: vector<double> > cPIV(Nlist);
   static std:: vector<std:: vector<int> > Atom0(Nlist);
   static std:: vector<std:: vector<int> > Atom1(Nlist);
-  //
   std:: vector<std:: vector<int> > A0(Nprec);
   std:: vector<std:: vector<int> > A1(Nprec);
   unsigned stride=1;
@@ -754,7 +752,6 @@ void PIV::calculate()
   // Transform (and sort) the rPIV before starting the dynamics
   if (((prev_stp==-1) || (init_stp==1)) &&!CompDer) {
     if(prev_stp!=-1) {init_stp=0;}
-    log << "Debug " << prev_stp << " " << init_stp << "\n";
     // Calculate the volume scaling factor
     if(Svol) {
       Fvol=cbrt(Vol0/getBox().determinant());
@@ -925,7 +922,7 @@ void PIV::calculate()
         }
         if(timer) stopwatch.stop("1 Build cPIV");
         if(timer) stopwatch.start("2 Sort cPIV");
-        if(!doserial) {
+        if(!doserial && comm.initialized()) {
           // Vectors keeping track of the dimension and the starting-position of the rank-specific pair vector in the big pair vector.
           std:: vector<int> Vdim(stride,0);
           std:: vector<int> Vpos(stride,0);
@@ -987,6 +984,8 @@ void PIV::calculate()
           // Loop on blocks
           //for(unsigned m=0;m<Nlist;m++) {
           // Loop on Ordering Vector size excluding zeros (i=1)
+          if(timer) stopwatch.stop("2 Sort cPIV");
+          if(timer) stopwatch.start("3 Reconstruct cPIV");
           for(unsigned i=1; i<Nprec; i++) {
             // Loop on the ranks
             for(unsigned l=0; l<stride; l++) {
@@ -1000,7 +999,7 @@ void PIV::calculate()
               }
             }
           }
-          if(timer) stopwatch.stop("2 Sort cPIV");
+          if(timer) stopwatch.stop("3 Reconstruct cPIV");
         } else {
           for(unsigned i=1; i<Nprec; i++) {
             for(unsigned m=0; m<OrdVec[i]; m++) {
@@ -1013,7 +1012,6 @@ void PIV::calculate()
       }
     }
   }
-
   Vector distance;
   double dfunc=0.;
   // Calculate volume scaling factor
@@ -1072,7 +1070,7 @@ void PIV::calculate()
     exit();
   }
 
-  if(timer) stopwatch.start("3 Build For Derivatives");
+  if(timer) stopwatch.start("4 Build For Derivatives");
   // non-global variables Nder and Scalevol defined to speedup if structures in cycles
   bool Nder=CompDer;
   bool Scalevol=Svol;
@@ -1206,18 +1204,17 @@ void PIV::calculate()
       }
     }
 
-    if (!serial) {
+    if (!serial && comm.initialized()) {
       comm.Barrier();
       comm.Sum(&m_PIVdistance,1);
       if(!m_deriv.empty()) comm.Sum(&m_deriv[0][0],3*m_deriv.size());
       comm.Sum(&m_virial[0][0],9);
     }
-
   }
   prev_stp=getStep();
 
   //Timing
-  if(timer) stopwatch.stop("3 Build For Derivatives");
+  if(timer) stopwatch.stop("4 Build For Derivatives");
   if(timer) {
     log.printf("Timings for action %s with label %s \n", getName().c_str(), getLabel().c_str() );
     log<<stopwatch;
