@@ -54,8 +54,7 @@ periodic image.
 \note As an experimental feature, CENTER also supports a keyword PHASES.
 This keyword solves PBCs by computing scaled coordinates and average
 trigonometric functions, similarly to \ref CENTER_OF_MULTICOLVAR.
-Notice that virial should be implemented correctly, as well as non-orthorombic
-unit cells. Also notice that by construction this center position is
+Notice that by construction this center position is
 not invariant with respect to rotations of the atoms at fixed cell lattice.
 In addition, for symmetric Bravais lattices, it is not invariant with respect
 to special symmetries. E.g., if you have an hexagonal cell, the center will
