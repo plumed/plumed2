@@ -1,0 +1,2 @@
+type=driver
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces ff --dump-forces-fmt=%10.6f --dump-full-virial --debug-forces debugforces"
