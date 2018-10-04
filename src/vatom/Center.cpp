@@ -203,7 +203,7 @@ void Center::calculate() {
 
   if(!nopbc && !dophases) makeWhole();
 
-  if( first ) {
+  if( first && weight_mass) {
     for(unsigned i=0; i<getNumberOfAtoms(); i++) {
       if(std::isnan(getMass(i))) {
         error(
