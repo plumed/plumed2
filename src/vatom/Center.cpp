@@ -23,6 +23,7 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
+#include <cmath>
 
 using namespace std;
 
@@ -81,6 +82,41 @@ PRINT ARG=d1
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC VATOM COM
+/*
+Calculate the center of mass for a group of atoms.
+
+The computed
+center of mass is stored as a virtual atom that can be accessed in
+an atom list through the label for the COM action that creates it.
+
+For arbitrary weights (e.g. geometric center) see \ref CENTER.
+
+When running with periodic boundary conditions, the atoms should be
+in the proper periodic image. This is done automatically since PLUMED 2.2,
+by considering the ordered list of atoms and rebuilding PBCs with a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED.
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
+
+\par Examples
+
+The following input instructs plumed to print the distance between the
+center of mass for atoms 1,2,3,4,5,6,7 and that for atoms 15,20:
+\plumedfile
+c1: COM ATOMS=1-7
+c2: COM ATOMS=15,20
+d1: DISTANCE ATOMS=c1,c2
+PRINT ARG=d1
+\endplumedfile
+
+*/
+//+ENDPLUMEDOC
+
 
 class Center:
   public ActionWithVirtualAtom
@@ -90,6 +126,7 @@ class Center:
   std::vector<Tensor> dcenter_cos;
   bool weight_mass;
   bool nopbc;
+  bool first;
   bool phases;
 public:
   explicit Center(const ActionOptions&ao);
@@ -98,6 +135,7 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(Center,"CENTER")
+PLUMED_REGISTER_ACTION(Center,"COM")
 
 void Center::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);
@@ -112,6 +150,7 @@ Center::Center(const ActionOptions&ao):
   ActionWithVirtualAtom(ao),
   weight_mass(false),
   nopbc(false),
+  first(true),
   phases(false)
 {
   vector<AtomNumber> atoms;
@@ -121,6 +160,7 @@ Center::Center(const ActionOptions&ao):
   parseFlag("MASS",weight_mass);
   parseFlag("NOPBC",nopbc);
   parseFlag("PHASES",phases);
+  if( getName()=="COM") weight_mass=true;
   checkRead();
   log.printf("  of atoms:");
   for(unsigned i=0; i<atoms.size(); ++i) {
@@ -162,6 +202,19 @@ void Center::calculate() {
   const bool dophases=(getPbc().isSet() ? phases : false);
 
   if(!nopbc && !dophases) makeWhole();
+
+  if( first && weight_mass) {
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+      if(std::isnan(getMass(i))) {
+        error(
+          "You are trying to compute a CENTER or COM but masses are not known.\n"
+          "        If you are using plumed driver, please use the --mc option"
+        );
+      }
+    }
+    first=false;
+  }
+
   vector<Tensor> deriv(getNumberOfAtoms());
   for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
   if( plumed.getAtoms().chargesWereSet() ) {
