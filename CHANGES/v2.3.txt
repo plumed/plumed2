@@ -252,6 +252,8 @@ For developers:
 
 ## Version 2.3.7 (coming soon)
 
+\plumednotmaintained
+
 For users:
 - Fixed flag DETAILED_TIMERS in \ref DEBUG (flag was ignored and detailed timers always written).
 - Small fix in \ref DUMPMASSCHARGE (atoms are now correctly requested only at first step).
