@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018 The plumed team
+   Copyright (c) 2012-2017 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,39 +19,21 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_core_ActionShortcut_h
-#define __PLUMED_core_ActionShortcut_h
+#ifndef __PLUMED_gridtools_RDF_h
+#define __PLUMED_gridtools_RDF_h
 
-#include "Action.h"
+#include "core/ActionShortcut.h"
 
 namespace PLMD {
+namespace gridtools {
 
-/**
-\ingroup MULTIINHERIT
-Action used to create a command that expands to multiple PLMD::Action commands when read in during input
-*/
-class ActionShortcut :
-  public virtual Action {
-private:
-  std::string shortcutlabel;
+class RDF : public ActionShortcut {
 public:
+  static void createX2ReferenceObject( const std::string& lab,  const std::string& grid_setup, const bool& calc_dens, ActionShortcut* action ); 
   static void registerKeywords( Keywords& keys );
-/// Read keywords
-  void readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap );
-/// Constructor
-  explicit ActionShortcut(const ActionOptions&ao);
-/// Get the label for the shortcut
-  const std::string & getShortcutLabel() const ;
-/// Take everything that was input to this action and convert it to a string
-  std::string convertInputLineToString();
-/// It is a shortcut it should never need to be activated
-  void activate() {}
-/// Do nothing.
-  void calculate() {}
-/// Do nothing.
-  void apply() {}
+  explicit RDF(const ActionOptions&ao);
 };
 
 }
-
+}
 #endif

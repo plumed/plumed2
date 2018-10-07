@@ -44,6 +44,8 @@ class ActionOptions;
 /// to avoid random results.
 ///
 class ActionRegister {
+/// Action is a friend so that we can access the keywords for all actions so we know what to do with UPDATE_FROM/UPDATE_UNTIL and RESTART
+  friend class Action;
 /// Write on a stream the list of registered directives
   friend std::ostream &operator<<(std::ostream &,const ActionRegister&);
 /// Pointer to a function which, given the options, create an Action

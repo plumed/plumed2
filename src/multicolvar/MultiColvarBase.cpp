@@ -72,25 +72,7 @@ void MultiColvarBase::expandFunctions( const std::string& labout, const std::str
 }
 
 void MultiColvarBase::readShortcutKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action ) {
-  Keywords keys; MultiColvarBase::shortcutKeywords( keys );
-  for(unsigned i=0; i<keys.size(); ++i) {
-      std::string t, keyname = keys.get(i);
-      if( keys.style( keyname, "optional") ) {
-          action->parse(keyname,t); 
-          if( t.length()>0 ) {
-             keymap.insert(std::pair<std::string,std::string>(keyname,t));
-          } else if( keys.numbered( keyname ) ) {
-             for(unsigned i=1;; ++i) {
-               std::string istr; Tools::convert( i, istr );
-               if( !action->parseNumbered(keyname,i,t) ) break ;
-               keymap.insert(std::pair<std::string,std::string>(keyname + istr,t));
-             }
-          }
-      } else if( keys.style( keyname, "flag") ) {
-          bool found=false; action->parseFlag(keyname,found);
-          if( found ) keymap.insert(std::pair<std::string,std::string>(keyname,""));
-      } else plumed_merror("shortcut keywords should be optional or flags");
-  } 
+  Keywords keys; MultiColvarBase::shortcutKeywords( keys ); action->readShortcutKeywords( keys, keymap );
 }
 
 void MultiColvarBase::expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights, 

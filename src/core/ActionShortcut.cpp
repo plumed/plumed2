@@ -29,6 +29,27 @@ void ActionShortcut::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
 }
 
+void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap ) {
+  for(unsigned i=0; i<keys.size(); ++i) {
+      std::string t, keyname = keys.get(i);
+      if( keys.style( keyname, "optional") || keys.style( keyname, "compulsory") ) {
+          parse(keyname,t); 
+          if( t.length()>0 ) {
+             keymap.insert(std::pair<std::string,std::string>(keyname,t));
+          } else if( keys.numbered( keyname ) ) {
+             for(unsigned i=1;; ++i) {
+               std::string istr; Tools::convert( i, istr );
+               if( !parseNumbered(keyname,i,t) ) break ;
+               keymap.insert(std::pair<std::string,std::string>(keyname + istr,t));
+             }
+          }
+      } else if( keys.style( keyname, "flag") ) {
+          bool found=false; parseFlag(keyname,found);
+          if( found ) keymap.insert(std::pair<std::string,std::string>(keyname,""));
+      } else plumed_merror("shortcut keywords should be optional, compulsory or flags");
+  }
+}
+
 ActionShortcut::ActionShortcut(const ActionOptions&ao):
   Action(ao),
   shortcutlabel(label)

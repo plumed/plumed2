@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Action.h"
 #include "ActionWithValue.h"
+#include "ActionRegister.h"
 #include "PlumedMain.h"
 #include "tools/Log.h"
 #include "tools/Exception.h"
@@ -107,21 +108,6 @@ Action::~Action() {
   }
 }
 
-void Action::readInputLine( const std::string& input ) {
-  std::string f_input = input;
-  if( update_from!=std::numeric_limits<double>::max() ) {
-    std::string ufrom; Tools::convert( update_from, ufrom ); f_input += " UPDATE_FROM=" + ufrom;
-  }
-  if( update_until!=std::numeric_limits<double>::max() ) {
-    std::string util; Tools::convert( update_until, util ); f_input += " UPDATE_UNTIL=" + util;
-  }
-  if( keywords.exists("RESTART") ) {
-    if( restart ) f_input += " RESTART=YES";
-    if( !restart ) f_input += " RESTART=NO";
-  }
-  plumed.readInputLine( f_input );
-}
-
 FILE* Action::fopen(const char *path, const char *mode) {
   bool write(false);
   for(const char*p=mode; *p; p++) if(*p=='w' || *p=='a' || *p=='+') write=true;
@@ -141,6 +127,26 @@ void Action::fflush() {
   for(const auto & p : files) {
     std::fflush(p);
   }
+}
+
+void Action::readInputLine( const std::string& input ) {
+  std::string f_input = input;
+  // Work out what action we are reading in
+  std::vector<std::string> words=Tools::getWords(input); Tools::interpretLabel( words );
+  // And get the keywords
+  Keywords keys; actionRegister().mk[ words[0] ](keys);
+  // Now create the new input
+  if( update_from!=std::numeric_limits<double>::max() && keys.exists("UPDATE_FROM") ) {
+    std::string ufrom; Tools::convert( update_from, ufrom ); f_input += " UPDATE_FROM=" + ufrom;
+  }
+  if( update_until!=std::numeric_limits<double>::max() && keys.exists("UPDATE_UNTIL") ) {
+    std::string util; Tools::convert( update_until, util ); f_input += " UPDATE_UNTIL=" + util;
+  }
+  if( keywords.exists("RESTART") && keys.exists("RESTART") ) {
+    if( restart ) f_input += " RESTART=YES";
+    if( !restart ) f_input += " RESTART=NO";
+  }
+  plumed.readInputLine( f_input );
 }
 
 std::string Action::getKeyword(const std::string& key) {

@@ -19,10 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "HistogramBase.h"
+#include "SphericalKDE.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/Pbc.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -37,43 +38,7 @@ Accumulate the average probability density on a spherical grid.
 */
 //+ENDPLUMEDOC
 
-class SphericalKDE : public HistogramBase {
-private:
-  double hh;
-  std::vector<double> center;
-  unsigned nbins;
-  double von_misses_norm;
-  double von_misses_concentration;
-public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
-  static void registerKeywords( Keywords& keys );
-  explicit SphericalKDE(const ActionOptions&ao);
-  void setupNeighborsVector();
-  void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
-                             std::vector<std::string>& max, std::vector<unsigned>& out_nbin,
-                             std::vector<double>& spacing, std::vector<bool>& pbc, const bool& dumpcube ) const ;
-  void completeGridObjectSetup() {}
-  void buildSingleKernel( std::vector<unsigned>& tflags, const double& height, std::vector<double>& args );
-  double calculateValueOfSingleKernel( const std::vector<double>& args, std::vector<double>& der ) const ;
-  void addKernelToGrid( const double& height, const std::vector<double>& args, const unsigned& bufstart, std::vector<double>& buffer ) const ;
-  void addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const ;
-};
-
-PLUMED_REGISTER_ACTION(SphericalKDE,"SPHERICAL_KDE")
-PLUMED_REGISTER_SHORTCUT(SphericalKDE,"SPHERICAL_KDE")
-
-void SphericalKDE::shortcutKeywords( Keywords& keys ) {
-  HistogramBase::shortcutKeywords( keys );
-}
-
-void SphericalKDE::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                   const std::map<std::string,std::string>& keys,
-                                   std::vector<std::vector<std::string> >& actions ) {
-  HistogramBase::resolveNormalizationShortcut( lab, words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(SphericalKDE,"SPHERICAL_KDE_CALC")
 
 void SphericalKDE::registerKeywords( Keywords& keys ) {
   HistogramBase::registerKeywords( keys );
@@ -157,6 +122,25 @@ void SphericalKDE::addKernelForces( const unsigned& heights_index, const unsigne
     if( heights_index==2  ) forces[ args.size()*numberOfKernels + itask ] += newval*fforce / height;
     unsigned n=itask; for(unsigned j=0; j<gpoint.size(); ++j) { forces[n] += von_misses_concentration*newval*gpoint[j]*fforce; n += numberOfKernels; }
   }
+}
+
+class SphericalKDEShortcut : public ActionShortcut {
+public:
+  static void registerKeywords(Keywords& keys);
+  explicit SphericalKDEShortcut(const ActionOptions&);
+};
+
+PLUMED_REGISTER_ACTION(SphericalKDEShortcut,"SPHERICAL_KDE")
+    
+void SphericalKDEShortcut::registerKeywords( Keywords& keys ) {
+  SphericalKDE::registerKeywords( keys ); 
+}
+
+SphericalKDEShortcut::SphericalKDEShortcut(const ActionOptions& ao):
+Action(ao),
+ActionShortcut(ao)
+{
+  HistogramBase::createKDEObject( getShortcutLabel(), "SPHERICAL_KDE", this );
 }
 
 }

@@ -27,6 +27,9 @@
 #include "GridCoordinatesObject.h"
 
 namespace PLMD {
+
+class ActionShortcut;
+
 namespace gridtools {
 
 class HistogramBase :
@@ -43,11 +46,12 @@ protected:
   GridCoordinatesObject gridobject;
   void addValueWithDerivatives( const std::vector<unsigned>& shape );
 public:
-  static void shortcutKeywords( Keywords& keys );
+  static void histogramKeywords( Keywords& keys );
   static void registerKeywords( Keywords& keys );
-  static void resolveNormalizationShortcut( const std::string& lab, const std::vector<std::string>& words,
-      const std::map<std::string,std::string>& keys,
-      std::vector<std::vector<std::string> >& actions );
+  static void createKDEObject( const std::string& lab, const std::string& command, ActionShortcut* action );
+  static void readHistogramKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action );
+  static void createAveragingObject( const std::string& ilab, const std::string& olab,
+                                     const std::map<std::string,std::string>& keymap, ActionShortcut* action );
   explicit HistogramBase(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const ;
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;

@@ -20,37 +20,48 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "HistogramBase.h"
+#include "core/ActionShortcut.h"
 
 namespace PLMD {
 namespace gridtools {
 
-void HistogramBase::shortcutKeywords( Keywords& keys ) {
-  keys.add("optional","HEIGHTS","this keyword takes the label of an action that calculates a vector of values.  The elements of this vector "
-           "are used as weights for the Gaussians.");
-  keys.addFlag("UNORMALIZED",false,"calculate the unormalized distribution of colvars");
+void HistogramBase::histogramKeywords( Keywords& keys ) {
+  keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
+  keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
+           "of 0 implies that all the data will be used and that the grid will never be cleared");
+  keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
+  keys.add("compulsory","NORMALIZATION","true","This controls how the data is normalized it can be set equal to true, false or ndata.  The differences between "
+           "these options are explained in the manual page for \\ref HISTOGRAM");
 }
 
-void HistogramBase::resolveNormalizationShortcut( const std::string& lab, const std::vector<std::string>& words,
-    const std::map<std::string,std::string>& keys,
-    std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> inp;
-  if( keys.count("HEIGHTS") && !keys.count("UNORMALIZED") ) {
-    std::vector<std::string> norm_input; norm_input.push_back( lab + "_hsum:");
-    norm_input.push_back("COMBINE"); norm_input.push_back( "ARG=" + keys.find("HEIGHTS")->second );
-    norm_input.push_back("PERIODIC=NO"); actions.push_back( norm_input );
-    inp.push_back( lab + "_unorm:" ); inp.push_back(words[0]); inp.push_back("UNORMALIZED");
+void HistogramBase::createKDEObject( const std::string& lab, const std::string& command, ActionShortcut* action ) {
+  std::string inp, height; action->parse("HEIGHTS",height); bool uflag; action->parseFlag("UNORMALIZED",uflag);
+  // Deal with the weights if we are doing averages on a grid
+  if( height.length()>0  && !uflag ) {
+    inp = lab + "_unorm: " + command + "_CALC " + action->convertInputLineToString(); 
+    action->readInputLine( lab + "_hsum: COMBINE ARG=" + height + " PERIODIC=NO");
+    inp = inp + " UNORMALIZED";
+  } else if( !uflag ) {
+     inp = lab + ": " + command + "_CALC " + action->convertInputLineToString();
   } else {
-    inp.push_back( lab + ":" ); inp.push_back(words[0]);
-    if( keys.count("UNORMALIZED") ) inp.push_back("UNORMALIZED");
+     inp = lab + ": " + command + "_CALC UNORMALIZED " + action->convertInputLineToString();
   }
-  for(unsigned i=1; i<words.size(); ++i) inp.push_back( words[i] );
-  if( keys.count("HEIGHTS") ) inp.push_back( "HEIGHTS=" + keys.find("HEIGHTS")->second );
-  actions.push_back( inp );
-  if( keys.count("HEIGHTS") && !keys.count("UNORMALIZED") ) {
-    std::vector<std::string> ninp; ninp.push_back( lab + ":" ); ninp.push_back("MATHEVAL");
-    ninp.push_back("ARG1=" + lab + "_unorm"); ninp.push_back("ARG2=" + lab + "_hsum");
-    ninp.push_back("FUNC=x/y"); ninp.push_back("PERIODIC=NO"); actions.push_back( ninp );
+  if( height.length()>0 ) inp = inp + " HEIGHTS=" + height;
+  action->readInputLine( inp );
+  if( height.length()>0 && !uflag ) {
+    action->readInputLine(  lab + ": MATHEVAL ARG1=" + lab + "_unorm ARG2=" + lab + "_hsum FUNC=x/y PERIODIC=NO"); 
   }
+}
+
+void HistogramBase::readHistogramKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action ) { 
+  Keywords keys; HistogramBase::histogramKeywords( keys ); action->readShortcutKeywords( keys, keymap );
+}
+
+void HistogramBase::createAveragingObject( const std::string& ilab, const std::string& olab, 
+                                           const std::map<std::string,std::string>& keymap, ActionShortcut* action ) {
+  std::string av_words = "STRIDE=" + keymap.find("STRIDE")->second + " CLEAR=" + keymap.find("CLEAR")->second + " NORMALIZATION=" + keymap.find("NORMALIZATION")->second;
+  if( keymap.count("LOGWEIGHTS") ) av_words += " LOGWEIGHTS=" + keymap.find("LOGWEIGHTS")->second;
+  action->readInputLine( olab + ": AVERAGE ARG=" + ilab + " " + av_words );
 }
 
 void HistogramBase::registerKeywords( Keywords& keys ) {
