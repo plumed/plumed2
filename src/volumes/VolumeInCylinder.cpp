@@ -23,6 +23,7 @@
 #include "tools/Pbc.h"
 #include "tools/SwitchingFunction.h"
 #include "ActionVolume.h"
+#include "VolumeShortcut.h"
 
 //+PLUMEDOC VOLUMES INCYLINDER
 /*
@@ -79,29 +80,16 @@ private:
   std::vector<unsigned> dir;
   SwitchingFunction switchingFunction;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit VolumeInCylinder (const ActionOptions& ao);
   void setupRegions();
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
 };
 
-PLUMED_REGISTER_ACTION(VolumeInCylinder,"INCYLINDER")
-PLUMED_REGISTER_SHORTCUT(VolumeInCylinder,"INCYLINDER")
-
-void VolumeInCylinder::shortcutKeywords( Keywords& keys ) {
-  ActionVolume::shortcutKeywords( keys );
-}
-
-void VolumeInCylinder::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                       const std::map<std::string,std::string>& keys,
-                                       std::vector<std::vector<std::string> >& actions ) {
-  ActionVolume::expandShortcut( lab, words, keys, actions );
-}
-
+PLUMED_REGISTER_ACTION(VolumeInCylinder,"INCYLINDER_CALC")
+char glob_cylinder[] = "INCYLINDER";
+typedef VolumeShortcut<glob_cylinder> VolumeInCylinderShortcut;
+PLUMED_REGISTER_ACTION(VolumeInCylinderShortcut,"INCYLINDER")
 
 void VolumeInCylinder::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );

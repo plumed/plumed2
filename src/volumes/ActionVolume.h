@@ -55,12 +55,9 @@ protected:
   Vector getPosition( const unsigned& index ) const ;
   void requestAtoms( const std::vector<AtomNumber> & a );
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit ActionVolume(const ActionOptions&);
+  void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
   unsigned getNumberOfDerivatives() const ;
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   void calculate();

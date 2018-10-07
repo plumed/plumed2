@@ -25,6 +25,7 @@
 #include "tools/Units.h"
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
+#include "VolumeShortcut.h"
 
 //+PLUMEDOC VOLUMES TETRAHEDRALPORE
 /*
@@ -125,10 +126,6 @@ private:
   std::vector<Vector> dlbi, dlcross, dlperp;
   std::vector<Tensor> dbi, dcross, dperp;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit VolumeTetrapore(const ActionOptions& ao);
   ~VolumeTetrapore();
@@ -137,19 +134,10 @@ public:
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
 };
 
-PLUMED_REGISTER_ACTION(VolumeTetrapore,"TETRAHEDRALPORE")
-PLUMED_REGISTER_SHORTCUT(VolumeTetrapore,"TETRAHEDRALPORE")
-
-void VolumeTetrapore::shortcutKeywords( Keywords& keys ) {
-  ActionVolume::shortcutKeywords( keys );
-}
-
-void VolumeTetrapore::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                      const std::map<std::string,std::string>& keys,
-                                      std::vector<std::vector<std::string> >& actions ) {
-  ActionVolume::expandShortcut( lab, words, keys, actions );
-}
-
+PLUMED_REGISTER_ACTION(VolumeTetrapore,"TETRAHEDRALPORE_CALC")
+char glob_tetrapore[] = "TETRAHEDRALPORE";
+typedef VolumeShortcut<glob_tetrapore> VolumeTetraporeShortcut;
+PLUMED_REGISTER_ACTION(VolumeTetraporeShortcut,"TETRAHEDRALPORE")
 
 void VolumeTetrapore::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );

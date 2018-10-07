@@ -23,6 +23,7 @@
 #include "tools/Pbc.h"
 #include "tools/SwitchingFunction.h"
 #include "ActionVolume.h"
+#include "VolumeShortcut.h"
 
 //+PLUMEDOC VOLUMES INSPHERE
 /*
@@ -75,28 +76,16 @@ private:
   Vector origin;
   SwitchingFunction switchingFunction;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit VolumeInSphere(const ActionOptions& ao);
   void setupRegions();
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
 };
 
-PLUMED_REGISTER_ACTION(VolumeInSphere,"INSPHERE")
-PLUMED_REGISTER_SHORTCUT(VolumeInSphere,"INSPHERE")
-
-void VolumeInSphere::shortcutKeywords( Keywords& keys ) {
-  ActionVolume::shortcutKeywords( keys );
-}
-
-void VolumeInSphere::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                     const std::map<std::string,std::string>& keys,
-                                     std::vector<std::vector<std::string> >& actions ) {
-  ActionVolume::expandShortcut( lab, words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(VolumeInSphere,"INSPHERE_CALC")
+char glob_sphere[] = "INSPHERE";
+typedef VolumeShortcut<glob_sphere> VolumeInSphereShortcut;
+PLUMED_REGISTER_ACTION(VolumeInSphereShortcut,"INSPHERE")
 
 void VolumeInSphere::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );

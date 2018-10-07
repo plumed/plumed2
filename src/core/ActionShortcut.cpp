@@ -67,7 +67,12 @@ const std::string & ActionShortcut::getShortcutLabel() const {
 
 std::string ActionShortcut::convertInputLineToString() {
   std::string output;
-  for(auto p=line.begin(); p!=line.end(); ++p) output += " " + (*p); 
+  for(auto p=line.begin(); p!=line.end(); ++p) {
+      if( (*p).find("= " )!=std::string::npos ) {
+          std::size_t eq = (*p).find_first_of("=");
+          output += " " + (*p).substr(0,eq) + "={" + (*p).substr(eq+2) + "}";  
+      } else output += " " + (*p);
+  } 
   line.resize(0); return output;
 }
 

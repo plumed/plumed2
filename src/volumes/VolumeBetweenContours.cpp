@@ -25,6 +25,7 @@
 #include "tools/SwitchingFunction.h"
 #include "tools/LinkCells.h"
 #include "ActionVolume.h"
+#include "VolumeShortcut.h"
 #include <memory>
 
 //+PLUMEDOC VOLUMES INENVELOPE
@@ -71,28 +72,16 @@ private:
   std::vector<unsigned> ltmp_ind;
   SwitchingFunction sfunc;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit VolumeInEnvelope(const ActionOptions& ao);
   void setupRegions();
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
 };
 
-PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE")
-PLUMED_REGISTER_SHORTCUT(VolumeInEnvelope,"INENVELOPE")
-
-void VolumeInEnvelope::shortcutKeywords( Keywords& keys ) {
-  ActionVolume::shortcutKeywords( keys );
-}
-
-void VolumeInEnvelope::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                       const std::map<std::string,std::string>& keys,
-                                       std::vector<std::vector<std::string> >& actions ) {
-  ActionVolume::expandShortcut( lab, words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE_CALC")
+char glob_contours[] = "INENVELOPE";
+typedef VolumeShortcut<glob_contours> VolumeInEnvelopeShortcut;
+PLUMED_REGISTER_ACTION(VolumeInEnvelopeShortcut,"INENVELOPE")
 
 void VolumeInEnvelope::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys ); keys.remove("SIGMA");

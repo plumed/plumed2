@@ -20,111 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionVolume.h"
+#include "core/PlumedMain.h"
+#include "multicolvar/MultiColvarBase.h"
 
 namespace PLMD {
 namespace volumes {
-
-void ActionVolume::shortcutKeywords( Keywords& keys ) {
-  keys.addFlag("SUM",false,"calculate the sum of all the quantities.");
-  keys.addOutputComponent("_sum","SUM","the sum of all the colvars weighted by the function that determines if we are in the region");
-  keys.addFlag("MEAN",false,"calculate the average value of the colvar inside the region of interest");
-  keys.addOutputComponent("_mean","MEAN","the average values of the colvar in the region of interest");
-  keys.add("optional","DATA","the label of an action that calculates multicolvars.  Weighted sums based on the location of the colvars calculated by this action will be calcualted");
-  keys.add("optional","LESS_THAN","calcualte the number of colvars that are inside the region of interest and that are less than a certain threshold");
-  keys.addOutputComponent("_lessthan","LESS_THAN","the number of cvs in the region of interest that are less than a certain threshold");
-  keys.add("optional","MORE_THAN","calcualte the number of colvars that are inside the region of interest and that are greater that a certain threshold");
-  keys.addOutputComponent("_morethan","MORE_THAN","the number of cvs in the region of interest that are more than a certain threshold");
-  keys.add("optional","BETWEEN","calculate the number of colvars that are inside the region of interest and that have a CV value that is between a particular set of bounds");
-  keys.addOutputComponent("_between","BETWEEN","the number of cvs in the region of interest that are within a certain range");
-}
-
-void ActionVolume::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                   const std::map<std::string,std::string>& keys,
-                                   std::vector<std::vector<std::string> >& actions ) {
-  if( keys.count("DATA") ) {
-    std::string mc_lab = keys.find("DATA")->second;
-    // Create the apprpriate volume object
-    std::vector<std::string> vol_input; vol_input.push_back( lab + ":" );
-    for(unsigned i=0; i<words.size(); ++i) vol_input.push_back( words[i] );
-    vol_input.push_back( "ATOMS=" + mc_lab ); actions.push_back( vol_input );
-    // Now create input for sums
-    if( keys.count("SUM") || keys.count("MEAN") ) {
-      std::vector<std::string> me_input; me_input.push_back( lab + "_prod:" );
-      me_input.push_back("MATHEVAL"); me_input.push_back("ARG1=" + mc_lab);
-      me_input.push_back("ARG2=" + lab); me_input.push_back("FUNC=x*y");
-      me_input.push_back("PERIODIC=NO"); actions.push_back( me_input );
-      std::vector<std::string> input;
-      if( keys.count("SUM") ) input.push_back( lab + "_sum:" );
-      else input.push_back( lab + "_numer:");
-      input.push_back("COMBINE");
-      input.push_back("ARG=" + lab + "_prod"); input.push_back("PERIODIC=NO"); actions.push_back( input );
-    }
-    if( keys.count("MEAN") ) {
-      // Calculate denominator
-      std::vector<std::string> norm_in; norm_in.push_back( lab + "_norm:" );
-      norm_in.push_back("COMBINE"); norm_in.push_back("ARG=" + lab);
-      norm_in.push_back("PERIODIC=NO"); actions.push_back( norm_in );
-      // And calculate final quantity which is mean of these two actions
-      std::vector<std::string> me_input2; me_input2.push_back( lab + "_mean:" );
-      me_input2.push_back("MATHEVAL");
-      if( keys.count("SUM") ) me_input2.push_back("ARG1=" + lab + "_sum" );
-      else me_input2.push_back("ARG1=" + lab + "_numer");
-      me_input2.push_back("ARG2=" + lab + "_norm"); me_input2.push_back("FUNC=x/y");
-      me_input2.push_back("PERIODIC=NO"); actions.push_back( me_input2 );
-    }
-    if( keys.count("LESS_THAN") ) {
-      // Calculate number less than
-      std::vector<std::string> lt_inp; lt_inp.push_back( mc_lab + "_" + lab + "_lt:" );
-      lt_inp.push_back("LESS_THAN"); lt_inp.push_back("ARG1=" + mc_lab );
-      lt_inp.push_back("SWITCH=" + keys.find("LESS_THAN")->second  );
-      actions.push_back( lt_inp );
-      // And the matheval bit
-      std::vector<std::string> me_input; me_input.push_back( lab + "_lt:" );
-      me_input.push_back("MATHEVAL"); me_input.push_back("ARG1=" + mc_lab + "_" + lab + "_lt" );
-      me_input.push_back("ARG2=" + lab); me_input.push_back("FUNC=x*y");
-      me_input.push_back("PERIODIC=NO"); actions.push_back( me_input );
-      // And the final sum
-      std::vector<std::string> input; input.push_back( lab + "_lessthan:" ); input.push_back("COMBINE");
-      input.push_back("ARG=" + lab + "_lt"); input.push_back("PERIODIC=NO"); actions.push_back( input );
-    }
-    if( keys.count("MORE_THAN") ) {
-      // Calculate number less than
-      std::vector<std::string> lt_inp; lt_inp.push_back( mc_lab + "_" + lab + "_mt:" );
-      lt_inp.push_back("LESS_THAN"); lt_inp.push_back("ARG1=" + mc_lab );
-      lt_inp.push_back("SWITCH=" + keys.find("LESS_THAN")->second  );
-      actions.push_back( lt_inp );
-      // And the matheval bit
-      std::vector<std::string> me_input; me_input.push_back( lab + "_mt:" );
-      me_input.push_back("MATHEVAL"); me_input.push_back("ARG1=" + mc_lab + "_" + lab + "_mt" );
-      me_input.push_back("ARG2=" + lab); me_input.push_back("FUNC=x*y");
-      me_input.push_back("PERIODIC=NO"); actions.push_back( me_input );
-      // And the final sum
-      std::vector<std::string> input; input.push_back( lab + "_morethan:" ); input.push_back("COMBINE");
-      input.push_back("ARG=" + lab + "_mt"); input.push_back("PERIODIC=NO"); actions.push_back( input );
-    }
-    if( keys.count("BETWEEN") ) {
-      // Calculate number less than
-      std::vector<std::string> lt_inp; lt_inp.push_back( mc_lab + "_" + lab + "_bt:" );
-      lt_inp.push_back("LESS_THAN"); lt_inp.push_back("ARG1=" + mc_lab );
-      lt_inp.push_back("SWITCH=" + keys.find("LESS_THAN")->second  );
-      actions.push_back( lt_inp );
-      // And the matheval bit
-      std::vector<std::string> me_input; me_input.push_back( lab + "_bt:" );
-      me_input.push_back("MATHEVAL"); me_input.push_back("ARG1=" + mc_lab + "_" + lab + "_bt" );
-      me_input.push_back("ARG2=" + lab); me_input.push_back("FUNC=x*y");
-      me_input.push_back("PERIODIC=NO"); actions.push_back( me_input );
-      // And the final sum
-      std::vector<std::string> input; input.push_back( lab + "_between:" ); input.push_back("COMBINE");
-      input.push_back("ARG=" + lab + "_bt"); input.push_back("PERIODIC=NO"); actions.push_back( input );
-    }
-  } else if( keys.count("SUM") ) {
-    std::vector<std::string> mc_line; mc_line.push_back( lab + "_vols:" );
-    for(unsigned i=0; i<words.size(); ++i) mc_line.push_back(words[i]);
-    actions.push_back( mc_line );
-    std::vector<std::string> input; input.push_back( lab + ":" ); input.push_back("COMBINE");
-    input.push_back("ARG=" + lab + "_vols"); input.push_back("PERIODIC=NO"); actions.push_back( input );
-  }
-}
 
 void ActionVolume::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
@@ -168,6 +68,10 @@ ActionVolume::ActionVolume(const ActionOptions&ao):
   if( getFullNumberOfTasks()==1 ) { ActionWithValue::addValueWithDerivatives(); }
   else { std::vector<unsigned> shape(1); shape[0]=getFullNumberOfTasks(); ActionWithValue::addValue( shape ); }
   setNotPeriodic();
+}
+
+void ActionVolume::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
+  multicolvar::MultiColvarBase::interpretDotStar( getLabel(), ulab, nargs, myvals, plumed.getActionSet() );
 }
 
 void ActionVolume::requestAtoms( const std::vector<AtomNumber> & a ) {

@@ -78,11 +78,6 @@ public:
   static void expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights,
                                const std::map<std::string,std::string>& keymap, ActionShortcut* action );
   static void expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights, ActionShortcut* action );
-  static void expandFunctions( const std::string& labout, const std::string& argin,
-                               const std::string& weights,
-                               const std::vector<std::string>& words,
-                               const std::map<std::string,std::string>& keys,
-                               std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase();

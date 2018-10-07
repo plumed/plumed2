@@ -22,6 +22,7 @@
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
+#include "VolumeShortcut.h"
 
 //+PLUMEDOC VOLUMES AROUND
 /*
@@ -75,28 +76,16 @@ private:
   double ylow, yhigh;
   double zlow, zhigh;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit VolumeAround(const ActionOptions& ao);
   void setupRegions();
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
 };
 
-PLUMED_REGISTER_ACTION(VolumeAround,"AROUND")
-PLUMED_REGISTER_SHORTCUT(VolumeAround,"AROUND")
-
-void VolumeAround::shortcutKeywords( Keywords& keys ) {
-  ActionVolume::shortcutKeywords( keys );
-}
-
-void VolumeAround::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                   const std::map<std::string,std::string>& keys,
-                                   std::vector<std::vector<std::string> >& actions ) {
-  ActionVolume::expandShortcut( lab, words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(VolumeAround,"AROUND_CALC")
+char glob_around[] = "AROUND";
+typedef VolumeShortcut<glob_around> VolumeAroundShortcut;
+PLUMED_REGISTER_ACTION(VolumeAroundShortcut,"AROUND")
 
 void VolumeAround::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );

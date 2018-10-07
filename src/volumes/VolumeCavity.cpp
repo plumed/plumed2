@@ -25,6 +25,7 @@
 #include "tools/Units.h"
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
+#include "VolumeShortcut.h"
 
 //+PLUMEDOC VOLUMES CAVITY
 /*
@@ -117,10 +118,6 @@ private:
   std::vector<Vector> dlbi, dlcross, dlperp;
   std::vector<Tensor> dbi, dcross, dperp;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   static void registerKeywords( Keywords& keys );
   explicit VolumeCavity(const ActionOptions& ao);
   ~VolumeCavity();
@@ -129,18 +126,10 @@ public:
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
 };
 
-PLUMED_REGISTER_ACTION(VolumeCavity,"CAVITY")
-PLUMED_REGISTER_SHORTCUT(VolumeCavity,"CAVITY")
-
-void VolumeCavity::shortcutKeywords( Keywords& keys ) {
-  ActionVolume::shortcutKeywords( keys );
-}
-
-void VolumeCavity::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                                   const std::map<std::string,std::string>& keys,
-                                   std::vector<std::vector<std::string> >& actions ) {
-  ActionVolume::expandShortcut( lab, words, keys, actions );
-}
+PLUMED_REGISTER_ACTION(VolumeCavity,"CAVITY_CALC")
+char glob_cavity[] = "CAVITY";
+typedef VolumeShortcut<glob_cavity> VolumeCavityShortcut;
+PLUMED_REGISTER_ACTION(VolumeCavityShortcut,"CAVITY")
 
 void VolumeCavity::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
