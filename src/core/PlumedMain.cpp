@@ -612,22 +612,18 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
   } else {
     std::vector<std::string> interpreted(words);
     Tools::interpretLabel(interpreted);
-    std::vector<std::vector<std::string> > act_info( actionRegister().expandShortcuts( multi_sim_comm.Get_rank(), interpreted ) );
-    for(unsigned i=0;i<act_info.size();++i){
-        Tools::interpretLabel( act_info[i] );
-        std::unique_ptr<Action> action(actionRegister().create(ActionOptions(*this,act_info[i])));
-        if(!action) {
-          std::string msg;
-          msg ="ERROR\nI cannot understand line:";
-          for(unsigned j=0; j<act_info[i].size(); ++j) msg+=" "+act_info[i][j];
-          msg+="\nMaybe a missing space or a typo?";
-          log << msg;
-          log.flush();
-          plumed_merror(msg);
-        };
-        action->checkRead();
-        actionSet.emplace_back(std::move(action));
-    }
+    auto action=actionRegister().create(ActionOptions(*this,interpreted));
+    if(!action) {
+      std::string msg;
+      msg ="ERROR\nI cannot understand line:";
+      for(unsigned i=0; i<interpreted.size(); ++i) msg+=" "+interpreted[i];
+      msg+="\nMaybe a missing space or a typo?";
+      log << msg;
+      log.flush();
+      plumed_merror(msg);
+    };
+    action->checkRead();
+    actionSet.emplace_back(std::move(action));
   };
 
   pilots=actionSet.select<ActionPilot*>();

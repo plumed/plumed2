@@ -35,21 +35,6 @@ ActionRegister::~ActionRegister() {
     for(const auto & p : m) names+=p.first+" ";
     std::cerr<<"WARNING: Directive "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
-  if(mk.size()>0) {
-    string names="";
-    for(const auto & p : mk) names+=p.first+" ";
-    std::cerr<<"WARNING: Directive "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
-  }
-  if(sk.size()>0) {
-    string names="";
-    for(const auto & p : sk) names+=p.first+" ";
-    std::cerr<<"WARNING: Shortcut for directive "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
-  }
-  if(s.size()>0) {
-    string names="";
-    for(const auto & p : s) names+=p.first+" ";
-    std::cerr<<"WARNING: Shorcut for directive "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
-  }
 }
 
 ActionRegister& actionRegister() {
@@ -57,95 +42,11 @@ ActionRegister& actionRegister() {
   return ans;
 }
 
-void ActionRegister::addShortcut(std::string key, keywords_pointer kp, shortcut_pointer sp ) {
-  plumed_massert( !sk.count(key) && !s.count(key), "should only be one shortcut registered per action");
-  sk.insert(pair<string,keywords_pointer>(key,kp)); s.insert(pair<string,shortcut_pointer>(key,sp));
-}
-
-void ActionRegister::removeShortcut(std::string key) {
-  for(auto p=sk.begin(); p!=sk.end(); ++p) {
-    if((*p).first==key) { sk.erase(p); break; }
-  }
-  for(auto p=s.begin(); p!=s.end(); ++p) {
-    if((*p).first==key) { s.erase(p); break; }
-  }
-}
-
-bool ActionRegister::checkForShortcut(std::string action) {
-  if(s.count(action)>0 && sk.count(action)>0) return true;
-  return false;
-}
-
-void ActionRegister::getShortcutKeywords( const std::string name, Keywords& keys ) {
-  plumed_massert( sk.count(name)>0, "no shortcut for " + name ); sk[name](keys);
-}
-
-std::vector<std::vector<std::string> > ActionRegister::expandShortcuts( const unsigned& replica_index, std::vector<std::string>& words ) {
-  std::vector<std::vector<std::string> > actions;
-  if( s.count(words[0])>0 ) {
-    plumed_assert( sk.count(words[0])>0 );
-    Keywords keys; sk[words[0]](keys); std::map<std::string,std::string> keymap;
-    for(unsigned i=0; i<keys.size(); ++i) {
-      std::string t, def, keyname = keys.get(i);
-      if( keys.style( keyname, "compulsory") && !keys.getDefaultValue( keyname, def ) ) {
-        bool found=Tools::parse(words,keyname,t,replica_index);
-        if( found ) keymap.insert(pair<std::string,std::string>(keyname,t));
-      } else if( keys.style( keyname, "optional") || keys.style( keyname, "atoms") ) {
-        bool found=Tools::parse(words,keyname,t,replica_index);
-        if( found ) keymap.insert(pair<std::string,std::string>(keyname,t));
-        else if( !found && keys.numbered( keyname ) ) {
-          for(unsigned i=1;; ++i) {
-            std::string istr; Tools::convert( i, istr );
-            bool found=Tools::parse(words,keyname + istr,t,replica_index);
-            if( !found ) break ;
-            keymap.insert(pair<std::string,std::string>(keyname + istr,t));
-          }
-          for(unsigned i=1;; ++i) {
-            std::string istr; Tools::convert( i, istr ); bool foundall=true;
-            for(unsigned j=1; j<=i; ++j) {
-              std::string jstr; Tools::convert( j, jstr );
-              bool found=Tools::parse(words,keyname + jstr + istr,t,replica_index);
-              if( j==1 && !found ) { foundall=false; break ; }
-              else if( !found ) plumed_merror("input suggests reading in matrix of numbered keywords but numbers are missing");
-              keymap.insert(pair<std::string,std::string>(keyname + jstr + istr,t));
-            }
-            if( !foundall ) break;
-          }
-        }
-      } else if( keys.style( keyname, "flag") ) {
-        bool found=false; Tools::parseFlag(words,keyname,found);
-        if( found ) keymap.insert(pair<std::string,std::string>(keyname,""));
-      }
-    }
-    if( keymap.size()>0 || m.find(words[0])==m.end() || keys.exists("ALWAYS_EXPAND") ) {
-      for(unsigned i=0; i<keys.size(); ++i) {
-        std::string t, def, keyname = keys.get(i);
-        if( keys.style( keyname, "compulsory") ) {
-          if( keys.getDefaultValue( keyname, def ) ) {
-            bool found=Tools::parse(words,keyname,t,replica_index);
-            if( !found ) keymap.insert(pair<std::string,std::string>(keyname,def));
-            else keymap.insert(pair<std::string,std::string>(keyname,t));
-          }
-        }
-      }
-      std::string lab; bool found=Tools::parse( words, "LABEL", lab, replica_index);
-      plumed_assert( found ); s[words[0]](lab, words, keymap, actions );
-      return actions;
-    }
-  }
-  actions.push_back( words );
-  return actions;
-}
-
 void ActionRegister::remove(creator_pointer f) {
-  std::string directive;
   for(auto p=m.begin(); p!=m.end(); ++p) {
     if((*p).second==f) {
-      directive=(*p).first; m.erase(p); break;
+      m.erase(p); break;
     }
-  }
-  for(auto p=mk.begin(); p!=mk.end(); ++p) {
-    if((*p).first==directive) { mk.erase(p); break; }
   }
 }
 

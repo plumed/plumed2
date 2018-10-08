@@ -352,25 +352,8 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
   } else if( mystr==getLabel() + ".*" ) {
     // Retrieve all scalar values
     if( !action_to_do_after ) retrieveAllScalarValuesInLoop( myuser->getLabel(), nargs, args );
-    if( args.size()==nargs && actionRegister().checkForShortcut(getName()) ) {
-      Keywords skeys; actionRegister().getShortcutKeywords( getName(), skeys );
-      std::vector<std::string> out_comps( skeys.getAllOutputComponents() );
-      for(unsigned i=0; i<out_comps.size(); ++i) {
-        std::string keyname; bool donumtest = skeys.getKeywordForThisOutput( out_comps[i], keyname );
-        if( donumtest ) {
-          if( skeys.numbered( keyname ) ) {
-            for(unsigned j=1;; ++j) {
-              std::string numstr; Tools::convert( j, numstr );
-              ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] + numstr );
-              if( !action ) break;
-              (action->getPntrToValue())->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
-            }
-          }
-        }
-        ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getLabel() + out_comps[i] );
-        if( action ) (action->getPntrToValue())->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
-      }
-    } else if( args.size()==nargs ) interpretDotStar( myuser->getLabel(), nargs, args );
+    // This interprets scalar values for many shortcuts
+    interpretDotStar( myuser->getLabel(), nargs, args );
   } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
     // Retrieve value with specific name
     copyOutput( mystr )->interpretDataRequest( myuser->getLabel(), nargs, args, "" );

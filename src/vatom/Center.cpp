@@ -171,10 +171,6 @@ class Center:
   bool phases;
   bool dophases;
 public:
-  static void shortcutKeywords( Keywords& keys );
-  static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                              const std::map<std::string,std::string>& keys,
-                              std::vector<std::vector<std::string> >& actions );
   explicit Center(const ActionOptions&ao);
   void calculate();
   void apply();
@@ -189,24 +185,6 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(Center,"CENTER")
-PLUMED_REGISTER_SHORTCUT(Center,"CENTER")
-PLUMED_REGISTER_SHORTCUT(Center,"COM")
-
-void Center::shortcutKeywords( Keywords& keys ) {
-  keys.addFlag("MASS",false,"calculate the center of mass");
-}
-
-void Center::expandShortcut( const std::string& lab, const std::vector<std::string>& words,
-                             const std::map<std::string,std::string>& keys,
-                             std::vector<std::vector<std::string> >& actions ) {
-  std::vector<std::string> input;
-  input.push_back(lab +":"); input.push_back("CENTER");
-  if( words[0]=="COM" ) input.push_back("WEIGHTS=@masses");
-  else if( keys.count("MASS") ) input.push_back("WEIGHTS=@masses");
-  else plumed_error();
-  for(unsigned i=1; i<words.size(); ++i) input.push_back(words[i]);
-  actions.push_back( input );
-}
 
 void Center::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);
@@ -216,9 +194,8 @@ void Center::registerKeywords(Keywords& keys) {
            "If WEIGHTS=@masses is used the center of mass is computed.  If WEIGHTS=@charges the center of charge is computed.  If "
            "the label of an action is provided PLUMED assumes that that action calculates a list of symmetry functions that can be used "
            "as weights. Lastly, an explicit list of numbers to use as weights can be provided");
-//  keys.addFlag("BERRYPHASE",false,"calculate the position of the center using a Berry Phase average.");
-//  keys.addFlag("MASS",false,"If set center is mass weighted");
   keys.addFlag("PHASES",false,"Compute center using trigonometric phases");
+  keys.addFlag("MASS",false,"calculate the center of mass");
 }
 
 Center::Center(const ActionOptions&ao):
@@ -234,9 +211,14 @@ Center::Center(const ActionOptions&ao):
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms); parseFlag("NOPBC",nopbc); parseFlag("PHASES",phases);
+  bool usemass = false; parseFlag("MASS",usemass);
   if(atoms.size()==0) error("at least one atom should be specified");
   std::vector<std::string> str_weights; parseVector("WEIGHTS",str_weights);
-  if( str_weights.size()==0) {
+  if( usemass ) {
+      if( str_weights.size()>0 ) error("USEMASS is incompatible with WEIGHTS");
+      str_weights.resize(1); str_weights[0]="@masses";
+  }
+  if( str_weights.size()==0 ) {
     log<<"  computing the geometric center of atoms:\n";
     weights.resize( atoms.size() );
     for(unsigned i=0; i<atoms.size(); i++) weights[i] = 1.;
