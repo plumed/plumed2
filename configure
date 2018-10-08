@@ -636,7 +636,6 @@ dot
 doxygen
 make_doc
 readelf
-LD
 OPENMP_CXXFLAGS
 EGREP
 GREP
@@ -4304,9 +4303,6 @@ ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ex
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
-# log the initial flags
-LD="$CXX"
-
 if test -z "$LDSHARED" ; then
   LDSHARED="$CXX"
 fi
@@ -4640,7 +4636,32 @@ then
   CXX="$CXX --coverage"
   LDSHARED="$LDSHARED --coverage"
   CFLAGS="$CFLAGS --coverage"
-  LDFLAGS="$CFLAGS --coverage"
+
+  save_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS --coverage"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether LDFLAGS can contain --coverage" >&5
+$as_echo_n "checking whether LDFLAGS can contain --coverage... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; LDFLAGS="$save_LDFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
   STATIC_LIBS="$STATIC_LIBS --coverage"
 fi
 
@@ -8666,7 +8687,6 @@ $as_echo "#define _REENTRANT 1" >>confdefs.h
 
 
 #### Options for dynamic library to work properly ####
-
 
 
 # these are libraries that should be linked also to MD engines

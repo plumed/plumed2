@@ -311,9 +311,6 @@ AC_PROG_FC
 # we use C++ for all the autoconf tests
 AC_LANG(C++)
 
-# log the initial flags
-LD="$CXX"
-
 if test -z "$LDSHARED" ; then
   LDSHARED="$CXX"
 fi
@@ -353,7 +350,7 @@ then
   CXX="$CXX --coverage"
   LDSHARED="$LDSHARED --coverage"
   CFLAGS="$CFLAGS --coverage"
-  LDFLAGS="$CFLAGS --coverage"
+  PLUMED_CHECK_LDFLAGS([--coverage])
   STATIC_LIBS="$STATIC_LIBS --coverage"
 fi
 
@@ -756,7 +753,6 @@ AC_DEFINE([_REENTRANT])
 
 #### Options for dynamic library to work properly ####
 AC_SUBST(SOEXT)
-AC_SUBST(LD)
 AC_SUBST(LDSHARED)
 # these are libraries that should be linked also to MD engines
 AC_SUBST(STATIC_LIBS)
