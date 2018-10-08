@@ -353,7 +353,7 @@ then
   CXX="$CXX --coverage"
   LDSHARED="$LDSHARED --coverage"
   CFLAGS="$CFLAGS --coverage"
-  LDFLAGS="$CFLAGS --coverage"
+  PLUMED_CHECK_LDFLAGS([--coverage])
   STATIC_LIBS="$STATIC_LIBS --coverage"
 fi
 
