@@ -279,7 +279,7 @@ if test $gcov == true
 then
   PLUMED_CHECK_CXXFLAG([--coverage])
   CFLAGS="$CFLAGS --coverage"
-  LDFLAGS="$CFLAGS --coverage"
+  PLUMED_CHECK_LDFLAGS([--coverage])
   STATIC_LIBS="$STATIC_LIBS --coverage"
 fi
 
