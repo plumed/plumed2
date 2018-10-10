@@ -1233,7 +1233,7 @@ void EMMIVOX::update_neighbor_list()
   Vector d_m, md;
   double ov_tot, expov, ov;
   double ov_cut, res;
-  unsigned atype, itab;
+  unsigned itab;
   int tot_size, rank_size;
 
   // cycle on GMM components - in parallel
@@ -1343,7 +1343,7 @@ void EMMIVOX::calculate_overlap() {
   for(unsigned i=0; i<ovmd_der_.size(); ++i) ovmd_der_[i] = Vector(0,0,0);
 
   // we have to cycle over all model and data GMM components in the neighbor list
-  unsigned id, im, atype;
+  unsigned id, im;
   unsigned GMM_m_size = GMM_m_type_.size();
   for(unsigned i=rank_; i<nl_.size(); i=i+size_) {
     // get data (id) and atom (im) indexes
