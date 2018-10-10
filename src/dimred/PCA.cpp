@@ -63,7 +63,7 @@ The first two principal components will be output to a file called pca-comp.pdb.
 will be performed at the end of the simulation.
 
 \plumedfile
-PCA METRIC=OPTIMAL ATOMS=1-22 STRIDE=1 USE_ALL_DATA NLOW_DIM=2 OFILE=pca-comp.pdb
+PCA METRIC=OPTIMAL ATOMS=1-22 STRIDE=1 NLOW_DIM=2 OFILE=pca-comp.pdb
 \endplumedfile
 
 The following input instructs PLUMED to perform a principal component analysis in which the covariance matrix is calculated from chnages in the six distances

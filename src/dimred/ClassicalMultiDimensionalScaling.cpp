@@ -54,7 +54,6 @@ The RMSD distance between atoms 1-256 have moved is used to measure the distance
 CLASSICAL_MDS ...
   ATOMS=1-256
   METRIC=OPTIMAL-FAST
-  USE_ALL_DATA
   NLOW_DIM=2
   OUTPUT_FILE=rmsd-embed
 ... CLASSICAL_MDS
