@@ -65,6 +65,7 @@ Here's a description of the content of each file and directory in the root PLUME
     configure        : configuration script
     configure.ac     : configuration script (autoconf)
     developer-doc    : developer documentation
+    docker           : directory where Docker is generated
     macports         : directory where Portfiles are generated
     patches          : patch scripts
     regtest          : regression tests, including reference results
