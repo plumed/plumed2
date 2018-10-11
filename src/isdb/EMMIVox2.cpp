@@ -1298,7 +1298,7 @@ void EMMIVOX2::calculate_overlap() {
   }
 
   // clear overlap vector
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
 
   // we have to cycle over all model and data GMM components in the neighbor list
@@ -1475,7 +1475,7 @@ void EMMIVOX2::calculate()
   // declare omp reduction for Tensors
   #pragma omp declare reduction( sumTensor : Tensor : omp_out += omp_in )
 
-  #pragma omp parallel
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     // private stuff
     vector<Vector> atom_der(atom_der_.size(), Vector(0,0,0));
