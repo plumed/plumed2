@@ -59,21 +59,20 @@ Here's a description of the content of each file and directory in the root PLUME
     Makefile         : makefile
     Makefile.conf.in : template configuration makefile
     PEOPLE           : list of authors
-    README           : this file
+    README.md        : this file
     VERSION          : version file
     astyle           : a local version of astyle, used to format code
-    configurations   : template configuration files
     configure        : configuration script
     configure.ac     : configuration script (autoconf)
     developer-doc    : developer documentation
-    include          : symbolic link for include files
+    docker           : directory where Docker is generated
     macports         : directory where Portfiles are generated
     patches          : patch scripts
-    release.sh       : developer utility to publish releases
     regtest          : regression tests, including reference results
+    release.sh       : developer utility to publish releases
     scripts          : shell tools
-    src              : source code
     sourceme.sh.in   : template configuration script
+    src              : source code
     test             : examples
     user-doc         : user documentation
     vim              : directory where vim syntax is generated
