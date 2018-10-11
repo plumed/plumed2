@@ -191,15 +191,27 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 }
 
 void WholeMolecules::calculate() {
-  for(unsigned i=0; i<groups.size(); ++i) {
-    if(doref) {
-      Vector & first (modifyGlobalPosition(groups[i][0]));
-      first = refs[i]+pbcDistance(refs[i],first);
+  if(doref) {
+    #pragma omp parallel
+    {
+      #pragma omp for nowait
+      for(unsigned i=0; i<groups.size(); ++i) {
+        Vector & first (modifyGlobalPosition(groups[i][0]));
+        first = refs[i]+pbcDistance(refs[i],first);
+        for(unsigned j=0; j<groups[i].size()-1; ++j) {
+          const Vector & first (getGlobalPosition(groups[i][j]));
+          Vector & second (modifyGlobalPosition(groups[i][j+1]));
+          second=first+pbcDistance(first,second);
+        }
+      }
     }
-    for(unsigned j=0; j<groups[i].size()-1; ++j) {
-      const Vector & first (getGlobalPosition(groups[i][j]));
-      Vector & second (modifyGlobalPosition(groups[i][j+1]));
-      second=first+pbcDistance(first,second);
+  } else {
+    for(unsigned i=0; i<groups.size(); ++i) {
+      for(unsigned j=0; j<groups[i].size()-1; ++j) {
+        const Vector & first (getGlobalPosition(groups[i][j]));
+        Vector & second (modifyGlobalPosition(groups[i][j+1]));
+        second=first+pbcDistance(first,second);
+      }
     }
   }
 }
