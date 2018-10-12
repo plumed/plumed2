@@ -29,6 +29,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/SetupMolInfo.h"
+#include "tools/OpenMP.h"
 
 #include <vector>
 #include <string>
@@ -192,7 +193,7 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 
 void WholeMolecules::calculate() {
   if(doref) {
-    #pragma omp parallel
+    #pragma omp parallel num_threads(OpenMP::getNumThreads())
     {
       #pragma omp for nowait
       for(unsigned i=0; i<groups.size(); ++i) {
