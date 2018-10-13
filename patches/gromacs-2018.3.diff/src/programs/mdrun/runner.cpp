@@ -1333,6 +1333,10 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
+        /* PLUMED */
+        plumed_cmd(plumedmain,"setNumOMPthreads",&hw_opt.nthreads_omp);
+        /* PLUMED */
+
         /* Now do whatever the user wants us to do (how flexible...) */
         my_integrator(inputrec->eI) (fplog, cr, mdlog, nfile, fnm,
                                      oenv,

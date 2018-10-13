@@ -379,7 +379,6 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       break;
     /* ADDED WITH API==5 */
     case cmd_setNumOMPthreads:
-      CHECK_INIT(initialized,word);
       CHECK_NOTNULL(val,word);
       OpenMP::setNumThreads(*static_cast<unsigned*>(val));
       break;
