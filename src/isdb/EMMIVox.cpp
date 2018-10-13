@@ -1314,14 +1314,17 @@ void EMMIVOX::update_neighbor_list()
   comm.Allgatherv(&nl_l[0], recvcounts[rank_], &nl_[0], &recvcounts[0], &disp[0]);
   // now resize derivatives
   ovmd_der_.resize(tot_size);
-  // now cycle over the neighbor list to creat a list of voxels per atom
-  GMM_m_nb_.clear(); GMM_m_nb_.resize(GMM_m_size);
-  GMM_d_nb_.clear(); GMM_d_nb_.resize(ovdd_.size());
-  for(unsigned i=0; i<tot_size; ++i) {
-    unsigned id = nl_[i] / GMM_m_size;
-    unsigned im = nl_[i] % GMM_m_size;
-    GMM_m_nb_[im].push_back(id);
-    GMM_d_nb_[id].push_back(im);
+  // in case of B-factors sampling
+  if(dbfact_>0) {
+    // now cycle over the neighbor list to creat a list of voxels per atom
+    GMM_m_nb_.clear(); GMM_m_nb_.resize(GMM_m_size);
+    GMM_d_nb_.clear(); GMM_d_nb_.resize(ovdd_.size());
+    for(unsigned i=0; i<tot_size; ++i) {
+      unsigned id = nl_[i] / GMM_m_size;
+      unsigned im = nl_[i] % GMM_m_size;
+      GMM_m_nb_[im].push_back(id);
+      GMM_d_nb_[id].push_back(im);
+    }
   }
 }
 

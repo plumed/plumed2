@@ -1272,15 +1272,18 @@ void EMMIVOX2::update_neighbor_list()
   unsigned tot_size = nl_.size();
   // now resize derivatives
   ovmd_der_.resize(tot_size);
-  // now cycle over the neighbor list to creat a list of voxels per atom
-  GMM_m_nb_.clear(); GMM_m_nb_.resize(GMM_m_size);
-  GMM_d_nb_.clear(); GMM_d_nb_.resize(ovdd_.size());
-  unsigned id, im;
-  for(unsigned i=0; i<tot_size; ++i) {
-    id = nl_[i] / GMM_m_size;
-    im = nl_[i] % GMM_m_size;
-    GMM_m_nb_[im].push_back(id);
-    GMM_d_nb_[id].push_back(im);
+  // in case of B-factors sampling
+  if(dbfact_>0) {
+    // now cycle over the neighbor list to creat a list of voxels per atom
+    GMM_m_nb_.clear(); GMM_m_nb_.resize(GMM_m_size);
+    GMM_d_nb_.clear(); GMM_d_nb_.resize(ovdd_.size());
+    unsigned id, im;
+    for(unsigned i=0; i<tot_size; ++i) {
+      id = nl_[i] / GMM_m_size;
+      im = nl_[i] % GMM_m_size;
+      GMM_m_nb_[im].push_back(id);
+      GMM_d_nb_[id].push_back(im);
+    }
   }
 }
 
@@ -1298,7 +1301,6 @@ void EMMIVOX2::calculate_overlap() {
   }
 
   // clear overlap vector
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] = 0.0;
 
   // we have to cycle over all model and data GMM components in the neighbor list
@@ -1498,6 +1500,7 @@ void EMMIVOX2::calculate()
   }
 
   // set atom derivatives
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
   // set score and virial
   getPntrToComponent("scoreb")->set(ene_);
