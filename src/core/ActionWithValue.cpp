@@ -70,7 +70,7 @@ void ActionWithValue::clearInputForces() {
 }
 
 void ActionWithValue::clearDerivatives() {
-  unsigned nt = OpenMP::getGoodNumThreads(values);
+  unsigned nt = OpenMP::getNumThreads();
   #pragma omp parallel num_threads(nt)
   {
     #pragma omp for
