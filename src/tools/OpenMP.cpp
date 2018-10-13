@@ -29,16 +29,30 @@
 
 namespace PLMD {
 
+static unsigned plmd_numThreads = 1;
+static bool plmd_numThreads_set = false;
+static unsigned plmd_cachelineSize = 512;
+static bool plmd_cachelineSize_set = false;
+
+void OpenMP::setNumThreads(const unsigned nt) {
+  plmd_numThreads = nt;
+  plmd_numThreads_set = true;
+}
+
 unsigned OpenMP::getCachelineSize() {
-  static unsigned cachelineSize=512;
-  if(std::getenv("PLUMED_CACHELINE_SIZE")) Tools::convert(std::getenv("PLUMED_CACHELINE_SIZE"),cachelineSize);
-  return cachelineSize;
+  if(!plmd_cachelineSize_set) {
+    if(std::getenv("PLUMED_CACHELINE_SIZE")) Tools::convert(std::getenv("PLUMED_CACHELINE_SIZE"),plmd_cachelineSize);
+    plmd_cachelineSize_set = true;
+  }
+  return plmd_cachelineSize;
 }
 
 unsigned OpenMP::getNumThreads() {
-  static unsigned numThreads=1;
-  if(std::getenv("PLUMED_NUM_THREADS")) Tools::convert(std::getenv("PLUMED_NUM_THREADS"),numThreads);
-  return numThreads;
+  if(!plmd_numThreads_set) {
+    if(std::getenv("PLUMED_NUM_THREADS")) Tools::convert(std::getenv("PLUMED_NUM_THREADS"),plmd_numThreads);
+    plmd_numThreads_set = true;
+  }
+  return plmd_numThreads;
 }
 
 unsigned OpenMP::getThreadNum() {

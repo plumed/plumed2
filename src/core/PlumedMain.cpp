@@ -377,6 +377,12 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       doCheckPoint = false;
       if(*static_cast<int*>(val)!=0) doCheckPoint = true;
       break;
+    /* ADDED WITH API==5 */
+    case cmd_setNumOMPthreads:
+      CHECK_INIT(initialized,word);
+      CHECK_NOTNULL(val,word);
+      OpenMP::setNumThreads(*static_cast<unsigned*>(val));
+      break;
     /* STOP API */
     case cmd_setMDEngine:
       CHECK_NOTINIT(initialized,word);

@@ -30,6 +30,9 @@ class OpenMP {
 
 public:
 
+/// Set number of threads that can be used by openMP
+  static void setNumThreads(const unsigned nt);
+
 /// Get number of threads that can be used by openMP
   static unsigned getNumThreads();
 
