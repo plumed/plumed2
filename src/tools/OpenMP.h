@@ -55,7 +55,7 @@ unsigned OpenMP::getGoodNumThreads(const T*x,unsigned n) {
   (void) p; // this is not to have warnings. notice that the pointer location is not used actually.
 // a factor two is necessary since there is no guarantee that x is aligned
 // to cache line boundary
-  unsigned m=n/(2*getCachelineSize()*sizeof(T));
+  unsigned m=n*sizeof(T)/(2*getCachelineSize());
   unsigned numThreads=getNumThreads();
   if(m>numThreads) m=numThreads;
   if(m==0) m=1;
