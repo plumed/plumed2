@@ -58,7 +58,7 @@ unsigned OpenMP::getGoodNumThreads(const T*x,unsigned n) {
   unsigned m=n*sizeof(T)/(2*getCachelineSize());
   unsigned numThreads=getNumThreads();
   if(m>numThreads) m=numThreads;
-  if(m==0) m=1;
+  else m=1;
   return m;
 }
 
