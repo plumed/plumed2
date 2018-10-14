@@ -29,30 +29,37 @@
 
 namespace PLMD {
 
-static unsigned plmd_numThreads = 1;
-static bool plmd_numThreads_set = false;
-static unsigned plmd_cachelineSize = 512;
-static bool plmd_cachelineSize_set = false;
+
+struct OpenMPVars{
+  unsigned cacheline_size=512;
+  bool cache_set=false;
+  unsigned num_threads=1;
+  bool nt_env_set=false;
+};
+
+static OpenMPVars & getOpenMPVars() {
+  static OpenMPVars vars;
+  return vars;
+}
 
 void OpenMP::setNumThreads(const unsigned nt) {
-  plmd_numThreads = nt;
-  plmd_numThreads_set = true;
+  getOpenMPVars().num_threads=nt;
 }
 
 unsigned OpenMP::getCachelineSize() {
-  if(!plmd_cachelineSize_set) {
-    if(std::getenv("PLUMED_CACHELINE_SIZE")) Tools::convert(std::getenv("PLUMED_CACHELINE_SIZE"),plmd_cachelineSize);
-    plmd_cachelineSize_set = true;
+  if(!getOpenMPVars().cache_set) {
+    if(std::getenv("PLUMED_CACHELINE_SIZE")) Tools::convert(std::getenv("PLUMED_CACHELINE_SIZE"),getOpenMPVars().cacheline_size);
+    getOpenMPVars().cache_set = true;
   }
-  return plmd_cachelineSize;
+  return getOpenMPVars().cacheline_size;
 }
 
 unsigned OpenMP::getNumThreads() {
-  if(!plmd_numThreads_set) {
-    if(std::getenv("PLUMED_NUM_THREADS")) Tools::convert(std::getenv("PLUMED_NUM_THREADS"),plmd_numThreads);
-    plmd_numThreads_set = true;
+  if(!getOpenMPVars().nt_env_set) {
+    if(std::getenv("PLUMED_NUM_THREADS")) Tools::convert(std::getenv("PLUMED_NUM_THREADS"),getOpenMPVars().num_threads);
+    getOpenMPVars().nt_env_set = true;
   }
-  return plmd_numThreads;
+  return getOpenMPVars().num_threads;
 }
 
 unsigned OpenMP::getThreadNum() {
