@@ -30,7 +30,7 @@
 namespace PLMD {
 
 
-struct OpenMPVars{
+struct OpenMPVars {
   unsigned cacheline_size=512;
   bool cache_set=false;
   unsigned num_threads=1;
