@@ -53,7 +53,11 @@ namespace colvar {
  as also discussed in \cite biarnes2007conformational .
  This implementation provides both a triplet with Cartesian components (qx, qy, and qz)
  and a triplet of polar components (amplitude, phi, and theta).
- Applications of this particular implentation are to be published (paper in preparation).
+ Applications of this particular implementation are to be published (paper in preparation).
+
+ \note The 6-membered ring implementation distributed with previous versions of PLUMED lead to
+ qx and qy values that had an opposite sign with respect to those originally defined in \cite cremer1975general.
+ The bug is fixed in version 2.5.
 
  Components of this action are:
 
@@ -299,12 +303,12 @@ void Puckering::calculate6m() {
 
 
 // qx
-  double qx = A/sqrt(3);
+  double qx = -A/sqrt(3);
 
 // qx derivaties
   vector<Vector> dqx_dR(6);
   for(unsigned j=0; j<6; j++) {
-    dqx_dR[j]=1/sqrt(3) * dA_dR[j];
+    dqx_dR[j]=-1/sqrt(3) * dA_dR[j];
   }
 
   Value* vqx=getPntrToComponent("qx");
@@ -318,12 +322,12 @@ void Puckering::calculate6m() {
   setBoxDerivativesNoPbc(vqx);
 
 // qy
-  double qy = -B/sqrt(3);
+  double qy = B/sqrt(3);
 
 // qy derivatives
   vector<Vector> dqy_dR(6);
   for(unsigned j=0; j<6; j++) {
-    dqy_dR[j]=-1/sqrt(3) * dB_dR[j];
+    dqy_dR[j]=1/sqrt(3) * dB_dR[j];
   }
 
   Value* vqy=getPntrToComponent("qy");
