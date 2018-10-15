@@ -55,9 +55,9 @@ namespace colvar {
  and a triplet of polar components (amplitude, phi, and theta).
  Applications of this particular implementation are to be published (paper in preparation).
 
- \bug The 6-membered ring implementation distributed with this version of PLUMED leads to
-  qx and qy values that have an opposite sign with respect to those originally defined in \cite cremer1975general.
-  The bug will be fixed in a later version but is here kept to preserve reproducibility.
+ \note The 6-membered ring implementation distributed with previous versions of PLUMED lead to
+ qx and qy values that had an opposite sign with respect to those originally defined in \cite cremer1975general.
+ The bug is fixed in version 2.5.
 
  Components of this action are:
 
