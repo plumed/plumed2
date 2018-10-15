@@ -54,15 +54,23 @@ i.e. if you have 4 cores and 2 GPU you can:
 
 - use 2 MPI/2GPU/2OPENMP:
 
+\verbatim
 export PLUMED_NUM_THREADS=2
-
 mpiexec -np 2 gmx_mpi mdrun -nb gpu -ntomp 2 -pin on -gpu_id 01
+\endverbatim
 
 - use 4 MPI/2GPU:
 
+\verbatim
 export PLUMED_NUM_THREADS=1
-
 mpiexec -np 4 gmx_mpi mdrun -nb gpu -ntomp 1 -pin on -gpu_id 0011
+\endverbatim
+
+Of notice that since plumed 2.5 and gromacs 2018.3 the number of openMP threads can automatically set by gromacs (so PLUMED_NUM_THREADS is not needed, and the number of OpenMP threads used by plumed is set by -ntomp)
+
+\verbatim
+mpiexec -np 2 gmx_mpi mdrun -nb gpu -ntomp 2 -pin on -gpu_id 01
+\endverbatim
 
 
 \page Metadyn Metadynamics
@@ -170,12 +178,23 @@ This should be enabled by default if your compiler supports it,
 and can be disabled with `--disable-openmp`..
 At runtime, you should set the environment variable
 PLUMED_NUM_THREADS to the number of threads you wish to use with PLUMED.
-By default (if PLUMED_NUM_THREADS is unset) openmp will be disabled at
-runtime. E.g., to run with gromacs you should do:
+The number of OpenMP threads can be set either by the MD code, if implemented in the patch, or generally by setting PLUMED_NUM_THREADS.
+If they are not set openmp will be disabled at runtime. 
+
+E.g., to run with gromacs you can do:
 \verbatim
 export PLUMED_NUM_THREADS=8
 mdrun -plumed
 \endverbatim
+
+or as well
+
+\verbatim
+mdrun -plumed -ntomp 8
+\endverbatim
+
+In the first case the number of OpenMP threads used by plumed is 8 while the one used by gromacs can be 1 or something else, this is usually suboptimal.
+In the second case GROMACS and plumed will use the same number of OpenMP threads.
 
 Notice that:
 - This option is likely to improve the performance, but could also slow down
