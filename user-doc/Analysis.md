@@ -96,10 +96,10 @@ use CLEAR in this case.
 PLUMED has a number of diagnostic tools that can be used to check that new Actions are working correctly: 
 
 <table align=center frame=void width=95%% cellpadding=5%%>
-<tr> <td width=5%> \subpage DUMPFORCES </td> <td>Dump the force acting on one of a values in a file.  </td> </tr>
-<tr> <td width=5%> \subpage DUMPDERIVATIVES </td> <td>Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).</td> </tr>
-<tr> <td width=5%> \subpage DUMPMASSCHARGE </td> <td>Dump masses and charges on a selected file.</td> </tr>
-<tr> <td width=5%> \subpage DUMPPROJECTIONS </td> <td>Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).</td> </tr>
+<tr> <td width=5%> \ref DUMPFORCES </td> <td>Dump the force acting on one of a values in a file.  </td> </tr>
+<tr> <td width=5%> \ref DUMPDERIVATIVES </td> <td>Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).</td> </tr>
+<tr> <td width=5%> \ref DUMPMASSCHARGE </td> <td>Dump masses and charges on a selected file.</td> </tr>
+<tr> <td width=5%> \ref DUMPPROJECTIONS </td> <td>Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).</td> </tr>
 </table>
 
 These commands allow you to test that derivatives and forces are calculated correctly
