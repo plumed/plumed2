@@ -138,7 +138,7 @@ quantity to a file called colvar.
 
 \plumedfile
 Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=q3
-LOCAL_Q3 ARG=q3 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=lq3
+LOCAL_Q3 SPECIES=q3 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=lq3
 PRINT ARG=lq3.mean FILE=colvar
 \endplumedfile
 
@@ -146,7 +146,7 @@ The following input calculates the distribution of LOCAL_Q3 parameters at any gi
 
 \plumedfile
 Q3 SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=q3
-LOCAL_Q3 ARG=q3 SWITCH={RATIONAL D_0=1.3 R_0=0.2} HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} LABEL=lq3
+LOCAL_Q3 SPECIES=q3 SWITCH={RATIONAL D_0=1.3 R_0=0.2} HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} LABEL=lq3
 PRINT ARG=lq3.* FILE=colvar
 \endplumedfile
 
@@ -157,7 +157,7 @@ are done with those of all the other atoms in the system.  The final quantity is
 Q3 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q3a
 Q3 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q3b
 
-LOCAL_Q3 ARG=q3a,q3b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LOWMEM LABEL=w3
+LOCAL_Q3 SPECIES=q3a,q3b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LOWMEM LABEL=w3
 PRINT ARG=w3.* FILE=colvar
 \endplumedfile
 
