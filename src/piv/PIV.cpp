@@ -38,10 +38,13 @@ namespace piv
 
 //+PLUMEDOC COLVAR PIV
 /*
-Calculates the PIV-distance: the squared Cartesian distance between the PIV \cite gallet2013structural,pipolo2017navigating
+Calculates the PIV-distance.
+
+PIV distance is the squared Cartesian distance between the PIV \cite gallet2013structural \cite pipolo2017navigating
 associated to the configuration of the system during the dynamics and a reference configuration provided
 as input (PDB file format).
 PIV can be used together with \ref FUNCPATHMSD to define a path in the PIV space.
+
 \par Examples
 
 The following example calculates PIV-distances from three reference configurations in Ref1.pdb, Ref2.pdb and Ref3.pdb
@@ -54,6 +57,7 @@ SORT=1 meand that the PIV block elements are sorted (SORT=0 no sorting.)
 Values for SORT, SFACTOR and Neighborlist parameters have to be specified for each block.
 The order is the following: AA,BB,CC,AB,AC,BC. If ONLYDIRECT (ONLYCROSS) is used the order is AA,BB,CC (AB,AC,BC).
 The sorting operation within each PIV block is performed using the counting sort algorithm, PRECISION specifies the size of the counting array.
+
 \plumedfile
 PIV ...
 LABEL=Pivd1
