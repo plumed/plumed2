@@ -53,7 +53,11 @@ namespace colvar {
  as also discussed in \cite biarnes2007conformational .
  This implementation provides both a triplet with Cartesian components (qx, qy, and qz)
  and a triplet of polar components (amplitude, phi, and theta).
- Applications of this particular implentation are to be published (paper in preparation).
+ Applications of this particular implementation are to be published (paper in preparation).
+
+ \bug The 6-membered ring implementation distributed with this version of PLUMED leads to
+  qx and qy values that have an opposite sign with respect to those originally defined in \cite cremer1975general.
+  The bug will be fixed in a later version but is here kept to preserve reproducibility.
 
  Components of this action are:
 
