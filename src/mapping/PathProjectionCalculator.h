@@ -48,8 +48,6 @@ public:
   unsigned getNumberOfFrames() const ;
 /// Get the label of the reference frame
   std::string getReferenceLabel( const unsigned& iframe ) const ;
-/// Get the projection on the path
-  double getProjectionOnPath( const unsigned& ifrom, const unsigned& ito, const unsigned& closest, const Tensor& box, double& len );
 /// Get the displacement between two reference frames
   void getDisplaceVector( const unsigned& ifrom, const unsigned& ito, const Tensor& box, std::vector<double>& displace );
 /// Transfer data in and out of the reference configurations (used for reparamerization)

@@ -29,13 +29,13 @@ namespace PLMD {
 class ParallelPlumedActions : public ActionWithValue {
 private:
 ///
+  bool forcesWereSet;
+///
   unsigned nderivatives;
 ///
   std::vector<unsigned> der_starts;
 ///
   std::vector<Value*> valuesToGet;
-///
-  std::vector<double> forcesToApply;
 ///
   std::vector<std::pair<unsigned,unsigned> > action_lists;
 public:

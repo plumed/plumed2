@@ -129,7 +129,7 @@ void GridCoordinatesObject::getIndices( const std::vector<double>& point, std::v
 }
 
 unsigned GridCoordinatesObject::getIndex( const std::vector<double>& point ) const {
-  plumed_dbg_assert( gtype==flat && bounds_set && point.size()==dimension );
+  plumed_dbg_assert( bounds_set && point.size()==dimension );
   if( gtype==flat ) {
     std::vector<unsigned> indices(dimension); getIndices( point, indices );
     return getIndex( indices );

@@ -39,6 +39,7 @@ void ParallelPlumedActions::registerKeywords( Keywords& keys ) {
 ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
+  forcesWereSet(false),
   nderivatives(0)
 {
   // Read the plumed input
@@ -95,7 +96,6 @@ ParallelPlumedActions::ParallelPlumedActions(const ActionOptions&ao):
   if( ncols==0 ){ shape.resize(1); shape[0]=action_lists.size(); }
   else { shape.resize(2); shape[0]=action_lists.size(); shape[1]=ncols; }
   addValue( shape ); if( periodic ) setPeriodic( pmin, pmax ); else setNotPeriodic(); 
-  forcesToApply.resize( action_lists.size() );
   // Now create some tasks
   for(unsigned i=0;i<action_lists.size();++i) addTaskToList(i);
   // Now work out the number of derivatives we have in this action
@@ -144,6 +144,7 @@ void ParallelPlumedActions::clearDerivatives( const bool& force ) {
           }
       }
   }
+  forcesWereSet=false;
 }
 
 void ParallelPlumedActions::activate() {
@@ -202,25 +203,42 @@ void ParallelPlumedActions::setForcesOnPlumedActions( const std::vector<double>&
       ActionWithArguments* av = dynamic_cast<ActionWithArguments*>( plumed.getActionSet()[action_lists[i].first].get() );
       if( av ) av->setForcesOnArguments( forces, start );   
   }
+  forcesWereSet=true;
 }
 
 void ParallelPlumedActions::apply() {
   if( doNotCalculateDerivatives() ) return;
-  std::fill(forcesToApply.begin(),forcesToApply.end(),0);
-  if( getForcesFromValues( forcesToApply ) ) { 
-      error("This is untested and I am pretty sure it doesn't work in parallel - try at your own peril");
-      // Add forces to final values
+
+  // Check what tasks need to be redone on all nodes
+  if( !forcesWereSet ) {
+      unsigned ncols = 1; if( getPntrToOutput(0)->getRank()==2 ) ncols = getPntrToOutput(0)->getShape()[1];
       for(unsigned i=0;i<action_lists.size();++i) {
-          const ActionWithValue* av=dynamic_cast<const ActionWithValue*>( plumed.getActionSet()[action_lists[i].second-1].get() );
-          (av->copyOutput(0))->addForce( 0, forcesToApply[i] );
+          bool hasforce=false; 
+          for(unsigned j=0;j<ncols;++j){ if( fabs( getPntrToOutput(0)->getForce(i*ncols+j) )>epsilon) hasforce=true; }
+          if( hasforce ) {
+              for(unsigned j=action_lists[i].first;j<action_lists[i].second;++j) {
+                  Action* p=plumed.getActionSet()[j].get(); p->activate(); 
+                  ActionWithValue* av=dynamic_cast<ActionWithValue*>(p);
+                  if(av) av->clearDerivatives(); 
+                  p->calculate();
+              }
+          }
       }
+      // Run tasks and apply
       for(unsigned i=0;i<action_lists.size();++i) {
-          for(unsigned j=action_lists[i].second-1;j<=action_lists[i].first;--j) plumed.getActionSet()[j].get()->apply();
+          if( !plumed.getActionSet()[action_lists[i].first].get()->isActive() ) continue;
+          // Add forces on this value to underlying values
+          for(unsigned j=0;j<ncols;++j) valuesToGet[i]->addForce( j, getPntrToOutput(0)->getForce(i*ncols+j) );
+          // Do apply
+          for(unsigned j=action_lists[i].second-1;j>=action_lists[i].first;--j) plumed.getActionSet()[j].get()->apply();
+          // Deactivate everything we have activated
+          for(unsigned j=action_lists[i].first;j<action_lists[i].second;++j) plumed.getActionSet()[j].get()->deactivate(); 
       }
   }
   // Now do apply for all actions
   for(unsigned i=0;i<action_lists.size();++i) {
       for(unsigned j=action_lists[i].first;j<action_lists[i].second;++j) {
+          // Apply forces on atoms
           ActionAtomistic* a=dynamic_cast<ActionAtomistic*>( plumed.getActionSet()[j].get() );
           if( a ) a->applyForces();
       }

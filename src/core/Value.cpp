@@ -270,7 +270,9 @@ unsigned Value::getNumberOfValues( const std::string& alab ) const {
 
 double Value::get(const unsigned& ival) const {
   if( hasDeriv ) return data[ival*(1+action->getNumberOfDerivatives())] / norm;
-  plumed_dbg_massert( ival<getNumberOfValues( action->getLabel() ), "could not get value from " + name );
+#ifdef DNDEBUG 
+  if( action ) plumed_dbg_massert( ival<getNumberOfValues( action->getLabel() ), "could not get value from " + name );
+#endif
   if( norm>epsilon ) return data[ival] / norm;
   return 0.0;
 }

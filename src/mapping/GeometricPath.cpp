@@ -30,13 +30,14 @@ namespace mapping {
 class GeometricPath : public ActionWithValue, public ActionWithArguments {
 private:
   std::vector<double> pcoords;
+  std::vector<double> forcesToApply;
   PathProjectionCalculator path_projector;
 public:
   static void registerKeywords(Keywords& keys);
   explicit GeometricPath(const ActionOptions&);
   void calculate();
   unsigned getNumberOfDerivatives() const ;
-  void apply() {}
+  void apply();
 };
 
 PLUMED_REGISTER_ACTION(GeometricPath,"GEOMETRIC_PATH")
@@ -57,7 +58,7 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   ActionWithArguments(ao),
   path_projector(this)
 {
-  plumed_assert( !actionInChain() );
+  done_over_stream=false; plumed_assert( !actionInChain() );
   if( arg_ends.size()>0 ) error("makes no sense to use ARG1, ARG2... with this action use single ARG keyword");
   // Get the coordinates in the low dimensional space
   pcoords.resize( getPntrToArgument(0)->getShape()[0] ); parseVector("COORDINATES", pcoords );
@@ -65,10 +66,12 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   // Create the values to store the output
   addComponentWithDerivatives("s"); componentIsNotPeriodic("s");
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+  // Create the forces to apply array
+  forcesToApply.resize( getPntrToArgument(0)->getShape()[0]*getPntrToArgument(0)->getShape()[1] );
 }
 
 unsigned GeometricPath::getNumberOfDerivatives() const {
-  return 0;
+  return getPntrToArgument(0)->getShape()[0]*getPntrToArgument(0)->getShape()[1];
 }
 
 void GeometricPath::calculate() {
@@ -93,20 +96,43 @@ void GeometricPath::calculate() {
   unsigned ifrom=iclose1, ito=iclose3; if( iclose3<0 || iclose3>=nrows ) { ifrom=iclose2; ito=iclose1; }
 
   // And calculate projection of vector connecting current point to closest frame on vector connecting nearest two frames
-  Tensor box( plumed.getAtoms().getPbc().getBox() );
-  double v2v2, v1v2 = path_projector.getProjectionOnPath( ifrom, ito, iclose1, box, v2v2 ); 
+  Tensor box( plumed.getAtoms().getPbc().getBox() ); std::vector<double> displace;
+  path_projector.getDisplaceVector( ifrom, ito, box, displace );
+  double v2v2=0, v1v2=0; k=ncols*iclose1;
+  for(unsigned i=0;i<displace.size();++i) { v2v2 += displace[i]*displace[i]; v1v2 += displace[i]*getPntrToArgument(0)->get(k+i); }
 
   // This computes s value
   double spacing = pcoords[iclose1] - pcoords[iclose2];
   double root = sqrt( v1v2*v1v2 - v2v2 * ( v1v1 - v3v3) );
   double dx = 0.5 * ( (root + v1v2) / v2v2 - 1.);
   double path_s = pcoords[iclose1] + spacing * dx;
-  double fact = 0.25*spacing / v2v2; Value* sp = getPntrToComponent(0); sp->set( path_s );
+  Value* sp = getPntrToComponent(0); sp->set( path_s );
+  if( !doNotCalculateDerivatives() ) {
+      for(unsigned i=0;i<ncols;++i) {
+          sp->addDerivative( ncols*iclose1 + i, 0.5*spacing*(v1v2*displace[i]/v2v2 - getPntrToArgument(0)->get(ncols*iclose1 + i))/root + 0.5*spacing*displace[i]/v2v2 );
+          sp->addDerivative( ncols*iclose2 + i, 0.5*spacing*getPntrToArgument(0)->get(ncols*iclose2 + i)/root );
+      }
+  } 
 
   // This computes z value
-  double v4v4, proj = path_projector.getProjectionOnPath( iclose2, iclose1, iclose1, box, v4v4 ); 
+  path_projector.getDisplaceVector( iclose2, iclose1, box, displace ); double v4v4=0, proj=0; k=ncols*iclose1; 
+  for(unsigned i=0;i<displace.size();++i) { v4v4 += displace[i]*displace[i]; proj += displace[i]*getPntrToArgument(0)->get(k+i); }
   double path_z = v1v1 + dx*dx*v4v4 - 2*dx*proj; path_z = sqrt(path_z);
   Value* zp = getPntrToComponent(1); zp->set( path_z );
+  if( !doNotCalculateDerivatives() ) {
+      for(unsigned i=0;i<ncols;++i) {
+          zp->addDerivative( ncols*iclose1 + i, getPntrToArgument(0)->get(ncols*iclose1 + i)/(spacing*path_z) + 
+                                                (dx*v4v4 - displace[i])*sp->getDerivative(ncols*iclose1 + i)/(spacing*path_z) );
+          zp->addDerivative( ncols*iclose2 + i, (dx*v4v4 - displace[i])*sp->getDerivative(ncols*iclose2 + i)/(spacing*path_z) ); 
+      }
+  }
+}
+
+void GeometricPath::apply() {
+  if( doNotCalculateDerivatives() ) return;
+  // And add forces
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, ss );
 }
 
 }

@@ -114,13 +114,6 @@ void PathProjectionCalculator::getDisplaceVector( const unsigned& ifrom, const u
   computeVectorBetweenFrames( ifrom, ito, box ); for(unsigned i=0;i<data.size();++i) displace[i] = data[i]; 
 }
 
-double PathProjectionCalculator::getProjectionOnPath( const unsigned& ifrom, const unsigned& ito, const unsigned& closest, const Tensor& box, double& len ) {
-  plumed_dbg_assert( mypath_obj ); computeVectorBetweenFrames( ifrom, ito, box );
-  double fval=0; len=0; unsigned k=mypath_obj->getShape()[1]*closest;
-  for(unsigned i=0;i<data.size();++i) { len += data[i]*data[i]; fval += data[i]*mypath_obj->get(k+i); }
-  return fval;
-}
-
 std::string PathProjectionCalculator::getReferenceLabel( const unsigned& iframe ) const {
   return reference_frames[iframe]->getLabel();
 }
