@@ -1333,6 +1333,15 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
+        /* PLUMED */
+        if(plumedswitch){
+          /* detect plumed API version */
+          int pversion=0;
+          plumed_cmd(plumedmain,"getApiVersion",&pversion);
+          if(pversion>5) plumed_cmd(plumedmain,"setNumOMPthreads",&hw_opt.nthreads_omp);
+        }
+        /* END PLUMED */
+
         /* Now do whatever the user wants us to do (how flexible...) */
         my_integrator(inputrec->eI) (fplog, cr, mdlog, nfile, fnm,
                                      oenv,
