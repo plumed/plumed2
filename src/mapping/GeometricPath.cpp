@@ -121,10 +121,11 @@ void GeometricPath::calculate() {
   Value* zp = getPntrToComponent(1); zp->set( path_z );
   if( !doNotCalculateDerivatives() ) {
       for(unsigned i=0;i<ncols;++i) {
-          zp->addDerivative( ncols*iclose1 + i, getPntrToArgument(0)->get(ncols*iclose1 + i)/(spacing*path_z) + 
-                                                (dx*v4v4 - displace[i])*sp->getDerivative(ncols*iclose1 + i)/(spacing*path_z) );
-          zp->addDerivative( ncols*iclose2 + i, (dx*v4v4 - displace[i])*sp->getDerivative(ncols*iclose2 + i)/(spacing*path_z) ); 
-      }
+          zp->addDerivative( ncols*iclose1 + i, (1/path_z)*(getPntrToArgument(0)->get(ncols*iclose1 + i) + 
+                                                            (v4v4*dx-proj)*sp->getDerivative(ncols*iclose1 + i)/spacing - 
+                                                            dx*displace[i]) );
+          zp->addDerivative( ncols*iclose2 + i, (v4v4*dx-proj)*sp->getDerivative(ncols*iclose2 + i)/(path_z*spacing) );
+      } 
   }
 }
 
