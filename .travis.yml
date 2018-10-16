@@ -15,7 +15,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKECOVERAGE=yes PLUMED_ALL_TESTS=yes  ARRAYFIRE=cpu
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKECOVERAGE=yes PLUMED_ALL_TESTS=yes  ARRAYFIRE=yes
 # the following are with debug flags
   - os: linux
     dist: trusty
