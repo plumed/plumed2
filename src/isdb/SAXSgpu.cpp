@@ -19,9 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-/* 
- This class was originally written by Alexander Jussupow with some contribution 
- by Carlo Camilloni 
+/*
+ This class was originally written by Alexander Jussupow with some contribution
+ by Carlo Camilloni
 */
 
 #include "colvar/Colvar.h"
@@ -44,8 +44,8 @@
 
 using namespace std;
 
-namespace PLMD{
-namespace isdb{
+namespace PLMD {
+namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR SAXSGPU
 /*
@@ -95,7 +95,7 @@ PRINT ARG=(saxs\.q_.*),(saxs\.exp_.*) FILE=colvar STRIDE=1
 
 */
 //+ENDPLUMEDOC
-   
+
 class SAXSGPU : public Colvar {
 private:
   bool                pbc;
@@ -120,7 +120,7 @@ public:
 
 PLUMED_REGISTER_ACTION(SAXSGPU,"SAXSGPU")
 
-void SAXSGPU::registerKeywords(Keywords& keys){
+void SAXSGPU::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
@@ -141,9 +141,9 @@ void SAXSGPU::registerKeywords(Keywords& keys){
 }
 
 SAXSGPU::SAXSGPU(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-pbc(true),
-serial(false)
+  PLUMED_COLVAR_INIT(ao),
+  pbc(true),
+  serial(false)
 {
 #ifndef __PLUMED_HAS_ARRAYFIRE
   error("SAXSGPU can only be used if ARRAYFIRE is installed");
@@ -160,7 +160,7 @@ serial(false)
 
   splitb = 0;
   parse("SPLITB",splitb);
-  if(splitb==0) error("SPLITB must be set");  
+  if(splitb==0) error("SPLITB must be set");
 
   bool multi=false;
   parseFlag("MULTIGPU",multi);
@@ -264,7 +264,7 @@ serial(false)
   // convert units to nm^-1
   for(unsigned i=0; i<numq; ++i) {
     q_list[i]=q_list[i]*10.0;    //factor 10 to convert from A^-1 to nm^-1
-  } 
+  }
   log<<"  Bibliography ";
   log<<plumed.cite("Jussupow, et al. (in preparation)");
   if(martini)   log<<plumed.cite("Niebling, Björling, Westenhoff, J Appl Crystallogr 47, 1190–1198 (2014).");
@@ -282,22 +282,22 @@ serial(false)
   sum_device    = new af::array[total_device*numq];
   deriv_device  = new af::array[total_device*numq];
   allFFa        = new af::array[total_device];
-  float *FF_new = new float[numq*size];  
+  float *FF_new = new float[numq*size];
   for(unsigned k=0; k<numq; ++k) {
     for(unsigned i=0; i<size; i++) {
       FF_new[k+i*numq] = static_cast<float>(static_cast<double>(FF_tmp[k][i])/sqrt(scexp));
     }
   }
-  for(unsigned i=0;i<total_device; i++) {
-     af::setDevice(i);
-     allFFa[i] = af::array(numq, size, FF_new);
+  for(unsigned i=0; i<total_device; i++) {
+    af::setDevice(i);
+    allFFa[i] = af::array(numq, size, FF_new);
   }
   delete[] FF_new;
 
 #endif
 }
 
-SAXSGPU::~SAXSGPU(){
+SAXSGPU::~SAXSGPU() {
 #ifdef __PLUMED_HAS_ARRAYFIRE
   delete[] sum_device;
   delete[] deriv_device;
@@ -305,13 +305,13 @@ SAXSGPU::~SAXSGPU(){
 #endif
 }
 
-void SAXSGPU::calculate(){
+void SAXSGPU::calculate() {
 #ifdef __PLUMED_HAS_ARRAYFIRE
   if(pbc) makeWhole();
 
   const unsigned size=getNumberOfAtoms();
   const unsigned numq = q_list.size();
-  
+
   float* posi;
   posi = new float[3*size];
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
@@ -322,7 +322,7 @@ void SAXSGPU::calculate(){
     posi[i+2*size] = tmp[2];
   }
 
-  for(unsigned i=0;i<total_device; i++) {
+  for(unsigned i=0; i<total_device; i++) {
     af::setDevice(i);
     sum_device[i]   = af::constant(0, numq, f32);
     deriv_device[i] = af::constant(0, numq, size, 3, f32);
@@ -334,7 +334,7 @@ void SAXSGPU::calculate(){
     af::setDevice(dnumber);
 
     //first step calculate the short size of the matrix
-    unsigned sizeb = size - i; 
+    unsigned sizeb = size - i;
     if(sizeb > splitb) sizeb = splitb;
     af::seq seqb(i, i+sizeb-1);
 
@@ -359,7 +359,7 @@ void SAXSGPU::calculate(){
     for (unsigned k=0; k<numq; k++) {
       // calculate FF matrix
       // FFdist_mod size,sizeb,1
-      af::array FFdist_mod = (af::tile(af::moddims(allFFa[dnumber].row(k), size, 1), 1, sizeb)* 
+      af::array FFdist_mod = (af::tile(af::moddims(allFFa[dnumber].row(k), size, 1), 1, sizeb)*
                               af::tile(af::moddims(allFFb.row(k), 1, sizeb), size, 1));
 
       // get q*dist and sin
@@ -367,7 +367,7 @@ void SAXSGPU::calculate(){
       // distq size,sizeb,1
       af::array dist_q = qvalue*dist_sqrt;
       // dist_sin size,sizeb,1
-      af::array dist_sin = af::sin(dist_q)/dist_q;      
+      af::array dist_sin = af::sin(dist_q)/dist_q;
       // flat it and get the intensity
       sum_device[dnumber](k) += af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
 
@@ -379,7 +379,7 @@ void SAXSGPU::calculate(){
       // now is size, sizeb, 3
       af::array dd_all = af::tile(tmp, 1, 1, 3)*xyz_dist;
       deriv_device[dnumber](k, seqb, af::span) = af::sum(dd_all);
-    }   
+    }
   }
   delete[] posi;
 
@@ -397,7 +397,7 @@ void SAXSGPU::calculate(){
     float* tmp_deriv;
     tmp_deriv = new float[size*3*numq];
     deriv_device[i] = af::reorder(deriv_device[i], 2, 1, 0);
-    deriv_device[i] = af::flat(deriv_device[i]); 
+    deriv_device[i] = af::flat(deriv_device[i]);
     deriv_device[i].host(tmp_deriv);
 
     #pragma omp parallel num_threads(OpenMP::getNumThreads())
@@ -407,7 +407,7 @@ void SAXSGPU::calculate(){
       #pragma omp for nowait
       for(unsigned i=0; i<size*3*numq; i++) deriv[i] += tmp_deriv[i];
     }
- 
+
     delete[] tmp_inten;
     delete[] tmp_deriv;
   }
@@ -417,14 +417,14 @@ void SAXSGPU::calculate(){
     Value* val=getPntrToComponent(k);
     val->set(inten[k]);
     Tensor deriv_box;
-    for(unsigned i=0;i<size;i++) {
+    for(unsigned i=0; i<size; i++) {
       const unsigned di = k*size*3+i*3;
       const Vector dd(deriv[di+0],deriv[di+1],deriv[di+2]);
       setAtomsDerivatives(val, i, 2*dd);
       const Vector posi=getPosition(i);
       deriv_box += Tensor(posi,2*dd);
     }
-    setBoxDerivatives(val, -deriv_box);    
+    setBoxDerivatives(val, -deriv_box);
   }
 #endif
 }
