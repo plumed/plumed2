@@ -73,9 +73,9 @@ which are activated setting the GRID_MIN and GRID_MAX keywords of \ref METAD.
 This makes addition of a hill to the list a bit slower (since
 the Gaussian has to be evaluated for many grid points)
 but the evaluation of the potential very fast. Since
-the latter is usually done every few hundred steps, whereas the former
-typically ad every step, using grids will make the simulation
-much faster.
+the former is usually done every few hundred steps, whereas the latter 
+typically at every step, using grids will make the simulation
+ faster in particular for long runs.
 
 Notice that when restarting a simulation the history is read  by default
 from a file and hills are added again to the grid.
@@ -83,8 +83,7 @@ This allows one to change the grid boundaries upon restart. However,
 the first step after restart is usually very slow.
 Since PLUMED 2.3 you can also store the grid on a file
 and read it upon restart. This can be particularly
-useful if you perform many restarts and if your hills file has
-become very large.
+useful if you perform many restarts and if your hills are large.
 
 For the precise syntax, see \ref METAD
 
