@@ -125,7 +125,7 @@ void SAXSGPU::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.add("compulsory","SPLITB","Spliting the length of the atom array");
+  keys.add("compulsory","SPLITB","Spliting the length of the atom array, default is equal to the number of used atoms");
   keys.addFlag("MULTIGPU",false,"Set to TRUE if you want to use multiple GPU");
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
@@ -143,7 +143,9 @@ void SAXSGPU::registerKeywords(Keywords& keys) {
 SAXSGPU::SAXSGPU(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
-  serial(false)
+  serial(false),
+  splitb(0),
+  total_device(1)
 {
 #ifndef __PLUMED_HAS_ARRAYFIRE
   error("SAXSGPU can only be used if ARRAYFIRE is installed");
@@ -160,7 +162,7 @@ SAXSGPU::SAXSGPU(const ActionOptions&ao):
 
   splitb = 0;
   parse("SPLITB",splitb);
-  if(splitb==0) error("SPLITB must be set");
+  if(splitb==0) splitb=size;
 
   bool multi=false;
   parseFlag("MULTIGPU",multi);

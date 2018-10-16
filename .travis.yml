@@ -10,12 +10,12 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=673dcefa
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=673dcefa ARRAYFIRE=yes
 # coverage scan
   - os: linux
     dist: trusty
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKECOVERAGE=yes PLUMED_ALL_TESTS=yes
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKECOVERAGE=yes PLUMED_ALL_TESTS=yes  ARRAYFIRE=cpu
 # the following are with debug flags
   - os: linux
     dist: trusty
@@ -151,6 +151,8 @@ install:
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
 # I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
   - if test -n "$LD_LIBRARY_PATH" ; then PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" ; fi
+# arrayfire
+  - if test "$ARRAYFIRE" == yes; then ./.travis/install.arrayfire ; fi 
 # macports related stuff
 # configure macports
   - if test -n "$PLUMED_MACPORTS" ; then
@@ -176,6 +178,7 @@ script:
   - if test -n "$ASMJIT" ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-asmjit" ; fi
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
   - if test "$MAKECOVERAGE" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
+  - if test "$ARRAYFIRE" == yes; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-af_cpu"; fi
 # when running lcov plumed should be compiled with -O0
   - if test "$MAKECOVERAGE" == yes ; then PLUMED_CXXFLAGS=-O0 ; fi
 

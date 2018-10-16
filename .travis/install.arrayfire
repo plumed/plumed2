@@ -1,0 +1,13 @@
+#! /bin/bash
+
+set -e
+set -x
+
+cd "$(mktemp -dt plumed.XXXXXX)"
+
+wget http://arrayfire.s3.amazonaws.com/3.6.1/ArrayFire-v3.6.1_Linux_x86_64.sh
+
+./Arrayfire_*_Linux_x86_64.sh --include-subdir --prefix=/opt
+
+echo /opt/arrayfire/lib > /etc/ld.so.conf.d/arrayfire.conf
+ldconfig
