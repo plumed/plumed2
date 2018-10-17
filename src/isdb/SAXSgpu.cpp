@@ -103,6 +103,7 @@ private:
   vector<double>      q_list;
 #ifdef  __PLUMED_HAS_ARRAYFIRE
   af::array           FF_value;
+  af::array           q_value;
 #endif
   void getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter);
   void calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho);
@@ -276,6 +277,7 @@ SAXSGPU::SAXSGPU(const ActionOptions&ao):
   af::array allFFa = af::array(numq, size, FF_new);
   delete[] FF_new;
   FF_value = allFFa;
+  //FF_value = af::moddims(allFFa.T(), size, numq);
 #endif
 }
 
@@ -330,7 +332,7 @@ void SAXSGPU::calculate() {
   for (unsigned k=0; k<numq; k++) {
     // calculate FF matrix
     // size,size,1,1
-    af::array FFdist_mod = af::tile(af::moddims(FF_value.row(k), size, 1), 1, size)*af::tile(FF_value.row(k), size, 1);
+    af::array FFdist_mod = af::tile(af::moddims(FF_value(k, af::span), size, 1), 1, size)*af::tile(FF_value(k, af::span), size, 1);
 
     // get q
     const float qvalue = static_cast<float>(q_list[k]);
