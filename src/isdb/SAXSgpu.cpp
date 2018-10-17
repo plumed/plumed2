@@ -291,32 +291,37 @@ void SAXSGPU::calculate() {
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (unsigned i=0; i<size; i++) {
     const Vector tmp = getPosition(i);
-    posi[i]        = static_cast<float>(tmp[0]);
-    posi[i+size]   = static_cast<float>(tmp[1]);
-    posi[i+2*size] = static_cast<float>(tmp[2]);
+    posi[3*i]   = static_cast<float>(tmp[0]);
+    posi[3*i+1] = static_cast<float>(tmp[1]);
+    posi[3*i+2] = static_cast<float>(tmp[2]);
   }
 
   // create array a and b containing atomic coordinates
   af::setDevice(deviceid);
+  // 3,size,1,1
+  af::array pos_a = af::array(3, size, posi);
   // size,3,1,1
-  af::array pos_a = af::array(size, 3, posi);
+  pos_a = af::moddims(pos_a.T(), size, 1, 3);
   // size,3,1,1
   af::array pos_b = pos_a(af::span, af::span);
   // size,1,3,1
   pos_a = af::moddims(pos_a, size, 1, 3);
   // 1,size,3,1
   pos_b = af::moddims(pos_b, 1, size, 3);
+
   // remove position vector
   delete[] posi;
 
   // size,size,3,1
-  af::array xyz_dist = (af::tile(pos_a, 1, size, 1) - af::tile(pos_b, size, 1, 1));
+  af::array xyz_dist = af::tile(pos_a, 1, size, 1) - af::tile(pos_b, size, 1, 1);
   // size,size,1,1
   af::array square = af::sum(xyz_dist*xyz_dist,2);
   // size,size,1,1
   af::array dist_sqrt = af::sqrt(square);
   // replace the zero of square with one to avoid nan in the derivatives (the number does not matter becasue this are multiplied by zero)
   af::replace(square,!(af::iszero(square)),1.);
+  // size,size,3,1
+  xyz_dist = xyz_dist / af::tile(square, 1, 1, 3);
   // numq,1,1,1
   af::array sum_device   = af::constant(0, numq, f32);
   // numq,size,3,1
@@ -335,10 +340,10 @@ void SAXSGPU::calculate() {
     af::array dist_sin = af::sin(dist_q)/dist_q;
     af::replace(dist_sin,!(af::isNaN(dist_sin)),1.);
     // 1,1,1,1
-    sum_device(k) += af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
+    sum_device(k) = af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
 
     // size,size,1,1
-    af::array tmp = FFdist_mod*(dist_sin - af::cos(dist_q))/square;
+    af::array tmp = FFdist_mod*(dist_sin - af::cos(dist_q));
     // size,size,3,1
     af::array dd_all = af::tile(tmp, 1, 1, 3)*xyz_dist;
     // it should become 1,size,3
