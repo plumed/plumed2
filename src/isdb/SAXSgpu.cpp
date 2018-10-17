@@ -57,7 +57,6 @@ automatically assigned to atoms using the ATOMISTIC flag reading a PDB file, a c
 automatically assigned to Martini pseudoatoms usign the MARTINI flag.
 The calculated intensities can be scaled using the SCEXP keywords. This is applied by rescaling the structure factors.
 Experimental reference intensities can be added using the ADDEXP and EXPINT flag and keywords.
-\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
 in the following example the saxs intensities for a martini model are calculated. structure factors
@@ -66,7 +65,7 @@ are obtained from the pdb file indicated in the MOLINFO.
 \plumedfile
 MOLINFO STRUCTURE=template.pdb
 
-SAXS ...
+SAXSGPU ...
 LABEL=saxs
 ATOMS=1-355
 ADDEXP
@@ -87,7 +86,7 @@ QVALUE12=0.35 EXPINT12=0.0180036
 QVALUE13=0.38 EXPINT13=0.0193374
 QVALUE14=0.41 EXPINT14=0.0210131
 QVALUE15=0.44 EXPINT15=0.0220506
-... SAXS
+...
 
 PRINT ARG=(saxs\.q_.*),(saxs\.exp_.*) FILE=colvar STRIDE=1
 
@@ -100,21 +99,15 @@ class SAXSGPU : public Colvar {
 private:
   bool                pbc;
   bool                serial;
-  unsigned            splitb;
-  unsigned            total_device;
+  int                 deviceid;
   vector<double>      q_list;
-#ifdef __PLUMED_HAS_ARRAYFIRE
-  af::array          *allFFa;
-  af::array          *sum_device;
-  af::array          *deriv_device;
-#endif
+  af::array           FF_value;
   void getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter);
   void calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho);
 
 public:
   static void registerKeywords( Keywords& keys );
   explicit SAXSGPU(const ActionOptions&);
-  ~SAXSGPU();
   virtual void calculate();
 };
 
@@ -125,8 +118,7 @@ void SAXSGPU::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.add("compulsory","SPLITB","Spliting the length of the atom array, default is equal to the number of used atoms");
-  keys.addFlag("MULTIGPU",false,"Set to TRUE if you want to use multiple GPU");
+  keys.add("compulsory","DEVICEID","0","Identifier of the GPU to be used");
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
@@ -144,8 +136,7 @@ SAXSGPU::SAXSGPU(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   serial(false),
-  splitb(0),
-  total_device(1)
+  deviceid(0)
 {
 #ifndef __PLUMED_HAS_ARRAYFIRE
   error("SAXSGPU can only be used if ARRAYFIRE is installed");
@@ -160,19 +151,11 @@ SAXSGPU::SAXSGPU(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
-  splitb = 0;
-  parse("SPLITB",splitb);
-  if(splitb==0) splitb=size;
+  parse("DEVICEID",deviceid);
+  af::setDevice(deviceid);
+  af::info();
 
-  bool multi=false;
-  parseFlag("MULTIGPU",multi);
-  if(multi) {
-    total_device = af::getDeviceCount();
-  } else {
-    total_device = 1;
-  }
-
-  double scexp = 0;
+  long double scexp = 0;
   parse("SCEXP",scexp);
   if(scexp==0) scexp=1.0;
 
@@ -241,7 +224,7 @@ SAXSGPU::SAXSGPU(const ActionOptions&ao):
     ntarget++;
   }
   if( ntarget!=numq && exp==true) error("found wrong number of EXPINT values");
-
+ 
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
   for(unsigned i=0; i<numq; i++) {
@@ -267,6 +250,7 @@ SAXSGPU::SAXSGPU(const ActionOptions&ao):
   for(unsigned i=0; i<numq; ++i) {
     q_list[i]=q_list[i]*10.0;    //factor 10 to convert from A^-1 to nm^-1
   }
+
   log<<"  Bibliography ";
   log<<plumed.cite("Jussupow, et al. (in preparation)");
   if(martini)   log<<plumed.cite("Niebling, Björling, Westenhoff, J Appl Crystallogr 47, 1190–1198 (2014).");
@@ -280,30 +264,16 @@ SAXSGPU::SAXSGPU(const ActionOptions&ao):
   requestAtoms(atoms);
   checkRead();
 
-  // move form factors on the gpu
-  sum_device    = new af::array[total_device*numq];
-  deriv_device  = new af::array[total_device*numq];
-  allFFa        = new af::array[total_device];
+  // move structure factor to the GPU
   float *FF_new = new float[numq*size];
   for(unsigned k=0; k<numq; ++k) {
     for(unsigned i=0; i<size; i++) {
-      FF_new[k+i*numq] = static_cast<float>(static_cast<double>(FF_tmp[k][i])/sqrt(scexp));
+      FF_new[k+i*numq] = static_cast<float>(FF_tmp[k][i]/sqrt(scexp));
     }
   }
-  for(unsigned i=0; i<total_device; i++) {
-    af::setDevice(i);
-    allFFa[i] = af::array(numq, size, FF_new);
-  }
+  af::array allFFa = af::array(numq, size, FF_new);
   delete[] FF_new;
-
-#endif
-}
-
-SAXSGPU::~SAXSGPU() {
-#ifdef __PLUMED_HAS_ARRAYFIRE
-  delete[] sum_device;
-  delete[] deriv_device;
-  delete[] allFFa;
+  FF_value = allFFa;
 #endif
 }
 
@@ -311,7 +281,7 @@ void SAXSGPU::calculate() {
 #ifdef __PLUMED_HAS_ARRAYFIRE
   if(pbc) makeWhole();
 
-  const unsigned size=getNumberOfAtoms();
+  const unsigned size = getNumberOfAtoms();
   const unsigned numq = q_list.size();
 
   float* posi;
@@ -319,102 +289,79 @@ void SAXSGPU::calculate() {
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (unsigned i=0; i<size; i++) {
     const Vector tmp = getPosition(i);
-    posi[i]        = tmp[0];
-    posi[i+size]   = tmp[1];
-    posi[i+2*size] = tmp[2];
+    posi[i]        = static_cast<float>(tmp[0]);
+    posi[i+size]   = static_cast<float>(tmp[1]);
+    posi[i+2*size] = static_cast<float>(tmp[2]);
   }
 
-  for(unsigned i=0; i<total_device; i++) {
-    af::setDevice(i);
-    sum_device[i]   = af::constant(0, numq, f32);
-    deriv_device[i] = af::constant(0, numq, size, 3, f32);
-  }
-
-  for (unsigned i=0; i<size; i=i+splitb) {
-    //multiple device
-    const int dnumber=(i/splitb) % total_device;
-    af::setDevice(dnumber);
-
-    //first step calculate the short size of the matrix
-    unsigned sizeb = size - i;
-    if(sizeb > splitb) sizeb = splitb;
-    af::seq seqb(i, i+sizeb-1);
-
-    // create array a and b containing atomic coordinates
-    af::array a = af::array(size, 3, posi);
-    af::array b = a(seqb, af::span);
-    a += 0.000001; // crapy solution
-
-    a = af::moddims(a, size, 1, 3);
-    b = af::moddims(b, 1, sizeb, 3);
-    af::array xyz_dist = af::moddims((af::tile(a, 1, sizeb, 1) - af::tile(b, size, 1, 1)), size, sizeb, 3);
-
-    // square size,sizeb,1
-    af::array square = af::moddims(af::sum(xyz_dist*xyz_dist,2), size, sizeb);
-    // dist_sqrt is size,sizeb,1
-    af::array dist_sqrt = af::sqrt(square);
-
-    // allFA numq,size
-    // allFB numq,sizeb
-    af::array allFFb = allFFa[dnumber](af::span, seqb);
-
-    for (unsigned k=0; k<numq; k++) {
-      // calculate FF matrix
-      // FFdist_mod size,sizeb,1
-      af::array FFdist_mod = (af::tile(af::moddims(allFFa[dnumber].row(k), size, 1), 1, sizeb)*
-                              af::tile(af::moddims(allFFb.row(k), 1, sizeb), size, 1));
-
-      // get q*dist and sin
-      const float qvalue = q_list[k];
-      // distq size,sizeb,1
-      af::array dist_q = qvalue*dist_sqrt;
-      // dist_sin size,sizeb,1
-      af::array dist_sin = af::sin(dist_q)/dist_q;
-      // flat it and get the intensity
-      sum_device[dnumber](k) += af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
-
-      // array get cos and tmp
-      // tmp is size,sizeb
-      af::array tmp = af::moddims(FFdist_mod*(dist_sin - af::cos(dist_q))/square, size, sizeb);
-
-      // increase the tmp size and calculate dd
-      // now is size, sizeb, 3
-      af::array dd_all = af::tile(tmp, 1, 1, 3)*xyz_dist;
-      deriv_device[dnumber](k, seqb, af::span) = af::sum(dd_all);
-    }
-  }
+  // create array a and b containing atomic coordinates
+  af::setDevice(deviceid);
+  // size,3,1,1
+  af::array pos_a = af::array(size, 3, posi);
+  // size,3,1,1
+  af::array pos_b = pos_a(af::span, af::span);
+  // size,1,3,1
+  pos_a = af::moddims(pos_a, size, 1, 3);
+  // 1,size,3,1
+  pos_b = af::moddims(pos_b, 1, size, 3);
+  // remove position vector
   delete[] posi;
+
+  // size,size,3,1
+  af::array xyz_dist = (af::tile(pos_a, 1, size, 1) - af::tile(pos_b, size, 1, 1));
+  // size,size,1,1
+  af::array square = af::sum(xyz_dist*xyz_dist,2);
+  // size,size,1,1
+  af::array dist_sqrt = af::sqrt(square);
+  // replace the zero of square with one to avoid nan in the derivatives (the number does not matter becasue this are multiplied by zero)
+  af::replace(square,!(af::iszero(square)),1.);
+  // numq,1,1,1
+  af::array sum_device   = af::constant(0, numq, f32);
+  // numq,size,3,1
+  af::array deriv_device = af::constant(0, numq, size, 3, f32);
+
+  for (unsigned k=0; k<numq; k++) {
+    // calculate FF matrix
+    // size,size,1,1
+    af::array FFdist_mod = af::tile(af::moddims(FF_value.row(k), size, 1), 1, size)*af::tile(FF_value.row(k), size, 1);
+
+    // get q
+    const float qvalue = static_cast<float>(q_list[k]);
+    // size,size,1,1
+    af::array dist_q = qvalue*dist_sqrt;
+    // size,size,1
+    af::array dist_sin = af::sin(dist_q)/dist_q;
+    af::replace(dist_sin,!(af::isNaN(dist_sin)),1.);
+    // 1,1,1,1 
+    sum_device(k) += af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
+
+    // size,size,1,1
+    af::array tmp = FFdist_mod*(dist_sin - af::cos(dist_q))/square;
+    // size,size,3,1
+    af::array dd_all = af::tile(tmp, 1, 1, 3)*xyz_dist;
+    // it should become 1,size,3
+    deriv_device(k, af::span, af::span) = af::sum(dd_all,0);
+  }
+
+  // read out results
+  float* tmp_inten;
+  tmp_inten = new float[numq];
+  sum_device.host(tmp_inten);
+
+  float* tmp_deriv;
+  tmp_deriv = new float[size*3*numq];
+  deriv_device = af::reorder(deriv_device, 2, 1, 0);
+  deriv_device = af::flat(deriv_device);
+  deriv_device.host(tmp_deriv);
 
   // accumulate the results
   std::vector<double> inten; inten.resize(numq,0);
   std::vector<double> deriv; deriv.resize(numq*size*3,0);
+  for(unsigned i=0; i<numq; i++) inten[i] = tmp_inten[i];
+  for(unsigned i=0; i<size*3*numq; i++) deriv[i] = tmp_deriv[i];
+  delete[] tmp_inten;
+  delete[] tmp_deriv;
 
-  // read out results
-  for (unsigned i=0; i<total_device; i++) {
-    af::setDevice(i);
-    float* tmp_inten;
-    tmp_inten = new float[numq];
-    sum_device[i].host(tmp_inten);
-
-    float* tmp_deriv;
-    tmp_deriv = new float[size*3*numq];
-    deriv_device[i] = af::reorder(deriv_device[i], 2, 1, 0);
-    deriv_device[i] = af::flat(deriv_device[i]);
-    deriv_device[i].host(tmp_deriv);
-
-    #pragma omp parallel num_threads(OpenMP::getNumThreads())
-    {
-      #pragma omp for nowait
-      for(unsigned i=0; i<numq; i++) inten[i] += tmp_inten[i];
-      #pragma omp for nowait
-      for(unsigned i=0; i<size*3*numq; i++) deriv[i] += tmp_deriv[i];
-    }
-
-    delete[] tmp_inten;
-    delete[] tmp_deriv;
-  }
-
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for(unsigned k=0; k<numq; k++) {
     Value* val=getPntrToComponent(k);
     val->set(inten[k]);
