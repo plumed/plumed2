@@ -101,7 +101,9 @@ private:
   bool                serial;
   int                 deviceid;
   vector<double>      q_list;
+#ifdef  __PLUMED_HAS_ARRAYFIRE
   af::array           FF_value;
+#endif
   void getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter);
   void calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho);
 
@@ -224,7 +226,7 @@ SAXSGPU::SAXSGPU(const ActionOptions&ao):
     ntarget++;
   }
   if( ntarget!=numq && exp==true) error("found wrong number of EXPINT values");
- 
+
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
   for(unsigned i=0; i<numq; i++) {
@@ -332,7 +334,7 @@ void SAXSGPU::calculate() {
     // size,size,1
     af::array dist_sin = af::sin(dist_q)/dist_q;
     af::replace(dist_sin,!(af::isNaN(dist_sin)),1.);
-    // 1,1,1,1 
+    // 1,1,1,1
     sum_device(k) += af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
 
     // size,size,1,1
