@@ -268,16 +268,15 @@ SAXSGPU::SAXSGPU(const ActionOptions&ao):
   checkRead();
 
   // move structure factor to the GPU
-  float *FF_new = new float[numq*size];
+  vector<float> FF_new;
+  FF_new.resize(numq*size);
   for(unsigned k=0; k<numq; ++k) {
     for(unsigned i=0; i<size; i++) {
       FF_new[k+i*numq] = static_cast<float>(FF_tmp[k][i]/sqrt(scexp));
     }
   }
-  af::array allFFa = af::array(numq, size, FF_new);
-  delete[] FF_new;
+  af::array allFFa = af::array(numq, size, &FF_new.front());
   FF_value = allFFa;
-  //FF_value = af::moddims(allFFa.T(), size, numq);
 #endif
 }
 
@@ -288,8 +287,8 @@ void SAXSGPU::calculate() {
   const unsigned size = getNumberOfAtoms();
   const unsigned numq = q_list.size();
 
-  float* posi;
-  posi = new float[3*size];
+  vector<float> posi;
+  posi.resize(3*size);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (unsigned i=0; i<size; i++) {
     const Vector tmp = getPosition(i);
@@ -301,7 +300,7 @@ void SAXSGPU::calculate() {
   // create array a and b containing atomic coordinates
   af::setDevice(deviceid);
   // 3,size,1,1
-  af::array pos_a = af::array(3, size, posi);
+  af::array pos_a = af::array(3, size, &posi.front());
   // size,3,1,1
   pos_a = af::moddims(pos_a.T(), size, 1, 3);
   // size,3,1,1
@@ -311,8 +310,6 @@ void SAXSGPU::calculate() {
   // 1,size,3,1
   pos_b = af::moddims(pos_b, 1, size, 3);
 
-  // remove position vector
-  delete[] posi;
 
   // size,size,3,1
   af::array xyz_dist = af::tile(pos_a, 1, size, 1) - af::tile(pos_b, size, 1, 1);
@@ -353,23 +350,21 @@ void SAXSGPU::calculate() {
   }
 
   // read out results
-  float* tmp_inten;
-  tmp_inten = new float[numq];
-  sum_device.host(tmp_inten);
+  std::vector<float> inten; 
+  inten.resize(numq);
+  sum_device.host(&inten.front());
 
-  float* tmp_deriv;
-  tmp_deriv = new float[size*3*numq];
+  std::vector<double> deriv; 
+  deriv.resize(numq*size*3);
+
+  vector<float> tmp_deriv;
+  tmp_deriv.resize(size*3*numq);
   deriv_device = af::reorder(deriv_device, 2, 1, 0);
   deriv_device = af::flat(deriv_device);
-  deriv_device.host(tmp_deriv);
+  deriv_device.host(&tmp_deriv.front());
 
   // accumulate the results
-  std::vector<double> inten; inten.resize(numq,0);
-  std::vector<double> deriv; deriv.resize(numq*size*3,0);
-  for(unsigned i=0; i<numq; i++) inten[i] = tmp_inten[i];
   for(unsigned i=0; i<size*3*numq; i++) deriv[i] = tmp_deriv[i];
-  delete[] tmp_inten;
-  delete[] tmp_deriv;
 
   for(unsigned k=0; k<numq; k++) {
     Value* val=getPntrToComponent(k);
