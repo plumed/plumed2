@@ -310,7 +310,6 @@ void SAXSGPU::calculate() {
   // 1,size,3,1
   pos_b = af::moddims(pos_b, 1, size, 3);
 
-
   // size,size,3,1
   af::array xyz_dist = af::tile(pos_a, 1, size, 1) - af::tile(pos_b, size, 1, 1);
   // size,size,1,1
@@ -354,17 +353,11 @@ void SAXSGPU::calculate() {
   inten.resize(numq);
   sum_device.host(&inten.front());
 
-  std::vector<double> deriv; 
-  deriv.resize(numq*size*3);
-
-  vector<float> tmp_deriv;
-  tmp_deriv.resize(size*3*numq);
+  std::vector<float> deriv;
+  deriv.resize(size*3*numq);
   deriv_device = af::reorder(deriv_device, 2, 1, 0);
   deriv_device = af::flat(deriv_device);
-  deriv_device.host(&tmp_deriv.front());
-
-  // accumulate the results
-  for(unsigned i=0; i<size*3*numq; i++) deriv[i] = tmp_deriv[i];
+  deriv_device.host(&deriv.front());
 
   for(unsigned k=0; k<numq; k++) {
     Value* val=getPntrToComponent(k);
