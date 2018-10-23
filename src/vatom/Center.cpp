@@ -216,7 +216,7 @@ Center::Center(const ActionOptions&ao):
       if( args.size()!=1 ) error("should only have one value as input to WEIGHT");
       if( args[0]->getRank()!=1 || args[0]->getShape()[0]!=atoms.size() ) error("value input for WEIGHTS has wrong shape");
       val_weights = args[0]; std::vector<std::string> empty(1); empty[0] = (val_weights->getPntrToAction())->getLabel();
-      (val_weights->getPntrToAction())->addActionToChain( empty, this );
+      if( (val_weights->getPntrToAction())->valuesComputedInChain() ) (val_weights->getPntrToAction())->addActionToChain( empty, this );
       log.printf("  atoms are weighted by values in vector labelled %s \n",val_weights->getName().c_str() );
     }
   } else {
@@ -304,8 +304,10 @@ void Center::performTask( const unsigned& task_index, MultiValue& myvals ) const
   } else if( weight_charge ) {
     if( !plumed.getAtoms().chargesWereSet() ) plumed_merror("cannot calculate center of charge if chrages are unset");
     w = getCharge(task_index);
-  } else if( val_weights ) {
+  } else if( val_weights && actionInChain() ) {
     w = myvals.get( val_weights->getPositionInStream() );
+  } else if( val_weights ) {
+    w = val_weights->get(task_index);
   } else {
     plumed_dbg_assert( task_index<weights.size() );
     w = weights[task_index];
