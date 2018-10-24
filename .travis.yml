@@ -179,8 +179,8 @@ script:
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
   - if test "$MAKECOVERAGE" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
   - if test "$ARRAYFIRE" == yes; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-af_cpu"; fi
-# when running lcov plumed should be compiled with -O0
-  - if test "$MAKECOVERAGE" == yes ; then PLUMED_CXXFLAGS=-O0 ; fi
+# when running lcov plumed use moderate optimization
+  - if test "$MAKECOVERAGE" == yes ; then PLUMED_CXXFLAGS=-O ; fi
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined
