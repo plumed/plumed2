@@ -349,7 +349,7 @@ void SAXSGPU::calculate() {
   }
 
   // read out results
-  std::vector<float> inten; 
+  std::vector<float> inten;
   inten.resize(numq);
   sum_device.host(&inten.front());
 
