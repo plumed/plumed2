@@ -117,7 +117,7 @@ install:
 # a specific old version of asmjit is required:
   - if test -n "$ASMJIT" ; then ./.travis/install.asmjit $ASMJIT ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      ./.travis/install.ccache v3.4.3 ;
+      ./.travis/install.ccache v3.5 ;
     fi
 # cppcheck:
 # I use 1.71 since 1.72 seems to report a lot of false positive
