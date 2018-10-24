@@ -29,7 +29,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.84
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.85
 # test using external blas with internal lapack
   - os: linux
     if: branch =~ ^test- OR type IN(pull_request)
@@ -93,10 +93,10 @@ matrix:
 install:
 # setup environment to allow install on the home directory
   - export PATH="$HOME/opt/bin:$PATH"
-  - export CPATH="$HOME/opt/include:$CPATH"
-  - export INCLUDE="$HOME/opt/include:$INCLUDE"
-  - export LIBRARY_PATH="$HOME/opt/lib:$LIBRARY_PATH"
-  - export LD_LIBRARY_PATH="$HOME/opt/lib:$LD_LIBRARY_PATH"
+  - export CPATH="$HOME/opt/include:$HOME/opt/arrayfire/include:$CPATH"
+  - export INCLUDE="$HOME/opt/include:$HOME/opt/arrayfire/include:$INCLUDE"
+  - export LIBRARY_PATH="$HOME/opt/lib:$HOME/opt/arrayfire/lib:$LIBRARY_PATH"
+  - export LD_LIBRARY_PATH="$HOME/opt/lib:$HOME/opt/arrayfire/lib:$LD_LIBRARY_PATH"
 # Setting the TMPDIR in this way allegedly prevents problems with the compilation of 
 # PLUMED + Python on macos
   - export TMPDIR="/tmp" 
@@ -117,7 +117,7 @@ install:
 # a specific old version of asmjit is required:
   - if test -n "$ASMJIT" ; then ./.travis/install.asmjit $ASMJIT ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      ./.travis/install.ccache v3.4.3 ;
+      ./.travis/install.ccache v3.5 ;
     fi
 # cppcheck:
 # I use 1.71 since 1.72 seems to report a lot of false positive
@@ -151,6 +151,8 @@ install:
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
 # I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
   - if test -n "$LD_LIBRARY_PATH" ; then PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" ; fi
+# arrayfire
+  - if test "$ARRAYFIRE" == yes; then ./.travis/install.arrayfire ; fi 
 # macports related stuff
 # configure macports
   - if test -n "$PLUMED_MACPORTS" ; then
@@ -176,8 +178,9 @@ script:
   - if test -n "$ASMJIT" ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-asmjit" ; fi
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
   - if test "$MAKECOVERAGE" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
-# when running lcov plumed should be compiled with -O0
-  - if test "$MAKECOVERAGE" == yes ; then PLUMED_CXXFLAGS=-O0 ; fi
+  - if test "$ARRAYFIRE" == yes; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-af_cpu"; fi
+# when running lcov plumed use moderate optimization
+  - if test "$MAKECOVERAGE" == yes ; then PLUMED_CXXFLAGS=-O ; fi
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined
