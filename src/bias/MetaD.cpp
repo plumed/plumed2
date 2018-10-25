@@ -1932,49 +1932,37 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
   }
 }
 
+//NB: for backward compatibility REWEIGHTING_NGRID is kept, but its value is not used
 void MetaD::computeReweightingFactor()
 {
-  if( !welltemp_ ) error("cannot compute the c(t) reweighting factors for non well-tempered metadynamics");
-
-  if(biasf_==1.0) {
-// in this case we have no bias, so reweight factor is 0.0
+  if(biasf_==1.0) { // in this case we have no bias, so reweight factor is 0.0
     getPntrToComponent("rct")->set(0.0);
     return;
   }
 
-  // Recover the minimum values for the grid
-  unsigned ncv=getNumberOfArguments();
-  unsigned ntotgrid=1;
-  std::vector<double> dmin( ncv ),dmax( ncv ), grid_spacing( ncv ), vals( ncv );
-  for(unsigned j=0; j<ncv; ++j) {
-    Tools::convert( BiasGrid_->getMin()[j], dmin[j] );
-    Tools::convert( BiasGrid_->getMax()[j], dmax[j] );
-    grid_spacing[j] = ( dmax[j] - dmin[j] ) / static_cast<double>( rewf_grid_[j] );
-    if( !getPntrToArgument(j)->isPeriodic() ) dmax[j] += grid_spacing[j];
-    ntotgrid *= rewf_grid_[j];
+  double Z_0=0; //integral of exp(-beta*F)
+  double Z_V=0; //integral of exp(-beta*(F+V))
+  double minusBetaF=biasf_/(biasf_-1.)/kbt_;
+  double minusBetaFplusV=1./(biasf_-1.)/kbt_;
+  if (biasf_==-1.0){ //non well-tempered case
+    minusBetaF=1;
+    minusBetaFplusV=0;
+  }
+  const double big_number=minusBetaF*BiasGrid_->getMaxValue(); //to avoid exp overflow
+
+  const unsigned rank=comm.Get_rank(); //XXX is it really faster to run this in parallel?
+  const unsigned stride=comm.Get_size();
+  for (Grid::index_t t=rank; t<BiasGrid_->getSize(); t+=stride) {
+    const double val=BiasGrid_->getValue(t);
+    Z_0+=std::exp(minusBetaF*val-big_number);
+    Z_V+=std::exp(minusBetaFplusV*val-big_number);
+  }
+  if (stride>1) {
+    comm.Sum(Z_0);
+    comm.Sum(Z_V);
   }
 
-  // Now sum over whole grid
-  reweight_factor=0.0;
-  std::unique_ptr<double[]> der(new double[ncv]);
-  std::vector<unsigned> t_index( ncv );
-  double sum1=0.0; double sum2=0.0;
-  double afactor = biasf_ / (kbt_*(biasf_-1.0)); double afactor2 = 1.0 / (kbt_*(biasf_-1.0));
-  unsigned rank=comm.Get_rank(), stride=comm.Get_size();
-  for(unsigned i=rank; i<ntotgrid; i+=stride) {
-    t_index[0]=(i%rewf_grid_[0]);
-    unsigned kk=i;
-    for(unsigned j=1; j<ncv-1; ++j) { kk=(kk-t_index[j-1])/rewf_grid_[i-1]; t_index[j]=(kk%rewf_grid_[i]); }
-    if( ncv>=2 ) t_index[ncv-1]=((kk-t_index[ncv-1])/rewf_grid_[ncv-2]);
-
-    for(unsigned j=0; j<ncv; ++j) vals[j]=dmin[j] + t_index[j]*grid_spacing[j];
-
-    double currentb=getBiasAndDerivatives(vals,der.get());
-    sum1 += exp( afactor*currentb );
-    sum2 += exp( afactor2*currentb );
-  }
-  comm.Sum( sum1 ); comm.Sum( sum2 );
-  reweight_factor = kbt_ * std::log( sum1/sum2 );
+  reweight_factor=kbt_*std::log(Z_0/Z_V);
   getPntrToComponent("rct")->set(reweight_factor);
 }
 
