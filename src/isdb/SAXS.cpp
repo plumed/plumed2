@@ -20,8 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*
- This class was originally written by Alexander Jussupow and
- Carlo Camilloni
+ This class was originally written by Alexander Jussupow
  Extension for the middleman algorithm by Max Muehlbauer
 */
 
@@ -39,6 +38,11 @@
 #ifdef __PLUMED_HAS_GSL
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_legendre.h>
+#endif
+
+#ifdef __PLUMED_HAS_ARRAYFIRE
+#include <arrayfire.h>
+#include <af/util.h>
 #endif
 
 #ifndef M_PI
@@ -107,12 +111,19 @@ private:
   bool                     serial;
   bool                     bessel;
   bool                     force_bessel;
+  bool                     gpu;
+  int                      deviceid;
   vector<double>           q_list;
   vector<double>           FF_rank;
   vector<vector<double> >  FF_value;
+#ifdef  __PLUMED_HAS_ARRAYFIRE
+  af::array                AFF_value;
+#endif
   vector<double>           avals;
   vector<double>           bvals;
 
+  void calculate_gpu(vector<Vector> &deriv);
+  void calculate_cpu(vector<Vector> &deriv);
   void getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter);
   void calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho);
   void bessel_calculate(vector<Vector> &deriv, vector<double> &sum, vector<Vector2d> &qRnm, const vector<double> &r_polar,
@@ -140,6 +151,8 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addFlag("BESSEL",false,"Perform the calculation using the adaptive spherical harmonic approximation");
   keys.addFlag("FORCE_BESSEL",false,"Perform the calculation using the adaptive spherical harmonic approximation, without adaptive algorithm, usefull for debug only");
+  keys.add("compulsory","DEVICEID","0","Identifier of the GPU to be used");
+  keys.addFlag("GPU",false,"calculate SAXS using ARRAYFIRE on an accellerator device");
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
@@ -158,7 +171,9 @@ SAXS::SAXS(const ActionOptions&ao):
   pbc(true),
   serial(false),
   bessel(false),
-  force_bessel(false)
+  force_bessel(false),
+  gpu(false),
+  deviceid(0)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -177,6 +192,21 @@ SAXS::SAXS(const ActionOptions&ao):
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
+
+  parseFlag("GPU",gpu);
+#ifndef  __PLUMED_HAS_ARRAYFIRE
+  if(gpu) error("To use the GPU mode PLUMED must be compiled with ARRAYFIRE");
+#endif
+
+  parse("DEVICEID",deviceid);
+#ifdef  __PLUMED_HAS_ARRAYFIRE
+  if(gpu) {
+    af::setDevice(deviceid);
+    af::info();
+  }
+#endif
+
+
 
   double scexp = 0;
   parse("SCEXP",scexp);
@@ -237,13 +267,27 @@ SAXS::SAXS(const ActionOptions&ao):
   }
 
   // Calculate Rank of FF_matrix
-  FF_rank.resize(numq);
-  FF_value.resize(numq,vector<double>(size));
-  for(unsigned k=0; k<numq; ++k) {
-    for(unsigned i=0; i<size; i++) {
-      FF_value[k][i] = static_cast<double>(FF_tmp[k][i])/sqrt(scexp);
-      FF_rank[k]+=FF_value[k][i]*FF_value[k][i];
+  if(!gpu) {
+    FF_rank.resize(numq);
+    FF_value.resize(numq,vector<double>(size));
+    for(unsigned k=0; k<numq; ++k) {
+      for(unsigned i=0; i<size; i++) {
+        FF_value[k][i] = static_cast<double>(FF_tmp[k][i])/sqrt(scexp);
+        FF_rank[k]+=FF_value[k][i]*FF_value[k][i];
+      }
     }
+  } else {
+    vector<float> FF_new;
+    FF_new.resize(numq*size);
+    for(unsigned k=0; k<numq; ++k) {
+      for(unsigned i=0; i<size; i++) {
+        FF_new[k+i*numq] = static_cast<float>(FF_tmp[k][i]/sqrt(scexp));
+      }
+    }
+#ifdef __PLUMED_HAS_ARRAYFIRE
+    af::array allFFa = af::array(numq, size, &FF_new.front());
+    AFF_value = allFFa;
+#endif
   }
 
   bool exp=false;
@@ -320,10 +364,9 @@ SAXS::SAXS(const ActionOptions&ao):
   checkRead();
 }
 
-void SAXS::calculate()
+void SAXS::calculate_gpu(vector<Vector> &deriv)
 {
-  if(pbc) makeWhole();
-
+#ifdef __PLUMED_HAS_ARRAYFIRE
   const unsigned size = getNumberOfAtoms();
   const unsigned numq = q_list.size();
 
@@ -334,7 +377,103 @@ void SAXS::calculate()
     rank   = 0;
   }
 
-  vector<Vector> deriv(numq*size);
+  vector<float> posi;
+  posi.resize(3*size);
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for (unsigned i=0; i<size; i++) {
+    const Vector tmp = getPosition(i);
+    posi[3*i]   = static_cast<float>(tmp[0]);
+    posi[3*i+1] = static_cast<float>(tmp[1]);
+    posi[3*i+2] = static_cast<float>(tmp[2]);
+  }
+
+  // create array a and b containing atomic coordinates
+  af::setDevice(deviceid);
+  // 3,size,1,1
+  af::array pos_a = af::array(3, size, &posi.front());
+  // size,3,1,1
+  pos_a = af::moddims(pos_a.T(), size, 1, 3);
+  // size,3,1,1
+  af::array pos_b = pos_a(af::span, af::span);
+  // size,1,3,1
+  pos_a = af::moddims(pos_a, size, 1, 3);
+  // 1,size,3,1
+  pos_b = af::moddims(pos_b, 1, size, 3);
+
+  // size,size,3,1
+  af::array xyz_dist = af::tile(pos_a, 1, size, 1) - af::tile(pos_b, size, 1, 1);
+  // size,size,1,1
+  af::array square = af::sum(xyz_dist*xyz_dist,2);
+  // size,size,1,1
+  af::array dist_sqrt = af::sqrt(square);
+  // replace the zero of square with one to avoid nan in the derivatives (the number does not matter becasue this are multiplied by zero)
+  af::replace(square,!(af::iszero(square)),1.);
+  // size,size,3,1
+  xyz_dist = xyz_dist / af::tile(square, 1, 1, 3);
+  // numq,1,1,1
+  af::array sum_device   = af::constant(0, numq, f32);
+  // numq,size,3,1
+  af::array deriv_device = af::constant(0, numq, size, 3, f32);
+
+  for (unsigned k=0; k<numq; k++) {
+    // calculate FF matrix
+    // size,size,1,1
+    af::array FFdist_mod = af::tile(af::moddims(AFF_value(k, af::span), size, 1), 1, size)*af::tile(AFF_value(k, af::span), size, 1);
+
+    // get q
+    const float qvalue = static_cast<float>(q_list[k]);
+    // size,size,1,1
+    af::array dist_q = qvalue*dist_sqrt;
+    // size,size,1
+    af::array dist_sin = af::sin(dist_q)/dist_q;
+    af::replace(dist_sin,!(af::isNaN(dist_sin)),1.);
+    // 1,1,1,1
+    sum_device(k) = af::sum(af::flat(dist_sin)*af::flat(FFdist_mod));
+
+    // size,size,1,1
+    af::array tmp = FFdist_mod*(dist_sin - af::cos(dist_q));
+    // size,size,3,1
+    af::array dd_all = af::tile(tmp, 1, 1, 3)*xyz_dist;
+    // it should become 1,size,3
+    deriv_device(k, af::span, af::span) = af::sum(dd_all,0);
+  }
+
+  // read out results
+  std::vector<float> sum;
+  sum.resize(numq);
+  sum_device.host(&sum.front());
+
+  std::vector<float> dd;
+  dd.resize(size*3*numq);
+  deriv_device = af::reorder(deriv_device, 2, 1, 0);
+  deriv_device = af::flat(deriv_device);
+  deriv_device.host(&dd.front());
+
+  for(unsigned k=0; k<numq; k++) {
+    string num; Tools::convert(k,num);
+    Value* val=getPntrToComponent("q_"+num);
+    val->set(sum[k]);
+    if(getDoScore()) setCalcData(k, sum[k]);
+    for(unsigned i=0; i<size; i++) {
+      const unsigned di = k*size*3+i*3;
+      deriv[k*size+i] = Vector(2.*dd[di+0],2.*dd[di+1],2.*dd[di+2]);
+    }
+  }
+#endif
+}
+
+void SAXS::calculate_cpu(vector<Vector> &deriv)
+{
+  const unsigned size = getNumberOfAtoms();
+  const unsigned numq = q_list.size();
+
+  unsigned stride = comm.Get_size();
+  unsigned rank   = comm.Get_rank();
+  if(serial) {
+    stride = 1;
+    rank   = 0;
+  }
+
   vector<double> sum(numq,0);
   vector<Vector> c_dist(size*size);
   vector<double> m_dist(size*size);
@@ -370,11 +509,8 @@ void SAXS::calculate()
       const unsigned kdx=k*size;
       for (unsigned i=rank; i<size-1; i+=stride) {
         const double FF=2.*FF_value[k][i];
-        //const Vector posi=getPosition(i);
         Vector dsum;
         for (unsigned j=i+1; j<size ; j++) {
-          //const Vector c_distances = delta(posi,getPosition(j));
-          //const double m_distances = c_distances.modulo();
           const Vector c_distances = c_dist[i*size+j];
           const double m_distances = m_dist[i*size+j];
           const double qdist       = q_list[k]*m_distances;
@@ -418,6 +554,20 @@ void SAXS::calculate()
       if(getDoScore()) setCalcData(k, sum[k]);
     }
   }
+
+
+}
+
+void SAXS::calculate()
+{
+  if(pbc) makeWhole();
+
+  const unsigned size = getNumberOfAtoms();
+  const unsigned numq = q_list.size();
+
+  vector<Vector> deriv(numq*size);
+  if(gpu) calculate_gpu(deriv);
+  else calculate_cpu(deriv);
 
   if(getDoScore()) {
     /* Metainference */
