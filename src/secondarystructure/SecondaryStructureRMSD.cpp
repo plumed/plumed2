@@ -87,7 +87,7 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
   align_atom_1(0),
   align_atom_2(0)
 {
-  parse("TYPE",alignType); parseFlag("NOPBC",nopbc);
+  parse("TYPE",alignType);
   log.printf("  distances from secondary structure elements are calculated using %s algorithm\n",alignType.c_str() );
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)"); log<<"\n";
 

@@ -7,7 +7,7 @@ cf: MORE_THAN ARG1=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1}
 # Find largest cluster
 dfs: DFSCLUSTERING MATRIX=c1_mat.w 
 clust1: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1 
-com: CENTER ATOMS=1-512 WEIGHTS=clust1 BERRYPHASE 
+com: CENTER ATOMS=1-512 WEIGHTS=clust1 PHASES 
 # Filtered coordination numbers for atoms in largest cluster
 ff: MATHEVAL ARG1=clust1 ARG2=cf FUNC=x*y PERIODIC=NO
 

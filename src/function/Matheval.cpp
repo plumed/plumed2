@@ -302,21 +302,23 @@ void Matheval::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::strin
 }
 
 void Matheval::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
-  bool allzero;
-  if( check_multiplication_vars.size()>0 ) {
-      allzero=false;
-      for(unsigned i=0; i<check_multiplication_vars.size(); ++i) {
-        if( fabs(args[check_multiplication_vars[i]])<epsilon ) { allzero=true; break; }
-      } 
-  } else if( check_multiplication_vars.size()==0 ) {
-      allzero=(fabs(args[0])<epsilon);
-      for(unsigned i=1; i<args.size(); ++i) {
-        if( fabs(args[i])>epsilon ) { allzero=false; break; }
+  if( args.size()>1 ) {
+      bool allzero;
+      if( check_multiplication_vars.size()>0 ) {
+          allzero=false;
+          for(unsigned i=0; i<check_multiplication_vars.size(); ++i) {
+            if( fabs(args[check_multiplication_vars[i]])<epsilon ) { allzero=true; break; }
+          } 
+      } else if( check_multiplication_vars.size()==0 ) {
+          allzero=(fabs(args[0])<epsilon);
+          for(unsigned i=1; i<args.size(); ++i) {
+            if( fabs(args[i])>epsilon ) { allzero=false; break; }
+          }
       }
-  }
-  if( allzero ) {
-      addValue(0, 0.0, myvals ); for(unsigned i=0; i<getNumberOfArguments(); i++) addDerivative(0, i, 0.0, myvals );
-      return;
+      if( allzero ) {
+          addValue(0, 0.0, myvals ); for(unsigned i=0; i<getNumberOfArguments(); i++) addDerivative(0, i, 0.0, myvals );
+          return;
+      }
   }
 
   const unsigned t=OpenMP::getThreadNum(); plumed_assert(t<expression.size());

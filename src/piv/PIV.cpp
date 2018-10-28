@@ -185,7 +185,7 @@ When using PIV please cite \cite pipolo2017navigating .
 class PIV      : public Colvar
 {
 private:
-  bool pbc, serial, timer;
+  bool pbc, timer;
   ForwardDecl<Stopwatch> stopwatch_fwd;
   /// The stopwatch that times the different parts of the calculation
   Stopwatch& stopwatch=*stopwatch_fwd;
@@ -242,7 +242,6 @@ void PIV::registerKeywords( Keywords& keys )
   keys.addFlag("ONLYDIRECT",false,"Use only direct-terms (A-A, B-B, C-C, ...) in PIV");
   keys.addFlag("DERIVATIVES",false,"Activate the calculation of the PIV for every class (needed for numerical derivatives).");
   keys.addFlag("NLIST",false,"Use a neighbour list for distance calculations.");
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addFlag("TIMER",false,"Permorm timing analysis on heavy loops.");
   keys.add("optional","NL_CUTOFF","Neighbour lists cutoff.");
   keys.add("optional","NL_STRIDE","Update neighbour lists every NL_STRIDE steps.");
@@ -254,7 +253,6 @@ PIV::PIV(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
   pbc(true),
   timer(false),
-  serial(false),
   updatePIV(1),
   Svol(false),
   Sfac(false),
@@ -301,8 +299,7 @@ PIV::PIV(const ActionOptions&ao):
   }
 
   // SERIAL/PARALLEL
-  parseFlag("SERIAL",serial);
-  if(serial) {
+  if(runInSerial()) {
     log << "Serial PIV construction\n";
   } else     {
     log << "Parallel PIV construction\n";
@@ -745,7 +742,7 @@ void PIV::calculate()
   unsigned stride=1;
   unsigned rank=0;
 
-  if(!serial) {
+  if(!runInSerial()) {
     stride=comm.Get_size();
     rank=comm.Get_rank();
   } else {
@@ -884,7 +881,7 @@ void PIV::calculate()
     }
     Vector ddist;
     // Global to local variables
-    bool doserial=serial;
+    bool doserial=runInSerial();
     // Build "Nlist" PIV blocks
     for(unsigned j=0; j<Nlist; j++) {
       if(dosort[j]) {
@@ -1208,7 +1205,7 @@ void PIV::calculate()
       }
     }
 
-    if (!serial && comm.initialized()) {
+    if (!runInSerial() && comm.initialized()) {
       comm.Barrier();
       comm.Sum(&m_PIVdistance,1);
       if(!m_deriv.empty()) comm.Sum(&m_deriv[0][0],3*m_deriv.size());

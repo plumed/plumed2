@@ -20,7 +20,7 @@ PRINT ATOMS=c1 ARG1=cf ARG2=c1 FILE=myatoms.xyz FMT=%8.4f
 
 # Find center of largest cluster
 trans1: MATHEVAL ARG1=cf ARG2=clust1 FUNC=x*x*y PERIODIC=NO 
-cent: CENTER ATOMS=1-512 WEIGHTS=trans1 BERRYPHASE
+cent: CENTER ATOMS=1-512 WEIGHTS=trans1 PHASES
 
 # Dumpmulticolvar with origin at center 
 PRINT ATOMS=c1 ARG1=clust1 FILE=multicolvar.xyz GREATER_THAN_OR_EQUAL=0.001 UNITS=A FMT=%8.4f ORIGIN=cent
