@@ -148,8 +148,11 @@ Mapping::Mapping(const ActionOptions&ao):
   // Get the arguments and atoms that are required
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
   for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
-  requestAtoms( atoms ); std::vector<Value*> req_args; if( getNumberOfAtoms()==0 ) nopbc = true;
-  interpretArgumentList( args, req_args ); requestArguments( req_args, false );
+  std::vector<Value*> req_args; interpretArgumentList( args, req_args );
+  if( req_args.size()>0 && atoms.size()>0 ) error("cannot mix atoms and arguments"); 
+  if( req_args.size()>0 ) requestArguments( req_args, false );
+  if( atoms.size()>0 ) requestAtoms( atoms ); 
+  if( getNumberOfAtoms()==0 ) nopbc = true;
   // Resize forces array
   if( getNumberOfAtoms()>0 ) {
     forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );

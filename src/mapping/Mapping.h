@@ -42,6 +42,10 @@ private:
   bool nopbc;
 /// The forces on each of the derivatives (used in apply)
   std::vector<double> forcesToApply;
+/// The weights of the various configurations
+  std::vector<double> weights;
+/// The list of properties in the property map
+  std::map<std::string,std::vector<double> > property;
 protected:
 /// Are we calculating squared distances
   bool squared;

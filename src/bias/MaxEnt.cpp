@@ -164,7 +164,6 @@ class MaxEnt : public Bias {
   int myrep,nrep;
 public:
   explicit MaxEnt(const ActionOptions&);
-  ~MaxEnt();
   void calculate();
   void update();
   void update_lambda();
@@ -212,9 +211,6 @@ void MaxEnt::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("_error","default","Instantaneous values of the discrepancy between the observable and the restraint center");
   keys.addOutputComponent("_coupling","default","Instantaneous values of Lagrangian multipliers. They are also written by default in a separate output file.");
   keys.use("RESTART");
-}
-MaxEnt::~MaxEnt() {
-  lagmultOfile_.close();
 }
 MaxEnt::MaxEnt(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
@@ -335,7 +331,6 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
       printFirstStep=false;
     }
     ifile.reset(false);
-    ifile.close();
   }
 
   lagmultOfile_.link(*this);

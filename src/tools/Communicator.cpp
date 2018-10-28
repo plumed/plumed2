@@ -63,15 +63,6 @@ int Communicator::Get_rank()const {
   return r;
 }
 
-Communicator& Communicator::Get_world() {
-  static Communicator c;
-#ifdef __PLUMED_HAS_MPI
-  if(initialized()) c.communicator=MPI_COMM_WORLD;
-#endif
-  return c;
-}
-
-
 int Communicator::Get_size()const {
   int s=1;
 #ifdef __PLUMED_HAS_MPI
@@ -224,12 +215,13 @@ MPI_Comm & Communicator::Get_comm() {
 }
 
 bool Communicator::initialized() {
-  int flag=false;
 #if defined(__PLUMED_HAS_MPI)
+  int flag=0;
   MPI_Initialized(&flag);
-#endif
   if(flag) return true;
   else return false;
+#endif
+  return false;
 }
 
 void Communicator::Request::wait(Status&s) {

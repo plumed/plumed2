@@ -642,14 +642,13 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         }
         string funcl = getLabel() + ".bias";
         BiasGrid_=Grid::create(funcl, args, gridfile, gmin_t, gmax_t, gbin_t, sparsegrid, spline, true);
-        gridfile.close();
         if(BiasGrid_->getDimension() != args.size()) {
           error("mismatch between dimensionality of input grid and number of arguments");
         }
         if(getPntrToArgument(i)->isPeriodic() != BiasGrid_->getIsPeriodic()[0]) {
           error("periodicity mismatch between arguments and input bias");
         }
-        log.printf("  Restarting from %s:",gridreadfilenames_[i].c_str());
+        log.printf("  Restarting from %s:\n",gridreadfilenames_[i].c_str());
         if(getRestart()) restartedFromGrid=true;
       } else {
         if(!sparsegrid) {BiasGrid_.reset( new Grid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true) );}
@@ -689,8 +688,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           fname = hillsfname[i];
         }
       }
-      IFile *ifile = new IFile();
-      ifiles.emplace_back(ifile);
+      ifiles.emplace_back(new IFile());
+      // this is just a shortcut pointer to the last element:
+      IFile *ifile = ifiles.back().get();
       ifile->link(*this);
       ifilesnames.push_back(fname);
       if(ifile->FileExist(fname)) {
@@ -702,6 +702,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
         ifiles[k]->reset(false);
         // close only the walker own hills file for later writing
         if(j==mw_id_) ifiles[k]->close();
+      } else {
+        // in case a file does not exist and we are restarting, complain that the file was not found
+        if(getRestart()) log<<"  WARNING: restart file "<<fname<<" not found\n";
       }
     }
   }

@@ -43,7 +43,7 @@ class SwitchingFunction {
 /// This is to check that switching function has been initialized
   bool init=false;
 /// Type of function
-  enum {rational,exponential,gaussian,smap,cubic,tanh,matheval,leptontype,nativeq,cosine,tanh3} type=rational;
+  enum {rational,exponential,gaussian,smap,cubic,tanh,cosinus,matheval,leptontype,nativeq,cosine,tanh3} type=rational;
 /// Inverse of scaling length.
 /// We store the inverse to avoid a division
   double invr0=0.0;
@@ -81,6 +81,12 @@ class SwitchingFunction {
 /// Lepton expression for derivative
 /// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
   std::vector<lepton::CompiledExpression> expression_deriv;
+  std::vector<double*> lepton_ref;
+  std::vector<double*> lepton_ref_deriv;
+/// Set to true for fast rational functions (depending on x**2 only)
+  bool fastrational=false;
+/// Set to true if lepton only uses x2
+  bool leptonx2=false;
 public:
   static void registerKeywords( Keywords& keys );
 /// Set a "rational" switching function.

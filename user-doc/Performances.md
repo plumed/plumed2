@@ -27,6 +27,7 @@ help in taking the most by using PLUMED for your simulations.
 - \subpage Openmp
 - \subpage Secondary
 - \subpage Time
+- \subpage Lepton
 
 \page GMXGPU GROMACS and PLUMED with GPU
 
@@ -53,15 +54,23 @@ i.e. if you have 4 cores and 2 GPU you can:
 
 - use 2 MPI/2GPU/2OPENMP:
 
+\verbatim
 export PLUMED_NUM_THREADS=2
-
 mpiexec -np 2 gmx_mpi mdrun -nb gpu -ntomp 2 -pin on -gpu_id 01
+\endverbatim
 
 - use 4 MPI/2GPU:
 
+\verbatim
 export PLUMED_NUM_THREADS=1
-
 mpiexec -np 4 gmx_mpi mdrun -nb gpu -ntomp 1 -pin on -gpu_id 0011
+\endverbatim
+
+Of notice that since plumed 2.5 and gromacs 2018.3 the number of openMP threads can automatically set by gromacs (so PLUMED_NUM_THREADS is not needed, and the number of OpenMP threads used by plumed is set by -ntomp)
+
+\verbatim
+mpiexec -np 2 gmx_mpi mdrun -nb gpu -ntomp 2 -pin on -gpu_id 01
+\endverbatim
 
 
 \page Metadyn Metadynamics
@@ -71,9 +80,9 @@ which are activated setting the GRID_MIN and GRID_MAX keywords of \ref METAD.
 This makes addition of a hill to the list a bit slower (since
 the Gaussian has to be evaluated for many grid points)
 but the evaluation of the potential very fast. Since
-the latter is usually done every few hundred steps, whereas the former
-typically ad every step, using grids will make the simulation
-much faster.
+the former is usually done every few hundred steps, whereas the latter 
+typically at every step, using grids will make the simulation
+ faster in particular for long runs.
 
 Notice that when restarting a simulation the history is read  by default
 from a file and hills are added again to the grid.
@@ -81,8 +90,7 @@ This allows one to change the grid boundaries upon restart. However,
 the first step after restart is usually very slow.
 Since PLUMED 2.3 you can also store the grid on a file
 and read it upon restart. This can be particularly
-useful if you perform many restarts and if your hills file has
-become very large.
+useful if you perform many restarts and if your hills are large.
 
 For the precise syntax, see \ref METAD
 
@@ -169,12 +177,23 @@ This should be enabled by default if your compiler supports it,
 and can be disabled with `--disable-openmp`..
 At runtime, you should set the environment variable
 PLUMED_NUM_THREADS to the number of threads you wish to use with PLUMED.
-By default (if PLUMED_NUM_THREADS is unset) openmp will be disabled at
-runtime. E.g., to run with gromacs you should do:
+The number of OpenMP threads can be set either by the MD code, if implemented in the patch, or generally by setting PLUMED_NUM_THREADS.
+If they are not set openmp will be disabled at runtime. 
+
+E.g., to run with gromacs you can do:
 \verbatim
 export PLUMED_NUM_THREADS=8
 mdrun -plumed
 \endverbatim
+
+or as well
+
+\verbatim
+mdrun -plumed -ntomp 8
+\endverbatim
+
+In the first case the number of OpenMP threads used by plumed is 8 while the one used by gromacs can be 1 or something else, this is usually suboptimal.
+In the second case GROMACS and plumed will use the same number of OpenMP threads.
 
 Notice that:
 - This option is likely to improve the performance, but could also slow down
@@ -206,6 +225,67 @@ The metric used to calculate the distance from ideal secondary structure element
 the performances, try to use TYPE=OPTIMAL or TYPE=OPTIMAL-FAST instead of TYPE=DRMSD.
 
 At last, try to reduce the number of residues in the calculation.
+
+\page Lepton Making lepton library faster
+
+In case you are using a lot of \ref CUSTOM functions or \ref switchingfunction "switching functions",
+notice that these functionalities depend on the lepton library included in PLUMED.
+This library replace libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
+However, you can make it even faster using a [just-in-time compilater](https://github.com/asmjit/asmjit.git).
+Currently, this is an experimental feature, so use it with care.
+
+In order to enable it you should first install asmjit.
+\verbatim
+git clone https://github.com/asmjit/asmjit.git
+cd asmjit
+git checkout 673dcefa # this is a specific version
+mkdir build
+cd build
+cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=$prefix ../
+make -j 4
+make install
+\endverbatim
+
+Notice that you should set the prefix correctly so that PLUMED can find it at configure time.
+In the example asmjit is installed on `/usr/local` but you might be willing to install it somewhere else.
+On a Mac, you might also have to use `install_name_tool` to fix its path
+\verbatim
+install_name_tool -id $prefix/lib/libasmgit.dylib $prefix/lib/libasmgit.dylib
+\endverbatim
+
+Also notice that a specific version of asmjit is required.
+The version supported by PLUMED is more recent than the version originally supported by the Lepton library.
+In case you find troubles and want to experiment with older versions, write on the mailing list
+or check the Lepton implementation for older asmjit releases by doing `cd src/lepton; gitk`.
+If on your system a more recent version of the asmjit library is already installed, you might have to make
+sure that PLUMED finds the correct version, both at compilation and run time.
+
+Then, configure PLUMED using this additional flag:
+\verbatim
+./configure --enable-asmjit
+make
+make install
+\endverbatim
+
+You are done!
+
+In some case using a custom expression is almost as fast as using a hard-coded
+function. For instance, with an input like this one:
+\verbatim
+...
+c: COORDINATION GROUPA=1-108 GROUPB=1-108 R_0=1
+dfast: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={CUSTOM FUNC=1/(1+x2^3) R_0=1}
+...
+\endverbatim
+I (GB) obtained the following timings (on a Macbook laptop):
+\verbatim
+...
+PLUMED: 4A  1 c                                          108     0.126592     0.001172     0.000701     0.002532
+PLUMED: 4A  2 dfast                                      108     0.135210     0.001252     0.000755     0.002623
+...
+\endverbatim
+
+Notice the usage of `x2` as a variable for the switching function (see \ref switchingfunction).
 
 \page Time Time your Input
 

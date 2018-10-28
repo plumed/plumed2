@@ -25,6 +25,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
+#include <cmath>
 
 using namespace std;
 
@@ -88,6 +89,15 @@ In case you want to recover the old behavior you should use the NOPBC flag.
 In that case you need to take care that atoms are in the correct
 periodic image.
 
+\note As an experimental feature, CENTER also supports a keyword PHASES.
+This keyword solves PBCs by computing scaled coordinates and average
+trigonometric functions, similarly to \ref CENTER_OF_MULTICOLVAR.
+Notice that by construction this center position is
+not invariant with respect to rotations of the atoms at fixed cell lattice.
+In addition, for symmetric Bravais lattices, it is not invariant with respect
+to special symmetries. E.g., if you have an hexagonal cell, the center will
+not be invariant with respect to rotations of 120 degrees.
+On the other hand, it might make the treatment of PBC easier in difficult cases.
 
 \par Examples
 
@@ -109,18 +119,56 @@ PRINT ARG=d1
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC VATOM COM
+/*
+Calculate the center of mass for a group of atoms.
+
+The computed
+center of mass is stored as a virtual atom that can be accessed in
+an atom list through the label for the COM action that creates it.
+
+For arbitrary weights (e.g. geometric center) see \ref CENTER.
+
+When running with periodic boundary conditions, the atoms should be
+in the proper periodic image. This is done automatically since PLUMED 2.2,
+by considering the ordered list of atoms and rebuilding PBCs with a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED.
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
+
+\par Examples
+
+The following input instructs plumed to print the distance between the
+center of mass for atoms 1,2,3,4,5,6,7 and that for atoms 15,20:
+\plumedfile
+c1: COM ATOMS=1-7
+c2: COM ATOMS=15,20
+d1: DISTANCE ATOMS=c1,c2
+PRINT ARG=d1
+\endplumedfile
+
+*/
+//+ENDPLUMEDOC
+
 
 class Center:
   public ActionWithVirtualAtom
 {
   std::vector<double> weights;
   bool weight_mass, weight_charge;
-  bool nopbc, berryp;
   Value* val_weights;
   unsigned myx, myw, bufstart, nspace;
   std::vector<Tensor> deriv;
   std::vector<double> val_forces;
   std::vector<std::vector<double> > val_deriv;
+  Tensor invbox2pi;
+  bool nopbc;
+  bool first;
+  bool phases;
 public:
   static void shortcutKeywords( Keywords& keys );
   static void expandShortcut( const std::string& lab, const std::vector<std::string>& words,
@@ -167,7 +215,9 @@ void Center::registerKeywords(Keywords& keys) {
            "If WEIGHTS=@masses is used the center of mass is computed.  If WEIGHTS=@charges the center of charge is computed.  If "
            "the label of an action is provided PLUMED assumes that that action calculates a list of symmetry functions that can be used "
            "as weights. Lastly, an explicit list of numbers to use as weights can be provided");
-  keys.addFlag("BERRYPHASE",false,"calculate the position of the center using a Berry Phase average.");
+//  keys.addFlag("BERRYPHASE",false,"calculate the position of the center using a Berry Phase average.");
+//  keys.addFlag("MASS",false,"If set center is mass weighted");
+  keys.addFlag("PHASES",false,"Compute center using trigonometric phases");
 }
 
 Center::Center(const ActionOptions&ao):
@@ -175,12 +225,14 @@ Center::Center(const ActionOptions&ao):
   ActionWithVirtualAtom(ao),
   weight_mass(false),
   weight_charge(false),
-  nopbc(false),berryp(false),
   val_weights(NULL),
-  myx(0), myw(0), bufstart(0), nspace(1)
+  myx(0), myw(0), bufstart(0), nspace(1),
+  nopbc(false),
+  first(true),
+  phases(false)
 {
   vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
+  parseAtomList("ATOMS",atoms); parseFlag("NOPBC",nopbc); parseFlag("PHASES",phases);
   if(atoms.size()==0) error("at least one atom should be specified");
   std::vector<std::string> str_weights; parseVector("WEIGHTS",str_weights);
   if( str_weights.size()==0) {
@@ -229,17 +281,17 @@ Center::Center(const ActionOptions&ao):
     }
     log.printf("\n");
   }
+  log.printf("  of atoms:");
   for(unsigned i=0; i<atoms.size(); ++i) {
     if(i>0 && i%25==0) log<<"\n";
     log.printf("  %d",atoms[i].serial());
   }
   log<<"\n";
-  parseFlag("NOPBC",nopbc); parseFlag("BERRYPHASE",berryp);
   checkRead();
-  if( !nopbc && !berryp ) {
+  if( !nopbc && !phases ) {
     log<<"  PBC will be ignored\n";
-  } else if( berryp ) {
-    nopbc=true; log<<"  PBC will be dealt with by computing a berry phase average\n";
+  } else if( phases ) {
+    nopbc=true; log<<"  phases will be used to take into account PBC\n";
   } else {
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
   }
@@ -262,9 +314,11 @@ unsigned Center::getNumberOfDerivatives() const {
 
 void Center::prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {
   // Check that we are orthorhomoic
-  if( berryp && !getPbc().isOrthorombic() ) error("cannot calculate berry phase average with non-orthorhombic cells");
+  if( phases && !getPbc().isOrthorombic() ) error("cannot calculate berry phase average with non-orthorhombic cells");
   // Check if we need to make the whole thing
   if(!nopbc) makeWhole();
+  // Setup inverse box thing so we can do Berry phase
+  invbox2pi=2*pi*getPbc().getInvBox();
 
   // Set mass for center
   double mass=0.;
@@ -279,7 +333,7 @@ void Center::prepareForTasks( const unsigned& nactive, const std::vector<unsigne
 }
 
 void Center::setStashIndices( unsigned& nquants ) {
-  if( berryp ) {
+  if( phases ) {
     myx = nquants; myw = nquants + 6; nquants +=7;
   } else {
     myx = nquants; myw = nquants + 3; nquants += 4;
@@ -288,7 +342,7 @@ void Center::setStashIndices( unsigned& nquants ) {
 
 void Center::getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ) {
   bufstart = bufsize; if( !doNotCalculateDerivatives() ) nspace = 1 + getNumberOfDerivatives();
-  if( berryp ) bufsize += 7*nspace; else bufsize += 4*nspace;
+  if( phases ) bufsize += 7*nspace; else bufsize += 4*nspace;
   ActionWithValue::getSizeOfBuffer( nactive_tasks, bufsize );
 }
 
@@ -310,17 +364,18 @@ void Center::performTask( const unsigned& task_index, MultiValue& myvals ) const
     plumed_dbg_assert( task_index<weights.size() );
     w = weights[task_index];
   }
-  if( berryp ) {
-    Vector stmp, ctmp, fpos = getPbc().realToScaled( pos ); myvals.addValue( myw, w );
+  if( phases ) {
+    Vector stmp, ctmp, fpos = matmul(pos,invbox2pi); myvals.addValue( myw, w );
     for(unsigned j=0; j<3; ++j) {
-      stmp[j] = sin( 2*pi*fpos[j] ); ctmp[j] = cos( 2*pi*fpos[j] );
+      stmp[j] = sin( fpos[j] ); ctmp[j] = cos( fpos[j] );
       myvals.addValue( myx+j, w*stmp[j] ); myvals.addValue( myx+3+j, w*ctmp[j] );
     }
     if( !doNotCalculateDerivatives() ) {
       for(unsigned j=0; j<3; ++j) {
-        double icell = 1.0 / getPbc().getBox().getRow(j).modulo();
-        myvals.addDerivative( myx+j, 3*task_index+j, 2*pi*icell*w*ctmp[j] ); myvals.updateIndex( myx+j, 3*task_index+j );
-        myvals.addDerivative( myx+3+j, 3*task_index+j, -2*pi*icell*w*stmp[j] ); myvals.updateIndex( myx+3+j, 3*task_index+j );
+        for(unsigned k=0;k<3;++k) {
+            myvals.addDerivative( myx+j, 3*task_index+k, ctmp[j]*invbox2pi[k][j] ); myvals.updateIndex( myx+k, 3*task_index+k );
+            myvals.addDerivative( myx+3+j, 3*task_index+k, -stmp[j]*invbox2pi[k][j] ); myvals.updateIndex( myx+3+k, 3*task_index+k );
+        }
       }
       if( val_weights ) {
         unsigned base = 3*getNumberOfAtoms();
@@ -358,7 +413,7 @@ void Center::performTask( const unsigned& task_index, MultiValue& myvals ) const
 
 void Center::gatherForVirtualAtom( const MultiValue& myvals, std::vector<double>& buffer ) const {
   unsigned ntmp_vals = 4;
-  if( berryp ) {
+  if( phases ) {
     unsigned sstart = bufstart, cstart = bufstart + 3*nspace;
     for(unsigned j=0; j<3; ++j) {
       buffer[sstart] += myvals.get(myx+j); sstart+=nspace;
@@ -386,30 +441,32 @@ void Center::gatherForVirtualAtom( const MultiValue& myvals, std::vector<double>
 
 void Center::transformFinalValueAndDerivatives( const std::vector<double>& buffer ) {
   // Get final position
-  if( berryp ) {
-    Vector stmp, ctmp; double ww = buffer[bufstart + 6*nspace]; Vector fpos;
+  if( phases ) {
+    double ww = buffer[bufstart + 6*nspace]; Vector fpos;
+    Tensor box2pi=getPbc().getBox() / (2*pi); Vector stmp, ctmp; 
     for(unsigned i=0; i<3; ++i) {
       stmp[i]=buffer[bufstart+i*nspace]/ww; ctmp[i]=buffer[bufstart+(3+i)*nspace]/ww;
-      fpos[i] = atan2( stmp[i], ctmp[i] ) / (2*pi);
+      fpos[i] = atan2( stmp[i], ctmp[i] );
     }
-    setPosition( getPbc().scaledToReal( fpos ) );
+    setPosition( matmul(fpos,box2pi) );
     // And derivatives
     if( !doNotCalculateDerivatives() ) {
       double inv_weight = 1.0 / ww; Vector tander;
       for(unsigned j=0; j<3; ++j) {
         double tmp = stmp[j] / ctmp[j];
-        tander[j] = getPbc().getBox().getRow(j).modulo() / (2*pi*( 1 + tmp*tmp ));
+        tander[j] = 1.0 / ( 1 + tmp*tmp );
       }
-      double sderv, cderv;
+      double sderv, cderv; Tensor dd;
       for(unsigned i=0; i<getNumberOfAtoms(); ++i ) {
         for(unsigned j=0; j<3; ++j) {
           sderv = inv_weight*buffer[bufstart + 1 + 3*i + j]; cderv = inv_weight*buffer[bufstart + 1 + 3*nspace + 3*i + j];
-          deriv[i](0,j) = tander[j]*( sderv/ctmp[j]  - stmp[j]*cderv/(ctmp[j]*ctmp[j]) );
+          dd(0,j) = tander[j]*( sderv/ctmp[j]  - stmp[j]*cderv/(ctmp[j]*ctmp[j]) );
           sderv = inv_weight*buffer[bufstart + 1 + nspace + 3*i + j]; cderv = inv_weight*buffer[bufstart + 1 + 4*nspace + 3*i + j];
-          deriv[i](1,j) = tander[j]*( sderv/ctmp[j]  - stmp[j]*cderv/(ctmp[j]*ctmp[j]) );
+          dd(1,j) = tander[j]*( sderv/ctmp[j]  - stmp[j]*cderv/(ctmp[j]*ctmp[j]) );
           sderv = inv_weight*buffer[bufstart + 1 + 2*nspace + 3*i + j]; cderv = inv_weight*buffer[bufstart + 1 + 5*nspace + 3*i + j];
-          deriv[i](2,j) = tander[j]*( sderv/ctmp[j]  - stmp[j]*cderv/(ctmp[j]*ctmp[j]) );
+          dd(2,j) = tander[j]*( sderv/ctmp[j]  - stmp[j]*cderv/(ctmp[j]*ctmp[j]) );
         }
+        deriv[i]=matmul(dd,box2pi);
       }
       setAtomsDerivatives(deriv);
       if( val_weights ) {

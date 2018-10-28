@@ -612,7 +612,6 @@ bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::
       uppI_="-1.";
     }
     ifile.scanField();
-    ifile.close();
     return true;
   } else {
     return false;

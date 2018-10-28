@@ -500,9 +500,11 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     if(integratehills)	hillsHandler.reset(new FilesHandler(hillsFiles,parallelread,*this, log));
     if(integratehisto)	histoHandler.reset(new FilesHandler(histoFiles,parallelread,*this, log));
 
-    Stopwatch sw;
+// Stopwatch is logged when it goes out of scope
+    Stopwatch sw(log);
 
-    sw.start("0 Summing hills");
+// Stopwatch is stopped when swh goes out of scope
+    auto swh=sw.startStop("0 Summing hills");
 
     // read a number of hills and put in the bias representation
     int nfiles=0;
@@ -559,7 +561,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           if(minTOzero) histoGrid.setMinToZero();
           histoGrid.setOutputFmt(fmt);
           histoGrid.writeToFile(gridfile);
-          gridfile.close();
 
           if(!ihisto)integratehisto=false;// once you get to the final bunch just give up
         }
@@ -581,7 +582,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           if(minTOzero) biasGrid.setMinToZero();
           biasGrid.setOutputFmt(fmt);
           biasGrid.writeToFile(gridfile);
-          gridfile.close();
           // rescale back prior to accumulate
           if(!ibias)integratehills=false;// once you get to the final bunch just give up
         }
@@ -603,7 +603,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           if(minTOzero) histoGrid.setMinToZero();
           histoGrid.setOutputFmt(fmt);
           histoGrid.writeToFile(gridfile);
-          gridfile.close();
 
           if(!ihisto)integratehisto=false; // once you get to the final bunch just give up
         }
@@ -612,10 +611,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
 
       nfiles++;
     }
-
-    sw.stop("0 Summing hills");
-
-    log<<sw;
 
     return;
   }

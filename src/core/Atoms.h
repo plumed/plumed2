@@ -49,6 +49,12 @@ class Atoms
   int natoms;
   std::set<AtomNumber> unique;
   std::vector<unsigned> uniq_index;
+/// Map global indexes to local indexes
+/// E.g. g2l[i] is the position of atom i in the array passed from the MD engine.
+/// Called "global to local" since originally it was used to map global indexes to local
+/// ones used in domain decomposition. However, it is now also used for the NAMD-like
+/// interface, where only a small number of atoms is passed to plumed.
+  std::vector<int> g2l;
   std::vector<Vector> positions;
   std::vector<Vector> forces;
   std::vector<double> masses;
@@ -113,7 +119,6 @@ class Atoms
   public:
     bool on;
     bool async;
-    std::vector<int>    g2l;
 
     std::vector<Communicator::Request> mpi_request_positions;
     std::vector<Communicator::Request> mpi_request_index;
@@ -156,7 +161,8 @@ public:
   double getKbT()const;
 
   void setNatoms(int);
-  const int & getNatoms()const;
+  int getNatoms()const;
+  int getNVirtualAtoms()const;
 
   const long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
@@ -230,11 +236,21 @@ public:
   bool usingNaturalUnits()const;
   void setNaturalUnits(bool n) {naturalUnits=n;}
   void setMDNaturalUnits(bool n) {MDnaturalUnits=n;}
+
+  void setExtraCV(const std::string &name,void*p);
+  void setExtraCVForce(const std::string &name,void*p);
+  double getExtraCV(const std::string &name);
+  void updateExtraCVForce(const std::string &name,double f);
 };
 
 inline
-const int & Atoms::getNatoms()const {
+int Atoms::getNatoms()const {
   return natoms;
+}
+
+inline
+int Atoms::getNVirtualAtoms()const {
+  return virtualAtomsActions.size();
 }
 
 inline
@@ -259,7 +275,7 @@ bool Atoms::isVirtualAtom(AtomNumber i)const {
 
 inline
 bool Atoms::usingNaturalUnits() const {
-  return naturalUnits;
+  return naturalUnits || MDnaturalUnits;
 }
 
 inline

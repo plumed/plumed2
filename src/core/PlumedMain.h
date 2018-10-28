@@ -94,15 +94,24 @@ public:
   Communicator&multi_sim_comm=*multi_sim_comm_fwd;
 
 private:
+/// Error handler.
+/// Pointer to a function that is called an exception thrown within
+/// the library is about to leave the library.
+/// Can be used to remap exceptions in case the plumed wrapper was compiled
+/// with a different version of the C++ standard library.
+/// Should only be called from \ref plumed_plumedmain_cmd().
+  typedef struct {
+    void* ptr;
+    void(*handler)(void* ptr,int code,const char*);
+  } plumed_error_handler;
+
+  plumed_error_handler error_handler= {NULL,NULL};
+
 /// Forward declaration.
   ForwardDecl<DLLoader> dlloader_fwd;
   DLLoader& dlloader=*dlloader_fwd;
 
   std::unique_ptr<WithCmd> cltool;
-
-/// Forward declaration.
-  ForwardDecl<Stopwatch> stopwatch_fwd;
-  Stopwatch& stopwatch=*stopwatch_fwd;
 
   std::unique_ptr<WithCmd> grex;
 /// Flag to avoid double initialization
@@ -114,6 +123,11 @@ private:
   ForwardDecl<Log> log_fwd;
 /// Log stream
   Log& log=*log_fwd;
+
+/// Forward declaration.
+/// Should be placed after log since its constructor takes a log reference as an argument.
+  ForwardDecl<Stopwatch> stopwatch_fwd;
+  Stopwatch& stopwatch=*stopwatch_fwd;
 
 /// Forward declaration.
   ForwardDecl<Citations> citations_fwd;
@@ -375,6 +389,10 @@ public:
   bool updateFlagsTop();
 /// Set end of input file
   void setEndPlumed();
+/// Call error handler.
+/// Should only be called from \ref plumed_plumedmain_cmd().
+/// If the error handler was not set, returns false.
+  bool callErrorHandler(int code,const char* msg)const;
 };
 
 /////
@@ -444,6 +462,15 @@ inline
 void PlumedMain::setEndPlumed() {
   endPlumed=true;
 }
+
+inline
+bool PlumedMain::callErrorHandler(int code,const char* msg)const {
+  if(error_handler.handler) {
+    error_handler.handler(error_handler.ptr,code,msg);
+    return true;
+  } else return false;
+}
+
 
 }
 

@@ -130,12 +130,11 @@ PropertyMap::PropertyMap(const ActionOptions&ao):
     addComponentWithDerivatives("zzz"); componentIsNotPeriodic("zzz");
     //reparse the REMARK field and pick the index
     for(unsigned i=0; i<pdbv.size(); i++) {
-      vector<std::string> myv(pdbv[i].getRemark());
       // now look for X=1.34555 Y=5.6677
       vector<double> labelvals;
       for(unsigned j=0; j<labels.size(); j++) {
         double val;
-        if(Tools::parse(myv,labels[j],val)) {labelvals.push_back(val);}
+        if( pdbv[i].getArgumentValue(labels[j],val) ) {labelvals.push_back(val);}
         else {
           char buf[500];
           sprintf(buf,"PROPERTY LABEL \" %s \" NOT FOUND IN REMARK FOR FRAME %u \n",labels[j].c_str(),i);

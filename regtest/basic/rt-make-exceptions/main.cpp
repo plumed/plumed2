@@ -1,5 +1,4 @@
 #include "plumed/tools/Stopwatch.h"
-#include "plumed/tools/Exception.h"
 #include "plumed/wrapper/Plumed.h"
 #include <fstream>
 #include <iostream>
@@ -13,7 +12,7 @@ void test_line(std::ostream & ofs,Plumed & p,const std::string & arg){
   try{
     p.cmd(cmd.c_str(),arg.c_str());
     ofs<<"+++ !!!! uncatched !!!!"<<std::endl;
-  } catch(Exception&e) {
+  } catch(Plumed::Exception&e) {
     ofs<<"+++ catched"<<std::endl;
   }
 }
@@ -25,7 +24,7 @@ void test_this(std::ostream & ofs,Plumed & p,const std::string & cmd,const void*
   try{
     p.cmd(cmd.c_str(),arg);
     ofs<<"+++ !!!! uncatched !!!!"<<std::endl;
-  } catch(Exception&e) {
+  } catch(Plumed::Exception&e) {
     ofs<<"+++ catched"<<std::endl;
   }
 }
@@ -41,7 +40,8 @@ int main(){
     try{
       sw.pause();
       ofs<<"+++ !!!! uncatched !!!!"<<std::endl;
-    } catch(Exception& e) {
+// this is not of type PLMD::Plumed::Exception since it is thrown within the library
+    } catch(std::exception & e) {
       ofs<<"+++ catched"<<std::endl;
     }
   }
@@ -103,6 +103,9 @@ int main(){
 // check regexp not surrounded by parentheses (bug in 2.3.3).
   test_line(ofs,plumed,"RESTRAINT ARG=x(d) KAPPA=5 AT=0");
   test_line(ofs,plumed,"RESTRAINT ARG=(d)x KAPPA=5 AT=0");
+
+// check error in regular expression
+  test_line(ofs,plumed,"RESTRAINT ARG=([a) KAPPA=5 AT=0");
 
   test_line(ofs,plumed,"EXTERNAL ARG=d FILE=potential LABEL=ext");
   test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1 RESTART=WHAT");

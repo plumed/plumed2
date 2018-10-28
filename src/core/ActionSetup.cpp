@@ -23,6 +23,7 @@
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "tools/Exception.h"
+#include "ActionAnyorder.h"
 
 namespace PLMD {
 

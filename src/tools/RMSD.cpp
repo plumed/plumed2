@@ -419,7 +419,6 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
                               const std::vector<Vector> & positions,
                               const std::vector<Vector> & reference,
                               std::vector<Vector>  & derivatives, bool squared)const {
-  double dist(0);
   const unsigned n=reference.size();
 // This is the trace of positions*positions + reference*reference
   double rr00(0);
@@ -445,7 +444,8 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
     rr01+=Tensor(positions[iat]-cpositions,reference[iat])*w;
   }
 
-  Matrix<double> m=Matrix<double>(4,4);
+  Tensor4d m;
+
   m[0][0]=2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
   m[1][1]=2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
   m[2][2]=2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
@@ -483,25 +483,16 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
     dm_drr01[3][2] = dm_drr01[2][3];
   }
 
-  vector<double> eigenvals;
-  Matrix<double> eigenvecs;
-  int diagerror=diagMat(m, eigenvals, eigenvecs );
-
-  if (diagerror!=0) {
-    string sdiagerror;
-    Tools::convert(diagerror,sdiagerror);
-    string msg="DIAGONALIZATION FAILED WITH ERROR CODE "+sdiagerror;
-    plumed_merror(msg);
-  }
-
-  dist=eigenvals[0]+rr00+rr11;
-
-  Matrix<double> ddist_dm(4,4);
-
-  Vector4d q(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
+  double dist=0.0;
+  Vector4d q;
 
   Tensor dq_drr01[4];
   if(!alEqDis) {
+    Vector4d eigenvals;
+    Tensor4d eigenvecs;
+    diagMatSym(m, eigenvals, eigenvecs );
+    dist=eigenvals[0]+rr00+rr11;
+    q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
     double dq_dm[4][4][4];
     for(unsigned i=0; i<4; i++) for(unsigned j=0; j<4; j++) for(unsigned k=0; k<4; k++) {
           double tmp=0.0;
@@ -517,7 +508,14 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
         }
       dq_drr01[i]=tmp;
     }
+  } else {
+    VectorGeneric<1> eigenvals;
+    TensorGeneric<1,4> eigenvecs;
+    diagMatSym(m, eigenvals, eigenvecs );
+    dist=eigenvals[0]+rr00+rr11;
+    q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
   }
+
 
 // This is the rotation matrix that brings reference to positions
 // i.e. matmul(rotation,reference[iat])+shift is fitted to positions[iat]
@@ -982,7 +980,7 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
   }
 
 // the quaternion matrix: this is internal
-  Matrix<double> m=Matrix<double>(4,4);
+  Tensor4d m;
 
   m[0][0]=2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
   m[1][1]=2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
@@ -1023,20 +1021,12 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
   }
 
 
-  int diagerror=diagMat(m, eigenvals, eigenvecs );
-
-  if (diagerror!=0) {
-    std::string sdiagerror;
-    Tools::convert(diagerror,sdiagerror);
-    std::string msg="DIAGONALIZATION FAILED WITH ERROR CODE "+sdiagerror;
-    plumed_merror(msg);
-  }
-
-  Vector4d q(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
-//  cerr<<"EIGENVAL "<<eigenvals[0]<<" "<<eigenvals[1]<<" "<<eigenvals[2]<<" "<<eigenvals[3]<<"\n";
+  Vector4d q;
 
   Tensor dq_drr01[4];
   if(!alEqDis or !only_rotation) {
+    diagMatSym(m, eigenvals, eigenvecs );
+    q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
     double dq_dm[4][4][4];
     for(unsigned i=0; i<4; i++) for(unsigned j=0; j<4; j++) for(unsigned k=0; k<4; k++) {
           double tmp=0.0;
@@ -1052,6 +1042,13 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation) {
         }
       dq_drr01[i]=tmp;
     }
+  } else {
+    TensorGeneric<1,4> here_eigenvecs;
+    VectorGeneric<1> here_eigenvals;
+    diagMatSym(m, here_eigenvals, here_eigenvecs );
+    for(unsigned i=0; i<4; i++) eigenvecs[0][i]=here_eigenvecs[0][i];
+    eigenvals[0]=here_eigenvals[0];
+    q=Vector4d(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
   }
 
 // This is the rotation matrix that brings reference to positions

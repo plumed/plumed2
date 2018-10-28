@@ -57,8 +57,8 @@ public:
 /// Base class for all the input Actions.
 /// The input Actions are more or less corresponding to the directives
 /// in the plumed.dat file and are applied in order at each time-step.
-class Action
-{
+class Action {
+  friend class ActionShortcut;
 
 /// Name of the directive in the plumed.dat file.
   const std::string name;

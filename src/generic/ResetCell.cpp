@@ -153,7 +153,7 @@ void ResetCell::calculate() {
 
 // rotate all coordinates
   for(unsigned i=0; i<getTotAtoms(); i++) {
-    Vector & ato (modifyPosition(AtomNumber::index(i)));
+    Vector & ato (modifyGlobalPosition(AtomNumber::index(i)));
     ato=matmul(rotation,ato);
   }
 // rotate box

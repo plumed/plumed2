@@ -29,6 +29,7 @@
 #include "tools/ForwardDecl.h"
 #include <vector>
 #include <set>
+#include <map>
 
 namespace PLMD {
 
@@ -58,6 +59,10 @@ class ActionAtomistic :
   std::vector<Vector>   forces;          // forces on the needed atoms
   double                forceOnEnergy;
 
+  double                forceOnExtraCV;
+
+  std::string           extraCV;
+
   bool                  lockRequestAtoms; // forbid changes to request atoms
 
   bool                  donotretrieve;
@@ -65,6 +70,8 @@ class ActionAtomistic :
 
 protected:
   Atoms&                atoms;
+
+  void setExtraCV(const std::string &name);
 
 public:
 /// Request an array of atoms.
@@ -77,13 +84,16 @@ public:
 /// Get position of i-th atom (access by relative index)
   const Vector & getPosition(int)const;
 /// Get position of i-th atom (access by absolute AtomNumber).
-/// With direct access to the global atom array
-  const Vector & getPosition(AtomNumber)const;
+/// With direct access to the global atom array.
+/// \warning Should be only used by actions that need to read the shared position array.
+///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
+  const Vector & getGlobalPosition(AtomNumber)const;
 /// Get modifiable position of i-th atom (access by absolute AtomNumber).
-/// Should be used by action that need to modify the stored atomic coordinates
-  Vector & modifyPosition(AtomNumber);
+/// \warning Should be only used by actions that need to modify the shared position array.
+///          This array is insensitive to local changes such as makeWhole(), numerical derivatives, etc.
+  Vector & modifyGlobalPosition(AtomNumber);
 /// Get total number of atoms, including virtual ones.
-/// Can be used to make a loop on modifyPosition or getPosition(AtomNumber)
+/// Can be used to make a loop on modifyGlobalPosition or getGlobalPosition.
   unsigned getTotAtoms()const;
 /// Get modifiable force of i-th atom (access by absolute AtomNumber).
 /// \warning  Should be used by action that need to modify the stored atomic forces.
@@ -115,6 +125,8 @@ public:
   Tensor & modifyVirial();
 /// Get a reference to force on energy
   double & modifyForceOnEnergy();
+/// Get a reference to force on extraCV
+  double & modifyForceOnExtraCV();
 /// Get number of available atoms
   unsigned getNumberOfAtoms()const {return indexes.size();}
 /// Compute the pbc distance between two positions
@@ -196,12 +208,12 @@ const Vector & ActionAtomistic::getPosition(int i)const {
 }
 
 inline
-const Vector & ActionAtomistic::getPosition(AtomNumber i)const {
+const Vector & ActionAtomistic::getGlobalPosition(AtomNumber i)const {
   return atoms.positions[i.index()];
 }
 
 inline
-Vector & ActionAtomistic::modifyPosition(AtomNumber i) {
+Vector & ActionAtomistic::modifyGlobalPosition(AtomNumber i) {
   return atoms.positions[i.index()];
 }
 
@@ -267,6 +279,11 @@ double & ActionAtomistic::modifyForceOnEnergy() {
 }
 
 inline
+double & ActionAtomistic::modifyForceOnExtraCV() {
+  return forceOnExtraCV;
+}
+
+inline
 const Pbc & ActionAtomistic::getPbc() const {
   return pbc;
 }
@@ -299,6 +316,11 @@ unsigned ActionAtomistic::getTotAtoms()const {
 inline
 Pbc & ActionAtomistic::modifyGlobalPbc() {
   return atoms.pbc;
+}
+
+inline
+void ActionAtomistic::setExtraCV(const std::string &name) {
+  extraCV=name;
 }
 
 

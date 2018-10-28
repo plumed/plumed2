@@ -311,7 +311,7 @@ Rescale::~Rescale()
 void Rescale::read_bias()
 {
 // open file
-  IFile *ifile = new IFile();
+  std::unique_ptr<IFile> ifile(new IFile);
   ifile->link(*this);
   if(ifile->FileExist(Biasfilename_)) {
     ifile->open(Biasfilename_);
@@ -334,7 +334,6 @@ void Rescale::read_bias()
   } else {
     error("Cannot find bias file "+Biasfilename_+"\n");
   }
-  delete ifile;
 }
 
 unsigned Rescale::proposeMove(unsigned x, unsigned xmin, unsigned xmax)

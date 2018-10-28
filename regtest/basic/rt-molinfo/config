@@ -1,0 +1,2 @@
+type=driver
+arg="--igro test.gro --plumed plumed.dat"

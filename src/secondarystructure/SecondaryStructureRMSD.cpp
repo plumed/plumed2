@@ -81,12 +81,13 @@ SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
+  nopbc(false),
   align_strands(false),
   s_cutoff2(0),
   align_atom_1(0),
   align_atom_2(0)
 {
-  parse("TYPE",alignType);
+  parse("TYPE",alignType); parseFlag("NOPBC",nopbc);
   log.printf("  distances from secondary structure elements are calculated using %s algorithm\n",alignType.c_str() );
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)"); log<<"\n";
 
@@ -210,6 +211,12 @@ void SecondaryStructureRMSD::performTask( const unsigned& current, MultiValue& m
     origin_new=pos[align_atom_1]+distance;
     for(unsigned i=15; i<30; ++i) {
       pos[i]+=( origin_new - origin_old );
+    }
+  } else if( alignType!="DRMSD" && !nopbc ) {
+    for(unsigned i=0; i<n-1; ++i) {
+      const Vector & first (pos[i]);
+      Vector & second (pos[i+1]);
+      second=first+pbcDistance(first,second);
     }
   }
   // Create a holder for the derivatives

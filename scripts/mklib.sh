@@ -1,11 +1,16 @@
 #! /bin/bash
 
-source "$PLUMED_ROOT"/src/config/compile_options.sh
-
 if [ "$1" = --description ] ; then
   echo "compile a .cpp file into a shared library"
   exit 0
 fi
+
+if [ "$1" = --options ] ; then
+  echo "--description --options"
+  exit 0
+fi
+
+source "$PLUMED_ROOT"/src/config/compile_options.sh
 
 if [ $# != 1 ] || [[ "$1" != *.cpp ]] ;
 then
@@ -27,7 +32,11 @@ fi
 
 rm -f "$obj" "$lib"
 
-eval "$compile" "$obj" "$file" && $link "$lib" "$obj"
+if test "$PLUMED_IS_INSTALLED" = yes ; then
+  eval "$compile" "$obj" "$file" && eval "$link_installed" "$lib" "$obj"
+else
+  eval "$compile" "$obj" "$file" && eval "$link_uninstalled" "$lib" "$obj"
+fi
 
 
 

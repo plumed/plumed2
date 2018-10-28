@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2017 The VES code team
+   Copyright (c) 2016-2018 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -28,23 +28,6 @@
 
 namespace PLMD {
 namespace ves {
-
-static std::map<std::string, double> leptonConstants= {
-  {"e", std::exp(1.0)},
-  {"log2e", 1.0/std::log(2.0)},
-  {"log10e", 1.0/std::log(10.0)},
-  {"ln2", std::log(2.0)},
-  {"ln10", std::log(10.0)},
-  {"pi", pi},
-  {"pi_2", pi*0.5},
-  {"pi_4", pi*0.25},
-//  {"1_pi", 1.0/pi},
-//  {"2_pi", 2.0/pi},
-//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
-  {"sqrt2", std::sqrt(2.0)},
-  {"sqrt1_2", std::sqrt(0.5)}
-};
-
 
 //+PLUMEDOC VES_BASISF BF_CUSTOM
 /*
@@ -193,7 +176,7 @@ BF_Custom::BF_Custom(const ActionOptions&ao):
   for(unsigned int i=1; i<getNumberOfBasisFunctions(); i++) {
     std::string is; Tools::convert(i,is);
     try {
-      lepton::ParsedExpression pe_value = lepton::Parser::parse(bf_str[i]).optimize(leptonConstants);
+      lepton::ParsedExpression pe_value = lepton::Parser::parse(bf_str[i]).optimize(lepton::Constants());
       std::ostringstream tmp_stream; tmp_stream << pe_value;
       bf_values_parsed[i] = tmp_stream.str();
       bf_values_expressions_[i] = pe_value.createCompiledExpression();
@@ -214,7 +197,7 @@ BF_Custom::BF_Custom(const ActionOptions&ao):
     }
 
     try {
-      lepton::ParsedExpression pe_deriv = lepton::Parser::parse(bf_str[i]).differentiate(variable_str_).optimize(leptonConstants);
+      lepton::ParsedExpression pe_deriv = lepton::Parser::parse(bf_str[i]).differentiate(variable_str_).optimize(lepton::Constants());
       std::ostringstream tmp_stream2; tmp_stream2 << pe_deriv;
       bf_derivs_parsed[i] = tmp_stream2.str();
       bf_derivs_expressions_[i] = pe_deriv.createCompiledExpression();
@@ -242,7 +225,7 @@ BF_Custom::BF_Custom(const ActionOptions&ao):
     }
 
     try {
-      lepton::ParsedExpression pe_value = lepton::Parser::parse(transf_str).optimize(leptonConstants);;
+      lepton::ParsedExpression pe_value = lepton::Parser::parse(transf_str).optimize(lepton::Constants());;
       std::ostringstream tmp_stream; tmp_stream << pe_value;
       transf_value_parsed = tmp_stream.str();
       transf_value_expression_ = pe_value.createCompiledExpression();
@@ -263,7 +246,7 @@ BF_Custom::BF_Custom(const ActionOptions&ao):
     }
 
     try {
-      lepton::ParsedExpression pe_deriv = lepton::Parser::parse(transf_str).differentiate(transf_variable_str_).optimize(leptonConstants);;
+      lepton::ParsedExpression pe_deriv = lepton::Parser::parse(transf_str).differentiate(transf_variable_str_).optimize(lepton::Constants());;
       std::ostringstream tmp_stream2; tmp_stream2 << pe_deriv;
       transf_deriv_parsed = tmp_stream2.str();
       transf_deriv_expression_ = pe_deriv.createCompiledExpression();

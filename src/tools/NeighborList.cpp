@@ -45,7 +45,8 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
   if(!do_pair) {
     nallpairs_=nlist0_*nlist1_;
   } else {
-    plumed_assert(nlist0_==nlist1_);
+    plumed_assert(nlist0_==nlist1_) << "when using PAIR option, the two groups should have the same number of elements\n"
+                                    << "the groups you specified have size "<<nlist0_<<" and "<<nlist1_;
     nallpairs_=nlist0_;
   }
   initialize();
@@ -154,6 +155,12 @@ unsigned NeighborList::size() const {
 
 pair<unsigned,unsigned> NeighborList::getClosePair(unsigned i) const {
   return neighbors_[i];
+}
+
+pair<AtomNumber,AtomNumber> NeighborList::getClosePairAtomNumber(unsigned i) const {
+  pair<AtomNumber,AtomNumber> Aneigh;
+  Aneigh=pair<AtomNumber,AtomNumber>(fullatomlist_[neighbors_[i].first],fullatomlist_[neighbors_[i].second]);
+  return Aneigh;
 }
 
 vector<unsigned> NeighborList::getNeighbors(unsigned index) {

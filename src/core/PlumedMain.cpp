@@ -48,22 +48,12 @@
 
 using namespace std;
 
-#include "PlumedMainEnum.inc"
-
 namespace PLMD {
-
-const std::unordered_map<std::string, int> & plumedMainWordMap() {
-  static std::unordered_map<std::string, int> word_map;
-  static bool init=false;
-  if(!init) {
-#include "PlumedMainMap.inc"
-  }
-  init=true;
-  return word_map;
-}
 
 PlumedMain::PlumedMain():
   initialized(false),
+// automatically write on log in destructor
+  stopwatch_fwd(log),
   step(0),
   active(false),
   mydatafetcher(DataFetchingObject::create(sizeof(double),*this)),
@@ -82,14 +72,10 @@ PlumedMain::PlumedMain():
 {
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
-  stopwatch.start();
-  stopwatch.pause();
 }
 
+// destructor needed to delete forward declarated objects
 PlumedMain::~PlumedMain() {
-  stopwatch.start();
-  stopwatch.stop();
-  if(initialized) log<<stopwatch;
 }
 
 /////////////////////////////////////////////////////////////
@@ -102,9 +88,19 @@ PlumedMain::~PlumedMain() {
 
 void PlumedMain::cmd(const std::string & word,void*val) {
 
+// Enumerate all possible commands:
+  enum {
+#include "PlumedMainEnum.inc"
+  };
+
+// Static object (initialized once) containing the map of commands:
+  const static std::unordered_map<std::string, int> word_map = {
+#include "PlumedMainMap.inc"
+  };
+
   try {
 
-    stopwatch.start();
+    auto ss=stopwatch.startPause();
 
     std::vector<std::string> words=Tools::getWords(word);
     unsigned nw=words.size();
@@ -113,8 +109,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
     } else {
       int iword=-1;
       double d;
-      const auto it=plumedMainWordMap().find(words[0]);
-      if(it!=plumedMainWordMap().end()) iword=it->second;
+      const auto it=word_map.find(words[0]);
+      if(it!=word_map.end()) iword=it->second;
       switch(iword) {
       case cmd_setBox:
         CHECK_INIT(initialized,word);
@@ -262,6 +258,13 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         if( nw==2 ) mydatafetcher->setData( words[1], "", val );
         else mydatafetcher->setData( words[1], words[2], val );
         break;
+      /* ADDED WITH API==6 */
+      case cmd_setErrorHandler:
+      {
+        if(val) error_handler=*static_cast<plumed_error_handler*>(val);
+        else error_handler.handler=NULL;
+      }
+      break;
       case cmd_read:
         CHECK_INIT(initialized,word);
         if(val)readInputFile(static_cast<char*>(val));
@@ -380,6 +383,11 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         doCheckPoint = false;
         if(*static_cast<int*>(val)!=0) doCheckPoint = true;
         break;
+      /* ADDED WITH API==6 */
+      case cmd_setNumOMPthreads:
+        CHECK_NOTNULL(val,word);
+        OpenMP::setNumThreads(*static_cast<unsigned*>(val));
+        break;
       /* STOP API */
       case cmd_setMDEngine:
         CHECK_NOTINIT(initialized,word);
@@ -441,6 +449,16 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         plumed_assert(nw==2);
         *(static_cast<int*>(val))=(actionRegister().check(words[1]) ? 1:0);
         break;
+      case cmd_setExtraCV:
+        CHECK_NOTNULL(val,word);
+        plumed_assert(nw==2);
+        atoms.setExtraCV(words[1],val);
+        break;
+      case cmd_setExtraCVForce:
+        CHECK_NOTNULL(val,word);
+        plumed_assert(nw==2);
+        atoms.setExtraCVForce(words[1],val);
+        break;
       case cmd_GREX:
         if(!grex) grex.reset(new GREX(*this));
         plumed_massert(grex,"error allocating grex");
@@ -464,9 +482,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       }
     }
-    stopwatch.pause();
 
-  } catch (Exception &e) {
+  } catch (std::exception &e) {
     if(log.isOpen()) {
       log<<"\n\n################################################################################\n\n";
       log<<e.what();
@@ -485,7 +502,8 @@ void PlumedMain::init() {
   atoms.init();
   if(!log.isOpen()) log.link(stdout);
   log<<"PLUMED is starting\n";
-  log<<"Version: "<<config::getVersionLong()<<" (git: "<<config::getVersionGit()<<") compiled on " __DATE__ " at " __TIME__ "\n";
+  log<<"Version: "<<config::getVersionLong()<<" (git: "<<config::getVersionGit()<<") "
+     <<"compiled on " <<config::getCompilationDate() << " at " << config::getCompilationTime() << "\n";
   log<<"Please cite this paper when using PLUMED ";
   log<<cite("Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. 185, 604 (2014)");
   log<<"\n";
@@ -603,7 +621,8 @@ void PlumedMain::prepareCalc() {
 // traverse them in this order:
 void PlumedMain::prepareDependencies() {
 
-  stopwatch.start("1 Prepare dependencies");
+// Stopwatch is stopped when sw goes out of scope
+  auto sw=stopwatch.startStop("1 Prepare dependencies");
 
 // activate all the actions which are on step
 // activation is recursive and enables also the dependencies
@@ -632,15 +651,14 @@ void PlumedMain::prepareDependencies() {
     }
   }
 
-  stopwatch.stop("1 Prepare dependencies");
 }
 
 void PlumedMain::shareData() {
 // atom positions are shared (but only if there is something to do)
   if(!active)return;
-  stopwatch.start("2 Sharing data");
+// Stopwatch is stopped when sw goes out of scope
+  auto sw=stopwatch.startStop("2 Sharing data");
   if(atoms.getNatoms()>0) atoms.share();
-  stopwatch.stop("2 Sharing data");
 }
 
 void PlumedMain::performCalcNoUpdate() {
@@ -659,14 +677,15 @@ void PlumedMain::performCalc() {
 
 void PlumedMain::waitData() {
   if(!active)return;
-  stopwatch.start("3 Waiting for data");
+// Stopwatch is stopped when sw goes out of scope
+  auto sw=stopwatch.startStop("3 Waiting for data");
   if(atoms.getNatoms()>0) atoms.wait();
-  stopwatch.stop("3 Waiting for data");
 }
 
 void PlumedMain::justCalculate() {
   if(!active)return;
-  stopwatch.start("4 Calculating (forward loop)");
+// Stopwatch is stopped when sw goes out of scope
+  auto sw=stopwatch.startStop("4 Calculating (forward loop)");
   bias=0.0;
   work=0.0;
 
@@ -675,11 +694,17 @@ void PlumedMain::justCalculate() {
   for(const auto & pp : actionSet) {
     Action* p(pp.get());
     if(p->isActive()) {
-      std::string actionNumberLabel;
+// Stopwatch is stopped when sw goes out of scope.
+// We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
+      Stopwatch::Handler sw;
       if(detailedTimers) {
+        std::string actionNumberLabel;
         Tools::convert(iaction,actionNumberLabel);
-        actionNumberLabel="4A "+actionNumberLabel+" "+p->getLabel();
-        stopwatch.start(actionNumberLabel);
+        const unsigned m=actionSet.size();
+        unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
+        const int pad=k-actionNumberLabel.length();
+        for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
+        sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
       }
       ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
       ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
@@ -699,11 +724,9 @@ void PlumedMain::justCalculate() {
       if(av)av->setGradientsIfNeeded();
       ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
       if(avv)avv->setGradientsIfNeeded();
-      if(detailedTimers) stopwatch.stop(actionNumberLabel);
     }
     iaction++;
   }
-  stopwatch.stop("4 Calculating (forward loop)");
 }
 
 void PlumedMain::justApply() {
@@ -714,17 +737,24 @@ void PlumedMain::justApply() {
 void PlumedMain::backwardPropagate() {
   if(!active)return;
   int iaction=0;
-  stopwatch.start("5 Applying (backward loop)");
+// Stopwatch is stopped when sw goes out of scope
+  auto sw=stopwatch.startStop("5 Applying (backward loop)");
 // apply them in reverse order
   for(auto pp=actionSet.rbegin(); pp!=actionSet.rend(); ++pp) {
     const auto & p(pp->get());
     if(p->isActive()) {
 
-      std::string actionNumberLabel;
+// Stopwatch is stopped when sw goes out of scope.
+// We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
+      Stopwatch::Handler sw;
       if(detailedTimers) {
+        std::string actionNumberLabel;
         Tools::convert(iaction,actionNumberLabel);
-        actionNumberLabel="5A "+actionNumberLabel+" "+p->getLabel();
-        stopwatch.start(actionNumberLabel);
+        const unsigned m=actionSet.size();
+        unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
+        const int pad=k-actionNumberLabel.length();
+        for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
+        sw=stopwatch.startStop("5A "+actionNumberLabel+" "+p->getLabel());
       }
 
       p->apply();
@@ -732,22 +762,24 @@ void PlumedMain::backwardPropagate() {
 // still ActionAtomistic has a special treatment, since they may need to add forces on atoms
       if(a) a->applyForces();
 
-      if(detailedTimers) stopwatch.stop(actionNumberLabel);
     }
     iaction++;
   }
 
+// Stopwatch is stopped when sw goes out of scope.
+// We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
+  Stopwatch::Handler sw1;
+  if(detailedTimers) sw1=stopwatch.startStop("5B Update forces");
 // this is updating the MD copy of the forces
-  if(detailedTimers) stopwatch.start("5B Update forces");
   if(atoms.getNatoms()>0) atoms.updateForces();
-  if(detailedTimers) stopwatch.stop("5B Update forces");
-  stopwatch.stop("5 Applying (backward loop)");
 }
 
 void PlumedMain::update() {
   if(!active)return;
 
-  stopwatch.start("6 Update");
+// Stopwatch is stopped when sw goes out of scope
+  auto sw=stopwatch.startStop("6 Update");
+
 // update step (for statistics, etc)
   updateFlags.push(true);
   for(const auto & p : actionSet) {
@@ -770,7 +802,6 @@ void PlumedMain::update() {
     log.flush();
     for(const auto & p : actionSet) p->fflush();
   }
-  stopwatch.stop("6 Update");
 }
 
 void PlumedMain::load(const std::string& ss) {

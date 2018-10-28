@@ -97,7 +97,7 @@ void Path::expandShortcut( const std::string& lab, const std::vector<std::string
       PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
       // Break if we are done
       if( !do_read ) break ;
-      std::vector<std::string> remarks( mypdb.getRemark() );
+      std::vector<std::string> remarks; // ( mypdb.getRemark() );
       for(unsigned i=0; i<props.size(); ++i) {
         bool found=Tools::parse( remarks, props[i], propstr );
         if( nfram==0 ) { coords[i] += propstr; } else { coords[i] += "," + propstr; }

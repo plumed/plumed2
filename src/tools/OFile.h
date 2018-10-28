@@ -54,7 +54,6 @@ int main(){
   pof.printField("x1",10.0).printField("x3",-1e70*20.12345678901234567890).printField();
   pof.printField("x3",10.0).printField("x2",777.0).printField("x1",-1e70*20.12345678901234567890).printField();
   pof.printField("x3",67.0).printField("x1",18.0).printField();
-  pof.close();
   return 0;
 }
 \endverbatim
@@ -137,10 +136,13 @@ int main(){
 // rarely to avoid excessive slow down
 
   }
-
-  snp.close();
-  grw.close();
 }
+
+\notice
+Notice that it is not necessary to explicitely close files, since they are closed implicitely
+when the object goes out of scope. In case you need to explicitly close the file before it is
+destroyed, please check it the procedure is exception safe and, if necessary, add some `try/catch`
+statement.
 
 \endverbatim
 */

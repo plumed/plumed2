@@ -24,6 +24,8 @@
 
 #include "reference/ReferenceConfiguration.h"
 #include "reference/Direction.h"
+#include "tools/PDB.h"
+#include <memory>
 
 
 namespace PLMD {
@@ -34,6 +36,8 @@ namespace mapping {
 
 class PathReparameterization {
 private:
+/// This is used when setting up frames
+  PDB mypdb;
 /// Packs that we use to store the vectors connecting frames
   MultiValue mydpack;
   ReferenceValuePack mypack;
@@ -44,7 +48,7 @@ private:
 /// The underlying value object for the arguments
   const std::vector<Value*>& args;
 /// Reference to path that we are reparameterizing
-  std::vector<std::unique_ptr<ReferenceConfiguration>>& mypath;
+  const std::vector<std::unique_ptr<ReferenceConfiguration>>& mypath;
 /// These are the current separations and the total length of the path
   std::vector<double> len, sumlen, sfrac;
 /// Maximum number of cycles in path reparameterization

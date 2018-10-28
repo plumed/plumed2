@@ -149,7 +149,6 @@ GeometricPath::GeometricPath(const ActionOptions&ao):
   log.printf("  coordinates of points on path : ");
   for(unsigned i=0; i<framep.size(); ++i) log.printf("%f ",framep[i] );
   log.printf("\n");
-  projdir.setNamesAndAtomNumbers( myatoms, myargs );
   mypack1_stashd_atoms.resize( maxatoms ); mypack1_stashd_args.resize( maxargs );
   Mapping* am = dynamic_cast<Mapping*>( getPntrToArgument(0)->getPntrToAction() );
   unsigned maxderiv=maxargs; if( maxatoms>0 ) maxderiv += 3*maxatoms + 9;

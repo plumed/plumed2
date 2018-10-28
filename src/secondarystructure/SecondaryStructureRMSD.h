@@ -39,6 +39,8 @@ class SecondaryStructureRMSD :
   public ActionWithValue
 {
 private:
+/// Are we operating without periodic boundary conditions
+  bool nopbc;
 /// The type of rmsd we are calculating
   std::string alignType;
 /// List of all the atoms we require

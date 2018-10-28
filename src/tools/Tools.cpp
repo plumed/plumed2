@@ -28,25 +28,12 @@
 #include <dirent.h>
 #include <iostream>
 #include <map>
+#if defined(__PLUMED_HAS_CHDIR) || defined(__PLUMED_HAS_GETCWD)
+#include <unistd.h>
+#endif
 
 using namespace std;
 namespace PLMD {
-
-static std::map<string, double> leptonConstants= {
-  {"e", std::exp(1.0)},
-  {"log2e", 1.0/std::log(2.0)},
-  {"log10e", 1.0/std::log(10.0)},
-  {"ln2", std::log(2.0)},
-  {"ln10", std::log(10.0)},
-  {"pi", pi},
-  {"pi_2", pi*0.5},
-  {"pi_4", pi*0.25},
-//  {"1_pi", 1.0/pi},
-//  {"2_pi", 2.0/pi},
-//  {"2_sqrtpi", 2.0/std::sqrt(pi)},
-  {"sqrt2", std::sqrt(2.0)},
-  {"sqrt1_2", std::sqrt(0.5)}
-};
 
 template<class T>
 bool Tools::convertToAny(const string & str,T & t) {
@@ -86,7 +73,7 @@ bool Tools::convertToReal(const string & str,T & t) {
     t=-pi; return true;
   }
   try {
-    t=lepton::Parser::parse(str).evaluate(leptonConstants);
+    t=lepton::Parser::parse(str).evaluate(lepton::Constants());
     return true;
   } catch(PLMD::lepton::Exception& exc) {
   }
@@ -109,7 +96,7 @@ bool Tools::convertToReal(const string & str,T & t) {
     std::string remains; nstr>>remains;
     return remains.length()==0;
   } else if(str=="NAN") {
-    t=NAN;
+    t=std::numeric_limits<double>::quiet_NaN();
     return true;
   }
   return false;
@@ -377,6 +364,31 @@ bool Tools::findKeyword(const std::vector<std::string>&line,const std::string&ke
   return false;
 }
 
+Tools::DirectoryChanger::DirectoryChanger(const char*path) {
+  if(!path) return;
+  if(std::strlen(path)==0) return;
+#ifdef __PLUMED_HAS_GETCWD
+  char* ret=getcwd(cwd,buffersize);
+  plumed_assert(ret)<<"Name of current directory too long, increase buffer size";
+#else
+  plumed_error()<<"You are trying to use DirectoryChanger but your system does not support getcwd";
+#endif
+#ifdef __PLUMED_HAS_CHDIR
+  int r=chdir(path);
+  plumed_assert(r==0) <<"Cannot chdir to directory "<<path<<". The directory must exist!";
+#else
+  plumed_error()<<"You are trying to use DirectoryChanger but your system does not support chdir";
+#endif
+}
 
+Tools::DirectoryChanger::~DirectoryChanger() {
+#ifdef __PLUMED_HAS_CHDIR
+  if(strlen(cwd)==0) return;
+  int ret=chdir(cwd);
+// we cannot put an assertion here (in a destructor) otherwise cppcheck complains
+// we thus just report the problem
+  if(ret!=0) fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",cwd);
+#endif
+}
 
 }

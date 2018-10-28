@@ -37,7 +37,7 @@ protected:
   double lower, upper;
   std::map< std::pair <unsigned,unsigned>, double> targets;
 /// Read in NOPBC, LOWER_CUTOFF and UPPER_CUTOFF
-  void readBounds();
+  void readBounds( const PDB& );
 public:
   explicit DRMSD( const ReferenceConfigurationOptions& ro );
 /// This sets upper and lower bounds on distances to be used in DRMSD

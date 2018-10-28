@@ -172,7 +172,7 @@ void ActionWithValue::clearDerivatives( const bool& force ) {
   // This ensures we do not clear derivatives calculated in a chain until the next time the first
   // action in the chain is called
   if( !force && action_to_do_before ) return ;
-  unsigned nt = OpenMP::getGoodNumThreads(values);
+  unsigned nt = OpenMP::getNumThreads();
   #pragma omp parallel num_threads(nt)
   {
     #pragma omp for

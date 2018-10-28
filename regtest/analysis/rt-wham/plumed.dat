@@ -1,0 +1,28 @@
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+rp: RESTRAINT ARG=phi KAPPA=50.0 ...
+# NOTICE: this input has been artificially modified just to make the test run on travis-ci
+# frames come from a trajectory inconsistent with these restraints
+# see https://github.com/plumed/plumed2/issues/394
+  AT=@replicas:{
+        -3.00000000000000000000
+        -2.22580645161290322584
+        -1.45161290322580645168
+        -.67741935483870967752
+        .09677419354838709664
+        .87096774193548387080
+        1.64516129032258064496
+        2.41935483870967741912
+     }
+...
+
+PRINT ARG=phi,psi FILE=colvar 
+#PRINT ARG=rp0.bias,rp1.bias,rp2.bias,rp3.bias,rp4.bias,rp5.bias,rp6.bias,rp7.bias,rp8.bias,rp9.bias,rp10.bias,rp11.bias,rp12.bias,rp13.bias,rp14.bias,rp15.bias,rp16.bias,rp17.bias,rp18.bias,rp19.bias,rp20.bias,rp21.bias,rp22.bias,rp23.bias,rp24.bias,rp25.bias,rp26.bias,rp27.bias,rp28.bias,rp29.bias,rp30.bias,rp31.bias FILE=bias
+
+WHAM_WEIGHTS BIAS=rp.bias TEMP=300 FILE=wham-weights FMT=%8.4f 
+
+hh: WHAM_HISTOGRAM ARG=phi BIAS=rp.bias TEMP=300 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 
+
+fes: CONVERT_TO_FES GRID=hh TEMP=300
+DUMPGRID GRID=fes FILE=fes.dat FMT=%8.4f
+ 

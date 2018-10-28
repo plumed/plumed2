@@ -126,6 +126,10 @@ public:
   std::string getMode()const;
 /// Get the file suffix
   std::string getSuffix()const;
+/// Get the underlying file pointer.
+/// It might be null even if the file is open, e.g. when the file
+/// was open as a gzipped file.
+  FILE* getFILE()const;
 };
 
 inline
@@ -138,7 +142,10 @@ std::string FileBase::getMode()const {
   return mode;
 }
 
-
+inline
+FILE* FileBase::getFILE()const {
+  return fp;
+}
 
 }
 
