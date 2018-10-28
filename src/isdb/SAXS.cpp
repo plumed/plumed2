@@ -56,15 +56,21 @@ namespace isdb {
 
 //+PLUMEDOC ISDB_COLVAR SAXS
 /*
-Calculates SAXS scattered intensity using the Debye equation.
+Calculates SAXS scattered intensity using either the Debye equation or the harmonic sphere approximation.
 
 Intensities are calculated for a set of scattering lenght set using QVALUES numbered keywords, QVALUE cannot be 0.
 Structure factors can be either assigned using a polynomial expansion to any order using the PARAMETERS keywords;
-automatically assigned to atoms using the ATOMISTIC flag reading a PDB file, a correction for the water density is automatically added;
-automatically assigned to Martini pseudoatoms usign the MARTINI flag.
-The calculated intensities can be scaled using the SCEXP keywords. This is applied by rescaling the structure factors.
+automatically assigned to atoms using the ATOMISTIC flag reading a PDB file, a correction for the water density is 
+automatically added, with water density that by default is 0.334 but that can be set otherwise using WATERDENS;
+automatically assigned to Martini pseudoatoms using the MARTINI flag.
+The calculated intensities can be scaled using the SCALEINT keywords. This is applied by rescaling the structure factors.
 Experimental reference intensities can be added using the ADDEXP and EXPINT flag and keywords.
-\ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
+By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a GPU
+if the arrayfire libraries are installed and correctly linked (). Alternatively we an implementation based on Bessel functions,
+BESSEL flag. This is very fast for small q values because a short expasion is enough. 
+An automatic choice is made for which q bessel are used and for which the calculation is done by Debye. If one wants to force
+all q values to be calculated using Bessel function this can be done using FORCE_BESSEL.
+Irrespectively of the method employed, \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
 in the following example the saxs intensities for a martini model are calculated. structure factors
@@ -77,7 +83,7 @@ SAXS ...
 LABEL=saxs
 ATOMS=1-355
 ADDEXP
-SCEXP=3920000
+SCALEINT=3920000
 MARTINI
 QVALUE1=0.02 EXPINT1=1.0902
 QVALUE2=0.05 EXPINT2=0.790632
@@ -161,7 +167,7 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.add("compulsory","WATERDENS","0.334","Density of the water to be used for the correction of atomistic structure factors.");
   keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimental values.");
   keys.add("numbered","EXPINT","Add an experimental value for each q value.");
-  keys.add("compulsory","SCEXP","1.0","SCALING value of the experimental data. Usefull to simplify the comparison.");
+  keys.add("compulsory","SCALEINT","1.0","SCALING value of the calculated data. Usefull to simplify the comparison.");
   keys.addOutputComponent("q","default","the # SAXS of q");
   keys.addOutputComponent("exp","ADDEXP","the # experimental intensity");
 }
@@ -209,7 +215,7 @@ SAXS::SAXS(const ActionOptions&ao):
 
 
   double scexp = 0;
-  parse("SCEXP",scexp);
+  parse("SCALEINT",scexp);
   if(scexp==0) scexp=1.0;
 
   unsigned ntarget=0;
