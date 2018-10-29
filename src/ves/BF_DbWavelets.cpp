@@ -36,22 +36,36 @@ namespace ves {
 /*
 Daubechies Wavelets as basis functions
 
-Note: at the moment only the scaling function and not the wavelet function is used.
-It should nevertheless form an orthogonal basis set and will be needed for multiscale.
-The Wavelet function can be easily implemented by an additional matrix multiplication and a translation of the position axis.
+Note: at the moment only the scaling function is working as intended as multiscale is not yet implemented.
+
+This basis set uses Daubechies Wavelets to construct a complete and orthogonal basis.
+Because no analytic formula for these wavelets exist, they are instead constructed iteratively on a grid.
+The method of construction is close to the "Vector cascade algorithm" described by Strang, Nguyen. (It is sometimes also called Daubechies-Lagarias method)
+
+\par Input parameters
 
 order N: number of vanishing moments
 
-Support is then [0, 2*N-1), each basis function is a translate by an integer value k.
+Intrinsic support of the function is then [0, 2*N-1).
+
+(Give formula!)
+
+Each basis function is a translate by an integer value k.
+
+\par Number of basis functions
 
 If the support is scaled to match the desired range of the CV exactly there would be 4*N -3 basis functions whose support is at least partially in this region: k = {(-2*N)+2, … , 0, … 2*N-1}
-Especially for the scaling function the translates with support in negative regions do not have significant contributions in the desired range if k <= -order, so these are omitted by default. (could cut maybe one more)
+As some of these translates will not have significant contributions in this area because of their function values being close to zero over the full range, these 'tail wavelets' are being omitted.
+The formula for cutting of was found empirically. In short it omits roughly all translates that have only function values with less than 1 % of the maximum value in the CV range.
+It is not perfect but sometimes keeps a few more translates (depending on the actually chosen order).
+Giving the range of k in dependency of the chosen order is therefore not possible.
+Instead it will be given in the logfile if wanted.
+As a rule of thumb there are about 3*order basis functions.
 
-The default range of k is therefore only k = {-N+1, -N+2, …, 0, …, 2*N-1}.
-Including a constant basis function this sums to N*3-1 used basis functions by default.
-This could be lowered by scaling the wavelets less so that their support is larger than the desired CV range.
+(Note for future: The number of needed BFs could also be lowered by scaling the wavelets less so that their support is larger than the desired CV range.)
 
-Method of construction: Strang, Nguyen - Vector cascade algorithm (Daubechies-Lagarias method)
+Additionally a constant basis function is included.
+
 
 \par Examples
 
@@ -92,7 +106,8 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
   use_scaling_function_(false)
 {
-  setNumberOfBasisFunctions((getOrder()*3)-1);
+  setNumberOfBasisFunctions(ceil((getOrder()*2.54)+2)+1); // empiric formula to cut off tails
+  // would maybe more insightful for others to just hardcode a list
 
   // parse grid properties and set it up
   parseFlag("SCALING_FUNCTION", use_scaling_function_);
@@ -110,8 +125,8 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   }
 
   // set left shift of first basis function
-  use_scaling_function_ ? shift_ = getOrder()
-                        : shift_ = getOrder() - (getOrder()+1)/2 + 2; // for odd order this is not perfect
+  use_scaling_function_ ? shift_ = getNumberOfBasisFunctions()-(getOrder()*2-1) - 1 // all right shifts are needed
+                        : shift_ = ceil(1.2*getOrder()); // empiric formula that fits pretty well
   // set some properties
   setIntrinsicInterval("0",std::to_string(getOrder()*2-1));
   setNonPeriodic();
