@@ -131,7 +131,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
   derivs[0]=0.0;
   for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
     // scale and shift argument to match current wavelet
-    double x = (arg-intervalMin())*intervalDerivf() - i + shift_;
+    double x = (arg-intervalMin())*intervalDerivf() - i - 1 + shift_;
 
     if (x < 0 || x >= intrinsicIntervalMax()) { // Wavelets are 0 outside the defined range
       values[i] = 0.0; derivs[i] = 0.0;
@@ -154,7 +154,7 @@ void BF_DbWavelets::setupLabels() {
   double min = intervalMin();
   double spacing = intervalDerivf();
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    double pos = min + static_cast<signed>(i-getOrder()) / spacing;
+    double pos = min + static_cast<signed>(i-1-shift_) / spacing;
     std::string is; Tools::convert(pos, is);
     setLabel(i,"i="+is);
   }
