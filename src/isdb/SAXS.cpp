@@ -212,7 +212,7 @@ SAXS::SAXS(const ActionOptions&ao):
   }
 #endif
 
-
+  if(bessel&&gpu) error("You CANNOT use BESSEL on GPU!\n");
 
   double scexp = 0;
   parse("SCALEINT",scexp);
@@ -222,6 +222,7 @@ SAXS::SAXS(const ActionOptions&ao):
   for(unsigned i=0;; ++i) {
     double t_list;
     if( !parseNumbered( "QVALUE", i+1, t_list) ) break;
+    if(t_list<=0.) error("QVALUE cannot be less or equal to zero!\n");
     q_list.push_back(t_list);
     ntarget++;
   }
@@ -232,7 +233,7 @@ SAXS::SAXS(const ActionOptions&ao):
   bool martini=false;
   parseFlag("MARTINI",martini);
 
-  if(martini&&atomistic) error("You cannot use martini and atomistic at the same time");
+  if(martini&&atomistic) error("You cannot use MARTINI and ATOMISTIC at the same time");
 
   double rho = 0.334;
   parse("WATERDENS", rho);
