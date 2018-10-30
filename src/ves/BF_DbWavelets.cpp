@@ -163,7 +163,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
 }
 
 
-// label according to positions?
+// labels according to minimum position in CV space
 void BF_DbWavelets::setupLabels() {
   setLabel(0,"const");
   double min = intervalMin();
