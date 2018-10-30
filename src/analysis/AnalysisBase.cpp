@@ -31,7 +31,7 @@ void AnalysisBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionPilot::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.remove("NUMERICAL_DERIVATIVES");
-  keys.remove("TOL"); keys.reset_style("TIMINGS","hidden"); keys.isAnalysis();
+  keys.reset_style("TIMINGS","hidden"); keys.isAnalysis();
   keys.add("atoms-2","USE_OUTPUT_DATA_FROM","use the ouput of the analysis performed by this object as input to your new analysis object");
 }
 
