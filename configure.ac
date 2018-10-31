@@ -738,13 +738,13 @@ import os
   fi
 fi
 
-if test $af_ocl == true ; then
+if test "$af_ocl" == true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
 fi
-if test $af_cuda == true ; then
+if test "$af_cuda" == true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcuda])
 fi
-if test $af_cpu == true ; then
+if test "$af_cpu" == true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcpu])
 fi
 
