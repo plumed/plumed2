@@ -313,7 +313,8 @@ endif
 ifdef python_bin
 	cp -pr ../../python install 
 	cd install/python && rm -fr *.so plumed.cpp build && \
-        CC="$(CC)" \
+	LD_LIBRARY_PATH=$$PWD/../..:$$LD_LIBRARY_PATH \
+	  CC="$(CC)" \
           LDSHARED="$(LDSHARED) $(PYTHON_EXTRA_LDFLAGS)" \
           CXX="$(CXX)" \
           plumedexe="../../plumed" \
