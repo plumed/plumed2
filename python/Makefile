@@ -24,7 +24,8 @@ endif
 
 all:
 	@echo Building python interface for PLUMED 
-	CC="$(CC)" \
+	LD_LIBRARY_PATH=$$PWD/../src/lib:$$LD_LIBRARY_PATH \
+	  CC="$(CC)" \
           LDSHARED="$(LDSHARED) $(PYTHON_EXTRA_LDFLAGS)" \
           CXX="$(CXX)" \
           program_name=plumed \

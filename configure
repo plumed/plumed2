@@ -8726,7 +8726,7 @@ $as_echo "$as_me: WARNING: cannot enable python interface" >&2;}
   fi
 fi
 
-if test $af_ocl == true ; then
+if test "$af_ocl" == true ; then
 
     found=ko
     __PLUMED_HAS_ARRAYFIRE=no
@@ -8864,7 +8864,7 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
     fi
 
 fi
-if test $af_cuda == true ; then
+if test "$af_cuda" == true ; then
 
     found=ko
     __PLUMED_HAS_ARRAYFIRE=no
@@ -9002,7 +9002,7 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
     fi
 
 fi
-if test $af_cpu == true ; then
+if test "$af_cpu" == true ; then
 
     found=ko
     __PLUMED_HAS_ARRAYFIRE=no
