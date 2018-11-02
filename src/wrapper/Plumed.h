@@ -452,7 +452,7 @@
 #if __cplusplus > 199711L
 #define __PLUMED_WRAPPER_CXX_NOEXCEPT noexcept
 #else
-#define __PLUMED_WRAPPER_CXX_NOEXCEPT
+#define __PLUMED_WRAPPER_CXX_NOEXCEPT throw()
 #endif
 
 /* Macros for anonymous namespace */
@@ -513,16 +513,10 @@ typedef struct {
   void*p;
 } plumed;
 
-/**
-  \brief Small structure for passing error handler.
-
-  (for internal use).
-*/
-
 typedef struct {
   void* ptr;
-  void(*handler)(void* ptr,int code,const char*);
-} plumed_error_handler;
+  void (*handler)(void*,int,const char*,const void*);
+} plumed_nothrow_handler;
 
 /** \relates plumed
     \brief Constructor
@@ -668,18 +662,6 @@ plumed plumed_create_invalid();
 __PLUMED_WRAPPER_C_END
 
 /** \relates plumed
-    \brief Set an error handler
-
-    The error handler is a callback function that will be used in two cases:
-    - If using \ref plumed_cmd on an invalid object
-    - If using a kernel library >=2.5, to handle plumed exception.
-*/
-
-__PLUMED_WRAPPER_C_BEGIN
-void plumed_set_error_handler(plumed p,plumed_error_handler handler);
-__PLUMED_WRAPPER_C_END
-
-/** \relates plumed
     \brief Tells p to execute a command.
 
     If the object is not valid (see \ref plumed_valid), this command will exit.
@@ -700,6 +682,21 @@ __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
 void plumed_cmd(plumed p,const char*key,const void*val);
+__PLUMED_WRAPPER_C_END
+
+/**
+  \relates plumed
+  \brief Same as \ref plumed_cmd, but does not throw exceptions.
+
+  This function is meant to be used when errors should be handled explicitly.
+  if an exception is raised within PLUMED, the function nothrow.handler() will
+  be called with arguments (nothrow.ptr,code,message,opt). This allows the C++ interface
+  to correctly rethrow exceptions, but might be used from C as well. opt can be used
+  to pass further information (not used yet).
+*/
+
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_handler nothrow);
 __PLUMED_WRAPPER_C_END
 
 /** \relates plumed
@@ -932,6 +929,7 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 /* these are to include standard exceptions */
 #include <exception>
 #include <stdexcept>
+#include <string>
 
 /* C++ interface is hidden in PLMD namespace (same as plumed library) */
 namespace PLMD {
@@ -956,51 +954,77 @@ class Plumed {
   plumed main;
 
   /**
-    Error handler installed to rethrow exceptions.
+    Error handler used to rethrow exceptions.
   */
-  static void cxx_error_handler(void*ptr, int code, const char*what) {
-    (void) ptr;
-    (void) code;
-    throw Plumed::Exception(what);
-  }
+
+  struct NothrowHandler {
+    int code;
+    ::std::string what;
+  };
 
   /**
-    Install error handler.
-
-    It installs a C++ handler that allows rethrowing exceptions.
-
-    Should be used anytime a handler is created (constructor).
+    Callback function that sets the error handler.
   */
-  Plumed& set_error_handler() {
-    try {
-      plumed_error_handler handler;
-      handler.ptr=NULL;
-      handler.handler=cxx_error_handler;
-      plumed_set_error_handler(main,handler);
-    } catch(...) {
-      /* Don't do anything. This is just to avoid troubles when loading kernels
-         between 2.4 and 2.5, that declare api=6 but do not implement setErrorHandler */
-    }
-    return *this;
+  static void nothrow_handler(void*ptr,int code,const char*what,const void* opt) {
+    NothrowHandler* h=(NothrowHandler*) ptr;
+    h->code=code;
+    h->what=what;
+    (void) opt; /* not used yet */
   }
 
 public:
 
   /**
-    Class used to rethrow PLUMED exceptions.
-
-    It inherits from ::std::runtime_error so that:
-    - it can store a message
-    - it can be catched as std::exception.
-
+    Base class used to rethrow PLUMED exceptions.
   */
 
   class Exception :
-    public ::std::runtime_error
+    public ::std::exception
   {
+    ::std::string msg;
   public:
-    Exception(const char* msg): ::std::runtime_error(msg) {}
+    Exception(const char* msg): msg(msg) {}
+    Exception(const Exception & other): msg(other.what()) {}
+    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT {return msg.c_str();}
+    ~Exception() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
+
+  /**
+    Used to rethrow a PLMD::ExceptionError
+  */
+
+  class ExceptionError :
+    public Exception {
+  public:
+    ExceptionError(const char* msg): Exception(msg) {}
+    ExceptionError(const ExceptionError & other) : Exception(other.what()) {}
+    ~ExceptionError() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+  };
+
+  /**
+    Used to rethrow a PLMD::ExceptionDebug
+  */
+
+  class ExceptionDebug :
+    public Exception {
+  public:
+    ExceptionDebug(const char* msg): Exception(msg) {}
+    ExceptionDebug(const ExceptionDebug & other) : Exception(other.what()) {}
+    ~ExceptionDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+  };
+
+  /**
+    Thrown when trying to access an invalid plumed object
+  */
+
+  class Invalid :
+    public Exception {
+  public:
+    Invalid(const char* msg): Exception(msg) {}
+    Invalid(const Invalid & other) : Exception(other.what()) {}
+    ~Invalid() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+  };
+
 
   /**
      Check if plumed is installed (for runtime binding)
@@ -1111,7 +1135,6 @@ public:
 Plumed()__PLUMED_WRAPPER_CXX_NOEXCEPT :
   main(plumed_create())
   {
-    set_error_handler();
   }
 
   /**
@@ -1229,7 +1252,7 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   */
   static Plumed dlopen(const char* path)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
 // use decref to remove the extra reference
-    return Plumed(plumed_create_dlopen(path)).decref().set_error_handler();
+    return Plumed(plumed_create_dlopen(path)).decref();
   }
 
   /**
@@ -1239,7 +1262,7 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   */
   static Plumed dlopen(const char* path,int mode)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
 // use decref to remove the extra reference
-    return Plumed(plumed_create_dlopen2(path,mode)).decref().set_error_handler();
+    return Plumed(plumed_create_dlopen2(path,mode)).decref();
   }
   /** Invalid constructor. Available as of PLUMED 2.5.
 
@@ -1270,7 +1293,7 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   */
   static Plumed invalid() __PLUMED_WRAPPER_CXX_NOEXCEPT  {
 // use decref to remove the extra reference
-    return Plumed(plumed_create_invalid()).decref().set_error_handler();
+    return Plumed(plumed_create_invalid()).decref();
   }
 
   /**
@@ -1353,10 +1376,28 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
       \param key The name of the command to be executed
       \param val The argument. It is declared as const to allow calls like p.cmd("A","B"),
                  but for some choice of key it can change the content
-      \note Equivalent to plumed_cmd()
+      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
+            rethrow any exception raised within PLUMED.
   */
   void cmd(const char*key,const void*val=NULL) {
-    plumed_cmd(main,key,val);
+    NothrowHandler h;
+    h.code=0;
+    plumed_nothrow_handler nothrow= {&h,nothrow_handler};
+    plumed_cmd_nothrow(main,key,val,nothrow);
+    /* The interpretation of the codes should be kept in sync with core/PlumedMainInitializer.cpp */
+    if(h.code==0) return;
+    if(h.code==1) throw Plumed::Invalid(h.what.c_str());
+    if(h.code>=10000 && h.code<20000) {
+      if(h.code>=10100 && h.code<10200) throw ::std::logic_error(h.what.c_str());
+      if(h.code>=10200 && h.code<10300) throw ::std::runtime_error(h.what.c_str());
+    }
+    if(h.code>=20000 && h.code<30000) {
+      if(h.code>=20100 && h.code<20200) throw Plumed::ExceptionDebug(h.what.c_str());
+      if(h.code>=20200 && h.code<20300) throw Plumed::ExceptionError(h.what.c_str());
+      throw Plumed::Exception(h.what.c_str());
+    }
+    /* all other exception types are mapped to runtime_error */
+    throw ::std::runtime_error(h.what.c_str());
   }
   /**
      Destructor
@@ -1574,11 +1615,41 @@ typedef struct {
 } plumed_plumedmain_function_holder;
 
 /**
-   Holder for plumed symbol table.
+  Holder for plumed symbol table.
+
+  The table contains pointers to function exported from plumed. Functions can be added increasing the version number.
+  Notice that the default way to extend functionalities is by adding cmd strings. This is a last resort, and all new
+  functions should be explicitly motivated. Here's the addition:
+
+  version=2, cmd_nothrow.
+
+  This function accepts an extra argument `plumed_nothrow_handler*handler`.
+  In case an exception is thrown withint plumed, it just calls `handler->handler(handler->ptr,code,message,opt)` and return.
+  An alternative would have been to install an error handler (with a call to cmd("setErrorHandler")). However, the cost
+  of doing it everytime Plumed::cmd is called is too high. On the other hand, installing it only at object construction
+  is very risky since and object created in that way would not report any error if manipulated from the C interface.
+  So, it looks like this is the only possibility.
+
 */
 typedef struct {
+  /**
+    Version number.
+
+    Minimum value is 1.
+  */
   int version;
+  /**
+    Pointers to standard plumed functions (create/cmd/finalize).
+
+    Always available.
+  */
   plumed_plumedmain_function_holder functions;
+  /**
+    Pointer to a cmd function guaranteed not to throw exceptions.
+
+    Available with version>=2.
+  */
+  void (*cmd_nothrow)(void*plumed,const char*key,const void*val,plumed_nothrow_handler);
 } plumed_symbol_table_type;
 
 /* Utility to convert function pointers to pointers, just for the sake of printing them */
@@ -1903,8 +1974,6 @@ typedef struct {
   plumed_symbol_table_type* table;
   /* pointer to plumed object */
   void* p;
-  /* error handler. only used if error_handler.handler!=NULL */
-  plumed_error_handler error_handler;
 } plumed_implementation;
 
 __PLUMED_WRAPPER_INTERNALS_BEGIN
@@ -1929,8 +1998,6 @@ plumed_implementation* plumed_malloc_pimpl() {
   pimpl->functions.finalize=NULL;
   pimpl->table=NULL;
   pimpl->p=NULL;
-  pimpl->error_handler.ptr=NULL;
-  pimpl->error_handler.handler=NULL;
   return pimpl;
 }
 __PLUMED_WRAPPER_INTERNALS_END
@@ -1980,7 +2047,8 @@ plumed plumed_create(void) {
   assert(pimpl->functions.finalize);
   /* obtain object */
   pimpl->p=(*(pimpl->functions.create))();
-  assert(pimpl->p);
+  /* notice: we do not assert pimpl->p since in principle it might be nullptr */
+  /* user might identify this using plumed_valid() */
   /* store pimpl in returned object */
   p.p=pimpl;
   return p;
@@ -2023,7 +2091,8 @@ plumed plumed_create_dlopen2(const char*path,int mode) {
   assert(pimpl->functions.finalize);
   /* obtain object */
   pimpl->p=(*(pimpl->functions.create))();
-  assert(pimpl->p);
+  /* notice: we do not assert pimpl->p since in principle it might be nullptr */
+  /* user might identify this using plumed_valid() */
   /* store pimpl in returned object */
   p.p=pimpl;
   return p;
@@ -2068,42 +2137,15 @@ plumed plumed_create_invalid() {
 __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
-void plumed_set_error_handler(plumed p,plumed_error_handler handler) {
-  plumed_implementation* pimpl;
-  int api;
-  /* obtain pimpl */
-  pimpl=(plumed_implementation*) p.p;
-  assert(plumed_check_pimpl(pimpl));
-  pimpl->error_handler=handler;
-  /* if plumed object is valid and recent enough, inject error_handler to rethrow exceptions */
-  if(pimpl->p) {
-    api=0;
-    plumed_cmd(p,"getApiVersion",&api);
-    if(api>=6) {
-      plumed_cmd(p,"setErrorHandler",&handler);
-    }
-  }
-}
-__PLUMED_WRAPPER_C_END
-
-__PLUMED_WRAPPER_C_BEGIN
 void plumed_cmd(plumed p,const char*key,const void*val) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
   if(!pimpl->p) {
-    if(pimpl->error_handler.handler) {
-      if(pimpl->used_plumed_kernel) {
-        pimpl->error_handler.handler(pimpl->error_handler.ptr,1,"You are trying to use plumed, but it is not available.\nCheck your PLUMED_KERNEL environment variable.");
-      } else {
-        pimpl->error_handler.handler(pimpl->error_handler.ptr,1,"You are trying to use plumed, but it is not available.");
-      }
-    } else {
-      __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use plumed, but it is not available. +++\n");
-      if(pimpl->used_plumed_kernel) __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
-      __PLUMED_WRAPPER_STD exit(1);
-    }
+    __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use plumed, but it is not available. +++\n");
+    if(pimpl->used_plumed_kernel) __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
+    __PLUMED_WRAPPER_STD exit(1);
   }
   assert(pimpl->functions.create);
   assert(pimpl->functions.cmd);
@@ -2112,6 +2154,31 @@ void plumed_cmd(plumed p,const char*key,const void*val) {
   (*(pimpl->functions.cmd))(pimpl->p,key,val);
 }
 __PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_handler nothrow) {
+  plumed_implementation* pimpl;
+  /* obtain pimpl */
+  pimpl=(plumed_implementation*) p.p;
+  assert(plumed_check_pimpl(pimpl));
+  if(!pimpl->p) {
+    if(pimpl->used_plumed_kernel) {
+      nothrow.handler(nothrow.ptr,1,"You are trying to use plumed, but it is not available.\nCheck your PLUMED_KERNEL environment variable.",NULL);
+    } else {
+      nothrow.handler(nothrow.ptr,1,"You are trying to use plumed, but it is not available.",NULL);
+    }
+    return;
+  }
+  assert(pimpl->functions.create);
+  assert(pimpl->functions.cmd);
+  assert(pimpl->functions.finalize);
+  /* execute */
+  if(pimpl->table && pimpl->table->version>1) (*(pimpl->table->cmd_nothrow))(pimpl->p,key,val,nothrow);
+  else (*(pimpl->functions.cmd))(pimpl->p,key,val);
+}
+__PLUMED_WRAPPER_C_END
+
+
 
 __PLUMED_WRAPPER_C_BEGIN
 void plumed_finalize(plumed p) {

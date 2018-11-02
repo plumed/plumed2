@@ -36,6 +36,11 @@ typedef struct {
   void(*finalize)(void*);
 } plumed_plumedmain_function_holder;
 
+typedef struct {
+  void* ptr;
+  void (*handler)(void*,int,const char*,const void*);
+} plumed_nothrow_handler;
+
 /**
   Container for symbol table. Presently only contains a version number and a plumed_plumedmain_function_holder object.
   The definition of this structure might change in the future. In particular, the structure might grow adding
@@ -44,6 +49,7 @@ typedef struct {
 typedef struct {
   int version;
   plumed_plumedmain_function_holder functions;
+  void (*cmd_nothrow)(void*plumed,const char*key,const void*val,plumed_nothrow_handler nothrow);
 } plumed_symbol_table_type;
 
 
