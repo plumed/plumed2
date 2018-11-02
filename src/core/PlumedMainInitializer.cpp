@@ -24,28 +24,59 @@
 #include "tools/Exception.h"
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #if defined __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
 #endif
 
 using namespace std;
 
+// create should never throw
+// in case of a problem, it logs the error and return a null pointer
+// when loaded by an interface >=2.5, this will result in a non valid plumed object.
+// earlier interfaces will just give a segfault or a failed assertion.
 extern "C" void*plumed_plumedmain_create() {
-  return new PLMD::PlumedMain;
+  try {
+    return new PLMD::PlumedMain;
+  } catch(std::exception & e) {
+    std::cerr<<"+++ an error happened while creating a plumed object\n";
+    std::cerr<<e.what()<<std::endl;
+    return nullptr;
+  } catch(...) {
+    std::cerr<<"+++ an unknown error happened while creating a plumed object"<<std::endl;
+    return nullptr;
+  }
 }
+
+#define __PLUMED_CATCH(e,nothrow) \
+  catch(PLMD::ExceptionError & e) { \
+    nothrow.handler(nothrow.ptr,20200,e.what(),nullptr); \
+  } catch(PLMD::ExceptionDebug & e) { \
+    nothrow.handler(nothrow.ptr,20100,e.what(),nullptr); \
+  } catch(PLMD::Exception & e) { \
+    nothrow.handler(nothrow.ptr,20000,e.what(),nullptr); \
+  } catch(std::runtime_error & e) { \
+    nothrow.handler(nothrow.ptr,10200,e.what(),nullptr); \
+  } catch(std::logic_error & e) { \
+    nothrow.handler(nothrow.ptr,10100,e.what(),nullptr); \
+  } catch(std::exception & e) { \
+    nothrow.handler(nothrow.ptr,10000,e.what(),nullptr); \
+  }
 
 extern "C" void plumed_plumedmain_cmd(void*plumed,const char*key,const void*val) {
   plumed_massert(plumed,"trying to use a plumed object which is not initialized");
   auto p=static_cast<PLMD::PlumedMain*>(plumed);
-  try {
-    p->cmd(key,val);
-  } catch(std::exception & e) {
-// we are at library boundaries.
-// if a error_handler was provided, we use it to manage this exception.
-// this allows an exception to be catched also if the MD code
+  p->cmd(key,val);
+}
+
+extern "C" void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const void*val,plumed_nothrow_handler nothrow) {
+// At library boundaries we translate exceptions to error codes.
+// This allows an exception to be catched also if the MD code
 // was linked against a different C++ library
-    if(!p->callErrorHandler(2,e.what())) throw;
-  }
+  try {
+    plumed_massert(plumed,"trying to use a plumed object which is not initialized");
+    static_cast<PLMD::PlumedMain*>(plumed)->cmd(key,val);;
+  } __PLUMED_CATCH(e,nothrow)
 }
 
 extern "C" void plumed_plumedmain_finalize(void*plumed) {
@@ -56,15 +87,19 @@ extern "C" void plumed_plumedmain_finalize(void*plumed) {
 }
 
 // values here should be consistent with those in plumed_symbol_table_init !!!!
-plumed_symbol_table_type plumed_symbol_table=
-{1,{plumed_plumedmain_create,plumed_plumedmain_cmd,plumed_plumedmain_finalize}};
+plumed_symbol_table_type plumed_symbol_table= {
+  2,
+  {plumed_plumedmain_create,plumed_plumedmain_cmd,plumed_plumedmain_finalize},
+  plumed_plumedmain_cmd_nothrow
+};
 
 // values here should be consistent with those above !!!!
 extern "C" void plumed_symbol_table_init() {
-  plumed_symbol_table.version=1;
+  plumed_symbol_table.version=2;
   plumed_symbol_table.functions.create=plumed_plumedmain_create;
   plumed_symbol_table.functions.cmd=plumed_plumedmain_cmd;
   plumed_symbol_table.functions.finalize=plumed_plumedmain_finalize;
+  plumed_symbol_table.cmd_nothrow=plumed_plumedmain_cmd_nothrow;
 }
 
 namespace PLMD {
