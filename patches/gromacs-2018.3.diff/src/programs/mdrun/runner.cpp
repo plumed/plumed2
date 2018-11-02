@@ -1338,7 +1338,16 @@ int Mdrunner::mdrunner()
           /* detect plumed API version */
           int pversion=0;
           plumed_cmd(plumedmain,"getApiVersion",&pversion);
-          if(pversion>5) plumed_cmd(plumedmain,"setNumOMPthreads",&hw_opt.nthreads_omp);
+          if(pversion>5) {
+            try{
+              plumed_cmd(plumedmain,"setNumOMPthreads",&hw_opt.nthreads_omp);
+            } catch(...) {
+              /*
+                plumed 2.5b declares a pversion=6 but does not support setNumOMPthreads.
+                Ignoring errors here would allow for loading the plumed 2.5b kernel.
+              */
+            }
+          }
         }
         /* END PLUMED */
 
