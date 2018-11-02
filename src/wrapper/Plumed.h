@@ -984,6 +984,7 @@ public:
     ::std::string msg;
   public:
     Exception(const char* msg): msg(msg) {}
+    Exception(const Exception & other): msg(other.what()) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT {return msg.c_str();}
     ~Exception() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
@@ -996,6 +997,7 @@ public:
     public Exception {
   public:
     ExceptionError(const char* msg): Exception(msg) {}
+    ExceptionError(const ExceptionError & other) : Exception(other.what()) {}
     ~ExceptionError() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
 
@@ -1007,6 +1009,7 @@ public:
     public Exception {
   public:
     ExceptionDebug(const char* msg): Exception(msg) {}
+    ExceptionDebug(const ExceptionDebug & other) : Exception(other.what()) {}
     ~ExceptionDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
 
@@ -1018,6 +1021,7 @@ public:
     public Exception {
   public:
     Invalid(const char* msg): Exception(msg) {}
+    Invalid(const Invalid & other) : Exception(other.what()) {}
     ~Invalid() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
 
