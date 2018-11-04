@@ -57,8 +57,12 @@ ActionShortcut(ao)
    std::vector<std::string> awords=Tools::getWords(atoms_str,"\t\n ,"); Tools::interpretRanges( awords );
    // Now create all the pairentropy objects
    for(unsigned i=0;i<awords.size();++i) {
-       std::string ilab; Tools::convert( i+1, ilab );
-       readInputLine( getShortcutLabel() + ilab + ": PAIRENTROPY GROUPA=" + ilab + " GROUPB=" + atoms_str + " " + pair_str + " REFERENCE=" + getShortcutLabel() );
+       std::string ilab, jlab, atoms_str2; Tools::convert( awords[i], ilab ); 
+       for(unsigned j=0;j<awords.size();++j) {
+           if( awords[i]==awords[j] ) continue; Tools::convert( awords[j], jlab );
+           if( atoms_str2.length()==0 ) atoms_str2 = jlab; else atoms_str2 += "," + jlab;
+       }
+       readInputLine( getShortcutLabel() + ilab + ": PAIRENTROPY GROUPA=" + ilab + " GROUPB=" + atoms_str2 + " " + pair_str + " REFERENCE=" + getShortcutLabel() );
    }
    // And compose a vector containing the values of all the pair entropies
    std::string num, argstr = "ARG=" + getShortcutLabel() + "1"; 

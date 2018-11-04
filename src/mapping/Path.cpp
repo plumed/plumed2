@@ -94,10 +94,10 @@ Path::Path( const ActionOptions& ao ):
       if( !do_read ) break ;
       // This creates the coefficients
       if( pnames.size()>0 ) {
-          std::vector<std::string> remarks( mypdb.getRemark() );
+          double pval; std::string propstr;
           for(unsigned i=0; i<pnames.size(); ++i) {
-              std::string propstr; bool found=Tools::parse( remarks, pnames[i], propstr );
-              if( !found ) plumed_merror("could not find property named " + pnames[i] + " in input file " + refname );
+              if( !mypdb.getArgumentValue(pnames[i], pval) ) plumed_merror("could not find property named " + pnames[i] + " in input file " + refname );
+              Tools::convert( pval, propstr ); 
               if( nfram==0 ) { properties[i] = "COEFFICIENTS=" + propstr; } else { properties[i] += "," + propstr; }
           }
       } else {
@@ -136,9 +136,8 @@ void Path::createActionsToComputeDistances( const std::string mtype, const std::
       PDB mypdb; do_read=mypdb.readFromFilepointer(fp,false,fake_unit);  // Units don't matter here
       // Break if we are done
       if( !do_read ) break ;
-      std::string num; Tools::convert( nfram+1, num );
+      std::string num, stri; Tools::convert( nfram+1, num );
       action->readInputLine( scut_lab + "_ref" + num + ": READ_CONFIG REFERENCE=" + refname  + " NUMBER=" + num  + argstr );
-      std::vector<std::string> remark( mypdb.getRemark() ); std::string stri; 
 
       if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) { 
           if( nfram==0 ) {

@@ -228,7 +228,7 @@ void SecondaryStructureRMSD::performTask( const unsigned& current, MultiValue& m
       pos[i]+=( origin_new - origin_old );
     }
   } else if( alignType!="DRMSD" && !nopbc ) {
-    for(unsigned i=0; i<n-1; ++i) {
+    for(unsigned i=0; i<natoms-1; ++i) {
       const Vector & first (pos[i]);
       Vector & second (pos[i+1]);
       second=first+pbcDistance(first,second);

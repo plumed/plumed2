@@ -51,11 +51,18 @@ ActionShortcut(ao)
   std::string ref_str, ref_name; parse("REFERENCE",ref_name); 
   if( ref_name.length()>0 ) ref_str = "REFERENCE=" + ref_name; else ref_name = getShortcutLabel();
   // Read in the atoms and get the number of atoms that we are using
-  std::string atom_str, group_str, groupa_str, groupb_str; parse("GROUP",group_str); 
-  if( group_str.length()>0 ) { atom_str="GROUP=" + group_str; }
-  else { parse("GROUPA",groupa_str); parse("GROUPB",groupb_str); atom_str="GROUPA=" + groupa_str + " GROUPB=" + groupb_str; group_str=groupb_str; }
-  std::vector<std::string> awords=Tools::getWords(group_str,"\t\n ,"); 
-  Tools::interpretRanges( awords ); std::string natoms; Tools::convert( awords.size(), natoms );
+  std::string atom_str, group_str, natoms; parse("GROUP",group_str); 
+  if( group_str.length()>0 ) { 
+      atom_str="GROUP=" + group_str; 
+      std::vector<std::string> awords=Tools::getWords(group_str,"\t\n ,");
+      Tools::interpretRanges( awords ); Tools::convert( awords.size(), natoms );
+  } else { 
+      std::string groupa_str, groupb_str;
+      parse("GROUPA",groupa_str); parse("GROUPB",groupb_str); 
+      atom_str="GROUPA=" + groupa_str + " GROUPB=" + groupb_str;
+      std::vector<std::string> awords=Tools::getWords(groupb_str,"\t\n ,");
+      Tools::interpretRanges( awords ); Tools::convert( awords.size()+1, natoms );
+  } 
   // Read in all other keywords and create the RDF object
   std::string maxr, nbins, dens, bw; parse("MAXR",maxr); parse("GRID_BIN",nbins); parse("DENSITY",dens); parse("BANDWIDTH",bw);
   std::string dens_str; if( dens.length()>0 ) dens_str = " DENSITY=" + dens;

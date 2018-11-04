@@ -66,9 +66,9 @@ GeometricPathShortcut::GeometricPathShortcut( const ActionOptions& ao ):
 
       if( nfram==0 ) { ref_str = " REFFRAMES=" + refactions[nfram]; } else { ref_str += "," + refactions[nfram]; }
       if( pname.length()>0 ) {
-          std::vector<std::string> remarks( mypdb.getRemark() );
-          std::string propstr; bool found=Tools::parse( remarks, pname, propstr );
-          if( !found ) plumed_merror("could not find property named " + pname + " in input file " + refname );
+          double pval; std::string propstr;
+          if( !mypdb.getArgumentValue(pname, pval) ) plumed_merror("could not find property named " + pname + " in input file " + refname );
+          Tools::convert( pval, propstr ); 
           if( nfram==0 ) { coord_str = "COORDINATES=" + propstr; } else { coord_str += "," + propstr; }
       } else {
           std::string propstr; Tools::convert( nfram+1, propstr );

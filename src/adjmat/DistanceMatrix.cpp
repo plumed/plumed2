@@ -77,9 +77,8 @@ double DistanceMatrix::calculateWeight( const Vector& pos1, const Vector& pos2, 
       addAtomDerivatives( 0, (-invd)*distance, myvals );
       addAtomDerivatives( 1, (+invd)*distance, myvals );
       addBoxDerivatives( (-invd)*Tensor(distance,distance), myvals );
-      return mod;
   }
-  return 0;
+  return mod;
 }
 
 }

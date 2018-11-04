@@ -79,7 +79,6 @@ SetupReferenceBase(ao)
                  for(unsigned i=0;i<pdb.getPositions().size();++i) center += align[i]*pdb.getPositions()[i] / asum;
              }
          }
-         std::vector<std::string> remark( pdb.getRemark() );
          if( getNumberOfArguments()>0 ) {
              log.printf("  labels of arguments are : ");
              for(unsigned i=0;i<getNumberOfArguments();++i) log.printf("%s ", getPntrToArgument(i)->getName().c_str() );
@@ -115,25 +114,27 @@ SetupReferenceBase(ao)
              } 
          }
          if( getNumberOfArguments()>0 ) {
-             std::vector<unsigned> shape( 1 ); shape[0] = 0; unsigned n=0;
+             std::vector<unsigned> shape( 1 ); shape[0] = 0; unsigned n=0; double val;
              for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );
              addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore( getLabel() );
              for(unsigned i=0;i<getNumberOfArguments();++i) {
                  if( getPntrToArgument(i)->getRank()==0 ) {
-                     double val; Tools::parse( remark, getPntrToArgument(i)->getName(), val );
+                     if( !pdb.getArgumentValue(getPntrToArgument(i)->getName(), val)  ) error("did not find argument " + getPntrToArgument(i)->getName() + " in pdb file");
                      getPntrToComponent(0)->set( n, val ); n++;
                  } else if( getPntrToArgument(i)->getRank()==1 ) {
                      for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
-                         double val; std::string num; Tools::convert( j+1, num );
-                         Tools::parse( remark, getPntrToArgument(i)->getName() + "." + num, val ); 
+                         std::string num; Tools::convert( j+1, num );
+                         if( !pdb.getArgumentValue(getPntrToArgument(i)->getName() + "." + num, val)  ) 
+                             error("did not find argument " + getPntrToArgument(i)->getName() + "." + num + " in pdb file");
                          getPntrToComponent(0)->set( n, val ); n++;
                      }
                  } else if( getPntrToArgument(i)->getRank()==2 ) { 
                      for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
                          std::string jnum; Tools::convert( j+1, jnum );
                          for(unsigned k=0;k<getPntrToArgument(k)->getShape()[2];++k) {
-                             double val; std::string knum; Tools::convert( k+1, knum );
-                             Tools::parse( remark, getPntrToArgument(i)->getName() + "." + jnum + "." + knum, val );
+                             std::string knum; Tools::convert( k+1, knum );
+                             if( !pdb.getArgumentValue(getPntrToArgument(i)->getName() + "." + jnum + "." + knum, val)  ) 
+                                 error("did not find argument " + getPntrToArgument(i)->getName() + "." + jnum  + "." + knum + " in pdb file");
                              getPntrToComponent(0)->set( n, val ); n++;
                          }
                      }
@@ -141,17 +142,16 @@ SetupReferenceBase(ao)
              }
          }
          if( read_args.size()>0 ) {
-             std::vector<unsigned> shape( 1 ); shape[0] = read_args.size();
+             std::vector<unsigned> shape( 1 ); shape[0] = read_args.size(); double val;
              addValue( shape ); setNotPeriodic(); getPntrToComponent(0)->buildDataStore( getLabel() );
              for(unsigned i=0;i<read_args.size();++i) {
-                 double val; Tools::parse( remark, read_args[i], val ); getPntrToComponent(0)->set( i, val );
+                 if( !pdb.getArgumentValue( read_args[i], val ) ) error("did not find argument " + read_args[i] + " in pdb file");
+                 getPntrToComponent(0)->set( i, val );
              }
          }
          // Set the box size if this information was read
-         if( pdb.cellWasRead() ) {
-             Tensor box( pdb.getBox() );
-             atoms.setBox( &box[0][0] );
-         }
+         Tensor box( pdb.getBoxVec() );
+         atoms.setBox( &box[0][0] );
          break;
       }
       if( !do_read ) error("not enough frames input input file " + reference );
