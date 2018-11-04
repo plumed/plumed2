@@ -279,6 +279,8 @@ public:
 ///
   virtual bool canBeAfterInChain( ActionWithValue* av ) const { return true; }
 ///
+  virtual bool valuesComputedInChain() const { return true; }
+///
   virtual void transformFinalValueAndDerivatives( const std::vector<double>& buf  ) {};
 /// Retrieve the forces acting on all values
   bool getForcesFromValues( std::vector<double>& forces );
