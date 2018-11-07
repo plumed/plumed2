@@ -803,7 +803,7 @@ EOF
       comment=
       test -n "$testlib" && comment=" with library $testlib"
       AC_MSG_CHECKING([whether $name can link a C++ object$comment])
-      $compexe $LDFLAGS $testlib $LIBS conftest.o conftest-main.o -o conftest.exe 1>/dev/null 2>/dev/null
+      $compexe conftest.o conftest-main.o $LDFLAGS $testlib $LIBS -o conftest.exe 1>/dev/null 2>/dev/null
       if test -f conftest.exe
       then
         found=yes

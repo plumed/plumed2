@@ -7196,7 +7196,7 @@ EOF
       test -n "$testlib" && comment=" with library $testlib"
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $name can link a C++ object$comment" >&5
 $as_echo_n "checking whether $name can link a C++ object$comment... " >&6; }
-      $compexe $LDFLAGS $testlib $LIBS conftest.o conftest-main.o -o conftest.exe 1>/dev/null 2>/dev/null
+      $compexe conftest.o conftest-main.o $LDFLAGS $testlib $LIBS -o conftest.exe 1>/dev/null 2>/dev/null
       if test -f conftest.exe
       then
         found=yes
