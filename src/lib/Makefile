@@ -269,7 +269,8 @@ endif
 # copy Template.cpp file (we leave it in src/colvar/ for backward compatibility)
 	cp ../colvar/Template.cpp "$(DESTDIR)$(libdir)/$(program_name)/src/colvar/"
 # copy compile_options.sh file (we leave it in src/colvar/ for backward compatibility)
-	cp ../config/compile_options.sh "$(DESTDIR)$(libdir)/$(program_name)/src/config/compile_options.sh"
+# we remove the link_uninstalled= option (see https://github.com/plumed/plumed2/issues/408)
+	grep -v "^link_uninstalled=" ../config/compile_options.sh > "$(DESTDIR)$(libdir)/$(program_name)/src/config/compile_options.sh"
 # copy config.txt file (we leave it in src/colvar/ for backward compatibility)
 	cp ../config/config.txt "$(DESTDIR)$(libdir)/$(program_name)/src/config/config.txt"
 ifeq ($(make_static_archive),yes)
