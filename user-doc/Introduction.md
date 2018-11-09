@@ -54,4 +54,5 @@ or enhanced sampling calculations.  Notice that PLUMED can be used as an analysi
 also from the following packages:
 - [PLUMED-GUI](http://github.com/tonigi/vmd_plumed) is a [VMD](http://www.ks.uiuc.edu/Research/vmd/) plugin that computes PLUMED collective variables.
 - [HTMD](http://www.htmd.org/) can use PLUMED collective variables for analysis.
+- [OpenPathSampling](http://openpathsampling.org/), using the [PLUMED Wrapper for OpenPathSampling](https://e-cam.readthedocs.io/en/latest/Classical-MD-Modules/modules/OpenPathSampling/ops_plumed_wrapper/readme.html).
 
