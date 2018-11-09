@@ -1,31 +1,42 @@
 patch -u -l -b -F 5 -N --suffix=.preplumed "./Makefile" << \EOF_EOF
 --- ./Makefile.preplumed
 +++ ./Makefile
-@@ -359,10 +359,12 @@
- CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN $(TCL) $(FFT) $(CUDA) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF) $(EXTRAINCS) $(MSA)
+@@ -359,16 +359,18 @@
+ CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(FMM) $(COPTI)$(PLUGININCDIR) $(COPTI)$(COLVARSINCDIR) $(COPTD)STATIC_PLUGIN $(TCL) $(PYTHON) $(FFT) $(CUDA) $(MIC) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF) $(EXTRAINCS) $(MSA) $(CKLOOP)
  CXXFLAGS = $(CXXBASEFLAGS) $(CXXOPTS)
+ CXXMICFLAGS = $(CXXBASEFLAGS) $(CXXOPTS) $(CXXMICOPTS)
  CXXTHREADFLAGS = $(CXXBASEFLAGS) $(CXXTHREADOPTS)
  CXXSIMPARAMFLAGS = $(CXXBASEFLAGS) $(CXXSIMPARAMOPTS)
  CXXNOALIASFLAGS = $(CXXBASEFLAGS) $(CXXNOALIASOPTS)
 +include .rootdir/Plumed.inc
 +
+ COLVARSCXXFLAGS = $(CXXBASEFLAGS) $(CXXCOLVAROPTS) $(COPTI)$(LEPTONINCDIR) -DLEPTON -DLEPTON_USE_STATIC_LIBRARIES
  GXXFLAGS = $(CXXBASEFLAGS) -DNO_STRSTREAM_H
  CFLAGS = $(COPTI)$(SRCDIR) $(TCL) $(COPTS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
  PLUGINGCCFLAGS = $(COPTI)$(PLUGINSRCDIR) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN
  PLUGINCFLAGS = $(PLUGINGCCFLAGS) $(COPTS)
  SBCFLAGS = $(COPTI)$(SBSRCDIR) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN -DPSFGEN_USEPLUGINS $(TCL) $(COPTS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
-@@ -394,10 +396,11 @@
- 	$(CUDAOBJS) \
- 	$(CUDALIB) \
- 	$(DPMTALIB) \
- 	$(DPMELIB) \
- 	$(TCLLIB) \
+ SBGCCFLAGS = $(COPTI)$(SBSRCDIR) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN -DPSFGEN_USEPLUGINS $(TCL) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
+ COLVARSGXXFLAGS= $(GXXFLAGS)
+ LEPTONGCCFLAGS= $(COPTI)$(LEPTONINCDIR)
+ LEPTONCXXFLAGS=$(CXXBASEFLAGS) $(COPTI)$(LEPTONINCDIR) -DLEPTON_BUILDING_STATIC_LIBRARY
+@@ -394,15 +396,16 @@
+	$(CUDAOBJS) \
+	$(CUDALIB) \
+	$(DPMTALIB) \
+	$(DPMELIB) \
+	$(FMMLIB) \
+	$(TCLLIB) \
 +        $(PLUMED_LOAD) \
- 	$(FFTLIB) \
- 	$(PLUGINLIB) \
- 	$(CHARMOPTS) \
- 	$(EXTRALINKLIBS) \
- 	-lm -o namd2
+	$(PYTHONLIB) \
+	$(FFTLIB) \
+	$(PLUGINLIB) \
+	$(SBLIB) \
+	$(COLVARSLIB) \
+	$(LEPTONOBJS) \
+	$(CHARMOPTS) \
+	$(EXTRALINKLIBS) \
+	$(MATHLIBS) -o namd2
 EOF_EOF
 patch -u -l -b -F 5 --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 --- ./src/ComputeMgr.C.preplumed
@@ -204,16 +215,17 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/SimParameters.C" << \EOF_EOF
     opts.optional("GBIS", "intrinsicRadiusOffset",
        "Coulomb Radius Offset", &coulomb_radius_offset, 0.09);
     opts.optional("GBIS", "ionConcentration",
-@@ -4299,11 +4306,11 @@
+@@ -4299,12 +4307,12 @@
     }
-    
+
     // Global forces configuration
- 
+
     globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn ||
--                      (IMDon && ! IMDignore) || SMDOn || TMDOn || colvarsOn || symmetryOn );
-+                      (IMDon && ! IMDignore) || SMDOn || TMDOn || colvarsOn || symmetryOn || plumedOn );
- 
- 
+                       (IMDon && ! (IMDignore || IMDignoreForces)) || SMDOn || TMDOn ||
+-                      colvarsOn || symmetryOn || qmForcesOn );
++                      colvarsOn || symmetryOn || qmForcesOn || plumedOn );
+
+
     if (tclForcesOn)
     {
       iout << iINFO << "TCL GLOBAL FORCES ACTIVE\n";
