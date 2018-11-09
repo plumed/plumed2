@@ -9874,9 +9874,6 @@ then
   prefix=/usr/local
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking If prefix is equal to present working directory" >&5
-$as_echo_n "checking If prefix is equal to present working directory... " >&6; }
-
 pkgconfig_bin=""
 
 for ac_prog in pkg-config
