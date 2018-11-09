@@ -1200,8 +1200,6 @@ then
   prefix=/usr/local
 fi
 
-AC_MSG_CHECKING([If prefix is equal to present working directory])
-
 pkgconfig_bin=""
 
 AC_PATH_PROGS(pkgconfig_bin,pkg-config)
