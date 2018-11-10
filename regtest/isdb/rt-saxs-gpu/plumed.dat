@@ -50,6 +50,8 @@ QVALUE15=0.44
 PRINT ARG=(saxs\.q_.*) FILE=colvar STRIDE=1
 PRINT ARG=(saxsb\.q_.*) FILE=colvarb STRIDE=1
 
+BIASVALUE ARG=saxsb.q_0
+
 DUMPDERIVATIVES ARG=(saxs\.q_.*) FILE=forces FMT=%.4f
 DUMPDERIVATIVES ARG=(saxsb\.q_.*) FILE=forcesb FMT=%.4f
 

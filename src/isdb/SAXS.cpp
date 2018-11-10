@@ -378,13 +378,6 @@ void SAXS::calculate_gpu(vector<Vector> &deriv)
   const unsigned size = getNumberOfAtoms();
   const unsigned numq = q_list.size();
 
-  unsigned stride = comm.Get_size();
-  unsigned rank   = comm.Get_rank();
-  if(serial) {
-    stride = 1;
-    rank   = 0;
-  }
-
   std::vector<float> sum;
   sum.resize(numq);
 
@@ -392,7 +385,7 @@ void SAXS::calculate_gpu(vector<Vector> &deriv)
   dd.resize(size*3*numq);
 
   // on gpu only the master rank run the calculation
-  if(rank==0) {
+  if(comm.Get_rank()==0) {
     vector<float> posi;
     posi.resize(3*size);
     #pragma omp parallel for num_threads(OpenMP::getNumThreads())
@@ -462,10 +455,8 @@ void SAXS::calculate_gpu(vector<Vector> &deriv)
     deriv_device.host(&dd.front());
   }
 
-  if(!serial) {
-    comm.Bcast(deriv, 0);
-    comm.Bcast(sum, 0);
-  }
+  comm.Bcast(dd, 0);
+  comm.Bcast(sum, 0);
 
   for(unsigned k=0; k<numq; k++) {
     string num; Tools::convert(k,num);
@@ -572,8 +563,6 @@ void SAXS::calculate_cpu(vector<Vector> &deriv)
       if(getDoScore()) setCalcData(k, sum[k]);
     }
   }
-
-
 }
 
 void SAXS::calculate()
