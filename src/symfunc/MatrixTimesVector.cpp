@@ -22,6 +22,7 @@
 #include "SymmetryFunctionBase.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "core/ActionRegister.h"
+#include "adjmat/AdjacencyMatrixBase.h"
 #include <string>
 #include <cmath>
 
@@ -85,10 +86,14 @@ PRINT ARG=la.* FILE=colvar
 //+ENDPLUMEDOC
 
 class MatrixTimesVector : public SymmetryFunctionBase {
+private: 
+  bool fixed_matrix;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixTimesVector(const ActionOptions&);
   unsigned getNumberOfDerivatives() const ;
+  void calculate();
+  void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const ;
   void updateDerivativeIndices( MultiValue& myvals ) const ;
 };
@@ -102,19 +107,43 @@ void MatrixTimesVector::registerKeywords( Keywords& keys ) {
 
 MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
   Action(ao),
-  SymmetryFunctionBase(ao)
+  SymmetryFunctionBase(ao),
+  fixed_matrix(false)
 {
+  adjmat::AdjacencyMatrixBase* ab = dynamic_cast<adjmat::AdjacencyMatrixBase*>( getPntrToArgument(0)->getPntrToAction() );
+  if( !ab ) fixed_matrix=true;
+
   std::vector<Value*> vecs; parseArgumentList("VECTOR",vecs);
   if( vecs.size()!=1 ) error("keyword VECTOR shoudl only be provided with the label of a singl action");
   if( vecs[0]->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("shape of input vector should match second dimension of input WEIGHT matrix");
   vecs[0]->buildDataStore( getLabel() );
   log.printf("  calculating product of input weight matrix with vector of weights labelled %s \n",vecs[0]->getName().c_str() );
   std::vector<Value*> args( getArguments() ); args.push_back( vecs[0] );
-  requestArguments( args, true ); addValueWithDerivatives();
+  requestArguments( args, !fixed_matrix ); addValueWithDerivatives();
 }
 
 unsigned MatrixTimesVector::getNumberOfDerivatives() const {
   return SymmetryFunctionBase::getNumberOfDerivatives() + getPntrToArgument(1)->getShape()[0];
+}
+
+void MatrixTimesVector::calculate() {
+  if( actionInChain() ) return ;
+  plumed_assert( fixed_matrix ); 
+  runAllTasks();
+}
+
+void MatrixTimesVector::performTask( const unsigned& current, MultiValue& myvals ) const {
+  if( fixed_matrix ) {
+      unsigned ncols = getPntrToArgument(0)->getShape()[1]; Vector dir;
+      for(unsigned i=0;i<ncols;++i) {
+          double weight = getPntrToArgument(0)->get( current*ncols + i );
+          if( fabs(weight)>epsilon ) {
+              myvals.setSecondTaskIndex( ncols + i ); compute( weight, dir, myvals );
+          }
+      }
+  } else {
+      SymmetryFunctionBase::performTask( current, myvals ); 
+  } 
 }
 
 void MatrixTimesVector::compute( const double& val, const Vector& dir, MultiValue& myvals ) const {

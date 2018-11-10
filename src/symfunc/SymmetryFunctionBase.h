@@ -58,10 +58,10 @@ public:
   bool mustBeTreatedAsDistinctArguments() const ;
   void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
   virtual unsigned getNumberOfDerivatives() const ;
-  void calculate() {}
+  virtual void calculate(){}
   virtual void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const = 0;
   virtual void updateDerivativeIndices( MultiValue& myvals ) const ;
-  void performTask( const unsigned& current, MultiValue& myvals ) const ;
+  virtual void performTask( const unsigned& current, MultiValue& myvals ) const ;
   virtual void computeSymmetryFunction( const unsigned& current, MultiValue& myvals ) const ;
   void apply();
 };

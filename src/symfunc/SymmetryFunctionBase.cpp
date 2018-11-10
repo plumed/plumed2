@@ -22,6 +22,7 @@
 #include "SymmetryFunctionBase.h"
 #include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSetup.h"
 #include "core/Atoms.h"
 #include "multicolvar/MultiColvarBase.h"
 
@@ -122,7 +123,9 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
   }
   std::vector<std::string> alabels(1); std::vector<Value*> wval; parseArgumentList("WEIGHT",wval);
   if( wval.size()!=1 ) error("keyword WEIGHT should be provided with the label of a single action");
-  alabels[0]=(wval[0]->getPntrToAction())->getLabel(); (wval[0]->getPntrToAction())->addActionToChain( alabels, this );
+  alabels[0]=(wval[0]->getPntrToAction())->getLabel();
+  ActionSetup* as = dynamic_cast<ActionSetup*>( wval[0]->getPntrToAction() );
+  if( !as ) (wval[0]->getPntrToAction())->addActionToChain( alabels, this );
   log.printf("  using bond weights from matrix labelled %s \n",wval[0]->getName().c_str() );
   nderivatives=(wval[0]->getPntrToAction())->getNumberOfDerivatives();
 
@@ -142,8 +145,9 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
       if( ((wval[0]->getPntrToAction())->getActionThatCalculates())->getLabel()!=((vecs[0]->getPntrToAction())->getActionThatCalculates())->getLabel() ) {
         error("found mismatched vectors and weights in input to symmetry function (2nd version) - current not available, please email plumed list");
       }
-      alabels[0]=(vecs[0]->getPntrToAction())->getLabel(); (vecs[0]->getPntrToAction())->addActionToChain( alabels, this ); wval.push_back(vecs[0]);
-      std::string dir="x"; if( i==2 ) dir="y"; else dir="z";
+      alabels[0]=(vecs[0]->getPntrToAction())->getLabel(); ActionSetup* as2 = dynamic_cast<ActionSetup*>( vecs[0]->getPntrToAction() );
+      if( as2 ) (vecs[0]->getPntrToAction())->addActionToChain( alabels, this );
+      wval.push_back(vecs[0]); std::string dir="x"; if( i==2 ) dir="y"; else dir="z";
       log.printf("  %s direction of bond read from matrix labelled %s \n",dir.c_str(),vecs[0]->getName().c_str() );
     }
   }
