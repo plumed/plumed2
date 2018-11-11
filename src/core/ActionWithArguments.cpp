@@ -309,34 +309,38 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
     if( !distinct_but_stored ) nder = distinct_arguments[0].first->getNumberOfDerivatives();
     else nder = arguments[0]->getNumberOfValues( getLabel() );
 
-    for(unsigned i=1; i<getNumberOfArguments(); ++i) {
-      // Work out what action applies forces
-      ActionWithValue* myval; ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( arguments[i]->getPntrToAction() );
-      if( !aa || aa->mustBeTreatedAsDistinctArguments() ) myval = arguments[i]->getPntrToAction();
-      else myval = aa->getFirstNonStream();
-
-      distinct_but_stored=false;
-      for(unsigned j=0; j<arguments[i]->store_data_for.size(); ++j) {
-        if( arguments[i]->store_data_for[j].first==getLabel() ) { distinct_but_stored=true; break; }
-      }
-
-      // Check we haven't already dealt with this argument
-      int argno=-1;;
-      for(unsigned j=0; j<distinct_arguments.size(); ++j) {
-        if( myval==distinct_arguments[j].first ) { argno=j; break; }
-      }
-      if( argno>=0 ) {
-        arg_deriv_starts.push_back( arg_deriv_starts[argno] );
-      } else {
+    if( getNumberOfArguments()==1 ) { 
         arg_deriv_starts.push_back( nder );
-        if( !distinct_but_stored ) {
-          distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(myval,0) );
-          nder += myval->getNumberOfDerivatives();
-        } else {
-          distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(myval,1) );
-          nder += arguments[i]->getNumberOfValues( getLabel() );
+    } else {
+        for(unsigned i=1; i<getNumberOfArguments(); ++i) {
+          // Work out what action applies forces
+          ActionWithValue* myval; ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( arguments[i]->getPntrToAction() );
+          if( !aa || aa->mustBeTreatedAsDistinctArguments() ) myval = arguments[i]->getPntrToAction();
+          else myval = aa->getFirstNonStream();
+
+          distinct_but_stored=false;
+          for(unsigned j=0; j<arguments[i]->store_data_for.size(); ++j) {
+            if( arguments[i]->store_data_for[j].first==getLabel() ) { distinct_but_stored=true; break; }
+          }
+
+          // Check we haven't already dealt with this argument
+          int argno=-1;;
+          for(unsigned j=0; j<distinct_arguments.size(); ++j) {
+            if( myval==distinct_arguments[j].first ) { argno=j; break; }
+          }
+          if( argno>=0 ) {
+            arg_deriv_starts.push_back( arg_deriv_starts[argno] );
+          } else {
+            arg_deriv_starts.push_back( nder );
+            if( !distinct_but_stored ) {
+              distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(myval,0) );
+              nder += myval->getNumberOfDerivatives();
+            } else {
+              distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(myval,1) );
+              nder += arguments[i]->getNumberOfValues( getLabel() );
+            }
+          }
         }
-      }
     }
   } else {
     for(unsigned i=0; i<getNumberOfArguments(); ++i) { if( arg[i]->getRank()>0 ) arg[i]->buildDataStore( getLabel() ); }
@@ -394,7 +398,10 @@ unsigned ActionWithArguments::setupActionInChain() {
   unsigned nderivatives=0;
   for(unsigned i=0; i<distinct_arguments.size(); ++i) {
     if( distinct_arguments[i].second==0 ) nderivatives += distinct_arguments[i].first->getNumberOfDerivatives();
-    else nderivatives += distinct_arguments[i].first->getFullNumberOfTasks();  // GAT - does this work with matrices??
+    else {
+      if( distinct_arguments[i].first->getNumberOfComponents()==1 ) nderivatives += (distinct_arguments[i].first->getPntrToComponent(0))->getNumberOfValues( getLabel() );
+      else nderivatives += distinct_arguments[i].first->getFullNumberOfTasks();  // GAT - does this work with matrices??
+    }
   }
   return nderivatives;
 }

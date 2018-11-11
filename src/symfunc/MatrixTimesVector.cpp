@@ -123,6 +123,7 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
 }
 
 unsigned MatrixTimesVector::getNumberOfDerivatives() const {
+  if( fixed_matrix ) return arg_deriv_starts[1] + getPntrToArgument(1)->getShape()[0];
   return SymmetryFunctionBase::getNumberOfDerivatives() + getPntrToArgument(1)->getShape()[0];
 }
 
@@ -141,6 +142,7 @@ void MatrixTimesVector::performTask( const unsigned& current, MultiValue& myvals
               myvals.setSecondTaskIndex( ncols + i ); compute( weight, dir, myvals );
           }
       }
+      if( !doNotCalculateDerivatives() ) updateDerivativeIndices( myvals );
   } else {
       SymmetryFunctionBase::performTask( current, myvals ); 
   } 
@@ -155,7 +157,8 @@ void MatrixTimesVector::compute( const double& val, const Vector& dir, MultiValu
 }
 
 void MatrixTimesVector::updateDerivativeIndices( MultiValue& myvals ) const {
-  SymmetryFunctionBase::updateDerivativeIndices( myvals );
+  // Could make this work without this if statement if it is needed in the future
+  if( !fixed_matrix ) SymmetryFunctionBase::updateDerivativeIndices( myvals );
   for(unsigned i=arg_deriv_starts[1]; i<getNumberOfDerivatives(); ++i) {
     for(unsigned j=0; j<getNumberOfComponents(); ++j) {
       unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
