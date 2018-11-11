@@ -42,7 +42,7 @@ MultiBias::MultiBias(const ActionOptions&ao):
   ActionWithArguments(ao),
   forcesToApply(getNumberOfScalarArguments(),0.0)
 {
-  createTasksFromArguments(); nderivatives = getNumberOfArguments();
+  createTasksFromArguments(0); nderivatives = getNumberOfArguments();
   if( distinct_arguments.size()>0 ) {
     // Create the chain of actions that will calculate the function
     nderivatives = setupActionInChain();
@@ -73,7 +73,7 @@ void MultiBias::calculate() {
 
 void MultiBias::performTask( const unsigned& current, MultiValue& myvals ) const {
   // Get the values of all the arguments
-  std::vector<double> args( getNumberOfArgumentsPerTask() ); retrieveArguments( myvals, args );
+  std::vector<double> args( getNumberOfArgumentsPerTask() ); retrieveArguments( myvals, args, 0 );
   // Calculate whatever we are calculating
   calculateBias( args, myvals );
   if( actionInChain() ) {

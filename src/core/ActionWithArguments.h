@@ -56,7 +56,7 @@ protected:
 /// This changes the arg keyword in the pdb file
   void expandArgKeywordInPDB( PDB& pdb );
 /// Create a list of tasks from the argument streams
-  void createTasksFromArguments();
+  void createTasksFromArguments( const unsigned& startarg );
 /// Get the total number of input arguments
   unsigned getNumberOfScalarArguments() const ;
 /// Is an average used as an argument of this function
@@ -102,7 +102,7 @@ public:
 /// Convert a list of argument names into a list of pointers to the values
   void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
 /// Retrieve the argument values
-  void retrieveArguments( const MultiValue& myvals, std::vector<double>& args ) const ;
+  void retrieveArguments( const MultiValue& myvals, std::vector<double>& args, const unsigned& argstart ) const ;
 /// This tells us which arguments must be treated as distinct in functions
   virtual bool mustBeTreatedAsDistinctArguments() const ;
 /// Get the number of quantities that must be stored in input

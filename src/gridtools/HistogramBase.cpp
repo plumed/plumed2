@@ -198,7 +198,7 @@ void HistogramBase::performTask( const unsigned& current, MultiValue& myvals ) c
 }
 
 void HistogramBase::retrieveArgumentsAndHeight( const MultiValue& myvals, std::vector<double>& args, double& height ) const {
-  std::vector<double> argsh( arg_ends.size()-1 ); retrieveArguments( myvals, argsh );
+  std::vector<double> argsh( arg_ends.size()-1 ); retrieveArguments( myvals, argsh, 0 );
   height=1.0; if( heights_index==2 ) height = argsh[ argsh.size()-1 ];
   if( !unorm ) height = height / norm;
   for(unsigned i=0; i<args.size(); ++i) args[i]=argsh[i];

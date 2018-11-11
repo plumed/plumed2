@@ -402,7 +402,7 @@ void Print::update() {
       unsigned natoms=0, ntatoms=getNumberOfAtoms(); if( hasorigin ) ntatoms = ntatoms - 1;
       MultiValue myfvals(0,0); std::vector<double> argvals( getNumberOfArgumentsPerTask() );
       for(unsigned i=0; i<ntatoms; ++i) {
-        myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals );
+        myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals, 0 );
         if( isInTargetRange( argvals ) ) natoms++;
       }
       ofile.printf("%d\n",natoms);
@@ -419,7 +419,7 @@ void Print::update() {
       for(unsigned i=0; i<ntatoms; ++i) {
         const char* defname="X"; const char* name=defname;
         if(names.size()>0) if(names[i].length()>0) name=names[i].c_str();
-        myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals );
+        myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals, 0 );
         if( isInTargetRange( argvals ) ) {
           if( hasorigin ) {
             Vector fpos=pbcDistance( getPosition(ntatoms), getPosition(i) );
@@ -447,7 +447,7 @@ void Print::update() {
       ofile.printf("%d\n",tasks.size()); ofile.printf("\n");
       for(unsigned i=0; i<tasks.size(); ++i) {
         const char* defname="X"; const char* name=defname; ofile.printf("%s", name);
-        myfvals.setTaskIndex(tasks[i]); retrieveArguments( myfvals, argvals );
+        myfvals.setTaskIndex(tasks[i]); retrieveArguments( myfvals, argvals, 0 );
         if( isInTargetRange( argvals ) ) {
           for(unsigned j=0; j<argvals.size(); ++j) ofile.printf((" " + fmt).c_str(), argvals[j] );
           ofile.printf("\n");
@@ -458,7 +458,7 @@ void Print::update() {
     unsigned n=0; MultiValue myfvals(0,0); std::vector<double> argvals( getNumberOfArgumentsPerTask() );
     ofile.printf("[ %s step %d ] \n", getLabel().c_str(), getStep() );
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
-      myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals );
+      myfvals.setTaskIndex(i); retrieveArguments( myfvals, argvals, 0 );
       if( isInTargetRange( argvals ) ) {
         ofile.printf("%6d", getAbsoluteIndexes()[i].serial() ); n++;
         if( n%15==0 ) ofile.printf("\n");

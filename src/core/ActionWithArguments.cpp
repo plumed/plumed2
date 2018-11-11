@@ -476,12 +476,12 @@ ActionWithValue* ActionWithArguments::getFirstNonStream() {
   return aa->getFirstNonStream();
 }
 
-void ActionWithArguments::createTasksFromArguments() {
+void ActionWithArguments::createTasksFromArguments( const unsigned& startarg ) {
   ActionWithValue* av = dynamic_cast<ActionWithValue*>(this); plumed_assert( av );
   unsigned ntasks=1;
   if( arg_ends.size()>0 ) {
      ntasks=0; 
-     for(unsigned j=arg_ends[0]; j<arg_ends[1]; ++j) {
+     for(unsigned j=arg_ends[startarg]; j<arg_ends[startarg+1]; ++j) {
          // Get number of tasks
          if( getPntrToArgument(j)->getRank()==2 && !getPntrToArgument(j)->hasDerivatives() ) {
              if( !getPntrToArgument(j)->usingAllVals( getLabel() ) ) error("cannot use a subset of values as input to this argument");
@@ -489,7 +489,7 @@ void ActionWithArguments::createTasksFromArguments() {
          } else ntasks += getPntrToArgument(j)->getNumberOfValues( getLabel() );
      }
 
-     for(unsigned i=1; i<arg_ends.size()-1; ++i) {
+     for(unsigned i=startarg+1; i<arg_ends.size()-1; ++i) {
       unsigned nt = 0;
       for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
           // Get number of tasks
@@ -543,15 +543,14 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
   return Value::projection(*v1,*v2);
 }
 
-void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vector<double>& args ) const {
+void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vector<double>& args, const unsigned& argstart ) const {
   if( done_over_stream ) {
-    plumed_dbg_assert( args.size()==arguments.size() );
-    for(unsigned i=0; i<args.size(); ++i) {
-      plumed_dbg_massert( i<arguments.size(), "cannot retrieve in " + getLabel() );
+    plumed_dbg_assert( args.size()==(arguments.size()-argstart) );
+    for(unsigned i=argstart; i<arguments.size(); ++i) {
       plumed_dbg_massert( usingAllArgs[i], "cannot stream in " + getLabel() );
-      if( !arguments[i]->value_set ) args[i]=myvals.get( arguments[i]->streampos );
-      else if( arguments[i]->getRank()==0 ) args[i]=arguments[i]->get();
-      else args[i]=arguments[i]->get( myvals.getTaskIndex() );
+      if( !arguments[i]->value_set ) args[i-argstart]=myvals.get( arguments[i]->streampos );
+      else if( arguments[i]->getRank()==0 ) args[i-argstart]=arguments[i]->get();
+      else args[i-argstart]=arguments[i]->get( myvals.getTaskIndex() );
     }
     return;
   }
@@ -561,10 +560,10 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
       for(unsigned j=0; j<narg_v; ++j) arguments[i]->getRequiredValue( getLabel(), j, args );
     }
   } else {
-    for(unsigned i=0; i<arg_ends.size()-1; ++i) {
+    for(unsigned i=argstart; i<arg_ends.size()-1; ++i) {
       unsigned k=arg_ends[i];
       if( arg_ends[i+1]==(k+1) && arguments[k]->getRank()==0 ) {
-        args[i] = arguments[k]->get();
+        args[i-argstart] = arguments[k]->get();
       } else {
         unsigned nt=0, nn=0; unsigned mycode;
         if( thisAsActionWithValue ) mycode = thisAsActionWithValue->getTaskCode( myvals.getTaskIndex() ); else mycode = myvals.getTaskIndex();
@@ -575,8 +574,8 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
               nn += nv; k++;
             }
         }
-        if( usingAllArgs[k] ) args[i] = arguments[k]->get( mycode - nn );
-        else args[i] = arguments[k]->getRequiredValue( getLabel(), mycode - nn );
+        if( usingAllArgs[k] ) args[i-argstart] = arguments[k]->get( mycode - nn );
+        else args[i-argstart] = arguments[k]->getRequiredValue( getLabel(), mycode - nn );
       }
     }
   }

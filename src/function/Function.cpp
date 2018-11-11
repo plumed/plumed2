@@ -108,7 +108,7 @@ Function::Function(const ActionOptions&ao):
       // Now create a task list for the function
       for(unsigned j=0; j<npoints; ++j) addTaskToList(j);
     } else {
-      createTasksFromArguments();
+      createTasksFromArguments(0);
       // Now create the stream of jobs to work through
       if( distinct_arguments.size()>0 ) {  // This is for if we have a function that needs to store - needs though GAT
         // Create the chain of actions that will calculate the function
@@ -360,7 +360,7 @@ void Function::getGridPointAsCoordinate( const unsigned& ind, const bool& setlen
 void Function::performTask( const unsigned& current, MultiValue& myvals ) const {
   // Calculate whatever we are calculating
   if( (matinp && !myvals.inVectorCall()) || !matinp ) {
-    std::vector<double> args( getNumberOfArgumentsPerTask() ); retrieveArguments( myvals, args );
+    std::vector<double> args( getNumberOfArgumentsPerTask() ); retrieveArguments( myvals, args, 0 );
     calculateFunction( args, myvals );
     // Make sure grid derivatives are updated
     if( getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() ) {
