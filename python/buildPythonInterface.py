@@ -29,31 +29,35 @@ import numpy
 import subprocess
 import os
 
-# Function for checking if PLUMED is in path
-def is_exe(fpath):
-    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+plumedname = os.getenv("program_name")
+if plumedname is None:
+    plumedname = "plumed"
 
-plumedexe=os.environ["plumedexe"]
+plumedversion = subprocess.check_output(['grep','-v','#','../VERSION']).decode("utf-8")
 
-plumedversion = subprocess.check_output([plumedexe, 'info', '--version']).decode("utf-8")
-print( "Version number for this plumed is " + plumedversion )
+print( "Module name " + plumedname )
+print( "Version number " + plumedversion )
 
-print( "Building interface using CC=" + os.environ["CC"] + " , CXX=" + os.environ["CXX"] + " and LDSHARED=" + os.environ["LDSHARED"] )
+extra_compile_args=['-D__PLUMED_HAS_DLOPEN','-D__PLUMED_WRAPPER_LINK_RUNTIME=1','-D__PLUMED_WRAPPER_CXX=1','-D__PLUMED_WRAPPER_IMPLEMENTATION=1','-D__PLUMED_WRAPPER_EXTERN=0'] 
+
+defaultkernel=os.getenv("default_kernel")
+if defaultkernel is not None:
+    extra_compile_args.append("-D__PLUMED_DEFAULT_KERNEL=" + os.path.abspath(defaultkernel))
+    print( "Hardcoded PLUMED_KERNEL " + os.path.abspath(defaultkernel))
 
 setup(
-  name='plumed',
+  name=plumedname,
   version=plumedversion,
   description='Python interface to PLUMED',
   author='Gareth A. Tribello',
   author_email='plumed-users@googlegroups.com',
   url='http://www.plumed.org',
   ext_modules = cythonize([
-                  Extension( name="plumed",
+                  Extension( name=plumedname,
                              sources=["plumed.pyx"],
-                             library_dirs=[os.environ["lib_dir"]],
-                             libraries=[os.environ["program_name"]],
                              language="c++",
-                             include_dirs=[os.environ["include_dir"], numpy.get_include()]
+                             include_dirs=[os.environ["include_dir"], numpy.get_include()],
+                             extra_compile_args=extra_compile_args
                            )
                           ])
 )

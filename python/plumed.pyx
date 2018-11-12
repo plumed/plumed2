@@ -31,6 +31,8 @@ cimport numpy as np
 cdef class Plumed:
      cdef cplumed.Plumed c_plumed
      def __cinit__(self):
+         if not self.c_plumed.valid():
+              raise RuntimeError("PLUMED not available, check your PLUMED_KERNEL environment variable")
          cdef int pres = 8
          self.c_plumed.cmd( "setRealPrecision", <void*>&pres )
      def cmd_ndarray_real(self, ckey, val):

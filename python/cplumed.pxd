@@ -23,10 +23,13 @@
 # This create cython wrappers to the main bits of the PLUMED libraray
 #
 
+from libcpp cimport bool
+
+# Some of these functions are noexcept.
+# We anyway use except + in case this changes later.
 cdef extern from "Plumed.h" namespace "PLMD":
      cdef cppclass Plumed:
          Plumed() except +
          void cmd(const char*key, const void*val) except +
          void cmd(const char*key) except +
-
-
+         bool valid() except +

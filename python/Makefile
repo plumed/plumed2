@@ -16,22 +16,12 @@ else
 
 ifdef python_bin
 
-ifeq ($(SOEXT),dylib)
-PYTHON_EXTRA_LDFLAGS=-undefined dynamic_lookup
-else
-PYTHON_EXTRA_LDFLAGS=
-endif
-
 all:
 	@echo Building python interface for PLUMED 
-	LD_LIBRARY_PATH=$$PWD/../src/lib:$$LD_LIBRARY_PATH \
-	  CC="$(CC)" \
-          LDSHARED="$(LDSHARED) $(PYTHON_EXTRA_LDFLAGS)" \
-          CXX="$(CXX)" \
+	unset CXX && unset CC && unset CFLAGS && unset CXXFLAGS && unset LDSHARED && \
           program_name=plumed \
-          plumedexe=../src/lib/plumed \
           include_dir=../src/wrapper \
-          lib_dir=../src/lib \
+          default_kernel="$$PWD/../src/lib/libplumedKernel.$(SOEXT)" \
           $(python_bin) buildPythonInterface.py build_ext -i
 
 else

@@ -17,8 +17,6 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 ifeq ($(SOEXT),dylib)
-# Extra flags required to properly compile the python interface
-  PYTHON_EXTRA_LDFLAGS:=-undefined dynamic_lookup
   SONAME_OPTION:=-Wl,-install_name
 else
   PYTHON_EXTRA_LDFLAGS:=
@@ -314,14 +312,10 @@ endif
 ifdef python_bin
 	cp -pr ../../python install 
 	cd install/python && rm -fr *.so plumed.cpp build && \
-	LD_LIBRARY_PATH=$$PWD/../..:$$LD_LIBRARY_PATH \
-	  CC="$(CC)" \
-          LDSHARED="$(LDSHARED) $(PYTHON_EXTRA_LDFLAGS)" \
-          CXX="$(CXX)" \
-          plumedexe="../../plumed" \
+          unset CXX && unset CC && unset CFLAGS && unset CXXFLAGS && unset LDSHARED && \
           program_name="$(program_name)" \
           include_dir=../../../wrapper \
-          lib_dir="$(DESTDIR)$(libdir)" \
+          default_kernel="$(libdir)/lib$(program_name)Kernel.$(SOEXT)" \
           $(python_bin) buildPythonInterface.py build_ext -i
 	cp -pr install/python "$(DESTDIR)$(libdir)/$(program_name)/" 
 endif
