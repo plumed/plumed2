@@ -33,10 +33,11 @@ class ActionWithInputGrid :
   public ActionWithValue,
   public ActionWithArguments {
 private:
-  bool firststep;
   void doTheCalculation();
 protected:
+  bool firststep;
   GridCoordinatesObject gridobject;
+  void setupGridObject();
   double getFunctionValue( const unsigned& ipoint ) const ;
   double getFunctionValue( const std::vector<unsigned>& ip ) const ;
   double getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const ;

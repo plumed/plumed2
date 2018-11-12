@@ -108,11 +108,11 @@ Function::Function(const ActionOptions&ao):
       // Now create a task list for the function
       for(unsigned j=0; j<npoints; ++j) addTaskToList(j);
     } else {
-      createTasksFromArguments(0);
+      createTasksFromArguments();
       // Now create the stream of jobs to work through
       if( distinct_arguments.size()>0 ) {  // This is for if we have a function that needs to store - needs though GAT
         // Create the chain of actions that will calculate the function
-        nderivatives = setupActionInChain();
+        nderivatives = setupActionInChain(0);
         // Set forces to apply to correct size
         forcesToApply.resize( nderivatives );
       }

@@ -56,13 +56,13 @@ protected:
 /// This changes the arg keyword in the pdb file
   void expandArgKeywordInPDB( PDB& pdb );
 /// Create a list of tasks from the argument streams
-  void createTasksFromArguments( const unsigned& startarg );
+  void createTasksFromArguments();
 /// Get the total number of input arguments
   unsigned getNumberOfScalarArguments() const ;
 /// Is an average used as an argument of this function
   bool hasAverageAsArgument() const ;
 /// This is used to create a chain of actions that can be used to calculate a function/multibias
-  unsigned setupActionInChain() ;
+  unsigned setupActionInChain( const unsigned& argstart ) ;
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;

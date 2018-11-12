@@ -42,10 +42,10 @@ MultiBias::MultiBias(const ActionOptions&ao):
   ActionWithArguments(ao),
   forcesToApply(getNumberOfScalarArguments(),0.0)
 {
-  createTasksFromArguments(0); nderivatives = getNumberOfArguments();
+  createTasksFromArguments(); nderivatives = getNumberOfArguments();
   if( distinct_arguments.size()>0 ) {
     // Create the chain of actions that will calculate the function
-    nderivatives = setupActionInChain();
+    nderivatives = setupActionInChain(0);
     // Set forces to apply to correct size
     forcesToApply.resize( nderivatives );
   }

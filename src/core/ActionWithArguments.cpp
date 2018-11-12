@@ -216,14 +216,25 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
   plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
   thisAsActionWithValue = dynamic_cast<const ActionWithValue*>(this);
   bool firstcall=(arguments.size()==0);
-  arguments=arg;
-  clearDependencies();
-  distinct_arguments.resize(0);
+  arguments=arg; clearDependencies();
+  if( arguments.size()==0 ) return ;
+  // Check if we are evaluating a function on a grid if we are ignore first argument in many places
+  unsigned argstart=0; 
+  if( arguments[0]->getRank()>0 && arguments.size()==(1+arguments[0]->getRank()) && arguments[0]->hasDerivatives() ) {
+      Value* gval=arguments[0]; ActionWithValue* act=gval->getPntrToAction();
+      std::vector<unsigned> ind( gval->getRank() ), nbin( gval->getRank() ); std::string gtype;
+      std::vector<double> spacing( gval->getRank() ), xx( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
+      std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
+      act->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, false ); 
+      bool match=true; for(unsigned i=1;i<arguments.size();++i) { if( argn[i-1]!=arguments[i]->getName() ) match=false; }
+      if( match ) argstart = 1;
+  }
+  distinct_arguments.resize(0); done_over_stream=false;
   bool storing=false; allrankzero=true;
   // This allows us to do some optimizing in getting values
   for(unsigned i=0; i<arguments.size(); ++i) usingAllArgs.push_back( arguments[i]->usingAllVals( getLabel() ) );
   // Now check if we need to store data
-  for(unsigned i=0; i<arguments.size(); ++i) {
+  for(unsigned i=argstart; i<arguments.size(); ++i) {
     if( arguments[i]->getRank()>0 ) allrankzero=false;
     Average* av=dynamic_cast<Average*>( arguments[i]->getPntrToAction() ); 
     if( av || arguments[i]->alwaysstore || arguments[i]->columnsums || !usingAllArgs[i] ) { storing=true; break; }
@@ -243,6 +254,8 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
         plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
         addDependency(action);
+        if( i<argstart ) continue;
+
         if( storing ) arguments[i]->buildDataStore( getLabel() );
         if( arguments[i]->getRank()>0 ) {
           // This checks if we have used the data in this value to calculate any of the other arguments in the input
@@ -291,14 +304,14 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
 
   if( done_over_stream ) {
     // Get the action where this argument should be applied
-    ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( arguments[0]->getPntrToAction() );
+    ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( arguments[argstart]->getPntrToAction() );
     bool distinct_but_stored=false;
-    for(unsigned i=0; i<arguments[0]->store_data_for.size(); ++i) {
-      if( arguments[0]->store_data_for[i].first==getLabel() ) { distinct_but_stored=true; break; }
+    for(unsigned i=0; i<arguments[argstart]->store_data_for.size(); ++i) {
+      if( arguments[argstart]->store_data_for[i].first==getLabel() ) { distinct_but_stored=true; break; }
     }
     if( !aa || aa->mustBeTreatedAsDistinctArguments() ) {
-      if( !distinct_but_stored ) distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(arguments[0]->getPntrToAction(),0) );
-      else distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(arguments[0]->getPntrToAction(),1) );
+      if( !distinct_but_stored ) distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(arguments[argstart]->getPntrToAction(),0) );
+      else distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(arguments[argstart]->getPntrToAction(),1) );
     } else {
       if( !distinct_but_stored ) distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(aa->getFirstNonStream(),0) );
       else distinct_arguments.push_back(std::pair<ActionWithValue*,unsigned>(aa->getFirstNonStream(),1) );
@@ -307,12 +320,12 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
     arg_deriv_starts.clear(); arg_deriv_starts.resize(0);
     arg_deriv_starts.push_back(0); unsigned nder;
     if( !distinct_but_stored ) nder = distinct_arguments[0].first->getNumberOfDerivatives();
-    else nder = arguments[0]->getNumberOfValues( getLabel() );
+    else nder = arguments[argstart]->getNumberOfValues( getLabel() );
 
     if( getNumberOfArguments()==1 ) { 
         arg_deriv_starts.push_back( nder );
     } else {
-        for(unsigned i=1; i<getNumberOfArguments(); ++i) {
+        for(unsigned i=argstart+1; i<getNumberOfArguments(); ++i) {
           // Work out what action applies forces
           ActionWithValue* myval; ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( arguments[i]->getPntrToAction() );
           if( !aa || aa->mustBeTreatedAsDistinctArguments() ) myval = arguments[i]->getPntrToAction();
@@ -343,15 +356,15 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
         }
     }
   } else {
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) { if( arg[i]->getRank()>0 ) arg[i]->buildDataStore( getLabel() ); }
+    for(unsigned i=argstart; i<getNumberOfArguments(); ++i) { if( arg[i]->getRank()>0 ) arg[i]->buildDataStore( getLabel() ); }
   }
 
 }
 
-unsigned ActionWithArguments::setupActionInChain() {
+unsigned ActionWithArguments::setupActionInChain( const unsigned& argstart ) {
   plumed_assert( done_over_stream ); 
   std::vector<std::string> alabels; std::vector<ActionWithValue*> f_actions;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     bool found=false; std::string mylab = (arguments[i]->getPntrToAction())->getLabel();
     for(unsigned j=0; j<alabels.size(); ++j) {
       if( alabels[j]==mylab ) { found=true; break; }
@@ -383,7 +396,7 @@ unsigned ActionWithArguments::setupActionInChain() {
   // Now add this argument to the chain
   bool added=false, all_setup=true; 
   ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+  for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     // Ensures we don't add actions to setup chains
     ActionSetup* as = dynamic_cast<ActionSetup*>( arguments[i]->getPntrToAction() );
     // Add this function to jobs to do in recursive loop in previous action
@@ -476,12 +489,12 @@ ActionWithValue* ActionWithArguments::getFirstNonStream() {
   return aa->getFirstNonStream();
 }
 
-void ActionWithArguments::createTasksFromArguments( const unsigned& startarg ) {
+void ActionWithArguments::createTasksFromArguments() {
   ActionWithValue* av = dynamic_cast<ActionWithValue*>(this); plumed_assert( av );
   unsigned ntasks=1;
   if( arg_ends.size()>0 ) {
      ntasks=0; 
-     for(unsigned j=arg_ends[startarg]; j<arg_ends[startarg+1]; ++j) {
+     for(unsigned j=arg_ends[0]; j<arg_ends[1]; ++j) {
          // Get number of tasks
          if( getPntrToArgument(j)->getRank()==2 && !getPntrToArgument(j)->hasDerivatives() ) {
              if( !getPntrToArgument(j)->usingAllVals( getLabel() ) ) error("cannot use a subset of values as input to this argument");
@@ -489,7 +502,7 @@ void ActionWithArguments::createTasksFromArguments( const unsigned& startarg ) {
          } else ntasks += getPntrToArgument(j)->getNumberOfValues( getLabel() );
      }
 
-     for(unsigned i=startarg+1; i<arg_ends.size()-1; ++i) {
+     for(unsigned i=1; i<arg_ends.size()-1; ++i) {
       unsigned nt = 0;
       for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
           // Get number of tasks
@@ -560,10 +573,11 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
       for(unsigned j=0; j<narg_v; ++j) arguments[i]->getRequiredValue( getLabel(), j, args );
     }
   } else {
-    for(unsigned i=argstart; i<arg_ends.size()-1; ++i) {
-      unsigned k=arg_ends[i];
+    for(unsigned i=0; i<arg_ends.size()-1; ++i) {
+      unsigned k=arg_ends[i]; plumed_assert( k<arguments.size() );
       if( arg_ends[i+1]==(k+1) && arguments[k]->getRank()==0 ) {
-        args[i-argstart] = arguments[k]->get();
+        plumed_assert( k<arguments.size() );
+        args[i] = arguments[k]->get();
       } else {
         unsigned nt=0, nn=0; unsigned mycode;
         if( thisAsActionWithValue ) mycode = thisAsActionWithValue->getTaskCode( myvals.getTaskIndex() ); else mycode = myvals.getTaskIndex();
@@ -574,8 +588,8 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
               nn += nv; k++;
             }
         }
-        if( usingAllArgs[k] ) args[i-argstart] = arguments[k]->get( mycode - nn );
-        else args[i-argstart] = arguments[k]->getRequiredValue( getLabel(), mycode - nn );
+        if( usingAllArgs[k] ) args[i] = arguments[k]->get( mycode - nn );
+        else args[i] = arguments[k]->getRequiredValue( getLabel(), mycode - nn );
       }
     }
   }

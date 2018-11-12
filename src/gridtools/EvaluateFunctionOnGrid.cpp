@@ -26,9 +26,12 @@ namespace PLMD {
 namespace gridtools {
 
 class EvaluateFunctionOnGrid : public ActionWithInputGrid {
+private:
+  unsigned nderivatives;
 public:
   static void registerKeywords( Keywords& keys );
   explicit EvaluateFunctionOnGrid(const ActionOptions&ao);
+  void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
   void finishOutputSetup(){}
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
 };
@@ -49,6 +52,9 @@ ActionWithInputGrid(ao)
   std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
   act->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, false );
   if( gtype=="fibonacci" ) error("cannot interpolate on fibonacci sphere");
+  // Arg ends must be setup once more
+  arg_ends.resize(0); arg_ends.push_back(1); 
+  for(unsigned i=0;i<gval->getRank();++i) arg_ends.push_back( 2+i );
   // Retreive values with these arguments
   std::vector<Value*> argv; interpretArgumentList( argn, argv ); 
   // Now check that arguments make sense
@@ -74,7 +80,14 @@ ActionWithInputGrid(ao)
   else addValue( shape );
   setNotPeriodic();
   // Make a task list
-  createTasksFromArguments( 1 );
+  createTasksFromArguments();
+  // Get the number of derivatives
+  nderivatives = getNumberOfArguments();
+  if( distinct_arguments.size()>0 ) nderivatives = setupActionInChain(1);
+}
+
+void EvaluateFunctionOnGrid::prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {
+  if( firststep ) setupGridObject();
 }
 
 void EvaluateFunctionOnGrid::performTask( const unsigned& current, MultiValue& myvals ) const {

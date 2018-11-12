@@ -96,23 +96,25 @@ double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<do
   return value;
 }
 
-void ActionWithInputGrid::doTheCalculation() {
-  if( firststep ) {
-    if( gridobject.getGridType()=="flat" ) {
-      unsigned dimension = getPntrToArgument(0)->getRank();
-      std::vector<std::string> argn( dimension ), min( dimension ), max( dimension ); std::string gtype;
-      std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
-      (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
-      gridobject.setBounds( min, max, nbin, spacing );
-    }
-    firststep=false; finishOutputSetup();
+void ActionWithInputGrid::setupGridObject() {
+  plumed_assert( firststep ); 
+  if( gridobject.getGridType()=="flat" ) {
+    unsigned dimension = getPntrToArgument(0)->getRank();
+    std::vector<std::string> argn( dimension ), min( dimension ), max( dimension ); std::string gtype;
+    std::vector<unsigned> nbin( dimension ); std::vector<double> spacing( dimension ); std::vector<bool> ipbc( dimension );
+    (getPntrToArgument(0)->getPntrToAction())->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, ipbc, false );
+    gridobject.setBounds( min, max, nbin, spacing );
   }
+}
+
+void ActionWithInputGrid::doTheCalculation() {
+  if( firststep ) { setupGridObject(); firststep=false; finishOutputSetup(); }
   runAllTasks();
   jobsAfterLoop();
 }
 
 void ActionWithInputGrid::calculate() {
-  if( hasAverageAsArgument() ) return ;
+  if( hasAverageAsArgument() || actionInChain() ) return ;
   doTheCalculation();
 }
 
