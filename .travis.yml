@@ -129,7 +129,14 @@ install:
     fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq ; fi
 # install some package - these are fast, we install them anyway
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libfftw3-dev gsl-bin libgsl0-dev  libboost-serialization-dev ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libfftw3-dev gsl-bin libgsl0-dev ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      if [[ "$CONFIG_FLAGS" == *debug* ]] ; then 
+        .travis/install.boost ;
+      else
+        sudo apt-get install -y libboost-serialization-dev ;
+      fi
+    fi
   - if test "$PLUMED_CXX" ; then ./.travis/install.xdrfile ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       ./.travis/install.ccache v3.5 ;
