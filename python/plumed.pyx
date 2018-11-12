@@ -29,25 +29,20 @@ import numpy as np
 cimport numpy as np
 
 cdef class Plumed:
-     cdef cplumed.plumed c_plumed
+     cdef cplumed.Plumed c_plumed
      def __cinit__(self):
-         self.c_plumed = cplumed.plumed_create()   #new cplumed.Plumed()
          cdef int pres = 8
-         cplumed.plumed_cmd(self.c_plumed, "setRealPrecision", <void*>&pres )  
-     def __dealloc__(self): 
-         cplumed.plumed_finalize(self.c_plumed)
-
+         self.c_plumed.cmd( "setRealPrecision", <void*>&pres )
      def cmd_ndarray_real(self, ckey, val):
          cdef double [:] abuffer = val.ravel()
-         cplumed.plumed_cmd(self.c_plumed, ckey, <void*>&abuffer[0])
+         self.c_plumed.cmd( ckey, <void*>&abuffer[0])
      def cmd_ndarray_int(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
-         cplumed.plumed_cmd(self.c_plumed, ckey, <void*>&abuffer[0])
+         self.c_plumed.cmd( ckey, <void*>&abuffer[0])
      cdef cmd_float(self, ckey, double val ):
-         cplumed.plumed_cmd(self.c_plumed, ckey, <void*>&val )
+         self.c_plumed.cmd( ckey, <void*>&val )
      cdef cmd_int(self, ckey, int val):
-         cplumed.plumed_cmd(self.c_plumed, ckey, <void*>&val)
-
+         self.c_plumed.cmd( ckey, <void*>&val)
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
@@ -55,7 +50,7 @@ cdef class Plumed:
          cdef np.int_t[:] ibuffer
          cdef np.float64_t[:] dbuffer
          if val is None :
-            cplumed.plumed_cmd( self.c_plumed, ckey, NULL )
+            self.c_plumed.cmd( ckey, NULL )
          elif isinstance(val, (int,long) ):
             if key=="getDataRank" :
                raise ValueError("when using cmd with getDataRank option value must a size one ndarray")
@@ -74,6 +69,6 @@ cdef class Plumed:
          elif isinstance(val, basestring ) :
               py_bytes = val.encode()
               cval = py_bytes 
-              cplumed.plumed_cmd( self.c_plumed, ckey, <void*>cval )
+              self.c_plumed.cmd( ckey, <void*>cval )
          else :
             raise ValueError("Unknown value type ({})".format(str(type(val))))
