@@ -158,7 +158,7 @@
 \endverbatim
 
   If you want to create on purpose an invalid Plumed object (useful in C++ to postpone
-  the loading of the library) you can use `Plumed p(Plumed::invalid());`.
+  the loading of the library) you can use `Plumed p(Plumed::makeInvalid());`.
 
   To know if the global object is valid instead you should use the following function:
 \verbatim
@@ -421,6 +421,16 @@
 
 #ifndef __PLUMED_WRAPPER_CXX_POLYMORPHIC
 #define __PLUMED_WRAPPER_CXX_POLYMORPHIC 1
+#endif
+
+/*
+  1: make the default constructor create an invalid object
+  0: make the default constructor create a valid object
+
+  Only for internal usage.
+*/
+#ifndef __PLUMED_WRAPPER_CXX_DEFAULT_INVALID
+#define __PLUMED_WRAPPER_CXX_DEFAULT_INVALID 0
 #endif
 
 
@@ -1133,7 +1143,11 @@ public:
     \note Performs the same task a plumed_create()
   */
 Plumed()__PLUMED_WRAPPER_CXX_NOEXCEPT :
+#if __PLUMED_WRAPPER_CXX_DEFAULT_INVALID
+  main(plumed_create_invalid())
+#else
   main(plumed_create())
+#endif
   {
   }
 
@@ -1285,16 +1299,29 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     However, there will be some error reported related to the attempt to load the kernel
     when `p` is initialized. The following solution is the optimal one:
   \verbatim
-    Plumed p(Plumed::invalid());
+    Plumed p(Plumed::makeInvalid());
     setenv("PLUMED_KERNEL","/path/to/kernel/libplumedKernel.so",1);
     p=Plumed();
     p.cmd("init")
   \endverbatim
   */
-  static Plumed invalid() __PLUMED_WRAPPER_CXX_NOEXCEPT  {
+  static Plumed makeInvalid() __PLUMED_WRAPPER_CXX_NOEXCEPT  {
 // use decref to remove the extra reference
     return Plumed(plumed_create_invalid()).decref();
   }
+
+  /**
+    Create a valid PLMD::Plumed object.
+
+    Can be used to create a valid object e.g. when Plumed.h was compiled with
+    `-D__PLUMED_WRAPPER_CXX_DEFAULT_INVALID`. For internal usage.
+  */
+
+  static Plumed makeValid()__PLUMED_WRAPPER_CXX_NOEXCEPT  {
+// use decref to remove the extra reference
+    return Plumed(plumed_create()).decref();
+  }
+
 
   /**
      Retrieve the C plumed structure for this object.
