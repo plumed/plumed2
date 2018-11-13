@@ -595,7 +595,7 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
   }
 }
 
-void ActionWithArguments::setForcesOnArguments( const std::vector<double>& forces, unsigned& start ) {
+void ActionWithArguments::setForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& start ) {
   if( done_over_stream ) {
     for(unsigned i=0; i<distinct_arguments.size(); ++i) {
       if( distinct_arguments[i].second==0 ) {
@@ -603,11 +603,11 @@ void ActionWithArguments::setForcesOnArguments( const std::vector<double>& force
         ParallelPlumedActions* pp = dynamic_cast<ParallelPlumedActions*>( distinct_arguments[i].first );
         if( pp ) pp->setForcesOnPlumedActions( forces, start ); 
         ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( distinct_arguments[i].first );
-        if( aarg ) aarg->setForcesOnArguments( forces, start );
+        if( aarg ) aarg->setForcesOnArguments( 0, forces, start );
         ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( distinct_arguments[i].first );
         if( aat ) aat->setForcesOnAtoms( forces, start );
       } else {
-        for(unsigned j=0; j<arguments.size(); ++j) {
+        for(unsigned j=argstart; j<arguments.size(); ++j) {
           bool hasstored=false;
           for(unsigned k=0; k<arguments[j]->store_data_for.size(); ++k) {
             if( arguments[j]->store_data_for[k].first==getLabel() ) { hasstored=true; break; }
@@ -623,7 +623,7 @@ void ActionWithArguments::setForcesOnArguments( const std::vector<double>& force
       }
     }
   } else {
-    for(unsigned i=0; i<arguments.size(); ++i) {
+    for(unsigned i=argstart; i<arguments.size(); ++i) {
       unsigned narg_v = arguments[i]->getNumberOfValues( getLabel() );
       if( usingAllArgs[i] ) {
         for(unsigned j=0; j<narg_v; ++j) { arguments[i]->addForce( j, forces[start] ); start++; }

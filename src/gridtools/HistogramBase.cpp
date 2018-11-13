@@ -224,7 +224,7 @@ void HistogramBase::apply() {
   if( doNotCalculateDerivatives() ) return;
   // And add forces
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, ss );
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 0, forcesToApply, ss );
 }
 
 void HistogramBase::gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const {

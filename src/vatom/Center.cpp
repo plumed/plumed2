@@ -523,7 +523,7 @@ void Center::apply() {
     for(unsigned j=0; j<3; ++j) {
       for(unsigned k=0; k<val_deriv[j].size(); ++k) val_forces[k] = f[j]*val_deriv[j][k];
       start=0;
-      if( aarg ) aarg->setForcesOnArguments( val_forces, start );
+      if( aarg ) aarg->setForcesOnArguments( 0, val_forces, start );
       if( aat ) aat->setForcesOnAtoms( val_forces, start );
     }
   }

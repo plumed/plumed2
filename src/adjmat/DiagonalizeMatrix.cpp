@@ -137,7 +137,7 @@ void DiagonalizeMatrix::apply() {
 
   // Forces on eigenvalues
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, ss );
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 0, forcesToApply, ss );
 
   // Check for forces on eigenvectors
   bool eigvec_forces=false;

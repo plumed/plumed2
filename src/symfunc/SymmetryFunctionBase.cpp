@@ -352,7 +352,7 @@ void SymmetryFunctionBase::apply() {
   if( doNotCalculateDerivatives() ) return;
   if( forcesToApply.size()!=getNumberOfDerivatives() ) forcesToApply.resize( getNumberOfDerivatives() );
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
-  if( getForcesFromValues( forcesToApply ) ) { setForcesOnArguments( forcesToApply, mm ); }
+  if( getForcesFromValues( forcesToApply ) ) { setForcesOnArguments( 0, forcesToApply, mm ); }
 }
 
 }

@@ -480,7 +480,7 @@ void Function::apply()
   } else {
     // And add forces
     std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;
-    if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, ss );
+    if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 0, forcesToApply, ss );
   }
 }
 

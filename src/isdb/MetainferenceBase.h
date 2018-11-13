@@ -332,7 +332,7 @@ inline
 void MetainferenceBase::apply() {
   forcesToApply.assign(forcesToApply.size(),0.0);
   if( getForcesFromValues(forcesToApply) ) {
-    unsigned start=0; setForcesOnArguments( forcesToApply, start );
+    unsigned start=0; setForcesOnArguments( 0, forcesToApply, start );
     if( getNumberOfAtoms()>0 ) setForcesOnAtoms( forcesToApply, start );
   }
 }

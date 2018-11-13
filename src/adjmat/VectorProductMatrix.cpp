@@ -314,7 +314,7 @@ void VectorProductMatrix::apply() {
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned mm=0;
   if( getForcesFromValues( forcesToApply ) ) {
     setForcesOnAtoms( forcesToApply, mm );
-    setForcesOnArguments( forcesToApply, mm );
+    setForcesOnArguments( 0, forcesToApply, mm );
   }
 }
 

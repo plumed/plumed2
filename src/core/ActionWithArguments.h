@@ -87,7 +87,7 @@ public:
 /// Setup the dependencies
   void requestArguments(const std::vector<Value*> &arg, const bool& allow_streams);
 /// Set the forces on the arguments
-  void setForcesOnArguments( const std::vector<double>& forces, unsigned& start );
+  void setForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& start );
 public:
   explicit ActionWithArguments(const ActionOptions&);
   virtual ~ActionWithArguments() {}

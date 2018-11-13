@@ -44,11 +44,11 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputGrid(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives() const ;
+  virtual unsigned getNumberOfDerivatives() const ;
   virtual void finishOutputSetup() = 0;
   virtual void jobsAfterLoop() {}
   void calculate();
-  void apply() {};
+  virtual void apply() {};
   void update();
   void runFinalJobs();
 };

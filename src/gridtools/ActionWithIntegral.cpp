@@ -52,7 +52,7 @@ void ActionWithIntegral::finishOutputSetup() {
 void ActionWithIntegral::apply() {
   if( doNotCalculateDerivatives() ) return;
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned fstart=0;
-  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( forcesToApply, fstart );
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 0, forcesToApply, fstart );
 }
 
 }

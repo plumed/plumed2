@@ -201,7 +201,7 @@ void ParallelPlumedActions::setForcesOnPlumedActions( const std::vector<double>&
       ActionAtomistic* aa = dynamic_cast<ActionAtomistic*>( plumed.getActionSet()[action_lists[i].first].get() );
       if( aa ) aa->setForcesOnAtoms( forces, start );
       ActionWithArguments* av = dynamic_cast<ActionWithArguments*>( plumed.getActionSet()[action_lists[i].first].get() );
-      if( av ) av->setForcesOnArguments( forces, start );   
+      if( av ) av->setForcesOnArguments( 0, forces, start );   
   }
   forcesWereSet=true;
 }

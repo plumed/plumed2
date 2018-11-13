@@ -28,12 +28,15 @@ namespace gridtools {
 class EvaluateFunctionOnGrid : public ActionWithInputGrid {
 private:
   unsigned nderivatives;
+  std::vector<double> forcesToApply;
 public:
   static void registerKeywords( Keywords& keys );
   explicit EvaluateFunctionOnGrid(const ActionOptions&ao);
+  unsigned getNumberOfDerivatives() const ;
   void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
   void finishOutputSetup(){}
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
+  void apply();
 };
 
 PLUMED_REGISTER_ACTION(EvaluateFunctionOnGrid,"EVALUATE_FUNCTION_FROM_GRID")
@@ -82,8 +85,13 @@ ActionWithInputGrid(ao)
   // Make a task list
   createTasksFromArguments();
   // Get the number of derivatives
-  nderivatives = getNumberOfArguments();
+  nderivatives = getNumberOfArguments() - 1;
   if( distinct_arguments.size()>0 ) nderivatives = setupActionInChain(1);
+  forcesToApply.resize( nderivatives );
+}
+
+unsigned EvaluateFunctionOnGrid::getNumberOfDerivatives() const {
+  return nderivatives;
 }
 
 void EvaluateFunctionOnGrid::prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {
@@ -98,7 +106,27 @@ void EvaluateFunctionOnGrid::performTask( const unsigned& current, MultiValue& m
   // And derivatives
   if( doNotCalculateDerivatives() ) return;
   // Set the final derivatives
-  // for(unsigned i=0;i<nargs;++i) { myvals.addDerivative( ostrn, i, der[i] );
+  if( actionInChain() ) {
+    for(unsigned j=0; j<nargs; ++j) {
+      unsigned istrn = getArgumentPositionInStream(j+1, myvals);
+      for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+        unsigned kind=myvals.getActiveIndex(istrn,k);
+        myvals.addDerivative( ostrn, arg_deriv_starts[j] + kind, der[j]*myvals.getDerivative( istrn, kind ) );
+        myvals.updateIndex( ostrn, arg_deriv_starts[j] + kind );
+      }
+    }
+    return;
+  } 
+  for(unsigned i=0;i<nargs;++i) { 
+      if( getPntrToArgument(i+1)->getRank()>0 ) error("non-chained function has not been implemented here");
+      myvals.addDerivative( ostrn, i, der[i] ); myvals.updateIndex( ostrn, i ); 
+  }
+}
+
+void EvaluateFunctionOnGrid::apply() {
+  if( doNotCalculateDerivatives() ) return;
+  std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned fstart=0;
+  if( getForcesFromValues( forcesToApply ) ) setForcesOnArguments( 1, forcesToApply, fstart );
 }
 
 }
