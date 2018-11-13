@@ -30,9 +30,19 @@ cimport numpy as np
 
 cdef class Plumed:
      cdef cplumed.Plumed c_plumed
-     def __cinit__(self):
-         if not self.c_plumed.valid():
-              raise RuntimeError("PLUMED not available, check your PLUMED_KERNEL environment variable")
+     def __cinit__(self,kernel=None):
+         cdef bytes py_kernel
+         cdef char* ckernel
+         if kernel is None:
+            self.c_plumed=cplumed.Plumed.makeValid()
+            if not self.c_plumed.valid():
+                 raise RuntimeError("PLUMED not available, check your PLUMED_KERNEL environment variable")
+         else:
+            py_kernel= kernel.encode()
+            ckernel = py_kernel
+            self.c_plumed=cplumed.Plumed.dlopen(ckernel)
+            if not self.c_plumed.valid():
+                 raise RuntimeError("Error loading PLUMED kernel at path " + kernel)
          cdef int pres = 8
          self.c_plumed.cmd( "setRealPrecision", <void*>&pres )
      def cmd_ndarray_real(self, ckey, val):

@@ -33,3 +33,7 @@ cdef extern from "Plumed.h" namespace "PLMD":
          void cmd(const char*key, const void*val) except +
          void cmd(const char*key) except +
          bool valid() except +
+         @staticmethod
+         Plumed dlopen(const char*path) except +
+         @staticmethod
+         Plumed makeValid() except +
