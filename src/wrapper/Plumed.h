@@ -1310,12 +1310,12 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     return Plumed(plumed_create_invalid()).decref();
   }
 
-/**
-  Create a valid PLMD::Plumed object.
+  /**
+    Create a valid PLMD::Plumed object.
 
-  Can be used to create a valid object e.g. when Plumed.h was compiled with
-  `-D__PLUMED_WRAPPER_CXX_DEFAULT_INVALID`. For internal usage.
-*/
+    Can be used to create a valid object e.g. when Plumed.h was compiled with
+    `-D__PLUMED_WRAPPER_CXX_DEFAULT_INVALID`. For internal usage.
+  */
 
   static Plumed makeValid()__PLUMED_WRAPPER_CXX_NOEXCEPT  {
 // use decref to remove the extra reference
