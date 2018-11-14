@@ -126,12 +126,6 @@
 #include "membed.h"
 #include "repl_ex.h"
 
-/* PLUMED */
-#include "../../../Plumed.h"
-extern int    plumedswitch;
-extern plumed plumedmain;
-/* END PLUMED */
-
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
@@ -958,13 +952,17 @@ int Mdrunner::mdrunner()
                           !thisRankHasDuty(cr, DUTY_PP),
                           inputrec->cutoff_scheme == ecutsVERLET);
 
-#ifndef NDEBUG
-    if (EI_TPI(inputrec->eI) &&
+    // Disabled for the rest of the lifetime of release-2018 branch
+    // to prevent false positives.
+    /*
+       #ifndef NDEBUG
+       if (EI_TPI(inputrec->eI) &&
         inputrec->cutoff_scheme == ecutsVERLET)
-    {
+       {
         gmx_feenableexcept();
-    }
-#endif
+       }
+       #endif
+     */
 
     // Build a data structure that expresses which kinds of non-bonded
     // task are handled by this rank.
@@ -1333,15 +1331,6 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
-        /* PLUMED */
-        if(plumedswitch){
-          /* detect plumed API version */
-          int pversion=0;
-          plumed_cmd(plumedmain,"getApiVersion",&pversion);
-          if(pversion>5) plumed_cmd(plumedmain,"setNumOMPthreads",&hw_opt.nthreads_omp);
-        }
-        /* END PLUMED */
-
         /* Now do whatever the user wants us to do (how flexible...) */
         my_integrator(inputrec->eI) (fplog, cr, mdlog, nfile, fnm,
                                      oenv,
@@ -1416,12 +1405,6 @@ int Mdrunner::mdrunner()
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
-
-    /* PLUMED */
-    if(plumedswitch){
-      plumed_finalize(plumedmain);
-    }
-    /* END PLUMED */
 
     /* Close logfile already here if we were appending to it */
     if (MASTER(cr) && continuationOptions.appendFiles)
