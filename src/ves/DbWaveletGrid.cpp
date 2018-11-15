@@ -35,7 +35,7 @@ namespace ves {
 
 // construction of Wavelet grid according to the Daubechies-Lagarias method
 // c.f. Strang, Nguyen "Wavelets and Filter Banks" chapter 6.3
-std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gridsize, bool do_wavelet) {
+std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gridsize, bool do_wavelet, const std::string& type) {
   // calculate the grid properties of the scaling grid
   // the range of the grid is from 0 to maxsupport
   unsigned maxsupport = order*2 -1;
@@ -46,9 +46,8 @@ std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gr
   unsigned bins_per_int = 1<<recursion_number;
   gridsize = maxsupport*bins_per_int;
 
-
   // Filter coefficients
-  std::vector<double> h_coeffs = getFilterCoefficients(order, true);
+  std::vector<double> h_coeffs = getFilterCoefficients(order, true, type);
   // Vector with the Matrices M0 and M1 for the cascade
   std::vector<Matrix<double>> h_Matvec = setupMatrices(h_coeffs);
   std::vector<Matrix<double>> g_Matvec; // only filled if needed for wavelet
@@ -67,7 +66,7 @@ std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gr
   }
   else {
     // if wavelet is wanted: get the needed coefficients as well
-    std::vector<double> g_coeffs = getFilterCoefficients(order, false);
+    std::vector<double> g_coeffs = getFilterCoefficients(order, false, type);
     g_Matvec = setupMatrices(g_coeffs);
 
     grid.reset(new Grid("db"+std::to_string(order)+"_psi", {"position"}, {"0"},

@@ -45,7 +45,7 @@ public:
 
 private:
   // lookup function for the filter coefficients
-  static std::vector<double> getFilterCoefficients(const unsigned order, bool lowpass);
+  static std::vector<double> getFilterCoefficients(const unsigned order, const bool lowpass, const std::string& type);
   // Fills the coefficient matrices needed for the cascade algorithm
   static std::vector<Matrix<double>> setupMatrices(const std::vector<double>& h);
   // calculates the values of the Wavelet or its derivatives at the Integer points
@@ -60,7 +60,7 @@ private:
       const BinaryMap& derivsmap);
 public:
   // construct either a grid with the scaling function or the wavelet function, and its first derivative
-  static std::unique_ptr<Grid> setupGrid(const unsigned order, unsigned gridsize, bool do_wavelet);
+  static std::unique_ptr<Grid> setupGrid(const unsigned order, unsigned gridsize, bool do_wavelet, const std::string& type);
 };
 
 

@@ -79,6 +79,7 @@ class BF_DbWavelets : public BasisFunctions {
   // Grid that holds the Wavelet values and its derivative
   std::unique_ptr<Grid> waveletGrid_;
   bool use_scaling_function_;
+  std::string type_;
   unsigned int shift_;
   void setupLabels() override;
 
@@ -95,6 +96,7 @@ PLUMED_REGISTER_ACTION(BF_DbWavelets,"BF_DB_WAVELETS")
 void BF_DbWavelets::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
   keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value will be used as guiding value only, while the true number will be \"(ORDER*2 - 1) * 2**n\" with the smallest n such that the grid is at least as large as the specified number. Defaults to 1000"); // Change the commentary a bit?
+  keys.add("optional","TYPE","Specify the wavelet type. Defaults to Daubechies Wavelets with minimum phase. Other currently implemented possibilities are \"MOST_SYMMETRIC\"");
   keys.addFlag("SCALING_FUNCTION", false, "If this flag is set the scaling function (mother wavelet) will be used instead of the \"true\" wavelet function (father wavelet).");
   keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
   // why is this removed?
@@ -105,15 +107,18 @@ void BF_DbWavelets::registerKeywords(Keywords& keys) {
 BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
   use_scaling_function_(false)
+
 {
   setNumberOfBasisFunctions(ceil((getOrder()*2.54)+2)+1); // empiric formula to cut off tails
   // would maybe more insightful for others to just hardcode a list
 
   // parse grid properties and set it up
   parseFlag("SCALING_FUNCTION", use_scaling_function_);
+  type_ = "";
+  parse("TYPE", type_);
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
-  waveletGrid_ = DbWaveletGrid::setupGrid(getOrder(), gridsize, !use_scaling_function_);
+  waveletGrid_ = DbWaveletGrid::setupGrid(getOrder(), gridsize, !use_scaling_function_, type_);
   unsigned true_gridsize = waveletGrid_->getNbin()[0];
   if(true_gridsize != 1000) {addKeywordToList("GRID_SIZE",true_gridsize);}
   bool dump_wavelet_grid=false;
