@@ -510,11 +510,13 @@
 #define __PLUMED_WRAPPER_STD
 #endif
 
-/* Allow using noexcept with C++11 compilers */
+/* Allow using noexcept and explicit with C++11 compilers */
 #if __cplusplus > 199711L
 #define __PLUMED_WRAPPER_CXX_NOEXCEPT noexcept
+#define __PLUMED_WRAPPER_CXX_EXPLICIT explicit
 #else
 #define __PLUMED_WRAPPER_CXX_NOEXCEPT throw()
+#define __PLUMED_WRAPPER_CXX_EXPLICIT
 #endif
 
 /* Macros for anonymous namespace */
@@ -1158,7 +1160,7 @@ public:
   {
     ::std::string msg;
   public:
-    Exception(const char* msg): msg(msg) {}
+    __PLUMED_WRAPPER_CXX_EXPLICIT Exception(const char* msg): msg(msg) {}
     Exception(const Exception & other): msg(other.what()) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT {return msg.c_str();}
     ~Exception() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
@@ -1171,7 +1173,7 @@ public:
   class ExceptionError :
     public Exception {
   public:
-    ExceptionError(const char* msg): Exception(msg) {}
+    __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionError(const char* msg): Exception(msg) {}
     ExceptionError(const ExceptionError & other) : Exception(other.what()) {}
     ~ExceptionError() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
@@ -1183,7 +1185,7 @@ public:
   class ExceptionDebug :
     public Exception {
   public:
-    ExceptionDebug(const char* msg): Exception(msg) {}
+    __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionDebug(const char* msg): Exception(msg) {}
     ExceptionDebug(const ExceptionDebug & other) : Exception(other.what()) {}
     ~ExceptionDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
@@ -1195,7 +1197,7 @@ public:
   class Invalid :
     public Exception {
   public:
-    Invalid(const char* msg): Exception(msg) {}
+    __PLUMED_WRAPPER_CXX_EXPLICIT Invalid(const char* msg): Exception(msg) {}
     Invalid(const Invalid & other) : Exception(other.what()) {}
     ~Invalid() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
@@ -1209,7 +1211,7 @@ public:
   {
     ::std::string msg;
   public:
-    LeptonException(const char* msg): msg(msg) {}
+    __PLUMED_WRAPPER_CXX_EXPLICIT LeptonException(const char* msg): msg(msg) {}
     LeptonException(const LeptonException & other): msg(other.what()) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT {return msg.c_str();}
     ~LeptonException() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
@@ -1230,7 +1232,7 @@ private:
   { \
     char msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER]; \
   public: \
-    std_ ## name(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+    __PLUMED_WRAPPER_CXX_EXPLICIT std_ ## name(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
       this->msg[0]='\0'; \
       __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1); \
       static const char* debug=__PLUMED_WRAPPER_STD getenv("PLUMED_EXCEPTIONS_DEBUG"); \
@@ -1360,7 +1362,7 @@ public:
      \return The Plumed global object
   */
   static Plumed global() __PLUMED_WRAPPER_CXX_NOEXCEPT {
-    return plumed_global();
+    return Plumed(plumed_global());
   }
 #endif /*}*/
   /**
@@ -1388,12 +1390,8 @@ Plumed()__PLUMED_WRAPPER_CXX_NOEXCEPT :
      The reference counter for the corresponding object will be increased
      to make sure that the object will be available after plumed_f_finalize is called
      if the created object is still in scope.
-
   */
-// to have maximum portability of this file I do not use the explicit keyword here
-// I thus add a suppress command for cppcheck
-// cppcheck-suppress noExplicitConstructor
-Plumed(const char*c)__PLUMED_WRAPPER_CXX_NOEXCEPT :
+__PLUMED_WRAPPER_CXX_EXPLICIT Plumed(const char*c)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   main(plumed_create_reference_f(c))
   {
   }
@@ -1401,10 +1399,7 @@ Plumed(const char*c)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   /**
     Create a reference from a void* pointer. Available as of PLUMED 2.5.
   */
-// to have maximum portability of this file I do not use the explicit keyword here
-// I thus add a suppress command for cppcheck
-// cppcheck-suppress noExplicitConstructor
-Plumed(void*v)__PLUMED_WRAPPER_CXX_NOEXCEPT :
+__PLUMED_WRAPPER_CXX_EXPLICIT Plumed(void*v)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   main(plumed_create_reference_v(v))
   {
   }
@@ -1418,10 +1413,7 @@ Plumed(void*v)__PLUMED_WRAPPER_CXX_NOEXCEPT :
      to make sure that the object will be available after plumed_finalize is called
      if the created object is still in scope.
   */
-// to have maximum portability of this file I do not use the explicit keyword here
-// I thus add a suppress command for cppcheck
-// cppcheck-suppress noExplicitConstructor
-Plumed(plumed p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
+__PLUMED_WRAPPER_CXX_EXPLICIT Plumed(plumed p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   main(plumed_create_reference(p))
   {
   }
