@@ -84,7 +84,7 @@ void SetupReferenceBase::transferDataToPlumed( const unsigned& npos, std::vector
       charges[npos + myindices[i].index()] = atoms.getVatomCharge(mygroup[i]);
       positions[npos + myindices[i].index()] = atoms.getVatomPosition(mygroup[i]);
   }
-  if( getNumberOfComponents()>0 ) {
+  if( argname.length()>0 && getNumberOfComponents()>0 ) {
       unsigned nvals = getPntrToOutput(0)->getSize(); 
       std::vector<double> valdata( nvals );
       for(unsigned i=0;i<nvals;++i) valdata[i] = getPntrToOutput(0)->get(i);

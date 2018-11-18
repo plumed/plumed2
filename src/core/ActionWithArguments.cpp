@@ -158,17 +158,22 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         } else {
           // Take all the values from an action with a specific name
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
-          if( !action ) {
-            std::string str=" (hint! the actions in this ActionSet are: ";
-            str+=plumed.getActionSet().getLabelList()+")";
-            error("cannot find action named " + a +str);
-          }
-          unsigned carg = nargs; action->interpretDataLabel( c[i], this, nargs, arg );
-          // if( arg.size()==carg && name=="*" ) error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
-          if( nargs==carg ) {
-            std::string str=" (hint! the components in this actions are: ";
-            str+=action->getComponentsList()+")";
-            error("action " + a + " has no component named " + name + str);
+          if( action ) {
+            unsigned carg = nargs; action->interpretDataLabel( c[i], this, nargs, arg );
+            if( nargs==carg ) {
+              std::string str=" (hint! the components in this actions are: ";
+              str+=action->getComponentsList()+")";
+              error("action " + a + " has no component named " + name + str);
+            } 
+          } else {
+            // Search for value in PlumedMain
+            Value* plmed_val = plumed.getPntrToValue( c[i] );
+            if( !plmed_val ) {
+                std::string str=" (hint! the actions in this ActionSet are: ";
+                str+=plumed.getActionSet().getLabelList()+")";
+                error("cannot find action named " + a +str);
+            }
+            arg.push_back( plmed_val ); nargs++;
           }
         }
       } else {    // if it doesn't contain a dot
@@ -253,8 +258,13 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
         }
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
         plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
-        addDependency(action);
+        if( i<argstart ) {
+            // We don't add the depedency if we the previous one is an average
+            Average* av=dynamic_cast<Average*>( action ); 
+            if( !av ) addDependency(action);
+        }
         if( i<argstart ) continue;
+        addDependency(action); 
 
         if( storing ) arguments[i]->buildDataStore( getLabel() );
         if( arguments[i]->getRank()>0 ) {

@@ -58,6 +58,14 @@ SetupReferenceBase(ao)
    p.cmd("setMDEngine","plumed");
    unsigned tatoms, targs; as->getNatomsAndNargs( tatoms, targs );
    int natoms = tatoms; p.cmd("setNatoms",&natoms);
+   // Create copies of the values computed by the reference object
+   for(unsigned i=0;i<as->getNumberOfComponents();++i) {
+       std::vector<int> size(1+as->copyOutput(i)->getRank()); 
+       size[0]=as->copyOutput(i)->getRank(); 
+       for(unsigned j=0;j<size[0];++j) size[j+1]=as->copyOutput(i)->getShape()[j];
+       p.cmd("createValue " + as->copyOutput(i)->getName(), &size[0] );
+       if( !as->copyOutput(i)->isPeriodic() ) p.cmd("setValueNotPeriodic " + as->copyOutput(i)->getName());
+   }
    double tstep=1.0; p.cmd("setTimestep",&tstep);
    // Now read the PLUMED command that we have to execute
    std::string inp; parse("INPUT",inp); const char* cinp=inp.c_str();
@@ -71,9 +79,16 @@ SetupReferenceBase(ao)
    int istep=0; p.cmd("setStep",&istep);
    std::vector<Vector> positions( natoms ), forces( natoms );
    std::vector<double> masses( natoms ), charges( natoms );
-   as->transferDataToPlumed( 0, masses, charges, positions, "arg1", p );
+   as->transferDataToPlumed( 0, masses, charges, positions, "", p );
    p.cmd("setMasses",&masses[0]); if( atoms.chargesWereSet() ) p.cmd("setCharge",&charges[0]);
    p.cmd("setForces",&forces[0]); p.cmd("setPositions",&positions[0]);
+   // Copy values from reference to PLUMED 
+   for(unsigned i=0;i<as->getNumberOfComponents();++i) {
+      unsigned nvals = as->copyOutput(i)->getSize();
+      std::vector<double> valdata( nvals );
+      for(unsigned j=0;j<nvals;++j) valdata[j] = as->copyOutput(i)->get(j); 
+      p.cmd("setValue " + as->copyOutput(i)->getName(), &valdata[0] );
+   }
    Tensor box( atoms.getPbc().getBox() ); p.cmd("setBox",&box[0][0]);
    // Now retrieve the final value
    ActionWithValue* fav = dynamic_cast<ActionWithValue*>( p.getActionSet()[p.getActionSet().size()-1].get() );
