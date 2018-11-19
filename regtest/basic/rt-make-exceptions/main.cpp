@@ -1,3 +1,8 @@
+#ifdef __PLUMED_LIBCXX11
+// In order to correctly catch the thrown C++11 exceptions,
+// we notify the Plumed wrapper that those exceptions are recognized by the compiler.
+#define __PLUMED_WRAPPER_LIBCXX11 1
+#endif
 #include "plumed/tools/Stopwatch.h"
 #include "plumed/wrapper/Plumed.h"
 #include <fstream>

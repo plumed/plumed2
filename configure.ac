@@ -389,7 +389,51 @@ then
    AC_MSG_WARN([Please change compiler or make sure that everything works correctly])
 fi
 
-
+AC_MSG_CHECKING([whether C++ library supports C++11 exceptions])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#include <new>
+#include <functional>
+#include <memory>
+#include <system_error>
+#include <ios>
+#include <future>
+// capable to catch:
+void func(void) {
+  try{
+  } catch(std::bad_array_new_length &) {
+  } catch(std::bad_function_call &) {
+  } catch(std::bad_weak_ptr &) {
+  } catch(std::system_error &e) {
+    if(e.code().category()==std::generic_category()) void;
+    else if(e.code().category()==std::system_category()) void;
+    else if(e.code().category()==std::iostream_category()) void;
+    else if(e.code().category()==std::future_category()) void;
+  } catch(std::ios_base::failure &e) {
+    if(e.code().category()==std::generic_category()) void;
+    else if(e.code().category()==std::system_category()) void;
+    else if(e.code().category()==std::iostream_category()) void;
+    else if(e.code().category()==std::future_category()) void;
+  }
+// capable to throw:
+  auto a=std::bad_array_new_length();
+  auto b=std::bad_function_call();
+  auto c=std::bad_weak_ptr();
+  auto d=std::system_error(10,std::generic_category(),"msg");
+  auto e=std::system_error(10,std::system_category(),"msg");
+  auto f=std::system_error(10,std::iostream_category(),"msg");
+  auto g=std::system_error(10,std::future_category(),"msg");
+  auto h=std::ios_base::failure("msg",std::error_code(10,std::generic_category()));
+  auto i=std::ios_base::failure("msg",std::error_code(10,std::system_category()));
+  auto j=std::ios_base::failure("msg",std::error_code(10,std::iostream_category()));
+  auto k=std::ios_base::failure("msg",std::error_code(10,std::future_category()));
+}
+])],
+[
+  AC_MSG_RESULT([yes]);
+  AC_DEFINE([__PLUMED_LIBCXX11])
+],
+[AC_MSG_RESULT([no])
+])
 
 AC_SUBST(disable_dependency_tracking)
 
