@@ -47,6 +47,25 @@ std::vector<double> DbWaveletGrid::getFilterCoefficients(const unsigned order, c
             0.022785172948
           };
       break;
+    case 8:
+      h = { 0.002672793393,
+            -0.000428394300,
+            -0.021145686528,
+            0.005386388754,
+            0.069490465911,
+            -0.038493521263,
+            -0.073462508761,
+            0.515398670374,
+            1.099106630537,
+            0.680745347190,
+            -0.086536154060,
+            -0.202648655286,
+            0.010758611751,
+            0.044823623042,
+            -0.000766690896,
+            -0.004783458512
+          };
+      break;
     default:
       plumed_merror("Specified order currently not implemented");
     }
