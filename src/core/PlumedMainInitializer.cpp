@@ -102,9 +102,10 @@ extern "C" void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const v
     else if(e.code().category()==system_category()) nothrow.handler(nothrow.ptr,10231,e.what(),opt);
     else if(e.code().category()==iostream_category()) nothrow.handler(nothrow.ptr,10232,e.what(),opt);
     else if(e.code().category()==future_category()) nothrow.handler(nothrow.ptr,10233,e.what(),opt);
+    else
 #endif
-    // 10239 represents std::ios_base::failure with default constructur
-    nothrow.handler(nothrow.ptr,10239,e.what(),nullptr);
+      // 10239 represents std::ios_base::failure with default constructur
+      nothrow.handler(nothrow.ptr,10239,e.what(),nullptr);
 #ifdef __PLUMED_LIBCXX11
   } catch(std::system_error & e) {
     int value=e.code().value();
