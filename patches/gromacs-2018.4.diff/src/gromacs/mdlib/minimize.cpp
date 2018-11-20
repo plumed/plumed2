@@ -2983,7 +2983,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                     top_global, &state_work, top,
                                     inputrec, nrnb, wcycle, gstat,
                                     vsite, constr, fcd, graph, mdAtoms, fr,
-                                    mu_tot, enerd, vir, pres, atom*2+dx, FALSE);
+                                    mu_tot, enerd, vir, pres, aid*2+dx, FALSE);
                 }
 
                 cr->nnodes = nnodes;
@@ -3019,7 +3019,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             }
             else
             {
-                for (node = 0; (node < nnodes && atom+node < atom_index.size()); node++)
+                for (node = 0; (node < nnodes && aid+node < atom_index.size()); node++)
                 {
                     if (node > 0)
                     {
@@ -3031,7 +3031,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 #endif
                     }
 
-                    row = (atom + node)*DIM + d;
+                    row = (aid + node)*DIM + d;
 
                     for (size_t j = 0; j < atom_index.size(); j++)
                     {

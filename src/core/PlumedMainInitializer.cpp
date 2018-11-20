@@ -22,12 +22,25 @@
 #include "PlumedMainInitializer.h"
 #include "PlumedMain.h"
 #include "tools/Exception.h"
+#include "lepton/Exception.h"
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #if defined __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
 #endif
+#include <exception>
+#include <stdexcept>
+#include <ios>
+#include <new>
+#include <typeinfo>
+#ifdef __PLUMED_LIBCXX11
+#include <system_error>
+#include <future>
+#include <memory>
+#include <functional>
+#endif
+
 
 using namespace std;
 
@@ -48,21 +61,6 @@ extern "C" void*plumed_plumedmain_create() {
   }
 }
 
-#define __PLUMED_CATCH(e,nothrow) \
-  catch(PLMD::ExceptionError & e) { \
-    nothrow.handler(nothrow.ptr,20200,e.what(),nullptr); \
-  } catch(PLMD::ExceptionDebug & e) { \
-    nothrow.handler(nothrow.ptr,20100,e.what(),nullptr); \
-  } catch(PLMD::Exception & e) { \
-    nothrow.handler(nothrow.ptr,20000,e.what(),nullptr); \
-  } catch(std::runtime_error & e) { \
-    nothrow.handler(nothrow.ptr,10200,e.what(),nullptr); \
-  } catch(std::logic_error & e) { \
-    nothrow.handler(nothrow.ptr,10100,e.what(),nullptr); \
-  } catch(std::exception & e) { \
-    nothrow.handler(nothrow.ptr,10000,e.what(),nullptr); \
-  }
-
 extern "C" void plumed_plumedmain_cmd(void*plumed,const char*key,const void*val) {
   plumed_massert(plumed,"trying to use a plumed object which is not initialized");
   auto p=static_cast<PLMD::PlumedMain*>(plumed);
@@ -76,7 +74,88 @@ extern "C" void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const v
   try {
     plumed_massert(plumed,"trying to use a plumed object which is not initialized");
     static_cast<PLMD::PlumedMain*>(plumed)->cmd(key,val);;
-  } __PLUMED_CATCH(e,nothrow)
+  } catch(PLMD::ExceptionError & e) {
+    nothrow.handler(nothrow.ptr,20200,e.what(),nullptr);
+  } catch(PLMD::ExceptionDebug & e) {
+    nothrow.handler(nothrow.ptr,20100,e.what(),nullptr);
+  } catch(PLMD::Exception & e) {
+    nothrow.handler(nothrow.ptr,20000,e.what(),nullptr);
+  } catch(PLMD::lepton::Exception & e) {
+    nothrow.handler(nothrow.ptr,19900,e.what(),nullptr);
+    // 11000 to 12000 are "bad exceptions". message will be copied without new allocations
+  } catch(bad_exception & e) {
+    nothrow.handler(nothrow.ptr,11500,e.what(),nullptr);
+#ifdef __PLUMED_LIBCXX11
+  } catch(bad_array_new_length & e) {
+    nothrow.handler(nothrow.ptr,11410,e.what(),nullptr);
+#endif
+  } catch(bad_alloc & e) {
+    nothrow.handler(nothrow.ptr,11400,e.what(),nullptr);
+#ifdef __PLUMED_LIBCXX11
+  } catch(bad_function_call & e) {
+    nothrow.handler(nothrow.ptr,11300,e.what(),nullptr);
+  } catch(bad_weak_ptr & e) {
+    nothrow.handler(nothrow.ptr,11200,e.what(),nullptr);
+#endif
+  } catch(bad_cast & e) {
+    nothrow.handler(nothrow.ptr,11100,e.what(),nullptr);
+  } catch(bad_typeid & e) {
+    nothrow.handler(nothrow.ptr,11000,e.what(),nullptr);
+    // not implemented yet: std::regex_error
+    // we do not allow regex yet due to portability problems with gcc 4.8
+    // as soon as we transition to using <regex> it should be straightforward to add
+  } catch(std::ios_base::failure & e) {
+#ifdef __PLUMED_LIBCXX11
+    int value=e.code().value();
+    const void* opt[3]= {"c",&value,nullptr}; // "c" passes the error code. nullptr terminates the optional part.
+    if(e.code().category()==generic_category()) nothrow.handler(nothrow.ptr,10230,e.what(),opt);
+    else if(e.code().category()==system_category()) nothrow.handler(nothrow.ptr,10231,e.what(),opt);
+    else if(e.code().category()==iostream_category()) nothrow.handler(nothrow.ptr,10232,e.what(),opt);
+    else if(e.code().category()==future_category()) nothrow.handler(nothrow.ptr,10233,e.what(),opt);
+    else
+#endif
+      // 10239 represents std::ios_base::failure with default constructur
+      nothrow.handler(nothrow.ptr,10239,e.what(),nullptr);
+#ifdef __PLUMED_LIBCXX11
+  } catch(std::system_error & e) {
+    int value=e.code().value();
+    const void* opt[3]= {"c",&value,nullptr}; // "c" passes the error code. nullptr terminates the optional part.
+    if(e.code().category()==generic_category()) nothrow.handler(nothrow.ptr,10220,e.what(),opt);
+    else if(e.code().category()==system_category()) nothrow.handler(nothrow.ptr,10221,e.what(),opt);
+    else if(e.code().category()==iostream_category()) nothrow.handler(nothrow.ptr,10222,e.what(),opt);
+    else if(e.code().category()==future_category()) nothrow.handler(nothrow.ptr,10223,e.what(),opt);
+    // fallback to generic runtime_error
+    else nothrow.handler(nothrow.ptr,10200,e.what(),nullptr);
+#endif
+  } catch(std::underflow_error &e) {
+    nothrow.handler(nothrow.ptr,10215,e.what(),nullptr);
+  } catch(std::overflow_error &e) {
+    nothrow.handler(nothrow.ptr,10210,e.what(),nullptr);
+  } catch(std::range_error &e) {
+    nothrow.handler(nothrow.ptr,10205,e.what(),nullptr);
+  } catch(std::runtime_error & e) {
+    nothrow.handler(nothrow.ptr,10200,e.what(),nullptr);
+    // not implemented yet: std::future_error
+    // not clear how useful it would be.
+  } catch(std::out_of_range & e) {
+    nothrow.handler(nothrow.ptr,10120,e.what(),nullptr);
+  } catch(std::length_error & e) {
+    nothrow.handler(nothrow.ptr,10115,e.what(),nullptr);
+  } catch(std::domain_error & e) {
+    nothrow.handler(nothrow.ptr,10110,e.what(),nullptr);
+  } catch(std::invalid_argument & e) {
+    nothrow.handler(nothrow.ptr,10105,e.what(),nullptr);
+  } catch(std::logic_error & e) {
+    nothrow.handler(nothrow.ptr,10100,e.what(),nullptr);
+    // generic exception. message will be copied without new allocations
+    // reports all non caught exceptions that are derived from std::exception
+    // for instance, boost exceptions would end up here
+  } catch(std::exception & e) {
+    nothrow.handler(nothrow.ptr,10000,e.what(),nullptr);
+  } catch(...) {
+    std::cerr<<"+++ rethrowing an unknown error happened while using a plumed cmd"<<std::endl;
+    throw;
+  }
 }
 
 extern "C" void plumed_plumedmain_finalize(void*plumed) {
