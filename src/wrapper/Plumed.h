@@ -1965,7 +1965,7 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
     while(pc>=pathcopy && __PLUMED_WRAPPER_STD memcmp(pc,"Kernel",6)) pc--;
     if(pc>=pathcopy) {
       __PLUMED_WRAPPER_STD memmove(pc, pc+6, __PLUMED_WRAPPER_STD strlen(pc)-5);
-      __PLUMED_FPRINTF(stderr,"+++ This error is expected if you are trying to load a kernel <=2.4");
+      __PLUMED_FPRINTF(stderr,"+++ This error is expected if you are trying to load a kernel <=2.4\n");
       __PLUMED_FPRINTF(stderr,"+++ Trying %s +++\n",pathcopy);
       p=dlopen(pathcopy,mode);
       if(!p) __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
