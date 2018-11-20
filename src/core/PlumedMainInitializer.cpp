@@ -26,11 +26,21 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <system_error>
-#include <future>
 #if defined __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
 #endif
+#include <exception>
+#include <stdexcept>
+#include <ios>
+#include <new>
+#include <typeinfo>
+#ifdef __PLUMED_LIBCXX11
+#include <system_error>
+#include <future>
+#include <memory>
+#include <functional>
+#endif
+
 
 using namespace std;
 
