@@ -403,16 +403,16 @@ void func(void) {
   } catch(std::bad_array_new_length &) {
   } catch(std::bad_function_call &) {
   } catch(std::bad_weak_ptr &) {
-  } catch(std::system_error &e) {
-    if(e.code().category()==std::generic_category()) void;
-    else if(e.code().category()==std::system_category()) void;
-    else if(e.code().category()==std::iostream_category()) void;
-    else if(e.code().category()==std::future_category()) void;
   } catch(std::ios_base::failure &e) {
-    if(e.code().category()==std::generic_category()) void;
-    else if(e.code().category()==std::system_category()) void;
-    else if(e.code().category()==std::iostream_category()) void;
-    else if(e.code().category()==std::future_category()) void;
+    if(e.code().category()==std::generic_category()) {}
+    else if(e.code().category()==std::system_category()) {}
+    else if(e.code().category()==std::iostream_category()) {}
+    else if(e.code().category()==std::future_category()) {}
+  } catch(std::system_error &e) {
+    if(e.code().category()==std::generic_category()) {}
+    else if(e.code().category()==std::system_category()) {}
+    else if(e.code().category()==std::iostream_category()) {}
+    else if(e.code().category()==std::future_category()) {}
   }
 // capable to throw:
   auto a=std::bad_array_new_length();
