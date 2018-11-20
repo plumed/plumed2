@@ -313,10 +313,11 @@ ifdef python_bin
 	cp -pr ../../python install 
 	cd install/python && rm -fr *.so plumed.cpp build && \
           unset CXX && unset CC && unset CFLAGS && unset CXXFLAGS && unset LDSHARED && \
-          program_name="$(program_name)" \
-          include_dir=../../../wrapper \
-          default_kernel="$(libdir)/lib$(program_name)Kernel.$(SOEXT)" \
-          $(python_bin) buildPythonInterface.py build_ext -i
+          plumed_program_name="$(program_name)" \
+          plumed_version=$(VERSION) \
+          plumed_include_dir=../../../wrapper \
+          plumed_default_kernel="$(libdir)/lib$(program_name)Kernel.$(SOEXT)" \
+          $(python_bin) setup.py build_ext -i
 	cp -pr install/python "$(DESTDIR)$(libdir)/$(program_name)/" 
 endif
 ifdef BASH_COMPLETION_DIR

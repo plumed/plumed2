@@ -24,26 +24,46 @@
 #
 from distutils.core import setup
 from distutils.extension import Extension
-from Cython.Build import cythonize
-import numpy
 import subprocess
 import os
+import sys
 
-plumedname = os.getenv("program_name")
+plumedname = os.getenv("plumed_program_name")
 if plumedname is None:
     plumedname = "plumed"
 
-plumedversion = subprocess.check_output(['grep','-v','#','../VERSION']).decode("utf-8")
+plumedversion = os.getenv("plumed_version")
+if plumedversion is None:
+    plumedversion = subprocess.check_output(['grep','-v','#','./VERSION']).decode("utf-8")
 
 print( "Module name " + plumedname )
 print( "Version number " + plumedversion )
 
 extra_compile_args=['-D__PLUMED_HAS_DLOPEN','-D__PLUMED_WRAPPER_LINK_RUNTIME=1','-D__PLUMED_WRAPPER_CXX=1','-D__PLUMED_WRAPPER_IMPLEMENTATION=1','-D__PLUMED_WRAPPER_EXTERN=0','-D__PLUMED_WRAPPER_CXX_DEFAULT_INVALID=1'] 
 
-defaultkernel=os.getenv("default_kernel")
+defaultkernel=os.getenv("plumed_default_kernel")
 if defaultkernel is not None:
     extra_compile_args.append("-D__PLUMED_DEFAULT_KERNEL=" + os.path.abspath(defaultkernel))
     print( "Hardcoded PLUMED_KERNEL " + os.path.abspath(defaultkernel))
+
+try:
+    import numpy
+except:
+    print('Error: building ' + plumedname + ' requires numpy. Please install it first with pip install numpy')
+    sys.exit(-1)
+
+try:
+    from Cython.Build import cythonize
+except:
+    print('Error: building ' + plumedname + ' requires cython. Please install it first with pip install cython')
+    sys.exit(-1)
+
+include_dirs=[numpy.get_include()]
+
+try:
+    include_dirs.append(os.environ["plumed_include_dir"])
+except:
+    include_dirs.append(".")
 
 setup(
   name=plumedname,
@@ -56,7 +76,7 @@ setup(
                   Extension( name=plumedname,
                              sources=["plumed.pyx"],
                              language="c++",
-                             include_dirs=[os.environ["include_dir"], numpy.get_include()],
+                             include_dirs=include_dirs,
                              extra_compile_args=extra_compile_args
                            )
                           ])
