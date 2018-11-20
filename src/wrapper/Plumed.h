@@ -991,13 +991,17 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #include <string.h>
 #endif
 
-#include <exception> /* exception */
+#include <exception> /* exception bad_exception */
 #include <stdexcept> /* runtime_error logic_error invalid_argument domain_error length_error out_of_range range_error overflow_error underflow_error */
 #include <string> /* string */
 #include <ios> /* iostream_category (C++11) ios_base::failure (C++11 and C++<11) */
-#if __cplusplus > 199711L
-#include <system_error> /* generic_category system_category */
+#include <new> /* bad_alloc bad_array_new_length (C++11) */
+#include <typeinfo> /* bad_typeid bad_cast */
+#if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
+#include <system_error> /* system_error generic_category system_category */
 #include <future> /* future_category */
+#include <memory> /* bad_weak_ptr */
+#include <functional> /* bad_function_call */
 #endif
 
 /* C++ interface is hidden in PLMD namespace (same as plumed library) */
