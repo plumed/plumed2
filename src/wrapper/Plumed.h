@@ -1663,7 +1663,7 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   Comparison operator. Available as of PLUMED 2.5.
 */
 inline
-bool operator==(const Plumed&a,const Plumed&b) {
+bool operator==(const Plumed&a,const Plumed&b) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   return a.toVoid()==b.toVoid();
 }
 
@@ -1672,7 +1672,7 @@ bool operator==(const Plumed&a,const Plumed&b) {
   Comparison operator. Available as of PLUMED 2.5.
 */
 inline
-bool operator!=(const Plumed&a,const Plumed&b) {
+bool operator!=(const Plumed&a,const Plumed&b) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   return a.toVoid()!=b.toVoid();
 }
 
@@ -1681,7 +1681,7 @@ bool operator!=(const Plumed&a,const Plumed&b) {
   Comparison operator. Available as of PLUMED 2.5.
 */
 inline
-bool operator<=(const Plumed&a,const Plumed&b) {
+bool operator<=(const Plumed&a,const Plumed&b) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   return a.toVoid()<=b.toVoid();
 }
 
@@ -1690,7 +1690,7 @@ bool operator<=(const Plumed&a,const Plumed&b) {
   Comparison operator. Available as of PLUMED 2.5.
 */
 inline
-bool operator<(const Plumed&a,const Plumed&b) {
+bool operator<(const Plumed&a,const Plumed&b) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   return a.toVoid()<b.toVoid();
 }
 
@@ -1699,7 +1699,7 @@ bool operator<(const Plumed&a,const Plumed&b) {
   Comparison operator. Available as of PLUMED 2.5.
 */
 inline
-bool operator>=(const Plumed&a,const Plumed&b) {
+bool operator>=(const Plumed&a,const Plumed&b) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   return a.toVoid()>=b.toVoid();
 }
 
@@ -1708,7 +1708,7 @@ bool operator>=(const Plumed&a,const Plumed&b) {
   Comparison operator. Available as of PLUMED 2.5.
 */
 inline
-bool operator>(const Plumed&a,const Plumed&b) {
+bool operator>(const Plumed&a,const Plumed&b) __PLUMED_WRAPPER_CXX_NOEXCEPT {
   return a.toVoid()>b.toVoid();
 }
 
