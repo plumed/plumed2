@@ -2305,9 +2305,6 @@ typedef struct {
   /* handler to dlopened library. NULL if there was no library opened */
   void* dlhandle;
   /* non zero if, upon destruction, the library should be dlclosed */
-  /* by default, we do not dlclose libraries since this might create problems if exceptions are handled after
-     the last plumed object has been destroyed */
-  /* in addition, when creating multiple plumed objects, it is more efficient to keep the library loaded */
   int dlclose;
   /* 1 if path to kernel was taken from PLUMED_KERNEL var, 0 otherwise */
   int used_plumed_kernel;
@@ -2373,12 +2370,8 @@ plumed plumed_create(void) {
   pimpl->used_plumed_kernel=1;
 #endif
   /* note if handle should not be dlclosed */
-  /* Notice that PLUMED_LOAD_DLCLOSE only affects the kernel linked from PLUMED_KERNEL
-     and is not used in plumed_create_dlopen().
-     It might make sense in combination with PLUMED_LOAD_NODEEPBIND to avoid clashes.
-     However, it is probably useless.
-  */
-  pimpl->dlclose=__PLUMED_GETENV("PLUMED_LOAD_DLCLOSE")!=NULL;
+  pimpl->dlclose=1;
+  if(__PLUMED_GETENV("PLUMED_LOAD_DLCLOSE") && !__PLUMED_WRAPPER_STD strcmp(__PLUMED_GETENV("PLUMED_LOAD_DLCLOSE"),"no")) pimpl->dlclose=0;
   /* in case of failure, return */
   /* the resulting object should be plumed_finalized, though you cannot use plumed_cmd */
   if(!pimpl->functions.create) {
@@ -2424,6 +2417,8 @@ plumed plumed_create_dlopen2(const char*path,int mode) {
   pimpl=plumed_malloc_pimpl();
 #ifdef __PLUMED_HAS_DLOPEN
   if(path) pimpl->dlhandle=plumed_attempt_dlopen(path,mode);
+  /* mark this library to be dlclosed when the object is finalized */
+  pimpl->dlclose=1;
   if(pimpl->dlhandle) plumed_search_symbols(pimpl->dlhandle,&pimpl->functions,&pimpl->table);
 #endif
   if(!pimpl->functions.create) {
