@@ -1945,10 +1945,17 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
   void* p;
   char* pc;
   size_t strlenpath;
+  FILE* fp;
   pathcopy=NULL;
   p=NULL;
   pc=NULL;
   strlenpath=0;
+  fp=__PLUMED_WRAPPER_STD fopen(path,"r");
+  if(!fp) {
+    __PLUMED_FPRINTF(stderr,"+++ File %s does not exist or cannot be read\n",path);
+    return NULL;
+  }
+  __PLUMED_WRAPPER_STD fclose(fp);
   dlerror();
   p=dlopen(path,mode);
   if(!p) {
@@ -1969,6 +1976,14 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
       __PLUMED_WRAPPER_STD memmove(pc, pc+6, __PLUMED_WRAPPER_STD strlen(pc)-5);
       __PLUMED_FPRINTF(stderr,"+++ This error is expected if you are trying to load a kernel <=2.4\n");
       __PLUMED_FPRINTF(stderr,"+++ Trying %s +++\n",pathcopy);
+      fp=__PLUMED_WRAPPER_STD fopen(path,"r");
+      if(!fp) {
+        __PLUMED_FPRINTF(stderr,"+++ File %s does not exist or cannot be read\n",pathcopy);
+        __PLUMED_FREE(pathcopy);
+        return NULL;
+      }
+      __PLUMED_WRAPPER_STD fclose(fp);
+      dlerror();
       p=dlopen(pathcopy,mode);
       if(!p) __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
     }
