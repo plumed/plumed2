@@ -268,11 +268,11 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     for(unsigned t=0; t<lepton_ref.size(); t++) {
       try {
         lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x");
-      } catch(PLMD::lepton::Exception& exc) {
+      } catch(const PLMD::lepton::Exception& exc) {
         try {
           lepton_ref[t]=&const_cast<lepton::CompiledExpression*>(&expression[t])->getVariableReference("x2");
           leptonx2=true;
-        } catch(PLMD::lepton::Exception& exc) {
+        } catch(const PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
           lepton_ref[t]=nullptr;
@@ -288,7 +288,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     for(unsigned t=0; t<lepton_ref_deriv.size(); t++) {
       try {
         lepton_ref_deriv[t]=&const_cast<lepton::CompiledExpression*>(&expression_deriv[t])->getVariableReference(arg);
-      } catch(PLMD::lepton::Exception& exc) {
+      } catch(const PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=3*x
         lepton_ref_deriv[t]=nullptr;
