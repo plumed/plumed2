@@ -109,8 +109,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   use_scaling_function_(false)
 
 {
-  setNumberOfBasisFunctions(ceil((getOrder()*2.54)+2)+1); // empiric formula to cut off tails
-  // would maybe more insightful for others to just hardcode a list
+  setNumberOfBasisFunctions(getOrder()*4-2);
 
   // parse grid properties and set it up
   parseFlag("SCALING_FUNCTION", use_scaling_function_);
@@ -130,8 +129,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions&ao):
   }
 
   // set left shift of first basis function
-  use_scaling_function_ ? shift_ = getNumberOfBasisFunctions()-(getOrder()*2-1) - 1 // all right shifts are needed
-                        : shift_ = ceil(1.2*getOrder()); // empiric formula that fits pretty well
+  shift_ = getNumberOfBasisFunctions()-(getOrder()*2-1) - 1;
   // set some properties
   setIntrinsicInterval("0",std::to_string(getOrder()*2-1));
   setNonPeriodic();
