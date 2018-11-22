@@ -61,7 +61,7 @@ public:
   // --------------------------------------------------------------------------
 
   ASMJIT_INLINE CpuFeatures() noexcept { reset(); }
-  ASMJIT_INLINE CpuFeatures(const CpuFeatures& other) noexcept { init(other); }
+  ASMJIT_INLINE CpuFeatures(const CpuFeatures& other) noexcept = default;
 
   // --------------------------------------------------------------------------
   // [Init / Reset]
@@ -272,7 +272,7 @@ public:
   // --------------------------------------------------------------------------
 
   ASMJIT_INLINE CpuInfo() noexcept { reset(); }
-  ASMJIT_INLINE CpuInfo(const CpuInfo& other) noexcept { init(other); }
+  ASMJIT_INLINE CpuInfo(const CpuInfo& other) noexcept = default;
 
   // --------------------------------------------------------------------------
   // [Init / Reset]
