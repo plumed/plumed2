@@ -1088,7 +1088,7 @@ class Plumed {
   }
 
   /**
-    Rethrow the exception.
+    Rethrow the exception based on the information saved in the NothrowHandler.
   */
 
   static void rethrow(const NothrowHandler&h) {
@@ -1153,6 +1153,74 @@ class Plumed {
     }
     /* fallback for any other exception */
     throw Plumed::std_exception(msg);
+  }
+
+  /**
+    Rethrow the current exception.
+
+    This is useful in order to handle an exception thrown by a kernel <=2.4.
+    Only std exceptions are handled, though some of them are thrown as special
+    Plumed exceptions in order to be attached a message.
+  */
+  static void rethrow() {
+    try {
+      throw;
+    } catch(const ::std::bad_exception & e) {
+      throw Plumed::std_bad_exception(e.what());
+#if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
+    } catch(const ::std::bad_array_new_length & e) {
+      throw Plumed::std_bad_array_new_length(e.what());
+#endif
+    } catch(const ::std::bad_alloc & e) {
+      throw Plumed::std_bad_alloc(e.what());
+#if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
+    } catch(const ::std::bad_function_call & e) {
+      throw Plumed::std_bad_function_call(e.what());
+    } catch(const ::std::bad_weak_ptr & e) {
+      throw Plumed::std_bad_weak_ptr(e.what());
+#endif
+    } catch(const ::std::bad_cast & e) {
+      throw Plumed::std_bad_cast(e.what());
+    } catch(const ::std::bad_typeid & e) {
+      throw Plumed::std_bad_typeid(e.what());
+      // not implemented yet: std::regex_error
+      // we do not allow regex yet due to portability problems with gcc 4.8
+      // as soon as we transition to using <regex> it should be straightforward to add
+    } catch(const ::std::ios_base::failure & e) {
+#if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
+      throw ::std::ios_base::failure(e.what(),e.code());
+#else
+      throw ::std::ios_base::failure(e.what());
+#endif
+#if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
+    } catch(const ::std::system_error & e) {
+      throw ::std::system_error(e.code(),e.what());
+#endif
+    } catch(const ::std::underflow_error &e) {
+      throw ::std::underflow_error(e.what());
+    } catch(const ::std::overflow_error &e) {
+      throw ::std::overflow_error(e.what());
+    } catch(const ::std::range_error &e) {
+      throw ::std::range_error(e.what());
+    } catch(const ::std::runtime_error & e) {
+      throw ::std::runtime_error(e.what());
+      // not implemented yet: std::future_error
+      // not clear how useful it would be.
+    } catch(const ::std::out_of_range & e) {
+      throw ::std::out_of_range(e.what());
+    } catch(const ::std::length_error & e) {
+      throw ::std::length_error(e.what());
+    } catch(const ::std::domain_error & e) {
+      throw ::std::domain_error(e.what());
+    } catch(const ::std::invalid_argument & e) {
+      throw ::std::invalid_argument(e.what());
+    } catch(const ::std::logic_error & e) {
+      throw ::std::logic_error(e.what());
+    } catch(const ::std::exception & e) {
+      throw Plumed::std_exception(e.what());
+    } catch(...) {
+      throw;
+    }
   }
 
 public:
@@ -1637,7 +1705,16 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     NothrowHandler h;
     h.code=0;
     plumed_nothrow_handler nothrow= {&h,nothrow_handler};
-    plumed_cmd_nothrow(main,key,val,nothrow);
+    try {
+      plumed_cmd_nothrow(main,key,val,nothrow);
+    } catch (...) {
+      /*
+        When loading a kernel <=2.4, plumed_cmd_nothrow could throw an exception.
+        If the exception is transmitted through the C interface and arrives here,
+        we translate it so as to free the virtual tables of the loaded kernel.
+      */
+      rethrow();
+    }
     if(h.code!=0) rethrow(h);
   }
 
