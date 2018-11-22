@@ -1350,7 +1350,7 @@ public:
      \note Equivalent to plumed_gcmd()
   */
   static void gcmd(const char* key,const void* val=NULL) {
-    plumed_gcmd(key,val);
+    global().cmd(key,val);
   }
   /**
      Finalize global-plumed
