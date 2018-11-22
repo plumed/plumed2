@@ -60,7 +60,7 @@ CLEAN_FILE="$TMPDIR/codecheck.clean"
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "  In the following analysis we exclude:"
-echo "    src/molfile src/lapack src/blas src/lepton" 
+echo "    src/molfile src/lapack src/blas src/lepton src/asmjit" 
 echo "  since they are full of false positives"
 cat codecheck.log |
  gawk '{
@@ -70,12 +70,14 @@ cat codecheck.log |
     if(match($0,"[[]blas/")) next;
     if(match($0,"[[]molfile/")) next;
     if(match($0,"[[]lepton/")) next;
+    if(match($0,"[[]asmjit/")) next;
   } else {
 # with cppcheck we exclude molfile lapack and blas
     if(match($0,"[[]molfile/")) next;
     if(match($0,"[[]lapack/")) next;
     if(match($0,"[[]blas/")) next;
     if(match($0,"[[]lepton/")) next;
+    if(match($0,"[[]asmjit/")) next;
   }
   print
 }' > "${CLEAN_FILE}"
