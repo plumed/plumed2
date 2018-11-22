@@ -986,9 +986,11 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #if __PLUMED_WRAPPER_CXX_STD
 #include <cstdlib> /* NULL getenv */
 #include <cstring> /* strncat strlen */
+#include <cstdio> /* fprintf */
 #else
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #endif
 
 #include <exception> /* exception bad_exception */
@@ -1077,10 +1079,10 @@ class Plumed {
     static const char* debug=__PLUMED_WRAPPER_STD getenv("PLUMED_EXCEPTIONS_DEBUG");
 
     if(debug) {
-      fprintf(stderr,"+++ PLUMED_EXCEPTIONS_DEBUG\n");
-      fprintf(stderr,"+++ code: %d error_code: %d message:\n%s\n",h->code,h->error_code,what);
-      if(__PLUMED_WRAPPER_STD strlen(what) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) fprintf(stderr,"+++ WARNING: message will be truncated\n");
-      fprintf(stderr,"+++ END PLUMED_EXCEPTIONS_DEBUG\n");
+      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_EXCEPTIONS_DEBUG\n");
+      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ code: %d error_code: %d message:\n%s\n",h->code,h->error_code,what);
+      if(__PLUMED_WRAPPER_STD strlen(what) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
+      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ END PLUMED_EXCEPTIONS_DEBUG\n");
     }
 
   }
@@ -1240,7 +1242,7 @@ private:
       this->msg[0]='\0'; \
       __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1); \
       static const char* debug=__PLUMED_WRAPPER_STD getenv("PLUMED_EXCEPTIONS_DEBUG"); \
-      if(debug && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) fprintf(stderr,"+++ WARNING: message will be truncated\n"); \
+      if(debug && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n"); \
     } \
     std_ ## name(const std_ ## name & other) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
       msg[0]='\0'; \
