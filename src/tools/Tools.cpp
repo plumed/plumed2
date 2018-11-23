@@ -75,7 +75,7 @@ bool Tools::convertToReal(const string & str,T & t) {
   try {
     t=lepton::Parser::parse(str).evaluate(lepton::Constants());
     return true;
-  } catch(PLMD::lepton::Exception& exc) {
+  } catch(const PLMD::lepton::Exception& exc) {
   }
   if( str.find("PI")!=std::string::npos ) {
     std::size_t pi_start=str.find_first_of("PI");

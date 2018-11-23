@@ -118,7 +118,7 @@ static void testThrow(const char* what) {
     throw std::ios_base::failure(what);
   }
 
-  plumed_error() << "unknown exception" << what;
+  plumed_error() << "unknown exception " << what;
 }
 
 PlumedMain::PlumedMain():

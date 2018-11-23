@@ -256,7 +256,7 @@ void Matheval::calculate() {
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     try {
       expression.getVariableReference(var[i])=getArgument(i);
-    } catch(PLMD::lepton::Exception& exc) {
+    } catch(const PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
     }
@@ -266,7 +266,7 @@ void Matheval::calculate() {
     for(unsigned j=0; j<getNumberOfArguments(); j++) {
       try {
         expression_deriv[i].getVariableReference(var[j])=getArgument(j);
-      } catch(PLMD::lepton::Exception& exc) {
+      } catch(const PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
       }
