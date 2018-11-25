@@ -318,7 +318,7 @@ ifdef python_bin
           plumed_include_dir=../../../wrapper \
           plumed_default_kernel="$(libdir)/lib$(program_name)Kernel.$(SOEXT)" \
           $(python_bin) setup.py build_ext -i
-	cp -pr install/python "$(DESTDIR)$(libdir)/$(program_name)/" 
+	cp install/python/*.so "$(DESTDIR)$(libdir)/$(program_name)/python/" 
 endif
 ifdef BASH_COMPLETION_DIR
 	mkdir -p "$(DESTDIR)$(BASH_COMPLETION_DIR)"
