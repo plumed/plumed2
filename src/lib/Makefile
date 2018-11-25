@@ -323,7 +323,8 @@ ifdef python_bin
           include_dir=../../../wrapper \
           lib_dir="$(DESTDIR)$(libdir)" \
           $(python_bin) buildPythonInterface.py build_ext -i
-	cp -pr install/python "$(DESTDIR)$(libdir)/$(program_name)/" 
+	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/python"
+	cp install/python/*.so "$(DESTDIR)$(libdir)/$(program_name)/python/"
 endif
 ifdef BASH_COMPLETION_DIR
 	mkdir -p "$(DESTDIR)$(BASH_COMPLETION_DIR)"
