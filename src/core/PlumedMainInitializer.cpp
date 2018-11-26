@@ -153,7 +153,8 @@ extern "C" void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const v
   } catch(const std::exception & e) {
     nothrow.handler(nothrow.ptr,10000,e.what(),nullptr);
   } catch(...) {
-    std::cerr<<"+++ rethrowing an unknown error happened while using a plumed cmd"<<std::endl;
+    // if exception cannot be translated, we throw a bad_exception
+    nothrow.handler(nothrow.ptr,11500,"plumed could not translate exception",nullptr);
     throw;
   }
 }
