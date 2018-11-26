@@ -1,0 +1,50 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           python 1.0
+
+version             @_VERSION_@
+revision            @_REVISION_@
+name                py-plumed
+categories          science
+
+platforms           darwin
+categories-append   science
+license             LGPL-3
+maintainers         {gmail.com:giovanni.bussi @GiovanniBussi} openmaintainer
+
+description         Python wrappers for plumed.
+long_description    ${description} They allow the plumed library to be directly used from python.
+
+@_FETCH_@
+
+python.versions     27 36 37
+
+
+pre-configure {
+    worksrcdir ${distname}/python
+}
+
+pre-test {
+    worksrcdir ${distname}/python
+}
+
+if {${name} ne ${subport}} {
+
+    build.env-append plumed_default_kernel=${prefix}/lib/libplumedKernel.dylib \
+                     plumed_macports=yes
+
+    depends_build-append port:py${python.version}-cython
+
+    depends_lib-append   port:py${python.version}-numpy \
+                         path:${prefix}/lib/libplumedKernel.dylib:plumed
+
+    depends_test-append port:py${python.version}-nose
+    test.run            yes
+}
+
+notes "
+PLUMED is linked with runtime binding. By setting the environment variable PLUMED_KERNEL\
+to the path of libplumedKernel.dylib you can replace your own PLUMED library at runtime.\
+By default, ${prefix}/lib/libplumedKernel.dylib is linked.
+"

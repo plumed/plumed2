@@ -22,11 +22,16 @@
 #
 # This python routine builds an interface between plumed and python using cython
 #
-from distutils.core import setup
+from setuptools import setup
 from distutils.extension import Extension
 import subprocess
 import os
 import sys
+from shutil import copyfile
+
+if os.getenv("plumed_macports") is not None:
+    copyfile("../VERSION","VERSION")
+    copyfile("../src/wrapper/Plumed.h","Plumed.h")
 
 plumedname = os.getenv("plumed_program_name")
 if plumedname is None:
@@ -79,5 +84,7 @@ setup(
                              include_dirs=include_dirs,
                              extra_compile_args=extra_compile_args
                            )
-                          ])
+                          ]),
+  zip_safe=False,
+  test_suite='nose.collector'
 )
