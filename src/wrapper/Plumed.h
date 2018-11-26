@@ -1228,7 +1228,7 @@ class Plumed {
     } catch(const ::std::exception & e) {
       throw Plumed::std_exception(e.what());
     } catch(...) {
-      throw;
+      throw Plumed::std_bad_exception("plumed could not translate exception");
     }
   }
 
