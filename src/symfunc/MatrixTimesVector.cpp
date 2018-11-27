@@ -88,6 +88,7 @@ PRINT ARG=la.* FILE=colvar
 class MatrixTimesVector : public SymmetryFunctionBase {
 private: 
   bool fixed_matrix;
+  unsigned vecder_start;
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixTimesVector(const ActionOptions&);
@@ -120,10 +121,11 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
   log.printf("  calculating product of input weight matrix with vector of weights labelled %s \n",vecs[0]->getName().c_str() );
   std::vector<Value*> args( getArguments() ); args.push_back( vecs[0] );
   requestArguments( args, !fixed_matrix ); addValueWithDerivatives();
+  if( fixed_matrix ) { vecder_start=getPntrToArgument(0)->getShape()[0]*getPntrToArgument(0)->getShape()[1]; } else { vecder_start=arg_deriv_starts[1]; }
 }
 
 unsigned MatrixTimesVector::getNumberOfDerivatives() const {
-  if( fixed_matrix ) return arg_deriv_starts[1] + getPntrToArgument(1)->getShape()[0];
+  if( fixed_matrix ) return vecder_start + getPntrToArgument(1)->getShape()[0];
   return SymmetryFunctionBase::getNumberOfDerivatives() + getPntrToArgument(1)->getShape()[0];
 }
 
@@ -153,13 +155,13 @@ void MatrixTimesVector::compute( const double& val, const Vector& dir, MultiValu
   double func = getPntrToArgument(1)->get(tindex); addToValue( 0, val*func, myvals );
   if( doNotCalculateDerivatives() ) return;
   addWeightDerivative( 0, func, myvals );
-  myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), arg_deriv_starts[1] + tindex, val );
+  myvals.addDerivative( getPntrToOutput(0)->getPositionInStream(), vecder_start + tindex, val );
 }
 
 void MatrixTimesVector::updateDerivativeIndices( MultiValue& myvals ) const {
   // Could make this work without this if statement if it is needed in the future
   if( !fixed_matrix ) SymmetryFunctionBase::updateDerivativeIndices( myvals );
-  for(unsigned i=arg_deriv_starts[1]; i<getNumberOfDerivatives(); ++i) {
+  for(unsigned i=vecder_start; i<getNumberOfDerivatives(); ++i) {
     for(unsigned j=0; j<getNumberOfComponents(); ++j) {
       unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
       myvals.updateIndex( ostrn, i );

@@ -79,7 +79,7 @@ SetupReferenceBase(ao)
    int istep=0; p.cmd("setStep",&istep);
    std::vector<Vector> positions( natoms ), forces( natoms );
    std::vector<double> masses( natoms ), charges( natoms );
-   as->transferDataToPlumed( 0, masses, charges, positions, "", p );
+   as->getAtomsFromReference( 0, masses, charges, positions );
    p.cmd("setMasses",&masses[0]); if( atoms.chargesWereSet() ) p.cmd("setCharge",&charges[0]);
    p.cmd("setForces",&forces[0]); p.cmd("setPositions",&positions[0]);
    // Copy values from reference to PLUMED 

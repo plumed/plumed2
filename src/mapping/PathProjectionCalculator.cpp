@@ -101,9 +101,19 @@ unsigned PathProjectionCalculator::getNumberOfFrames() const {
 }
 
 void PathProjectionCalculator::computeVectorBetweenFrames( const unsigned& ifrom, const unsigned& ito, const Tensor& box ) {
-  int step = 1; metric.cmd("setStep",&step);
-  reference_frames[ifrom]->transferDataToPlumed( 0, masses, charges, positions, "arg1", metric );
-  reference_frames[ito]->transferDataToPlumed( positions.size()/2, masses, charges, positions, "arg2", metric );
+  int step = 1; metric.cmd("setStep",&step); std::vector<double> valdata;
+  if( reference_frames[ifrom]->getNumberOfComponents()>0 ) {
+      Value* myval1 = reference_frames[ifrom]->copyOutput(0); unsigned nvals = myval1->getSize();
+      valdata.resize( nvals ); for(unsigned i=0;i<nvals;++i) valdata[i] = myval1->get(i);
+      metric.cmd("setValue arg1", &valdata[0] );
+  }
+  reference_frames[ifrom]->getAtomsFromReference( 0, masses, charges, positions );
+  if( reference_frames[ito]->getNumberOfComponents()>0 ) {
+      Value* myval2 = reference_frames[ito]->copyOutput(0); unsigned nvals = myval2->getSize();
+      valdata.resize( nvals ); for(unsigned i=0;i<nvals;++i) valdata[i] = myval2->get(i); 
+      metric.cmd("setValue arg2", &valdata[0] );
+  }
+  reference_frames[ito]->getAtomsFromReference( positions.size()/2, masses, charges, positions );
   metric.cmd("setMasses",&masses[0]); metric.cmd("setCharges",&charges[0]);
   metric.cmd("setPositions",&positions[0]); metric.cmd("setForces",&forces[0]);
   metric.cmd("setBox",&box[0][0]); metric.cmd("calc");

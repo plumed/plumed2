@@ -33,6 +33,8 @@ class ReweightBase :
   public ActionWithArguments
 {
 protected:
+///
+  bool biaswasset;
 /// The temperature at which you are running the simulation
   double simtemp;
 public:
@@ -40,11 +42,13 @@ public:
   explicit ReweightBase(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const { return 0; }
   virtual bool buildsWeightStore() const { return false; }
-  void calculate();
+  void calculate(){};
+  void update();
   virtual void calculateWeights( const unsigned& nframes ) {}
   virtual double getLogWeight() = 0;
   virtual double getWeight( const unsigned& iweight ) const { plumed_error(); }
   virtual void clearData() {}
+  void setArguments( const std::vector<std::string>& c );
   void apply() {}
 };
 

@@ -212,7 +212,11 @@ void Function::addValueWithDerivatives() {
     else if( hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
     else if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape );
     else if( shape.size()==0 ) ActionWithValue::addValueWithDerivatives( shape );
-    else ActionWithValue::addValue( shape );
+    else { 
+      if( shape.size()==1 && shape[0]==1 ) {
+          std::vector<unsigned> fshape; ActionWithValue::addValueWithDerivatives( fshape );
+      } else ActionWithValue::addValue( shape );
+    }
     if(period.size()==1 && period[0]=="NO") setNotPeriodic();
     else if(period.size()==2) setPeriodic(period[0],period[1]);
     // Ensure symmetry of matrix is transferred if it is valid

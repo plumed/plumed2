@@ -77,18 +77,12 @@ void SetupReferenceBase::getNatomsAndNargs( unsigned& natoms, unsigned& nargs ) 
   nargs=0; if( getNumberOfComponents()>0 ) nargs = getPntrToOutput(0)->getNumberOfValues( getLabel() );
 }
 
-void SetupReferenceBase::transferDataToPlumed( const unsigned& npos, std::vector<double>& masses, std::vector<double>& charges, 
-                                               std::vector<Vector>& positions, const std::string& argname, PlumedMain& plmd ) const {
+void SetupReferenceBase::getAtomsFromReference( const unsigned& npos, std::vector<double>& masses, 
+                                                std::vector<double>& charges, std::vector<Vector>& positions ) const {
   for(unsigned i=0;i<myindices.size();++i) {
       masses[npos + myindices[i].index()] = atoms.getVatomMass(mygroup[i]);
       charges[npos + myindices[i].index()] = atoms.getVatomCharge(mygroup[i]);
       positions[npos + myindices[i].index()] = atoms.getVatomPosition(mygroup[i]);
-  }
-  if( argname.length()>0 && getNumberOfComponents()>0 ) {
-      unsigned nvals = getPntrToOutput(0)->getSize(); 
-      std::vector<double> valdata( nvals );
-      for(unsigned i=0;i<nvals;++i) valdata[i] = getPntrToOutput(0)->get(i);
-      plmd.cmd("setValue " + argname, &valdata[0] );
   }
 }
 

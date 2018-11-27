@@ -89,6 +89,7 @@ ReweightBias::ReweightBias(const ActionOptions&ao):
 }
 
 double ReweightBias::getLogWeight() {
+  if( getNumberOfArguments()==0 ) error("bias was not set in input");
   // Retrieve the bias
   double bias=0.0; for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgumentScalar(i);
   return bias / simtemp;

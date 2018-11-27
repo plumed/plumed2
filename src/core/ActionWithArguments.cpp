@@ -277,27 +277,28 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
             if( found ) { arguments[i]->buildDataStore( getLabel() ); break; }
           }
           // Check if we already have this argument in the stream
-          bool found=false; ActionWithValue* myact = (arguments[i]->getPntrToAction())->getActionThatCalculates();
-          for(unsigned k=0; k<f_actions.size(); ++k) {
-            if( f_actions[k]==myact ) { found=true; break; }
-          }
-          if( !found ) {
-            if( f_actions.size()==0 ) f_actions.push_back( myact );
-            else if( !arguments[i]->storedata ) f_actions.push_back( myact );
+          ActionWithValue* myact = (arguments[i]->getPntrToAction())->getActionThatCalculates();
+          ActionSetup* as = dynamic_cast<ActionSetup*>( myact ); bool found=false;
+          if( !as && myact->getName()!="READ" ) {
+              for(unsigned k=0; k<f_actions.size(); ++k) {
+                if( f_actions[k]==myact ) { found=true; break; }
+              }
+              if( !found ) {
+                if( f_actions.size()==0 ) f_actions.push_back( myact );
+                else if( !arguments[i]->storedata ) f_actions.push_back( myact );
+              }
           }
         }
     }
   }
   // This is a way of checking if we are in an ActionWithValue by looking at the keywords -- is there better fix?
-  if( firstcall ) {
+  if( firstcall && !thisAsActionWithValue ) {
     if( !keywords.exists("SERIAL") ) {
       for(unsigned i=0; i<arg.size(); ++i) { if( arg[i]->getRank()>0 ) arg[i]->buildDataStore( getLabel() ); }
       return;
     }
-  } else {
-    ActionWithValue* av = dynamic_cast<ActionWithValue*>(this);
-    if(!av) return;
-  }
+  } else if(!thisAsActionWithValue) return;
+  
   if( !allow_streams || storing ) {
     done_over_stream=false;
   } else if( f_actions.size()>1 ) {

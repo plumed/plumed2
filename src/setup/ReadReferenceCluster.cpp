@@ -57,9 +57,31 @@ SetupReferenceBase(ao)
   bool read_covar; parseFlag("READ_COVARIANCE",read_covar);
   bool read_var; parseFlag("READ_VARIANCE",read_var);
   if( read_covar && read_var ) error("cannot read both the variance and the covariance matrix");
-  for(unsigned i=0;i<number;++i) {
-    ifile.scanField();  
-    if(i==number-1) {
+  for(unsigned line=0;line<number;++line) {
+    // Read in the position of the center of the cluster
+    std::vector<std::string> names; std::vector<double> values; double val;
+    for(unsigned i=0;i<getNumberOfArguments();++i) {
+        if( getPntrToArgument(i)->getRank()==0 ) {
+            ifile.scanField(getPntrToArgument(i)->getName(), val); 
+            values.push_back( val ); names.push_back( getPntrToArgument(i)->getName() );
+        } else if( getPntrToArgument(i)->getRank()==1 ) {
+            for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
+                std::string num; Tools::convert( j+1, num );
+                ifile.scanField(getPntrToArgument(i)->getName() + "." + num, val);
+                values.push_back( val ); names.push_back( getPntrToArgument(i)->getName() + "." + num );
+            }
+        } else if( getPntrToArgument(i)->getRank()==2 ) {
+            for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
+                std::string jnum; Tools::convert( j+1, jnum );
+                for(unsigned k=0;k<getPntrToArgument(k)->getShape()[2];++k) {
+                    std::string knum; Tools::convert( k+1, knum );
+                    ifile.scanField(getPntrToArgument(i)->getName() + "." + jnum + "." + knum, val);
+                    values.push_back( val ); names.push_back( getPntrToArgument(i)->getName() + "." + jnum + "." + knum );
+                }
+            }
+        } else error("cannot deal with objects with ranks greater than 2");
+    }
+    if(line==number-1) {
          readline=true;
          log.printf("  reading %dth reference structure from file %s \n", number, reference.c_str());
          log.printf("  which contains");
@@ -78,29 +100,24 @@ SetupReferenceBase(ao)
          
          if( getNumberOfArguments()>0 ) {
              // Create the component that will hold the position of the center of the cluster
-             std::vector<unsigned> shape( 1 ); shape[0] = 0; unsigned n=0; double val;
+             std::vector<unsigned> shape( 1 ); shape[0] = 0;  
              for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );
              addComponent( "center", shape ); componentIsNotPeriodic("center"); getPntrToComponent(0)->buildDataStore( getLabel() );
   
              // Read in the position of the center of the cluster
-             std::vector<std::string> names;
+             unsigned n=0;
              for(unsigned i=0;i<getNumberOfArguments();++i) {
                  if( getPntrToArgument(i)->getRank()==0 ) {
-                     ifile.scanField(getPntrToArgument(i)->getName(), val);
-                     getPntrToComponent(0)->set( n, val ); n++; names.push_back( getPntrToArgument(i)->getName() );
+                     getPntrToComponent(0)->set( n, values[n] ); n++; 
                  } else if( getPntrToArgument(i)->getRank()==1 ) {
                      for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
-                         std::string num; Tools::convert( j+1, num );
-                         ifile.scanField(getPntrToArgument(i)->getName() + "." + num, val);
-                         getPntrToComponent(0)->set( n, val ); n++; names.push_back( getPntrToArgument(i)->getName() + "." + num );
+                         getPntrToComponent(0)->set( n, values[n] ); n++; 
                      }
                  } else if( getPntrToArgument(i)->getRank()==2 ) { 
                      for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
                          std::string jnum; Tools::convert( j+1, jnum );
                          for(unsigned k=0;k<getPntrToArgument(k)->getShape()[2];++k) {
-                             std::string knum; Tools::convert( k+1, knum );
-                             ifile.scanField(getPntrToArgument(i)->getName() + "." + jnum + "." + knum, val); 
-                             getPntrToComponent(0)->set( n, val ); n++; names.push_back( getPntrToArgument(i)->getName() + "." + jnum + "." + knum );
+                             getPntrToComponent(0)->set( n, values[n] ); n++; 
                          }
                      }
                  } else error("cannot deal with objects with ranks greater than 2");
@@ -147,6 +164,7 @@ SetupReferenceBase(ao)
          }
          break;
       }
+      ifile.scanField(); 
   }
   if( !readline ) error("could not read reference configuration");
   ifile.scanField(); ifile.close();

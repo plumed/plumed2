@@ -48,9 +48,13 @@ ReweightBase::ReweightBase(const ActionOptions&ao):
   addValue(); setNotPeriodic();
 }
 
-void ReweightBase::calculate() {
+void ReweightBase::update() {
   double weight = getLogWeight();
   setValue( weight );
+}
+
+void ReweightBase::setArguments( const std::vector<std::string>& c ) {
+  std::vector<Value*> arg; interpretArgumentList(c,arg); requestArguments(arg,false);
 }
 
 }

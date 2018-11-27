@@ -76,18 +76,20 @@ ActionWithInputGrid(ao)
   }
   log.printf("\n"); requestArguments( req_arg, true );
 
-  // Create value for this function
-  std::vector<unsigned> shape( argv[0]->getRank() ); 
-  for(unsigned i=0;i<shape.size();++i) shape[i]=argv[0]->getShape()[i];
-  if( shape.size()==0 ) addValueWithDerivatives( shape ); 
-  else addValue( shape );
-  setNotPeriodic();
   // Make a task list
   createTasksFromArguments();
   // Get the number of derivatives
   nderivatives = getNumberOfArguments() - 1;
   if( distinct_arguments.size()>0 ) nderivatives = setupActionInChain(1);
   forcesToApply.resize( nderivatives );
+  // Create value for this function
+  std::vector<unsigned> shape(0);
+  if( argv[0]->getRank()>0 ) {
+      shape.resize( argv[0]->getRank() );
+      for(unsigned i=0;i<shape.size();++i) shape[i]=argv[0]->getShape()[i];
+      addValue( shape );
+  } else addValueWithDerivatives( shape ); 
+  setNotPeriodic();
 }
 
 unsigned EvaluateFunctionOnGrid::getNumberOfDerivatives() const {
