@@ -409,6 +409,7 @@ class CS2Backbone : public MetainferenceBase {
     unsigned csatoms;           // fixed number of atoms used
     unsigned totcsatoms;        // number of atoms used
     unsigned res_num;           // residue number
+    unsigned chain;             // chain number
     unsigned ipos;              // index of the atom for which we are calculating the chemical shifts
     vector<unsigned> bb;        // atoms for the previous, current and next backbone
     vector<unsigned> side_chain;// atoms for the current sidechain
@@ -430,6 +431,7 @@ class CS2Backbone : public MetainferenceBase {
       csatoms(0),
       totcsatoms(0),
       res_num(0),
+      chain(0),
       ipos(0)
     {
       xd1.reserve(26);
@@ -608,15 +610,16 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   } else {
     for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
       std::string num; Tools::convert(chemicalshifts[cs].res_num,num);
+      std::string chain_num; Tools::convert(chemicalshifts[cs].chain,chain_num);
       if(getDoScore()) {
-        addComponent(chemicalshifts[cs].nucleus+num);
-        componentIsNotPeriodic(chemicalshifts[cs].nucleus+num);
-        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+num);
+        addComponent(chemicalshifts[cs].nucleus+chain_num+"_"+num);
+        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"_"+num);
+        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"_"+num);
         setParameter(chemicalshifts[cs].exp_cs);
       } else {
-        addComponentWithDerivatives(chemicalshifts[cs].nucleus+num);
-        componentIsNotPeriodic(chemicalshifts[cs].nucleus+num);
-        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+num);
+        addComponentWithDerivatives(chemicalshifts[cs].nucleus+chain_num+"_"+num);
+        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"_"+num);
+        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"_"+num);
       }
     }
     if(getDoScore()) Initialise(chemicalshifts.size());
@@ -625,9 +628,10 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   if(!noexp) {
     for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
       std::string num; Tools::convert(chemicalshifts[cs].res_num,num);
-      addComponent("exp"+chemicalshifts[cs].nucleus+num);
-      componentIsNotPeriodic("exp"+chemicalshifts[cs].nucleus+num);
-      Value* comp=getPntrToComponent("exp"+chemicalshifts[cs].nucleus+num);
+      std::string chain_num; Tools::convert(chemicalshifts[cs].chain,chain_num);
+      addComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"_"+num);
+      componentIsNotPeriodic("exp"+chemicalshifts[cs].nucleus+chain_num+"_"+num);
+      Value* comp=getPntrToComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"_"+num);
       comp->set(chemicalshifts[cs].exp_cs);
     }
   }
@@ -693,6 +697,7 @@ void CS2Backbone::init_cs(const string &file, const string &nucl, const PDB &pdb
     else if(nucl=="HA") tmp_cs.nucleus = "ha_";
     else if(nucl=="H")  tmp_cs.nucleus = "hn_";
     else if(nucl=="N")  tmp_cs.nucleus = "nh_";
+    tmp_cs.chain = ichain;
     tmp_cs.res_num = resnum;
     tmp_cs.res_type_curr = frag2enum(RES);
     tmp_cs.res_type_prev = frag2enum(pdb.getResidueName(resnum-1, chains[ichain]));

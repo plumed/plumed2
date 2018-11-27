@@ -141,9 +141,9 @@ void ActionWithValue::addComponent( const std::string& name ) {
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
     plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
+    plumed_massert(values[i]->name!=thename,"there is already a value with this name: "+thename);
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponent(\"bias\") from your bias.");
-    plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
   values.emplace_back(new Value(this,thename, false ) );
   std::string msg="  added component to this action:  "+thename+" \n";
@@ -158,9 +158,9 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name ) {
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
     plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
+    plumed_massert(values[i]->name!=thename,"there is already a value with this name: "+thename);
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
-    plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
   values.emplace_back(new Value(this,thename, true ) );
   std::string msg="  added component to this action:  "+thename+" \n";
