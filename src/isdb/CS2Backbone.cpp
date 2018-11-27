@@ -1476,7 +1476,7 @@ void CS2Backbone::init_sidechain(const PDB &pdb) {
       }
 
     }
-    old_size += aend.index()+1;
+    old_size = aend.index()+1;
   }
 }
 
@@ -1566,7 +1566,7 @@ void CS2Backbone::init_xdist(const PDB &pdb) {
         atom[s][a].xd2.push_back(add2);
       }
     }
-    old_size += aend.index()+1;
+    old_size = aend.index()+1;
   }
 }
 
@@ -1689,7 +1689,7 @@ void CS2Backbone::init_rings(const PDB &pdb) {
         plumed_merror("Unkwown Ring Fragment");
       }
     }
-    old_size += aend.index()+1;
+    old_size = aend.index()+1;
   }
 }
 
