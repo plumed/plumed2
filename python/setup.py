@@ -70,10 +70,28 @@ try:
 except:
     include_dirs.append(".")
 
+def readme():
+    with open('README.rst') as f:
+        return f.read()
+
 setup(
   name=plumedname,
   version=plumedversion,
   description='Python interface to PLUMED',
+  long_description=readme(),
+  classifiers=[
+          'Development Status :: 4 - Beta',
+          'Intended Audience :: Science/Research',
+          'Topic :: Scientific/Engineering :: Bio-Informatics',
+          'Topic :: Scientific/Engineering :: Chemistry',
+          'Topic :: Scientific/Engineering :: Physics',
+          'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
+          'Programming Language :: Python :: 2',
+          'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3',
+          'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7',
+  ],
   author='Gareth A. Tribello',
   author_email='plumed-users@googlegroups.com',
   url='http://www.plumed.org',
