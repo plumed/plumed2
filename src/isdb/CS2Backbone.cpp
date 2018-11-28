@@ -100,10 +100,8 @@ The default behaviour is to store the values for the active nuclei in components
 co_#, ha_#, hn_#, nh_# and expca_#, expcb_#, expco_#, expha_#, exphn_#, exp_nh#) with NOEXP it is possible
 to only store the backcalculated values, where # includes a chain and residue number.
 
-One more standard file is also needed in the folder DATADIR: camshift.db. This file includes all the parameters needed to
+One additional file is always needed in the folder DATADIR: camshift.db. This file includes all the parameters needed to
 calculate the chemical shifts and can be found in regtest/isdb/rt-cs2backbone/data/ .
-
-All the above files must be in a single folder that must be specified with the keyword DATADIR.
 
 Additional material and examples can be also found in the tutorial \ref belfast-9 as well as in the cs2backbone regtests
 in the isdb folder.
