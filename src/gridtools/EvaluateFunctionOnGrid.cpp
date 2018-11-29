@@ -33,6 +33,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit EvaluateFunctionOnGrid(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const ;
+  bool hasAverageAsArgument() const ;
   void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
   void finishOutputSetup(){}
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
@@ -94,6 +95,10 @@ ActionWithInputGrid(ao)
 
 unsigned EvaluateFunctionOnGrid::getNumberOfDerivatives() const {
   return nderivatives;
+}
+
+bool EvaluateFunctionOnGrid::hasAverageAsArgument() const {
+  return false;
 }
 
 void EvaluateFunctionOnGrid::prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {

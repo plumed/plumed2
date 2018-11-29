@@ -59,11 +59,11 @@ protected:
   void createTasksFromArguments();
 /// Get the total number of input arguments
   unsigned getNumberOfScalarArguments() const ;
-/// Is an average used as an argument of this function
-  bool hasAverageAsArgument() const ;
 /// This is used to create a chain of actions that can be used to calculate a function/multibias
   unsigned setupActionInChain( const unsigned& argstart ) ;
 public:
+/// Is an average used as an argument of this function
+  virtual bool hasAverageAsArgument() const ;
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;
 /// Registers the list of keywords
