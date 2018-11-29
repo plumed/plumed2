@@ -26,6 +26,7 @@ from setuptools import setup
 from distutils.extension import Extension
 import subprocess
 import os
+import os.path
 import sys
 from shutil import copyfile
 
@@ -51,16 +52,14 @@ if defaultkernel is not None:
     extra_compile_args.append("-D__PLUMED_DEFAULT_KERNEL=" + os.path.abspath(defaultkernel))
     print( "Hardcoded PLUMED_KERNEL " + os.path.abspath(defaultkernel))
 
+def readme():
+    with open('README.rst') as f:
+        return f.read()
+
 try:
     import numpy
 except:
     print('Error: building ' + plumedname + ' requires numpy. Please install it first with pip install numpy')
-    sys.exit(-1)
-
-try:
-    from Cython.Build import cythonize
-except:
-    print('Error: building ' + plumedname + ' requires cython. Please install it first with pip install cython')
     sys.exit(-1)
 
 include_dirs=[numpy.get_include()]
@@ -70,9 +69,44 @@ try:
 except:
     include_dirs.append(".")
 
-def readme():
-    with open('README.rst') as f:
-        return f.read()
+# allow one to force using cython with env var plumed_force_cython=yes
+USE_CYTHON = False
+try:
+    if(os.environ["plumed_force_cython"]=="yes"):
+        print('plumed_force_cython=yes')
+        USE_CYTHON = True
+except:
+    pass
+
+# if plumed.cpp is available, do not need cython
+if not USE_CYTHON:
+    if not os.path.isfile("plumed.cpp"):
+        print('plumed.cpp not found, cython is needed')
+        USE_CYTHON = True
+
+# try to import cython
+if USE_CYTHON:
+    try:
+        print('importing cython')
+        from Cython.Build import cythonize
+        extension="pyx"
+    except:
+        print('Error: building ' + plumedname + ' requires cython. Please install it first with pip install cython')
+        sys.exit(-1)
+else:
+    print('using available plumed.cpp file')
+    extension="cpp"
+
+ext_modules=[Extension(
+     name=plumedname,
+     sources=["plumed." + extension],
+     language="c++",
+     include_dirs=include_dirs,
+     extra_compile_args=extra_compile_args
+  )]
+
+if USE_CYTHON:
+    ext_modules=cythonize(ext_modules)
 
 setup(
   name=plumedname,
@@ -95,14 +129,7 @@ setup(
   author='Gareth A. Tribello',
   author_email='plumed-users@googlegroups.com',
   url='http://www.plumed.org',
-  ext_modules = cythonize([
-                  Extension( name=plumedname,
-                             sources=["plumed.pyx"],
-                             language="c++",
-                             include_dirs=include_dirs,
-                             extra_compile_args=extra_compile_args
-                           )
-                          ]),
+  ext_modules = ext_modules,
   zip_safe=False,
   test_suite='nose.collector'
 )
