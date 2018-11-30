@@ -8760,15 +8760,18 @@ done
   then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Python executable is $PYTHON_BIN" >&5
 $as_echo "$as_me: Python executable is $PYTHON_BIN" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (distutils, cython, numpy, subprocess, os)" >&5
-$as_echo_n "checking support for required python modules (distutils, cython, numpy, subprocess, os)... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (setuptools, cython, numpy, subprocess, os, shutil)" >&5
+$as_echo_n "checking support for required python modules (setuptools, cython, numpy, subprocess, os, shutil)... " >&6; }
 testimport="
-from distutils.core import setup
-from distutils.extension import Extension
-from Cython.Build import cythonize
-import numpy
+from setuptools import setup
+from setuptools import Extension
 import subprocess
 import os
+import os.path
+import sys
+from shutil import copyfile
+import numpy
+from Cython.Build import cythonize
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5

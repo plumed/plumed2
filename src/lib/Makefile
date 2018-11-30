@@ -17,8 +17,6 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 ifeq ($(SOEXT),dylib)
-# Extra flags required to properly compile the python interface
-  PYTHON_EXTRA_LDFLAGS:=-undefined dynamic_lookup
   SONAME_OPTION:=-Wl,-install_name
 else
   PYTHON_EXTRA_LDFLAGS:=
@@ -314,17 +312,14 @@ endif
 ifdef python_bin
 	cp -pr ../../python install 
 	cd install/python && rm -fr *.so plumed.cpp build && \
-	LD_LIBRARY_PATH=$$PWD/../..:$$LD_LIBRARY_PATH \
-	  CC="$(CC)" \
-          LDSHARED="$(LDSHARED) $(PYTHON_EXTRA_LDFLAGS)" \
-          CXX="$(CXX)" \
-          plumedexe="../../plumed" \
-          program_name="$(program_name)" \
-          include_dir=../../../wrapper \
-          lib_dir="$(DESTDIR)$(libdir)" \
-          $(python_bin) buildPythonInterface.py build_ext -i
+          unset CXX && unset CC && unset CFLAGS && unset CXXFLAGS && unset LDSHARED && \
+          plumed_program_name="$(program_name)" \
+          plumed_version=$(VERSION) \
+          plumed_include_dir=../../../wrapper \
+          plumed_default_kernel="$(libdir)/lib$(program_name)Kernel.$(SOEXT)" \
+          $(python_bin) setup.py build_ext -i
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/python"
-	cp install/python/*.so "$(DESTDIR)$(libdir)/$(program_name)/python/"
+	cp install/python/*.so "$(DESTDIR)$(libdir)/$(program_name)/python/" 
 endif
 ifdef BASH_COMPLETION_DIR
 	mkdir -p "$(DESTDIR)$(BASH_COMPLETION_DIR)"
