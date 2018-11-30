@@ -23,7 +23,7 @@
 # This python routine builds an interface between plumed and python using cython
 #
 from setuptools import setup
-from distutils.extension import Extension
+from setuptools import Extension
 import subprocess
 import os
 import os.path
