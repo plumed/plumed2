@@ -7,9 +7,9 @@ matrix:
 # this is the "master" one, it is going to update the manual every time
 # Variable PLUMED_ALL_TESTS=yes ensures that all the regtests can be run.
 # If some of them is not enabled, the whole suite will fail.
-  - name: Run all tests and build doc. All features enabled (system blas and lapack + asmjit)
+  - name: Run all tests and build doc on ubuntu 18. All features enabled (system blas and lapack + asmjit)
     os: linux
-    dist: trusty
+    dist: bionic
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=yes
   - name: Run all tests and scan coverage
@@ -127,6 +127,9 @@ install:
       brew install ccache ;
       export PLUMED_MPIRUN="mpirun --oversubscribe" ;
     fi
+  - if [[ "$TRAVIS_DIST" == xenial ]] || [[ "$TRAVIS_DIST" == bionic ]] ; then
+      export PLUMED_MPIRUN="mpirun.openmpi" ;
+    fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq ; fi
 # install some package - these are fast, we install them anyway
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libfftw3-dev gsl-bin libgsl0-dev ; fi
@@ -152,6 +155,7 @@ install:
 # we do it only when needed
   - if test "$PLUMED_CXX" == "mpic++" -a "$TRAVIS_OS_NAME" == "linux" ; then sudo apt-get install -y libopenmpi-dev openmpi-bin ; fi
   - if test "$PLUMED_CXX" == "mpic++" -a "$TRAVIS_OS_NAME" == "osx" ;   then brew install openmpi ; fi
+  - export OMPI_MCA_btl="^openib"
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y graphviz            ; fi
 # install doxygen-latex
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y doxygen-latex ; fi
@@ -166,7 +170,11 @@ install:
 # pandas: needed by mdtraj and by plumed
   - if test "$PLUMED_CXX" ; then
       if test "$TRAVIS_OS_NAME" == "linux" ; then
-        pyenv global 3.6.3 ;
+        if test "$TRAVIS_DIST" == "bionic" ; then
+            pyenv global 3.7.1 ;
+        else
+            pyenv global 3.6.3;
+        fi ;
         pip install --user Cython ;
         pip install --user nose ;
         pip install --user numpy ;
