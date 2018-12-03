@@ -30,6 +30,27 @@
 
 namespace PLMD {
 
+template<typename T>
+static void getPointers(TypesafePtr p,TypesafePtr px,TypesafePtr py,TypesafePtr pz,T*&ppx,T*&ppy,T*&ppz,unsigned & stride) {
+  auto p_=p.get<T>();
+  if(p_) {
+    ppx=p_;
+    ppy=p_+1;
+    ppz=p_+2;
+    stride=3;
+  } else if(px && py && pz) {
+    ppx=px.get<T>();
+    ppy=py.get<T>();
+    ppz=pz.get<T>();
+    stride=1;
+  } else {
+    ppx=nullptr;
+    ppy=nullptr;
+    ppz=nullptr;
+    stride=0;
+  }
+}
+
 /// Class containing the pointers to the MD data
 /// It is templated so that single and double precision versions coexist
 /// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
@@ -40,52 +61,57 @@ class MDAtomsTyped:
   T scalep,scalef;
   T scaleb,scalev;
   T scalec,scalem; // factor to scale charges and masses
-  int stride;
-  T *m;
-  T *c;
-  T *px; T *py; T *pz;
-  T *fx; T *fy; T *fz;
-  T *box;
-  T *virial;
-  std::map<std::string,T*> extraCV;
-  std::map<std::string,T*> extraCVForce;
+  TypesafePtr m;
+  TypesafePtr c;
+  TypesafePtr p;
+  TypesafePtr px,py,pz;
+  TypesafePtr f;
+  TypesafePtr fx,fy,fz;
+  TypesafePtr box;
+  TypesafePtr virial;
+  std::map<std::string,TypesafePtr> extraCV;
+  std::map<std::string,TypesafePtr> extraCVForce;
 public:
   MDAtomsTyped();
-  void setm(void*m) override;
-  void setc(void*m) override;
-  void setBox(void*) override;
-  void setp(void*p) override;
-  void setVirial(void*) override;
-  void setf(void*f) override;
-  void setp(void*p,int i) override;
-  void setf(void*f,int i) override;
+  void setm(TypesafePtr m) override;
+  void setc(TypesafePtr m) override;
+  void setBox(TypesafePtr ) override;
+  void setp(TypesafePtr p) override;
+  void setVirial(TypesafePtr ) override;
+  void setf(TypesafePtr f) override;
+  void setp(TypesafePtr p,int i) override;
+  void setf(TypesafePtr f,int i) override;
   void setUnits(const Units&,const Units&) override;
-  void setExtraCV(const std::string &name,void*p) override {
-    extraCV[name]=static_cast<T*>(p);
+  void setExtraCV(const std::string &name,TypesafePtr p) override {
+    extraCV[name]=p;
   }
-  void setExtraCVForce(const std::string &name,void*p) override {
-    extraCVForce[name]=static_cast<T*>(p);
+  void setExtraCVForce(const std::string &name,TypesafePtr p) override {
+    extraCVForce[name]=p;
   }
   double getExtraCV(const std::string &name) override {
-
     auto search=extraCV.find(name);
     if(search != extraCV.end()) {
-      return static_cast<double>(*search->second);
+      return static_cast<double>(*(search->second.template get<const T>()));
     } else {
       plumed_error() << "Unable to access extra cv named '" << name << "'.\nNotice that extra cvs need to be calculated in the MD code.";
     }
   }
   void updateExtraCVForce(const std::string &name,double f) override {
-    *extraCVForce[name]+=static_cast<T>(f);
+    *extraCVForce[name].template get<T>()+=static_cast<T>(f);
   }
-  void MD2double(const void*m,double&d)const override {
-    d=double(*(static_cast<const T*>(m)));
+  void MD2double(const TypesafePtr m,double&d)const override {
+    d=double(*m.template get<const T>());
   }
-  void double2MD(const double&d,void*m) const override {
-    *(static_cast<T*>(m))=T(d);
+  void double2MD(const double&d,TypesafePtr m)const override {
+    *m.get<T>()=T(d);
   }
-  Vector getMDforces(const unsigned index) const override {
-    Vector force(fx[stride*index],fy[stride*index],fz[stride*index]);
+  Vector getMDforces(const unsigned index)const override {
+    unsigned stride;
+    const T* ffx;
+    const T* ffy;
+    const T* ffz;
+    getPointers(f,fx,fy,fz,ffx,ffy,ffz,stride);
+    Vector force(ffx[stride*index],ffy[stride*index],ffz[stride*index]);
     return force/scalef;
   }
   void getBox(Tensor &) const override;
@@ -120,100 +146,147 @@ void MDAtomsTyped<T>::setUnits(const Units& units,const Units& MDUnits) {
 
 template <class T>
 void MDAtomsTyped<T>::getBox(Tensor&box)const {
-  if(this->box) for(int i=0; i<3; i++)for(int j=0; j<3; j++) box(i,j)=this->box[3*i+j]*scaleb;
+  auto b=this->box.template get<const T>(9);
+  if(b) for(int i=0; i<3; i++)for(int j=0; j<3; j++) box(i,j)=b[3*i+j]*scaleb;
   else box.zero();
 }
 
 template <class T>
 void MDAtomsTyped<T>::getPositions(const std::vector<int>&index,std::vector<Vector>&positions)const {
+  unsigned stride;
+  const T* ppx;
+  const T* ppy;
+  const T* ppz;
+  getPointers(p,px,py,pz,ppx,ppy,ppz,stride);
+  plumed_assert(index.size()==0 || (ppx && ppy && ppz));
 // cannot be parallelized with omp because access to positions is not ordered
   for(unsigned i=0; i<index.size(); ++i) {
-    positions[index[i]][0]=px[stride*i]*scalep;
-    positions[index[i]][1]=py[stride*i]*scalep;
-    positions[index[i]][2]=pz[stride*i]*scalep;
+    positions[index[i]][0]=ppx[stride*i]*scalep;
+    positions[index[i]][1]=ppy[stride*i]*scalep;
+    positions[index[i]][2]=ppz[stride*i]*scalep;
   }
 }
 
 template <class T>
 void MDAtomsTyped<T>::getPositions(const std::set<AtomNumber>&index,const std::vector<unsigned>&i, std::vector<Vector>&positions)const {
+  unsigned stride;
+  const T* ppx;
+  const T* ppy;
+  const T* ppz;
+  getPointers(p,px,py,pz,ppx,ppy,ppz,stride);
+  plumed_assert(index.size()==0 || (ppx && ppy && ppz));
 // cannot be parallelized with omp because access to positions is not ordered
   unsigned k=0;
   for(const auto & p : index) {
-    positions[p.index()][0]=px[stride*i[k]]*scalep;
-    positions[p.index()][1]=py[stride*i[k]]*scalep;
-    positions[p.index()][2]=pz[stride*i[k]]*scalep;
+    positions[p.index()][0]=ppx[stride*i[k]]*scalep;
+    positions[p.index()][1]=ppy[stride*i[k]]*scalep;
+    positions[p.index()][2]=ppz[stride*i[k]]*scalep;
     k++;
   }
 }
 
 template <class T>
 void MDAtomsTyped<T>::getPositions(unsigned j,unsigned k,std::vector<Vector>&positions)const {
+  unsigned stride;
+  const T* ppx;
+  const T* ppy;
+  const T* ppz;
+  getPointers(p,px,py,pz,ppx,ppy,ppz,stride);
+  plumed_assert(k==j || (ppx && ppy && ppz));
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(&positions[j],(k-j)))
   for(unsigned i=j; i<k; ++i) {
-    positions[i][0]=px[stride*i]*scalep;
-    positions[i][1]=py[stride*i]*scalep;
-    positions[i][2]=pz[stride*i]*scalep;
+    positions[i][0]=ppx[stride*i]*scalep;
+    positions[i][1]=ppy[stride*i]*scalep;
+    positions[i][2]=ppz[stride*i]*scalep;
   }
 }
 
 
 template <class T>
 void MDAtomsTyped<T>::getLocalPositions(std::vector<Vector>&positions)const {
+  unsigned stride;
+  const T* ppx;
+  const T* ppy;
+  const T* ppz;
+  getPointers(p,px,py,pz,ppx,ppy,ppz,stride);
+  plumed_assert(positions.size()==0 || (ppx && ppy && ppz));
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(positions))
   for(unsigned i=0; i<positions.size(); ++i) {
-    positions[i][0]=px[stride*i]*scalep;
-    positions[i][1]=py[stride*i]*scalep;
-    positions[i][2]=pz[stride*i]*scalep;
+    positions[i][0]=ppx[stride*i]*scalep;
+    positions[i][1]=ppy[stride*i]*scalep;
+    positions[i][2]=ppz[stride*i]*scalep;
   }
 }
 
 
 template <class T>
 void MDAtomsTyped<T>::getMasses(const std::vector<int>&index,std::vector<double>&masses)const {
-  if(m) for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=scalem*m[i];
+  auto mm=m.get<const T>();
+  if(mm) for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=scalem*mm[i];
   else  for(unsigned i=0; i<index.size(); ++i) masses[index[i]]=0.0;
 }
 
 template <class T>
 void MDAtomsTyped<T>::getCharges(const std::vector<int>&index,std::vector<double>&charges)const {
-  if(c) for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=scalec*c[i];
+  auto cc=c.get<const T>();
+  if(cc) for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=scalec*cc[i];
   else  for(unsigned i=0; i<index.size(); ++i) charges[index[i]]=0.0;
 }
 
 template <class T>
 void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const {
-  if(this->virial) for(int i=0; i<3; i++)for(int j=0; j<3; j++) this->virial[3*i+j]+=T(virial(i,j)*scalev);
+  auto v=this->virial.template get<T>();
+  if(v) for(int i=0; i<3; i++)for(int j=0; j<3; j++) v[3*i+j]+=T(virial(i,j)*scalev);
 }
 
 template <class T>
 void MDAtomsTyped<T>::updateForces(const std::set<AtomNumber>&index,const std::vector<unsigned>&i,const std::vector<Vector>&forces) {
+  unsigned stride;
+  T* ffx;
+  T* ffy;
+  T* ffz;
+  getPointers(f,fx,fy,fz,ffx,ffy,ffz,stride);
+  plumed_assert(index.size()==0 || (ffx && ffy && ffz));
   unsigned k=0;
   for(const auto & p : index) {
-    fx[stride*i[k]]+=scalef*T(forces[p.index()][0]);
-    fy[stride*i[k]]+=scalef*T(forces[p.index()][1]);
-    fz[stride*i[k]]+=scalef*T(forces[p.index()][2]);
+    ffx[stride*i[k]]+=scalef*T(forces[p.index()][0]);
+    ffy[stride*i[k]]+=scalef*T(forces[p.index()][1]);
+    ffz[stride*i[k]]+=scalef*T(forces[p.index()][2]);
     k++;
   }
 }
 
 template <class T>
 void MDAtomsTyped<T>::updateForces(const std::vector<int>&index,const std::vector<Vector>&forces) {
+  unsigned stride;
+  T* ffx;
+  T* ffy;
+  T* ffz;
+  getPointers(f,fx,fy,fz,ffx,ffy,ffz,stride);
+  plumed_assert(index.size()==0 || (ffx && ffy && ffz));
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(fx,stride*index.size()))
   for(unsigned i=0; i<index.size(); ++i) {
-    fx[stride*i]+=scalef*T(forces[index[i]][0]);
-    fy[stride*i]+=scalef*T(forces[index[i]][1]);
-    fz[stride*i]+=scalef*T(forces[index[i]][2]);
+    ffx[stride*i]+=scalef*T(forces[index[i]][0]);
+    ffy[stride*i]+=scalef*T(forces[index[i]][1]);
+    ffz[stride*i]+=scalef*T(forces[index[i]][2]);
   }
 }
 
 template <class T>
 void MDAtomsTyped<T>::rescaleForces(const std::vector<int>&index,double factor) {
-  if(virial) for(unsigned i=0; i<3; i++)for(unsigned j=0; j<3; j++) virial[3*i+j]*=T(factor);
+  unsigned stride;
+  T* ffx;
+  T* ffy;
+  T* ffz;
+  getPointers(f,fx,fy,fz,ffx,ffy,ffz,stride);
+  plumed_assert(index.size()==0 || (ffx && ffy && ffz));
+  auto v=virial.get<T>(9);
+  if(v) for(unsigned i=0; i<3; i++)for(unsigned j=0; j<3; j++) v[3*i+j]*=T(factor);
   #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(fx,stride*index.size()))
   for(unsigned i=0; i<index.size(); ++i) {
-    fx[stride*i]*=T(factor);
-    fy[stride*i]*=T(factor);
-    fz[stride*i]*=T(factor);
+    ffx[stride*i]*=T(factor);
+    ffy[stride*i]*=T(factor);
+    ffz[stride*i]*=T(factor);
   }
 }
 
@@ -223,65 +296,57 @@ unsigned MDAtomsTyped<T>::getRealPrecision()const {
 }
 
 template <class T>
-void MDAtomsTyped<T>::setp(void*pp) {
-  T*p=static_cast<T*>(pp);
-  plumed_assert(stride==0 || stride==3);
-  px=p;
-  py=p+1;
-  pz=p+2;
-  stride=3;
+void MDAtomsTyped<T>::setp(TypesafePtr pp) {
+  p=pp;
+  px=TypesafePtr();
+  py=TypesafePtr();
+  pz=TypesafePtr();
 }
 
 template <class T>
-void MDAtomsTyped<T>::setBox(void*pp) {
-  box=static_cast<T*>(pp);
-}
-
-
-template <class T>
-void MDAtomsTyped<T>::setf(void*ff) {
-  T*f=static_cast<T*>(ff);
-  plumed_assert(stride==0 || stride==3);
-  fx=f;
-  fy=f+1;
-  fz=f+2;
-  stride=3;
-}
-
-template <class T>
-void MDAtomsTyped<T>::setp(void*pp,int i) {
-  T*p=static_cast<T*>(pp);
-  plumed_assert(stride==0 || stride==1);
-  if(i==0)px=p;
-  if(i==1)py=p;
-  if(i==2)pz=p;
-  stride=1;
-}
-
-template <class T>
-void MDAtomsTyped<T>::setVirial(void*pp) {
-  virial=static_cast<T*>(pp);
+void MDAtomsTyped<T>::setBox(TypesafePtr pp) {
+  box=pp;
 }
 
 
 template <class T>
-void MDAtomsTyped<T>::setf(void*ff,int i) {
-  T*f=static_cast<T*>(ff);
-  plumed_assert(stride==0 || stride==1);
-  if(i==0)fx=f;
-  if(i==1)fy=f;
-  if(i==2)fz=f;
-  stride=1;
+void MDAtomsTyped<T>::setf(TypesafePtr ff) {
+  f=ff;
+  fx=TypesafePtr();
+  fy=TypesafePtr();
+  fz=TypesafePtr();
 }
 
 template <class T>
-void MDAtomsTyped<T>::setm(void*m) {
-  this->m=static_cast<T*>(m);
+void MDAtomsTyped<T>::setp(TypesafePtr pp,int i) {
+  p=TypesafePtr();
+  if(i==0)px=pp;
+  if(i==1)py=pp;
+  if(i==2)pz=pp;
 }
 
 template <class T>
-void MDAtomsTyped<T>::setc(void*c) {
-  this->c=static_cast<T*>(c);
+void MDAtomsTyped<T>::setVirial(TypesafePtr pp) {
+  virial=pp.get<T>(9);
+}
+
+
+template <class T>
+void MDAtomsTyped<T>::setf(TypesafePtr ff,int i) {
+  f=TypesafePtr();;
+  if(i==0)fx=ff;
+  if(i==1)fy=ff;
+  if(i==2)fz=ff;
+}
+
+template <class T>
+void MDAtomsTyped<T>::setm(TypesafePtr m) {
+  this->m=m;
+}
+
+template <class T>
+void MDAtomsTyped<T>::setc(TypesafePtr c) {
+  this->c=c.get<T>();
 }
 
 template <class T>
@@ -292,7 +357,6 @@ MDAtomsTyped<T>::MDAtomsTyped():
   scalev(1.0),
   scalec(1.0),
   scalem(1.0),
-  stride(0),
   m(NULL),
   c(NULL),
   px(NULL),

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2012-2018 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,46 +19,38 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_core_GREX_h
-#define __PLUMED_core_GREX_h
-
-#include "WithCmd.h"
-#include "tools/ForwardDecl.h"
-#include <string>
-#include <vector>
+#include "TypesafePtr.h"
+#include <iostream>
 
 namespace PLMD {
 
-class PlumedMain;
-class Atoms;
-class Communicator;
 
-class GREX:
-  public WithCmd
-{
-  bool initialized;
-  ForwardDecl<Communicator> intracomm_fwd;
-  Communicator& intracomm=*intracomm_fwd;
-  ForwardDecl<Communicator> intercomm_fwd;
-  Communicator& intercomm=*intercomm_fwd;
-  PlumedMain& plumedMain;
-  Atoms&      atoms;
-  int partner;
-  double localDeltaBias;
-  double foreignDeltaBias;
-  double localUNow;
-  double localUSwap;
-  std::vector<double> allDeltaBias;
-  std::string buffer;
-  int myreplica;
-public:
-  explicit GREX(PlumedMain&);
-  ~GREX();
-  void cmd(const std::string&key,TypesafePtr val=nullptr) override;
-  void calculate();
-  void savePositions();
-};
+void TypesafePtrPool::add(const void*ptr) {
+// lock:
+//    std::lock_guard<std::mutex> lock(mtx);
+    refcount[ptr]++;
+  }
+  void TypesafePtrPool::remove(const void*ptr) {
+// lock:
+//    std::lock_guard<std::mutex> lock(mtx);
+    auto f=refcount.find(ptr);
+    if(f!=refcount.end()) {
+      f->second--;
+      if(f->second<=0) refcount.erase(f);
+    }
+  }
+
+  void TypesafePtrPool::print(std::ostream & os) {
+    for(const auto & f : refcount) std::cout<<f.first<<" "<<f.second<<"\n";
+  }
+
+void TypesafePtrPool::forget(const void*ptr) {
+    auto f=refcount.find(ptr);
+    if(f!=refcount.end()) {
+      refcount.erase(f);
+    }
+}
 
 }
 
-#endif
+

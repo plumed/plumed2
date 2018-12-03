@@ -22,6 +22,7 @@
 #ifndef __PLUMED_core_Atoms_h
 #define __PLUMED_core_Atoms_h
 
+#include "tools/TypesafePtr.h"
 #include "tools/Communicator.h"
 #include "tools/Tensor.h"
 #include "tools/Units.h"
@@ -156,10 +157,10 @@ public:
   void setRealPrecision(int);
   int  getRealPrecision()const;
 
-  void setTimeStep(void*);
+  void setTimeStep(TypesafePtr);
   double getTimeStep()const;
 
-  void setKbT(void*);
+  void setKbT(TypesafePtr);
   double getKbT()const;
 
   void setNatoms(int);
@@ -183,23 +184,23 @@ public:
   void setAtomsNlocal(int);
 
   void startStep();
-  void setEnergy(void*);
-  void setBox(void*);
-  void setVirial(void*);
-  void setPositions(void*);
-  void setPositions(void*,int);
-  void setForces(void*);
-  void setForces(void*,int);
-  void setMasses(void*);
-  void setCharges(void*);
+  void setEnergy(TypesafePtr);
+  void setBox(TypesafePtr);
+  void setVirial(TypesafePtr);
+  void setPositions(TypesafePtr);
+  void setPositions(TypesafePtr,int);
+  void setForces(TypesafePtr);
+  void setForces(TypesafePtr,int);
+  void setMasses(TypesafePtr);
+  void setCharges(TypesafePtr);
   bool chargesWereSet() const ;
   bool boxWasSet() const ;
 
-  void MD2double(const void*m,double&d)const;
-  void double2MD(const double&d,void*m)const;
+  void MD2double(const TypesafePtr m,double&d)const;
+  void double2MD(const double&d,TypesafePtr m)const;
 
   void createFullList(int*);
-  void getFullList(int**);
+  void getFullList(const int**);
   void clearFullList();
 
   void add(ActionAtomistic*);
@@ -233,8 +234,8 @@ public:
   void setNaturalUnits(bool n) {naturalUnits=n;}
   void setMDNaturalUnits(bool n) {MDnaturalUnits=n;}
 
-  void setExtraCV(const std::string &name,void*p);
-  void setExtraCVForce(const std::string &name,void*p);
+  void setExtraCV(const std::string &name,TypesafePtr p);
+  void setExtraCVForce(const std::string &name,TypesafePtr p);
   double getExtraCV(const std::string &name);
   void updateExtraCVForce(const std::string &name,double f);
 };

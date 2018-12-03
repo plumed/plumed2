@@ -280,6 +280,18 @@ public:
   }
 };
 
+/// Class representing a type error in the PLMD::Plumed interface
+class ExceptionTypeError :
+  public Exception {
+public:
+  using Exception::Exception;
+  template<typename T>
+  ExceptionTypeError& operator<<(const T & x) {
+    *((Exception*) this) <<x;
+    return *this;
+  }
+};
+
 #ifdef __GNUG__
 // With GNU compiler, we can use __PRETTY_FUNCTION__ to get the function name
 #define __PLUMED_FUNCNAME __PRETTY_FUNCTION__

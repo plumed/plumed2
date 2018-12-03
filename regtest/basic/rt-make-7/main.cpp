@@ -100,6 +100,12 @@ int main(){
   std::vector<double> box(9,0.0);
   std::vector<double> virial(9,0.0);
 
+  try {
+    double dnatoms=natoms;
+    plumed->cmd("setNatoms",&dnatoms);
+    plumed_error() << "should have failed with a typecheck error";
+  } catch(PLMD::Plumed::ExceptionTypeError & e) {
+  }
   plumed->cmd("setNatoms",&natoms);
   plumed->cmd("setLogFile","test.log");
   plumed->cmd("init");

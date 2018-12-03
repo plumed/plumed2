@@ -64,6 +64,7 @@ class Citations;
 class ExchangePatterns;
 class FileBase;
 class DataFetchingObject;
+class TypesafePtrPool;
 
 /**
 Main plumed object.
@@ -92,6 +93,12 @@ private:
   ForwardDecl<Communicator> multi_sim_comm_fwd;
 public:
   Communicator&multi_sim_comm=*multi_sim_comm_fwd;
+
+private:
+/// Forward declaration.
+  ForwardDecl<TypesafePtrPool> typesafePtrPool_fwd;
+public:
+  TypesafePtrPool&typesafePtrPool=*typesafePtrPool_fwd;
 
 private:
 /// Error handler.
@@ -238,7 +245,7 @@ public:
    and an MD engine, this is the right place
    Notice that this interface should always keep retro-compatibility
   */
-  void cmd(const std::string&key,void*val=NULL) override;
+  void cmd(const std::string&key,TypesafePtr val=NULL) override;
   ~PlumedMain();
   /**
     Read an input file.

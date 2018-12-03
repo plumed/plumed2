@@ -28,6 +28,8 @@
 #include <map>
 #include <memory>
 
+#include "tools/TypesafePtr.h"
+
 namespace PLMD {
 
 class ActionSet;
@@ -57,7 +59,7 @@ public:
 /// Find the action that calculates a particular value
   static ActionWithValue* findAction( const ActionSet& a, const std::string& key );
 /// Set the pointer to the data
-  virtual void setData( const std::string& key, const std::string& type, void* outval )=0;
+  virtual void setData( const std::string& key, const std::string& type, TypesafePtr outval )=0;
 /// After calc has been performed grab all the data and put it in the relevant arrays
   virtual void finishDataGrab()=0;
 };

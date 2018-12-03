@@ -22,6 +22,7 @@
 #ifndef __PLUMED_tools_PlumedHandle_h
 #define __PLUMED_tools_PlumedHandle_h
 #include "core/PlumedMainInitializer.h"
+#include "TypesafePtr.h"
 #include <memory>
 
 namespace PLMD
@@ -126,7 +127,7 @@ public:
 /// Move constructor.
   PlumedHandle(PlumedHandle &&) = default;
 /// Execute cmd.
-  void cmd(const char*key,const void*ptr=nullptr);
+  void cmd(const char*key,TypesafePtr ptr=nullptr);
 };
 
 }

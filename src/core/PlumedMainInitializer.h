@@ -21,6 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_core_PlumedMainInitializer_h
 #define __PLUMED_core_PlumedMainInitializer_h
+
+#include <cstddef>
+
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE DEFINITIONS WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
 // This section should be consistent with the Plumed.h file.
@@ -41,6 +44,13 @@ typedef struct {
   void (*handler)(void*,int,const char*,const void*);
 } plumed_nothrow_handler;
 
+typedef struct {
+  const void* ptr;
+  std::size_t nelem;
+  unsigned long int flags;
+  void* opt;
+} plumed_safeptr;
+
 /**
   Container for symbol table. Presently only contains a version number and a plumed_plumedmain_function_holder object.
   The definition of this structure might change in the future. In particular, the structure might grow adding
@@ -50,6 +60,9 @@ typedef struct {
   int version;
   plumed_plumedmain_function_holder functions;
   void (*cmd_nothrow)(void*plumed,const char*key,const void*val,plumed_nothrow_handler nothrow);
+  void (*cmd_safe)(void*plumed,const char*key,plumed_safeptr ptr);
+  void (*cmd_safe_nothrow)(void*plumed,const char*key,plumed_safeptr,plumed_nothrow_handler);
+  void (*forget_ptr)(void* plumed,const void*);
 } plumed_symbol_table_type;
 
 

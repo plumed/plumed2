@@ -467,6 +467,17 @@
 #endif
 
 /*
+  1: make PLMD::Plumed class polymorphic (default)
+  0: make PLMD::Plumed class non-polymorphic
+
+  Only used in declarations.
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX_TYPESAFE
+#define __PLUMED_WRAPPER_CXX_TYPESAFE 1
+#endif
+
+/*
   1: make the default constructor create an invalid object
   0: make the default constructor create a valid object
 
@@ -486,6 +497,20 @@
 #define __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER 512
 #endif
 
+
+/*
+  Allow passing NULL to C++ cmd interface.
+*/
+#ifndef __PLUMED_WRAPPER_CXX_ENABLE_NULL
+#define __PLUMED_WRAPPER_CXX_ENABLE_NULL 1
+#endif
+
+/*
+  Type of the NULL pointer, or a type that the NULL pointer can be converted to.
+*/
+#ifndef __PLUMED_WRAPPER_CXX_NULL_TYPE
+#define __PLUMED_WRAPPER_CXX_NULL_TYPE long int
+#endif
 
 /*
  By default, assume C++11 compliant library is not available.
@@ -565,6 +590,12 @@
 
 #endif /*}*/
 
+#if __PLUMED_WRAPPER_CXX_STD
+#include <cstddef> /* size_t */
+#else
+#include <stddef.h>
+#endif
+
 /**
   \brief Main plumed object
 
@@ -592,6 +623,43 @@ typedef struct {
   void* ptr;
   void (*handler)(void*,int,const char*,const void*);
 } plumed_nothrow_handler;
+
+/** \relates plumed
+    \brief Structure holding a typesafe pointer.
+*/
+
+typedef struct {
+  /** Pointer to data */
+  const void* ptr;
+  /** Number of elements (in case pointing to an array) */
+  __PLUMED_WRAPPER_STD size_t nelem;
+  /**
+    sum of:
+    sizeof(pointed data), up to 0x10000 (65536). 0 means size not checked
+    0x10000    * data type, up to 0xff (255)
+               0 not typechecked
+               1 void
+               2 nullptr
+               3 integral
+               4 floating point
+               5 FILE (size will not be computed as it might be incomplete)
+               >5 not typechecked
+    0x1000000  * 1 for unsigned (ignored)
+    0x2000000  * pointer/const type, up to 8
+               0 not typechecked
+               1 T*
+               2 const T*
+               3 T**
+               4 const T**
+               5 T*const*
+               6 const T*const*
+               7 T <- pass by value, not implemented yet
+    0x10000000 and higher bits are ignored
+  */
+  unsigned long int flags;
+  /** Optional information, not used yet  */
+  void* opt;
+} plumed_safeptr;
 
 /** \relates plumed
     \brief Constructor
@@ -772,6 +840,14 @@ __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
 void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_handler nothrow);
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr,plumed_nothrow_handler nothrow);
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_forget_ptr(plumed p,const void*ptr);
 __PLUMED_WRAPPER_C_END
 
 /** \relates plumed
@@ -996,9 +1072,11 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 
 #if __PLUMED_WRAPPER_CXX_STD
 #include <cstdlib> /* NULL getenv */
+#include <cstddef> /* nullptr_t */
 #include <cstring> /* strncat strlen */
 #include <cstdio> /* fprintf */
 #else
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -1020,6 +1098,10 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 /* C++ interface is hidden in PLMD namespace (same as plumed library) */
 namespace PLMD {
 
+/* Optionally, it is further hidden in an anonymous namespace */
+
+__PLUMED_WRAPPER_ANONYMOUS_BEGIN /*{*/
+
 /**
   Retrieve PLUMED_EXCEPTIONS_DEBUG (internal utility).
 
@@ -1032,9 +1114,17 @@ inline static bool PlumedGetenvExceptionsDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {
   return res;
 }
 
-/* Optionally, it is further hidden in an anonymous namespace */
+/**
+  Retrieve PLUMED_TYPESAFE_DEBUG (internal utility).
 
-__PLUMED_WRAPPER_ANONYMOUS_BEGIN /*{*/
+  This function should not be used by external programs. It is defined
+  as inline static so that it can store a static variable (for quicker access)
+  without adding a unique global symbol to a library including this header file.
+*/
+inline static bool PlumedGetenvTypesafeDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  static const char* res=__PLUMED_WRAPPER_STD getenv("PLUMED_TYPESAFE_DEBUG");
+  return res;
+}
 
 /**
   C++ wrapper for \ref plumed.
@@ -1170,6 +1260,8 @@ class Plumed {
       if(h.code>=20100 && h.code<20200) throw Plumed::ExceptionDebug(msg);
       /* error - runtime check */
       if(h.code>=20200 && h.code<20300) throw Plumed::ExceptionError(msg);
+      /* error - type error */
+      if(h.code>=20300 && h.code<20400) throw Plumed::ExceptionTypeError(msg);
       throw Plumed::Exception(msg);
     }
     /* fallback for any other exception */
@@ -1310,6 +1402,35 @@ public:
   };
 
   /**
+    Thrown when a non-zero integer is passed to the cmd function as second argument.
+    The reason is that we only allow passing integers when they are zero to represent a NULL pointer.
+  */
+  class IncorrectNullptr :
+    public Exception {
+  public:
+    __PLUMED_WRAPPER_CXX_EXPLICIT IncorrectNullptr(const char* msg): Exception(msg) {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~IncorrectNullptr() throw() {}
+#endif
+  };
+
+  /**
+    Thrown when a wrong pointer is passed to the PLUMED interface.
+  */
+  class ExceptionTypeError:
+    public Exception {
+  public:
+    __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionTypeError(const char* msg): Exception(msg) {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~ExceptionTypeError() throw() {}
+#endif
+  };
+
+  /**
     Class used to rethrow Lepton exceptions.
   */
 
@@ -1375,6 +1496,104 @@ private:
   __PLUMED_WRAPPER_NOSTRING_EXCEPTION(exception)
 
 public:
+
+  /// Small class that wraps plumed_safeptr in order to make its initialization easier
+  class SafePtr{
+  public:
+    plumed_safeptr safe;
+    /// Default constructor, nullptr
+    SafePtr() __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      safe.ptr=NULL;
+      safe.nelem=0;
+      safe.flags=0x10000*2;
+      safe.opt=NULL;
+    }
+#if __cplusplus > 199711L
+    /// Construct from null
+    SafePtr(std::nullptr_t) noexcept {
+      safe.ptr=NULL;
+      safe.nelem=0;
+      safe.flags=0x10000*2;
+      safe.opt=NULL;
+    }
+#endif
+
+#if __PLUMED_WRAPPER_CXX_ENABLE_NULL
+    /// Construct from NULL
+    SafePtr(__PLUMED_WRAPPER_CXX_NULL_TYPE null) {
+      if(null!=0) throw IncorrectNullptr("non zero integer passed to cmd");
+      safe.ptr=NULL;
+      safe.nelem=0;
+      safe.flags=0x10000*2;
+      safe.opt=NULL;
+    }
+#endif
+
+#define __PLUMED_WRAPPER_SAFEPTR(type,code,size) \
+  SafePtr(type*ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+    safe.ptr=ptr; \
+    safe.nelem=nelem; \
+    safe.flags=size | (0x10000*(code)) | (0x2000000*1); \
+    safe.opt=NULL; \
+  } \
+  SafePtr(const type*ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+    safe.ptr=ptr; \
+    safe.nelem=nelem; \
+    safe.flags=size | (0x10000*(code)) | (0x2000000*2); \
+    safe.opt=NULL; \
+  } \
+  SafePtr(type**ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+    safe.ptr=ptr; \
+    safe.nelem=nelem; \
+    safe.flags=size | (0x10000*(code)) | (0x2000000*3); \
+    safe.opt=NULL; \
+  } \
+  SafePtr(const type**ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+    safe.ptr=ptr; \
+    safe.nelem=nelem; \
+    safe.flags=size | (0x10000*(code)) | (0x2000000*4); \
+    safe.opt=NULL; \
+  } \
+  SafePtr(type*const*ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+    safe.ptr=ptr; \
+    safe.nelem=nelem; \
+    safe.flags=size | (0x10000*(code)) | (0x2000000*5); \
+    safe.opt=NULL; \
+  } \
+  SafePtr(const type*const*ptr,__PLUMED_WRAPPER_STD size_t nelem=0) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+    safe.ptr=ptr; \
+    safe.nelem=nelem; \
+    safe.flags=size | (0x10000*(code)) | (0x2000000*6); \
+    safe.opt=NULL; \
+  }
+
+#define __PLUMED_WRAPPER_SAFEPTR_EMPTY(type,code) __PLUMED_WRAPPER_SAFEPTR(type,code,0)
+#define __PLUMED_WRAPPER_SAFEPTR_SIZED(type,code) __PLUMED_WRAPPER_SAFEPTR(type,code,sizeof(type))
+
+  __PLUMED_WRAPPER_SAFEPTR_EMPTY(void,1);
+  __PLUMED_WRAPPER_SAFEPTR_SIZED(char,3);
+  __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned char,0x100+3);
+  __PLUMED_WRAPPER_SAFEPTR_SIZED(short,3);
+  __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned short,0x100+3);
+  __PLUMED_WRAPPER_SAFEPTR_SIZED(int,3);
+  __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned int,0x100+3);
+  __PLUMED_WRAPPER_SAFEPTR_SIZED(long,3);
+  __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned long,0x100+3);
+  __PLUMED_WRAPPER_SAFEPTR_SIZED(float,4);
+  __PLUMED_WRAPPER_SAFEPTR_SIZED(double,4);
+  __PLUMED_WRAPPER_SAFEPTR_EMPTY(FILE,5);
+
+  /// Conversion operator
+  operator plumed_safeptr() const __PLUMED_WRAPPER_CXX_NOEXCEPT {
+    return safe;
+  }
+
+  /// Allow to change number of elements.
+  void setNelem(__PLUMED_WRAPPER_STD size_t nelem) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+    this->safe.nelem=nelem;
+  }
+
+  };
 
   /**
      Check if plumed is installed (for runtime binding)
@@ -1452,9 +1671,16 @@ public:
                  but for some choice of key it can change the content
      \note Equivalent to plumed_gcmd()
   */
-  static void gcmd(const char* key,const void* val=NULL) {
-    global().cmd(key,val);
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+  static void gcmd(const char* key,SafePtr safe=SafePtr(),__PLUMED_WRAPPER_STD size_t nelem=0) {
+    global().cmd(key,safe,nelem);
   }
+#else
+  static void gcmd(const char* key,const void* ptr,__PLUMED_WRAPPER_STD size_t nelem=0) {
+    global().cmd(key,ptr,nelem);
+  }
+#endif
+
   /**
      Finalize global-plumed
   */
@@ -1736,12 +1962,18 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
       \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
             rethrow any exception raised within PLUMED.
   */
-  void cmd(const char*key,const void*val=NULL) {
+
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+  void cmd(const char*key,SafePtr safe=SafePtr(),__PLUMED_WRAPPER_STD size_t nelem=0) {
+    if(nelem>0) safe.setNelem(nelem);
+    if(PlumedGetenvTypesafeDebug()) {
+       __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_TYPESAFE_DEBUG %s %p %zd %lx %p\n",key,safe.safe.ptr,safe.safe.nelem,safe.safe.flags,safe.safe.opt);
+    }
     NothrowHandler h;
     h.code=0;
     plumed_nothrow_handler nothrow= {&h,nothrow_handler};
     try {
-      plumed_cmd_nothrow(main,key,val,nothrow);
+      plumed_cmd_safe_nothrow(main,key,safe,nothrow);
     } catch (...) {
       /*
         When loading a kernel <=2.4, plumed_cmd_nothrow could throw an exception.
@@ -1752,6 +1984,25 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     }
     if(h.code!=0) rethrow(h);
   }
+#else
+  void cmd(const char*key,const void* ptr=NULL,__PLUMED_WRAPPER_STD size_t nelem=0) {
+    NothrowHandler h;
+    (void) nelem;
+    h.code=0;
+    plumed_nothrow_handler nothrow= {&h,nothrow_handler};
+    try {
+      plumed_cmd_nothrow(main,key,ptr,nothrow);
+    } catch (...) {
+      /*
+        When loading a kernel <=2.4, plumed_cmd_nothrow could throw an exception.
+        If the exception is transmitted through the C interface and arrives here,
+        we translate it so as to free the virtual tables of the loaded kernel.
+      */
+      rethrow();
+    }
+    if(h.code!=0) rethrow(h);
+  }
+#endif
 
   /**
      Destructor
@@ -1936,14 +2187,12 @@ __PLUMED_WRAPPER_ANONYMOUS_END /*}*/
 #include <cassert> /* assert */
 #include <cstdlib> /* getenv malloc free abort exit */
 #include <climits> /* CHAR_BIT */
-#include <cstddef> /* size_t */
 #else
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <stddef.h>
 #endif
 
 /**
@@ -2006,6 +2255,24 @@ typedef struct {
     Available with version>=2.
   */
   void (*cmd_nothrow)(void*plumed,const char*key,const void*val,plumed_nothrow_handler);
+  /**
+    Pointer to a cmd function that accepts typeinfos.
+
+    Available with version>=3.
+  */
+  void (*cmd_safe)(void*plumed,const char*key,plumed_safeptr);
+
+  /** 
+    Pointer to a cmd function guaranteed not to throw exceptions and that accepts typeinfos.
+
+    Available with version>=3.
+  */
+  void (*cmd_safe_nothrow)(void*plumed,const char*key,plumed_safeptr,plumed_nothrow_handler);
+
+  /**
+  */
+  void (*forget_ptr)(void*plumed,const void*ptr);
+
 } plumed_symbol_table_type;
 
 /* Utility to convert function pointers to pointers, just for the sake of printing them */
@@ -2522,7 +2789,7 @@ void plumed_cmd(plumed p,const char*key,const void*val) {
 __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
-void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_handler nothrow) {
+void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr safe,plumed_nothrow_handler nothrow) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
   pimpl=(plumed_implementation*) p.p;
@@ -2539,8 +2806,30 @@ void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_ha
   assert(pimpl->functions.cmd);
   assert(pimpl->functions.finalize);
   /* execute */
-  if(pimpl->table && pimpl->table->version>1) (*(pimpl->table->cmd_nothrow))(pimpl->p,key,val,nothrow);
-  else (*(pimpl->functions.cmd))(pimpl->p,key,val);
+  if(pimpl->table && pimpl->table->version>2) (*(pimpl->table->cmd_safe_nothrow))(pimpl->p,key,safe,nothrow);
+  else if(pimpl->table && pimpl->table->version>1) (*(pimpl->table->cmd_nothrow))(pimpl->p,key,safe.ptr,nothrow);
+  else (*(pimpl->functions.cmd))(pimpl->p,key,safe.ptr);
+}
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_forget_ptr(plumed p,const void*ptr) {
+  plumed_implementation* pimpl;
+  /* obtain pimpl */
+  pimpl=(plumed_implementation*) p.p;
+  assert(plumed_check_pimpl(pimpl));
+  if(pimpl->p && pimpl->table && pimpl->table->version>2) (*(pimpl->table->forget_ptr))(pimpl->p,ptr);
+}
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_handler nothrow) {
+  plumed_safeptr safe;
+  safe.ptr=val;
+  safe.flags=0;
+  safe.nelem=0;
+  safe.opt=NULL;
+  plumed_cmd_safe_nothrow(p,key,safe,nothrow);
 }
 __PLUMED_WRAPPER_C_END
 

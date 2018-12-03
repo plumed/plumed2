@@ -50,7 +50,7 @@ CLToolMain::~CLToolMain() {
 
 #define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"CLTool " + word + "\")");
 
-void CLToolMain::cmd(const std::string& word,void*val) {
+void CLToolMain::cmd(const std::string& word,TypesafePtr val) {
 
 // Enumerate all possible commands:
   enum {
@@ -68,32 +68,32 @@ void CLToolMain::cmd(const std::string& word,void*val) {
     // do nothing
   } else {
     int iword=-1;
-    char**v;
-    char*vv;
+    const char*const*v;
+    const char*vv;
     const auto it=word_map.find(words[0]);
     if(it!=word_map.end()) iword=it->second;
     switch(iword) {
     case cmd_setArgc:
       CHECK_NULL(val,word);
-      argc=*static_cast<int*>(val);
+      argc=*val.get<const int>();
       break;
     case cmd_setArgv:
       CHECK_NULL(val,word);
-      v=static_cast<char**>(val);
+      v=val.get<const char*const>();
       for(int i=0; i<argc; ++i) argv.push_back(std::string(v[i]));
       break;
     case cmd_setArgvLine:
       CHECK_NULL(val,word);
-      vv=static_cast<char*>(val);
+      vv=val.get<const char>();
       argv=Tools::getWords(vv);
       break;
     case cmd_setIn:
       CHECK_NULL(val,word);
-      in=static_cast<FILE*>(val);
+      in=val.get<FILE>();
       break;
     case cmd_setOut:
       CHECK_NULL(val,word);
-      out=static_cast<FILE*>(val);
+      out=val.get<FILE>();
       break;
     case cmd_setMPIComm:
       comm.Set_comm(val);
@@ -117,7 +117,7 @@ void CLToolMain::cmd(const std::string& word,void*val) {
           *ptr=0; ptr++;
         }
         int ret=run(argc,&vvv[0],in,out,comm);
-        *static_cast<int*>(val)=ret;
+        *val.get<int>()=ret;
       }
       break;
     default:

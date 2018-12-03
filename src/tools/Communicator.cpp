@@ -80,21 +80,21 @@ Communicator::~Communicator() {
 #endif
 }
 
-void Communicator::Set_comm(void*val) {
+void Communicator::Set_comm(TypesafePtr val) {
 #ifdef __PLUMED_HAS_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
-  if(val) Set_comm(*(MPI_Comm*)val);
+  if(val) Set_comm(*(MPI_Comm*)val.get<void>());
 #else
   (void) val;
   plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
 }
 
-void Communicator::Set_fcomm(void*val) {
+void Communicator::Set_fcomm(TypesafePtr val) {
 #ifdef __PLUMED_HAS_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(val) {
-    MPI_Comm comm=MPI_Comm_f2c(*(MPI_Fint*)val);
+    MPI_Comm comm=MPI_Comm_f2c(*(MPI_Fint*)val.get<void>());
     Set_comm(comm);
   }
 #else

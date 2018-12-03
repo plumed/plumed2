@@ -63,7 +63,7 @@ cdef class Plumed:
             if not self.c_plumed.valid():
                  raise RuntimeError("Error loading PLUMED kernel at path " + kernel)
          cdef int pres = 8
-         self.c_plumed.cmd( "setRealPrecision", <void*>&pres )
+         self.c_plumed.cmd( "setRealPrecision", <int*>&pres )
      def finalize(self):
          """ Explicitly finalize a Plumed object.
 
@@ -86,16 +86,19 @@ cdef class Plumed:
          return self
      def __exit__(self, type, value, traceback):
         self.finalize()
-     def cmd_ndarray_real(self, ckey, val):
+     def cmd_ndarray_double(self, ckey, val):
          cdef double [:] abuffer = val.ravel()
-         self.c_plumed.cmd( ckey, <void*>&abuffer[0])
+         self.c_plumed.cmd( ckey, <double*>&abuffer[0])
      def cmd_ndarray_int(self, ckey, val):
+         cdef int [:] abuffer = val.ravel()
+         self.c_plumed.cmd( ckey, <int*>&abuffer[0])
+     def cmd_ndarray_long(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
-         self.c_plumed.cmd( ckey, <void*>&abuffer[0])
+         self.c_plumed.cmd( ckey, <long*>&abuffer[0])
      cdef cmd_float(self, ckey, double val ):
-         self.c_plumed.cmd( ckey, <void*>&val )
+         self.c_plumed.cmd( ckey, <double*>&val )
      cdef cmd_int(self, ckey, int val):
-         self.c_plumed.cmd( ckey, <void*>&val)
+         self.c_plumed.cmd( ckey, <int*>&val)
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
@@ -113,24 +116,29 @@ cdef class Plumed:
             self.cmd_float(ckey, val)
          elif HAS_NUMPY and isinstance(val, np.ndarray) :
             if( val.dtype=="float64" ):
-               self.cmd_ndarray_real(ckey, val)
-            elif( val.dtype=="int64" ) :
+               self.cmd_ndarray_double(ckey, val)
+            elif( val.dtype=="int32" ) :
                self.cmd_ndarray_int(ckey, val)
+            elif( val.dtype=="int64" ) :
+               self.cmd_ndarray_long(ckey, val)
             else :
                raise ValueError("ndarrys should be float64 or int64")
          elif isinstance(val, array.array) :
             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
                ar = val
-               self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
+               self.c_plumed.cmd( ckey, ar.data.as_doubles)
             elif( (val.typecode=="i" or val.typecode=="I") ) :
                ar = val
-               self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
+               self.c_plumed.cmd( ckey, ar.data.as_ints)
+            elif( (val.typecode=="l" or val.typecode=="L") ) :
+               ar = val
+               self.c_plumed.cmd( ckey, ar.data.as_longs)
             else :
-               raise ValueError("ndarrays should be double (size=8) or int")
+               raise ValueError("ndarrays should be double (size=8), int, or long")
          elif isinstance(val, str ) :
               py_bytes = val.encode()
               cval = py_bytes
-              self.c_plumed.cmd( ckey, <void*>cval )
+              self.c_plumed.cmd( ckey, <const char*>cval )
          else :
             raise ValueError("Unknown value type ({})".format(str(type(val))))
 

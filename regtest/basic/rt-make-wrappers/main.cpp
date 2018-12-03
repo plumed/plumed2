@@ -108,6 +108,28 @@ void testme(T p,S cmd){
   cmd(p,(char*)"calc",NULL);
 }
 
+#define TESTME(X) \
+{ \
+  int natoms=10; \
+  const std::vector<double> positions(3*natoms,0.0); \
+  const std::vector<double> masses(natoms,1.0); \
+  std::vector<double> forces(3*natoms,0.0); \
+  std::vector<double> virial(9,0.0); \
+ \
+ \
+  X((char*)"setNatoms",&natoms); \
+  X((char*)"init",NULL); \
+  X((char*)"readInputLine",(char*)"d: DISTANCE ATOMS=1,2"); \
+  X((char*)"readInputLine",(char*)"PRINT ARG=d FILE=COLVAR RESTART=YES"); \
+  int step=1; \
+  X((char*)"setStep",&step); \
+  X((char*)"setPositions",&positions[0]); \
+  X((char*)"setMasses",&masses[0]); \
+  X((char*)"setForces",&forces[0]); \
+  X((char*)"setVirial",&virial[0]); \
+  X((char*)"calc",NULL); \
+}
+
 template<typename S>
 void testme(S cmd){
   int natoms=10;
@@ -149,6 +171,7 @@ void testmecpp(PLMD::Plumed p){
   p.cmd((char*)"setForces",&forces[0]);
   p.cmd((char*)"setVirial",&virial[0]);
   p.cmd((char*)"calc",NULL);
+//plumed_forget_ptr(p,&masses[0]);
 }
 
 int main(){
@@ -229,7 +252,7 @@ int main(){
 
     PLMD::Plumed::gcreate();
     if(!PLMD::Plumed::gvalid()) plumed_error();
-    testme(PLMD::Plumed::gcmd);
+    TESTME(PLMD::Plumed::gcmd); // testme does not work since gcmd is an overload!
     PLMD::Plumed::gfinalize();
   }
   {

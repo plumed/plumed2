@@ -40,6 +40,7 @@
 #include <memory>
 #include <functional>
 #endif
+#include "tools/TypesafePtr.h"
 
 
 // create should never throw
@@ -65,13 +66,25 @@ extern "C" void plumed_plumedmain_cmd(void*plumed,const char*key,const void*val)
   p->cmd(key,val);
 }
 
-extern "C" void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const void*val,plumed_nothrow_handler nothrow) {
+extern "C" {
+static void plumed_plumedmain_cmd_safe(void*plumed,const char*key,plumed_safeptr safe) {
+  plumed_massert(plumed,"trying to use a plumed object which is not initialized");
+  auto p=static_cast<PLMD::PlumedMain*>(plumed);
+  p->cmd(key,PLMD::TypesafePtr(&p->typesafePtrPool,safe.ptr,safe.nelem,safe.flags));
+}
+}
+
+extern "C" {
+static void plumed_plumedmain_cmd_safe_nothrow(void*plumed,const char*key,plumed_safeptr safe,plumed_nothrow_handler nothrow) {
 // At library boundaries we translate exceptions to error codes.
 // This allows an exception to be catched also if the MD code
 // was linked against a different C++ library
   try {
     plumed_massert(plumed,"trying to use a plumed object which is not initialized");
-    static_cast<PLMD::PlumedMain*>(plumed)->cmd(key,val);;
+    auto p=static_cast<PLMD::PlumedMain*>(plumed);
+    p->cmd(key,PLMD::TypesafePtr(&p->typesafePtrPool,safe.ptr,safe.nelem,safe.flags));;
+  } catch(const PLMD::ExceptionTypeError & e) {
+    nothrow.handler(nothrow.ptr,20300,e.what(),nullptr);
   } catch(const PLMD::ExceptionError & e) {
     nothrow.handler(nothrow.ptr,20200,e.what(),nullptr);
   } catch(const PLMD::ExceptionDebug & e) {
@@ -156,6 +169,25 @@ extern "C" void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const v
     throw;
   }
 }
+}
+
+extern "C" {
+static void plumed_plumedmain_cmd_nothrow(void*plumed,const char*key,const void*val,plumed_nothrow_handler nothrow) {
+  plumed_safeptr safe;
+  safe.ptr=val;
+  safe.nelem=0;
+  safe.flags=0;
+  safe.opt=NULL;
+  plumed_plumedmain_cmd_safe_nothrow(plumed,key,safe,nothrow);
+}
+}
+
+extern "C" {
+static void plumed_forget_ptr(void*plumed,const void*ptr) {
+  auto p=static_cast<PLMD::PlumedMain*>(plumed);
+  p->typesafePtrPool.forget(ptr);
+}
+}
 
 extern "C" void plumed_plumedmain_finalize(void*plumed) {
   plumed_massert(plumed,"trying to deallocate a plumed object which is not initialized");
@@ -166,18 +198,24 @@ extern "C" void plumed_plumedmain_finalize(void*plumed) {
 
 // values here should be consistent with those in plumed_symbol_table_init !!!!
 plumed_symbol_table_type plumed_symbol_table= {
-  2,
+  3,
   {plumed_plumedmain_create,plumed_plumedmain_cmd,plumed_plumedmain_finalize},
-  plumed_plumedmain_cmd_nothrow
+  plumed_plumedmain_cmd_nothrow,
+  plumed_plumedmain_cmd_safe,
+  plumed_plumedmain_cmd_safe_nothrow,
+  plumed_forget_ptr
 };
 
 // values here should be consistent with those above !!!!
 extern "C" void plumed_symbol_table_init() {
-  plumed_symbol_table.version=2;
+  plumed_symbol_table.version=3;
   plumed_symbol_table.functions.create=plumed_plumedmain_create;
   plumed_symbol_table.functions.cmd=plumed_plumedmain_cmd;
   plumed_symbol_table.functions.finalize=plumed_plumedmain_finalize;
   plumed_symbol_table.cmd_nothrow=plumed_plumedmain_cmd_nothrow;
+  plumed_symbol_table.cmd_safe=plumed_plumedmain_cmd_safe;
+  plumed_symbol_table.cmd_safe_nothrow=plumed_plumedmain_cmd_safe_nothrow;
+  plumed_symbol_table.forget_ptr=plumed_forget_ptr;
 }
 
 namespace PLMD {
