@@ -41,9 +41,9 @@ std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gr
   unsigned maxsupport = order*2 -1;
   // determine needed recursion depth for specified size
   unsigned recursion_number = 0;
-  while (maxsupport*(1<<recursion_number) < gridsize) recursion_number++;
+  while (maxsupport*(1U<<recursion_number) < gridsize) { recursion_number++; }
   // set "true" gridsize
-  unsigned bins_per_int = 1<<recursion_number;
+  unsigned bins_per_int = 1U<<recursion_number;
   gridsize = maxsupport*bins_per_int;
 
 
