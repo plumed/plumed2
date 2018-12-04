@@ -130,7 +130,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
   parse("FUNCTION_LENGTH",length);
   if(length != intrinsic_length) {addKeywordToList("FUNCTION_LENGTH",length);}
   shift_ = length / intrinsic_length;
-  setNumberOfBasisFunctions(floor((intervalMax()-intervalMin()+length) / shift_));
+  setNumberOfBasisFunctions(1 + floor((intervalMax()-intervalMin()+length) / shift_));
 
   // set left shift of first basis function
   first_position_ = shift_ - length;
