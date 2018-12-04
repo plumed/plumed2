@@ -79,8 +79,7 @@ class BF_DbWavelets : public BasisFunctions {
   // Grid that holds the Wavelet values and its derivative
   std::unique_ptr<Grid> waveletGrid_;
   bool use_scaling_function_;
-  double shift_; // shift between individual basis functions
-  double first_position_; // shift of the first basis function
+  double scale_; // scale factor of the individual BFs to match specified length
   void setupLabels() override;
 
 public:
@@ -125,15 +124,12 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
   }
 
   // calculate the number of basis functions from the specified length
-  double intrinsic_length = 2*getOrder() - 1;
+  unsigned intrinsic_length = 2*getOrder() - 1;
   double length;
   parse("FUNCTION_LENGTH",length);
   if(length != intrinsic_length) {addKeywordToList("FUNCTION_LENGTH",length);}
-  shift_ = length / intrinsic_length;
-  setNumberOfBasisFunctions(1 + floor((intervalMax()-intervalMin()+length) / shift_));
-
-  // set left shift of first basis function
-  first_position_ = shift_ - length;
+  scale_ = intrinsic_length / length;
+  setNumberOfBasisFunctions(1 + static_cast<int>((intervalMax()-intervalMin()+length) * scale_));
 
   // set some properties
   setIntrinsicInterval(0.0,intrinsic_length);
@@ -154,7 +150,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
   derivs[0]=0.0;
   for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
     // scale and shift argument to match current wavelet
-    double x = (arg-intervalMin())*intervalDerivf() - i - 1 + shift_;
+    double x = (arg*scale_) - (i - intrinsicIntervalMax());
 
     if (x < 0 || x >= intrinsicIntervalMax()) { // Wavelets are 0 outside the defined range
       values[i] = 0.0; derivs[i] = 0.0;
@@ -174,10 +170,8 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
 // labels according to minimum position in CV space
 void BF_DbWavelets::setupLabels() {
   setLabel(0,"const");
-  double min = intervalMin();
-  double spacing = intervalDerivf();
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    double pos = min + static_cast<signed>(i-1-shift_) / spacing;
+    double pos = intervalMin() + i/scale_;
     std::string is; Tools::convert(pos, is);
     setLabel(i,"i="+is);
   }
