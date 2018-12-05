@@ -151,11 +151,8 @@ void CoordinationBase::calculate()
   }
 
   unsigned nt=OpenMP::getNumThreads();
-
   const unsigned nn=nl->size();
-
-  if(nt*stride*10>nn) nt=nn/stride/10;
-  if(nt==0)nt=1;
+  if(nt*stride*10>nn) nt=1;
 
   #pragma omp parallel num_threads(nt)
   {
