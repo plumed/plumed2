@@ -186,8 +186,7 @@ void EEFSolv::calculate() {
   Tensor deriv_box;
   unsigned nt=OpenMP::getNumThreads();
   const unsigned nn=nl.size();
-  if(nt*10>nn) nt=nn/10;
-  if(nt==0)nt=1;
+  if(nt*10>nn) nt=1;
   #pragma omp parallel num_threads(nt)
   {
     vector<Vector> deriv_omp(size);
