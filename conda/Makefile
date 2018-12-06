@@ -6,7 +6,7 @@ default: all
 all: build
 
 build:
-	bash build.sh
+	bash run-conda-build.sh
 
 
 
