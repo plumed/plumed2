@@ -13,5 +13,5 @@ make install
 
 cd python
 make pip
-export plumed_default_kernel=$PREFIX/lib
+export plumed_default_kernel=$PREFIX/lib/libplumedKernel.so
 $PYTHON -m pip install .
