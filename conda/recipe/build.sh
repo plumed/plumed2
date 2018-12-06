@@ -2,8 +2,10 @@
 
 env | sort
 
-# TG: The "disabled" features are workaround for possible conda+configure bugs in library
-#     search: building is ok but linking with the .so doesn't find them (in conda-forge).
+# TG: The "disabled" features are workaround for possible
+#     conda+configure bugs in library search: building is ok but
+#     linking with the .so doesn't find them (in
+#     conda-forge). Possibly the LD path needs tweaks.
 
 # TODO: re-enable them and see. Also to do: install docs?
 
