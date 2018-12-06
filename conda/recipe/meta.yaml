@@ -21,14 +21,9 @@ build:
 
 requirements:
   build:
-    # TONI the "not linux" nonsense is because the "compiler" macro resolves to the toolchain packages,
-    # which override $CC with the system default, which fails on circle-ci
-    - {{ compiler('c') }}  # [osx]
-    - {{ compiler('cxx') }}  # [osx]
-    - {{ compiler('fortran') }}  # [osx]
-    - gcc_linux-64  # [linux]
-    - gxx_linux-64  # [linux]
-    - gfortran_linux-64  # [linux]
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ compiler('fortran') }}
     - m2-bash  # [win]
     - m2-curl  # [win]
     - m2-findutils  # [win]
@@ -42,7 +37,6 @@ requirements:
     - {{ compiler('m2w64_fortran') }}  # [win]
     - {{ compiler('m2w64_c') }}  # [win]
     - {{ compiler('m2w64_cxx') }}  # [win]
-    
 #    - ccache-toolchain
   host:
     - python
@@ -80,8 +74,3 @@ about:
   doc_url: https://plumed.github.io/doc-v2.4/user-doc/html/index.html
   dev_url: https://github.com/plumed/plumed2
 
-extra:
-  recipe-maintainers:
-    # GitHub IDs for maintainers of the recipe.
-    # Always check with the people listed below if they are OK becoming maintainers of the recipe. (There will be spam!)
-    - tonigi
