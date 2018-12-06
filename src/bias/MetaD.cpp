@@ -427,9 +427,9 @@ private:
   int mw_id_;
   int mw_rstride_;
   bool walkers_mpi;
-  bool flying;
   unsigned mpi_nw_;
   unsigned mpi_mw_;
+  bool flying;
   bool acceleration;
   double acc;
   double acc_restart_mean_;
