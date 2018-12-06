@@ -89,9 +89,8 @@ matrix:
     sudo: required
     env: PLUMED_CONDA=yes
 # osx conda package
-  - os: linux
-    dist: trusty
-    sudo: required
+  - os: osx
+    osx_image: xcode8.3
     env: PLUMED_CONDA=yes
 # I don't put any mpi variant with macports since it takes too long to compile
 ## This command can be used to allow failures:
