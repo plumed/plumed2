@@ -22,6 +22,7 @@
 /*
  This class was originally written by Alexander Jussupow
  Extension for the middleman algorithm by Max Muehlbauer
+ Martini beads strucutre factor for Nucleic Acids by Cristina Paissoni
 */
 
 #include "MetainferenceBase.h"
