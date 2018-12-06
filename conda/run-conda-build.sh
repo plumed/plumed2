@@ -18,7 +18,7 @@ export PATH="$CONDA_HOME/bin:$PATH"
 conda config --set always_yes yes --set changeps1 no
 conda update -q conda
 conda info -a
-conda install conda-build
+conda install conda-build conda-verify
 
 conda-build recipe
 
