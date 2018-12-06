@@ -83,7 +83,12 @@ matrix:
     cache:
       directories:
       - $HOME/.macports-ci-ccache
-# conda package
+# linux conda package
+  - os: linux
+    dist: trusty
+    sudo: required
+    env: PLUMED_CONDA=yes
+# osx conda package
   - os: linux
     dist: trusty
     sudo: required
