@@ -829,7 +829,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-8.32689);
           parameter[i].push_back(6.09318);
           parameter[i].push_back(-1.18913);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="ARG") {
         if(Aname=="BB") {
           parameter[i].push_back(10.729);
@@ -855,7 +855,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-4.45031);
           parameter[i].push_back(2.49356);
           parameter[i].push_back(-0.410721);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="ASN") {
         if(Aname=="BB") {
           parameter[i].push_back(10.738);
@@ -873,7 +873,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-6.71992);
           parameter[i].push_back(3.93622);
           parameter[i].push_back(-0.64973);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="ASP") {
         if(Aname=="BB") {
           parameter[i].push_back(10.695);
@@ -891,7 +891,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-5.9407);
           parameter[i].push_back(3.48836);
           parameter[i].push_back(-0.569402);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="CYS") {
         if(Aname=="BB") {
           parameter[i].push_back(10.698);
@@ -909,7 +909,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-5.03578);
           parameter[i].push_back(2.7076);
           parameter[i].push_back(-0.420714);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="GLN") {
         if(Aname=="BB") {
           parameter[i].push_back(10.728);
@@ -927,7 +927,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-5.8376);
           parameter[i].push_back(5.53784);
           parameter[i].push_back(-1.12604);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="GLU") {
         if(Aname=="BB") {
           parameter[i].push_back(10.694);
@@ -945,7 +945,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-4.66486);
           parameter[i].push_back(4.90004);
           parameter[i].push_back(-1.01204);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="GLY") {
         if(Aname=="BB") {
           parameter[i].push_back(9.977);
@@ -955,7 +955,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-2.88326);
           parameter[i].push_back(1.87323);
           parameter[i].push_back(-0.345773);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="HIS") {
         if(Aname=="BB") {
           parameter[i].push_back(10.721);
@@ -989,7 +989,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-1.62949);
           parameter[i].push_back(0.902379);
           parameter[i].push_back(-0.139957);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="ILE") {
         if(Aname=="BB") {
           parameter[i].push_back(10.699);
@@ -1007,7 +1007,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-19.1948);
           parameter[i].push_back(9.89207);
           parameter[i].push_back(-1.60877);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="LEU") {
         if(Aname=="BB") {
           parameter[i].push_back(10.692);
@@ -1025,7 +1025,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-23.7197);
           parameter[i].push_back(10.7247);
           parameter[i].push_back(-1.59146);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="LYS") {
         if(Aname=="BB") {
           parameter[i].push_back(10.706);
@@ -1051,7 +1051,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-2.09142);
           parameter[i].push_back(1.02933);
           parameter[i].push_back(-0.137787);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="MET") {
         if(Aname=="BB") {
           parameter[i].push_back(10.671);
@@ -1069,7 +1069,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-13.174);
           parameter[i].push_back(8.68286);
           parameter[i].push_back(-1.56095);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="PHE") {
         if(Aname=="BB") {
           parameter[i].push_back(10.741);
@@ -1103,7 +1103,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-4.76592);
           parameter[i].push_back(1.97055);
           parameter[i].push_back(-0.262381);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="PRO") {
         if(Aname=="BB") {
           parameter[i].push_back(11.434);
@@ -1121,7 +1121,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-12.5068);
           parameter[i].push_back(5.64597);
           parameter[i].push_back(-0.825206);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="SER") {
         if(Aname=="BB") {
           parameter[i].push_back(10.699);
@@ -1139,7 +1139,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-1.48421);
           parameter[i].push_back(0.800326);
           parameter[i].push_back(-0.108314);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="THR") {
         if(Aname=="BB") {
           parameter[i].push_back(10.697);
@@ -1157,7 +1157,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(1.9396);
           parameter[i].push_back(0.0804861);
           parameter[i].push_back(-0.0302721);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="TRP") {
         if(Aname=="BB") {
           parameter[i].push_back(10.689);
@@ -1199,7 +1199,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-4.7589);
           parameter[i].push_back(1.96686);
           parameter[i].push_back(-0.261786);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="TYR") {
         if(Aname=="BB") {
           parameter[i].push_back(10.689);
@@ -1233,7 +1233,7 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-4.63649);
           parameter[i].push_back(2.52869);
           parameter[i].push_back(-0.39894);
-        } else error("Atom name not known");
+        } else error("Atom name not known: "+Aname);
       } else if(Rname=="VAL") {
         if(Aname=="BB") {
           parameter[i].push_back(10.691);
@@ -1251,8 +1251,696 @@ void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long
           parameter[i].push_back(-14.9927);
           parameter[i].push_back(6.6133);
           parameter[i].push_back(-0.964977);
-        } else error("Atom name not known");
-      } else error("Residue not known");
+        } else error("Atom name not known: "+Aname);
+      } else if(Rname=="  A") {
+        if(Aname=="BB1") {
+          parameter[i].push_back(32.88500000);
+          parameter[i].push_back(0.08339900);
+          parameter[i].push_back(-7.36054400);
+          parameter[i].push_back(2.19220300);
+          parameter[i].push_back(-3.56523400);
+          parameter[i].push_back(2.33326900);
+          parameter[i].push_back(-0.39785500);
+        } else if(Aname=="BB2") {
+          parameter[i].push_back(3.80600000);
+          parameter[i].push_back(-0.10727600);
+          parameter[i].push_back(9.58854100);
+          parameter[i].push_back(-6.23740500);
+          parameter[i].push_back(-0.48267300);
+          parameter[i].push_back(1.14119500);
+          parameter[i].push_back(-0.21385600);
+        } else if(Aname=="BB3") {
+          parameter[i].push_back(3.59400000);
+          parameter[i].push_back(0.04537300);
+          parameter[i].push_back(9.59178900);
+          parameter[i].push_back(-1.29202200);
+          parameter[i].push_back(-7.10851000);
+          parameter[i].push_back(4.05571200);
+          parameter[i].push_back(-0.63372500);
+        } else if(Aname=="SC1") {
+          parameter[i].push_back(6.67100000);
+          parameter[i].push_back(-0.00855300);
+          parameter[i].push_back(1.63222400);
+          parameter[i].push_back(-0.06466200);
+          parameter[i].push_back(-1.48694200);
+          parameter[i].push_back(0.78544600);
+          parameter[i].push_back(-0.12083500);
+        } else if(Aname=="SC2") {
+          parameter[i].push_back(5.95100000);
+          parameter[i].push_back(-0.02606600);
+          parameter[i].push_back(2.54399900);
+          parameter[i].push_back(-0.48436900);
+          parameter[i].push_back(-1.55357400);
+          parameter[i].push_back(0.86466900);
+          parameter[i].push_back(-0.13509000);
+        } else if(Aname=="SC3") {
+          parameter[i].push_back(11.39400000);
+          parameter[i].push_back(0.00871300);
+          parameter[i].push_back(-0.23891300);
+          parameter[i].push_back(0.48919400);
+          parameter[i].push_back(-1.75289400);
+          parameter[i].push_back(0.99267500);
+          parameter[i].push_back(-0.16291300);
+        } else if(Aname=="SC4") {
+          parameter[i].push_back(6.45900000);
+          parameter[i].push_back(0.01990600);
+          parameter[i].push_back(4.17970400);
+          parameter[i].push_back(0.97629900);
+          parameter[i].push_back(-5.03297800);
+          parameter[i].push_back(2.55576700);
+          parameter[i].push_back(-0.39150500);
+        } else if(Aname=="3TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00064800);
+          parameter[i].push_back(0.92124600);
+          parameter[i].push_back(0.08064300);
+          parameter[i].push_back(-0.39054400);
+          parameter[i].push_back(0.12429100);
+          parameter[i].push_back(-0.01122700);
+        } else if(Aname=="5TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00039300);
+          parameter[i].push_back(0.92305100);
+          parameter[i].push_back(0.07747500);
+          parameter[i].push_back(-0.38792100);
+          parameter[i].push_back(0.12323800);
+          parameter[i].push_back(-0.01106600);
+        } else if(Aname=="TE3") {
+          parameter[i].push_back(7.82400000);
+          parameter[i].push_back(-0.04881000);
+          parameter[i].push_back(8.21557900);
+          parameter[i].push_back(-0.89491400);
+          parameter[i].push_back(-9.54293700);
+          parameter[i].push_back(6.33122200);
+          parameter[i].push_back(-1.16672900);
+        } else if(Aname=="TE5") {
+          parameter[i].push_back(8.03600000);
+          parameter[i].push_back(0.01641200);
+          parameter[i].push_back(5.14902200);
+          parameter[i].push_back(0.83419700);
+          parameter[i].push_back(-7.59068300);
+          parameter[i].push_back(4.52063200);
+          parameter[i].push_back(-0.78260800);
+        } else error("Atom name not known: "+Aname);
+      } else if(Rname=="  C") {
+        if(Aname=="BB1") {
+          parameter[i].push_back(32.88500000);
+          parameter[i].push_back(0.08311100);
+          parameter[i].push_back(-7.35432100);
+          parameter[i].push_back(2.18610000);
+          parameter[i].push_back(-3.55788300);
+          parameter[i].push_back(2.32918700);
+          parameter[i].push_back(-0.39720000);
+        } else if(Aname=="BB2") {
+          parameter[i].push_back(3.80600000);
+          parameter[i].push_back(-0.10808100);
+          parameter[i].push_back(9.61612600);
+          parameter[i].push_back(-6.28595400);
+          parameter[i].push_back(-0.45187000);
+          parameter[i].push_back(1.13326000);
+          parameter[i].push_back(-0.21320300);
+        } else if(Aname=="BB3") {
+          parameter[i].push_back(3.59400000);
+          parameter[i].push_back(0.04484200);
+          parameter[i].push_back(9.61919800);
+          parameter[i].push_back(-1.33582800);
+          parameter[i].push_back(-7.07200400);
+          parameter[i].push_back(4.03952900);
+          parameter[i].push_back(-0.63098200);
+        } else if(Aname=="SC1") {
+          parameter[i].push_back(5.95100000);
+          parameter[i].push_back(-0.02911300);
+          parameter[i].push_back(2.59700400);
+          parameter[i].push_back(-0.55507700);
+          parameter[i].push_back(-1.56344600);
+          parameter[i].push_back(0.88956200);
+          parameter[i].push_back(-0.14061300);
+        } else if(Aname=="SC2") {
+          parameter[i].push_back(11.62100000);
+          parameter[i].push_back(0.01366100);
+          parameter[i].push_back(-0.25959200);
+          parameter[i].push_back(0.48918300);
+          parameter[i].push_back(-1.52550500);
+          parameter[i].push_back(0.83644100);
+          parameter[i].push_back(-0.13407300);
+        } else if(Aname=="SC3") {
+          parameter[i].push_back(5.01900000);
+          parameter[i].push_back(-0.03276100);
+          parameter[i].push_back(5.53776900);
+          parameter[i].push_back(-0.95105000);
+          parameter[i].push_back(-3.71130800);
+          parameter[i].push_back(2.16146000);
+          parameter[i].push_back(-0.34918600);
+        } else if(Aname=="3TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00057300);
+          parameter[i].push_back(0.92174800);
+          parameter[i].push_back(0.07964500);
+          parameter[i].push_back(-0.38965700);
+          parameter[i].push_back(0.12392500);
+          parameter[i].push_back(-0.01117000);
+        } else if(Aname=="5TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00071000);
+          parameter[i].push_back(0.92082800);
+          parameter[i].push_back(0.08150600);
+          parameter[i].push_back(-0.39127000);
+          parameter[i].push_back(0.12455900);
+          parameter[i].push_back(-0.01126300);
+        } else if(Aname=="TE3") {
+          parameter[i].push_back(7.82400000);
+          parameter[i].push_back(-0.05848300);
+          parameter[i].push_back(8.29319900);
+          parameter[i].push_back(-1.12563800);
+          parameter[i].push_back(-9.42197600);
+          parameter[i].push_back(6.35441700);
+          parameter[i].push_back(-1.18356900);
+        } else if(Aname=="TE5") {
+          parameter[i].push_back(8.03600000);
+          parameter[i].push_back(0.00493500);
+          parameter[i].push_back(4.92622000);
+          parameter[i].push_back(0.64810700);
+          parameter[i].push_back(-7.05100000);
+          parameter[i].push_back(4.26064400);
+          parameter[i].push_back(-0.74819100);
+        } else error("Atom name not known: "+Aname);
+      } else if(Rname=="  G") {
+        if(Aname=="BB1") {
+          parameter[i].push_back(32.88500000);
+          parameter[i].push_back(0.08325400);
+          parameter[i].push_back(-7.35736000);
+          parameter[i].push_back(2.18914800);
+          parameter[i].push_back(-3.56154800);
+          parameter[i].push_back(2.33120600);
+          parameter[i].push_back(-0.39752300);
+        } else if(Aname=="BB2") {
+          parameter[i].push_back(3.80600000);
+          parameter[i].push_back(-0.10788300);
+          parameter[i].push_back(9.60930800);
+          parameter[i].push_back(-6.27402500);
+          parameter[i].push_back(-0.46192700);
+          parameter[i].push_back(1.13737000);
+          parameter[i].push_back(-0.21383100);
+        } else if(Aname=="BB3") {
+          parameter[i].push_back(3.59400000);
+          parameter[i].push_back(0.04514500);
+          parameter[i].push_back(9.61234700);
+          parameter[i].push_back(-1.31542100);
+          parameter[i].push_back(-7.09150500);
+          parameter[i].push_back(4.04706200);
+          parameter[i].push_back(-0.63201000);
+        } else if(Aname=="SC1") {
+          parameter[i].push_back(6.67100000);
+          parameter[i].push_back(-0.00863200);
+          parameter[i].push_back(1.63252300);
+          parameter[i].push_back(-0.06567200);
+          parameter[i].push_back(-1.48680500);
+          parameter[i].push_back(0.78565600);
+          parameter[i].push_back(-0.12088900);
+        } else if(Aname=="SC2") {
+          parameter[i].push_back(11.39400000);
+          parameter[i].push_back(0.00912200);
+          parameter[i].push_back(-0.22869000);
+          parameter[i].push_back(0.49616400);
+          parameter[i].push_back(-1.75039000);
+          parameter[i].push_back(0.98649200);
+          parameter[i].push_back(-0.16141600);
+        } else if(Aname=="SC3") {
+          parameter[i].push_back(10.90100000);
+          parameter[i].push_back(0.02208700);
+          parameter[i].push_back(0.17032800);
+          parameter[i].push_back(0.73280800);
+          parameter[i].push_back(-1.95292000);
+          parameter[i].push_back(0.98357600);
+          parameter[i].push_back(-0.14790900);
+        } else if(Aname=="SC4") {
+          parameter[i].push_back(6.45900000);
+          parameter[i].push_back(0.02023700);
+          parameter[i].push_back(4.17655400);
+          parameter[i].push_back(0.98731800);
+          parameter[i].push_back(-5.04352800);
+          parameter[i].push_back(2.56059400);
+          parameter[i].push_back(-0.39234300);
+        } else if(Aname=="3TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00066300);
+          parameter[i].push_back(0.92118800);
+          parameter[i].push_back(0.08062700);
+          parameter[i].push_back(-0.39041600);
+          parameter[i].push_back(0.12419400);
+          parameter[i].push_back(-0.01120500);
+        } else if(Aname=="5TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00062800);
+          parameter[i].push_back(0.92133500);
+          parameter[i].push_back(0.08029900);
+          parameter[i].push_back(-0.39015300);
+          parameter[i].push_back(0.12411600);
+          parameter[i].push_back(-0.01119900);
+        } else if(Aname=="TE3") {
+          parameter[i].push_back(7.82400000);
+          parameter[i].push_back(-0.05177400);
+          parameter[i].push_back(8.34606700);
+          parameter[i].push_back(-1.02936300);
+          parameter[i].push_back(-9.55211900);
+          parameter[i].push_back(6.37776600);
+          parameter[i].push_back(-1.17898000);
+        } else if(Aname=="TE5") {
+          parameter[i].push_back(8.03600000);
+          parameter[i].push_back(0.00525100);
+          parameter[i].push_back(4.71070600);
+          parameter[i].push_back(0.66746900);
+          parameter[i].push_back(-6.72538700);
+          parameter[i].push_back(4.03644100);
+          parameter[i].push_back(-0.70605700);
+        } else error("Atom name not known: "+Aname);
+      } else if(Rname=="  U") {
+        if(Aname=="BB1") {
+          parameter[i].push_back(32.88500000);
+          parameter[i].push_back(0.08321400);
+          parameter[i].push_back(-7.35634900);
+          parameter[i].push_back(2.18826800);
+          parameter[i].push_back(-3.56047400);
+          parameter[i].push_back(2.33064700);
+          parameter[i].push_back(-0.39744000);
+        } else if(Aname=="BB2") {
+          parameter[i].push_back(3.80600000);
+          parameter[i].push_back(-0.10773100);
+          parameter[i].push_back(9.60099900);
+          parameter[i].push_back(-6.26131900);
+          parameter[i].push_back(-0.46668300);
+          parameter[i].push_back(1.13698100);
+          parameter[i].push_back(-0.21351600);
+        } else if(Aname=="BB3") {
+          parameter[i].push_back(3.59400000);
+          parameter[i].push_back(0.04544300);
+          parameter[i].push_back(9.59625900);
+          parameter[i].push_back(-1.29222200);
+          parameter[i].push_back(-7.11143200);
+          parameter[i].push_back(4.05687700);
+          parameter[i].push_back(-0.63382800);
+        } else if(Aname=="SC1") {
+          parameter[i].push_back(5.95100000);
+          parameter[i].push_back(-0.02924500);
+          parameter[i].push_back(2.59668700);
+          parameter[i].push_back(-0.56118700);
+          parameter[i].push_back(-1.56477100);
+          parameter[i].push_back(0.89265100);
+          parameter[i].push_back(-0.14130800);
+        } else if(Aname=="SC2") {
+          parameter[i].push_back(10.90100000);
+          parameter[i].push_back(0.02178900);
+          parameter[i].push_back(0.18839000);
+          parameter[i].push_back(0.72223100);
+          parameter[i].push_back(-1.92581600);
+          parameter[i].push_back(0.96654300);
+          parameter[i].push_back(-0.14501300);
+        } else if(Aname=="SC3") {
+          parameter[i].push_back(5.24600000);
+          parameter[i].push_back(-0.04586500);
+          parameter[i].push_back(5.89978100);
+          parameter[i].push_back(-1.50664700);
+          parameter[i].push_back(-3.17054400);
+          parameter[i].push_back(1.93717100);
+          parameter[i].push_back(-0.31701000);
+        } else if(Aname=="3TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00067500);
+          parameter[i].push_back(0.92102300);
+          parameter[i].push_back(0.08100800);
+          parameter[i].push_back(-0.39084300);
+          parameter[i].push_back(0.12441900);
+          parameter[i].push_back(-0.01124900);
+        } else if(Aname=="5TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00059000);
+          parameter[i].push_back(0.92154600);
+          parameter[i].push_back(0.07968200);
+          parameter[i].push_back(-0.38950100);
+          parameter[i].push_back(0.12382500);
+          parameter[i].push_back(-0.01115100);
+        } else if(Aname=="TE3") {
+          parameter[i].push_back(7.82400000);
+          parameter[i].push_back(-0.02968100);
+          parameter[i].push_back(7.93783200);
+          parameter[i].push_back(-0.33078100);
+          parameter[i].push_back(-10.14120200);
+          parameter[i].push_back(6.63334700);
+          parameter[i].push_back(-1.22111200);
+        } else if(Aname=="TE5") {
+          parameter[i].push_back(8.03600000);
+          parameter[i].push_back(-0.00909700);
+          parameter[i].push_back(4.33193500);
+          parameter[i].push_back(0.43416500);
+          parameter[i].push_back(-5.80831400);
+          parameter[i].push_back(3.52438800);
+          parameter[i].push_back(-0.62382400);
+        } else error("Atom name not known: "+Aname);
+      } else if(Rname==" DA") {
+        if(Aname=="BB1") {
+          parameter[i].push_back(32.88500000);
+          parameter[i].push_back(0.08179900);
+          parameter[i].push_back(-7.31735900);
+          parameter[i].push_back(2.15614500);
+          parameter[i].push_back(-3.52263200);
+          parameter[i].push_back(2.30604700);
+          parameter[i].push_back(-0.39270100);
+        } else if(Aname=="BB2") {
+          parameter[i].push_back(3.80600000);
+          parameter[i].push_back(-0.10597700);
+          parameter[i].push_back(9.52537500);
+          parameter[i].push_back(-6.12991000);
+          parameter[i].push_back(-0.54092600);
+          parameter[i].push_back(1.15429100);
+          parameter[i].push_back(-0.21503500);
+        } else if(Aname=="BB3") {
+          parameter[i].push_back(-1.35600000);
+          parameter[i].push_back(0.58928300);
+          parameter[i].push_back(6.71894100);
+          parameter[i].push_back(4.14050900);
+          parameter[i].push_back(-9.65859900);
+          parameter[i].push_back(4.43185000);
+          parameter[i].push_back(-0.64657300);
+        } else if(Aname=="SC1") {
+          parameter[i].push_back(6.67100000);
+          parameter[i].push_back(-0.00871400);
+          parameter[i].push_back(1.63289100);
+          parameter[i].push_back(-0.06637700);
+          parameter[i].push_back(-1.48632900);
+          parameter[i].push_back(0.78551800);
+          parameter[i].push_back(-0.12087300);
+        } else if(Aname=="SC2") {
+          parameter[i].push_back(5.95100000);
+          parameter[i].push_back(-0.02634300);
+          parameter[i].push_back(2.54864300);
+          parameter[i].push_back(-0.49015800);
+          parameter[i].push_back(-1.55386900);
+          parameter[i].push_back(0.86630200);
+          parameter[i].push_back(-0.13546200);
+        } else if(Aname=="SC3") {
+          parameter[i].push_back(11.39400000);
+          parameter[i].push_back(0.00859500);
+          parameter[i].push_back(-0.25471400);
+          parameter[i].push_back(0.48718800);
+          parameter[i].push_back(-1.74520000);
+          parameter[i].push_back(0.99246200);
+          parameter[i].push_back(-0.16351900);
+        } else if(Aname=="SC4") {
+          parameter[i].push_back(6.45900000);
+          parameter[i].push_back(0.01991800);
+          parameter[i].push_back(4.17962300);
+          parameter[i].push_back(0.97469100);
+          parameter[i].push_back(-5.02950400);
+          parameter[i].push_back(2.55371800);
+          parameter[i].push_back(-0.39113400);
+        } else if(Aname=="3TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00062600);
+          parameter[i].push_back(0.92142000);
+          parameter[i].push_back(0.08016400);
+          parameter[i].push_back(-0.39000300);
+          parameter[i].push_back(0.12402500);
+          parameter[i].push_back(-0.01117900);
+        } else if(Aname=="5TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00055500);
+          parameter[i].push_back(0.92183900);
+          parameter[i].push_back(0.07907600);
+          parameter[i].push_back(-0.38895100);
+          parameter[i].push_back(0.12359600);
+          parameter[i].push_back(-0.01111600);
+        } else if(Aname=="TE3") {
+          parameter[i].push_back(2.87400000);
+          parameter[i].push_back(0.00112900);
+          parameter[i].push_back(12.51167200);
+          parameter[i].push_back(-7.67548000);
+          parameter[i].push_back(-2.02234000);
+          parameter[i].push_back(2.50837100);
+          parameter[i].push_back(-0.49458500);
+        } else if(Aname=="TE5") {
+          parameter[i].push_back(8.03600000);
+          parameter[i].push_back(0.00473100);
+          parameter[i].push_back(4.65554400);
+          parameter[i].push_back(0.66424100);
+          parameter[i].push_back(-6.62131300);
+          parameter[i].push_back(3.96107400);
+          parameter[i].push_back(-0.69075800);
+        } else error("Atom name not known: "+Aname);
+      } else if(Rname==" DC") {
+        if(Aname=="BB1") {
+          parameter[i].push_back(32.88500000);
+          parameter[i].push_back(0.08189900);
+          parameter[i].push_back(-7.32493500);
+          parameter[i].push_back(2.15976900);
+          parameter[i].push_back(-3.52612100);
+          parameter[i].push_back(2.31058600);
+          parameter[i].push_back(-0.39402700);
+        } else if(Aname=="BB2") {
+          parameter[i].push_back(3.80600000);
+          parameter[i].push_back(-0.10559800);
+          parameter[i].push_back(9.52527700);
+          parameter[i].push_back(-6.12131700);
+          parameter[i].push_back(-0.54899400);
+          parameter[i].push_back(1.15592900);
+          parameter[i].push_back(-0.21494500);
+        } else if(Aname=="BB3") {
+          parameter[i].push_back(-1.35600000);
+          parameter[i].push_back(0.55525700);
+          parameter[i].push_back(6.80305500);
+          parameter[i].push_back(4.05924700);
+          parameter[i].push_back(-9.61034700);
+          parameter[i].push_back(4.41253800);
+          parameter[i].push_back(-0.64315100);
+        } else if(Aname=="SC1") {
+          parameter[i].push_back(5.95100000);
+          parameter[i].push_back(-0.02899900);
+          parameter[i].push_back(2.59587800);
+          parameter[i].push_back(-0.55388300);
+          parameter[i].push_back(-1.56395100);
+          parameter[i].push_back(0.88967400);
+          parameter[i].push_back(-0.14062500);
+        } else if(Aname=="SC2") {
+          parameter[i].push_back(11.62100000);
+          parameter[i].push_back(0.01358100);
+          parameter[i].push_back(-0.24913000);
+          parameter[i].push_back(0.48787200);
+          parameter[i].push_back(-1.52867300);
+          parameter[i].push_back(0.83694900);
+          parameter[i].push_back(-0.13395300);
+        } else if(Aname=="SC3") {
+          parameter[i].push_back(5.01900000);
+          parameter[i].push_back(-0.03298400);
+          parameter[i].push_back(5.54242800);
+          parameter[i].push_back(-0.96081500);
+          parameter[i].push_back(-3.71051600);
+          parameter[i].push_back(2.16500200);
+          parameter[i].push_back(-0.35023400);
+        } else if(Aname=="3TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00055700);
+          parameter[i].push_back(0.92181400);
+          parameter[i].push_back(0.07924000);
+          parameter[i].push_back(-0.38916400);
+          parameter[i].push_back(0.12369900);
+          parameter[i].push_back(-0.01113300);
+        } else if(Aname=="5TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00066500);
+          parameter[i].push_back(0.92103900);
+          parameter[i].push_back(0.08064600);
+          parameter[i].push_back(-0.39034900);
+          parameter[i].push_back(0.12417600);
+          parameter[i].push_back(-0.01120600);
+        } else if(Aname=="TE3") {
+          parameter[i].push_back(2.87400000);
+          parameter[i].push_back(-0.05235500);
+          parameter[i].push_back(13.09201200);
+          parameter[i].push_back(-9.48128200);
+          parameter[i].push_back(-0.14958600);
+          parameter[i].push_back(1.75537200);
+          parameter[i].push_back(-0.39347500);
+        } else if(Aname=="TE5") {
+          parameter[i].push_back(8.03600000);
+          parameter[i].push_back(-0.00513600);
+          parameter[i].push_back(4.67705700);
+          parameter[i].push_back(0.48333300);
+          parameter[i].push_back(-6.34511000);
+          parameter[i].push_back(3.83388500);
+          parameter[i].push_back(-0.67367800);
+        } else error("Atom name not known: "+Aname);
+      } else if(Rname==" DG") {
+        if(Aname=="BB1") {
+          parameter[i].push_back(32.88500000);
+          parameter[i].push_back(0.08182900);
+          parameter[i].push_back(-7.32133900);
+          parameter[i].push_back(2.15767900);
+          parameter[i].push_back(-3.52369700);
+          parameter[i].push_back(2.30839600);
+          parameter[i].push_back(-0.39348300);
+        } else if(Aname=="BB2") {
+          parameter[i].push_back(3.80600000);
+          parameter[i].push_back(-0.10618100);
+          parameter[i].push_back(9.54169000);
+          parameter[i].push_back(-6.15177600);
+          parameter[i].push_back(-0.53462400);
+          parameter[i].push_back(1.15581300);
+          parameter[i].push_back(-0.21567000);
+        } else if(Aname=="BB3") {
+          parameter[i].push_back(-1.35600000);
+          parameter[i].push_back(0.57489100);
+          parameter[i].push_back(6.75164700);
+          parameter[i].push_back(4.11300900);
+          parameter[i].push_back(-9.63394600);
+          parameter[i].push_back(4.41675400);
+          parameter[i].push_back(-0.64339900);
+        } else if(Aname=="SC1") {
+          parameter[i].push_back(6.67100000);
+          parameter[i].push_back(-0.00886600);
+          parameter[i].push_back(1.63333000);
+          parameter[i].push_back(-0.06892100);
+          parameter[i].push_back(-1.48683500);
+          parameter[i].push_back(0.78670800);
+          parameter[i].push_back(-0.12113900);
+        } else if(Aname=="SC2") {
+          parameter[i].push_back(11.39400000);
+          parameter[i].push_back(0.00907900);
+          parameter[i].push_back(-0.22475500);
+          parameter[i].push_back(0.49535100);
+          parameter[i].push_back(-1.75324900);
+          parameter[i].push_back(0.98767400);
+          parameter[i].push_back(-0.16150800);
+        } else if(Aname=="SC3") {
+          parameter[i].push_back(10.90100000);
+          parameter[i].push_back(0.02207600);
+          parameter[i].push_back(0.17932200);
+          parameter[i].push_back(0.73253200);
+          parameter[i].push_back(-1.95554900);
+          parameter[i].push_back(0.98339900);
+          parameter[i].push_back(-0.14763600);
+        } else if(Aname=="SC4") {
+          parameter[i].push_back(6.45900000);
+          parameter[i].push_back(0.02018400);
+          parameter[i].push_back(4.17705400);
+          parameter[i].push_back(0.98531700);
+          parameter[i].push_back(-5.04354900);
+          parameter[i].push_back(2.56123700);
+          parameter[i].push_back(-0.39249300);
+        } else if(Aname=="3TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00061700);
+          parameter[i].push_back(0.92140100);
+          parameter[i].push_back(0.08016400);
+          parameter[i].push_back(-0.39003500);
+          parameter[i].push_back(0.12406900);
+          parameter[i].push_back(-0.01119200);
+        } else if(Aname=="5TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00064900);
+          parameter[i].push_back(0.92110500);
+          parameter[i].push_back(0.08031500);
+          parameter[i].push_back(-0.38997000);
+          parameter[i].push_back(0.12401200);
+          parameter[i].push_back(-0.01118100);
+        } else if(Aname=="TE3") {
+          parameter[i].push_back(2.87400000);
+          parameter[i].push_back(0.00182000);
+          parameter[i].push_back(12.41507000);
+          parameter[i].push_back(-7.47384800);
+          parameter[i].push_back(-2.11864700);
+          parameter[i].push_back(2.50112600);
+          parameter[i].push_back(-0.48652200);
+        } else if(Aname=="TE5") {
+          parameter[i].push_back(8.03600000);
+          parameter[i].push_back(0.00676400);
+          parameter[i].push_back(4.65989200);
+          parameter[i].push_back(0.78482500);
+          parameter[i].push_back(-6.86460600);
+          parameter[i].push_back(4.11675400);
+          parameter[i].push_back(-0.72249100);
+        } else error("Atom name not known: "+Aname);
+      } else if(Rname==" DT") {
+        if(Aname=="BB1") {
+          parameter[i].push_back(32.88500000);
+          parameter[i].push_back(0.08220100);
+          parameter[i].push_back(-7.33006800);
+          parameter[i].push_back(2.16636500);
+          parameter[i].push_back(-3.53465700);
+          parameter[i].push_back(2.31447600);
+          parameter[i].push_back(-0.39445400);
+        } else if(Aname=="BB2") {
+          parameter[i].push_back(3.80600000);
+          parameter[i].push_back(-0.10723000);
+          parameter[i].push_back(9.56675000);
+          parameter[i].push_back(-6.20236100);
+          parameter[i].push_back(-0.49550400);
+          parameter[i].push_back(1.14300600);
+          parameter[i].push_back(-0.21420000);
+        } else if(Aname=="BB3") {
+          parameter[i].push_back(-1.35600000);
+          parameter[i].push_back(0.56737900);
+          parameter[i].push_back(6.76595400);
+          parameter[i].push_back(4.08976100);
+          parameter[i].push_back(-9.61512500);
+          parameter[i].push_back(4.40975100);
+          parameter[i].push_back(-0.64239800);
+        } else if(Aname=="SC1") {
+          parameter[i].push_back(5.95100000);
+          parameter[i].push_back(-0.02926500);
+          parameter[i].push_back(2.59630300);
+          parameter[i].push_back(-0.56152200);
+          parameter[i].push_back(-1.56532600);
+          parameter[i].push_back(0.89322800);
+          parameter[i].push_back(-0.14142900);
+        } else if(Aname=="SC2") {
+          parameter[i].push_back(10.90100000);
+          parameter[i].push_back(0.02183400);
+          parameter[i].push_back(0.19463000);
+          parameter[i].push_back(0.72393000);
+          parameter[i].push_back(-1.93199500);
+          parameter[i].push_back(0.96856300);
+          parameter[i].push_back(-0.14512600);
+        } else if(Aname=="SC3") {
+          parameter[i].push_back(4.31400000);
+          parameter[i].push_back(-0.07745600);
+          parameter[i].push_back(12.49820300);
+          parameter[i].push_back(-7.64994200);
+          parameter[i].push_back(-3.00359600);
+          parameter[i].push_back(3.26263300);
+          parameter[i].push_back(-0.64498600);
+        } else if(Aname=="3TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00062000);
+          parameter[i].push_back(0.92141100);
+          parameter[i].push_back(0.08030900);
+          parameter[i].push_back(-0.39021500);
+          parameter[i].push_back(0.12414000);
+          parameter[i].push_back(-0.01120100);
+        } else if(Aname=="5TE") {
+          parameter[i].push_back(4.23000000);
+          parameter[i].push_back(0.00063700);
+          parameter[i].push_back(0.92130800);
+          parameter[i].push_back(0.08026900);
+          parameter[i].push_back(-0.39007500);
+          parameter[i].push_back(0.12406600);
+          parameter[i].push_back(-0.01118800);
+        } else if(Aname=="TE3") {
+          parameter[i].push_back(2.87400000);
+          parameter[i].push_back(-0.00251200);
+          parameter[i].push_back(12.43576400);
+          parameter[i].push_back(-7.55343800);
+          parameter[i].push_back(-2.07363500);
+          parameter[i].push_back(2.51279300);
+          parameter[i].push_back(-0.49437100);
+        } else if(Aname=="TE5") {
+          parameter[i].push_back(8.03600000);
+          parameter[i].push_back(0.00119900);
+          parameter[i].push_back(4.91762300);
+          parameter[i].push_back(0.65637000);
+          parameter[i].push_back(-7.23392500);
+          parameter[i].push_back(4.44636600);
+          parameter[i].push_back(-0.79467800);
+        } else error("Atom name not known: "+Aname);
+      } else error("Residue not known: "+Rname);
     }
   } else {
     error("MOLINFO DATA not found\n");
