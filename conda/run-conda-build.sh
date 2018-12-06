@@ -13,7 +13,8 @@ conda install conda-build
 
 conda-build recipe
 
-ls -lR $CONDA_HOME/conda-bld
+ls -l $CONDA_HOME/conda-bld/
+ls -lR $CONDA_HOME/conda-bld/linux-64
 
 # And now upload if desired
 # conda upload $CONDA_HOME/conda-bld/linux-64/*.tar.bz2
