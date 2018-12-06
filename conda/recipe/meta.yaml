@@ -55,12 +55,13 @@ requirements:
 
 test:
   # TODO. In principle these could be the official regtests.
-  # imports:
-  #  - plumed2
+  imports:
+    - plumed2
   commands:
     - plumed info --root
     - plumed info --version
     - plumed info --long-version
+    - python -c "import plumed; plumed.Plumed()"
 
 about:
   home: http://www.plumed.org/
