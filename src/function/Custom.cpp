@@ -31,7 +31,7 @@ namespace function {
 
 //+PLUMEDOC FUNCTION CUSTOM
 /*
-Calculate a combination of variables using a matheval expression.
+Calculate a combination of variables using a custom expression.
 
 This action computes an  arbitrary function of one or more precomputed
 collective variables. Arguments are chosen with the ARG keyword,
@@ -39,6 +39,9 @@ and the function is provided with the FUNC string. Notice that this
 string should contain no space. Within FUNC, one can refer to the
 arguments as x,y,z, and t (up to four variables provided as ARG).
 This names can be customized using the VAR keyword (see examples below).
+
+This function is implemented using the Lepton library, that allows to evaluate
+algebraic expressions and to automatically differentiate them.
 
 If you want a function that depends not only on collective variables
 but also on time you can use the \subpage TIME action.
@@ -179,6 +182,10 @@ PLUMED_REGISTER_ACTION(Custom,"CUSTOM")
 //+PLUMEDOC FUNCTION MATHEVAL
 /*
 An alias to the \ref CUSTOM function.
+
+This alias is kept in order to maintain compatibility with previous PLUMED versions.
+However, notice that as of PLUMED 2.5 the libmatheval library is not linked anymore,
+and the \ref MATHEVAL function is implemented using the Lepton library.
 
 \par Examples
 
