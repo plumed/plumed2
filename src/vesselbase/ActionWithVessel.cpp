@@ -273,7 +273,7 @@ void ActionWithVessel::runAllTasks() {
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*2>nactive_tasks || !threadSafe()) nt=1;
+  if( nt*stride*2>nactive_tasks || !threadSafe() || !actionIsBridged) nt=1;
 
   // Get size for buffer
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize );
