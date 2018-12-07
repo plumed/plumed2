@@ -265,7 +265,7 @@ void ActionWithVessel::runAllTasks() {
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks || !threadSafe()) nt=1;
+  if( nt*stride*2>nactive_tasks || !threadSafe()) nt=1;
 
   // Get size for buffer
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize );
@@ -275,7 +275,7 @@ void ActionWithVessel::runAllTasks() {
   if( dertime_can_be_off ) dertime=false;
 
   if(timers) stopwatch.start("2 Loop over tasks");
-  #pragma omp parallel num_threads(nt)
+  #pragma omp parallel num_threads(nt) schedule(dynamic)
   {
     std::vector<double> omp_buffer;
     if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
