@@ -29,7 +29,7 @@ using namespace std;
 namespace PLMD {
 namespace function {
 
-//+PLUMEDOC FUNCTION MATHEVAL
+//+PLUMEDOC FUNCTION CUSTOM
 /*
 Calculate a combination of variables using a matheval expression.
 
@@ -50,7 +50,7 @@ using as a CV the difference between two distances.
 \plumedfile
 dAB: DISTANCE ATOMS=10,12
 dAC: DISTANCE ATOMS=10,15
-diff: MATHEVAL ARG=dAB,dAC FUNC=y-x PERIODIC=NO
+diff: CUSTOM ARG=dAB,dAC FUNC=y-x PERIODIC=NO
 # notice: the previous line could be replaced with the following
 # diff: COMBINE ARG=dAB,dAC COEFFICIENTS=-1,1
 METAD ARG=diff WIDTH=0.1 HEIGHT=0.5 BIASFACTOR=10 PACE=100
@@ -58,7 +58,7 @@ METAD ARG=diff WIDTH=0.1 HEIGHT=0.5 BIASFACTOR=10 PACE=100
 (see also \ref DISTANCE, \ref COMBINE, and \ref METAD).
 Notice that forces applied to diff will be correctly propagated
 to atoms 10, 12, and 15.
-Also notice that since MATHEVAL is used without the VAR option
+Also notice that since CUSTOM is used without the VAR option
 the two arguments should be referred to as x and y in the expression FUNC.
 For simple functions
 such as this one it is possible to use \ref COMBINE.
@@ -70,13 +70,13 @@ again as computed from the square root of the square.
 \plumedfile
 DISTANCE LABEL=d1 ATOMS=1,2 COMPONENTS
 DISTANCE LABEL=d2 ATOMS=2,3 COMPONENTS
-MATHEVAL ...
+CUSTOM ...
   LABEL=theta
   ARG=d1.x,d1.y,d1.z,d2.x,d2.y,d2.z
   VAR=ax,ay,az,bx,by,bz
   FUNC=acos((ax*bx+ay*by+az*bz)/sqrt((ax*ax+ay*ay+az*az)*(bx*bx+by*by+bz*bz))
   PERIODIC=NO
-... MATHEVAL
+... CUSTOM
 PRINT ARG=theta
 \endplumedfile
 (See also \ref PRINT and \ref DISTANCE).
@@ -90,7 +90,7 @@ For example, imagine that you want to implement a restraint that only acts when 
 distance is larger than 0.5. You can do it with
 \plumedfile
 d: DISTANCE ATOMS=10,15
-m: MATHEVAL ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
+m: CUSTOM ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
 # check the function you are applying:
 PRINT ARG=d,n FILE=checkme
 RESTRAINT ARG=d AT=0.5 KAPPA=10.0
@@ -101,7 +101,7 @@ The meaning of the function `0.5*step(0.5-x)+x*step(x-0.5)` is:
 - If x<0.5 (step(0.5-x)!=0) use 0.5
 - If x>0.5 (step(x-0.5)!=0) use x
 Notice that the same could have been obtained using an \ref UPPER_WALLS
-However, with MATHEVAL you can create way more complex definitions.
+However, with CUSTOM you can create way more complex definitions.
 
 \warning If you apply forces on the variable (as in the previous example) you should
 make sure that the variable is continuous!
@@ -121,7 +121,7 @@ create. The equivalent of the AND operator is the product: `step(1.0-x)*step(x-0
 only equal to 1 when x is between 0.5 and 1.0. By combining negation and AND you can obtain an OR. That is,
 `1-step(1.0-x)*step(x-0.5)` is only equal to 1 when x is outside the 0.5-1.0 interval.
 
-MATHEVAL can be used in combination with \ref DISTANCE to implement variants of the
+CUSTOM can be used in combination with \ref DISTANCE to implement variants of the
 DISTANCE keyword that were present in PLUMED 1.3 and that allowed to compute
 the distance of a point from a line defined by two other points, or the progression
 along that line.
@@ -141,10 +141,10 @@ d23: DISTANCE ATOMS=p2,p3
 # compute progress variable of the projection of point p3
 # along the vector joining p1 and p2
 # notice that progress is measured from the middle point
-onaxis: MATHEVAL ARG=d13,d23,d12 FUNC=(0.5*(y^2-x^2)/z) PERIODIC=NO
+onaxis: CUSTOM ARG=d13,d23,d12 FUNC=(0.5*(y^2-x^2)/z) PERIODIC=NO
 
 # compute between point p3 and the vector joining p1 and p2
-fromaxis: MATHEVAL ARG=d13,d23,d12,onaxis VAR=x,y,z,o FUNC=(0.5*(y^2+x^2)-o^2-0.25*z^2) PERIODIC=NO
+fromaxis: CUSTOM ARG=d13,d23,d12,onaxis VAR=x,y,z,o FUNC=(0.5*(y^2+x^2)-o^2-0.25*z^2) PERIODIC=NO
 
 PRINT ARG=onaxis,fromaxis
 
@@ -159,7 +159,7 @@ progression (S) and distance (Z) variables \cite perez2015atp.
 //+ENDPLUMEDOC
 
 
-class Matheval :
+class Custom :
   public Function
 {
   lepton::CompiledExpression expression;
@@ -169,24 +169,24 @@ class Matheval :
   vector<double> values;
   vector<char*> names;
 public:
-  explicit Matheval(const ActionOptions&);
+  explicit Custom(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(Matheval,"MATHEVAL")
+PLUMED_REGISTER_ACTION(Custom,"CUSTOM")
 
-//+PLUMEDOC FUNCTION CUSTOM
+//+PLUMEDOC FUNCTION MATHEVAL
 /*
-An alias to the \ref MATHEVAL function.
+An alias to the \ref CUSTOM function.
 
 \par Examples
 
-Just replace \ref MATHEVAL with \ref CUSTOM.
+Just replace \ref CUSTOM with \ref MATHEVAL.
 
 \plumedfile
 d: DISTANCE ATOMS=10,15
-m: CUSTOM ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
+m: MATHEVAL ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
 # check the function you are applying:
 PRINT ARG=d,n FILE=checkme
 RESTRAINT ARG=d AT=0.5 KAPPA=10.0
@@ -196,20 +196,20 @@ RESTRAINT ARG=d AT=0.5 KAPPA=10.0
 */
 //+ENDPLUMEDOC
 
-class Custom :
-  public Matheval {
+class Matheval :
+  public Custom {
 };
 
-PLUMED_REGISTER_ACTION(Matheval,"CUSTOM")
+PLUMED_REGISTER_ACTION(Custom,"MATHEVAL")
 
-void Matheval::registerKeywords(Keywords& keys) {
+void Custom::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG"); keys.use("PERIODIC");
   keys.add("compulsory","FUNC","the function you wish to evaluate");
   keys.add("optional","VAR","the names to give each of the arguments in the function.  If you have up to three arguments in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
 }
 
-Matheval::Matheval(const ActionOptions&ao):
+Custom::Custom(const ActionOptions&ao):
   Action(ao),
   Function(ao),
   expression_deriv(getNumberOfArguments()),
@@ -252,7 +252,7 @@ Matheval::Matheval(const ActionOptions&ao):
   }
 }
 
-void Matheval::calculate() {
+void Custom::calculate() {
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     try {
       expression.getVariableReference(var[i])=getArgument(i);
