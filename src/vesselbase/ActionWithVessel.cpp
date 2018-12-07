@@ -275,7 +275,7 @@ void ActionWithVessel::runAllTasks() {
   if( dertime_can_be_off ) dertime=false;
 
   if(timers) stopwatch.start("2 Loop over tasks");
-  #pragma omp parallel num_threads(nt) schedule(dynamic)
+  #pragma omp parallel num_threads(nt)
   {
     std::vector<double> omp_buffer;
     if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
@@ -283,7 +283,7 @@ void ActionWithVessel::runAllTasks() {
     MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
     myvals.clearAll(); bvals.clearAll();
 
-    #pragma omp for nowait
+    #pragma omp for nowait schedule(dynamic)
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
       // Calculate the stuff in the loop for this action
       performTask( indexOfTaskInFullList[i], partialTaskList[i], myvals );
