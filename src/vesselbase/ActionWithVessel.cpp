@@ -273,7 +273,7 @@ void ActionWithVessel::runAllTasks() {
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks || !threadSafe()) nt=1;
+  if( nt*stride*2>nactive_tasks || !threadSafe()) nt=1;
 
   // Get size for buffer
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize );
@@ -291,7 +291,7 @@ void ActionWithVessel::runAllTasks() {
     MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
     myvals.clearAll(); bvals.clearAll();
 
-    #pragma omp for nowait
+    #pragma omp for nowait schedule(dynamic)
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
       // Calculate the stuff in the loop for this action
       performTask( indexOfTaskInFullList[i], partialTaskList[i], myvals );
