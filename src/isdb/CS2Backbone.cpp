@@ -981,12 +981,12 @@ void CS2Backbone::calculate()
   }
 
   unsigned nt=OpenMP::getNumThreads();
-  if(nt*stride*10>chemicalshifts.size()) nt=1;
+  if(nt*stride*2>chemicalshifts.size()) nt=1;
 
   // a single loop over all chemical shifts
   #pragma omp parallel num_threads(nt)
   {
-    #pragma omp for
+    #pragma omp for schedule(dynamic)
     for(unsigned cs=rank; cs<chemicalshifts.size(); cs+=stride) {
       const unsigned kdx=cs*max_cs_atoms;
       const ChemicalShift *myfrag = &chemicalshifts[cs];
