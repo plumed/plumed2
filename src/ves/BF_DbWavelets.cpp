@@ -125,7 +125,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
 
   // calculate the number of basis functions from the specified length
   unsigned intrinsic_length = 2*getOrder() - 1;
-  double length;
+  double length = intrinsic_length;
   parse("FUNCTION_LENGTH",length);
   if(length != intrinsic_length) {addKeywordToList("FUNCTION_LENGTH",length);}
   scale_ = intrinsic_length / length;
