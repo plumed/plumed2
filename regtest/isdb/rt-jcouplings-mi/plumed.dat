@@ -45,8 +45,8 @@ JCOUPLING ...
 
 BIASVALUE ARG=jmi.score
 
-PRINT ARG=mij.* FILE=miorig STRIDE=1
-PRINT ARG=jmi.score,jmi.acceptSigma,jmi.sigmaMean,jmi.sigma FILE=minew STRIDE=1
+PRINT ARG=mij.* FILE=miorig STRIDE=1 FMT=%9.4lf
+PRINT ARG=jmi.score,jmi.acceptSigma,jmi.sigmaMean,jmi.sigma FILE=minew STRIDE=1 FMT=%9.4lf
 
 DUMPDERIVATIVES ARG=jmi.score FILE=force.new STRIDE=1 FMT=%9.4lf
 

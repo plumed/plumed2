@@ -46,10 +46,10 @@ JCOUPLING ...
 
 PRINT ARG=(jhan\..*),(jhahn\..*),(jccg\..*),(jncg\..*) STRIDE=1 FILE=COLVAR FMT=%.4f
 
-DUMPDERIVATIVES ARG=jhan.*  STRIDE=1 FILE=deriv-jhan  FMT=%8.3f
-DUMPDERIVATIVES ARG=jhahn.* STRIDE=1 FILE=deriv-jhahn FMT=%8.3f
-DUMPDERIVATIVES ARG=jccg.*  STRIDE=1 FILE=deriv-jccg  FMT=%8.3f
-DUMPDERIVATIVES ARG=jncg.*  STRIDE=1 FILE=deriv-jncg  FMT=%8.3f
+DUMPDERIVATIVES ARG=jhan.*  STRIDE=1 FILE=deriv-jhan  FMT=%8.2f
+DUMPDERIVATIVES ARG=jhahn.* STRIDE=1 FILE=deriv-jhahn FMT=%8.2f
+DUMPDERIVATIVES ARG=jccg.*  STRIDE=1 FILE=deriv-jccg  FMT=%8.2f
+DUMPDERIVATIVES ARG=jncg.*  STRIDE=1 FILE=deriv-jncg  FMT=%8.2f
 
 FLUSH STRIDE=100
 
