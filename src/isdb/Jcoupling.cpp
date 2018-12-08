@@ -301,7 +301,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
   checkRead();
 }
 
-void JCoupling::calculate() 
+void JCoupling::calculate()
 {
   if (pbc) makeWhole();
   vector<Vector> deriv(ncoupl_*6);
