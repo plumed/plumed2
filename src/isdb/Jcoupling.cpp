@@ -24,9 +24,6 @@
 #include "tools/Pbc.h"
 #include "tools/Torsion.h"
 
-#include <string>
-#include <cmath>
-
 using namespace std;
 
 namespace PLMD {
@@ -328,9 +325,9 @@ void JCoupling::calculate()
       // Calculate the Karplus relation and its derivative
       double theta = torsion + kshift_;
       double cos_theta = cos(theta);
-      double pder = ka_*cos_theta + kb_;
-      j[r] = pder*cos_theta + kc_;
-      double derj = -sin(theta)*(2.*pder - kb_);
+      double sin_theta = sin(theta);
+      j[r] = ka_*cos_theta*cos_theta + kb_*cos_theta + kc_;
+      double derj = -2.*ka_*sin_theta*cos_theta - kb_*sin_theta;
 
       dd0 *= derj;
       dd1 *= derj;
