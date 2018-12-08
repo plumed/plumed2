@@ -212,6 +212,7 @@ public:
   void prepareForAveraging();
   void performOperations( const bool& from_update );
   void finishAveraging();
+  bool threadSafe() const { return !in_apply; }
   bool isPeriodic() { return false; }
   unsigned getNumberOfDerivatives();
   void turnOnDerivatives();
