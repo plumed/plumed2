@@ -1,4 +1,4 @@
 plumed_needs="cregex"
 type=driver
 # this is to test a different name
-arg="--plumed plumed.dat --trajectory-stride 2 --timestep 0.002 --mf_xtc trajectory.xtc"
+arg="--plumed plumed.dat --mf_pdb peptide.pdb"
