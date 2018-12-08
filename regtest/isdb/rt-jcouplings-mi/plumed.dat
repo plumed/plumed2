@@ -43,11 +43,30 @@ JCOUPLING ...
     TEMP=300
 ... JCOUPLING
 
+JCOUPLING ...
+    NOPBC
+    TYPE=HAHN
+    ATOMS1=@psi-2 COUPLING1=7
+    ATOMS2=@psi-3 COUPLING2=6
+    ATOMS3=@psi-4 COUPLING3=5
+    ATOMS4=@psi-5 COUPLING4=4
+    ATOMS5=@psi-6 COUPLING5=3
+    ATOMS6=@psi-7 COUPLING6=2
+    ATOMS7=@psi-8 COUPLING7=1
+    LABEL=jminum
+    DOSCORE
+    NOISETYPE=OUTLIERS
+    SIGMA_MEAN0=10
+    DSIGMA=0
+    TEMP=300
+    NUMERICAL_DERIVATIVES
+... JCOUPLING
+
 BIASVALUE ARG=jmi.score
 
 PRINT ARG=mij.* FILE=miorig STRIDE=1
 PRINT ARG=jmi.score,jmi.acceptSigma,jmi.sigmaMean,jmi.sigma FILE=minew  STRIDE=1
 
-DUMPDERIVATIVES ARG=jmi.score FILE=force.new STRIDE=1
+DUMPDERIVATIVES ARG=jmi.score,jminum.score FILE=force.new STRIDE=1 FMT=%.5lf
 
 ENDPLUMED
