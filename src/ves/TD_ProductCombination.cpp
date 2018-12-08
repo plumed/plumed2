@@ -63,7 +63,7 @@ product combination are given in the DISTRIBUTIONS keyword.
 
 The target distribution resulting from the product combination will be
 automatically normalized. Therefore, the product combination needs to
-be a proper distribution that is non-negative and normalizable. The
+be a proper distribution that is non-negative and that can be normalized. The
 code will perform checks to make sure that this is indeed the case.
 
 The product combination will be a dynamic target distribution if one or more

@@ -34,8 +34,8 @@ namespace vatom {
 Add a virtual atom in a fixed position.
 
 This action creates a virtual atom at a fixed position.
-The coordinates can be specified in cartesian components (by default)
-or in scaled coordinats (SCALED_COMPONENTS).
+The coordinates can be specified in Cartesian components (by default)
+or in scaled coordinates (SCALED_COMPONENTS).
 It is also possible to assign a predefined charge or mass to the atom.
 
 \attention

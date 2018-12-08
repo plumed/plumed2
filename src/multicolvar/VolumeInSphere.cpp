@@ -26,7 +26,7 @@
 
 //+PLUMEDOC VOLUMES INSPHERE
 /*
-This quantity can be used to calculate functions of the distribution of collective
+This quantity can be used to calculate functions of the distribution of collective 
 variables for the atoms that lie in a particular, user-specified part of of the cell.
 
 Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three
@@ -86,7 +86,7 @@ PLUMED_REGISTER_ACTION(VolumeInSphere,"INSPHERE")
 void VolumeInSphere::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
   keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
-  keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
+  keys.add("compulsory","RADIUS","the switching function that tells us the extent of the spherical region of interest");
   keys.remove("SIGMA");
 }
 

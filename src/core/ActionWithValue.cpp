@@ -30,7 +30,7 @@ void ActionWithValue::registerKeywords(Keywords& keys) {
   keys.setComponentsIntroduction("By default the value of the calculated quantity can be referenced elsewhere in the "
                                  "input file by using the label of the action.  Alternatively this Action can be used "
                                  "to calculate the following quantities by employing the keywords listed "
-                                 "below.  These quanties can be referenced elsewhere in the input by using this Action's "
+                                 "below.  These quantities can be referenced elsewhere in the input by using this Action's "
                                  "label followed by a dot and the name of the quantity required from the list below.");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
 }
@@ -41,14 +41,14 @@ void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {
 }
 
 void ActionWithValue::componentsAreNotOptional(Keywords& keys) {
-  keys.setComponentsIntroduction("By default this Action calculates the following quantities. These quanties can "
+  keys.setComponentsIntroduction("By default this Action calculates the following quantities. These quantities can "
                                  "be referenced elsewhere in the input by using this Action's label followed by a "
                                  "dot and the name of the quantity required from the list below.");
 }
 
 void ActionWithValue::useCustomisableComponents(Keywords& keys) {
   keys.setComponentsIntroduction("The names of the components in this action can be customized by the user in the "
-                                 "actions input file.  However, in addition to these customizable components the "
+                                 "actions input file.  However, in addition to the components that can be customized the "
                                  "following quantities will always be output");
 }
 

@@ -31,15 +31,15 @@ namespace PLMD {
 /*
 A function that can be used to calculate whether quantities are between fixed upper and lower bounds.
 
-If we have multiple instances of a variable we can estimate the probability distribution (pdf)
+If we have multiple instances of a variable we can estimate the probability density function
 for that variable using a process called kernel density estimation:
 
 \f[
 P(s) = \sum_i K\left( \frac{s - s_i}{w} \right)
 \f]
 
-In this equation \f$K\f$ is a symmetric funciton that must integrate to one that is often
-called a kernel function and \f$w\f$ is a smearing parameter.  From a pdf calculated using
+In this equation \f$K\f$ is a symmetric function that must integrate to one that is often
+called a kernel function and \f$w\f$ is a smearing parameter.  From a probability density function calculated using
 kernel density estimation we can calculate the number/fraction of values between an upper and lower
 bound using:
 
@@ -68,7 +68,7 @@ in the table below:
 </tr>
 </table>
 
-Some keywords can also be used to calculate a descretized version of the histogram.  That
+Some keywords can also be used to calculate a discrete version of the histogram.  That
 is to say the number of values between \f$a\f$ and \f$b\f$, the number of values between
 \f$b\f$ and \f$c\f$ and so on.  A keyword that specifies this sort of calculation would look
 something like

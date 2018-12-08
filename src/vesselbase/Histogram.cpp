@@ -44,8 +44,8 @@ void Histogram::registerKeywords( Keywords& keys ) {
 }
 
 void Histogram::reserveKeyword( Keywords& keys ) {
-  keys.reserve("vessel","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
-               "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
+  keys.reserve("vessel","HISTOGRAM","calculate how many of the values fall in each of the bins of a histogram. "
+               "This shortcut allows you to calculates NBIN quantities like BETWEEN.");
 }
 
 Histogram::Histogram( const VesselOptions& da ):

@@ -79,7 +79,7 @@ void InPlaneDistances::registerKeywords( Keywords& keys ) {
   keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms","VECTORSTART","The first atom position that is used to define the normal to the plane of interest");
-  keys.add("atoms","VECTOREND","The second atom position that is used to defin the normal to the plane of interest");
+  keys.add("atoms","VECTOREND","The second atom position that is used to define the normal to the plane of interest");
   keys.add("atoms-2","GROUP","The set of atoms for which you wish to calculate the in plane distance ");
 }
 

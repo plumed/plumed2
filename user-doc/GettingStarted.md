@@ -8,16 +8,16 @@ some free energy method. A very brief introduction to the syntax used in the PLU
 is provided in this <a href="http://www.youtube.com/watch?v=PxJP16qNCYs"> 10-minute video </a>.
 
 Within this input file every line is an instruction for PLUMED to perform some particular action.  This could be
- the calculation of a colvar, an occasional analysis of the trajectory or a biassing of the dynamics.  The first
+ the calculation of a colvar, an occasional analysis of the trajectory or a biasing of the dynamics.  The first
 word in these lines specify what particular action is to be performed.  This is then followed by a number of keywords
 which provide PLUMED with more details as to how the action is to be performed.  These keywords are either single words
 (in which they tell PLUMED to do the calculation in a particular way - for example NOPBC tells PLUMED to not use the periodic
-bounadry conditions when calculating a particular colvar) or they can be words followed by an equals sign and a comma separated 
+boundary conditions when calculating a particular colvar) or they can be words followed by an equals sign and a comma separated 
 list _with no spaces_ of numbers or characters (so for example ATOMS=1,2,3,4 tells PLUMED to use atom numbers 1,2,3 and 4 in 
 the calculation of a particular colvar).
 The reason why spaces are not admitted is that PLUMED should be able to understand when the list of atoms
 ended and a new keyword should be expected. 
-Space separated lists can be used instead of commma separated list if the entire list
+Space separated lists can be used instead of comma separated list if the entire list
 is enclosed in curly braces (e.g. ATOMS={1 2 3 4}).  Please note that you can split commands over multiple lines by using
 \ref ContinuationLines. 
 
@@ -57,7 +57,7 @@ You can also add \ref comments to the input or set up your input over multiple f
 \ref includes.
 
 More information on the input syntax as well as details on the the various trajectory
-analisys tools that come with PLUMED are given in: 
+analysis tools that come with PLUMED are given in: 
 
 - \ref colvarintro tells you about the ways that you can calculate functions of the positions of the atoms.
 - \ref Analysis tells you about the various forms of analysis you can run on trajectories using PLUMED.

@@ -35,7 +35,7 @@ colvar thus generates the set of all possible six residue sections and calculate
 the RMSD distance between the configuration in which the residues find themselves
 and an idealized alpha helical structure. These distances can be calculated by either
 aligning the instantaneous structure with the reference structure and measuring each
-atomic displacement or by calculating differences between the set of interatomic
+atomic displacement or by calculating differences between the set of inter-atomic
 distances in the reference and instantaneous structures.
 
 This colvar is based on the following reference \cite pietrucci09jctc.  The authors of
@@ -60,7 +60,7 @@ options you no longer need to specify NN, R_0, MM and D_0.
 
 Please be aware that for codes like gromacs you must ensure that plumed
 reconstructs the chains involved in your CV when you calculate this CV using
-anthing other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
+anything other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
 
 \par Examples
 
@@ -69,7 +69,7 @@ protein that are in an alpha helical configuration.
 
 \plumedfile
 MOLINFO STRUCTURE=helix.pdb
-hh: ALPHARMSD RESIDUES=all
+alpha: ALPHARMSD RESIDUES=all
 \endplumedfile
 
 Here the same is done use RMSD instead of DRMSD
@@ -77,7 +77,7 @@ Here the same is done use RMSD instead of DRMSD
 \plumedfile
 MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES ENTITY0=1-100
-hh: ALPHARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1
+alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1
 \endplumedfile
 
 */

@@ -42,7 +42,7 @@ void Lowest::registerKeywords( Keywords& keys ) {
 
 void Lowest::reserveKeyword( Keywords& keys ) {
   keys.reserve("vessel","LOWEST","this flag allows you to recover the lowest of these variables.");
-  keys.addOutputComponent("lowest","LOWEST","the lowest of the quantitities calculated by this action");
+  keys.addOutputComponent("lowest","LOWEST","the lowest of the quantities calculated by this action");
 }
 
 Lowest::Lowest( const VesselOptions& da ) :

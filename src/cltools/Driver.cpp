@@ -102,7 +102,7 @@ will read a file produced by \ref DUMPMASSCHARGE .
 
 \par Examples
 
-The following command tells plumed to postprocess the trajectory contained in `trajectory.xyz`
+The following command tells plumed to post process the trajectory contained in `trajectory.xyz`
  by performing the actions described in the input file `plumed.dat`.  If an action that takes the
 stride keyword is given a stride equal to \f$n\f$ then it will be performed only on every \f$n\f$th
 frames in the trajectory file.
@@ -132,7 +132,7 @@ PRINT ARG=d FILE=colvar
 In this case, the driver reads the `xyz` file assuming it to contain coordinates in Angstrom units.
 However, the resulting `colvar` file contains a distance expressed in nm.
 
-The following command tells plumed to postprocess the trajectory contained in trajectory.xyz.
+The following command tells plumed to post process the trajectory contained in trajectory.xyz.
  by performing the actions described in the input file plumed.dat.
 \verbatim
 plumed driver --plumed plumed.dat --ixyz trajectory.xyz --trajectory-stride 100 --timestep 0.001
@@ -143,7 +143,7 @@ and the `--timestep` is equal to the simulation timestep.  As such the `STRIDE` 
 files are referred to the original timestep and any files output resemble those that would have been generated
 had we run the calculation we are running with driver when the MD simulation was running.
 
-PLUMED can read natively xyz files (in PLUMED units) and gro files (in nm). In addition,
+PLUMED can read xyz files (in PLUMED units) and gro files (in nm). In addition,
 PLUMED includes by default support for a
 subset of the trajectory file formats supported by VMD, e.g. xtc and dcd:
 
@@ -219,7 +219,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
            " currently working only for xtc/trr files read with --ixtc/--trr)"
 #endif
           );
-  keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs mpi)");
+  keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs MPI)");
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("atoms","--igro","the trajectory in gro format");
@@ -230,13 +230,13 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--mass-units","units for mass in pdb and mc file, either as a string or a number");
   keys.add("optional","--charge-units","units for charge in pdb and mc file, either as a string or a number");
-  keys.add("optional","--kt","set kBT, it will not be necessary to specify temperature in input file");
+  keys.add("optional","--kt","set \\f$k_B T\\f$, it will not be necessary to specify temperature in input file");
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
   keys.addFlag("--dump-full-virial",false,"with --dump-forces, it dumps the 9 components of the virial");
   keys.add("optional","--pdb","provides a pdb with masses and charges");
   keys.add("optional","--mc","provides a file with masses and charges as produced with DUMPMASSCHARGE");
-  keys.add("optional","--box","comma-separated box dimensions (3 for orthorombic, 9 for generic)");
+  keys.add("optional","--box","comma-separated box dimensions (3 for orthorhombic, 9 for generic)");
   keys.add("optional","--natoms","provides number of atoms - only used if file format does not contain number of atoms");
   keys.add("optional","--initial-step","provides a number for the initial step, default is 0");
   keys.add("optional","--debug-forces","output a file containing the forces due to the bias evaluated using numerical derivatives "

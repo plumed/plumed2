@@ -54,7 +54,7 @@ To learn more about how the path is adapted we strongly recommend reading this p
 
 \par Examples
 
-The input below provides an example of how the adaptive path works in practise. The path is updated every 50 steps of
+The input below provides an example that shows how the adaptive path works. The path is updated every 50 steps of
 MD based on the data accumulated during the preceding 50 time steps.
 
 \plumedfile

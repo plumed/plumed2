@@ -99,7 +99,7 @@ void Combine::registerKeywords(Keywords& keys) {
   keys.add("compulsory","COEFFICIENTS","1.0","the coefficients of the arguments in your function");
   keys.add("compulsory","PARAMETERS","0.0","the parameters of the arguments in your function");
   keys.add("compulsory","POWERS","1.0","the powers to which you are raising each of the arguments in your function");
-  keys.addFlag("NORMALIZE",false,"normalize all the coefficents so that in total they are equal to one");
+  keys.addFlag("NORMALIZE",false,"normalize all the coefficients so that in total they are equal to one");
 }
 
 Combine::Combine(const ActionOptions&ao):

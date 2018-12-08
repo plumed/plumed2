@@ -1,9 +1,9 @@
 /**
-\page isdb-1 ISDB: setting up a Metadynamic Metainference simulation 
+\page isdb-1 ISDB: setting up a Metadynamics Metainference simulation 
 
 \section isdb-1-aims Aims
 
-The aim of this tutorial is to introduce the users to the ISDB module and in particular to Metadynamic Metainfenrence \cite Bonomi:2016ip \cite Bonomi:2016ge ensemble determination. 
+The aim of this tutorial is to introduce the users to the ISDB module and in particular to Metadynamics Metainfenrence \cite Bonomi:2016ip \cite Bonomi:2016ge ensemble determination. 
 We will reproduce the setup of the simulation for a simple system \cite Lohr:2017gc . For a general overview of the problem of ensembles determination please read \cite Bonomi:2017dn .
 
 \section isdb-1-objectives Objectives
@@ -58,7 +58,7 @@ This can be run using gromacs (unfortunately recent versions of gromacs do not s
 gmx_mpi mdrun -s run.tpr -table table.xvg -tablep table.xvg -plumed plumed-eef1.dat -v
 \endverbatim
 
-In order to have a converged sampling for this reference ensemble calculation it is usefull to setup a Metadynamics calculation. In particular we will use \ref PBMETAD because it is then a natural choice for Metadynamic Metainference later. The following input file is meant to be appended to the former.
+In order to have a converged sampling for this reference ensemble calculation it is usefull to setup a Metadynamics calculation. In particular we will use \ref PBMETAD because it is then a natural choice for Metadynamics Metainference later. The following input file is meant to be appended to the former.
 
 \plumedfile
 # CVs, Psi9, Phi1 are not defined
@@ -116,7 +116,7 @@ In this case we are running a multiple-replica simulation where the sampling is 
 mpiexec -np 14 gmx_mpi mdrun -s topolnew -multi 14 -plumed plumed-eef1-pbmetad.dat -table table.xvg -tablep table.xvg >& log.out &
 \endverbatim
 
-\section isdb-1-m_m Metadynamic Metainference 
+\section isdb-1-m_m Metadynamics Metainference 
 
 The former simulations should provide a converged (check for this) ensemble for the peptide. As shown in \cite Lohr:2017gc the agreement with the multiple avaible NMR experimental data is not perfect. In order to generate an ensemble compatible with most of the available experimetnal data it is possible to include them in the simulation using \ref METAINFERENCE . To do so the forward models for the data sets should be defined in the input file. In this case we have backbone chemical shifts, \ref CS2BACKBONE ; residual dipolar couplings for two bonds, \ref RDC ; and J-couplings for multiple atoms, \ref JCOUPLING.
 Once the forward models are defined for the data sets, the calculated data together with the corresponding experimental values can be used to calculate the metainference score. The metainference score is additive so it can be splitted into multiple \ref METAINFERENCE entries. In this case we are using two metainference entries for the two sets of RDCs because these are compared with the experimental data modulo a constant that should be unique each data set. Then we use one metainference for all the jcouplings and another one for the chemical shifts. In this latter case we use a different noise model, i.e. NOISE=MOUTLIERS because the forward model for chemical shifts can result in systematic errors for some of them.
@@ -332,6 +332,6 @@ mpiexec -np 14 gmx_mpi mdrun -s topolnew -multi 14 -plumed plumed-eef1-pbmetad-m
 
 link: @subpage isdb-1
 
-description: This tutorial show an example on how to use PLUMED-ISDB to run Metadynamic Metainference 
+description: This tutorial show an example on how to use PLUMED-ISDB to run Metadynamics Metainference 
 
 additional-files: isdb-1

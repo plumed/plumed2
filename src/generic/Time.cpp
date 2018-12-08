@@ -31,7 +31,7 @@ namespace generic {
 
 //+PLUMEDOC GENERIC TIME
 /*
-retrieve the time of the simulation to be used elsewere
+retrieve the time of the simulation to be used elsewhere
 
 \par Examples
 

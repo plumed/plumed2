@@ -54,7 +54,7 @@ void MoleculePlane::registerKeywords( Keywords& keys ) {
            "second atoms and the vector connecting the second and third atoms.  If four atoms are specified the "
            "orientation of the molecule is taken as the normal to the plane containing the vector connecting the "
            "first and second atoms and the vector connecting the third and fourth atoms. The molecule is always "
-           "assumed to lie at the geometric centre for the three/four atoms.");
+           "assumed to lie at the geometric center for the three/four atoms.");
   keys.reset_style("MOL","atoms");
 }
 

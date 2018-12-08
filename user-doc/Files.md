@@ -1,7 +1,7 @@
 \page Files Files
 
 We tried to design PLUMED in such a manner that input/output is done consistently
-irrespectively of the file type. Most of the files written or read by PLUMED thus follow
+irrespective of the file type. Most of the files written or read by PLUMED thus follow
 the very same conventions discussed below. 
 
 \section Restart
@@ -50,7 +50,7 @@ Notice that when PLUMED adds the replica suffix, it recognizes the file extensio
 extension. Before PLUMED 2.2, the only recognized suffix was ".gz". Since 2.2, any suffix with length
 less or equal to five letters is recognized.
 
-This means that using in a multireplica context an input such as
+This means that using in a multi-replica context an input such as
 \plumedfile
 d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=COLVAR.gz

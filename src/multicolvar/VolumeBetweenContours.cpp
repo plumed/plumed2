@@ -28,7 +28,7 @@
 
 //+PLUMEDOC VOLUMES INENVELOPE
 /*
-This quantity can be used to calculate functions of the distribution of collective
+This quantity can be used to calculate functions of the distribution of collective 
 variables for the atoms that lie in a region where the density of a certain type of atom is high.
 
 This collective variable can be used to determine whether colvars are within region where the density
@@ -81,8 +81,8 @@ PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE")
 void VolumeInEnvelope::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys ); keys.remove("SIGMA");
   keys.add("atoms","ATOMS","the atom whose positions we are constructing a field from");
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","CONTOUR","a switching funciton that tells PLUMED how large the density should be");
+  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density estimation");
+  keys.add("compulsory","CONTOUR","a switching function that tells PLUMED how large the density should be");
 }
 
 VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):

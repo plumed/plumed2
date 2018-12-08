@@ -35,7 +35,7 @@ This command instructs plumed to flush all the open files with a user specified 
 Notice that all files are flushed anyway every 10000 steps.
 
 This
-is useful for preventing data loss that would otherwise arrise as a consequence of the code
+is useful for preventing data loss that would otherwise arise as a consequence of the code
 storing data for printing in the buffers. Notice that wherever it is written in the
 plumed input file, it will flush all the open files.
 

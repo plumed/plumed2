@@ -96,7 +96,7 @@ void OutputCluster::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","1","the frequency with which you would like to output the atoms in the cluster");
   keys.add("compulsory","FILE","the name of the file on which to output the details of the cluster");
   keys.add("compulsory","MAXDEPTH","6","maximum depth for searches over paths to reconstruct clusters for PBC");
-  keys.add("compulsory","MAXGOES","200","number of times to run searches to reconstuct clusters");
+  keys.add("compulsory","MAXGOES","200","number of times to run searches to reconstruct clusters");
   keys.addFlag("MAKE_WHOLE",false,"reconstruct the clusters and remove all periodic boundary conditions.");
 }
 

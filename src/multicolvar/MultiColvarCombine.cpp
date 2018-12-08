@@ -55,7 +55,7 @@ PLUMED_REGISTER_ACTION(MultiColvarCombine,"MCOLV_COMBINE")
 void MultiColvarCombine::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","DATA","the multicolvars you are calculating linear combinations for");
-  keys.add("compulsory","COEFFICIENTS","1.0","the coeficients to use for the various multicolvars");
+  keys.add("compulsory","COEFFICIENTS","1.0","the coefficients to use for the various multicolvars");
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM"); keys.use("HISTOGRAM");
   keys.use("MIN"); keys.use("MAX"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("ALT_MIN"); keys.use("BETWEEN"); keys.use("MOMENTS");
 }

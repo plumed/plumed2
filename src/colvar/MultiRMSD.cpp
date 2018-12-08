@@ -98,13 +98,13 @@ with the TER keyword being used to separate the various domains in you protein.
 
 The following tells plumed to calculate the RMSD distance between
 the positions of the atoms in the reference file and their instantaneous
-position.  The Kearseley algorithm for each of the domains.
+position.  The Kearsley algorithm for each of the domains.
 
 \plumedfile
 MULTI-RMSD REFERENCE=file.pdb TYPE=MULTI-OPTIMAL
 \endplumedfile
 
-The following tells plumed to calculate the RMSD distance btween the positions of
+The following tells plumed to calculate the RMSD distance between the positions of
 the atoms in the domains of reference the reference structure and their instantaneous
 positions.  Here distances are calculated using the \ref DRMSD measure.
 
@@ -153,7 +153,7 @@ void MultiRMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","MULTI-SIMPLE","the manner in which RMSD alignment is performed.  Should be MULTI-OPTIMAL, MULTI-OPTIMAL-FAST,  MULTI-SIMPLE or MULTI-DRMSD.");
-  keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
+  keys.addFlag("SQUARED",false," This should be set if you want the mean squared displacement instead of the root mean squared displacement");
 }
 
 MultiRMSD::MultiRMSD(const ActionOptions&ao):

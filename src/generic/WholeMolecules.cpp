@@ -40,7 +40,7 @@ namespace generic {
 
 //+PLUMEDOC GENERIC WHOLEMOLECULES
 /*
-This action is used to rebuild molecules that can become split by the periodic
+This action is used to rebuild molecules that can become split by the periodic 
 boundary conditions.
 
 It is similar to the ALIGN_ATOMS keyword of plumed1, and is needed since some
@@ -66,8 +66,8 @@ The way WHOLEMOLECULES modifies each of the listed entities is this:
 
 In this way, if an entity consists of a list of atoms such that consecutive atoms in the
 list are always closer than half a box side the entity will become whole.
-This can be usually achieved selecting consecute atoms (1-100), but it is also possible
-to skip some atoms, provided consecute chosen atoms are close enough.
+This can be usually achieved selecting consecutive atoms (1-100), but it is also possible
+to skip some atoms, provided consecutive chosen atoms are close enough.
 
 \par Examples
 

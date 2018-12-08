@@ -57,11 +57,11 @@ best estimate of \f$F(\mathbf{s})\f$, similarly as for the
 \ref TD_WELLTEMPERED "well-tempered target distribution".
 Furthermore, the inverse temperature \f$\beta = (k_{\mathrm{B}}T)^{-1}\f$ and
 the thermal energy \f$k_{\mathrm{B}}T\f$ can be included
-by using the _beta_ and _kBT_ variables.
+by using the _beta_ and \f$k_B T\f$ variables.
 
 The target distribution will be automatically normalized over the region on
 which it is defined on. Therefore, the function given in
-FUNCTION needs to be non-negative and normalizable. The
+FUNCTION needs to be non-negative and it must be possible to normalize the function. The
 code will perform checks to make sure that this is indeed the case.
 
 
@@ -92,7 +92,7 @@ TD_CUSTOM ...
 By using the _FE_ variable the target distribution can depend on
 the free energy surface \f$F(\mathbf{s})\f$. For example,
 the following input is identical to using \ref TD_WELLTEMPERED with
-BIASFACTOR=10.
+a bias factor of 10.
 \plumedfile
 TD_CUSTOM ...
  FUNCTION=exp(-(beta/10.0)*FE)
@@ -100,7 +100,7 @@ TD_CUSTOM ...
 ... TD_CUSTOM
 \endplumedfile
 Here the inverse temperature is automatically obtained by using the _beta_
-variable. It is also possible to use the _kBT_ variable. The following
+variable. It is also possible to use the \f$k_B T\f$ variable. The following
 syntax will give the exact same results as the syntax above
 \plumedfile
 TD_CUSTOM ...
@@ -143,7 +143,7 @@ PLUMED_REGISTER_ACTION(TD_Custom,"TD_CUSTOM")
 
 void TD_Custom::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
-  keys.add("compulsory","FUNCTION","The function you wish to use for the target distribution where you should use the variables _s1_,_s2_,... for the arguments. You can also use the current estimate of the FES by using the variable _FE_ and the temperature by using the _kBT_ and _beta_ variables.");
+  keys.add("compulsory","FUNCTION","The function you wish to use for the target distribution where you should use the variables _s1_,_s2_,... for the arguments. You can also use the current estimate of the FES by using the variable _FE_ and the temperature by using the \\f$k_B T\\f$ and _beta_ variables.");
   keys.use("WELLTEMPERED_FACTOR");
   keys.use("SHIFT_TO_ZERO");
 }

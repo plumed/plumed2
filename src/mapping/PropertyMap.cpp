@@ -36,8 +36,8 @@ X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))}
 \f]
 
 Within PLUMED there are multiple ways to define the distance from a high-dimensional configuration, \f$D_i\f$.  You could calculate
-the RMSD distance or you could calculate the ammount by which a set of collective variables change.  As such this implementation
-of the propertymap allows one to use all the different distance metric that are discussed in \ref dists. This is as opposed to
+the RMSD distance or you could calculate the amount by which a set of collective variables change.  As such this implementation
+of the property map allows one to use all the different distance metric that are discussed in \ref dists. This is as opposed to
 the alternative implementation \ref PROPERTYMAP which is a bit faster but which only allows one to use the RMSD distance.
 
 \par Examples

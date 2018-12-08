@@ -29,7 +29,7 @@ namespace gridtools {
 void ActionWithInputGrid::registerKeywords( Keywords& keys ) {
   ActionWithGrid::registerKeywords( keys );
   keys.add("compulsory","GRID","the action that creates the input grid you would like to use");
-  keys.add("optional","COMPONENT","if your input is a vector field use this to specifiy the component of the input vector field for which you wish to use");
+  keys.add("optional","COMPONENT","if your input is a vector field use this to specify the component of the input vector field for which you wish to use");
 }
 
 ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):

@@ -36,7 +36,7 @@ namespace isdb {
 //+PLUMEDOC ISDB_COLVAR NOE
 /*
 Calculates NOE intensities as sums of 1/r^6, also averaging over multiple equivalent atoms
-or ambiguous NOE.
+ or ambiguous NOE.
 
 Each NOE is defined by two groups containing the same number of atoms, distances are
 calculated in pairs, transformed in 1/r^6, summed and saved as components.
