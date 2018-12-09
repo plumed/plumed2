@@ -303,7 +303,7 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.add("optional","MC_STRIDE","MC stride");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
   keys.add("optional","STATUS_FILE","write a file with all the data usefull for restart/continuation of Metainference");
-  keys.add("compulsory","WRITE_STRIDE","1000","write the status to a file every N steps, this can be used for restart/continuation");
+  keys.add("compulsory","WRITE_STRIDE","10000","write the status to a file every N steps, this can be used for restart/continuation");
   keys.add("optional","SELECTOR","name of selector");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
   keys.use("RESTART");
