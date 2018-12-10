@@ -139,6 +139,15 @@ void Communicator::Sum(Data data) {
 #endif
 }
 
+// for LogMFD
+void Communicator::Min(Data data) {
+#if defined(__PLUMED_HAS_MPI)
+  if(initialized()) MPI_Allreduce(MPI_IN_PLACE,data.pointer,data.size,data.type,MPI_MIN,communicator);
+#else
+  (void) data;
+#endif
+}
+
 Communicator::Request Communicator::Isend(ConstData data,int source,int tag) {
   Request req;
 #ifdef __PLUMED_HAS_MPI

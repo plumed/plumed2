@@ -176,6 +176,14 @@ public:
 /// Wrapper for MPI_Allreduce with MPI_SUM (reference)
   template <class T> void Sum(T&buf) {Sum(Data(buf));}
 
+  // for LogMFD
+/// Wrapper for MPI_Allreduce with MPI_MIN (data struct)
+  void Min(Data);
+/// Wrapper for MPI_Allreduce with MPI_MIN (pointer)
+  template <class T> void Min(T*buf,int count) {Min(Data(buf,count));}
+/// Wrapper for MPI_Allreduce with MPI_MIN (reference)
+  template <class T> void Min(T&buf) {Min(Data(buf));}
+
 /// Wrapper for MPI_Bcast (data struct)
   void Bcast(Data,int);
 /// Wrapper for MPI_Bcast (pointer)
