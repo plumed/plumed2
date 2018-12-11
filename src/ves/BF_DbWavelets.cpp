@@ -129,7 +129,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
   parse("FUNCTION_LENGTH",length);
   if(length != intervalMax() - intervalMin()) {addKeywordToList("FUNCTION_LENGTH",length);}
   scale_ = intrinsic_length / length;
-  setNumberOfBasisFunctions(1 + static_cast<int>((intervalMax()-intervalMin()+length) * scale_));
+  setNumberOfBasisFunctions(1 + static_cast<unsigned>(ceil((intervalMax()-intervalMin()+length) * scale_ - 1)));
 
   // set some properties
   setIntrinsicInterval(0.0,intrinsic_length);
