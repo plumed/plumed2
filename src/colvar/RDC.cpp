@@ -351,6 +351,7 @@ void RDC::calculate()
     }
     gsl_matrix_free(coef_mat);
     gsl_matrix_free(A);
+    gsl_matrix_free(V);
     gsl_vector_free(rdc_vec);
     gsl_vector_free(bc);
     gsl_vector_free(Stmp);
