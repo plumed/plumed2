@@ -150,7 +150,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
   derivs[0]=0.0;
   for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
     // scale and shift argument to match current wavelet
-    double x = (arg*scale_) - (i - intrinsicIntervalMax());
+    double x = (arg-intervalMin())*scale_ - (i - intrinsicIntervalMax());
 
     if (x < 0 || x >= intrinsicIntervalMax()) { // Wavelets are 0 outside the defined range
       values[i] = 0.0; derivs[i] = 0.0;
