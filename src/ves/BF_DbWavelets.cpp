@@ -171,7 +171,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
 void BF_DbWavelets::setupLabels() {
   setLabel(0,"const");
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
-    double pos = intervalMin() + i/scale_;
+    double pos = intervalMin() + (i-intrinsicIntervalMax())/scale_;
     std::string is; Tools::convert(pos, is);
     setLabel(i,"i="+is);
   }
