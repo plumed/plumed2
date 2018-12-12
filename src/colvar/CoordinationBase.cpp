@@ -140,8 +140,8 @@ void CoordinationBase::calculate()
     nl->update(getPositions());
   }
 
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
+  unsigned stride;
+  unsigned rank;
   if(serial) {
     stride=1;
     rank=0;
