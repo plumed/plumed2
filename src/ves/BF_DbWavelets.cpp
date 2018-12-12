@@ -80,6 +80,7 @@ class BF_DbWavelets : public BasisFunctions {
   std::unique_ptr<Grid> waveletGrid_;
   bool use_scaling_function_;
   double scale_; // scale factor of the individual BFs to match specified length
+  std::vector<double> shifts_; // shift of the individual BFs
   void setupLabels() override;
 
 public:
@@ -130,6 +131,10 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
   if(length != intervalMax() - intervalMin()) {addKeywordToList("FUNCTION_LENGTH",length);}
   scale_ = intrinsic_length / length;
   setNumberOfBasisFunctions(1 + static_cast<unsigned>(ceil((intervalMax()-intervalMin()+length) * scale_ - 1)));
+  shifts_.push_back(0.0); // constant BF, just for clearer notation
+  for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
+    shifts_.push_back(-intervalMin()*scale_ + intrinsicIntervalMax() - i);
+  }
 
   // set some properties
   setIntrinsicInterval(0.0,intrinsic_length);
@@ -150,7 +155,7 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
   derivs[0]=0.0;
   for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
     // scale and shift argument to match current wavelet
-    double x = (arg-intervalMin())*scale_ - (i - intrinsicIntervalMax());
+    double x = shifts_[i] + arg*scale_;
 
     if (x < 0 || x >= intrinsicIntervalMax()) { // Wavelets are 0 outside the defined range
       values[i] = 0.0; derivs[i] = 0.0;
