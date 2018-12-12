@@ -31,16 +31,16 @@ Used to perform LogMFD, LogPD, and TAMD/d-AFED.
 Consider a physical system of \f$N_q\f$ particles, for which the Hamiltonian is given as
 
 \f[
-  {H_{\rm MD}}\left( {\bf{\Gamma }} \right) = \sum\limits_{j = 1}^{{N_q}} {\frac{{{\bf{p}}_j^2}}{{2{m_j}}}}  + \Phi \left( {\bf{q}} \right)
+  {H_{\rm MD}}\left( {\bf{\Gamma}} \right) = \sum\limits_{j = 1}^{{N_q}} {\frac{{{\bf{p}}_j^2}}{{2{m_j}}}}  + \Phi \left( {\bf{q}} \right)
 \f]
 
-where \f$\bf{q}_j\f$, \f$\bf{p}_j\f$ (\f$\bf{\Gamma}=\bf{q},\bf{p}\f$), and \f$m_j\f$ are the position, momentum, and mass of the \f$j\f$th particle, respectively,
-and \f$\Phi\f$ is the potential energy function for \f$\bf{q}\f$.
-The free energy \f$F(\bf{X})\f$ as a function of a set of \f$N\f$ collective variables (CVs) is given as
+where \f${\bf q}_j\f$, \f${\bf p}_j\f$ (\f$\bf{\Gamma}={\bf q},{\bf p}\f$), and \f$m_j\f$ are the position, momentum, and mass of the \f$j\f$th particle, respectively,
+and \f$\Phi\f$ is the potential energy function for \f${\bf q}\f$.
+The free energy \f$F({\bf X})\f$ as a function of a set of \f$N\f$ collective variables (CVs) is given as
 
 \f{eqnarray*}{
-  F\left( {\bf{X}} \right) &=&  - {k_B}T\log \int {\exp \left[ { - \beta {H_{\rm MD}}} \right]\prod\limits_{i = 1}^N {\delta \left( {{s_i}\left( {\bf{q}} \right) - {X_i}} \right)} d{\bf{\Gamma }}} \\
-  &\simeq&  - {k_B}T\log \int {\exp \left[ { - \beta \left\{ {{H_{\rm MD}} + \sum\limits_i^N {\frac{{{K_i}}}{2}{{\left( {{s_i}\left( {\bf{q}} \right) - {X_i}} \right)}^2}} } \right\}} \right]} d{\bf{\Gamma }}
+  F\left( {{\bf X}} \right) &=&  - {k_B}T\log \int {\exp \left[ { - \beta {H_{\rm MD}}} \right]\prod\limits_{i = 1}^N {\delta \left( {{s_i}\left( {{\bf q}} \right) - {X_i}} \right)} d{\bf{\Gamma }}} \\
+  &\simeq&  - {k_B}T\log \int {\exp \left[ { - \beta \left\{ {{H_{\rm MD}} + \sum\limits_i^N {\frac{{{K_i}}}{2}{{\left( {{s_i}\left( {{\bf q}} \right) - {X_i}} \right)}^2}} } \right\}} \right]} d{\bf{\Gamma }}
 \f}
 
 where \f$\bf{s}\f$ are the CVs, \f$k_B\f$ is Boltzmann constant, \f$\beta=k_BT\f$,
@@ -50,23 +50,23 @@ and \f$K_i\f$ is the spring constant which is large enough to invoke
  \delta \left( x \right) = \lim_{k \to \infty } \sqrt {\beta k/2\pi} \exp \left( -\beta kx^2/2 \right)
 \f]
 
-In mean-force dynamics (MFD), \f$\bf{X}\f$ are treated as fictitious dynamical variables, which are associated with the following Hamiltonian,
+In mean-force dynamics (MFD), \f${\bf X}\f$ are treated as fictitious dynamical variables, which are associated with the following Hamiltonian,
 
 \f[
- {H_{\rm log}} = \sum\limits_{i = 1}^N {\frac{{P_{{X_i}}^2}}{{2{M_i}}} + \Psi \left( {\bf{X}} \right)}
+ {H_{\rm log}} = \sum\limits_{i = 1}^N {\frac{{P_{{X_i}}^2}}{{2{M_i}}} + \Psi \left( {{\bf X}} \right)}
 \f]
 
-where \f${P_{{X_i}}}\f$  and \f$M_i\f$ are the momentum and mass of \f$X_i\f$, respectively, and \f$\Psi\f$ is the potential function for \f$\bf{X}\f$.
-We assume that \f$\Psi\f$ is a functional of \f$F(\bf{X})\f$; \f$Ψ[F(\bf{X})]\f$. The simplest form of \f$\Psi\f$ is \f$\Psi = F(\bf{X})\f$,
-which corresponds to TAMD/d-AFED \cite AbramsJ2008, \cite Maragliano2006 (or the extended Lagrangian dynamics in the limit of the adiabatic decoupling between \f$\bf{s}\f$ and \f$\bf{X}\f$).
+where \f${P_{{X_i}}}\f$  and \f$M_i\f$ are the momentum and mass of \f$X_i\f$, respectively, and \f$\Psi\f$ is the potential function for \f${\bf X}\f$.
+We assume that \f$\Psi\f$ is a functional of \f$F({\bf X})\f$; \f$Ψ[F({\bf X})]\f$. The simplest form of \f$\Psi\f$ is \f$\Psi = F({\bf X})\f$,
+which corresponds to TAMD/d-AFED \cite AbramsJ2008, \cite Maragliano2006 (or the extended Lagrangian dynamics in the limit of the adiabatic decoupling between \f$\bf{q}\f$ and \f${\bf X}\f$).
  In the case of LogMFD, the following form of \f$\Psi\f$ is introduced \cite MorishitaLogMFD;
 
 
 \f[
-  {\Psi _{\rm log}}\left( {\bf{X}} \right) = \gamma \log \left[ {\alpha F\left( {\bf{X}} \right) + 1} \right]
+  {\Psi _{\rm log}}\left( {{\bf X}} \right) = \gamma \log \left[ {\alpha F\left( {{\bf X}} \right) + 1} \right]
 \f]
 
-where \f$\alpha\f$ (ALPHA) and \f$\gamma\f$ (GAMMA) are positive parameters. The logarithmic form of \f$\Psi_{\rm log}\f$ ensures the dynamics of \f$\bf{X}\f$ on a much smoother energy surface [i.e., \f$\Psi_{\rm log}(\bf{X})\f$] than \f$F(\bf{X})\f$, thus enhancing the sampling in the \f$\bf{X}\f$-space. The parameters \f$\alpha\f$ and \f$\gamma\f$ determine the degree of flatness of \f$\Psi_{\rm log}\f$, but adjusting only \f$\alpha\f$ is normally sufficient to have a relatively flat surface (with keeping the relation \f$\gamma=1/\alpha\f$). 
+where \f$\alpha\f$ (ALPHA) and \f$\gamma\f$ (GAMMA) are positive parameters. The logarithmic form of \f$\Psi_{\rm log}\f$ ensures the dynamics of \f${\bf X}\f$ on a much smoother energy surface [i.e., \f$\Psi_{\rm log}({\bf X})\f$] than \f$F({\bf X})\f$, thus enhancing the sampling in the \f${\bf X}\f$-space. The parameters \f$\alpha\f$ and \f$\gamma\f$ determine the degree of flatness of \f$\Psi_{\rm log}\f$, but adjusting only \f$\alpha\f$ is normally sufficient to have a relatively flat surface (with keeping the relation \f$\gamma=1/\alpha\f$). 
 
 The equation of motion (EOM) for \f$X_i\f$ in LogMFD (no thermostat) is
 
@@ -74,31 +74,31 @@ The equation of motion (EOM) for \f$X_i\f$ in LogMFD (no thermostat) is
  {M_i}{\ddot X_i} =  - \left( {\frac{{\alpha \gamma }}{{\alpha F + 1}}} \right)\frac{{\partial F}}{{\partial {X_i}}}
 \f]
 
-where \f$-\partial F/\partial X_i\f$  is evaluated as a canonical average under the condition that \f$\bf{X}\f$ is fixed;
+where \f$-\partial F/\partial X_i\f$  is evaluated as a canonical average under the condition that \f${\bf X}\f$ is fixed;
 
 \f{eqnarray*}{
- - \frac{{\partial F}}{{\partial {X_i}}} &\simeq& \frac{1}{Z}\int {{K_i}\left( {{s_i}\left( {\bf{q}} \right) - {X_i}} \right)\exp \left[ { - \beta \left\{ {{H_{\rm MD}} + \sum\limits_i^N {\frac{{{K_i}}}{2}{{\left( {{s_i}\left( {\bf{q}} \right) - {X_i}} \right)}^2}} } \right\}} \right]} d{\bf{\Gamma }}\\
- &\equiv& {\left\langle {{K_i}\left( {{s_i}\left( {\bf{q}} \right) - {X_i}} \right)} \right\rangle _{\bf{X}}}
+ - \frac{{\partial F}}{{\partial {X_i}}} &\simeq& \frac{1}{Z}\int {{K_i}\left( {{s_i}\left( {{\bf q}} \right) - {X_i}} \right)\exp \left[ { - \beta \left\{ {{H_{\rm MD}} + \sum\limits_i^N {\frac{{{K_i}}}{2}{{\left( {{s_i}\left( {{\bf q}} \right) - {X_i}} \right)}^2}} } \right\}} \right]} d{\bf{\Gamma }}\\
+ &\equiv& {\left\langle {{K_i}\left( {{s_i}\left( {{\bf q}} \right) - {X_i}} \right)} \right\rangle _{{\bf X}}}
 \f}
 
 where
 
 \f[
- Z = \int {\exp \left[ { - \beta \left\{ {{H_{\rm MD}} + \sum\limits_i^N {\frac{{{K_i}}}{2}{{\left( {{s_i}\left( {\bf{q}} \right) - {X_i}} \right)}^2}} } \right\}} \right]} d{\bf{\Gamma }}
+ Z = \int {\exp \left[ { - \beta \left\{ {{H_{\rm MD}} + \sum\limits_i^N {\frac{{{K_i}}}{2}{{\left( {{s_i}\left( {{\bf q}} \right) - {X_i}} \right)}^2}} } \right\}} \right]} d{\bf{\Gamma }}
 \f]
 
-The mean-force (MF) is practically evaluated by performing a shot-time canonical MD run each time \f$\bf{X}\f$ is updated according to the EOM for \f$\bf{X}\f$. 
+The mean-force (MF) is practically evaluated by performing a shot-time canonical MD run each time \f${\bf X}\f$ is updated according to the EOM for \f${\bf X}\f$. 
 
-If the canonical average for the MF is effectively converged, the dynamical variables \f$\bf{q}\f$ and \f$\bf{X}\f$ are decoupled and they evolve adiabatically, which can be exploited for the on-the-fly evaluation of \f$F(\bf{X})\f$. I.e., \f$H_{\rm log}\f$ should be a constant of motion in this case, thus \f$F(\bf{X})\f$ can be evaluated each time \f$\bf{X}\f$ is updated as
+If the canonical average for the MF is effectively converged, the dynamical variables \f${\bf q}\f$ and \f${\bf X}\f$ are decoupled and they evolve adiabatically, which can be exploited for the on-the-fly evaluation of \f$F({\bf X})\f$. I.e., \f$H_{\rm log}\f$ should be a constant of motion in this case, thus \f$F({\bf X})\f$ can be evaluated each time \f${\bf X}\f$ is updated as
 
 
 \f[
- F\left( {{\bf{X}}\left( t \right)} \right) = \frac{1}{\alpha} \left[
+ F\left( {{{\bf X}}\left( t \right)} \right) = \frac{1}{\alpha} \left[
   \exp \frac{1}{\gamma} \left\{ \left( H_{\rm log} - \sum_i \frac{P_{X_i}^2}{2M_i} \right) \right\} - 1 \right]
 \f]
 
 
-This means that \f$F(\bf{X})\f$ can be constructed without postprocessing (on-the-fly free energy reconstruction). Note that the on-the-fly free energy reconstruction is also possible in TAMD/d-AFED if the Hamiltonian-like conserved quantity is available (e.g., the Nose-Hoover type dynamics).
+This means that \f$F({\bf X})\f$ can be constructed without postprocessing (on-the-fly free energy reconstruction). Note that the on-the-fly free energy reconstruction is also possible in TAMD/d-AFED if the Hamiltonian-like conserved quantity is available (e.g., the Nose-Hoover type dynamics).
 
 
 
@@ -108,17 +108,17 @@ This means that \f$F(\bf{X})\f$ can be constructed without postprocessing (on-th
 The accuracy in the MF is critical to the on-the-fly free energy reconstruction. To improve the evaluation of the MF, parallel-dynamics (PD) is incorporated into LogMFD, leading to logarithmic parallel-dynamics (LogPD) \cite MorishitaLogPD. 
 
 
-In PD, the MF is evaluated by a nonequilibrium path-ensemble based on the Crooks-Jarzynski nonequilibrium work relation. To this end, multiple replicas of the MD system which run in parallel are introduced. The CVs [\f$\bf{s}(q)\f$] in each replica is restrained to the same value of \f$\bf{X}(t)\f$. A canonical MD run with \f$N_m\f$ steps is performed in each replica, then the MF on \f$X_i\f$ is evaluated using the MD trajectories from all replicas.
+In PD, the MF is evaluated by a nonequilibrium path-ensemble based on the Crooks-Jarzynski nonequilibrium work relation. To this end, multiple replicas of the MD system which run in parallel are introduced. The CVs [\f${\bf s}({\bf q})\f$] in each replica is restrained to the same value of \f${\bf X}(t)\f$. A canonical MD run with \f$N_m\f$ steps is performed in each replica, then the MF on \f$X_i\f$ is evaluated using the MD trajectories from all replicas.
 The MF is practically calculated as
 
 
 \f[
- - \frac{{\partial F}}{{\partial {X_i}}} = \sum\limits_{k = 1}^{{N_r}} {{W_k}} \sum\limits_{n = 1}^{{N_m}} {\frac{1}{{{N_m}}}{K_i}\left[ {{s_i}\left( {{\bf{q}}_n^k} \right) - {X_i}} \right]}
+ - \frac{{\partial F}}{{\partial {X_i}}} = \sum\limits_{k = 1}^{{N_r}} {{W_k}} \sum\limits_{n = 1}^{{N_m}} {\frac{1}{{{N_m}}}{K_i}\left[ {{s_i}\left( {{{\bf q}}_n^k} \right) - {X_i}} \right]}
 \f]
 
 
 
-where \f$\bf{q}^k_n\f$  indicates the \f$\bf{q}\f$-configuration at time step n in the \f$N_m\f$-step shot-time MD run in the \f$k\f$th replica among \f$N_r\f$ replicas. \f$W_k\f$ is given as
+where \f${\bf q}^k_n\f$  indicates the \f${\bf q}\f$-configuration at time step \f$n\f$ in the \f$N_m\f$-step shot-time MD run in the \f$k\f$th replica among \f$N_r\f$ replicas. \f$W_k\f$ is given as
 
 \f[
  {W_k} = \frac{{{e^{ - \beta {w_k}\left( t \right)}}}}{{\sum\limits_{k=1}^{{N_r}} {{e^{ - \beta {w_k}\left( t \right)}}} }}
@@ -133,7 +133,7 @@ where
 \f]
 
 \f[
- H_{\rm MD}^k\left( {{\bf{\Gamma }},{\bf{X}}} \right) = {H_{\rm MD}}\left( {{{\bf{\Gamma }}^k}} \right) + \sum\limits_{i = 1}^N {\frac{{{K_i}}}{2}{{\left( {s_i^k - {X_i}} \right)}^2}}
+ H_{\rm MD}^k\left( {{\bf{\Gamma }},{{\bf X}}} \right) = {H_{\rm MD}}\left( {{{\bf{\Gamma }}^k}} \right) + \sum\limits_{i = 1}^N {\frac{{{K_i}}}{2}{{\left( {s_i^k - {X_i}} \right)}^2}}
 \f]
 
 and \f$s^k_i\f$ is the \f$i\f$ th CV in the \f$k\f$th replica. 
@@ -153,11 +153,11 @@ where
 
 With the MF evaluated using the PD approach, reconstructing free energy profiles can be performed more efficiently (requiring less elapsed computing time) in LogPD than with a single MD system in LogMFD. In the case that there exists more than one stable state separated by high energy barriers in the hidden subspace orthogonal to the CV-subspace, LogPD is particularly of use to incorporate all the contributions from such hidden states with appropriate weights (in the limit \f$N_r\to\infty\f$ ).
 
-Note that LogPD calculations should always be initiated with an equilibrium \f$\bf{q}\f$-configuration in each replica, because the Crooks-Jarzynski nonequilibrium work relation is invoked. Also note that LogPD is currently available only with Gromacs, while LogMFD can be performed with Lammps, Gromacs, and NAMD.
+Note that LogPD calculations should always be initiated with an equilibrium \f${\bf q}\f$-configuration in each replica, because the Crooks-Jarzynski nonequilibrium work relation is invoked. Also note that LogPD is currently available only with Gromacs, while LogMFD can be performed with Lammps, Gromacs, and NAMD.
 
 \section Thermostatted Thermostatted LogMFD/PD
 
-Thermostatting of \f$\bf{X}\f$ is often recommended in LogMFD/PD to maintain the adiabatic decoupling between \f$\bf{q}\f$ and \f$\bf{X}\f$. In the framework of the LogMFD approach, the Nose-Hoover type thermostat and the Gaussian isokinetic (velocity scaling) thermostat can be used to control the kinetic energy of \f$\bf{X}\f$.
+Thermostatting of \f${\bf X}\f$ is often recommended in LogMFD/PD to maintain the adiabatic decoupling between \f${\bf q}\f$ and \f${\bf X}\f$. In the framework of the LogMFD approach, the Nose-Hoover type thermostat and the Gaussian isokinetic (velocity scaling) thermostat can be used to control the kinetic energy of \f${\bf X}\f$.
 
 \subsection Nose-Hoover Nose-Hoover LogMFD/PD
 
@@ -176,20 +176,20 @@ The EOM for \f$\eta\f$ is
 where \f$N\f$ is the number of the CVs. Since the following pseudo-Hamiltonian is a constant of motion in Nose-Hoover LogMFD/PD, 
 
 \f[
- H_{\rm log}^{\rm NH} = \sum\limits_{i = 1}^N {\frac{{P_{{X_i}}^2}}{{2{M_i}}} + \gamma \log \left[ {\alpha F\left( {\bf{X}} \right) + 1} \right] + \frac{1}{2}Q{{\dot \eta }^2} + N{k_B}T}
+ H_{\rm log}^{\rm NH} = \sum\limits_{i = 1}^N {\frac{{P_{{X_i}}^2}}{{2{M_i}}} + \gamma \log \left[ {\alpha F\left( {{\bf X}} \right) + 1} \right] + \frac{1}{2}Q{{\dot \eta }^2} + N{k_B}T\eta}
 \f]
 
-\f$F(\bf{X}(t))\f$ is obtained at each MFD step as
+\f$F({\bf X}(t))\f$ is obtained at each MFD step as
 
 \f[
- F\left( {{\bf{X}}\left( t \right)} \right) = \frac{1}{\alpha }\left[ {\exp \left\{ {{{ \frac{1}{\gamma} \left( {H_{\rm log}^{\rm NH} - \sum_i {\frac{{P_{{X_i}}^2}}{{2{M_i}}}}  - \frac{1}{2}Q{{\dot \eta }^2} - N{k_B}T} \right)}  }} \right\} - 1} \right]
+ F\left( {{{\bf X}}\left( t \right)} \right) = \frac{1}{\alpha }\left[ {\exp \left\{ {{{ \frac{1}{\gamma} \left( {H_{\rm log}^{\rm NH} - \sum_i {\frac{{P_{{X_i}}^2}}{{2{M_i}}}}  - \frac{1}{2}Q{{\dot \eta }^2} - N{k_B}T\eta} \right)}  }} \right\} - 1} \right]
 \f]
 
 
 
 \subsection VS Velocity scaling LogMFD/PD
 
-The velocity scaling algorithm (which is equivalent to the Gaussian isokinetic dynamics in the limit \f$\Delta t\to 0\f$) can also be employed to control the velocity of \f$\bf{X}\f$, \f$\bf{V}_x\f$.
+The velocity scaling algorithm (which is equivalent to the Gaussian isokinetic dynamics in the limit \f$\Delta t\to 0\f$) can also be employed to control the velocity of \f${\bf X}\f$, \f$\bf{V}_x\f$.
 
 The following algorithm is introduced to perform isokinetic LogMFD calculations \cite MorishitaVsLogMFD;
 
@@ -198,7 +198,7 @@ The following algorithm is introduced to perform isokinetic LogMFD calculations 
 S\left( {{t_{n + 1}}} \right) &=& \sqrt {\frac{{N{k_B}T}}{{\sum\limits_i {{M_i}V_{{X_i}}^2\left( {{t_{n + 1}}} \right)} }}} \\
 {V_{{X_i}}}^\prime \left( {{t_{n + 1}}} \right) &=& S\left( {{t_{n + 1}}} \right){V_{{X_i}}}\left( {{t_{n + 1}}} \right)\\
 {X_i}\left( {{t_{n + 1}}} \right) &=& {X_i}\left( {{t_n}} \right) + \Delta t V_{X_i}^\prime \left( {{t_{n + 1}}} \right)\\
-{\Psi_{\rm log}}\left( {{t_{n + 1}}} \right) &=& N{k_B}T\ln S\left( {{t_{n + 1}}} \right) + {\Psi_{\rm log}}\left( {{t_n}} \right)\\
+{\Psi_{\rm log}}\left( {{t_{n + 1}}} \right) &=& N{k_B}T\log S\left( {{t_{n + 1}}} \right) + {\Psi_{\rm log}}\left( {{t_n}} \right)\\
 F\left( {{t_{n + 1}}} \right) &=& \frac{1}{\alpha} \left[
     \exp \left\{ \Psi_{\rm log} \left( t_{n+1} \right) / \gamma \right\} - 1 \right]
 \f}
@@ -209,7 +209,7 @@ Note that \f$V_{X_i}^\prime\left( {{t_0}} \right)\f$ is assumed to be initially 
   \sum\limits_{i = 1}^N M_i V_{X_i}^{\prime 2} \left( t_0 \right)  = N{k_B}{T}
 \f]
 
-It should be stressed that, in the same way as in the NVE and Nose-Hoover LogMFD/PD, \f$F(\bf{X}(t))\f$ can be evaluated at each MFD step (on-the-fly free energy reconstruction) in Velocity Scaling LogMFD/PD.
+It should be stressed that, in the same way as in the NVE and Nose-Hoover LogMFD/PD, \f$F({\bf X}(t))\f$ can be evaluated at each MFD step (on-the-fly free energy reconstruction) in Velocity Scaling LogMFD/PD.
 
 
 \par Examples
@@ -222,6 +222,7 @@ to the fictitious dynamical variables in LogMFD/PD.
 
 plumed.dat
 \plumedfile
+UNITS TIME=fs LENGTH=1.0 ENERGY=kcal/mol Mass=1.0 CHARGE=1.0
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 
@@ -229,18 +230,18 @@ psi: TORSION ATOMS=7,9,15,17
 LOGMFD ...
 LABEL=logmfd
 ARG=phi,psi
-KAPPA=50.0,50.0
+KAPPA=1000.0,1000.0
 DELTA_T=0.5
-INTERVAL=1
+INTERVAL=500
 TEMP=300.0
-FLOG=10.0
-MFICT=6000.0,6000.0
+FLOG=5.0
+MFICT=5000000.0,5000000.0
 # FICT=0.8,0.8
-VFICT=0.00,0.00
+VFICT=3.5e-4,3.5e-4
 ALPHA=4.0
 THERMOSTAT=NVE
 VETA=0.0
-META=6000.0
+META=20000.0
 FICT_MAX=3.1,3.1
 FICT_MIN=-3.1,-3.1
 ... LOGMFD
@@ -436,7 +437,7 @@ namespace PLMD {
       Bias::registerKeywords(keys);
       keys.use("ARG");
       keys.add("compulsory","INTERVAL",
-	       "Period of MD steps (\f$N_m\f$) to update fictitious dynamical variables." );
+	       "Period of MD steps (\\f$N_m\\f$) to update fictitious dynamical variables." );
       keys.add("compulsory","DELTA_T",
 	       "Time step for the fictitious dynamical variables (MFD step)." );
       keys.add("compulsory","THERMOSTAT",
@@ -475,7 +476,8 @@ namespace PLMD {
 	       "If not provided, they will be taken as 10000." );
       
       keys.add("optional","XETA",
-	       "The initial eta variable of the Nose-Hoover thermostat for the fictitious dynamical variables. "
+	       "The initial eta variable of the Nose-Hoover thermostat "
+	       "for the fictitious dynamical variables. "
 	       "If not provided, it will be taken as 0." );
       keys.add("optional","VETA",
 	       "The initial velocity of eta variable. "
@@ -486,10 +488,15 @@ namespace PLMD {
 
       keys.add("compulsory","FLOG",
 	       "The initial free energy value in the LogMFD/PD run."
-	       "The origin of the free energy profile is adjusted by FLOG to realize \f$F(\bf{X}(t)) > 0\f$ at any \f$\bf{X}(t)\f$, resulting in enhanced barrier-crossing. (The value of \f$H_{\rm log}\f$ is automatically set according to FLOG).");
+	       "The origin of the free energy profile is adjusted by FLOG to "
+	       "realize \\f$F({\\bf X}(t)) > 0\\f$ at any \\f${\\bf X}(t)\\f$, "
+	       "resulting in enhanced barrier-crossing. "
+	       "(The value of \\f$H_{\\rm log}\\f$ is automatically "
+	       "set according to FLOG).");
       
       keys.add("optional","WORK",
-	       "The initial value of the work done by fictitious dynamical variables in each replica. "
+	       "The initial value of the work done by fictitious dynamical "
+	       "variables in each replica. "
 	       "If not provided, it will be taken as 0.");
 
       componentsAreNotOptional(keys);
