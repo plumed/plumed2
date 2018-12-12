@@ -64,7 +64,8 @@ IFile& IFile::advanceField() {
   bool done=false;
   while(!done) {
     getline(line);
-    if(!*this) {return *this;}
+// using explicit conversion not to confuse cppcheck 1.86
+    if(!bool(*this)) {return *this;}
     std::vector<std::string> words=Tools::getWords(line);
     if(words.size()>=2 && words[0]=="#!" && words[1]=="FIELDS") {
       fields.clear();
@@ -124,7 +125,8 @@ IFile& IFile::open(const std::string&path) {
 
 IFile& IFile::scanFieldList(std::vector<std::string>&s) {
   if(!inMiddleOfField) advanceField();
-  if(!*this) return *this;
+// using explicit conversion not to confuse cppcheck 1.86
+  if(!bool(*this)) return *this;
   s.clear();
   for(unsigned i=0; i<fields.size(); i++)
     s.push_back(fields[i].name);
@@ -141,7 +143,8 @@ bool IFile::FieldExist(const std::string& s) {
 
 IFile& IFile::scanField(const std::string&name,std::string&str) {
   if(!inMiddleOfField) advanceField();
-  if(!*this) return *this;
+// using explicit conversion not to confuse cppcheck 1.86
+  if(!bool(*this)) return *this;
   unsigned i=findField(name);
   str=fields[i].value;
   fields[i].read=true;
