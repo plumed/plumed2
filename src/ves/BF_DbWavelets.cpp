@@ -27,6 +27,8 @@
 #include "VesTools.h"
 #include "core/ActionRegister.h"
 
+#include <algorithm>
+
 
 namespace PLMD {
 namespace ves {
@@ -82,6 +84,8 @@ class BF_DbWavelets : public BasisFunctions {
   double scale_; // scale factor of the individual BFs to match specified length
   std::vector<double> shifts_; // shift of the individual BFs
   void setupLabels() override;
+protected:
+  std::vector<double> getCutoffPoints(const double& threshold);
 
 public:
   static void registerKeywords( Keywords&);
@@ -125,19 +129,19 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
   }
 
   // calculate the number of basis functions from the specified length
-  unsigned intrinsicLength = 2*getOrder() - 1;
+  unsigned intrinsic_length = 2*getOrder() - 1;
   double length = intervalMax() - intervalMin();
   parse("FUNCTION_LENGTH",length);
   if(length != intervalMax() - intervalMin()) {addKeywordToList("FUNCTION_LENGTH",length);}
-  scale_ = intrinsicLength / length;
+  scale_ = intrinsic_length / length;
   setNumberOfBasisFunctions(1 + static_cast<unsigned>(ceil((intervalMax()-intervalMin()+length) * scale_ - 1)));
   shifts_.push_back(0.0); // constant BF, just for clearer notation
   for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
-    shifts_.push_back(-intervalMin()*scale_ + intrinsicLength - i);
+    shifts_.push_back(-intervalMin()*scale_ + intrinsic_length - i);
   }
 
   // set some properties
-  setIntrinsicInterval(0.0,intrinsicLength);
+  setIntrinsicInterval(0.0,intrinsic_length);
   setNonPeriodic();
   setIntervalBounded();
   setType("daubechies_wavelets");
@@ -169,6 +173,30 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
     }
   }
   if(!inside_range) {for(auto& deriv : derivs) {deriv=0.0;}}
+}
+
+
+// returns left and right cutoff point of Wavelet
+// threshold is a percent value of maximum
+std::vector<double> BF_DbWavelets::getCutoffPoints(const double& threshold) {
+  double threshold_value = threshold * waveletGrid_->getMaxValue();
+  std::vector<double> cutoffpoints;
+
+  for (unsigned i = 0; i < waveletGrid_->getSize(); ++i) {
+    if (waveletGrid_->getValue(i) > threshold_value) {
+      cutoffpoints.push_back(waveletGrid_->getPoint(i)[0]);
+      break;
+    }
+  }
+
+  for (unsigned i = waveletGrid_->getSize(); i <= 0; --i) {
+    if (waveletGrid_->getValue(i) > threshold_value) {
+      cutoffpoints.push_back(waveletGrid_->getPoint(i)[0]);
+      break;
+    }
+  }
+
+  return cutoffpoints;
 }
 
 
