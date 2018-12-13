@@ -900,14 +900,14 @@ void LogMFD::update() {
     const double temp = 2.0*ekin/getNumberOfArguments()/plumed.getAtoms().getKBoltzmann();
 
     fprintf(outlog, "%*d", 8, (int)getStep()/interval);
-    fprintf(outlog, "%18.9f", flog);
-    fprintf(outlog, "%18.9f", temp);
-    fprintf(outlog, "%18.9f", xeta);
-    fprintf(outlog, "%18.9f", veta);
+    fprintf(outlog, "%17.8f", flog);
+    fprintf(outlog, "%17.8f", temp);
+    fprintf(outlog, "%17.8f", xeta);
+    fprintf(outlog, "%17.8f", veta);
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      fprintf(outlog, "%18.9f", fict[i]);
-      fprintf(outlog, "%18.9f", vfict[i]);
-      fprintf(outlog, "%18.9f", ffict[i]);
+      fprintf(outlog, "%17.8f", fict[i]);
+      fprintf(outlog, "%17.8f", vfict[i]);
+      fprintf(outlog, "%17.8f", ffict[i]);
     }
     fprintf(outlog," \n");
     fclose(outlog);
@@ -921,7 +921,7 @@ void LogMFD::update() {
     fprintf(outlog2, "%16.6e ", work);
     fprintf(outlog2, "%16.6e ", weight);
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      fprintf(outlog2, "%18.9f", fict_ave[i]);
+      fprintf(outlog2, "%17.8f", fict_ave[i]);
     }
     fprintf(outlog2," \n");
     fclose(outlog2);
