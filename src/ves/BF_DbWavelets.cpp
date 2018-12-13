@@ -125,19 +125,19 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
   }
 
   // calculate the number of basis functions from the specified length
-  unsigned intrinsic_length = 2*getOrder() - 1;
+  unsigned intrinsicLength = 2*getOrder() - 1;
   double length = intervalMax() - intervalMin();
   parse("FUNCTION_LENGTH",length);
   if(length != intervalMax() - intervalMin()) {addKeywordToList("FUNCTION_LENGTH",length);}
-  scale_ = intrinsic_length / length;
+  scale_ = intrinsicLength / length;
   setNumberOfBasisFunctions(1 + static_cast<unsigned>(ceil((intervalMax()-intervalMin()+length) * scale_ - 1)));
   shifts_.push_back(0.0); // constant BF, just for clearer notation
   for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
-    shifts_.push_back(-intervalMin()*scale_ + intrinsicIntervalMax() - i);
+    shifts_.push_back(-intervalMin()*scale_ + intrinsicLength - i);
   }
 
   // set some properties
-  setIntrinsicInterval(0.0,intrinsic_length);
+  setIntrinsicInterval(0.0,intrinsicLength);
   setNonPeriodic();
   setIntervalBounded();
   setType("daubechies_wavelets");
