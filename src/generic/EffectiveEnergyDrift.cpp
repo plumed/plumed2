@@ -222,8 +222,6 @@ void EffectiveEnergyDrift::update() {
     pNLocalAtoms = pGatindex.size();
     pPositions=positions;
     pForces=forces;
-    pPositions=positions;
-    pForces=forces;
     pbox=box;
     pfbox=fbox;
     initialBias=plumed.getBias();
