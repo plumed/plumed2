@@ -139,19 +139,25 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
 
   // parse threshold for tail wavelets and get respective cutoff points
   double threshold = 0.0;
+  std::vector<double> cutoffpoints (2);
   parse("TAILS_THRESHOLD",threshold);
   if(threshold >= 1) {plumed_merror("TAILS_THRESHOLD should be significantly smaller than 1.");}
-  if(threshold != 0.0) {addKeywordToList("TAILS_THRESHOLD",threshold);}
-  std::vector<double> cutoffpoints = getCutoffPoints(threshold);
+  if(threshold == 0.0) {
+    cutoffpoints = {0.0, static_cast<double>(intrinsic_length)};
+  }
+  else {
+    addKeywordToList("TALS_THRESHOLD",threshold);
+    cutoffpoints = getCutoffPoints(threshold);
+  };
 
+  // calculate number of Basis functions and the shifts
   unsigned int num_BFs = 1; // constant one
   num_BFs += static_cast<unsigned>(ceil(cutoffpoints[1])); // left shifts including 0
   num_BFs += static_cast<unsigned>(ceil((intervalMax()-intervalMin())*scale_ - cutoffpoints[0] - 1)); // right shifts
   setNumberOfBasisFunctions(num_BFs);
-
   shifts_.push_back(0.0); // constant BF – never used, just for clearer notation
   for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
-    shifts_.push_back(-intervalMin()*scale_ + intrinsic_length - i);
+    shifts_.push_back(-intervalMin()*scale_ + intrinsic_length - i - ceil(cutoffpoints[1]));
   }
 
   // set some properties
