@@ -134,8 +134,14 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
   parse("FUNCTION_LENGTH",length);
   if(length != intervalMax() - intervalMin()) {addKeywordToList("FUNCTION_LENGTH",length);}
   scale_ = intrinsic_length / length;
-  setNumberOfBasisFunctions(1 + static_cast<unsigned>(ceil((intervalMax()-intervalMin()+length) * scale_ - 1)));
-  shifts_.push_back(0.0); // constant BF, just for clearer notation
+
+  std::vector<double> cutoffpoints = getCutoffPoints(0.01);
+  unsigned int num_BFs = 1; // constant one
+  num_BFs += static_cast<unsigned>(ceil(cutoffpoints[1])); // left shifts including 0
+  num_BFs += static_cast<unsigned>(ceil((intervalMax()-intervalMin())*scale_ - cutoffpoints[0] - 1)); // right shifts
+  setNumberOfBasisFunctions(num_BFs);
+
+  shifts_.push_back(0.0); // constant BF – never used, just for clearer notation
   for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
     shifts_.push_back(-intervalMin()*scale_ + intrinsic_length - i);
   }
