@@ -26,6 +26,7 @@
 #include "tools/Grid.h"
 #include "VesTools.h"
 #include "core/ActionRegister.h"
+#include "tools/Exception.h"
 
 #include <algorithm>
 
@@ -101,6 +102,7 @@ void BF_DbWavelets::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
   keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value will be used as guiding value only, while the true number will be \"(ORDER*2 - 1) * 2**n\" with the smallest n such that the grid is at least as large as the specified number. Defaults to 1000"); // Change the commentary a bit?
   keys.add("optional","FUNCTION_LENGTH","The length of the support of the scaled basis functions. This can be used to alter the scaling of the basis functions. Is by default set to the total size of the interval. This also influences the number of actually used basis functions, as all shifted functions that are partially supported in the CV space are used.");
+  keys.add("optional","TAILS_THRESHOLD","The threshold for cutting off tail wavelets with respect to the maximum value. All shifted wavelet functions that will only have values lower below the threshold in the CV space will be excluded from the basis set. Defaults to 0 (include all), generally only small values (e.g. 0.01) should be used.");
   keys.addFlag("SCALING_FUNCTION", false, "If this flag is set the scaling function (mother wavelet) will be used instead of the \"true\" wavelet function (father wavelet).");
   keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
   // why is this removed?
@@ -135,7 +137,13 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
   if(length != intervalMax() - intervalMin()) {addKeywordToList("FUNCTION_LENGTH",length);}
   scale_ = intrinsic_length / length;
 
-  std::vector<double> cutoffpoints = getCutoffPoints(0.01);
+  // parse threshold for tail wavelets and get respective cutoff points
+  double threshold = 0.0;
+  parse("TAILS_THRESHOLD",threshold);
+  if(threshold >= 1) {plumed_merror("TAILS_THRESHOLD should be significantly smaller than 1.");}
+  if(threshold != 0.0) {addKeywordToList("TAILS_THRESHOLD",threshold);}
+  std::vector<double> cutoffpoints = getCutoffPoints(threshold);
+
   unsigned int num_BFs = 1; // constant one
   num_BFs += static_cast<unsigned>(ceil(cutoffpoints[1])); // left shifts including 0
   num_BFs += static_cast<unsigned>(ceil((intervalMax()-intervalMin())*scale_ - cutoffpoints[0] - 1)); // right shifts
