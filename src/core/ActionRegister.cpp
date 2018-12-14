@@ -85,11 +85,13 @@ std::unique_ptr<Action> ActionRegister::create(const ActionOptions&ao) {
   return action;
 }
 
-bool ActionRegister::printManual( const std::string& action, const bool& vimout ) {
+bool ActionRegister::printManual( const std::string& action, const bool& vimout, const bool& spellout ) {
   if ( check(action) ) {
     Keywords keys; mk[action](keys);
     if( vimout ) {
       printf("%s",action.c_str()); keys.print_vim(); printf("\n");
+    } else if( spellout ) {
+      keys.print_spelling();
     } else {
       keys.print_html();
     }

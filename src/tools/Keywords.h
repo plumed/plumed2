@@ -113,6 +113,8 @@ public:
   void print( Log& log ) const ;
 /// Print the documentation to a file (use by PLUMED::CLTool::readCommandLineArgs)
   void print( FILE* out ) const ;
+/// Print a file containing the list of keywords for a particular action (used for spell checking)
+  void print_spelling() const ;
 /// Reserve a keyword
   void reserve( const std::string & t, const std::string & k, const std::string & d );
 /// Reserve a flag

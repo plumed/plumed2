@@ -65,7 +65,7 @@ public:
 /// Returns a list of the allowed CLTools
   std::vector<std::string> list()const;
 /// Print out the instructions for using the tool in html ready for input into the manual
-  bool printManual(const std::string& cltool);
+  bool printManual(const std::string& cltool,const bool& spelling);
 /// Return all the keys of this cltool
   std::vector<std::string> getKeys(const std::string& cltool)const;
 };

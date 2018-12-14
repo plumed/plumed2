@@ -447,6 +447,11 @@ void Keywords::print_html() const {
   std::cout<<"</table>\n\n";
 }
 
+void Keywords::print_spelling() const {
+  for(unsigned i=0; i<keys.size(); ++i) printf("%s\n", keys[i].c_str() );
+  for(unsigned i=0; i<cnames.size(); ++i) printf("%s\n",cnames[i].c_str() );
+}
+
 void Keywords::print( FILE* out ) const {
   unsigned nkeys=0;
   for(unsigned i=0; i<keys.size(); ++i) {

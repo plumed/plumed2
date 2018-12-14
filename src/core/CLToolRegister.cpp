@@ -92,8 +92,11 @@ std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar) {
   return log;
 }
 
-bool CLToolRegister::printManual( const std::string& cltool ) {
-  if ( check(cltool) ) {
+bool CLToolRegister::printManual( const std::string& cltool, const bool& spelling ) {
+  if( spelling && check(cltool) ) {
+    mk[cltool].print_spelling();
+    return true;
+  } else if ( check(cltool) ) {
     mk[cltool].print_html();
     return true;
   } else {

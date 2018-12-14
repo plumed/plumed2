@@ -68,7 +68,7 @@ public:
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   std::unique_ptr<Action> create(const ActionOptions&ao);
 /// Print out the keywords for an action in html/vim ready for input into the manual
-  bool printManual(const std::string& action, const bool& vimout);
+  bool printManual(const std::string& action, const bool& vimout, const bool& spellout);
 /// Print out a template command for an action
   bool printTemplate(const std::string& action, bool include_optional);
   void remove(creator_pointer);
