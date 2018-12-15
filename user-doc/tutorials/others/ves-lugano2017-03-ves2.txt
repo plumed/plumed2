@@ -40,7 +40,7 @@ metadynamics. The advantages of this distribution are that the features of the
 FES (metastable states) are preserved and that the system is not forced to sample regions of high
 free energy as it would if we had chosen the uniform target distribution. This
 is specially important when biasing 2 CVs and there are large regions of very
-high free energy and therefore they represent unphysical configurations.
+high free energy and therefore they represent un-physical configurations.
 
 There is a caveat though, \f$ p(\mathbf{s}) \f$ depends on \f$
 F(\mathbf{s})\f$ that is the function that we are trying to calculate.
@@ -132,7 +132,7 @@ disregard the first 1 ns of simulation:
 sed '2,5000d' ../COLVAR > COLVAR
 \endverbatim
 To calculate the biased and unbiased distribution of CVs we use the following
-Plumed's input:
+PLUMED input:
 \plumedfile
 distance:       READ FILE=COLVAR  IGNORE_TIME VALUES=d1
 ves:       READ FILE=COLVAR IGNORE_TIME VALUES=b1.bias
@@ -204,7 +204,7 @@ Equivalently one may say that fluctuations are enhanced.
 \subsection ves-lugano2017-ves2-subsection-4 Example 2: Constructing a 2 dimensional bias
 
 In this example we will construct a 2 dimensional bias on the distance Na-Cl
-and the coodrination number of Na with respect to O.
+and the coordination number of Na with respect to O.
 The files to run this example are included in the Example2 folder.
 Two dimensional biases in VES can be written:
 \f[

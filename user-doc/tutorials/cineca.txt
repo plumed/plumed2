@@ -1,5 +1,5 @@
 /**
-\page cineca Cineca tutorial
+\page cineca CINECA tutorial
 
 \authors Max Bonomi, stealing most of the material from other tutorials.
          Alejandro Gil Ley is acknowledged for beta-testing this tutorial.
@@ -35,7 +35,7 @@ We can start by downloading the tarball and uncompressing it:
 \endverbatim
 
 \warning Exercises should be run inside the newly-created cineca directory,
-by creating new subdirectories, one per exercise.
+by creating new sub-directories, one per exercise.
 
 \section cineca-toymodel Alanine dipeptide: our toy model
 
@@ -93,7 +93,7 @@ GROMACS can be run (interactively) using the following command:
 \verbatim
 > gmx_mpi mdrun -s ../SETUP/topolA.tpr -nsteps 10000 -x traj.xtc
 \endverbatim
-The nsteps flags can be used to change the number of timesteps and topolA.tpr is the name of the tpr file.
+The nsteps flags can be used to change the number of time steps and topolA.tpr is the name of the tpr file.
 While running, GROMACS will produce a md.log file, with log information, and a traj.xtc file, with a binary trajectory.
 The trajectory can be visualized with VMD using:
 \verbatim
@@ -182,7 +182,7 @@ be printed in the output file you should give more information to the driver, e.
 (see \ref driver)
 
 In this case we inform the driver that the `traj.xtc` file was produced in a run with a timestep of 0.002 ps and
-saving a snapshop every 1000 timesteps.
+saving a snapshot every 1000 time steps.
 
 You might want to analyze a different collective variable, such as the gyration radius.
 The gyration radius tells how extended is a molecule in space.
@@ -202,7 +202,7 @@ PRINT ARG=phi,psi,gyr FILE=analyze
 \endverbatim
 (see \ref TORSION, \ref GYRATION, \ref GROUP, and \ref PRINT)
 
-Now try to compute the time serie of the gyration radius.
+Now try to compute the time series of the gyration radius.
 
 \section cineca-biasing Biasing collective variables
 
@@ -222,8 +222,8 @@ all the biasing methods available in PLUMED can be found at the \ref Bias page.
 \hidden{Summary of theory}
 \subsubsection cineca-biasing-me-theory Summary of theory
 In metadynamics, an external history-dependent bias potential is constructed in the space of 
-a few selected degrees of freedom \f$ \vec{s}({q}) \f$, generally called collective variables (CVs) \cite metad.
-This potential is built as a sum of Gaussians deposited along the trajectory in the CVs space:
+a few selected degrees of freedom \f$ \vec{s}({q})\f$, generally called collective variables (CVs) \cite metad.
+This potential is built as a sum of Gaussian kernels deposited along the trajectory in the CVs space:
 
 \f[
 V(\vec{s},t) = \sum_{ k \tau < t} W(k \tau)
@@ -233,7 +233,7 @@ V(\vec{s},t) = \sum_{ k \tau < t} W(k \tau)
 \f]
 
 where \f$ \tau \f$ is the Gaussian deposition stride, 
-\f$ \sigma_i \f$ the width of the Gaussian for the ith CV, and \f$ W(k \tau) \f$ the
+\f$ \sigma_i \f$ the width of the Gaussian for the \f$i\f$th CV, and \f$ W(k \tau) \f$ the
 height of the Gaussian. The effect of the metadynamics bias potential is to push the system away 
 from local minima into visiting new regions of the phase space. Furthermore, in the long
 time limit, the bias potential converges to minus the free energy as a function of the CVs:
@@ -242,7 +242,7 @@ time limit, the bias potential converges to minus the free energy as a function 
 V(\vec{s},t\rightarrow \infty) = -F(\vec{s}) + C.
 \f]
 
-In standard metadynamics, Gaussians of constant height are added for the entire course of a 
+In standard metadynamics, Gaussian kernels of constant height are added for the entire course of a 
 simulation. As a result, the system is eventually pushed to explore high free-energy regions
 and the estimate of the free energy calculated from the bias potential oscillates around
 the real value. 
@@ -266,16 +266,16 @@ where \f$ T \f$ is the temperature of the system.
 In the long time limit, the CVs thus sample an ensemble
 at a temperature \f$ T+\Delta T \f$ which is higher than the system temperature \f$ T \f$.
 The parameter \f$ \Delta T \f$ can be chosen to regulate the extent of free-energy exploration:
- \f$ \Delta T = 0\f$ corresponds to standard MD, \f$ \Delta T \rightarrow \infty \f$ to standard
+ \f$ \Delta T = 0\f$ corresponds to standard MD, \f$ \Delta T \rightarrow\infty\f$ to standard
 metadynamics. In well-tempered metadynamics literature and in PLUMED, you will often encounter
-the term "biasfactor" which is the ratio between the temperature of the CVs (\f$ T+\Delta T \f$) 
+the term "bias factor" which is the ratio between the temperature of the CVs (\f$ T+\Delta T \f$) 
 and the system temperature (\f$ T \f$):
 
 \f[
 \gamma = \frac{T+\Delta T}{T}.
 \f]
 
-The biasfactor should thus be carefully chosen in order for the relevant free-energy barriers to be crossed
+The bias factor should thus be carefully chosen in order for the relevant free-energy barriers to be crossed
 efficiently in the time scale of the simulation.
  
 Additional information can be found in the several review papers on metadynamics 
@@ -303,7 +303,7 @@ psi: TORSION ATOMS=7,9,15,17
 #
 # Activate well-tempered metadynamics in phi depositing 
 # a Gaussian every 500 time steps, with initial height equal 
-# to 1.2 kJoule/mol, biasfactor equal to 10.0, and width to 0.35 rad
+# to 1.2 kJ/mol, bias factor equal to 10.0, and width to 0.35 rad
 
 METAD ...
 LABEL=metad
@@ -329,7 +329,7 @@ The syntax for the command \ref METAD is simple.
 The directive is followed by a keyword ARG followed by the labels of the CVs
 on which the metadynamics potential will act.
 The keyword PACE determines the stride of Gaussian deposition in number of time steps,
-while the keyword HEIGHT specifies the height of the Gaussian in kJoule/mol. For each CVs, one has
+while the keyword HEIGHT specifies the height of the Gaussian in kJ/mol. For each CVs, one has
 to specified the width of the Gaussian by using the keyword SIGMA. Gaussian will be written
 to the file indicated by the keyword FILE. 
 
@@ -362,7 +362,7 @@ by the metadynamics bias potential to visit the other local minimum. As the simu
 the bias potential fills the underlying free-energy landscape, and the system is able to diffuse in the
 entire phase space.
 
-The HILLS file contains a list of the Gaussians deposited along the simulation.
+The HILLS file contains a list of the Gaussian kernels deposited along the simulation.
 If we give a look at the header of this file, we can find relevant information about its content:
 
 \verbatim
@@ -376,7 +376,7 @@ If we give a look at the header of this file, we can find relevant information a
 
 The line starting with FIELDS tells us what is displayed in the various columns of the HILLS file:
 the time of the simulation, the value of phi and psi, the width of the Gaussian in phi and psi,
-the height of the Gaussian, and  the biasfactor.
+the height of the Gaussian, and  the bias factor.
 We can use the HILLS file to visualize the decrease of the Gaussian height during the simulation,
 according to the well-tempered recipe:
 
@@ -384,14 +384,14 @@ according to the well-tempered recipe:
 \image html munster-metad-phihills.png "Time evolution of the Gaussian height."
 
 If we look carefully at the scale of the y-axis, we will notice that in the beginning the value
-of the Gaussian height is higher than the initial height specified in the input file, which should be 1.2 kJoule/mol.
-In fact, this column reports the height of the Gaussian rescaled by the pre-factor that
+of the Gaussian height is higher than the initial height specified in the input file, which should be 1.2 kJ/mol.
+In fact, this column reports the height of the Gaussian scaled by the pre-factor that
 in well-tempered metadynamics relates the bias potential to the free energy. In this way, when
-we will use \ref sum_hills, the sum of the Gaussians deposited will directly provide the free-energy,
+we will use \ref sum_hills, the sum of the Gaussian kernels deposited will directly provide the free-energy,
 without further rescaling needed (see below).
 
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
-bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussians
+bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussian kernels
 deposited during the simulation and stored in the HILLS file.  
 To calculate the free energy as a function of phi, it is sufficient to use the following command line:
 
@@ -418,7 +418,7 @@ The result should look like this:
 
 To assess the convergence of a metadynamics simulation, one can calculate the estimate of the free energy as a function
 of simulation time. At convergence, the reconstructed profiles should be similar.
-The option --stride should be used to give an estimate of the free energy every N Gaussians deposited, and
+The option --stride should be used to give an estimate of the free energy every N Gaussian kernels deposited, and
 the option --mintozero can be used to align the profiles by setting the global minimum to zero.
 If we use the following command line:
 
@@ -426,11 +426,11 @@ If we use the following command line:
 plumed sum_hills --hills HILLS --stride 100 --mintozero
 \endverbatim
 
-one free energy is calculated every 100 Gaussians deposited, and the global minimum is set to zero in all profiles.
+one free energy is calculated every 100 Gaussian kernels deposited, and the global minimum is set to zero in all profiles.
 The resulting plot should look like the following:
 
 \anchor cineca-metad-phifest-fig
-\image html munster-metad-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 100 Gaussians deposited."
+\image html munster-metad-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 100 Gaussian kernels deposited."
 
 To assess the convergence of the simulation more quantitatively, we can calculate the free-energy difference between the two
 local minima of the free energy along phi as a function of simulation time.
@@ -485,7 +485,7 @@ psi: TORSION ATOMS=7,9,15,17
 #
 # Activate well-tempered metadynamics in psi depositing 
 # a Gaussian every 500 time steps, with initial height equal 
-# to 1.2 kJoule/mol, biasfactor equal to 10.0, and width to 0.35 rad
+# to 1.2 kJ/mol, bias factor equal to 10.0, and width to 0.35 rad
 
 METAD ...
 LABEL=metad
@@ -661,7 +661,7 @@ PRINT ARG=phi,psi,res.bias
 Notice that here we are printing a quantity named `res.bias`. We do this because \ref RESTRAINT does not define a single
 value (that here would be theoretically named `res`) but a structure with several components. All
 biasing methods (including \ref METAD) do so, as well as many collective variables (see e.g. \ref DISTANCE used with COMPONENTS keyword).
-Printing the bias allows one to know how much a given snapshop was penalized.
+Printing the bias allows one to know how much a given snapshot was penalized.
 Also notice that PLUMED understands numbers in the form `{number}pi`. This is convenient when using
 torsions, since they are expressed in radians.
 

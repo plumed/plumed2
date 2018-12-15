@@ -62,7 +62,7 @@ plumed partial_tempering $scale < processed.top > topol$i.top
 
 Warnings:
 - It's not very robust and there might be force-field dependent issues!
-- It certainly does not work with charmm cmap
+- It certainly does not work with CHARMM cmap
 
 Suggested tests:
 1. Compare partial_tempering with scale=1.0 to non-scaled force field. E.g.
@@ -137,7 +137,7 @@ is not neutral. There should be no problem in this. When used with pbc, GROMACS
 will add a compensating background.
 
 Suggested check:
-- Try with several identical force fields (hardcode the same lambda for all replicas in the
+- Try with several identical force fields (hard code the same lambda for all replicas in the
   script above) and different seed/starting point. Acceptance should be 1.0
 
 Notice that when you run with GPUs acceptance could be different from 1.0.
