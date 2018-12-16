@@ -22,6 +22,9 @@
 #include "SymmetryFunctionBase.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
+#include "tools/PDB.h"
 #include <string>
 #include <cmath>
 
@@ -60,6 +63,11 @@ EnvironmentalSimilarity::EnvironmentalSimilarity(const ActionOptions&ao):
   SymmetryFunctionBase(ao)
 {
   double sig; parse("SIGMA",sig); sig2=sig*sig;
+  std::string reffile; parse("REFERENCE",reffile);
+  PDB pdb; pdb.read(reffile,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
+  unsigned natoms=pdb.getPositions().size(); environment.resize( natoms );
+  for(unsigned i=0;i<natoms;++i) environment[i]=pdb.getPositions()[i];
+  log.printf("  reading %d reference vectors from %s \n", natoms, reffile.c_str() );
   addValueWithDerivatives();
 }
 
