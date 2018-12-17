@@ -407,6 +407,7 @@ void RDC::do_svd()
   }
   gsl_matrix_free(coef_mat);
   gsl_matrix_free(A);
+  gsl_matrix_free(V);
   gsl_vector_free(rdc_vec);
   gsl_vector_free(bc);
   gsl_vector_free(Stmp);
@@ -427,9 +428,7 @@ void RDC::calculate()
   vector<Vector> dRDC(N/2, Vector{0.,0.,0.});
 
   /* RDC Calculations and forces */
-  const double omp_dummy = 0.0;
-  const unsigned nt = OpenMP::getGoodNumThreads(&omp_dummy, N / 2);
-  #pragma omp parallel num_threads(nt)
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     #pragma omp for
     for(unsigned r=0; r<N; r+=2)

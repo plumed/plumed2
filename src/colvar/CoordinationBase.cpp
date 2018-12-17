@@ -140,8 +140,8 @@ void CoordinationBase::calculate()
     nl->update(getPositions());
   }
 
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
+  unsigned stride;
+  unsigned rank;
   if(serial) {
     stride=1;
     rank=0;
@@ -151,11 +151,8 @@ void CoordinationBase::calculate()
   }
 
   unsigned nt=OpenMP::getNumThreads();
-
   const unsigned nn=nl->size();
-
-  if(nt*stride*10>nn) nt=nn/stride/10;
-  if(nt==0)nt=1;
+  if(nt*stride*10>nn) nt=1;
 
   #pragma omp parallel num_threads(nt)
   {

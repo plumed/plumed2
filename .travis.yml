@@ -29,7 +29,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.85
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.86
 # test using external blas with internal lapack
   - os: linux
     if: branch =~ ^test- OR type IN(pull_request)
@@ -64,7 +64,7 @@ matrix:
   - os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
-    env: PLUMED_MACPORTS="plumed +python36"
+    env: PLUMED_MACPORTS="plumed" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
       - $HOME/.macports-ci-ccache
@@ -72,14 +72,14 @@ matrix:
   - os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
-    env: PLUMED_MACPORTS="plumed +allmodules"
+    env: PLUMED_MACPORTS="plumed +allmodules" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
       - $HOME/.macports-ci-ccache
 # osx serial macports debug variant
   - os: osx
     osx_image: xcode8.3
-    env: PLUMED_MACPORTS="plumed +allmodules +python27"
+    env: PLUMED_MACPORTS="plumed +allmodules" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
       - $HOME/.macports-ci-ccache
@@ -199,6 +199,9 @@ script:
       sudo port -N -k install $PLUMED_MACPORTS ;
       plumed config show ;
       ./macports-ci ccache --save ;
+      for p in $PLUMED_PYTHON ; do
+        sudo port -N install py${p//./}-plumed ;
+      done
     fi
 
 # build docker container
@@ -217,7 +220,13 @@ script:
   - if test "$MAKECOVERAGE" == yes ; then make -C developer-doc coverage ; fi
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
   - if test "$PLUMED_CXX" ; then make -C regtest checkfail ; fi
-  - if test -n "$PLUMED_MACPORTS" ; then sudo port -N -d test $PLUMED_MACPORTS ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then
+      sudo port -N -d test $PLUMED_MACPORTS ;
+      for p in $PLUMED_PYTHON ; do
+        sudo port install py${p//./}-nose ;
+        nosetests-$p -v -w python ;
+      done
+    fi
 
 # CPPCHECK:
 # this is required so as to have all the include files inplace:

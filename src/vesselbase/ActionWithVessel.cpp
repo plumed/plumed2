@@ -273,8 +273,7 @@ void ActionWithVessel::runAllTasks() {
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
-  if( nt==0 || !threadSafe() ) nt=1;
+  if( nt*stride*2>nactive_tasks || !threadSafe()) nt=1;
 
   // Get size for buffer
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize );
@@ -282,11 +281,6 @@ void ActionWithVessel::runAllTasks() {
   buffer.assign( buffer.size(), 0.0 );
   // Switch off calculation of derivatives in main loop
   if( dertime_can_be_off ) dertime=false;
-  // std::vector<unsigned> der_list;
-  // if( mydata ) der_list.resize( mydata->getSizeOfDerivativeList(), 0 );
-
-  // Build storage stuff for loop
-  // std::vector<double> buffer( bufsize, 0.0 );
 
   if(timers) stopwatch.start("2 Loop over tasks");
   #pragma omp parallel num_threads(nt)
@@ -297,7 +291,7 @@ void ActionWithVessel::runAllTasks() {
     MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
     myvals.clearAll(); bvals.clearAll();
 
-    #pragma omp for nowait
+    #pragma omp for nowait schedule(dynamic)
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
       // Calculate the stuff in the loop for this action
       performTask( indexOfTaskInFullList[i], partialTaskList[i], myvals );

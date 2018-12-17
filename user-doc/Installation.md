@@ -682,6 +682,57 @@ In case you found out how to compile PLUMED on some fancy architecture please sh
 either post it in your blog, send it to the mailing list, or ask as to update this paragraph in the manual, we will
 be happy to do so.
 
+\section installingpython Installing Python wrappers
+
+As of PLUMED 2.5 it is possible to use the PLUMED library through Python wrappers. Notice that this is not something for end users but rather for developers. The interface is very similar to the one used in MD codes linked with PLUMED.
+
+There are two ways to install Python wrappers.
+
+\subsection installingpython-inside Installing Python wrappers within PLUMED
+
+If `./configure` finds a `python` executable that also has the modules `numpy` and `cython` available, Python wrappers will be installed within `/prefix/lib/plumed/python`. In order to access them, you should add this directory to the environment variable `PYTHONPATH`. Notice that if your python interpreter has a different name you might have to pass it to `./configure` with `PYTHON_BIN=python3.6`. The whole thing would then be:
+
+````
+./configure PYTHON_BIN=python3.6 --prefix=$HOME/opt
+make && make install
+export PYTHONPATH="$HOME/opt/lib/plumed/python:$PYTHONPATH"
+python3.6
+>>> import plumed
+````
+
+Notice that in this manner you will have to commit to a specific python version **before** installing PLUMED.
+
+\subsection installingpython-outside Installing Python wrappers outside PLUMED
+
+If you use multiple python versions, you might find it easier to install the Python wrappers separately from PLUMED. The simplest way is to do it with `pip`:
+
+````
+pip3.6 install --user numpy
+pip3.6 install --user plumed
+````
+
+Here the `--user` flag allows you to install the packages on your home. Notice that you don't even need to download PLUMED in order to install the wrappers, but you will need PLUMED in order to use them. You can tell the wrappers where PLUMED is by setting the `PLUMED_KERNEL` environment variable:
+
+````
+export PLUMED_KERNEL=$HOME/opt/lib/libplumedKernel.so
+python3.6
+>>> import plumed
+````
+
+Notice that by installing the wrappers in this manner you will download those that are packaged on [Pypi](https://pypi.org/project/plumed/).
+If you want to install using pip the development version of the wrappers you should download the PLUMED repository and use
+the following commands:
+
+````
+pip3.6 install --user cython # also cython is required in this case
+pip3.6 install --user numpy
+cd plumed2/python
+make pip
+pip3.6 install --user .
+````
+
+If you want to install the development version it is recommended to use a virtualenv so that it will not interfere with the released packages.
+
 \section installinghints Other hints
 
 We here collect a list of suggestions that might be useful on particular
