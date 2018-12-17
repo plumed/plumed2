@@ -203,14 +203,14 @@ std::vector<double> BF_DbWavelets::getCutoffPoints(const double& threshold) {
   std::vector<double> cutoffpoints;
 
   for (unsigned i = 0; i < waveletGrid_->getSize(); ++i) {
-    if (fabs(waveletGrid_->getValue(i)) > threshold_value) {
+    if (fabs(waveletGrid_->getValue(i)) >= threshold_value) {
       cutoffpoints.push_back(waveletGrid_->getPoint(i)[0]);
       break;
     }
   }
 
   for (unsigned i = waveletGrid_->getSize(); i <= 0; --i) {
-    if (fabs(waveletGrid_->getValue(i)) > threshold_value) {
+    if (fabs(waveletGrid_->getValue(i)) >= threshold_value) {
       cutoffpoints.push_back(waveletGrid_->getPoint(i)[0]);
       break;
     }
