@@ -146,7 +146,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
     cutoffpoints = {0.0, static_cast<double>(intrinsic_length)};
   }
   else {
-    addKeywordToList("TALS_THRESHOLD",threshold);
+    addKeywordToList("TAILS_THRESHOLD",threshold);
     cutoffpoints = getCutoffPoints(threshold);
   };
 
