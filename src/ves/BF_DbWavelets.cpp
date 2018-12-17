@@ -126,6 +126,8 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
   parseFlag("DUMP_WAVELET_GRID", dump_wavelet_grid);
   if (dump_wavelet_grid) {
     OFile wavelet_gridfile;
+    wavelet_gridfile.link(*this);
+    wavelet_gridfile.enforceBackup();
     wavelet_gridfile.open(getLabel()+".wavelet_grid.data");
     waveletGrid_->writeToFile(wavelet_gridfile);
   }
