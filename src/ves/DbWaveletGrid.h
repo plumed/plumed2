@@ -54,10 +54,10 @@ private:
   static std::vector<double> getEigenvector(const Matrix<double>& A, const double eigenvalue);
   // calculate the values of the Wavelet or its derivative via the vector cascade algorithm
   static BinaryMap cascade(std::vector<Matrix<double>>& h_Matvec, std::vector<Matrix<double>>& g_Matvec,
-      const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int,
-      unsigned derivnum, bool do_wavelet);
+                           const std::vector<double>& values_at_integers, unsigned recursion_number,
+                           unsigned bins_per_int, unsigned derivnum, bool do_wavelet);
   static void fillGridFromMaps(std::unique_ptr<Grid>& grid, const BinaryMap& valuesmap,
-      const BinaryMap& derivsmap);
+                               const BinaryMap& derivsmap);
 public:
   // construct either a grid with the scaling function or the wavelet function, and its first derivative
   static std::unique_ptr<Grid> setupGrid(const unsigned order, unsigned gridsize, bool do_wavelet);
