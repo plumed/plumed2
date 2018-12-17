@@ -157,7 +157,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
   setNumberOfBasisFunctions(num_BFs);
   shifts_.push_back(0.0); // constant BF – never used, just for clearer notation
   for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
-    shifts_.push_back(-intervalMin()*scale_ + intrinsic_length - i - ceil(cutoffpoints[1]));
+    shifts_.push_back(-intervalMin()*scale_ + ceil(cutoffpoints[1]) - i);
   }
 
   // set some properties
