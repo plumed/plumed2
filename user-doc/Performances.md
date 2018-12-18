@@ -230,8 +230,8 @@ At last, try to reduce the number of residues in the calculation.
 
 In case you are using a lot of \ref CUSTOM functions or \ref switchingfunction "switching functions",
 notice that these functionalities depend on the lepton library included in PLUMED.
-This library replace libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
-However, you can make it even faster using a [just-in-time compilater](https://github.com/asmjit/asmjit.git).
+This library replaces libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
+However, you can make it even faster using a [just-in-time compiler](https://github.com/asmjit/asmjit.git).
 Currently, this is an experimental feature, so use it with care.
 
 In order to enable it you should first install asmjit.
@@ -285,7 +285,10 @@ PLUMED: 4A  2 dfast                                      108     0.135210     0.
 ...
 \endverbatim
 
-Notice the usage of `x2` as a variable for the switching function (see \ref switchingfunction).
+Notice the usage of `x2` as a variable for the switching function (see \ref switchingfunction), which
+avoids an unnecessary square root calculation (this is done automatically by the hard-coded switching functions
+when you use only even powers). The asmjit calculation (`dfast`) takes less than 10% more than the hard-coded
+one (`c`).
 
 \page Time Time your Input
 

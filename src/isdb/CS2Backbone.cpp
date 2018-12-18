@@ -52,7 +52,7 @@ Calculates the backbone chemical shifts for a protein.
 
 The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shift
 of the selected nuclei can be saved as components. Alternatively one can calculate either
-the CAMSHIFT score (useful as a collective variable \cite Granata:2013dkor as a scoring
+the CAMSHIFT score (useful as a collective variable \cite Granata:2013dk or as a scoring
 function \cite Robustelli:2010dn) or a \ref METAINFERENCE score (using DOSCORE).
 For these two latter cases experimental chemical shifts must be provided.
 

@@ -144,14 +144,14 @@ autocompletion should be installed. Otherwise, configure will look for the prese
 and, in case it is installed on the same prefix as PLUMED, also PLUMED autocompletion will be installed.
 Finally, if none of these two conditions are satisfied, autocompletion will not be enabled. You will
 have to change your bashrc file once adding the following lines:
-Now look at these lines:
 \verbatim
 _plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
 complete -F _plumed -o default plumed
 \endverbatim
-This is what you are expected to do if for instance you have multiple versions of PLUMED installed
-concurrently using separate env modules.
-The command `plumed completion` just writes on its standard output the body of a bash function.
+The command `plumed completion` just writes on its standard output the body of a bash function that is
+then used by bash to construct the autocompletion.
+The `--no-mpi` flag makes it more likely that the command can be executed correctly e.g. when you are on the login node of a cluster and
+PLUMED was compiled with MPI but the login node does not support MPI. In other cases, it is harmless.
 The `-o default` options will make sure that if `plumed --no-mpi completion` returns an error the default bash completion
 will be used. This is what will happen if you load an older PLUMED version for which the `completion` command is not available yet.
 In future PLUMED versions the `plumed completion` command might return more sophisticated functions. You should
