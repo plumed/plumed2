@@ -356,7 +356,7 @@ SAXS::SAXS(const ActionOptions&ao):
   log<<"  Bibliography ";
   if(martini) {
     log<<plumed.cite("Niebling, Björling, Westenhoff, J Appl Crystallogr 47, 1190–1198 (2014).");
-    log<<plumed.cite("Paissoni, Jussupow, Camilloni, bioRxiv 444901.");
+    log<<plumed.cite("Paissoni, Jussupow, Camilloni, bioRxiv 498147.");
   }
   if(atomistic) {
     log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978).");
