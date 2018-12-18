@@ -35,48 +35,69 @@ namespace ves {
 
 //+PLUMEDOC VES_BASISF BF_DB_WAVELETS
 /*
-Daubechies Wavelets as basis functions
+Daubechies Wavelets as basis functions.
 
 Note: at the moment only the scaling function is working as intended as multiscale is not yet implemented.
 
-This basis set uses Daubechies Wavelets to construct a complete and orthogonal basis.
+This basis set uses Daubechies Wavelets \cite daubechies_orthonormal_1988 to construct a complete and orthogonal basis.
+It is based on using a pair of functions, the scaling function (or father wavelet) \f$\phi\f$ and the wavelet function (or mother wavelet) \f$\psi\f$.
+They are defined via the two-scale relations for scale \f$j\f$ and shift \f$k\f$:
 
 \f{align*}{
   \phi_k^j \left(x\right) = 2^{-j/2} \phi \left( 2^{-j} x - k\right)\\
   \psi_k^j \left(x\right) = 2^{-j/2} \psi \left( 2^{-j} x - k\right)
 \f}
 
+The exact properties are set by choosing filter coefficients, e.g. choosing \f$h_k\f$ for the father wavelet:
+
+\f[
+  \phi\left(x\right) = \sqrt{2} \sum_k h_k\, \phi \left( 2 x - k\right)\\
+\f]
+
+The filter coefficients by Daubechies result in an orthonormal basis of all integer shifted functions:
+\f[
+  \int \phi(x+i) \phi(x+j) \mathop{}\!\mathrm{d}x = \delta_{ij} \quad \text{for} \quad i,j\ \epsilon\ \mathbb{Z}
+\f]
+
 Because no analytic formula for these wavelets exist, they are instead constructed iteratively on a grid.
-The method of construction is close to the "Vector cascade algorithm" described by Strang, Nguyen.
-(It is sometimes also called Daubechies-Lagarias method)
-To construct them the filter coefficients of the scaling function are hardcoded, which were previously generated via a python script.
-Currently only the "maximum phase" type is used, but the "least asymmetric" type can be added easily.
-
-\par Input parameters
-
-
-order N: number of vanishing moments
-
-Intrinsic support of the function is then [0, 2*N-1).
+The method of construction is close to the "Vector cascade algorithm" described in \cite strang_wavelets_1997 .
+The needed filter coefficients of the scaling function are hardcoded, and were previously generated via a python script.
+Currently only the "maximum phase" type is implemented, but the "least asymmetric" type can be added easily.
 
 
 
-Each basis function is a translate by an integer value k.
+\par Some details on the input parameters
+
+The specified order of the basis set defines the coefficients and the corresponding wavelet used.
+Order N results in DbN wavelets, which is equal to the number of vanishing moments of the wavelet basis and double the number of filter coefficients.
+
+The intrinsic support of the wavelets is then \f$\left[0, N*2 -1\right)\f$.
+Using the cascade algorithm results in a doubling of the grid values per integer for each iteration.
+This means that the grid size will always be a power of two multiplied by the intrinsic support length of the wavelets.
+The used grid size is calculated by \f$n_{\text{bins}} = (N*2 - 1) * 2^m\f$ with the smallest \f$m\f$ such that the grid is at least as large as the specified number.
+
+By default the basis functions are scaled to match the specified size of the CV space (MINIMUM and MAXIMUM keywords), which often is a good initial choice.
+The "FUNCTION_LENGTH" keyword can be used to alter this and use a different scaling.
+A smaller value will use more and smaller basis functions which results in a more localized optimization, while a larger one will use less and more globally defined functions.
 
 \par Number of basis functions
 
-If the support is scaled to match the desired range of the CV exactly there would be 4*N -3 basis functions whose support is at least partially in this region: k = {(-2*N)+2, … , 0, … 2*N-1}
-As some of these translates will not have significant contributions in this area because of their function values being close to zero over the full range, these 'tail wavelets' are being omitted.
-The formula for cutting of was found empirically. In short it omits roughly all translates that have only function values with less than 1 % of the maximum value in the CV range.
-It is not perfect but sometimes keeps a few more translates (depending on the actually chosen order).
-Giving the range of k in dependency of the chosen order is therefore not possible.
-Instead it will be given in the logfile if wanted.
-As a rule of thumb there are about 3*order basis functions.
+The resulting basis set consists of integer shifts of the wavelet function at scale \f$j\f$,
+\f[
+  \phi_i (x) = phi(\frac{x+i}{j})
+\f]
 
-(Note for future: The number of needed BFs could also be lowered by scaling the wavelets less so that their support is larger than the desired CV range.)
+where \f$i\$ in principal would span all positive and negative integers.
+Because of the compact support of the wavelets clearly not all shifts are needed.
+
+If the wavelets are scaled to match the CV range exactly there would be \f$4*N -3\f$ basis functions whose support is at least partially in this region.
+This number is adjusted automatically if a different FUNCTION_LENGTH is specified.
+Additionally, some of the shifted basis functions will not have significant contributions because of their function values being close to zero over the full range.
+These 'tail wavelets' can be omitted by using the TAILS_THRESHOLD keyword.
+By default all are included but a value of e.g. 0.01 will already reduce the number of basis functions significantly (by more than \f$N\f$)
+The number of basis functions is not easily determinable a priori but will be given in the logfile.
 
 Additionally a constant basis function is included.
-
 
 \par Examples
 
@@ -111,9 +132,9 @@ PLUMED_REGISTER_ACTION(BF_DbWavelets,"BF_DB_WAVELETS")
 
 void BF_DbWavelets::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
-  keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value will be used as guiding value only, while the true number will be \"(ORDER*2 - 1) * 2**n\" with the smallest n such that the grid is at least as large as the specified number. Defaults to 1000"); // Change the commentary a bit?
+  keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value definess the minimum number, while the true number will probably be larger. Defaults to 1000.");
   keys.add("optional","FUNCTION_LENGTH","The length of the support of the scaled basis functions. This can be used to alter the scaling of the basis functions. Is by default set to the total size of the interval. This also influences the number of actually used basis functions, as all shifted functions that are partially supported in the CV space are used.");
-  keys.add("optional","TAILS_THRESHOLD","The threshold for cutting off tail wavelets with respect to the maximum value. All shifted wavelet functions that will only have values lower below the threshold in the CV space will be excluded from the basis set. Defaults to 0 (include all), generally only small values (e.g. 0.01) should be used.");
+  keys.add("optional","TAILS_THRESHOLD","The threshold for cutting off tail wavelets with respect to the maximum value. All shifted wavelet functions that will only have values lower below the threshold in the CV space will be excluded from the basis set. Defaults to 0 (include all).");
   keys.addFlag("MOTHER_WAVELET", false, "If this flag is set the \"true\" wavelet function (mother wavelet) will be used instead of the scaling function (father wavelet). Makes only sense for multiresolution, which is at the moment not implemented.");
   keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
   // why is this removed?
