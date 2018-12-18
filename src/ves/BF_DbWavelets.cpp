@@ -28,8 +28,6 @@
 #include "core/ActionRegister.h"
 #include "tools/Exception.h"
 
-#include <algorithm>
-
 
 namespace PLMD {
 namespace ves {
@@ -42,6 +40,12 @@ Daubechies Wavelets as basis functions
 Note: at the moment only the scaling function is working as intended as multiscale is not yet implemented.
 
 This basis set uses Daubechies Wavelets to construct a complete and orthogonal basis.
+
+\f{align*}{
+  \phi_k^j \left(x\right) = 2^{-j/2} \phi \left( 2^{-j} x - k\right)\\
+  \psi_k^j \left(x\right) = 2^{-j/2} \psi \left( 2^{-j} x - k\right)
+\f}
+
 Because no analytic formula for these wavelets exist, they are instead constructed iteratively on a grid.
 The method of construction is close to the "Vector cascade algorithm" described by Strang, Nguyen.
 (It is sometimes also called Daubechies-Lagarias method)
@@ -49,6 +53,7 @@ To construct them the filter coefficients of the scaling function are hardcoded,
 Currently only the "maximum phase" type is used, but the "least asymmetric" type can be added easily.
 
 \par Input parameters
+
 
 order N: number of vanishing moments
 
@@ -87,7 +92,6 @@ There is a regtest checking the creation of the grid values of the wavelet funct
 class BF_DbWavelets : public BasisFunctions {
   // Grid that holds the Wavelet values and its derivative
   std::unique_ptr<Grid> waveletGrid_;
-  std::string interpolation_;
   bool use_mother_wavelet_;
   double scale_; // scale factor of the individual BFs to match specified length
   std::vector<double> shifts_; // shift of the individual BFs
