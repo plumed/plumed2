@@ -84,6 +84,7 @@ private:
   double contour_location;
   std::vector<double> grid_;
   std::vector< std::vector<double> > der_;
+  std::vector<double> getOneDimensionalTrapezoidalWeights(const unsigned int, const double, const bool) const;
 protected:
   std::string funcname;
   std::vector<std::string> argnames;
@@ -232,6 +233,8 @@ public:
 /// Find the maximum over paths of the minimum value of the gridded function along the paths
 /// for all paths of neighboring grid lattice points from a source point to a sink point.
   virtual double findMaximalPathMinimum(const std::vector<double> &source, const std::vector<double> &sink);
+/// Returns a vector with the weights for doing integration over the grid.
+  std::vector<double> getIntegrationWeights(const std::string& weights_type="trapezoidal", const std::string& fname_weights_grid="") const;
 };
 
 

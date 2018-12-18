@@ -1153,4 +1153,72 @@ double Grid::findMaximalPathMinimum(const std::vector<double> &source, const std
   return 0.0;
 }
 
+std::vector<double> Grid::getOneDimensionalTrapezoidalWeights(const unsigned int nbins, const double dx, const bool periodic) const {
+  std::vector<double> weights_1d(nbins);
+  // Returns trapezoidal weights for a one-dim case, used in getIntegrationWeights below.
+  for(unsigned int i=1; i<(nbins-1); i++) {
+    weights_1d[i] = dx;
+  }
+  if(!periodic) {
+    weights_1d[0]= 0.5*dx;
+    weights_1d[(nbins-1)]= 0.5*dx;
+  }
+  else {
+    // as for periodic arguments the first point should be counted twice as the
+    // grid doesn't include its periodic copy
+    weights_1d[0]= dx;
+    weights_1d[(nbins-1)]= dx;
+  }
+  return weights_1d;
+}
+
+std::vector<double> Grid::getIntegrationWeights(const std::string& weights_type,  const std::string& fname_weights_grid) const {
+  // Returns a vector with the weights for doing integration over the grid.
+  // Currently supports integration weights that are products of one-dim weights,
+  // only trapezoidal rule supported at the moment. The bin volume is included in
+  // the weights.
+  // the vector is in same order as getValue(Grid::index_t l) will give.
+  std::vector<double> dx = this->getDx();
+  std::vector<bool> isPeriodic = this->getIsPeriodic();
+  std::vector<unsigned int> nbins = this->getNbin();
+  std::vector<std::vector<double> > weights_perdim;
+  // get weights for each dimension
+  for(unsigned int k=0; k<this->getDimension(); k++) {
+    std::vector<double> weights_tmp;
+    if(weights_type=="trapezoidal") {
+      weights_tmp = getOneDimensionalTrapezoidalWeights(nbins[k],dx[k],isPeriodic[k]);
+    }
+    else {
+      plumed_merror("getIntegrationWeights: unknown weight type, the available type is trapezoidal");
+    }
+    weights_perdim.push_back(weights_tmp);
+  }
+  // get the product weights
+  std::vector<double> weights_vector(this->getSize(),0.0);
+  for(Grid::index_t l=0; l<this->getSize(); l++) {
+    std::vector<unsigned int> ind = this->getIndices(l);
+    double value = 1.0;
+    for(unsigned int k=0; k<this->getDimension(); k++) {
+      value *= weights_perdim[k][ind[k]];
+    }
+    weights_vector[l] = value;
+  }
+
+  // write the weights out to file if requested
+  if(fname_weights_grid.size()>0) {
+    Grid weights_grid = Grid(*this);
+    for(Grid::index_t l=0; l<weights_grid.getSize(); l++) {
+      weights_grid.setValue(l,weights_vector[l]);
+    }
+    OFile ofile;
+    ofile.enforceBackup();
+    ofile.open(fname_weights_grid);
+    weights_grid.writeToFile(ofile);
+    ofile.close();
+  }
+
+  return weights_vector;
+}
+
+
 }
