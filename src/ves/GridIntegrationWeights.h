@@ -38,7 +38,6 @@ class GridIntegrationWeights {
 private:
   static std::vector<double> getOneDimensionalTrapezoidalWeights(const unsigned int, const double, const bool periodic=false);
 public:
-  static std::vector<double> getIntegrationWeights(const Grid*, const std::string& fname_weights_grid="", const std::string& weights_type="trapezoidal");
   static void getOneDimensionalIntegrationPointsAndWeights(std::vector<double>&, std::vector<double>&, const unsigned int, const double, const double, const std::string& weights_type="trapezoidal");
 };
 

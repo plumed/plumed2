@@ -30,48 +30,6 @@
 namespace PLMD {
 namespace ves {
 
-std::vector<double> GridIntegrationWeights::getIntegrationWeights(const Grid* grid_pntr, const std::string& fname_weights_grid, const std::string& weights_type) {
-  std::vector<double> dx = grid_pntr->getDx();
-  std::vector<bool> isPeriodic = grid_pntr->getIsPeriodic();
-  std::vector<unsigned int> nbins = grid_pntr->getNbin();
-  std::vector<std::vector<double> > weights_perdim;
-  for(unsigned int k=0; k<grid_pntr->getDimension(); k++) {
-    std::vector<double> weights_tmp;
-    if(weights_type=="trapezoidal") {
-      weights_tmp = getOneDimensionalTrapezoidalWeights(nbins[k],dx[k],isPeriodic[k]);
-    }
-    else {
-      plumed_merror("getIntegrationWeights: unknown weight type, the available type is trapezoidal");
-    }
-    weights_perdim.push_back(weights_tmp);
-  }
-
-  std::vector<double> weights_vector(grid_pntr->getSize(),0.0);
-  for(Grid::index_t l=0; l<grid_pntr->getSize(); l++) {
-    std::vector<unsigned int> ind = grid_pntr->getIndices(l);
-    double value = 1.0;
-    for(unsigned int k=0; k<grid_pntr->getDimension(); k++) {
-      value *= weights_perdim[k][ind[k]];
-    }
-    weights_vector[l] = value;
-  }
-
-  if(fname_weights_grid.size()>0) {
-    Grid weights_grid = Grid(*grid_pntr);
-    for(Grid::index_t l=0; l<weights_grid.getSize(); l++) {
-      weights_grid.setValue(l,weights_vector[l]);
-    }
-    OFile ofile;
-    ofile.enforceBackup();
-    ofile.open(fname_weights_grid);
-    weights_grid.writeToFile(ofile);
-    ofile.close();
-  }
-  //
-  return weights_vector;
-}
-
-
 void GridIntegrationWeights::getOneDimensionalIntegrationPointsAndWeights(std::vector<double>& points, std::vector<double>& weights, const unsigned int nbins, const double min, const double max, const std::string& weights_type) {
   double dx = (max-min)/(static_cast<double>(nbins)-1.0);
   points.resize(nbins);
