@@ -30,7 +30,7 @@ namespace PLMD {
 namespace ves {
 
 // returns the filter coefficients, at the moment simply a lookup table (calculated with python script)
-// lowpass coefficients are for the scaling function, highpass for the actual wavelets
+// lowpass coefficients are for the scaling function, highpass for the mother wavelets
 std::vector<double> DbWaveletGrid::getFilterCoefficients(const unsigned order, bool lowpass) {
   std::vector<double> h;
   switch(order) {
