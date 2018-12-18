@@ -107,11 +107,11 @@ within colvars and functions.  One place where this is very useful is when you a
 not you have implemented the derivatives of a new collective variables correctly.  So for example if
 we wanted to do such a test on the distance CV we would employ an input file something like this:
 
-\verbatim
+\plumedfile
 d1: DISTANCE ATOMS=1,2
 d1n: DISTANCE ATOMS=1,2 NUMERICAL_DERIVATIVES
 DUMPDERIVATIVES ARG=d1,d1n FILE=derivatives
-\endverbatim
+\endplumedfile
 
 The first of these two distance commands calculates the analytical derivatives of the distance
 while the second calculates these derivatives numerically.  Obviously, if your CV is implemented
@@ -170,12 +170,12 @@ that are available in PLUMED are as follows
 
 In general most of these landmark selection algorithms must be used in tandem with a \ref dissimilaritym "dissimilarity matrix" object as as follows:
 
-\verbatim
+\plumedfile
 data: COLLECT_FRAMES ARG=d1 STRIDE=1
 ss1: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data 
 ll2: LANDMARK_SELECT_FPS USE_OUTPUT_DATA_FROM=ss1 NLANDMARKS=300
 OUTPUT_COLVAR_FILE USE_OUTPUT_DATA_FROM=ll2 FILE=mylandmarks
-\endverbatim
+\endplumedfile
 
 When landmark selection is performed in this way a weight is ascribed to each of the landmark configurations.  This weight is
 calculated by summing the weights of all the trajectory frames in each of the landmarks Voronoi polyhedron 
@@ -207,22 +207,22 @@ the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu
 
 Within PLUMED running an input to run a dimensionality reduction algorithm can be as simple as:
 
-\verbatim
+\plumedfile
 data: COLLECT_FRAMES STRIDE=1 ARG=d1
 ss1: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data 
 mds: CLASSICAL_MDS USE_OUTPUT_DATA_FROM=ss1 NLOW_DIM=2
-\endverbatim
+\endplumedfile
 
 Where we have to use the \ref EUCLIDEAN_DISSIMILARITIES action here in order to calculate the matrix of dissimilarities between trajectory frames.
 We can even throw some landmark selection into this procedure and perform
 
-\verbatim
+\plumedfile
 data: COLLECT_FRAMES STRIDE=1 ARG=d1
 matrix: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data
 ll2: LANDMARK_SELECT_FPS USE_OUTPUT_DATA_FROM=matrix NLANDMARKS=300
 mds: CLASSICAL_MDS USE_OUTPUT_DATA_FROM=ll2 NLOW_DIM=2
 osample: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=matrix PROJECTION=smap
-\endverbatim
+\endplumedfile
 
 Notice here that the final command allows us to calculate the projections of all the non-landmark points that were collected by the action with
 label matrix.

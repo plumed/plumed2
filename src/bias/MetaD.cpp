@@ -135,16 +135,16 @@ for replica exchange methods to be computed correctly.
 Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
 
-The \\f$c(t)\\f$ reweighting factor can also be calculated on the fly using the equations
+The \f$c(t)\f$ reweighting factor can also be calculated on the fly using the equations
 presented in \cite Tiwary_jp504920s.
-The expression used to calculate \\f$c(t)\\f$ follows directly from Eq. 3 in \cite Tiwary_jp504920s,
-where \\f$F(\vec{s})=-\gamma/(\gamma-1) V(\vec{s})\\f$.
+The expression used to calculate \f$c(t)\f$ follows directly from Eq. 3 in \cite Tiwary_jp504920s,
+where \f$F(\vec{s})=-\gamma/(\gamma-1) V(\vec{s})\f$.
 This gives smoother results than equivalent Eqs. 13 and Eqs. 14 in that paper.
-The \\f$c(t)\\f$ is given by the rct component while the bias
-normalized by \\f$c(t)\\f$ is given by the rbias component (rbias=bias-rct) which can be used
+The \f$c(t)\f$ is given by the rct component while the bias
+normalized by \f$c(t)\f$ is given by the rbias component (rbias=bias-rct) which can be used
 to obtain a reweighted histogram.
-The calculation of \\f$c(t)\\f$ is enabled by using the keyword CALC_RCT.
-By default \\f$c(t)\\f$ is updated every time the bias changes, but if this slows down the simulation
+The calculation of \f$c(t)\f$ is enabled by using the keyword CALC_RCT.
+By default \f$c(t)\f$ is updated every time the bias changes, but if this slows down the simulation
 the keyword RCT_USTRIDE can be set to a value higher than 1.
 This option requires that a grid is used.
 
@@ -233,7 +233,7 @@ one update and the other. Since version 2.2.5, hills files are automatically
 flushed every WALKERS_RSTRIDE steps.
 
 \par
-The \\f$c(t)\\f$ reweighting factor can be calculated on the fly using the equations
+The \f$c(t)\f$ reweighting factor can be calculated on the fly using the equations
 presented in \cite Tiwary_jp504920s as described above.
 This is enabled by using the keyword CALC_RCT,
 and can be done only if the bias is defined on a grid.
@@ -248,9 +248,9 @@ METAD ...
 \endplumedfile
 Here we have asked that the calculation is performed every 10 hills deposition by using
 RCT_USTRIDE keyword. If this keyword is not given, the calculation will
-by default be performed every time the bias changes. The \\f$c(t)\\f$ reweighting factor will be given
+by default be performed every time the bias changes. The \f$c(t)\f$ reweighting factor will be given
 in the rct component while the instantaneous value of the bias potential
-normalized using the \\f$c(t)\\f$ reweighting factor is given in the rbias component
+normalized using the \f$c(t)\f$ reweighting factor is given in the rbias component
 [rbias=bias-rct] which can be used to obtain a reweighted histogram or
 free energy surface using the \ref HISTOGRAM analysis.
 
