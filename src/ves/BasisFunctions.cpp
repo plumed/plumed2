@@ -24,7 +24,6 @@
 #include "TargetDistribution.h"
 #include "VesBias.h"
 #include "VesTools.h"
-#include "GridIntegrationWeights.h"
 
 #include "tools/Grid.h"
 #include "tools/Tools.h"
@@ -260,7 +259,7 @@ std::vector<double> BasisFunctions::numericalTargetDistributionIntegralsFromGrid
   plumed_massert(grid_pntr->getDimension()==1,"the target distribution grid should be one dimensional");
   //
   std::vector<double> targetdist_integrals(nbasis_,0.0);
-  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(grid_pntr);
+  std::vector<double> integration_weights = grid_pntr->getIntegrationWeights();
 
   for(Grid::index_t k=0; k < grid_pntr->getSize(); k++) {
     double arg = grid_pntr->getPoint(k)[0];

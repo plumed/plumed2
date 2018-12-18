@@ -29,7 +29,6 @@
 #include "core/PlumedMain.h"
 #include "tools/Grid.h"
 
-#include "GridIntegrationWeights.h"
 
 
 namespace PLMD {
@@ -197,7 +196,7 @@ void TD_ProductCombination::updateGrid() {
   for(unsigned int i=0; i<ndist_; i++) {
     distribution_pntrs_[i]->updateTargetDist();
   }
-  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
+  std::vector<double> integration_weights = getTargetDistGridPntr()->getIntegrationWeights();
   double norm = 0.0;
   for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
     double value = 1.0;

@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "TargetDistribution.h"
-#include "GridIntegrationWeights.h"
 #include "VesTools.h"
 #include "GridLinearInterpolation.h"
 

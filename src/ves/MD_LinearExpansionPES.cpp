@@ -23,7 +23,6 @@
 #include "BasisFunctions.h"
 #include "LinearBasisSetExpansion.h"
 #include "CoeffsVector.h"
-#include "GridIntegrationWeights.h"
 
 #include "cltools/CLTool.h"
 #include "cltools/CLToolRegister.h"
@@ -418,7 +417,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   ofile_potential.close();
 
   Grid histo_grid(*potential_expansion_pntr->getPntrToBiasGrid());
-  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(&histo_grid);
+  std::vector<double> integration_weights = histo_grid.getIntegrationWeights();
   double norm=0.0;
   for(Grid::index_t i=0; i<histo_grid.getSize(); i++) {
     double value = integration_weights[i]*exp(-histo_grid.getValue(i)/temp);

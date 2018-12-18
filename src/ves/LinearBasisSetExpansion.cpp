@@ -24,7 +24,6 @@
 #include "VesBias.h"
 #include "CoeffsVector.h"
 #include "VesTools.h"
-#include "GridIntegrationWeights.h"
 #include "BasisFunctions.h"
 #include "TargetDistribution.h"
 
@@ -571,7 +570,7 @@ void LinearBasisSetExpansion::restartTargetDistribution() {
 void LinearBasisSetExpansion::calculateTargetDistAveragesFromGrid(const Grid* targetdist_grid_pntr) {
   plumed_assert(targetdist_grid_pntr!=NULL);
   std::vector<double> targetdist_averages(ncoeffs_,0.0);
-  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(targetdist_grid_pntr);
+  std::vector<double> integration_weights = targetdist_grid_pntr->getIntegrationWeights();
   Grid::index_t stride=mycomm_.Get_size();
   Grid::index_t rank=mycomm_.Get_rank();
   for(Grid::index_t l=rank; l<targetdist_grid_pntr->getSize(); l+=stride) {
@@ -615,7 +614,7 @@ double LinearBasisSetExpansion::calculateReweightFactor() const {
   plumed_massert(targetdist_grid_pntr_!=NULL,"calculateReweightFactor only be used if the target distribution grid is defined");
   plumed_massert(bias_grid_pntr_!=NULL,"calculateReweightFactor only be used if the bias grid is defined");
   double sum = 0.0;
-  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(targetdist_grid_pntr_);
+  std::vector<double> integration_weights = targetdist_grid_pntr_->getIntegrationWeights();
   //
   for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++) {
     sum += integration_weights[l] * targetdist_grid_pntr_->getValue(l) * exp(+beta_*bias_grid_pntr_->getValue(l));

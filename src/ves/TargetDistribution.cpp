@@ -24,7 +24,6 @@
 #include "TargetDistModifer.h"
 
 #include "VesBias.h"
-#include "GridIntegrationWeights.h"
 #include "VesTools.h"
 
 #include "core/Value.h"
@@ -206,7 +205,7 @@ void TargetDistribution::calculateStaticDistributionGrid() {
 
 
 double TargetDistribution::integrateGrid(const Grid* grid_pntr) {
-  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(grid_pntr);
+  std::vector<double> integration_weights = grid_pntr->getIntegrationWeights();
   double sum = 0.0;
   for(Grid::index_t l=0; l<grid_pntr->getSize(); l++) {
     sum += integration_weights[l]*grid_pntr->getValue(l);
@@ -302,7 +301,7 @@ void TargetDistribution::updateBiasCutoffForTargetDistGrid() {
   // plumed_massert(log_targetdist_grid_pntr_!=NULL,"the grids have not been setup using setupGrids");
   plumed_massert(getBiasWithoutCutoffGridPntr()!=NULL,"the bias without cutoff grid has to be linked");
   //
-  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(targetdist_grid_pntr_);
+  std::vector<double> integration_weights = targetdist_grid_pntr_->getIntegrationWeights();
   double norm = 0.0;
   for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++)
   {
@@ -327,7 +326,7 @@ void TargetDistribution::applyTargetDistModiferToGrid(TargetDistModifer* modifer
   // plumed_massert(targetdist_grid_pntr_!=NULL,"the grids have not been setup using setupGrids");
   // plumed_massert(log_targetdist_grid_pntr_!=NULL,"the grids have not been setup using setupGrids");
   //
-  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(targetdist_grid_pntr_);
+  std::vector<double> integration_weights = targetdist_grid_pntr_->getIntegrationWeights();
   double norm = 0.0;
   for(Grid::index_t l=0; l<targetdist_grid_pntr_->getSize(); l++)
   {

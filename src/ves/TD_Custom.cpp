@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "TargetDistribution.h"
-#include "GridIntegrationWeights.h"
 
 #include "core/ActionRegister.h"
 #include "tools/Grid.h"
@@ -236,7 +235,7 @@ void TD_Custom::updateGrid() {
     } catch(PLMD::lepton::Exception& exc) {}
   }
   //
-  std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
+  std::vector<double> integration_weights = getTargetDistGridPntr()->getIntegrationWeights();
   double norm = 0.0;
   //
   for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
