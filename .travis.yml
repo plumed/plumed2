@@ -136,7 +136,7 @@ install:
 # install doxygen-latex
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y doxygen-latex ; fi
 # install aspell
-  - if test "$MAKEDOC" == yes ; then sudo apt-get install -y sudo apt-get install aspell aspell-en  ; fi
+  - if test "$MAKEDOC" == yes ; then sudo apt-get install -y aspell aspell-en  ; fi
 # install lcov
   - if test "$MAKECOVERAGE" == yes ; then ./.travis/install.lcov v1.13 ; fi
 # install numpy and cython for python interface
