@@ -59,7 +59,7 @@ std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gr
 
 
   std::unique_ptr<Grid> grid;
-  if (use_mother_wavelet) {
+  if (!use_mother_wavelet) {
     // Set up the scaling grid with correct properties
     grid.reset(new Grid("db"+std::to_string(order)+"_phi", {"position"}, {"0"},
     {std::to_string(maxsupport)}, {gridsize}, false, true, true,

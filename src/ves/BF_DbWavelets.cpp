@@ -43,7 +43,10 @@ Note: at the moment only the scaling function is working as intended as multisca
 
 This basis set uses Daubechies Wavelets to construct a complete and orthogonal basis.
 Because no analytic formula for these wavelets exist, they are instead constructed iteratively on a grid.
-The method of construction is close to the "Vector cascade algorithm" described by Strang, Nguyen. (It is sometimes also called Daubechies-Lagarias method)
+The method of construction is close to the "Vector cascade algorithm" described by Strang, Nguyen.
+(It is sometimes also called Daubechies-Lagarias method)
+To construct them the filter coefficients of the scaling function are hardcoded, which were previously generated via a python script.
+Currently only the "maximum phase" type is used, but the "least asymmetric" type can be added easily.
 
 \par Input parameters
 
@@ -51,7 +54,7 @@ order N: number of vanishing moments
 
 Intrinsic support of the function is then [0, 2*N-1).
 
-(Give formula!)
+
 
 Each basis function is a translate by an integer value k.
 
@@ -72,7 +75,10 @@ Additionally a constant basis function is included.
 
 \par Examples
 
+
 \par Test
+
+There is a regtest checking the creation of the grid values of the wavelet function as well as their basic usage as basis functions.
 
 */
 //+ENDPLUMEDOC
@@ -81,7 +87,8 @@ Additionally a constant basis function is included.
 class BF_DbWavelets : public BasisFunctions {
   // Grid that holds the Wavelet values and its derivative
   std::unique_ptr<Grid> waveletGrid_;
-  bool use_scaling_function_;
+  std::string interpolation_;
+  bool use_mother_wavelet_;
   double scale_; // scale factor of the individual BFs to match specified length
   std::vector<double> shifts_; // shift of the individual BFs
   void setupLabels() override;
@@ -103,7 +110,7 @@ void BF_DbWavelets::registerKeywords(Keywords& keys) {
   keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value will be used as guiding value only, while the true number will be \"(ORDER*2 - 1) * 2**n\" with the smallest n such that the grid is at least as large as the specified number. Defaults to 1000"); // Change the commentary a bit?
   keys.add("optional","FUNCTION_LENGTH","The length of the support of the scaled basis functions. This can be used to alter the scaling of the basis functions. Is by default set to the total size of the interval. This also influences the number of actually used basis functions, as all shifted functions that are partially supported in the CV space are used.");
   keys.add("optional","TAILS_THRESHOLD","The threshold for cutting off tail wavelets with respect to the maximum value. All shifted wavelet functions that will only have values lower below the threshold in the CV space will be excluded from the basis set. Defaults to 0 (include all), generally only small values (e.g. 0.01) should be used.");
-  keys.addFlag("SCALING_FUNCTION", false, "If this flag is set the scaling function (mother wavelet) will be used instead of the \"true\" wavelet function (father wavelet).");
+  keys.addFlag("MOTHER_WAVELET", false, "If this flag is set the \"true\" wavelet function (mother wavelet) will be used instead of the scaling function (father wavelet). Makes only sense for multiresolution, which is at the moment not implemented.");
   keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
   // why is this removed?
   keys.remove("NUMERICAL_INTEGRALS");
@@ -112,14 +119,14 @@ void BF_DbWavelets::registerKeywords(Keywords& keys) {
 
 BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
-  use_scaling_function_(false)
+  use_mother_wavelet_(false)
 {
 
   // parse grid properties and set it up
-  parseFlag("SCALING_FUNCTION", use_scaling_function_);
+  parseFlag("MOTHER_WAVELET", use_mother_wavelet_);
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
-  waveletGrid_ = DbWaveletGrid::setupGrid(getOrder(), gridsize, !use_scaling_function_);
+  waveletGrid_ = DbWaveletGrid::setupGrid(getOrder(), gridsize, use_mother_wavelet_);
   unsigned true_gridsize = waveletGrid_->getNbin()[0];
   if(true_gridsize != 1000) {addKeywordToList("GRID_SIZE",true_gridsize);}
   bool dump_wavelet_grid=false;
@@ -166,7 +173,8 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
   setIntrinsicInterval(0.0,intrinsic_length);
   setNonPeriodic();
   setIntervalBounded();
-  setType("daubechies_wavelets");
+  std::string type; use_mother_wavelet_ ? type = "Mother Wavelet" : type = "Father Wavelet";
+  setType(type);
   setDescription("Daubechies Wavelets (maximum phase type)");
   setLabelPrefix("k");
   setupBF();
