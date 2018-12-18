@@ -33,7 +33,7 @@ namespace function {
 /*
 Calculate a combination of variables using a custom expression.
 
-This action computes an  arbitrary function of one or more 
+This action computes an  arbitrary function of one or more
 collective variables. Arguments are chosen with the ARG keyword,
 and the function is provided with the FUNC string. Notice that this
 string should contain no space. Within FUNC, one can refer to the

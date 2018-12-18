@@ -40,7 +40,7 @@ namespace colvar {
 /*
 This CV computes the dimer interaction energy for a collection of dimers.
 
-Each dimer represents an atom, as described in the dimer paper \cite dimer-metad. 
+Each dimer represents an atom, as described in the dimer paper \cite dimer-metad.
 A system of N atoms is thus represented with N dimers, each
 Dimer being composed of two beads and eventually a virtual site representing its center of mass.
 

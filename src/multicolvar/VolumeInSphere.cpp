@@ -26,7 +26,7 @@
 
 //+PLUMEDOC VOLUMES INSPHERE
 /*
-This quantity can be used to calculate functions of the distribution of collective 
+This quantity can be used to calculate functions of the distribution of collective
 variables for the atoms that lie in a particular, user-specified part of of the cell.
 
 Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three

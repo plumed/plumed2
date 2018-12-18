@@ -88,7 +88,7 @@ PRINT ARG=q4.mean FILE=colvar
 
 //+PLUMEDOC MCOLVARF LOCAL_Q4
 /*
-Calculate the local degree of order around an atoms by taking the average dot product between the \f$q_4\f$ vector on the central atom and the \f$q_4\f$ vector 
+Calculate the local degree of order around an atoms by taking the average dot product between the \f$q_4\f$ vector on the central atom and the \f$q_4\f$ vector
 on the atoms in the first coordination sphere.
 
 The \ref Q4 command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere

@@ -45,8 +45,8 @@ namespace drr {
 
 //+PLUMEDOC EABFMOD_BIAS DRR
 /*
-Used to performed extended-system adaptive biasing force(eABF) \cite Lelievre2007 method 
-on one or more collective variables. This method is also 
+Used to performed extended-system adaptive biasing force(eABF) \cite Lelievre2007 method
+on one or more collective variables. This method is also
 called dynamic reference restraining(DRR) \cite Zheng2012 .
 
 For each collective variable \f$\xi_i\f$, a fictitious variable \f$\lambda_i\f$

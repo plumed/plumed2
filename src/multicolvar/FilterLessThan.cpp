@@ -77,7 +77,7 @@ for \ref MULTICOLVARDENS
 
 //+PLUMEDOC MFILTERS MFILTER_LESS
 /*
-This action can be used to filter the distribution of colvar values in a \ref mcolv 
+This action can be used to filter the distribution of colvar values in a \ref mcolv
 so that one can compute the mean and so on for only those multicolvars less than a tolerance.
 
 This action can be used to create a dynamic group of atom based on the value of a multicolvar.

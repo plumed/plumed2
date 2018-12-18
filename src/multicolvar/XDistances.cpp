@@ -34,7 +34,7 @@ namespace multicolvar {
 //+PLUMEDOC MCOLVAR XDISTANCES
 /*
 Calculate the x components of the vectors connecting one or many pairs of atoms.
-You can then calculate functions of the distribution of 
+You can then calculate functions of the distribution of
 values such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
@@ -81,7 +81,7 @@ PRINT ARG=d1.gt0.1
 //+PLUMEDOC MCOLVAR YDISTANCES
 /*
 Calculate the y components of the vectors connecting one or many pairs of atoms.
-You can then calculate functions of the distribution of 
+You can then calculate functions of the distribution of
 values such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
@@ -129,7 +129,7 @@ PRINT ARG=d1.gt0.1
 //+PLUMEDOC MCOLVAR ZDISTANCES
 /*
 Calculate the z components of the vectors connecting one or many pairs of atoms.
-You can then calculate functions of the distribution of 
+You can then calculate functions of the distribution of
 values such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples

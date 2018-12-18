@@ -40,7 +40,7 @@ namespace generic {
 
 //+PLUMEDOC GENERIC WHOLEMOLECULES
 /*
-This action is used to rebuild molecules that can become split by the periodic 
+This action is used to rebuild molecules that can become split by the periodic
 boundary conditions.
 
 It is similar to the ALIGN_ATOMS keyword of plumed1, and is needed since some
