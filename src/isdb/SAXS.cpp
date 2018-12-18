@@ -354,8 +354,10 @@ SAXS::SAXS(const ActionOptions&ao):
     if(bessel&&i>0&&q_list[i]<q_list[i-1]) plumed_merror("With BESSEL the Q values should be ordered from the smallest to the largest");
   }
   log<<"  Bibliography ";
-  log<<plumed.cite("Jussupow, et al. (in preparation)");
-  if(martini)   log<<plumed.cite("Niebling, Björling, Westenhoff, J Appl Crystallogr 47, 1190–1198 (2014).");
+  if(martini) {
+    log<<plumed.cite("Niebling, Björling, Westenhoff, J Appl Crystallogr 47, 1190–1198 (2014).");
+    log<<plumed.cite("Paissoni, Jussupow, Camilloni, bioRxiv 444901.");
+  }
   if(atomistic) {
     log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978).");
     log<<plumed.cite("Brown, Fox, Maslen, O'Keefe, Willis, International Tables for Crystallography C, 554–595 (International Union of Crystallography, 2006).");
