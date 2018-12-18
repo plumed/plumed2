@@ -175,6 +175,24 @@ public:
   template <class T> void Sum(T*buf,int count) {Sum(Data(buf,count));}
 /// Wrapper for MPI_Allreduce with MPI_SUM (reference)
   template <class T> void Sum(T&buf) {Sum(Data(buf));}
+/// Wrapper for MPI_Allreduce with MPI_PROD (data struct)
+  void Prod(Data);
+/// Wrapper for MPI_Allreduce with MPI_PROD (pointer)
+  template <class T> void Prod(T*buf,int count) {Prod(Data(buf,count));}
+/// Wrapper for MPI_Allreduce with MPI_PROD (reference)
+  template <class T> void Prod(T&buf) {Prod(Data(buf));}
+/// Wrapper for MPI_Allreduce with MPI_MAX (data struct)
+  void Max(Data);
+/// Wrapper for MPI_Allreduce with MPI_MAX (pointer)
+  template <class T> void Max(T*buf,int count) {Max(Data(buf,count));}
+/// Wrapper for MPI_Allreduce with MPI_MAX (reference)
+  template <class T> void Max(T&buf) {Max(Data(buf));}
+/// Wrapper for MPI_Allreduce with MPI_MIN (data struct)
+  void Min(Data);
+/// Wrapper for MPI_Allreduce with MPI_MIN (pointer)
+  template <class T> void Min(T*buf,int count) {Min(Data(buf,count));}
+/// Wrapper for MPI_Allreduce with MPI_MIN (reference)
+  template <class T> void Min(T&buf) {Min(Data(buf));}
 
 /// Wrapper for MPI_Bcast (data struct)
   void Bcast(Data,int);
