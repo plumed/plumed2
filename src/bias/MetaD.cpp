@@ -1942,10 +1942,11 @@ void MetaD::computeReweightingFactor()
 
   const unsigned rank=comm.Get_rank();
   const unsigned stride=comm.Get_size();
+  const std::vector<double> integration_weights = BiasGrid_->getIntegrationWeights();
   for (Grid::index_t t=rank; t<BiasGrid_->getSize(); t+=stride) {
     const double val=BiasGrid_->getValue(t);
-    Z_0+=std::exp(minusBetaF*val-big_number);
-    Z_V+=std::exp(minusBetaFplusV*val-big_number);
+    Z_0+=integration_weights[t]*std::exp(minusBetaF*val-big_number);
+    Z_V+=integration_weights[t]*std::exp(minusBetaFplusV*val-big_number);
   }
   if (stride>1) {
     comm.Sum(Z_0);
