@@ -34,8 +34,7 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR FAKE
 /*
-This is a fake colvar container used by cltools or various other actions
-and just support input and period definition
+This is a fake colvar container used by cltools or various other actions that supports input and period definitions
 
 \par Examples
 

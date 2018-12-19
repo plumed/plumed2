@@ -91,7 +91,7 @@ void VolumeInCylinder::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
   keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","DIRECTION","the direction of the long axis of the cylinder. Must be x, y or z");
-  keys.add("compulsory","RADIUS","a switching function that gives the extent of the cyclinder in the plane perpendicular to the direction");
+  keys.add("compulsory","RADIUS","a switching function that gives the extent of the cylinder in the plane perpendicular to the direction");
   keys.add("compulsory","LOWER","0.0","the lower boundary on the direction parallel to the long axis of the cylinder");
   keys.add("compulsory","UPPER","0.0","the upper boundary on the direction parallel to the long axis of the cylinder");
   keys.reset_style("SIGMA","optional");

@@ -65,7 +65,7 @@ For instance the following command:
 > plumed pdbrenumber --ipdb input.pdb --opdb output.pdb
 \endverbatim
 will copy file `input.pdb` to `output.pdb` replacing all the serial atoms with
-increasing numbers starting from one. Atoms past the 99999th one will be written
+increasing numbers starting from one. Atoms that have an index that is greater than 99999 will be written
 in the output PDB file in hybrid-36 code.
 
 It is possible to set a different serial number for the first atom, letting the

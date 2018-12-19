@@ -70,7 +70,7 @@ void Debug::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","1","the frequency with which this action is to be performed");
   keys.addFlag("logActivity",false,"write in the log which actions are inactive and which are inactive");
   keys.addFlag("logRequestedAtoms",false,"write in the log which atoms have been requested at a given time");
-  keys.addFlag("NOVIRIAL",false,"switch off the virial contribution for the entirity of the simulation");
+  keys.addFlag("NOVIRIAL",false,"switch off the virial contribution for the entirety of the simulation");
   keys.addFlag("DETAILED_TIMERS",false,"switch on detailed timers");
   keys.add("optional","FILE","the name of the file on which to output these quantities");
 }

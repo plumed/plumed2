@@ -41,13 +41,13 @@ This is the Path Collective Variables implementation
 ( see \cite brand07 ).
 This variable computes the progress along a given set of frames that is provided
 in input ("s" component) and the distance from them ("z" component).
-It is a function of MSD that are obtained by the joint use of MSD variable and SQUARED flag
+It is a function of mean squared displacement that are obtained by the joint use of mean squared displacement variables with the SQUARED flag
 (see below).
 
 \par Examples
 
 Here below is a case where you have defined three frames and you want to
-calculate the progress alng the path and the distance from it in p1
+calculate the progress along the path and the distance from it in p1
 
 \plumedfile
 t1: RMSD REFERENCE=frame_1.dat TYPE=OPTIMAL SQUARED

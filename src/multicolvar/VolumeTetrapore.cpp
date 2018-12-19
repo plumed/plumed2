@@ -64,7 +64,7 @@ position to a position in \f$ (u_i,v_i,z_i)\f$.  This is done using a rotation m
 \f]
 
 where \f$\mathbf{R}\f$ is a rotation matrix that is calculated by constructing a set of three orthonormal vectors from the
-refererence positions specified by the user.  Initially unit vectors are found by calculating the bisector, \f$\mathbf{b}\f$, and
+reference positions specified by the user.  Initially unit vectors are found by calculating the bisector, \f$\mathbf{b}\f$, and
 cross product, \f$\mathbf{c}\f$, of the vectors connecting atoms 1 and 2.  A third unit vector, \f$\mathbf{p}\f$ is then found by taking the cross
 product between the cross product calculated during the first step, \f$\mathbf{c}\f$ and the bisector, \f$\mathbf{b}\f$.  From this
 second cross product \f$\mathbf{p}\f$ and the bisector \f$\mathbf{b}\f$ two new vectors are calculated using:

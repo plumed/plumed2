@@ -64,7 +64,7 @@ position to a position in \f$ (u_i,v_i,z_i)\f$.  This is done using a rotation m
 \f]
 
 where \f$\mathbf{R}\f$ is a rotation matrix that is calculated by constructing a set of three orthonormal vectors from the
-refererence positions specified by the user. The first of these unit vectors points from the first reference atom to the second.
+reference positions specified by the user. The first of these unit vectors points from the first reference atom to the second.
 The second is then the normal to the plane containing atoms 1,2 and 3 and the the third is the unit vector orthogonal to
 these first two vectors.  \f$(x_o,y_o,z_o)\f$, meanwhile, specifies the position of the first reference atom.
 
@@ -83,8 +83,8 @@ described above and the resulting projections determine the \f$u'\f$, \f$v'\f$ a
 
 \par Examples
 
-The following commands tell plumed to calculate the number of atoms in an ion chanel in a protein.
-The extent of the chanel is calculated from the positions of atoms 1, 4, 5 and 11. The final value will be labeled cav.
+The following commands tell plumed to calculate the number of atoms in an ion channel in a protein.
+The extent of the channel is calculated from the positions of atoms 1, 4, 5 and 11. The final value will be labeled cav.
 
 \plumedfile
 d1: DENSITY SPECIES=20-500

@@ -211,20 +211,20 @@ void FuncSumHills::registerKeywords(Keywords& keys) {
   keys.add("optional","HILLSFILES"," source file for hills creation(may be the same as HILLS)"); // this can be a vector!
   keys.add("optional","HISTOFILES"," source file for histogram creation(may be the same as HILLS)"); // also this can be a vector!
   keys.add("optional","HISTOSIGMA"," sigmas for binning when the histogram correction is needed    ");
-  keys.add("optional","PROJ"," only with sumhills: the projection on the cvs");
-  keys.add("optional","KT"," only with sumhills: the kt factor when projection on cvs");
+  keys.add("optional","PROJ"," only with sumhills: the projection on the CVs");
+  keys.add("optional","KT"," only with sumhills: the kt factor when projection on CVs");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.add("optional","INTERVAL","set monodimensional INTERVAL");
+  keys.add("optional","INTERVAL","set one dimensional INTERVAL");
   keys.add("optional","OUTHILLS"," output file for hills ");
   keys.add("optional","OUTHISTO"," output file for histogram ");
   keys.add("optional","INITSTRIDE"," stride if you want an initial dump ");
   keys.add("optional","STRIDE"," stride when you do it on the fly ");
-  keys.addFlag("ISCLTOOL",true,"use via plumed commandline: calculate at read phase and then go");
+  keys.addFlag("ISCLTOOL",true,"use via plumed command line: calculate at read phase and then go");
   keys.addFlag("PARALLELREAD",false,"read parallel HILLS file");
-  keys.addFlag("NEGBIAS",false,"dump  negative bias ( -bias )   instead of the free energy: needed in welltempered with flexible hills ");
+  keys.addFlag("NEGBIAS",false,"dump  negative bias ( -bias )   instead of the free energy: needed in well tempered with flexible hills ");
   keys.addFlag("NOHISTORY",false,"to be used with INITSTRIDE:  it splits the bias/histogram in pieces without previous history  ");
   keys.addFlag("MINTOZERO",false,"translate the resulting bias/histogram to have the minimum to zero  ");
   keys.add("optional","FMT","the format that should be used to output real numbers");

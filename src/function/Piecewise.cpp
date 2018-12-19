@@ -31,7 +31,7 @@ namespace function {
 
 //+PLUMEDOC FUNCTION PIECEWISE
 /*
-Compute a piecewise straight line through its arguments that passes through
+Compute a piece wise straight line through its arguments that passes through
 a set of ordered control points.
 
 For variables less than the first
@@ -89,10 +89,10 @@ void Piecewise::registerKeywords(Keywords& keys) {
   keys.add("numbered","POINT","This keyword is used to specify the various points in the function above.");
   keys.reset_style("POINT","compulsory");
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("_pfunc","default","one or multiple instances of this quantity will be referenceable elsewhere "
+  keys.addOutputComponent("_pfunc","default","one or multiple instances of this quantity can be referenced elsewhere "
                           "in the input file.  These quantities will be named with the arguments of the "
                           "function followed by the character string _pfunc.  These quantities tell the "
-                          "user the values of the piecewise functions of each of the arguments.");
+                          "user the values of the piece wise functions of each of the arguments.");
 }
 
 Piecewise::Piecewise(const ActionOptions&ao):

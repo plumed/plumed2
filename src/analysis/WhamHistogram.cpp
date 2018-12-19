@@ -27,7 +27,7 @@ namespace analysis {
 
 //+PLUMEDOC REWEIGHTING WHAM_HISTOGRAM
 /*
-This can be used to output the a histogram using the weighted histogram techinque
+This can be used to output the a histogram using the weighted histogram technique
 
 \par Examples
 

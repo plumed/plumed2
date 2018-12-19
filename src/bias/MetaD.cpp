@@ -47,7 +47,7 @@ namespace bias {
 
 //+PLUMEDOC BIAS METAD
 /*
-Used to performed MetaDynamics on one or more collective variables.
+Used to performed metadynamics on one or more collective variables.
 
 In a metadynamics simulations a history dependent bias composed of
 intermittently added Gaussian functions is added to the potential \cite metad.
@@ -75,7 +75,7 @@ utility.
 
 In the simplest possible implementation of a metadynamics calculation the expense of a metadynamics
 calculation increases with the length of the simulation as one has to, at every step, evaluate
-the values of a larger and larger number of Gaussians. To avoid this issue you can
+the values of a larger and larger number of Gaussian kernels. To avoid this issue you can
 store the bias on a grid.  This approach is similar to that proposed in \cite babi08jcp but has the
 advantage that the grid spacing is independent on the Gaussian width.
 Notice that you should
@@ -91,7 +91,7 @@ case one can first save a GRID using GRID_WFILE (and GRID_WSTRIDE) and at a late
 it using GRID_RFILE.
 
 Another option that is available in plumed is well-tempered metadynamics \cite Barducci:2008. In this
-varient of metadynamics the heights of the Gaussian hills are rescaled at each step so the bias is now
+variant of metadynamics the heights of the Gaussian hills are scaled at each step so the bias is now
 given by:
 
 \f[
@@ -106,27 +106,27 @@ Also notice that with well-tempered metadynamics the HILLS file does not contain
 but the negative of the free-energy estimate. This choice has the advantage that
 one can restart a simulation using a different value for the \f$\Delta T\f$. The applied bias will be scaled accordingly.
 
-Note that you can use here also the flexible gaussian approach  \cite Branduardi:2012dl
-in which you can adapt the gaussian to the extent of Cartesian space covered by a variable or
+Note that you can use here also the flexible Gaussian approach  \cite Branduardi:2012dl
+in which you can adapt the Gaussian to the extent of Cartesian space covered by a variable or
 to the space in collective variable covered in a given time. In this case the width of the deposited
-gaussian potential is denoted by one value only that is a Cartesian space (ADAPTIVE=GEOM) or a time
-(ADAPTIVE=DIFF). Note that a specific integration technique for the deposited gaussians
+Gaussian potential is denoted by one value only that is a Cartesian space (ADAPTIVE=GEOM) or a time
+(ADAPTIVE=DIFF). Note that a specific integration technique for the deposited Gaussian kernels
 should be used in this case. Check the documentation for utility sum_hills.
 
 With the keyword INTERVAL one changes the metadynamics algorithm setting the bias force equal to zero
 outside boundary \cite baftizadeh2012protein. If, for example, metadynamics is performed on a CV s and one is interested only
-to the free energy for s > sw, the history dependent potential is still updated according to the above
-equations but the metadynamics force is set to zero for s < sw. Notice that Gaussians are added also
-if s < sw, as the tails of these Gaussians influence VG in the relevant region s > sw. In this way, the
-force on the system in the region s > sw comes from both metadynamics and the force field, in the region
-s < sw only from the latter. This approach allows obtaining a history-dependent bias potential VG that
+to the free energy for s > boundary, the history dependent potential is still updated according to the above
+equations but the metadynamics force is set to zero for s < boundary. Notice that Gaussian kernels are added also
+if s < boundary, as the tails of these Gaussian kernels influence VG in the relevant region s > boundary. In this way, the
+force on the system in the region s > boundary comes from both metadynamics and the force field, in the region
+s < boundary only from the latter. This approach allows obtaining a history-dependent bias potential VG that
 fluctuates around a stable estimator, equal to the negative of the free energy far enough from the
 boundaries. Note that:
 - It works only for one-dimensional biases;
 - It works both with and without GRID;
-- The interval limit sw in a region where the free energy derivative is not large;
-- If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should
-  be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at sw.
+- The interval limit boundary in a region where the free energy derivative is not large;
+- If in the region outside the limit boundary the system has a free energy minimum, the INTERVAL keyword should
+  be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at boundary.
 
 As a final note, since version 2.0.2 when the system is outside of the selected interval the force
 is set to zero and the bias value to the value at the corresponding boundary. This allows acceptances
@@ -173,8 +173,8 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 (See also \ref DISTANCE \ref PRINT).
 
 \par
-If you use adaptive Gaussians, with diffusion scheme where you use
-a Gaussian that should cover the space of 20 timesteps in collective variables.
+If you use adaptive Gaussian kernels, with diffusion scheme where you use
+a Gaussian that should cover the space of 20 time steps in collective variables.
 Note that in this case the histogram correction is needed when summing up hills.
 \plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
@@ -184,7 +184,7 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 \endplumedfile
 
 \par
-If you use adaptive Gaussians, with geometrical scheme where you use
+If you use adaptive Gaussian kernels, with geometrical scheme where you use
 a Gaussian that should cover the space of 0.05 nm in Cartesian space.
 Note that in this case the histogram correction is needed when summing up hills.
 \plumedfile
@@ -195,7 +195,7 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 \endplumedfile
 
 \par
-When using adaptive Gaussians you might want to limit how the hills width can change.
+When using adaptive Gaussian kernels you might want to limit how the hills width can change.
 You can use SIGMA_MIN and SIGMA_MAX keywords.
 The sigmas should specified in terms of CV so you should use the CV units.
 Note that if you use a negative number, this means that the limit is not set.
@@ -255,7 +255,7 @@ normalized using the \f$c(t)\f$ reweighting factor is given in the rbias compone
 free energy surface using the \ref HISTOGRAM analysis.
 
 \par
-The kinetics of the transitions between basins can also be analysed on the fly as
+The kinetics of the transitions between basins can also be analyzed on the fly as
 in \cite PRL230602. The flag ACCELERATION turn on accumulation of the acceleration
 factor that can then be used to determine the rate. This method can be used together
 with \ref COMMITTOR analysis to stop the simulation when the system get to the target basin.
@@ -298,14 +298,14 @@ You can also provide a target distribution using the keyword TARGET
 \cite white2015designing
 \cite marinelli2015ensemble
 \cite gil2016empirical
-The TARGET should be a grid containing a free-energy (i.e. the -kbT*log of the desired target distribution).
-Gaussians will then be scaled by a factor
+The TARGET should be a grid containing a free-energy (i.e. the -\f$k_B\f$T*log of the desired target distribution).
+Gaussian kernels will then be scaled by a factor
 \f[
 e^{\beta(\tilde{F}(s)-\tilde{F}_{max})}
 \f]
 Here \f$\tilde{F}(s)\f$ is the free energy defined on the grid and \f$\tilde{F}_{max}\f$ its maximum value.
 Notice that we here used the maximum value as in ref \cite gil2016empirical
-This choice allows to avoid exceedingly large Gaussians to be added. However,
+This choice allows to avoid exceedingly large Gaussian kernels to be added. However,
 it could make the Gaussian too small. You should always choose carefully the HEIGHT parameter
 in this case.
 The grid file should be similar to other PLUMED grid files in that it should contain
@@ -313,7 +313,7 @@ both the target free-energy and its derivatives.
 
 Notice that if you wish your simulation to converge to the target free energy you should use
 the DAMPFACTOR command to provide a global tempering \cite dama2014well
-Alternatively, if you use a BIASFACTOR yout simulation will converge to a free
+Alternatively, if you use a BIASFACTOR your simulation will converge to a free
 energy that is a linear combination of the target free energy and of the intrinsic free energy
 determined by the original force field.
 
@@ -492,15 +492,15 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","FILE","HILLS","a file in which the list of added hills is stored");
   keys.add("optional","HEIGHT","the heights of the Gaussian hills. Compulsory unless TAU and either BIASFACTOR or DAMPFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
-  keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
+  keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this bias factor.  Please note you must also specify temp");
   keys.add("optional","RECT","list of bias factors for all the replicas");
-  keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(kbT*DAMPFACTOR)");
+  keys.add("optional","DAMPFACTOR","damp hills with exp(-max(V)/(\\f$k_B\\f$T*DAMPFACTOR)");
   for (size_t i = 0; i < n_tempering_options_; i++) {
     registerTemperingKeywords(tempering_names_[i][0], tempering_names_[i][1], keys);
   }
   keys.add("optional","TARGET","target to a predefined distribution");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
-  keys.add("optional","TAU","in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
+  keys.add("optional","TAU","in well tempered metadynamics, sets height to (\\f$k_B \\Delta T\\f$*pace*timestep)/tau");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -515,12 +515,12 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","GRID_WFILE","the file on which to write the grid");
   keys.add("optional","GRID_RFILE","a grid file from which the bias should be read at the initial step of the simulation");
   keys.addFlag("STORE_GRIDS",false,"store all the grid files the calculation generates. They will be deleted if this keyword is not present");
-  keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
+  keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or time step dimensions");
   keys.add("optional","WALKERS_ID", "walker id");
   keys.add("optional","WALKERS_N", "number of walkers");
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
-  keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
+  keys.add("optional","INTERVAL","one dimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");
@@ -529,7 +529,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","ACCELERATION_RFILE","a data file from which the acceleration should be read at the initial step of the simulation");
   keys.addFlag("CALC_MAX_BIAS", false, "Set to TRUE if you want to compute the maximum of the metadynamics V(s, t)");
   keys.addFlag("CALC_TRANSITION_BIAS", false, "Set to TRUE if you want to compute a metadynamics transition bias V*(t)");
-  keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELLx with x=0,1,2,...,n. Each specifies the coordinates for one well as in transition-tempered metadynamics. At least one must be provided.");
+  keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELL followed by an integer. Each specifies the coordinates for one well as in transition-tempered metadynamics. At least one must be provided.");
   keys.addFlag("FREQUENCY_ADAPTIVE",false,"Set to TRUE if you want to enable frequency adaptive metadynamics such that the frequency for hill addition to change dynamically based on the acceleration factor.");
   keys.add("optional","FA_UPDATE_FREQUENCY","the frequency for updating the hill addition pace in frequency adaptive metadynamics, by default this is equal to the value given in PACE");
   keys.add("optional","FA_MAX_PACE","the maximum hill addition frequency allowed in frequency adaptive metadynamics. By default there is no maximum value.");
@@ -542,7 +542,7 @@ void MetaD::registerKeywords(Keywords& keys) {
 const std::string MetaD::tempering_names_[1][2] = {{"TT", "transition tempered"}};
 
 void MetaD::registerTemperingKeywords(const std::string &name_stem, const std::string &name, Keywords &keys) {
-  keys.add("optional", name_stem + "BIASFACTOR", "use " + name + " metadynamics with this biasfactor.  Please note you must also specify temp");
+  keys.add("optional", name_stem + "BIASFACTOR", "use " + name + " metadynamics with this bias factor.  Please note you must also specify temp");
   keys.add("optional", name_stem + "BIASTHRESHOLD", "use " + name + " metadynamics with this bias threshold.  Please note you must also specify " + name_stem + "BIASFACTOR");
   keys.add("optional", name_stem + "ALPHA", "use " + name + " metadynamics with this hill size decay exponent parameter.  Please note you must also specify " + name_stem + "BIASFACTOR");
 }
@@ -589,7 +589,7 @@ MetaD::MetaD(const ActionOptions& ao):
     log.printf("  Uses Geometry-based hills width: sigma must be in distance units and only one sigma is needed\n");
     adaptive_=FlexibleBin::geometry;
   } else if(adaptiveoption=="DIFF") {
-    log.printf("  Uses Diffusion-based hills width: sigma must be in timesteps and only one sigma is needed\n");
+    log.printf("  Uses Diffusion-based hills width: sigma must be in time steps and only one sigma is needed\n");
     adaptive_=FlexibleBin::diffusion;
   } else if(adaptiveoption=="NONE") {
     adaptive_=FlexibleBin::none;
@@ -612,7 +612,7 @@ MetaD::MetaD(const ActionOptions& ao):
     // if adaptive then the number must be an integer
     if(adaptive_==FlexibleBin::diffusion) {
       if(int(sigma0_[0])-sigma0_[0]>1.e-9 || int(sigma0_[0])-sigma0_[0] <-1.e-9 || int(sigma0_[0])<1 ) {
-        error("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of timesteps\n");
+        error("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of time steps\n");
       }
     }
     // here evtl parse the sigma min and max values

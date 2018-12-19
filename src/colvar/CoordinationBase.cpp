@@ -35,9 +35,9 @@ void CoordinationBase::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords(keys);
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addFlag("PAIR",false,"Pair only 1st element of the 1st group with 1st element in the second, etc");
-  keys.addFlag("NLIST",false,"Use a neighbour list to speed up the calculation");
-  keys.add("optional","NL_CUTOFF","The cutoff for the neighbour list");
-  keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbour list");
+  keys.addFlag("NLIST",false,"Use a neighbor list to speed up the calculation");
+  keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
+  keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbor list");
   keys.add("atoms","GROUPA","First list of atoms");
   keys.add("atoms","GROUPB","Second list of atoms (if empty, N*(N-1)/2 pairs in GROUPA are counted)");
 }

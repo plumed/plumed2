@@ -25,7 +25,7 @@
 
 //+PLUMEDOC DIMRED SKETCHMAP_SMACOF
 /*
-Optimise the sketch-map stress function using the SMACOF algorithm.
+Optimize the sketch-map stress function using the SMACOF algorithm.
 
 \par Examples
 

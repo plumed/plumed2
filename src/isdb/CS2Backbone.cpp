@@ -52,12 +52,12 @@ Calculates the backbone chemical shifts for a protein.
 
 The functional form is that of CamShift \cite Kohlhoff:2009us. The chemical shift
 of the selected nuclei can be saved as components. Alternatively one can calculate either
-the CAMSHIFT score (usefull as a collective variable \cite Granata:2013dk or as a scoring
+the CAMSHIFT score (useful as a collective variable \cite Granata:2013dk or as a scoring
 function \cite Robustelli:2010dn) or a \ref METAINFERENCE score (using DOSCORE).
 For these two latter cases experimental chemical shifts must be provided.
 
 CS2BACKBONE calculation can be relatively heavy because it often uses a large number of atoms, it can
-be parallelised using MPI and \ref Openmp.
+be run in parallel using MPI and \ref Openmp.
 
 As a general rule, when using \ref CS2BACKBONE or other experimental restraints it may be better to
 increase the accuracy of the constraint algorithm due to the increased strain on the bonded structure.
@@ -68,7 +68,7 @@ ATOMS and a TEMPLATE pdb file for the same atoms should be provided as well in t
 The system is made automatically whole unless NOPBC is used, in particular if the system is made
 by multiple chains it is usually better to use NOPBC and make the molecule whole \ref WHOLEMOLECULES
 selecting an appropriate order of the atoms. The pdb file is needed to the generate a simple topology of the protein.
-For histidines in protonation states different from D the HIE/HSE HIP/HSP name should be used.
+For histidine residues in protonation states different from D the HIE/HSE HIP/HSP name should be used.
 GLH and ASH can be used for the alternative protonation of GLU and ASP. Non-standard amino acids and other
 molecules are not yet supported, but in principle they can be named UNK. If multiple chains are present
 the chain identifier must be in the standard PDB format, together with the TER keyword at the end of each chain.
@@ -81,7 +81,7 @@ add only the files for the nuclei you need, but each file should include all pro
 A chemical shift for a nucleus is calculated if a value greater than 0 is provided.
 For practical purposes the value can correspond to the experimental value.
 Residues numbers should match that used in the pdb file, but must be positive, so double check the pdb.
-The first and last residue of each chain should be preceeded by a # character.
+The first and last residue of each chain should be preceded by a # character.
 
 \verbatim
 CAshifts.dat:
@@ -96,9 +96,9 @@ CAshifts.dat:
 #last of second chain
 \endverbatim
 
-The default behaviour is to store the values for the active nuclei in components (ca_#, cb_#,
+The default behavior is to store the values for the active nuclei in components (ca_#, cb_#,
 co_#, ha_#, hn_#, nh_# and expca_#, expcb_#, expco_#, expha_#, exphn_#, exp_nh#) with NOEXP it is possible
-to only store the backcalculated values, where # includes a chain and residue number.
+to only store the back-calculated values, where # includes a chain and residue number.
 
 One additional file is always needed in the folder DATADIR: camshift.db. This file includes all the parameters needed to
 calculate the chemical shifts and can be found in regtest/isdb/rt-cs2backbone/data/ .
@@ -500,10 +500,10 @@ void CS2Backbone::registerKeywords( Keywords& keys ) {
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATADIR","data/","The folder with the experimental chemical shifts.");
-  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialise ALMOST.");
-  keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbour list update.");
+  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialize ALMOST.");
+  keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbor list update.");
   keys.addFlag("CAMSHIFT",false,"Set to TRUE if you to calculate a single CamShift score.");
-  keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimetnal values.");
+  keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimental values.");
   keys.addOutputComponent("ha","default","the calculated Ha hydrogen chemical shifts");
   keys.addOutputComponent("hn","default","the calculated H hydrogen chemical shifts");
   keys.addOutputComponent("nh","default","the calculated N nitrogen chemical shifts");

@@ -62,19 +62,19 @@ We calculate histograms within PLUMED using a method known as kernel density est
 https://en.wikipedia.org/wiki/Kernel_density_estimation
 
 In PLUMED the value of \f$\zeta\f$ at each discrete instant in time in the trajectory is accumulated.  A kernel, \f$K(\zeta-\zeta(t'),\sigma)\f$,
-centered at the current value, \f$\zeta(t)\f$, of this quantity is generated with a bandwith \f$\sigma\f$, which
+centered at the current value, \f$\zeta(t)\f$, of this quantity is generated with a bandwidth \f$\sigma\f$, which
 is set by the user.  These kernels are then used to accumulate the ensemble average for the probability density:
 
 \f[
 \langle P(\zeta) \rangle = \frac{ \sum_{t'=0}^t w(t') K(\zeta-\zeta(t'),\sigma) }{ \sum_{t'=0}^t w(t') }
 \f]
 
-Here the sums run over a portion of the trajectory specified by the user.  The final quantity evalulated is a weighted
+Here the sums run over a portion of the trajectory specified by the user.  The final quantity evaluated is a weighted
 average as the weights, \f$w(t')\f$, allow us to negate the effect any bias might have on the region of phase space
 sampled by the system.  This is discussed in the section of the manual on \ref Analysis.
 
 A discrete analogue of kernel density estimation can also be used.  In this analogue the kernels in the above formula
-are replaced by dirac delta functions.   When this method is used the final function calculated is no longer a probability
+are replaced by Dirac delta functions.   When this method is used the final function calculated is no longer a probability
 density - it is instead a probability mass function as each element of the function tells you the value of an integral
 between two points on your grid rather than the value of a (continuous) function on a grid.
 
@@ -101,17 +101,17 @@ weighted average.  Furthermore, the weights should be taken into account when th
 
 where \f$W_i\f$ is the sum of all the weights for the \f$i\f$th block of data.
 
-If we wish to caclulate a normalized histogram we must calculate ensemble averages from our biased simulation using:
+If we wish to calculate a normalized histogram we must calculate ensemble averages from our biased simulation using:
 \f[
  \langle H(x) \rangle = \frac{\sum_{t=1}^M w_t K( x - x_t,\sigma) }{\sum_{t=1}^M w_t}
 \f]
-where the sums runs over the trajectory, \f$w_t\f$ is the weight of the \f$t\f$th trajectory frame, \f$x_t\f$ is the value of the cv for the \f$t\f$th
+where the sums runs over the trajectory, \f$w_t\f$ is the weight of the \f$t\f$th trajectory frame, \f$x_t\f$ is the value of the CV for the \f$t\f$th
 trajectory frame and \f$K\f$ is a kernel function centered on \f$x_t\f$ with bandwidth \f$\sigma\f$.  The quantity that is evaluated is the value of the
 normalized histogram at point \f$x\f$.  The following ensemble average will be calculated if you use the NORMALIZATION=true option in HISTOGRAM.
 If the ensemble average is calculated in this way we must calculate the associated error bars from our block averages using the second of the expressions
 above.
 
-A number of works have shown that when biased simulations are performed it is often better to calculate an unormalized estimate of the histogram using:
+A number of works have shown that when biased simulations are performed it is often better to calculate an estimate of the histogram that is not normalized using:
 \f[
 \langle H(x) \rangle = \frac{1}{M} \sum_{t=1}^M w_t K( x - x_t,\sigma)
 \f]
@@ -122,7 +122,7 @@ block averages.
 \par Examples
 
 The following input monitors two torsional angles during a simulation
-and outputs a continuos histogram as a function of them at the end of the simulation.
+and outputs a continuous histogram as a function of them at the end of the simulation.
 \plumedfile
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
@@ -227,7 +227,7 @@ void Histogram::registerKeywords( Keywords& keys ) {
   gridtools::ActionWithGrid::registerKeywords( keys ); keys.use("ARG"); keys.remove("NORMALIZATION");
   keys.add("compulsory","NORMALIZATION","ndata","This controls how the data is normalized it can be set equal to true, false or ndata.  See above for an explanation");
   keys.add("optional","DATA","input data from action with vessel and compute histogram");
-  keys.add("optional","VECTORS","input three dimsnional vectors for computing histogram");
+  keys.add("optional","VECTORS","input three dimensional vectors for computing histogram");
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");

@@ -51,7 +51,7 @@ PLUMED_REGISTER_ACTION(GridToXYZ,"GRID_TO_XYZ")
 
 void GridToXYZ::registerKeywords( Keywords& keys ) {
   GridPrintingBase::registerKeywords( keys );
-  keys.add("optional","COMPONENT","if your input is a vector field use this to specifiy the component of the input vector field for which you wish to output");
+  keys.add("optional","COMPONENT","if your input is a vector field use this to specify the component of the input vector field for which you wish to output");
   keys.add("compulsory","UNITS","PLUMED","the units in which to print out the coordinates. PLUMED means internal PLUMED units");
   keys.add("optional", "PRECISION","The number of digits in trajectory file");
   keys.remove("FMT");

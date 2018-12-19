@@ -33,8 +33,9 @@ namespace vatom {
 /*
 Calculate the absolute position of a ghost atom with fixed coordinates
 in the local reference frame formed by three atoms.
+
 The computed ghost atom is stored as a virtual atom that can be accessed in
-an atom list through the the label for the GHOST action that creates it.
+ an atom list through the the label for the GHOST action that creates it.
 
 \par Examples
 

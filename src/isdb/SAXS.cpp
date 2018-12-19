@@ -59,19 +59,19 @@ namespace isdb {
 /*
 Calculates SAXS scattered intensity using either the Debye equation or the harmonic sphere approximation.
 
-Intensities are calculated for a set of scattering lenght set using QVALUES numbered keywords, QVALUE cannot be 0.
+Intensities are calculated for a set of scattering length set using QVALUE keywords that are numbered starting from 0.
 Structure factors can be either assigned using a polynomial expansion to any order using the PARAMETERS keywords;
 automatically assigned to atoms using the ATOMISTIC flag reading a PDB file, a correction for the water density is
 automatically added, with water density that by default is 0.334 but that can be set otherwise using WATERDENS;
-automatically assigned to Martini pseudoatoms using the MARTINI flag.
+automatically assigned to Martini pseudo atoms using the MARTINI flag.
 The calculated intensities can be scaled using the SCALEINT keywords. This is applied by rescaling the structure factors.
 Experimental reference intensities can be added using the ADDEXP and EXPINT flag and keywords.
 By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a GPU
-if the arrayfire libraries are installed and correctly linked (). Alternatively we an implementation based on Bessel functions,
-BESSEL flag. This is very fast for small q values because a short expasion is enough.
-An automatic choice is made for which q bessel are used and for which the calculation is done by Debye. If one wants to force
+if the ARRAYFIRE libraries are installed and correctly linked (). Alternatively we an implementation based on Bessel functions,
+BESSEL flag. This is very fast for small q values because a short expansion is enough.
+An automatic choice is made for which q Bessel are used and for which the calculation is done by Debye. If one wants to force
 all q values to be calculated using Bessel function this can be done using FORCE_BESSEL.
-Irrespectively of the method employed, \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
+Irrespective of the method employed, \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 \par Examples
 in the following example the saxs intensities for a martini model are calculated. structure factors
@@ -157,18 +157,18 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addFlag("BESSEL",false,"Perform the calculation using the adaptive spherical harmonic approximation");
-  keys.addFlag("FORCE_BESSEL",false,"Perform the calculation using the adaptive spherical harmonic approximation, without adaptive algorithm, usefull for debug only");
+  keys.addFlag("FORCE_BESSEL",false,"Perform the calculation using the adaptive spherical harmonic approximation, without adaptive algorithm, useful for debug only");
   keys.add("compulsory","DEVICEID","0","Identifier of the GPU to be used");
-  keys.addFlag("GPU",false,"calculate SAXS using ARRAYFIRE on an accellerator device");
+  keys.addFlag("GPU",false,"calculate SAXS using ARRAYFIRE on an accelerator device");
   keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
-  keys.add("numbered","QVALUE","Selected scattering lenghts in Angstrom are given as QVALUE1, QVALUE2, ... .");
-  keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the i-th atom/bead.");
+  keys.add("numbered","QVALUE","Selected scattering lengths in Angstrom are given as QVALUE1, QVALUE2, ... .");
+  keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the \\f$i\\f$th atom/bead.");
   keys.add("compulsory","WATERDENS","0.334","Density of the water to be used for the correction of atomistic structure factors.");
   keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimental values.");
   keys.add("numbered","EXPINT","Add an experimental value for each q value.");
-  keys.add("compulsory","SCALEINT","1.0","SCALING value of the calculated data. Usefull to simplify the comparison.");
+  keys.add("compulsory","SCALEINT","1.0","SCALING value of the calculated data. Useful to simplify the comparison.");
   keys.addOutputComponent("q","default","the # SAXS of q");
   keys.addOutputComponent("exp","ADDEXP","the # experimental intensity");
 }

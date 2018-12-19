@@ -32,7 +32,7 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");

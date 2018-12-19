@@ -57,7 +57,7 @@ PRINT ARG=f1.* FILE=colvar
 
 The following example calculates the difference of the current contact map with respect
 to a reference provided. In this case REFERENCE is the fraction of contact that is formed
-(i.e. the distance between two atoms transformed with the SWITH), while R_0 is the contact
+(i.e. the distance between two atoms transformed with the SWITCH), while R_0 is the contact
 distance. WEIGHT gives the relative weight of each contact to the final distance measure.
 
 \plumedfile
@@ -142,7 +142,7 @@ void ContactMap::registerKeywords( Keywords& keys ) {
            "weight value for each contact.");
   keys.reset_style("SWITCH","compulsory");
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
-  keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contant map");
+  keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contact map");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addOutputComponent("contact","default","By not using SUM or CMDIST each contact will be stored in a component");
 }

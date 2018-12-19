@@ -27,7 +27,7 @@
 Calculate a function to investigate the relative orientations of polymer angles
 
 This CV takes the vectors calculated by a \ref PLANES action as input and computes the following function
-of the relative angles, \f$\theta\f$, between the normals of pairs of input vectors:
+of the relative angles, \f$\theta\f$, between the vectors that are normal to the pairs of input vectors:
 
 \f[
 s = \frac{ 3 \cos^2 \theta - 1 }{ 2 }

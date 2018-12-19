@@ -1,7 +1,7 @@
 \page colvarintro Collective Variables
 
 Chemical systems contain an enormous number atoms, which, in most cases makes it simply impossible for
-us to understand anything by monitoring the atom postions directly.  Consquentially,
+us to understand anything by monitoring the atom positions directly.  Consequently,
 we introduce Collective variables (CVs) that describe the chemical processes we are
 interested in and monitor these simpler quantities instead.  These CVs are used in many of the methods
 implemented in PLUMED - there values can be monitored using \ref PRINT, \ref Function of them can be calculated
@@ -12,14 +12,14 @@ The simplest collective variables that are implemented in PLUMED take in a
 set of atomic positions and output one or multiple scalar CV values.  Information on these variables is given on the page entitled 
 \ref Colvar while information as to how sets of atoms can be selected
 can be found in the pages on \ref Group.  Please be aware that PLUMED contains implementations of many other collective variables 
-but that the input for these variables may be less transparent when it is first encourntered.
+but that the input for these variables may be less transparent when it is first encountered.
 In particular, the page on \ref dists describes the various ways that you can calculate the distance from a particular reference
 configuration.  So you will find instructions on how to calculate the RMSD distance from the folded state of a protein here.
 Meanwhile, the page on \ref Function describes the various functions of collective variables that can be used in the
 code.  This is a very powerful feature of PLUMED as you can use the \ref Function commands to calculate any function or 
 combination of the simple collective variables listed on the page \ref Colvar.  Lastly the page on \ref mcolv describes MultiColvars.  
 MultiColvars allow you to use many different colvars and allow us to
-implement all these collective variables without implementing having an unmanigiably large ammount of code.  For some things (e.g.
+implement all these collective variables without a large amount of code.  For some things (e.g.
 \ref DISTANCES GROUPA=1 GROUPB=2-100 LESS_THAN={RATIONAL R_0=3}) there are more computationally efficient options available in plumed
 (e.g. \ref COORDINATION).  However, MultiColvars are worth investigating as they provide a flexible syntax for many quite-complex CVs.
 
@@ -38,19 +38,19 @@ The following list contains descriptions of a number of the colvars that are cur
 
 \page dists Distances from reference configurations
 
-One colvar that has been shown to be very sucessful in studying protein folding is the distance between the instantaneous configuration
+One colvar that has been shown to be very successful in studying protein folding is the distance between the instantaneous configuration
 and a reference configuration - often the structure of the folded state.  When the free energy of a protein is shown as a function
 of this collective variable there is a minima for low values of the CV, which is due to the folded state of the protein.  There is 
 then a second minima at higher values of the CV, which is the minima corresponding to the unfolded state.
 
 A slight problem with this sort of collective variable is that there are many different ways of calculating the distance from a 
 particular reference structure.  The simplest - adding together the distances by which each of the atoms has been translated in
-going from the reference configuration to the instantanous configuration - is not particularly sensible.  A distance calculated
-in this way does not neglect translation of the center of mass of the molecule and rotation of the frame of reference.  A common practise
+going from the reference configuration to the instantaneous configuration - is not particularly sensible.  A distance calculated
+in this way does not neglect translation of the center of mass of the molecule and rotation of the frame of reference.  A common practice
 is thus to remove these components by calculating the \ref RMSD distance between the reference and instantaneous configurations.
-This is not the only way to calculate the distance, however.  One could also calculate the total ammount by which a large number 
-of collective variables change in moving from the reference to the instaneous configurations.  One could even combine RMSD distances
-with the ammount the collective variables change.  A full list of the ways distances can be measured in PLUMED is given below:
+This is not the only way to calculate the distance, however.  One could also calculate the total amount by which a large number 
+of collective variables change in moving from the reference to the instantaneous configurations.  One could even combine RMSD distances
+with the amount the collective variables change.  A full list of the ways distances can be measured in PLUMED is given below:
 
 @DCOLVAR@
 
@@ -67,12 +67,12 @@ function something like this:
 \f[
 s = \sum_i g[f(\{X\}_i)]
 \f]
-In this expression \f$g\f$ is a funciton that takes in one argument and \f$f\f$ is a function that takes a set of atomic positions
+In this expression \f$g\f$ is a function that takes in one argument and \f$f\f$ is a function that takes a set of atomic positions
 as argument. The symbol \f$\{X\}_i\f$ is used to indicate the fact that the function \f$f\f$ is evaluated for a number of different
 sets of atoms.  If you would just like to output the values of all the various \f$f\f$ functions you should use the command \ref DUMPMULTICOLVAR
 
 This functionality is useful if you need to calculate a minimum distance or the number of coordination numbers greater than a 3.0.  
-To avoid dupilcating the code to calculate an angle or distance many times and to make it easier to implement very complex collective 
+To avoid duplicating the code to calculate an angle or distance many times and to make it easier to implement very complex collective 
 variables PLUMED provides these sort of collective variables using so-called MultiColvars.  MultiColvars are named in this way because a single
 PLUMED action can be used to calculate a number of different collective variables.  For instance the \ref DISTANCES
 action can be used to calculate the minimum distance, the number of distances less than a certain value, the number of
@@ -112,8 +112,8 @@ with respect to these terms are essentially zero.  By increasing the TOL paramet
 of the calculation.  Be aware, however, that this increase in speed is only possible because you are lowering the 
 accuracy with which you are computing the quantity of interest.
 
-Once you have specified the base quanties that are to be calculated from the atoms involved and any parameters
-you need to specify what function of these base quanties is to be calculated.  For most multicolvars you can calculate 
+Once you have specified the base quantities that are to be calculated from the atoms involved and any parameters
+you need to specify what function of these base quantities is to be calculated.  For most multicolvars you can calculate 
 the minimum, the number less than a target value, the number within a certain range, the number more than a target
 value and the average value directly.  
 
@@ -136,7 +136,7 @@ The idea with these methods is that function of the form:
 \f[
 s = \sum_i w(\{X\}_i) g[f(\{X\}_i)]
 \f]
-can be evaluated where once again \f$g\f$ is a function with one argumet and \f$g\f$ is a function of a set of atomic positions.  
+can be evaluated where once again \f$g\f$ is a function with one argument and \f$g\f$ is a function of a set of atomic positions.  
 The difference from the more general function described earlier is that we now have a weight \f$w\f$ which is again a function of the
 atomic positions.  This weight varies between zero and one and it is this weight that is calculated in the list of filtering methods
 and volume methods described in the lists above.  
@@ -175,8 +175,8 @@ The list of biases of this type are as follows:
 
 @MCOLVARB@
 
-Notice that (in theory) you could also use this functionality to add additional terms to your forcefield or to implement your 
-forcefield.
+Notice that (in theory) you could also use this functionality to add additional terms to your force field or to implement your 
+force field.
 
 \section usingbase Extracting all the base quantities
 
@@ -187,10 +187,10 @@ action.  You can thus use the following command to extract this sort of informat
 \page contactmatrix Exploiting contact matrices
 
 A contact matrix is an \f$N \times N\f$ matrix in which the \f$i\f$th, \f$j\f$th element tells you whether or not the \f$i\f$th
-and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  There are various ways of definining
+and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  There are various ways of defining
 whether a pair of atoms/molecules are adjacent or not.  For example we can say two atoms are adjacent if the distance between
 them is less than some cutoff.  Alternatively, if we have a have a pair of molecules, we might state they are adjacent if their
-centre's of mass are within a certain cutoff and if the two molecules have the same orientation.  Two electronegative atoms
+centers of mass are within a certain cutoff and if the two molecules have the same orientation.  Two electronegative atoms
 might be said to be adjacent if there is a hydrogen bond between them.  For these reasons then PLUMED contains all of the 
 following methods for calculating an adjacency matrix 
 

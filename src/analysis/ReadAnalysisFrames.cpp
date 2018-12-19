@@ -41,7 +41,7 @@ PLUMED_REGISTER_ACTION(ReadAnalysisFrames,"COLLECT_FRAMES")
 void ReadAnalysisFrames::registerKeywords( Keywords& keys ) {
   AnalysisBase::registerKeywords( keys );
   keys.remove("SERIAL"); keys.remove("USE_OUTPUT_DATA_FROM"); keys.use("ARG");
-  keys.add("atoms-1","ATOMS","the atoms whose positions we are tracking for the purpose of analysing the data");
+  keys.add("atoms-1","ATOMS","the atoms whose positions we are tracking for the purpose of analyzing the data");
   keys.add("atoms-1","STRIDE","the frequency with which data should be stored for analysis.  By default data is collected on every step");
   keys.add("compulsory","CLEAR","0","the frequency with which data should all be deleted and restarted");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
@@ -127,7 +127,7 @@ void ReadAnalysisFrames::calculateWeights() {
 
 void ReadAnalysisFrames::update() {
   if( getStep()==0 ) return;
-  // Delete everything we stored now that it has been analysed
+  // Delete everything we stored now that it has been analyzed
   if( clearonnextstep ) {
     my_data_stash.clear(); my_data_stash.resize(0);
     logweights.clear(); logweights.resize(0);

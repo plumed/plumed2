@@ -36,7 +36,7 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS completion
 /*
-Dumps the body of a bash function to be used for autocompletion.
+Dumps the body of a bash function to be used for auto completion.
 
 Users will typically not need this command.
 See more at \ref BashAutocompletion

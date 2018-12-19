@@ -49,7 +49,7 @@ including \f$\psi\f$ in the numerator is there to ensure that only those molecul
 number of molecules.  It is important to include this "more than" switching function when you are simulating nucleation
 from solution with this CV.  Lastly, the $K_n functions are \ref kernelfunctions that take the torsion angle, \f$\theta_{ij}\f$, between the
 internal orientation vectors for molecules \f$i\f$ and \f$j\f$ as input.  These kernel functions should be set so that they are
-equal to one when the relative orientation of the moleclues are as they are in the solid and equal to zero otherwise.
+equal to one when the relative orientation of the molecules are as they are in the solid and equal to zero otherwise.
 The final \f$s_i\f$ quantity thus measures whether (on average) the molecules in the first coordination sphere around molecule \f$i\f$
 are oriented as they would be in the solid.  Furthermore, this Action is a multicolvar so you can calculate the \f$s_i\f$ values
 for all the molecules in your system simultaneously and then determine the average, the number less than and so on.

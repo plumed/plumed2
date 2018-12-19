@@ -31,7 +31,7 @@ namespace adjmat {
 
 void ActionWithInputMatrix::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.add("compulsory","MATRIX","the action that calcualtes the adjacency matrix vessel we would like to analyse");
+  keys.add("compulsory","MATRIX","the action that calculates the adjacency matrix vessel we would like to analyze");
 }
 
 

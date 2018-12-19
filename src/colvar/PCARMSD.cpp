@@ -75,8 +75,8 @@ void PCARMSD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","EIGENVECTORS","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   //useCustomisableComponents(keys);
   keys.addOutputComponent("eig","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
-  keys.addOutputComponent("residual","default","the distance of the present configuration from the configuration supplied as AVERAGE in terms of MSD after optimal alignment ");
-  keys.addFlag("SQUARED-ROOT",false," This should be setted if you want RMSD instead of MSD ");
+  keys.addOutputComponent("residual","default","the distance of the present configuration from the configuration supplied as AVERAGE in terms of mean squared displacement after optimal alignment ");
+  keys.addFlag("SQUARED-ROOT",false," This should be set if you want RMSD instead of mean squared displacement ");
 }
 
 PCARMSD::PCARMSD(const ActionOptions&ao):

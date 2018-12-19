@@ -205,9 +205,9 @@ void XDistances::registerKeywords( Keywords& keys ) {
   keys.reset_style("ATOMS","atoms");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-           "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+           "the atoms in GROUPB. This must be used in conjunction with GROUPB.");
   keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-           "in GROUPB. This must be used in conjuction with GROUPA.");
+           "in GROUPB. This must be used in conjunction with GROUPA.");
 }
 
 XDistances::XDistances(const ActionOptions&ao):

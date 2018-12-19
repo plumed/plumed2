@@ -36,7 +36,7 @@ This command sets the internal units for the code.  A new unit can be set by eit
 specifying a conversion factor from the plumed default unit or by using a string
 corresponding to one of the defined units given below.  This directive MUST
 appear at the BEGINNING of the plumed.dat file.  The same units must be used
-througout the plumed.dat file.
+throughout the plumed.dat file.
 
 Notice that all input/output will then be made using the specified units.
 That is: all the input parameters, all the output files, etc. The only
@@ -45,7 +45,7 @@ the units. For example, trajectories written in .gro format (with \ref DUMPATOMS
 are going to be always in nm.
 
 The following strings can be used to specify units. Note that the strings are
-case senstive.
+case sensitive.
 - LENGTH: nm (default), A (for Angstrom), um (for micrometer), Bohr (0.052917721067 nm)
 - ENERGY: kj/mol (default), j/mol, kcal/mol (4.184 kj/mol), eV (96.48530749925792 kj/mol), Ha (for Hartree, 2625.499638 kj/mol)
 - TIME: ps (default), fs, ns, atomic (2.418884326509e-5 ps)
@@ -72,8 +72,8 @@ DUMPATOMS FILE=out.gro STRIDE=10 ATOMS=1-100
 DUMPATOMS FILE=out.xyz STRIDE=10 ATOMS=1-100
 \endplumedfile
 
-In the `COLVAR` file, time and distance will appear in fs and A respectively, *irrespectively* of which units
-you are using the the host MD code. The coordinates in the `out.gro` file will be expressed in nm,
+In the `COLVAR` file, time and distance will appear in fs and A respectively, *irrespective* of which units
+you are using in the host MD code. The coordinates in the `out.gro` file will be expressed in nm,
 since `gro` files are by convention written in nm. The coordinates in the `out.xyz` file
 will be written in Angstrom *since we used the UNITS command setting Angstrom units*.
 Indeed, within PLUMED xyz files are using internal PLUMED units and not necessarily Angstrom!

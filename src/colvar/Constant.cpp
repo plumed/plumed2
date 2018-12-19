@@ -32,8 +32,7 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR CONSTANT
 /*
-Return one or more constant quantities
-with or without derivatives.
+Return one or more constant quantities with or without derivatives.
 
 Useful in combination with functions that
 takes in input constants or parameters.

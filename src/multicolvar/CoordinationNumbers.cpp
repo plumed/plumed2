@@ -36,7 +36,7 @@ namespace multicolvar {
 //+PLUMEDOC MCOLVAR COORDINATIONNUMBER
 /*
 Calculate the coordination numbers of atoms so that you can then calculate functions of the distribution of
-coordination numbers such as the minimum, the number less than a certain quantity and so on.
+ coordination numbers such as the minimum, the number less than a certain quantity and so on.
 
 To make the calculation of coordination numbers differentiable the following function is used:
 
@@ -105,7 +105,7 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","R_POWER","Multiply the coordination number function by a power of r, "
            "as done in White and Voth (see note above, default: no)");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords

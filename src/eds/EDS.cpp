@@ -41,7 +41,7 @@ namespace eds {
 Add a linear bias on a set of observables.
 
 This force is the same as the linear part of the bias in \ref
-RESTRAINT, but this bias has the ability to compute prefactors
+RESTRAINT, but this bias has the ability to compute the prefactors
 adaptively using the scheme of White and Voth \cite white2014efficient
 in order to match target observable values for a set of CVs.
 Further updates to the algorithm are described in \cite hocky2017cgds.
@@ -211,7 +211,7 @@ void EDS::registerKeywords(Keywords& keys) {
            "CENTER_ARG is for calculated centers, e.g. from a CV or analysis. ");
 
   keys.add("optional","PERIOD","Steps over which to adjust bias for adaptive or ramping");
-  keys.add("compulsory","RANGE","25.0","The (starting) maximum increase in coupling constant per PERIOD (in kBT/[BIAS_SCALE unit]) for each CV based");
+  keys.add("compulsory","RANGE","25.0","The (starting) maximum increase in coupling constant per PERIOD (in \\f$k_B T\\f$/[BIAS_SCALE unit]) for each CV based");
   keys.add("compulsory","INCREASE_FACTOR","1.0","Factor by which to increase RANGE every time coupling exceeds RANGE. RANGE is the max prefactor for increasing coupling in a given PERIOD.");
   keys.add("compulsory","SEED","0","Seed for random order of changing bias");
   keys.add("compulsory","INIT","0","Starting value for coupling constant");
@@ -223,7 +223,7 @@ void EDS::registerKeywords(Keywords& keys) {
            "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
            "If not set, default is 1 / N, where N is the number of CVs. ");
 
-  keys.addFlag("LM",false,"Use Levenberg-Marquadt algorithm along with simulatneous keyword. Otherwise use gradient descent.");
+  keys.addFlag("LM",false,"Use Levenberg-Marquadt algorithm along with simultaneous keyword. Otherwise use gradient descent.");
   keys.addFlag("LM_MIXING","1","Initial mixing parameter when using Levenberg-Marquadt minimization.");
 
   keys.add("optional","RESTART_FMT","the format that should be used to output real numbers in EDS restarts");

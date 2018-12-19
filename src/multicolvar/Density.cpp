@@ -34,7 +34,7 @@ namespace multicolvar {
 //+PLUMEDOC MCOLVAR DENSITY
 /*
 Calculate functions of the density of atoms as a function of the box.  This allows one to calculate
-the number of atoms in half the box.
+ the number of atoms in half the box.
 
 \par Examples
 

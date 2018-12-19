@@ -28,7 +28,7 @@ namespace gridtools {
 
 void ActionWithGrid::registerKeywords( Keywords& keys ) {
   vesselbase::ActionWithAveraging::registerKeywords( keys );
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
+  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","CONCENTRATION","the concentration parameter for Von Mises-Fisher distributions");
