@@ -51,7 +51,7 @@ They are defined via the two-scale relations for scale \f$j\f$ and shift \f$k\f$
 The exact properties are set by choosing filter coefficients, e.g. choosing \f$h_k\f$ for the father wavelet:
 
 \f[
-  \phi\left(x\right) = \sqrt{2} \sum_k h_k\, \phi \left( 2 x - k\right)\\
+  \phi\left(x\right) = \sqrt{2} \sum_k h_k\, \phi \left( 2 x - k\right)
 \f]
 
 The filter coefficients by Daubechies result in an orthonormal basis of all integer shifted functions:
@@ -64,6 +64,9 @@ The method of construction is close to the "Vector cascade algorithm" described 
 The needed filter coefficients of the scaling function are hardcoded, and were previously generated via a python script.
 Currently only the "maximum phase" type is implemented, but the "least asymmetric" type can be added easily.
 
+As an example the two Db8 wavelet functions can be seen below
+
+\image html ves-basisf-db8.png
 
 
 \par Some details on the input parameters
@@ -71,10 +74,10 @@ Currently only the "maximum phase" type is implemented, but the "least asymmetri
 The specified order of the basis set defines the coefficients and the corresponding wavelet used.
 Order N results in DbN wavelets, which is equal to the number of vanishing moments of the wavelet basis and double the number of filter coefficients.
 
-The intrinsic support of the wavelets is then \f$\left[0, N*2 -1\right)\f$.
+The intrinsic support of the wavelets is then \f$ \left[0, N*2 -1 \right) \f$.
 Using the cascade algorithm results in a doubling of the grid values per integer for each iteration.
 This means that the grid size will always be a power of two multiplied by the intrinsic support length of the wavelets.
-The used grid size is calculated by \f$n_{\text{bins}} = (N*2 - 1) * 2^m\f$ with the smallest \f$m\f$ such that the grid is at least as large as the specified number.
+The used grid size is calculated by \f$n_{\text{bins}} = (N*2 - 1) * 2^m\f$ with the smallest \f$ m \f$ such that the grid is at least as large as the specified number.
 
 By default the basis functions are scaled to match the specified size of the CV space (MINIMUM and MAXIMUM keywords), which often is a good initial choice.
 The "FUNCTION_LENGTH" keyword can be used to alter this and use a different scaling.
@@ -82,29 +85,65 @@ A smaller value will use more and smaller basis functions which results in a mor
 
 \par Number of basis functions
 
-The resulting basis set consists of integer shifts of the wavelet function at scale \f$j\f$,
+The resulting basis set consists of integer shifts of the wavelet function at scale \f$j\f$ ,
 \f[
-  \phi_i (x) = phi(\frac{x+i}{j})
+  \phi_i (x) = \phi(\frac{x+i}{j})
 \f]
 
-where \f$i\$ in principal would span all positive and negative integers.
+where \f$i\f$ in principal would span all positive and negative integers.
 Because of the compact support of the wavelets clearly not all shifts are needed.
 
 If the wavelets are scaled to match the CV range exactly there would be \f$4*N -3\f$ basis functions whose support is at least partially in this region.
 This number is adjusted automatically if a different FUNCTION_LENGTH is specified.
 Additionally, some of the shifted basis functions will not have significant contributions because of their function values being close to zero over the full range.
 These 'tail wavelets' can be omitted by using the TAILS_THRESHOLD keyword.
-By default all are included but a value of e.g. 0.01 will already reduce the number of basis functions significantly (by more than \f$N\f$)
+By default all are included but a value of e.g. 0.01 will already reduce the number of basis functions significantly.
 The number of basis functions is not easily determinable a priori but will be given in the logfile.
+Additionally the starting point (leftmost defined point) of the individual basis functions is printed.
 
 Additionally a constant basis function is included.
 
 \par Examples
 
 
-\par Test
+First a very simple example that relies on the default values.
+We want to bias some CV in the range of 0 to 4.
+The wavelets will therefore be scaled to match that range.
+Using Db8 wavelets this results in 30 basis functions (including the constant one), with their starting points given by \f$ -14 \frac{4}{15}, -13 \frac{4}{15}, \cdots , 0 , \cdots, 13 \frac{4}{15}, 14 \frac{4}{15} \f$.
+\plumedfile
+BF_DB_WAVELETS ...
+ ORDER=8
+ MINIMUM=0.0
+ MAXIMUM=4.0
+ LABEL=bf
+... BF_DB_WAVELETS
+\endplumedfile
 
-There is a regtest checking the creation of the grid values of the wavelet function as well as their basic usage as basis functions.
+
+By omitting wavelets with only insignificant parts, we can reduce the number of basis functions, e.g. a threshold of 0.01 will remove the 8 leftmost shifts.
+\plumedfile
+BF_DB_WAVELETS ...
+ ORDER=8
+ MINIMUM=0.0
+ MAXIMUM=4.0
+ TAILS_THRESHOLD=0.01
+ LABEL=bf
+... BF_DB_WAVELETS
+\endplumedfile
+
+
+The length of the individual basis functions can also be adjusted to fit the specific problem.
+If for example the wavelets are instead scaled to length 3, there will be 35 basis functions, with leftmost points at \f$ -14 \frac{3}{15}, -13 \frac{3}{15}, \cdots, 0, \cdots, 18 \frac{3}{15}, 19 \frac{3}{15} \f$.
+
+\plumedfile
+BF_DB_WAVELETS ...
+ ORDER=8
+ MINIMUM=0.0
+ MAXIMUM=4.0
+ FUNCTION_LENGTH=3
+ LABEL=bf
+... BF_DB_WAVELETS
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
