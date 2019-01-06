@@ -39,6 +39,9 @@ namespace bias {
 /*
 Implementation of VES\f$\Delta F\f$ method \cite vesdeltaf (step two only).
 
+\warning
+  Notice that this is a stand-alone bias Action, it does not need any of the other VES module components
+
 First you should create some estimate of the local free energy basins of your system,
 using e.g. multiple \ref METAD short runs, and combining them with the \ref sum_hills utility.
 Once you have them, you can use this bias Action to perform the VES optimization part of the method.
