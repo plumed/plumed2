@@ -57,7 +57,7 @@ in wihch case \f$\alpha_i=\Delta F_i\f$.
 However, as discussed in \cite vesdeltaf, a better estimate of \f$\Delta F_i\f$ should be obtained through the reweighting procedure.
 
 \par Examples
-The following performs the optimization of the free energy difference between two basins, 
+The following performs the optimization of the free energy difference between two basins,
 which were obtained via \ref sum_hills and stored on file.
 
 \plumedfile
@@ -68,8 +68,8 @@ VES_DELTA_F ...
   FILE_F0=../fesA.data
   FILE_F1=../fesB.data
   BIASFACTOR=10.0
-  AV_STRIDE=500
   M_STEP=0.1
+  AV_STRIDE=500
   PRINT_STRIDE=100
 ... VES_DELTA_F
 
@@ -142,28 +142,28 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("optional","TEMP","temperature is compulsory, but it can be sometimes fetched from the MD engine");
-
+//local free energies
   keys.add("numbered","FILE_F","names of files containing local free energies and derivatives. "
-                               "The first one, FILE_F0, is used as reference for all the free energy differences.");
+           "The first one, FILE_F0, is used as reference for all the free energy differences.");
   keys.reset_style("FILE_F","compulsory");
   keys.addFlag("NORMALIZE",false,"normalize all local free energies so that alpha will be (approx) \\f$\\Delta F\\f$");
   keys.addFlag("NO_MINTOZERO",false,"leave local free energies as provided, without shifting them to zero min");
-
+//target distribution
   keys.add("compulsory","BIASFACTOR","non-tempered","the \\f$\\gamma\\f$ bias factor used for well-tempered target \\f$p(\\mathbf{s})\\f$");
   keys.add("optional","TG_STRIDE","( default=1 ) number of AV_STRIDEs between updates"
-                                  " of target \\f$p(\\mathbf{s})\\f$ and reweighing factor \\f$c(t)\\f$");
-
+           " of target \\f$p(\\mathbf{s})\\f$ and reweighing factor \\f$c(t)\\f$");
+//optimization
   keys.add("compulsory","M_STEP","1.0","the \\f$\\mu\\f$ step used for the \\f$\\Omega\\f$ functional minimization");
   keys.add("compulsory","AV_STRIDE","500","number of simulation steps between alpha updates");
   keys.add("optional","TAU_MEAN","exponentially decaying average for alpha (rescaled using AV_STRIDE)."
-                                 " Should only be used in very specific cases.");
+           " Should only be used in very specific cases.");
   keys.add("optional","INITIAL_ALPHA","( default=0 ) an initial guess for the bias potential parameter alpha");
   keys.addFlag("DAMPING_OFF",false,"do not use an AdaGrad-like term to rescale M_STEP");
-
+//output parameters file
   keys.add("compulsory","ALPHA_FILE","Alpha.data","file name for output minimization parameters");
   keys.add("optional","PRINT_STRIDE","( default=10 ) stride for printing to ALPHA_FILE");
   keys.add("optional","FMT","specify format for ALPHA_FILE");
-
+//debug flags
   keys.addFlag("SERIAL",false,"perform the calculation in serial even if multiple tasks are available");
   keys.addFlag("NO_MULTIPLE_WALKERS",false,"do not use multiple walkers, even if there are multiple simulations running");
 
