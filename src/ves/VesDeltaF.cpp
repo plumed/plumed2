@@ -39,19 +39,19 @@ namespace bias {
 /*
 Implementation of VES\f$\Delta F\f$ method \cite vesdeltaf (step two only).
 
-First you should create some estimate of the local free energy basins of interest for your system, 
+First you should create some estimate of the local free energy basins of your system,
 using e.g. multiple \ref METAD short runs, and combining them with the \ref sum_hills utility.
-Once you have them, you can use this bias routine to perform the VES optimization part of the method.
+Once you have them, you can use this bias Action to perform the VES optimization part of the method.
 
 The bias used is the logarithm of an exponential sum of the given \f$N+1\f$ local free energy basins \f$F_i(\mathbf{s})\f$:
 \f[
   F(\mathbf{s})=-\frac{1}{\beta}\log\left(e^{-\beta F_0(\mathbf{s})}
-  +\sum_{i=1}^{N} e^{-\beta*F_i(\mathbf{s})} e^{-\beta \alpha_i}\right)
+  +\sum_{i=1}^{N} e^{-\beta F_i(\mathbf{s})} e^{-\beta \alpha_i}\right)
 \f]
 The parameters \f$\boldsymbol{\alpha}\f$ are the \f$N\f$ free energy differences from the \f$F_0\f$ basin.
 
 By default the \f$F_i(\mathbf{s})\f$ are shifted so that \f$\min[F_i(\mathbf{s})]=0\f$ for each \f$i=\{0,...,N\}\f$.
-In this case the optimization parameters are the diffence in height between the basins minima.
+In this case the optimization parameters \f$\alpha_i\f$ are the diffence in height between the basins minima.
 You can also decide to normalize the local free energies so that \f$\int d\mathbf{s} \exp[-\beta F_i(\mathbf{s})]=1\f$,
 in wihch case \f$\alpha_i=\Delta F_i\f$.
 However, as discussed in \cite vesdeltaf, a better estimate of \f$\Delta F_i\f$ should be obtained through the reweighting procedure.
