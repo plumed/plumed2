@@ -56,7 +56,7 @@ The exact properties are set by choosing filter coefficients, e.g. choosing \f$h
 
 The filter coefficients by Daubechies result in an orthonormal basis of all integer shifted functions:
 \f[
-  \int \phi(x+i) \phi(x+j) \mathop{}\!\mathrm{d}x = \delta_{ij} \quad \text{for} \quad i,j\ \epsilon\ \mathbb{Z}
+  \int \phi(x+i) \phi(x+j) \mathop{}\!\mathrm{d}x = \delta_{ij} \quad \text{for} \quad i,j \in \mathbb{Z}
 \f]
 
 Because no analytic formula for these wavelets exist, they are instead constructed iteratively on a grid.
