@@ -46,17 +46,28 @@ First you should create some estimate of the local free energy basins of your sy
 using e.g. multiple \ref METAD short runs, and combining them with the \ref sum_hills utility.
 Once you have them, you can use this bias Action to perform the VES optimization part of the method.
 
-The bias used is the logarithm of an exponential sum of the given \f$N+1\f$ local free energy basins \f$F_i(\mathbf{s})\f$:
+These \f$N+1\f$ local basins are used to model the global free energy.
+In particular, given the conditional probabilities \f$P(\mathbf{s}|i)\propto e^{-\beta F_i(\mathbf{s})}\f$
+and the probabilities of being in a given basin \f$P_i\f$, we can write:
 \f[
-  F(\mathbf{s})=-\frac{1}{\beta}\log\left(e^{-\beta F_0(\mathbf{s})}
-  +\sum_{i=1}^{N} e^{-\beta F_i(\mathbf{s})} e^{-\beta \alpha_i}\right)
+  e^{-\beta F(\mathbf{s})}\propto P(\mathbf{s})=\sum_{i=0}^N P(\mathbf{s}|i)P_i \, .
 \f]
-The parameters \f$\boldsymbol{\alpha}\f$ are the \f$N\f$ free energy differences from the \f$F_0\f$ basin.
+We use this free energy model and the chosen bias factor \f$\gamma\f$ to build the bias potential:
+\f$V(\mathbf{s})=-(1-1/\gamma)F(\mathbf{s})\f$.
+Or, more explicitly:
+\f[
+  V(\mathbf{s})=(1-1/\gamma)\frac{1}{\beta}\log\left[e^{-\beta F_0(\mathbf{s})}
+  +\sum_{i=1}^{N} e^{-\beta F_i(\mathbf{s})} e^{-\beta \alpha_i}\right] \, ,
+\f]
+where the parameters \f$\boldsymbol{\alpha}\f$ are the \f$N\f$ free energy differences (see below) from the \f$F_0\f$ basin.
 
-By default the \f$F_i(\mathbf{s})\f$ are shifted so that \f$\min[F_i(\mathbf{s})]=0\f$ for each \f$i=\{0,...,N\}\f$.
-In this case the optimization parameters \f$\alpha_i\f$ are the diffence in height between the basins minima.
-You can also decide to normalize the local free energies so that \f$\int d\mathbf{s} \exp[-\beta F_i(\mathbf{s})]=1\f$,
-in wihch case \f$\alpha_i=\Delta F_i\f$.
+By default the \f$F_i(\mathbf{s})\f$ are shifted so that \f$\min[F_i(\mathbf{s})]=0\f$ for all \f$i=\{0,...,N\}\f$.
+In this case the optimization parameters \f$\alpha_i\f$ are the difference in height between the minima of the basins.
+Using the keyword `NORMALIZE`, you can also decide to normalize the local free energies so that
+\f$\int d\mathbf{s}\, e^{-\beta F_i(\mathbf{s})}=1\f$.
+In this case the parameters will represent not the difference in height (which depends on the chosen CVs),
+but the actual free energy difference, \f$\alpha_i=\Delta F_i\f$.
+
 However, as discussed in \cite vesdeltaf, a better estimate of \f$\Delta F_i\f$ should be obtained through the reweighting procedure.
 
 \par Examples
@@ -128,7 +139,7 @@ private:
   Value* valueCofT;
   Value* ValueWork;
 
-//funcions
+//functions
   void update_alpha();
   void update_tg_and_rct();
   inline unsigned get_index(const unsigned, const unsigned) const;
@@ -159,7 +170,7 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
   keys.add("compulsory","M_STEP","1.0","the \\f$\\mu\\f$ step used for the \\f$\\Omega\\f$ functional minimization");
   keys.add("compulsory","AV_STRIDE","500","number of simulation steps between alpha updates");
   keys.add("optional","TAU_MEAN","exponentially decaying average for alpha (rescaled using AV_STRIDE)."
-           " Should only be used in very specific cases.");
+           " Should be used only in very specific cases");
   keys.add("optional","INITIAL_ALPHA","( default=0 ) an initial guess for the bias potential parameter alpha");
   keys.addFlag("DAMPING_OFF",false,"do not use an AdaGrad-like term to rescale M_STEP");
 //output parameters file
@@ -198,7 +209,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
 //initialize probability grids using local free energies
   bool spline=true;
   bool sparsegrid=false;
-  std::string funcl="file.free"; //tipical name given by sum_hills
+  std::string funcl="file.free"; //typical name given by sum_hills
 
   std::vector<std::string> fes_names;
   for(unsigned n=0;; n++)//NB: here we start from FILE_F0 not from FILE_F1
@@ -376,7 +387,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
         exp_alpha_[i]=std::exp(-beta_*mean_alpha_[i]);
         past_increment2_[i]=damping[i]*damping[i];
       }
-      //sync all walkers and treads. not sure is mandatory but is no harm
+      //sync all walkers and treads. Not sure is mandatory but is no harm
       comm.Barrier();
       if(comm.Get_rank()==0)
         multi_sim_comm.Barrier();
@@ -505,7 +516,7 @@ void VesDeltaF::calculate()
     prev_tot_prob+=prob[i+1]*prev_exp_alpha_[i];
   work_+=(1-inv_gamma_)/beta_*std::log(tot_prob/prev_tot_prob);
 
-//update coeffs stuff (to be done after the forces are set)
+//update alpha and tg (to be done after the forces are set)
   if (av_counter_==av_stride_)
   {
     update_alpha();
@@ -533,7 +544,7 @@ void VesDeltaF::update_tg_and_rct()
   std::fill(tg_dV_dAlpha_.begin(),tg_dV_dAlpha_.end(),0);
   std::fill(tg_d2V_dAlpha2_.begin(),tg_d2V_dAlpha2_.end(),0);
   for (Grid::index_t t=rank_; t<grid_p_[0]->getSize(); t+=NumParallel_)
-  { //FIXME can we recycle code?
+  { //FIXME can we recycle some code?
     std::vector<double> prob(grid_p_.size());
     for(unsigned n=0; n<grid_p_.size(); n++)
       prob[n]=grid_p_[n]->getValue(t);
