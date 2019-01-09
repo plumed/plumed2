@@ -15,6 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
+#include "core/Colvar.h"
 #include "core/ActionRegister.h"
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
@@ -148,6 +149,7 @@ private:
   std::vector<double> alpha_vector_2_;
   std::vector<double> ssds_;
   std::vector<double> step_size_;
+  std::vector<Vector> pseudo_virial_;
   std::vector<Value*> out_coupling_;
   Matrix<double> covar_;
   Matrix<double> covar2_;
@@ -167,6 +169,7 @@ private:
   bool b_write_restart_;
   bool b_hard_c_range_;
   bool b_lm_;
+  bool b_virial_;
   int seed_;
   int update_period_;
   int avg_coupling_count_;
@@ -185,6 +188,7 @@ private:
   /*write output restart*/
   void writeOutRestart();
   void update_statistics();
+  void update_pseudo_virial();
   void calc_lm_step_size();
   void calc_covar_step_size();
   void calc_ssd_step_size();
@@ -238,6 +242,7 @@ void EDS::registerKeywords(Keywords& keys) {
   keys.addFlag("COVAR",false,"Utilize the covariance matrix when updating the bias. Default Off, but may be enabled due to other options");
   keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting).");
   keys.addFlag("MEAN",false,"Instead of using final bias level from restart, use average. Can only be used in conjunction with FREEZE");
+  keys.addFlag("VIRIAL",false,"Compute the pseudo-virial.");
 
   keys.use("RESTART");
 
@@ -258,6 +263,7 @@ EDS::EDS(const ActionOptions&ao):
   coupling_accum_(ncvs_,0.0),
   means_(ncvs_,0.0),
   step_size_(ncvs_,0.0),
+  pseudo_virial_(ncvs_),
   out_coupling_(ncvs_,NULL),
   in_restart_name_(""),
   out_restart_name_(""),
@@ -271,6 +277,7 @@ EDS::EDS(const ActionOptions&ao):
   b_write_restart_(false),
   b_hard_c_range_(false),
   b_lm_(false),
+  b_virial_(false),
   seed_(0),
   update_period_(0),
   avg_coupling_count_(1),
@@ -315,6 +322,7 @@ EDS::EDS(const ActionOptions&ao):
   parseFlag("FREEZE",b_freeze_);
   parseFlag("MEAN",b_mean);
   parseFlag("COVAR",b_covar_);
+  parseFlag("VIRIAL",b_virial_);
   parse("IN_RESTART",in_restart_name_);
   checkRead();
 
@@ -387,8 +395,26 @@ EDS::EDS(const ActionOptions&ao):
     ssds_.resize(ncvs_);
   }
 
+  if(b_virial_) {
+    //check that the CVs can be used to compute pseudo-virial
+    bool valid = true;
+    Colvar* cv;
+    for(unsigned int i = 0; i < ncvs_; i++) {
+      cv = dynamic_cast<Colvar*>(getPntrToArgument(i)->getPntrToAction());
+      if(cv) {
+        //make sure there are atom derivatives.
+        valid = valid && (cv->getNumberOfAtoms() * 3 <= getPntrToArgument(i)->getNumberOfDerivatives());
+      } else  {
+        valid = false;
+      }
 
-  if (b_mean == true and b_freeze_ == false) {
+    }
+    if(!valid) {
+      error("If using VIRIAL keyword, you must have normal CVs as arguments to EDS. No function or multi CVs");
+    }
+  }
+
+  if (b_mean && b_freeze_) {
     error("EDS keyworkd MEAN can only be used along with keyword FREEZE");
   }
 
@@ -546,6 +572,10 @@ void EDS::readInRestart(const bool b_mean) {
       in_restart_.scanField(cv_name + "_maxgrad",max_coupling_grad_[i]);
       in_restart_.scanField(cv_name + "_accum",coupling_accum_[i]);
       in_restart_.scanField(cv_name + "_mean",means_[i]);
+      if(b_virial_) {
+        for(unsigned int j = 0; j < 3; j++)
+          in_restart_.scanField(cv_name + "_psuedo_virial" + std::to_string(j),pseudo_virial_[i][j]);
+      }
       //unused due to difference between covar/nocovar
       in_restart_.scanField(cv_name + "_std",tmp);
 
@@ -621,6 +651,10 @@ void EDS::writeOutRestart() {
     out_restart_.printField(cv_name + "_maxgrad",max_coupling_grad_[i]);
     out_restart_.printField(cv_name + "_accum",coupling_accum_[i]);
     out_restart_.printField(cv_name + "_mean",means_[i]);
+    if(b_virial_) {
+      for(unsigned int j = 0; j < 3; j++)
+        out_restart_.printField(cv_name + "_psuedo_virial" + std::to_string(j),pseudo_virial_[i][j]);
+    }
     if(!b_covar_ && !b_lm_)
       out_restart_.printField(cv_name + "_std",ssds_[i] / (fmax(1, update_calls_ - 1)));
     else
@@ -810,6 +844,20 @@ void EDS::calc_ssd_step_size() {
   for(unsigned int i = 0; i< ncvs_; ++i) {
     tmp = 2. * difference(i, center_[i], means_[i]) * ssds_[i] / fmax(1,update_calls_ - 1);
     step_size_[i] = tmp / kbt_/scale_[i];
+  }
+}
+
+void EDS::update_pseudo_virial() {
+  for(unsigned int i = 0; i < ncvs_; i++) {
+    Value* value = getPntrToArgument(i);
+    //checked in setup to ensure this is correcc.
+    Colvar* cv = static_cast<Colvar*> (value->getPntrToAction());
+    for(unsigned int j = 0; j < cv->getNumberOfAtoms(); j++) {
+      Vector p = cv->getPosition(j);
+      pseudo_virial_[i][0] += p[0] * value->getDerivative(3 * j + 0);
+      pseudo_virial_[i][1] += p[1] * value->getDerivative(3 * j + 1);
+      pseudo_virial_[i][2] += p[2] * value->getDerivative(3 * j + 2);
+    }
   }
 }
 
