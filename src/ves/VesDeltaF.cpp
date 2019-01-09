@@ -147,6 +147,7 @@ private:
 public:
   VesDeltaF(const ActionOptions&);
   void calculate();
+  void update();
   static void registerKeywords(Keywords& keys);
 };
 
@@ -515,8 +516,10 @@ void VesDeltaF::calculate()
   for(unsigned i=0; i<alpha_size_; i++)
     prev_tot_prob+=prob[i+1]*prev_exp_alpha_[i];
   work_+=(1-inv_gamma_)/beta_*std::log(tot_prob/prev_tot_prob);
+}
 
-//update alpha and tg (to be done after the forces are set)
+void VesDeltaF::update()
+{
   if (av_counter_==av_stride_)
   {
     update_alpha();
