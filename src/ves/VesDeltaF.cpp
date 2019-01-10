@@ -134,10 +134,6 @@ private:
   std::vector<double> prev_exp_alpha_;
   double work_;
 
-//output values
-  Value* valueCofT;
-  Value* ValueWork;
-
 //functions
   void update_alpha();
   void update_tg_and_rct();
@@ -410,9 +406,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
 
 //add other output components
   addComponent("rct"); componentIsNotPeriodic("rct");
-  valueCofT=getPntrToComponent("rct");
   addComponent("work"); componentIsNotPeriodic("work");
-  ValueWork=getPntrToComponent("work");
 
 //print some info
   log.printf("  Temperature T: %g\n",1./(Kb*beta_));
@@ -580,7 +574,7 @@ void VesDeltaF::update_tg_and_rct()
     tg_dV_dAlpha_[i]/=Z_tg;
   for(unsigned ij=0; ij<sym_alpha_size_; ij++)
     tg_d2V_dAlpha2_[ij]/=Z_tg;
-  valueCofT->set(-1./beta_*std::log(Z_tg/Z_0)); //Z_tg is the best available estimate of Z_V
+  getPntrToComponent("rct")->set(-1./beta_*std::log(Z_tg/Z_0)); //Z_tg is the best available estimate of Z_V
 }
 
 void VesDeltaF::update_alpha()
@@ -609,7 +603,7 @@ void VesDeltaF::update_alpha()
     }
   }
   //set work and reset it
-  ValueWork->set(work_);
+  getPntrToComponent("work")->set(work_);
   work_=0;
 
 //build the gradient and the Hessian of the functional
