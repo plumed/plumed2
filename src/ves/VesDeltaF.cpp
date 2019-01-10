@@ -23,7 +23,6 @@
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
-#include "core/ActionSet.h"
 #include "core/Atoms.h"
 #include "tools/Communicator.h"
 #include "tools/Grid.h"
