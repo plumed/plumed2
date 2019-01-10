@@ -15,7 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
-#include "core/Colvar.h"
+#include "core/ActionAtomistic.h"
 #include "core/ActionRegister.h"
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
@@ -170,6 +170,7 @@ private:
   bool b_hard_c_range_;
   bool b_lm_;
   bool b_virial_;
+  bool b_update_statistics_;
   int seed_;
   int update_period_;
   int avg_coupling_count_;
@@ -178,8 +179,10 @@ private:
   double c_range_increase_f_;
   double multi_prop_;
   double lm_mixing_par_;
+  double virial_scaling_;
   Random rand_;
   Value* value_force2_;
+  Value* value_pressure_;
 
   /*read input restart. b_mean sets if we use mean or final value for freeze*/
   void readInRestart(const bool b_mean);
@@ -226,6 +229,7 @@ void EDS::registerKeywords(Keywords& keys) {
   keys.add("optional","MULTI_PROP","What proportion of dimensions to update at each step. "
            "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
            "If not set, default is 1 / N, where N is the number of CVs. ");
+  keys.add("optional","VIRIAL","Compute the penalty for having non-zero virial bias");
 
   keys.addFlag("LM",false,"Use Levenberg-Marquadt algorithm along with simultaneous keyword. Otherwise use gradient descent.");
   keys.addFlag("LM_MIXING","1","Initial mixing parameter when using Levenberg-Marquadt minimization.");
@@ -242,11 +246,12 @@ void EDS::registerKeywords(Keywords& keys) {
   keys.addFlag("COVAR",false,"Utilize the covariance matrix when updating the bias. Default Off, but may be enabled due to other options");
   keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting).");
   keys.addFlag("MEAN",false,"Instead of using final bias level from restart, use average. Can only be used in conjunction with FREEZE");
-  keys.addFlag("VIRIAL",false,"Compute the pseudo-virial.");
+
 
   keys.use("RESTART");
 
   keys.addOutputComponent("force2","default","squared value of force from the bias");
+  keys.addOutputComponent("pressure","default","If using virial scaling, this is the curent sum of virials");
   keys.addOutputComponent("_coupling","default", "For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
 }
 
@@ -295,7 +300,7 @@ EDS::EDS(const ActionOptions&ao):
   componentIsNotPeriodic("force2");
   value_force2_ = getPntrToComponent("force2");
 
-  for(unsigned int i = 0; i<ncvs_; i++) {
+  for(unsigned int i = 0; i<ncvs_; ++i) {
     std::string comp = getPntrToArgument(i)->getName() + "_coupling";
     addComponent(comp);
     componentIsNotPeriodic(comp);
@@ -315,6 +320,7 @@ EDS::EDS(const ActionOptions&ao):
   parse("MULTI_PROP",multi_prop_);
   parse("LM_MIXING",lm_mixing_par_);
   parse("RESTART_FMT", fmt_);
+  parse("VIRIAL",virial_scaling_);
   fmt_ = " " + fmt_;//add space since parse strips them
   parse("OUT_RESTART",out_restart_name_);
   parseFlag("LM",b_lm_);
@@ -322,7 +328,6 @@ EDS::EDS(const ActionOptions&ao):
   parseFlag("FREEZE",b_freeze_);
   parseFlag("MEAN",b_mean);
   parseFlag("COVAR",b_covar_);
-  parseFlag("VIRIAL",b_virial_);
   parse("IN_RESTART",in_restart_name_);
   checkRead();
 
@@ -364,13 +369,13 @@ EDS::EDS(const ActionOptions&ao):
     log.printf(" (default) ");
 
     scale_.resize(ncvs_);
-    for(unsigned int i = 0; i < scale_.size(); i++) {
+    for(unsigned int i = 0; i < scale_.size(); ++i) {
       if(center_[i]==0)
         error("BIAS_SCALE parameter has been set to CENTER value of 0 (as is default). This will divide by 0, so giving up. See doc for EDS bias");
       scale_[i] = center_[i];
     }
   } else {
-    for(unsigned int i = 0; i < scale_.size(); i++)
+    for(unsigned int i = 0; i < scale_.size(); ++i)
       log.printf(" %f",scale_[i]);
   }
   log.printf("\n");
@@ -395,23 +400,18 @@ EDS::EDS(const ActionOptions&ao):
     ssds_.resize(ncvs_);
   }
 
+  b_virial_ = virial_scaling_;
+
   if(b_virial_) {
     //check that the CVs can be used to compute pseudo-virial
-    bool valid = true;
-    Colvar* cv;
-    for(unsigned int i = 0; i < ncvs_; i++) {
-      cv = dynamic_cast<Colvar*>(getPntrToArgument(i)->getPntrToAction());
-      if(cv) {
-        //make sure there are atom derivatives.
-        valid = valid && (cv->getNumberOfAtoms() * 3 <= getPntrToArgument(i)->getNumberOfDerivatives());
-      } else  {
-        valid = false;
-      }
-
-    }
-    if(!valid) {
-      error("If using VIRIAL keyword, you must have normal CVs as arguments to EDS. No function or multi CVs");
-    }
+    log.printf("  EDS will compute virials of CVs and penalize with scale of %f. Checking CVs are valid...", virial_scaling_);
+    for(unsigned int i = 0; i < ncvs_; ++i)
+      if(!dynamic_cast<ActionAtomistic*>(getPntrToArgument(i)->getPntrToAction()))
+        error("If using VIRIAL keyword, you must have normal CVs as arguments to EDS. Offending action: " + getPntrToArgument(i)->getPntrToAction()->getName());
+    log.printf("done\n");
+    addComponent("pressure");
+    componentIsNotPeriodic("pressure");
+    value_pressure_ = getPntrToComponent("pressure");
   }
 
   if (b_mean && b_freeze_) {
@@ -440,12 +440,12 @@ EDS::EDS(const ActionOptions&ao):
 
     if(!b_c_values_) {
       log.printf("  with centers:");
-      for(unsigned int i = 0; i< ncvs_; i++) {
+      for(unsigned int i = 0; i< ncvs_; ++i) {
         log.printf(" %f ",center_[i]);
       }
     } else {
       log.printf("  with actions centers:");
-      for(unsigned int i = 0; i< ncvs_; i++) {
+      for(unsigned int i = 0; i< ncvs_; ++i) {
         log.printf(" %s ",center_values_[i]->getName().c_str());
         //add dependency on these actions
         addDependency(center_values_[i]->getPntrToAction());
@@ -453,7 +453,7 @@ EDS::EDS(const ActionOptions&ao):
     }
 
     log.printf("\n  with initial ranges / rates:\n");
-    for(unsigned int i = 0; i<max_coupling_range_.size(); i++) {
+    for(unsigned int i = 0; i<max_coupling_range_.size(); ++i) {
       //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
       //
       //using the current maxing out scheme, max_coupling_range is the biggest step that can be taken in any given interval
@@ -475,10 +475,10 @@ EDS::EDS(const ActionOptions&ao):
       }
 
       log.printf("  with starting coupling constants");
-      for(unsigned int i = 0; i<set_coupling_.size(); i++) log.printf(" %f",set_coupling_[i]);
+      for(unsigned int i = 0; i<set_coupling_.size(); ++i) log.printf(" %f",set_coupling_[i]);
       log.printf("\n");
       log.printf("  and final coupling constants");
-      for(unsigned int i = 0; i<target_coupling_.size(); i++) log.printf(" %f",target_coupling_[i]);
+      for(unsigned int i = 0; i<target_coupling_.size(); ++i) log.printf(" %f",target_coupling_[i]);
       log.printf("\n");
     }
 
@@ -487,7 +487,7 @@ EDS::EDS(const ActionOptions&ao):
       update_period_*=-1;
     }
 
-    for(unsigned int i = 0; i<set_coupling_.size(); i++) current_coupling_[i] = set_coupling_[i];
+    for(unsigned int i = 0; i<set_coupling_.size(); ++i) current_coupling_[i] = set_coupling_[i];
 
     // if b_adaptive_, then first half will be used for equilibrating and second half for statistics
     if(update_period_>0) {
@@ -573,7 +573,7 @@ void EDS::readInRestart(const bool b_mean) {
       in_restart_.scanField(cv_name + "_accum",coupling_accum_[i]);
       in_restart_.scanField(cv_name + "_mean",means_[i]);
       if(b_virial_) {
-        for(unsigned int j = 0; j < 3; j++)
+        for(unsigned int j = 0; j < 3; ++j)
           in_restart_.scanField(cv_name + "_psuedo_virial" + std::to_string(j),pseudo_virial_[i][j]);
       }
       //unused due to difference between covar/nocovar
@@ -588,16 +588,16 @@ void EDS::readInRestart(const bool b_mean) {
 
 
   log.printf("  with centers:");
-  for(unsigned int i = 0; i<center_.size(); i++) {
+  for(unsigned int i = 0; i<center_.size(); ++i) {
     log.printf(" %f",center_[i]);
   }
   log.printf("\n  and scaling:");
-  for(unsigned int i = 0; i<scale_.size(); i++) {
+  for(unsigned int i = 0; i<scale_.size(); ++i) {
     log.printf(" %f",scale_[i]);
   }
 
   log.printf("\n  with initial ranges / rates:\n");
-  for(unsigned int i = 0; i<max_coupling_range_.size(); i++) {
+  for(unsigned int i = 0; i<max_coupling_range_.size(); ++i) {
     log.printf("    %f / %f\n",max_coupling_range_[i],max_coupling_grad_[i]);
   }
 
@@ -607,18 +607,18 @@ void EDS::readInRestart(const bool b_mean) {
 
   if(b_mean) {
     log.printf("Loaded in averages for coupling constants...\n");
-    for(unsigned int i = 0; i<current_coupling_.size(); i++) current_coupling_[i] = avg_bias[i] / N;
-    for(unsigned int i = 0; i<current_coupling_.size(); i++) set_coupling_[i] = avg_bias[i] / N;
+    for(unsigned int i = 0; i<current_coupling_.size(); ++i) current_coupling_[i] = avg_bias[i] / N;
+    for(unsigned int i = 0; i<current_coupling_.size(); ++i) set_coupling_[i] = avg_bias[i] / N;
   }
 
   log.printf("  with current coupling constants:\n    ");
-  for(unsigned int i = 0; i<current_coupling_.size(); i++) log.printf(" %f",current_coupling_[i]);
+  for(unsigned int i = 0; i<current_coupling_.size(); ++i) log.printf(" %f",current_coupling_[i]);
   log.printf("\n");
   log.printf("  with initial coupling constants:\n    ");
-  for(unsigned int i = 0; i<set_coupling_.size(); i++) log.printf(" %f",set_coupling_[i]);
+  for(unsigned int i = 0; i<set_coupling_.size(); ++i) log.printf(" %f",set_coupling_[i]);
   log.printf("\n");
   log.printf("  and final coupling constants:\n    ");
-  for(unsigned int i = 0; i<target_coupling_.size(); i++) log.printf(" %f",target_coupling_[i]);
+  for(unsigned int i = 0; i<target_coupling_.size(); ++i) log.printf(" %f",target_coupling_[i]);
   log.printf("\n");
 
   in_restart_.close();
@@ -652,7 +652,7 @@ void EDS::writeOutRestart() {
     out_restart_.printField(cv_name + "_accum",coupling_accum_[i]);
     out_restart_.printField(cv_name + "_mean",means_[i]);
     if(b_virial_) {
-      for(unsigned int j = 0; j < 3; j++)
+      for(unsigned int j = 0; j < 3; ++j)
         out_restart_.printField(cv_name + "_psuedo_virial" + std::to_string(j),pseudo_virial_[i][j]);
     }
     if(!b_covar_ && !b_lm_)
@@ -706,7 +706,7 @@ void EDS::calculate() {
     //pass
   } else if(!b_equil_) {
     //if we aren't wating for the bias to equilibrate, collect data
-    update_statistics();
+    b_update_statistics_ = true;
   } else {
     // equilibrating
     //check if we've reached the setpoint
@@ -764,10 +764,11 @@ void EDS::apply_bias() {
     ene += m*cv;
     setOutputForce(i,f);
     totf2 += f*f;
-  };
+  }
 
   setBias(ene);
   value_force2_->set(totf2);
+
 
 }
 
@@ -791,6 +792,8 @@ void EDS::update_statistics()  {
       }
     }
   }
+  if(b_virial_)
+    update_pseudo_virial();
 }
 
 void EDS::reset_statistics() {
@@ -803,6 +806,11 @@ void EDS::reset_statistics() {
     for(unsigned int i = 0; i < ncvs_; ++i)
       for(unsigned int j = 0; j < ncvs_; ++j)
         covar_(i,j) = 0;
+  if(b_virial_) {
+    for(unsigned int i = 0; i < ncvs_; ++i)
+      for(unsigned int j = 0; j < 3; ++j)
+        pseudo_virial_[i][j] = 0;
+  }
 }
 
 void EDS::calc_lm_step_size() {
@@ -848,17 +856,21 @@ void EDS::calc_ssd_step_size() {
 }
 
 void EDS::update_pseudo_virial() {
-  for(unsigned int i = 0; i < ncvs_; i++) {
-    Value* value = getPntrToArgument(i);
-    //checked in setup to ensure this is correcc.
-    Colvar* cv = static_cast<Colvar*> (value->getPntrToAction());
-    for(unsigned int j = 0; j < cv->getNumberOfAtoms(); j++) {
-      Vector p = cv->getPosition(j);
-      pseudo_virial_[i][0] += p[0] * value->getDerivative(3 * j + 0);
-      pseudo_virial_[i][1] += p[1] * value->getDerivative(3 * j + 1);
-      pseudo_virial_[i][2] += p[2] * value->getDerivative(3 * j + 2);
-    }
+  double p = 0;
+  for(unsigned int i = 0; i < ncvs_; ++i) {
+    //checked in setup to ensure this cast is valid.
+    std::cout << "Type is " << typeid(getPntrToArgument(i)->getPntrToAction()).name() << std::endl;
+    ActionAtomistic* cv = reinterpret_cast<ActionAtomistic*> (getPntrToArgument(i)->getPntrToAction());
+    Tensor& v(cv->modifyVirial());
+    //compute running mean
+    pseudo_virial_[i][0] += (v(0,0) - pseudo_virial_[i][0]) / fmax(1,update_calls_);
+    pseudo_virial_[i][1] += (v(1,1) - pseudo_virial_[i][1]) / fmax(1,update_calls_);
+    pseudo_virial_[i][2] += (v(2,2) - pseudo_virial_[i][2]) / fmax(1,update_calls_);
+    p += v(0,0) + v(1,1) + v(2,2);
+    std::cout << &v << " " << &cv << " " << p <<  " " << v(0,0) << std::endl;
   }
+  //update instantaneous pressure
+  value_pressure_->set(p);
 }
 
 void EDS::update_bias()
@@ -878,6 +890,11 @@ void EDS::update_bias()
 
     //multidimesional stochastic step
     if(ncvs_ == 1 || (rand_.RandU01() < (multi_prop_) ) ) {
+
+      if(b_virial_) {
+        //apply virial regularization
+        step_size_[i] -= 2 * virial_scaling_ * (pseudo_virial_[i][0] + pseudo_virial_[i][1] + pseudo_virial_[i][2]);
+      }
 
       double proposed_coupling_accum = coupling_accum_[i] + step_size_[i] * step_size_[i];
       double proposed_coupling_prefactor = max_coupling_range_[i]/sqrt(proposed_coupling_accum);
@@ -908,7 +925,10 @@ void EDS::update_bias()
 
 
 void EDS::update() {
-  //pass
+  if(b_update_statistics_) {
+    update_statistics();
+    b_update_statistics_ = false;
+  }
 }
 
 EDS::~EDS() {
