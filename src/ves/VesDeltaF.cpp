@@ -33,6 +33,7 @@ using namespace std;
 
 namespace PLMD {
 namespace bias {
+namespace ves {
 
 //+PLUMEDOC VES_BIAS VES_DELTA_F
 /*
@@ -662,5 +663,6 @@ inline unsigned VesDeltaF::get_index(const unsigned i, const unsigned j) const
     return get_index(j,i);
 }
 
+}
 }
 }
