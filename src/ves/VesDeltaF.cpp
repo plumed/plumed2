@@ -36,7 +36,7 @@ namespace bias {
 
 //+PLUMEDOC VES_BIAS VES_DELTA_F
 /*
-Implementation of VES\f$\Delta F\f$ method \cite vesdeltaf (step two only).
+Implementation of VES\f$\Delta F\f$ method \cite Invernizzi2019vesdeltaf (step two only).
 
 \warning
   Notice that this is a stand-alone bias Action, it does not need any of the other VES module components
@@ -67,7 +67,7 @@ Using the keyword `NORMALIZE`, you can also decide to normalize the local free e
 In this case the parameters will represent not the difference in height (which depends on the chosen CVs),
 but the actual free energy difference, \f$\alpha_i=\Delta F_i\f$.
 
-However, as discussed in \cite vesdeltaf, a better estimate of \f$\Delta F_i\f$ should be obtained through the reweighting procedure.
+However, as discussed in \cite Invernizzi2019vesdeltaf, a better estimate of \f$\Delta F_i\f$ should be obtained through the reweighting procedure.
 
 \par Examples
 The following performs the optimization of the free energy difference between two basins,
