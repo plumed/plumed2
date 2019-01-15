@@ -29,10 +29,7 @@
 #include "tools/File.h"
 //#include <algorithm> //std::fill
 
-using namespace std;
-
 namespace PLMD {
-namespace bias {
 namespace ves {
 
 //+PLUMEDOC VES_BIAS VES_DELTA_F
@@ -92,7 +89,7 @@ PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=cv,ves.bias,ves.rct
 */
 //+ENDPLUMEDOC
 
-class VesDeltaF : public Bias {
+class VesDeltaF : public bias::Bias {
 
 private:
   double beta_;
@@ -663,6 +660,5 @@ inline unsigned VesDeltaF::get_index(const unsigned i, const unsigned j) const
     return get_index(j,i);
 }
 
-}
 }
 }
