@@ -157,7 +157,8 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
   keys.addFlag("NORMALIZE",false,"normalize all local free energies so that alpha will be (approx) \\f$\\Delta F\\f$");
   keys.addFlag("NO_MINTOZERO",false,"leave local free energies as provided, without shifting them to zero min");
 //target distribution
-  keys.add("compulsory","BIASFACTOR","non-tempered","the \\f$\\gamma\\f$ bias factor used for well-tempered target \\f$p(\\mathbf{s})\\f$");
+  keys.add("compulsory","BIASFACTOR","0","the \\f$\\gamma\\f$ bias factor used for well-tempered target \\f$p(\\mathbf{s})\\f$."
+           " Set to 0 for non-tempered flat target");
   keys.add("optional","TG_STRIDE","( default=1 ) number of AV_STRIDEs between updates"
            " of target \\f$p(\\mathbf{s})\\f$ and reweighing factor \\f$c(t)\\f$");
 //optimization
@@ -193,7 +194,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   double temp=0;
   parse("TEMP",temp);
   double KbT=Kb*temp;
-  if(KbT==0)
+  if (KbT==0)
   {
     KbT=plumed.getAtoms().getKbT();
     plumed_massert(KbT>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
@@ -209,7 +210,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   for(unsigned n=0;; n++)//NB: here we start from FILE_F0 not from FILE_F1
   {
     std::string filename;
-    if( !parseNumbered("FILE_F",n,filename) )
+    if (!parseNumbered("FILE_F",n,filename))
       break;
     fes_names.push_back(filename);
     IFile gridfile;
@@ -349,13 +350,13 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   checkRead();
 
 //restart if needed
-  if(getRestart())
+  if (getRestart())
   {
     IFile ifile;
     ifile.link(*this);
     if (walkers_num_>1)
       ifile.enforceSuffix("");
-    if(ifile.FileExist(alphaFileName))
+    if (ifile.FileExist(alphaFileName))
     {
       log.printf("  Restarting from: %s\n",alphaFileName.c_str());
       log.printf("    all options (also PRINT_STRIDE) must be consistent!\n");
@@ -383,7 +384,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
       }
       //sync all walkers and treads. Not sure is mandatory but is no harm
       comm.Barrier();
-      if(comm.Get_rank()==0)
+      if (comm.Get_rank()==0)
         multi_sim_comm.Barrier();
     }
     else
@@ -399,7 +400,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
     alphaOfile_.enforceSuffix("");
   }
   alphaOfile_.open(alphaFileName);
-  if(fmt.length()>0)
+  if (fmt.length()>0)
     alphaOfile_.fmtField(" "+fmt);
 
 //add other output components
@@ -436,7 +437,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
     log.printf("  Using multiple threads per simulation: %d\n",NumParallel_);
   if (no_multiple_walkers)
     log.printf("  -- NO_MULTIPLE_WALKERS: multiple simulations will not communicate\n");
-  if(walkers_num_>1)
+  if (walkers_num_>1)
   {
     log.printf("  Using multiple walkers\n");
     log.printf("    number of walkers: %d\n",walkers_num_);
@@ -473,7 +474,7 @@ void VesDeltaF::calculate()
     setOutputForce(s,-(1-inv_gamma_)/beta_/tot_prob*dProb_dCV_s);
   }
 //skip first step to sync getTime() and av_counter_, as in METAD
-  if(isFirstStep_)
+  if (isFirstStep_)
   {
     isFirstStep_=false;
     return;
@@ -578,9 +579,9 @@ void VesDeltaF::update_tg_and_rct()
 void VesDeltaF::update_alpha()
 {
 //combining the averages of multiple walkers
-  if(walkers_num_>1)
+  if (walkers_num_>1)
   {
-    if(comm.Get_rank()==0) //sum only once: in the first rank of each walker
+    if (comm.Get_rank()==0) //sum only once: in the first rank of each walker
     {
       multi_sim_comm.Sum(av_dV_dAlpha_);
       multi_sim_comm.Sum(av_dV_dAlpha_prod_);
