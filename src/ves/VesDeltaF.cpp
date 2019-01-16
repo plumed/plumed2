@@ -68,8 +68,8 @@ but the actual free energy difference, \f$\alpha_i=\Delta F_i\f$.
 However, as discussed in \cite Invernizzi2019vesdeltaf, a better estimate of \f$\Delta F_i\f$ should be obtained through the reweighting procedure.
 
 \par Examples
-The following performs the optimization of the free energy difference between two basins,
-which were obtained via \ref sum_hills and stored on file.
+
+The following performs the optimization of the free energy difference between two metastable basins:
 
 \plumedfile
 VES_DELTA_F ...
@@ -86,6 +86,17 @@ VES_DELTA_F ...
 
 PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=cv,ves.bias,ves.rct
 \endplumedfile
+
+The local FES files were obtained via \ref sum_hills and their header should be similar to the following:
+
+\verbatim
+#! FIELDS cv file.free der_cv
+#! SET min_cv -1
+#! SET max_cv 1
+#! SET nbins_cv  100
+#! SET periodic_cv false
+\endverbatim
+
 */
 //+ENDPLUMEDOC
 
