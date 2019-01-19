@@ -94,9 +94,9 @@ double OptimalRMSD::projectAtomicDisplacementOnVector( const bool& normalized, c
   }
   for(unsigned a=0; a<3; a++) {
     for(unsigned b=0; b<3; b++) {
+      double tmp1=0.; for(unsigned n=0; n<getNumberOfAtoms(); n++) tmp1+=mypack.centeredpos[n][b]*vecs[n][a];
+
       for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) {
-        double tmp1=0.;
-        for(unsigned n=0; n<getNumberOfAtoms(); n++) tmp1+=mypack.centeredpos[n][b]*vecs[n][a];
         if( normalized ) mypack.addAtomDerivatives( iat, getDisplace()[iat]*mypack.DRotDPos[a][b][iat]*tmp1 );
         else mypack.addAtomDerivatives( iat, mypack.DRotDPos[a][b][iat]*tmp1 );
       }
