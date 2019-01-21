@@ -149,7 +149,7 @@ private:
   std::vector<double> alpha_vector_2_;
   std::vector<double> ssds_;
   std::vector<double> step_size_;
-  std::vector<Vector> pseudo_virial_;
+  std::vector<double> pseudo_virial_;
   std::vector<Value*> out_coupling_;
   Matrix<double> covar_;
   Matrix<double> covar2_;
@@ -403,6 +403,8 @@ EDS::EDS(const ActionOptions&ao):
   b_virial_ = virial_scaling_;
 
   if(b_virial_) {
+    if(ncvs_ == 1)
+      error("Minimizing the virial is only valid with multiply correlated collective variables.");
     //check that the CVs can be used to compute pseudo-virial
     log.printf("  EDS will compute virials of CVs and penalize with scale of %f. Checking CVs are valid...", virial_scaling_);
     for(unsigned int i = 0; i < ncvs_; ++i)
@@ -414,7 +416,7 @@ EDS::EDS(const ActionOptions&ao):
     value_pressure_ = getPntrToComponent("pressure");
   }
 
-  if (b_mean && b_freeze_) {
+  if (!b_mean && b_freeze_) {
     error("EDS keyworkd MEAN can only be used along with keyword FREEZE");
   }
 
@@ -555,6 +557,7 @@ void EDS::readInRestart(const bool b_mean) {
     rand_.setSeed(seed_);
   }
 
+
   double time, tmp;
   std::vector<double> avg_bias = std::vector<double>(center_.size());
   unsigned int N = 0;
@@ -572,9 +575,11 @@ void EDS::readInRestart(const bool b_mean) {
       in_restart_.scanField(cv_name + "_maxgrad",max_coupling_grad_[i]);
       in_restart_.scanField(cv_name + "_accum",coupling_accum_[i]);
       in_restart_.scanField(cv_name + "_mean",means_[i]);
-      if(b_virial_) {
-        for(unsigned int j = 0; j < 3; ++j)
-          in_restart_.scanField(cv_name + "_psuedo_virial" + std::to_string(j),pseudo_virial_[i][j]);
+      if(in_restart_.FieldExist(cv_name + "_pseudovirial")) {
+          if(b_virial_)
+            in_restart_.scanField(cv_name + "_pseudovirial",pseudo_virial_[i]);
+          else //discard the field
+            in_restart_.scanField(cv_name + "_pseudovirial",tmp);
       }
       //unused due to difference between covar/nocovar
       in_restart_.scanField(cv_name + "_std",tmp);
@@ -651,10 +656,8 @@ void EDS::writeOutRestart() {
     out_restart_.printField(cv_name + "_maxgrad",max_coupling_grad_[i]);
     out_restart_.printField(cv_name + "_accum",coupling_accum_[i]);
     out_restart_.printField(cv_name + "_mean",means_[i]);
-    if(b_virial_) {
-      for(unsigned int j = 0; j < 3; ++j)
-        out_restart_.printField(cv_name + "_psuedo_virial" + std::to_string(j),pseudo_virial_[i][j]);
-    }
+    if(b_virial_)
+        out_restart_.printField(cv_name + "_pseudovirial",pseudo_virial_[i]);
     if(!b_covar_ && !b_lm_)
       out_restart_.printField(cv_name + "_std",ssds_[i] / (fmax(1, update_calls_ - 1)));
     else
@@ -774,18 +777,19 @@ void EDS::apply_bias() {
 
 void EDS::update_statistics()  {
   double s;
+  double N = fmax(1,update_calls_);
   std::vector<double> deltas(ncvs_);
   //Welford, West, and Hanso online variance method
   for(unsigned int i = 0; i < ncvs_; ++i)  {
     deltas[i] = difference(i,means_[i],getArgument(i));
-    means_[i] += deltas[i]/fmax(1,update_calls_);
+    means_[i] += deltas[i]/N;
     if(!b_covar_ && !b_lm_)
       ssds_[i] += deltas[i]*difference(i,means_[i],getArgument(i));
   }
   if(b_covar_ || b_lm_) {
     for(unsigned int i = 0; i < ncvs_; ++i) {
       for(unsigned int j = i; j < ncvs_; ++j) {
-        s = (update_calls_ - 1) * deltas[i] * deltas[j] / update_calls_ / update_calls_ - covar_(i,j) / update_calls_;
+        s = (N - 1) * deltas[i] * deltas[j] / N / N - covar_(i,j) / N;
         covar_(i,j) += s;
         //do this so we don't double count
         covar_(j,i) = covar_(i,j);
@@ -809,7 +813,7 @@ void EDS::reset_statistics() {
   if(b_virial_) {
     for(unsigned int i = 0; i < ncvs_; ++i)
       for(unsigned int j = 0; j < 3; ++j)
-        pseudo_virial_[i][j] = 0;
+        pseudo_virial_[i] = 0;
   }
 }
 
@@ -856,21 +860,27 @@ void EDS::calc_ssd_step_size() {
 }
 
 void EDS::update_pseudo_virial() {
-  double p = 0;
+  //We want to compute the bias force on each atom times the position
+  // of the atoms.
+  double p, netp = 0;
   for(unsigned int i = 0; i < ncvs_; ++i) {
     //checked in setup to ensure this cast is valid.
-    std::cout << "Type is " << typeid(getPntrToArgument(i)->getPntrToAction()).name() << std::endl;
-    ActionAtomistic* cv = reinterpret_cast<ActionAtomistic*> (getPntrToArgument(i)->getPntrToAction());
-    Tensor& v(cv->modifyVirial());
+    ActionAtomistic* cv = dynamic_cast<ActionAtomistic*> (getPntrToArgument(i)->getPntrToAction());
+    const std::vector<Vector> &pos(cv->getPositions());
+    std::vector<Vector> &forces(cv->modifyForces());
+    const unsigned int natoms=cv->getNumberOfAtoms();
+
+    //compute r * F
+    p = 0;
+    for(unsigned int j = 0; j < natoms; ++j)
+      p += dotProduct(pos[j], forces[j]);
+
     //compute running mean
-    pseudo_virial_[i][0] += (v(0,0) - pseudo_virial_[i][0]) / fmax(1,update_calls_);
-    pseudo_virial_[i][1] += (v(1,1) - pseudo_virial_[i][1]) / fmax(1,update_calls_);
-    pseudo_virial_[i][2] += (v(2,2) - pseudo_virial_[i][2]) / fmax(1,update_calls_);
-    p += v(0,0) + v(1,1) + v(2,2);
-    std::cout << &v << " " << &cv << " " << p <<  " " << v(0,0) << std::endl;
+    pseudo_virial_[i] += (p - pseudo_virial_[i]) / fmax(1,update_calls_);
+    netp += p;
   }
-  //update instantaneous pressure
-  value_pressure_->set(p);
+  //update pressure
+  value_pressure_->set( (netp - value_pressure_->get()) / fmax(1, update_calls_) );
 }
 
 void EDS::update_bias()
@@ -893,7 +903,7 @@ void EDS::update_bias()
 
       if(b_virial_) {
         //apply virial regularization
-        step_size_[i] -= 2 * virial_scaling_ * (pseudo_virial_[i][0] + pseudo_virial_[i][1] + pseudo_virial_[i][2]);
+        step_size_[i] += 2 * virial_scaling_ * value_pressure_->get();
       }
 
       double proposed_coupling_accum = coupling_accum_[i] + step_size_[i] * step_size_[i];
