@@ -136,11 +136,11 @@ private:
   std::vector<double> center_;
   std::vector<Value*> center_values_;
   std::vector<double> scale_;
-  std::vector<double> current_coupling_;
-  std::vector<double> set_coupling_;
-  std::vector<double> target_coupling_;
-  std::vector<double> max_coupling_range_;
-  std::vector<double> max_coupling_grad_;
+  std::vector<double> current_coupling_; //actually current coupling
+  std::vector<double> set_coupling_; //what are coupling is ramping up to. =current_coupling when gathering stats
+  std::vector<double> target_coupling_; //used when loaded to reach a value
+  std::vector<double> max_coupling_range_; //used for adaptive range
+  std::vector<double> max_coupling_grad_; //maximum allowed gradient
   std::vector<double> coupling_rate_;
   std::vector<double> coupling_accum_;
   std::vector<double> means_;
@@ -213,7 +213,7 @@ PLUMED_REGISTER_ACTION(EDS,"EDS")
 void EDS::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("optional","CENTER","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing. This is for fixed values");
+  keys.add("optional","CENTER","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing. This is for fixed centers");
   keys.add("optional","CENTER_ARG","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing. "
            "CENTER_ARG is for calculated centers, e.g. from a CV or analysis. ");
 
@@ -229,7 +229,7 @@ void EDS::registerKeywords(Keywords& keys) {
   keys.add("optional","MULTI_PROP","What proportion of dimensions to update at each step. "
            "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
            "If not set, default is 1 / N, where N is the number of CVs. ");
-  keys.add("optional","VIRIAL","Compute the penalty for having non-zero virial bias");
+  keys.add("optional","VIRIAL","Add an update penalty for having non-zero virial contributions. Only makes sense with multiple correlated CVs.");
 
   keys.addFlag("LM",false,"Use Levenberg-Marquadt algorithm along with simultaneous keyword. Otherwise use gradient descent.");
   keys.addFlag("LM_MIXING","1","Initial mixing parameter when using Levenberg-Marquadt minimization.");
@@ -251,7 +251,7 @@ void EDS::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
 
   keys.addOutputComponent("force2","default","squared value of force from the bias");
-  keys.addOutputComponent("pressure","default","If using virial scaling, this is the curent sum of virials");
+  keys.addOutputComponent("pressure","default","If using virial keyword, this is the curent sum of virials. It is the average virial contribution due to EDS in units of kT, as determined from input temperature. Multiply by number density * kbT / 3 to get pressure");
   keys.addOutputComponent("_coupling","default", "For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
 }
 
@@ -868,12 +868,18 @@ void EDS::update_pseudo_virial() {
     ActionAtomistic* cv = dynamic_cast<ActionAtomistic*> (getPntrToArgument(i)->getPntrToAction());
     const std::vector<Vector> &pos(cv->getPositions());
     std::vector<Vector> &forces(cv->modifyForces());
+    Tensor &v(cv->modifyVirial());
     const unsigned int natoms=cv->getNumberOfAtoms();
 
     //compute r * F
     p = 0;
     for(unsigned int j = 0; j < natoms; ++j)
-      p += dotProduct(pos[j], forces[j]);
+      p += dotProduct(pos[j], forces[j]) / kbt_;
+
+    //average per particle virial contribution in kT
+    p /= natoms;
+
+    //p += v(0,0) + v(1,1) + v(2,2);
 
     //compute running mean
     pseudo_virial_[i] += (p - pseudo_virial_[i]) / fmax(1,update_calls_);
@@ -903,7 +909,11 @@ void EDS::update_bias()
 
       if(b_virial_) {
         //apply virial regularization
-        step_size_[i] += 2 * virial_scaling_ * value_pressure_->get();
+        // P * dP/dcoupling
+        // coupling is already included in virial term due to plumed propogating from bias to forces
+        // thus we need to divide by it to get the derivative (since force is linear in coupling)
+        if(fabs(set_coupling_[i]) > 0.000000001) //my heuristic for if EDS has started to prevent / 0
+          step_size_[i] -= 2 * virial_scaling_ * value_pressure_->get() * value_pressure_->get() / set_coupling_[i];
       }
 
       double proposed_coupling_accum = coupling_accum_[i] + step_size_[i] * step_size_[i];
