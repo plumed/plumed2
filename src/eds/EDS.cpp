@@ -170,7 +170,7 @@ private:
   bool b_hard_c_range_;
   bool b_lm_;
   bool b_virial_;
-  bool b_update_statistics_;
+  bool b_update_virial_;
   int seed_;
   int update_period_;
   int avg_coupling_count_;
@@ -576,10 +576,10 @@ void EDS::readInRestart(const bool b_mean) {
       in_restart_.scanField(cv_name + "_accum",coupling_accum_[i]);
       in_restart_.scanField(cv_name + "_mean",means_[i]);
       if(in_restart_.FieldExist(cv_name + "_pseudovirial")) {
-          if(b_virial_)
-            in_restart_.scanField(cv_name + "_pseudovirial",pseudo_virial_[i]);
-          else //discard the field
-            in_restart_.scanField(cv_name + "_pseudovirial",tmp);
+        if(b_virial_)
+          in_restart_.scanField(cv_name + "_pseudovirial",pseudo_virial_[i]);
+        else //discard the field
+          in_restart_.scanField(cv_name + "_pseudovirial",tmp);
       }
       //unused due to difference between covar/nocovar
       in_restart_.scanField(cv_name + "_std",tmp);
@@ -657,7 +657,7 @@ void EDS::writeOutRestart() {
     out_restart_.printField(cv_name + "_accum",coupling_accum_[i]);
     out_restart_.printField(cv_name + "_mean",means_[i]);
     if(b_virial_)
-        out_restart_.printField(cv_name + "_pseudovirial",pseudo_virial_[i]);
+      out_restart_.printField(cv_name + "_pseudovirial",pseudo_virial_[i]);
     if(!b_covar_ && !b_lm_)
       out_restart_.printField(cv_name + "_std",ssds_[i] / (fmax(1, update_calls_ - 1)));
     else
@@ -677,83 +677,6 @@ void EDS::calculate() {
       center_[i] = center_values_[i]->get();
 
   apply_bias();
-
-  //adjust parameters according to EDS recipe
-  update_calls_++;
-
-  //check if we're ramping or doing normal updates and then restart if needed. The ramping check
-  //is complicated because we could be frozen, finished ramping or not ramping.
-  //The + 2 is so we have an extra line showing that the bias isn't changing (for my sanity and yours)
-  if( b_write_restart_) {
-    if(getStep() == 0 ||
-        ( (update_period_ < 0 && !b_freeze_ && update_calls_ <= fabs(update_period_) + 2) ||
-          (update_period_ > 0 && update_calls_ % update_period_ == 0 ) ) )
-      writeOutRestart();
-  }
-
-  int b_finished_equil_flag = 1;
-
-  //assume forces already applied and saved
-
-
-  //are we ramping to a constant value and not done equilibrating?
-  if(update_period_ < 0) {
-    if(update_calls_ <= fabs(update_period_) && !b_freeze_) {
-      for(unsigned int i = 0; i < ncvs_; ++i)
-        current_coupling_[i] += (target_coupling_[i]-set_coupling_[i])/fabs(update_period_);
-    }
-    //make sure we don't reset update calls
-    b_finished_equil_flag = 0;
-  } else if(update_period_ == 0) { //do we have a no-update case?
-    //not updating
-    //pass
-  } else if(!b_equil_) {
-    //if we aren't wating for the bias to equilibrate, collect data
-    b_update_statistics_ = true;
-  } else {
-    // equilibrating
-    //check if we've reached the setpoint
-    for(unsigned int i = 0; i < ncvs_; ++i) {
-      if(coupling_rate_[i] == 0 || pow(current_coupling_[i] - set_coupling_[i],2) < pow(coupling_rate_[i],2)) {
-        b_finished_equil_flag &= 1;
-      }
-      else {
-        current_coupling_[i] += coupling_rate_[i];
-        b_finished_equil_flag = 0;
-      }
-    }
-  }
-
-  //Update max coupling range if not hard
-  if(!b_hard_c_range_) {
-    for(unsigned int i = 0; i < ncvs_; ++i) {
-      if(fabs(current_coupling_[i])>max_coupling_range_[i]) {
-        max_coupling_range_[i]*=c_range_increase_f_;
-        max_coupling_grad_[i]*=c_range_increase_f_;
-      }
-    }
-  }
-
-  //reduce all the flags
-  if(b_equil_ && b_finished_equil_flag) {
-    b_equil_ = false;
-    update_calls_ = 0;
-  }
-
-  //Now we update coupling constant, if necessary
-  if(!b_equil_ && update_period_ > 0 && update_calls_ == update_period_ && !b_freeze_) {
-    update_bias();
-    update_calls_ = 0;
-    avg_coupling_count_++;
-    b_equil_ = true; //back to equilibration now
-  } //close update if
-
-  //pass couplings out so they are accessible
-  for(unsigned int i = 0; i<ncvs_; ++i) {
-    out_coupling_[i]->set(current_coupling_[i]);
-  }
-
-
 }
 
 void EDS::apply_bias() {
@@ -893,10 +816,7 @@ void EDS::update_bias()
 {
   log.flush();
   if (b_lm_)
-  {
-    log.flush();
     calc_lm_step_size();
-  }
   else if(b_covar_)
     calc_covar_step_size();
   else
@@ -935,20 +855,93 @@ void EDS::update_bias()
       //do not change the bias
       coupling_rate_[i] = 0;
     }
-
-    //reset means/vars
-    reset_statistics();
-
   }
+
+  //reset means/vars
+  reset_statistics();
 }
 
 
 
 void EDS::update() {
-  if(b_update_statistics_) {
+  //adjust parameters according to EDS recipe
+  update_calls_++;
+
+  //if we aren't wating for the bias to equilibrate, set flag to collect data
+  //want statistics before writing restart
+  if(!b_equil_ && update_period_ > 0)
     update_statistics();
-    b_update_statistics_ = false;
+
+  //write restart with correct statistics before bias update
+  //check if we're ramping or doing normal updates and then restart if needed. The ramping check
+  //is complicated because we could be frozen, finished ramping or not ramping.
+  //The + 2 is so we have an extra line showing that the bias isn't changing (for my sanity and yours)
+  if( b_write_restart_) {
+    if(getStep() == 0 ||
+        ( (update_period_ < 0 && !b_freeze_ && update_calls_ <= fabs(update_period_) + 2) ||
+          (update_period_ > 0 && update_calls_ % update_period_ == 0 ) ) )
+      writeOutRestart();
   }
+
+  int b_finished_equil_flag = 1;
+
+  //assume forces already applied and saved
+  //are we ramping to a constant value and not done equilibrating?
+  if(update_period_ < 0) {
+    if(update_calls_ <= fabs(update_period_) && !b_freeze_) {
+      for(unsigned int i = 0; i < ncvs_; ++i)
+        current_coupling_[i] += (target_coupling_[i]-set_coupling_[i])/fabs(update_period_);
+    }
+    //make sure we don't reset update calls
+    b_finished_equil_flag = 0;
+  } else if(update_period_ == 0) { //do we have a no-update case?
+    //not updating
+    //pass
+  } else if(b_equil_) {
+    // equilibrating
+    //check if we've reached the setpoint
+    for(unsigned int i = 0; i < ncvs_; ++i) {
+      if(coupling_rate_[i] == 0 || pow(current_coupling_[i] - set_coupling_[i],2) < pow(coupling_rate_[i],2)) {
+        b_finished_equil_flag &= 1;
+      }
+      else {
+        current_coupling_[i] += coupling_rate_[i];
+        b_finished_equil_flag = 0;
+      }
+    }
+  }
+
+
+
+  //Update max coupling range if not hard
+  if(!b_hard_c_range_) {
+    for(unsigned int i = 0; i < ncvs_; ++i) {
+      if(fabs(current_coupling_[i])>max_coupling_range_[i]) {
+        max_coupling_range_[i]*=c_range_increase_f_;
+        max_coupling_grad_[i]*=c_range_increase_f_;
+      }
+    }
+  }
+
+  //reduce all the flags
+  if(b_equil_ && b_finished_equil_flag) {
+    b_equil_ = false;
+    update_calls_ = 0;
+  }
+
+  //Now we update coupling constant, if necessary
+  if(!b_equil_ && update_period_ > 0 && update_calls_ == update_period_ && !b_freeze_) {
+    update_bias();
+    update_calls_ = 0;
+    avg_coupling_count_++;
+    b_equil_ = true; //back to equilibration now
+  } //close update if
+
+  //pass couplings out so they are accessible
+  for(unsigned int i = 0; i<ncvs_; ++i) {
+    out_coupling_[i]->set(current_coupling_[i]);
+  }
+
 }
 
 EDS::~EDS() {
