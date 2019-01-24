@@ -137,7 +137,7 @@ private:
   std::vector<Value*> center_values_;
   std::vector<double> scale_;
   std::vector<double> current_coupling_; //actually current coupling
-  std::vector<double> set_coupling_; //what are coupling is ramping up to. =current_coupling when gathering stats
+  std::vector<double> set_coupling_; //what our coupling is ramping up to. Equal to current_coupling when gathering stats
   std::vector<double> target_coupling_; //used when loaded to reach a value
   std::vector<double> max_coupling_range_; //used for adaptive range
   std::vector<double> max_coupling_grad_; //maximum allowed gradient
@@ -180,6 +180,7 @@ private:
   double multi_prop_;
   double lm_mixing_par_;
   double virial_scaling_;
+  double pseudo_virial_net_;
   Random rand_;
   Value* value_force2_;
   Value* value_pressure_;
@@ -785,31 +786,34 @@ void EDS::calc_ssd_step_size() {
 void EDS::update_pseudo_virial() {
   //We want to compute the bias force on each atom times the position
   // of the atoms.
-  double p, netp = 0;
+  double p, netp = 0, netpv = 0;
+  double volume = 0;
   for(unsigned int i = 0; i < ncvs_; ++i) {
     //checked in setup to ensure this cast is valid.
     ActionAtomistic* cv = dynamic_cast<ActionAtomistic*> (getPntrToArgument(i)->getPntrToAction());
-    const std::vector<Vector> &pos(cv->getPositions());
-    std::vector<Vector> &forces(cv->modifyForces());
     Tensor &v(cv->modifyVirial());
     const unsigned int natoms=cv->getNumberOfAtoms();
+    if(!volume)
+      volume = cv->getBox().determinant();
 
-    //compute r * F
-    p = 0;
-    for(unsigned int j = 0; j < natoms; ++j)
-      p += dotProduct(pos[j], forces[j]) / kbt_;
+    //add diagonal of virial tensor to get net pressure
+    //from CV
+    p = v(0,0) + v(1,1) + v(2,2);
+    p /= 3 * volume;
 
-    //average per particle virial contribution in kT
-    p /= natoms;
-
-    //p += v(0,0) + v(1,1) + v(2,2);
-
-    //compute running mean
-    pseudo_virial_[i] += (p - pseudo_virial_[i]) / fmax(1,update_calls_);
     netp += p;
+
+    //now scale for correct units in EDS algorithm
+    p *= (volume) / (kbt_ * natoms);
+
+    //compute running mean of scaled
+    pseudo_virial_[i] += (p - pseudo_virial_[i]) / fmax(1,update_calls_);
+    //update net pressure
+    netpv += p;
   }
   //update pressure
-  value_pressure_->set( (netp - value_pressure_->get()) / fmax(1, update_calls_) );
+  value_pressure_->set( netp );
+  pseudo_virial_net_ = (netpv - pseudo_virial_net_) / (fmax(1, update_calls_));
 }
 
 void EDS::update_bias()
@@ -833,7 +837,8 @@ void EDS::update_bias()
         // coupling is already included in virial term due to plumed propogating from bias to forces
         // thus we need to divide by it to get the derivative (since force is linear in coupling)
         if(fabs(set_coupling_[i]) > 0.000000001) //my heuristic for if EDS has started to prevent / 0
-          step_size_[i] -= 2 * virial_scaling_ * value_pressure_->get() * value_pressure_->get() / set_coupling_[i];
+          //scale^2 here is to align units
+          step_size_[i] -= 2 * scale_[i] * scale_[i] * virial_scaling_ * pseudo_virial_net_ * pseudo_virial_net_ / set_coupling_[i];
       }
 
       double proposed_coupling_accum = coupling_accum_[i] + step_size_[i] * step_size_[i];
