@@ -213,10 +213,6 @@ SAXS::SAXS(const ActionOptions&ao):
 
   if(bessel&&gpu) error("You CANNOT use BESSEL on GPU!\n");
 
-  double scexp = 0;
-  parse("SCALEINT",scexp);
-  if(scexp==0) scexp=1.0;
-
   unsigned ntarget=0;
   for(unsigned i=0;; ++i) {
     double t_list;
@@ -257,12 +253,7 @@ SAXS::SAXS(const ActionOptions&ao):
         }
       }
     }
-    for(unsigned i=0; i<size; ++i) {
-      for(unsigned j=0; j<parameter[i].size(); ++j) {
-        Iq0+=parameter[i][j];
-      }
-    }
-    Iq0 /= sqrt(0.5);
+    for(unsigned i=0; i<size; ++i) Iq0+=parameter[i][0];
   } else if(martini) {
     //read in parameter vector
     vector<vector<long double> > parameter;
@@ -275,16 +266,11 @@ SAXS::SAXS(const ActionOptions&ao):
         }
       }
     }
-    for(unsigned i=0; i<size; ++i) {
-      for(unsigned j=0; j<parameter[i].size(); ++j) {
-        Iq0+=parameter[i][j];
-      }
-    }
-    Iq0 *= sqrt(0.5);
+    for(unsigned i=0; i<size; ++i) Iq0+=parameter[i][0];
   } else if(atomistic) {
     Iq0=calculateASF(atoms, FF_tmp, rho);
   }
-  scexp = Iq0*Iq0/scexp;
+  double scale_int = Iq0*Iq0;
 
   vector<double> expint;
   expint.resize( numq );
@@ -298,6 +284,10 @@ SAXS::SAXS(const ActionOptions&ao):
   if(ntarget==numq) exp=true;
   if(getDoScore()&&!exp) error("with DOSCORE you need to set the EXPINT values");
 
+  double tmp_scale_int=1.;
+  parse("SCALEINT",tmp_scale_int);
+
+
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
   for(unsigned i=0; i<numq; i++) {
@@ -307,14 +297,17 @@ SAXS::SAXS(const ActionOptions&ao):
   }
 
   // Calculate Rank of FF_matrix
-  if(exp) scexp /= expint[0];
+  if(tmp_scale_int!=1) scale_int /= tmp_scale_int;
+  else {
+    if(exp) scale_int /= expint[0];
+  }
 
   if(!gpu) {
     FF_rank.resize(numq);
     FF_value.resize(numq,vector<double>(size));
     for(unsigned k=0; k<numq; ++k) {
       for(unsigned i=0; i<size; i++) {
-        FF_value[k][i] = static_cast<double>(FF_tmp[k][i])/sqrt(scexp);
+        FF_value[k][i] = static_cast<double>(FF_tmp[k][i])/sqrt(scale_int);
         FF_rank[k]+=FF_value[k][i]*FF_value[k][i];
       }
     }
@@ -323,7 +316,7 @@ SAXS::SAXS(const ActionOptions&ao):
     FF_new.resize(numq*size);
     for(unsigned k=0; k<numq; ++k) {
       for(unsigned i=0; i<size; i++) {
-        FF_new[k+i*numq] = static_cast<float>(FF_tmp[k][i]/sqrt(scexp));
+        FF_new[k+i*numq] = static_cast<float>(FF_tmp[k][i]/sqrt(scale_int));
       }
     }
 #ifdef __PLUMED_HAS_ARRAYFIRE
