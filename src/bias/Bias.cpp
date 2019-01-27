@@ -41,6 +41,7 @@ Bias::Bias(const ActionOptions&ao):
     log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
   }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->hasDerivatives() ) error("cannot bias value " + getPntrToArgument(i)->getName() + " as derivatives are not implemented");
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
 

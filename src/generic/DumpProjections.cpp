@@ -97,6 +97,7 @@ DumpProjections::DumpProjections(const ActionOptions&ao):
   checkRead();
 
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( !getPntrToArgument(i)->hasDerivatives() ) error("cannot bias value " + getPntrToArgument(i)->getName() + " as derivatives are not implemented"); 
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
 }

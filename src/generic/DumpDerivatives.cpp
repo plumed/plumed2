@@ -101,10 +101,12 @@ DumpDerivatives::DumpDerivatives(const ActionOptions&ao):
   log.printf("  with format %s\n",fmt.c_str());
   unsigned nargs=getNumberOfArguments();
   if( nargs==0 ) error("no arguments specified");
+  if( !getPntrToArgument(0)->hasDerivatives() ) error("cannot bias value " + getPntrToArgument(0)->getName() + " as derivatives are not implemented");
   (getPntrToArgument(0)->getPntrToAction())->turnOnDerivatives();
   unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
   if( npar==0 ) error("one or more arguments has no derivatives");
   for(unsigned i=1; i<nargs; i++) {
+    if( !getPntrToArgument(i)->hasDerivatives() ) error("cannot bias value " + getPntrToArgument(i)->getName() + " as derivatives are not implemented");
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
     if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) error("the number of derivatives must be the same in all values being dumped");
   }
