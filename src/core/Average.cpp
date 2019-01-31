@@ -203,9 +203,12 @@ void Average::update() {
     getPntrToOutput(0)->clearDerivatives();
     if( normalization!=f ) {
       if( getPntrToArgument(0)->isPeriodic() ) {
+        getPntrToOutput(1)->set(0.0);
         getPntrToOutput(1)->setNorm(0.0);
+        getPntrToOutput(2)->set(0.0); 
         getPntrToOutput(2)->setNorm(0.0);
       } else {
+        getPntrToOutput(0)->set(0.0);
         getPntrToOutput(0)->setNorm(0.0);
       }
     }
