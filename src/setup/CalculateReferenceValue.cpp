@@ -93,25 +93,53 @@ SetupReferenceBase(ao)
    // Now retrieve the final value
    ActionWithValue* fav = dynamic_cast<ActionWithValue*>( p.getActionSet()[p.getActionSet().size()-1].get() );
    if( !fav ) error("final value should calculate relevant value that you want as reference");
-   if( fav->getNumberOfComponents()!=1 ) error("final action in input should have one component");
-   std::string name = (fav->copyOutput(0))->getName();
-   long rank; p.cmd("getDataRank " + name, &rank );
-   if( rank==0 ) rank=1;
-   std::vector<long> ishape( rank ); std::vector<unsigned> shape( rank ); 
-   p.cmd("getDataShape " + name, &ishape[0] );
-   unsigned nvals=1; for(unsigned i=0;i<shape.size();++i){ shape[i]=ishape[i]; nvals *= shape[i]; } 
-   std::vector<double> data( nvals ); p.cmd("setMemoryForData " + name, &data[0] );
+   // if( fav->getNumberOfComponents()!=1 ) error("final action in input should have one component");
+   std::vector<unsigned> nvals( fav->getNumberOfComponents() ); 
+   std::vector<std::vector<double> > data( fav->getNumberOfComponents() );
+   std::vector<std::vector<unsigned> > shapes( fav->getNumberOfComponents() );
+   for(unsigned i=0;i<fav->getNumberOfComponents();++i) {
+       std::string name = (fav->copyOutput(i))->getName();
+       long rank; p.cmd("getDataRank " + name, &rank );
+       if( rank==0 ) rank=1;
+       std::vector<long> ishape( rank ); shapes[i].resize( rank ); 
+       p.cmd("getDataShape " + name, &ishape[0] );
+       nvals[i]=1; for(unsigned j=0;j<ishape.size();++j){ shapes[i][j]=ishape[j]; nvals[i] *= shapes[i][j]; } 
+       data[i].resize( nvals[i] ); p.cmd("setMemoryForData " + name, &data[i][0] );
+   }
    // Do the calculation using the Plumed object
-   p.cmd("calc"); addValue( shape ); getPntrToComponent(0)->buildDataStore( getLabel() );
-   if( (fav->copyOutput(0))->isPeriodic() ) {
-       std::string min, max; (fav->copyOutput(0))->getDomain( min, max ); 
-       setPeriodic( min, max );
-   } else setNotPeriodic();
+   p.cmd("calc"); 
+   // And setup the values 
+   if( fav->getNumberOfComponents()==1 ) {
+       addValue( shapes[0] ); 
+       if( (fav->copyOutput(0))->isPeriodic() ) {
+           std::string min, max; (fav->copyOutput(0))->getDomain( min, max ); 
+           setPeriodic( min, max );
+       } else setNotPeriodic();
+   } else {
+       for(unsigned i=0;i<fav->getNumberOfComponents();++i) {
+           std::string name = (fav->copyOutput(i))->getName(); 
+           std::size_t dot = name.find_first_of(".");
+           std::string subname=name.substr(dot+1);
+           addComponent( subname, shapes[i] );
+           if( (fav->copyOutput(i))->isPeriodic() ) {
+               std::string min, max; (fav->copyOutput(i))->getDomain( min, max );
+               componentIsPeriodic( subname, min, max );
+           } else componentIsNotPeriodic( subname );
+       }
+   }
+   // Setup all the values
+   for(unsigned i=0;i<fav->getNumberOfComponents();++i) getPntrToComponent(i)->buildDataStore( getLabel() );
    // And set it to what was calculated
-   for(unsigned i=0;i<nvals;++i) getPntrToComponent(0)->set( i, data[i] ); 
-   log.printf("  setup %d reference values \n", nvals);
+   for(unsigned i=0;i<fav->getNumberOfComponents();++i) { 
+       log.printf("  setup %d reference values for value %s \n", nvals[i], getPntrToComponent(i)->getName().c_str() );
+       for(unsigned j=0;j<nvals[i];++j) getPntrToComponent(i)->set( j, data[i][j] ); 
+   } 
    // Create a fake task list -- this ensures derivatives are looked at correctly
-   for(unsigned i=0;i<shape[0];++i) addTaskToList( i );
+   unsigned maxtask=shapes[0][0];
+   for(unsigned i=1;i<shapes.size();++i) {
+       if( shapes[i][0]>maxtask ) maxtask=shapes[i][0]; 
+   }
+   for(unsigned i=0;i<maxtask;++i) addTaskToList( i );
 }
 
 }

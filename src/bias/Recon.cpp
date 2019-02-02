@@ -57,11 +57,12 @@ Action(ao),
 ActionShortcut(ao)
 {
   // Read the reference file and determine how many clusters we have
-  std::string argstr; parse("ARG",argstr); 
+  std::string argstr; parse("ARG",argstr); std::vector<unsigned> neigv; 
   std::string fname; parse("REFERENCE",fname); std::vector<double> weights;
   IFile ifile; ifile.open(fname); ifile.allowIgnoredFields(); double h;
   for(unsigned k=0;; ++k) {
      if( !ifile.scanField("height",h) ) break;
+     int meig; ifile.scanField("neigv",meig); neigv.push_back( meig );
      // Create a reference configuration for this cluster
      std::string num; Tools::convert( k+1, num );
      readInputLine( getShortcutLabel() + "_ref" + num + ": READ_CLUSTER ARG=" + argstr + " NUMBER=" + num + " REFERENCE=" + fname + " READ_COVARIANCE");
@@ -71,6 +72,12 @@ ActionShortcut(ao)
      // And compute a determinent for the input covariance matrix
      readInputLine( getShortcutLabel() + "_det" + num + ": CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref" + num +
                     " INPUT={DETERMINANT ARG=" + getShortcutLabel() + "_ref" + num + ".covariance}");
+     // Compute eigenvalues and eigenvectors for the input covariance matrix if required 
+     if( meig>0 ) { 
+         std::string seig="1"; for(int j=1;j<meig;++j) { std::string eignum; Tools::convert( j+1, eignum ); seig += "," + eignum; }
+         readInputLine( getShortcutLabel() + "_eigv" + num + ": CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref" + num +
+                        " INPUT={DIAGONALIZE ARG=" + getShortcutLabel() + "_ref" + num + ".covariance VECTORS=" + seig + "}");
+     }
      // Store the weights as we will use these when constructing the bias later in the input
      weights.push_back(h); ifile.scanField();
   }
@@ -83,7 +90,22 @@ ActionShortcut(ao)
       readInputLine( getShortcutLabel() + "_dist-" + num + ": MAHALANOBIS_DISTANCE ARG1=" + argstr + " ARG2=" + getShortcutLabel() + "_ref" + num + ".center" + 
                      " METRIC=" + getShortcutLabel() + "_icov" + num );
       // Get the negative of the distance from the center of the basin
-      readInputLine( getShortcutLabel() + "_pdist-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist-" + num + " FUNC=0-x PERIODIC=NO");
+      if( neigv[k]==0 ) {
+        readInputLine( getShortcutLabel() + "_pdist-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist-" + num + " FUNC=0-x PERIODIC=NO");
+      } else {
+        // This computes the projections of the difference between the current point and the origin on the various eigenvectors
+        for(unsigned i=0;i<neigv[k];++i) {
+            std::string eignum; Tools::convert( i+1, eignum );
+            // Multiply difference in CVs by eigenvector - returns a vector
+            readInputLine( getShortcutLabel() + "_dproj" + eignum + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist-" + num + "_diff"
+               + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vecs-" + eignum + " FUNC=x*y PERIODIC=NO");
+            // Sum the components of the vector
+            readInputLine( getShortcutLabel() + "_udproj" + eignum + "-" + num + ": COMBINE ARG=" + getShortcutLabel() + "_dproj" + eignum + "-" + num + " PERIODIC=NO");
+            // And divide the projection on the eigenvector by the eigenvalue so that gaussian widths are in units of covariance
+            readInputLine( getShortcutLabel() + "_proj" + eignum + "-" + num + ": MATHEVAL ARG1="+  getShortcutLabel() + "_udproj" + eignum + "-" + num 
+               + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vals-" + eignum + " FUNC=x/y PERIODIC=NO");
+        }
+      }
   }
 
   // Create the well-tempered weight
@@ -95,11 +117,24 @@ ActionShortcut(ao)
   // Setup the histograms that will store the bias potential for each basin and compute the instantaneous bias from each basin
   std::string gmax, grid_nbins, sigma, pacestr; parse("GRID_MAX",gmax); parse("GRID_BIN",grid_nbins); parse("SIGMA",sigma); parse("PACE",pacestr);
   for(unsigned k=0;k<weights.size();++k) {
-      // Build the histograms for the bias potential
-      std::string num; Tools::convert( k+1, num );
-      readInputLine( getShortcutLabel() + "_histo-" + num + ": HISTOGRAM ARG1=" + getShortcutLabel() + "_dist-" + num + "," + 
-                     getShortcutLabel() + "_pdist-" + num + " NORMALIZATION=false GRID_MIN=0 GRID_MAX=" + gmax + " GRID_BIN=" + 
-                     grid_nbins + " BANDWIDTH=" + sigma + " STRIDE=" + pacestr + " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact"); 
+      std::string num; Tools::convert( k+1, num ); 
+      // Build the histograms for the bias potential 
+      if( neigv[k]==0 ) {
+          readInputLine( getShortcutLabel() + "_histo-" + num + ": HISTOGRAM ARG1=" + getShortcutLabel() + "_dist-" + num + "," + 
+                         getShortcutLabel() + "_pdist-" + num + " NORMALIZATION=false GRID_MIN=0 GRID_MAX=" + gmax + " GRID_BIN=" + 
+                         grid_nbins + " BANDWIDTH=" + sigma + " STRIDE=" + pacestr + " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact"); 
+      } else {
+          std::string gminstr=" GRID_MIN=-" + gmax; std::string gmaxstr=" GRID_MAX=" + gmax;
+          std::string bandstr=" BANDWIDTH=" + sigma; std::string gbinstr=" GRID_BIN=" + grid_nbins;
+          std::string input = getShortcutLabel() + "_histo-" + num + ": HISTOGRAM NORMALIZATION=false STRIDE=" + pacestr + 
+                              " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact ARG1=" + getShortcutLabel() + "_proj1-" + num;
+          for(unsigned i=1;i<neigv[k];++i) {
+              std::string eignum; Tools::convert( i+1, eignum );
+              input += " ARG" + eignum + "=" + getShortcutLabel() + "_proj" + eignum + "-" + num;
+              gminstr += ",-" + gmax; gmaxstr += "," + gmax; bandstr += "," + sigma; gbinstr += "," + grid_nbins; 
+          }
+          readInputLine( input + " " + gminstr + " " + gmaxstr + " " + bandstr + " " + gbinstr );
+      }
       // Evaluate the bias potential for each basin
       readInputLine( getShortcutLabel() + "_bias-" + num + ": EVALUATE_FUNCTION_FROM_GRID ARG=" + getShortcutLabel() + "_histo-" + num );
   }
