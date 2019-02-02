@@ -82,6 +82,8 @@ ActionShortcut(ao)
       // Compute the distance between the center of the basin and the current configuration
       readInputLine( getShortcutLabel() + "_dist-" + num + ": MAHALANOBIS_DISTANCE ARG1=" + argstr + " ARG2=" + getShortcutLabel() + "_ref" + num + ".center" + 
                      " METRIC=" + getShortcutLabel() + "_icov" + num );
+      // Get the negative of the distance from the center of the basin
+      readInputLine( getShortcutLabel() + "_pdist-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist-" + num + " FUNC=0-x PERIODIC=NO");
   }
 
   // Create the well-tempered weight
@@ -95,9 +97,9 @@ ActionShortcut(ao)
   for(unsigned k=0;k<weights.size();++k) {
       // Build the histograms for the bias potential
       std::string num; Tools::convert( k+1, num );
-      readInputLine( getShortcutLabel() + "_histo-" + num + ": HISTOGRAM ARG1=" + getShortcutLabel() + "_dist-" + num + " NORMALIZATION=false" +
-                     " GRID_MIN=0 GRID_MAX=" + gmax + " GRID_BIN=" + grid_nbins + " BANDWIDTH=" + sigma + " STRIDE=" + pacestr + 
-                     " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact"); 
+      readInputLine( getShortcutLabel() + "_histo-" + num + ": HISTOGRAM ARG1=" + getShortcutLabel() + "_dist-" + num + "," + 
+                     getShortcutLabel() + "_pdist-" + num + " NORMALIZATION=false GRID_MIN=0 GRID_MAX=" + gmax + " GRID_BIN=" + 
+                     grid_nbins + " BANDWIDTH=" + sigma + " STRIDE=" + pacestr + " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact"); 
       // Evaluate the bias potential for each basin
       readInputLine( getShortcutLabel() + "_bias-" + num + ": EVALUATE_FUNCTION_FROM_GRID ARG=" + getShortcutLabel() + "_histo-" + num );
   }
