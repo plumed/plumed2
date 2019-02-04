@@ -126,6 +126,8 @@ install:
       brew update > /dev/null ;
       brew install ccache ;
       export PLUMED_MPIRUN="mpirun --oversubscribe" ;
+    else
+      export PLUMED_MPIRUN="mpirun.openmpi" ;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq ; fi
 # install some package - these are fast, we install them anyway
