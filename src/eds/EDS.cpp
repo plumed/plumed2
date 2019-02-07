@@ -45,7 +45,8 @@ This force is the same as the linear part of the bias in \ref
 RESTRAINT, but this bias has the ability to compute the prefactors
 adaptively using the scheme of White and Voth \cite white2014efficient
 in order to match target observable values for a set of CVs.
-Further updates to the algorithm are described in \cite hocky2017cgds.
+Further updates to the algorithm are described in \cite hocky2017cgds 
+and you can read a review on the method and its applications here: \cite Amirkulova2019Recent.
 
 You can
 see a tutorial on EDS specifically for biasing coordination number at
@@ -70,6 +71,16 @@ divide-by-zero error. Instead, set \f$s_i=1\f$ or modify the CV so the
 desired target value is no longer zero.
 
 Notice that a similar method is available as \ref MAXENT, although with different features and using a different optimization algorithm.
+
+\par Virial 
+
+The bias forces modify the virial and this can change your simulation density if the bias is used in an NPT simulation. 
+One way to avoid changing the virial contribution from the bias is to add the keyword VIRIAL=1.0, which changes how the bias
+is computed to minimize its contribution to the virial. This can also lead to smaller magnitude biases that are more robust if
+transferred to other systems.  VIRIAL=1.0 can be a reasonable starting point and increasing the value changes the balance between matching
+the set-points and minimizing the virial. See \cite Amirkulova2019Recent for details on the equations. Since the coupling constants 
+are unique with a single CV, VIRIAL is not applicable with a single CV. When used with multiple CVs, the CVs should be correlated 
+which is almost always the case.   
 
 \par Examples
 
@@ -218,12 +229,11 @@ void EDS::registerKeywords(Keywords& keys) {
 
   keys.add("optional","PERIOD","Steps over which to adjust bias for adaptive or ramping");
   keys.add("compulsory","RANGE","25.0","The (starting) maximum increase in coupling constant per PERIOD (in \\f$k_B T\\f$/[BIAS_SCALE unit]) for each CV based");
-  keys.add("compulsory","INCREASE_FACTOR","1.0","Factor by which to increase RANGE every time coupling exceeds RANGE. RANGE is the max prefactor for increasing coupling in a given PERIOD.");
   keys.add("compulsory","SEED","0","Seed for random order of changing bias");
   keys.add("compulsory","INIT","0","Starting value for coupling constant");
   keys.add("compulsory","FIXED","0","Fixed target values for coupling constant. Non-adaptive.");
   keys.add("optional","BIAS_SCALE","A divisor to set the units of the bias. "
-           "If not set, this will be the experimental value by default (as is done in White and Voth 2014).");
+           "If not set, this will be the CENTER value by default (as is done in White and Voth 2014).");
   keys.add("optional","TEMP","The system temperature. If not provided will be taken from MD code (if available)");
   keys.add("optional","MULTI_PROP","What proportion of dimensions to update at each step. "
            "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
@@ -250,7 +260,7 @@ void EDS::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
 
   keys.addOutputComponent("force2","default","squared value of force from the bias");
-  keys.addOutputComponent("pressure","default","If using virial keyword, this is the curent sum of virials. It is the average virial contribution due to EDS in units of kT, as determined from input temperature. Multiply by number density * kbT / 3 to get pressure");
+  keys.addOutputComponent("pressure","default","If using virial keyword, this is the curent sum of virials. It is in units of pressure (energy / vol^3)");
   keys.addOutputComponent("_coupling","default", "For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
 }
 
