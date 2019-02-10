@@ -36,7 +36,8 @@ ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
-  firststep(true)
+  firststep(true),
+  set_zero_outside_range(false)
 {
   if( getNumberOfArguments()!=1 ) error("should be exactly one argument to this action");
   if( getPntrToArgument(0)->getRank()==0 || !getPntrToArgument(0)->hasDerivatives() ) error("input to this action should be a grid");
@@ -52,6 +53,7 @@ ActionWithInputGrid::ActionWithInputGrid(const ActionOptions&ao):
 
 double ActionWithInputGrid::getFunctionValueAndDerivatives( const std::vector<double>& x, std::vector<double>& der ) const {
   plumed_dbg_assert( gridobject.getGridType()=="flat" ); unsigned dimension = gridobject.getDimension();
+  if( set_zero_outside_range && !gridobject.inbounds( x ) ) return 0.0;
 
   double X,X2,X3,value=0; der.assign(der.size(),0.0);
   std::vector<double> fd(dimension);

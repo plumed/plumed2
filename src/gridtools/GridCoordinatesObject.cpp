@@ -119,6 +119,15 @@ unsigned GridCoordinatesObject::getIndex( const std::vector<unsigned>& indices )
   return index;
 }
 
+bool GridCoordinatesObject::inbounds( const std::vector<double>& point ) const {
+  plumed_dbg_assert( gtype==flat && bounds_set && point.size()==dimension );
+  for(unsigned i=0; i<dimension; ++i) {
+      if( pbc[i] ) continue;
+      if( point[i]<min[i] || point[i]>(max[i]-dx[i]) ) return false;
+  }
+  return true;
+}
+
 void GridCoordinatesObject::getIndices( const std::vector<double>& point, std::vector<unsigned>& indices ) const {
   plumed_dbg_assert( gtype==flat && bounds_set && point.size()==dimension && indices.size()==dimension );
   for(unsigned i=0; i<dimension; ++i) {

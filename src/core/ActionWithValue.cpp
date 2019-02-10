@@ -360,8 +360,8 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
   } else {
     std::size_t dot1 = mystr.find_first_of('.'); std::string thelab = mystr.substr(0,dot1);
     plumed_assert( thelab==getLabel() ); std::string rest = mystr.substr(dot1+1);
-    if( rest.find_first_of('.')==std::string::npos ) {
-      plumed_assert( values.size()==1 ); plumed_assert( values[0]->getRank()>0 && values[0]->getName()==getLabel() );
+    if( values.size()==1 ) {
+      plumed_assert( values[0]->getRank()>0 && values[0]->getName()==getLabel() );
       values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, rest );
     } else {
       std::size_t dot2 = rest.find_first_of('.'); std::string thecomp = rest.substr(0,dot2);

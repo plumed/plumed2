@@ -205,6 +205,8 @@ public:
 ///
   std::string getOutputDescription( const std::string& alabel ) const ;
 ///
+  std::string getOutputDescription( const std::string& alabel, const unsigned& i ) const ;
+///
   void setSymmetric( const bool& sym );
 ///
   bool isSymmetric() const ;

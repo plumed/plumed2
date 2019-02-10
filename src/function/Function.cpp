@@ -53,7 +53,7 @@ Function::Function(const ActionOptions&ao):
   bool gridinput=false; unsigned npoints=0; std::string gtype; std::vector<std::string> gargn, min, max; 
   // Method for if input to function is a function on a grid
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) {
+    if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() && getPntrToArgument(i)->usingAllVals( getLabel() ) ) {
       gridinput=true; npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
       nderivatives = getPntrToArgument(i)->getRank() + getNumberOfArguments(); 
       gspacing.resize( getPntrToArgument(i)->getRank() ); nbin.resize( getPntrToArgument(i)->getRank() );
@@ -151,7 +151,7 @@ Function::Function(const ActionOptions&ao):
 std::vector<unsigned> Function::getShape() {
   unsigned maxrank=0, rmax=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()>maxrank ) { maxrank=getPntrToArgument(i)->getRank(); rmax=i; }
+    if( getPntrToArgument(i)->usingAllVals( getLabel() ) && getPntrToArgument(i)->getRank()>maxrank ) { maxrank=getPntrToArgument(i)->getRank(); rmax=i; }
   }
   std::vector<unsigned> shape;
   if( hasGridOutput() ) {
@@ -168,7 +168,7 @@ std::vector<unsigned> Function::getShape() {
 
 bool Function::hasGridOutput() const {
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() ) return true;
+    if( getPntrToArgument(i)->getRank()>0 && getPntrToArgument(i)->hasDerivatives() && getPntrToArgument(i)->usingAllVals( getLabel() ) ) return true;
   }
   return false;
 }
@@ -197,9 +197,9 @@ void Function::addValueWithDerivatives() {
   }
 
   if( arg_ends.size()==0 ) {
-    if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
-    else if( hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
-    else if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape );
+    if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape ); 
+    else if( hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape ); 
+    else if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape ); 
     else if( shape.size()==0 ) ActionWithValue::addValueWithDerivatives( shape );
     else ActionWithValue::addValue( shape );
     if(period.size()==1 && period[0]=="NO") setNotPeriodic();
@@ -433,7 +433,7 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
             myvals.updateIndex( ostrn, base + myvals.getTaskIndex() );
           }
         }
-        for(unsigned k=arg_ends[i]; k<arg_ends[i+1]; ++k) base += getPntrToArgument(k)->getSize();
+        for(unsigned k=arg_ends[i]; k<arg_ends[i+1]; ++k) base += getPntrToArgument(k)->getNumberOfValues( getLabel() );
       }
     } else {
       for(unsigned j=0; j<getNumberOfComponents(); ++j) {

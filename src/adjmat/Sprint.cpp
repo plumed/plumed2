@@ -84,10 +84,10 @@ ActionShortcut(ao)
   // Sort sprint coordinates for each group of atoms
   unsigned k=0;
   for(unsigned j=0; j<nin_group.size(); ++j) {
-    std::string jnum, knum; Tools::convert( j+1, jnum ); Tools::convert(k, knum); k++;
+    std::string jnum, knum; Tools::convert( j+1, jnum ); Tools::convert(k+1, knum); k++;
     std::string sort_act = getShortcutLabel() + jnum + ": SORT ARG=" + getShortcutLabel() + "_sp." + knum;
     for(unsigned n=1; n<nin_group[j]; ++n) {
-      Tools::convert( k, knum ); sort_act += "," + getShortcutLabel() + "_sp." + knum; k++;
+      Tools::convert( k+1, knum ); sort_act += "," + getShortcutLabel() + "_sp." + knum; k++;
     }
     readInputLine( sort_act );
   }

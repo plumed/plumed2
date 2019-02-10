@@ -36,6 +36,7 @@ private:
   void doTheCalculation();
 protected:
   bool firststep;
+  bool set_zero_outside_range;
   GridCoordinatesObject gridobject;
   void setupGridObject();
   double getFunctionValue( const unsigned& ipoint ) const ;

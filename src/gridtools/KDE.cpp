@@ -205,6 +205,7 @@ void KDE::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
+  keys.addFlag("IGNORE_IF_OUT_OF_RANGE",false,"if a kernel is outside of the range of the grid it is safe to ignore");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
 }
 
@@ -213,6 +214,7 @@ KDE::KDE(const ActionOptions&ao):
   HistogramBase(ao),
   kernel(NULL),
   firststep(false),
+  ignore_out_of_bounds(false),
   gmin( getNumberOfDerivatives() ),
   gmax( getNumberOfDerivatives() ),
   bandwidth( getNumberOfDerivatives() )
@@ -269,6 +271,8 @@ KDE::KDE(const ActionOptions&ao):
   if( nbin.size()!=getNumberOfDerivatives() && gspacing.size()!=getNumberOfDerivatives() ) error("GRID_BIN or GRID_SPACING must be set");
   if( kerneltype.find("-bin")!=std::string::npos ) cval.resize( gmin.size() );
 
+  parseFlag("IGNORE_IF_OUT_OF_RANGE",ignore_out_of_bounds);
+  if( ignore_out_of_bounds ) log.printf("  ignoring kernels that are outside of grid \n");
   // Create a value
   std::vector<bool> ipbc( getNumberOfDerivatives() );
   for(unsigned i=0; i<getNumberOfDerivatives(); ++i) {
@@ -460,6 +464,8 @@ void KDE::addKernelToGrid( const double& height, const std::vector<double>& args
       buffer[ bufstart + gridobject.getIndex( newargs )*(1+args.size()) ] += height;
       return;
   }
+  if( ignore_out_of_bounds && !gridobject.inbounds( args ) ) return ;
+
   unsigned num_neigh; std::vector<unsigned> neighbors;
   std::vector<double> gpoint( args.size() ), der( args.size() );
   gridobject.getNeighbors( args, nneigh, num_neigh, neighbors );

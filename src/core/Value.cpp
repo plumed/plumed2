@@ -141,10 +141,12 @@ void Value::interpretDataRequest( const std::string& uselab, unsigned& nargs, st
   std::vector<unsigned> indices( shape.size() ); std::string indstr=values;
   for(unsigned i=0; i<shape.size()-1; ++i) {
     std::size_t dot = indstr.find_first_of(".");
+    if( dot==std::string::npos ) action->error("invalid specification for element of value"); 
     Tools::convert( indstr.substr(0,dot), indices[i] );
     indices[i] -= 1; indstr=indstr.substr(dot+1);
   }
-  Tools::convert( indstr, indices[indices.size()-1] );
+  Tools::convert( indstr, indices[indices.size()-1] ); indices[indices.size()-1] -= 1;
+  if( getIndex(indices)>=getNumberOfValues( action->getLabel() ) ) action->error("action does not have this many components");
   userdata[uselab].push_back( std::pair<int,int>(getIndex(indices),nargs) ); nargs++;
 }
 
@@ -358,11 +360,21 @@ std::string Value::getOutputDescription( const std::string& alabel ) const {
     if( getRank()==2 ) return " matrix labelled " + name;
   }
   // N.B. Output for rank 2 values in this case is not very transparent.
-  std::string num, datp;
-  for(unsigned i=0; i<userdata.find(alabel)->second.size(); ++i) {
-    Tools::convert( userdata.find(alabel)->second[i].first+1, num ); datp += " " + name + "." + num;
-  }
+  std::string datp;
+  for(unsigned i=0; i<userdata.find(alabel)->second.size(); ++i) datp += " " + getOutputDescription( alabel, i ); 
   return datp;
+}
+
+std::string Value::getOutputDescription( const std::string& alabel, const unsigned& i ) const {
+  if( getRank()==1 ) {
+      std::string num; Tools::convert( userdata.find(alabel)->second[i].first+1, num ); return name + "." + num;
+  } else if( getRank()==2 ) {
+      std::string num; Tools::convert( std::floor(userdata.find(alabel)->second[i].first/shape[1])+1 , num );
+      std::string num2; Tools::convert( userdata.find(alabel)->second[i].first%shape[1]+1, num2 );
+      return name + "." + num + "." + num2;
+  } else {
+      action->error("elements of three rank objects have not been implemented");
+  }
 }
 
 void Value::setSymmetric( const bool& sym ) {

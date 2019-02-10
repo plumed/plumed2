@@ -44,6 +44,7 @@ PLUMED_REGISTER_ACTION(EvaluateFunctionOnGrid,"EVALUATE_FUNCTION_FROM_GRID")
 
 void EvaluateFunctionOnGrid::registerKeywords( Keywords& keys ){
   ActionWithInputGrid::registerKeywords( keys );
+  keys.addFlag("ZERO_OUTSIDE_GRID_RANGE",false,"if we are asked to evaluate the function for a number that is outside the range of the grid set it to zero");
 }
 
 EvaluateFunctionOnGrid::EvaluateFunctionOnGrid(const ActionOptions&ao):
@@ -76,6 +77,8 @@ ActionWithInputGrid(ao)
       req_arg.push_back( argv[i] );
   }
   log.printf("\n"); requestArguments( req_arg, true );
+  parseFlag("ZERO_OUTSIDE_GRID_RANGE",set_zero_outside_range);
+  if( set_zero_outside_range ) log.printf("  function is zero outside grid range \n");
 
   // Make a task list
   createTasksFromArguments();

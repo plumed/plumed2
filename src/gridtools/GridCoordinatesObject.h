@@ -71,6 +71,8 @@ public:
   void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax, const std::vector<unsigned>& nbins, std::vector<double>& spacing );
 /// Convert an index into indices
   void convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const ;
+/// Check if a point is within the grid boundaries
+  bool inbounds( const std::vector<double>& point ) const ;
 /// Convert a point in space the the correspoinding grid point
   unsigned getIndex( const std::vector<double>& p ) const ;
 ///  Flatten the grid and get the grid index for a point

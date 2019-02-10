@@ -50,6 +50,7 @@ void Recon::registerKeywords(Keywords& keys) {
   keys.add("compulsory","GRID_BIN","the number of bins to use for all the grids");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value"); 
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
+  keys.addFlag("TRUNCATE_GRIDS",false,"set all histograms equal to zero outside specified range");
 }
 
 Recon::Recon(const ActionOptions& ao):
@@ -57,6 +58,7 @@ Action(ao),
 ActionShortcut(ao)
 {
   // Read the reference file and determine how many clusters we have
+  bool truncate=false; parseFlag("TRUNCATE_GRIDS",truncate);
   std::string argstr; parse("ARG",argstr); std::vector<unsigned> neigv; 
   std::string fname; parse("REFERENCE",fname); std::vector<double> weights;
   IFile ifile; ifile.open(fname); ifile.allowIgnoredFields(); double h;
@@ -115,6 +117,7 @@ ActionShortcut(ao)
   readInputLine( getShortcutLabel() + "_wtfact: REWEIGHT_WELLTEMPERED HEIGHT=" + height + " BIASFACTOR=" + biasfactor + tempstr);
 
   // Setup the histograms that will store the bias potential for each basin and compute the instantaneous bias from each basin
+  std::string truncflag1="", truncflag2=""; if( truncate ) { truncflag1="IGNORE_IF_OUT_OF_RANGE"; truncflag2="ZERO_OUTSIDE_GRID_RANGE"; } 
   std::string gmax, grid_nbins, sigma, pacestr; parse("GRID_MAX",gmax); parse("GRID_BIN",grid_nbins); parse("SIGMA",sigma); parse("PACE",pacestr);
   for(unsigned k=0;k<weights.size();++k) {
       std::string num; Tools::convert( k+1, num ); 
@@ -122,7 +125,7 @@ ActionShortcut(ao)
       if( neigv[k]==0 ) {
           readInputLine( getShortcutLabel() + "_histo-" + num + ": HISTOGRAM ARG1=" + getShortcutLabel() + "_dist-" + num + "," + 
                          getShortcutLabel() + "_pdist-" + num + " NORMALIZATION=false GRID_MIN=0 GRID_MAX=" + gmax + " GRID_BIN=" + 
-                         grid_nbins + " BANDWIDTH=" + sigma + " STRIDE=" + pacestr + " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact"); 
+                         grid_nbins + " BANDWIDTH=" + sigma + " STRIDE=" + pacestr + " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact " + truncflag1); 
       } else {
           std::string gminstr=" GRID_MIN=-" + gmax; std::string gmaxstr=" GRID_MAX=" + gmax;
           std::string bandstr=" BANDWIDTH=" + sigma; std::string gbinstr=" GRID_BIN=" + grid_nbins;
@@ -136,7 +139,7 @@ ActionShortcut(ao)
           readInputLine( input + " " + gminstr + " " + gmaxstr + " " + bandstr + " " + gbinstr );
       }
       // Evaluate the bias potential for each basin
-      readInputLine( getShortcutLabel() + "_bias-" + num + ": EVALUATE_FUNCTION_FROM_GRID ARG=" + getShortcutLabel() + "_histo-" + num );
+      readInputLine( getShortcutLabel() + "_bias-" + num + ": EVALUATE_FUNCTION_FROM_GRID ARG=" + getShortcutLabel() + "_histo-" + num + " " + truncflag2 );
   }
 
   // Now create the kernels

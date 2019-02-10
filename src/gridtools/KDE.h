@@ -34,6 +34,7 @@ private:
   KernelFunctions* kernel;
   std::string kerneltype;
   bool firststep;
+  bool ignore_out_of_bounds;
   double cheight;
   std::vector<double> cval;
   std::vector<unsigned> nbin, nneigh;
