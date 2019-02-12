@@ -49,6 +49,7 @@ void Recon::registerKeywords(Keywords& keys) {
   keys.add("compulsory","GRID_MAX","the maximum value to use for all the grids");
   keys.add("compulsory","GRID_BIN","the number of bins to use for all the grids");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value"); 
+  keys.add("compulsory","ALPHA","1.0","smearing factor that smooht or sharpen the profile of the PMIs"); 
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.addFlag("TRUNCATE_GRIDS",false,"set all histograms equal to zero outside specified range");
 }
@@ -143,16 +144,18 @@ ActionShortcut(ao)
   }
 
   // Now create the kernels
+  std::string alphastr; parse("ALPHA",alphastr);
+  double alphanum; parse("ALPHA",alphanum);
   for(unsigned k=0;k<weights.size();++k) {
       std::string num; Tools::convert( k+1, num );
       // Must work out the weight of the normalized kernel here
       ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>(getShortcutLabel() + "_ref" + num);
       unsigned ndim = av->copyOutput(0)->getShape()[0];
-      std::string wstr; Tools::convert( weights[k]/sqrt(pow(2*pi,ndim)), wstr ); 
+      std::string wstr; Tools::convert(sqrt(alphanum)*weights[k]/sqrt(pow(2*pi,ndim)), wstr ); 
       // Compute the kernel (just a plain Gaussian at present)
       readInputLine( getShortcutLabel() + "_kernel-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist-" + num + "_2" + 
                                                                 " ARG2=" + getShortcutLabel() + "_det" + num  +
-                                                                " FUNC=" + wstr + "*exp(-x/2)/sqrt(y) PERIODIC=NO");
+                                                                " FUNC=" + wstr + "*exp(-x/2*"+alphastr+")/sqrt(y) PERIODIC=NO");
   }
   // And sum the kernels
   std::string cinput = getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_kernel-1";
