@@ -164,7 +164,86 @@ Once you picked a setting that gives you result that are accurate enough, you me
 You should see that using neighbor lists is usually inconvenient unless you run with a single or very few cores.
 Hopefully this will change in a later PLUMED version!
 
-\subsection cineca-2019-2d Biasing your CVs
+\subsection cineca-2019-2e Biasing your CVs
+
+So far we have used PLUMED to analyze a CV on the fly. In principle, when you analyze CVs you typically only print them with a given
+stride (say, every 100 steps). This of course moderates significantly their cost. However, when you bias a CV you typically need to
+compute it at every step. Let's try to perform a metadynamics simulation biasing the coordination number and
+the distance between the magnesium ion and the phosphate. Parameters are similar to those used in \cite{cunha2017unraveling},
+although we use here a shorter deposition pace in order to artificially increase the computational cost.
+
+\plumedfile
+MOLINFO STRUCTURE=conf.pdb
+wat: GROUP ATOMS=@water
+ow:  GROUP ATOMS=@water REMOVE=@hydrogens
+mg:  GROUP ATOMS=10484
+p:   GROUP ATOMS=@P-2
+dp:    DISTANCE ATOMS=mg,p
+cn:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261
+metadP: METAD ARG=dp,cn SIGMA=0.05,0.1 HEIGHT=0.3 PACE=100 TEMP=300 BIASFACTOR=15
+PRINT ARG=dp,cn FILE=COLVAR STRIDE=100
+\endplumedfile
+
+If you use this input for a very long simulation you will realize that most of the time is spent
+within the `METAD` action. The reason is simple: in its standard implementation, metadynamics is implemented
+as a history dependent potential where, every time we need to compute the force, a sum over the past history
+is performed. The history is saved in the `HILLS` file (have a look at it). When this file becomes too large the simulation
+will slow down. Without the need to run a very long simulation, we can see the problem by artificially creating a very long
+HILLS file. Every line of the HILLS file contains:
+- The value of time.
+- The coordinates at which the Gaussian function was deposited.
+- The width of the deposited Gaussian function
+- The height
+- A number called bias-factor (check \ref METAD manual to know what it means).
+
+We can make an artificially long HILLS file and then use it to restart our simulation.
+\verbatim
+var="$(<HILLS)
+for((i=0;i<=10000;i++)) ; do echo "$var" ; done | awk '{if($1!="#!") print $1,$2,$3,$4,$5,$6/100000,$7; else print}' > HILLS_long
+\endverbatim
+
+Now modify your `plumed.dat` file so that it will read the `HILLS_long` file:
+\plumedfile
+MOLINFO STRUCTURE=conf.pdb
+wat: GROUP ATOMS=@water
+ow:  GROUP ATOMS=@water REMOVE=@hydrogens
+mg:  GROUP ATOMS=10484
+p:   GROUP ATOMS=@P-2
+dp:    DISTANCE ATOMS=mg,p
+cn:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261
+metadP: METAD ARG=dp,cn SIGMA=0.05,0.1 HEIGHT=0.3 PACE=100 TEMP=300 BIASFACTOR=15 FILE=HILLS_long RESTART=YES
+PRINT ARG=dp,cn FILE=COLVAR STRIDE=100
+\endplumedfile
+
+Run your simulation and check the timing. Which is the most expensive action now?
+
+\subsection cineca-2019-2f Optimizing METAD using grids
+
+The standard solution to the problem above is to use a grid to store the Gaussian functions.
+In this manner, at the first step PLUMED will take some time to put all the Gaussian functions
+on the grid, but subsequent calculations of the force will be much faster, since they will just
+require a grid lookup (rather than a sum over the history).
+
+Time the simulation using the following lines to perform METAD:
+\plumedfile
+metadP: METAD ARG=dp,cn SIGMA=0.05,0.1 HEIGHT=0.3 PACE=100 TEMP=300 BIASFACTOR=15 FILE=HILLS_long RESTART=YES GRID_MIN=3,4 GRID_MAX=4,6
+\endplumedfile
+
+Which is the most expensive action now?
+
+\warning If a simulation reaches a point outside of the grid PLUMED will stop! You should be generous in the boundaries, but not too much or 
+  your simulation might require too much memory and crash
+
+\subsection cineca-2019-2g Using multiple time stepping
+
+Another solution that can be implemented in order to decrease the cost is to compute biases and/or CVs less frequently.
+
+
+
+
+
+
+
 
 */
 
