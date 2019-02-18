@@ -62,7 +62,7 @@ The filter coefficients by Daubechies result in an orthonormal basis of all inte
 Because no analytic formula for these wavelets exist, they are instead constructed iteratively on a grid.
 The method of construction is close to the "Vector cascade algorithm" described in \cite strang_wavelets_1997 .
 The needed filter coefficients of the scaling function are hardcoded, and were previously generated via a python script.
-Currently only the "maximum phase" type is implemented, but the "least asymmetric" type can be added easily.
+Currently the "maximum phase" type (Db) and the "least asymmetric" (Sym) type are implemented.
 
 As an example the two Db8 wavelet functions can be seen below
 
@@ -155,11 +155,10 @@ class BF_Wavelets : public BasisFunctions {
   void setupLabels() override;
 protected:
   std::vector<double> getCutoffPoints(const double& threshold);
-  void setType(const std::string& type_str);
+  void setWaveletType(const std::string& type_str);
 
   bool use_mother_wavelet_;
-  //std::string type_; // wavelet family
-  WaveletGrid::Type type_ ;
+  WaveletGrid::Type wavelet_type_ ;
   double scale_; // scale factor of the individual BFs to match specified length
   std::vector<double> shifts_; // shift of the individual BFs
 public:
@@ -178,6 +177,7 @@ void BF_Wavelets::registerKeywords(Keywords& keys) {
   keys.add("optional","FUNCTION_LENGTH","The length of the support of the scaled basis functions. This can be used to alter the scaling of the basis functions. Is by default set to the total size of the interval. This also influences the number of actually used basis functions, as all shifted functions that are partially supported in the CV space are used.");
   keys.add("optional","TAILS_THRESHOLD","The threshold for cutting off tail wavelets with respect to the maximum value. All shifted wavelet functions that will only have values lower below the threshold in the CV space will be excluded from the basis set. Defaults to 0 (include all).");
   keys.addFlag("MOTHER_WAVELET", false, "If this flag is set the \"true\" wavelet function (mother wavelet) will be used instead of the scaling function (father wavelet). Makes only sense for multiresolution, which is at the moment not implemented.");
+  keys.add("optional","TYPE","Specify the wavelet type. Defaults to \"DAUBECHIES\" Wavelets with minimum phase. Other currently implemented possibilities are \"SYMMETRIC\"");
   keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
   // why is this removed?
   keys.remove("NUMERICAL_INTEGRALS");
@@ -187,20 +187,20 @@ void BF_Wavelets::registerKeywords(Keywords& keys) {
 BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
   use_mother_wavelet_(false),
-  type_(WaveletGrid::Type::db)
+  wavelet_type_(WaveletGrid::Type::db)
 {
 
   // parse grid properties and set it up
   parseFlag("MOTHER_WAVELET", use_mother_wavelet_);
 
-  std::string type_str;
-  parse("TYPE", type_str);
-  setType(type_str);
+  std::string wavelet_type_str = "DAUBECHIES";
+  parse("TYPE", wavelet_type_str);
+  setWaveletType(wavelet_type_str);
 
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
 
-  waveletGrid_ = WaveletGrid::setupGrid(getOrder(), gridsize, use_mother_wavelet_, type_);
+  waveletGrid_ = WaveletGrid::setupGrid(getOrder(), gridsize, use_mother_wavelet_, wavelet_type_);
   unsigned true_gridsize = waveletGrid_->getNbin()[0];
   if(true_gridsize != 1000) {addKeywordToList("GRID_SIZE",true_gridsize);}
   bool dump_wavelet_grid=false;
@@ -247,9 +247,8 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   setIntrinsicInterval(0.0,intrinsic_length);
   setNonPeriodic();
   setIntervalBounded();
-  std::string type; use_mother_wavelet_ ? type = "Mother Wavelet" : type = "Father Wavelet";
-  setType(type);
-  setDescription("Daubechies Wavelets (maximum phase type)");
+  setType(wavelet_type_str);
+  setDescription("Wavelets as localized basis functions");
   setLabelPrefix("k");
   setupBF();
   checkRead();
@@ -280,16 +279,16 @@ void BF_Wavelets::getAllValues(const double arg, double& argT, bool& inside_rang
 }
 
 
-// Returns the enum Type from the parsed string
-void BF_Wavelets::setType(const std::string& type_str) {
-  if (type_str == "DAUBECHIES") {
-    this->type_ = WaveletGrid::Type::db;
+// Sets the enum WaveletType from the parsed string
+void BF_Wavelets::setWaveletType(const std::string& wavelet_type_str) {
+  if (wavelet_type_str == "DAUBECHIES") {
+    this->wavelet_type_ = WaveletGrid::Type::db;
   }
-  else if (type_str == "SYMMETRIC") {
-    this->type_ = WaveletGrid::Type::sym;
+  else if (wavelet_type_str == "SYMMETRIC") {
+    this->wavelet_type_ = WaveletGrid::Type::sym;
   }
   else {
-    plumed_merror("Unknown Wavelet type \""+type_str+"\"");
+    plumed_merror("Unknown Wavelet type \""+wavelet_type_str+"\"");
   }
 }
 
