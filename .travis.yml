@@ -133,6 +133,8 @@ install:
   - if test "$PLUMED_CXX" == "mpic++" -a "$TRAVIS_OS_NAME" == "linux" ; then sudo apt-get install -y libopenmpi-dev openmpi-bin ; fi
   - if test "$PLUMED_CXX" == "mpic++" -a "$TRAVIS_OS_NAME" == "osx" ;   then brew install openmpi ; fi
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y graphviz            ; fi
+# install doxygen-latex
+  - if test "$MAKEDOC" == yes ; then sudo apt-get install -y doxygen-latex ; fi
 # install aspell
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y aspell aspell-en  ; fi
 # install lcov
@@ -178,6 +180,7 @@ script:
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-boost_serialization"
 # enable asmjit used in lepton
   - if test -n "$ASMJIT" ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-asmjit" ; fi
+  - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
   - if test "$MAKECOVERAGE" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
   - if test "$ARRAYFIRE" == yes; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-af_cpu"; fi
 # when running lcov plumed use moderate optimization
