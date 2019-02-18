@@ -1,0 +1,175 @@
+/**
+\page cineca-2019 CINECA 2019 tutorial
+
+\authors Giovanni Bussi
+\date February 19, 2019
+
+This document describes the PLUMED tutorial held at CINECA, Feburary 2019.
+The aim of this tutorial is to learn how to use PLUMED to analyze molecular
+dynamics (MD) simulations and to optimize the performance of a biased simulation.
+Although the presented input files are correct,
+the users are invited to **refer to the literature to understand how the
+parameters of enhanced sampling methods should be chosen in a real application.**
+
+Users are also encouraged to follow the links to the full PLUMED reference documentation
+and to wander around in the manual to discover the many available features
+and to do the other, more complete, tutorials.
+
+\section cineca-2019-1-syntax Learning the PLUMED syntax
+
+As a first step, you should learn the basics of PLUMED syntax.
+In order to do so, read the initial part of the 
+\ref trieste-1 "first Trieste tutorial". The first exercize will be sufficient.
+Once you will be familier with the logic of the PLUMED input file you will be ready to continue with the
+exercize below.
+
+\section cineca-2019-2-optimization How to optimize a simulation performed with PLUMED
+
+The input files for this exercize can be found in this \tarball{cineca-2019}.
+
+We will now learn how to optimize a simulation where PLUMED is used on-the-fly to
+compute or bias collective variables. You should use the provided `topol.tpr` file.
+
+\subsection cineca-2019-2a Run a simulation with GROMACS alone
+
+In order to run a simulation with gromacs you can use the following command
+\verbatim
+gmx_mpi mdrun -nsteps 500 -v -nb cpu -ntomp 12 -pin on
+\endverbatim
+This will run a simulation for 500 steps, without using any GPU-acceleration, and with 12 OpenMP 
+threads. Adjust the number of threads based on the number of processors that you have on each node.
+500 steps should be sufficient to get an estimate of the simulation speed if you use OpenMP only.
+Notice that if you use MPI parallelism with GROMACS more steps are needed due to dynamic load balancing.
+
+As a first step, make a table showing the performance (ns per day) with different number of OpenMP threads.
+On my workstation the result is
+
+| Number of threads | Performance (ns/day) |  Wallclock time (s) |
+|:-----------------:|:--------------------:|:-------------------:|
+| 12                | 27.225               | 3.180               |
+| 6                 | 12.677               | 6.829               |
+| 3                 | 8.827                | 9.807               |
+| 1                 | 3.685                | 23.491              |
+
+Scaling is approximately linear.
+
+\subsection cineca-2019-2b Run a simulation with GROMACS+PLUMED
+
+Now you can try to run GROMACS with PLUMED using the following input file
+
+\plumedfile
+MOLINFO STRUCTURE=conf.pdb
+# @water and @hydrogens are special groups introduce in PLUMED 2.5!
+wat: GROUP ATOMS=@water
+ow:  GROUP ATOMS=@water REMOVE=@hydrogens
+mg:  GROUP ATOMS=10484
+p:   GROUP ATOMS=@P-2
+dp:    DISTANCE ATOMS=mg,p
+cn:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261
+PRINT ARG=dp,cn
+\endplumedfile
+
+The command to run the simulation will be
+\verbatim
+gmx_mpi mdrun -nsteps 500 -v -nb cpu -ntomp 12 -pin on -plumed plumed.dat
+\endverbatim
+
+The total time required by this simulation should **increase**. This is because PLUMED occupies some of the
+CPU cycles in order to:
+- copy the coordinates of the requested atoms
+- compute the requested collective variables
+- print them on a file
+
+Take note of the increment in the Wallclock time. On my workstation it is approx 1.5 seconds more for these 500 steps with 12 OpenMP threads.
+Check how much is the impact when you change the number of threads.
+
+
+\subsection cineca-2019-2c Timing individual variables
+
+In order to know which of your collective variables is taking more time to be computed, you should
+use the \ref DEBUG DETAILED_TIMERS flag (place it after \ref MOLINFO). The end of the `md.log` file should now look
+similar to this
+\verbatim
+PLUMED:                                                    1     1.138360     1.138360     1.138360     1.138360
+PLUMED: 1 Prepare dependencies                           501     0.001654     0.000003     0.000003     0.000014
+PLUMED: 2 Sharing data                                   501     0.052691     0.000105     0.000092     0.004898
+PLUMED: 3 Waiting for data                               501     0.004488     0.000009     0.000008     0.000030
+PLUMED: 4 Calculating (forward loop)                     501     0.444763     0.000888     0.000849     0.001809
+PLUMED: 4A 1 @1                                          501     0.001294     0.000003     0.000002     0.000010
+PLUMED: 4A 6 dp                                          501     0.007342     0.000015     0.000013     0.000045
+PLUMED: 4A 7 cn                                          501     0.422879     0.000844     0.000807     0.001701
+PLUMED: 4A 8 @8                                          501     0.001087     0.000002     0.000002     0.000014
+PLUMED: 5 Applying (backward loop)                       501     0.112352     0.000224     0.000210     0.002120
+PLUMED: 5A 0 @8                                          501     0.000713     0.000001     0.000001     0.000009
+PLUMED: 5A 1 cn                                          501     0.069576     0.000139     0.000132     0.000324
+PLUMED: 5A 2 dp                                          501     0.002932     0.000006     0.000005     0.000018
+PLUMED: 5A 7 @1                                          501     0.000806     0.000002     0.000001     0.000010
+PLUMED: 5B Update forces                                 501     0.029823     0.000060     0.000050     0.001948
+PLUMED: 6 Update                                         501     0.009887     0.000020     0.000017     0.000110
+\endverbatim
+
+Notice that running with DETAILED_TIMERS might slow down a bit more your simulation.
+
+Each line tells you how expensive was the calculation of each collective variable.
+Find which is the most expensive! We will focus on it in the next points
+
+\subsection cineca-2019-2d Optmizing coordination numbers using neighbor lists
+
+The \ref COORDINATION of multiple atoms can be very expensive for a number of reasons:
+- It might requires the calculation of a large number of distances
+- It might require many atoms to be moved from GROMACS to PLUMED
+
+In this specific example, the coordination number will require a number of calculations that is proportional
+to the number of water molecules in the system.
+
+Repeat the timing above using neighbor lists. Here's how you should modify the line computing the COORDINATION
+in order to enable neighbor lists
+
+\plumedfile
+cn:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261 NLIST NL_STRIDE=20 NL_CUTOFF=1.0
+\endplumedfile
+
+There are two critical parameters:
+- the stride for the neighbor lists
+- the cutoff distance
+
+However, you should be very careful since using neighbor lists introduces approximations that might invalidate your calculation!
+The recommended procedure is to first perform a simulation where you compute your variable with different settings and compare the result.
+For instance:
+
+\plumedfile
+MOLINFO STRUCTURE=conf.pdb
+wat: GROUP ATOMS=@water
+ow:  GROUP ATOMS=@water REMOVE=@hydrogens
+mg:  GROUP ATOMS=10484
+p:   GROUP ATOMS=@P-2
+dp:    DISTANCE ATOMS=mg,p
+cn:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261
+cn2:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261 NLIST NL_STRIDE=2  NL_CUTOFF=1.0
+cn10:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261 NLIST NL_STRIDE=10 NL_CUTOFF=1.0
+cn20:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261 NLIST NL_STRIDE=20 NL_CUTOFF=1.0
+cn50:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261 NLIST NL_STRIDE=50 NL_CUTOFF=1.0
+PRINT ARG=dp,(cn.*) FILE=COLVAR STRIDE=1
+\endplumedfile
+
+In the `COLVAR` files you will see multiple columns corresponding to values computed using different strides.
+You should pick a column such that the reported value is not too different from the one in the third column (that is: without neighbor lists).
+"Not too different" of course depends on how much you want to trade in accuracy vs speed.
+
+\warning As of PLUMED 2.5, the construction of the neighbor list is not parallelized! As a consequence, the advantage of using it
+  is usually not compensated by the slow time required to construct it. In addition, notice that the time for constructing the list
+  is not present in the breakdown of the timers seen above.
+
+Once you picked a setting that gives you result that are accurate enough, you measure the speed using that setting alone.
+You should see that using neighbor lists is usually inconvenient unless you run with a single or very few cores.
+Hopefully this will change in a later PLUMED version!
+
+\subsection cineca-2019-2d Biasing your CVs
+
+*/
+
+link: @subpage cineca-2019
+
+description: A short 1.5 hours tutorial that introduces analysis and optimization
+
+additional-files: cineca-2019
