@@ -20,7 +20,7 @@
    along with the VES code module.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "DbWaveletGrid.h"
+#include "WaveletGrid.h"
 #include "tools/Exception.h"
 
 #include <algorithm>
@@ -32,45 +32,9 @@ namespace ves {
 // returns the filter coefficients, at the moment simply a lookup table (calculated with python script)
 // the coefficients are normalized such that their sum equals 1
 // lowpass coefficients are for the scaling function, highpass for the actual wavelets
-std::vector<double> DbWaveletGrid::getFilterCoefficients(const unsigned order, const bool lowpass, const std::string& type) {
+std::vector<double> WaveletGrid::getFilterCoefficients(const unsigned order, const bool lowpass, const Type type) {
   std::vector<double> h;
-  if (type == "MOST_SYMMETRIC") {
-    switch(order) {
-    case 4:
-      h = { -0.053574450709,
-            -0.0209554825625,
-            0.351869534328,
-            0.568329121704,
-            0.210617267102,
-            -0.0701588120895,
-            -0.008912350721,
-            0.022785172948
-          };
-      break;
-    case 8:
-      h = { 0.001336396696,
-            -0.000214197150,
-            -0.010572843264,
-            0.002693194377,
-            0.034745232955,
-            -0.019246760631,
-            -0.036731254380,
-            0.257699335187,
-            0.549553315269,
-            0.340372673595,
-            -0.043326807703,
-            -0.101324327643,
-            0.005379305875,
-            0.022411811521,
-            -0.000383345448,
-            -0.002391729256
-          };
-      break;
-    default:
-      plumed_merror("Specified order currently not implemented");
-    }
-  }
-  else {
+  if (type == Type::db) {
     switch(order) {
     case 4:
       h = { 0.16290171402564917413726008653520,
@@ -529,6 +493,43 @@ std::vector<double> DbWaveletGrid::getFilterCoefficients(const unsigned order, c
             -0.00000001283287967663174522311048,
             0.00000000286811494633447015293831,
             -0.00000000021204976174791129176822
+          };
+      break;
+    default:
+      plumed_merror("Specified order currently not implemented");
+    }
+  }
+
+  else if (type == Type::sym) {
+    switch(order) {
+    case 4:
+      h = { -0.053574450709,
+            -0.0209554825625,
+            0.351869534328,
+            0.568329121704,
+            0.210617267102,
+            -0.0701588120895,
+            -0.008912350721,
+            0.022785172948
+          };
+      break;
+    case 8:
+      h = { 0.001336396696,
+            -0.000214197150,
+            -0.010572843264,
+            0.002693194377,
+            0.034745232955,
+            -0.019246760631,
+            -0.036731254380,
+            0.257699335187,
+            0.549553315269,
+            0.340372673595,
+            -0.043326807703,
+            -0.101324327643,
+            0.005379305875,
+            0.022411811521,
+            -0.000383345448,
+            -0.002391729256
           };
       break;
     default:

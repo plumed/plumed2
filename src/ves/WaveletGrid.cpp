@@ -20,7 +20,7 @@
    along with the VES code module.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "DbWaveletGrid.h"
+#include "WaveletGrid.h"
 #include "tools/Exception.h"
 #include "tools/Grid.h"
 #include "tools/Matrix.h"
@@ -35,7 +35,7 @@ namespace ves {
 
 // construction of Wavelet grid according to the Daubechies-Lagarias method
 // c.f. Strang, Nguyen "Wavelets and Filter Banks" chapter 6.3
-std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gridsize, bool use_mother_wavelet, const std::string& type) {
+std::unique_ptr<Grid> WaveletGrid::setupGrid(const unsigned order, unsigned gridsize, const bool use_mother_wavelet, const Type type) {
   // calculate the grid properties of the scaling grid
   // the range of the grid is from 0 to maxsupport
   unsigned maxsupport = order*2 -1;
@@ -85,7 +85,7 @@ std::unique_ptr<Grid> DbWaveletGrid::setupGrid(const unsigned order, unsigned gr
 
 
 
-std::vector<Matrix<double>> DbWaveletGrid::setupMatrices(const std::vector<double>& coeffs) {
+std::vector<Matrix<double>> WaveletGrid::setupMatrices(const std::vector<double>& coeffs) {
   Matrix<double> M0, M1;
   const int N = coeffs.size() -1;
   M0.resize(N,N); M1.resize(N,N);
@@ -104,7 +104,7 @@ std::vector<Matrix<double>> DbWaveletGrid::setupMatrices(const std::vector<doubl
 }
 
 
-std::vector<double> DbWaveletGrid::calcIntegerValues(const Matrix<double> &M, const int deriv) {
+std::vector<double> WaveletGrid::calcIntegerValues(const Matrix<double> &M, const int deriv) {
   // corresponding eigenvalue of the matrix
   double eigenvalue = pow(0.5, deriv);
   std::vector<double> values = getEigenvector(M, eigenvalue);
@@ -127,7 +127,7 @@ std::vector<double> DbWaveletGrid::calcIntegerValues(const Matrix<double> &M, co
 // maybe move this to the tools/matrix.h file?
 // this works reliably only for singular eigenvalues
 //
-std::vector<double> DbWaveletGrid::getEigenvector(const Matrix<double> &A, const double eigenvalue) {
+std::vector<double> WaveletGrid::getEigenvector(const Matrix<double> &A, const double eigenvalue) {
   // mostly copied from tools/matrix.h
   int info, N = A.ncols(); // ncols == nrows
   std::vector<double> da(N*N);
@@ -161,7 +161,7 @@ std::vector<double> DbWaveletGrid::getEigenvector(const Matrix<double> &A, const
 }
 
 
-DbWaveletGrid::BinaryMap DbWaveletGrid::cascade(std::vector<Matrix<double>>& h_Matvec, std::vector<Matrix<double>>& g_Matvec, const std::vector<double>& values_at_integers, unsigned recursion_number, unsigned bins_per_int, unsigned derivnum, bool use_mother_wavelet) {
+WaveletGrid::BinaryMap WaveletGrid::cascade(std::vector<Matrix<double>>& h_Matvec, std::vector<Matrix<double>>& g_Matvec, const std::vector<double>& values_at_integers, const unsigned recursion_number, const unsigned bins_per_int, const unsigned derivnum, const bool use_mother_wavelet) {
   BinaryMap scaling_map, wavelet_map;
   scaling_map.reserve(bins_per_int);
   // vector to store the binary representation of all the decimal parts
@@ -214,7 +214,7 @@ DbWaveletGrid::BinaryMap DbWaveletGrid::cascade(std::vector<Matrix<double>>& h_M
 
 
 // Fill the Grid with the values of the unordered maps
-void DbWaveletGrid::fillGridFromMaps(std::unique_ptr<Grid>& grid, const BinaryMap& values_map, const BinaryMap& derivs_map) {
+void WaveletGrid::fillGridFromMaps(std::unique_ptr<Grid>& grid, const BinaryMap& values_map, const BinaryMap& derivs_map) {
   unsigned bins_per_int = values_map.size();
   // this is somewhat complicated… not sure if the unordered_map way is the best way for c++
   for (const auto& value_iter : values_map) {

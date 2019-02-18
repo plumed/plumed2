@@ -22,9 +22,9 @@
 
 
 #include "BasisFunctions.h"
-#include "DbWaveletGrid.h"
 #include "tools/Grid.h"
 #include "VesTools.h"
+#include "WaveletGrid.h"
 #include "core/ActionRegister.h"
 #include "tools/Exception.h"
 
@@ -149,27 +149,30 @@ BF_DB_WAVELETS ...
 //+ENDPLUMEDOC
 
 
-class BF_DbWavelets : public BasisFunctions {
+class BF_Wavelets : public BasisFunctions {
   // Grid that holds the Wavelet values and its derivative
   std::unique_ptr<Grid> waveletGrid_;
-  bool use_mother_wavelet_;
-  double scale_; // scale factor of the individual BFs to match specified length
-  std::vector<double> shifts_; // shift of the individual BFs
   void setupLabels() override;
 protected:
   std::vector<double> getCutoffPoints(const double& threshold);
+  void setType(const std::string& type_str);
 
+  bool use_mother_wavelet_;
+  //std::string type_; // wavelet family
+  WaveletGrid::Type type_ ;
+  double scale_; // scale factor of the individual BFs to match specified length
+  std::vector<double> shifts_; // shift of the individual BFs
 public:
   static void registerKeywords( Keywords&);
-  explicit BF_DbWavelets(const ActionOptions&);
+  explicit BF_Wavelets(const ActionOptions&);
   void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const override;
 };
 
 
-PLUMED_REGISTER_ACTION(BF_DbWavelets,"BF_DB_WAVELETS")
+PLUMED_REGISTER_ACTION(BF_Wavelets,"BF_WAVELETS")
 
 
-void BF_DbWavelets::registerKeywords(Keywords& keys) {
+void BF_Wavelets::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
   keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value definess the minimum number, while the true number will probably be larger. Defaults to 1000.");
   keys.add("optional","FUNCTION_LENGTH","The length of the support of the scaled basis functions. This can be used to alter the scaling of the basis functions. Is by default set to the total size of the interval. This also influences the number of actually used basis functions, as all shifted functions that are partially supported in the CV space are used.");
@@ -181,18 +184,23 @@ void BF_DbWavelets::registerKeywords(Keywords& keys) {
 }
 
 
-BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
+BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
-  use_mother_wavelet_(false)
+  use_mother_wavelet_(false),
+  type_(WaveletGrid::Type::db)
 {
 
   // parse grid properties and set it up
   parseFlag("MOTHER_WAVELET", use_mother_wavelet_);
-  type_ = "";
-  parse("TYPE", type_);
+
+  std::string type_str;
+  parse("TYPE", type_str);
+  setType(type_str);
+
   unsigned gridsize = 1000;
   parse("GRID_SIZE", gridsize);
-  waveletGrid_ = DbWaveletGrid::setupGrid(getOrder(), gridsize, use_mother_wavelet_);
+
+  waveletGrid_ = WaveletGrid::setupGrid(getOrder(), gridsize, use_mother_wavelet_, type_);
   unsigned true_gridsize = waveletGrid_->getNbin()[0];
   if(true_gridsize != 1000) {addKeywordToList("GRID_SIZE",true_gridsize);}
   bool dump_wavelet_grid=false;
@@ -248,7 +256,7 @@ BF_DbWavelets::BF_DbWavelets(const ActionOptions& ao):
 }
 
 
-void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
+void BF_Wavelets::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
   argT=checkIfArgumentInsideInterval(arg,inside_range);
   //
   values[0]=1.0;
@@ -272,9 +280,23 @@ void BF_DbWavelets::getAllValues(const double arg, double& argT, bool& inside_ra
 }
 
 
+// Returns the enum Type from the parsed string
+void BF_Wavelets::setType(const std::string& type_str) {
+  if (type_str == "DAUBECHIES") {
+    this->type_ = WaveletGrid::Type::db;
+  }
+  else if (type_str == "SYMMETRIC") {
+    this->type_ = WaveletGrid::Type::sym;
+  }
+  else {
+    plumed_merror("Unknown Wavelet type \""+type_str+"\"");
+  }
+}
+
+
 // returns left and right cutoff point of Wavelet
 // threshold is a percent value of maximum
-std::vector<double> BF_DbWavelets::getCutoffPoints(const double& threshold) {
+std::vector<double> BF_Wavelets::getCutoffPoints(const double& threshold) {
   double threshold_value = threshold * waveletGrid_->getMaxValue();
   std::vector<double> cutoffpoints;
 
@@ -297,7 +319,7 @@ std::vector<double> BF_DbWavelets::getCutoffPoints(const double& threshold) {
 
 
 // labels according to minimum position in CV space
-void BF_DbWavelets::setupLabels() {
+void BF_Wavelets::setupLabels() {
   setLabel(0,"const");
   for(unsigned int i=1; i < getNumberOfBasisFunctions(); i++) {
     double pos = -shifts_[i]/scale_;

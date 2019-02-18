@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with the VES code module.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_ves_DbWaveletsGrid_h
-#define __PLUMED_ves_DbWaveletsGrid_h
+#ifndef __PLUMED_ves_WaveletsGrid_h
+#define __PLUMED_ves_WaveletsGrid_h
 
 #include "../lapack/lapack.h"
 #include <memory>
@@ -37,21 +37,26 @@ namespace ves {
 class Grid;
 
 
-// factory class to set up a Grid with DbWavelets
-class DbWaveletGrid {
+// factory class to set up a Grid with Wavelets
+class WaveletGrid {
 public:
   // unordered map with binary representation as string and corresponding values
   using BinaryMap = std::unordered_map<std::string, std::vector<double>>;
+  // short names of implemented wavelet types
+  enum class Type {
+    db, // standard Daubechies
+    sym // most symmetric Daubechies
+  };
 
 private:
   // lookup function for the filter coefficients
-  static std::vector<double> getFilterCoefficients(const unsigned order, const bool lowpass, const std::string& type);
+  static std::vector<double> getFilterCoefficients(unsigned order, bool lowpass, Type type);
   // Fills the coefficient matrices needed for the cascade algorithm
   static std::vector<Matrix<double>> setupMatrices(const std::vector<double>& h);
   // calculates the values of the Wavelet or its derivatives at the Integer points
-  static std::vector<double> calcIntegerValues(const Matrix<double>& M, const int deriv);
+  static std::vector<double> calcIntegerValues(const Matrix<double>& M, int deriv);
   // get eigenvector of square matrix A corresponding to some eigenvalue via SVD decomposition
-  static std::vector<double> getEigenvector(const Matrix<double>& A, const double eigenvalue);
+  static std::vector<double> getEigenvector(const Matrix<double>& A, double eigenvalue);
   // calculate the values of the Wavelet or its derivative via the vector cascade algorithm
   static BinaryMap cascade(std::vector<Matrix<double>>& h_Matvec, std::vector<Matrix<double>>& g_Matvec,
                            const std::vector<double>& values_at_integers, unsigned recursion_number,
@@ -60,7 +65,7 @@ private:
                                const BinaryMap& derivsmap);
 public:
   // construct either a grid with the scaling function or the wavelet function, and its first derivative
-  static std::unique_ptr<Grid> setupGrid(const unsigned order, unsigned gridsize, bool use_mother_wavelet, const std::string& type);
+  static std::unique_ptr<Grid> setupGrid(unsigned order, unsigned gridsize, bool use_mother_wavelet, Type type);
 };
 
 
