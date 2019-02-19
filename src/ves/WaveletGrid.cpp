@@ -89,14 +89,14 @@ std::vector<Matrix<double>> WaveletGrid::setupMatrices(const std::vector<double>
   Matrix<double> M0, M1;
   const int N = coeffs.size() -1;
   M0.resize(N,N); M1.resize(N,N);
-  for (int i = 0; i < N; ++i) { // not very elegant, maybe change this later
+  for (int i = 0; i < N; ++i) {
     for (int j = 0; j < N; ++j) {
       int shift = 2*i -j;
       if (0 <= shift && shift <= N) {
-        M0[i][j] = 2 * coeffs[2*i -j];
+        M0[i][j] = coeffs[2*i -j]; // normalization is already included in coeffs
       }
       if (-1 <= shift && shift <= N -1) {
-        M1[i][j] = 2 * coeffs[2*i -j + 1];
+        M1[i][j] = coeffs[2*i -j + 1];
       }
     }
   }
