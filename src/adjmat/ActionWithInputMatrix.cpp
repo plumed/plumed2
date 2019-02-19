@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,7 +31,7 @@ namespace adjmat {
 
 void ActionWithInputMatrix::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.add("compulsory","MATRIX","the action that calcualtes the adjacency matrix vessel we would like to analyse");
+  keys.add("compulsory","MATRIX","the action that calculates the adjacency matrix vessel we would like to analyze");
 }
 
 

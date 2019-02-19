@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -989,8 +989,8 @@ double Grid::integrate( std::vector<unsigned>& npoints ) {
   for(unsigned i=0; i<ntotgrid; ++i) {
     t_index[0]=(i%npoints[0]);
     unsigned kk=i;
-    for(unsigned j=1; j<dimension_-1; ++j) { kk=(kk-t_index[j-1])/npoints[i-1]; t_index[j]=(kk%npoints[i]); }
-    if( dimension_>=2 ) t_index[dimension_-1]=((kk-t_index[dimension_-1])/npoints[dimension_-2]);
+    for(unsigned j=1; j<dimension_-1; ++j) { kk=(kk-t_index[j-1])/npoints[j-1]; t_index[j]=(kk%npoints[j]); }
+    if( dimension_>=2 ) t_index[dimension_-1]=((kk-t_index[dimension_-2])/npoints[dimension_-2]);
 
     for(unsigned j=0; j<dimension_; ++j) vals[j]=min_[j] + t_index[j]*ispacing[j];
 

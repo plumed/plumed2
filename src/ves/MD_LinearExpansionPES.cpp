@@ -118,7 +118,7 @@ The corresponding pot_coeffs_input.data file is
 #!-------------------
 \endverbatim
 
-One then uses the (x,y) postion of the particle as CVs by using the \ref POSITION
+One then uses the (x,y) position of the particle as CVs by using the \ref POSITION
 action as shown in the following PLUMED input
 \plumedfile
 p: POSITION ATOM=1
@@ -151,21 +151,21 @@ void MD_LinearExpansionPES::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","nstep","10","The number of steps of dynamics you want to run.");
   keys.add("compulsory","tstep","0.005","The integration timestep.");
-  keys.add("compulsory","temperature","1.0","The temperature to perform the simulation at. For multiple replica you can give a seperate value for each replica.");
-  keys.add("compulsory","friction","10.","The friction of the Langevin thermostat. For multiple replica you can give a seperate value for each replica.");
+  keys.add("compulsory","temperature","1.0","The temperature to perform the simulation at. For multiple replica you can give a separate value for each replica.");
+  keys.add("compulsory","friction","10.","The friction of the Langevin thermostat. For multiple replica you can give a separate value for each replica.");
   keys.add("compulsory","random_seed","5293818","Value of random number seed.");
-  keys.add("compulsory","plumed_input","plumed.dat","The name of the plumed input file(s). For multiple replica you can give a seperate value for each replica.");
+  keys.add("compulsory","plumed_input","plumed.dat","The name of the plumed input file(s). For multiple replica you can give a separate value for each replica.");
   keys.add("compulsory","dimension","1","Number of dimensions, supports 1 to 3.");
-  keys.add("compulsory","initial_position","Initial position of the particle. For multiple replica you can give a seperate value for each replica.");
+  keys.add("compulsory","initial_position","Initial position of the particle. For multiple replica you can give a separate value for each replica.");
   keys.add("compulsory","replicas","1","Number of replicas.");
   keys.add("compulsory","basis_functions_1","Basis functions for dimension 1.");
   keys.add("optional","basis_functions_2","Basis functions for dimension 2 if needed.");
   keys.add("optional","basis_functions_3","Basis functions for dimension 3 if needed.");
-  keys.add("compulsory","input_coeffs","potential-coeffs.in.data","Filename of the input coefficent file for the potential. For multiple replica you can give a seperate value for each replica.");
-  keys.add("compulsory","output_coeffs","potential-coeffs.out.data","Filename of the output coefficent file for the potential.");
-  keys.add("compulsory","output_coeffs_fmt","%30.16e","Format of the output coefficent file for the potential. Useful for regtests.");
-  keys.add("optional","coeffs_prefactor","prefactor for multiplying the coefficents with. For multiple replica you can give a seperate value for each replica.");
-  keys.add("optional","template_coeffs_file","only generate a template coefficent file with the filename given and exit.");
+  keys.add("compulsory","input_coeffs","potential-coeffs.in.data","Filename of the input coefficient file for the potential. For multiple replica you can give a separate value for each replica.");
+  keys.add("compulsory","output_coeffs","potential-coeffs.out.data","Filename of the output coefficient file for the potential.");
+  keys.add("compulsory","output_coeffs_fmt","%30.16e","Format of the output coefficient file for the potential. Useful for regtests.");
+  keys.add("optional","coeffs_prefactor","prefactor for multiplying the coefficients with. For multiple replica you can give a separate value for each replica.");
+  keys.add("optional","template_coeffs_file","only generate a template coefficient file with the filename given and exit.");
   keys.add("compulsory","output_potential_grid","100","The number of grid points used for the potential and histogram output files.");
   keys.add("compulsory","output_potential","potential.data","Filename of the potential output file.");
   keys.add("compulsory","output_histogram","histogram.data","Filename of the histogram output file.");
@@ -237,8 +237,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   parse("nstep",nsteps);
   double tstep;
   parse("tstep",tstep);
-  //
-  double temp;
+  // initialize to solve a cppcheck 1.86 warning
+  double temp=0.0;
   std::vector<double> temps_vec(0);
   parseVector("temperature",temps_vec);
   if(temps_vec.size()==1) {
@@ -276,7 +276,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   }
   else {
     if(seeds_vec.size()!=1 && seeds_vec.size()!=replicas) {
-      error("problem with random_seed keyword, for multiple replicas you should give either one value or a seperate value for each replica");
+      error("problem with random_seed keyword, for multiple replicas you should give either one value or a separate value for each replica");
     }
     if(seeds_vec.size()==1) {
       seeds_vec.resize(replicas);
@@ -361,7 +361,7 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     ofile_coeffstmpl.open(template_coeffs_fname);
     coeffs_pntr->writeToFile(ofile_coeffstmpl,true);
     ofile_coeffstmpl.close();
-    error("Only generating a template coefficent file - Should stop now.");
+    error("Only generating a template coefficient file - Should stop now.");
   }
 
   std::vector<std::string> input_coeffs_fnames(0);

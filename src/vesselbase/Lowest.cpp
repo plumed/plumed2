@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,7 +42,7 @@ void Lowest::registerKeywords( Keywords& keys ) {
 
 void Lowest::reserveKeyword( Keywords& keys ) {
   keys.reserve("vessel","LOWEST","this flag allows you to recover the lowest of these variables.");
-  keys.addOutputComponent("lowest","LOWEST","the lowest of the quantitities calculated by this action");
+  keys.addOutputComponent("lowest","LOWEST","the lowest of the quantities calculated by this action");
 }
 
 Lowest::Lowest( const VesselOptions& da ) :

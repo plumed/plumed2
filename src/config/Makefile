@@ -80,6 +80,7 @@ compile_options.sh: ../../Makefile.conf
 # the default option (two level namespace) since it should give linking errors in advance,
 # but we might change it later.
 	@echo "link_installed='"$(LDSHARED) $(DYNAMIC_LIBS) $(libdir)/lib$(program_name)Kernel.$(SOEXT) -o"'" >> $@
+# this is removed with a grep statement in src/lib/Makefile (see https://github.com/plumed/plumed2/issues/408)
 	@echo "link_uninstalled='"$(LDSHARED) $(DYNAMIC_LIBS) $(CURDIR:/config=)/lib/libplumedKernel.$(SOEXT) -o"'" >> $@
 	@echo "soext='"$(SOEXT)"'" >> $@
 

@@ -101,8 +101,6 @@ variant allmodules description {Enable all optional modules} {
     depends_lib-append port:boost
 }
 
-@_PYTHON_@
-
 # Link lapack/blas libraries
 pre-configure {
     # commands should be included in a pre-configure block to access tcl variables

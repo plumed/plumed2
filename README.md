@@ -41,10 +41,11 @@ Below you find the status on [Travis-CI](http://travis-ci.org/plumed/plumed2) fo
 
 | Branch   |      Status   | First stable release (year) | Still supported |
 |:--------:|:-------------:|:--------:|:------:|
-| master   | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=master)](https://travis-ci.org/plumed/plumed2) | 2018 (expected) | / |
+| master   | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=master)](https://travis-ci.org/plumed/plumed2) | 2019 (expected) | / |
+| v2.5     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.5)](https://travis-ci.org/plumed/plumed2)   | 2018 | yes |
 | v2.4     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.4)](https://travis-ci.org/plumed/plumed2)   | 2017 | yes |
-| v2.3     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.3)](https://travis-ci.org/plumed/plumed2)   | 2016 | yes |
-| v2.2     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.2)](https://travis-ci.org/plumed/plumed2)   | 2015 |no |
+| v2.3     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.3)](https://travis-ci.org/plumed/plumed2)   | 2016 | no |
+| v2.2     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.2)](https://travis-ci.org/plumed/plumed2)   | 2015 | no |
 | v2.1     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.1)](https://travis-ci.org/plumed/plumed2)   | 2014 | no |
 | v2.0     | Not available | 2013 | no |
 
@@ -58,21 +59,20 @@ Here's a description of the content of each file and directory in the root PLUME
     Makefile         : makefile
     Makefile.conf.in : template configuration makefile
     PEOPLE           : list of authors
-    README           : this file
+    README.md        : this file
     VERSION          : version file
     astyle           : a local version of astyle, used to format code
-    configurations   : template configuration files
     configure        : configuration script
     configure.ac     : configuration script (autoconf)
     developer-doc    : developer documentation
-    include          : symbolic link for include files
+    docker           : directory where Docker is generated
     macports         : directory where Portfiles are generated
     patches          : patch scripts
-    release.sh       : developer utility to publish releases
     regtest          : regression tests, including reference results
+    release.sh       : developer utility to publish releases
     scripts          : shell tools
-    src              : source code
     sourceme.sh.in   : template configuration script
+    src              : source code
     test             : examples
     user-doc         : user documentation
     vim              : directory where vim syntax is generated

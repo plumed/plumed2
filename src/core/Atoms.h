@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -163,8 +163,8 @@ public:
   double getKbT()const;
 
   void setNatoms(int);
-  const int getNatoms()const;
-  const int getNVirtualAtoms()const;
+  int getNatoms()const;
+  int getNVirtualAtoms()const;
 
   const long int& getDdStep()const;
   const std::vector<int>& getGatindex()const;
@@ -240,12 +240,12 @@ public:
 };
 
 inline
-const int Atoms::getNatoms()const {
+int Atoms::getNatoms()const {
   return natoms;
 }
 
 inline
-const int Atoms::getNVirtualAtoms()const {
+int Atoms::getNVirtualAtoms()const {
   return virtualAtomsActions.size();
 }
 

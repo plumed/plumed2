@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -56,7 +56,7 @@ columns | content
 \endverbatim
 PLUMED parser is slightly more permissive than the official PDB format
 in the fact that the format of real numbers is not fixed. In other words,
-any parsable real number is ok and the dot can be placed anywhere. However,
+any real number that can be parsed is OK and the dot can be placed anywhere. However,
 __columns are interpret strictly__. A sample PDB should look like the following
 \verbatim
 ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
@@ -78,7 +78,7 @@ for instance in \ref RMSD and in \ref FIT_TO_TEMPLATE), the occupancy column is 
 to provide the weight of each atom in the alignment. In cases where, perhaps after alignment,
 the displacement between running coordinates and the provided PDB is computed, the beta factors
 are used as weight for the displacement.
-Since setting the weights to zero is the same as __not__ including an atom in the alignement or
+Since setting the weights to zero is the same as __not__ including an atom in the alignment or
 displacement calculation, the two following reference files would be equivalent when used in an \ref RMSD
 calculation. First file:
 \verbatim

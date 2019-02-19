@@ -22,7 +22,7 @@ will cause both the d1.x and d1.y components of the DISTANCE action to be printe
 Notice that selection does not happen in alphabetic order, nor in the order in which `[xy]` are listed, but rather in the order in which
 the two variables have been created by PLUMED.
 Also notice that the
-`.` character must be escaped as `\.` in order to interpret it as a literal `.`. An unescaped dot is a wildcard which is matched by any character,
+`.` character must be escaped as `\.` in order to interpret it as a literal `.`. An un-escaped dot is a wildcard which is matched by any character,
 So as an example
 \plumedfile
 d1: DISTANCE ATOMS=1,2 COMPONENTS
@@ -63,7 +63,7 @@ PRINT ARG=(d1\.[xy]|t[0-9]) STRIDE=100 FILE=colvar FMT=%8.4f
 this selects the same set of arguments as the previous example.
 
 \note
-Be careful you do not confuse regular expressions, which are triggered by the parethesis `()` and only available when
+Be careful you do not confuse regular expressions, which are triggered by the parenthesis `()` and only available when
 PLUMED has been compiled with the regex library, with the capability of PLUMED to use `*` as a wildcard in arguments:
 \plumedfile
 d1: DISTANCE ATOMS=1,2 COMPONENTS

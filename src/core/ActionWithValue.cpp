@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,7 +30,7 @@ void ActionWithValue::registerKeywords(Keywords& keys) {
   keys.setComponentsIntroduction("By default the value of the calculated quantity can be referenced elsewhere in the "
                                  "input file by using the label of the action.  Alternatively this Action can be used "
                                  "to calculate the following quantities by employing the keywords listed "
-                                 "below.  These quanties can be referenced elsewhere in the input by using this Action's "
+                                 "below.  These quantities can be referenced elsewhere in the input by using this Action's "
                                  "label followed by a dot and the name of the quantity required from the list below.");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
 }
@@ -41,14 +41,14 @@ void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {
 }
 
 void ActionWithValue::componentsAreNotOptional(Keywords& keys) {
-  keys.setComponentsIntroduction("By default this Action calculates the following quantities. These quanties can "
+  keys.setComponentsIntroduction("By default this Action calculates the following quantities. These quantities can "
                                  "be referenced elsewhere in the input by using this Action's label followed by a "
                                  "dot and the name of the quantity required from the list below.");
 }
 
 void ActionWithValue::useCustomisableComponents(Keywords& keys) {
   keys.setComponentsIntroduction("The names of the components in this action can be customized by the user in the "
-                                 "actions input file.  However, in addition to these customizable components the "
+                                 "actions input file.  However, in addition to the components that can be customized the "
                                  "following quantities will always be output");
 }
 
@@ -70,7 +70,7 @@ void ActionWithValue::clearInputForces() {
 }
 
 void ActionWithValue::clearDerivatives() {
-  unsigned nt = OpenMP::getGoodNumThreads(values);
+  unsigned nt = OpenMP::getNumThreads();
   #pragma omp parallel num_threads(nt)
   {
     #pragma omp for
@@ -141,9 +141,9 @@ void ActionWithValue::addComponent( const std::string& name ) {
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
     plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
+    plumed_massert(values[i]->name!=thename,"there is already a value with this name: "+thename);
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponent(\"bias\") from your bias.");
-    plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
   values.emplace_back(new Value(this,thename, false ) );
   std::string msg="  added component to this action:  "+thename+" \n";
@@ -158,9 +158,9 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name ) {
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0; i<values.size(); ++i) {
     plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
+    plumed_massert(values[i]->name!=thename,"there is already a value with this name: "+thename);
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
-    plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
   values.emplace_back(new Value(this,thename, true ) );
   std::string msg="  added component to this action:  "+thename+" \n";

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -53,7 +53,7 @@ SPRINT MATRIX=mat LABEL=ss
 PRINT ARG=ss.* FILE=colvar
 \endplumedfile
 
-This example input calculates the 14 SPRINT coordinates foa a molecule composed of 7 hydrogen and
+This example input calculates the 14 SPRINT coordinates for a molecule composed of 7 hydrogen and
 7 carbon atoms.  Once again two atoms are adjacent if they are within a cutoff:
 
 \plumedfile
@@ -111,8 +111,8 @@ void Sprint::registerKeywords( Keywords& keys ) {
   ActionWithInputMatrix::registerKeywords( keys );
   componentsAreNotOptional(keys);
   keys.addOutputComponent("coord","default","all \\f$n\\f$ sprint coordinates are calculated and then stored in increasing order. "
-                          "the smallest sprint coordinate will be labelled <em>label</em>.coord-1, "
-                          "the second smallest will be labelleled <em>label</em>.coord-1 and so on");
+                          "the smallest sprint coordinate will be labeled <em>label</em>.coord-1, "
+                          "the second smallest will be labelled <em>label</em>.coord-1 and so on");
 }
 
 Sprint::Sprint(const ActionOptions&ao):

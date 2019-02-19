@@ -16,7 +16,7 @@
 
 \page comments Comments
 
-If you are an organised sort of person who likes to remember what the hell you were trying to do when you ran a 
+If you are an organized sort of person who likes to remember what the hell you were trying to do when you ran a 
 particular simulation you might find it useful to put comments in your input file.  In PLUMED you can do this as 
 comments can be added using a # sign.  On any given line everything after the # sign is ignored so 
 erm... yes add lines of comments or trailing comments to your hearts content as shown below (using Shakespeare is optional):
@@ -144,14 +144,14 @@ autocompletion should be installed. Otherwise, configure will look for the prese
 and, in case it is installed on the same prefix as PLUMED, also PLUMED autocompletion will be installed.
 Finally, if none of these two conditions are satisfied, autocompletion will not be enabled. You will
 have to change your bashrc file once adding the following lines:
-Now look at these lines:
 \verbatim
 _plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
 complete -F _plumed -o default plumed
 \endverbatim
-This is what you are expected to do if for instance you have multiple versions of PLUMED installed
-concurrently using separate env modules.
-The command `plumed completion` just writes on its standard output the body of a bash function.
+The command `plumed completion` just writes on its standard output the body of a bash function that is
+then used by bash to construct the autocompletion.
+The `--no-mpi` flag makes it more likely that the command can be executed correctly e.g. when you are on the login node of a cluster and
+PLUMED was compiled with MPI but the login node does not support MPI. In other cases, it is harmless.
 The `-o default` options will make sure that if `plumed --no-mpi completion` returns an error the default bash completion
 will be used. This is what will happen if you load an older PLUMED version for which the `completion` command is not available yet.
 In future PLUMED versions the `plumed completion` command might return more sophisticated functions. You should
@@ -161,7 +161,7 @@ be able to benefit of these features without ever changing your bash configurati
 
 In case you have multiple versions of PLUMED installed in separate env modules there is nothing more to do.
 However, if you have have multiple versions of PLUMED installed with different suffixes you should
-consistently add more lines to your profile file. For instance, if you installed executables named
+consistently add more lines to your profile file. For instance, if you installed two executables named
 `plumed` and `plumed_mpi` your configuration file should look like:
 \verbatim
 _plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
@@ -172,7 +172,7 @@ complete -F _plumed_mpi -o default plumed_mpi
 
 \page VimSyntax Using VIM syntax file
 
-For the impatients:
+For the impatient use:
 - Add the following to your .vimrc file:
 \verbatim
 " Enable syntax
@@ -192,7 +192,7 @@ For the impatients:
 :set ft=plumed
 \endverbatim
 This will also enable autocompletion. Use `<CTRL-X><CTRL-O>` to autocomplete a word.
-- If you want to fold multiline statements, type
+- If you want to fold multi-line statements, type
 \verbatim
 :setlocal foldmethod=syntax
 \endverbatim
@@ -201,7 +201,7 @@ This will also enable autocompletion. Use `<CTRL-X><CTRL-O>` to autocomplete a w
   Typing `:PHelp` again (or pushing `<F2>`) you will
   close that window. With `<CTRL-W><CTRL-W>` you go back and forth between the two windows.
 - When you open a file starting with `#! FIELDS`, VIM will automatically understand it
-  is a PLUMED outpt file (VIM filetype = plumedf) and will color fields and data columns with
+  is a PLUMED output file (VIM filetype = plumedf) and will color fields and data columns with
   alternating colors. Typing `:PPlus` and `:PMinus` (or pushing `<F3>` and `<F4>`)
   you can move a highlighted column.
 
@@ -233,7 +233,7 @@ we recommend the following procedure:
 :let &runtimepath.=','.$PLUMED_VIMPATH
 \endverbatim
 
-The modulefile provided with PLUMED should set the PLUMED_VIMPATH environemnt variable
+The modulefile provided with PLUMED should set the PLUMED_VIMPATH environment variable
 to the proper path.
 Thus, when working with a given PLUMED module loaded, you should be able to
 enable to proper syntax by just typing
@@ -250,7 +250,7 @@ the following command would give you the optimal flexibility:
 :let &runtimepath.=','.$PLUMED_VIMPATH.',/opt/local/lib/plumed/vim/'
 \endverbatim
 The environment variable `PLUMED_VIMPATH`, if set, will take the precedence.
-Otherwise, vim will resort to the hardcoded path.
+Otherwise, vim will resort to the hard coded path.
 In this case we assumed that there is a PLUMED installed in `/opt/local/` (e.g. using MacPorts),
 but you can override it sourcing a `sourceme.sh` file in the compilation directory
 or loading a PLUMED module with `module load plumed`.
@@ -274,7 +274,7 @@ Now, every time you open this file, you will see it highlighted.
 The syntax file contains a definition of all possible PLUMED actions and keywords.
 It is designed to allow for a quick validation of the PLUMED input file before running it.
 As such, all the meaningful words in the input should be highlighted:
-- Valid action names (such as `METAD`) and labels (such as `metad:` or `LABEL=metad`) will be
+- Valid action names (such as `METAD`) and labels (such as `m:` or `LABEL=m`) will be
   highlighted in the brightest way (`Type` in VIM). Those are the most important words.
 - Keyword and flag names (such as `ATOMS=` or `COMPONENTS` when part of the action \ref DISTANCE) will be highlighted with a different color
   (`Statement` in VIM).
@@ -432,7 +432,7 @@ It is also possible to highlight a specific field of the file. Typing
 :5PCol
 \endverbatim
 you will highlight the fifth field. Notice that in the `FIELDS` line (the first line of the file)
-the 7th word of the line will be highlighted, which is the one containing the name of the field.
+the seventh word of the line will be highlighted, which is the one containing the name of the field.
 This allows for easy matching of values shown
 in the file and tags provided in the `FIELDS` line.
 The highlighted column can be moved back and forth using `:PPlus` and `:PMinus`.
@@ -479,7 +479,7 @@ plus a "toBeIncluded.dat" file
 RESTRAINT ARG=dist
 \endplumedfile
 
-However, when you do this it is important to recognise that \ref INCLUDE is a real directive that is only resolved
+However, when you do this it is important to recognize that \ref INCLUDE is a real directive that is only resolved
 after all the \ref comments have been stripped and the \ref ContinuationLines have been unrolled.  This means it
 is not possible to do things like:
 
@@ -493,8 +493,8 @@ RESTRAINT ARG=dist
 
 You can introduce new functionality into PLUMED by placing it directly into the src directory and recompiling the 
 PLUMED libraries.  Alternatively, if you want to keep your code independent from the rest of PLUMED (perhaps
-so you can release it independely - we won't be offended), then you can create your own dynamic library.  To use this 
-in conjuction with PLUMED you can then load it at runtime by using the \subpage LOAD keyword as shown below:
+so you can release it independently - we won't be offended), then you can create your own dynamic library.  To use this 
+in conjunction with PLUMED you can then load it at runtime by using the \subpage LOAD keyword as shown below:
 
 \plumedfile
 LOAD FILE=library.so
@@ -514,7 +514,7 @@ very intensive development of the code of if you are running on a computer with 
 
 \page exchange-patterns Changing exchange patterns in replica exchange
 
-Using the \subpage RANDOM_EXCHANGES keyword it is possible to make exchanges betweem randomly
+Using the \subpage RANDOM_EXCHANGES keyword it is possible to make exchanges between randomly
 chosen replicas. This is useful e.g. for bias exchange metadynamics \cite piana.
 
 \page special-replica-syntax Special replica syntax
@@ -620,7 +620,7 @@ RESTRAINT ...
 ...
 \endplumedfile
 
-In short, whenever there are keywords that should vary across replicas, you should set them usign the `@replicas:` keyword.
+In short, whenever there are keywords that should vary across replicas, you should set them using the `@replicas:` keyword.
 As mentioned above, you can always use the old syntax with separate input file, and this is recommended when the
 number of keywords that are different is large.
 
@@ -660,7 +660,7 @@ yet to integer numbers (e.g.: the PACE argument of \ref METAD).
 </TR>
 <TR>
 <TD WIDTH="5%"> 
-\subpage Files </TD><TD> </TD><TD> Dealing with Input/Outpt
+\subpage Files </TD><TD> </TD><TD> Dealing with Input/Output
 </TD>
 </TR>
 </TABLE>

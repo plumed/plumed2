@@ -68,13 +68,13 @@ static distribution.
 In the following example we employ a uniform distribution for
 argument 1 and a Gaussian distribution for argument 2.
 \plumedfile
-td_uni: TD_UNIFORM
+target_uniform: TD_UNIFORM
 
-td_gauss: TD_GAUSSIAN CENTER=-2.0 SIGMA=0.5
+target_Gaussian: TD_GAUSSIAN CENTER=-2.0 SIGMA=0.5
 
-td_pd: TD_PRODUCT_DISTRIBUTION DISTRIBUTIONS=td_uni,td_gauss
+td_pd: TD_PRODUCT_DISTRIBUTION DISTRIBUTIONS=target_uniform,target_Gaussian
 \endplumedfile
-Note that order of the labels is important, using DISTRIBUTIONS=td_gauss,td_uni
+Note that order of the labels is important, using DISTRIBUTIONS=target_Gaussian,target_uniform
 would mean that we would employ a Gaussian distribution for argument 1 and a uniform
 distribution for argument 2, which would lead to completely different results.
 

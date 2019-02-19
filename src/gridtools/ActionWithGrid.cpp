@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,7 +28,7 @@ namespace gridtools {
 
 void ActionWithGrid::registerKeywords( Keywords& keys ) {
   vesselbase::ActionWithAveraging::registerKeywords( keys );
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
+  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","CONCENTRATION","the concentration parameter for Von Mises-Fisher distributions");

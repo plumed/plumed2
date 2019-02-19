@@ -38,7 +38,7 @@ obj: all
 
 # there is a single C file here, and this is its dependency:
 Plumed.o: Plumed.c Plumed.h
-PlumedStatic.o: PlumedStatic.cpp Plumed.c Plumed.h
+PlumedStatic.o: PlumedStatic.cpp Plumed.h
 
 # Individual dependencies
 

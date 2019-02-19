@@ -106,7 +106,7 @@ the conformations corresponding to the transition state.
 Imagine that you know since the beginning the shape of the free-energy landscape
 \f$ F(s) \f$ as a function of one CV \f$ s \f$. If you perform a molecular dynamics
 simulation using a bias potential which is exactly equal to \f$ -F(s) \f$,
-the biased free-energy landscape will be flat and barrierless.
+the biased free-energy landscape will be flat and barrier less.
 This potential acts as an "umbrella" that helps you to safely cross
 the transition state in spite of its high free energy.
 
@@ -145,7 +145,7 @@ where
 \f[
 Z_i=\sum_{q}e^{-\left(U(q)+V_i(q)\right)}
 \f]
-The likelyhood for the observation of a sequence of snapshots \f$q_i(t)\f$ (where \f$i\f$ is
+The likelihood for the observation of a sequence of snapshots \f$q_i(t)\f$ (where \f$i\f$ is
 the index of the trajectory and \f$t\f$ is time) is just the product of the probability
 of each of the snapshots. We use here the minus-logarithm of the likelihood (so that
 the product is converted to a sum) that can be written as
@@ -158,17 +158,17 @@ the product is converted to a sum) that can be written as
 +\log Z_i
 \right)
 \f]
-One can then maximize the likelyhood by setting \f$\frac{\delta \mathcal{L}}{\delta P({\bf s})}=0\f$.
+One can then maximize the likelihood by setting \f$\frac{\delta\mathcal{L}}{\delta P({\bf s})}=0\f$.
 After some boring algebra the following expression can be obtained
 \f[
 0=\sum_{i}\int dt\left(-\frac{\delta_{{\bf s}_{i}(t),{\bf s}}}{P({\bf s})}+\frac{e^{-\frac{V_{i}({\bf s})}{k_{B}T}}}{Z_{i}}\right)
 \f]
 In this equation we aim at finding \f$P(s)\f$. However, also the list of normalization factors \f$Z_i\f$ is unknown, and they should 
-be found selfconsistently. Thus one can find the solution as
+be found self consistently. Thus one can find the solution as
 \f[
 P({\bf s})\propto \frac{N({\bf s})}{\sum_i\int dt\frac{e^{-\frac{V_{i}({\bf s})}{k_{B}T}}}{Z_{i}} }
 \f]
-where \f$Z\f$ is selfconsistently determined as 
+where \f$Z\f$ is self consistently determined as 
 \f[
 Z_i\propto\int ds' P({\bf s}') e^{-\frac{V_i({\bf s}')}{k_BT}}
 \f]
@@ -185,9 +185,9 @@ Z_i\propto\frac{\sum_j \int dt e^{-\beta V_i({\bf s}_j(t))} w_j(t)}{
 \sum_j \int dt w_j(t)}
 \f]
 
-This allows to straighforwardly compute averages related
+This allows to straightforwardly compute averages related
 to other, non-biased degrees of freedom, and it is thus a bit more flexible.
-It is sufficient to precompute this factors \f$w\f$ and use them to weight
+It is sufficient to pre-compute this factors \f$w\f$ and use them to weight
 every single frame in the trajectory.
 
 \section belfast-4-learning-outcomes Learning Outcomes
@@ -316,7 +316,7 @@ This can be done e.g. with this shell script
   awk '{if($3>1 && $3<2)a++; else b++;}END{print a/(a+b)}'
 \endverbatim
 Notice that we here considered only the last 80000 frames in the average. Look at the time series for \f$\psi \f$ 
-and guess why. Also notice that the script is removing the initial comments. After this trivial preprocessing,
+and guess why. Also notice that the script is removing the initial comments. After this trivial pre-processing,
 the script is just counting how many times the third column (\f$ \psi \f$) lies between 1 and 2 and 
 how many times it doesn't. At the end it prints the number of times the variable is between 1 and 2
 divided by the total count. The result should be something around 0.40. Now try to do it on
@@ -336,7 +336,7 @@ Repeat this calculation for different values of AT. Does the result depend on AT
 \subsection belfast-4-fes A free-energy landscape
 
 One can also count the probability of an angle to be in a precise
-bin. The logarithm of this quantity, in kbT units, is the free-energy
+bin. The logarithm of this quantity, in \f$k_B T\f$ units, is the free-energy
 associated to that bin. There are several ways to compute
 histograms, either with PLUMED or with external programs. Here I decided to
 use awk.

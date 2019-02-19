@@ -36,12 +36,15 @@ namespace PLMD
 namespace piv
 {
 
-//+PLUMEDOC COLVAR PIV
+//+PLUMEDOC PIVMOD_COLVAR PIV
 /*
-Calculates the PIV-distance: the squared Cartesian distance between the PIV \cite gallet2013structural,pipolo2017navigating
+Calculates the PIV-distance.
+
+PIV distance is the squared Cartesian distance between the PIV \cite gallet2013structural \cite pipolo2017navigating
 associated to the configuration of the system during the dynamics and a reference configuration provided
 as input (PDB file format).
 PIV can be used together with \ref FUNCPATHMSD to define a path in the PIV space.
+
 \par Examples
 
 The following example calculates PIV-distances from three reference configurations in Ref1.pdb, Ref2.pdb and Ref3.pdb
@@ -49,11 +52,12 @@ and prints the results in a file named colvar.
 Three atoms (PIVATOMS=3) with names (pdb file) A B and C are used to construct the PIV and all PIV blocks (AA, BB, CC, AB, AC, BC) are considered.
 SFACTOR is a scaling factor that multiplies the contribution to the PIV-distance given by the single PIV block.
 NLIST sets the use of neighbor lists for calculating atom-atom distances.
-The SWITCH keyword specifies the perameters of the switching function that transforms atom-atom distances.
-SORT=1 meand that the PIV block elements are sorted (SORT=0 no sorting.)
-Values for SORT, SFACTOR and Neighborlist parameters have to be specified for each block.
+The SWITCH keyword specifies the parameters of the switching function that transforms atom-atom distances.
+SORT=1 means that the PIV block elements are sorted (SORT=0 no sorting.)
+Values for SORT, SFACTOR and the neighbor list parameters have to be specified for each block.
 The order is the following: AA,BB,CC,AB,AC,BC. If ONLYDIRECT (ONLYCROSS) is used the order is AA,BB,CC (AB,AC,BC).
 The sorting operation within each PIV block is performed using the counting sort algorithm, PRECISION specifies the size of the counting array.
+
 \plumedfile
 PIV ...
 LABEL=Pivd1
@@ -225,23 +229,23 @@ void PIV::registerKeywords( Keywords& keys )
            "Details of the various switching "
            "functions you can use are provided on \\ref switchingfunction.");
   keys.add("compulsory","PRECISION","the precision for approximating reals with integers in sorting.");
-  keys.add("compulsory","REF_FILE","PDB file name that contains the i-th reference structure.");
+  keys.add("compulsory","REF_FILE","PDB file name that contains the \\f$i\\f$th reference structure.");
   keys.add("compulsory","PIVATOMS","Number of atoms to use for PIV.");
   keys.add("compulsory","SORT","Whether to sort or not the PIV block.");
-  keys.add("compulsory","ATOMTYPES","The atomtypes to use for PIV.");
+  keys.add("compulsory","ATOMTYPES","The atom types to use for PIV.");
   keys.add("optional","SFACTOR","Scale the PIV-distance by such block-specific factor");
   keys.add("optional","VOLUME","Scale atom-atom distances by the cubic root of the cell volume. The input volume is used to scale the R_0 value of the switching function. ");
-  keys.add("optional","UPDATEPIV","Frequency (timesteps) at which the PIV is updated.");
+  keys.add("optional","UPDATEPIV","Frequency (in steps) at which the PIV is updated.");
   keys.addFlag("TEST",false,"Print the actual and reference PIV and exit");
-  keys.addFlag("COM",false,"Use centers of mass of groups of atoms instead of atoms as secified in the Pdb file");
+  keys.addFlag("COM",false,"Use centers of mass of groups of atoms instead of atoms as specified in the Pdb file");
   keys.addFlag("ONLYCROSS",false,"Use only cross-terms (A-B, A-C, B-C, ...) in PIV");
   keys.addFlag("ONLYDIRECT",false,"Use only direct-terms (A-A, B-B, C-C, ...) in PIV");
   keys.addFlag("DERIVATIVES",false,"Activate the calculation of the PIV for every class (needed for numerical derivatives).");
-  keys.addFlag("NLIST",false,"Use a neighbour list for distance calculations.");
+  keys.addFlag("NLIST",false,"Use a neighbor list for distance calculations.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.addFlag("TIMER",false,"Permorm timing analysis on heavy loops.");
-  keys.add("optional","NL_CUTOFF","Neighbour lists cutoff.");
-  keys.add("optional","NL_STRIDE","Update neighbour lists every NL_STRIDE steps.");
+  keys.addFlag("TIMER",false,"Perform timing analysis on heavy loops.");
+  keys.add("optional","NL_CUTOFF","Neighbor lists cutoff.");
+  keys.add("optional","NL_STRIDE","Update neighbor lists every NL_STRIDE steps.");
   keys.add("optional","NL_SKIN","The maximum atom displacement tolerated for the neighbor lists update.");
   keys.reset_style("SWITCH","compulsory");
 }
@@ -281,7 +285,6 @@ PIV::PIV(const ActionOptions&ao):
 //com2atoms(std:: vector<std:: vector<unsigned> >(Nlist))
 {
   log << "Starting PIV Constructor\n";
-  unsigned rank=comm.Get_rank();
 
   // Precision on the real-to-integer transformation for the sorting
   parse("PRECISION",Nprec);
@@ -303,6 +306,7 @@ PIV::PIV(const ActionOptions&ao):
     log << "Serial PIV construction\n";
   } else     {
     log << "Parallel PIV construction\n";
+    unsigned rank=comm.Get_rank();
   }
 
   // Derivatives
@@ -496,7 +500,6 @@ PIV::PIV(const ActionOptions&ao):
     parseVector("SFACTOR",scaling);
     //if(scaling.size()!=getNumberOfArguments() && scaling.size()!=0) error("not enough values for SFACTOR");
   }
-
   // Neighbour Lists option
   parseFlag("NLIST",doneigh);
   nl.resize(Nlist);
@@ -737,7 +740,6 @@ void PIV::calculate()
   static std:: vector<std:: vector<double> > cPIV(Nlist);
   static std:: vector<std:: vector<int> > Atom0(Nlist);
   static std:: vector<std:: vector<int> > Atom1(Nlist);
-  //
   std:: vector<std:: vector<int> > A0(Nprec);
   std:: vector<std:: vector<int> > A1(Nprec);
   unsigned stride=1;
@@ -754,7 +756,6 @@ void PIV::calculate()
   // Transform (and sort) the rPIV before starting the dynamics
   if (((prev_stp==-1) || (init_stp==1)) &&!CompDer) {
     if(prev_stp!=-1) {init_stp=0;}
-    log << "Debug " << prev_stp << " " << init_stp << "\n";
     // Calculate the volume scaling factor
     if(Svol) {
       Fvol=cbrt(Vol0/getBox().determinant());
@@ -925,7 +926,7 @@ void PIV::calculate()
         }
         if(timer) stopwatch.stop("1 Build cPIV");
         if(timer) stopwatch.start("2 Sort cPIV");
-        if(!doserial) {
+        if(!doserial && comm.initialized()) {
           // Vectors keeping track of the dimension and the starting-position of the rank-specific pair vector in the big pair vector.
           std:: vector<int> Vdim(stride,0);
           std:: vector<int> Vpos(stride,0);
@@ -987,6 +988,8 @@ void PIV::calculate()
           // Loop on blocks
           //for(unsigned m=0;m<Nlist;m++) {
           // Loop on Ordering Vector size excluding zeros (i=1)
+          if(timer) stopwatch.stop("2 Sort cPIV");
+          if(timer) stopwatch.start("3 Reconstruct cPIV");
           for(unsigned i=1; i<Nprec; i++) {
             // Loop on the ranks
             for(unsigned l=0; l<stride; l++) {
@@ -1000,7 +1003,7 @@ void PIV::calculate()
               }
             }
           }
-          if(timer) stopwatch.stop("2 Sort cPIV");
+          if(timer) stopwatch.stop("3 Reconstruct cPIV");
         } else {
           for(unsigned i=1; i<Nprec; i++) {
             for(unsigned m=0; m<OrdVec[i]; m++) {
@@ -1013,7 +1016,6 @@ void PIV::calculate()
       }
     }
   }
-
   Vector distance;
   double dfunc=0.;
   // Calculate volume scaling factor
@@ -1072,7 +1074,7 @@ void PIV::calculate()
     exit();
   }
 
-  if(timer) stopwatch.start("3 Build For Derivatives");
+  if(timer) stopwatch.start("4 Build For Derivatives");
   // non-global variables Nder and Scalevol defined to speedup if structures in cycles
   bool Nder=CompDer;
   bool Scalevol=Svol;
@@ -1206,18 +1208,17 @@ void PIV::calculate()
       }
     }
 
-    if (!serial) {
+    if (!serial && comm.initialized()) {
       comm.Barrier();
       comm.Sum(&m_PIVdistance,1);
       if(!m_deriv.empty()) comm.Sum(&m_deriv[0][0],3*m_deriv.size());
       comm.Sum(&m_virial[0][0],9);
     }
-
   }
   prev_stp=getStep();
 
   //Timing
-  if(timer) stopwatch.stop("3 Build For Derivatives");
+  if(timer) stopwatch.stop("4 Build For Derivatives");
   if(timer) {
     log.printf("Timings for action %s with label %s \n", getName().c_str(), getLabel().c_str() );
     log<<stopwatch;

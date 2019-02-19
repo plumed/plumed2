@@ -126,12 +126,12 @@ Precompiled manual for PLUMED ${TRAVIS_BRANCH}
 This repository hosts a precompiled manual for [PLUMED](http://www.plumed.org) ${TRAVIS_BRANCH},
 git revision [$hash](https://github.com/${GIT_OWNER}/${GIT_REPO}/commit/$hash).
 
-This manual has been compiled on [travis](http://travis-ci.org/${GIT_OWNER}/${GIT_REPO}) on $(date).
-
 To browse the manual you should go [here](http://${GIT_OWNER}.github.io/${WHAT}-${TRAVIS_BRANCH}).
 
 You can also download a full copy of the manual for offline access
 at [this link](http://github.com/${GIT_OWNER}/${WHAT}-${TRAVIS_BRANCH}/archive/gh-pages.zip).
+
+This manual has been compiled on [travis](http://travis-ci.org/${GIT_OWNER}/${GIT_REPO}) on $(date).
 
 EOF
 

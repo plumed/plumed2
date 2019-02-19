@@ -1,6 +1,6 @@
 \page Function Functions
 
-When performing biased dynamics or analysing a trajectory you may wish to analyse/bias the value of
+When performing biased dynamics or analyzing a trajectory you may wish to analyze/bias the value of
 some function of a set of collective variables rather than the values of the collective variables
 directly.  You can do this with PLUMED by using any one of the following list of functions.
 

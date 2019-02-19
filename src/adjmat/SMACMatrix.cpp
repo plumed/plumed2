@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,7 +38,7 @@ A_{ij} = \sigma(r_{ij}) \sum_n K_n(\theta_{ij})
 In this expression \f$r_{ij}\f$ is the distance between molecule \f$i\f$ and molecule \f$j\f$ and \f$\sigma(r_{ij}\f$ is a
 \ref switchingfunction that acts on this distance.  The $K_n functions are \ref kernelfunctions that take the torsion angle, \f$\theta_{ij}\f$, between the
 internal orientation vectors for molecules \f$i\f$ and \f$j\f$ as input.  These kernel functions should be set so that they are
-equal to one when the relative orientation of the moleclues are as they are in the solid and equal to zero otherwise.
+equal to one when the relative orientation of the molecules are as they are in the solid and equal to zero otherwise.
 As the above matrix element is a product of functions it is only equal to one when the centers of mass of molecules \f$i\f$ and\f$j\f$
 are with a certain distance of each other and when the molecules are aligned in some desirable way.
 
@@ -47,7 +47,7 @@ are with a certain distance of each other and when the molecules are aligned in 
 In the following example an adjacency matrix is constructed in which the \f$(i,j)\f$ element is equal to one if
 molecules \f$i\f$ and \f$j\f$ are within 6 angstroms of each other and if the torsional angle between the orientations
 of these molecules is close to 0 or \f$\pi\f$.  The various connected components of this matrix are determined using the
-\ref DFSCLUSTERING algorithm and then the size of the largest cluster of connectes molecules is output to a colvar file
+\ref DFSCLUSTERING algorithm and then the size of the largest cluster of connects molecules is output to a colvar file
 
 \plumedfile
 UNITS LENGTH=A

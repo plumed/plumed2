@@ -240,6 +240,7 @@ PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
 PLUMED_CONFIG_ENABLE([absolute-soname],[store absolute soname (Linux only - this is the default behavior on OSX). Only enable for testing!],[no])
 PLUMED_CONFIG_ENABLE([absolute-install-name],[store absolute relative (OSX only - disable to have a behavior similar to Linux). Only disable for testing!],[yes])
 PLUMED_CONFIG_ENABLE([loader-path],[use @loader_path to find libplumedKernel.dylib (OSX only)],[yes])
+PLUMED_CONFIG_ENABLE([bsymbolic],[use -Bsymbolic flag in making shared libraries (Linux only)],[yes])
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
@@ -263,6 +264,9 @@ PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no]
 PLUMED_CONFIG_ENABLE([asmjit],[search for asmjit],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[no])
 PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
+PLUMED_CONFIG_ENABLE([af_ocl],[arrayfire_opencl],[search for arrayfire],[no])
+PLUMED_CONFIG_ENABLE([af_cuda],[arrayfire_cuda],[search for arrayfire],[no])
+PLUMED_CONFIG_ENABLE([af_cpu],[arrayfire_cpu],[search for arrayfire],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -310,9 +314,6 @@ AC_PROG_FC
 # we use C++ for all the autoconf tests
 AC_LANG(C++)
 
-# log the initial flags
-LD="$CXX"
-
 if test -z "$LDSHARED" ; then
   LDSHARED="$CXX"
 fi
@@ -352,7 +353,7 @@ then
   CXX="$CXX --coverage"
   LDSHARED="$LDSHARED --coverage"
   CFLAGS="$CFLAGS --coverage"
-  LDFLAGS="$CFLAGS --coverage"
+  PLUMED_CHECK_LDFLAGS([--coverage])
   STATIC_LIBS="$STATIC_LIBS --coverage"
 fi
 
@@ -388,7 +389,51 @@ then
    AC_MSG_WARN([Please change compiler or make sure that everything works correctly])
 fi
 
-
+AC_MSG_CHECKING([whether C++ library supports C++11 exceptions])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#include <new>
+#include <functional>
+#include <memory>
+#include <system_error>
+#include <ios>
+#include <future>
+// capable to catch:
+void func(void) {
+  try{
+  } catch(std::bad_array_new_length &) {
+  } catch(std::bad_function_call &) {
+  } catch(std::bad_weak_ptr &) {
+  } catch(std::ios_base::failure &e) {
+    if(e.code().category()==std::generic_category()) {}
+    else if(e.code().category()==std::system_category()) {}
+    else if(e.code().category()==std::iostream_category()) {}
+    else if(e.code().category()==std::future_category()) {}
+  } catch(std::system_error &e) {
+    if(e.code().category()==std::generic_category()) {}
+    else if(e.code().category()==std::system_category()) {}
+    else if(e.code().category()==std::iostream_category()) {}
+    else if(e.code().category()==std::future_category()) {}
+  }
+// capable to throw:
+  auto a=std::bad_array_new_length();
+  auto b=std::bad_function_call();
+  auto c=std::bad_weak_ptr();
+  auto d=std::system_error(10,std::generic_category(),"msg");
+  auto e=std::system_error(10,std::system_category(),"msg");
+  auto f=std::system_error(10,std::iostream_category(),"msg");
+  auto g=std::system_error(10,std::future_category(),"msg");
+  auto h=std::ios_base::failure("msg",std::error_code(10,std::generic_category()));
+  auto i=std::ios_base::failure("msg",std::error_code(10,std::system_category()));
+  auto j=std::ios_base::failure("msg",std::error_code(10,std::iostream_category()));
+  auto k=std::ios_base::failure("msg",std::error_code(10,std::future_category()));
+}
+])],
+[
+  AC_MSG_RESULT([yes]);
+  AC_DEFINE([__PLUMED_LIBCXX11])
+],
+[AC_MSG_RESULT([no])
+])
 
 AC_SUBST(disable_dependency_tracking)
 
@@ -715,14 +760,17 @@ if test $python == true  ; then
   if test -n "$PYTHON_BIN"
   then
     AC_MSG_NOTICE([Python executable is $PYTHON_BIN])
-    AC_MSG_CHECKING([support for required python modules (distutils, cython, numpy, subprocess, os)])
+    AC_MSG_CHECKING([support for required python modules (setuptools, cython, numpy, subprocess, os, shutil)])
 testimport="
-from distutils.core import setup
-from distutils.extension import Extension
-from Cython.Build import cythonize
-import numpy
+from setuptools import setup
+from setuptools import Extension
 import subprocess
 import os
+import os.path
+import sys
+from shutil import copyfile
+import numpy
+from Cython.Build import cythonize
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        AC_MSG_RESULT([yes])
@@ -735,6 +783,16 @@ import os
   else
     AC_MSG_WARN([cannot enable python interface])
   fi
+fi
+
+if test "$af_ocl" == true ; then
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
+fi
+if test "$af_cuda" == true ; then
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcuda])
+fi
+if test "$af_cpu" == true ; then
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcpu])
 fi
 
 # in non-debug mode, add -DNDEBUG
@@ -755,7 +813,6 @@ AC_DEFINE([_REENTRANT])
 
 #### Options for dynamic library to work properly ####
 AC_SUBST(SOEXT)
-AC_SUBST(LD)
 AC_SUBST(LDSHARED)
 # these are libraries that should be linked also to MD engines
 AC_SUBST(STATIC_LIBS)
@@ -784,6 +841,9 @@ if test "$shared" == true ; then
     SOEXT=so
     LDSHARED="$LDSHARED -shared"
     PLUMED_CHECK_LDFLAGS([-rdynamic])
+    if test "$bsymbolic" == true ; then
+      PLUMED_CHECK_LDFLAGS([-Wl,-Bsymbolic])
+    fi
   ;;
   (*)
     AC_MSG_NOTICE([*** Dynamic library only enabled on OSX and Linux ***])
@@ -1157,7 +1217,7 @@ EOF
       comment=
       test -n "$testlib" && comment=" with library $testlib"
       AC_MSG_CHECKING([whether $name can link a C++ object$comment])
-      $compexe $LDFLAGS $testlib $LIBS conftest.o conftest-main.o -o conftest.exe 1>/dev/null 2>/dev/null
+      $compexe conftest.o conftest-main.o $LDFLAGS $testlib $LIBS -o conftest.exe 1>/dev/null 2>/dev/null
       if test -f conftest.exe
       then
         found=yes
@@ -1186,8 +1246,6 @@ if test "$prefix" == NONE
 then
   prefix=/usr/local
 fi
-
-AC_MSG_CHECKING([If prefix is equal to present working directory])
 
 pkgconfig_bin=""
 

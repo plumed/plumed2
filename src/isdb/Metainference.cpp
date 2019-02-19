@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -53,10 +53,10 @@ can be given either from fixed components of other actions using PARARG or as nu
 PARAMETERS. The default behavior is that of averaging the data over the available replicas,
 if this is not wanted the keyword NOENSEMBLE prevent this averaging.
 
-Metadynamic Metainference \cite Bonomi:2016ge or more in general biased Metainference requires the knowledge of
+Metadynamics Metainference \cite Bonomi:2016ge or more in general biased Metainference requires the knowledge of
 biasing potential in order to calculate the weighted average. In this case the value of the bias
 can be provided as the last argument in ARG and adding the keyword REWEIGHT. To avoid the noise
-resulting from the instantaneus value of the bias the weight of each replica can be averaged
+resulting from the instantaneous value of the bias the weight of each replica can be averaged
 over a give time using the keyword AVERAGING.
 
 The data can be averaged by using multiple replicas and weighted for a bias if present.
@@ -66,7 +66,7 @@ the arguments as a single gaussian common to all the data points, a gaussian per
 point, a single long-tailed gaussian common to all the data points, a log-tailed
  gaussian per data point or using two distinct noises as for the most general formulation of Metainference.
 In this latter case the noise of the replica-averaging is gaussian (one per data point) and the noise for
-the comparison with the experiemntal data can chosen using the keywork LIKELIHOOD
+the comparison with the experimental data can chosen using the keyword LIKELIHOOD
 between gaussian or log-normal (one per data point), furthermore the evolution of the estimated average
 over an infinite number of replicas is driven by DFTILDE.
 
@@ -74,7 +74,7 @@ As for Metainference theory there are two sigma values: SIGMA_MEAN represent the
 error of calculating an average quantity using a finite set of replica and should
 be set as small as possible following the guidelines for replica-averaged simulations
 in the framework of the Maximum Entropy Principle. Alternatively, this can be obtained
-automatically using the internal sigma mean optimisation as introduced in \cite Lohr:2017gc
+automatically using the internal sigma mean optimization as introduced in \cite Lohr:2017gc
 (OPTSIGMAMEAN=SEM), in this second case sigma_mean is estimated from the maximum standard error
 of the mean either over the simulation or over a defined time using the keyword AVERAGING.
 SIGMA_BIAS is an uncertainty parameter, sampled by a MC algorithm in the bounded interval
@@ -298,12 +298,12 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.add("optional","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","OPTSIGMAMEAN","NONE","Set to NONE/SEM to manually set sigma mean, or to estimate it on the fly");
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
-  keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
+  keys.add("optional","TEMP","the system temperature - this is only needed if code doesn't pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
-  keys.add("optional","STATUS_FILE","write a file with all the data usefull for restart/continuation of Metainference");
-  keys.add("compulsory","WRITE_STRIDE","1000","write the status to a file every N steps, this can be used for restart/continuation");
+  keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference");
+  keys.add("compulsory","WRITE_STRIDE","10000","write the status to a file every N steps, this can be used for restart/continuation");
   keys.add("optional","SELECTOR","name of selector");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
   keys.use("RESTART");
@@ -313,7 +313,7 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance");
   keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance");
   keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
-  keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives wrt the bias");
+  keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives with respect to the bias");
   keys.addOutputComponent("scale",        "default",      "scale parameter");
   keys.addOutputComponent("offset",       "default",      "offset parameter");
   keys.addOutputComponent("ftilde",       "GENERIC",      "ensemble average estimator");

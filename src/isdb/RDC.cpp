@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -79,7 +79,7 @@ This collective variable can then be use to break the rotational symmetry of a s
 Alternatively if the molecule is rigid it is possible to use the experimental data to calculate the alignment tensor and the use that to back calculate the RDCs, this is what is usually call the Single Value Decomposition approach. In this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
-Replica-Averaged simulations can be perfomed using RDCs, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
+Replica-Averaged simulations can be performed using RDCs, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
 Additional material and examples can be also found in the tutorial \ref belfast-9
@@ -88,7 +88,7 @@ Additional material and examples can be also found in the tutorial \ref belfast-
 In the following example five N-H RDCs are defined and averaged over multiple replicas,
 their correlation is then calculated with respect to a set of experimental data and restrained.
 In addition, and only for analysis purposes, the same RDCs each single conformation are calculated
-using a Single Value Decomposition algorithm, then averaged and again compared with the experimenta data.
+using a Single Value Decomposition algorithm, then averaged and again compared with the experimental data.
 
 \plumedfile
 RDC ...
@@ -132,23 +132,23 @@ PRINT ARG=st.corr,st_svd.corr,rdce.bias FILE=colvar
 
 //+PLUMEDOC ISDB_COLVAR PCS
 /*
-Calculates the Pseudocontact shift of a nucleus determined by the presence of a metal ion susceptible to anisotropic magnetization.
+Calculates the Pseudo-contact shift of a nucleus determined by the presence of a metal ion susceptible to anisotropic magnetization.
 
 The PCS of an atomic nucleus depends on the \f$\theta\f$ angle between the vector from the spin-label to the nucleus
  and the external magnetic field and the module of the vector itself \cite Camilloni:2015jf . While in principle the averaging
-resulting from the tumbling should remove the pseudocontact shift, in presence of the NMR magnetic field the magnatically anisotropic molecule bound to system will break the rotational symmetry does resulting in measurable PCSs and RDCs.
+resulting from the tumbling should remove the pseudo-contact shift, in presence of the NMR magnetic field the magnetically anisotropic molecule bound to system will break the rotational symmetry does resulting in measurable values for the PCS and RDC.
 
-PCSs can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
+PCS values can also be calculated using a Single Value Decomposition approach, in this case the code rely on the
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
-Replica-Averaged simulations can be perfomed using PCSs, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
+Replica-Averaged simulations can be performed using PCS values, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
 Metainference simulations can be performed with this CV and \ref METAINFERENCE .
 
 \par Examples
 
-In the following example five PCSs are defined and their correlation with
+In the following example five PCS values are defined and their correlation with
 respect to a set of experimental data is calculated and restrained. In addition,
-and only for analysis purposes, the same PCSs are calculated using a Single Value
+and only for analysis purposes, the same PCS values are calculated using a Single Value
 Decomposition algorithm.
 
 \plumedfile
@@ -206,9 +206,9 @@ void RDC::registerKeywords( Keywords& keys ) {
   keys.reset_style("ATOMS","atoms");
   keys.add("compulsory","GYROM","1.","Add the product of the gyromagnetic constants for the bond. ");
   keys.add("compulsory","SCALE","1.","Add the scaling factor to take into account concentration and other effects. ");
-  keys.addFlag("SVD",false,"Set to TRUE if you want to backcalculate using Single Value Decomposition (need GSL at compilation time).");
-  keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimetnal values.");
-  keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and usefull for \ref STATS).");
+  keys.addFlag("SVD",false,"Set to TRUE if you want to back calculate using Single Value Decomposition (need GSL at compilation time).");
+  keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimental values.");
+  keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and useful for \\ref STATS).");
   keys.addOutputComponent("rdc","default","the calculated # RDC");
   keys.addOutputComponent("exp","SVD/ADDCOUPLINGS","the experimental # RDC");
 }
@@ -407,6 +407,7 @@ void RDC::do_svd()
   }
   gsl_matrix_free(coef_mat);
   gsl_matrix_free(A);
+  gsl_matrix_free(V);
   gsl_vector_free(rdc_vec);
   gsl_vector_free(bc);
   gsl_vector_free(Stmp);
@@ -427,9 +428,7 @@ void RDC::calculate()
   vector<Vector> dRDC(N/2, Vector{0.,0.,0.});
 
   /* RDC Calculations and forces */
-  const double omp_dummy = 0.0;
-  const unsigned nt = OpenMP::getGoodNumThreads(&omp_dummy, N / 2);
-  #pragma omp parallel num_threads(nt)
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     #pragma omp for
     for(unsigned r=0; r<N; r+=2)

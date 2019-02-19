@@ -88,8 +88,8 @@ all the files read by PLUMED, with the exception of PDB files where the suffix i
 
 The last comment implies that if you need to process your trajectories with _different_
 input files you might do it creating files named `plumed.0.dat`, `plumed.1.dat`, and
-`plumed.2.dat`. This is correct, and this was the ony way to do multi-replica
-simulatons with different input files up to PLUMED 2.3. However,
+`plumed.2.dat`. This is correct, and this was the only way to do multi-replica
+simulations with different input files up to PLUMED 2.3. However,
 in the following we will see how to obtain the same effect with a new special command that has
 been introduced in PLUMED 2.4.
 
@@ -194,7 +194,7 @@ RESTRAINT ...
 ...
 \endplumedfile
 
-In short, whenever there are keywords that should vary across replicas, you should set them usign the `@replicas:` keyword.
+In short, whenever there are keywords that should vary across replicas, you should set them using the `@replicas:` keyword.
 As mentioned above, you can always use the old syntax with separate input file, and this is recommended when the
 number of keywords that are different is large.
 
@@ -373,7 +373,7 @@ The actual numbers might very depending on the length of your simulation.
 
 Now you can use the provided python script to analyze the `ALLBIAS` file.
 `SCRIPTS/wham.py` should be provided three arguments: name of the file with bias potentials,
-number of replicas (that is the number of columns) and value of kbT (2.5 in kj/mol).
+number of replicas (that is the number of columns) and value of k\f$_B\f$T (2.5 in kj/mol).
 
 \verbatim
 # use the python script to compute weights
@@ -422,12 +422,12 @@ values close to these ones
 that tells you that the first minimum has a population of roughly 97%.
 
 \note
-This approach can be used to reweight any replica exchange simulation, irrespectively of how
+This approach can be used to reweight any replica exchange simulation, irrespective of how
 different were the employed bias potentials. This includes bias-exchange metadynamics \cite piana
 when using well-tempered metadynamics \cite Barducci:2008.
 Notice that for non-well-tempered bias exchange  metadynamics one can use a very similar approach based on binning
 that is described in \cite marinelli-trpc09.
-In addition, the approach illustrated here can be used direcly in
+In addition, the approach illustrated here can be used directly in
 bias-exchange metadynamics simulations with additional restraints which are different
 in different replicas (as in \cite cunha2017unraveling) as well as other flavors
 of biased replica exchange simulations (e.g. \cite curuksu2009enhanced \cite gil2015enhanced).
@@ -459,7 +459,7 @@ Compute as before the relative population of the two minima.
 \endverbatim
 Which is the result? What can you learn from this example?
 
-If you did things correclty, here you should find a population close to 2/3 for the first minimum and 1/3 for the second one.
+If you did things correctly, here you should find a population close to 2/3 for the first minimum and 1/3 for the second one.
 Notice that this population just reflects the way we initialized the simulations (2 of them in one minimum and 1 in the other minimum)
 and does not take into account which is the relative stability of the two minima according to the real potential energy function.
 In other words, we are just obtaining the relative population that we used to initialize the simulation.

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,7 +31,7 @@ namespace gridtools {
 Output the function on the grid to a file with the PLUMED grid format.
 
 PLUMED provides a number of actions that calculate the values of functions on grids.
-For instance, whenver you calculate a free energy as a function of a collective variable using
+For instance, whenever you calculate a free energy as a function of a collective variable using
 \ref HISTOGRAM and \ref CONVERT_TO_FES you will generally want to output the value of the free energy at a number of points on a
 discrete grid that covers the CV space uniformly.  Alternatively you may want to calculate
 what value some symmetry function takes at different points inside your simulation cell using \ref MULTICOLVARDENS.
@@ -54,7 +54,7 @@ information about the function plotted and that looks something like this:
 \endverbatim
 
 The header shown here tells us that we have grid showing the values that a function with two arguments x and y
-takes at various points in our cell.  The lines beheath the first line then tell us a little bit about these two
+takes at various points in our cell.  The lines beneath the first line then tell us a little bit about these two
 input arguments.
 
 The remaining lines of the file give us information on the positions of our grid points and the value the function and
@@ -66,7 +66,7 @@ for y.  This block is then followed by a blank line again and this pattern conti
 \par Examples
 
 The following input monitors two torsional angles during a simulation
-and outputs a continuos histogram as a function of them at the end of the simulation.
+and outputs a continuous histogram as a function of them at the end of the simulation.
 \plumedfile
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
@@ -89,7 +89,6 @@ TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
 HISTOGRAM ...
   ARG=r1,r2
-  USE_ALL_DATA
   KERNEL=DISCRETE
   GRID_MIN=-3.14,-3.14
   GRID_MAX=3.14,3.14

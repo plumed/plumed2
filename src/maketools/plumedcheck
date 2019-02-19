@@ -321,7 +321,8 @@ BEGINFILE{
 # DOC: included. These headers should be replaced with their equivalent from the stdlib.
 # DOC: E.g., use `#include <cstdlib>` instead of `#include <stdlib.h>`. Notice that
 # DOC: using the modern header all the functions are declared inside the `std` namespace.
-      if(h in deprecated_headers) error("deprecated_header","including deprecated header " h);
+# DOC: Also notice that we have a special exception to allow them in Plumed.h.
+      if(h in deprecated_headers && !(module in outer_modules)) error("deprecated_header","including deprecated header " h);
 # DOC: :unsupported_header_regex:
 # DOC: Header `<regex>`, although part of the C++11 standard, is not supported by gcc 4.8.
 # DOC: In order to allow compatibility with old compilers, this header should not be used.

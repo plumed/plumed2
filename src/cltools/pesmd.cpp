@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -100,13 +100,13 @@ namespace cltools {
 
 class PesMD  : public PLMD::CLTool {
   string description() const {
-    return "langevin dynamics on PLUMED energy landscape";
+    return "Langevin dynamics on PLUMED energy landscape";
   }
 public:
   static void registerKeywords( Keywords& keys ) {
     keys.add("compulsory","nstep","The number of steps of dynamics you want to run");
     keys.add("compulsory","temperature","NVE","the temperature at which you wish to run the simulation in LJ units");
-    keys.add("compulsory","friction","off","The friction (in LJ units) for the langevin thermostat that is used to keep the temperature constant");
+    keys.add("compulsory","friction","off","The friction (in LJ units) for the Langevin thermostat that is used to keep the temperature constant");
     keys.add("compulsory","tstep","0.005","the integration timestep in LJ units");
     keys.add("compulsory","dimension","the dimension of your energy landscape");
     keys.add("compulsory","plumed","plumed.dat","the name of the plumed input file containing the potential");

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,9 +41,9 @@ an MD simulation
 \par Description of components
 
 The READ command will read those fields that are labelled with the text string given to the
-VALUE keyword.  It will also read in any fields that are labelleled with the text string
+VALUE keyword.  It will also read in any fields that are labeled with the text string
 given to the VALUE keyword followed by a dot and a further string. If a single Value is read in
-this value can be referenced using the label of the Action.  Alternatively, if multiple quanties
+this value can be referenced using the label of the Action.  Alternatively, if multiple quantities
 are read in, they can be referenced elsewhere in the input by using the label for the Action
 followed by a dot and the character string that appeared after the dot in the title of the field.
 
@@ -99,13 +99,13 @@ void Read::registerKeywords(Keywords& keys) {
   ActionPilot::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   keys.add("compulsory","STRIDE","1","the frequency with which the file should be read.");
-  keys.add("compulsory","EVERY","1","only read every ith line of the colvar file. This should be used if the colvar was written more frequently than the trajectory.");
+  keys.add("compulsory","EVERY","1","only read every \\f$n\\f$th line of the colvar file. This should be used if the colvar was written more frequently than the trajectory.");
   keys.add("compulsory","VALUES","the values to read from the file");
   keys.add("compulsory","FILE","the name of the file from which to read these quantities");
   keys.addFlag("IGNORE_TIME",false,"ignore the time in the colvar file. When this flag is not present read will be quite strict "
                "about the start time of the simulation and the stride between frames");
   keys.addFlag("IGNORE_FORCES",false,"use this flag if the forces added by any bias can be safely ignored.  As an example forces can be "
-               "safely ignored if you are doing postprocessing that does not involve outputting forces");
+               "safely ignored if you are doing post processing that does not involve outputting forces");
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");

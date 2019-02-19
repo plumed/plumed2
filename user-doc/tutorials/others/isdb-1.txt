@@ -1,9 +1,9 @@
 /**
-\page isdb-1 ISDB: setting up a Metadynamic Metainference simulation 
+\page isdb-1 ISDB: setting up a Metadynamics Metainference simulation 
 
 \section isdb-1-aims Aims
 
-The aim of this tutorial is to introduce the users to the ISDB module and in particular to Metadynamic Metainfenrence \cite Bonomi:2016ip \cite Bonomi:2016ge ensemble determination. 
+The aim of this tutorial is to introduce the users to the ISDB module and in particular to Metadynamics Metainference \cite Bonomi:2016ip \cite Bonomi:2016ge ensemble determination. 
 We will reproduce the setup of the simulation for a simple system \cite Lohr:2017gc . For a general overview of the problem of ensembles determination please read \cite Bonomi:2017dn .
 
 \section isdb-1-objectives Objectives
@@ -19,7 +19,7 @@ The \tarball{isdb-1} for this project contains the following files:
 - system: a folder with reference files for gromacs (not needed)
 - reference-impl: a folder to perform a simple implicit solvent simulation
 - reference-impl-pbmetad: a folder to perform a pbmetad implicit solvent simulation
-- m_and_m: a folder to perform a metadynamic metainference simulation
+- m_and_m: a folder to perform a metadynamics metainference simulation
 
 This tutorial has been tested on a pre-release version of version 2.4.
 
@@ -27,16 +27,16 @@ This tutorial has been tested on a pre-release version of version 2.4.
 
 Molecular dynamics simulations are the ideal tool to determine at atomistic resolution the behavior of complex molecules. This great resolution power comes at the cost
 of approximations that affects the agreement with actual experimental observables. At the same time experimental data alone are generally speaking not enough to determine
-a structural ensemble due the inverse nature of the problem, that is to go from few observables to many atoms in many different configurations. Furthemore, experimental data
+a structural ensemble due the inverse nature of the problem, that is to go from few observables to many atoms in many different configurations. Furthermore, experimental data
 are affected by errors of multiple nature, from noise, systematic errors and errors in their atomistic interpretation. Most important experimental data are the result of
-the averaging over the ensemble of structure so it is not trivial to deconvolve this signal. One possibility is that of employng MD simulations together with experimental data
+the averaging over the ensemble of structure so it is not trivial to deconvolve this signal. One possibility is that of employing MD simulations together with experimental data
 to generate simulations already corrected for the data themselves. With \ref METAINFERENCE this is done on-the-fly by adding an additional energy to the system that takes into
 account the agreement with the experimental data considering the multiple sources of errors.
 
 \section isdb-1-reference Run a reference simulation
  
 The system we use is the EGAAWAASS peptide used in ref. \cite Lohr:2017gc .
-First of all we will run a simulation in implicit solvent using the EEF1-SB CHARMM36 force field. EEF1-SB includes a correction to the standard backbone torsion potentianl of CHARMM36, an electrostatic interaction with a distance dependent dielectric constant and a simple gaussian form for the solvation energy. The first two terms are implemented in the force field and using table potentials while the latter is implemented as a collective variable in PLUMED, \ref EEFSOLV .
+First of all we will run a simulation in implicit solvent using the EEF1-SB CHARMM36 force field. EEF1-SB includes a correction to the standard backbone torsion potential of CHARMM36, an electrostatic interaction with a distance dependent dielectric constant and a simple gaussian form for the solvation energy. The first two terms are implemented in the force field and using table potentials while the latter is implemented as a collective variable in PLUMED, \ref EEFSOLV .
 
 \plumedfile
 # this is optional and tell to VIM that this is a PLUMED file
@@ -52,13 +52,13 @@ bias: BIASVALUE ARG=solv
 
 \endplumedfile
 
-This can be run using gromacs (unfortunately recent versions of gromacs do not support verlet groups with table potentials, so performances are currently suboptimal on the gromacs side)
+This can be run using gromacs (unfortunately recent versions of gromacs do not support Verlet groups with table potentials, so performances are currently sub-optimal on the gromacs side)
 
 \verbatim
 gmx_mpi mdrun -s run.tpr -table table.xvg -tablep table.xvg -plumed plumed-eef1.dat -v
 \endverbatim
 
-In order to have a converged sampling for this reference ensemble calculation it is usefull to setup a Metadynamics calculation. In particular we will use \ref PBMETAD because it is then a natural choice for Metadynamic Metainference later. The following input file is meant to be appended to the former.
+In order to have a converged sampling for this reference ensemble calculation it is useful to setup a Metadynamics calculation. In particular we will use \ref PBMETAD because it is then a natural choice for Metadynamics Metainference later. The following input file is meant to be appended to the former.
 
 \plumedfile
 # CVs, Psi9, Phi1 are not defined
@@ -110,19 +110,19 @@ PRINT FILE=COLVAR ARG=phi2,phi3,phi4,phi5,phi6,phi7,phi8,phi9,psi1,psi2,psi3,psi
 PRINT FILE=ENERGY ARG=bias.bias,pb.bias STRIDE=200
 \endplumedfile
 
-In this case we are running a multiple-replica simulation where the sampling is used to parallelise the Metadynamics time-dependent potential through the use of multiple walkers.
+In this case we are running a multiple-replica simulation where the sampling is used to parallelize the Metadynamics time-dependent potential through the use of multiple walkers.
 
 \verbatim
 mpiexec -np 14 gmx_mpi mdrun -s topolnew -multi 14 -plumed plumed-eef1-pbmetad.dat -table table.xvg -tablep table.xvg >& log.out &
 \endverbatim
 
-\section isdb-1-m_m Metadynamic Metainference 
+\section isdb-1-m_m Metadynamics Metainference 
 
-The former simulations should provide a converged (check for this) ensemble for the peptide. As shown in \cite Lohr:2017gc the agreement with the multiple avaible NMR experimental data is not perfect. In order to generate an ensemble compatible with most of the available experimetnal data it is possible to include them in the simulation using \ref METAINFERENCE . To do so the forward models for the data sets should be defined in the input file. In this case we have backbone chemical shifts, \ref CS2BACKBONE ; residual dipolar couplings for two bonds, \ref RDC ; and J-couplings for multiple atoms, \ref JCOUPLING.
-Once the forward models are defined for the data sets, the calculated data together with the corresponding experimental values can be used to calculate the metainference score. The metainference score is additive so it can be splitted into multiple \ref METAINFERENCE entries. In this case we are using two metainference entries for the two sets of RDCs because these are compared with the experimental data modulo a constant that should be unique each data set. Then we use one metainference for all the jcouplings and another one for the chemical shifts. In this latter case we use a different noise model, i.e. NOISE=MOUTLIERS because the forward model for chemical shifts can result in systematic errors for some of them.
+The former simulations should provide a converged (check for this) ensemble for the peptide. As shown in \cite Lohr:2017gc the agreement with the multiple available NMR experimental data is not perfect. In order to generate an ensemble compatible with most of the available experimental data it is possible to include them in the simulation using \ref METAINFERENCE . To do so the forward models for the data sets should be defined in the input file. In this case we have backbone chemical shifts, \ref CS2BACKBONE ; residual dipolar couplings for two bonds, \ref RDC ; and J-couplings for multiple atoms, \ref JCOUPLING.
+Once the forward models are defined for the data sets, the calculated data together with the corresponding experimental values can be used to calculate the metainference score. The metainference score is additive so it can be split into multiple \ref METAINFERENCE entries. In this case we are using two metainference entries for the two sets of RDCs because these are compared with the experimental data modulo a constant that should be unique each data set. Then we use one metainference for all the jcouplings and another one for the chemical shifts. In this latter case we use a different noise model, i.e. NOISE=MOUTLIERS because the forward model for chemical shifts can result in systematic errors for some of them.
 
 
-The following input file is meant to be appended to the formers.
+The following input file is meant to be appended to the former files.
 
 \plumedfile
 # EXPERIMENTAL DATA SECTION
@@ -332,6 +332,6 @@ mpiexec -np 14 gmx_mpi mdrun -s topolnew -multi 14 -plumed plumed-eef1-pbmetad-m
 
 link: @subpage isdb-1
 
-description: This tutorial show an example on how to use PLUMED-ISDB to run Metadynamic Metainference 
+description: This tutorial show an example on how to use PLUMED-ISDB to run Metadynamics Metainference 
 
 additional-files: isdb-1

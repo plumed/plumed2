@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017,2018 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -67,12 +67,12 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   keys.add("optional","DSIGMA","maximum MC move of the uncertainty parameter");
   keys.add("compulsory","OPTSIGMAMEAN","NONE","Set to NONE/SEM to manually set sigma mean, or to estimate it on the fly");
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
-  keys.add("optional","TEMP","the system temperature - this is only needed if code doesnt' pass the temperature to plumed");
+  keys.add("optional","TEMP","the system temperature - this is only needed if code doesn't pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_STRIDE","MC stride");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
-  keys.add("optional","STATUS_FILE","write a file with all the data usefull for restart/continuation of Metainference");
-  keys.add("compulsory","WRITE_STRIDE","1000","write the status to a file every N steps, this can be used for restart/continuation");
+  keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference");
+  keys.add("compulsory","WRITE_STRIDE","10000","write the status to a file every N steps, this can be used for restart/continuation");
   keys.add("optional","SELECTOR","name of selector");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
   keys.use("RESTART");
@@ -82,7 +82,7 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance");
   keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance");
   keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
-  keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives wrt the bias");
+  keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives with respect to the bias");
   keys.addOutputComponent("scale",        "SCALEDATA",    "scale parameter");
   keys.addOutputComponent("offset",       "ADDOFFSET",    "offset parameter");
   keys.addOutputComponent("ftilde",       "GENERIC",      "ensemble average estimator");

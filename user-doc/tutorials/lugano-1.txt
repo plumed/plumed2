@@ -4,7 +4,7 @@
 \section lugano-1-aims Aims
 
 The aim of this tutorial is to introduce you to the PLUMED syntax. We will go through the writing of input files to calculate
-and print simple collective variables. We will then discuss how we can use PLUMED to analyse a trajectory by calculating ensemble 
+and print simple collective variables. We will then discuss how we can use PLUMED to analyze a trajectory by calculating ensemble 
 averages, histograms and free energy surfaces. 
 
 \section lugano-1-lo Learning Outcomes
@@ -20,16 +20,16 @@ Once this tutorial is completed students will:
 
 The <a href="tutorial-resources/lugano-1.tar.gz" download="lugano-1.tar.gz"> tarball </a> for this project contains the following files:
 
-- trajectory-short.xyz : a (short) trajectory for a 16 residue protein in xyz format. All the calculations with plumed driver that will be performed during this tuturial will use this trajectory.
-- template.pdb : a single frame from the trajectory that can be used in conjuction with the \ref MOLINFO command
+- trajectory-short.xyz : a (short) trajectory for a 16 residue protein in xyz format. All the calculations with plumed driver that will be performed during this tutorial will use this trajectory.
+- template.pdb : a single frame from the trajectory that can be used in conjunction with the \ref MOLINFO command
 - in : An input file for the simplemd code that forms part of PLUMED 
-- input.xyz : A configuration file for Lennard-Jones solid with an fcc solid structure
+- input.xyz : A configuration file for Lennard-Jones solid with an FCC solid structure
 
 \section lugano-1-instructions Instructions
 
 PLUMED2 is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
-Once it is incorporated you can use PLUMED2 to perform a variety of different analyses on the fly and to bias 
-the sampling in the molecular dynamics engine.  PLUMED2 can also, however, be used as a standalone code for analysing trajectories.
+Once it is incorporated you can use PLUMED2 to perform a variety of different analyzes on the fly and to bias 
+the sampling in the molecular dynamics engine.  PLUMED2 can also, however, be used as a standalone code for analyzing trajectories.
 If you are using the code in this way you can, once PLUMED2 is compiled, run the plumed executable by issuing the command:
 
 \verbatim
@@ -44,7 +44,7 @@ plumed --help
 
 What is output when this command is run is a list of the tasks you can use PLUMED2 to perform.  There are commands that allow you
 to patch an MD code, commands that allow you to run molecular dynamics and commands that allow you to build the manual.  In this
-tutorial we will mostly be using PLUMED2 to analyse trajectories, however.  As such most of the calculations we will perform will be performed 
+tutorial we will mostly be using PLUMED2 to analyze trajectories, however.  As such most of the calculations we will perform will be performed 
 using the driver tool.  Let's look at the options we can issue to plumed driver by issuing the following command:  
 
 \verbatim
@@ -73,7 +73,7 @@ to \ref PRINT these CVs and a termination line.
 Comments are denoted with a # and the termination of the input for PLUMED is marked with the keyword ENDPLUMED. Any words that 
 follow the ENDPLUMED line are ignored by PLUMED. You can also introduce blank lines as these will not be interpreted by PLUMED.
 
-The following input can be used analyse the \ref DISTANCE between the two terminal carbons of a 16 residues peptide. The \ref PRINT 
+The following input can be used analyze the \ref DISTANCE between the two terminal carbons of a 16 residues peptide. The \ref PRINT 
 command after the \ref DISTANCE command ensures that the results (i.e. the distances calculated) are printed into the file named COLVAR.
 
 \verbatim
@@ -88,7 +88,7 @@ ENDPLUMED
 here I can write what I want it won't be read.
 \endverbatim
 
-Let's use this simple input file to analyse the trajectory included in the RESOURCES.  To do so copy the input above into a file called 
+Let's use this simple input file to analyze the trajectory included in the RESOURCES.  To do so copy the input above into a file called 
 plumed.dat and then issue the command below:
 
 \verbatim
@@ -107,7 +107,7 @@ find that the first two lines read:
 \endverbatim
 
 The first line of the COLVAR files tells you what values are in each of the columns.  The remaining lines then tell you the values these quantities took
-in the various trajectory frames.  We can plot this data using gnuplot (or our favourite graphing program) by issuing the following commands:
+in the various trajectory frames.  We can plot this data using gnuplot (or our favorite graphing program) by issuing the following commands:
 
 \verbatim
 gnuplot
@@ -192,7 +192,7 @@ ENDPLUMED
 Make a PLUMED input containing the above input and execute it on the trajectory that you downloaded at the start of the exercise by making use of the commands
 in section \ref lugano-1-introinput
 
-Before we turn to analysing what is output from this calculation there are a few things to note about this input file.  Firstly, I should describe what this file
+Before we turn to analyzing what is output from this calculation there are a few things to note about this input file.  Firstly, I should describe what this file
 instructs PLUMED to do.  It tells PLUMED to:
 
 1. calculate the position of the Virtual Atom 'first' as the \ref CENTER of atoms from 1 to 6;
@@ -211,7 +211,7 @@ Notice also that ranges of atoms can be defined with a stride which can also be 
 3. ATOMS=from,to:by (i.e.: 251-256:2)
 4. ATOMS=to,from:-by (i.e.: 256-251:-2)
 
-Lets now return to the business of analysing what was output by the calculation.  Lets begin by looking at the contents of the COLVAR file that was output.
+Lets now return to the business of analyzing what was output by the calculation.  Lets begin by looking at the contents of the COLVAR file that was output.
 When you do so you should find that the first few lines of this file read:
 
 \verbatim
@@ -222,7 +222,7 @@ When you do so you should find that the first few lines of this file read:
 Notice that at variance with the file that was output in the previous section we now have three columns of numbers in the output file.  Given the \ref PRINT
 command that we used in the input to this calculation though this new behavior makes a lot of sense.
 
-Lets now plot contents of the COLVAR file so we can compare the behaviour of the distance between the two terminal carbons and the distance between the 
+Lets now plot contents of the COLVAR file so we can compare the behavior of the distance between the two terminal carbons and the distance between the 
 centers of the mass of the two terminal residues in this trajectory (these two distances are what the above input is calculating).  To plot this data
 issue the following commands:
 
@@ -238,7 +238,7 @@ we are right.  To look at the trajectory issue the following commands:
 vmd template.pdb trajectory-short.xyz 
 \endverbatim
 
-Lets summarise what we have learnt from these sections thus far.  We have seen that:
+Lets summarize what we have learned from these sections thus far.  We have seen that:
 
 - PLUMED provides a simple syntax that can be used to calculate the \ref DISTANCE between any pair of atoms in our system.
 - PLUMED also allows us to calculate the positions of virtual atom (e.g. \ref CENTER) and that we can calculate the \ref DISTANCE between these quantities.
@@ -246,13 +246,13 @@ Lets summarise what we have learnt from these sections thus far.  We have seen t
 
 Now, obviously, PLUMED can do much more than calculate the distances between pairs of atoms as we will start to see that in the following sections.  
 
-\subsection lugano-1-torsions Calculating torsions
+\subsection lugano-1-torsions Calculating torsion angles
 
 In the previous sections we have seen how we can use PLUMED to calculate distances and how by plotting these distances we can begin to simplify the 
 high dimensional data contained in a trajectory.  Obviously, calculating a \ref DISTANCE is not always the best way to simplify the information contained 
-in a trajectory and we often find we have to work with other more-complex quantities.  PLUMED thus started as a libraray that was used to gather all the various 
-implementations people had written for different collective variables (CVs) that people had used to "analyse" trajectories over the years (analyse is in 
-inverted commas here because, as you will see if you continue to use PLUMED, we use CVs to do much more than simply analyse trajectories).  
+in a trajectory and we often find we have to work with other more-complex quantities.  PLUMED thus started as a library that was used to gather all the various 
+implementations people had written for different collective variables (CVs) that people had used to "analyze" trajectories over the years (analyze is in 
+inverted commas here because, as you will see if you continue to use PLUMED, we use CVs to do much more than simply analyze trajectories).  
 Now we will not have time to go over all the quantities that can be calculated in this tutorial.  Once you understand the basic principles, however, you 
 should be able to use the manual to work out how to calculate other quantities of interest.  With this in mind then lets learn how to calculate 
 a \ref TORSION.  As with \ref DISTANCE the atoms that we specify in our \ref TORSION command can be real or virtual.  In the example below two
@@ -268,13 +268,13 @@ PRINT ARG=cvtor STRIDE=1 FILE=COLVAR
 ENDPLUMED
 \endverbatim
 
-Copy this input to a PLUMED input file and use it to analyse the trajectory you downloaded at the start of this exercise by using the commands
-descibred in section \ref lugano-1-introinput then plot the CV output using gnuplot.
+Copy this input to a PLUMED input file and use it to analyze the trajectory you downloaded at the start of this exercise by using the commands
+described in section \ref lugano-1-introinput then plot the CV output using gnuplot.
 
 As you can hopefully see calculating \ref TORSION values and other CVs is no more difficult than calculating \ref DISTANCE values.  In fact it is 
-easier as generally when you calculate the torsions of a protein you often wish to calculate particular, named torsions (i.e. the \f$\phi\f$ and \f$\psi\f$
+easier as generally when you calculate the torsion angles of a protein you often wish to calculate particular, named torsion angles (i.e. the \f$\phi\f$ and \f$\psi\f$
 angles).  The \ref MOLINFO command makes it particularly easy to do this.  For instance suppose that you want to calculate and print the \f$\phi\f$ angle
-in the 6th residue of the protein and the \f$\psi\f$ angle in the 8th residue of the protein.  You can do so using the following input:
+in the sixth residue of the protein and the \f$\psi\f$ angle in the eighth residue of the protein.  You can do so using the following input:
 
 \verbatim
 MOLINFO STRUCTURE=template.pdb
@@ -283,13 +283,13 @@ psi8: TORSION ATOMS=@psi-8
 PRINT ARG=phi6,psi8 FILE=colvar
 \endverbatim
 
-Copy this input to a PLUMED input file and use it to analyse the trajectory you downloaded at the start of this exercise by using the commands
-descibred in section \ref lugano-1-introinput then plot the CV output using gnuplot.  Notice that you will need the template.pdb file you downloaded 
+Copy this input to a PLUMED input file and use it to analyze the trajectory you downloaded at the start of this exercise by using the commands
+described in section \ref lugano-1-introinput then plot the CV output using gnuplot.  Notice that you will need the template.pdb file you downloaded 
 at the start of this exercise in order for this to run.
 
 \subsection lugano-1-gyration An exercise with the radius of gyration
 
-Lets now see if you can use everything you have learnt to setup a PLUMED input file of your own.  What I would like you to do is to write
+Lets now see if you can use everything you have learned to setup a PLUMED input file of your own.  What I would like you to do is to write
 a PLUMED input file that measures the Radius of Gyration \ref GYRATION for the configurations in each of the frames in the trajectory that
 you downloaded at the start of this exercise.  This radius of gyration will be calculated using the positions of all the atoms in that trajectory.
 
@@ -305,9 +305,9 @@ Now 'ca' is not a virtual atom but a simple list of atoms.
 
 \subsection lugano-1-multicol Coordination numbers
 
-In the previous sections we have learnt how PLUMED can be used to calculate simple functions of atomic positions such as the 
+In the previous sections we have learned how PLUMED can be used to calculate simple functions of atomic positions such as the 
 \ref DISTANCE between pairs of atoms.  As discussed here (https://www.youtube.com/watch?v=iDvZmbWE5ps) many of the more complicated 
-collective variables that we use to analyse simulations can be calculated by computing these simple quantities multiple times for different
+collective variables that we use to analyze simulations can be calculated by computing these simple quantities multiple times for different
 sets of atoms.  That is to say we can calculate many more complicated collective variables using:
 
 \f[
@@ -319,7 +319,7 @@ a scalar.  The sum then runs over the different sets of atoms from which the qua
 so lets make it more concrete by considering an example.  Suppose that we want to calculate the coordination number of atom \f$k\f$.  What we 
 need to do is:
 
-1. We need to calculate the distance between atom \f$k\f$ and every atom in the system that is not atom \f$k\f$.  This will be the set of sets of atoms that we have to perform the sum above on.  Furthermore, the function \f$f\f$ in the above will be pythagoras theorem, which is the function we use to calculate the distance between a pair of atoms. 
+1. We need to calculate the distance between atom \f$k\f$ and every atom in the system that is not atom \f$k\f$.  This will be the set of sets of atoms that we have to perform the sum above on.  Furthermore, the function \f$f\f$ in the above will be Pythagoras theorem, which is the function we use to calculate the distance between a pair of atoms. 
 2. We need to transform the distances calculated by a switching function (\f$f\f$ in the above) that is equal to one if the distance is less than or equal to the typical length of a chemical bond and zero otherwise.
 
 Lets thus use PLUMED to calculate the coordination number of atom 9.  We can do this as follows:
@@ -329,7 +329,7 @@ d1: DISTANCES GROUPA=9 GROUPB=1-8,10-256 LESS_THAN={RATIONAL D_0=0.16 R_0=0.01 D
 PRINT ARG=d1.* FILE=colvar
 \endverbatim  
 
-Copy this input file to a PLUMED input file. Before using it to analyse the trajectory that you downloaded at the start of the exercise using the commands 
+Copy this input file to a PLUMED input file. Before using it to analyze the trajectory that you downloaded at the start of the exercise using the commands 
 described in section \ref lugano-1-introinput try to guess what value this coordination number will take.  Hint: what element is atom 9? 
 
 Now see if you can adjust the above input to calculate the coordination number of atom 5.  What is the coordination number of this atom and why does it take 
@@ -351,10 +351,10 @@ PRINT ARG=dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR
 ENDPLUMED
 \endverbatim
 
-Try to copy this input now and to use it to analyse the trajectory you downloaded at the start of the exercise using the commands 
+Try to copy this input now and to use it to analyze the trajectory you downloaded at the start of the exercise using the commands 
 described in section \ref lugano-1-introinput.  
 
-Multicolvar is not just for \ref DISTANCES though.  The infrastracture of multicolvar has been used to develop many PLUMED2 collective variables. 
+Multicolvar is not just for \ref DISTANCES though.  The infrastructure of multicolvar has been used to develop many PLUMED2 collective variables. 
 One interesting example is the set of Secondary Structure CVs (\ref ANTIBETARMSD, \ref PARABETARMSD and \ref ALPHARMSD).  You can use the input 
 below to calculate the degree of anti-beta secondary structure in each of the trajectory frames by copying this input to a PLUMED input file
 and by exploiting the commands to run driver that were described in section \ref lugano-1-introinput. 
@@ -373,7 +373,7 @@ We can do a large number of other things with multicolvar.  If you are intereste
 
 \subsection lugano-1-averagesintro Understanding the need for ensemble averages
 
-In the previous sections we have learnt how we can use PLUMED to calculate collective variables from simulation trajectories and have seen how,
+In the previous sections we have learned how we can use PLUMED to calculate collective variables from simulation trajectories and have seen how,
 by plotting how these collective variables change as a function of time, we can get a handle on what happens during the trajectory.  Generally
 this level of analysis is not sufficient for us to publish a paper about the simulations we have run, however.  In this section we are going to
 run some molecular dynamics simulations in order to understand why. 
@@ -408,7 +408,7 @@ positions of all other atoms were identical.  In spite of these similarities, ho
 are very different.   This is important as it tells us that the time series of CV values that we get from a single MD simulation is (in and of itself) 
 not particularly valuable as we would have got a completely different time series of values if we had run the calculation with only a slightly different
 input structure.  We should, therefore, <b> think of the trajectory output from a molecular dynamics simulations as a time series of random variables </b>
-and analyse it accordingly.
+and analyze it accordingly.
 
 The justification for thinking of a trajectory as a time series of random variables is based on statistical mechanics which tells us that a system 
 with a constant number of atoms and a constant volume evolving at a fixed temperature has a probability:
@@ -446,7 +446,7 @@ were added together.  This works because of results known as the law of large nu
 - http://gtribello.github.io/mathNET/LAW_OF_LARGE_NUMBERS.html 
 - http://gtribello.github.io/mathNET/CENTRAL_LIMIT_THEOREM.html
 
-Alternatively, we can justify this way of analysing our trajectory by thinking of the set of sampled frames as random variables generated from Markov chain.  
+Alternatively, we can justify this way of analyzing our trajectory by thinking of the set of sampled frames as random variables generated from Markov chain.  
 These mathematical objects are discussed here:
   
 - http://gtribello.github.io/mathNET/MARKOV_PROPERTY.html
@@ -454,7 +454,7 @@ These mathematical objects are discussed here:
 - http://gtribello.github.io/mathNET/TRANSIENT_RECURRENT_STATES.html
 - http://gtribello.github.io/mathNET/STATIONARY_DIST_MARKOV.html
  
-Regardlessly, however, and as we will see in the following section we can estimate ensemble averages of collective variables using:
+Regardless, however, and as we will see in the following section we can estimate ensemble averages of collective variables using:
 
 \f[
 \langle A \rangle \approx \frac{1}{T} \sum_{t} A[q(t)]
@@ -462,7 +462,7 @@ Regardlessly, however, and as we will see in the following section we can estima
 
 where the sum runs over the set of \f$T\f$ microstates, \f$q(t)\f$, in our trajectory and where \f$A[q(t)]\f$ is the function that is used to calculate the value 
 of the collective variable from the positions of the atoms in the microstate.  When we do so we find that the values of the ensemble averages from different 
-trajectories are reasonably consisitent and certainly much more consisitent than the set of instantaneous CV values.
+trajectories are reasonably consistent and certainly much more consistent than the set of instantaneous CV values.
 
 \subsection lugano-1-averages Calculating ensemble averages using PLUMED
 
@@ -529,8 +529,8 @@ trajectories.
 
 \verbatim
 d1: DISTANCE ATOMS=2,3
-hh: HISTOGRAM ARG=d1 BANDWIDTH=0.05 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200 STRIDE=10
-DUMPGRID GRID=hh FILE=histo STRIDE=25000
+histogram: HISTOGRAM ARG=d1 BANDWIDTH=0.05 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200 STRIDE=10
+DUMPGRID GRID=histogram FILE=histo STRIDE=25000
 \endverbatim
 
 You can plot the histogram output from this simulation using:
@@ -549,19 +549,19 @@ that tells us how often data should be added to to the accumulated averages.  Fu
 with its own STRIDE keyword (\ref PRINT for \ref AVERAGE and \ref DUMPGRID for \ref HISTOGRAM) that tells us how frequently the accumulated averages 
 should be output to human readable files.
 
-A substantial difference between these two input files is the object the label hh refers to.  In all previous examples the label of an action has referred to a
-scalar quantity that was calculated by that action.  In the example above, however, the label hh refers to the function accumulated on a grid that is evaluated
+A substantial difference between these two input files is the object the label histogram refers to.  In all previous examples the label of an action has referred to a
+scalar quantity that was calculated by that action.  In the example above, however, the label histogram refers to the function accumulated on a grid that is evaluated
 by the \ref HISTOGRAM command.  This is why we cannot print this quantity using \ref PRINT - it is not a simple scalar valued function anymore.  As you become more
 familiar with PLUMED you will find that these labels can refer to a range of different types of mathematical object.  
 
-Lets now see if we can bring together everything we have learnt in this tutorial in order to analyse the protein trajectory that was downloaded at the start of 
+Lets now see if we can bring together everything we have learned in this tutorial in order to analyze the protein trajectory that was downloaded at the start of 
 the exercise.
 
 \subsection lugano-1-analysis A histogram for the protein trajectory
 
 We are going to calculate the \ref HISTOGRAM from our protein trajectory as a function of two different collective variables:
 \ref ANTIBETARMSD and the average distance between the ca atoms of our protein backbone.  The input that allows us to 
-claculate perform this analysis is shown below:
+calculate perform this analysis is shown below:
 
 \verbatim
 # Read in protein structure template
@@ -575,7 +575,7 @@ PRINT ARG=abeta.lessthan,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR
 # Accumulate histogram of collective variables
 hh: HISTOGRAM ARG=abeta.lessthan,dd.mean KERNEL=DISCRETE GRID_MIN=0,0.8 GRID_MAX=4,1.2 GRID_BIN=40,40
 # Output histogram - N.B. when we are running with driver we can not provide a STRIDE.  
-# The histogram will then only be output once all the trajectory frames have been read in and analysed
+# The histogram will then only be output once all the trajectory frames have been read in and analyzed
 DUMPGRID GRID=hh FILE=histo
 \endverbatim
 
@@ -588,7 +588,7 @@ set pm3d map
 sp 'histo' w pm3d
 \endverbatim
 
-If you do so though, you will probably find that the structure in the histogram, \f$H(s)\f$, is a bit difficult to visualise because the probability changes 
+If you do so though, you will probably find that the structure in the histogram, \f$H(s)\f$, is a bit difficult to visualize because the probability changes 
 from point to point by multiple
 orders of magnitude.  This is why we often convert the histogram, \f$H(s)\f$, to a free energy surface, \f$F(s)\f$, using:
 
@@ -611,7 +611,7 @@ PRINT ARG=abeta.lessthan,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR
 hh: HISTOGRAM ARG=abeta.lessthan,dd.mean KERNEL=DISCRETE GRID_MIN=0,0.8 GRID_MAX=4,1.2 GRID_BIN=40,40
 fes: CONVERT_TO_FES GRID=hh TEMP=300
 # Output free energy - N.B. when we are running with driver we can not provide a STRIDE.
-# The histogram will then only be output once all the trajectory frames have been read in and analysed
+# The histogram will then only be output once all the trajectory frames have been read in and analyzed
 DUMPGRID GRID=fes FILE=fes.dat
 \endverbatim
 
@@ -623,7 +623,7 @@ If you have worked through all of this tutorial make sure that you have understo
 in section \ref lugano-1-lo means and that you can use PLUMED to perform all these tasks.  In terms of further work you should investigate issues related 
 to the convergence of estimates of ensemble averages such as block averaging.  You might like to investigate how long your simulations have to be in order 
 to obtain reliable estimates of the ensemble average for a collective variable and reliable estimates for the free energy as a function of a collective variable.
-Alternatively, you might like to explore other collective variables that could be used to analyse the protein trajectory that you have worked on in this tutorial.
+Alternatively, you might like to explore other collective variables that could be used to analyze the protein trajectory that you have worked on in this tutorial.
 
 */
 

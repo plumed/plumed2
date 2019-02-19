@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -63,7 +63,7 @@ PLUMED_REGISTER_ACTION(HBPammMatrix,"HBPAMM_MATRIX")
 void HBPammMatrix::registerKeywords( Keywords& keys ) {
   adjmat::AdjacencyMatrixBase::registerKeywords( keys );
   keys.add("atoms-1","SITES","The list of atoms which can be part of a hydrogen bond.  When this command is used the set of atoms that can donate a "
-           "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified"
+           "hydrogen bond is assumed to be the same as the set of atoms that can form hydrogen bonds.  The atoms involved must be specified "
            "as a list of labels of \\ref mcolv or labels of a \\ref multicolvarfunction actions.  If you would just like to use "
            "the atomic positions you can use a \\ref DENSITY command to specify a group of atoms.  Specifying your atomic positions using labels of "
            "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "

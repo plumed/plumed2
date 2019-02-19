@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -71,7 +71,7 @@ LABEL=ab
 PRINT ARG=ab FILE=colvar STRIDE=10
 \endplumedfile
 
-Writing out the atoms involved in all the torsions in this way can be rather tedious. Thankfully if you are working with protein you
+Writing out the atoms involved in all the torsion angles in this way can be rather tedious. Thankfully if you are working with protein you
 can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
@@ -87,7 +87,7 @@ PRINT ARG=ab FILE=colvar STRIDE=10
 \endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
-Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
+Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the fourth residue of the protein.
 
 
 */
@@ -115,9 +115,9 @@ void AlphaBeta::registerKeywords( Keywords& keys ) {
            "action will depend on what functions of the distribution you choose to calculate.");
   keys.reset_style("ATOMS","atoms");
   keys.add("numbered","REFERENCE","the reference values for each of the torsional angles.  If you use a single REFERENCE value the "
-           "same reference value is used for all torsions");
+           "same reference value is used for all torsional angles");
   keys.add("numbered","COEFFICIENT","the coefficient for each of the torsional angles.  If you use a single COEFFICIENT value the "
-           "same reference value is used for all torsions");
+           "same reference value is used for all torsional angles");
   keys.reset_style("REFERENCE","compulsory");
   keys.reset_style("COEFFICIENT","optional");
 }

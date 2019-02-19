@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -79,7 +79,7 @@ void InPlaneDistances::registerKeywords( Keywords& keys ) {
   keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms","VECTORSTART","The first atom position that is used to define the normal to the plane of interest");
-  keys.add("atoms","VECTOREND","The second atom position that is used to defin the normal to the plane of interest");
+  keys.add("atoms","VECTOREND","The second atom position that is used to define the normal to the plane of interest");
   keys.add("atoms-2","GROUP","The set of atoms for which you wish to calculate the in plane distance ");
 }
 
