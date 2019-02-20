@@ -810,52 +810,62 @@ void EMMIVOX2::doMonteCarloBfact()
 
     // useful quantities
     map<unsigned, double> deltaov;
-    Vector pos;
-    double dist;
+    map<unsigned, double>::iterator itov;
     set<unsigned> ngbs;
 
-    // cycle over all the atoms belonging to residue ires
-    for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
+    #pragma omp parallel num_threads(OpenMP::getNumThreads())
+    {
+      // private variables
+      map<unsigned, double> deltaov_l;
+      set<unsigned> ngbs_l;
+      #pragma omp for nowait
+      // cycle over all the atoms belonging to residue ires
+      for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
 
-      // get atom id
-      unsigned im = GMM_m_resmap_[ires][ia];
-      // get atom type
-      unsigned atype = GMM_m_type_[im];
-      // sigma for 5 Gaussians
-      Vector5d m_s = GMM_m_s_[atype];
-      // prefactors
-      Vector5d cfact = cfact_[atype];
-      // and position
-      pos = getPosition(im);
+        // get atom id
+        unsigned im = GMM_m_resmap_[ires][ia];
+        // get atom type
+        unsigned atype = GMM_m_type_[im];
+        // sigma for 5 Gaussians
+        Vector5d m_s = GMM_m_s_[atype];
+        // prefactors
+        Vector5d cfact = cfact_[atype];
+        // and position
+        Vector pos = getPosition(im);
 
-      // cycle on all the components affected
-      for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
-        // voxel id
-        unsigned id = GMM_m_nb_[im][i];
-        // get contribution before change
-        double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_, cfact, m_s, bfactold);
-        // get contribution after change
-        double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_, cfact, m_s, bfactnew);
-        // update delta overlap
-        deltaov[id] += dnew-dold;
-        // look for neighbors
-        for(unsigned j=0; j<GMM_d_nb_[id].size(); ++j) {
-          // atom index of potential neighbor
-          unsigned in = GMM_d_nb_[id][j];
-          // residue index of potential neighbor
-          unsigned iresn = GMM_m_res_[in];
-          // check if same residue
-          if(ires==iresn) continue;
-          // distance
-          dist = delta(pos,getPosition(in)).modulo();
-          // if closer than 0.5 nm, add residue to lists
-          if(dist>0 && dist<0.5) ngbs.insert(iresn);
+        // cycle on all the components affected
+        for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
+          // voxel id
+          unsigned id = GMM_m_nb_[im][i];
+          // get contribution before change
+          double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_, cfact, m_s, bfactold);
+          // get contribution after change
+          double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_, cfact, m_s, bfactnew);
+          // update delta overlap
+          deltaov_l[id] += dnew-dold;
+          // look for neighbors
+          for(unsigned j=0; j<GMM_d_nb_[id].size(); ++j) {
+            // atom index of potential neighbor
+            unsigned in = GMM_d_nb_[id][j];
+            // residue index of potential neighbor
+            unsigned iresn = GMM_m_res_[in];
+            // check if same residue
+            if(ires==iresn) continue;
+            // distance
+            double dist = delta(pos,getPosition(in)).modulo();
+            // if closer than 0.5 nm, add residue to lists
+            if(dist>0 && dist<0.5) ngbs_l.insert(iresn);
+          }
         }
       }
+      // add to global list
+      #pragma omp critical
+      for(itov=deltaov_l.begin(); itov!=deltaov_l.end(); ++itov) deltaov[itov->first] += itov->second;
+      #pragma omp critical
+      ngbs.insert(ngbs_l.begin(), ngbs_l.end());
     }
 
     // now calculate new and old score
-    map<unsigned, double>::iterator itov;
     double old_ene = 0.0;
     double new_ene = 0.0;
 
@@ -1115,29 +1125,35 @@ void EMMIVOX2::calculate_useful_stuff(double reso)
 // prepare auxiliary vectors
 void EMMIVOX2::get_auxiliary_vectors()
 {
-// temporary stuff
-  Vector5d pref, invs2;
 // clear lists
   pref_.clear(); invs2_.clear();
-// calculate constant quantities
-  for(unsigned im=0; im<GMM_m_res_.size(); ++im) {
-    // get atom type
-    unsigned atype = GMM_m_type_[im];
-    // get residue id
-    unsigned ires = GMM_m_res_[im];
-    // get bfactor
-    double bfact = GMM_m_b_[ires];
-    // sigma for 5 gaussians
-    Vector5d m_s = GMM_m_s_[atype];
+// resize
+  pref_.resize(GMM_m_res_.size()); invs2_.resize(GMM_m_res_.size());
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  {
+    // private variables
+    Vector5d pref, invs2;
+    #pragma omp for nowait
     // calculate constant quantities
-    for(unsigned j=0; j<5; ++j) {
-      double m_b = m_s[j] + bfact/4.0;
-      invs2[j] = 1.0/(GMM_d_s_+inv_pi2_*m_b);
-      pref[j]  = cfact_[atype][j] * pow(invs2[j],1.5);
+    for(unsigned im=0; im<GMM_m_res_.size(); ++im) {
+      // get atom type
+      unsigned atype = GMM_m_type_[im];
+      // get residue id
+      unsigned ires = GMM_m_res_[im];
+      // get bfactor
+      double bfact = GMM_m_b_[ires];
+      // sigma for 5 gaussians
+      Vector5d m_s = GMM_m_s_[atype];
+      // calculate constant quantities
+      for(unsigned j=0; j<5; ++j) {
+        double m_b = m_s[j] + bfact/4.0;
+        invs2[j] = 1.0/(GMM_d_s_+inv_pi2_*m_b);
+        pref[j]  = cfact_[atype][j] * pow(invs2[j],1.5);
+      }
+      // put into lists
+      pref_[im] = pref;
+      invs2_[im]= invs2;
     }
-    // add to lists
-    pref_.push_back(pref);
-    invs2_.push_back(invs2);
   }
 }
 
