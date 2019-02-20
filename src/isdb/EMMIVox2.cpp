@@ -216,7 +216,7 @@ private:
   double get_annealing(long int step);
 // do regression
   double scaleEnergy(double s);
-  double doRegression();
+  double doRegression(double scale);
 // read and write status
   void read_status();
   void print_status(long int step);
@@ -1343,28 +1343,32 @@ void EMMIVOX2::calculate_overlap() {
 double EMMIVOX2::scaleEnergy(double s)
 {
   double ene = 0.0;
-  for(unsigned i=0; i<ovdd_.size(); ++i) {
-    ene += std::log( abs ( s * ovmd_[i] - ovdd_[i] ) );
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
+  {
+    #pragma omp for reduction( + : ene)
+    for(unsigned i=0; i<ovdd_.size(); ++i) {
+      ene += std::log( abs ( s * ovmd_[i] - ovdd_[i] ) );
+    }
   }
   return ene;
 }
 
-double EMMIVOX2::doRegression()
+double EMMIVOX2::doRegression(double scale)
 {
 // standard MC parameters
-  unsigned MCsteps = 100000;
+  unsigned MCsteps = 10000;
   double kbtmin = 1.0;
   double kbtmax = 10.0;
-  unsigned ncold = 5000;
-  unsigned nhot = 2000;
+  unsigned ncold = 500;
+  unsigned nhot = 200;
   double MCacc = 0.0;
   double kbt, ebest, scale_best;
 
-// initial value of scale factor and energy
-  double scale = random_.RandU01() * ( scale_max_ - scale_min_ ) + scale_min_;
+// initial value of energy
   double ene = scaleEnergy(scale);
-// set best energy
+// set best energy and scale
   ebest = ene;
+  scale_best = scale;
 
 // MC loop
   for(unsigned istep=0; istep<MCsteps; ++istep) {
@@ -1449,7 +1453,7 @@ void EMMIVOX2::calculate()
 
   // do regression
   if(nregres_>0) {
-    if(step%nregres_==0 && !getExchangeStep()) scale_ = doRegression();
+    if(step%nregres_==0 && !getExchangeStep()) scale_ = doRegression(scale_);
     // set scale component
     getPntrToComponent("scale")->set(scale_);
   }
