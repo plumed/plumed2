@@ -192,11 +192,6 @@ private:
   double scale_min_;
   double scale_max_;
   double dscale_;
-  // tabulated exponential
-  double dpcutoff_;
-  double dexp_;
-  unsigned nexp_;
-  vector<double> tab_exp_;
   // simulated annealing
   unsigned nanneal_;
   double   kanneal_;
@@ -322,8 +317,7 @@ EMMIVOX2::EMMIVOX2(const ActionOptions&ao):
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
   dbfact_(0.0), bfactmax_(4.0), readbf_(false),
   statusstride_(0), first_status_(true),
-  nregres_(0), scale_(1.),
-  dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
+  nregres_(0), scale_(1.), nanneal_(0),
   kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0)
 {
 
@@ -1125,11 +1119,6 @@ void EMMIVOX2::calculate_useful_stuff(double reso)
   log.printf("  minimum Bfactor value       : %3.2f\n", bfactmin_);
   log.printf("  maximum Bfactor value       : %3.2f\n", bfactmax_);
   log.printf("  initial Bfactor value       : %3.2f\n", bfactini);
-  // tabulate exponential
-  dexp_ = dpcutoff_ / static_cast<double> (nexp_-1);
-  for(unsigned i=0; i<nexp_; ++i) {
-    tab_exp_.push_back(exp(-static_cast<double>(i) * dexp_));
-  }
 }
 
 // prepare auxiliary vectors
