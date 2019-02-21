@@ -111,38 +111,49 @@ We want to bias some CV in the range of 0 to 4.
 The wavelets will therefore be scaled to match that range.
 Using Db8 wavelets this results in 30 basis functions (including the constant one), with their starting points given by \f$ -14 \frac{4}{15}, -13 \frac{4}{15}, \cdots , 0 , \cdots, 13 \frac{4}{15}, 14 \frac{4}{15} \f$.
 \plumedfile
-BF_DB_WAVELETS ...
+BF_WAVELETS ...
  ORDER=8
  MINIMUM=0.0
  MAXIMUM=4.0
  LABEL=bf
-... BF_DB_WAVELETS
+... BF_WAVELETS
 \endplumedfile
 
 
 By omitting wavelets with only insignificant parts, we can reduce the number of basis functions, e.g. a threshold of 0.01 will remove the 8 leftmost shifts.
 \plumedfile
-BF_DB_WAVELETS ...
+BF_WAVELETS ...
  ORDER=8
  MINIMUM=0.0
  MAXIMUM=4.0
  TAILS_THRESHOLD=0.01
  LABEL=bf
-... BF_DB_WAVELETS
+... BF_WAVELETS
 \endplumedfile
 
 
 The length of the individual basis functions can also be adjusted to fit the specific problem.
 If for example the wavelets are instead scaled to length 3, there will be 35 basis functions, with leftmost points at \f$ -14 \frac{3}{15}, -13 \frac{3}{15}, \cdots, 0, \cdots, 18 \frac{3}{15}, 19 \frac{3}{15} \f$.
-
 \plumedfile
-BF_DB_WAVELETS ...
+BF_WAVELETS ...
  ORDER=8
  MINIMUM=0.0
  MAXIMUM=4.0
  FUNCTION_LENGTH=3
  LABEL=bf
-... BF_DB_WAVELETS
+... BF_WAVELETS
+\endplumedfile
+
+
+To use a different wavelet family it can be specified with the "TYPE" keyword, e.g. to use the "least asymmetric" or "symlets" one could use an input like:
+\plumedfile
+BF_WAVELETS ...
+ ORDER=8
+ MINIMUM=0.0
+ MAXIMUM=4.0
+ TYPE=SYMMETRIC
+ LABEL=bf
+... BF_WAVELETS
 \endplumedfile
 
 */
