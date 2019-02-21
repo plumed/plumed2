@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "tools/KernelFunctions.h"
 #include "core/ActionShortcut.h"
 #include "multicolvar/MultiColvarBase.h"
 #include "tools/IFile.h"
@@ -128,23 +127,24 @@ PAMM::PAMM(const ActionOptions& ao) :
 Action(ao),
 ActionShortcut(ao)
 {
-  // Must get list of input value names
-  std::vector<std::string> valnames; parseVector("DATA",valnames);
+   // Must get list of input value names
+   std::vector<std::string> valnames; parseVector("DATA",valnames);
+   // Create input values
+   std::string argstr=""; 
+   for(unsigned j=0;j<valnames.size();++j) { 
+       std::string jstr; Tools::convert(j+1,jstr); argstr += " ARG" + jstr + "=" + valnames[j];
+   }
+
    // Create actions to calculate all pamm kernels
-   unsigned nkernels = 0; 
+   unsigned nkernels = 0;  double h;
    std::string fname; parse("CLUSTERS",fname); 
    IFile ifile; ifile.open(fname); ifile.allowIgnoredFields();
    for(unsigned k=0;; ++k) {
-      std::unique_ptr<KernelFunctions> kk = KernelFunctions::read( &ifile, false, valnames );
-      if( !kk ) break ;
-      std::string num; Tools::convert( k+1, num );
-      std::string kinput = getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED KERNEL=" + kk->getInputString();
-      for(unsigned j=0;j<valnames.size();++j){ 
-          std::string jstr; Tools::convert(j+1,jstr); kinput += " ARG" + jstr + "=" + valnames[j];
-      }
-      readInputLine(kinput); nkernels++;
-      // meanwhile, I just release the unique_ptr herelease the unique_ptr here. GB
-      ifile.scanField();
+      if( !ifile.scanField("height",h) ) break;
+      // Create a kernel for this cluster
+      std::string num, wstr; Tools::convert( k+1, num ); Tools::convert(h,wstr);
+      readInputLine( getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED" + argstr  + " NUMBER=" + num + " REFERENCE=" + fname + " WEIGHT=" + wstr );
+      nkernels++; ifile.scanField();
    }
    ifile.close();
 

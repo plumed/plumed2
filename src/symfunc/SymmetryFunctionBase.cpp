@@ -115,6 +115,7 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
   ActionWithValue(ao),
   ActionWithArguments(ao),
   usecols(false),
+  nderivatives(0),
   done_with_matrix_comput(true)
 {
   if( keywords.exists("USECOLS") ) {
@@ -123,13 +124,16 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
   }
   std::vector<std::string> alabels(1); std::vector<Value*> wval; parseArgumentList("WEIGHT",wval);
   if( wval.size()!=1 ) error("keyword WEIGHT should be provided with the label of a single action");
-  alabels[0]=(wval[0]->getPntrToAction())->getLabel();
-  ActionSetup* as = dynamic_cast<ActionSetup*>( wval[0]->getPntrToAction() );
-  if( !as ) (wval[0]->getPntrToAction())->addActionToChain( alabels, this );
+  if( wval[0]->getPntrToAction() ) {
+      alabels[0]=(wval[0]->getPntrToAction())->getLabel();
+      ActionSetup* as = dynamic_cast<ActionSetup*>( wval[0]->getPntrToAction() );
+      if( !as ) (wval[0]->getPntrToAction())->addActionToChain( alabels, this );
+      nderivatives=(wval[0]->getPntrToAction())->getNumberOfDerivatives();
+  }
   log.printf("  using bond weights from matrix labelled %s \n",wval[0]->getName().c_str() );
-  nderivatives=(wval[0]->getPntrToAction())->getNumberOfDerivatives();
 
   if( keywords.exists("VECTORS") ) {
+    if( !wval[0]->getPntrToAction() ) error("using weights from input matrix not available with vectors");
     for(unsigned i=1; i<=3; ++i) {
       std::vector<Value*> vecs; parseArgumentList("VECTORS",i,vecs);
       if( vecs.size()!=1 ) error("keywords VECTORS should be provided with the label of a single action");
@@ -174,9 +178,11 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
   if( getPntrToArgument(0)->getRank()==2 ) {
     for(unsigned i=0; i<getPntrToArgument(0)->getShape()[0]; ++i) addTaskToList(i);
   }
-  if( !usecols && plumed.getAtoms().getAllGroups().count(wval[0]->getPntrToAction()->getLabel()) ) {
-    const auto m=plumed.getAtoms().getAllGroups().find(wval[0]->getPntrToAction()->getLabel());
-    plumed.getAtoms().insertGroup( getLabel(), m->second );
+  if( !usecols && wval[0]->getPntrToAction() ) {
+    if( plumed.getAtoms().getAllGroups().count(wval[0]->getPntrToAction()->getLabel()) ) {
+        const auto m=plumed.getAtoms().getAllGroups().find(wval[0]->getPntrToAction()->getLabel());
+        plumed.getAtoms().insertGroup( getLabel(), m->second );
+    }
   }
 }
 

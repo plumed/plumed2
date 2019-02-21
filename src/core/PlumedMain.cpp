@@ -281,17 +281,32 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       /* ADDED WITH API=7 */
       case cmd_setValue:
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2);
-        { 
-           Value* vv=getPntrToValue(words[1]); unsigned nvals=vv->getSize();
+        {
+           Value* vv=getPntrToValue(words[1]); vv->clearInputForce();
+           unsigned nvals=vv->getSize();
            if( atoms.getRealPrecision()==sizeof(double)) {
                double* dval=static_cast<double*>(val);
                for(unsigned i=0;i<nvals;++i) vv->data[i]=dval[i];
            } else if( atoms.getRealPrecision()==sizeof(float)) {
                float* dval=static_cast<float*>(val);
-               for(unsigned i=0;i<nvals;++i) vv->data[i]=dval[i]; 
+               for(unsigned i=0;i<nvals;++i) vv->data[i]=dval[i];
            } else plumed_merror("invalid real precision size");
         }
         break;
+      /* ADDED WITH API=7 */
+      case cmd_getValueForces:
+        CHECK_INIT(initialized,words[0]); plumed_assert(nw==2);
+        {
+           Value* vv=getPntrToValue(words[1]); unsigned nvals=vv->inputForces.size();
+           if( atoms.getRealPrecision()==sizeof(double)) {
+               double* dval=static_cast<double*>(val);
+               for(unsigned i=0;i<nvals;++i) dval[i]+=vv->inputForces[i];
+           } else if( atoms.getRealPrecision()==sizeof(float)) {
+               float* dval=static_cast<float*>(val);
+               for(unsigned i=0;i<nvals;++i) dval[i]+=vv->inputForces[i];
+           } else plumed_merror("invalid real precision size");
+      }
+      break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
@@ -576,6 +591,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
            for(unsigned i=0;i<srank[0];++i) shape[i]=srank[i+1];
            values.emplace_back(new Value(NULL, words[1], false, shape) );
            values[values.size()-1]->created_in_plumedmain=true;
+           fixed_vals.insert(std::pair<std::string,bool>(words[1],false));
         }
         break;
       case cmd_setValueNotPeriodic:
@@ -591,6 +607,10 @@ void PlumedMain::cmd(const std::string & word,void*val) {
            getPntrToValue(words[1])->setDomain( domain[0], domain[1] );
         }
         break; 
+      case cmd_valueIsConstant:
+        CHECK_NOTINIT(initialized,words[0]); plumed_assert(nw==2);
+        fixed_vals.find(words[1])->second=true;
+        break;
       default:
         plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
         break;
@@ -1000,6 +1020,11 @@ Value* PlumedMain::getPntrToValue( const std::string& name ) {
   }
   if( outval<0 ) return NULL;
   return values[outval].get();
+}
+
+bool PlumedMain::valueIsFixed( const std::string& name ) const {
+  plumed_massert( fixed_vals.count(name)>0, "could not find value named " + name ); 
+  return fixed_vals.find(name)->second;
 }
 
 void PlumedMain::runJobsAtEndOfCalculation() {

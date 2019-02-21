@@ -319,11 +319,13 @@ void Custom::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>
   if( check_multiplication_vars.size()>0 ) {
       bool foundarg=false;
       for(unsigned i=0;i<check_multiplication_vars.size();++i) {
-          std::string argact = getPntrToArgument(check_multiplication_vars[i])->getPntrToAction()->getLabel();
-          for(unsigned j=0;j<actionsThatSelectTasks.size();++j) {
-              if( argact==actionsThatSelectTasks[j] ){ foundarg=true; break; }
-          } 
-          if( foundarg ) break;
+          if( getPntrToArgument(check_multiplication_vars[i])->getPntrToAction() ) { 
+              std::string argact = getPntrToArgument(check_multiplication_vars[i])->getPntrToAction()->getLabel();
+              for(unsigned j=0;j<actionsThatSelectTasks.size();++j) {
+                  if( argact==actionsThatSelectTasks[j] ){ foundarg=true; break; }
+              } 
+              if( foundarg ) break;
+          }
       }
       if( foundarg ) actionsThatSelectTasks.push_back( getLabel() );
   } else {

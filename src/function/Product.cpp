@@ -25,28 +25,27 @@
 namespace PLMD {
 namespace function {
 
-class Determinant : public ActionShortcut {
+class Product : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
-  explicit Determinant(const ActionOptions&ao);
+  explicit Product(const ActionOptions&ao);
 };
 
-PLUMED_REGISTER_ACTION(Determinant,"DETERMINANT") 
+PLUMED_REGISTER_ACTION(Product,"PRODUCT")
 
-void Determinant::registerKeywords( Keywords& keys ) {
+void Product::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
-  keys.add("compulsory","ARG","The matrix that we are calculating the determinant for");
+  keys.add("compulsory","ARG","The poin that we are calculating the distance from");
 }
 
-Determinant::Determinant( const ActionOptions& ao):
+Product::Product( const ActionOptions& ao):
 Action(ao),
 ActionShortcut(ao)
 { 
-  std::string arg; parse("ARG",arg);
-  // Compose a vector from the args
-  readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + arg + " VECTORS=all"); 
-  // Not sure about the regexp here - check with matrix with more than 10 rows
-  readInputLine( getShortcutLabel() + ": PRODUCT ARG=(" + getShortcutLabel() + "_diag\.vals-[0-9])");
+  std::string arg; parse("ARG",arg); 
+  readInputLine( getShortcutLabel() + "_logs: MATHEVAL ARG1=" + arg + " FUNC=log(x) PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_logsum: COMBINE ARG=" + getShortcutLabel() + "_logs PERIODIC=NO");
+  readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_logsum FUNC=exp(x) PERIODIC=NO");
 }
 
 }

@@ -80,7 +80,7 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
       desired_vectors.resize(1); desired_vectors[0]=ivec;
     } else if( eigv[0]=="all") {
       desired_vectors.resize( getPntrToArgument(0)->getShape()[0] );
-      for(unsigned i=0; i<eigv.size(); ++i) desired_vectors[i] = i + 1;
+      for(unsigned i=0; i<desired_vectors.size(); ++i) desired_vectors[i] = i + 1;
     } else error("input to VECTOR keyword should be list of numbers or all");
   }
 

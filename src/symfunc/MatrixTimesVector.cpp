@@ -111,12 +111,17 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
   SymmetryFunctionBase(ao),
   fixed_matrix(false)
 {
-  adjmat::AdjacencyMatrixBase* ab = dynamic_cast<adjmat::AdjacencyMatrixBase*>( getPntrToArgument(0)->getPntrToAction() );
-  if( !ab ) fixed_matrix=true;
+  if( getPntrToArgument(0)->getPntrToAction() ) {
+      adjmat::AdjacencyMatrixBase* ab = dynamic_cast<adjmat::AdjacencyMatrixBase*>( getPntrToArgument(0)->getPntrToAction() );
+      if( !ab ) fixed_matrix=true;
+  } else fixed_matrix=true;
 
   std::vector<Value*> vecs; parseArgumentList("VECTOR",vecs);
   if( vecs.size()!=1 ) error("keyword VECTOR shoudl only be provided with the label of a singl action");
-  if( vecs[0]->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("shape of input vector should match second dimension of input WEIGHT matrix");
+
+  if( vecs[0]->getRank()==0 ) {
+      if( getPntrToArgument(0)->getShape()[1]!=1 ) error("shape of input vector should match second dimension of input WEIGHT matrix");
+  } else if( vecs[0]->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("shape of input vector should match second dimension of input WEIGHT matrix");
   vecs[0]->buildDataStore( getLabel() );
   log.printf("  calculating product of input weight matrix with vector of weights labelled %s \n",vecs[0]->getName().c_str() );
   std::vector<Value*> args( getArguments() ); args.push_back( vecs[0] );
@@ -125,7 +130,9 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
 }
 
 unsigned MatrixTimesVector::getNumberOfDerivatives() const {
-  if( fixed_matrix ) return vecder_start + getPntrToArgument(1)->getShape()[0];
+  if( fixed_matrix && getPntrToArgument(1)->getRank()==0 ) return vecder_start + 1;
+  else if ( fixed_matrix ) return vecder_start + getPntrToArgument(1)->getShape()[0];
+  else if( getPntrToArgument(1)->getRank()==0 ) vecder_start + 1;
   return SymmetryFunctionBase::getNumberOfDerivatives() + getPntrToArgument(1)->getShape()[0];
 }
 

@@ -71,20 +71,14 @@ ActionShortcut(ao)
          else if( ires=="false" ) resid.push_back( false );
          else error("residual flag should be set to true/false");
      } else resid.push_back( false );
-     // Create a reference configuration for this cluster
-     std::string num; Tools::convert( k+1, num );
-     readInputLine( getShortcutLabel() + "_ref" + num + ": READ_CLUSTER ARG=" + argstr + " NUMBER=" + num + " REFERENCE=" + fname + " READ_COVARIANCE");
-     // Invert the input covariance matrix
-     readInputLine( getShortcutLabel() + "_icov" + num + ": CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref" + num + 
-                    " INPUT={INVERT_MATRIX ARG=" + getShortcutLabel() + "_ref" + num + ".covariance}");
-     // And compute a determinent for the input covariance matrix
-     readInputLine( getShortcutLabel() + "_det" + num + ": CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref" + num +
-                    " INPUT={DETERMINANT ARG=" + getShortcutLabel() + "_ref" + num + ".covariance}");
+     // Create a Kernel for this cluster
+     std::string num, wstr; Tools::convert( k+1, num ); Tools::convert( h, wstr );
+     readInputLine( getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED ARG=" + argstr + " NUMBER=" + num + " REFERENCE=" + fname + " WEIGHT=" + wstr ); 
      // Compute eigenvalues and eigenvectors for the input covariance matrix if required 
      if( meig>0 ) { 
          std::string seig="1"; for(int j=1;j<meig;++j) { std::string eignum; Tools::convert( j+1, eignum ); seig += "," + eignum; }
-         readInputLine( getShortcutLabel() + "_eigv" + num + ": CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref" + num +
-                        " INPUT={DIAGONALIZE ARG=" + getShortcutLabel() + "_ref" + num + ".covariance VECTORS=" + seig + "}");
+         readInputLine( getShortcutLabel() + "_eigv" + num + ": CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_kernel-" + num + "_ref" +
+                        " INPUT={DIAGONALIZE ARG=" + getShortcutLabel() + "_kernel-" + num + "_ref.covariance VECTORS=" + seig + "}");
      }
      // Store the weights as we will use these when constructing the bias later in the input
      weights.push_back(h); ifile.scanField();
@@ -94,11 +88,11 @@ ActionShortcut(ao)
   // Now build the basins
   for(unsigned k=0;k<weights.size();++k) {
       std::string num; Tools::convert( k+1, num ); 
-      // Compute the distance between the center of the basin and the current configuration
-      readInputLine( getShortcutLabel() + "_dist-" + num + ": MAHALANOBIS_DISTANCE ARG1=" + argstr + " ARG2=" + getShortcutLabel() + "_ref" + num + ".center" + 
-                     " METRIC=" + getShortcutLabel() + "_icov" + num );
       // Get the negative of the distance from the center of the basin
       if( neigv[k]==0 ) {
+        // Compute the distance between the center of the basin and the current configuration
+        readInputLine( getShortcutLabel() + "_dist-" + num + ": MATHEVAL ARG=" + getShortcutLabel() + "_kernel-" + num + "_dist_2 FUNC=sqrt(x) PERIODIC=NO");
+        // And the reflection of the distance
         readInputLine( getShortcutLabel() + "_pdist-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist-" + num + " FUNC=0-x PERIODIC=NO");
       } else {
         // This computes the projections of the difference between the current point and the origin on the various eigenvectors
@@ -107,7 +101,7 @@ ActionShortcut(ao)
             coeffstr +=",-1"; powstr +=",2"; std::string anum, eignum; Tools::convert( i+1, eignum ); 
             Tools::convert( i+2, anum ); argstr += " ARG" + anum + "=" + getShortcutLabel() + "_proj" + eignum + "-" + num + " ";
             // Multiply difference in CVs by eigenvector - returns a vector
-            readInputLine( getShortcutLabel() + "_dproj" + eignum + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist-" + num + "_diff"
+            readInputLine( getShortcutLabel() + "_dproj" + eignum + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + "_dist_2_diff"
                + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vecs-" + eignum + " FUNC=x*y PERIODIC=NO");
             // Sum the components of the vector
             readInputLine( getShortcutLabel() + "_udproj" + eignum + "-" + num + ": COMBINE ARG=" + getShortcutLabel() + "_dproj" + eignum + "-" + num + " PERIODIC=NO");
@@ -160,18 +154,6 @@ ActionShortcut(ao)
       readInputLine( getShortcutLabel() + "_bias-" + num + ": EVALUATE_FUNCTION_FROM_GRID ARG=" + getShortcutLabel() + "_histo-" + num + " " + truncflag2 );
   }
 
-  // Now create the kernels
-  for(unsigned k=0;k<weights.size();++k) {
-      std::string num; Tools::convert( k+1, num );
-      // Must work out the weight of the normalized kernel here
-      ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>(getShortcutLabel() + "_ref" + num);
-      unsigned ndim = av->copyOutput(0)->getShape()[0];
-      std::string wstr; Tools::convert( weights[k]/sqrt(pow(2*pi,ndim)), wstr ); 
-      // Compute the kernel (just a plain Gaussian at present)
-      readInputLine( getShortcutLabel() + "_kernel-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist-" + num + "_2" + 
-                                                                " ARG2=" + getShortcutLabel() + "_det" + num  +
-                                                                " FUNC=" + wstr + "*exp(-x/2)/sqrt(y) PERIODIC=NO");
-  }
   // And sum the kernels
   std::string cinput = getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_kernel-1";
   for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); cinput += "," + getShortcutLabel() + "_kernel-" + num; }

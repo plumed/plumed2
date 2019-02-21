@@ -149,6 +149,9 @@ private:
 /// An array containing values that were passed from the MD code to PLUMED
   std::vector<std::unique_ptr<Value>> values;
 
+/// Records which of the input values are fixed
+  std::map<std::string,bool> fixed_vals;
+
 /// Object containing data we would like to grab and pass back
   std::unique_ptr<DataFetchingObject> mydatafetcher;
 
@@ -399,6 +402,8 @@ public:
   bool callErrorHandler(int code,const char* msg)const;
 /// Get pointer to value that was passed from MD code to PLUMED
   Value* getPntrToValue( const std::string& name );
+/// Is the value with this name fixed in the input
+  bool valueIsFixed( const std::string& name ) const ;
 };
 
 /////

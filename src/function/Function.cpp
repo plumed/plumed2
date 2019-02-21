@@ -149,16 +149,25 @@ Function::Function(const ActionOptions&ao):
 }
 
 std::vector<unsigned> Function::getShape() {
+  std::vector<unsigned> shape; if( !numberedkeys ){ shape.resize(0); return shape; }
+
+  // Get the total number of values
   unsigned maxrank=0, rmax=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->usingAllVals( getLabel() ) && getPntrToArgument(i)->getRank()>maxrank ) { maxrank=getPntrToArgument(i)->getRank(); rmax=i; }
   }
-  std::vector<unsigned> shape;
   if( hasGridOutput() ) {
     shape.resize( maxrank );
     for(unsigned i=0; i<shape.size(); ++i) shape[i] = getPntrToArgument(rmax)->getShape()[i];
-  } else if( maxrank==0 || !numberedkeys ) {
+  } else if( !numberedkeys ) {
     shape.resize(0);
+  } else if( maxrank==0 ) {
+    unsigned maxvals=0;
+    for(unsigned i=0;i<arg_ends.size()-1;++i) {
+        unsigned nvals=0; for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) nvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+        if( nvals>maxvals ) { maxvals=nvals; }
+    }
+    if( maxvals>1 ) { shape.resize(1); shape[0]=maxvals; }
   } else {
     shape.resize( maxrank );
     for(unsigned i=0; i<shape.size(); ++i) shape[i]=getPntrToArgument(rmax)->getShape()[i];
@@ -223,19 +232,32 @@ void Function::addValueWithDerivatives() {
     Value* myval = getPntrToValue();
     if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
   } else {
-    std::string num;
-    for(unsigned i=0; i<arg_ends.size()-1; ++i) {
-      Tools::convert(i+1,num);
-      if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
-      else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
-      else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent( "arg_" + num, shape );
-      else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
-      else ActionWithValue::addComponent( "arg_" + num, shape );
-      if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg_" + num );
-      else if(period.size()==2) componentIsPeriodic("arg_" + num, period[0], period[1]);
-      // Ensure symmetry of matrix is transferred if it is valid
-      Value* myval = getPntrToComponent(getNumberOfComponents()-1);
-      if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
+    bool allone=false;
+    if( arg_ends.size()==2 ) {
+        allone=true; 
+        for(unsigned i=0;i<getNumberOfArguments();++i) {
+            if( getPntrToArgument(i)->getRank()!=0 ) allone=false; 
+        }
+        if( allone ) {
+            ActionWithValue::addValue( shape );
+            if(period.size()==1 && period[0]=="NO") setNotPeriodic();
+            else if(period.size()==2) setPeriodic(period[0],period[1]);
+        }
+    } 
+    if( !allone ) {
+        for(unsigned i=0; i<arg_ends.size()-1; ++i) {
+          std::string num; Tools::convert(i+1,num);
+          if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
+          else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
+          else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent( "arg_" + num, shape );
+          else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
+          else ActionWithValue::addComponent( "arg_" + num, shape );
+          if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg_" + num );
+          else if(period.size()==2) componentIsPeriodic("arg_" + num, period[0], period[1]);
+          // Ensure symmetry of matrix is transferred if it is valid
+          Value* myval = getPntrToComponent(getNumberOfComponents()-1);
+          if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
+        }
     }
   }
   if( actionInChain() && matinp ) matout=getPntrToOutput(0)->getRank()==2;
@@ -315,7 +337,7 @@ void Function::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::strin
               if( argact==actionsThatSelectTasks[j] ){ found=true; break; }
           }
           if( !found ) safeToChain=false;
-      }
+      } else safeToChain=false;
   }
   if( safeToChain ) actionsThatSelectTasks.push_back( getLabel() );
 }

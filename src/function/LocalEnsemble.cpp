@@ -95,8 +95,15 @@ void LocalEnsemble::registerKeywords(Keywords& keys) {
 LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
   Action(ao),
   Function(ao)
-{
-  addValueWithDerivatives();
+{  
+  std::vector<std::string> period; parseVector("PERIODIC",period);
+  std::vector<unsigned> shape; shape.resize(0);
+  for(unsigned i=0; i<arg_ends.size()-1; ++i) {
+      std::string num; Tools::convert(i+1,num);
+      ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
+      if(period.size()==1 && period[0]=="NO") componentIsNotPeriodic( "arg_" + num );
+      else if(period.size()==2) componentIsPeriodic("arg_" + num, period[0], period[1]);
+  }
   log.printf("  averaging over %u replicas.\n", arg_ends[1]-arg_ends[0]);
 }
 

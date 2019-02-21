@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SetupReferenceBase.h"
 #include "core/ActionRegister.h"
+#include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
@@ -91,8 +92,15 @@ SetupReferenceBase(ao)
    }
    Tensor box( atoms.getPbc().getBox() ); p.cmd("setBox",&box[0][0]);
    // Now retrieve the final value
-   ActionWithValue* fav = dynamic_cast<ActionWithValue*>( p.getActionSet()[p.getActionSet().size()-1].get() );
-   if( !fav ) error("final value should calculate relevant value that you want as reference");
+   ActionWithValue* fav; 
+   for(int i=p.getActionSet().size()-1;i>=0;--i) {
+       fav = dynamic_cast<ActionWithValue*>( p.getActionSet()[i].get() );
+       if( !fav ) {
+          ActionShortcut* fshort = dynamic_cast<ActionShortcut*>( p.getActionSet()[i].get() );
+          if( !fshort ) error("final value should calculate relevant value that you want as reference");
+       } else break;
+   }
+   if( !fav ) error("need to calculate relevant value in calculate");
    // if( fav->getNumberOfComponents()!=1 ) error("final action in input should have one component");
    std::vector<unsigned> nvals( fav->getNumberOfComponents() ); 
    std::vector<std::vector<double> > data( fav->getNumberOfComponents() );
@@ -132,7 +140,7 @@ SetupReferenceBase(ao)
    // And set it to what was calculated
    for(unsigned i=0;i<fav->getNumberOfComponents();++i) { 
        log.printf("  setup %d reference values for value %s \n", nvals[i], getPntrToComponent(i)->getName().c_str() );
-       for(unsigned j=0;j<nvals[i];++j) getPntrToComponent(i)->set( j, data[i][j] ); 
+       for(unsigned j=0;j<nvals[i];++j) getPntrToComponent(i)->set( j, data[i][j] );
    } 
    // Create a fake task list -- this ensures derivatives are looked at correctly
    unsigned maxtask=shapes[0][0];
