@@ -40,7 +40,7 @@ if plumedname is None:
 
 plumedversion = os.getenv("plumed_version")
 if plumedversion is None:
-    plumedversion = subprocess.check_output(['grep','-v','#','./VERSION']).decode("utf-8")
+    plumedversion = subprocess.check_output(['grep','-v','#','./VERSION']).decode("utf-8").rstrip()
 
 print( "Module name " + plumedname )
 print( "Version number " + plumedversion )
