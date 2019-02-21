@@ -29,6 +29,13 @@ import os
 import os.path
 import sys
 from shutil import copyfile
+import platform
+from distutils.sysconfig import get_config_var
+from distutils.version import LooseVersion
+
+
+def is_platform_mac():
+    return sys.platform == 'darwin'
 
 if os.getenv("plumed_macports") is not None:
     copyfile("../VERSION","VERSION")
@@ -51,6 +58,19 @@ defaultkernel=os.getenv("plumed_default_kernel")
 if defaultkernel is not None:
     extra_compile_args.append("-D__PLUMED_DEFAULT_KERNEL=" + os.path.abspath(defaultkernel))
     print( "Hardcoded PLUMED_KERNEL " + os.path.abspath(defaultkernel))
+
+# Fixes problem with compiling the PYTHON interface in Mac OS 10.14 and higher.
+# Sets the deployment target to 10.9 when compiling on version 10.9 and above,
+# overriding distutils behaviour to target the Mac OS version python was built for.
+# This can be overridden by setting MACOSX_DEPLOYMENT_TARGET before compiling the
+# python interface.
+# This fix is taken from https://github.com/pandas-dev/pandas/pull/24274/files
+if is_platform_mac():
+    if 'MACOSX_DEPLOYMENT_TARGET' not in os.environ:
+        current_system = LooseVersion(platform.mac_ver()[0])
+        python_target = LooseVersion(get_config_var('MACOSX_DEPLOYMENT_TARGET'))
+        if python_target < '10.9' and current_system >= '10.9':
+            os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.9'
 
 def readme():
     with open('README.rst') as f:
