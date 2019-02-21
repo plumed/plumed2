@@ -161,8 +161,11 @@ private:
 // neighbor list
   double   nl_cutoff_;
   unsigned nl_stride_;
+  double   ns_cutoff_;
   bool first_time_;
   vector<unsigned> nl_;
+  vector<unsigned> ns_;
+  vector<Vector> refpos_;
 // averaging
   bool no_aver_;
 // Monte Carlo stuff
@@ -243,6 +246,9 @@ private:
                      const Vector5d &cfact, const Vector5d &m_s, double bfact);
 // update the neighbor list
   void update_neighbor_list();
+// update the neighbor sphere
+  void update_neighbor_sphere();
+  bool do_neighbor_sphere();
 // calculate overlap
   void calculate_overlap();
 // Gaussian noise
@@ -266,8 +272,9 @@ void EMMIVOX2::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","atoms for which we calculate the density map, typically all heavy atoms");
   keys.add("compulsory","DATA_FILE","file with the experimental data");
-  keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
+  keys.add("compulsory","NL_CUTOFF","The cutoff in distance for the neighbor list");
   keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
+  keys.add("compulsory","NS_CUTOFF","The cutoff in distance for the outer neighbor sphere");
   keys.add("compulsory","SIGMA_MIN","minimum uncertainty");
   keys.add("compulsory","RESOLUTION", "Cryo-EM map resolution");
   keys.add("compulsory","VOXEL","Side of voxel grid");
@@ -423,6 +430,8 @@ EMMIVOX2::EMMIVOX2(const ActionOptions&ao):
   if(nl_cutoff_<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
   parse("NL_STRIDE",nl_stride_);
   if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
+  parse("NS_CUTOFF",ns_cutoff_);
+  if(ns_cutoff_<=nl_cutoff_) error("NS_CUTOFF should be greater than NL_CUTOFF");
 
   // averaging or not
   parseFlag("NO_AVER",no_aver_);
@@ -456,6 +465,7 @@ EMMIVOX2::EMMIVOX2(const ActionOptions&ao):
   log.printf("  type of data noise : %s\n", noise.c_str());
   log.printf("  neighbor list cutoff : %lf\n", nl_cutoff_);
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
+  log.printf("  neighbor sphere cutoff : %lf\n", ns_cutoff_);
   log.printf("  minimum uncertainty : %f\n",sigma_min);
   log.printf("  scale factor : %lf\n",scale_);
   log.printf("  reading/writing to status file : %s\n",statusfilename_.c_str());
@@ -1203,6 +1213,67 @@ double EMMIVOX2::get_overlap(const Vector &d_m, const Vector &m_m, double d_s,
   return ov_tot;
 }
 
+void EMMIVOX2::update_neighbor_sphere()
+{
+  // dimension of atom vectors
+  unsigned GMM_m_size = GMM_m_type_.size();
+
+  // clear global list and reference positions
+  ns_.clear(); refpos_.clear();
+  // allocate reference positions
+  refpos_.resize(GMM_m_size);
+
+  // store reference positions
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  {
+    #pragma omp for nowait
+    for(unsigned im=0; im<GMM_m_size; ++im) refpos_[im] = getPosition(im);
+  }
+
+  // cycle on GMM components - in parallel
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  {
+    // private variables
+    vector<unsigned> ns_l;
+    Vector d_m;
+    #pragma omp for nowait
+    for(unsigned id=0; id<ovdd_.size(); ++id) {
+      // grid point
+      d_m = GMM_d_m_[id];
+      // cycle on all atoms
+      for(unsigned im=0; im<GMM_m_size; ++im) {
+        // calculate distance
+        double dist = delta(refpos_[im], d_m).modulo();
+        // add to local list
+        if(dist<=ns_cutoff_) ns_l.push_back(id*GMM_m_size+im);
+      }
+    }
+    // add to global list
+    #pragma omp critical
+    ns_.insert(ns_.end(), ns_l.begin(), ns_l.end());
+  }
+}
+
+bool EMMIVOX2::do_neighbor_sphere()
+{
+  vector<double> dist(refpos_.size(), 0.0);
+  bool update = false;
+
+// calculate displacement
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  {
+    #pragma omp for nowait
+    for(unsigned im=0; im<refpos_.size(); ++im) dist[im] = delta(getPosition(im),refpos_[im]).modulo();
+  }
+
+// check if update or not
+  double maxdist = *max_element(dist.begin(), dist.end());
+  if(maxdist>=(ns_cutoff_-nl_cutoff_)) update=true;
+
+// return if update or not
+  return update;
+}
+
 void EMMIVOX2::update_neighbor_list()
 {
   // dimension of atom vectors
@@ -1211,74 +1282,21 @@ void EMMIVOX2::update_neighbor_list()
   // clear global list
   nl_.clear();
 
-  // cycle on GMM components - in parallel
+  // cycle on neighbour sphere - in parallel
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     // private variables
     vector<unsigned> nl_l;
-    vector<double> ov_l;
-    map<double, unsigned> ov_m;
-    Vector d_m, md;
-    double ov_tot, m2, expov, ov, ov_cut, res;
-    unsigned itab;
+    unsigned id, im;
     #pragma omp for nowait
-    for(unsigned id=0; id<ovdd_.size(); ++id) {
-      // clear lists and map
-      ov_l.clear(); ov_m.clear();
-      // grid point
-      d_m = GMM_d_m_[id];
-      // total overlap with id
-      ov_tot = 0.0;
-      // cycle on all atoms
-      for(unsigned im=0; im<GMM_m_size; ++im) {
-        // calculate vector difference m_m-d_m with/without pbc
-        md = delta(getPosition(im), d_m);
-        // calculate modulo
-        m2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2];
-        // calculate exponent
-        expov = m2 * invs2_[im][4];
-        // get index of expov in tabulated exponential
-        itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
-        // check boundaries
-        if(itab>=tab_exp_.size()) continue;
-        // in case calculate overlap
-        ov = pref_[im][4] * tab_exp_[itab];
-        // add other Gaussian components
-        for(int j=3; j>=0; j--) {
-          // calculate exponent
-          expov = m2 * invs2_[im][j];
-          // get index of expov in tabulated exponential
-          itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
-          // check boundaries
-          if(itab>=tab_exp_.size()) break;
-          // add overlap contribution
-          ov += pref_[im][j] * tab_exp_[itab];
-        }
-        // add to list
-        ov_l.push_back(ov);
-        // and map to retrieve atom index
-        ov_m[ov] = im;
-        // increase ov_tot
-        ov_tot += ov;
-      }
-      // check if zero size -> add atom with max overlap
-      if(ov_l.size()==0) continue;
-      // define cutoff
-      ov_cut = ov_tot * nl_cutoff_;
-      // sort ov_l in ascending order
-      std::sort(ov_l.begin(), ov_l.end());
-      // integrate ov_l
-      res = 0.0;
-      for(unsigned i=0; i<ov_l.size()-1; ++i) {
-        res += ov_l[i];
-        // if exceeding the cutoff for overlap, stop
-        if(res >= ov_cut) break;
-        else ov_m.erase(ov_l[i]);
-      }
-      // now add atoms to local neighborlist
-      for(map<double, unsigned>::iterator it=ov_m.begin(); it!=ov_m.end(); ++it)
-        nl_l.push_back(id*GMM_m_size+it->second);
-      // end cycle on GMM components in parallel
+    for(unsigned i=0; i<ns_.size(); ++i) {
+      // get data (id) and atom (im) indexes
+      id = ns_[i] / GMM_m_size;
+      im = ns_[i] % GMM_m_size;
+      // calculate distance
+      double dist = delta(GMM_d_m_[id], getPosition(im)).modulo();
+      // add to local neighbour list
+      if(dist<=nl_cutoff_) nl_l.push_back(ns_[i]);
     }
     // add to global list
     #pragma omp critical
@@ -1312,6 +1330,13 @@ void EMMIVOX2::prepare()
 void EMMIVOX2::calculate_overlap() {
 
   if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0) {
+    // check if time to update neighbor sphere
+    bool update = false;
+    if(first_time_ || getExchangeStep()) update = true;
+    else update = do_neighbor_sphere();
+    // update neighbor sphere
+    if(update) update_neighbor_sphere();
+    // update neighbor list
     update_neighbor_list();
     first_time_=false;
   }
@@ -1553,25 +1578,30 @@ void EMMIVOX2::calculate()
 vector<double> EMMIVOX2::calculate_Gauss()
 {
   vector<double> eneg(GMM_d_grps_.size(), 0.0);
-  double dev;
-  int GMMid;
-  // cycle on all the GMM groups
-  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
-    // cycle on all the members of the group
-    for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
-      // id of the GMM component
-      GMMid = GMM_d_grps_[i][j];
-      // calculate deviation
-      dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
-      // add to group energy
-      eneg[i] += dev * dev;
-      // store derivative for later
-      GMMid_der_[GMMid] = kbt_ * dev / sigma_[i];
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene_)
+  {
+    // private stuff
+    double dev;
+    int GMMid;
+    // cycle on all the GMM groups
+    #pragma omp for reduction( + : ene_)
+    for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+      // cycle on all the members of the group
+      for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
+        // id of the GMM component
+        GMMid = GMM_d_grps_[i][j];
+        // calculate deviation
+        dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
+        // add to group energy
+        eneg[i] += dev * dev;
+        // store derivative for later
+        GMMid_der_[GMMid] = kbt_ * dev / sigma_[i];
+      }
+      // add normalizations and prior
+      eneg[i] = kbt_ * ( 0.5 * eneg[i] + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
+      // add to total energy
+      ene_ += eneg[i];
     }
-    // add normalizations and prior
-    eneg[i] = kbt_ * ( 0.5 * eneg[i] + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
-    // add to total energy
-    ene_ += eneg[i];
   }
   return eneg;
 }
@@ -1579,47 +1609,56 @@ vector<double> EMMIVOX2::calculate_Gauss()
 vector<double> EMMIVOX2::calculate_Outliers()
 {
   vector<double> eneg(GMM_d_grps_.size(), 0.0);
-  double dev;
-  int GMMid;
-  // cycle on all the GMM groups
-  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
-    // cycle on all the members of the group
-    for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
-      // id of the GMM component
-      GMMid = GMM_d_grps_[i][j];
-      // calculate deviation
-      dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
-      // add to group energy
-      eneg[i] += std::log( 1.0 + 0.5 * dev * dev );
-      // store derivative for later
-      GMMid_der_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene_)
+  {
+    // private stuff
+    double dev;
+    int GMMid;
+    // cycle on all the GMM groups
+    #pragma omp for reduction( + : ene_)
+    for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+      // cycle on all the members of the group
+      for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
+        // id of the GMM component
+        GMMid = GMM_d_grps_[i][j];
+        // calculate deviation
+        dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
+        // add to group energy
+        eneg[i] += std::log( 1.0 + 0.5 * dev * dev );
+        // store derivative for later
+        GMMid_der_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
+      }
+      // add normalizations and prior
+      eneg[i] = kbt_ * ( eneg[i] + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
+      // add to total energy
+      ene_ += eneg[i];
     }
-    // add normalizations and prior
-    eneg[i] = kbt_ * ( eneg[i] + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
-    // add to total energy
-    ene_ += eneg[i];
   }
   return eneg;
 }
 
 void EMMIVOX2::calculate_Marginal()
 {
-  double dev, errf;
-  int GMMid;
-  // cycle on all the GMM groups
-  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
-    // cycle on all the members of the group
-    for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
-      // id of the GMM component
-      GMMid = GMM_d_grps_[i][j];
-      // calculate deviation
-      dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
-      // calculate errf
-      errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
-      // add to group energy
-      ene_ += -kbt_ * std::log ( 0.5 / dev * errf ) ;
-      // store derivative for later
-      GMMid_der_[GMMid] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene_)
+  {
+    double dev, errf;
+    int GMMid;
+    // cycle on all the GMM groups
+    #pragma omp for reduction( + : ene_)
+    for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+      // cycle on all the members of the group
+      for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
+        // id of the GMM component
+        GMMid = GMM_d_grps_[i][j];
+        // calculate deviation
+        dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
+        // calculate errf
+        errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
+        // add to group energy
+        ene_ += -kbt_ * std::log ( 0.5 / dev * errf ) ;
+        // store derivative for later
+        GMMid_der_[GMMid] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
+      }
     }
   }
 }
