@@ -822,7 +822,7 @@ void EMMIVOX2::doMonteCarloBfact()
       // private variables
       map<unsigned, double> deltaov_l;
       set<unsigned> ngbs_l;
-      #pragma omp for nowait
+      #pragma omp for
       // cycle over all the atoms belonging to residue ires
       for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
 
@@ -1132,7 +1132,7 @@ void EMMIVOX2::get_auxiliary_vectors()
   {
     // private variables
     Vector5d pref, invs2;
-    #pragma omp for nowait
+    #pragma omp for
     // calculate constant quantities
     for(unsigned im=0; im<GMM_m_res_.size(); ++im) {
       // get atom type
@@ -1213,11 +1213,8 @@ void EMMIVOX2::update_neighbor_sphere()
   refpos_.resize(GMM_m_size);
 
   // store reference positions
-  #pragma omp parallel num_threads(OpenMP::getNumThreads())
-  {
-    #pragma omp for nowait
-    for(unsigned im=0; im<GMM_m_size; ++im) refpos_[im] = getPosition(im);
-  }
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned im=0; im<GMM_m_size; ++im) refpos_[im] = getPosition(im);
 
   // cycle on GMM components - in parallel
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
@@ -1225,7 +1222,7 @@ void EMMIVOX2::update_neighbor_sphere()
     // private variables
     vector<unsigned> ns_l;
     Vector d_m;
-    #pragma omp for nowait
+    #pragma omp for
     for(unsigned id=0; id<ovdd_.size(); ++id) {
       // grid point
       d_m = GMM_d_m_[id];
@@ -1249,11 +1246,8 @@ bool EMMIVOX2::do_neighbor_sphere()
   bool update = false;
 
 // calculate displacement
-  #pragma omp parallel num_threads(OpenMP::getNumThreads())
-  {
-    #pragma omp for nowait
-    for(unsigned im=0; im<refpos_.size(); ++im) dist[im] = delta(getPosition(im),refpos_[im]).modulo();
-  }
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned im=0; im<refpos_.size(); ++im) dist[im] = delta(getPosition(im),refpos_[im]).modulo();
 
 // check if update or not
   double maxdist = *max_element(dist.begin(), dist.end());
@@ -1277,7 +1271,7 @@ void EMMIVOX2::update_neighbor_list()
     // private variables
     vector<unsigned> nl_l;
     unsigned id, im;
-    #pragma omp for nowait
+    #pragma omp for
     for(unsigned i=0; i<ns_.size(); ++i) {
       // get data (id) and atom (im) indexes
       id = ns_[i] / GMM_m_size;
@@ -1340,7 +1334,7 @@ void EMMIVOX2::calculate_overlap() {
     // private variables
     vector<double> v_(ovmd_.size(), 0.0);
     unsigned id, im;
-    #pragma omp for nowait
+    #pragma omp for
     for(unsigned i=0; i<nl_.size(); ++i) {
       // get data (id) and atom (im) indexes
       id = nl_[i] / GMM_m_size;
@@ -1531,11 +1525,10 @@ void EMMIVOX2::calculate()
     }
     #pragma omp critical
     for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] += atom_der[i];
+    #pragma omp for
+    for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
   }
 
-  // set atom derivatives
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
   // set score and virial
   getPntrToComponent("scoreb")->set(ene_);
   setBoxDerivatives(getPntrToComponent("scoreb"), virial);
