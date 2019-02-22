@@ -25,8 +25,12 @@
 #
 
 cimport cplumed  # This imports information from pxd file - including contents of this file here causes name clashes
-import numpy as np
-cimport numpy as np
+
+try:
+     import numpy as np
+     HAS_NUMPY=True
+except:
+     HAS_NUMPY=False
 
 cdef class Plumed:
      cdef cplumed.Plumed c_plumed
@@ -59,8 +63,6 @@ cdef class Plumed:
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
          cdef char* cval 
-         cdef np.int_t[:] ibuffer
-         cdef np.float64_t[:] dbuffer
          if val is None :
             self.c_plumed.cmd( ckey, NULL )
          elif isinstance(val, (int,long) ):
@@ -71,7 +73,7 @@ cdef class Plumed:
             if key=="getBias" :
                raise ValueError("when using cmd with getBias option value must be a size one ndarray")
             self.cmd_float(ckey, val) 
-         elif isinstance(val, np.ndarray) : 
+         elif HAS_NUMPY and isinstance(val, np.ndarray) : 
             if( val.dtype=="float64" ):
                self.cmd_ndarray_real(ckey, val)
             elif( val.dtype=="int64" ) : 

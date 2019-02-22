@@ -41,12 +41,14 @@ if {${name} ne ${subport}} {
     build.env-append plumed_default_kernel=${prefix}/lib/libplumedKernel.dylib \
                      plumed_macports=yes
 
-    depends_build-append port:py${python.version}-cython
+    depends_build-append port:py${python.version}-cython \
+                         port:py${python.version}-setuptools
 
-    depends_lib-append   port:py${python.version}-numpy \
-                         path:${prefix}/lib/libplumedKernel.dylib:plumed
+    depends_lib-append   path:${prefix}/lib/libplumedKernel.dylib:plumed
 
-    depends_test-append port:py${python.version}-nose
+    depends_test-append port:py${python.version}-nose \
+                        port:py${python.version}-numpy
+
     test.cmd            nosetests-${python.branch}
     test.target
     test.run            yes

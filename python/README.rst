@@ -1,11 +1,8 @@
 Python wrappers for plumed
 ==========================
 
-Install using the following commands::
+Install using the following command::
 
-     # install dependencies
-     python -m pip install numpy
-     # install plumed
      python -m pip install plumed
 
 WARNING: You will need to also build and install the plumed library (see http://www.plumed.org) and set the environment variable
@@ -16,3 +13,4 @@ WARNING: You will need to also build and install the plumed library (see http://
      >>> import plumed
      >>> p=plumed.Plumed()
 
+CHANGES: See the PLUMED documentation.

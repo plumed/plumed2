@@ -76,18 +76,11 @@ def readme():
     with open('README.rst') as f:
         return f.read()
 
-try:
-    import numpy
-except:
-    print('Error: building ' + plumedname + ' requires numpy. Please install it first with pip install numpy')
-    sys.exit(-1)
-
-include_dirs=[numpy.get_include()]
 
 try:
-    include_dirs.append(os.environ["plumed_include_dir"])
+    include_dirs=[os.environ["plumed_include_dir"]]
 except:
-    include_dirs.append(".")
+    include_dirs=["."]
 
 # allow one to force using cython with env var plumed_force_cython=yes
 USE_CYTHON = False
