@@ -2,6 +2,15 @@
 
 env | sort
 
+# GB: install xdrfile library
+wget ftp://ftp.gromacs.org/pub/contrib/xdrfile-1.1.4.tar.gz
+tar xzf xdrfile-1.1.4.tar.gz
+cd xdrfile-1.1.4
+./configure --prefix=$PREFIX --enable-shared
+make
+make install
+cd ../
+
 # TG: The "disabled" features are workaround for possible
 #     conda+configure bugs in library search: building is ok but
 #     linking with the .so doesn't find them (in
