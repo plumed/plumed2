@@ -151,7 +151,7 @@ BF_WAVELETS ...
  ORDER=8
  MINIMUM=0.0
  MAXIMUM=4.0
- TYPE=SYMMETRIC
+ TYPE=SYMLETS
  LABEL=bf
 ... BF_WAVELETS
 \endplumedfile
@@ -188,7 +188,7 @@ void BF_Wavelets::registerKeywords(Keywords& keys) {
   keys.add("optional","FUNCTION_LENGTH","The length of the support of the scaled basis functions. This can be used to alter the scaling of the basis functions. Is by default set to the total size of the interval. This also influences the number of actually used basis functions, as all shifted functions that are partially supported in the CV space are used.");
   keys.add("optional","TAILS_THRESHOLD","The threshold for cutting off tail wavelets with respect to the maximum value. All shifted wavelet functions that will only have values lower below the threshold in the CV space will be excluded from the basis set. Defaults to 0 (include all).");
   keys.addFlag("MOTHER_WAVELET", false, "If this flag is set the \"true\" wavelet function (mother wavelet) will be used instead of the scaling function (father wavelet). Makes only sense for multiresolution, which is at the moment not implemented.");
-  keys.add("optional","TYPE","Specify the wavelet type. Defaults to \"DAUBECHIES\" Wavelets with minimum phase. Other currently implemented possibilities are \"SYMMETRIC\"");
+  keys.add("optional","TYPE","Specify the wavelet type. Defaults to \"DAUBECHIES\" Wavelets with minimum phase. Other currently implemented possibilities are \"SYMLETS\"");
   keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
   // why is this removed?
   keys.remove("NUMERICAL_INTEGRALS");
@@ -295,7 +295,7 @@ void BF_Wavelets::setWaveletType(const std::string& wavelet_type_str) {
   if (wavelet_type_str == "DAUBECHIES") {
     this->wavelet_type_ = WaveletGrid::Type::db;
   }
-  else if (wavelet_type_str == "SYMMETRIC") {
+  else if (wavelet_type_str == "SYMLETS") {
     this->wavelet_type_ = WaveletGrid::Type::sym;
   }
   else {
