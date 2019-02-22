@@ -26,6 +26,9 @@
 
 cimport cplumed  # This imports information from pxd file - including contents of this file here causes name clashes
 
+from cpython cimport array
+import array
+
 try:
      import numpy as np
      HAS_NUMPY=True
@@ -63,6 +66,7 @@ cdef class Plumed:
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
          cdef char* cval 
+         cdef array.array ar
          if val is None :
             self.c_plumed.cmd( ckey, NULL )
          elif isinstance(val, (int,long) ):
@@ -80,6 +84,15 @@ cdef class Plumed:
                self.cmd_ndarray_int(ckey, val)
             else :
                raise ValueError("ndarrys should be float64 or int64")
+         elif isinstance(val, array.array) : 
+            if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8): 
+               ar = val
+               self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
+            elif( (val.typecode=="i" or val.typecode=="I") ) :
+               ar = val
+               self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
+            else :
+               raise ValueError("ndarrays should be double (size=8) or int")
          elif isinstance(val, basestring ) :
               py_bytes = val.encode()
               cval = py_bytes 
