@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,7 +32,7 @@ ActionSetup::ActionSetup(const ActionOptions&ao):
 {
   const ActionSet& actionset(plumed.getActionSet());
   for(const auto & p : actionset) {
-// check that all the preceeding actions are ActionSetup
+// check that all the preceding actions are ActionSetup
     if( !dynamic_cast<ActionSetup*>(p.get()) && !dynamic_cast<ActionAnyorder*>(p.get()) ) error("Action " + getLabel() + " is a setup action, and should be only preceeded by other setup actions or by actions that can be used in any order.");
   }
 }

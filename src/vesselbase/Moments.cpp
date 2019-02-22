@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -59,10 +59,10 @@ void Moments::registerKeywords( Keywords& keys ) {
 
 void Moments::reserveKeyword( Keywords& keys ) {
   keys.reserve("optional","MOMENTS","calculate the moments of the distribution of collective variables. "
-               "The \\f$m\\f$th moment of a distribution is calculated using \\f$\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m \\f$, where \\f$\\overline{s}\\f$ is "
+               "The mth moment of a distribution is calculated using \\f$\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m \\f$, where \\f$\\overline{s}\\f$ is "
                "the average for the distribution. The moments keyword takes a lists of integers as input or a range. Each integer is a value of \\f$m\\f$. The final "
                "calculated values can be referenced using moment-\\f$m\\f$.  You can use the COMPONENT keyword in this action but the syntax is slightly different. "
-               "If you would like the 2nd and third moments of the 3rd component you would use MOMENTS={COMPONENT=3 MOMENTS=2-3}.  The moments would then be refered to "
+               "If you would like the second and third moments of the third component you would use MOMENTS={COMPONENT=3 MOMENTS=2-3}.  The moments would then be referred to "
                "using the labels moment-3-2 and moment-3-3.  This syntax is also required if you are using numbered MOMENT keywords i.e. MOMENTS1, MOMENTS2...");
   keys.reset_style("MOMENTS","vessel");
   keys.addOutputComponent("moment","MOMENTS","the central moments of the distribution of values. The second moment "

@@ -1,0 +1,17 @@
+Running:
+	> python martiniFormFactor_p3.py -f start.pdb -dat SASDAB7.dat -unit nm
+results in the following ouput files:
+	aacg_template.pdb
+	plumed.dat
+	plumed_beads.dat
+
+The file plumed_AACG.dat is a plumed file for computing intensities with both atomistic and coarse-grain approaches, as described in the tutorial.
+
+
+In OutputFromPDB the are the output files, obtained running:
+	> plumed driver --plumed plumed.dat --mf_pdb start.pdb 
+	> plumed driver --plumed plumed_AACG.dat --mf_pdb start.pdb 
+
+In OutputFromXTC the are the output files, obtained running:
+	> plumed driver --plumed plumed.dat --mf_xtc samplextc.xtc 
+	> plumed driver --plumed plumed_AACG.dat --mf_xtc samplextc.xtc 

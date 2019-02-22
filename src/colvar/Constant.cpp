@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,8 +32,7 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR CONSTANT
 /*
-Return one or more constant quantities
-with or without derivatives.
+Return one or more constant quantities with or without derivatives.
 
 Useful in combination with functions that
 takes in input constants or parameters.

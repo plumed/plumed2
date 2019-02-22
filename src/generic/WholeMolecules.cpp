@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -66,8 +66,8 @@ The way WHOLEMOLECULES modifies each of the listed entities is this:
 
 In this way, if an entity consists of a list of atoms such that consecutive atoms in the
 list are always closer than half a box side the entity will become whole.
-This can be usually achieved selecting consecute atoms (1-100), but it is also possible
-to skip some atoms, provided consecute chosen atoms are close enough.
+This can be usually achieved selecting consecutive atoms (1-100), but it is also possible
+to skip some atoms, provided consecutive chosen atoms are close enough.
 
 \par Examples
 

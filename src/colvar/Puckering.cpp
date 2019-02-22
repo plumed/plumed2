@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,7 +43,7 @@ namespace colvar {
 
  For 5-membered rings the implementation is the one discussed in \cite huang2014improvement .
  This implementation is simple and can be used in RNA to distinguish C2'-endo and C3'-endo conformations.
- Both the polar coordinates (phs and amp) and the cartesian coordinates (Zx and Zy) are provided.
+ Both the polar coordinates (phs and amp) and the Cartesian coordinates (Zx and Zy) are provided.
  C2'-endo conformations have negative Zx, whereas C3'-endo conformations have positive Zy.
  Notation is consistent with \cite huang2014improvement .
  The five atoms should be provided as C4',O4',C1',C2',C3'.
@@ -91,8 +91,8 @@ void Puckering::registerKeywords(Keywords& keys) {
   keys.add("atoms","ATOMS","the five or six atoms of the sugar ring in the proper order");
   keys.addOutputComponent("phs","default","Pseudorotation phase (5 membered rings)");
   keys.addOutputComponent("amp","default","Pseudorotation amplitude (5 membered rings)");
-  keys.addOutputComponent("Zx","default","Pseudorotation x cartesian component (5 membered rings)");
-  keys.addOutputComponent("Zy","default","Pseudorotation y cartesian component (5 membered rings)");
+  keys.addOutputComponent("Zx","default","Pseudorotation x Cartesian component (5 membered rings)");
+  keys.addOutputComponent("Zy","default","Pseudorotation y Cartesian component (5 membered rings)");
   keys.addOutputComponent("phi","default","Pseudorotation phase (6 membered rings)");
   keys.addOutputComponent("theta","default","Theta angle (6 membered rings)");
   keys.addOutputComponent("amplitude","default","Pseudorotation amplitude (6 membered rings)");

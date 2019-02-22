@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -33,7 +33,7 @@ namespace function {
 /*
 Calculate a combination of variables using a custom expression.
 
-This action computes an  arbitrary function of one or more precomputed
+This action computes an  arbitrary function of one or more
 collective variables. Arguments are chosen with the ARG keyword,
 and the function is provided with the FUNC string. Notice that this
 string should contain no space. Within FUNC, one can refer to the

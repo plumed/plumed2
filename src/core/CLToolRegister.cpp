@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -92,8 +92,11 @@ std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar) {
   return log;
 }
 
-bool CLToolRegister::printManual( const std::string& cltool ) {
-  if ( check(cltool) ) {
+bool CLToolRegister::printManual( const std::string& cltool, const bool& spelling ) {
+  if( spelling && check(cltool) ) {
+    mk[cltool].print_spelling();
+    return true;
+  } else if ( check(cltool) ) {
     mk[cltool].print_html();
     return true;
   } else {

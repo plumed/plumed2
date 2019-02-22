@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -86,7 +86,7 @@ PLUMED_REGISTER_ACTION(VolumeInSphere,"INSPHERE")
 void VolumeInSphere::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys );
   keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
-  keys.add("compulsory","RADIUS","the switching function that tells us the extent of the sphereical region of interest");
+  keys.add("compulsory","RADIUS","the switching function that tells us the extent of the spherical region of interest");
   keys.remove("SIGMA");
 }
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018 The plumed team
+   Copyright (c) 2018,2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,7 +51,7 @@ However, most of the features are expected to work correctly.
 
 Notes:
 - The \ref LOAD action will not work correctly since registers will be shared among the two instances.
-  In particular, the loaded actions will be visible to both guest and host irrespectively of where they are loaded from.
+  In particular, the loaded actions will be visible to both guest and host irrespective of where they are loaded from.
   This can be fixed and will probably be fixed in a later version.
 - `CHDIR` is not thread safe.
    However, in most implementations there will be a single process running PLUMED, with perhaps multiple OpenMP threads
@@ -112,12 +112,12 @@ The files are long and complex and there are some clashes in the name of the var
 are used in both files, same files are written, etc). In addition, files might have been written using different units (see \ref UNITS`).
 If you want to run a single simulation with a bias potential
 that is the sum of the two bias potentials, you can:
-- Place the two input files, as well as all the files required by plumed, in separate directories `dir1` and `dir2`.
+- Place the two input files, as well as all the files required by plumed, in separate directories `directory1` and `directory2`.
 - Run with the following input file in the parent directory:
 \plumedfile
 # plumed.dat
-PLUMED FILE=plumed.dat CHDIR=dir1
-PLUMED FILE=plumed.dat CHDIR=dir2
+PLUMED FILE=plumed.dat CHDIR=directory1
+PLUMED FILE=plumed.dat CHDIR=directory2
 \endplumedfile
 
 */
@@ -179,7 +179,7 @@ void Plumed::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","1","stride different from 1 are not supported yet");
   keys.add("optional","FILE","input file for the guest PLUMED instance");
   keys.add("optional","KERNEL","kernel to be used for the guest PLUMED instance (USE WITH CAUTION!)");
-  keys.add("optional","LOG","logfile for the guest PLUMED instance. By default the host log is used");
+  keys.add("optional","LOG","log file for the guest PLUMED instance. By default the host log is used");
   keys.add("optional","CHDIR","run guest in a separate directory");
   keys.addFlag("NOREPLICAS",false,"run multiple replicas as isolated ones, without letting them know that the host has multiple replicas");
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");

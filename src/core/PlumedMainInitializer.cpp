@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -240,6 +240,9 @@ public:
 // - on Linux if we don't use RTLD_DEFAULT, since dlopen(NULL,RTLD_LOCAL) returns a null pointer.
     if(handle) dlclose(handle);
 #endif
+// I think this is a bug in cppcheck 1.87
+// Notice that if handle is NULL there's no point in dlclosing it.
+// cppcheck-suppress resourceLeak
   }
   ~PlumedMainInitializer() {
     if(debug) fprintf(stderr,"+++ Finalizing PLUMED with plumed_symbol_table at %p\n",(void*)&plumed_symbol_table);

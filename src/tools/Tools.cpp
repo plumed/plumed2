@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -145,7 +145,7 @@ vector<string> Tools::getWords(const string & line,const char* separators,int * 
     if(parenthesisLevel==0) for(unsigned j=0; j<sep.length(); j++) if(line[i]==sep[j]) found=true;
 // If at parenthesis level zero (outer)
     if(!(parenthesisLevel==0 && (found||onParenthesis))) word.push_back(line[i]);
-    if(onParenthesis) word.push_back(' ');
+    //if(onParenthesis) word.push_back(' ');
     if(line[i]==openpar) parenthesisLevel++;
     if(found && word.length()>0) {
       if(!parlevel) plumed_massert(parenthesisLevel==0,"Unmatching parenthesis in '" + line + "'");

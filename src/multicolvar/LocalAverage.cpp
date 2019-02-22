@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,7 +31,7 @@ Calculate averages over spherical regions centered on atoms
 As is explained in <a href="http://www.youtube.com/watch?v=iDvZmbWE5ps"> this video </a> certain multicolvars
 calculate one scalar quantity or one vector for each of the atoms in the system.  For example
 \ref COORDINATIONNUMBER measures the coordination number of each of the atoms in the system and \ref Q4 measures
-the 4th order Steinhardt parameter for each of the atoms in the system.  These quantities provide tell us something about
+the fourth order Steinhardt parameter for each of the atoms in the system.  These quantities provide tell us something about
 the disposition of the atoms in the first coordination sphere of each of the atoms of interest.  Lechner and Dellago \cite dellago-q6
 have suggested that one can probe local order in a system by taking the average value of such symmetry functions over
 the atoms within a spherical cutoff of each of these atoms in the systems.  When this is done with Steinhardt parameters
@@ -49,7 +49,7 @@ multicolvars.  The function \f$\sigma( r_{ij} )\f$ is a \ref switchingfunction t
 atoms \f$i\f$ and \f$j\f$.  Lechner and Dellago suggest that the parameters of this function should be set so that it the function is equal to one
 when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.
 
-The \f$s_i\f$ quantities calculated using the above command can be again thought of as atom-centred symmetry functions.  They
+The \f$s_i\f$ quantities calculated using the above command can be again thought of as atom-centered symmetry functions.  They
 thus operate much like multicolvars.  You can thus calculate properties of the distribution of \f$s_i\f$ values using MEAN, LESS_THAN, HISTOGRAM
 and so on.  You can also probe the value of these averaged variables in regions of the box by using the command in tandem with the
 \ref AROUND command.
@@ -66,7 +66,7 @@ PRINT ARG=la.* FILE=colvar
 \endplumedfile
 
 This example input calculates the \f$q_4\f$ (see \ref Q4) vectors for each of the atoms in the system.  These vectors are then averaged
-component by component over a spherical region.  The average value for this quantity is then outputeed to a file.  This calculates the
+component by component over a spherical region.  The average value for this quantity is then output to a file.  This calculates the
 quantities that were used in the paper by Lechner and Dellago \cite dellago-q6
 
 \plumedfile
@@ -108,7 +108,7 @@ void LocalAverage::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords

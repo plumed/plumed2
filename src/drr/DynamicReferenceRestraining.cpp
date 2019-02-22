@@ -51,7 +51,7 @@ called dynamic reference restraining(DRR) \cite Zheng2012 .
 
 For each collective variable \f$\xi_i\f$, a fictitious variable \f$\lambda_i\f$
 is attached through a spring. The fictitious variable \f$\lambda_i\f$ undergoes
-overdamped langevin dynamics jusk like \ref EXTENDED_LAGRANGIAN. The ABF
+overdamped Langevin dynamics just like \ref EXTENDED_LAGRANGIAN. The ABF
 algorithm applies bias force on \f$\lambda_i\f$. The bias force acts on
 \f$\lambda_i\f$ is the negative average spring force on \f$\lambda_i\f$, which
 enhances the sampling of \f$\lambda_i\f$.
@@ -79,7 +79,7 @@ A'(\xi^*)=\frac{{\sum_\lambda}N\left(\xi^*,\lambda\right)\left[\frac{\xi^*-\lang
 \f]
 
 The code performing UI(colvar_UIestimator.h) is contributed by Haohao Fu \cite Fu2016 .
-It may be slow. I only change the boltzmann constant and output
+It may be slow. I only change the Boltzmann constant and output
 precision in it. For new version and issues, please see:
 https://github.com/fhh2626/colvars
 
@@ -300,14 +300,14 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   componentsAreNotOptional(keys);
   keys.addOutputComponent(
     "_fict", "default",
-    "one or multiple instances of this quantity will be refereceable "
+    "one or multiple instances of this quantity can be referenced "
     "elsewhere in the input file. "
     "These quantities will named with the arguments of the bias followed by "
     "the character string _tilde. It is possible to add forces on these "
     "variable.");
   keys.addOutputComponent(
     "_vfict", "default",
-    "one or multiple instances of this quantity will be refereceable "
+    "one or multiple instances of this quantity can be referenced "
     "elsewhere in the input file. "
     "These quantities will named with the arguments of the bias followed by "
     "the character string _tilde. It is NOT possible to add forces on these "

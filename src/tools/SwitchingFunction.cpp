@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -131,7 +131,7 @@ s(r) = FUNC
 </table>
 
 Notice that for backward compatibility we allow using `MATHEVAL` instead of `CUSTOM`.
-Also notice that if the a `CUSTOM` switching function only depents on even powers of `x` it can be
+Also notice that if the a `CUSTOM` switching function only depends on even powers of `x` it can be
 made faster by using `x2` as a variable. For instance
 \verbatim
 {CUSTOM FUNC=1/(1+x2^3) R_0=0.3}
@@ -184,7 +184,10 @@ void SwitchingFunction::registerKeywords( Keywords& keys ) {
 
 void SwitchingFunction::set(const std::string & definition,std::string& errormsg) {
   vector<string> data=Tools::getWords(definition);
-  if( data.size()<1 ) errormsg="missing all input for switching function";
+  if( data.size()<1 ) {
+    errormsg="missing all input for switching function";
+    return;
+  }
   string name=data[0];
   data.erase(data.begin());
   invr0=0.0;
@@ -337,7 +340,7 @@ std::string SwitchingFunction::description() const {
   } else {
     plumed_merror("Unknown switching function type");
   }
-  ostr<<" swiching function with parameters d0="<<d0;
+  ostr<<" switching function with parameters d0="<<d0;
   if(type==rational) {
     ostr<<" nn="<<nn<<" mm="<<mm;
   } else if(type==nativeq) {

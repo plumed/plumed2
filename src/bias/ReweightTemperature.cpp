@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,7 +29,7 @@
 /*
 Calculate weights for ensemble averages allow for the computing of ensemble averages at temperatures lower/higher than that used in your original simulation.
 
-We can use our knowledge of the Boltzmann distribution in the cannonical ensemble to reweight the data
+We can use our knowledge of the Boltzmann distribution in the canonical ensemble to reweight the data
 contained in trajectories.  Using this procedure we can take trajectory at temperature \f$T_1\f$ and use it to
 extract probabilities at a different temperature, \f$T_2\f$, using:
 
@@ -43,7 +43,7 @@ that computes ensemble averages.  For example this action can be used in tandem 
 
 \par Examples
 
-The following input can be used to postprocess a molecular dynamics trajectory calculated at a temperature of 500 K.
+The following input can be used to post process a molecular dynamics trajectory calculated at a temperature of 500 K.
 The \ref HISTOGRAM as a function of the distance between atoms 1 and 2 that would have been obtained if the simulation
 had been run at the lower temperature of 300 K is estimated using the data from the higher temperature trajectory and output
 to a file.
@@ -79,7 +79,7 @@ PLUMED_REGISTER_ACTION(ReweightTemperature,"REWEIGHT_TEMP")
 void ReweightTemperature::registerKeywords(Keywords& keys ) {
   ReweightBase::registerKeywords( keys );
   keys.add("compulsory","REWEIGHT_TEMP","reweight data from a trajectory at one temperature and output the probability "
-           "distribution at a second temperature. This is not possible during postprocessing.");
+           "distribution at a second temperature. This is not possible during post processing.");
 }
 
 ReweightTemperature::ReweightTemperature(const ActionOptions&ao):

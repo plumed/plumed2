@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,10 +42,10 @@ keyword and places a restraint on each quantity, \f$x\f$, with the following fun
 \par Examples
 
 The following set of commands can be used to stop a cluster composed of 20 atoms subliming.  The position of
-the centre of mass of the cluster is calculated by the \ref COM command labelled c1.  The \ref DISTANCES
+the center of mass of the cluster is calculated by the \ref COM command labelled c1.  The \ref DISTANCES
 command labelled d1 is then used to calculate the distance between each of the 20 atoms in the cluster
 and the center of mass of the cluster.  These distances are then passed to the UWALLS command, which adds
-a \ref UPPER_WALLS restraint on each of them and thereby prevents each of them from moving very far from the centre
+a \ref UPPER_WALLS restraint on each of them and thereby prevents each of them from moving very far from the center
 of mass of the cluster.
 
 \plumedfile

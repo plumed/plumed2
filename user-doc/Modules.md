@@ -2,7 +2,7 @@
 
 The functionality in PLUMED 2 is divided into a small number of modules.  Some
 users may only wish to use a subset of the functionality available within the 
-code while others may wish to use some of PLUMED's more complicated features.
+code while others may wish to use some of the more complicated features that are available.
 For this reason the plumed source code is divided into modules, which users can
 activate or deactivate to their hearts content.  
 
@@ -35,8 +35,8 @@ If you repeat the `--enable-modules` keyword only the last instance will be used
 There are also some shortcuts available:
 - `./configure --enable-modules=all` to enable all optional modules. This includes the maximum number of features in PLUMED,
 including modules that might not be properly functional.
-- `./configure --enable-modules=none` or `./configure --disable-modules` to disable all optional modules. This produces a minimalistic
-PLUMED which can be used as a library but has no command line tools and no collective variables or biasing methods.
+- `./configure --enable-modules=none` or `./configure --disable-modules` to disable all optional modules. This produces a minimal
+PLUMED which can be used as a library but which has no command line tools and no collective variables or biasing methods.
 - `./configure --enable-modules=reset` or `./configure --enable-modules` to enable the default modules.
 
 The two kinds of syntax can be combined and, for example, `./configure --enable-modules=none:colvar` will result

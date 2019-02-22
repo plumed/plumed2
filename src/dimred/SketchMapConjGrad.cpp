@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,7 @@
 
 //+PLUMEDOC DIMRED SKETCHMAP_CONJGRAD
 /*
-Optimise the sketch-map stress function using conjugate gradients.
+Optimize the sketch-map stress function using conjugate gradients.
 
 \par Examples
 
@@ -48,7 +48,7 @@ PLUMED_REGISTER_ACTION(SketchMapConjGrad,"SKETCHMAP_CONJGRAD")
 
 void SketchMapConjGrad::registerKeywords( Keywords& keys ) {
   SketchMapBase::registerKeywords( keys );
-  keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimisation");
+  keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient minimization");
 }
 
 SketchMapConjGrad::SketchMapConjGrad( const ActionOptions& ao ):

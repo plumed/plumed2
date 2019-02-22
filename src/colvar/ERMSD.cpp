@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -51,11 +51,11 @@ It is not unusual, for example, that two RNA structures with low RMSD (i.e. less
 eRMSD measures the distance between structures by considering only the relative positions and orientations of nucleobases. The eRMSD can be considered as a vectorial version of contact maps and it is calculated as follows:
 
 1. Set up a local reference system in the center of the six-membered ring of each nucleobase in a molecule.
-   The xy plane lies on the plane of the nucleobase, and it is oriented such that the Watson-Crick interaction is always at \f$ \theta \approx 60^{\circ} \f$.
+   The xy plane lies on the plane of the nucleobase, and it is oriented such that the Watson-Crick interaction is always at \f$\theta\approx 60^{\circ}\f$.
 
-2. Calculate all pairwise distance vectors \f$ \vec{r}_{i,j} \f$ among base centers.
+2. Calculate all pairwise distance vectors \f$\vec{r}_{i,j}\f$ among base centers.
 
-3. Rescale distance vectors as \f$ \tilde{\vec{r}}_{i,j} = (r_x/a,r_y/a,r_z/b) \f$, where  a=b=5 \f$\r{A}\f$, c=3 \f$\r{A}\f$. This rescaling has the effect of weghting more deviations on the z-axis with respect to the x/y directions.
+3. Rescale distance vectors as \f$\tilde{\vec{r}}_{i,j}=(r_x/a,r_y/a,r_z/b)\f$, where  a=b=5 \f$\r{A}\f$, c=3 \f$\r{A}\f$. This rescaling has the effect of weighting more deviations on the z-axis with respect to the x/y directions.
 
 4. Calculate the G vectors
 
