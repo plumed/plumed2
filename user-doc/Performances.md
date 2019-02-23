@@ -7,6 +7,10 @@ variables, bias, on-the-fly analysis, etc in a way that is compatible with a num
 different molecular dynamics codes. This means that there cannot be a single 
 strategy to speed up all the possible calculations. 
 
+\ref performance-optimization "Here" 
+you can find a step-by-step tutorial on optimizing PLUMED performances, discussing some of the topics
+below in more detail and using practical examples.
+
 PLUMED makes use of MPI and OpenMP to parallelize some of its functions, try to always
 compile it with these features enabled. Furthermore, newer compilers with proper optimization 
 flags can provide a dramatic boost to performances.
