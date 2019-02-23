@@ -717,11 +717,7 @@ bool EMMIVOX2::doAccept(double oldE, double newE, double kbt) {
 
 void EMMIVOX2::doMonteCarlo(vector<double> &eneg)
 {
-  // prepare vector for new sigma and energy
-  vector<double> newsigma, newene;
-  newsigma.resize(sigma_.size());
-  newene.resize(sigma_.size());
-  // and local acceptance
+  // local acceptance
   double MCaccept = 0.0;
 
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(MCaccept)
@@ -773,12 +769,9 @@ void EMMIVOX2::doMonteCarlo(vector<double> &eneg)
 
       // in case of acceptance
       if(accept) {
-        newsigma[nGMM] = new_s;
-        newene[nGMM] = new_ene;
+        sigma_[nGMM] = new_s;
+        eneg[nGMM]   = new_ene;
         MCaccept += 1.0;
-      } else {
-        newsigma[nGMM] = sigma_[nGMM];
-        newene[nGMM] = eneg[nGMM];
       }
     } // end of cycle over sigmas
   }
@@ -787,9 +780,6 @@ void EMMIVOX2::doMonteCarlo(vector<double> &eneg)
   MCtrials_ += static_cast<double>(sigma_.size());
   // increase acceptance
   MCaccept_ += MCaccept;
-  // put back into sigma_ and eneg
-  for(unsigned i=0; i<sigma_.size(); ++i) sigma_[i] = newsigma[i];
-  for(unsigned i=0; i<eneg.size(); ++i)   eneg[i]   = newene[i];
 }
 
 void EMMIVOX2::doMonteCarloBfact()
