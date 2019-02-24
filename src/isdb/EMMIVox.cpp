@@ -949,30 +949,30 @@ void EMMIVOX::doMonteCarlo(vector<double> &eneg)
   {
     #pragma omp for reduction( + : MCaccept)
     // cycle over all the groups in parallel
-    for(unsigned nGMM=0; nGMM<sigma_.size(); ++nGMM) {
+    for(unsigned i=0; i<sigma_.size(); ++i) {
 
       // generate random move
-      double new_s = sigma_[nGMM] + dsigma_[nGMM] * ( 2.0 * random_.RandU01() - 1.0 );
+      double new_s = sigma_[i] + dsigma_[i] * ( 2.0 * random_.RandU01() - 1.0 );
       // check boundaries
-      if(new_s > sigma_max_[nGMM]) {new_s = 2.0 * sigma_max_[nGMM] - new_s;}
-      if(new_s < sigma_min_[nGMM]) {new_s = 2.0 * sigma_min_[nGMM] - new_s;}
+      if(new_s > sigma_max_[i]) {new_s = 2.0 * sigma_max_[i] - new_s;}
+      if(new_s < sigma_min_[i]) {new_s = 2.0 * sigma_min_[i] - new_s;}
 
       // calculate new group energy
       double new_ene;
 
       // in case of Gaussian noise
-      if(noise_==0) new_ene = calculate_Gauss_group(nGMM, new_s, scale_, offset_);
+      if(noise_==0) new_ene = calculate_Gauss_group(i, new_s, scale_, offset_);
 
       // in case of Outliers noise
-      if(noise_==1) new_ene = calculate_Outliers_group(nGMM, new_s, scale_, offset_);
+      if(noise_==1) new_ene = calculate_Outliers_group(i, new_s, scale_, offset_);
 
       // accept or reject
-      bool accept = doAccept(eneg[nGMM]/anneal_, new_ene/anneal_, kbt_);
+      bool accept = doAccept(eneg[i]/anneal_, new_ene/anneal_, kbt_);
 
       // in case of acceptance
       if(accept) {
-        sigma_[nGMM] = new_s;
-        eneg[nGMM]   = new_ene;
+        sigma_[i] = new_s;
+        eneg[i]   = new_ene;
         MCaccept += 1.0;
       }
     } // end of cycle over sigmas
