@@ -186,12 +186,15 @@ private:
   string       statusfilename_;
   OFile        statusfile_;
   bool         first_status_;
-  // regression
-  unsigned nregres_;
+  // Scale Monte Carlo
   double scale_;
+  double offset_;
   double scale_min_;
   double scale_max_;
   double dscale_;
+  double doffset_;
+  double MCSaccept_;
+  double MCStrials_;
   // simulated annealing
   unsigned nanneal_;
   double   kanneal_;
@@ -212,9 +215,6 @@ private:
   double get_median(vector<double> &v);
 // annealing
   double get_annealing(long int step);
-// do regression
-  double scaleEnergy(double s);
-  double doRegression(double scale);
 // read and write status
   void read_status();
   void print_status(long int step);
@@ -224,6 +224,8 @@ private:
   void doMonteCarlo(vector<double> &eneg);
 // do MonteCarlo for Bfactor
   void doMonteCarloBfact();
+// do MonteCarlo for scale
+  void doMonteCarloScale();
 // read error file
   vector<double> read_exp_errors(string errfile);
 // calculate model GMM parameters
@@ -285,11 +287,12 @@ void EMMIVOX2::registerKeywords( Keywords& keys ) {
   keys.addFlag("READ_BFACT",false,"read Bfactor from status file at restart");
   keys.add("optional","ERR_FILE","file with experimental errors");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
-  keys.add("optional","REGRESSION","regression stride");
-  keys.add("optional","REG_SCALE_MIN","regression minimum scale");
-  keys.add("optional","REG_SCALE_MAX","regression maximum scale");
-  keys.add("optional","REG_DSCALE","regression maximum scale MC move");
+  keys.add("optional","SCALE_MIN","minimum scale");
+  keys.add("optional","SCALE_MAX","maximum scale");
+  keys.add("optional","DSCALE","maximum scale MC move");
   keys.add("optional","SCALE","scale factor");
+  keys.add("optional","OFFSET","offset");
+  keys.add("optional","DOFFSET","maximum offset MC move");
   keys.add("optional","ANNEAL", "Length of annealing cycle");
   keys.add("optional","ANNEAL_FACT", "Annealing temperature factor");
   keys.add("optional","TEMP","temperature");
@@ -301,9 +304,9 @@ void EMMIVOX2::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
   keys.addOutputComponent("accB",  "default", "Bfactor MC acceptance");
-  keys.addOutputComponent("scale", "REGRESSION","scale factor");
-  keys.addOutputComponent("accscale", "REGRESSION","MC acceptance for scale regression");
-  keys.addOutputComponent("enescale", "REGRESSION","MC energy for scale regression");
+  keys.addOutputComponent("scale", "default","scale factor");
+  keys.addOutputComponent("offset","default","offset");
+  keys.addOutputComponent("accscale", "default","MC acceptance for scale");
   keys.addOutputComponent("anneal","ANNEAL","annealing factor");
 }
 
@@ -315,10 +318,12 @@ EMMIVOX2::EMMIVOX2(const ActionOptions&ao):
   first_time_(true), no_aver_(false),
   MCstride_(1), MCaccept_(0.), MCtrials_(0.),
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
+  MCSaccept_(0.), MCStrials_(0.),
   dbfact_(0.0), bfactmax_(4.0), readbf_(false),
   statusstride_(0), first_status_(true),
-  nregres_(0), scale_(1.), nanneal_(0),
-  kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0)
+  scale_(1.), dscale_(0.), offset_(0.), doffset_(0.),
+  nanneal_(0), kanneal_(0.), anneal_(1.),
+  prior_(1.), ovstride_(0)
 {
 
   // list of atoms
@@ -394,20 +399,19 @@ EMMIVOX2::EMMIVOX2(const ActionOptions&ao):
   parse("ANNEAL_FACT", kanneal_);
   if(nanneal_>0 && kanneal_<=1.0) error("with ANNEAL, ANNEAL_FACT must be greater than 1");
 
-  // regression stride
-  parse("REGRESSION",nregres_);
-  // other regression parameters
-  if(nregres_>0) {
-    parse("REG_SCALE_MIN",scale_min_);
-    parse("REG_SCALE_MAX",scale_max_);
-    parse("REG_DSCALE",dscale_);
-    // checks
-    if(scale_max_<=scale_min_) error("with REGRESSION, REG_SCALE_MAX must be greater than REG_SCALE_MIN");
-    if(dscale_<=0.) error("with REGRESSION, REG_DSCALE must be positive");
-  }
-
-  // scale factor
+  // scale MC
   parse("SCALE", scale_);
+  parse("DSCALE",dscale_);
+  parse("OFFSET",offset_);
+  parse("DOFFSET",doffset_);
+  // other parameters
+  if(dscale_>0.) {
+    parse("SCALE_MIN",scale_min_);
+    parse("SCALE_MAX",scale_max_);
+    // checks
+    if(scale_min_<=0.0) error("SCALE_MIN must be strictly positive");
+    if(scale_max_<=scale_min_) error("SCALE_MAX must be greater than SCALE_MIN");
+  }
 
   // read map resolution
   double reso;
@@ -462,13 +466,14 @@ EMMIVOX2::EMMIVOX2(const ActionOptions&ao):
   log.printf("  neighbor sphere cutoff : %lf\n", ns_cutoff_);
   log.printf("  minimum uncertainty : %f\n",sigma_min);
   log.printf("  scale factor : %lf\n",scale_);
+  log.printf("  offset : %lf\n",offset_);
   log.printf("  reading/writing to status file : %s\n",statusfilename_.c_str());
   log.printf("  with stride : %u\n",statusstride_);
-  if(nregres_>0) {
-    log.printf("  regression stride : %u\n", nregres_);
-    log.printf("  regression minimum scale : %lf\n", scale_min_);
-    log.printf("  regression maximum scale : %lf\n", scale_max_);
-    log.printf("  regression maximum scale MC move : %lf\n", dscale_);
+  if(dscale_>0.0) {
+    log.printf("  minimum scale : %lf\n", scale_min_);
+    log.printf("  maximum scale : %lf\n", scale_max_);
+    log.printf("  maximum scale MC move : %lf\n", dscale_);
+    log.printf("  maximum offset MC move : %lf\n", doffset_);
   }
   if(noise_!=2) {
     log.printf("  initial value of the uncertainty : %f\n",sigma_ini);
@@ -571,10 +576,10 @@ EMMIVOX2::EMMIVOX2(const ActionOptions&ao):
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
   if(dbfact_>0) {addComponent("accB"); componentIsNotPeriodic("accB");}
   if(noise_!=2) {addComponent("acc"); componentIsNotPeriodic("acc");}
-  if(nregres_>0) {
+  if(dscale_>0.0) {
     addComponent("scale");     componentIsNotPeriodic("scale");
+    addComponent("offset");    componentIsNotPeriodic("offset");
     addComponent("accscale");  componentIsNotPeriodic("accscale");
-    addComponent("enescale");  componentIsNotPeriodic("enescale");
   }
   if(nanneal_>0) {addComponent("anneal"); componentIsNotPeriodic("anneal");}
 
@@ -605,7 +610,7 @@ void EMMIVOX2::write_model_overlap(long int step)
 // write overlaps
   for(int i=0; i<ovmd_.size(); ++i) {
     ovfile.printField("Model", ovmd_[i]);
-    ovfile.printField("ModelScaled", scale_ * ovmd_[i]);
+    ovfile.printField("ModelScaled", scale_ * ovmd_[i] + offset_);
     ovfile.printField("Data", ovdd_[i]);
     ovfile.printField();
   }
@@ -742,7 +747,7 @@ void EMMIVOX2::doMonteCarlo(vector<double> &eneg)
           // id GMM component
           int GMMid = GMM_d_grps_[nGMM][i];
           // deviation
-          double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
+          double dev = ( scale_*ovmd_[GMMid]+offset_-ovdd_[GMMid] );
           // add to chi2
           chi2 += dev * dev;
         }
@@ -756,7 +761,7 @@ void EMMIVOX2::doMonteCarlo(vector<double> &eneg)
           // id GMM component
           int GMMid = GMM_d_grps_[nGMM][i];
           // calculate deviation
-          double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / new_s;
+          double dev = ( scale_*ovmd_[GMMid]+offset_-ovdd_[GMMid] ) / new_s;
           // add to energies
           new_ene += std::log( 1.0 + 0.5 * dev * dev);
         }
@@ -870,8 +875,8 @@ void EMMIVOX2::doMonteCarloBfact()
         // new value
         double ovmdnew = ovmd_[id]+itov->second;
         // scores
-        double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-        double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+        double devold = ( scale_*ovmd_[id]+offset_-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+        double devnew = ( scale_*ovmdnew+offset_  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
         old_ene += 0.5 * kbt_ * devold * devold;
         new_ene += 0.5 * kbt_ * devnew * devnew;
       }
@@ -883,8 +888,8 @@ void EMMIVOX2::doMonteCarloBfact()
         // new value
         double ovmdnew = ovmd_[id]+itov->second;
         // scores
-        double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-        double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+        double devold = ( scale_*ovmd_[id]+offset_-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+        double devnew = ( scale_*ovmdnew+offset_  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
         old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
         new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
       }
@@ -896,8 +901,8 @@ void EMMIVOX2::doMonteCarloBfact()
         // new value
         double ovmdnew = ovmd_[id]+itov->second;
         // scores
-        double devold = scale_*ovmd_[id]-ovdd_[id];
-        double devnew = scale_*ovmdnew  -ovdd_[id];
+        double devold = scale_*ovmd_[id]+offset_-ovdd_[id];
+        double devnew = scale_*ovmdnew+offset_  -ovdd_[id];
         old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
         new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
       }
@@ -1338,81 +1343,139 @@ void EMMIVOX2::calculate_overlap() {
 
 }
 
-double EMMIVOX2::scaleEnergy(double s)
+void EMMIVOX2::doMonteCarloScale()
 {
-  double ene = 0.0;
-  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
-  {
-    #pragma omp for reduction( + : ene)
-    for(unsigned i=0; i<ovdd_.size(); ++i) {
-      ene += std::log( abs ( s * ovmd_[i] - ovdd_[i] ) );
+  // propose move in scale
+  double ds = dscale_ * ( 2.0 * random_.RandU01() - 1.0 );
+  double new_scale = scale_ + ds;
+  // check boundaries
+  if(new_scale > scale_max_) {new_scale = 2.0 * scale_max_ - new_scale;}
+  if(new_scale < scale_min_) {new_scale = 2.0 * scale_min_ - new_scale;}
+  // propose move in offset
+  double doff = doffset_ * ( 2.0 * random_.RandU01() - 1.0 );
+  double new_off = offset_ + doff;
+
+  // communicate new_scale and new_off to other replicas
+  if(!no_aver_ && nrep_>1) {
+    if(replica_!=0) {new_scale = 0.0; new_off = 0.0;}
+    multi_sim_comm.Sum(&new_scale, 1);
+    multi_sim_comm.Sum(&new_off, 1);
+  }
+
+  // new energy
+  double new_ene = 0.0;
+
+  // in case of Gaussian noise
+  if(noise_==0) {
+    #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(new_ene)
+    {
+      // private variables
+      int GMMid;
+      double dev;
+      // cycle on all the GMM groups
+      #pragma omp for reduction( + : new_ene)
+      for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+        double new_eneg = 0.0;
+        // cycle on all the members of the group
+        for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
+          // id of the GMM component
+          GMMid = GMM_d_grps_[i][j];
+          // calculate deviation
+          dev = ( new_scale*ovmd_[GMMid]+new_off-ovdd_[GMMid] ) / sigma_[i];
+          // add to energy of the group
+          new_eneg += dev * dev;
+        }
+        // add normalizations and prior
+        new_eneg = kbt_ * ( 0.5 * new_eneg + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
+        // add to total energy
+        new_ene += new_eneg;
+      }
     }
   }
-  return ene;
-}
 
-double EMMIVOX2::doRegression(double scale)
-{
-// standard MC parameters
-  unsigned MCsteps = 10000;
-  double kbtmin = 1.0;
-  double kbtmax = 10.0;
-  unsigned ncold = 500;
-  unsigned nhot = 200;
-  double MCacc = 0.0;
-  double kbt, ebest, scale_best;
-
-// initial value of energy
-  double ene = scaleEnergy(scale);
-// set best energy and scale
-  ebest = ene;
-  scale_best = scale;
-
-// MC loop
-  for(unsigned istep=0; istep<MCsteps; ++istep) {
-    // get temperature
-    if(istep%(ncold+nhot)<ncold) kbt = kbtmin;
-    else kbt = kbtmax;
-    // propose move in scale
-    double ds = dscale_ * ( 2.0 * random_.RandU01() - 1.0 );
-    double new_scale = scale + ds;
-    // check boundaries
-    if(new_scale > scale_max_) {new_scale = 2.0 * scale_max_ - new_scale;}
-    if(new_scale < scale_min_) {new_scale = 2.0 * scale_min_ - new_scale;}
-    // new energy
-    double new_ene = scaleEnergy(new_scale);
-    // accept or reject
-    bool accept = doAccept(ene, new_ene, kbt);
-    // in case of acceptance
-    if(accept) {
-      scale = new_scale;
-      ene = new_ene;
-      MCacc += 1.0;
-    }
-    // save best
-    if(ene<ebest) {
-      ebest = ene;
-      scale_best = scale;
+  // in case of Outliers noise
+  if(noise_==1) {
+    #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(new_ene)
+    {
+      // private variables
+      int GMMid;
+      double dev;
+      // cycle on all the GMM groups
+      #pragma omp for reduction( + : new_ene)
+      for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+        double new_eneg = 0.0;
+        // cycle on all the members of the group
+        for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
+          // id of the GMM component
+          GMMid = GMM_d_grps_[i][j];
+          // calculate deviation
+          dev = ( new_scale*ovmd_[GMMid]+new_off-ovdd_[GMMid] ) / sigma_[i];
+          // add to group energy
+          new_eneg += std::log( 1.0 + 0.5 * dev * dev );
+        }
+        // add normalizations and prior
+        new_eneg = kbt_ * ( new_eneg + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
+        // add to total energy
+        new_ene += new_eneg;
+      }
     }
   }
-// calculate acceptance
-  double accscale = MCacc / static_cast<double>(MCsteps);
-// global communication
+
+  // in case of Marginal noise
+  if(noise_==2) {
+    #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(new_ene)
+    {
+      // private variables
+      int GMMid;
+      double dev, errf;
+      // cycle on all the GMM groups
+      #pragma omp for reduction( + : new_ene)
+      for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+        // cycle on all the members of the group
+        for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
+          // id of the GMM component
+          GMMid = GMM_d_grps_[i][j];
+          // calculate deviation
+          dev = ( new_scale*ovmd_[GMMid]+new_off-ovdd_[GMMid] );
+          // calculate errf
+          errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
+          // add to new energy
+          new_ene += -kbt_ * std::log ( 0.5 / dev * errf ) ;
+        }
+      }
+    }
+  }
+
+  // in case sum new energy across replicas
+  if(!no_aver_ && nrep_>1) multi_sim_comm.Sum(&new_ene, 1);
+
+  // accept or reject
+  bool accept = doAccept(ene_, new_ene, kbt_);
+
+  // increment number of trials
+  MCStrials_ += 1.0;
+
+  // in case of acceptance
+  if(accept) {
+    scale_ = new_scale;
+    offset_ = new_off;
+    ene_ = new_ene;
+    MCSaccept_ += 1.0;
+  }
+
+  // communicate to other replicas
   if(!no_aver_ && nrep_>1) {
     if(replica_!=0) {
-      scale_best = 0.0;
-      ebest = 0.0;
-      accscale = 0.0;
+      scale_ = 0.0;
+      offset_ = 0.0;
+      ene_ = 0.0;
+      MCSaccept_ = 0.0;
     }
-    multi_sim_comm.Sum(&scale_best, 1);
-    multi_sim_comm.Sum(&ebest, 1);
-    multi_sim_comm.Sum(&accscale, 1);
+    multi_sim_comm.Sum(&scale_, 1);
+    multi_sim_comm.Sum(&offset_, 1);
+    multi_sim_comm.Sum(&ene_, 1);
+    multi_sim_comm.Sum(&MCSaccept_, 1);
   }
-// set scale parameters
-  getPntrToComponent("accscale")->set(accscale);
-  getPntrToComponent("enescale")->set(ebest);
-// return scale value
-  return scale_best;
 }
 
 double EMMIVOX2::get_annealing(long int step)
@@ -1448,13 +1511,6 @@ void EMMIVOX2::calculate()
 
   // get time step
   long int step = getStep();
-
-  // do regression
-  if(nregres_>0) {
-    if(step%nregres_==0 && !getExchangeStep()) scale_ = doRegression(scale_);
-    // set scale component
-    getPntrToComponent("scale")->set(scale_);
-  }
 
   // write model overlap to file
   if(ovstride_>0 && step%ovstride_==0) write_model_overlap(step);
@@ -1533,6 +1589,28 @@ void EMMIVOX2::calculate()
     getPntrToComponent("acc")->set(acc);
   }
 
+  // Monte Carlo on scale
+  if(dscale_>0) {
+    // do Monte Carlo
+    if(step%MCstride_==0 && !getExchangeStep()) {
+      // sigmas might have changed!
+      if(noise_!=2) {
+        // first recalculate total energy from energy groups
+        ene_ = accumulate(eneg.begin(), eneg.end(), 0.0);
+        // and in case sum across replicas
+        if(!no_aver_ && nrep_>1) multi_sim_comm.Sum(&ene_, 1);
+      }
+      // than do MC on scale
+      doMonteCarloScale();
+    }
+    // calculate acceptance ratio
+    double acc = MCSaccept_ / MCStrials_;
+    // set value
+    getPntrToComponent("scale")->set(scale_);
+    getPntrToComponent("offset")->set(offset_);
+    getPntrToComponent("accscale")->set(acc);
+  }
+
   // Monte Carlo on b factors
   if(dbfact_>0) {
     // do Monte Carlo
@@ -1563,7 +1641,7 @@ vector<double> EMMIVOX2::calculate_Gauss()
         // id of the GMM component
         GMMid = GMM_d_grps_[i][j];
         // calculate deviation
-        dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
+        dev = ( scale_*ovmd_[GMMid]+offset_-ovdd_[GMMid] ) / sigma_[i];
         // add to group energy
         eneg[i] += dev * dev;
         // store derivative for later
@@ -1594,7 +1672,7 @@ vector<double> EMMIVOX2::calculate_Outliers()
         // id of the GMM component
         GMMid = GMM_d_grps_[i][j];
         // calculate deviation
-        dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
+        dev = ( scale_*ovmd_[GMMid]+offset_-ovdd_[GMMid] ) / sigma_[i];
         // add to group energy
         eneg[i] += std::log( 1.0 + 0.5 * dev * dev );
         // store derivative for later
@@ -1623,7 +1701,7 @@ void EMMIVOX2::calculate_Marginal()
         // id of the GMM component
         GMMid = GMM_d_grps_[i][j];
         // calculate deviation
-        dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
+        dev = ( scale_*ovmd_[GMMid]+offset_-ovdd_[GMMid] );
         // calculate errf
         errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
         // add to group energy
