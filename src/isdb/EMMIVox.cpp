@@ -161,8 +161,11 @@ private:
 // neighbor list
   double   nl_cutoff_;
   unsigned nl_stride_;
+  double   ns_cutoff_;
   bool first_time_;
   vector<unsigned> nl_;
+  vector<unsigned> ns_;
+  vector<Vector> refpos_;
 // averaging
   bool no_aver_;
 // Monte Carlo stuff
@@ -183,17 +186,15 @@ private:
   string       statusfilename_;
   OFile        statusfile_;
   bool         first_status_;
-  // regression
-  unsigned nregres_;
+  // Scale Monte Carlo
   double scale_;
   double scale_min_;
   double scale_max_;
   double dscale_;
-  // tabulated exponential
-  double dpcutoff_;
-  double dexp_;
-  unsigned nexp_;
-  vector<double> tab_exp_;
+  double offset_;
+  double doffset_;
+  double MCSaccept_;
+  double MCStrials_;
   // simulated annealing
   unsigned nanneal_;
   double   kanneal_;
@@ -214,9 +215,6 @@ private:
   double get_median(vector<double> &v);
 // annealing
   double get_annealing(long int step);
-// do regression
-  double scaleEnergy(double s);
-  double doRegression(double scale);
 // read and write status
   void read_status();
   void print_status(long int step);
@@ -226,6 +224,8 @@ private:
   void doMonteCarlo(vector<double> &eneg);
 // do MonteCarlo for Bfactor
   void doMonteCarloBfact();
+// do MonteCarlo for scale
+  void doMonteCarloScale();
 // read error file
   vector<double> read_exp_errors(string errfile);
 // calculate model GMM parameters
@@ -243,14 +243,23 @@ private:
                      const Vector5d &cfact, const Vector5d &m_s, double bfact);
 // update the neighbor list
   void update_neighbor_list();
+// update the neighbor sphere
+  void update_neighbor_sphere();
+  bool do_neighbor_sphere();
 // calculate overlap
   void calculate_overlap();
 // Gaussian noise
-  vector<double> calculate_Gauss();
+  double calculate_Gauss_group(unsigned igroup,
+                               double sigma, double scale, double offset);
+  double calculate_Gauss(vector<double> &eneg,
+                         vector<double> &sigma, double scale, double offset);
 // Outliers noise
-  vector<double> calculate_Outliers();
+  double calculate_Outliers_group(unsigned igroup,
+                                  double sigma, double scale, double offset);
+  double calculate_Outliers(vector<double> &eneg,
+                            vector<double> &sigma, double scale, double offset);
 // Marginal noise
-  void calculate_Marginal();
+  double calculate_Marginal(double scale, double offset);
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -266,8 +275,9 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","atoms for which we calculate the density map, typically all heavy atoms");
   keys.add("compulsory","DATA_FILE","file with the experimental data");
-  keys.add("compulsory","NL_CUTOFF","The cutoff in overlap for the neighbor list");
+  keys.add("compulsory","NL_CUTOFF","The cutoff in distance for the neighbor list");
   keys.add("compulsory","NL_STRIDE","The frequency with which we are updating the neighbor list");
+  keys.add("compulsory","NS_CUTOFF","The cutoff in distance for the outer neighbor sphere");
   keys.add("compulsory","SIGMA_MIN","minimum uncertainty");
   keys.add("compulsory","RESOLUTION", "Cryo-EM map resolution");
   keys.add("compulsory","VOXEL","Side of voxel grid");
@@ -283,11 +293,12 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.addFlag("READ_BFACT",false,"read Bfactor from status file at restart");
   keys.add("optional","ERR_FILE","file with experimental errors");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
-  keys.add("optional","REGRESSION","regression stride");
-  keys.add("optional","REG_SCALE_MIN","regression minimum scale");
-  keys.add("optional","REG_SCALE_MAX","regression maximum scale");
-  keys.add("optional","REG_DSCALE","regression maximum scale MC move");
+  keys.add("optional","SCALE_MIN","minimum scale");
+  keys.add("optional","SCALE_MAX","maximum scale");
+  keys.add("optional","DSCALE","maximum scale MC move");
   keys.add("optional","SCALE","scale factor");
+  keys.add("optional","OFFSET","offset");
+  keys.add("optional","DOFFSET","maximum offset MC move");
   keys.add("optional","ANNEAL", "Length of annealing cycle");
   keys.add("optional","ANNEAL_FACT", "Annealing temperature factor");
   keys.add("optional","TEMP","temperature");
@@ -299,9 +310,9 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
   keys.addOutputComponent("accB",  "default", "Bfactor MC acceptance");
-  keys.addOutputComponent("scale", "REGRESSION","scale factor");
-  keys.addOutputComponent("accscale", "REGRESSION","MC acceptance for scale regression");
-  keys.addOutputComponent("enescale", "REGRESSION","MC energy for scale regression");
+  keys.addOutputComponent("scale", "default","scale factor");
+  keys.addOutputComponent("offset","default","offset");
+  keys.addOutputComponent("accscale", "default","MC acceptance for scale");
   keys.addOutputComponent("anneal","ANNEAL","annealing factor");
 }
 
@@ -315,9 +326,10 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.),
   dbfact_(0.0), bfactmax_(4.0), readbf_(false),
   statusstride_(0), first_status_(true),
-  nregres_(0), scale_(1.),
-  dpcutoff_(15.0), nexp_(1000000), nanneal_(0),
-  kanneal_(0.), anneal_(1.), prior_(1.), ovstride_(0)
+  scale_(1.), dscale_(0.), offset_(0.), doffset_(0.),
+  MCSaccept_(0.), MCStrials_(0.),
+  nanneal_(0), kanneal_(0.), anneal_(1.),
+  prior_(1.), ovstride_(0)
 {
 
   // list of atoms
@@ -393,20 +405,19 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   parse("ANNEAL_FACT", kanneal_);
   if(nanneal_>0 && kanneal_<=1.0) error("with ANNEAL, ANNEAL_FACT must be greater than 1");
 
-  // regression stride
-  parse("REGRESSION",nregres_);
-  // other regression parameters
-  if(nregres_>0) {
-    parse("REG_SCALE_MIN",scale_min_);
-    parse("REG_SCALE_MAX",scale_max_);
-    parse("REG_DSCALE",dscale_);
-    // checks
-    if(scale_max_<=scale_min_) error("with REGRESSION, REG_SCALE_MAX must be greater than REG_SCALE_MIN");
-    if(dscale_<=0.) error("with REGRESSION, REG_DSCALE must be positive");
-  }
-
-  // scale factor
+  // scale MC
   parse("SCALE", scale_);
+  parse("DSCALE",dscale_);
+  parse("OFFSET",offset_);
+  parse("DOFFSET",doffset_);
+  // other parameters
+  if(dscale_>0.) {
+    parse("SCALE_MIN",scale_min_);
+    parse("SCALE_MAX",scale_max_);
+    // checks
+    if(scale_min_<=0.0) error("SCALE_MIN must be strictly positive");
+    if(scale_max_<=scale_min_) error("SCALE_MAX must be greater than SCALE_MIN");
+  }
 
   // read map resolution
   double reso;
@@ -423,6 +434,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   if(nl_cutoff_<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
   parse("NL_STRIDE",nl_stride_);
   if(nl_stride_<=0) error("NL_STRIDE should be explicitly specified and positive");
+  parse("NS_CUTOFF",ns_cutoff_);
+  if(ns_cutoff_<=nl_cutoff_) error("NS_CUTOFF should be greater than NL_CUTOFF");
 
   // averaging or not
   parseFlag("NO_AVER",no_aver_);
@@ -456,15 +469,17 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   log.printf("  type of data noise : %s\n", noise.c_str());
   log.printf("  neighbor list cutoff : %lf\n", nl_cutoff_);
   log.printf("  neighbor list stride : %u\n",  nl_stride_);
+  log.printf("  neighbor sphere cutoff : %lf\n", ns_cutoff_);
   log.printf("  minimum uncertainty : %f\n",sigma_min);
   log.printf("  scale factor : %lf\n",scale_);
+  log.printf("  offset : %lf\n",offset_);
   log.printf("  reading/writing to status file : %s\n",statusfilename_.c_str());
   log.printf("  with stride : %u\n",statusstride_);
-  if(nregres_>0) {
-    log.printf("  regression stride : %u\n", nregres_);
-    log.printf("  regression minimum scale : %lf\n", scale_min_);
-    log.printf("  regression maximum scale : %lf\n", scale_max_);
-    log.printf("  regression maximum scale MC move : %lf\n", dscale_);
+  if(dscale_>0.0) {
+    log.printf("  minimum scale : %lf\n", scale_min_);
+    log.printf("  maximum scale : %lf\n", scale_max_);
+    log.printf("  maximum scale MC move : %lf\n", dscale_);
+    log.printf("  maximum offset MC move : %lf\n", doffset_);
   }
   if(noise_!=2) {
     log.printf("  initial value of the uncertainty : %f\n",sigma_ini);
@@ -567,10 +582,10 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
   if(dbfact_>0) {addComponent("accB"); componentIsNotPeriodic("accB");}
   if(noise_!=2) {addComponent("acc"); componentIsNotPeriodic("acc");}
-  if(nregres_>0) {
+  if(dscale_>0.0) {
     addComponent("scale");     componentIsNotPeriodic("scale");
+    addComponent("offset");    componentIsNotPeriodic("offset");
     addComponent("accscale");  componentIsNotPeriodic("accscale");
-    addComponent("enescale");  componentIsNotPeriodic("enescale");
   }
   if(nanneal_>0) {addComponent("anneal"); componentIsNotPeriodic("anneal");}
 
@@ -583,7 +598,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // print bibliography
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
-  log<<plumed.cite("Hanot, Bonomi, Greenberg, Sali, Nilges, Vendruscolo, Pellarin, bioRxiv doi: 10.1101/113951 (2017)");
+  log<<plumed.cite("Bonomi, Hanot, Greenberg, Sali, Nilges, Vendruscolo, Pellarin, Structure, 27, 175 (2019)");
   log<<plumed.cite("Bonomi, Pellarin, Vendruscolo, Biophys. J. 114, 1604 (2018)");
   if(!no_aver_ && nrep_>1)log<<plumed.cite("Bonomi, Camilloni, Cavalli, Vendruscolo, Sci. Adv. 2, e150117 (2016)");
   log<<"\n";
@@ -601,7 +616,7 @@ void EMMIVOX::write_model_overlap(long int step)
 // write overlaps
   for(int i=0; i<ovmd_.size(); ++i) {
     ovfile.printField("Model", ovmd_[i]);
-    ovfile.printField("ModelScaled", scale_ * ovmd_[i]);
+    ovfile.printField("ModelScaled", scale_ * ovmd_[i] + offset_);
     ovfile.printField("Data", ovdd_[i]);
     ovfile.printField();
   }
@@ -709,234 +724,6 @@ bool EMMIVOX::doAccept(double oldE, double newE, double kbt) {
     if( s < exp(-delta) ) { accept = true; }
   }
   return accept;
-}
-
-void EMMIVOX::doMonteCarlo(vector<double> &eneg)
-{
-  // prepare vector for new sigma and energy
-  vector<double> newsigma, newene;
-  newsigma.resize(sigma_.size());
-  newene.resize(sigma_.size());
-  // and local acceptance
-  double MCaccept = 0.0;
-
-  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(MCaccept)
-  {
-    #pragma omp for reduction( + : MCaccept)
-    // cycle over all the groups in parallel
-    for(unsigned nGMM=0; nGMM<sigma_.size(); ++nGMM) {
-
-      // generate random move
-      double new_s = sigma_[nGMM] + dsigma_[nGMM] * ( 2.0 * random_.RandU01() - 1.0 );
-      // check boundaries
-      if(new_s > sigma_max_[nGMM]) {new_s = 2.0 * sigma_max_[nGMM] - new_s;}
-      if(new_s < sigma_min_[nGMM]) {new_s = 2.0 * sigma_min_[nGMM] - new_s;}
-
-      // cycle on GMM group and calculate new energy
-      double new_ene = 0.0;
-
-      // in case of Gaussian noise
-      if(noise_==0) {
-        double chi2 = 0.0;
-        for(unsigned i=0; i<GMM_d_grps_[nGMM].size(); ++i) {
-          // id GMM component
-          int GMMid = GMM_d_grps_[nGMM][i];
-          // deviation
-          double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
-          // add to chi2
-          chi2 += dev * dev;
-        }
-        // final energy calculation: add normalization and prior
-        new_ene = kbt_ * ( 0.5*chi2/new_s/new_s + (static_cast<double>(GMM_d_grps_[nGMM].size())+prior_)*std::log(new_s) );
-      }
-
-      // in case of Outliers noise
-      if(noise_==1) {
-        for(unsigned i=0; i<GMM_d_grps_[nGMM].size(); ++i) {
-          // id GMM component
-          int GMMid = GMM_d_grps_[nGMM][i];
-          // calculate deviation
-          double dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / new_s;
-          // add to energies
-          new_ene += std::log( 1.0 + 0.5 * dev * dev);
-        }
-        // final energy calculation: add normalization and prior
-        new_ene = kbt_ * ( new_ene + (static_cast<double>(GMM_d_grps_[nGMM].size())+prior_)*std::log(new_s));
-      }
-
-      // accept or reject
-      bool accept = doAccept(eneg[nGMM]/anneal_, new_ene/anneal_, kbt_);
-
-      // in case of acceptance
-      if(accept) {
-        newsigma[nGMM] = new_s;
-        newene[nGMM] = new_ene;
-        MCaccept += 1.0;
-      } else {
-        newsigma[nGMM] = sigma_[nGMM];
-        newene[nGMM] = eneg[nGMM];
-      }
-    } // end of cycle over sigmas
-  }
-
-  // update trials
-  MCtrials_ += static_cast<double>(sigma_.size());
-  // increase acceptance
-  MCaccept_ += MCaccept;
-  // put back into sigma_ and eneg
-  for(unsigned i=0; i<sigma_.size(); ++i) sigma_[i] = newsigma[i];
-  for(unsigned i=0; i<eneg.size(); ++i)   eneg[i]   = newene[i];
-}
-
-void EMMIVOX::doMonteCarloBfact()
-{
-
-// iterator over bfactor map
-  map<unsigned,double>::iterator it;
-
-// cycle over bfactor map
-  for(it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
-
-    // residue id
-    unsigned ires = it->first;
-    // old bfactor
-    double bfactold = it->second;
-
-    // propose move in bfactor
-    double bfactnew = bfactold + dbfact_ * ( 2.0 * random_.RandU01() - 1.0 );
-    // check boundaries
-    if(bfactnew > bfactmax_) {bfactnew = 2.0*bfactmax_ - bfactnew;}
-    if(bfactnew < bfactmin_) {bfactnew = 2.0*bfactmin_ - bfactnew;}
-
-    // useful quantities
-    map<unsigned, double> deltaov;
-    map<unsigned, double>::iterator itov;
-    set<unsigned> ngbs;
-
-    #pragma omp parallel num_threads(OpenMP::getNumThreads())
-    {
-      // private variables
-      map<unsigned, double> deltaov_l;
-      set<unsigned> ngbs_l;
-      #pragma omp for nowait
-      // cycle over all the atoms belonging to residue ires
-      for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
-
-        // get atom id
-        unsigned im = GMM_m_resmap_[ires][ia];
-        // get atom type
-        unsigned atype = GMM_m_type_[im];
-        // sigma for 5 Gaussians
-        Vector5d m_s = GMM_m_s_[atype];
-        // prefactors
-        Vector5d cfact = cfact_[atype];
-        // and position
-        Vector pos = getPosition(im);
-
-        // cycle on all the components affected
-        for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
-          // voxel id
-          unsigned id = GMM_m_nb_[im][i];
-          // get contribution before change
-          double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_, cfact, m_s, bfactold);
-          // get contribution after change
-          double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_, cfact, m_s, bfactnew);
-          // update delta overlap
-          deltaov_l[id] += dnew-dold;
-          // look for neighbors
-          for(unsigned j=0; j<GMM_d_nb_[id].size(); ++j) {
-            // atom index of potential neighbor
-            unsigned in = GMM_d_nb_[id][j];
-            // residue index of potential neighbor
-            unsigned iresn = GMM_m_res_[in];
-            // check if same residue
-            if(ires==iresn) continue;
-            // distance
-            double dist = delta(pos,getPosition(in)).modulo();
-            // if closer than 0.5 nm, add residue to lists
-            if(dist>0 && dist<0.5) ngbs_l.insert(iresn);
-          }
-        }
-      }
-      // add to global list
-      #pragma omp critical
-      for(itov=deltaov_l.begin(); itov!=deltaov_l.end(); ++itov) deltaov[itov->first] += itov->second;
-      #pragma omp critical
-      ngbs.insert(ngbs_l.begin(), ngbs_l.end());
-    }
-
-    // now calculate new and old score
-    double old_ene = 0.0;
-    double new_ene = 0.0;
-
-    if(noise_==0) {
-      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
-        // id of the component
-        unsigned id = itov->first;
-        // new value
-        double ovmdnew = ovmd_[id]+itov->second;
-        // scores
-        double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-        double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-        old_ene += 0.5 * kbt_ * devold * devold;
-        new_ene += 0.5 * kbt_ * devnew * devnew;
-      }
-    }
-    if(noise_==1) {
-      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
-        // id of the component
-        unsigned id = itov->first;
-        // new value
-        double ovmdnew = ovmd_[id]+itov->second;
-        // scores
-        double devold = ( scale_*ovmd_[id]-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-        double devnew = ( scale_*ovmdnew  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
-        old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
-        new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
-      }
-    }
-    if(noise_==2) {
-      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
-        // id of the component
-        unsigned id = itov->first;
-        // new value
-        double ovmdnew = ovmd_[id]+itov->second;
-        // scores
-        double devold = scale_*ovmd_[id]-ovdd_[id];
-        double devnew = scale_*ovmdnew  -ovdd_[id];
-        old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
-        new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
-      }
-    }
-
-    // add restraint to keep Bfactor of close atoms close
-    for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
-      double gold = (bfactold-GMM_m_b_[*is])/sqrt(bfactold+GMM_m_b_[*is])/0.058;
-      double gnew = (bfactnew-GMM_m_b_[*is])/sqrt(bfactnew+GMM_m_b_[*is])/0.058;
-      old_ene += 0.5 * kbt_ * gold * gold;
-      new_ene += 0.5 * kbt_ * gnew * gnew;
-    }
-
-    // increment number of trials
-    MCBtrials_ += 1.0;
-
-    // accept or reject
-    bool accept = doAccept(old_ene/anneal_, new_ene/anneal_, kbt_);
-
-    // in case of acceptance
-    if(accept) {
-      // update acceptance rate
-      MCBaccept_ += 1.0;
-      // update bfactor
-      it->second = bfactnew;
-      // change all the ovmd_ affected
-      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) ovmd_[itov->first] += itov->second;
-    }
-
-  } // end cycle on bfactors
-
-// update auxiliary lists
-  get_auxiliary_vectors();
 }
 
 vector<double> EMMIVOX::read_exp_errors(string errfile)
@@ -1115,11 +902,6 @@ void EMMIVOX::calculate_useful_stuff(double reso)
   log.printf("  minimum Bfactor value       : %3.2f\n", bfactmin_);
   log.printf("  maximum Bfactor value       : %3.2f\n", bfactmax_);
   log.printf("  initial Bfactor value       : %3.2f\n", bfactini);
-  // tabulate exponential
-  dexp_ = dpcutoff_ / static_cast<double> (nexp_-1);
-  for(unsigned i=0; i<nexp_; ++i) {
-    tab_exp_.push_back(exp(-static_cast<double>(i) * dexp_));
-  }
 }
 
 // prepare auxiliary vectors
@@ -1133,7 +915,7 @@ void EMMIVOX::get_auxiliary_vectors()
   {
     // private variables
     Vector5d pref, invs2;
-    #pragma omp for nowait
+    #pragma omp for
     // calculate constant quantities
     for(unsigned im=0; im<GMM_m_res_.size(); ++im) {
       // get atom type
@@ -1154,6 +936,267 @@ void EMMIVOX::get_auxiliary_vectors()
       pref_[im] = pref;
       invs2_[im]= invs2;
     }
+  }
+}
+
+
+void EMMIVOX::doMonteCarlo(vector<double> &eneg)
+{
+  // local acceptance
+  double MCaccept = 0.0;
+
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(MCaccept)
+  {
+    #pragma omp for reduction( + : MCaccept)
+    // cycle over all the groups in parallel
+    for(unsigned nGMM=0; nGMM<sigma_.size(); ++nGMM) {
+
+      // generate random move
+      double new_s = sigma_[nGMM] + dsigma_[nGMM] * ( 2.0 * random_.RandU01() - 1.0 );
+      // check boundaries
+      if(new_s > sigma_max_[nGMM]) {new_s = 2.0 * sigma_max_[nGMM] - new_s;}
+      if(new_s < sigma_min_[nGMM]) {new_s = 2.0 * sigma_min_[nGMM] - new_s;}
+
+      // calculate new group energy
+      double new_ene;
+
+      // in case of Gaussian noise
+      if(noise_==0) new_ene = calculate_Gauss_group(nGMM, new_s, scale_, offset_);
+
+      // in case of Outliers noise
+      if(noise_==1) new_ene = calculate_Outliers_group(nGMM, new_s, scale_, offset_);
+
+      // accept or reject
+      bool accept = doAccept(eneg[nGMM]/anneal_, new_ene/anneal_, kbt_);
+
+      // in case of acceptance
+      if(accept) {
+        sigma_[nGMM] = new_s;
+        eneg[nGMM]   = new_ene;
+        MCaccept += 1.0;
+      }
+    } // end of cycle over sigmas
+  }
+
+  // update trials
+  MCtrials_ += static_cast<double>(sigma_.size());
+  // increase acceptance
+  MCaccept_ += MCaccept;
+}
+
+void EMMIVOX::doMonteCarloBfact()
+{
+
+// iterator over bfactor map
+  map<unsigned,double>::iterator it;
+
+// cycle over bfactor map
+  for(it=GMM_m_b_.begin(); it!=GMM_m_b_.end(); ++it) {
+
+    // residue id
+    unsigned ires = it->first;
+    // old bfactor
+    double bfactold = it->second;
+
+    // propose move in bfactor
+    double bfactnew = bfactold + dbfact_ * ( 2.0 * random_.RandU01() - 1.0 );
+    // check boundaries
+    if(bfactnew > bfactmax_) {bfactnew = 2.0*bfactmax_ - bfactnew;}
+    if(bfactnew < bfactmin_) {bfactnew = 2.0*bfactmin_ - bfactnew;}
+
+    // useful quantities
+    map<unsigned, double> deltaov;
+    map<unsigned, double>::iterator itov;
+    set<unsigned> ngbs;
+
+    #pragma omp parallel num_threads(OpenMP::getNumThreads())
+    {
+      // private variables
+      map<unsigned, double> deltaov_l;
+      set<unsigned> ngbs_l;
+      #pragma omp for
+      // cycle over all the atoms belonging to residue ires
+      for(unsigned ia=0; ia<GMM_m_resmap_[ires].size(); ++ia) {
+
+        // get atom id
+        unsigned im = GMM_m_resmap_[ires][ia];
+        // get atom type
+        unsigned atype = GMM_m_type_[im];
+        // sigma for 5 Gaussians
+        Vector5d m_s = GMM_m_s_[atype];
+        // prefactors
+        Vector5d cfact = cfact_[atype];
+        // and position
+        Vector pos = getPosition(im);
+
+        // cycle on all the components affected
+        for(unsigned i=0; i<GMM_m_nb_[im].size(); ++i) {
+          // voxel id
+          unsigned id = GMM_m_nb_[im][i];
+          // get contribution before change
+          double dold=get_overlap(GMM_d_m_[id], pos, GMM_d_s_, cfact, m_s, bfactold);
+          // get contribution after change
+          double dnew=get_overlap(GMM_d_m_[id], pos, GMM_d_s_, cfact, m_s, bfactnew);
+          // update delta overlap
+          deltaov_l[id] += dnew-dold;
+          // look for neighbors
+          for(unsigned j=0; j<GMM_d_nb_[id].size(); ++j) {
+            // atom index of potential neighbor
+            unsigned in = GMM_d_nb_[id][j];
+            // residue index of potential neighbor
+            unsigned iresn = GMM_m_res_[in];
+            // check if same residue
+            if(ires==iresn) continue;
+            // distance
+            double dist = delta(pos,getPosition(in)).modulo();
+            // if closer than 0.5 nm, add residue to lists
+            if(dist>0 && dist<0.5) ngbs_l.insert(iresn);
+          }
+        }
+      }
+      // add to global list
+      #pragma omp critical
+      for(itov=deltaov_l.begin(); itov!=deltaov_l.end(); ++itov) deltaov[itov->first] += itov->second;
+      #pragma omp critical
+      ngbs.insert(ngbs_l.begin(), ngbs_l.end());
+    }
+
+    // now calculate new and old score
+    double old_ene = 0.0;
+    double new_ene = 0.0;
+
+    if(noise_==0) {
+      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+        // id of the component
+        unsigned id = itov->first;
+        // new value
+        double ovmdnew = ovmd_[id]+itov->second;
+        // scores
+        double devold = ( scale_*ovmd_[id]+offset_-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+        double devnew = ( scale_*ovmdnew+offset_  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+        old_ene += 0.5 * kbt_ * devold * devold;
+        new_ene += 0.5 * kbt_ * devnew * devnew;
+      }
+    }
+    if(noise_==1) {
+      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+        // id of the component
+        unsigned id = itov->first;
+        // new value
+        double ovmdnew = ovmd_[id]+itov->second;
+        // scores
+        double devold = ( scale_*ovmd_[id]+offset_-ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+        double devnew = ( scale_*ovmdnew+offset_  -ovdd_[id] ) / sigma_[GMM_d_beta_[id]];
+        old_ene += kbt_ * std::log( 1.0 + 0.5 * devold * devold );
+        new_ene += kbt_ * std::log( 1.0 + 0.5 * devnew * devnew );
+      }
+    }
+    if(noise_==2) {
+      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) {
+        // id of the component
+        unsigned id = itov->first;
+        // new value
+        double ovmdnew = ovmd_[id]+itov->second;
+        // scores
+        double devold = scale_*ovmd_[id]+offset_-ovdd_[id];
+        double devnew = scale_*ovmdnew+offset_  -ovdd_[id];
+        old_ene += -kbt_ * std::log( 0.5 / devold * erf ( devold * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
+        new_ene += -kbt_ * std::log( 0.5 / devnew * erf ( devnew * inv_sqrt2_ / sigma_min_[GMM_d_beta_[id]] ));
+      }
+    }
+
+    // add restraint to keep Bfactor of close atoms close
+    for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
+      double gold = (bfactold-GMM_m_b_[*is])/sqrt(bfactold+GMM_m_b_[*is])/0.058;
+      double gnew = (bfactnew-GMM_m_b_[*is])/sqrt(bfactnew+GMM_m_b_[*is])/0.058;
+      old_ene += 0.5 * kbt_ * gold * gold;
+      new_ene += 0.5 * kbt_ * gnew * gnew;
+    }
+
+    // increment number of trials
+    MCBtrials_ += 1.0;
+
+    // accept or reject
+    bool accept = doAccept(old_ene/anneal_, new_ene/anneal_, kbt_);
+
+    // in case of acceptance
+    if(accept) {
+      // update acceptance rate
+      MCBaccept_ += 1.0;
+      // update bfactor
+      it->second = bfactnew;
+      // change all the ovmd_ affected
+      for(itov=deltaov.begin(); itov!=deltaov.end(); ++itov) ovmd_[itov->first] += itov->second;
+    }
+
+  } // end cycle on bfactors
+
+// update auxiliary lists
+  get_auxiliary_vectors();
+}
+
+void EMMIVOX::doMonteCarloScale()
+{
+  // propose move in scale
+  double ds = dscale_ * ( 2.0 * random_.RandU01() - 1.0 );
+  double new_scale = scale_ + ds;
+  // check boundaries
+  if(new_scale > scale_max_) {new_scale = 2.0 * scale_max_ - new_scale;}
+  if(new_scale < scale_min_) {new_scale = 2.0 * scale_min_ - new_scale;}
+  // propose move in offset
+  double doff = doffset_ * ( 2.0 * random_.RandU01() - 1.0 );
+  double new_off = offset_ + doff;
+
+  // communicate new_scale and new_off to other replicas
+  if(!no_aver_ && nrep_>1) {
+    if(replica_!=0) {new_scale = 0.0; new_off = 0.0;}
+    multi_sim_comm.Sum(&new_scale, 1);
+    multi_sim_comm.Sum(&new_off, 1);
+  }
+
+  // new energy
+  double new_ene;
+  // prepare energy per group
+  vector<double> eneg(GMM_d_grps_.size(), 0.0);
+
+  // in case of Gaussian noise
+  if(noise_==0) new_ene = calculate_Gauss(eneg, sigma_, new_scale, new_off);
+
+  // in case of Outliers noise
+  if(noise_==1) new_ene = calculate_Outliers(eneg, sigma_, new_scale, new_off);
+
+  // in case of Marginal noise
+  if(noise_==2) new_ene = calculate_Marginal(new_scale, new_off);
+
+  // in case sum new energy across replicas
+  if(!no_aver_ && nrep_>1) multi_sim_comm.Sum(&new_ene, 1);
+
+  // accept or reject
+  bool accept = doAccept(ene_, new_ene, kbt_);
+
+  // increment number of trials
+  MCStrials_ += 1.0;
+
+  // in case of acceptance
+  if(accept) {
+    scale_ = new_scale;
+    offset_ = new_off;
+    ene_ = new_ene;
+    MCSaccept_ += 1.0;
+  }
+
+  // communicate to other replicas
+  if(!no_aver_ && nrep_>1) {
+    if(replica_!=0) {
+      scale_ = 0.0;
+      offset_ = 0.0;
+      ene_ = 0.0;
+      MCSaccept_ = 0.0;
+    }
+    multi_sim_comm.Sum(&scale_, 1);
+    multi_sim_comm.Sum(&offset_, 1);
+    multi_sim_comm.Sum(&ene_, 1);
+    multi_sim_comm.Sum(&MCSaccept_, 1);
   }
 }
 
@@ -1203,6 +1246,61 @@ double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, double d_s,
   return ov_tot;
 }
 
+void EMMIVOX::update_neighbor_sphere()
+{
+  // dimension of atom vectors
+  unsigned GMM_m_size = GMM_m_type_.size();
+
+  // clear global list and reference positions
+  ns_.clear(); refpos_.clear();
+  // allocate reference positions
+  refpos_.resize(GMM_m_size);
+
+  // store reference positions
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned im=0; im<GMM_m_size; ++im) refpos_[im] = getPosition(im);
+
+  // cycle on GMM components - in parallel
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  {
+    // private variables
+    vector<unsigned> ns_l;
+    Vector d_m;
+    #pragma omp for
+    for(unsigned id=0; id<ovdd_.size(); ++id) {
+      // grid point
+      d_m = GMM_d_m_[id];
+      // cycle on all atoms
+      for(unsigned im=0; im<GMM_m_size; ++im) {
+        // calculate distance
+        double dist = delta(refpos_[im], d_m).modulo();
+        // add to local list
+        if(dist<=ns_cutoff_) ns_l.push_back(id*GMM_m_size+im);
+      }
+    }
+    // add to global list
+    #pragma omp critical
+    ns_.insert(ns_.end(), ns_l.begin(), ns_l.end());
+  }
+}
+
+bool EMMIVOX::do_neighbor_sphere()
+{
+  vector<double> dist(refpos_.size(), 0.0);
+  bool update = false;
+
+// calculate displacement
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for(unsigned im=0; im<refpos_.size(); ++im) dist[im] = delta(getPosition(im),refpos_[im]).modulo();
+
+// check if update or not
+  double maxdist = *max_element(dist.begin(), dist.end());
+  if(maxdist>=(ns_cutoff_-nl_cutoff_)) update=true;
+
+// return if update or not
+  return update;
+}
+
 void EMMIVOX::update_neighbor_list()
 {
   // dimension of atom vectors
@@ -1211,74 +1309,21 @@ void EMMIVOX::update_neighbor_list()
   // clear global list
   nl_.clear();
 
-  // cycle on GMM components - in parallel
+  // cycle on neighbour sphere - in parallel
   #pragma omp parallel num_threads(OpenMP::getNumThreads())
   {
     // private variables
     vector<unsigned> nl_l;
-    vector<double> ov_l;
-    map<double, unsigned> ov_m;
-    Vector d_m, md;
-    double ov_tot, m2, expov, ov, ov_cut, res;
-    unsigned itab;
-    #pragma omp for nowait
-    for(unsigned id=0; id<ovdd_.size(); ++id) {
-      // clear lists and map
-      ov_l.clear(); ov_m.clear();
-      // grid point
-      d_m = GMM_d_m_[id];
-      // total overlap with id
-      ov_tot = 0.0;
-      // cycle on all atoms
-      for(unsigned im=0; im<GMM_m_size; ++im) {
-        // calculate vector difference m_m-d_m with/without pbc
-        md = delta(getPosition(im), d_m);
-        // calculate modulo
-        m2 = md[0]*md[0]+md[1]*md[1]+md[2]*md[2];
-        // calculate exponent
-        expov = m2 * invs2_[im][4];
-        // get index of expov in tabulated exponential
-        itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
-        // check boundaries
-        if(itab>=tab_exp_.size()) continue;
-        // in case calculate overlap
-        ov = pref_[im][4] * tab_exp_[itab];
-        // add other Gaussian components
-        for(int j=3; j>=0; j--) {
-          // calculate exponent
-          expov = m2 * invs2_[im][j];
-          // get index of expov in tabulated exponential
-          itab = static_cast<unsigned> (round( 0.5*expov/dexp_ ));
-          // check boundaries
-          if(itab>=tab_exp_.size()) break;
-          // add overlap contribution
-          ov += pref_[im][j] * tab_exp_[itab];
-        }
-        // add to list
-        ov_l.push_back(ov);
-        // and map to retrieve atom index
-        ov_m[ov] = im;
-        // increase ov_tot
-        ov_tot += ov;
-      }
-      // check if zero size -> add atom with max overlap
-      if(ov_l.size()==0) continue;
-      // define cutoff
-      ov_cut = ov_tot * nl_cutoff_;
-      // sort ov_l in ascending order
-      std::sort(ov_l.begin(), ov_l.end());
-      // integrate ov_l
-      res = 0.0;
-      for(unsigned i=0; i<ov_l.size()-1; ++i) {
-        res += ov_l[i];
-        // if exceeding the cutoff for overlap, stop
-        if(res >= ov_cut) break;
-        else ov_m.erase(ov_l[i]);
-      }
-      // now add atoms to local neighborlist
-      for(map<double, unsigned>::iterator it=ov_m.begin(); it!=ov_m.end(); ++it)
-        nl_l.push_back(id*GMM_m_size+it->second);
-      // end cycle on GMM components in parallel
+    unsigned id, im;
+    #pragma omp for
+    for(unsigned i=0; i<ns_.size(); ++i) {
+      // get data (id) and atom (im) indexes
+      id = ns_[i] / GMM_m_size;
+      im = ns_[i] % GMM_m_size;
+      // calculate distance
+      double dist = delta(GMM_d_m_[id], getPosition(im)).modulo();
+      // add to local neighbour list
+      if(dist<=nl_cutoff_) nl_l.push_back(ns_[i]);
     }
     // add to global list
     #pragma omp critical
@@ -1312,6 +1357,13 @@ void EMMIVOX::prepare()
 void EMMIVOX::calculate_overlap() {
 
   if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0) {
+    // check if time to update neighbor sphere
+    bool update = false;
+    if(first_time_ || getExchangeStep()) update = true;
+    else update = do_neighbor_sphere();
+    // update neighbor sphere
+    if(update) update_neighbor_sphere();
+    // update neighbor list
     update_neighbor_list();
     first_time_=false;
   }
@@ -1326,7 +1378,7 @@ void EMMIVOX::calculate_overlap() {
     // private variables
     vector<double> v_(ovmd_.size(), 0.0);
     unsigned id, im;
-    #pragma omp for nowait
+    #pragma omp for
     for(unsigned i=0; i<nl_.size(); ++i) {
       // get data (id) and atom (im) indexes
       id = nl_[i] / GMM_m_size;
@@ -1338,83 +1390,6 @@ void EMMIVOX::calculate_overlap() {
     for(unsigned i=0; i<ovmd_.size(); ++i) ovmd_[i] += v_[i];
   }
 
-}
-
-double EMMIVOX::scaleEnergy(double s)
-{
-  double ene = 0.0;
-  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
-  {
-    #pragma omp for reduction( + : ene)
-    for(unsigned i=0; i<ovdd_.size(); ++i) {
-      ene += std::log( abs ( s * ovmd_[i] - ovdd_[i] ) );
-    }
-  }
-  return ene;
-}
-
-double EMMIVOX::doRegression(double scale)
-{
-// standard MC parameters
-  unsigned MCsteps = 10000;
-  double kbtmin = 1.0;
-  double kbtmax = 10.0;
-  unsigned ncold = 500;
-  unsigned nhot = 200;
-  double MCacc = 0.0;
-  double kbt, ebest, scale_best;
-
-// initial value of energy
-  double ene = scaleEnergy(scale);
-// set best energy and scale
-  ebest = ene;
-  scale_best = scale;
-
-// MC loop
-  for(unsigned istep=0; istep<MCsteps; ++istep) {
-    // get temperature
-    if(istep%(ncold+nhot)<ncold) kbt = kbtmin;
-    else kbt = kbtmax;
-    // propose move in scale
-    double ds = dscale_ * ( 2.0 * random_.RandU01() - 1.0 );
-    double new_scale = scale + ds;
-    // check boundaries
-    if(new_scale > scale_max_) {new_scale = 2.0 * scale_max_ - new_scale;}
-    if(new_scale < scale_min_) {new_scale = 2.0 * scale_min_ - new_scale;}
-    // new energy
-    double new_ene = scaleEnergy(new_scale);
-    // accept or reject
-    bool accept = doAccept(ene, new_ene, kbt);
-    // in case of acceptance
-    if(accept) {
-      scale = new_scale;
-      ene = new_ene;
-      MCacc += 1.0;
-    }
-    // save best
-    if(ene<ebest) {
-      ebest = ene;
-      scale_best = scale;
-    }
-  }
-// calculate acceptance
-  double accscale = MCacc / static_cast<double>(MCsteps);
-// global communication
-  if(!no_aver_ && nrep_>1) {
-    if(replica_!=0) {
-      scale_best = 0.0;
-      ebest = 0.0;
-      accscale = 0.0;
-    }
-    multi_sim_comm.Sum(&scale_best, 1);
-    multi_sim_comm.Sum(&ebest, 1);
-    multi_sim_comm.Sum(&accscale, 1);
-  }
-// set scale parameters
-  getPntrToComponent("accscale")->set(accscale);
-  getPntrToComponent("enescale")->set(ebest);
-// return scale value
-  return scale_best;
 }
 
 double EMMIVOX::get_annealing(long int step)
@@ -1451,28 +1426,20 @@ void EMMIVOX::calculate()
   // get time step
   long int step = getStep();
 
-  // do regression
-  if(nregres_>0) {
-    if(step%nregres_==0 && !getExchangeStep()) scale_ = doRegression(scale_);
-    // set scale component
-    getPntrToComponent("scale")->set(scale_);
-  }
-
   // write model overlap to file
   if(ovstride_>0 && step%ovstride_==0) write_model_overlap(step);
 
-  // clear energy and store energy per group
-  ene_ = 0.0;
-  vector<double> eneg;
+  // prepare energy per group
+  vector<double> eneg(GMM_d_grps_.size(), 0.0);
 
   // Gaussian noise
-  if(noise_==0) eneg = calculate_Gauss();
+  if(noise_==0) ene_ = calculate_Gauss(eneg, sigma_, scale_, offset_);
 
   // Outliers noise
-  if(noise_==1) eneg = calculate_Outliers();
+  if(noise_==1) ene_ = calculate_Outliers(eneg, sigma_, scale_, offset_);
 
   // Marginal noise
-  if(noise_==2) calculate_Marginal();
+  if(noise_==2) ene_ = calculate_Marginal(scale_, offset_);
 
   // get annealing rescale factor
   if(nanneal_>0) {
@@ -1517,11 +1484,10 @@ void EMMIVOX::calculate()
     }
     #pragma omp critical
     for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] += atom_der[i];
+    #pragma omp for
+    for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
   }
 
-  // set atom derivatives
-  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-  for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
   // set score and virial
   getPntrToComponent("scoreb")->set(ene_);
   setBoxDerivatives(getPntrToComponent("scoreb"), virial);
@@ -1534,6 +1500,28 @@ void EMMIVOX::calculate()
     double acc = MCaccept_ / MCtrials_;
     // set value
     getPntrToComponent("acc")->set(acc);
+  }
+
+  // Monte Carlo on scale
+  if(dscale_>0) {
+    // do Monte Carlo
+    if(step%MCstride_==0 && !getExchangeStep()) {
+      // sigmas might have changed!
+      if(noise_!=2) {
+        // first recalculate total energy from energy groups
+        ene_ = accumulate(eneg.begin(), eneg.end(), 0.0);
+        // and in case sum across replicas
+        if(!no_aver_ && nrep_>1) multi_sim_comm.Sum(&ene_, 1);
+      }
+      // than do MC on scale
+      doMonteCarloScale();
+    }
+    // calculate acceptance ratio
+    double acc = MCSaccept_ / MCStrials_;
+    // set value
+    getPntrToComponent("scale")->set(scale_);
+    getPntrToComponent("offset")->set(offset_);
+    getPntrToComponent("accscale")->set(acc);
   }
 
   // Monte Carlo on b factors
@@ -1550,78 +1538,111 @@ void EMMIVOX::calculate()
   if(step%statusstride_==0) print_status(step);
 }
 
-vector<double> EMMIVOX::calculate_Gauss()
+double EMMIVOX::calculate_Gauss_group(unsigned igroup,
+                                       double sigma, double scale, double offset)
 {
-  vector<double> eneg(GMM_d_grps_.size(), 0.0);
-  double dev;
-  int GMMid;
-  // cycle on all the GMM groups
-  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
-    // cycle on all the members of the group
-    for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
-      // id of the GMM component
-      GMMid = GMM_d_grps_[i][j];
-      // calculate deviation
-      dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
-      // add to group energy
-      eneg[i] += dev * dev;
-      // store derivative for later
-      GMMid_der_[GMMid] = kbt_ * dev / sigma_[i];
-    }
-    // add normalizations and prior
-    eneg[i] = kbt_ * ( 0.5 * eneg[i] + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
-    // add to total energy
-    ene_ += eneg[i];
+  double eneg = 0.0;
+  // cycle on all the members of the group
+  for(unsigned j=0; j<GMM_d_grps_[igroup].size(); ++j) {
+    // id of the GMM component
+    int GMMid = GMM_d_grps_[igroup][j];
+    // calculate deviation
+    double dev = ( scale * ovmd_[GMMid] + offset - ovdd_[GMMid] ) / sigma;
+    // add to group energy
+    eneg += dev * dev;
+    // store derivative for later
+    GMMid_der_[GMMid] = kbt_ * dev / sigma;
   }
+  // add normalizations and prior
+  eneg = kbt_ * ( 0.5 * eneg + (static_cast<double>(GMM_d_grps_[igroup].size())+prior_) * std::log(sigma) );
+  // return energy per group
   return eneg;
 }
 
-vector<double> EMMIVOX::calculate_Outliers()
+double EMMIVOX::calculate_Gauss(vector<double> &eneg,
+                                 vector<double> &sigma, double scale, double offset)
 {
-  vector<double> eneg(GMM_d_grps_.size(), 0.0);
-  double dev;
-  int GMMid;
-  // cycle on all the GMM groups
-  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
-    // cycle on all the members of the group
-    for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
-      // id of the GMM component
-      GMMid = GMM_d_grps_[i][j];
-      // calculate deviation
-      dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] ) / sigma_[i];
-      // add to group energy
-      eneg[i] += std::log( 1.0 + 0.5 * dev * dev );
-      // store derivative for later
-      GMMid_der_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma_[i];
+  double ene = 0.0;
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
+  {
+    // cycle on all the GMM groups in parallel
+    #pragma omp for reduction( + : ene)
+    for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+      // get group contribution
+      eneg[i] = calculate_Gauss_group(i, sigma[i], scale, offset);
+      // add to total energy
+      ene += eneg[i];
     }
-    // add normalizations and prior
-    eneg[i] = kbt_ * ( eneg[i] + (static_cast<double>(GMM_d_grps_[i].size())+prior_) * std::log(sigma_[i]) );
-    // add to total energy
-    ene_ += eneg[i];
   }
+  // return total energy
+  return ene;
+}
+
+double EMMIVOX::calculate_Outliers_group(unsigned igroup,
+    double sigma, double scale, double offset)
+{
+  double eneg = 0.0;
+  // cycle on all the members of the group
+  for(unsigned j=0; j<GMM_d_grps_[igroup].size(); ++j) {
+    // id of the GMM component
+    int GMMid = GMM_d_grps_[igroup][j];
+    // calculate deviation
+    double dev = ( scale * ovmd_[GMMid] + offset - ovdd_[GMMid] ) / sigma;
+    // add to group energy
+    eneg += std::log( 1.0 + 0.5 * dev * dev );
+    // store derivative for later
+    GMMid_der_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma;
+  }
+  // add normalizations and prior
+  eneg = kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[igroup].size())+prior_) * std::log(sigma) );
+  // return energy per group
   return eneg;
 }
 
-void EMMIVOX::calculate_Marginal()
+double EMMIVOX::calculate_Outliers(vector<double> &eneg,
+                                    vector<double> &sigma, double scale, double offset)
 {
-  double dev, errf;
-  int GMMid;
-  // cycle on all the GMM groups
-  for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
-    // cycle on all the members of the group
-    for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
-      // id of the GMM component
-      GMMid = GMM_d_grps_[i][j];
-      // calculate deviation
-      dev = ( scale_*ovmd_[GMMid]-ovdd_[GMMid] );
-      // calculate errf
-      errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
-      // add to group energy
-      ene_ += -kbt_ * std::log ( 0.5 / dev * errf ) ;
-      // store derivative for later
-      GMMid_der_[GMMid] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
+  double ene = 0.0;
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
+  {
+    // cycle on all the GMM groups in parallel
+    #pragma omp for reduction( + : ene)
+    for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+      // get group contribution
+      eneg[i] = calculate_Outliers_group(i, sigma[i], scale, offset);
+      // add to total energy
+      ene += eneg[i];
     }
   }
+  // return total energy
+  return ene;
+}
+
+double EMMIVOX::calculate_Marginal(double scale, double offset)
+{
+  double ene = 0.0;
+  #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
+  {
+    // cycle on all the GMM groups
+    #pragma omp for reduction( + : ene)
+    for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
+      // cycle on all the members of the group
+      for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
+        // id of the GMM component
+        int GMMid = GMM_d_grps_[i][j];
+        // calculate deviation
+        double dev = ( scale * ovmd_[GMMid] + offset - ovdd_[GMMid] );
+        // calculate errf
+        double errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
+        // add to  energy
+        ene += -kbt_ * std::log ( 0.5 / dev * errf ) ;
+        // store derivative for later
+        GMMid_der_[GMMid] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
+      }
+    }
+  }
+  // return total energy
+  return ene;
 }
 
 }
