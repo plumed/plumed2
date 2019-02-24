@@ -1545,13 +1545,13 @@ double EMMIVOX::calculate_Gauss_group(unsigned igroup,
   // cycle on all the members of the group
   for(unsigned j=0; j<GMM_d_grps_[igroup].size(); ++j) {
     // id of the GMM component
-    int GMMid = GMM_d_grps_[igroup][j];
+    int id = GMM_d_grps_[igroup][j];
     // calculate deviation
-    double dev = ( scale * ovmd_[GMMid] + offset - ovdd_[GMMid] ) / sigma;
+    double dev = ( scale * ovmd_[id] + offset - ovdd_[id] ) / sigma;
     // add to group energy
     eneg += dev * dev;
     // store derivative for later
-    GMMid_der_[GMMid] = kbt_ * dev / sigma;
+    GMMid_der_[id] = kbt_ * dev / sigma;
   }
   // add normalizations and prior
   eneg = kbt_ * ( 0.5 * eneg + (static_cast<double>(GMM_d_grps_[igroup].size())+prior_) * std::log(sigma) );
@@ -1585,13 +1585,13 @@ double EMMIVOX::calculate_Outliers_group(unsigned igroup,
   // cycle on all the members of the group
   for(unsigned j=0; j<GMM_d_grps_[igroup].size(); ++j) {
     // id of the GMM component
-    int GMMid = GMM_d_grps_[igroup][j];
+    int id = GMM_d_grps_[igroup][j];
     // calculate deviation
-    double dev = ( scale * ovmd_[GMMid] + offset - ovdd_[GMMid] ) / sigma;
+    double dev = ( scale * ovmd_[id] + offset - ovdd_[id] ) / sigma;
     // add to group energy
     eneg += std::log( 1.0 + 0.5 * dev * dev );
     // store derivative for later
-    GMMid_der_[GMMid] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma;
+    GMMid_der_[id] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma;
   }
   // add normalizations and prior
   eneg = kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[igroup].size())+prior_) * std::log(sigma) );
@@ -1629,15 +1629,15 @@ double EMMIVOX::calculate_Marginal(double scale, double offset)
       // cycle on all the members of the group
       for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) {
         // id of the GMM component
-        int GMMid = GMM_d_grps_[i][j];
+        int id = GMM_d_grps_[i][j];
         // calculate deviation
-        double dev = ( scale * ovmd_[GMMid] + offset - ovdd_[GMMid] );
+        double dev = ( scale * ovmd_[id] + offset - ovdd_[id] );
         // calculate errf
         double errf = erf ( dev * inv_sqrt2_ / sigma_min_[i] );
         // add to  energy
         ene += -kbt_ * std::log ( 0.5 / dev * errf ) ;
         // store derivative for later
-        GMMid_der_[GMMid] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
+        GMMid_der_[id] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
       }
     }
   }
