@@ -34,7 +34,7 @@ namespace ves {
 
 
 // construction of Wavelet grid according to the Daubechies-Lagarias method
-// c.f. Strang, Nguyen "Wavelets and Filter Banks" chapter 6.3
+// see Strang, Nguyen "Wavelets and Filter Banks" chapter 6.3
 std::unique_ptr<Grid> WaveletGrid::setupGrid(const unsigned order, unsigned gridsize, const bool use_mother_wavelet, const Type type) {
   // calculate the grid properties of the scaling grid
   // the range of the grid is from 0 to maxsupport
