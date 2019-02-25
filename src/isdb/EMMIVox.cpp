@@ -1107,8 +1107,8 @@ void EMMIVOX::doMonteCarloBfact()
 
     // add restraint to keep Bfactor of close atoms close
     for(set<unsigned>::iterator is=ngbs.begin(); is!=ngbs.end(); ++is) {
-      double gold = (bfactold-GMM_m_b_[*is])/sqrt(bfactold+GMM_m_b_[*is])/0.058;
-      double gnew = (bfactnew-GMM_m_b_[*is])/sqrt(bfactnew+GMM_m_b_[*is])/0.058;
+      double gold = (bfactold-GMM_m_b_[*is])/sqrt(bfactold+GMM_m_b_[*is])/0.1;
+      double gnew = (bfactnew-GMM_m_b_[*is])/sqrt(bfactnew+GMM_m_b_[*is])/0.1;
       old_ene += 0.5 * kbt_ * gold * gold;
       new_ene += 0.5 * kbt_ * gnew * gnew;
     }
