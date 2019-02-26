@@ -45,7 +45,7 @@ This force is the same as the linear part of the bias in \ref
 RESTRAINT, but this bias has the ability to compute the prefactors
 adaptively using the scheme of White and Voth \cite white2014efficient
 in order to match target observable values for a set of CVs.
-Further updates to the algorithm are described in \cite hocky2017cgds 
+Further updates to the algorithm are described in \cite hocky2017cgds
 and you can read a review on the method and its applications here: \cite Amirkulova2019Recent.
 
 You can
@@ -72,15 +72,15 @@ desired target value is no longer zero.
 
 Notice that a similar method is available as \ref MAXENT, although with different features and using a different optimization algorithm.
 
-\par Virial 
+\par Virial
 
-The bias forces modify the virial and this can change your simulation density if the bias is used in an NPT simulation. 
+The bias forces modify the virial and this can change your simulation density if the bias is used in an NPT simulation.
 One way to avoid changing the virial contribution from the bias is to add the keyword VIRIAL=1.0, which changes how the bias
 is computed to minimize its contribution to the virial. This can also lead to smaller magnitude biases that are more robust if
 transferred to other systems.  VIRIAL=1.0 can be a reasonable starting point and increasing the value changes the balance between matching
-the set-points and minimizing the virial. See \cite Amirkulova2019Recent for details on the equations. Since the coupling constants 
-are unique with a single CV, VIRIAL is not applicable with a single CV. When used with multiple CVs, the CVs should be correlated 
-which is almost always the case.   
+the set-points and minimizing the virial. See \cite Amirkulova2019Recent for details on the equations. Since the coupling constants
+are unique with a single CV, VIRIAL is not applicable with a single CV. When used with multiple CVs, the CVs should be correlated
+which is almost always the case.
 
 \par Examples
 
