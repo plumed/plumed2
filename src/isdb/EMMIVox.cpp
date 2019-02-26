@@ -661,6 +661,9 @@ void EMMIVOX::read_status()
           ifile->scanField("s"+num, sigma_[i]);
         }
       }
+      // read scale and offset
+      ifile->scanField("scale", scale_);
+      ifile->scanField("offset", offset_);
       // read bfactors
       for(unsigned i=0; i<GMM_m_res_.size(); ++i) {
         // convert i to string
@@ -701,6 +704,9 @@ void EMMIVOX::print_status(long int step)
       statusfile_.printField("s"+num, sigma_[i]);
     }
   }
+  // always write scale and offset
+  statusfile_.printField("scale", scale_);
+  statusfile_.printField("offset", offset_);
   // always write bfactors
   for(unsigned i=0; i<GMM_m_res_.size(); ++i) {
     // convert i to string
