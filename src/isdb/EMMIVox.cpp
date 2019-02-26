@@ -195,10 +195,6 @@ private:
   double doffset_;
   double MCSaccept_;
   double MCStrials_;
-  // simulated annealing
-  unsigned nanneal_;
-  double   kanneal_;
-  double   anneal_;
   // prior exponent
   double prior_;
   // noise type
@@ -213,8 +209,6 @@ private:
   void write_model_overlap(long int step);
 // get median of vector
   double get_median(vector<double> &v);
-// annealing
-  double get_annealing(long int step);
 // read and write status
   void read_status();
   void print_status(long int step);
@@ -249,17 +243,17 @@ private:
 // calculate overlap
   void calculate_overlap();
 // Gaussian noise
-  double calculate_Gauss_group(unsigned igroup,
-                               double sigma, double scale, double offset);
-  double calculate_Gauss(vector<double> &eneg,
-                         vector<double> &sigma, double scale, double offset);
+  double calculate_Gauss_group(unsigned igroup, double sigma,
+                               double scale, double offset, vector<double> &GMMid_der);
+  double calculate_Gauss(vector<double> &eneg, vector<double> &sigma,
+                         double scale, double offset, vector<double> &GMMid_der);
 // Outliers noise
-  double calculate_Outliers_group(unsigned igroup,
-                                  double sigma, double scale, double offset);
-  double calculate_Outliers(vector<double> &eneg,
-                            vector<double> &sigma, double scale, double offset);
+  double calculate_Outliers_group(unsigned igroup, double sigma,
+                                  double scale, double offset, vector<double> &GMMid_der);
+  double calculate_Outliers(vector<double> &eneg, vector<double> &sigma,
+                            double scale, double offset, vector<double> &GMMid_der);
 // Marginal noise
-  double calculate_Marginal(double scale, double offset);
+  double calculate_Marginal(double scale, double offset, vector<double> &GMMid_der);
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -299,8 +293,6 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.add("optional","SCALE","scale factor");
   keys.add("optional","OFFSET","offset");
   keys.add("optional","DOFFSET","maximum offset MC move");
-  keys.add("optional","ANNEAL", "Length of annealing cycle");
-  keys.add("optional","ANNEAL_FACT", "Annealing temperature factor");
   keys.add("optional","TEMP","temperature");
   keys.add("optional","PRIOR", "exponent of uncertainty prior");
   keys.add("optional","WRITE_OV_STRIDE","write model overlaps every N steps");
@@ -313,7 +305,6 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("scale", "default","scale factor");
   keys.addOutputComponent("offset","default","offset");
   keys.addOutputComponent("accscale", "default","MC acceptance for scale");
-  keys.addOutputComponent("anneal","ANNEAL","annealing factor");
 }
 
 EMMIVOX::EMMIVOX(const ActionOptions&ao):
@@ -328,7 +319,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   statusstride_(0), first_status_(true),
   scale_(1.), dscale_(0.), offset_(0.), doffset_(0.),
   MCSaccept_(0.), MCStrials_(0.),
-  nanneal_(0), kanneal_(0.), anneal_(1.),
   prior_(1.), ovstride_(0)
 {
 
@@ -399,11 +389,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // exponent of uncertainty prior
   parse("PRIOR",prior_);
-
-  // simulated annealing stuff
-  parse("ANNEAL", nanneal_);
-  parse("ANNEAL_FACT", kanneal_);
-  if(nanneal_>0 && kanneal_<=1.0) error("with ANNEAL, ANNEAL_FACT must be greater than 1");
 
   // scale MC
   parse("SCALE", scale_);
@@ -495,10 +480,6 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   log.printf("  prior exponent : %f\n",prior_);
   log.printf("  number of replicas for averaging: %u\n",nrep_);
   log.printf("  id of the replica : %u\n",replica_);
-  if(nanneal_>0) {
-    log.printf("  length of annealing cycle : %u\n",nanneal_);
-    log.printf("  annealing factor : %f\n",kanneal_);
-  }
   if(ovstride_>0) {
     log.printf("  stride for writing model overlaps : %u\n",ovstride_);
     log.printf("  file for writing model overlaps : %s\n", ovfilename_.c_str());
@@ -580,14 +561,11 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
 
   // add components
   addComponentWithDerivatives("scoreb"); componentIsNotPeriodic("scoreb");
-  if(dbfact_>0) {addComponent("accB"); componentIsNotPeriodic("accB");}
-  if(noise_!=2) {addComponent("acc"); componentIsNotPeriodic("acc");}
-  if(dscale_>0.0) {
-    addComponent("scale");     componentIsNotPeriodic("scale");
-    addComponent("offset");    componentIsNotPeriodic("offset");
-    addComponent("accscale");  componentIsNotPeriodic("accscale");
-  }
-  if(nanneal_>0) {addComponent("anneal"); componentIsNotPeriodic("anneal");}
+  addComponent("scale");                 componentIsNotPeriodic("scale");
+  addComponent("offset");                componentIsNotPeriodic("offset");
+  if(dbfact_>0) {addComponent("accB");   componentIsNotPeriodic("accB");}
+  if(noise_!=2) {if(dsigma_[0]>0) {addComponent("acc");    componentIsNotPeriodic("acc");}}
+  if(dscale_>0.0) {addComponent("accscale");  componentIsNotPeriodic("accscale");}
 
   // initialize random seed
   unsigned iseed = time(NULL)+replica_;
@@ -950,6 +928,8 @@ void EMMIVOX::doMonteCarlo(vector<double> &eneg)
 {
   // local acceptance
   double MCaccept = 0.0;
+  // new derivatives per GMM component
+  vector<double> new_GMMid_der(GMMid_der_.size(), 0.0);
 
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(MCaccept)
   {
@@ -967,23 +947,26 @@ void EMMIVOX::doMonteCarlo(vector<double> &eneg)
       double new_ene;
 
       // in case of Gaussian noise
-      if(noise_==0) new_ene = calculate_Gauss_group(i, new_s, scale_, offset_);
+      if(noise_==0) new_ene = calculate_Gauss_group(i, new_s, scale_, offset_, new_GMMid_der);
 
       // in case of Outliers noise
-      if(noise_==1) new_ene = calculate_Outliers_group(i, new_s, scale_, offset_);
+      if(noise_==1) new_ene = calculate_Outliers_group(i, new_s, scale_, offset_, new_GMMid_der);
 
       // accept or reject
-      bool accept = doAccept(eneg[i]/anneal_, new_ene/anneal_, kbt_);
+      bool accept = doAccept(eneg[i], new_ene, kbt_);
 
       // in case of acceptance
       if(accept) {
         sigma_[i] = new_s;
         eneg[i]   = new_ene;
         MCaccept += 1.0;
+        // derivatives
+        for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) GMMid_der_[GMM_d_grps_[i][j]] = new_GMMid_der[GMM_d_grps_[i][j]];
       }
     } // end of cycle over sigmas
   }
-
+  // recalculate total energy from updated energy groups
+  ene_ = accumulate(eneg.begin(), eneg.end(), 0.0);
   // update trials
   MCtrials_ += static_cast<double>(sigma_.size());
   // increase acceptance
@@ -1123,7 +1106,7 @@ void EMMIVOX::doMonteCarloBfact()
     MCBtrials_ += 1.0;
 
     // accept or reject
-    bool accept = doAccept(old_ene/anneal_, new_ene/anneal_, kbt_);
+    bool accept = doAccept(old_ene, new_ene, kbt_);
 
     // in case of acceptance
     if(accept) {
@@ -1162,17 +1145,19 @@ void EMMIVOX::doMonteCarloScale()
 
   // new energy
   double new_ene;
-  // prepare energy per group
-  vector<double> eneg(GMM_d_grps_.size(), 0.0);
+  // prepare new energy per group
+  vector<double> new_eneg(GMM_d_grps_.size(), 0.0);
+  // and derivatives
+  vector<double> new_GMMid_der(GMMid_der_.size(), 0.0);
 
   // in case of Gaussian noise
-  if(noise_==0) new_ene = calculate_Gauss(eneg, sigma_, new_scale, new_off);
+  if(noise_==0) new_ene = calculate_Gauss(new_eneg, sigma_, new_scale, new_off, new_GMMid_der);
 
   // in case of Outliers noise
-  if(noise_==1) new_ene = calculate_Outliers(eneg, sigma_, new_scale, new_off);
+  if(noise_==1) new_ene = calculate_Outliers(new_eneg, sigma_, new_scale, new_off, new_GMMid_der);
 
   // in case of Marginal noise
-  if(noise_==2) new_ene = calculate_Marginal(new_scale, new_off);
+  if(noise_==2) new_ene = calculate_Marginal(new_scale, new_off, new_GMMid_der);
 
   // in case sum new energy across replicas
   if(!no_aver_ && nrep_>1) multi_sim_comm.Sum(&new_ene, 1);
@@ -1183,33 +1168,30 @@ void EMMIVOX::doMonteCarloScale()
   // increment number of trials
   MCStrials_ += 1.0;
 
+  // communicate decision
+  int do_update = 0;
+  if(accept) do_update = 1;
+  if(!no_aver_ && nrep_>1) {
+    if(replica_!=0) do_update = 0;
+    multi_sim_comm.Sum(&do_update, 1);
+  }
+
   // in case of acceptance
-  if(accept) {
+  if(do_update) {
     scale_ = new_scale;
     offset_ = new_off;
     ene_ = new_ene;
     MCSaccept_ += 1.0;
-  }
-
-  // communicate to other replicas
-  if(!no_aver_ && nrep_>1) {
-    if(replica_!=0) {
-      scale_ = 0.0;
-      offset_ = 0.0;
-      ene_ = 0.0;
-      MCSaccept_ = 0.0;
-    }
-    multi_sim_comm.Sum(&scale_, 1);
-    multi_sim_comm.Sum(&offset_, 1);
-    multi_sim_comm.Sum(&ene_, 1);
-    multi_sim_comm.Sum(&MCSaccept_, 1);
+    GMMid_der_ = new_GMMid_der;
+    // in case sum derivatives across replicas
+    if(!no_aver_ && nrep_>1) multi_sim_comm.Sum(&GMMid_der_[0], GMMid_der_.size());
   }
 }
 
 // get overlap and derivatives
 double EMMIVOX::get_overlap_der(const Vector &d_m, const Vector &m_m,
-                                 const Vector5d &pref, const Vector5d &invs2,
-                                 Vector &ov_der)
+                                const Vector5d &pref, const Vector5d &invs2,
+                                Vector &ov_der)
 {
   // initialize stuff
   double ov_tot = 0.0;
@@ -1233,7 +1215,7 @@ double EMMIVOX::get_overlap_der(const Vector &d_m, const Vector &m_m,
 
 // get overlap
 double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m, double d_s,
-                             const Vector5d &cfact, const Vector5d &m_s, double bfact)
+                            const Vector5d &cfact, const Vector5d &m_s, double bfact)
 {
   // calculate vector difference with/without pbc
   Vector md = delta(m_m, d_m);
@@ -1398,22 +1380,6 @@ void EMMIVOX::calculate_overlap() {
 
 }
 
-double EMMIVOX::get_annealing(long int step)
-{
-// default no annealing
-  double fact = 1.0;
-// position in annealing cycle
-  unsigned nc = step%(4*nanneal_);
-// useful doubles
-  double ncd = static_cast<double>(nc);
-  double nn  = static_cast<double>(nanneal_);
-// set fact
-  if(nc>=nanneal_   && nc<2*nanneal_) fact = (kanneal_-1.0) / nn * ( ncd - nn ) + 1.0;
-  if(nc>=2*nanneal_ && nc<3*nanneal_) fact = kanneal_;
-  if(nc>=3*nanneal_)                  fact = (1.0-kanneal_) / nn * ( ncd - 3.0*nn) + kanneal_;
-  return fact;
-}
-
 void EMMIVOX::calculate()
 {
 
@@ -1432,35 +1398,67 @@ void EMMIVOX::calculate()
   // get time step
   long int step = getStep();
 
+  // Monte Carlo on b factors - this will change the overlaps
+  if(dbfact_>0) {
+    // do Monte Carlo
+    if(step%MCBstride_==0 && !getExchangeStep()) doMonteCarloBfact();
+    // calculate acceptance ratio
+    double acc = MCBaccept_ / MCBtrials_;
+    // set value
+    getPntrToComponent("accB")->set(acc);
+  }
+
   // write model overlap to file
   if(ovstride_>0 && step%ovstride_==0) write_model_overlap(step);
 
   // prepare energy per group
   vector<double> eneg(GMM_d_grps_.size(), 0.0);
 
+  // calculate total energy and energies per group
   // Gaussian noise
-  if(noise_==0) ene_ = calculate_Gauss(eneg, sigma_, scale_, offset_);
+  if(noise_==0) ene_ = calculate_Gauss(eneg, sigma_, scale_, offset_, GMMid_der_);
 
   // Outliers noise
-  if(noise_==1) ene_ = calculate_Outliers(eneg, sigma_, scale_, offset_);
+  if(noise_==1) ene_ = calculate_Outliers(eneg, sigma_, scale_, offset_, GMMid_der_);
 
   // Marginal noise
-  if(noise_==2) ene_ = calculate_Marginal(scale_, offset_);
+  if(noise_==2) ene_ = calculate_Marginal(scale_, offset_, GMMid_der_);
 
-  // get annealing rescale factor
-  if(nanneal_>0) {
-    anneal_ = get_annealing(step);
-    getPntrToComponent("anneal")->set(anneal_);
+  // Move SIGMAs
+  // This part is needed only for Gaussian and Outliers noise models
+  if(noise_!=2) {
+    // do Monte Carlo
+    if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep()) doMonteCarlo(eneg);
+    if(dsigma_[0]>0) {
+      // calculate acceptance ratio
+      double acc = MCaccept_ / MCtrials_;
+      // set value
+      getPntrToComponent("acc")->set(acc);
+    }
   }
 
-  // annealing rescale
-  ene_ /= anneal_;
-
-  // in case of ensemble averaging
+  // up to now, energy, energy per group and derivatives are per replica
+  // in case of ensemble averaging: sum across replicas
   if(!no_aver_ && nrep_>1) {
     multi_sim_comm.Sum(&GMMid_der_[0], GMMid_der_.size());
     multi_sim_comm.Sum(&ene_, 1);
   }
+
+  // Monte Carlo on scale
+  if(dscale_>0) {
+    // do Monte Carlo
+    if(step%MCstride_==0 && !getExchangeStep()) doMonteCarloScale();
+    // calculate acceptance ratio
+    double acc = MCSaccept_ / MCStrials_;
+    // set acceptance value
+    getPntrToComponent("accscale")->set(acc);
+  }
+  // set scale and offset value
+  getPntrToComponent("scale")->set(scale_);
+  getPntrToComponent("offset")->set(offset_);
+
+  // print status
+  if(step%statusstride_==0) print_status(step);
 
   // clear atom derivatives
   for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] = Vector(0,0,0);
@@ -1482,7 +1480,7 @@ void EMMIVOX::calculate()
       id = nl_[i] / GMM_m_type_.size();
       im = nl_[i] % GMM_m_type_.size();
       // chain rule + replica normalization
-      tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_ / anneal_;
+      tot_der = GMMid_der_[id] * ovmd_der_[i] * escale * scale_;
       // increment atom derivatives
       atom_der[im] += tot_der;
       // and virial
@@ -1497,55 +1495,10 @@ void EMMIVOX::calculate()
   // set score and virial
   getPntrToComponent("scoreb")->set(ene_);
   setBoxDerivatives(getPntrToComponent("scoreb"), virial);
-
-  // This part is needed only for Gaussian and Outliers noise models
-  if(noise_!=2) {
-    // do Monte Carlo
-    if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep()) doMonteCarlo(eneg);
-    // calculate acceptance ratio
-    double acc = MCaccept_ / MCtrials_;
-    // set value
-    getPntrToComponent("acc")->set(acc);
-  }
-
-  // Monte Carlo on scale
-  if(dscale_>0) {
-    // do Monte Carlo
-    if(step%MCstride_==0 && !getExchangeStep()) {
-      // sigmas might have changed!
-      if(noise_!=2) {
-        // first recalculate total energy from energy groups
-        ene_ = accumulate(eneg.begin(), eneg.end(), 0.0);
-        // and in case sum across replicas
-        if(!no_aver_ && nrep_>1) multi_sim_comm.Sum(&ene_, 1);
-      }
-      // than do MC on scale
-      doMonteCarloScale();
-    }
-    // calculate acceptance ratio
-    double acc = MCSaccept_ / MCStrials_;
-    // set value
-    getPntrToComponent("scale")->set(scale_);
-    getPntrToComponent("offset")->set(offset_);
-    getPntrToComponent("accscale")->set(acc);
-  }
-
-  // Monte Carlo on b factors
-  if(dbfact_>0) {
-    // do Monte Carlo
-    if(step%MCBstride_==0 && !getExchangeStep()) doMonteCarloBfact();
-    // calculate acceptance ratio
-    double acc = MCBaccept_ / MCBtrials_;
-    // set value
-    getPntrToComponent("accB")->set(acc);
-  }
-
-  // print status
-  if(step%statusstride_==0) print_status(step);
 }
 
-double EMMIVOX::calculate_Gauss_group(unsigned igroup,
-                                       double sigma, double scale, double offset)
+double EMMIVOX::calculate_Gauss_group(unsigned igroup, double sigma,
+                                      double scale, double offset, vector<double> &GMMid_der)
 {
   double eneg = 0.0;
   // cycle on all the members of the group
@@ -1557,7 +1510,7 @@ double EMMIVOX::calculate_Gauss_group(unsigned igroup,
     // add to group energy
     eneg += dev * dev;
     // store derivative for later
-    GMMid_der_[id] = kbt_ * dev / sigma;
+    GMMid_der[id] = kbt_ * dev / sigma;
   }
   // add normalizations and prior
   eneg = kbt_ * ( 0.5 * eneg + (static_cast<double>(GMM_d_grps_[igroup].size())+prior_) * std::log(sigma) );
@@ -1565,8 +1518,8 @@ double EMMIVOX::calculate_Gauss_group(unsigned igroup,
   return eneg;
 }
 
-double EMMIVOX::calculate_Gauss(vector<double> &eneg,
-                                 vector<double> &sigma, double scale, double offset)
+double EMMIVOX::calculate_Gauss(vector<double> &eneg, vector<double> &sigma,
+                                double scale, double offset, vector<double> &GMMid_der)
 {
   double ene = 0.0;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
@@ -1575,7 +1528,7 @@ double EMMIVOX::calculate_Gauss(vector<double> &eneg,
     #pragma omp for reduction( + : ene)
     for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
       // get group contribution
-      eneg[i] = calculate_Gauss_group(i, sigma[i], scale, offset);
+      eneg[i] = calculate_Gauss_group(i, sigma[i], scale, offset, GMMid_der);
       // add to total energy
       ene += eneg[i];
     }
@@ -1585,7 +1538,7 @@ double EMMIVOX::calculate_Gauss(vector<double> &eneg,
 }
 
 double EMMIVOX::calculate_Outliers_group(unsigned igroup,
-    double sigma, double scale, double offset)
+    double sigma, double scale, double offset, vector<double> &GMMid_der)
 {
   double eneg = 0.0;
   // cycle on all the members of the group
@@ -1597,7 +1550,7 @@ double EMMIVOX::calculate_Outliers_group(unsigned igroup,
     // add to group energy
     eneg += std::log( 1.0 + 0.5 * dev * dev );
     // store derivative for later
-    GMMid_der_[id] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma;
+    GMMid_der[id] = kbt_ / ( 1.0 + 0.5 * dev * dev ) * dev / sigma;
   }
   // add normalizations and prior
   eneg = kbt_ * ( eneg + (static_cast<double>(GMM_d_grps_[igroup].size())+prior_) * std::log(sigma) );
@@ -1605,8 +1558,8 @@ double EMMIVOX::calculate_Outliers_group(unsigned igroup,
   return eneg;
 }
 
-double EMMIVOX::calculate_Outliers(vector<double> &eneg,
-                                    vector<double> &sigma, double scale, double offset)
+double EMMIVOX::calculate_Outliers(vector<double> &eneg, vector<double> &sigma,
+                                   double scale, double offset, vector<double> &GMMid_der)
 {
   double ene = 0.0;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
@@ -1615,7 +1568,7 @@ double EMMIVOX::calculate_Outliers(vector<double> &eneg,
     #pragma omp for reduction( + : ene)
     for(unsigned i=0; i<GMM_d_grps_.size(); ++i) {
       // get group contribution
-      eneg[i] = calculate_Outliers_group(i, sigma[i], scale, offset);
+      eneg[i] = calculate_Outliers_group(i, sigma[i], scale, offset, GMMid_der);
       // add to total energy
       ene += eneg[i];
     }
@@ -1624,7 +1577,7 @@ double EMMIVOX::calculate_Outliers(vector<double> &eneg,
   return ene;
 }
 
-double EMMIVOX::calculate_Marginal(double scale, double offset)
+double EMMIVOX::calculate_Marginal(double scale, double offset, vector<double> &GMMid_der)
 {
   double ene = 0.0;
   #pragma omp parallel num_threads(OpenMP::getNumThreads()) shared(ene)
@@ -1643,7 +1596,7 @@ double EMMIVOX::calculate_Marginal(double scale, double offset)
         // add to  energy
         ene += -kbt_ * std::log ( 0.5 / dev * errf ) ;
         // store derivative for later
-        GMMid_der_[id] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
+        GMMid_der[id] = - kbt_/errf*sqrt2_pi_*exp(-0.5*dev*dev/sigma_min_[i]/sigma_min_[i])/sigma_min_[i]+kbt_/dev;
       }
     }
   }
