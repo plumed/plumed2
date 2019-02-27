@@ -99,6 +99,7 @@ install:
   - export INCLUDE="$HOME/opt/include:$HOME/opt/arrayfire/include:$INCLUDE"
   - export LIBRARY_PATH="$HOME/opt/lib:$HOME/opt/arrayfire/lib:$LIBRARY_PATH"
   - export LD_LIBRARY_PATH="$HOME/opt/lib:$HOME/opt/arrayfire/lib:$LD_LIBRARY_PATH"
+  - export PYTHONPATH="$HOME/opt/lib/plumed/python:$PYTHONPATH"
 # Setting the TMPDIR in this way allegedly prevents problems with the compilation of 
 # PLUMED + Python on macos
   - export TMPDIR="/tmp" 
@@ -145,6 +146,7 @@ install:
       sudo pip install --upgrade pip ;
       sudo pip install numpy ;
       sudo pip install Cython ;
+      sudo pip install nose ;
     fi
 # then replace doxygen with the desided version
 # I use 1.8.10 instead of 1.8.11 since it looks like 1.8.11 have troubles with
@@ -225,9 +227,11 @@ script:
   - if test -n "$PLUMED_MACPORTS" ; then
       sudo port -N -d test $PLUMED_MACPORTS ;
       for p in $PLUMED_PYTHON ; do
-        sudo port install py${p//./}-nose ;
-        nosetests-$p -v -w python ;
+        sudo port test py${p//./}-plumed ;
       done
+    fi
+  - if test "$PLUMED_CXX" ; then
+        nosetests -v -w python ;
     fi
 
 # CPPCHECK:

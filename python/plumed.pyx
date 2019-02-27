@@ -25,8 +25,15 @@
 #
 
 cimport cplumed  # This imports information from pxd file - including contents of this file here causes name clashes
-import numpy as np
-cimport numpy as np
+
+from cpython cimport array
+import array
+
+try:
+     import numpy as np
+     HAS_NUMPY=True
+except:
+     HAS_NUMPY=False
 
 cdef class Plumed:
      cdef cplumed.Plumed c_plumed
@@ -59,8 +66,7 @@ cdef class Plumed:
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
          cdef char* cval 
-         cdef np.int_t[:] ibuffer
-         cdef np.float64_t[:] dbuffer
+         cdef array.array ar
          if val is None :
             self.c_plumed.cmd( ckey, NULL )
          elif isinstance(val, (int,long) ):
@@ -71,13 +77,22 @@ cdef class Plumed:
             if key=="getBias" :
                raise ValueError("when using cmd with getBias option value must be a size one ndarray")
             self.cmd_float(ckey, val) 
-         elif isinstance(val, np.ndarray) : 
+         elif HAS_NUMPY and isinstance(val, np.ndarray) : 
             if( val.dtype=="float64" ):
                self.cmd_ndarray_real(ckey, val)
             elif( val.dtype=="int64" ) : 
                self.cmd_ndarray_int(ckey, val)
             else :
                raise ValueError("ndarrys should be float64 or int64")
+         elif isinstance(val, array.array) : 
+            if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8): 
+               ar = val
+               self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
+            elif( (val.typecode=="i" or val.typecode=="I") ) :
+               ar = val
+               self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
+            else :
+               raise ValueError("ndarrays should be double (size=8) or int")
          elif isinstance(val, basestring ) :
               py_bytes = val.encode()
               cval = py_bytes 
