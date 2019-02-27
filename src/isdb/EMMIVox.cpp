@@ -960,7 +960,7 @@ void EMMIVOX::doMonteCarlo(vector<double> &eneg)
         sigma_[i] = new_s;
         eneg[i]   = new_ene;
         MCaccept += 1.0;
-        // derivatives
+        // derivatives of the GMM components in group i
         for(unsigned j=0; j<GMM_d_grps_[i].size(); ++j) GMMid_der_[GMM_d_grps_[i][j]] = new_GMMid_der[GMM_d_grps_[i][j]];
       }
     } // end of cycle over sigmas
@@ -1143,9 +1143,9 @@ void EMMIVOX::doMonteCarloScale()
     multi_sim_comm.Sum(&new_off, 1);
   }
 
-  // new energy
+  // new total energy
   double new_ene;
-  // prepare new energy per group
+  // prepare new energy per group - not used anymore
   vector<double> new_eneg(GMM_d_grps_.size(), 0.0);
   // and derivatives
   vector<double> new_GMMid_der(GMMid_der_.size(), 0.0);
