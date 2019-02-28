@@ -226,7 +226,7 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
 
   // calculate the number of basis functions from the specified length
   unsigned intrinsic_length = 2*getOrder() - 1;
-  double length = intervalMax() - intervalMin();
+  double length = intervalMax() - intervalMin(); // intervalRange() is not yet set
   parse("FUNCTION_LENGTH",length);
   if(length != intervalMax() - intervalMin()) {addKeywordToList("FUNCTION_LENGTH",length);}
   scale_ = intrinsic_length / length;
@@ -283,7 +283,7 @@ void BF_Wavelets::getAllValues(const double arg, double& argT, bool& inside_rang
       std::vector<double> temp_deriv (1);
       std::vector<double> x_vec {x};
       values[i] = waveletGrid_->getValueAndDerivatives(x_vec, temp_deriv);
-      derivs[i] = temp_deriv[0] * intervalDerivf(); // scale derivative
+      derivs[i] = temp_deriv[0] * scale_; // scale derivative
     }
   }
   if(!inside_range) {for(auto& deriv : derivs) {deriv=0.0;}}
