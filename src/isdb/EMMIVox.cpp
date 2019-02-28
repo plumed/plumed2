@@ -668,7 +668,7 @@ void EMMIVOX::print_status(long int step)
     statusfile_.link(*this);
     statusfile_.open(statusfilename_);
     statusfile_.setHeavyFlush();
-    statusfile_.fmtField("%6.3e ");
+    statusfile_.fmtField("%10.7e ");
   }
 // write fields
   double MDtime = static_cast<double>(step)*getTimeStep();
@@ -944,7 +944,7 @@ void EMMIVOX::doMonteCarlo(vector<double> &eneg)
       if(new_s < sigma_min_[i]) {new_s = 2.0 * sigma_min_[i] - new_s;}
 
       // calculate new group energy
-      double new_ene;
+      double new_ene = 0.0;
 
       // in case of Gaussian noise
       if(noise_==0) new_ene = calculate_Gauss_group(i, new_s, scale_, offset_, new_GMMid_der);
