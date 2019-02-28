@@ -1342,7 +1342,10 @@ int Mdrunner::mdrunner()
           /* detect plumed API version */
           int pversion=0;
           plumed_cmd(plumedmain,"getApiVersion",&pversion);
-          if(pversion>5) plumed_cmd(plumedmain,"setNumOMPthreads",&hw_opt.nthreads_omp);
+          if(pversion>5) {
+             int nth = gmx_omp_nthreads_get(emntDefault);
+             if(pversion>5) plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
+          }
         }
         /* END PLUMED */
 
