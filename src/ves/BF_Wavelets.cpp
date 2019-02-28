@@ -190,6 +190,7 @@ void BF_Wavelets::registerKeywords(Keywords& keys) {
   keys.addFlag("MOTHER_WAVELET", false, "If this flag is set the \"true\" wavelet function (mother wavelet) will be used instead of the scaling function (father wavelet). Makes only sense for multiresolution, which is at the moment not implemented.");
   keys.add("optional","TYPE","Specify the wavelet type. Defaults to \"DAUBECHIES\" Wavelets with minimum phase. Other currently implemented possibilities are \"SYMLETS\"");
   keys.addFlag("DUMP_WAVELET_GRID", false, "If this flag is set the grid with the wavelet values will be written to a file called \"wavelet_grid.data\".");
+  keys.add("optional","FORMAT_WAVELET_DUMP","The numerical format of the wavelet grid values and derivatives written to file. By default it is %15.8f.\n");
   // why is this removed?
   keys.remove("NUMERICAL_INTEGRALS");
 }
@@ -218,6 +219,9 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
   parseFlag("DUMP_WAVELET_GRID", dump_wavelet_grid);
   if (dump_wavelet_grid) {
     OFile wavelet_gridfile;
+    std::string fmt = "%13.6f";
+    parse("FORMAT_WAVELET_DUMP",fmt);
+    wavelet_gridfile.fmtField(fmt);
     wavelet_gridfile.link(*this);
     wavelet_gridfile.enforceBackup();
     wavelet_gridfile.open(getLabel()+".wavelet_grid.data");
