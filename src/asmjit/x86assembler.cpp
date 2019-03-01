@@ -503,7 +503,7 @@ Error X86Assembler::onDetach(CodeHolder* code) noexcept {
 // If the operand is AH|BH|CH|DH
 //   - patch its index from 0..3 to 4..7 as encoded by X86.
 //   - Disallow REX prefix.
-#define FIXUP_GPB(REG_OP, REG_ID, ...)                                   \
+#define FIXUP_GPB(REG_OP, REG_ID)                                   \
   do {                                                                   \
     if (!static_cast<const X86Gp&>(REG_OP).isGpbHi()) {                  \
       options |= (REG_ID >= 4) ? X86Inst::kOptionRex : 0;                \
