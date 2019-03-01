@@ -221,7 +221,7 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
     OFile wavelet_gridfile;
     std::string fmt = "%13.6f";
     parse("FORMAT_WAVELET_DUMP",fmt);
-    wavelet_gridfile.fmtField(fmt);
+    waveletGrid_->setOutputFmt(fmt);
     wavelet_gridfile.link(*this);
     wavelet_gridfile.enforceBackup();
     wavelet_gridfile.open(getLabel()+".wavelet_grid.data");
