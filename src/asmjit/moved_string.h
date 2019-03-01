@@ -17,8 +17,8 @@ freely, subject to the following restrictions:
    misrepresented as being the original software.
 3. This notice may not be removed or altered from any source distribution.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_asmjit_string_h
-#define __PLUMED_asmjit_string_h
+#ifndef __PLUMED_asmjit_moved_string_h
+#define __PLUMED_asmjit_moved_string_h
 #ifdef __PLUMED_HAS_ASMJIT
 // [AsmJit]
 // Complete x86/x64 JIT and Remote Assembler for C++.

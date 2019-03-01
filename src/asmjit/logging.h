@@ -32,7 +32,7 @@ freely, subject to the following restrictions:
 
 // [Dependencies]
 #include "./inst.h"
-#include "./string.h"
+#include "./moved_string.h"
 
 // [Api-Begin]
 #include "./asmjit_apibegin.h"

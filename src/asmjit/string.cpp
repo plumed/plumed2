@@ -28,7 +28,7 @@ freely, subject to the following restrictions:
 #define ASMJIT_EXPORTS
 
 // [Dependencies]
-#include "./string.h"
+#include "./moved_string.h"
 #include "./utils.h"
 
 // [Api-Begin]

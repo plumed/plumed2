@@ -46,7 +46,7 @@ freely, subject to the following restrictions:
 #include "./osutils.h"
 #include "./runtime.h"
 #include "./simdtypes.h"
-#include "./string.h"
+#include "./moved_string.h"
 #include "./utils.h"
 #include "./vmem.h"
 #include "./zone.h"
