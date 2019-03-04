@@ -368,14 +368,14 @@ void RDC::do_svd()
 {
 #ifdef __PLUMED_HAS_GSL
   gsl_vector_unique_ptr rdc_vec(gsl_vector_alloc(coupl.size())),
-      S(gsl_vector_alloc(5)),
-      Stmp(gsl_vector_alloc(5)),
-      work(gsl_vector_alloc(5)),
-      bc(gsl_vector_alloc(coupl.size()));
+                        S(gsl_vector_alloc(5)),
+                        Stmp(gsl_vector_alloc(5)),
+                        work(gsl_vector_alloc(5)),
+                        bc(gsl_vector_alloc(coupl.size()));
 
   gsl_matrix_unique_ptr coef_mat(gsl_matrix_alloc(coupl.size(),5)),
-      A(gsl_matrix_alloc(coupl.size(),5)),
-      V(gsl_matrix_alloc(5,5));
+                        A(gsl_matrix_alloc(coupl.size(),5)),
+                        V(gsl_matrix_alloc(5,5));
 
   gsl_matrix_set_zero(coef_mat.get());
   gsl_vector_set_zero(bc.get());
