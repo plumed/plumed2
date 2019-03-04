@@ -10,7 +10,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=yes
 # coverage scan
   - os: linux
     dist: trusty
@@ -35,7 +35,7 @@ matrix:
     if: branch =~ ^test- OR type IN(pull_request)
     dist: trusty
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack" ASMJIT=yes
 # test using docker image.
 # currently it means ubuntu 17, with gcc6
   - sudo: required
@@ -183,12 +183,13 @@ script:
   - if test "$ARRAYFIRE" == yes; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-af_cpu"; fi
 # when running lcov plumed use moderate optimization
   - if test "$MAKECOVERAGE" == yes ; then PLUMED_CXXFLAGS=-O ; fi
+  - if test "$ASMJIT" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-asmjit" ; fi
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined
   - if test "$PLUMED_CXX" ; then
       ccache -s ;
-      ./configure CXX="ccache $(which $PLUMED_CXX)" CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $CONFIG_FLAGS --prefix="$HOME/opt" --enable-asmjit ;
+      ./configure CXX="ccache $(which $PLUMED_CXX)" CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $CONFIG_FLAGS --prefix="$HOME/opt" ;
       make -j 4 ;
       make install ;
       ccache -s ;
