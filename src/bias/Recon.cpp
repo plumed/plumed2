@@ -131,10 +131,10 @@ ActionShortcut(ao)
           std::string gminstr=" GRID_MIN=-" + gmax; std::string gmaxstr=" GRID_MAX=" + gmax;
           std::string bandstr=" BANDWIDTH=" + sigma; std::string gbinstr=" GRID_BIN=" + grid_nbins;
           std::string input = getShortcutLabel() + "_histo-" + num + ": HISTOGRAM NORMALIZATION=false STRIDE=" + pacestr + 
-                              " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact ARG1=" + getShortcutLabel() + "_proj1-" + num;
+                              " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact ARG1=" + getShortcutLabel() + "_udproj1-" + num;
           for(unsigned i=1;i<neigv[k];++i) {
               std::string eignum; Tools::convert( i+1, eignum );
-              input += " ARG" + eignum + "=" + getShortcutLabel() + "_proj" + eignum + "-" + num;
+              input += " ARG" + eignum + "=" + getShortcutLabel() + "_udproj" + eignum + "-" + num;
               gminstr += ",-" + gmax; gmaxstr += "," + gmax; bandstr += "," + sigma; gbinstr += "," + grid_nbins; 
           }
           readInputLine( input + " " + gminstr + " " + gmaxstr + " " + bandstr + " " + gbinstr );
