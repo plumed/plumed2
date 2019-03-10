@@ -1022,6 +1022,20 @@ Value* PlumedMain::getPntrToValue( const std::string& name ) {
   return values[outval].get();
 }
 
+void PlumedMain::interpretDataLabel( const std::string& argname, const std::string& datauser, unsigned& nargs, std::vector<Value*>& args ) {
+  // If we are using all the values
+  Value* myval = getPntrToValue( argname );
+  if( myval ) { myval->interpretDataRequest( datauser, nargs, args, "" ); return; }
+  // If we are using a subset of the values for a action with a value
+  std::size_t dot1 = argname.find_first_of('.'); std::string thelab = argname.substr(0,dot1);
+  Value* myval2 = getPntrToValue( thelab ); std::string rest = argname.substr(dot1+1);
+  if( myval2 ) { myval2->interpretDataRequest( datauser, nargs, args, rest ); return; }
+  // If we are using a subset from a component 
+  std::size_t dot2 = rest.find_first_of('.'); std::string thelab2 = rest.substr(0,dot2);
+  Value* myval3 = getPntrToValue( thelab + "." + thelab2 ); std::string frest = rest.substr(dot2+1);
+  if( myval3 ) { myval->interpretDataRequest( datauser, nargs, args, frest ); }
+}
+
 bool PlumedMain::valueIsFixed( const std::string& name ) const {
   plumed_massert( fixed_vals.count(name)>0, "could not find value named " + name ); 
   return fixed_vals.find(name)->second;

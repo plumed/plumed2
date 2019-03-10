@@ -130,9 +130,12 @@ void Action::fflush() {
 }
 
 void Action::readInputLine( const std::string& input ) {
-  std::string f_input = input;
+  std::string lab, f_input = input;
   // Work out what action we are reading in
   std::vector<std::string> words=Tools::getWords(input); Tools::interpretLabel( words );
+  // Check for stupid labels
+  std::vector<std::string> words_copy( words ); Tools::parse(words_copy,"LABEL",lab,replica_index);
+  if( lab==label ) { std::string s; Tools::convert(plumed.getActionSet().size(),s); label="@" + s; }
   // And get the keywords
   Keywords keys; actionRegister().mk[ words[0] ](keys);
   // Now create the new input

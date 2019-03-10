@@ -34,6 +34,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit ComposeVector(const ActionOptions&);
   unsigned getNumberOfDerivatives() const ;
+  bool canChainFromThisAction() const { return false; }
   void calculate();
   void apply();
 };
@@ -50,7 +51,7 @@ Action(ao),
 ActionWithValue(ao),
 ActionWithArguments(ao)
 { 
-  std::vector<unsigned> shape(1); shape[0]=getNumberOfArguments();
+  std::vector<unsigned> shape(1); shape[0]=getNumberOfScalarArguments();
   addValue( shape ); setNotPeriodic();
 }
 
@@ -59,7 +60,7 @@ unsigned ComposeVector::getNumberOfDerivatives() const {
 }
 
 void ComposeVector::calculate() {
-  for(unsigned i=0;i<getNumberOfArguments();++i) getPntrToOutput(0)->set(i, getPntrToArgument(i)->get(0) );
+  for(unsigned i=0;i<getNumberOfScalarArguments();++i) getPntrToOutput(0)->set(i, getArgumentScalar(i) );
 }
 
 void ComposeVector::apply() {

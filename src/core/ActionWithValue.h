@@ -226,6 +226,8 @@ public:
   int getNumberOfComponents() const ;
 ///
   bool actionInChain() const ;
+///
+  virtual bool canChainFromThisAction() const { return true; }
 /// Clear the forces on the values
   void clearInputForces();
 /// Clear the derivatives of values wrt parameters

@@ -402,6 +402,8 @@ public:
   bool callErrorHandler(int code,const char* msg)const;
 /// Get pointer to value that was passed from MD code to PLUMED
   Value* getPntrToValue( const std::string& name );
+/// Interpret the data request from one of the values that are pased from the MD code to PLUMED
+  void interpretDataLabel( const std::string& argname, const std::string& datauser, unsigned& nargs, std::vector<Value*>& args );
 /// Is the value with this name fixed in the input
   bool valueIsFixed( const std::string& name ) const ;
 };

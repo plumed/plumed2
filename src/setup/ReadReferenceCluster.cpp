@@ -19,21 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SetupReferenceBase.h"
+#include "ReadReferenceCluster.h"
 #include "core/ActionRegister.h"
 #include "tools/IFile.h"
 
 namespace PLMD {
 namespace setup {
-
-class ReadReferenceCluster: public SetupReferenceBase {
-private:
-  std::vector<std::string> read_args;
-public: 
-  static void registerKeywords( Keywords& keys );
-  explicit ReadReferenceCluster(const ActionOptions&ao);
-  std::string getArgName( const unsigned& k ) const ;
-};
 
 PLUMED_REGISTER_ACTION(ReadReferenceCluster,"READ_CLUSTER")
 
@@ -78,136 +69,71 @@ SetupReferenceBase(ao)
           } else error("covariance has the wrong shape");
       } else error("sigma has the wrong shape");
   } else {
-      IFile ifile; ifile.open(reference); ifile.allowIgnoredFields();
-      unsigned number; parse("NUMBER",number); bool readline=false;
-      for(unsigned line=0;line<number;++line) {
-        // Read in the position of the center of the cluster
-        std::vector<std::string> names; std::vector<double> values; double val;
-        for(unsigned i=0;i<getNumberOfArguments();++i) {
-            if( numberedkeys ) {
-                ifile.scanField(getPntrToArgument(i)->getName(), val); 
-                values.push_back(val); names.push_back( getPntrToArgument(i)->getName() );
-            } else if( getPntrToArgument(i)->getRank()==0 ) {
-                ifile.scanField(getPntrToArgument(i)->getName(), val); 
-                values.push_back( val ); names.push_back( getPntrToArgument(i)->getName() );
-            } else if ( !getPntrToArgument(i)->usingAllVals( getLabel() ) ) {
-                for(unsigned j=0;j<getPntrToArgument(i)->getNumberOfValues( getLabel() );++j) {  
-                    std::string argname = getPntrToArgument(i)->getOutputDescription( getLabel(), j );
-                    ifile.scanField(argname,val); values.push_back( val ); names.push_back( argname );
-                }
-            } else if( getPntrToArgument(i)->getRank()==1 ) {
-                for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
-                    std::string num; Tools::convert( j+1, num );
-                    ifile.scanField(getPntrToArgument(i)->getName() + "." + num, val);
-                    values.push_back( val ); names.push_back( getPntrToArgument(i)->getName() + "." + num );
-                }
-            } else if( getPntrToArgument(i)->getRank()==2 ) {
-                for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
-                    std::string jnum; Tools::convert( j+1, jnum );
-                    for(unsigned k=0;k<getPntrToArgument(k)->getShape()[2];++k) {
-                        std::string knum; Tools::convert( k+1, knum );
-                        ifile.scanField(getPntrToArgument(i)->getName() + "." + jnum + "." + knum, val);
-                        values.push_back( val ); names.push_back( getPntrToArgument(i)->getName() + "." + jnum + "." + knum );
-                    }
-                }
-            } else error("cannot deal with objects with ranks greater than 2");
-        }
-        if(line==number-1) {
-             readline=true;
-             log.printf("  reading %dth reference structure from file %s \n", number, reference.c_str());
-             log.printf("  which contains");
-             if( read_args.size()>0 ) log.printf(" %d arguments \n", read_args.size() );
-             else log.printf(" %d arguments \n", getNumberOfArguments() );
-             if( getNumberOfArguments()>0 ) {
-                 log.printf("  labels of arguments are : ");
-                 for(unsigned i=0;i<getNumberOfArguments();++i) log.printf("%s ", getPntrToArgument(i)->getName().c_str() );
-                 log.printf("\n");
-             } 
-             if( read_args.size()>0 ) {
-                 log.printf("  labels of arguments are : ");
-                 for(unsigned i=0;i<read_args.size();++i) log.printf("%s ", read_args[i].c_str() );
-                 log.printf("\n");
-             }
-             
-             if( getNumberOfArguments()>0 ) {
-                 // Create the component that will hold the position of the center of the cluster
-                 std::vector<unsigned> shape( 1 ); shape[0] = getNumberOfArguments();  
-                 if( !numberedkeys ) {
-                     shape[0]=0; for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );
-                 }
-                 addComponent( "center", shape ); componentIsNotPeriodic("center"); getPntrToComponent(0)->buildDataStore( getLabel() );
-
-                 // Read in the position of the center of the cluster
-                 unsigned n=0;
-                 for(unsigned i=0;i<getNumberOfArguments();++i) {
-                     if( numberedkeys ) {
-                         getPntrToComponent(0)->set( i, values[n] ); n++;
-                     } else if( getPntrToArgument(i)->getRank()==0 ) {
-                         getPntrToComponent(0)->set( i, values[n] ); n++; 
-                     } else if ( !getPntrToArgument(i)->usingAllVals( getLabel() ) ) {
-                         for(unsigned j=0;j<getPntrToArgument(i)->getNumberOfValues( getLabel() );++j) {
-                             getPntrToComponent(0)->set( n, values[n] ); n++;
-                         }
-                     } else if( getPntrToArgument(i)->getRank()==1 ) {
-                         for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
-                             getPntrToComponent(0)->set( n, values[n] ); n++; 
-                         }
-                     } else if( getPntrToArgument(i)->getRank()==2 ) { 
-                         for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
-                             std::string jnum; Tools::convert( j+1, jnum );
-                             for(unsigned k=0;k<getPntrToArgument(k)->getShape()[2];++k) {
-                                 getPntrToComponent(0)->set( n, values[n] ); n++; 
-                             }
-                         }
-                     } else error("cannot deal with objects with ranks greater than 2");
-                 }
-                 if( ifile.FieldExist("sigma_" + names[0]) ) {
-                     addComponent("variance", shape); componentIsNotPeriodic("variance"); getPntrToComponent(1)->buildDataStore( getLabel() );
-                     for(unsigned i=0;i<names.size();++i) {
-                         ifile.scanField("sigma_" + names[i], val); getPntrToComponent(1)->set( i, val ); 
-                     }
-                 } else {
-                     std::vector<unsigned> nshape(2); nshape[0]=nshape[1]=shape[0];
-                     addComponent("covariance", nshape); componentIsNotPeriodic("covariance"); getPntrToComponent(1)->buildDataStore( getLabel() );
-                     for(unsigned i=0; i<names.size(); ++i) {
-                         for(unsigned j=0; j<names.size()-i; j++) {
-                             ifile.scanField("sigma_" +names[j+i] + "_" + names[j], val ); 
-                             getPntrToComponent(1)->set( (i+j)*names.size()+j, val );
-                             getPntrToComponent(1)->set( j*names.size()+j+i, val );
-                         }
-                     }
-                 }
-             }
-             if( read_args.size()>0 ) {
-                 std::vector<unsigned> shape( 1 ); shape[0] = read_args.size(); double val;
-                 addComponent( "center", shape ); componentIsNotPeriodic("center"); getPntrToComponent(0)->buildDataStore( getLabel() );
-                 for(unsigned i=0;i<read_args.size();++i) {
-                     ifile.scanField( read_args[i], val ); getPntrToComponent(0)->set( i, val );
-                 }
-                 if( ifile.FieldExist("sigma_" + read_args[0]) ) {
-                     addComponent("variance", shape); componentIsNotPeriodic("variance"); getPntrToComponent(1)->buildDataStore( getLabel() );
-                     for(unsigned i=0;i<read_args.size();++i) {
-                         ifile.scanField("sigma_" + read_args[i], val); getPntrToComponent(1)->set( i, val ); 
-                     }
-                 } else {
-                     std::vector<unsigned> nshape(2); nshape[0]=nshape[1]=shape[0];
-                     addComponent("covariance", nshape); componentIsNotPeriodic("covariance"); getPntrToComponent(1)->buildDataStore( getLabel() );
-                     for(unsigned i=0; i<read_args.size(); ++i) {
-                         for(unsigned j=0; j<read_args.size()-i; j++) {
-                             ifile.scanField("sigma_" +read_args[j+i] + "_" + read_args[j], val );
-                             getPntrToComponent(1)->set( (i+j)*read_args.size()+j, val );
-                             getPntrToComponent(1)->set( j*read_args.size()+i+j, val );
-                         }   
-                     }       
-                 }  
-             }
-             break;
-          }
-          ifile.scanField(); 
+      unsigned number; parse("NUMBER",number); std::vector<std::string> names; 
+      for(unsigned i=0;i<getNumberOfArguments();++i) {
+          if( numberedkeys ) {
+              names.push_back( getPntrToArgument(i)->getName() );
+          } else if( getPntrToArgument(i)->getRank()==0 ) {
+              names.push_back( getPntrToArgument(i)->getName() );
+          } else if ( !getPntrToArgument(i)->usingAllVals( getLabel() ) ) {
+              for(unsigned j=0;j<getPntrToArgument(i)->getNumberOfValues( getLabel() );++j) {
+                  names.push_back( getPntrToArgument(i)->getOutputDescription( getLabel(), j ) );
+              }
+          } else if( getPntrToArgument(i)->getRank()==1 ) {
+              for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
+                  std::string num; Tools::convert( j+1, num );
+                  names.push_back( getPntrToArgument(i)->getName() + "." + num );
+              }
+          } else if( getPntrToArgument(i)->getRank()==2 ) {
+              for(unsigned j=0;j<getPntrToArgument(i)->getShape()[0];++j) {
+                  std::string jnum; Tools::convert( j+1, jnum );
+                  for(unsigned k=0;k<getPntrToArgument(k)->getShape()[2];++k) {
+                      std::string knum; Tools::convert( k+1, knum );
+                      names.push_back( getPntrToArgument(i)->getName() + "." + jnum + "." + knum );
+                  }
+              }
+          } else error("cannot deal with objects with ranks greater than 2");
       }
-      if( !readline ) error("could not read reference configuration");
-      ifile.scanField(); ifile.close();
+      log.printf("  reading %dth reference structure from file %s \n", number, reference.c_str());
+      log.printf("  which contains %d arguments \n", names.size() );
+      log.printf("  labels of arguments are : ");
+      for(unsigned i=0;i<names.size();++i) log.printf("%s ", names[i].c_str() );
+      log.printf("\n"); std::string input; 
+      if( getNumberOfArguments()==0 ) {
+          input = "READ_ARGS=" + read_args[0]; for(unsigned i=1;i<read_args.size();++i) input += "," + read_args[i];
+          input += " " + convertFileToLine( reference, number, read_args );
+      } else {
+          input = "ARG=" + getPntrToArgument(0)->getName(); for(unsigned i=1;i<getNumberOfArguments();++i) input += "," + getPntrToArgument(i)->getName();
+          input += " " + convertFileToLine( reference, number, names );
+      }
+      std::string slab = getLabel(); readInputLine( slab + ": READ_CLUSTER " + input );
   }
+}
+
+std::string ReadReferenceCluster::convertFileToLine( const std::string& reference, const unsigned& number, const std::vector<std::string>& names ) {
+  bool readline=false; IFile ifile; ifile.open(reference); ifile.allowIgnoredFields(); std::string input;
+  for(unsigned line=0;line<number;++line) {
+    // Read in the position of the center of the cluster
+    std::string val; input="CENTER=";
+    for(unsigned i=0;i<names.size();++i) { ifile.scanField(names[i], val); if(i==0) input += val; else input += "," + val; }
+    if( ifile.FieldExist("sigma_" + names[0]) ) {
+        input += " COVAR=";
+        for(unsigned i=0;i<names.size();++i) { ifile.scanField("sigma_" + names[i], val); if( i==0 ) input += val; else input += "," + val; } 
+    } else {
+        input += " COVAR="; 
+        for(unsigned i=0; i<names.size(); ++i) {
+            for(unsigned j=0; j<names.size(); j++) {
+                ifile.scanField("sigma_" +names[i] + "_" + names[j], val ); 
+                if(i==0 && j==0 ) input += val; else input += "," + val;
+            }
+        }
+    }
+    if( line==number-1 ) { readline=true; break; }
+    ifile.scanField(); 
+  }
+  if( !readline ) plumed_merror("could not read reference configuration");
+  ifile.scanField(); ifile.close();
+  return input;
 }
 
 std::string ReadReferenceCluster::getArgName( const unsigned& k ) const {

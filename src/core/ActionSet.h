@@ -69,6 +69,9 @@ public:
 /// Only classes that can be dynamic casted to T are reported
   template <class T>
   std::vector<std::string> getLabelVector() const;
+/// Get the final action in the set of a particular type
+  template<class T>
+  T getFinalActionOfType() const;  
 };
 
 /////
@@ -122,7 +125,14 @@ std::vector<std::string> ActionSet::getLabelVector() const {
   return  outlist;
 }
 
-
+T ActionSet::getFinalActionOfType() const {
+  for(int i=(*this).size()-1;i>=0;--i) {
+      T t=dynamic_cast<T>( (*this)[i].get() );
+      if(t) return t;
+  }
+  plumed_merror("could not find final action of appropriate type");
+  return NULL;
+}
 
 }
 

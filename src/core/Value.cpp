@@ -148,12 +148,14 @@ void Value::interpretDataRequest( const std::string& uselab, unsigned& nargs, st
   std::vector<unsigned> indices( shape.size() ); std::string indstr=values;
   for(unsigned i=0; i<shape.size()-1; ++i) {
     std::size_t dot = indstr.find_first_of(".");
-    if( dot==std::string::npos ) action->error("invalid specification for element of value"); 
+    if( dot==std::string::npos && action ) action->error("invalid specification for element of value"); 
+    else if( dot==std::string::npos ) plumed_merror("invalid specification for element of value");
     Tools::convert( indstr.substr(0,dot), indices[i] );
     indices[i] -= 1; indstr=indstr.substr(dot+1);
   }
   Tools::convert( indstr, indices[indices.size()-1] ); indices[indices.size()-1] -= 1;
-  if( getIndex(indices)>=getNumberOfValues( action->getLabel() ) ) action->error("action does not have this many components");
+  std::size_t dot = name.find_first_of("."); std::string aname=name; if( dot!=std::string::npos ) aname = name.substr(0,dot);
+  if( getIndex(indices)>=getNumberOfValues(aname) ) action->error("action does not have this many components");
   userdata[uselab].push_back( std::pair<int,int>(getIndex(indices),nargs) ); nargs++;
 }
 

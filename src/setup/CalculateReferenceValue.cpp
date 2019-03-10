@@ -69,12 +69,19 @@ SetupReferenceBase(ao)
    }
    double tstep=1.0; p.cmd("setTimestep",&tstep);
    // Now read the PLUMED command that we have to execute
-   std::string inp; parse("INPUT",inp); const char* cinp=inp.c_str();
+   std::string inp; parse("INPUT",inp); 
    std::vector<std::string> input=Tools::getWords(inp);
    if( input.size()==1 && !actionRegister().check(input[0]) ) {
-       p.cmd("setPlumedDat",cinp); p.cmd("init");
+       const char* cinp=inp.c_str(); p.cmd("setPlumedDat",cinp); p.cmd("init");
    } else {
-       p.cmd("init"); p.cmd("readInputLine",cinp);
+       p.cmd("init"); std::string remainder = inp; 
+       while( remainder.find(";")!=std::string::npos ) { 
+            std::size_t semi = remainder.find_first_of(';'); 
+            std::string rem = remainder.substr(0,semi); 
+            const char* cinp=rem.c_str(); p.cmd("readInputLine",cinp);
+            remainder = remainder.substr(semi+1);
+       }
+       const char* cinp=remainder.c_str(); p.cmd("readInputLine",cinp);
    }
    // Setup the positions and masses using the indices from the read input
    int istep=0; p.cmd("setStep",&istep);
@@ -92,16 +99,7 @@ SetupReferenceBase(ao)
    }
    Tensor box( atoms.getPbc().getBox() ); p.cmd("setBox",&box[0][0]);
    // Now retrieve the final value
-   ActionWithValue* fav; 
-   for(int i=p.getActionSet().size()-1;i>=0;--i) {
-       fav = dynamic_cast<ActionWithValue*>( p.getActionSet()[i].get() );
-       if( !fav ) {
-          ActionShortcut* fshort = dynamic_cast<ActionShortcut*>( p.getActionSet()[i].get() );
-          if( !fshort ) error("final value should calculate relevant value that you want as reference");
-       } else break;
-   }
-   if( !fav ) error("need to calculate relevant value in calculate");
-   // if( fav->getNumberOfComponents()!=1 ) error("final action in input should have one component");
+   ActionWithValue* fav = p.getActionSet().getFinalActionOfType<ActionWithValue*>();
    std::vector<unsigned> nvals( fav->getNumberOfComponents() ); 
    std::vector<std::vector<double> > data( fav->getNumberOfComponents() );
    std::vector<std::vector<unsigned> > shapes( fav->getNumberOfComponents() );

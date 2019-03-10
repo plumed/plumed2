@@ -142,8 +142,8 @@ ActionShortcut(ao)
    for(unsigned k=0;; ++k) {
       if( !ifile.scanField("height",h) ) break;
       // Create a kernel for this cluster
-      std::string num, wstr; Tools::convert( k+1, num ); Tools::convert(h,wstr);
-      readInputLine( getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED" + argstr  + " NUMBER=" + num + " REFERENCE=" + fname + " WEIGHT=" + wstr );
+      std::string num, wstr, ktype; Tools::convert( k+1, num ); Tools::convert(h,wstr); ifile.scanField("kerneltype",ktype);
+      readInputLine( getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED" + argstr  + " NUMBER=" + num + " REFERENCE=" + fname + " WEIGHT=" + wstr + " TYPE=" + ktype );
       nkernels++; ifile.scanField();
    }
    ifile.close();

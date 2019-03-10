@@ -167,13 +167,12 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             } 
           } else {
             // Search for value in PlumedMain
-            Value* plmed_val = plumed.getPntrToValue( c[i] );
-            if( !plmed_val ) {
+            unsigned carg = nargs; plumed.interpretDataLabel( c[i], getLabel(), nargs, arg );
+            if( nargs==carg ) {
                 std::string str=" (hint! the actions in this ActionSet are: ";
                 str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
                 error("cannot find action named " + a +str);
             }
-            arg.push_back( plmed_val ); nargs++;
           }
         }
       } else {    // if it doesn't contain a dot
@@ -188,13 +187,12 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
           if(!action) {
             // Search for value in PlumedMain
-            Value* plmd_val = plumed.getPntrToValue( c[i] );
-            if( !plmd_val ) {
+            unsigned carg = nargs; plumed.interpretDataLabel( c[i], getLabel(), nargs, arg );
+            if( nargs==carg ) {
                 std::string str=" (hint! the actions in this ActionSet are: ";
                 str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
                 error("cannot find action named " + c[i] + str );
             }
-            arg.push_back( plmd_val ); nargs++;
           } else {
             unsigned carg=arg.size(); action->interpretDataLabel( "", this, nargs, arg );
             if( arg.size()!=carg+1 ) {
@@ -244,6 +242,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
     Average* av=dynamic_cast<Average*>( arguments[i]->getPntrToAction() ); 
     if( av || arguments[i]->alwaysstore || arguments[i]->columnsums || !usingAllArgs[i] ) { storing=true; break; }
     if( this->getCaller()!="plumedmain" && (arguments[i]->getPntrToAction())->getCaller()=="plumedmain" ) { storing=true; break; }
+    if( plumed.getPntrToValue( arguments[i]->getName() ) ) { storing=true; break; }
   }
   std::string fullname,name;
   std::vector<ActionWithValue*> f_actions;
@@ -272,6 +271,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
           for(unsigned j=0; j<arguments[i]->store_data_for.size(); ++j) {
             bool found=false;
             for(unsigned k=0; k<arguments.size(); ++k) {
+              if( !arguments[k]->getPntrToAction() ) continue;
               if( arguments[i]->store_data_for[j].first==(arguments[k]->getPntrToAction())->getLabel() && 
                   arguments[k]->getPntrToAction()->getName()!="NEIGHBORS" ) { found=true; break; }
             }
@@ -370,7 +370,6 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
   } else {
     for(unsigned i=argstart; i<getNumberOfArguments(); ++i) { if( arg[i]->getRank()>0 ) arg[i]->buildDataStore( getLabel() ); }
   }
-
 }
 
 unsigned ActionWithArguments::setupActionInChain( const unsigned& argstart ) {
@@ -410,12 +409,12 @@ unsigned ActionWithArguments::setupActionInChain( const unsigned& argstart ) {
   ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );
   for(unsigned i=argstart; i<getNumberOfArguments(); ++i) {
     // Ensures we don't add actions to setup chains
-    ActionSetup* as = dynamic_cast<ActionSetup*>( arguments[i]->getPntrToAction() );
+    // ActionSetup* as = dynamic_cast<ActionSetup*>( arguments[i]->getPntrToAction() );
     // Add this function to jobs to do in recursive loop in previous action
-    if( !as && arguments[i]->getRank()>0 ) {
+    if( (arguments[i]->getPntrToAction())->canChainFromThisAction() && arguments[i]->getRank()>0 ) {
       if( (arguments[i]->getPntrToAction())->addActionToChain( alabels, av ) ) { added=true; break; }
     }
-    if( !as ) all_setup=false;
+    if( (arguments[i]->getPntrToAction())->canChainFromThisAction() ) all_setup=false;
   }
   if( !all_setup ) plumed_massert(added, "could not add action " + getLabel() + " to chain of any of its arguments");
 
@@ -425,7 +424,16 @@ unsigned ActionWithArguments::setupActionInChain( const unsigned& argstart ) {
     if( distinct_arguments[i].second==0 ) nderivatives += distinct_arguments[i].first->getNumberOfDerivatives();
     else {
       if( distinct_arguments[i].first->getNumberOfComponents()==1 ) nderivatives += (distinct_arguments[i].first->getPntrToComponent(0))->getNumberOfValues( getLabel() );
-      else nderivatives += distinct_arguments[i].first->getFullNumberOfTasks();  // GAT - does this work with matrices??
+      else {
+        unsigned nd=0;
+        for(unsigned j=0;j<getNumberOfArguments();++j) {
+            if( (arguments[j]->getPntrToAction())->getLabel()==distinct_arguments[i].first->getLabel() ) { 
+                 if( nd>0 ) error("cannot use more than one argument from an action at once in this way");
+                 nd = arguments[j]->getNumberOfValues( getLabel() );
+            }
+        }
+        plumed_assert( nd > 0 ); nderivatives += nd;
+      }
     }
   }
   return nderivatives;
@@ -510,7 +518,8 @@ void ActionWithArguments::createTasksFromArguments() {
          // Get number of tasks
          if( getPntrToArgument(j)->getRank()==2 && !getPntrToArgument(j)->hasDerivatives() ) {
              if( !getPntrToArgument(j)->usingAllVals( getLabel() ) ) error("cannot use a subset of values as input to this argument");
-             ntasks += (getPntrToArgument(j)->getPntrToAction())->getFullNumberOfTasks();
+             ntasks += getPntrToArgument(j)->getShape()[0];
+             // (getPntrToArgument(j)->getPntrToAction())->getFullNumberOfTasks();
          } else ntasks += getPntrToArgument(j)->getNumberOfValues( getLabel() );
      }
 
@@ -520,7 +529,8 @@ void ActionWithArguments::createTasksFromArguments() {
           // Get number of tasks
           if( getPntrToArgument(j)->getRank()==2 && !getPntrToArgument(j)->hasDerivatives() ) {
                if( !getPntrToArgument(j)->usingAllVals( getLabel() ) ) error("cannot use a subset of values as input to this argument");
-               nt += (getPntrToArgument(j)->getPntrToAction())->getFullNumberOfTasks();
+               nt += getPntrToArgument(j)->getShape()[0];
+               //  (getPntrToArgument(j)->getPntrToAction())->getFullNumberOfTasks();
           } else nt += getPntrToArgument(j)->getNumberOfValues( getLabel() );
       }
       plumed_assert( nt==ntasks );

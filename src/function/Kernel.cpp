@@ -23,7 +23,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
-#include "setup/SetupReferenceBase.h"
+#include "setup/ReadReferenceCluster.h"
 
 #include <cmath>
 
@@ -68,12 +68,18 @@ Kernel::Kernel(const ActionOptions&ao):
   Action(ao),
   ActionShortcut(ao)
 {
-  bool vectorfunc, norm; parseFlag("NORMALIZED",norm); 
-  std::string argstr, argstr2; parse("ARG",argstr2); 
-  if( argstr2.length()>0 ) { 
-      vectorfunc=false; argstr="ARG=" + argstr2;
-  } else {
-      vectorfunc=true; argstr="";
+  bool norm; parseFlag("NORMALIZED",norm); 
+  std::string argstr2,center,sig,cov,ktype; parse("ARG",argstr2); parse("TYPE",ktype);
+  std::string fname; unsigned nnn; parse("REFERENCE",fname); double weight; parse("WEIGHT",weight);
+  if( fname.length()>0 ) { 
+      parse("NUMBER",nnn ); 
+  } else { 
+      parse("CENTER",center); parse("SIGMA",sig); 
+      if( sig.length()==0 ) parse("COVAR",cov);
+  }
+
+  if( argstr2.length()==0 ) { 
+      std::string argstr=""; std::vector<std::string> names;
       for(unsigned i=1;; ++i) {
         std::string num, argn; Tools::convert(i,num);
         parseNumbered("ARG",i,argn); 
@@ -82,64 +88,97 @@ Kernel::Kernel(const ActionOptions&ao):
 
         if( i==1 ) { argstr2 = "arg1"; } 
         else { argstr2 += ",arg" + num; }
-        argstr += " ARG" + num + "=" + argn;
+        argstr += " ARG" + num + "=" + argn; names.push_back( argn );
       }
+      std::string weight_str; Tools::convert( weight, weight_str );
+      std::string input = "KERNEL TYPE=" + ktype + " WEIGHT=" + weight_str + " ARG=" + argstr2; 
+      if( norm ) input += " NORMALIZED";
+      if( fname.length()>0 ) { 
+          input += " " + setup::ReadReferenceCluster::convertFileToLine( fname, nnn, names );  
+      } else { 
+          input += " CENTER=" + center; 
+          if( sig.length()>0 ) { input += " SIGMA=" + sig; } else { input += " COVAR=" + sig; }
+      }
+      readInputLine( getShortcutLabel() + ": PLUMED_FUNCTION PERIODIC=NO " + argstr + " INPUT={" + input +  "}");
+      checkRead(); return;
+  } else if( fname.length()>0 ) {
+      std::string weight_str; Tools::convert( weight, weight_str ); 
+      std::vector<std::string> names=Tools::getWords( argstr2, "\t\n ,");
+      std::string input = setup::ReadReferenceCluster::convertFileToLine( fname, nnn, names );
+      if( norm ) input += " NORMALIZED"; 
+      readInputLine( getShortcutLabel() + ": KERNEL TYPE=" + ktype + " WEIGHT=" + weight_str + " ARG=" + argstr2 + " " + input );
+      checkRead(); return;
   }
   
-  std::string input, function_input;
   // Read in the parameters of the kernel 
-  std::string fname; parse("REFERENCE",fname); double weight; parse("WEIGHT",weight);
-  if( fname.length()>0 ) {
-     std::string num; parse("NUMBER",num ); readInputLine( getShortcutLabel() + "_ref: READ_CLUSTER " + argstr + " NUMBER=" + num + " REFERENCE=" + fname ); 
-  } else {
-     std::string center, sig, covarstr; parse("CENTER",center); parse("SIGMA",sig); 
-     if( sig.length()>0 ) { covarstr = " SIGMA=" + sig; } else { parse("COVAR",sig); covarstr = " COVAR=" + sig; }
-     readInputLine( getShortcutLabel() + "_ref: READ_CLUSTER " + argstr + " CENTER=" + center + covarstr );
-  }
+  plumed_assert( fname.length()==0 );
+  std::string covarstr; if( sig.length()>0 ) { covarstr = " SIGMA=" + sig; } else { covarstr = " COVAR=" + cov; }
+  readInputLine( getShortcutLabel() + "_ref: READ_CLUSTER ARG=" + argstr2 + " CENTER=" + center + covarstr );
+  // Work out the type of kernel we are using
+  std::string func_str; 
+  if( ktype=="gaussian" || ktype=="von-misses" ) func_str = "exp(-x/2)";
+  else if( ktype=="triangular" ) func_str = "step(1.-sqrt(x))*(1.-sqrt(x))";
+  else error("invalied kernel type");
+  std::string vm_str=""; if(  ktype=="von-misses" ) vm_str=" VON_MISSES";
 
   setup::SetupReferenceBase* as = plumed.getActionSet().selectWithLabel<setup::SetupReferenceBase*>( getShortcutLabel() + "_ref" );
   plumed_assert( as ); Value* myval = as->copyOutput( getShortcutLabel() + "_ref.center"); 
-  unsigned nvals = myval->getNumberOfValues( myval->getName() ); 
+  unsigned nvals = myval->getNumberOfValues( myval->getName() ); std::string det_inp; 
   if( as->copyOutput(1)->getRank()==1 ) {
       // Invert the variance
       readInputLine( getShortcutLabel() + "_icov: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref " +
                                           "  INPUT={MATHEVAL ARG=" + getShortcutLabel() + "_ref.variance FUNC=1/x PERIODIC=NO}" );
-      if( norm ) readInputLine( getShortcutLabel() + "_det: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref INPUT={PRODUCT ARG=" + getShortcutLabel() + "_ref.variance}");
-      input = getShortcutLabel() + "_dist_2: NORMALIZED_EUCLIDEAN_DISTANCE SQUARED ARG1=" + argstr2 + " ARG2=" + getShortcutLabel() + "_ref.center METRIC=" + getShortcutLabel() + "_icov";
       // Compute the distance between the center of the basin and the current configuration
-      if( vectorfunc ) function_input += input + "; ";
-      else readInputLine( input ); 
+      readInputLine( getShortcutLabel() + "_dist_2: NORMALIZED_EUCLIDEAN_DISTANCE SQUARED" + vm_str +" ARG1=" + argstr2 + " ARG2=" + getShortcutLabel() +
+                     "_ref.center METRIC=" + getShortcutLabel() + "_icov");
+      // And compute a determinent for the input covariance matrix if it is required
+      if( norm ) {
+          if( ktype=="von-misses" ) {
+             det_inp = "vec: MATHEVAL ARG=" + getShortcutLabel() + "_icov FUNC=x PERIODIC=NO ; ";
+          } else {
+             det_inp = "det: PRODUCT ARG=" + getShortcutLabel() + "_ref.variance ; ";
+          }
+      } 
   } else { 
       if( as->copyOutput(1)->getRank()!=2 ) error("invalid input for metric");
       // Invert the input covariance matrix
       readInputLine( getShortcutLabel() + "_icov: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref INPUT={INVERT_MATRIX ARG=" + getShortcutLabel() + "_ref.covariance}" );
-      // And compute a determinent for the input covariance matrix if it is required
-      if( norm ) readInputLine( getShortcutLabel() + "_det: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref INPUT={DETERMINANT ARG=" + getShortcutLabel() + "_ref.covariance}");
       // Compute the distance between the center of the basin and the current configuration
-      input = getShortcutLabel() + "_dist_2: MAHALANOBIS_DISTANCE SQUARED ARG1=" + argstr2 + " ARG2=" + getShortcutLabel() + "_ref.center METRIC=" + getShortcutLabel() + "_icov";
-      if( vectorfunc ) function_input += input + "; ";
-      else readInputLine( input ); 
+      readInputLine( getShortcutLabel() + "_dist_2: MAHALANOBIS_DISTANCE SQUARED ARG1=" + argstr2 + " ARG2=" + getShortcutLabel() + "_ref.center METRIC=" + 
+                     getShortcutLabel() + "_icov " + vm_str );
+      // And compute a determinent for the input covariance matrix if it is required
+      if( norm ) {
+          if( ktype=="von-misses" ) {
+             std::string num, argnames="det.vals-1"; for(unsigned i=1;i<nvals;++i) { Tools::convert( i+1, num ); argnames += ",det.vals-" + num; }
+             det_inp = "det: DIAGONALIZE ARG=" + getShortcutLabel() + "_ref.covariance VECTORS=all ; ";
+             det_inp += "comp: COMPOSE_VECTOR ARG=" + argnames + " ; vec: MATHEVAL ARG1=comp FUNC=1/x PERIODIC=NO ; ";
+          } else {
+             det_inp = "det: DETERMINANT ARG=" + getShortcutLabel() + "_ref.covariance ; ";
+          }
+      }
   } 
 
-  std::string func_str, ktype; parse("TYPE",ktype);
-  if( ktype=="gaussian" ) func_str = "exp(-x/2)";
-  else if( ktype=="triangular" ) func_str = "step(1.-sqrt(x))*(1.-sqrt(x))";
-  else error("invalied kernel type"); 
   // Compute the Gaussian 
   if( norm ) {
-    if( ktype!="gaussian" ) error("only gaussian kernels are normalizable");
-    std::string wstr; Tools::convert( weight/sqrt(pow(2*pi,nvals)), wstr ); 
-    input = "MATHEVAL ARG1=" + getShortcutLabel() + "_dist_2 ARG2=" + getShortcutLabel() + "_det FUNC=" + wstr + "*exp(-x/2)/sqrt(y) PERIODIC=NO";
-    if( vectorfunc ) function_input += input;
-    else readInputLine( getShortcutLabel() + ": " + input ); 
+    if( ktype=="gaussian" ) {
+        std::string pstr; Tools::convert( sqrt(pow(2*pi,nvals)), pstr ); 
+        det_inp += "MATHEVAL ARG1=det FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO";
+    } else if( ktype=="von-misses" ) {
+        std::string wstr, min, max;
+        ActionWithValue* av=plumed.getActionSet().selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_dist_2_diff" ); plumed_assert( av );
+        if( !av->copyOutput(0)->isPeriodic() ) error("VON_MISSES only works with periodic variables");
+        av->copyOutput(0)->getDomain(min,max); Tools::convert( weight, wstr );
+        det_inp += " bes: BESSEL ORDER=0 ARG1=vec ; cc: MATHEVAL ARG1=vec ARG2=bes FUNC=(" + max + "-" + min + ")*y*exp(-x) PERIODIC=NO ; PRODUCT ARG=cc"; 
+    } else error("only gaussian and von-misses kernels are normalizable");
+    // Compute the normalizing constant
+    readInputLine( getShortcutLabel() + "_vol: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref INPUT={" + det_inp + "}");
+    // And the (suitably normalized) kernel 
+    std::string wstr; Tools::convert( weight, wstr ); 
+    readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist_2 ARG2=" + getShortcutLabel() + "_vol FUNC=" + wstr + "*exp(-x/2)/y PERIODIC=NO");
   } else {
     std::string wstr; Tools::convert( weight, wstr );
-    input = "MATHEVAL ARG1=" + getShortcutLabel() + "_dist_2 FUNC=" + wstr + "*" + func_str + " PERIODIC=NO";
-    if( vectorfunc ) function_input += input;
-    else readInputLine( getShortcutLabel() + ": " + input ); 
+    readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist_2 FUNC=" + wstr + "*" + func_str + " PERIODIC=NO");
   }
-  // And create the plumed function that will compute all our kernel functions
-  if( vectorfunc ) readInputLine( getShortcutLabel() + ": PLUMED_FUNCTION PERIODIC=NO " + argstr + " INPUT={" + function_input + "}"); 
   checkRead();
 }
 

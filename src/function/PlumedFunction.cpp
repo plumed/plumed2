@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
 #include "ActionRegister.h"
+#include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "setup/SetupReferenceBase.h"
@@ -91,6 +92,7 @@ PlumedFunction::PlumedFunction(const ActionOptions&ao):
   }
   // Parse the input and create input values
   std::string input; parse("INPUT",input); std::vector<std::string> input_lines;
+
   std::vector<std::pair<std::string,bool> > computed_args; std::string remainder = input; 
   while( remainder.find(";")!=std::string::npos ) {
       std::size_t semi = remainder.find_first_of(';');
@@ -116,8 +118,8 @@ PlumedFunction::PlumedFunction(const ActionOptions&ao):
 
   // And setup to retrive the final value
   for(unsigned k=0;k<OpenMP::getNumThreads();++k) {
-     ActionWithValue* fav = dynamic_cast<ActionWithValue*>( myplumed[k].getActionSet()[myplumed[k].getActionSet().size()-1].get() );
-     if( !fav ) error("final value should calculate relevant value that you want as reference");
+     ActionWithValue* fav = myplumed[k].getActionSet().getFinalActionOfType<ActionWithValue*>(); 
+     // Setup everything to get the data
      data[k].resize( fav->getNumberOfComponents() );
      for(unsigned i=0;i<fav->getNumberOfComponents();++i) {
        std::string name = (fav->copyOutput(i))->getName();
@@ -127,7 +129,7 @@ PlumedFunction::PlumedFunction(const ActionOptions&ao):
    }
   }
   if( data[0].size()>1 ) {
-      ActionWithValue* fav = dynamic_cast<ActionWithValue*>( myplumed[0].getActionSet()[myplumed[0].getActionSet().size()-1].get() ); 
+      ActionWithValue* fav = myplumed[0].getActionSet().getFinalActionOfType<ActionWithValue*>(); 
       for(unsigned i=0;i<fav->getNumberOfComponents();++i) addComponentWithDerivatives( (fav->copyOutput(i))->getName() );
   } else addValueWithDerivatives();
   checkRead();
@@ -143,8 +145,8 @@ void PlumedFunction::createInputLine( std::string& input, std::vector<std::pair<
       } else if( words[i].find("ARG")!=std::string::npos || words[i].find("WEIGHT")!=std::string::npos || 
                  words[i].find("METRIC")!=std::string::npos || words[i].find("VECTOR")!=std::string::npos ) {
           // Find the arguments and check that the arguments are not the input
-          std::size_t eq=words[i].find_first_of("="); std::string aargs = words[i].substr(eq+1);
-          if( aargs.find("arg")!=std::string::npos ) continue;
+          std::size_t eq=words[i].find_first_of("="); std::string aargs = words[i].substr(eq+1); double dd;
+          if( aargs.find("arg")!=std::string::npos || Tools::convert( aargs, dd ) ) continue;
 
           if( aargs.find(",")!=std::string::npos ) error("cannot deal with comma separated argument lists");
           // Check if the requested argument is computed by the action
@@ -176,7 +178,7 @@ void PlumedFunction::createInputLine( std::string& input, std::vector<std::pair<
 void PlumedFunction::turnOnDerivatives() {
   ActionWithValue::turnOnDerivatives();
   for(unsigned j=0;j<OpenMP::getNumThreads();++j) { 
-      ActionWithValue* fav = dynamic_cast<ActionWithValue*>( myplumed[j].getActionSet()[myplumed[j].getActionSet().size()-1].get() );
+      ActionWithValue* fav = myplumed[j].getActionSet().getFinalActionOfType<ActionWithValue*>(); 
       if( fav->getName()!="BIASVALUE" ) {
           for(unsigned i=0;i<fav->getNumberOfComponents();++i) myplumed[j].readInputLine( "BIASVALUE ARG=" + (fav->copyOutput(i))->getName() );
       }
@@ -199,7 +201,7 @@ void PlumedFunction::calculateFunction( const std::vector<double>& args, MultiVa
    // Do the calculation using the Plumed object
    const_cast<PlumedMain*>(&myplumed[t])->cmd("calc");
    // And set the final value
-   for(unsigned i=0;i<getNumberOfComponents();++i) addValue( i, data[t][i], myvals );  
+   for(unsigned i=0;i<getNumberOfComponents();++i) addValue( i, data[t][i], myvals );
    // And get the forces
    if( !doNotCalculateDerivatives() ) {
        for(unsigned i=0;i<getNumberOfComponents();++i) {
