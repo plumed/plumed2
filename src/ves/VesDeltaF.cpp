@@ -65,7 +65,7 @@ Using the keyword `NORMALIZE`, you can also decide to normalize the local free e
 In this case the parameters will represent not the difference in height (which depends on the chosen CVs),
 but the actual free energy difference, \f$\alpha_i=\Delta F_i\f$.
 
-However, as discussed in \cite Invernizzi2019vesdeltaf, a better estimate of \f$\Delta F_i\f$ should be obtained through the reweighting procedure.
+However, as discussed in Ref. \cite Invernizzi2019vesdeltaf, a better estimate of \f$\Delta F_i\f$ should be obtained through the reweighting procedure.
 
 \par Examples
 
@@ -87,7 +87,13 @@ VES_DELTA_F ...
 PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=cv,ves.bias,ves.rct
 \endplumedfile
 
-The local FES files were obtained via \ref sum_hills and their header should be similar to the following:
+The local FES files can be obtained as described in Sec. 4.2 of Ref. \cite Invernizzi2019vesdeltaf, i.e. for example:
+- run 4 indipendent MetaD runs, all starting from basin A, and kill them as soon as they make the first transition (see e.g. \ref COMMITTOR)
+- \verbatim cat HILLS* > all_HILLS \endverbatim
+- \verbatim plumed sum_hills --hills all_HILLS --oufile all_fesA.dat --mintozero --min -1 --max 1 --bin 100 \endverbatim
+- \verbatim awk -v n_rep=4 '{if ($1!="#!" && $1!="") {for (i=1+(NF-1)/2; i<=NF;i++) $i/=n_rep;} print $0}' all_fesA.dat > fesA.data \endverbatim
+
+The header of the file should be similar to the following:
 
 \verbatim
 #! FIELDS cv file.free der_cv
