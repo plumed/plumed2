@@ -91,7 +91,7 @@ The local FES files can be obtained as described in Sec. 4.2 of Ref. \cite Inver
 - run 4 indipendent MetaD runs, all starting from basin A, and kill them as soon as they make the first transition (see e.g. \ref COMMITTOR)
 - \verbatim cat HILLS* > all_HILLS \endverbatim
 - \verbatim plumed sum_hills --hills all_HILLS --oufile all_fesA.dat --mintozero --min -1 --max 1 --bin 100 \endverbatim
-- \verbatim awk -v n_rep=4 '{if($1!="#!" && $1!="") {for(i=1+(NF-1)/2; i<=NF;i++) $i/=n_rep;} print $0}' all_fesA.dat > fesA.data \endverbatim
+- \verbatim awk -v n_rep=4 '{if($1!="#!" && $1!="") {for(i=1+(NF-1)/2; i<=NF; i++) $i/=n_rep;} print $0}' all_fesA.dat > fesA.data \endverbatim
 
 The header of the file should be similar to the following:
 
@@ -461,6 +461,11 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
     log.printf("    number of walkers: %d\n",NumWalkers_);
     log.printf("    walker rank: %d\n",multi_sim_comm.Get_rank()); //only comm.Get_rank()=0 prints, so this is fine
   }
+  log.printf(" Bibliography ");
+  log<<plumed.cite("Invernizzi and Parrinello, J. Chem. Theory Comput. 15, ???? (2019)");
+  log<<plumed.cite("Valsson and Parrinello, Phys. Rev. Lett. 113, 090601 (2014)");
+  if(inv_gamma_>0)
+    log<<plumed.cite("Valsson and Parrinello, J. Chem. Theory Comput. 11, 1996-2002 (2015)");
 
 //set initial value for tg averages and rct
   update_tg_and_rct();
