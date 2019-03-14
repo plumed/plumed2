@@ -186,6 +186,7 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
 //debug flags
   keys.addFlag("SERIAL",false,"perform the calculation in serial even if multiple tasks are available");
   keys.addFlag("NO_MULTIPLE_WALKERS",false,"do not use multiple walkers, even if there are multiple simulations running");
+  keys.use("RESTART");
 
 //output components
   componentsAreNotOptional(keys);
