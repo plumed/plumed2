@@ -39,6 +39,9 @@ homepage            http://www.plumed.org/
 #            file2
 ### etc
 
+# Enable optional features.
+# --enable-asmjit:        Compile internal asmjit. Notice that internal asmjit is protected in
+#                         PLUMED namespace so will not collide with other asmjit implementations.
 # Disable additional features.
 # --disable-doc:          Do not create documentation, and avoid searching for Doxygen.
 # --disable-libsearch:    Avoid searching libraries using their default names.
@@ -49,6 +52,7 @@ homepage            http://www.plumed.org/
 #                         statically to an MD code.
 # --disable-mpi:          Do not search for MPI compiler (replaced when enabling mpi, see below)
 configure.args-append \
+                    --enable-asmjit \
                     --disable-doc \
                     --disable-libsearch \
                     --disable-static-patch \

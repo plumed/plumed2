@@ -160,7 +160,7 @@ public:
 /// Set the value
   void setValue(Value*,double);
 /// Check if numerical derivatives should be used
-  bool checkNumericalDerivatives() const ;
+  bool checkNumericalDerivatives() const override;
 /// This forces the class to use numerical derivatives
   void useNumericalDerivatives();
 // These are things for using vectors of values as fields

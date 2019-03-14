@@ -3,12 +3,13 @@
 <!-- 
 description: Methods for incorporating additional information about CVs into MD simulations by adaptively determined linear bias parameters
 authors: Glen Hocky, Andrew White
-reference: \cite white2014efficient \cite hocky2017cgds
+reference: \cite white2014efficient \cite hocky2017cgds \cite Amirkulova2019Recent
 -->
 
 ## Overview
 
 This Experiment Directed Simulation module contains methods for adaptively determining linear bias parameters such that each biased CV samples a new target mean value. This module implements the stochastic gradient descent algorithm in the original EDS paper \cite white2014efficient as well as additional minimization algorithms for Coarse-Grained Directed Simulation \cite hocky2017cgds.
+There is a recent review on the method and its applications here: \cite Amirkulova2019Recent.
 
 Notice that a similar method is available as \ref MAXENT, although with different features and using a different optimization algorithm.
 

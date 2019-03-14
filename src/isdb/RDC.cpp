@@ -184,6 +184,33 @@ private:
   bool           svd;
   bool           pbc;
 
+#ifdef __PLUMED_HAS_GSL
+/// Auxiliary class to delete a gsl_vector.
+/// If used somewhere else we can move it.
+  struct gsl_vector_deleter {
+    void operator()(gsl_vector* p) {
+      gsl_vector_free(p);
+    }
+  };
+
+/// unique_ptr to a gsl_vector.
+/// Gets deleted when going out of scope.
+  typedef std::unique_ptr<gsl_vector,gsl_vector_deleter> gsl_vector_unique_ptr;
+
+/// Auxiliary class to delete a gsl_matrix.
+/// If used somewhere else we can move it.
+  struct gsl_matrix_deleter {
+    void operator()(gsl_matrix* p) {
+      gsl_matrix_free(p);
+    }
+  };
+
+/// unique_ptr to a gsl_matrix.
+/// Gets deleted when going out of scope.
+  typedef std::unique_ptr<gsl_matrix,gsl_matrix_deleter> gsl_matrix_unique_ptr;
+#endif
+
+
   void do_svd();
 public:
   explicit RDC(const ActionOptions&);
@@ -340,18 +367,19 @@ RDC::RDC(const ActionOptions&ao):
 void RDC::do_svd()
 {
 #ifdef __PLUMED_HAS_GSL
-  gsl_vector *rdc_vec, *S, *Stmp, *work, *bc;
-  gsl_matrix *coef_mat, *A, *V;
-  rdc_vec = gsl_vector_alloc(coupl.size());
-  bc = gsl_vector_alloc(coupl.size());
-  Stmp = gsl_vector_alloc(5);
-  S = gsl_vector_alloc(5);
-  work = gsl_vector_alloc(5);
-  coef_mat = gsl_matrix_alloc(coupl.size(),5);
-  A = gsl_matrix_alloc(coupl.size(),5);
-  V = gsl_matrix_alloc(5,5);
-  gsl_matrix_set_zero(coef_mat);
-  gsl_vector_set_zero(bc);
+  gsl_vector_unique_ptr rdc_vec(gsl_vector_alloc(coupl.size())),
+                        S(gsl_vector_alloc(5)),
+                        Stmp(gsl_vector_alloc(5)),
+                        work(gsl_vector_alloc(5)),
+                        bc(gsl_vector_alloc(coupl.size()));
+
+  gsl_matrix_unique_ptr coef_mat(gsl_matrix_alloc(coupl.size(),5)),
+                        A(gsl_matrix_alloc(coupl.size(),5)),
+                        V(gsl_matrix_alloc(5,5));
+
+  gsl_matrix_set_zero(coef_mat.get());
+  gsl_vector_set_zero(bc.get());
+
   unsigned index=0;
   vector<double> dmax(coupl.size());
   for(unsigned r=0; r<getNumberOfAtoms(); r+=2) {
@@ -367,52 +395,44 @@ void RDC::do_svd()
     double mu_x = distance[0]/d;
     double mu_y = distance[1]/d;
     double mu_z = distance[2]/d;
-    gsl_vector_set(rdc_vec,index,coupl[index]/dmax[index]);
-    gsl_matrix_set(coef_mat,index,0,gsl_matrix_get(coef_mat,index,0)+(mu_x*mu_x-mu_z*mu_z));
-    gsl_matrix_set(coef_mat,index,1,gsl_matrix_get(coef_mat,index,1)+(mu_y*mu_y-mu_z*mu_z));
-    gsl_matrix_set(coef_mat,index,2,gsl_matrix_get(coef_mat,index,2)+(2.0*mu_x*mu_y));
-    gsl_matrix_set(coef_mat,index,3,gsl_matrix_get(coef_mat,index,3)+(2.0*mu_x*mu_z));
-    gsl_matrix_set(coef_mat,index,4,gsl_matrix_get(coef_mat,index,4)+(2.0*mu_y*mu_z));
+    gsl_vector_set(rdc_vec.get(),index,coupl[index]/dmax[index]);
+    gsl_matrix_set(coef_mat.get(),index,0,gsl_matrix_get(coef_mat.get(),index,0)+(mu_x*mu_x-mu_z*mu_z));
+    gsl_matrix_set(coef_mat.get(),index,1,gsl_matrix_get(coef_mat.get(),index,1)+(mu_y*mu_y-mu_z*mu_z));
+    gsl_matrix_set(coef_mat.get(),index,2,gsl_matrix_get(coef_mat.get(),index,2)+(2.0*mu_x*mu_y));
+    gsl_matrix_set(coef_mat.get(),index,3,gsl_matrix_get(coef_mat.get(),index,3)+(2.0*mu_x*mu_z));
+    gsl_matrix_set(coef_mat.get(),index,4,gsl_matrix_get(coef_mat.get(),index,4)+(2.0*mu_y*mu_z));
     index++;
   }
-  gsl_matrix_memcpy(A,coef_mat);
-  gsl_linalg_SV_decomp(A, V, Stmp, work);
-  gsl_linalg_SV_solve(A, V, Stmp, rdc_vec, S);
+  gsl_matrix_memcpy(A.get(),coef_mat.get());
+  gsl_linalg_SV_decomp(A.get(), V.get(), Stmp.get(), work.get());
+  gsl_linalg_SV_solve(A.get(), V.get(), Stmp.get(), rdc_vec.get(), S.get());
   /* tensor */
   Value* tensor;
   tensor=getPntrToComponent("Sxx");
-  double Sxx = gsl_vector_get(S,0);
+  double Sxx = gsl_vector_get(S.get(),0);
   tensor->set(Sxx);
   tensor=getPntrToComponent("Syy");
-  double Syy = gsl_vector_get(S,1);
+  double Syy = gsl_vector_get(S.get(),1);
   tensor->set(Syy);
   tensor=getPntrToComponent("Szz");
   double Szz = -Sxx-Syy;
   tensor->set(Szz);
   tensor=getPntrToComponent("Sxy");
-  double Sxy = gsl_vector_get(S,2);
+  double Sxy = gsl_vector_get(S.get(),2);
   tensor->set(Sxy);
   tensor=getPntrToComponent("Sxz");
-  double Sxz = gsl_vector_get(S,3);
+  double Sxz = gsl_vector_get(S.get(),3);
   tensor->set(Sxz);
   tensor=getPntrToComponent("Syz");
-  double Syz = gsl_vector_get(S,4);
+  double Syz = gsl_vector_get(S.get(),4);
   tensor->set(Syz);
 
-  gsl_blas_dgemv(CblasNoTrans, 1.0, coef_mat, S, 0., bc);
+  gsl_blas_dgemv(CblasNoTrans, 1.0, coef_mat.get(), S.get(), 0., bc.get());
   for(index=0; index<coupl.size(); index++) {
-    double rdc = gsl_vector_get(bc,index)*dmax[index];
+    double rdc = gsl_vector_get(bc.get(),index)*dmax[index];
     Value* val=getPntrToComponent(index);
     val->set(rdc);
   }
-  gsl_matrix_free(coef_mat);
-  gsl_matrix_free(A);
-  gsl_matrix_free(V);
-  gsl_vector_free(rdc_vec);
-  gsl_vector_free(bc);
-  gsl_vector_free(Stmp);
-  gsl_vector_free(S);
-  gsl_vector_free(work);
 #endif
 }
 

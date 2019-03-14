@@ -244,6 +244,7 @@ PLUMED_CONFIG_ENABLE([bsymbolic],[use -Bsymbolic flag in making shared libraries
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
+PLUMED_CONFIG_ENABLE([asmjit],[enable embedded asmjit],[no])
 PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
@@ -261,7 +262,6 @@ PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
-PLUMED_CONFIG_ENABLE([asmjit],[search for asmjit],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[no])
 PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
 PLUMED_CONFIG_ENABLE([af_ocl],[arrayfire_opencl],[search for arrayfire],[no])
@@ -641,6 +641,12 @@ fi
 # when configuring with --disable-openmp
 AC_OPENMP
 
+if test $asmjit == true ; then
+  AC_MSG_NOTICE([Enabling embedded asmjit])
+  AC_DEFINE([__PLUMED_HAS_ASMJIT])
+fi
+
+
 if test $readdir_r == true ; then
   PLUMED_CHECK_PACKAGE([dirent.h],[readdir_r],[__PLUMED_HAS_READDIR_R])
 fi
@@ -723,30 +729,6 @@ int main() {
 # notice: macports install libraries with -mt suffix
 fi
 
-if test $asmjit == true ; then
-  PLUMED_CHECK_CXX_PACKAGE([asmjit],[
-#include <asmjit/asmjit.h>
-#include <stdio.h>
-using namespace asmjit;
-typedef int (*Func)(void);
-int main(int argc, char* argv[[]]) {
-  JitRuntime rt;
-  CodeHolder code;
-  code.init(rt.getCodeInfo());
-  X86Assembler a(&code);
-  a.mov(x86::eax, 1);
-  a.ret();
-  Func fn;
-  Error err = rt.add(&fn, &code);
-  if (err) return 1;
-  int result = fn();
-  printf("%d\n", result);
-  rt.release(fn);
-  return 0;
-}
-  ], [__PLUMED_HAS_ASMJIT],[asmjit])
-fi
-
 if test $fftw == true ; then
   PLUMED_CHECK_PACKAGE([fftw3.h],[fftw_execute],[__PLUMED_HAS_FFTW],[fftw3])
 fi
@@ -760,7 +742,7 @@ if test $python == true  ; then
   if test -n "$PYTHON_BIN"
   then
     AC_MSG_NOTICE([Python executable is $PYTHON_BIN])
-    AC_MSG_CHECKING([support for required python modules (setuptools, cython, numpy, subprocess, os, shutil)])
+    AC_MSG_CHECKING([support for required python modules (setuptools, cython, subprocess, os, shutil)])
 testimport="
 from setuptools import setup
 from setuptools import Extension
@@ -769,7 +751,6 @@ import os
 import os.path
 import sys
 from shutil import copyfile
-import numpy
 from Cython.Build import cythonize
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then

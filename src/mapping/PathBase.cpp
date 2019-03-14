@@ -35,6 +35,7 @@ PathBase::PathBase(const ActionOptions& ao):
   Action(ao),
   Mapping(ao)
 {
+  setLowMemOption( true );
   weightHasDerivatives=true;
   bool noz; parseFlag("NOZPATH",noz);
   parse("LAMBDA",lambda);

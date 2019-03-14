@@ -38,9 +38,9 @@ public:
 /// Creator of keywords
   static void registerKeywords( Keywords& keys );
 /// Do nothing.
-  void calculate() {}
+  void calculate() override {}
 /// Do nothing.
-  void apply() {}
+  void apply() override {}
 };
 
 }

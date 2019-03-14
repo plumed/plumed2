@@ -7,6 +7,10 @@ variables, bias, on-the-fly analysis, etc in a way that is compatible with a num
 different molecular dynamics codes. This means that there cannot be a single 
 strategy to speed up all the possible calculations. 
 
+\ref performance-optimization "Here" 
+you can find a step-by-step tutorial on optimizing PLUMED performances, discussing some of the topics
+below in more detail and using practical examples.
+
 PLUMED makes use of MPI and OpenMP to parallelize some of its functions, try to always
 compile it with these features enabled. Furthermore, newer compilers with proper optimization 
 flags can provide a dramatic boost to performances.
@@ -232,35 +236,8 @@ In case you are using a lot of \ref CUSTOM functions or \ref switchingfunction "
 notice that these functionalities depend on the lepton library included in PLUMED.
 This library replaces libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
 However, you can make it even faster using a [just-in-time compiler](https://github.com/asmjit/asmjit.git).
-Currently, this is an experimental feature, so use it with care.
-
-In order to enable it you should first install asmjit.
-\verbatim
-git clone https://github.com/asmjit/asmjit.git
-cd asmjit
-git checkout 673dcefa # this is a specific version
-mkdir build
-cd build
-cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=$prefix ../
-make -j 4
-make install
-\endverbatim
-
-Notice that you should set the prefix correctly so that PLUMED can find it at configure time.
-In the example asmjit is installed on `/usr/local` but you might be willing to install it somewhere else.
-On a Mac, you might also have to use `install_name_tool` to fix its path
-\verbatim
-install_name_tool -id $prefix/lib/libasmgit.dylib $prefix/lib/libasmgit.dylib
-\endverbatim
-
-Also notice that a specific version of asmjit is required.
-The version supported by PLUMED is more recent than the version originally supported by the Lepton library.
-In case you find troubles and want to experiment with older versions, write on the mailing list
-or check the Lepton implementation for older asmjit releases by doing `cd src/lepton; gitk`.
-If on your system a more recent version of the asmjit library is already installed, you might have to make
-sure that PLUMED finds the correct version, both at compilation and run time.
-
-Then, configure PLUMED using this additional flag:
+As of PLUMED 2.6, the correct version of ASMJIT is embedded in PLUMED. In order to enable it
+it is sufficient to use a specific flag in configure:
 \verbatim
 ./configure --enable-asmjit
 make
@@ -268,6 +245,13 @@ make install
 \endverbatim
 
 You are done!
+
+Once ASMJIT has been configured, you can disable it at runtime setting the environment variable
+`PLUMED_USE_ASMJIT`:
+\verbatim
+export PLUMED_USE_ASMJIT=no
+\endverbatim
+
 
 In some case using a custom expression is almost as fast as using a hard-coded
 function. For instance, with an input like this one:
