@@ -30,7 +30,8 @@ namespace function {
 //+PLUMEDOC FUNCTION STATS
 /*
 Calculates statistical properties of a set of collective variables with respect to a set of reference values.
-In particular it calculates and store as components the sum of the squared deviations, the correlation, the
+
+In particular it calculates and stores as components the sum of the squared deviations, the correlation, the
 slope and the intercept of a linear fit.
 
 The reference values can be either provided as values using PARAMETERS or using value without derivatives

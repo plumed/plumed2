@@ -278,20 +278,20 @@ function. For instance, with an input like this one:
 \plumedfile
 ...
 c: COORDINATION GROUPA=1-108 GROUPB=1-108 R_0=1
-dfast: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={CUSTOM FUNC=1/(1+x2^3) R_0=1}
+d_fast: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={CUSTOM FUNC=1/(1+x2^3) R_0=1}
 ...
 \endplumedfile
 I (GB) obtained the following timings (on a Macbook laptop):
 \verbatim
 ...
 PLUMED: 4A  1 c                                          108     0.126592     0.001172     0.000701     0.002532
-PLUMED: 4A  2 dfast                                      108     0.135210     0.001252     0.000755     0.002623
+PLUMED: 4A  2 d_fast                                      108     0.135210     0.001252     0.000755     0.002623
 ...
 \endverbatim
 
 Notice the usage of `x2` as a variable for the switching function (see \ref switchingfunction), which
 avoids an unnecessary square root calculation (this is done automatically by the hard-coded switching functions
-when you use only even powers). The asmjit calculation (`dfast`) takes less than 10% more than the hard-coded
+when you use only even powers). The asmjit calculation (`d_fast`) takes less than 10% more than the hard-coded
 one (`c`).
 
 \page Time Time your Input

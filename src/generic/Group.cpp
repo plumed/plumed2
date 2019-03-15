@@ -36,8 +36,7 @@ namespace generic {
 
 //+PLUMEDOC GENERIC GROUP
 /*
-Define a group of atoms so that a particular list of atoms can be referenced with a single label
-in definitions of CVs or virtual atoms.
+Define a group of atoms so that a particular list of atoms can be referenced with a single label in definitions of CVs or virtual atoms.
 
 Atoms can be listed as comma separated numbers (i.e. `1,2,3,10,45,7,9`) , simple positive ranges
 (i.e. `20-40`), ranges with a stride either positive or negative (i.e. `20-40:2` or `80-50:-2`) or as
