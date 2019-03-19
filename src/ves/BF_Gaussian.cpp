@@ -41,7 +41,7 @@ Basis functions given by Gaussian distributions with shifted means defined on a
 bounded interval.
 You need to provide the interval \f$[a,b]\f$ on which the bias is to be
 expanded.
-The order of the expansion \f$N\f$ determines the number of equally sized
+The ORDER keyword of the basis set \f$N\f$ determines the number of equally sized
 sub-intervalls to be used.
 On the borders of each of these sub-intervalls the mean \f$\mu\f$ of a Gaussian
 basis function is placed:
@@ -49,8 +49,8 @@ basis function is placed:
   \mu_i = a + (i-1) \frac{b-a}{N}
 \f}
 
-The total number of basis functions is \f$N+2\f$ as the constant
-\f$f_{0}(x)=1\f$ is also included.
+The total number of basis functions is \f$N+4\f$ as the constant
+\f$f_{0}(x)=1\f$, as well as two additional Gaussians at the Boundaries are also included.
 
 The basis functions are given by
 \f{align}{
@@ -113,15 +113,15 @@ BF_Gaussian::BF_Gaussian(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
   width_((intervalMax()-intervalMin()) / getOrder())
 {
-  setNumberOfBasisFunctions(getOrder()+2);
+  setNumberOfBasisFunctions(getOrder()+4); // 1 constant, order+1 for interval, 2 for boundaries
   setIntrinsicInterval(intervalMin(),intervalMax());
   parse("WIDTH",width_);
   if(width_ <= 0.0) {plumed_merror("WIDTH should be larger than 0");}
   if(width_ != (intervalMax()-intervalMin())/getOrder()) {addKeywordToList("WIDTH",width_);}
   mean_.reserve(getNumberOfBasisFunctions());
   mean_.push_back(0.0);
-  for(unsigned int i=0; i < getNumberOfBasisFunctions()-1; i++) {
-    mean_.push_back(intervalMin()+i*(intervalMax()-intervalMin())/getOrder());
+  for(int i=1; i < static_cast<int>(getNumberOfBasisFunctions()); i++) {
+    mean_.push_back(intervalMin()+(i-2)*(intervalMax()-intervalMin())/getOrder());
   }
   setNonPeriodic();
   setNonOrthogonal();
