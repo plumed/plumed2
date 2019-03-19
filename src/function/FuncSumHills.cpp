@@ -40,10 +40,7 @@ namespace function {
 
 //+PLUMEDOC FUNCTION FUNCSUMHILLS
 /*
-This function is intended to be called by the command line tool sum_hills
-and it is meant to integrate a HILLS file or an HILLS file interpreted as
-a histogram i a variety of ways. Therefore it is not expected that you use this
-during your dynamics (it will crash!)
+This function is intended to be called by the command line tool sum_hills.  It is meant to integrate a HILLS file or an HILLS file interpreted as a histogram in a variety of ways. It is, therefore, not expected that you use this during your dynamics (it will crash!)
 
 In the future one could implement periodic integration during the metadynamics
 or straightforward MD as a tool to check convergence

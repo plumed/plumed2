@@ -32,7 +32,9 @@ namespace setup {
 
 //+PLUMEDOC GENERIC UNITS
 /*
-This command sets the internal units for the code.  A new unit can be set by either
+This command sets the internal units for the code.
+
+A new unit can be set by either
 specifying a conversion factor from the plumed default unit or by using a string
 corresponding to one of the defined units given below.  This directive MUST
 appear at the BEGINNING of the plumed.dat file.  The same units must be used

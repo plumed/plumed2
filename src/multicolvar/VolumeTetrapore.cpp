@@ -28,8 +28,7 @@
 
 //+PLUMEDOC VOLUMES TETRAHEDRALPORE
 /*
-This quantity can be used to calculate functions of the distribution of collective variables
-for the atoms lie that lie in a box defined by the positions of four atoms at the corners of a tetrahedron.
+This quantity can be used to calculate functions of the distribution of collective variables for the atoms lie that lie in a box defined by the positions of four atoms at the corners of a tetrahedron.
 
 Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three
 dimensional space. For example, if we have the coordination numbers for all the atoms in the

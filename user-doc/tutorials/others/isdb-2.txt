@@ -1,5 +1,5 @@
 /**
-\page isdb-2 ISDB: setting up a SAXS posprocessing and refinment calculation using MARTINI form factors 
+\page isdb-2 ISDB: setting up a SAXS post processing and refinement calculation using MARTINI form factors 
 
 \authors Cristina Paissoni 
 

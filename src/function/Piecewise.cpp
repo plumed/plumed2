@@ -31,8 +31,7 @@ namespace function {
 
 //+PLUMEDOC FUNCTION PIECEWISE
 /*
-Compute a piece wise straight line through its arguments that passes through
-a set of ordered control points.
+Compute a piece wise straight line through its arguments that passes through a set of ordered control points.
 
 For variables less than the first
 (greater than the last) point, the value of the first (last) point is used.
