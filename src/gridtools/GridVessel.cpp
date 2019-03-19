@@ -202,7 +202,7 @@ void GridVessel::getIndices( const std::vector<double>& point, std::vector<unsig
     if( pbc[i] ) indices[i]=indices[i]%nbin[i];
     else if( indices[i]>nbin[i] ) {
       std::string pp, num; Tools::convert( point[0], pp );
-      for(unsigned j=1;j<point.size();++j) { Tools::convert( point[j], num ); pp += ", " + num; } 
+      for(unsigned j=1; j<point.size(); ++j) { Tools::convert( point[j], num ); pp += ", " + num; }
       plumed_merror("point (" + pp + ")  is outside grid range");
     }
   }
