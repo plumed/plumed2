@@ -26,7 +26,9 @@
 #include "PlumedMain.h"
 #include "tools/MolDataClass.h"
 #include "tools/PDB.h"
+#include "config/Config.h"
 
+#include <iostream>
 
 namespace PLMD {
 
@@ -44,6 +46,7 @@ void SetupMolInfo::registerKeywords( Keywords& keys ) {
            "This is used to defines the atoms in the various residues, chains, etc . "
            "For more details on the PDB file format visit http://www.wwpdb.org/docs.html");
   keys.add("compulsory","MOLTYPE","protein","what kind of molecule is contained in the pdb file - usually not needed since protein/RNA/DNA are compatible");
+  keys.add("compulsory","PYTHON_BIN","default","python interpreter");
   keys.add("atoms","CHAIN","(for masochists ( mostly Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
 }
 
@@ -89,6 +92,32 @@ SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
       pdb.getAtomRange( chains[i], astart, aend, errmsg );
       if( errmsg.length()!=0 ) error( errmsg );
       log.printf("  chain named %s contains residues %u to %u and atoms %u to %u \n",chains[i].c_str(),start,end,astart.serial(),aend.serial());
+    }
+
+    std::string python_bin;
+    parse("PYTHON_BIN",python_bin);
+    if(python_bin=="no") {
+      log<<"  python interpreter disabled\n";
+    } else {
+      std::string cmd=config::getEnvCommand();
+      if(python_bin!="default") {
+        log<<"  forcing python interpreter: "<<python_bin<<"\n";
+        cmd+=" env PLUMED_PYTHON_BIN="+python_bin;
+      }
+      bool sorted=true;
+      const auto & at=pdb.getAtomNumbers();
+      for(unsigned i=0; i<at.size(); i++) {
+        if(at[i].index()!=i) sorted=false;
+      }
+      if(!sorted) {
+        log<<"  PDB is not sorted, python interpreter will be disabled\n";
+      } else {
+        if(Subprocess::available()) {
+          selector.reset(new Subprocess(cmd+" \""+config::getPlumedRoot()+"\"/scripts/selector.sh --pdb " + reference));
+        } else {
+          log<<"  subprocessing not suppored, python interpreter will be disabled\n";
+        }
+      }
     }
   }
 }
@@ -171,8 +200,32 @@ void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::
   }
 }
 
-void SetupMolInfo::interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms )const {
+void SetupMolInfo::interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms ) {
+  if(Tools::startWith(symbol,"mdt:") || Tools::startWith(symbol,"mda:")) {
+
+    log<<"  symbol " + symbol + " will be sent to python interpreter\n";
+
+    plumed_assert(selector) << "Python interpreter is disabled, selection " + symbol + " cannot be interpreted";
+    (*selector) << symbol << "\n";
+    selector->flush();
+    std::string res;
+    selector->getC2P().getline(res);
+    auto words=Tools::getWords(res);
+    if(!words.empty() && words[0]=="Error") plumed_error()<<res;
+    atoms.resize(0);
+    for(auto & w : words) {
+      int n;
+      if(w.empty()) continue;
+      Tools::convert(w,n);
+      atoms.push_back(AtomNumber::serial(n));
+    }
+    log<<"  selection interpreted using ";
+    if(Tools::startWith(symbol,"mdt:")) log<<"mdtraj "<<cite("McGibbon et al, Biophys. J., 109, 1528 (2015)")<<"\n";
+    if(Tools::startWith(symbol,"mda:")) log<<"MDAnalysis "<<cite("Gowers et al, Proceedings of the 15th Python in Science Conference, doi:10.25080/majora-629e541a-00e (2016)")<<"\n";
+    return;
+  }
   MolDataClass::specialSymbol( mytype, symbol, pdb, atoms );
+  if(atoms.empty()) error(symbol + " is not a label plumed knows");
 }
 
 std::string SetupMolInfo::getAtomName(AtomNumber a)const {
