@@ -25,12 +25,15 @@
 #include "OFile.h"
 #include "IFile.h"
 #include <string>
+#include <cstdio>
 
 namespace PLMD {
 
 class Subprocess {
   int fpc=0;
   int fcp=0;
+  FILE* fppc=NULL;
+  FILE* fpcp=NULL;
   OFile parent_to_child;
   IFile child_to_parent;
 public:

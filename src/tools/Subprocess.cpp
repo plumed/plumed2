@@ -45,6 +45,7 @@ Subprocess::Subprocess(const std::string & cmd) {
   case -1:
     plumed_error()<<"error forking";
     break;
+// CHILD:
   case 0:
   {
     if(close(1)<0) plumed_error()<<"error closing file";
@@ -56,13 +57,16 @@ Subprocess::Subprocess(const std::string & cmd) {
     execv(arr[0],arr);
     plumed_error()<<"error in script file";
   }
+// PARENT::
   default:
     if(close(pc[0])<0) plumed_error()<<"error closing file";
     if(close(cp[1])<0) plumed_error()<<"error closing file";
     fpc=pc[1];
     fcp=cp[0];
-    parent_to_child.link(fdopen(fpc,"w"));
-    child_to_parent.link(fdopen(fcp,"r"));
+    fppc=fdopen(fpc,"w");
+    parent_to_child.link(fppc);
+    fpcp=fdopen(fcp,"r");
+    child_to_parent.link(fpcp);
   }
 #else
   plumed_error()<<"Subprocess not supported";
@@ -72,7 +76,8 @@ Subprocess::Subprocess(const std::string & cmd) {
 Subprocess::~Subprocess() {
 #ifdef __PLUMED_HAS_SUBPROCESS
 // fpc should be closed to terminate the child executable
-  if(close(fpc)<0) plumed_error()<<"error closing file";
+  fclose(fppc);
+  close(fpc);
 // fcp should not be closed because it could make the child executable fail
 #endif
 }
