@@ -205,7 +205,7 @@ void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::
 }
 
 void SetupMolInfo::interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms ) {
-  if(Tools::startWith(symbol,"mdt:") || Tools::startWith(symbol,"mda:")) {
+  if(Tools::startWith(symbol,"mdt:") || Tools::startWith(symbol,"mda:") || Tools::startWith(symbol,"vmd:")) {
 
     log<<"  symbol " + symbol + " will be sent to python interpreter\n";
 
@@ -264,6 +264,7 @@ void SetupMolInfo::interpretSymbol( const std::string& symbol, std::vector<AtomN
     log<<"  selection interpreted using ";
     if(Tools::startWith(symbol,"mdt:")) log<<"mdtraj "<<cite("McGibbon et al, Biophys. J., 109, 1528 (2015)")<<"\n";
     if(Tools::startWith(symbol,"mda:")) log<<"MDAnalysis "<<cite("Gowers et al, Proceedings of the 15th Python in Science Conference, doi:10.25080/majora-629e541a-00e (2016)")<<"\n";
+    if(Tools::startWith(symbol,"vmd:")) log<<"VMD "<<cite("Humphrey, Dalke, and Schulten, K., J. Molec. Graphics, 14, 33 (1996)")<<"\n";
     return;
   }
   MolDataClass::specialSymbol( mytype, symbol, pdb, atoms );

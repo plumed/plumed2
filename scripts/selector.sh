@@ -26,9 +26,58 @@ def read_mdt(path):
     import mdtraj
     return mdtraj.load(path).top
 
+def read_vmd(path):
+    import subprocess
+    vmd = subprocess.Popen(["vmd", "-dispdev", "none",path,"-eofexit"],
+          stdin=subprocess.PIPE, stdout=subprocess.PIPE,universal_newlines=True)
+    # print("fconfigure stdout -buffering none",file=vmd.stdin) # does not work as expected
+    vmd.stdin.flush()
+    return vmd
+
+dummyline="DUMMYLINE"
+
+def select_vmd(vmd,selection):
+    import os
+    try:
+        bufferlines=int(os.environ['PLUMED_VMD_BUFFERLINES'])
+    except:
+        bufferlines=1000
+        
+    print("puts 'NEXT'",file=vmd.stdin)
+    print("[atomselect top { " + selection + " }] get index\n",file=vmd.stdin)
+    for i in range(bufferlines):
+      print("puts '"+dummyline+"'",file=vmd.stdin)
+    # print("for {set i 1} {$i < 2000} {incr i} { puts '" + dummyline +"' }",file=vmd.stdin) # does not work
+    print("flush stdout",file=vmd.stdin) # useless
+    vmd.stdin.flush()
+    is_next=False
+    is_error=False
+    error_msg=""
+    for line in vmd.stdout:
+        lines=line.rstrip()
+        if is_error:
+          if(lines=="'"+dummyline+"'"):
+            raise RuntimeError(error_msg)
+          error_msg+=" " + lines
+        elif is_next:
+          if re.match(".*ERROR.*",line):
+            is_error=True
+          else:
+            sel=[]
+            for w in line.split():
+                if not w.isdigit():
+                   sel=[]
+                   break
+                sel.append(int(w))
+            return sel
+        elif(lines=="'NEXT'"):
+          is_next=True
+
+path=None
+
 mda=None
 mdt=None
-path=None
+vmd=None
 
 help="""
 Example:
@@ -72,6 +121,7 @@ while True:
         path=arg
         mda=None
         mdt=None
+        vmd=None
     else:
       if path is None:
            sys.stdout.write("Error: provide pdb file");
@@ -95,6 +145,17 @@ while True:
            sel=mdt.select(arg)
         except Exception as e:
            sys.stdout.write("Error parsing mdtraj expression: ");
+           sys.stdout.write(str(e));
+           sys.stdout.write("\n")
+           sys.stdout.flush()
+           continue
+      elif cmd == "vmd" :
+         if vmd is None:
+           vmd=read_vmd(path)
+         try:
+           sel=select_vmd(vmd,arg)
+         except Exception as e:
+           sys.stdout.write("Error parsing vmd expression: ");
            sys.stdout.write(str(e));
            sys.stdout.write("\n")
            sys.stdout.flush()
