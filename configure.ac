@@ -673,6 +673,7 @@ if test $subprocess == true ; then
 /* random program calling all the functions needed to manage a subprocess */
 #include <cstdio>
 #include <unistd.h>
+#include <csignal>
 
 int
 main ()
@@ -692,6 +693,10 @@ main ()
     fp=fdopen(cp[[0]],"w");
     execv(arr[[0]],arr);
   }
+  auto p=fork();
+  kill(p,SIGINT);
+  kill(p,SIGCONT);
+  kill(p,SIGSTOP);
   return 0;
 }
 

@@ -113,7 +113,11 @@ SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
         log<<"  PDB is not sorted, python interpreter will be disabled\n";
       } else {
         if(Subprocess::available()) {
-          selector.reset(new Subprocess(cmd+" \""+config::getPlumedRoot()+"\"/scripts/selector.sh --pdb " + reference));
+          log<<"  starting python interpreter\n";
+          if(comm.Get_rank()==0) {
+            selector.reset(new Subprocess(cmd+" \""+config::getPlumedRoot()+"\"/scripts/selector.sh --pdb " + reference));
+            selector->stop();
+          }
         } else {
           log<<"  subprocessing not suppored, python interpreter will be disabled\n";
         }
@@ -205,19 +209,57 @@ void SetupMolInfo::interpretSymbol( const std::string& symbol, std::vector<AtomN
 
     log<<"  symbol " + symbol + " will be sent to python interpreter\n";
 
-    plumed_assert(selector) << "Python interpreter is disabled, selection " + symbol + " cannot be interpreted";
-    (*selector) << symbol << "\n";
-    selector->flush();
-    std::string res;
-    selector->getC2P().getline(res);
-    auto words=Tools::getWords(res);
-    if(!words.empty() && words[0]=="Error") plumed_error()<<res;
-    atoms.resize(0);
-    for(auto & w : words) {
-      int n;
-      if(w.empty()) continue;
-      Tools::convert(w,n);
-      atoms.push_back(AtomNumber::serial(n));
+    if(comm.Get_rank()==0) {
+      int ok=0;
+      std::string error_msg;
+      // this is a complicated way to have the exception propagated with MPI.
+      // It is necessary since only one process calls the selector.
+      // Probably I should recycle the exception propagation at library boundaries
+      // to allow transfering the exception to other processes.
+      try {
+        plumed_assert(selector) << "Python interpreter is disabled, selection " + symbol + " cannot be interpreted";
+        auto h=selector->contStop(); // stops again when it goes out of scope
+        (*selector) << symbol << "\n";
+        selector->flush();
+        std::string res;
+        selector->getline(res);
+        auto words=Tools::getWords(res);
+        if(!words.empty() && words[0]=="Error") plumed_error()<<res;
+        atoms.resize(0);
+        for(auto & w : words) {
+          int n;
+          if(w.empty()) continue;
+          Tools::convert(w,n);
+          atoms.push_back(AtomNumber::serial(n));
+        }
+        ok=1;
+      } catch (Exception & e) {
+        error_msg=e.what();
+      }
+      comm.Bcast(ok,0);
+      if(!ok) {
+        size_t s=error_msg.length();
+        comm.Bcast(s,0);
+        comm.Bcast(error_msg,0);
+        throw Exception()<<error_msg;
+      }
+      size_t nat=atoms.size();
+      comm.Bcast(nat,0);
+      comm.Bcast(atoms,0);
+    } else {
+      int ok=0;
+      std::string error_msg;
+      comm.Bcast(ok,0);
+      if(!ok) {
+        size_t s;
+        comm.Bcast(s,0);
+        error_msg.resize(s);
+        comm.Bcast(error_msg,0);
+        throw Exception()<<error_msg;
+      }
+      size_t nat=0;
+      comm.Bcast(nat,0);
+      comm.Bcast(atoms,0);
     }
     log<<"  selection interpreted using ";
     if(Tools::startWith(symbol,"mdt:")) log<<"mdtraj "<<cite("McGibbon et al, Biophys. J., 109, 1528 (2015)")<<"\n";

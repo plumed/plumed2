@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Communicator.h"
 #include "Exception.h"
+#include "AtomNumber.h"
 #include <cstdlib>
 
 using namespace std;
@@ -257,6 +258,7 @@ template<> MPI_Datatype Communicator::getMPIType<double>() { return MPI_DOUBLE;}
 template<> MPI_Datatype Communicator::getMPIType<int>()   { return MPI_INT;}
 template<> MPI_Datatype Communicator::getMPIType<char>()   { return MPI_CHAR;}
 template<> MPI_Datatype Communicator::getMPIType<unsigned>()   { return MPI_UNSIGNED;}
+template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_UNSIGNED;}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>()   { return MPI_UNSIGNED_LONG;}
 #else
 template<> MPI_Datatype Communicator::getMPIType<float>() { return MPI_Datatype();}
@@ -264,6 +266,7 @@ template<> MPI_Datatype Communicator::getMPIType<double>() { return MPI_Datatype
 template<> MPI_Datatype Communicator::getMPIType<int>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<char>() { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<unsigned>() { return MPI_Datatype();}
+template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   { return MPI_Datatype();}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>() { return MPI_Datatype();}
 #endif
 
