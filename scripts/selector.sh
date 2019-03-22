@@ -66,6 +66,8 @@ while True:
     arg=re.sub("^[^:]*:","",input_)
     if cmd == "" :
       continue
+    elif cmd == "quit" :
+        sys.exit(0)
     elif cmd == "pdb" :
         path=arg
         mda=None
