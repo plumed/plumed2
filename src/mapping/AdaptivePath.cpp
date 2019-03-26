@@ -241,9 +241,7 @@ void AdaptivePath::update() {
     pathfile<<"# PATH AT STEP "<<getStep();
     pathfile.printf(" TIME %f \n",getTime());
     std::vector<std::unique_ptr<ReferenceConfiguration>>& myconfs=getAllReferenceConfigurations();
-    std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-    if( moldat.size()>1 ) error("you should only have one MOLINFO action in your input file");
-    SetupMolInfo* mymoldat=NULL; if( moldat.size()==1 ) mymoldat=moldat[0];
+    auto* mymoldat=plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
     std::vector<std::string> argument_names( getNumberOfArguments() );
     for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i] = getPntrToArgument(i)->getName();
     PDB mypdb; mypdb.setArgumentNames( argument_names );

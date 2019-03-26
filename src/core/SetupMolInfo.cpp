@@ -62,8 +62,8 @@ SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
   // Read what is contained in the pdb file
   parse("MOLTYPE",mytype);
 
-  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.size()!=0 ) error("cannot use more than one MOLINFO action in input");
+  auto* moldat=plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
+  if( moldat ) log<<"  overriding last MOLINFO with label " << moldat->getLabel()<<"\n";
 
   std::vector<AtomNumber> backbone;
   parseAtomList("CHAIN",backbone);

@@ -78,8 +78,8 @@ OutputPCAProjection::OutputPCAProjection( const ActionOptions& ao ):
   mypdb.setArgumentNames( (mypca->my_input_data)->getArgumentNames() );
 
   // Find a moldata object
-  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.empty() ) warning("PDB output files do not have atom types unless you use MOLDATA");
+  auto* moldat=plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
+  if( moldat ) warning("PDB output files do not have atom types unless you use MOLDATA");
 
   parse("FILE",filename); parse("FMT",fmt);
   if( !getRestart() ) { OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
@@ -88,9 +88,7 @@ OutputPCAProjection::OutputPCAProjection( const ActionOptions& ao ):
 
 void OutputPCAProjection::performAnalysis() {
   // Find a moldata object
-  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.size()>1 ) error("you should only have one MOLINFO action in your input file");
-  SetupMolInfo* mymoldat=NULL; if( moldat.size()==1 ) mymoldat=moldat[0];
+  auto* mymoldat=plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
   // Output the embedding in plumed pdb format
   OFile afile; afile.link(*this); afile.setBackupString("analysis");
   mypdb.setAtomPositions( (mypca->myref)->getReferencePositions() );

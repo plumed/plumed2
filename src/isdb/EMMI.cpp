@@ -822,7 +822,7 @@ vector<double> EMMI::get_GMM_m(vector<AtomNumber> &atoms)
   // list of weights - one per atom
   vector<double> GMM_m_w;
 
-  vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+  auto* moldat=plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
   // map of atom types to A and B coefficients of scattering factor
   // f(s) = A * exp(-B*s**2)
   // B is in Angstrom squared
@@ -844,11 +844,11 @@ vector<double> EMMI::get_GMM_m(vector<AtomNumber> &atoms)
   GMM_m_w_.push_back(5.14099); // type 3
 
   // check if MOLINFO line is present
-  if( moldat.size()==1 ) {
-    log<<"  MOLINFO DATA found, using proper atom names\n";
+  if( moldat ) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
       // get atom name
-      string name = moldat[0]->getAtomName(atoms[i]);
+      string name = moldat->getAtomName(atoms[i]);
       char type;
       // get atom type
       char first = name.at(0);

@@ -246,15 +246,15 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
   requestAtoms(atoms);
-  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.size()==1 ) {
-    log<<"  MOLINFO DATA found, using proper atom names \n";
-    names.resize(atoms.size(),"");
-    for(unsigned i=0; i<atoms.size(); i++) if(atoms[i].index()<moldat[0]->getPDBsize()) names[i]=moldat[0]->getAtomName(atoms[i]);
+  auto* moldat=plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
+  if( moldat ) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
+    names.resize(atoms.size());
+    for(unsigned i=0; i<atoms.size(); i++) if(atoms[i].index()<moldat->getPDBsize()) names[i]=moldat->getAtomName(atoms[i]);
     residueNumbers.resize(atoms.size());
-    for(unsigned i=0; i<atoms.size(); ++i) if(atoms[i].index()<moldat[0]->getPDBsize()) residueNumbers[i]=moldat[0]->getResidueNumber(atoms[i]);
+    for(unsigned i=0; i<residueNumbers.size(); ++i) if(atoms[i].index()<moldat->getPDBsize()) residueNumbers[i]=moldat->getResidueNumber(atoms[i]);
     residueNames.resize(atoms.size());
-    for(unsigned i=0; i<atoms.size(); ++i) if(atoms[i].index()<moldat[0]->getPDBsize()) residueNames[i]=moldat[0]->getResidueName(atoms[i]);
+    for(unsigned i=0; i<residueNames.size(); ++i) if(atoms[i].index()<moldat->getPDBsize()) residueNames[i]=moldat->getResidueName(atoms[i]);
   }
 }
 

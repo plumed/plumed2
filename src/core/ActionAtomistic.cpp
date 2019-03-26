@@ -186,10 +186,11 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
         for(unsigned i=0; i<n; i++) t.push_back(AtomNumber::index(i));
         ok=true;
       } else {
-        vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-        if( moldat.size()>0 ) {
-          vector<AtomNumber> atom_list; moldat[0]->interpretSymbol( symbol, atom_list );
-          ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end());
+        auto* moldat=plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
+        if( moldat ) {
+          vector<AtomNumber> atom_list; moldat->interpretSymbol( symbol, atom_list );
+          if( atom_list.size()>0 ) { ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
+          else { error(strings[i] + " is not a label plumed knows"); }
         } else {
           error("atoms specified using @ symbol but no MOLINFO was available");
         }
