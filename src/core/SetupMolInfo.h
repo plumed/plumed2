@@ -35,7 +35,6 @@ namespace PLMD {
 class PDB;
 
 class SetupMolInfo :
-  public ActionSetup,
   public ActionPilot,
   public ActionAtomistic {
 private:
@@ -56,6 +55,8 @@ private:
   std::unique_ptr<Subprocess> selector;
 public:
   ~SetupMolInfo();
+  void calculate() override {}
+  void apply() override {}
   static void registerKeywords( Keywords& keys );
   explicit SetupMolInfo(const ActionOptions&ao);
   void getBackbone( std::vector<std::string>& resstrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone );
