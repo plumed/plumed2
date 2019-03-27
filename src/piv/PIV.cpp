@@ -750,8 +750,9 @@ void PIV::calculate()
   }
 
   // Transform (and sort) the rPIV before starting the dynamics
+  if ((getStep()>prev_stp&&prev_stp>=0)&&init_stp==1) {init_stp=0;}
   if (((prev_stp==-1) || (init_stp==1)) &&!CompDer) {
-    if(prev_stp!=-1) {init_stp=0;}
+    //if(prev_stp!=-1) {init_stp=0;}
     // Calculate the volume scaling factor
     if(Svol) {
       Fvol=cbrt(Vol0/getBox().determinant());
