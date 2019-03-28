@@ -44,6 +44,8 @@ void PathMSDBase::registerKeywords(Keywords& keys) {
   keys.add("optional", "EPSILON", "(default=-1) the maximum distance between the close and the current structure, the positive value turn on the close structure method");
   keys.add("optional", "LOG-CLOSE", "(default=0) value 1 enables logging regarding the close structure");
   keys.add("optional", "DEBUG-CLOSE", "(default=0) value 1 enables extensive debugging info regarding the close structure, the simulation will run much slower");
+  keys.add("optional", "LOG_CLOSE", "same as LOG-CLOSE");
+  keys.add("optional", "DEBUG_CLOSE", "same as DEBUG-CLOSE");
 }
 
 PathMSDBase::PathMSDBase(const ActionOptions&ao):
@@ -62,7 +64,9 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   parse("REFERENCE",reference);
   parse("EPSILON", epsilonClose);
   parse("LOG-CLOSE", logClose);
+  if(!logClose) parse("LOG_CLOSE", logClose);
   parse("DEBUG-CLOSE", debugClose);
+  if(!debugClose) parse("DEBUG_CLOSE",debugClose);
 
   // open the file
   FILE* fp=fopen(reference.c_str(),"r");
