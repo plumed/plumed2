@@ -373,7 +373,7 @@ SAXS::SAXS(const ActionOptions&ao):
   log<< plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 
-  requestAtoms(atoms);
+  requestAtoms(atoms, false);
   if(getDoScore()) {
     setParameters(expint);
     Initialise(numq);
