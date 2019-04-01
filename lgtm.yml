@@ -1,0 +1,11 @@
+extraction:
+  cpp:
+    prepare:
+      packages:
+        - libboost-all-dev
+        - libgsl-dev
+        - libfftw3-dev
+        - libatlas-base-dev
+        - libopenmpi-dev
+    command:
+      - ./configure --enable-modules=all
