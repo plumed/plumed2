@@ -73,6 +73,7 @@ freely, subject to the following restrictions:
 #if ASMJIT_CC_GCC
 # pragma GCC diagnostic push
 # if ASMJIT_CC_GCC_GE(7, 0, 0)
+#  pragma GCC diagnostic ignored "-Wbool-operation"
 # endif
 # if ASMJIT_CC_GCC_GE(8, 0, 0)
 #  pragma GCC diagnostic ignored "-Wclass-memaccess"
