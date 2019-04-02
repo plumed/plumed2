@@ -7,5 +7,6 @@ extraction:
         - libfftw3-dev
         - libatlas-base-dev
         - libopenmpi-dev
-    command:
-      - ./configure --enable-modules=all
+    configure:
+      command:
+        - ./configure --enable-modules=all
