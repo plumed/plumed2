@@ -139,7 +139,7 @@ install:
 # install aspell
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y aspell aspell-en  ; fi
 # install lcov
-  - if test "$MAKECOVERAGE" == yes ; then ./.travis/install.lcov v1.13 ; fi
+  - if test "$MAKECOVERAGE" == yes ; then ./.travis/install.lcov v1.14 ; fi
 # install numpy and cython for python interface
 # only for linux and homebrew (no macports)
   - if test "$PLUMED_CXX" ; then
