@@ -221,6 +221,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
           );
   keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs MPI)");
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
+  keys.addFlag("--parse-only",false,"read the plumed input file and stop");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("atoms","--igro","the trajectory in gro format");
 #ifdef __PLUMED_HAS_XDRFILE
@@ -252,7 +253,6 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   for(unsigned i=0; i<plugins.size(); i++) {
     string kk="--mf_"+string(plugins[i]->name);
     string mm=" molfile: the trajectory in "+string(plugins[i]->name)+" format " ;
-    //cerr<<"REGISTERING "<<kk<<mm<<endl;
     keys.add("atoms",kk,mm);
   }
 #endif
@@ -285,6 +285,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   }
   // Are we reading trajectory data
   bool noatoms; parseFlag("--noatoms",noatoms);
+  bool parseOnly; parseFlag("--parse-only",parseOnly);
 
   std::string fakein;
   bool debug_float=false;
@@ -447,7 +448,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       trajectoryFile=traj_trr;
       trajectory_fmt="xdr-trr";
     }
-    if(trajectoryFile.length()==0) {
+    if(trajectoryFile.length()==0&&!parseOnly) {
       fprintf(stderr,"ERROR: missing trajectory data\n");
       if(grex_log)fclose(grex_log);
       return 1;
@@ -518,11 +519,17 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
   int natoms;
 
+  if(parseOnly) {
+    if(command_line_natoms<0) error("--parseOnly requires setting the number of atoms with --natoms");
+    natoms=command_line_natoms;
+  }
+
+
   FILE* fp=NULL; FILE* fp_forces=NULL; OFile fp_dforces;
 #ifdef __PLUMED_HAS_XDRFILE
   XDRFILE* xd=NULL;
 #endif
-  if(!noatoms) {
+  if(!noatoms&&!parseOnly) {
     if (trajectoryFile=="-")
       fp=in;
     else {
@@ -605,16 +612,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   Random rnd;
 
   while(true) {
-    if(!noatoms) {
+    if(!noatoms&&!parseOnly) {
       if(use_molfile==true) {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
         int rc;
         rc = api->read_next_timestep(h_in, natoms, &ts_in);
-        //if(rc==MOLFILE_SUCCESS){
-        //       printf(" read this one :success \n");
-        //}
         if(rc==MOLFILE_EOF) {
-          //printf(" read this one :eof or error \n");
           break;
         }
 #endif
@@ -624,7 +627,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
 
     bool first_step=false;
-    if(!noatoms) {
+    if(!noatoms&&!parseOnly) {
       if(use_molfile==false && (trajectory_fmt=="xyz" || trajectory_fmt=="gro")) {
         if(trajectory_fmt=="gro") if(!Tools::getline(fp,line)) error("premature end of trajectory file");
         sscanf(line.c_str(),"%100d",&natoms);
@@ -665,6 +668,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       checknatoms=natoms;
       p.cmd("setNatoms",&natoms);
       p.cmd("init");
+      if(parseOnly) break;
     }
     if(checknatoms!=natoms) {
       std::string stepstr; Tools::convert(step,stepstr);
