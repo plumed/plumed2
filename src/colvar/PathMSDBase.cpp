@@ -41,10 +41,8 @@ void PathMSDBase::registerKeywords(Keywords& keys) {
   keys.add("optional","NEIGH_SIZE","size of the neighbor list");
   keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated in time units");
   keys.add("optional", "EPSILON", "(default=-1) the maximum distance between the close and the current structure, the positive value turn on the close structure method");
-  keys.add("optional", "LOG-CLOSE", "(default=0) value 1 enables logging regarding the close structure");
-  keys.add("optional", "DEBUG-CLOSE", "(default=0) value 1 enables extensive debugging info regarding the close structure, the simulation will run much slower");
-  keys.add("optional", "LOG_CLOSE", "same as LOG-CLOSE");
-  keys.add("optional", "DEBUG_CLOSE", "same as DEBUG-CLOSE");
+  keys.add("optional", "LOG_CLOSE", "(default=0) value 1 enables logging regarding the close structure");
+  keys.add("optional", "DEBUG_CLOSE", "(default=0) value 1 enables extensive debugging info regarding the close structure, the simulation will run much slower");
 }
 
 PathMSDBase::PathMSDBase(const ActionOptions&ao):
@@ -63,10 +61,8 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   parse("NEIGH_STRIDE",neigh_stride);
   parse("REFERENCE",reference);
   parse("EPSILON", epsilonClose);
-  parse("LOG-CLOSE", logClose);
-  if(!logClose) parse("LOG_CLOSE", logClose);
-  parse("DEBUG-CLOSE", debugClose);
-  if(!debugClose) parse("DEBUG_CLOSE",debugClose);
+  parse("LOG_CLOSE", logClose);
+  parse("DEBUG_CLOSE", debugClose);
   parseFlag("NOPBC",nopbc);
 
   // open the file
@@ -171,7 +167,7 @@ void PathMSDBase::calculate() {
     if (firstPosClose || (posclose > epsilonClose)) {
       //set the current structure as close one for a few next steps
       if (logClose)
-        log << "PLUMED-CLOSE: new close structure, rmsd pos close " << posclose << "\n";
+        log << "PLUMED_CLOSE: new close structure, rmsd pos close " << posclose << "\n";
       rmsdPosClose.clear();
       rmsdPosClose.setReference(getPositions());
       //as this is a new close structure, we need to save the rotation matrices fitted to the reference structures
