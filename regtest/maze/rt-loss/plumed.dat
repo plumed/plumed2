@@ -1,0 +1,11 @@
+LOSS ...
+  LABEL=loss
+
+  PARAMS=1,1,1
+... LOSS
+
+PRINT ...
+  ARG=*
+  FILE=colvar 
+  FMT=%15.8f 
+... PRINT
