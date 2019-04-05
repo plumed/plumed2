@@ -79,7 +79,7 @@ def readme():
 
 try:
     include_dirs=[os.environ["plumed_include_dir"]]
-except:
+except KeyError:
     include_dirs=["."]
 
 # allow one to force using cython with env var plumed_force_cython=yes
@@ -88,7 +88,7 @@ try:
     if(os.environ["plumed_force_cython"]=="yes"):
         print('plumed_force_cython=yes')
         USE_CYTHON = True
-except:
+except KeyError:
     pass
 
 # if plumed.cpp is available, do not need cython
@@ -103,7 +103,7 @@ if USE_CYTHON:
         print('importing cython')
         from Cython.Build import cythonize
         extension="pyx"
-    except:
+    except ImportError:
         print('Error: building ' + plumedname + ' requires cython. Please install it first with pip install cython')
         sys.exit(-1)
 else:

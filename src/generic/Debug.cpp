@@ -115,7 +115,7 @@ void Debug::apply() {
       if(p->isActive()) a++;
     };
     if(a>0) {
-      ofile.printf("activity at step %i: ",getStep());
+      ofile<<"activity at step "<<getStep()<<": ";
       for(const auto & p : actionSet) {
         if(dynamic_cast<Debug*>(p.get()))continue;
         if(p->isActive()) ofile.printf("+");
@@ -125,7 +125,7 @@ void Debug::apply() {
     };
   };
   if(logRequestedAtoms) {
-    ofile.printf("requested atoms at step %i: ",getStep());
+    ofile<<"requested atoms at step "<<getStep()<<": ";
     int* l;
     int n;
     plumed.cmd("createFullList",&n);

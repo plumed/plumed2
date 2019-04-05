@@ -219,7 +219,8 @@ void PathMSDBase::calculate() {
           vector<Vector> ders;
           double withoutclose = opt.calculate(getPositions(), ders, true);
           float difference = fabs(withoutclose-withclose);
-          log.printf("PLUMED-CLOSE: difference original %lf - with close %lf = %lf, step %d, i %d imgVec[i].index %d \n", withoutclose, withclose, difference, getStep(), i, imgVec[i].index);
+          log<<"PLUMED-CLOSE: difference original "<<withoutclose;
+          log<<" - with close "<<withclose<<" = "<<difference<<", step "<<getStep()<<", i "<<i<<" imgVec[i].index "<<imgVec[i].index<<"\n";
         }
       }
     }
