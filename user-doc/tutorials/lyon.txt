@@ -163,27 +163,27 @@ com: COM __FILL__
 d1: DISTANCE __FILL__ 
 UPPER_WALLS ARG=d1 __FILL__
 
-# Add the restraint on the distance between com and the first atom
+# Add the restraint on the distance between com and the second atom
 d2: DISTANCE __FILL__
 UPPER_WALLS  __FILL__
 
-# Add the restraint on the distance between com and the first atom
+# Add the restraint on the distance between com and the third atom
 d3: DISTANCE __FILL__
 UPPER_WALLS __FILL__
 
-# Add the restraint on the distance between com and the first atom
+# Add the restraint on the distance between com and the fourth atom
 d4: DISTANCE __FILL__
 UPPER_WALLS __FILL__
 
-# Add the restraint on the distance between com and the first atom
+# Add the restraint on the distance between com and the fifth atom
 d5: DISTANCE __FILL__
 UPPER_WALLS __FILL__
 
-# Add the restraint on the distance between com and the first atom
+# Add the restraint on the distance between com and the sixth atom
 d6: DISTANCE __FILL__
 UPPER_WALLS __FILL__
 
-# Add the restraint on the distance between com and the first atom
+# Add the restraint on the distance between com and the seventh atom
 d7: DISTANCE __FILL__
 UPPER_WALLS __FILL__
 \endplumedfile
