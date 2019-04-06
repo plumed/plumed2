@@ -1,25 +1,24 @@
-/*
- * Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
- *
- * See http://www.maze-code.github.io for more information.
- *
- * This file is part of maze.
- *
- * maze is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation, either version 3 of the License, or (at your option) 
- * any later version.
- *
- * maze is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.
- *
- * See the GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License 
- * along with maze. If not, see <https://www.gnu.org/licenses/>.
- *
- */ 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
+
+See http://www.maze-code.github.io for more information.
+
+This file is part of maze.
+
+maze is free software: you can redistribute it and/or modify it under the
+terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+
+maze is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.
+
+See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with maze. If not, see <https://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 /**
  * @file Optimizer_Bias.cpp
@@ -47,7 +46,7 @@
 namespace PLMD {
 namespace maze {
 
-//+PLUMEDOC MAZE_BIAS OPTIMIZER_BIAS
+//+PLUMEDOC MAZE_BIAS MAZE_OPTIMIZER_BIAS
 /*
 
 Biases the ligand along the direction calculated by the chosen \ref MAZE_OPTIMIZER.
@@ -84,7 +83,7 @@ UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
 
 p: POSITION ATOM=2635 NOPBC
 
-OPTIMIZER_BIAS ...
+MAZE_OPTIMIZER_BIAS ...
   LABEL=bias
 
   ARG=p.x,p.y,p.z
@@ -93,6 +92,7 @@ OPTIMIZER_BIAS ...
   ALPHA=3.6
 
   OPTIMIZER=opt
+... MAZE_OPTIMIZER_BIAS
 \endplumedfile
 
 */
@@ -195,7 +195,7 @@ private:
 };
 
 // Register OPTIMIZER_BIAS as a keyword for PLUMED2 input files.
-PLUMED_REGISTER_ACTION(OptimizerBias, "OPTIMIZER_BIAS")
+PLUMED_REGISTER_ACTION(OptimizerBias, "MAZE_OPTIMIZER_BIAS")
 
 void OptimizerBias::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);

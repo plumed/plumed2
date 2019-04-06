@@ -1,25 +1,24 @@
-/*
- * Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
- *
- * See http://www.maze-code.github.io for more information.
- *
- * This file is part of maze.
- *
- * maze is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation, either version 3 of the License, or (at your option) 
- * any later version.
- *
- * maze is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.
- *
- * See the GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License 
- * along with maze. If not, see <https://www.gnu.org/licenses/>.
- *
- */ 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
+
+See http://www.maze-code.github.io for more information.
+
+This file is part of maze.
+
+maze is free software: you can redistribute it and/or modify it under the
+terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+
+maze is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.
+
+See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with maze. If not, see <https://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 /**
  * @file Random_Walk.cpp
@@ -33,7 +32,7 @@
 namespace PLMD {
 namespace maze {
 
-//+PLUMEDOC MAZE_OPTIMIZER RANDOM_WALK
+//+PLUMEDOC MAZE_OPTIMIZER MAZE_RANDOM_WALK
 /*
 
 Fake optimizer that can be used for debugging.
@@ -47,10 +46,10 @@ Performs a random walk within the protein matrix.
 \par Examples
 
 Every optimizer implemented in the maze module needs a loss function as
-an argument, and it should be passed using the \ref LOSS keyword.
+an argument, and it should be passed using the \ref MAZE_LOSS keyword.
 
 \plumedfile
-RANDOM_WALK ...
+MAZE_RANDOM_WALK ...
   LABEL=rw
 
   LOSS=l
@@ -58,7 +57,7 @@ RANDOM_WALK ...
 
   LIGAND=2635-2646
   PROTEIN=1-2634
-... RANDOM_WALK
+... MAZE_RANDOM_WALK
 \endplumedfile
 
 As shown above, each optimizer should be provided with the LIGAND and
@@ -99,8 +98,8 @@ public:
   void optimize() override;
 };
 
-// Register RANDOM_WALK.
-PLUMED_REGISTER_ACTION(Random_Walk, "RANDOM_WALK")
+// Register MAZE_RANDOM_WALK.
+PLUMED_REGISTER_ACTION(Random_Walk, "MAZE_RANDOM_WALK")
 
 void Random_Walk::registerKeywords(Keywords& keys) {
   Optimizer::registerKeywords(keys);

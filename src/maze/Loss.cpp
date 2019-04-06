@@ -1,25 +1,24 @@
-/*
- * Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
- *
- * See http://www.maze-code.github.io for more information.
- *
- * This file is part of maze.
- *
- * maze is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation, either version 3 of the License, or (at your option) 
- * any later version.
- *
- * maze is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.
- *
- * See the GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License 
- * along with maze. If not, see <https://www.gnu.org/licenses/>.
- *
- */ 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
+
+See http://www.maze-code.github.io for more information.
+
+This file is part of maze.
+
+maze is free software: you can redistribute it and/or modify it under the
+terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+
+maze is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.
+
+See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with maze. If not, see <https://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 /**
  * @file Loss.cpp
@@ -31,7 +30,7 @@
 namespace PLMD {
 namespace maze {
 
-//+PLUMEDOC MAZE_LOSS LOSS
+//+PLUMEDOC MAZE_LOSS MAZE_LOSS
 /*
 
 Define a coarse-grained loss function describing interactions in a
@@ -53,14 +52,14 @@ the PARAMS keyword.
 
 The loss function can be defined in the following way:
 \plumedfile
-l: LOSS PARAMS=1,1,1
+l: MAZE_LOSS PARAMS=1,1,1
 \endplumedfile
 
 */
 //+ENDPLUMEDOC
 
 // Registers the LOSS action.
-PLUMED_REGISTER_ACTION(Loss, "LOSS")
+PLUMED_REGISTER_ACTION(Loss, "MAZE_LOSS")
 
 void Loss::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

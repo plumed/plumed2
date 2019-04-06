@@ -1,25 +1,24 @@
-/*
- * Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
- *
- * See http://www.maze-code.github.io for more information.
- *
- * This file is part of maze.
- *
- * maze is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation, either version 3 of the License, or (at your option) 
- * any later version.
- *
- * maze is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.
- *
- * See the GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License 
- * along with maze. If not, see <https://www.gnu.org/licenses/>.
- *
- */ 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
+
+See http://www.maze-code.github.io for more information.
+
+This file is part of maze.
+
+maze is free software: you can redistribute it and/or modify it under the
+terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+
+maze is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.
+
+See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with maze. If not, see <https://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 /**
  * @file Random_Acceleration_MD.cpp
@@ -33,7 +32,7 @@
 namespace PLMD {
 namespace maze {
 
-//+PLUMEDOC MAZE_OPTIMIZER RANDOM_ACCELERATION_MD
+//+PLUMEDOC MAZE_OPTIMIZER MAZE_RANDOM_ACCELERATION_MD
 /*
 
 Performs random acceleratiob MD within the protein matrix.
@@ -41,10 +40,10 @@ Performs random acceleratiob MD within the protein matrix.
 \par Examples
 
 Every optimizer implemented in the maze module needs a loss function as
-an argument, and it should be passed using the \ref LOSS keyword.
+an argument, and it should be passed using the \ref MAZE_LOSS keyword.
 
 \plumedfile
-RANDOM_ACCELERATION_MD ...
+MAZE_RANDOM_ACCELERATION_MD ...
   LABEL=rw
 
   OPTIMIZER_STRIDE=_
@@ -53,7 +52,7 @@ RANDOM_ACCELERATION_MD ...
 
   LIGAND=2635-2646
   PROTEIN=1-2634
-... RANDOM_ACCELERATION_MD
+... MAZE_RANDOM_ACCELERATION_MD
 \endplumedfile
 
 As shown above, each optimizer should be provided with the LIGAND and
@@ -114,8 +113,8 @@ private:
   Value* value_total_dist_;
 };
 
-// Register RANDOM_ACCELERATION_MD.
-PLUMED_REGISTER_ACTION(Random_Acceleration_MD, "RANDOM_ACCELERATION_MD")
+// Register MAZE_RANDOM_ACCELERATION_MD.
+PLUMED_REGISTER_ACTION(Random_Acceleration_MD, "MAZE_RANDOM_ACCELERATION_MD")
 
 void Random_Acceleration_MD::registerKeywords(Keywords& keys) {
   Optimizer::registerKeywords(keys);

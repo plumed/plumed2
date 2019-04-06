@@ -1,25 +1,24 @@
-/*
- * Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
- *
- * See http://www.maze-code.github.io for more information.
- *
- * This file is part of maze.
- *
- * maze is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation, either version 3 of the License, or (at your option) 
- * any later version.
- *
- * maze is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.
- *
- * See the GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License 
- * along with maze. If not, see <https://www.gnu.org/licenses/>.
- *
- */ 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
+
+See http://www.maze-code.github.io for more information.
+
+This file is part of maze.
+
+maze is free software: you can redistribute it and/or modify it under the
+terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+
+maze is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.
+
+See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with maze. If not, see <https://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 /**
  * @file Steered_MD.cpp
@@ -33,7 +32,7 @@
 namespace PLMD {
 namespace maze {
 
-//+PLUMEDOC MAZE_OPTIMIZER STEERED_MD
+//+PLUMEDOC MAZE_OPTIMIZER MAZE_STEERED_MD
 /*
 
 Performs a linear unbinding along a predefined biasing direction that
@@ -42,10 +41,10 @@ needs to be provided using the PULLING keyword.
 \par Examples
 
 Every optimizer implemented in the maze module needs a loss function as
-an argument, and it should be passed using the \ref LOSS keyword.
+an argument, and it should be passed using the \ref MAZE_LOSS keyword.
 
 \plumedfile
-STEERED_MD ...
+MAZE_STEERED_MD ...
   LABEL=smd
 
   LOSS=l
@@ -54,7 +53,7 @@ STEERED_MD ...
 
   LIGAND=2635-2646
   PROTEIN=1-2634
-... STEERED_MD
+... MAZE_STEERED_MD
 \endplumedfile
 
 As shown above, each optimizer should be provided with the LIGAND and
@@ -107,8 +106,8 @@ private:
   Value* value_total_dist_;
 };
 
-// Register STEERED_MD.
-PLUMED_REGISTER_ACTION(Steered_MD, "STEERED_MD")
+// Register MAZE_STEERED_MD.
+PLUMED_REGISTER_ACTION(Steered_MD, "MAZE_STEERED_MD")
 
 void Steered_MD::registerKeywords(Keywords& keys) {
   Optimizer::registerKeywords(keys);

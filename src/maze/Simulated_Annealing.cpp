@@ -1,25 +1,24 @@
-/*
- * Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
- *
- * See http://www.maze-code.github.io for more information.
- *
- * This file is part of maze.
- *
- * maze is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation, either version 3 of the License, or (at your option) 
- * any later version.
- *
- * maze is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.
- *
- * See the GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License 
- * along with maze. If not, see <https://www.gnu.org/licenses/>.
- *
- */ 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
+
+See http://www.maze-code.github.io for more information.
+
+This file is part of maze.
+
+maze is free software: you can redistribute it and/or modify it under the
+terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+
+maze is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.
+
+See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with maze. If not, see <https://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 /**
  * @file Simulated_Annealing.cpp
@@ -33,17 +32,17 @@
 namespace PLMD {
 namespace maze {
 
-//+PLUMEDOC MAZE_OPTIMIZER SIMULATED_ANNEALING
+//+PLUMEDOC MAZE_OPTIMIZER MAZE_SIMULATED_ANNEALING
 /*
 
 Calculates the biasing direction along which the ligand unbinds by minimizing
-the \ref LOSS function. The optimal biasing direction is determined by
+the \ref MAZE_LOSS function. The optimal biasing direction is determined by
 performing simulated annealing.
 
 \par Examples
 
 Every optimizer implemented in the maze module needs a loss function as an
-argument, and it should be passed using the \ref LOSS keyword.
+argument, and it should be passed using the \ref MAZE_LOSS keyword.
 
 In the following example simulated annealing is launched for 1000 iterations
 as the optimizer for the loss function every 200 ps. The geometric cooling
@@ -52,7 +51,7 @@ scheme is used.
 \plumedfile
 UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
 
-SIMULATED_ANNEALING ...
+MAZE_SIMULATED_ANNEALING ...
   LABEL=sa
 
   LOSS=l
@@ -66,7 +65,7 @@ SIMULATED_ANNEALING ...
 
   LIGAND=2635-2646
   PROTEIN=1-2634
-... SIMULATED_ANNEALING
+... MAZE_SIMULATED_ANNEALING
 \endplumedfile
 
 As shown above, each optimizer should be provided with the LIGAND and
@@ -122,8 +121,8 @@ private:
   std::string cooling_scheme_;
 };
 
-// Register SIMULATED_ANNEALING.
-PLUMED_REGISTER_ACTION(Simulated_Annealing, "SIMULATED_ANNEALING")
+// Register MAZE_SIMULATED_ANNEALING.
+PLUMED_REGISTER_ACTION(Simulated_Annealing, "MAZE_SIMULATED_ANNEALING")
 
 void Simulated_Annealing::registerKeywords(Keywords& keys) {
   Optimizer::registerKeywords(keys);

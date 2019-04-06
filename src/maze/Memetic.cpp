@@ -1,25 +1,24 @@
-/*
- * Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
- *
- * See http://www.maze-code.github.io for more information.
- *
- * This file is part of maze.
- *
- * maze is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation, either version 3 of the License, or (at your option) 
- * any later version.
- *
- * maze is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.
- *
- * See the GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License 
- * along with maze. If not, see <https://www.gnu.org/licenses/>.
- *
- */ 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Copyright (c) 2019 Jakub Rydzewski (jr@fizyka.umk.pl). All rights reserved.
+
+See http://www.maze-code.github.io for more information.
+
+This file is part of maze.
+
+maze is free software: you can redistribute it and/or modify it under the
+terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+
+maze is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.
+
+See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with maze. If not, see <https://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 /**
  * @file Memetic.cpp
@@ -31,21 +30,21 @@
 namespace PLMD {
 namespace maze {
 
-//+PLUMEDOC MAZE_OPTIMIZER MEMETIC_SAMPLING
+//+PLUMEDOC MAZE_OPTIMIZER MAZE_MEMETIC_SAMPLING
 /*
 
 Calculates the biasing direction along which the ligand unbinds by
-minimizing the \ref LOSS function. The optimal biasing direction is
+minimizing the \ref MAZE_LOSS function. The optimal biasing direction is
 determined by performing a population-based memetic search with local
 heuristics.
 
 \par Examples
 
 Every optimizer implemented in the maze module needs a loss function as
-an argument, and it should be passed using the \ref LOSS keyword.
+an argument, and it should be passed using the \ref MAZE_LOSS keyword.
 
 \plumedfile
-MEMETIC_SAMPLING ...
+MAZE_MEMETIC_SAMPLING ...
   LABEL=ma
 
   LOSS=l
@@ -67,7 +66,7 @@ MEMETIC_SAMPLING ...
 
   LIGAND=2635-2646
   PROTEIN=1-2634
-... MEMETIC_SAMPLING
+... MAZE_MEMETIC_SAMPLING
 \endplumedfile
 
 As shown above, each optimizer should be provided with the LIGAND and
@@ -79,9 +78,9 @@ The neighbor list can be turned on by providing the NLIST keyword.
 //+ENDPLUMEDOC
 
 /**
- * Register MEMETIC_SAMPLING.
+ * Register MAZE_MEMETIC_SAMPLING.
  */
-PLUMED_REGISTER_ACTION(Memetic, "MEMETIC_SAMPLING")
+PLUMED_REGISTER_ACTION(Memetic, "MAZE_MEMETIC_SAMPLING")
 
 void Memetic::registerKeywords(Keywords& keys) {
   Optimizer::registerKeywords(keys);
