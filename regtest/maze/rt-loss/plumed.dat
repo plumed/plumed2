@@ -1,8 +1,8 @@
-LOSS ...
+MAZE_LOSS ...
   LABEL=loss
 
   PARAMS=1,1,1
-... LOSS
+... MAZE_LOSS
 
 PRINT ...
   ARG=*

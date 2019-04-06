@@ -1,12 +1,12 @@
 UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
 
-LOSS ...
+MAZE_LOSS ...
   LABEL=l
 
   PARAMS=1,1,1
-... LOSS
+... MAZE_LOSS
 
-RANDOM_WALK ...
+MAZE_RANDOM_WALK ...
   LABEL=opt
 
   LOSS=l
@@ -18,7 +18,7 @@ RANDOM_WALK ...
   NLIST
   NL_CUTOFF=7
   NL_STRIDE=100
-... RANDOM_WALK
+... MAZE_RANDOM_WALK
 
 PRINT ...
   ARG=opt.sr
