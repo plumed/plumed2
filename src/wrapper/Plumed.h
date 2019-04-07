@@ -1244,8 +1244,8 @@ public:
     ::std::string msg;
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT Exception(const char* msg): msg(msg) {}
-    Exception(const Exception & other): msg(other.what()) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT {return msg.c_str();}
+    /* Destructor should be declared in order to have the correct throw() */
     ~Exception() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
 
@@ -1257,7 +1257,7 @@ public:
     public Exception {
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionError(const char* msg): Exception(msg) {}
-    ExceptionError(const ExceptionError & other) : Exception(other.what()) {}
+    /* Destructor should be declared in order to have the correct throw() */
     ~ExceptionError() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
 
@@ -1269,7 +1269,7 @@ public:
     public Exception {
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionDebug(const char* msg): Exception(msg) {}
-    ExceptionDebug(const ExceptionDebug & other) : Exception(other.what()) {}
+    /* Destructor should be declared in order to have the correct throw() */
     ~ExceptionDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
 
@@ -1281,7 +1281,7 @@ public:
     public Exception {
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT Invalid(const char* msg): Exception(msg) {}
-    Invalid(const Invalid & other) : Exception(other.what()) {}
+    /* Destructor should be declared in order to have the correct throw() */
     ~Invalid() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
 
@@ -1295,8 +1295,8 @@ public:
     ::std::string msg;
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT LeptonException(const char* msg): msg(msg) {}
-    LeptonException(const LeptonException & other): msg(other.what()) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT {return msg.c_str();}
+    /* Destructor should be declared in order to have the correct throw() */
     ~LeptonException() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
   };
 
