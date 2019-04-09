@@ -111,6 +111,7 @@ Quick instructions:
     ./configure --prefix=$HOME/opt
     make
     make doc # optional
+    make test # optional
 
 User documentation can be found at `user-doc/html/index.html`.
 Developer documentation can be found at `developer-doc/html/index.html`.
