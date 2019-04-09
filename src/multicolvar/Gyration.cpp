@@ -90,6 +90,7 @@ public ActionWithValue
 {
 private:
   bool nopbc;
+  std::vector<double> forcesToApply;
 public:
   static void registerKeywords(Keywords& keys);
   explicit GyrationTensor(const ActionOptions&);
@@ -116,7 +117,8 @@ GyrationTensor::GyrationTensor(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
-  nopbc(false)
+  nopbc(false),
+  forcesToApply(9)
 {
   std::vector<AtomNumber> atoms,catom;
   parseAtomList("ATOMS",atoms);
@@ -178,7 +180,23 @@ void GyrationTensor::calculate() {
 }
 
 void GyrationTensor::apply(){
-  // error("This is an error");
+  if( doNotCalculateDerivatives() ) return ;
+  
+  // Retrieve the forces from the values
+  double totmass = static_cast<double>(getNumberOfAtoms()-1);
+  for(unsigned i=0;i<9;++i) forcesToApply[i] = getPntrToOutput(0)->getForce( i ) / totmass;
+
+  unsigned n=getNumberOfAtoms()-1; Vector ff;
+  std::vector<Vector>& f(modifyForces());
+  Tensor&              v(modifyVirial());
+  for(unsigned i=0; i<getNumberOfAtoms()-1; i++) {
+      const Vector diff=delta( getPosition(getNumberOfAtoms()-1), getPosition(i) );
+      ff[0] = 2*forcesToApply[0]*diff[0]; 
+      ff[1] = 2*forcesToApply[4]*diff[1];
+      ff[2] = 2*forcesToApply[8]*diff[2];
+      f[i] += ff; f[n] -= ff;
+      v -= Tensor(getPosition(i),ff);
+  }
 }
 
 class Gyration : public ActionShortcut {
