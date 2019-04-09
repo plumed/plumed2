@@ -1,13 +1,10 @@
-\page maze
+\page MAZE MAZE
 
 <!-- 
 description: Module that implements enhanced sampling methods for ligand 
 unbinding from protein tunnels.
-
 authors: Jakub Rydzewski
-
-reference: J. Rydzewski, and O. Valsson, Finding Multiple Reaction Pathways of 
-Ligand Unbinding, arXiv: 1808.08089, 2018
+reference: \cite RydzewskiMaze 
 -->
 
 maze is a module for PLUMED2, which implements enhanced sampling methods for 
