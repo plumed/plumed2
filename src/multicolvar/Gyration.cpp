@@ -191,9 +191,9 @@ void GyrationTensor::apply(){
   Tensor&              v(modifyVirial());
   for(unsigned i=0; i<getNumberOfAtoms()-1; i++) {
       const Vector diff=delta( getPosition(getNumberOfAtoms()-1), getPosition(i) );
-      ff[0] = 2*forcesToApply[0]*diff[0]; 
-      ff[1] = 2*forcesToApply[4]*diff[1];
-      ff[2] = 2*forcesToApply[8]*diff[2];
+      ff[0] = 2*forcesToApply[0]*diff[0] + forcesToApply[1]*diff[1] + forcesToApply[2]*diff[2]; 
+      ff[1] = forcesToApply[3]*diff[0] + 2*forcesToApply[4]*diff[1] + forcesToApply[5]*diff[2]; 
+      ff[2] = forcesToApply[6]*diff[0] + forcesToApply[7]*diff[1] + 2*forcesToApply[8]*diff[2];
       f[i] += ff; f[n] -= ff;
       v -= Tensor(getPosition(i),ff);
   }
@@ -224,11 +224,23 @@ ActionShortcut(ao)
     readInputLine( getShortcutLabel() + "_cent: CENTER ATOMS=" + atoms + pbcstr );
     // Now compute the gyration tensor
     readInputLine( getShortcutLabel() + "_tensor: GYRATION_TENSOR ATOMS=" + atoms + pbcstr + " CENTER=" + getShortcutLabel() + "_cent");
-    // And now we need the average trace for the gyration radius
-    readInputLine( getShortcutLabel() + "_trace: COMBINE ARG=" + getShortcutLabel() + "_tensor.1.1," + 
-		   getShortcutLabel() + "_tensor.2.2," + getShortcutLabel() + "_tensor.3.3 PERIODIC=NO"); 
-    // Square root the radius
-    readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_trace FUNC=sqrt(x) PERIODIC=NO");
+    std::string gtype; parse("TYPE",gtype);
+    if( gtype=="RADIUS") {
+        // And now we need the average trace for the gyration radius
+        readInputLine( getShortcutLabel() + "_trace: COMBINE ARG=" + getShortcutLabel() + "_tensor.1.1," + 
+            	   getShortcutLabel() + "_tensor.2.2," + getShortcutLabel() + "_tensor.3.3 PERIODIC=NO"); 
+        // Square root the radius
+        readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_trace FUNC=sqrt(x) PERIODIC=NO");
+    } else if( gtype=="TRACE" ) {
+	// Compte the trace of the gyration tensor
+	readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_tensor.1.1," +
+                   getShortcutLabel() + "_tensor.2.2," + getShortcutLabel() + "_tensor.3.3 PERIODIC=NO");
+    } else {
+	// Diagonalize the gyration tensor
+	readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + getShortcutLabel() + "_tensor VECTORS=all" );    
+        if() {
+	} else error( gtype + " is not a valid type for gyration radius");
+    }	
 }
 
 }
