@@ -68,6 +68,7 @@ Here's a description of the content of each file and directory in the root PLUME
     docker           : directory where Docker is generated
     macports         : directory where Portfiles are generated
     patches          : patch scripts
+    python           : python stuff
     regtest          : regression tests, including reference results
     release.sh       : developer utility to publish releases
     scripts          : shell tools
