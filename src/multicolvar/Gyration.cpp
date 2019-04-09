@@ -126,8 +126,8 @@ GyrationTensor::GyrationTensor(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   checkRead();
 
-  log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)");
-  log<<"\n";
+  //log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)");
+  // log<<"\n";
 
   log.printf("  atoms involved : ");
   for(unsigned i=0; i<atoms.size(); ++i) {
@@ -198,6 +198,7 @@ Gyration::Gyration(const ActionOptions& ao):
 Action(ao),
 ActionShortcut(ao)
 {
+	printf("wHAT IS HAPENNING %s \n", getShortcutLabel().c_str());
     std::string atoms; parse("ATOMS",atoms); bool nopbc; parseFlag("NOPBC",nopbc); 
     std::string pbcstr; if(nopbc) pbcstr = " NOPBC"; 
     // Create the geometric center of the molecule
