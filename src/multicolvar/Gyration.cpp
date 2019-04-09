@@ -126,8 +126,8 @@ GyrationTensor::GyrationTensor(const ActionOptions&ao):
   parseFlag("NOPBC",nopbc);
   checkRead();
 
-  //log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)");
-  // log<<"\n";
+  log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)");
+  log<<"\n";
 
   log.printf("  atoms involved : ");
   for(unsigned i=0; i<atoms.size(); ++i) {
@@ -144,8 +144,8 @@ GyrationTensor::GyrationTensor(const ActionOptions&ao):
   }
 
   std::vector<unsigned> shape(2); shape[0]=shape[1]=3;
-  addValue(shape); setNotPeriodic();
-  atoms.push_back(catom[0]); requestAtoms(atoms);
+  addValue(shape); setNotPeriodic(); 
+  atoms.push_back(catom[0]); requestAtoms(atoms); 
 }
 
 void GyrationTensor::calculate() {
@@ -163,21 +163,22 @@ void GyrationTensor::calculate() {
     gyr_tens[0][2]+=diff[0]*diff[2];
     gyr_tens[1][2]+=diff[1]*diff[2];
   }
+  double totmass = static_cast<double>(getNumberOfAtoms()-1);
 
   Value* myval=getPntrToOutput(0); 
-  myval->set(0, gyr_tens[0][0] );
-  myval->set(1, gyr_tens[0][1] );
-  myval->set(2, gyr_tens[0][2] );
-  myval->set(3, gyr_tens[0][1] );
-  myval->set(4, gyr_tens[1][1] );
-  myval->set(5, gyr_tens[1][2] );
-  myval->set(6, gyr_tens[0][2] );
-  myval->set(7, gyr_tens[1][2] );
-  myval->set(8, gyr_tens[2][2] );
+  myval->set(0, gyr_tens[0][0] / totmass );
+  myval->set(1, gyr_tens[0][1] / totmass );
+  myval->set(2, gyr_tens[0][2] / totmass );
+  myval->set(3, gyr_tens[0][1] / totmass );
+  myval->set(4, gyr_tens[1][1] / totmass );
+  myval->set(5, gyr_tens[1][2] / totmass );
+  myval->set(6, gyr_tens[0][2] / totmass );
+  myval->set(7, gyr_tens[1][2] / totmass );
+  myval->set(8, gyr_tens[2][2] / totmass );
 }
 
 void GyrationTensor::apply(){
-  error("This is an error");
+  // error("This is an error");
 }
 
 class Gyration : public ActionShortcut {
@@ -189,6 +190,7 @@ public:
 PLUMED_REGISTER_ACTION(Gyration,"GYRATION")
 
 void Gyration::registerKeywords( Keywords& keys ) {
+   ActionShortcut::registerKeywords( keys );
    keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
    keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
    keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances"); 
@@ -198,7 +200,6 @@ Gyration::Gyration(const ActionOptions& ao):
 Action(ao),
 ActionShortcut(ao)
 {
-	printf("wHAT IS HAPENNING %s \n", getShortcutLabel().c_str());
     std::string atoms; parse("ATOMS",atoms); bool nopbc; parseFlag("NOPBC",nopbc); 
     std::string pbcstr; if(nopbc) pbcstr = " NOPBC"; 
     // Create the geometric center of the molecule
@@ -206,8 +207,10 @@ ActionShortcut(ao)
     // Now compute the gyration tensor
     readInputLine( getShortcutLabel() + "_tensor: GYRATION_TENSOR ATOMS=" + atoms + pbcstr + " CENTER=" + getShortcutLabel() + "_cent");
     // And now we need the average trace for the gyration radius
-    readInputLine( getShortcutLabel() + " : COMBINE ARG=" + getShortcutLabel() + "_tensor.1.1," + getShortcutLabel() + "_tensor.2.2," + 
-		   getShortcutLabel() + "_tensor.3.3 PERIODIC=NO"); 
+    readInputLine( getShortcutLabel() + "_trace: COMBINE ARG=" + getShortcutLabel() + "_tensor.1.1," + 
+		   getShortcutLabel() + "_tensor.2.2," + getShortcutLabel() + "_tensor.3.3 PERIODIC=NO"); 
+    // Square root the radius
+    readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_trace FUNC=sqrt(x) PERIODIC=NO");
 }
 
 }
