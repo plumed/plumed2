@@ -224,15 +224,15 @@ void GyrationTensor::calculate() {
 
   Tensor3d gyr_tens; double totmass = 0;
   //calculate gyration tensor
-  for(unsigned i=0; i<getNumberOfAtoms()-1; i++) {
+  for(unsigned i=0; i<getNumberOfAtoms()-1; i++){ 
     double w = getWeight(i);
     const Vector diff=delta( getPosition(getNumberOfAtoms()-1), getPosition(i) );
-    gyr_tens[0][0]+=w*diff[0]*diff[0];
-    gyr_tens[1][1]+=w*diff[1]*diff[1];
-    gyr_tens[2][2]+=w*diff[2]*diff[2];
-    gyr_tens[0][1]+=w*diff[0]*diff[1];
-    gyr_tens[0][2]+=w*diff[0]*diff[2];
-    gyr_tens[1][2]+=w*diff[1]*diff[2];
+    gyr_tens[0][0]+= w*diff[0]*diff[0];
+    gyr_tens[0][1]+= w*diff[0]*diff[1];
+    gyr_tens[0][2]+= w*diff[0]*diff[2];
+    gyr_tens[1][1]+= w*diff[1]*diff[1];
+    gyr_tens[1][2]+= w*diff[1]*diff[2];
+    gyr_tens[2][2]+= w*diff[2]*diff[2];
     totmass += w ;
   }
 
@@ -261,9 +261,9 @@ void GyrationTensor::apply(){
   for(unsigned i=0; i<getNumberOfAtoms()-1; i++) {
       double w = getWeight(i);
       const Vector diff=delta( getPosition(getNumberOfAtoms()-1), getPosition(i) );
-      ff[0] = w*(2*forcesToApply[0]*diff[0] + forcesToApply[1]*diff[1] + forcesToApply[2]*diff[2]); 
-      ff[1] = w*(forcesToApply[3]*diff[0] + 2*forcesToApply[4]*diff[1] + forcesToApply[5]*diff[2]); 
-      ff[2] = w*(forcesToApply[6]*diff[0] + forcesToApply[7]*diff[1] + 2*forcesToApply[8]*diff[2]);
+      ff[0] = w*(2*forcesToApply[0]*diff[0] +   forcesToApply[1]*diff[1] +   forcesToApply[2]*diff[2]); 
+      ff[1] = w*(  forcesToApply[3]*diff[0] + 2*forcesToApply[4]*diff[1] +   forcesToApply[5]*diff[2]); 
+      ff[2] = w*(  forcesToApply[6]*diff[0] +   forcesToApply[7]*diff[1] + 2*forcesToApply[8]*diff[2]);
       f[i] += ff; f[n] -= ff;
       v -= Tensor(getPosition(i),ff);
   }
@@ -311,6 +311,12 @@ ActionShortcut(ao)
         if( gtype=="ASPHERICITY" ) {
             readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-1" +
 			   " ARG2=" + getShortcutLabel() + "_diag.vals-2 ARG3=" + getShortcutLabel() + "_diag.vals-3 FUNC=x-0.5*(y+z) PERIODIC=NO");
+	} else if( gtype=="GTPC_1" ) {
+            readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-1 FUNC=sqrt(x) PERIODIC=NO");
+	} else if( gtype=="GTPC_2" ) {
+            readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-2 FUNC=sqrt(x) PERIODIC=NO");
+	} else if( gtype=="GTPC_3" ) {
+            readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-3 FUNC=sqrt(x) PERIODIC=NO");
 	} else error( gtype + " is not a valid type for gyration radius");
     }	
 }
