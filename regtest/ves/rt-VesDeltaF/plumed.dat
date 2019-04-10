@@ -16,6 +16,7 @@ VES_DELTA_F ...
   NO_MULTIPLE_WALKERS
   INITIAL_ALPHA=2
   TAU_MEAN=100
+  ALPHA_FILE=Alpha.data
 ... VES_DELTA_F
 
 PRINT FMT=%g STRIDE=50 FILE=Colvar.data ARG=phi,psi,ves.bias,ves.rct,ves.work

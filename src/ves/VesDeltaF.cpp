@@ -186,7 +186,7 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
   keys.add("optional","INITIAL_ALPHA","( default=0 ) an initial guess for the bias potential parameter alpha");
   keys.addFlag("DAMPING_OFF",false,"do not use an AdaGrad-like term to rescale M_STEP");
 //output parameters file
-  keys.add("compulsory","ALPHA_FILE","Alpha.data","file name for output minimization parameters");
+  keys.add("compulsory","ALPHA_FILE","ALPHA","file name for output minimization parameters");
   keys.add("optional","PRINT_STRIDE","( default=10 ) stride for printing to ALPHA_FILE");
   keys.add("optional","FMT","specify format for ALPHA_FILE");
 //debug flags
@@ -334,7 +334,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
     past_increment2_.resize(alpha_size_,0);
 
 //file printing options
-  std::string alphaFileName("Alpha.data");
+  std::string alphaFileName("ALPHA");
   parse("ALPHA_FILE",alphaFileName);
   print_stride_=10;
   parse("PRINT_STRIDE",print_stride_);
