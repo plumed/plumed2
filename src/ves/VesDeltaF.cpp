@@ -191,7 +191,7 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
   keys.add("optional","FMT","specify format for ALPHA_FILE");
 //debug flags
   keys.addFlag("SERIAL",false,"perform the calculation in serial even if multiple tasks are available");
-  keys.addFlag("NO_MULTIPLE_WALKERS",false,"do not use multiple walkers, even if there are multiple simulations running");
+  keys.addFlag("MULTIPLE_WALKERS",false,"use multiple walkers connected via MPI for the optimization");
   keys.use("RESTART");
 
 //output components
@@ -353,9 +353,9 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
     rank_=0;
   }
 
-  bool no_multiple_walkers=false;
-  parseFlag("NO_MULTIPLE_WALKERS",no_multiple_walkers);
-  if(no_multiple_walkers)
+  bool multiple_walkers=false;
+  parseFlag("MULTIPLE_WALKERS",multiple_walkers);
+  if(!multiple_walkers)
     NumWalkers_=1;
   else
   {
@@ -432,9 +432,9 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   for(unsigned n=0; n<grid_p_.size(); n++)
     log.printf("    F_%d filename: %s  c_%d=%g\n",n,fes_names[n].c_str(),n,c_norm[n]);
   if(no_mintozero)
-    log.printf("  -- NO_MINTOZERO: local free energies are not shifted to be zero at minimum\n");
+    log.printf(" -- NO_MINTOZERO: local free energies are not shifted to be zero at minimum\n");
   if(normalize)
-    log.printf("  -- NORMALIZE: F_n+=c_n, alpha=DeltaF\n");
+    log.printf(" -- NORMALIZE: F_n+=c_n, alpha=DeltaF\n");
   log.printf("  Using target distribution with 1/gamma = %g\n",inv_gamma_);
   log.printf("    and updated with stride %d\n",tg_stride_);
   log.printf("  Step for the minimization algorithm: %g\n",minimization_step_);
@@ -442,24 +442,27 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   if(mean_weight_tau_>1)
     log.printf("  Exponentially decaying average with weight=tau/av_stride=%d\n",mean_weight_tau_);
   if(mean_weight_tau_==1)
-    log.printf(" -- WARNING: setting TAU_MEAN=1 is equivalent to use simple SGD, without mean alpha nor hessian contribution\n");
+    log.printf(" +++ WARNING +++ setting TAU_MEAN=1 is equivalent to use simple SGD, without mean alpha nor hessian contribution\n");
   log.printf("  Initial guess for alpha:\n");
   for(unsigned i=0; i<alpha_size_; i++)
     log.printf("    alpha_%d = %g\n",i+1,mean_alpha_[i]);
   if(damping_off_)
-    log.printf("  -- DAMPING_OFF: the minimization step will NOT become smaller as the simulation goes on\n");
+    log.printf(" -- DAMPING_OFF: the minimization step will NOT become smaller as the simulation goes on\n");
   log.printf("  Printing on file %s with stride %d\n",alphaFileName.c_str(),print_stride_);
   if(serial)
     log.printf(" -- SERIAL: running without loop parallelization\n");
   if(NumParallel_>1)
     log.printf("  Using multiple threads per simulation: %d\n",NumParallel_);
-  if(no_multiple_walkers)
-    log.printf("  -- NO_MULTIPLE_WALKERS: multiple simulations will not communicate\n");
-  if(NumWalkers_>1)
+  if(multiple_walkers)
   {
-    log.printf("  Using multiple walkers\n");
-    log.printf("    number of walkers: %d\n",NumWalkers_);
-    log.printf("    walker rank: %d\n",multi_sim_comm.Get_rank()); //only comm.Get_rank()=0 prints, so this is fine
+    log.printf(" -- MULTIPLE_WALKERS: multiple simulations will combine statistics for the optimization\n");
+    if(NumWalkers_>1)
+    {
+      log.printf("    number of walkers: %d\n",NumWalkers_);
+      log.printf("    walker rank: %d\n",multi_sim_comm.Get_rank()); //only comm.Get_rank()=0 prints, so this is fine
+    }
+    else
+      log.printf(" +++ WARNING +++ only one replica found: are you sure you are running MPI-connected simulations?\n");
   }
   log.printf(" Bibliography ");
   log<<plumed.cite("Invernizzi and Parrinello, J. Chem. Theory Comput. 15, 2187-2194 (2019)");

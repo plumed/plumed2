@@ -20,6 +20,7 @@ VES_DELTA_F ...
   DAMPING_OFF
   SERIAL
   NO_MINTOZERO
+  MULTIPLE_WALKERS
 ... VES_DELTA_F
 
 PRINT FMT=%g STRIDE=50 FILE=Colvar.data ARG=phi,psi,ves.bias,ves.rct,ves.work
