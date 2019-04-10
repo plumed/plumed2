@@ -462,7 +462,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
     log.printf("    walker rank: %d\n",multi_sim_comm.Get_rank()); //only comm.Get_rank()=0 prints, so this is fine
   }
   log.printf(" Bibliography ");
-  log<<plumed.cite("Invernizzi and Parrinello, J. Chem. Theory Comput. 15, ???? (2019)");
+  log<<plumed.cite("Invernizzi and Parrinello, J. Chem. Theory Comput. 15, 2187-2194 (2019)");
   log<<plumed.cite("Valsson and Parrinello, Phys. Rev. Lett. 113, 090601 (2014)");
   if(inv_gamma_>0)
     log<<plumed.cite("Valsson and Parrinello, J. Chem. Theory Comput. 11, 1996-2002 (2015)");
