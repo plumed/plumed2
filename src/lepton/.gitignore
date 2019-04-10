@@ -1,0 +1,11 @@
+/*
+# in this directory, only accept source, Makefile and README
+!/.gitignore
+!/*.c
+!/*.cpp
+!/*.h
+!/Makefile
+!/README
+!/module.type
+!/COPYRIGHT
+!/import.sh

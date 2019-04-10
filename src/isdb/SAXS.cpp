@@ -363,7 +363,7 @@ SAXS::SAXS(const ActionOptions&ao):
   log<<"  Bibliography ";
   if(martini) {
     log<<plumed.cite("Niebling, Björling, Westenhoff, J Appl Crystallogr 47, 1190–1198 (2014).");
-    log<<plumed.cite("Paissoni, Jussupow, Camilloni, bioRxiv 498147.");
+    log<<plumed.cite("Paissoni, Jussupow, Camilloni, J Appl Crystallogr 52, 394-402 (2019).");
   }
   if(atomistic) {
     log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978).");
@@ -373,7 +373,7 @@ SAXS::SAXS(const ActionOptions&ao):
   log<< plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 
-  requestAtoms(atoms);
+  requestAtoms(atoms, false);
   if(getDoScore()) {
     setParameters(expint);
     Initialise(numq);

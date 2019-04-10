@@ -603,6 +603,9 @@ private:
 
     }
 
+// call final plumed jobs
+    plumed->cmd("runFinalJobs");
+
 // write final positions
     write_final_positions(outputfile,natoms,positions,cell,wrapatoms);
 

@@ -236,7 +236,7 @@ PRE::PRE(const ActionOptions&ao):
     }
   }
 
-  requestAtoms(nl->getFullAtomList());
+  requestAtoms(nl->getFullAtomList(), false);
   if(getDoScore()) {
     setParameters(exppre);
     Initialise(nga.size());

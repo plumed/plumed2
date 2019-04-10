@@ -32,7 +32,7 @@ import array
 try:
      import numpy as np
      HAS_NUMPY=True
-except:
+except ImportError:
      HAS_NUMPY=False
 
 cdef class Plumed:

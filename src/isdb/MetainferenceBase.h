@@ -312,7 +312,7 @@ void MetainferenceBase::unlockRequests() {
 }
 
 inline
-void MetainferenceBase::calculateNumericalDerivatives( ActionWithValue* a ) {
+void MetainferenceBase::calculateNumericalDerivatives( ActionWithValue* a=NULL ) {
   if( getNumberOfArguments()>0 ) {
     ActionWithArguments::calculateNumericalDerivatives( a );
   }

@@ -29,6 +29,7 @@
 !/maketools
 !/mapping
 !/manyrestraints
+!/maze
 !/molfile
 !/multicolvar
 !/python

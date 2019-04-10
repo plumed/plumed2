@@ -171,6 +171,8 @@ class Custom :
   string func;
   vector<double> values;
   vector<char*> names;
+  vector<double*> lepton_ref;
+  vector<double*> lepton_ref_deriv;
 public:
   explicit Custom(const ActionOptions&);
   void calculate();
@@ -221,7 +223,9 @@ Custom::Custom(const ActionOptions&ao):
   Function(ao),
   expression_deriv(getNumberOfArguments()),
   values(getNumberOfArguments()),
-  names(getNumberOfArguments())
+  names(getNumberOfArguments()),
+  lepton_ref(getNumberOfArguments(),nullptr),
+  lepton_ref_deriv(getNumberOfArguments()*getNumberOfArguments(),nullptr)
 {
   parseVector("VAR",var);
   if(var.size()==0) {
@@ -257,26 +261,35 @@ Custom::Custom(const ActionOptions&ao):
     log<<"    "<<pe<<"\n";
     expression_deriv[i]=pe.createCompiledExpression();
   }
-}
 
-void Custom::calculate() {
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     try {
-      expression.getVariableReference(var[i])=getArgument(i);
+      lepton_ref[i]=&expression.getVariableReference(var[i]);
     } catch(const PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
     }
   }
-  setValue(expression.evaluate());
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     for(unsigned j=0; j<getNumberOfArguments(); j++) {
       try {
-        expression_deriv[i].getVariableReference(var[j])=getArgument(j);
+        lepton_ref_deriv[i*getNumberOfArguments()+j]=&expression_deriv[i].getVariableReference(var[j]);
       } catch(const PLMD::lepton::Exception& exc) {
 // this is necessary since in some cases lepton things a variable is not present even though it is present
 // e.g. func=0*x
       }
+    }
+  }
+}
+
+void Custom::calculate() {
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    if(lepton_ref[i]) *lepton_ref[i]=getArgument(i);
+  }
+  setValue(expression.evaluate());
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    for(unsigned j=0; j<getNumberOfArguments(); j++) {
+      if(lepton_ref_deriv[i*getNumberOfArguments()+j]) *lepton_ref_deriv[i*getNumberOfArguments()+j]=getArgument(j);
     }
     setDerivative(i,expression_deriv[i].evaluate());
   }

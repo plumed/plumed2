@@ -68,6 +68,7 @@ Here's a description of the content of each file and directory in the root PLUME
     docker           : directory where Docker is generated
     macports         : directory where Portfiles are generated
     patches          : patch scripts
+    python           : python stuff
     regtest          : regression tests, including reference results
     release.sh       : developer utility to publish releases
     scripts          : shell tools
@@ -110,6 +111,7 @@ Quick instructions:
     ./configure --prefix=$HOME/opt
     make
     make doc # optional
+    make test # optional
 
 User documentation can be found at `user-doc/html/index.html`.
 Developer documentation can be found at `developer-doc/html/index.html`.
