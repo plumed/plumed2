@@ -120,6 +120,7 @@ void PAMM::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","DATA","the vectors from which the pamm coordinates are calculated");
   keys.add("compulsory","CLUSTERS","the name of the file that contains the definitions of all the clusters");
   keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
+  keys.add("compulsory","KERNELS","all","which kernels are we computing the PAMM values for");
   multicolvar::MultiColvarBase::shortcutKeywords( keys );
 }
 
@@ -160,11 +161,20 @@ ActionShortcut(ao)
    readInputLine( getShortcutLabel() + "_rksum: MATHEVAL ARG1=" + getShortcutLabel() + "_ksum FUNC=x+" + regparam + " PERIODIC=NO");   
    
    // And now compute all the pamm kernels
+   std::string kchoice; parse("KERNELS",kchoice);
    std::map<std::string,std::string> keymap; multicolvar::MultiColvarBase::readShortcutKeywords( keymap, this );
-   for(unsigned k=0;k<nkernels;++k) {
-       std::string num; Tools::convert( k+1, num );
-       readInputLine( getShortcutLabel() + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + " ARG2=" + getShortcutLabel() + "_rksum FUNC=x/y PERIODIC=NO");  
-       multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel() + "-" + num, getShortcutLabel() + "-" + num, "", keymap, this );
+   if( kchoice=="all" ) {
+       for(unsigned k=0;k<nkernels;++k) {
+           std::string num; Tools::convert( k+1, num );
+           readInputLine( getShortcutLabel() + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + " ARG2=" + getShortcutLabel() + "_rksum FUNC=x/y PERIODIC=NO");  
+           multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel() + "-" + num, getShortcutLabel() + "-" + num, "", keymap, this );
+       }
+   } else {
+       std::vector<std::string> awords=Tools::getWords(kchoice,"\t\n ,"); Tools::interpretRanges( awords );
+       for(unsigned k=0;k<awords.size();++k) {
+          readInputLine( getShortcutLabel() + "-" + awords[k] + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + awords[k] + " ARG2=" + getShortcutLabel() + "_rksum FUNC=x/y PERIODIC=NO");     
+          multicolvar::MultiColvarBase::expandFunctions( getShortcutLabel() + "-" + awords[k], getShortcutLabel() + "-" + awords[k], "", keymap, this ); 
+       }
    }
 }
 

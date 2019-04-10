@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DistanceFromContourBase.h"
 #include "core/ActionRegister.h"
-#include "tools/KernelFunctions.h"
 
 //+PLUMEDOC COLVAR DISTANCE_FROM_CONTOUR
 /*
@@ -179,10 +178,10 @@ void DistanceFromContour::calculate() {
   // Now do a search for the two contours
   findContour( dirv, pos1 );
   // Save the first value
-  Vector root1; root1.zero(); root1[dir] = pval[dir]->get();
+  Vector root1; root1.zero(); root1[dir] = pval[dir];
   findContour( dirv2, pos2 );
   // Calculate the separation between the two roots using PBC
-  Vector root2; root2.zero(); root2[dir] = pval[dir]->get();
+  Vector root2; root2.zero(); root2[dir] = pval[dir];
   Vector sep = pbcDistance( root1, root2 ); double spacing = fabs( sep[dir] ); plumed_assert( spacing>epsilon );
   getPntrToComponent("thickness")->set( spacing );
 
@@ -210,18 +209,13 @@ void DistanceFromContour::calculate() {
 
 void DistanceFromContour::evaluateDerivatives( const Vector root1, const double& root2 ) {
   if( getNumberOfArguments()>0 ) plumed_merror("derivatives for phase field distance from contour have not been implemented yet");
-  for(unsigned j=0; j<3; ++j) pval[j]->set( root1[j] );
 
   Vector origind; origind.zero(); Tensor vir; vir.zero();
   double sumd = 0; std::vector<double> pp(3), ddd(3,0);
   for(unsigned i=0; i<nactive; ++i) {
+    double newval = evaluateKernel( getPosition(active_list[i]), root1, ddd );
     Vector distance = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(active_list[i]) );
-    for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
 
-    // Now create the kernel and evaluate
-    KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 ); 
-    std::vector<Value*> fvals; kernel.normalize( fvals );
-    double newval = kernel.evaluate( pval, ddd, true );
     if( getNumberOfArguments()==1 ) {
     } else {
       sumd += ddd[dir];

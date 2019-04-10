@@ -79,7 +79,7 @@ Kernel::Kernel(const ActionOptions&ao):
   }
 
   if( argstr2.length()==0 ) { 
-      std::string argstr=""; std::vector<std::string> names;
+      std::string argstr=""; std::vector<std::string> names; bool allone=true;
       for(unsigned i=1;; ++i) {
         std::string num, argn; Tools::convert(i,num);
         parseNumbered("ARG",i,argn); 
@@ -89,9 +89,19 @@ Kernel::Kernel(const ActionOptions&ao):
         if( i==1 ) { argstr2 = "arg1"; } 
         else { argstr2 += ",arg" + num; }
         argstr += " ARG" + num + "=" + argn; names.push_back( argn );
+        if( argn.find(".")!=std::string::npos ) {
+           allone=false;
+        } else {
+           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(argn);
+           if( !action ) error("could not find action named " + argn + " in input file");
+           if( action->copyOutput(0)->getRank()>0 ) allone=false; 
+        }
       }
       std::string weight_str; Tools::convert( weight, weight_str );
-      std::string input = "KERNEL TYPE=" + ktype + " WEIGHT=" + weight_str + " ARG=" + argstr2; 
+      std::string input = "KERNEL TYPE=" + ktype + " WEIGHT=" + weight_str;
+      if( allone ) { 
+          input += " ARG=" + names[0]; for(unsigned i=1;i<names.size();++i) input += "," + names[i]; 
+      } else input += " ARG=" + argstr2; 
       if( norm ) input += " NORMALIZED";
       if( fname.length()>0 ) { 
           input += " " + setup::ReadReferenceCluster::convertFileToLine( fname, nnn, names );  
@@ -99,7 +109,11 @@ Kernel::Kernel(const ActionOptions&ao):
           input += " CENTER=" + center; 
           if( sig.length()>0 ) { input += " SIGMA=" + sig; } else { input += " COVAR=" + sig; }
       }
-      readInputLine( getShortcutLabel() + ": PLUMED_FUNCTION PERIODIC=NO " + argstr + " INPUT={" + input +  "}");
+      if( allone ) {
+          readInputLine( getShortcutLabel() + ": " + input );
+      } else {
+          readInputLine( getShortcutLabel() + ": PLUMED_FUNCTION PERIODIC=NO " + argstr + " INPUT={" + input +  "}");
+      }
       checkRead(); return;
   } else if( fname.length()>0 ) {
       std::string weight_str; Tools::convert( weight, weight_str ); 
@@ -118,7 +132,7 @@ Kernel::Kernel(const ActionOptions&ao):
   std::string func_str; 
   if( ktype=="gaussian" || ktype=="von-misses" ) func_str = "exp(-x/2)";
   else if( ktype=="triangular" ) func_str = "step(1.-sqrt(x))*(1.-sqrt(x))";
-  else error("invalied kernel type");
+  else func_str = ktype;
   std::string vm_str=""; if(  ktype=="von-misses" ) vm_str=" VON_MISSES";
 
   setup::SetupReferenceBase* as = plumed.getActionSet().selectWithLabel<setup::SetupReferenceBase*>( getShortcutLabel() + "_ref" );

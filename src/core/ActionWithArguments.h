@@ -47,8 +47,10 @@ private:
   std::vector<bool> usingAllArgs;
   std::vector<Value*> arguments;
   bool lockRequestArguments;
+  bool averageInArguments;
   const ActionWithValue* thisAsActionWithValue;
   ActionWithValue* getFirstNonStream();
+  Value* getArgumentForScalar(const unsigned n) const ;
 protected:
   bool numberedkeys, done_over_stream;
   std::vector< std::pair<ActionWithValue*,unsigned> > distinct_arguments;
@@ -124,6 +126,17 @@ unsigned ActionWithArguments::getNumberOfScalarArguments() const {
   return nscalars;
 }
 
+inline 
+Value* ActionWithArguments::getArgumentForScalar(const unsigned n) const {
+  unsigned nt = 0, nn = 0, j=0;
+  for(unsigned i=0; i<arguments.size(); ++i) {
+    nt += arguments[i]->getNumberOfValues( getLabel() );
+    if( n<nt ) { j=i; break ; }
+    nn += arguments[i]->getNumberOfValues( getLabel() );
+  }
+  return arguments[j];
+}
+
 inline
 double ActionWithArguments::getArgumentScalar(const unsigned n) const {
   unsigned nt = 0, nn = 0, j=0;
@@ -142,13 +155,12 @@ unsigned ActionWithArguments::getNumberOfArguments()const {
 
 inline
 double ActionWithArguments::difference(int i,double d1,double d2)const {
-  plumed_dbg_massert( i<arguments.size(), "problem for difference in " + getLabel() );
-  return arguments[i]->difference(d1,d2);
+  return getArgumentForScalar(i)->difference(d1,d2);
 }
 
 inline
 double ActionWithArguments::bringBackInPbc(int i,double d1)const {
-  return arguments[i]->bringBackInPbc(d1);
+  return getArgumentForScalar(i)->bringBackInPbc(d1);
 }
 
 inline

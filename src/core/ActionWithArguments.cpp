@@ -255,6 +255,15 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
         } else {
           name=fullname;
         }
+        Average* av = dynamic_cast<Average*>( arguments[i]->getPntrToAction() );
+        if( av ) { 
+            averageInArguments=true;
+        } else {
+            ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( arguments[i]->getPntrToAction() );
+            if( aa ) {
+                if( aa->hasAverageAsArgument() ) averageInArguments=true;
+            }
+        } 
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
         plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
         if( i<argstart ) {
@@ -443,6 +452,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
   allrankzero(true),
   lockRequestArguments(false),
+  averageInArguments(false),
   thisAsActionWithValue(NULL),
   numberedkeys(false),
   done_over_stream(false)
@@ -658,15 +668,7 @@ void ActionWithArguments::setForcesOnArguments( const unsigned& argstart, const 
 }
 
 bool ActionWithArguments::hasAverageAsArgument() const {
-  for(unsigned i=0; i<arguments.size(); ++i) {
-    Average* av = dynamic_cast<Average*>( arguments[i]->getPntrToAction() );
-    if( av ) return true;
-    ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( arguments[i]->getPntrToAction() );
-    if( aa ) {
-      if( aa->hasAverageAsArgument() ) return true;
-    }
-  }
-  return false;
+  return averageInArguments;
 }
 
 unsigned ActionWithArguments::getNumberOfArgumentsPerTask() const {

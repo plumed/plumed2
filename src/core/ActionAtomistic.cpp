@@ -299,8 +299,11 @@ void ActionAtomistic::readAtomsFromPDB( const PDB& pdb ) {
   for(unsigned j=0; j<indexes.size(); j++) masses[j]=pdb.getOccupancy()[indexes[j].index()];
 }
 
-void ActionAtomistic::makeWhole() {
-  for(unsigned j=0; j<positions.size()-1; ++j) {
+void ActionAtomistic::makeWhole( const unsigned start, const unsigned end ) {
+  plumed_dbg_assert( start>=0 && end<=positions.size() );
+  unsigned ss=0, ff=positions.size();
+  if( start>0 ) ss = start; if( end>0 ) ff = end; 
+  for(unsigned j=ss; j<ff-1; ++j) {
     const Vector & first (positions[j]);
     Vector & second (positions[j+1]);
     second=first+pbcDistance(first,second);

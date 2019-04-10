@@ -132,7 +132,7 @@ MatrixTimesVector::MatrixTimesVector(const ActionOptions&ao):
 unsigned MatrixTimesVector::getNumberOfDerivatives() const {
   if( fixed_matrix && getPntrToArgument(1)->getRank()==0 ) return vecder_start + 1;
   else if ( fixed_matrix ) return vecder_start + getPntrToArgument(1)->getShape()[0];
-  else if( getPntrToArgument(1)->getRank()==0 ) vecder_start + 1;
+  else if( getPntrToArgument(1)->getRank()==0 ) return vecder_start + 1;
   return SymmetryFunctionBase::getNumberOfDerivatives() + getPntrToArgument(1)->getShape()[0];
 }
 

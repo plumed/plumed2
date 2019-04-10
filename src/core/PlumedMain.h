@@ -406,6 +406,8 @@ public:
   void interpretDataLabel( const std::string& argname, const std::string& datauser, unsigned& nargs, std::vector<Value*>& args );
 /// Is the value with this name fixed in the input
   bool valueIsFixed( const std::string& name ) const ;
+/// Get the name of the MD engine that called PLUMED
+  std::string getMDEngine() const ;
 };
 
 /////

@@ -88,10 +88,10 @@ ActionShortcut(ao)
   // Now build the basins
   for(unsigned k=0;k<weights.size();++k) {
       std::string num; Tools::convert( k+1, num ); 
+      // Compute the distance between the center of the basin and the current configuration
+      readInputLine( getShortcutLabel() + "_dist-" + num + ": MATHEVAL ARG=" + getShortcutLabel() + "_kernel-" + num + "_dist_2 FUNC=sqrt(x) PERIODIC=NO");
       // Get the negative of the distance from the center of the basin
       if( neigv[k]==0 ) {
-        // Compute the distance between the center of the basin and the current configuration
-        readInputLine( getShortcutLabel() + "_dist-" + num + ": MATHEVAL ARG=" + getShortcutLabel() + "_kernel-" + num + "_dist_2 FUNC=sqrt(x) PERIODIC=NO");
         // And the reflection of the distance
         readInputLine( getShortcutLabel() + "_pdist-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist-" + num + " FUNC=0-x PERIODIC=NO");
       } else {

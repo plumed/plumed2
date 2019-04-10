@@ -1048,6 +1048,10 @@ void PlumedMain::runJobsAtEndOfCalculation() {
   }
 }
 
+std::string PlumedMain::getMDEngine() const {
+  return MDEngine;
+}
+
 #ifdef __PLUMED_HAS_PYTHON
 // This is here to stop cppcheck throwing an error
 #endif

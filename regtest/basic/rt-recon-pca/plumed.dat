@@ -1,6 +1,3 @@
 d1: POSITION ATOM=1
 rr: RECON ARG=d1.x,d1.y REFERENCE=cluster PACE=10 SIGMA=2.0 BIASFACTOR=5 HEIGHT=1.25 GRID_MAX=200 GRID_BIN=100 TEMP=300
-rr_dist-1: MATHEVAL ARG=rr_kernel-1_dist_2 FUNC=sqrt(x) PERIODIC=NO
-rr_dist-2: MATHEVAL ARG=rr_kernel-2_dist_2 FUNC=sqrt(x) PERIODIC=NO
-rr_dist-3: MATHEVAL ARG=rr_kernel-3_dist_2 FUNC=sqrt(x) PERIODIC=NO
 PRINT ARG=d1.x,d1.y,rr_dist-1,rr_dist-2,rr_dist-3,rr_wkernel-1,rr_wkernel-2,rr_wkernel-3,rr FMT=%8.4f FILE=colvar

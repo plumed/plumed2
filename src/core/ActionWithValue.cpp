@@ -65,12 +65,15 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
   noderiv(true),
   numericalDerivatives(false),
-  no_openmp(false),
+  no_openmp(plumed.getMDEngine()=="plumed"),
   serial(false),
   timers(false),
   nactive_tasks(0),
+  thisAsActionWithArguments(NULL),
+  thisAsActionWithVatom(NULL),
   action_to_do_before(NULL),
-  action_to_do_after(NULL)
+  action_to_do_after(NULL),
+  atom_action_to_do_after(NULL)
 {
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
   if(numericalDerivatives) log.printf("  using numerical derivatives\n");
@@ -160,7 +163,9 @@ bool ActionWithValue::addActionToChain( const std::vector<std::string>& alabels,
           if( !av1->canBeAfterInChain( av2 ) ) error("must calculate " + mylabels[j] + " before " + mylabels[i] );
       }
   }
-  action_to_do_after=act; act->action_to_do_before=this;
+  action_to_do_after=act; 
+  atom_action_to_do_after=dynamic_cast<ActionAtomistic*>( action_to_do_after ); 
+  act->action_to_do_before=this;
   return true;
 }
 
@@ -372,6 +377,8 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
 }
 
 void ActionWithValue::addTaskToList( const unsigned& taskCode ) {
+  if( !thisAsActionWithArguments ) thisAsActionWithArguments = dynamic_cast<const ActionWithArguments*>( this );
+  if( !thisAsActionWithVatom ) thisAsActionWithVatom=dynamic_cast<const ActionWithVirtualAtom*>( this );
   fullTaskList.push_back( taskCode ); taskFlags.push_back(0);
   plumed_assert( fullTaskList.size()==taskFlags.size() );
 }
@@ -409,7 +416,8 @@ void ActionWithValue::selectActiveTasks( const std::vector<std::string>& actionL
   // And now do stuff for the next action in the chain
   if( action_to_do_after ) {
       // Retrieve the atoms for tasks in the stream
-      ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( action_to_do_after ); if( aa ) aa->retrieveAtoms();
+      // ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( action_to_do_after ); 
+      if( atom_action_to_do_after ) atom_action_to_do_after->retrieveAtoms();
       // And set up the task list for the next one
       action_to_do_after->selectActiveTasks( actionLabelsInChain, forceAllTasks, actionsThatSelectTasks, tflags );
   }
@@ -537,8 +545,8 @@ void ActionWithValue::setupVirtualAtomStashes( unsigned& nquants ) {
 }
 
 void ActionWithValue::getNumberOfStreamedQuantities( unsigned& nquants, unsigned& ncols, unsigned& nmat ) const {
-  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
-  if( aa ) aa->getNumberOfStashedInputArguments( nquants );
+  // const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( thisAsActionWithArguments ) thisAsActionWithArguments->getNumberOfStashedInputArguments( nquants );
 
   for(unsigned i=0; i<values.size(); ++i) {
     if( values[i]->getRank()==2 && !values[i]->hasDerivatives() ) {
@@ -566,15 +574,15 @@ void ActionWithValue::runTask( const std::string& controller, const unsigned& ta
   // Do matrix element task
   bool wasperformed=false; myvals.setTaskIndex(task_index); myvals.setSecondTaskIndex( colno );
   if( isActive() ) wasperformed=performTask( controller, current, colno, myvals );
-  const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
-  if( aa ) {
+  // const ActionWithArguments* aa = dynamic_cast<const ActionWithArguments*>( this );
+  if( thisAsActionWithArguments ) {
     if( actionInChain() ) {
       // Now check if the task takes a matrix as input - if it does do it
-      bool do_this_task = ((aa->getPntrToArgument(0))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() );
+      bool do_this_task = ((thisAsActionWithArguments->getPntrToArgument(0))->getRank()==2 && !(thisAsActionWithArguments->getPntrToArgument(0))->hasDerivatives() );
 #ifdef DNDEBUG
       if( do_this_task ) {
-        for(unsigned i=1; i<aa->getNumberOfArguments(); ++i) {
-          plumed_dbg_assert( (aa->getPntrToArgument(i))->getRank()==2 && !(aa->getPntrToArgument(0))->hasDerivatives() );
+        for(unsigned i=1; i<thisAsActionWithArguments->getNumberOfArguments(); ++i) {
+          plumed_dbg_assert( (thisAsActionWithArguments->getPntrToArgument(i))->getRank()==2 && !(thisAsActionWithArguments->getPntrToArgument(0))->hasDerivatives() );
         }
       }
 #endif
@@ -675,8 +683,8 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
       }
     }
     // Special method for dealing with centers
-    const ActionWithVirtualAtom* av = dynamic_cast<const ActionWithVirtualAtom*>( this );
-    if( av ) av->gatherForVirtualAtom( myvals, buffer );
+    // const ActionWithVirtualAtom* av = dynamic_cast<const ActionWithVirtualAtom*>( this );
+    if(thisAsActionWithVatom) thisAsActionWithVatom->gatherForVirtualAtom( myvals, buffer );
   }
 
   if( action_to_do_after ) action_to_do_after->gatherAccumulators( taskCode, myvals, buffer );

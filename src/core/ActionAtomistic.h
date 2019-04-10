@@ -160,7 +160,9 @@ public:
 /// not going to be propagated. Can be used for optimization.
   void doNotForce() {donotforce=true;}
 /// Make atoms whole, assuming they are in the proper order
-  void makeWhole();
+/// If start and end are set equal to 0 then do all atoms.
+/// If start and end are set to particular indices then do a subset
+  void makeWhole( const unsigned start=0, const unsigned end=0 );
 /// Allow calls to modifyGlobalForce()
   void allowToAccessGlobalForces() {atoms.zeroallforces=true;}
 /// updates local unique atoms

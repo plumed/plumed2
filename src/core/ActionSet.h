@@ -125,6 +125,7 @@ std::vector<std::string> ActionSet::getLabelVector() const {
   return  outlist;
 }
 
+template <class T>
 T ActionSet::getFinalActionOfType() const {
   for(int i=(*this).size()-1;i>=0;--i) {
       T t=dynamic_cast<T>( (*this)[i].get() );

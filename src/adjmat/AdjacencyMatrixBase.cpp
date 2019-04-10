@@ -136,6 +136,7 @@ void AdjacencyMatrixBase::setLinkCellCutoff( const bool& symmetric, const double
 
   if( tcut<0 ) tcut=lcut;
   if( nl_cut>0 ) linkcells.setCutoff( nl_cut ); else linkcells.setCutoff( lcut );
+  log.printf("  set link cell cutoff to %f \n", linkcells.getCutoff() );
   threecells.setCutoff( tcut );
 }
 

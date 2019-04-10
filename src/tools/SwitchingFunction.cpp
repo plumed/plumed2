@@ -229,6 +229,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   bool dontstretch=false;
   Tools::parseFlag(data,"NOSTRETCH",dontstretch); // this is ignored now
   if(dontstretch) dostretch=false;
+  Tools::parseFlag(data,"RETURN_DERIV",returnderiv);
   double r0;
   if(name.find("CUBIC")!=std::string::npos ) {
     r0 = dmax - d0;
@@ -271,8 +272,9 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
 
   }
   else if(name=="EXP") type=exponential;
-  else if(name=="GAUSSIAN") type=gaussian;
-  else if(name=="CUBIC") type=cubic;
+  else if(name=="GAUSSIAN") {
+    type=gaussian; fastgaussian=(d0==0.0);
+  } else if(name=="CUBIC") type=cubic;
   else if(name=="TANH") type=tanh;
   else if(name=="COSINE"){ 
     type=cosine; dmax=r0+d0; dmax_2=dmax*dmax; dostretch=false;
@@ -421,6 +423,20 @@ double SwitchingFunction::calculateSqr(double distance2,double&dfunc)const {
     result=result*stretch+shift;
     dfunc*=stretch;
     return result;
+  } else if(fastgaussian) {
+    if(distance2>dmax_2) {
+      dfunc=0.0;
+      return 0.0;
+    }
+    const double rdist_2 = distance2*invr0_2;
+    double result=exp(-0.5*rdist_2);
+// chain rule:
+    dfunc=-result*invr0;
+    if( !returnderiv ) dfunc = -result*invr0 / sqrt(distance2);
+// stretch:
+    result=result*stretch+shift;
+    dfunc*=stretch;
+    return result;
   } else if(leptonx2) {
     if(distance2>dmax_2) {
       dfunc=0.0;
@@ -525,7 +541,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const {
     dfunc*=invr0;
 // this is because calculate() sets dfunc to the derivative divided times the distance.
 // (I think this is misleading and I would like to modify it - GB)
-    dfunc/=distance;
+    if( !returnderiv ) dfunc/=distance;
   }
 
   result=result*stretch+shift;

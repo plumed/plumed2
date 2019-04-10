@@ -66,7 +66,9 @@ of the PLMD::Action.  Perhaps unsurprisingly, when you manipulate the <b> compon
 PLMD::Action you should use <b> the routines with the word component in the name. </b>
 */
 
+class ActionAtomistic;
 class ActionWithArguments;
+class ActionWithVirtualAtom;
 
 class ActionWithValue :
   public virtual Action
@@ -102,10 +104,15 @@ private:
   std::vector<unsigned> taskFlags;
 /// The buffer that we use (we keep a copy here to avoid resizing)
   std::vector<double> buffer;
+/// A pointer to this but with actionWithArgument so we can avoid lots of dynamic_cast
+  const ActionWithArguments* thisAsActionWithArguments;
+/// A pointer to this but with actionWithVirtualAtom so we can avoid lots of dynamic_cast
+  const ActionWithVirtualAtom* thisAsActionWithVatom;
 /// Action that must be done before this one
   ActionWithValue* action_to_do_before;
 /// Actions that must be done after this one
   ActionWithValue* action_to_do_after;
+  ActionAtomistic* atom_action_to_do_after;
 /// Return the index for the component named name
   int getComponent( const std::string& name ) const;
 ////

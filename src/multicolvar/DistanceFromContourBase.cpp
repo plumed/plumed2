@@ -19,7 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "tools/KernelFunctions.h"
 #include "DistanceFromContourBase.h"
 
 namespace PLMD {
@@ -32,8 +31,9 @@ void DistanceFromContourBase::registerKeywords( Keywords& keys ) {
   keys.add("atoms","POSITIONS","the positions of the atoms that we are calculating the contour from");
   keys.add("atoms","ATOM","The atom whose perpendicular distance we are calculating from the contour");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
+  keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
+  keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
   keys.add("compulsory","CONTOUR","the value we would like for the contour");
 }
 
@@ -80,24 +80,22 @@ DistanceFromContourBase::DistanceFromContourBase( const ActionOptions& ao ):
 
   // Read in details of phase field construction
   parseVector("BANDWIDTH",bw); parse("KERNEL",kerneltype); parse("CONTOUR",contour);
+  std::string errors; switchingFunction.set( kerneltype + " R_0=1.0 NOSTRETCH RETURN_DERIV", errors );
+  if( errors.length()!=0 ) error("problem reading switching function description " + errors);
+  double det=1; for(unsigned i=0; i<bw.size(); ++i) det*=bw[i]*bw[i];
+  gvol=1.0; if( kerneltype=="GAUSSIAN" ) gvol=pow( 2*pi, 0.5*bw.size() ) * pow( det, 0.5 );
   log.printf("  constructing phase field using %s kernels with bandwidth (%f, %f, %f) \n",kerneltype.c_str(), bw[0], bw[1], bw[2] );
 
   // And a cutoff
   std::vector<double> pp( bw.size(),0 );
-  KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 );
-  double rcut = kernel.getCutoff( bw[0] );
+  double dp2cutoff; parse("CUTOFF",dp2cutoff); double rcut =  sqrt(2*dp2cutoff)*bw[0];
   for(unsigned j=1; j<bw.size(); ++j) {
-    if( kernel.getCutoff(bw[j])>rcut ) rcut=kernel.getCutoff(bw[j]);
+    if( sqrt(2*dp2cutoff)*bw[j]>rcut ) rcut=sqrt(2*dp2cutoff)*bw[j];
   }
   rcut2=rcut*rcut;
 
   // Create the vector of values that holds the position
-  for(unsigned i=0; i<3; ++i) pval.push_back( new Value() ); 
   forcesToApply.resize( 3*getNumberOfAtoms() + 9 );
-}
-
-DistanceFromContourBase::~DistanceFromContourBase() {
-  for(unsigned i=0; i<3; ++i) delete pval[i];
 }
 
 void DistanceFromContourBase::lockRequests() {
@@ -110,22 +108,23 @@ void DistanceFromContourBase::unlockRequests() {
   ActionAtomistic::unlockRequests();
 }
 
+double DistanceFromContourBase::evaluateKernel( const Vector& cpos, const Vector& apos, std::vector<double>& der ) const {
+  Vector distance = pbcDistance( getPosition(getNumberOfAtoms()-1), cpos );
+  Vector dist2 = pbcDistance( distance, apos );
+  double dval=0; for(unsigned j=0;j<3;++j) { der[j] = dist2[j]/bw[j]; dval += der[j]*der[j]; } 
+  double dfunc, newval = switchingFunction.calculateSqr( dval, dfunc ) / gvol;
+  double tmp = dfunc / gvol; for(unsigned j=0;j<3;++j) der[j] *= -tmp;
+  return newval;
+}
+
 double DistanceFromContourBase::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) {
-  std::string min, max;
-  for(unsigned j=0; j<3; ++j) {
-    Tools::convert( -0.5*getBox()(j,j), min );
-    Tools::convert( +0.5*getBox()(j,j), max );
-    pval[j]->setDomain( min, max ); pval[j]->set( x[j] );
-  }
+  // Transer the position to the local Vector
+  for(unsigned j=0;j<3;++j) pval[j] = x[j]; 
+  // Now find the contour
   double sumk = 0, sumd = 0; std::vector<double> pp(3), ddd(3,0);
   for(unsigned i=0; i<nactive; ++i) {
-    Vector distance = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(active_list[i]) );
-    for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
-  
-    // Now create the kernel and evaluate
-    KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 );
-    std::vector<Value*> fvals; kernel.normalize( fvals );
-    double newval = kernel.evaluate( pval, ddd, true );
+    double newval = evaluateKernel( getPosition(active_list[i]), pval, ddd );
+
     if( getNumberOfArguments()==1 ) {
       sumk += getPntrToArgument(0)->get(active_list[i])*newval;
       sumd += newval;

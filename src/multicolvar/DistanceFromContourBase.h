@@ -25,6 +25,7 @@
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
+#include "tools/SwitchingFunction.h"
 #include "tools/RootFindingBase.h" 
 
 namespace PLMD {
@@ -36,22 +37,24 @@ class DistanceFromContourBase :
   public ActionWithArguments
 {
 private:
-  double contour;
+  double contour, gvol;
   RootFindingBase<DistanceFromContourBase> mymin;
 protected:
   std::string kerneltype;
   std::vector<double> bw;
   double rcut2;
   unsigned nactive;
-  std::vector<Value*> pval;
+  Vector pval;
   std::vector<double> forcesToApply;
   std::vector<unsigned> active_list;
+  SwitchingFunction switchingFunction;
+///
+  double evaluateKernel( const Vector& cpos, const Vector& apos, std::vector<double>& der ) const ;
 /// Find a contour along line specified by direction
   void findContour( const std::vector<double>& direction, std::vector<double>& point ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromContourBase( const ActionOptions& );
-  ~DistanceFromContourBase();
   unsigned getNumberOfDerivatives() const ;
   void lockRequests();
   void unlockRequests();
