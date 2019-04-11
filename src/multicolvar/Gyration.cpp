@@ -296,26 +296,51 @@ ActionShortcut(ao)
     readInputLine( getShortcutLabel() + "_tensor: GYRATION_TENSOR ATOMS=" + atoms + pbcstr + " CENTER=" + getShortcutLabel() + "_cent");
     std::string gtype; parse("TYPE",gtype);
     if( gtype=="RADIUS") {
-        // And now we need the average trace for the gyration radius
+	// Compute the trace of the gyration tensor
         readInputLine( getShortcutLabel() + "_trace: COMBINE ARG=" + getShortcutLabel() + "_tensor.1.1," + 
             	   getShortcutLabel() + "_tensor.2.2," + getShortcutLabel() + "_tensor.3.3 PERIODIC=NO"); 
-        // Square root the radius
+        // Square root the trace
         readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_trace FUNC=sqrt(x) PERIODIC=NO");
     } else if( gtype=="TRACE" ) {
-	// Compte the trace of the gyration tensor
+	// Compute the trace of the gyration tensor
 	readInputLine( getShortcutLabel() + ": COMBINE ARG=" + getShortcutLabel() + "_tensor.1.1," +
                    getShortcutLabel() + "_tensor.2.2," + getShortcutLabel() + "_tensor.3.3 PERIODIC=NO");
     } else {
 	// Diagonalize the gyration tensor
 	readInputLine( getShortcutLabel() + "_diag: DIAGONALIZE ARG=" + getShortcutLabel() + "_tensor VECTORS=all" );    
         if( gtype=="ASPHERICITY" ) {
+	// Compute the asphericity using the Eigen values	
             readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-1" +
-			   " ARG2=" + getShortcutLabel() + "_diag.vals-2 ARG3=" + getShortcutLabel() + "_diag.vals-3 FUNC=x-0.5*(y+z) PERIODIC=NO");
+			   " ARG2=" + getShortcutLabel() + "_diag.vals-2 ARG3=" + getShortcutLabel() + "_diag.vals-3 FUNC=sqrt(x-0.5*(y+z)) PERIODIC=NO");
+	} else if( gtype=="ACYLINDRICITY" ) {
+	// Compute the acilindricity using the Eigen values
+            readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-2" +
+			    " ARG2=" + getShortcutLabel() + "_diag.vals-3 FUNC=sqrt(x-y) PERIODIC=NO");
+	} else if( gtype=="KAPPA2" ) {
+	// Compute the relative shape anisotropy using the Eigen values
+            readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-1" +
+			    " ARG2=" + getShortcutLabel() + "_diag.vals-2 ARG3=" + getShortcutLabel() + 
+			    "_diag.vals-3 FUNC=sqrt(1-3*(x*y+x*z+y*z)/(square(x+y+z))) PERIODIC=NO");
+	} else if( gtype=="RGYR_1" ) {
+	// Compute the largest principal radius of gyration 
+            readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-1" +
+			   " ARG2=" + getShortcutLabel() + "_diag.vals-2 FUNC=sqrt(x+y) PERIODIC=NO");	
+	} else if( gtype=="RGYR_2" ) {
+	// Compute the middle  principal radius of gyration 
+            readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-1" +
+			   " ARG2=" + getShortcutLabel() + "_diag.vals-3 FUNC=sqrt(x+y) PERIODIC=NO");
+	} else if( gtype=="RGYR_3" ) {
+	// Compute the smallest  principal radius of gyration 
+            readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-2" +
+			   " ARG2=" + getShortcutLabel() + "_diag.vals-3 FUNC=sqrt(x+y) PERIODIC=NO");
 	} else if( gtype=="GTPC_1" ) {
+	// Compute the largest Eigen value i.e the square root of the largest diagonal element of the diagonalised gyration tensor 
             readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-1 FUNC=sqrt(x) PERIODIC=NO");
 	} else if( gtype=="GTPC_2" ) {
+	// Compute the middle Eigen value i.e the square root of the middle diagonal element of the diagonalised gyration tensor 
             readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-2 FUNC=sqrt(x) PERIODIC=NO");
 	} else if( gtype=="GTPC_3" ) {
+	// Compute the smallest Eigen value i.e the square root of the smallest diagonal element of the diagonalised gyration tensor 
             readInputLine( getShortcutLabel() + ": MATHEVAL ARG1=" + getShortcutLabel() + "_diag.vals-3 FUNC=sqrt(x) PERIODIC=NO");
 	} else error( gtype + " is not a valid type for gyration radius");
     }	
