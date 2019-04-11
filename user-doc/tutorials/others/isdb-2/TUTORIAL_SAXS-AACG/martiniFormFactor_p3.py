@@ -7,8 +7,6 @@
 
 import sys,logging
 logging.basicConfig(format='%(levelname)-7s    %(message)s',level=9)
-import os.path
-import re
 
     
 # This is a simple and versatily option class that allows easy
@@ -283,7 +281,6 @@ def aver(b):
 # [ name, resname, resid, chain, x, y, z ]
 def mapCG(r):
     p = CoarseGrained.mapping[r[0][1]]     # Mapping for this residue 
-    flat_p = [item for sublist in p for item in sublist]
     # Get the atom_name, mass, coordinates (x,y,z), atom id for all atoms in the residue
     a = [(i[0],CoarseGrained.mass.get(i[0][0],0),i[4:7],i[7]) for i in r]               
     # Store weight, coordinate and index for atoms that match a bead
@@ -298,7 +295,7 @@ def mapCG(r):
 #######################
 ## 4 # STRUCTURE I/O ##  -> @IO <-
 #######################
-import logging,math,random,sys
+import math,sys
 
 #----+---------+
 ## A | PDB I/O |
@@ -671,7 +668,6 @@ class Chain:
             # Return the chain slice
             return newchain
         return self.sequence[other]
-        return self.sequence[other]
 
     # Extract a piece of a chain as a new chain
     def __getslice__(self,i,j):
@@ -839,7 +835,7 @@ class Chain:
 #############
 ## 8 # MAIN #  -> @MAIN <-
 #############
-import sys,logging,random,math,os,re
+import sys,math
 
 def main(options):
     # Check whether to read from a gro/pdb file or from stdin
@@ -1062,7 +1058,7 @@ def main(options):
 
 if __name__ == '__main__':
 
-    import sys,logging,time
+    import sys,time
 
     start = time.time()
     stloc = time.localtime(start)
@@ -1073,7 +1069,6 @@ if __name__ == '__main__':
         logging.error("NO INPUT! Try to use the option -h for help.")
         sys.exit(1)
 
-    options = options
     options = option_parser(args,options)
 
     if options["-f"].value is None:
