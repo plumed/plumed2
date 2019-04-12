@@ -76,6 +76,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
 /* PLUMED */
 #include "../../../Plumed.h"
 int    plumedswitch=0;

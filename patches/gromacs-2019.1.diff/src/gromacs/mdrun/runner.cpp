@@ -147,11 +147,6 @@
 #include "corewrap.h"
 #endif
 
-/* PLUMED */
-#include "../../../Plumed.h"
-extern int    plumedswitch;
-extern plumed plumedmain;
-/* END PLUMED */
 namespace gmx
 {
 

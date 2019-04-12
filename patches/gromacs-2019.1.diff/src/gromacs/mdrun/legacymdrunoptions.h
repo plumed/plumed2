@@ -66,7 +66,7 @@ extern void(*plumedcmd)(plumed,const char*,const void*);
 /* END PLUMED */
 
 /* PLUMED HREX */
-int plumed_hrex;
+extern int plumed_hrex;
 /* END PLUMED HREX */
 
 struct gmx_multisim_t;

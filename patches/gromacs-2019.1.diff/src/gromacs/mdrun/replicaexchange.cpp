@@ -78,7 +78,7 @@ extern plumed plumedmain;
 /* END PLUMED */
 
 /* PLUMED HREX */
-extern int plumed_hrex;
+int plumed_hrex;
 /* END PLUMED HREX */
 
 //! Helps cut off probability values.
