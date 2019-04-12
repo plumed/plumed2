@@ -19,15 +19,14 @@ See the GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with maze. If not, see <https://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifndef __PLUMED_maze_Loss_h
+#define __PLUMED_maze_Loss_h
 
 /**
  * @file Loss.h
  *
  * @author J. Rydzewski (jr@fizyka.umk.pl)
  */
-
-#ifndef __PLUMED_maze_Loss_h
-#define __PLUMED_maze_Loss_h
 
 #include "colvar/Colvar.h"
 #include "core/ActionRegister.h"

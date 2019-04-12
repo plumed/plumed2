@@ -19,15 +19,14 @@ See the GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with maze. If not, see <https://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifndef __PLUMED_maze_Tools_h
+#define __PLUMED_maze_Tools_h
 
 /**
  * @file Tools.h
  *
  * @author J. Rydzewski
  */
-
-#ifndef __PLUMED_maze_Tools_h
-#define __PLUMED_maze_Tools_h
 
 #include "core/ActionSet.h"
 #include "tools/Vector.h"
