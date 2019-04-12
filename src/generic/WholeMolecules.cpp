@@ -29,6 +29,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/SetupMolInfo.h"
+#include "tools/OpenMP.h"
 
 #include <vector>
 #include <string>
@@ -104,6 +105,8 @@ class WholeMolecules:
   public ActionAtomistic
 {
   vector<vector<AtomNumber> > groups;
+  bool doref;
+  vector<Vector> refs;
 public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -125,12 +128,15 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
            "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
            "you are interested in as a list of numbers");
   keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
+  keys.addFlag("ADDREFERENCE", false, "Set this flag if you want to define a reference position for the first atom of each entity");
+  keys.add("numbered", "REF", "Add reference position for first atom of each entity");
 }
 
 WholeMolecules::WholeMolecules(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
-  ActionAtomistic(ao)
+  ActionAtomistic(ao),
+  doref(false)
 {
   vector<AtomNumber> merge;
   for(int i=0;; i++) {
@@ -142,6 +148,16 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
     log.printf("\n");
     groups.push_back(group);
     merge.insert(merge.end(),group.begin(),group.end());
+  }
+  // read reference position of first atom of each entity
+  parseFlag("ADDREFERENCE", doref);
+  if(doref) {
+    for(int i=0; i<groups.size(); ++i) {
+      vector<double> ref;
+      parseNumberedVector("REF",i,ref);
+      refs.push_back(Vector(ref[0],ref[1],ref[2]));
+      log.printf("  reference position in entity %d : %lf %lf %lf\n",i,ref[0],ref[1],ref[2]);
+    }
   }
 
   // Read residues to align from MOLINFO
@@ -175,11 +191,27 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 }
 
 void WholeMolecules::calculate() {
-  for(unsigned i=0; i<groups.size(); ++i) {
-    for(unsigned j=0; j<groups[i].size()-1; ++j) {
-      const Vector & first (getGlobalPosition(groups[i][j]));
-      Vector & second (modifyGlobalPosition(groups[i][j+1]));
-      second=first+pbcDistance(first,second);
+  if(doref) {
+    #pragma omp parallel num_threads(OpenMP::getNumThreads())
+    {
+      #pragma omp for nowait
+      for(unsigned i=0; i<groups.size(); ++i) {
+        Vector & first (modifyGlobalPosition(groups[i][0]));
+        first = refs[i]+pbcDistance(refs[i],first);
+        for(unsigned j=0; j<groups[i].size()-1; ++j) {
+          const Vector & first (getGlobalPosition(groups[i][j]));
+          Vector & second (modifyGlobalPosition(groups[i][j+1]));
+          second=first+pbcDistance(first,second);
+        }
+      }
+    }
+  } else {
+    for(unsigned i=0; i<groups.size(); ++i) {
+      for(unsigned j=0; j<groups[i].size()-1; ++j) {
+        const Vector & first (getGlobalPosition(groups[i][j]));
+        Vector & second (modifyGlobalPosition(groups[i][j+1]));
+        second=first+pbcDistance(first,second);
+      }
     }
   }
 }
