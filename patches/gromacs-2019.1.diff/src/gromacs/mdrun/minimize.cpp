@@ -106,7 +106,6 @@
 #include "../../../Plumed.h"
 extern int    plumedswitch;
 extern plumed plumedmain;
-extern void(*plumedcmd)(plumed,const char*,const void*);
 /* END PLUMED */
 
 //! Utility structure for manipulating states during EM
@@ -504,36 +503,36 @@ static void init_em(FILE *fplog,
     /* PLUMED */
     if(plumedswitch){
       if(ms && ms->nsim>1) {
-        if(MASTER(cr)) (*plumedcmd) (plumedmain,"GREX setMPIIntercomm",&ms->mpi_comm_masters);
+        if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&ms->mpi_comm_masters);
         if(PAR(cr)){
           if(DOMAINDECOMP(cr)) {
-            (*plumedcmd) (plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
+            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
           }else{
-            (*plumedcmd) (plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
+            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
           }
         }
-        (*plumedcmd) (plumedmain,"GREX init",NULL);
+        plumed_cmd(plumedmain,"GREX init",NULL);
       }
       if(PAR(cr)){
         if(DOMAINDECOMP(cr)) {
-          (*plumedcmd) (plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
+          plumed_cmd(plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
         }else{
-          (*plumedcmd) (plumedmain,"setMPIComm",&cr->mpi_comm_mysim);
+          plumed_cmd(plumedmain,"setMPIComm",&cr->mpi_comm_mysim);
         }
       }
-      (*plumedcmd) (plumedmain,"setNatoms",&top_global->natoms);
-      (*plumedcmd) (plumedmain,"setMDEngine","gromacs");
-      (*plumedcmd) (plumedmain,"setLog",fplog);
+      plumed_cmd(plumedmain,"setNatoms",&top_global->natoms);
+      plumed_cmd(plumedmain,"setMDEngine","gromacs");
+      plumed_cmd(plumedmain,"setLog",fplog);
       real real_delta_t;
       real_delta_t=ir->delta_t;
-      (*plumedcmd) (plumedmain,"setTimestep",&real_delta_t);
-      (*plumedcmd) (plumedmain,"init",NULL);
+      plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
+      plumed_cmd(plumedmain,"init",NULL);
 
       if(PAR(cr)){
         if(DOMAINDECOMP(cr)) {
           int nat_home = dd_numHomeAtoms(*cr->dd);
-          (*plumedcmd) (plumedmain,"setAtomsNlocal",&nat_home);
-          (*plumedcmd) (plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
+          plumed_cmd(plumedmain,"setAtomsNlocal",&nat_home);
+          plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->globalAtomIndices.data());
 
         }
       }
@@ -916,16 +915,16 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
     int plumedNeedsEnergy=0;
     matrix plumed_vir;
     if(plumedswitch){
-      long int lstep=count; (*plumedcmd)(plumedmain,"setStepLong",&lstep);
-      (*plumedcmd) (plumedmain,"setPositions",&ems->s.x[0][0]);
-      (*plumedcmd) (plumedmain,"setMasses",&mdAtoms->mdatoms()->massT[0]);
-      (*plumedcmd) (plumedmain,"setCharges",&mdAtoms->mdatoms()->chargeA[0]);
-      (*plumedcmd) (plumedmain,"setBox",&ems->s.box[0][0]);
-      (*plumedcmd) (plumedmain,"prepareCalc",NULL);
-      (*plumedcmd) (plumedmain,"setForces",&ems->f[0][0]);
-      (*plumedcmd) (plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+      long int lstep=count; plumed_cmd(plumedmain,"setStepLong",&lstep);
+      plumed_cmd(plumedmain,"setPositions",&ems->s.x[0][0]);
+      plumed_cmd(plumedmain,"setMasses",&mdAtoms->mdatoms()->massT[0]);
+      plumed_cmd(plumedmain,"setCharges",&mdAtoms->mdatoms()->chargeA[0]);
+      plumed_cmd(plumedmain,"setBox",&ems->s.box[0][0]);
+      plumed_cmd(plumedmain,"prepareCalc",NULL);
+      plumed_cmd(plumedmain,"setForces",&ems->f[0][0]);
+      plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
       clear_mat(plumed_vir);
-      (*plumedcmd) (plumedmain,"setVirial",&plumed_vir[0][0]);
+      plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
     }
     /* END PLUMED */
 
@@ -947,8 +946,8 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
     if(plumedswitch){
       if(plumedNeedsEnergy) {
         msmul(force_vir,2.0,plumed_vir);
-        (*plumedcmd) (plumedmain,"setEnergy",&enerd->term[F_EPOT]);
-        (*plumedcmd) (plumedmain,"performCalc",NULL);
+        plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
+        plumed_cmd(plumedmain,"performCalc",NULL);
         msmul(plumed_vir,0.5,force_vir);
       } else {
         msmul(plumed_vir,0.5,plumed_vir);

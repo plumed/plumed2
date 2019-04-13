@@ -62,7 +62,6 @@
 #include "../../../Plumed.h"
 extern int    plumedswitch;
 extern plumed plumedmain; 
-extern void(*plumedcmd)(plumed,const char*,const void*);
 /* END PLUMED */
 
 /* PLUMED HREX */
