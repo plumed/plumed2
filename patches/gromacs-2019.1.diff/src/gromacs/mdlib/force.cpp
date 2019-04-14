@@ -81,7 +81,6 @@
 #include "../../../Plumed.h"
 int    plumedswitch=0;
 plumed plumedmain;
-void(*plumedcmd)(plumed,const char*,const void*)=NULL;
 /* END PLUMED */
 
 void ns(FILE               *fp,
@@ -603,8 +602,8 @@ void do_force_lowlevel(t_forcerec           *fr,
     /* PLUMED */
     if(plumedswitch){
       int plumedNeedsEnergy;
-      (*plumedcmd)(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
-      if(!plumedNeedsEnergy) (*plumedcmd)(plumedmain,"performCalc",NULL);
+      plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+      if(!plumedNeedsEnergy) plumed_cmd(plumedmain,"performCalc",NULL);
     }
     /* END PLUMED */
 }

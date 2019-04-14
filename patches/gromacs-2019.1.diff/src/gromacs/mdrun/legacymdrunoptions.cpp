@@ -211,7 +211,6 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
     plumedswitch=0;
     if (opt2bSet("-plumed", static_cast<int>(filenames.size()), filenames.data())) plumedswitch=1;
     if(plumedswitch){
-      plumedcmd=plumed_cmd;
       int real_precision=sizeof(real);
       real energyUnits=1.0;
       real lengthUnits=1.0;
