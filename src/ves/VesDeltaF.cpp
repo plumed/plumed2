@@ -565,7 +565,7 @@ void VesDeltaF::update_tg_and_rct()
   std::fill(tg_dV_dAlpha_.begin(),tg_dV_dAlpha_.end(),0);
   std::fill(tg_d2V_dAlpha2_.begin(),tg_d2V_dAlpha2_.end(),0);
   for(Grid::index_t t=rank_; t<grid_p_[0]->getSize(); t+=NumParallel_)
-  { //FIXME can we recycle some code?
+  { //TODO can we recycle some code?
     std::vector<double> prob(grid_p_.size());
     for(unsigned n=0; n<grid_p_.size(); n++)
       prob[n]=grid_p_[n]->getValue(t);
