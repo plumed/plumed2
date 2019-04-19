@@ -520,7 +520,7 @@ EMMI::EMMI(const ActionOptions&ao):
     double ovdd_m = get_median(ovdd);
     double err_m  = get_median(err);
     // print out statistics
-    log.printf("     # of members : %u\n", GMM_d_grps_[Gid].size());
+    log.printf("     # of members : %zu\n", GMM_d_grps_[Gid].size());
     log.printf("     median overlap : %lf\n", ovdd_m);
     log.printf("     median error : %lf\n", err_m);
     // add minimum value of sigma for this group of GMMs
