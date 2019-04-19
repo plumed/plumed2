@@ -238,7 +238,7 @@ public:
    and an MD engine, this is the right place
    Notice that this interface should always keep retro-compatibility
   */
-  void cmd(const std::string&key,void*val=NULL);
+  void cmd(const std::string&key,void*val=NULL) override;
   ~PlumedMain();
   /**
     Read an input file.

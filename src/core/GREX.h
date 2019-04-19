@@ -54,7 +54,7 @@ class GREX:
 public:
   explicit GREX(PlumedMain&);
   ~GREX();
-  void cmd(const std::string&key,void*val=NULL);
+  void cmd(const std::string&key,void*val=NULL) override;
   void calculate();
   void savePositions();
 };

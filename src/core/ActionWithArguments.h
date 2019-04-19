@@ -76,9 +76,9 @@ public:
 /// Calculate the numerical derivatives
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you
 /// are doing.  The default will be correct for the vast majority of cases
-  virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
-  void lockRequests();
-  void unlockRequests();
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ) override;
+  void lockRequests() override;
+  void unlockRequests() override;
 /// Returns an array of pointers to the arguments
   virtual const std::vector<Value*>    & getArguments() const ;
 /// Convert a list of argument names into a list of pointers to the values

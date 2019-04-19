@@ -196,7 +196,7 @@ NOE::NOE(const ActionOptions&ao):
     }
   }
 
-  requestAtoms(nl->getFullAtomList());
+  requestAtoms(nl->getFullAtomList(), false);
   if(getDoScore()) {
     setParameters(noedist);
     Initialise(nga.size());

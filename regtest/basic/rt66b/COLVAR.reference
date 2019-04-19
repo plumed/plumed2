@@ -1,4 +1,4 @@
-#! FIELDS time t2 t3 t4 t4d t5 t6 t7 t8 t9 t10 t12 t13 t14
+#! FIELDS time t2 t3 t4 t4d t5 t6 t7 t8 t9 t10 t12 t13 t13b t13c t13d t13e t14
 #! SET min_t2 -pi
 #! SET max_t2 pi
 #! SET min_t3 -pi
@@ -23,6 +23,14 @@
 #! SET max_t12 pi
 #! SET min_t13 -pi
 #! SET max_t13 pi
+#! SET min_t13b -pi
+#! SET max_t13b pi
+#! SET min_t13c -pi
+#! SET max_t13c pi
+#! SET min_t13d -pi
+#! SET max_t13d pi
+#! SET min_t13e -pi
+#! SET max_t13e pi
 #! SET min_t14 -pi
 #! SET max_t14 pi
- 0.000000 -1.140  3.000  1.144  1.436 -2.773 -2.785 -1.264  0.044 -0.426  0.621  0.361 -0.867 -2.888
+ 0.000000 -1.140  3.000  1.144  1.436 -2.773 -2.785 -1.264  0.044 -0.426  0.621  0.361 -0.867  2.257 -0.479  0.621  3.123 -2.888

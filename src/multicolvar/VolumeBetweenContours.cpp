@@ -28,8 +28,7 @@
 
 //+PLUMEDOC VOLUMES INENVELOPE
 /*
-This quantity can be used to calculate functions of the distribution of collective
-variables for the atoms that lie in a region where the density of a certain type of atom is high.
+This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a region where the density of a certain type of atom is high.
 
 This collective variable can be used to determine whether colvars are within region where the density
 of a particular atom is high.  This is achieved by calculating the following function at the point where

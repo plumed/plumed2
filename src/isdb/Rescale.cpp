@@ -278,7 +278,7 @@ Rescale::Rescale(const ActionOptions&ao):
   log.printf("  name of the SELECTOR use for this action %s\n",selector_.c_str());
   log.printf("  number of bins in grid %u\n",nbin);
   log.printf("  number of arguments that will not be scaled %u\n",nores_);
-  if(nrep_>1) log.printf("  number of arguments that will not be summed across replicas %u\n",not_shared.size());
+  if(nrep_>1) log<<"  number of arguments that will not be summed across replicas "<<not_shared.size()<<"\n";
   log.printf("  biasfactor %f\n",biasf_);
   log.printf("  initial hills height %f\n",w0_);
   log.printf("  stride to write bias to file %u\n",Biasstride_);

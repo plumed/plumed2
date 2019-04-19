@@ -1,11 +1,11 @@
 /**
-\page isdb-2 ISDB: setting up a SAXS posprocessing and refinment calculation using MARTINI form factors 
+\page isdb-2 ISDB: setting up a SAXS post processing and refinement calculation using MARTINI form factors 
 
 \authors Cristina Paissoni 
 
 \section isdb-2-aims Aims
 
-This tutorial is thought to illustrate how it is possible to compute SAXS intensities from single PDB files or trajectories using PLUMED. In particular, we will show how to compute scattering intensities with the hybrid coarse-grained/atomistic approach that is described in \cite paissoni:19 . 
+This tutorial is thought to illustrate how it is possible to compute SAXS intensities from single PDB files or trajectories using PLUMED. In particular, we will show how to compute scattering intensities with the hybrid coarse-grained/atomistic approach that is described in \cite Paissoni:2019ee . 
 The tutorial will provide basic instructions to prepare files for the back-calculation of SAXS intensities using the hybrid approach (this process is simplified by the possibility to use an ad-hoc python script). Further, it is explained how to adjust the plumed input file for specific purposes, e.g. to use SAXS data as restraints in MD simulations or to compare SAXS intensities computed with both the atomistic and the hybrid approach.
 
 \section isdb-2-objectives Objectives

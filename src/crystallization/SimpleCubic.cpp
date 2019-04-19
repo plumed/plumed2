@@ -32,8 +32,7 @@ namespace crystallization {
 
 //+PLUMEDOC MCOLVAR SIMPLECUBIC
 /*
-Calculate whether or not the coordination spheres of atoms are arranged as they would be in a simple
-cubic structure.
+Calculate whether or not the coordination spheres of atoms are arranged as they would be in a simple cubic structure.
 
 We can measure how similar the environment around atom \f$i\f$ is to a simple cubic structure is by evaluating
 the following quantity:

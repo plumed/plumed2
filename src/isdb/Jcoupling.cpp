@@ -289,7 +289,7 @@ JCoupling::JCoupling(const ActionOptions&ao):
     }
   }
 
-  requestAtoms(atoms);
+  requestAtoms(atoms, false);
   if(getDoScore()) {
     setParameters(coupl);
     Initialise(ncoupl_);

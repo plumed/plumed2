@@ -75,6 +75,8 @@
 namespace PLMD {
 namespace lepton {
 
+bool useAsmJit();
+
 // Utility class.
 // Implement an unique pointer to asmjit::JitRuntime.
 // Needed to decouple asmjit header file from this one.

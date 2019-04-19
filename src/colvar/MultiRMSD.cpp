@@ -51,7 +51,7 @@ public:
 
 using namespace std;
 
-//+PLUMEDOC DCOLVAR MULTI-RMSD
+//+PLUMEDOC DCOLVAR MULTI_RMSD
 /*
 Calculate the RMSD distance moved by a number of separated domains from their positions in a reference structure.
 
@@ -101,7 +101,7 @@ the positions of the atoms in the reference file and their instantaneous
 position.  The Kearsley algorithm for each of the domains.
 
 \plumedfile
-MULTI-RMSD REFERENCE=file.pdb TYPE=MULTI-OPTIMAL
+MULTI_RMSD REFERENCE=file.pdb TYPE=MULTI-OPTIMAL
 \endplumedfile
 
 The following tells plumed to calculate the RMSD distance between the positions of
@@ -109,7 +109,7 @@ the atoms in the domains of reference the reference structure and their instanta
 positions.  Here distances are calculated using the \ref DRMSD measure.
 
 \plumedfile
-MULTI-RMSD REFERENCE=file.pdb TYPE=MULTI-DRMSD
+MULTI_RMSD REFERENCE=file.pdb TYPE=MULTI-DRMSD
 \endplumedfile
 
 in this case it is possible to use the following DRMSD options in the pdb file using the REMARK syntax:
@@ -147,7 +147,7 @@ END
 */
 //+ENDPLUMEDOC
 
-PLUMED_REGISTER_ACTION(MultiRMSD,"MULTI-RMSD")
+PLUMED_REGISTER_ACTION(MultiRMSD,"MULTI_RMSD")
 
 void MultiRMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

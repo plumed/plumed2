@@ -44,16 +44,16 @@ class BiasWeight:public WeightBase {
 public:
   double beta,invbeta;
   explicit BiasWeight(double v) {beta=v; invbeta=1./beta;}
-  double projectInnerLoop(double &input, double &v) {return  input+exp(beta*v);}
-  double projectOuterLoop(double &v) {return -invbeta*std::log(v);}
+  double projectInnerLoop(double &input, double &v) override {return  input+exp(beta*v);}
+  double projectOuterLoop(double &v) override {return -invbeta*std::log(v);}
 };
 
 class ProbWeight:public WeightBase {
 public:
   double beta,invbeta;
   explicit ProbWeight(double v) {beta=v; invbeta=1./beta;}
-  double projectInnerLoop(double &input, double &v) {return  input+v;}
-  double projectOuterLoop(double &v) {return -invbeta*std::log(v);}
+  double projectInnerLoop(double &input, double &v) override {return  input+v;}
+  double projectOuterLoop(double &v) override {return -invbeta*std::log(v);}
 };
 
 
@@ -242,7 +242,7 @@ class SparseGrid : public Grid
   std::map< index_t,std::vector<double> > der_;
 
 protected:
-  void clear();
+  void clear() override;
 
 public:
   SparseGrid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin,
@@ -276,7 +276,7 @@ public:
   void addValueAndDerivatives(index_t index, double value, std::vector<double>& der);
 
 /// dump grid on file
-  void writeToFile(OFile&);
+  void writeToFile(OFile&) override;
 
   virtual ~SparseGrid() {}
 };

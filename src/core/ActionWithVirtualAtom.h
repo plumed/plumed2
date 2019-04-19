@@ -44,7 +44,7 @@ class ActionWithVirtualAtom:
   std::vector<Tensor> derivatives;
   std::vector<Tensor> boxDerivatives;
   std::map<AtomNumber,Tensor> gradients;
-  void apply();
+  void apply() override;
 protected:
 /// Set position of the virtual atom
   void setPosition(const Vector &);

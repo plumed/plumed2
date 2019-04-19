@@ -113,20 +113,18 @@ class SAXS :
   public MetainferenceBase
 {
 private:
-  bool                     pbc;
-  bool                     serial;
-  bool                     bessel;
-  bool                     force_bessel;
-  bool                     gpu;
-  int                      deviceid;
-  vector<double>           q_list;
-  vector<double>           FF_rank;
-  vector<vector<double> >  FF_value;
-#ifdef  __PLUMED_HAS_ARRAYFIRE
-  af::array                AFF_value;
-#endif
-  vector<double>           avals;
-  vector<double>           bvals;
+  bool                       pbc;
+  bool                       serial;
+  bool                       bessel;
+  bool                       force_bessel;
+  bool                       gpu;
+  int                        deviceid;
+  vector<double>             q_list;
+  vector<double>             FF_rank;
+  vector<vector<double> >    FF_value;
+  vector<vector<float> >     FFf_value;
+  vector<double>             avals;
+  vector<double>             bvals;
 
   void calculate_gpu(vector<Vector> &deriv);
   void calculate_cpu(vector<Vector> &deriv);
@@ -312,17 +310,12 @@ SAXS::SAXS(const ActionOptions&ao):
       }
     }
   } else {
-    vector<float> FF_new;
-    FF_new.resize(numq*size);
+    FFf_value.resize(numq,vector<float>(size));
     for(unsigned k=0; k<numq; ++k) {
       for(unsigned i=0; i<size; i++) {
-        FF_new[k+i*numq] = static_cast<float>(FF_tmp[k][i]/sqrt(scale_int));
+        FFf_value[k][i] = static_cast<float>(FF_tmp[k][i])/sqrt(scale_int);
       }
     }
-#ifdef __PLUMED_HAS_ARRAYFIRE
-    af::array allFFa = af::array(numq, size, &FF_new.front());
-    AFF_value = allFFa;
-#endif
   }
 
   if(!getDoScore()) {
@@ -363,7 +356,7 @@ SAXS::SAXS(const ActionOptions&ao):
   log<<"  Bibliography ";
   if(martini) {
     log<<plumed.cite("Niebling, Björling, Westenhoff, J Appl Crystallogr 47, 1190–1198 (2014).");
-    log<<plumed.cite("Paissoni, Jussupow, Camilloni, bioRxiv 498147.");
+    log<<plumed.cite("Paissoni, Jussupow, Camilloni, J Appl Crystallogr 52, 394-402 (2019).");
   }
   if(atomistic) {
     log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978).");
@@ -373,7 +366,7 @@ SAXS::SAXS(const ActionOptions&ao):
   log<< plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
   log<<"\n";
 
-  requestAtoms(atoms);
+  requestAtoms(atoms, false);
   if(getDoScore()) {
     setParameters(expint);
     Initialise(numq);
@@ -436,8 +429,10 @@ void SAXS::calculate_gpu(vector<Vector> &deriv)
 
     for (unsigned k=0; k<numq; k++) {
       // calculate FF matrix
+      // size,1,1,1
+      af::array AFF_value(size, &FFf_value[k].front());
       // size,size,1,1
-      af::array FFdist_mod = af::tile(af::moddims(AFF_value(k, af::span), size, 1), 1, size)*af::tile(AFF_value(k, af::span), size, 1);
+      af::array FFdist_mod = af::tile(AFF_value(af::span), 1, size)*af::transpose(af::tile(AFF_value(af::span), 1, size));
 
       // get q
       const float qvalue = static_cast<float>(q_list[k]);

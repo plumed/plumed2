@@ -519,13 +519,15 @@
 #define __PLUMED_WRAPPER_STD
 #endif
 
-/* Allow using noexcept and explicit with C++11 compilers */
+/* Allow using noexcept, explicit, and override with C++11 compilers */
 #if __cplusplus > 199711L
 #define __PLUMED_WRAPPER_CXX_NOEXCEPT noexcept
 #define __PLUMED_WRAPPER_CXX_EXPLICIT explicit
+#define __PLUMED_WRAPPER_CXX_OVERRIDE override
 #else
 #define __PLUMED_WRAPPER_CXX_NOEXCEPT throw()
 #define __PLUMED_WRAPPER_CXX_EXPLICIT
+#define __PLUMED_WRAPPER_CXX_OVERRIDE
 #endif
 
 /* Macros for anonymous namespace */
@@ -1244,9 +1246,9 @@ public:
     ::std::string msg;
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT Exception(const char* msg): msg(msg) {}
-    Exception(const Exception & other): msg(other.what()) {}
-    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT {return msg.c_str();}
-    ~Exception() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg.c_str();}
+    /* Destructor should be declared in order to have the correct throw() */
+    ~Exception() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
   };
 
   /**
@@ -1257,8 +1259,8 @@ public:
     public Exception {
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionError(const char* msg): Exception(msg) {}
-    ExceptionError(const ExceptionError & other) : Exception(other.what()) {}
-    ~ExceptionError() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+    /* Destructor should be declared in order to have the correct throw() */
+    ~ExceptionError() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
   };
 
   /**
@@ -1269,8 +1271,8 @@ public:
     public Exception {
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionDebug(const char* msg): Exception(msg) {}
-    ExceptionDebug(const ExceptionDebug & other) : Exception(other.what()) {}
-    ~ExceptionDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+    /* Destructor should be declared in order to have the correct throw() */
+    ~ExceptionDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
   };
 
   /**
@@ -1281,8 +1283,8 @@ public:
     public Exception {
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT Invalid(const char* msg): Exception(msg) {}
-    Invalid(const Invalid & other) : Exception(other.what()) {}
-    ~Invalid() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+    /* Destructor should be declared in order to have the correct throw() */
+    ~Invalid() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
   };
 
   /**
@@ -1295,9 +1297,9 @@ public:
     ::std::string msg;
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT LeptonException(const char* msg): msg(msg) {}
-    LeptonException(const LeptonException & other): msg(other.what()) {}
-    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT {return msg.c_str();}
-    ~LeptonException() __PLUMED_WRAPPER_CXX_NOEXCEPT {}
+    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg.c_str();}
+    /* Destructor should be declared in order to have the correct throw() */
+    ~LeptonException() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
   };
 
 private:
@@ -1331,8 +1333,8 @@ private:
       __PLUMED_WRAPPER_STD strncat(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1); \
       return *this; \
     } \
-    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT {return msg;} \
-    ~std_ ## name() __PLUMED_WRAPPER_CXX_NOEXCEPT {} \
+    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg;} \
+    ~std_ ## name() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {} \
   };
 
   __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_typeid)

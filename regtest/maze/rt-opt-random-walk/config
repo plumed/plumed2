@@ -1,0 +1,5 @@
+type=driver
+plumed_modules=maze
+
+arg="--plumed plumed.dat --timestep 1 --igro trajectory.gro"
+extra_files="../traj/trajectory.gro"
