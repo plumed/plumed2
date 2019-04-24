@@ -855,6 +855,15 @@ int Mdrunner::mdrunner()
          */
         gmx_bool bReadEkin;
 
+        if (mdrunOptions.numStepsCommandline > -2)
+        {
+            /* Temporarily set the number of steps to unmlimited to avoid
+             * triggering the nsteps check in load_checkpoint().
+             * This hack will go away soon when the -nsteps option is removed.
+             */
+            inputrec->nsteps = -1;
+        }
+
         load_checkpoint(opt2fn_master("-cpi", filenames.size(), filenames.data(), cr),
                         logFileHandle,
                         cr, domdecOptions.numCells,
@@ -1414,6 +1423,19 @@ int Mdrunner::mdrunner()
         PpForceWorkload ppForceWorkload;
 
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to integrator.");
+
+        /* PLUMED */
+        if(plumedswitch){
+          /* detect plumed API version */
+          int pversion=0;
+          plumed_cmd(plumedmain,"getApiVersion",&pversion);
+          if(pversion>5) {
+             int nth = gmx_omp_nthreads_get(emntDefault);
+             if(pversion>5) plumed_cmd(plumedmain,"setNumOMPthreads",&nth);
+          }
+        }
+        /* END PLUMED */
+
         /* Now do whatever the user wants us to do (how flexible...) */
         Integrator integrator {
             fplog, cr, ms, mdlog, static_cast<int>(filenames.size()), filenames.data(),
@@ -1494,6 +1516,12 @@ int Mdrunner::mdrunner()
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
     sfree(nrnb);
+
+    /* PLUMED */
+    if(plumedswitch){
+      plumed_finalize(plumedmain);
+    }
+    /* END PLUMED */
 
     // Ensure log file content is written
     if (logFileHandle)
