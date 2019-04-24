@@ -415,18 +415,20 @@ bool ABF::store_getbias(const vector<double> &pos, const vector<double> &f,
   unsigned long int &count = samples[baseaddr];
   ++count;
   double factor = 2 * (static_cast<double>(count)) / mFullSamples - 1;
-  // Clamp to [0,maxFactor]
-  factor = factor < 0 ? 0 : factor > mMaxFactor ? mMaxFactor : factor;
   auto it_fa = begin(forces) + baseaddr * ndims;
   auto it_fb = begin(fbias);
   auto it_f = begin(f);
+  auto it_maxFactor = begin(mMaxFactors);
   do {
+    // Clamp to [0,maxFactors]
+    factor = factor < 0 ? 0 : factor > (*it_maxFactor) ? (*it_maxFactor) : factor;
     (*it_fa) += (*it_f); // Accumulate instantaneous force
     (*it_fb) = factor * (*it_fa) * (-1.0) /
                static_cast<double>(count); // Calculate bias force
     ++it_fa;
     ++it_fb;
     ++it_f;
+    ++it_maxFactor;
   } while (it_f != end(f));
 
   return true;
