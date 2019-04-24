@@ -119,6 +119,11 @@ private:
   //
   lepton::CompiledExpression expression;
   //
+  std::vector<double*> cv_var_lepton_refs_;
+  double* kbt_var_lepton_ref_;
+  double* beta_var_lepton_ref_;
+  double* fes_var_lepton_ref_;
+  //
   std::vector<unsigned int> cv_var_idx_;
   std::vector<std::string> cv_var_str_;
   //
@@ -151,6 +156,11 @@ void TD_Custom::registerKeywords(Keywords& keys) {
 
 TD_Custom::TD_Custom(const ActionOptions& ao):
   PLUMED_VES_TARGETDISTRIBUTION_INIT(ao),
+//
+  cv_var_lepton_refs_(0,nullptr),
+  kbt_var_lepton_ref_(nullptr),
+  beta_var_lepton_ref_(nullptr),
+  fes_var_lepton_ref_(nullptr),
 //
   cv_var_idx_(0),
   cv_var_str_(0),
@@ -201,10 +211,31 @@ TD_Custom::TD_Custom(const ActionOptions& ao):
   //
   std::sort(cv_var_idx_.begin(),cv_var_idx_.end());
   cv_var_str_.resize(cv_var_idx_.size());
+  cv_var_lepton_refs_.resize(cv_var_str_.size());
   for(unsigned int j=0; j<cv_var_idx_.size(); j++) {
     std::string str1; Tools::convert(cv_var_idx_[j]+1,str1);
     cv_var_str_[j] = cv_var_prefix_str_+str1;
+    try {
+      cv_var_lepton_refs_[j] = &expression.getVariableReference(cv_var_str_[j]);
+    } catch(PLMD::lepton::Exception& exc) {}
   }
+
+  if(use_kbt_) {
+    try {
+      kbt_var_lepton_ref_ = &expression.getVariableReference(kbt_var_str_);
+    } catch(PLMD::lepton::Exception& exc) {}
+  }
+  if(use_beta_) {
+    try {
+      beta_var_lepton_ref_ = &expression.getVariableReference(beta_var_str_);
+    } catch(PLMD::lepton::Exception& exc) {}
+  }
+  if(use_fes_) {
+    try {
+      fes_var_lepton_ref_ = &expression.getVariableReference(fes_var_str_);
+    } catch(PLMD::lepton::Exception& exc) {}
+  }
+
 }
 
 
@@ -226,14 +257,10 @@ void TD_Custom::updateGrid() {
     plumed_massert(getFesGridPntr()!=NULL,"the FES grid has to be linked to the free energy in the target distribution");
   }
   if(use_kbt_) {
-    try {
-      expression.getVariableReference(kbt_var_str_) = 1.0/getBeta();
-    } catch(PLMD::lepton::Exception& exc) {}
+    if(kbt_var_lepton_ref_) {*kbt_var_lepton_ref_= 1.0/getBeta();}
   }
   if(use_beta_) {
-    try {
-      expression.getVariableReference(beta_var_str_) = getBeta();
-    } catch(PLMD::lepton::Exception& exc) {}
+    if(beta_var_lepton_ref_) {*beta_var_lepton_ref_= getBeta();}
   }
   //
   std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(getTargetDistGridPntr());
@@ -242,14 +269,10 @@ void TD_Custom::updateGrid() {
   for(Grid::index_t l=0; l<targetDistGrid().getSize(); l++) {
     std::vector<double> point = targetDistGrid().getPoint(l);
     for(unsigned int k=0; k<cv_var_str_.size() ; k++) {
-      try {
-        expression.getVariableReference(cv_var_str_[k]) = point[cv_var_idx_[k]];
-      } catch(PLMD::lepton::Exception& exc) {}
+      if(cv_var_lepton_refs_[k]) {*cv_var_lepton_refs_[k] = point[cv_var_idx_[k]];}
     }
     if(use_fes_) {
-      try {
-        expression.getVariableReference(fes_var_str_) = getFesGridPntr()->getValue(l);
-      } catch(PLMD::lepton::Exception& exc) {}
+      if(fes_var_lepton_ref_) {*fes_var_lepton_ref_ = getFesGridPntr()->getValue(l);}
     }
     double value = expression.evaluate();
 
