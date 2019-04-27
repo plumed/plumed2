@@ -12,7 +12,7 @@ matrix:
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=673dcefa
-  - name: Run all tests and scan converage
+  - name: Run all tests and scan coverage
     os: linux
     dist: trusty
     sudo: required
