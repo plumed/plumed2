@@ -395,7 +395,7 @@ private:
   vector<Gaussian> hills_;
   OFile hillsOfile_;
   OFile gridfile_;
-  std::unique_ptr<Grid> BiasGrid_;
+  std::unique_ptr<GridBase> BiasGrid_;
   bool storeOldGrids_;
   int wgridstride_;
   bool grid_;
@@ -406,7 +406,7 @@ private:
   double dampfactor_;
   struct TemperingSpecs tt_specs_;
   std::string targetfilename_;
-  std::unique_ptr<Grid> TargetGrid_;
+  std::unique_ptr<GridBase> TargetGrid_;
   double kbt_;
   int stride_;
   bool welltemp_;
@@ -1106,7 +1106,7 @@ MetaD::MetaD(const ActionOptions& ao):
       error("The GRID file you want to read: " + gridreadfilename_ + ", cannot be found!");
     }
     std::string funcl=getLabel() + ".bias";
-    BiasGrid_=Grid::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true);
+    BiasGrid_=GridBase::create(funcl, getArguments(), gridfile, gmin, gmax, gbin, sparsegrid, spline, true);
     if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
@@ -1196,7 +1196,7 @@ MetaD::MetaD(const ActionOptions& ao):
   if(targetfilename_.length()>0) {
     IFile gridfile; gridfile.open(targetfilename_);
     std::string funcl=getLabel() + ".target";
-    TargetGrid_=Grid::create(funcl,getArguments(),gridfile,false,false,true);
+    TargetGrid_=GridBase::create(funcl,getArguments(),gridfile,false,false,true);
     if(TargetGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
       if( getPntrToArgument(i)->isPeriodic()!=TargetGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");

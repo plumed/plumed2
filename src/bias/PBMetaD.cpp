@@ -237,7 +237,7 @@ private:
   vector< vector<Gaussian> > hills_;
   vector<std::unique_ptr<OFile>> hillsOfiles_;
   vector<std::unique_ptr<OFile>> gridfiles_;
-  vector<std::unique_ptr<Grid>> BiasGrids_;
+  vector<std::unique_ptr<GridBase>> BiasGrids_;
   bool    grid_;
   double  height0_;
   double  biasf_;
@@ -630,7 +630,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       gmin_t[0] = gmin[i];
       gmax_t[0] = gmax[i];
       gbin_t[0] = gbin[i];
-      std::unique_ptr<Grid> BiasGrid_;
+      std::unique_ptr<GridBase> BiasGrid_;
       // Read grid from file
       if(gridreadfilenames_.size()>0) {
         IFile gridfile;

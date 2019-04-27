@@ -83,7 +83,7 @@ td: TD_GRID FILE=input-grid.data
 
 
 class TD_Grid : public TargetDistribution {
-  std::unique_ptr<Grid> distGrid_;
+  std::unique_ptr<GridBase> distGrid_;
   std::vector<double> minima_;
   std::vector<double> maxima_;
   std::vector<bool> periodic_;

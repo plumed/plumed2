@@ -96,7 +96,7 @@ the order of arguments in the header of the grid file.
 class External : public Bias {
 
 private:
-  std::unique_ptr<Grid> BiasGrid_;
+  std::unique_ptr<GridBase> BiasGrid_;
   double scale_;
 
 public:
