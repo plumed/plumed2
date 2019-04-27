@@ -7,43 +7,51 @@ matrix:
 # this is the "master" one, it is going to update the manual every time
 # Variable PLUMED_ALL_TESTS=yes ensures that all the regtests can be run.
 # If some of them is not enabled, the whole suite will fail.
-  - os: linux
+  - name: Run all tests and build doc. All features enabled (system blas and lapack + asmjit)
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=yes
-# coverage scan
-  - os: linux
+  - name: Run all tests and scan converage
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKECOVERAGE=yes PLUMED_ALL_TESTS=yes
-# the following are with debug flags
-  - os: linux
+  - name: Debug flags, no MPI
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=gcc   PLUMED_CXX=g++    CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-  - os: linux
+  - name: Debug flags, MPI
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-# cppcheck
-  - os: linux
+  - name: Cppcheck and codecheck
+    os: linux
     dist: trusty
     sudo: required
     env: CPPCHECK=yes CPPCHECK_VERSION=1.87
-# test using external blas with internal lapack
-  - os: linux
+  - name: External blas with internal lapack
+    os: linux
     if: branch =~ ^test- OR type IN(pull_request)
     dist: trusty
     sudo: required
+<<<<<<< HEAD
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack" ASMJIT=yes
 # test using docker image.
 # currently it means ubuntu 17, with gcc6
   - sudo: required
+=======
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
+  - name: Docker image (ubuntu 17, with gcc6)
+    sudo: required
+>>>>>>> v2.5
     if: branch =~ ^test- OR type IN(pull_request)
     services: docker
     env: PLUMED_DOCKER=yes
-# osx serial
-  - os: osx
+  - name: MacOS, serial build
+    os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
@@ -51,8 +59,8 @@ matrix:
     cache:
       directories:
       - $HOME/.ccache
-# osx parallel
-  - os: osx
+  - name: MacOS, MPI build
+    os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
@@ -60,24 +68,24 @@ matrix:
     cache:
       directories:
       - $HOME/.ccache
-# osx serial macports
-  - os: osx
+  - name: MacPorts, default modules
+    os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_MACPORTS="plumed" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
       - $HOME/.macports-ci-ccache
-# osx serial macports debug variant
-  - os: osx
+  - name: MacPorts, all modules
+    os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_MACPORTS="plumed +allmodules" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
       - $HOME/.macports-ci-ccache
-# osx serial macports debug variant
-  - os: osx
+  - name: MacPorts 8.3, all modules
+    os: osx
     osx_image: xcode8.3
     env: PLUMED_MACPORTS="plumed +allmodules" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
