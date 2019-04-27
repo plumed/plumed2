@@ -444,7 +444,7 @@ double Grid::getValue(const vector<double> & x) const {
 double Grid::getValueAndDerivatives
 (index_t index, vector<double>& der) const {
   plumed_dbg_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
-  der=std::vector<double>(dimension_);
+  der.resize(dimension_);
   for(unsigned i=0; i<dimension_; i++) der[i]=der_[dimension_*index+i];
   return grid_[index];
 }
