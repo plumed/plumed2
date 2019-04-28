@@ -1,4 +1,4 @@
-\page tools Command Line Tools
+\page tools Tools
 
 PLUMED contains a number of simple command line tools.  To use one of these tools 
 you issue a command something like:
