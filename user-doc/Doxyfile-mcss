@@ -1,4 +1,7 @@
 @INCLUDE                = Doxyfile
+PROJECT_NAME            = PLUMED
+PROJECT_BRIEF           = User Manual
+M_MAIN_PROJECT_URL	= http://www.plumed.org
 GENERATE_HTML           = NO
 GENERATE_XML            = YES
 XML_PROGRAMLISTING      = NO
