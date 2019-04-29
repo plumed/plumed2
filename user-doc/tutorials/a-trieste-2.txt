@@ -53,7 +53,7 @@ result know as the Central Limit Theorem.  This theorem states the following:
 \lim_{n \rightarrow \infty} P\left( \frac{\frac{S_n}{n} - \langle Y \rangle}{ \sqrt{\frac{\langle(\delta Y)^2\rangle}{n}} } \le z \right) = \Phi(z) 
 \f]
 In this expression \f$\Phi(z)\f$ is the cumulative probability distribution function for a standard normal distribution and \f$S_n\f$ is a sum of \f$n\f$ independent samples
-from a probability distribution - in our case the probability distribution that we introduced in the previous equation.  \f$\langleY\rangle\f$ is the ensemble average 
+from a probability distribution - in our case the probability distribution that we introduced in the previous equation.  \f$\langle Y\rangle\f$ is the ensemble average 
 for the quantity \f$Y(x)\f$, which, in our case, we can calculate as follows:
 \f[
 \langle Y \rangle = \frac{ \int \textrm{d}x \textrm{d}p Y(x) e^{-\frac{H(x,p)}{k_B T}} }{ \int \textrm{d}x\textrm{d}p e^{-\frac{H(x,p)}{k_B T}} }

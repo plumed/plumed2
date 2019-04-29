@@ -34,14 +34,14 @@ In \ref MFILTER_LESS a weight, \f$w_i\f$ for the colvar is calculated using the 
 MEAN for \ref MFILTER_LESS one is thus calculating:
 
 \f[
-\mu = \frac{ \sum_i \sigma(s_i) s_i }{\sum_i \simga(s_i) }
+\mu = \frac{ \sum_i \sigma(s_i) s_i }{\sum_i \sigma(s_i) }
 \f]
 
 where \f$\sigma\f$ is the \ref switchingfunction.  In this action by contrast the colvar is being transformed by
 the \ref switchingfunction.  If one thus calculates a MEAN for this action one computes:
 
 \f[
-\mu = \frac{ \sum_{i=1}^N \simga(s_i) }{ N }
+\mu = \frac{ \sum_{i=1}^N \sigma(s_i) }{ N }
 \f]
 
 In other words, you are calculating the mean for the transformed colvar.
