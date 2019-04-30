@@ -96,15 +96,7 @@ the experimental data but for a multiplication factor SCALE that is also sampled
 MC on-the-fly
 
 \plumedfile
-RDC ...
-LABEL=rdc
-SCALE=0.0001
-GYROM=-72.5388
-ATOMS1=22,23
-ATOMS2=25,27
-ATOMS3=29,31
-ATOMS4=33,34
-... RDC
+RDC LABEL=rdc SCALE=0.0001 GYROM=-72.5388 ATOMS1=22,23 ATOMS2=25,27 ATOMS3=29,31 ATOMS4=33,34
 
 METAINFERENCE ...
 ARG=rdc.*
@@ -119,7 +111,7 @@ LABEL=spe
 PRINT ARG=spe.bias FILE=BIAS STRIDE=1
 \endplumedfile
 
-in the following example instead of using one uncertainty parameter per data point we use
+In the following example instead of using one uncertainty parameter per data point we use
 a single uncertainty value in a long-tailed gaussian to take into account for outliers, furthermore
 the data are weighted for the bias applied to other variables of the system.
 
