@@ -47,7 +47,8 @@ namespace drr {
 /*
 Used to performed extended-system adaptive biasing force(eABF) \cite Lelievre2007 method
  on one or more collective variables. This method is also
- called dynamic reference restraining(DRR) \cite Zheng2012 .
+ called dynamic reference restraining(DRR) \cite Zheng2012 . A detailed description
+ of this module can be found at \cite Chen2018 .
 
 For each collective variable \f$\xi_i\f$, a fictitious variable \f$\lambda_i\f$
 is attached through a spring. The fictitious variable \f$\lambda_i\f$ undergoes
