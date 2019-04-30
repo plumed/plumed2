@@ -81,7 +81,7 @@ SIGMA_BIAS is an uncertainty parameter, sampled by a MC algorithm in the bounded
 defined by SIGMA_MIN and SIGMA_MAX. The initial value is set at SIGMA0. The MC move is a
 random displacement of maximum value equal to DSIGMA. If the number of data point is
 too large and the acceptance rate drops it is possible to make the MC move over mutually
-exclusive, random subset of size MC_CHUNKSIZE and run more than one move setting MC_STRIDE
+exclusive, random subset of size MC_CHUNKSIZE and run more than one move setting MC_STEPS
 in such a way that MC_CHUNKSIZE*MC_STEPS will cover all the data points.
 
 Calculated and experimental data can be compared modulo a scaling factor and/or an offset
