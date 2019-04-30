@@ -53,7 +53,7 @@ In mean-force dynamics, \f${\bf X}\f$ are treated as fictitious dynamical variab
 \f]
 
 where \f${P_{{X_i}}}\f$  and \f$M_i\f$ are the momentum and mass of \f$X_i\f$, respectively, and \f$\Psi\f$ is the potential function for \f${\bf X}\f$.
-We assume that \f$\Psi\f$ is a functional of \f$F({\bf X})\f$; \f$Ψ[F({\bf X})]\f$. The simplest form of \f$\Psi\f$ is \f$\Psi = F({\bf X})\f$,
+We assume that \f$\Psi\f$ is a functional of \f$F({\bf X})\f$; \f$\Psi[F({\bf X})]\f$. The simplest form of \f$\Psi\f$ is \f$\Psi = F({\bf X})\f$,
 which corresponds to TAMD/d-AFED \cite AbramsJ2008, \cite Maragliano2006 (or the extended Lagrangian dynamics in the limit of the adiabatic decoupling between \f$\bf{q}\f$ and \f${\bf X}\f$).
  In the case of LogMFD, the following form of \f$\Psi\f$ is introduced \cite MorishitaLogMFD;
 
