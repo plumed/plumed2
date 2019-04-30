@@ -756,7 +756,8 @@ void SAXS::setup_midl(vector<double> &r_polar, vector<Vector2d> &qRnm, int &algo
   if(algorithm==-1) log.printf("BESSEL is suboptimal for this system and is being disabled, unless FORCE_BESSEL is used\n");
   if(force_bessel) algorithm=numq-1;
 
-  qRnm.resize(p2*size);
+  unsigned qRnm_size = p2*size;
+  qRnm.resize(qRnm_size);
   //as the legndre polynomials and the exponential term in the basis set expansion are not function of the scattering wavenumber, they can be precomputed
   for(unsigned i=rank; i<size; i+=stride) {
     for(int n=0; n<truncation; n++) {
