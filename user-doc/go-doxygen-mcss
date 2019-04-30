@@ -1,0 +1,7 @@
+#! /bin/bash
+
+for file in html/*.html
+do
+ awk -f plumed-syntax-mcss.awk $file > $file.tmp
+ mv $file.tmp $file
+done
