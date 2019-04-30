@@ -193,7 +193,6 @@ class Metainference : public bias::Bias
   // Monte Carlo stuff
   vector<Random> random;
   unsigned MCsteps_;
-  unsigned MCstride_;
   long unsigned MCaccept_;
   long unsigned MCacceptScale_;
   long unsigned MCacceptFT_;
@@ -300,7 +299,6 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesn't pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
-  keys.add("optional","MC_STRIDE","MC stride");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference");
   keys.add("compulsory","WRITE_STRIDE","10000","write the status to a file every N steps, this can be used for restart/continuation");
@@ -338,7 +336,6 @@ Metainference::Metainference(const ActionOptions&ao):
   Dftilde_(0.1),
   random(3),
   MCsteps_(1),
-  MCstride_(1),
   MCaccept_(0),
   MCacceptScale_(0),
   MCacceptFT_(0),
@@ -566,10 +563,7 @@ Metainference::Metainference(const ActionOptions&ao):
 
   // monte carlo stuff
   parse("MC_STEPS",MCsteps_);
-  parse("MC_STRIDE",MCstride_);
   parse("MC_CHUNKSIZE", MCchunksize_);
-  // adjust for multiple-time steps
-  MCstride_ *= getStride();
   // get temperature
   double temp=0.0;
   parse("TEMP",temp);
@@ -737,7 +731,6 @@ Metainference::Metainference(const ActionOptions&ao):
   log.printf("\n");
   log.printf("  temperature of the system %f\n",kbt_);
   log.printf("  MC steps %u\n",MCsteps_);
-  log.printf("  MC stride %u\n",MCstride_);
   log.printf("  initial standard errors of the mean");
   for(unsigned i=0; i<sigma_mean2_.size(); ++i) log.printf(" %f", sqrt(sigma_mean2_[i]));
   log.printf("\n");
@@ -1611,7 +1604,7 @@ void Metainference::calculate()
   if(doregres_zero_ && step%nregres_zero_==0) do_regression_zero(mean);
 
   /* MONTE CARLO */
-  if(step%MCstride_==0&&!getExchangeStep()) doMonteCarlo(mean);
+  if(!getExchangeStep()) doMonteCarlo(mean);
 
   // calculate bias and forces
   double ene = 0;

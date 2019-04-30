@@ -69,7 +69,6 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   keys.add("optional","SIGMA_MEAN0","starting value for the uncertainty in the mean estimate");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesn't pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
-  keys.add("optional","MC_STRIDE","MC stride");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference");
   keys.add("compulsory","WRITE_STRIDE","10000","write the status to a file every N steps, this can be used for restart/continuation");
@@ -113,7 +112,6 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   Dftilde_(0.1),
   random(3),
   MCsteps_(1),
-  MCstride_(1),
   MCaccept_(0),
   MCacceptScale_(0),
   MCacceptFT_(0),
@@ -311,7 +309,6 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
 
   // monte carlo stuff
   parse("MC_STEPS",MCsteps_);
-  parse("MC_STRIDE",MCstride_);
   parse("MC_CHUNKSIZE", MCchunksize_);
   // get temperature
   double temp=0.0;
@@ -596,7 +593,6 @@ void MetainferenceBase::Initialise(const unsigned input)
   log.printf("\n");
   log.printf("  temperature of the system %f\n",kbt_);
   log.printf("  MC steps %u\n",MCsteps_);
-  log.printf("  MC stride %u\n",MCstride_);
   log.printf("  initial standard errors of the mean");
   for(unsigned i=0; i<sigma_mean2_.size(); ++i) log.printf(" %f", sqrt(sigma_mean2_[i]));
   log.printf("\n");
@@ -746,7 +742,7 @@ double MetainferenceBase::getEnergyGJE(const vector<double> &mean, const vector<
 
 void MetainferenceBase::doMonteCarlo(const vector<double> &mean_)
 {
-  if(getStep()%MCstride_!=0||getExchangeStep()) return;
+  if(getExchangeStep()) return;
 
   // calculate old energy with the updated coordinates
   double old_energy=0.;
