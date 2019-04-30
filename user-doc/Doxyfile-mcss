@@ -14,3 +14,16 @@ M_LINKS_NAVBAR2 = \
     "_add_mod" \
     "tools _miscelaneous _performances citelist" \ 
     "tutorials"
+# try to use a personalize css
+HTML_EXTRA_STYLESHEET = \
+    https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400i,600,600i%7CSource+Code+Pro:400,400i,600 \
+    css/m-dark.css \
+    css/m-documentation.css
+HTML_EXTRA_FILES = \
+    css/m-theme-dark.css \
+    css/m-grid.css \
+    css/m-components.css \
+    css/m-layout.css \
+    css/pygments-dark.css \
+    css/pygments-console.css
+M_THEME_COLOR = #22272e
