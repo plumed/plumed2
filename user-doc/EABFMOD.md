@@ -3,7 +3,7 @@
 <!--
 description: Methods for performing eABF or DRR method to calculate PMF along CVs
 authors: Haochuan Chen, Haohao Fu
-reference: \cite Lelievre2007 \cite Lesage2016 \cite Fu2016
+reference: \cite Chen2018 \cite Lelievre2007 \cite Lesage2016 \cite Fu2016
 -->
 
 ## Overview
