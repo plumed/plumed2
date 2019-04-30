@@ -3,14 +3,14 @@ PROJECT_BRIEF           = User Manual
 M_MAIN_PROJECT_URL	= http://www.plumed.org
 GENERATE_HTML           = YES
 GENERATE_XML            = NO
-XML_PROGRAMLISTING      = NO
+XML_PROGRAMLISTING      = YES
 M_LINKS_NAVBAR1 = \
-    "_installation _syntax _change_log" \
+    "_installation _change_log" \ 
+    "_syntax" \
     "colvarintro _group _colvar dists _function mcolv contactmatrix" \
-    "_analysis" \
-    "_bias" 
+    "_analysis"
 M_LINKS_NAVBAR2 = \
+    "_bias" \
     "_add_mod" \
-    "tools" \
-    "_miscelaneous _performances citelist" \ 
-    "tutorials" \
+    "tools _miscelaneous _performances citelist" \ 
+    "tutorials"
