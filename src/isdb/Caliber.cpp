@@ -33,6 +33,7 @@ namespace isdb {
 //+PLUMEDOC ISDB_BIAS CALIBER
 /*
 Add a time-dependent, harmonic restraint on one or more variables.
+
 This allows implementing a maximum caliber restraint on one or more experimental time series by replica-averaged restrained simulations.
 See \cite Capelli:2018jt .
 
