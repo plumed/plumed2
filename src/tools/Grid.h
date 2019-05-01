@@ -83,7 +83,7 @@ public:
 private:
   double contour_location;
   std::vector<double> grid_;
-  std::vector< std::vector<double> > der_;
+  std::vector<double> der_;
 protected:
   std::string funcname;
   std::vector<std::string> argnames;
