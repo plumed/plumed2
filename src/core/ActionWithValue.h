@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,6 +26,7 @@
 #include "Value.h"
 #include "tools/Exception.h"
 #include <vector>
+#include <memory>
 
 namespace PLMD {
 
@@ -67,7 +68,7 @@ class ActionWithValue :
 {
 private:
 /// An array containing the values for this action
-  std::vector<Value*> values;
+  std::vector<std::unique_ptr<Value>> values;
 /// Are we skipping the calculation of the derivatives
   bool noderiv;
 /// Are we using numerical derivatives to differentiate
@@ -159,7 +160,7 @@ public:
 /// Set the value
   void setValue(Value*,double);
 /// Check if numerical derivatives should be used
-  bool checkNumericalDerivatives() const ;
+  bool checkNumericalDerivatives() const override;
 /// This forces the class to use numerical derivatives
   void useNumericalDerivatives();
 // These are things for using vectors of values as fields

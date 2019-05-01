@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,15 +42,16 @@ void DRMSD::setBoundsOnDistances( bool dopbc, double lbound, double ubound ) {
   lower=lbound; upper=ubound;
 }
 
-void DRMSD::readBounds() {
-  parseFlag("NOPBC",nopbc);
-  parse("LOWER_CUTOFF",lower,true);
-  parse("UPPER_CUTOFF",upper,true);
-  setBoundsOnDistances( !nopbc, lower, upper );
+void DRMSD::readBounds( const PDB& pdb ) {
+  if( bounds_were_set ) return;
+  double tmp; nopbc=pdb.hasFlag("NOPBC");
+  if( pdb.getArgumentValue("LOWER_CUTOFF",tmp) ) lower=tmp;
+  if( pdb.getArgumentValue("UPPER_CUTOFF",tmp) ) upper=tmp;
+  bounds_were_set=true;
 }
 
 void DRMSD::read( const PDB& pdb ) {
-  readAtomsFromPDB( pdb ); readBounds(); setup_targets();
+  readAtomsFromPDB( pdb ); readBounds( pdb ); setup_targets();
 }
 
 void DRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ) {

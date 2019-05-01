@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,12 +40,10 @@ namespace PLMD {
 ActionAtomistic::~ActionAtomistic() {
 // forget the pending request
   atoms.remove(this);
-  delete(&pbc);
 }
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
   Action(ao),
-  pbc(*new(Pbc)),
   lockRequestAtoms(false),
   donotretrieve(false),
   donotforce(false),
@@ -60,7 +58,7 @@ void ActionAtomistic::registerKeywords( Keywords& keys ) {
 }
 
 
-void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a) {
+void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a, const bool clearDep) {
   plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
   int nat=a.size();
   indexes=a;
@@ -69,7 +67,7 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a) {
   masses.resize(nat);
   charges.resize(nat);
   int n=atoms.positions.size();
-  clearDependencies();
+  if(clearDep) clearDependencies();
   unique.clear();
   for(unsigned i=0; i<indexes.size(); i++) {
     if(indexes[i].index()>=n) error("atom out of range");
@@ -77,7 +75,8 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a) {
 // only real atoms are requested to lower level Atoms class
     else unique.insert(indexes[i]);
   }
-
+  updateUniqueLocal();
+  atoms.unique.clear();
 }
 
 Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const {
@@ -175,14 +174,26 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
     if(ok) t.push_back(atom);
 // here we check if this is a special symbol for MOLINFO
     if( !ok && strings[i].compare(0,1,"@")==0 ) {
-      std::size_t dot=strings[i].find_first_of("@"); std::string symbol=strings[i].substr(dot+1);
-      vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-      if( moldat.size()>0 ) {
-        vector<AtomNumber> atom_list; moldat[0]->interpretSymbol( symbol, atom_list );
-        if( atom_list.size()>0 ) { ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
-        else { error(strings[i] + " is not a label plumed knows"); }
+      std::string symbol=strings[i].substr(1);
+      if(symbol=="allatoms") {
+        const auto n=plumed.getAtoms().getNatoms() + plumed.getAtoms().getNVirtualAtoms();
+        t.reserve(t.size()+n);
+        for(unsigned i=0; i<n; i++) t.push_back(AtomNumber::index(i));
+        ok=true;
+      } else if(symbol=="mdatoms") {
+        const auto n=plumed.getAtoms().getNatoms();
+        t.reserve(t.size()+n);
+        for(unsigned i=0; i<n; i++) t.push_back(AtomNumber::index(i));
+        ok=true;
       } else {
-        error("atoms specified using @ symbol but no MOLINFO was available");
+        vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+        if( moldat.size()>0 ) {
+          vector<AtomNumber> atom_list; moldat[0]->interpretSymbol( symbol, atom_list );
+          if( atom_list.size()>0 ) { ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
+          else { error(strings[i] + " is not a label plumed knows"); }
+        } else {
+          error("atoms specified using @ symbol but no MOLINFO was available");
+        }
       }
     }
 // here we check if the atom name is the name of a group
@@ -197,7 +208,7 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
     if(!ok) {
       const ActionSet&actionSet(plumed.getActionSet());
       for(const auto & a : actionSet) {
-        ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(a);
+        ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(a.get());
         if(c) if(c->getLabel()==strings[i]) {
             ok=true;
             t.push_back(c->getIndex());
@@ -251,6 +262,7 @@ void ActionAtomistic::applyForces() {
   for(unsigned j=0; j<indexes.size(); j++) f[indexes[j].index()]+=forces[j];
   v+=virial;
   atoms.forceOnEnergy+=forceOnEnergy;
+  if(extraCV.length()>0) atoms.updateExtraCVForce(extraCV,forceOnExtraCV);
 }
 
 void ActionAtomistic::clearOutputForces() {
@@ -258,6 +270,7 @@ void ActionAtomistic::clearOutputForces() {
   if(donotforce) return;
   for(unsigned i=0; i<forces.size(); ++i)forces[i].zero();
   forceOnEnergy=0.0;
+  forceOnExtraCV=0.0;
 }
 
 
@@ -279,6 +292,17 @@ void ActionAtomistic::makeWhole() {
     const Vector & first (positions[j]);
     Vector & second (positions[j+1]);
     second=first+pbcDistance(first,second);
+  }
+}
+
+void ActionAtomistic::updateUniqueLocal() {
+  unique_local.clear();
+  if(atoms.dd && atoms.shuffledAtoms>0) {
+    for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
+      if(atoms.g2l[pp->index()]>=0) unique_local.insert(*pp);
+    }
+  } else {
+    unique_local.insert(unique.begin(),unique.end());
   }
 }
 

@@ -1,0 +1,167 @@
+/**
+\page isdb-2 ISDB: setting up a SAXS post processing and refinement calculation using MARTINI form factors 
+
+\authors Cristina Paissoni 
+
+\section isdb-2-aims Aims
+
+This tutorial is thought to illustrate how it is possible to compute SAXS intensities from single PDB files or trajectories using PLUMED. In particular, we will show how to compute scattering intensities with the hybrid coarse-grained/atomistic approach that is described in \cite Paissoni:2019ee . 
+The tutorial will provide basic instructions to prepare files for the back-calculation of SAXS intensities using the hybrid approach (this process is simplified by the possibility to use an ad-hoc python script). Further, it is explained how to adjust the plumed input file for specific purposes, e.g. to use SAXS data as restraints in MD simulations or to compare SAXS intensities computed with both the atomistic and the hybrid approach.
+
+\section isdb-2-objectives Objectives
+Once this tutorial is completed users will be able to:
+- Calculate SAXS intensities using PLUMED from PDB files or trajectories.
+- Setup a Metainference simulations using SAXS intensities as restraints (to this aim, \ref isdb-1 is required as a prior condition)
+
+\section isdb-2-resources Resources
+
+The \tarball{isdb-2} for this project contains the following files:
+- martiniFormFactor_p2.py and martiniFormFactor_p3.py: two helpful python scripts to be used with python 2 or python 3, respectively. These are based on the martinize.py script (http://cgmartini.nl/index.php/tools2/proteins-and-bilayers/204-martinize) 
+- start.pdb and samplextc.xtc: PDB and trajectory files on which you can perform the calculations;
+- SASDAB7.dat: a file containing SAXS intensities, downloaded from the SASDB database \cite Valentini:2015ki .
+
+This tutorial has been tested on PLUMED version 2.5.1
+
+\section isdb-2-intro Introduction
+
+Calculations of Small-angle X-ray scattering (SAXS) intensities from a structure of N atoms could be extremely demanding from a computational perspective as it is an \f$O(N^2)\f$ problem. This issue has limited the applicability of SAXS in numerous situations, including their use as restraints in combination with MD simulations. A strategy to reduce the cost of computing SAXS from atomic structure consists in using a coarse grain representation of the structure, represented as a collection of M beads with M<N, each comprising a variable number of atoms. Niebling et al \cite Niebling:2014jy have previously derived the Martini beads form factors for proteins, showing how this approach can be almost 50 times faster than the standard SAXS calculation. More recently, Martini beads form factors for nucleic acids have been also derived and, together with the ones for proteins, have been implemented in PLUMED. Importantly, it has been shown that the computation of scattering intensities using these Martini form factors achieves a good accuracy, as compared to the atomistic ones, for 𝑞 values up to 0.45 Å-1.
+
+The Martini form factors can be exploited within a hybrid multi-resolution strategy to speed up SAXS profiles calculations, both for the back-calculation of scattering intensities from atomistic PDB or trajectory files and for the inclusion of SAXS data as restraints in experimental-driven all-atom simulations (e.g. \ref METAINFERENCE). This can be achieved using PLUMED, which computes on the fly the virtual position of the Martini beads from the atomistic 3D-structure and then uses the centres of mass of these beads, along with Martini form factors, to quickly back-calculate SAXS intensities.
+
+\section isdb-2-comp1 Computing SAXS intensities with the hybrid coarse-grained/atomistic approach
+
+Given a PDB file, PLUMED is able to compute SAXS intensities for the molecule in the PDB and to compare these intensities with the experimental ones stored in a data file. It is possible to apply the same procedure to all the conformations visited during a MD trajectory. This is achieved by using the PLUMED \ref driver utility and the \ref SAXS variable of the ISDB module.
+While computing scattering intensities with a full atomistic representation is quite easy (see the \ref SAXS keyword and later in this tutorial), in order to adopt the hybrid coarse-grained/atomistic approach a more elaborated procedure is needed, requiring the generation of few specific files to be used as input by \ref driver. To facilitate this step, it is possible to use this script (martiniFormFactor_p2.py for python 2 or martiniFormFactor_p3.py for python 3) and type in the bash shell:
+
+\verbatim
+python martiniFormFactor_p3.py -f filepdb.pdb -dat filedat.dat [-unit Ang/nm -nq 15]
+\endverbatim
+
+The input files are:
+- filepdb.pdb: a PDB file containing the atomic coordinates of the molecule; in our case it is start.pdb. Note that only one model should be present in the PDB and an ENDMDL statement is expected to appear only at the end of the file. Further, if different chains are present, they are expected to be separated by a TER statement or named differently (this is true also for chain breaks, but it is generally not recommended to use broken molecules for these calculations). If the aim is to analyse a trr/xtc trajectories, the PDB should contain the same atoms of the trajectories and with the same order, including water molecules and ions (you can simply save a sample PDB from the xtc/trr and use it to generate the necessary files).
+- filedat.dat: a file containing the momentum transfer in the first column and the experimental SAXS intensities in the second, with the two columns separated by blanks or commas; in our case it is SASDAB7.dat. Further columns are accepted but they will not be considered. The momentum transfer is expected to be expressed in inverse Angstrom, if it is expressed in inverse nm you can use the option “-unit nm” (note that this is needed in our case!). By default, the python script will select 15 equally separated q values, and the relative intensities, between the first and the last values of the file. If you want to change this default behaviour of the python script you can use the option “-nq” to indicate the number of q values to consider. These values will be used by PLUMED to compute SAXS intensities for the selected momentum transfers and to compare them with the corresponding experimental values provided.
+
+The files generated in this step, to be used later as input for \ref driver, are the following:
+- aacg_template.pdb: a PDB file, which PLUMED uses as a template, in which the atomistic model provided (with the atoms renumbered in sequential order) is concatenated to the coarse-grained representation.
+- plumed_beads.dat: a file that instructs PLUMED about how to compute the centre of mass of each bead and that define a group of atoms (called “martini”) containing all the identified beads. These atoms are the ones that will be used later for the calculation of SAXS intensities (the atom group “martini” is indeed recalled in the SAXS keyword of the plumed.dat file). We suggest to always double-check this file, verifying that the lists of atoms in the last beads correspond to the actual Martini mapping.
+- plumed.dat: a file that tells PLUMED to compute the \ref CENTER of each bead (achieved reading plumed_beads.dat), compute scattering intensities for the selected q-values using the hybrid coarse-grained/atomistic approach and, lastly, print some output files that could be useful for further statistics. We will see later how to modify this file to achieve different goals.
+
+The default files generated should be sufficient to post-process single PDB files or trajectories, by typing:
+
+\verbatim
+plumed driver --plumed plumed.dat --mf_pdb file.pdb
+\endverbatim
+or
+\verbatim
+plumed driver --plumed plumed.dat --mf_xtc file.xtc
+\endverbatim
+
+The output files generated by this step are:
+- SAXSINT, containing the computed SAXS intensities. Each line of this file contains in the first column a time and in the following columns the scattering intensities for each of the selected q-values. If the file post-processed is a PDB there will be only one line with time 0. Otherwise, each line will correspond to a frame of the input trajectory (by default the time unit is 1.0, but you can set the desired time step using the option “–timestep” of PLUMED \ref driver).
+- ST.SAXS, containing in the first column a time (as above) and in the following column the correlation between experimental and back-calculated SAXS intensities for the selected q-values.
+
+Let's see now the meaning of each line in plumed.dat and how it is possible to modify it for other purposes, e.g. to compare atomistic/coarse-grained scattering intensities and to perform Metainference simulations where SAXS data are used as restraints.
+Here is a sample of plumed.dat produced by the python script martiniFormFactor_p3.py:
+
+\plumedfile
+MOLINFO STRUCTURE=aacg_template.pdb
+
+# BEADS DEFINITION
+INCLUDE FILE=plumed_beads.dat
+
+# SAXS
+SAXS ...
+
+	LABEL=saxsdata
+	ATOMS=martini
+	MARTINI
+
+	# You can use SCALEINT keyword to set appropriate scaling factor.
+	# SCALEINT is expected to correspond to the intensity in q=0
+	# SCALEINT=
+
+	QVALUE1=0.0111721000	EXPINT1=0.0527250000
+	QVALUE2=0.0368675000	EXPINT2=0.0327126000
+	QVALUE3=0.0625615000	EXPINT3=0.0128316000
+	QVALUE4=0.0882529000	EXPINT4=0.0045545200
+	QVALUE5=0.1139410000	EXPINT5=0.0022799600
+	QVALUE6=0.1396240000	EXPINT6=0.0013048600
+	QVALUE7=0.1653020000	EXPINT7=0.0007215740
+	QVALUE8=0.1909730000	EXPINT8=0.0004340930
+	QVALUE9=0.2166360000	EXPINT9=0.0002717150
+	QVALUE10=0.2422910000	EXPINT10=0.0002574160
+	QVALUE11=0.2679360000	EXPINT11=0.0001878030
+	QVALUE12=0.2935700000	EXPINT12=0.0001592670
+	QVALUE13=0.3191930000	EXPINT13=0.0000811279
+	QVALUE14=0.3448030000	EXPINT14=0.0001110630
+	QVALUE15=0.3703990000	EXPINT15=0.0001264680
+
+	# METAINFERENCE
+	# Uncomment the following keywords and adjust parameters to activate METAINFERENCE
+	# DOSCORE NOENSEMBLE SIGMA_MEAN0=0
+	# REGRES_ZERO=500
+	# SIGMA0=5 SIGMA_MIN=0.001 SIGMA_MAX=5.00
+	# NOISETYPE=MGAUSS
+
+... SAXS
+
+# METAINFERENCE
+# Uncomment the following keyword to activate METAINF
+# saxsbias: BIASVALUE ARG=(saxsdata\.score) STRIDE=10
+
+# STATISTICS
+statcg: STATS ARG=(saxsdata\.q_.*) PARARG=(saxsdata\.exp_.*)
+
+# PRINT
+# Uncomment the following line to print METAINFERENCE output
+# PRINT ARG=(saxsdata\.score),(saxsdata\.biasDer),(saxsdata\.weight),(saxsdata\.scale),  (saxsdata\.offset),(saxsdata\.acceptSigma),(saxsdata\.sigma.*) STRIDE=500 FILE=BAYES.SAXS
+# change stride if you are using METAINFERENCE
+PRINT ARG=(saxsdata\.q_.*) STRIDE=1 FILE=SAXSINT
+PRINT ARG=statcg.corr STRIDE=1 FILE=ST.SAXSCG
+\endplumedfile
+
+The first two lines tell PLUMED to use aacg_template.pdb as a template and to read the file plumed_beads.dat (which rules how to compute the \ref CENTER of the beads and defines the “martini” group, containing all the beads). Note that you do not need to prepare these two files, since they both are produced by the python script martiniFormFactor_p[2,3].py.
+These lines are followed by the SAXS keyword, labelled “saxsdata”. Here are defined the atoms to be used for SAXS calculations (in our case these are all the beads within the group “martini”) and the structure factors to adopt: in this case we are using the Martini form factors (flag MARTINI), alternatively it is possible to use the atomistic ones (flag ATOMISTIC) or define custom form factors using a polynomial expansion to any order (flag PARAMETERS). By default, PLUMED computes a scaling factor to fit experimental and back-calculated intensities, however it is possible to set manually this scaling factor using the flag SCALEINT, which is expected to correspond to the intensity in q=0. The following lines indicate the q-values at which the calculation of scattering intensities is required (QVALUE) and the corresponding intensities (EXPINT). These are the ones selected by default by the python script, but it is possible to manually adjust them and/or to add new values. Lastly, within the SAXS keyword, there are few lines that are needed to activate \ref METAINFERENCE. These are commented since they are not necessary for the back-calculation of SAXS intensities, however you have to uncomment and adjust them if you want to perform Metainference simulations in which SAXS data are used as restraints. The same is true for the line containing the keyword BIASVALUE.
+In the last part of the file, we ask PLUMED to compute some statistics comparing experimental and back-calculated intensities; finally, we print the computed intensities and statistics into the SAXSINT and ST.SAXSCG files, respectively.
+
+It is easy to modify the plumed.dat for your own purposes, for instance:
+1. it could be used to perform Metainference simulations: to this aim it is sufficient to uncomment the lines indicated in the plumed.dat above and adjust the parameters to make them suitable for the investigated system (see the tutorial ISDB: setting up a Metadynamics Metainference simulation and the SAXS keyword). We further suggest adding (if needed) \ref WHOLEMOLECULES and NOPBC flags.
+2. it could be exploited to compute SAXS intensities with both the atomistic and the hybrid approach to compare them later. A sample plumed.dat to achieve this could be:
+
+\plumedfile
+MOLINFO STRUCTURE=aacg_template.pdb
+# BEADS DEFINITION
+INCLUDE FILE=plumed_beads.dat
+
+# SAXS
+SAXS ...
+LABEL=saxscg
+ATOMS=martini
+MARTINI	
+QVALUE1=0.010
+QVALUE2=0.020
+# etc..
+... SAXS
+
+SAXS ...
+LABEL=saxsaa
+ATOMS=1-11104
+      ATOMISTIC
+QVALUE1=0.010
+QVALUE2=0.020
+# etc..
+... SAXS
+
+#PRINT
+PRINT ARG=(saxscg\.q_.*) FILE=QVAL_CG
+PRINT ARG=(saxsaa\.q_.*) FILE=QVAL_AA
+\endplumedfile
+
+*/
+
+link: @subpage isdb-2
+
+description: This tutorial show an example on how to use PLUMED-ISDB to run SAXS analysis and refinement calculation 
+
+additional-files: isdb-2
+

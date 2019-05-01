@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,10 +35,6 @@ MultiDomainRMSD::MultiDomainRMSD( const ReferenceConfigurationOptions& ro ):
 {
 }
 
-MultiDomainRMSD::~MultiDomainRMSD() {
-  for(unsigned i=0; i<domains.size(); ++i) delete domains[i];
-}
-
 void MultiDomainRMSD::read( const PDB& pdb ) {
   unsigned nblocks =  pdb.getNumberOfAtomBlocks();
   if( nblocks<2 ) error("multidomain RMSD only has one block of atoms");
@@ -47,20 +43,22 @@ void MultiDomainRMSD::read( const PDB& pdb ) {
   std::string num; blocks.resize( nblocks+1 ); blocks[0]=0;
   for(unsigned i=0; i<nblocks; ++i) blocks[i+1]=pdb.getAtomBlockEnds()[i];
 
-  double lower=0.0, upper=std::numeric_limits<double>::max( );
-  parse("LOWER_CUTOFF",lower,true);
-  parse("UPPER_CUTOFF",upper,true);
-  bool nopbc=false; parseFlag("NOPBC",nopbc);
+  double tmp, lower=0.0, upper=std::numeric_limits<double>::max( );
+  if( pdb.getArgumentValue("LOWER_CUTOFF",tmp) ) lower=tmp;
+  if( pdb.getArgumentValue("UPPER_CUTOFF",tmp) ) upper=tmp;
+  bool nopbc=pdb.hasFlag("NOPBC");
 
+  domains.resize(0); weights.resize(0);
   for(unsigned i=1; i<=nblocks; ++i) {
     Tools::convert(i,num);
     if( ftype=="RMSD" ) {
-      parse("TYPE"+num, ftype );
-      parse("LOWER_CUTOFF"+num,lower,true);
-      parse("UPPER_CUTOFF"+num,upper,true);
-      nopbc=false; parseFlag("NOPBC"+num,nopbc);
+      // parse("TYPE"+num, ftype );
+      lower=0.0; upper=std::numeric_limits<double>::max( );
+      if( pdb.getArgumentValue("LOWER_CUTOFF"+num,tmp) ) lower=tmp;
+      if( pdb.getArgumentValue("UPPER_CUTOFF"+num,tmp) ) upper=tmp;
+      nopbc=pdb.hasFlag("NOPBC");
     }
-    domains.push_back( metricRegister().create<SingleDomainRMSD>( ftype ) );
+    domains.emplace_back( metricRegister().create<SingleDomainRMSD>( ftype ) );
     positions.resize( blocks[i] - blocks[i-1] );
     align.resize( blocks[i] - blocks[i-1] );
     displace.resize( blocks[i] - blocks[i-1] );
@@ -75,12 +73,14 @@ void MultiDomainRMSD::read( const PDB& pdb ) {
     domains[i-1]->setReferenceAtoms( positions, align, displace );
     domains[i-1]->setupRMSDObject();
 
-    double ww=0; parse("WEIGHT"+num, ww, true );
-    if( ww==0 ) weights.push_back( 1.0 );
+    double ww=0;
+    if( !pdb.getArgumentValue("WEIGHT"+num,ww) ) weights.push_back( 1.0 );
     else weights.push_back( ww );
   }
   // And set the atom numbers for this object
-  setAtomNumbers( pdb.getAtomNumbers() );
+  indices.resize(0); atom_der_index.resize(0);
+  for(unsigned i=0; i<pdb.size(); ++i) { indices.push_back( pdb.getAtomNumbers()[i] ); atom_der_index.push_back(i); }
+  // setAtomNumbers( pdb.getAtomNumbers() );
 }
 
 void MultiDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ) {
@@ -160,45 +160,43 @@ void MultiDomainRMSD::setupPCAStorage( ReferenceValuePack& mypack ) {
 //   }
 // }
 
-void MultiDomainRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& direction ) const {
+void MultiDomainRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const {
   std::vector<Vector> mypos, mydir;
   for(unsigned i=0; i<domains.size(); ++i) {
     // Must extract appropriate positions here
     mypos.resize( blocks[i+1] - blocks[i] ); mydir.resize( blocks[i+1] - blocks[i] );
     unsigned n=0; for(unsigned j=blocks[i]; j<blocks[i+1]; ++j) { mypos[n]=pos[j]; n++; }
     // Do the calculation
-    domains[i]->extractAtomicDisplacement( mypos, anflag, mydir );
+    domains[i]->extractAtomicDisplacement( mypos, mydir );
     // Extract the direction
     n=0; for(unsigned j=blocks[i]; j<blocks[i+1]; ++j) { direction[j]=weights[i]*mydir[n];  n++; }
   }
 }
 
-double MultiDomainRMSD::projectAtomicDisplacementOnVector( const std::vector<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
-  double totd=0.; std::vector<Vector> tvecs; std::vector<Vector> mypos; mypack.clear();
+double MultiDomainRMSD::projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const {
+  double totd=0.; std::vector<Vector> tvecs; mypack.clear();
   MultiValue tvals( 1, mypack.getNumberOfDerivatives() ); ReferenceValuePack tder( 0, getNumberOfAtoms(), tvals );
   for(unsigned i=0; i<domains.size(); ++i) {
     // Must extract appropriate positions here
-    mypos.resize( blocks[i+1] - blocks[i] ); tvecs.resize( blocks[i+1] - blocks[i] );
-    domains[i]->setupPCAStorage( tder );
+    tvecs.resize( blocks[i+1] - blocks[i] ); domains[i]->setupPCAStorage( tder );
     if( tder.centeredpos.size()>0 ) {
-      for(unsigned p=0; p<3; ++p) for(unsigned q=0; q<3; ++q) tder.DRotDPos(p,q).resize( mypos.size() );
+      for(unsigned p=0; p<3; ++p) for(unsigned q=0; q<3; ++q) tder.DRotDPos(p,q).resize( tvecs.size() );
     }
     // Extract information from storage pack and put in local pack
     if( tder.centeredpos.size()>0 ) tder.rot[0]=mypack.rot[i];
     unsigned n=0;
     for(unsigned j=blocks[i]; j<blocks[i+1]; ++j) {
-      mypos[n]=pos[j]; tder.setAtomIndex(n,j); tvecs[n] = vecs[j];
-      tder.displacement[n]=mypack.displacement[j] / weights[i];
+      tder.setAtomIndex(n,j); tvecs[n] = vecs[j]; tder.displacement[n]=mypack.displacement[j] / weights[i];
       if( tder.centeredpos.size()>0 ) {
         tder.centeredpos[n]=mypack.centeredpos[j];
         for(unsigned p=0; p<3; ++p) for(unsigned q=0; q<3; ++q) tder.DRotDPos(p,q)[n]=mypack.DRotDPos(p,q)[j];
       }
       n++;
     }
-    for(unsigned k=n; k<getNumberOfAtoms(); ++k) tder.setAtomIndex(k,3*pos.size()+10);
+    for(unsigned k=n; k<getNumberOfAtoms(); ++k) tder.setAtomIndex(k,3*vecs.size()+10);
 
     // Do the calculations
-    totd += weights[i]*domains[i]->projectAtomicDisplacementOnVector( tvecs, mypos, tder );
+    totd += weights[i]*domains[i]->projectAtomicDisplacementOnVector( normalized, tvecs, tder );
 
     // And derivatives
     mypack.copyScaledDerivatives( 0, weights[i], tvals );

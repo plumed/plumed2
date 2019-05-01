@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,13 +41,13 @@ This is the Path Collective Variables implementation
 ( see \cite brand07 ).
 This variable computes the progress along a given set of frames that is provided
 in input ("s" component) and the distance from them ("z" component).
-It is a function of MSD that are obtained by the joint use of MSD variable and SQUARED flag
+It is a function of mean squared displacement that are obtained by the joint use of mean squared displacement variables with the SQUARED flag
 (see below).
 
 \par Examples
 
 Here below is a case where you have defined three frames and you want to
-calculate the progress alng the path and the distance from it in p1
+calculate the progress along the path and the distance from it in p1
 
 \plumedfile
 t1: RMSD REFERENCE=frame_1.dat TYPE=OPTIMAL SQUARED
@@ -65,7 +65,7 @@ ATOMS1=1,2 REFERENCE1=0.1
 ATOMS2=3,4 REFERENCE2=0.5
 ATOMS3=4,5 REFERENCE3=0.25
 ATOMS4=5,6 REFERENCE4=0.0
-SWITCH=(RATIONAL R_0=1.5)
+SWITCH={RATIONAL R_0=1.5}
 LABEL=c1
 CMDIST
 ... CONTACTMAP
@@ -75,7 +75,7 @@ ATOMS1=1,2 REFERENCE1=0.3
 ATOMS2=3,4 REFERENCE2=0.9
 ATOMS3=4,5 REFERENCE3=0.45
 ATOMS4=5,6 REFERENCE4=0.1
-SWITCH=(RATIONAL R_0=1.5)
+SWITCH={RATIONAL R_0=1.5}
 LABEL=c2
 CMDIST
 ... CONTACTMAP
@@ -85,13 +85,54 @@ ATOMS1=1,2 REFERENCE1=1.0
 ATOMS2=3,4 REFERENCE2=1.0
 ATOMS3=4,5 REFERENCE3=1.0
 ATOMS4=5,6 REFERENCE4=1.0
-SWITCH=(RATIONAL R_0=1.5)
+SWITCH={RATIONAL R_0=1.5}
 LABEL=c3
 CMDIST
 ... CONTACTMAP
 
 p1: FUNCPATHMSD ARG=c1,c2,c3 LAMBDA=500.0
 PRINT ARG=c1,c2,c3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
+\endplumedfile
+
+In this third example is shown how to define a PATH in the \ref PIV space:
+
+\plumedfile
+PIV ...
+LABEL=c1
+PRECISION=1000
+NLIST
+REF_FILE=Ref1.pdb
+PIVATOMS=2
+ATOMTYPES=A,B
+ONLYDIRECT
+SFACTOR=1.0,0.2
+SORT=1,1
+SWITCH1={RATIONAL R_0=0.6 MM=12 NN=4}
+SWITCH2={RATIONAL R_0=0.5 MM=10 NN=5}
+NL_CUTOFF=1.2,1.2
+NL_STRIDE=10,10
+NL_SKIN=0.1,0.1
+... PIV
+PIV ...
+LABEL=c2
+PRECISION=1000
+NLIST
+REF_FILE=Ref2.pdb
+PIVATOMS=2
+ATOMTYPES=A,B
+ONLYDIRECT
+SFACTOR=1.0,0.2
+SORT=1,1
+SWITCH1={RATIONAL R_0=0.6 MM=12 NN=4}
+SWITCH2={RATIONAL R_0=0.4 MM=10 NN=5}
+NL_CUTOFF=1.2,1.2
+NL_STRIDE=10,10
+NL_SKIN=0.1,0.1
+... PIV
+
+p1: FUNCPATHMSD ARG=c1,c2 LAMBDA=0.180338
+METAD ARG=p1.s,p1.z SIGMA=0.01,0.2 HEIGHT=0.8 PACE=500   LABEL=res
+PRINT ARG=c1,c2,p1.s,p1.z,res.bias STRIDE=500  FILE=colvar FMT=%15.6f
 \endplumedfile
 
 */
@@ -173,7 +214,7 @@ FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
   log.printf("  lambda is %f\n",lambda);
   // list the action involved and check the type
   std::string myname=getPntrToArgument(0)->getPntrToAction()->getName();
-  if(myname!="RMSD"&&myname!="CONTACTMAP"&&myname!="DISTANCE") error("One or more of your arguments is not of RMSD/CONTACTMAP/DISTANCE type!!!");
+  if(myname!="RMSD"&&myname!="CONTACTMAP"&&myname!="DISTANCE"&&myname!="PIV") error("One or more of your arguments is not of RMSD/CONTACTMAP/DISTANCE/PIV type!!!");
   for(unsigned i=1; i<getNumberOfArguments(); i++) {
     // for each value get the name and the label of the corresponding action
     if( getPntrToArgument(i)->getPntrToAction()->getName()!=myname ) error("mismatch between the types of arguments");
@@ -181,7 +222,7 @@ FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
   log.printf("  Consistency check completed! Your path cvs look good!\n");
   // do some neighbor printout
   if(neigh_stride>0. || neigh_size>0) {
-    if(neigh_size>getNumberOfArguments()) {
+    if(neigh_size>static_cast<int>(getNumberOfArguments())) {
       log.printf(" List size required ( %d ) is too large: resizing to the maximum number of arg required: %d  \n",neigh_size,getNumberOfArguments());
       neigh_size=getNumberOfArguments();
     }
@@ -255,7 +296,7 @@ void FuncPathMSD::prepare() {
       // resize the effective list
       neighpair.resize(neigh_size);
       log.printf("  NEIGH LIST NOW INCLUDE INDEXES: ");
-      for(int i=0; i<neigh_size; ++i)log.printf(" %f ",indexmap[neighpair[i].first]); log.printf(" \n");
+      for(int i=0; i<neigh_size; ++i) {log.printf(" %f ",indexmap[neighpair[i].first]);} log.printf(" \n");
     } else {
       if( int(getStep())%int(neigh_stride/getTimeStep())==0 ) {
         log.printf(" Time %f : recalculating full neighlist \n",getStep()*getTimeStep());

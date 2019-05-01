@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,14 +39,16 @@ private:
 protected:
 /// The grid vessel
   GridVessel* mygrid;
-/// Read in stuff that is specifically for the grid and create it
-  void createGrid( const std::string& type, const std::string& inputstr );
+/// Read in stuff that is specifically for the grid and create it.
+/// Notice that this not only returns a unique_ptr but also set the protected
+/// member mygrid as an alias to that unique_ptr.
+  std::unique_ptr<GridVessel> createGrid( const std::string& type, const std::string& inputstr );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithGrid( const ActionOptions& );
   virtual void turnOnDerivatives();
   void calculate();
-  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+  void runTask( const unsigned& current, MultiValue& myvals ) const ;
   virtual void compute( const unsigned& current, MultiValue& myvals ) const = 0;
 };
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,6 +22,7 @@
 #ifndef __PLUMED_colvar_CoordinationBase_h
 #define __PLUMED_colvar_CoordinationBase_h
 #include "Colvar.h"
+#include <memory>
 
 namespace PLMD {
 
@@ -32,7 +33,7 @@ namespace colvar {
 class CoordinationBase : public Colvar {
   bool pbc;
   bool serial;
-  NeighborList *nl;
+  std::unique_ptr<NeighborList> nl;
   bool invalidateList;
   bool firsttime;
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,12 +26,11 @@ namespace vesselbase {
 
 void ValueVessel::registerKeywords( Keywords& keys ) {
   Vessel::registerKeywords( keys );
-  keys.add("compulsory","COMPONENT","1","The component we are using in the functions");
+  keys.add("compulsory","COMPONENT","1","the component of the vector for which to calculate this quantity");
 }
 
 ValueVessel::ValueVessel( const VesselOptions& da ):
-  Vessel(da),
-  no_output_value(false)
+  Vessel(da)
 {
   parse("COMPONENT",mycomp);
   ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
@@ -42,7 +41,9 @@ ValueVessel::ValueVessel( const VesselOptions& da ):
     a->setNotPeriodic();
     final_value=a->copyOutput( a->getNumberOfComponents()-1 );
   } else if( numval<0 ) {
-    no_output_value=true; final_value=new Value(); final_value->setNotPeriodic();
+    final_value_ptr.reset(new Value);
+    final_value=final_value_ptr.get();
+    final_value->setNotPeriodic();
   } else {
     plumed_massert( !a->exists(getAction()->getLabel() + "." + getLabel() ), "you can't create the name multiple times");
     a->addComponentWithDerivatives( getLabel() );
@@ -51,13 +52,10 @@ ValueVessel::ValueVessel( const VesselOptions& da ):
   }
 }
 
-ValueVessel::~ValueVessel() {
-  if( no_output_value ) delete final_value;
-}
-
 std::string ValueVessel::description() {
   if( final_value->getName()==getAction()->getLabel() ) return "value " + getAction()->getLabel() + " contains " + value_descriptor();
-  return "value " + getAction()->getLabel() + "." + getLabel() + " contains " + value_descriptor();
+  std::string compstr; Tools::convert(mycomp,compstr);
+  return "value " + getAction()->getLabel() + "." + getLabel() + " is obtained by taking the " + compstr + "th component and finding " + value_descriptor();
 }
 
 bool ValueVessel::applyForce( std::vector<double>& forces ) {

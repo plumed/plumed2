@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,6 +35,7 @@ namespace colvar {
 Calculate the components of the simulation cell
 
 \par Examples
+
 The following input tells plumed to print the squared modulo of each of the three lattice vectors
 \plumedfile
 cell: CELL

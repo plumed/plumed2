@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -68,7 +68,7 @@ bool ActionRegister::check(string key) {
   return false;
 }
 
-Action* ActionRegister::create(const ActionOptions&ao) {
+std::unique_ptr<Action> ActionRegister::create(const ActionOptions&ao) {
   if(ao.line.size()<1)return NULL;
   // Create a copy of the manual locally. The manual is
   // then added to the ActionOptions. This allows us to
@@ -76,25 +76,25 @@ Action* ActionRegister::create(const ActionOptions&ao) {
   // the action have been documented. In addition, we can
   // generate the documentation when the user makes an error
   // in the input.
-  Action* action;
+  std::unique_ptr<Action> action;
   if( check(ao.line[0]) ) {
     Keywords keys; mk[ao.line[0]](keys);
     ActionOptions nao( ao,keys );
     action=m[ao.line[0]](nao);
-    keys.destroyData();
-  } else action=NULL;
+  }
   return action;
 }
 
-bool ActionRegister::printManual( const std::string& action, const bool& vimout ) {
+bool ActionRegister::printManual( const std::string& action, const bool& vimout, const bool& spellout ) {
   if ( check(action) ) {
     Keywords keys; mk[action](keys);
     if( vimout ) {
       printf("%s",action.c_str()); keys.print_vim(); printf("\n");
+    } else if( spellout ) {
+      keys.print_spelling();
     } else {
       keys.print_html();
     }
-    keys.destroyData();
     return true;
   } else {
     return false;
@@ -104,7 +104,7 @@ bool ActionRegister::printManual( const std::string& action, const bool& vimout 
 bool ActionRegister::printTemplate( const std::string& action, bool include_optional ) {
   if( check(action) ) {
     Keywords keys; mk[action](keys);
-    keys.print_template(action, include_optional); keys.destroyData();
+    keys.print_template(action, include_optional);
     return true;
   } else {
     return false;

@@ -1,0 +1,78 @@
+#! FIELDS idx_arg aver.targetdist-0 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  5
+#! SET shape_arg  5
+       0      1.000000       0  f0(s)
+       1     -0.000000       1  f1(s)
+       2      5.333344       2  f2(s)
+       3     -0.000000       3  f3(s)
+       4     51.200341       4  f4(s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-1 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  5
+#! SET shape_arg  5
+       0      1.000000       0  f0(s)
+       1      0.000000       1  f1(s)
+       2      5.333452       2  f2(s)
+       3      0.000000       3  f3(s)
+       4     51.203793       4  f4(s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-2 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  5
+#! SET shape_arg  5
+       0      1.000000       0  f0(s)
+       1      0.000000       1  f1(s)
+       2      0.250000       2  f2(s)
+       3      0.000000       3  f3(s)
+       4      0.187500       4  f4(s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-3 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  5
+#! SET shape_arg  5
+       0      1.000000       0  f0(s)
+       1     -1.999869       1  f1(s)
+       2      4.249462       2  f2(s)
+       3     -9.497785       3  f3(s)
+       4     22.178371       4  f4(s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-4 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  5
+#! SET shape_arg  5
+       0      1.000000       0  f0(s)
+       1      1.999869       1  f1(s)
+       2      4.249462       2  f2(s)
+       3      9.497785       3  f3(s)
+       4     22.178371       4  f4(s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-5 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  5
+#! SET shape_arg  5
+       0      1.000000       0  f0(s)
+       1      0.333000       1  f1(s)
+       2      0.360889       2  f2(s)
+       3      0.286676       3  f3(s)
+       4      0.366130       4  f4(s)
+#!-------------------
+
+

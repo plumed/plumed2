@@ -1,0 +1,24 @@
+# Terminal settings
+#set terminal pngcairo size 1000,700 enhanced font 'Verdana,18'
+#set output "plot.png"
+#set border lw 1.5
+
+set xlabel "Distance (nm)"
+set ylabel "Coordination Na-O"
+set cblabel "Free energy (kT)"
+
+set xr [0.2:0.7]
+set yr [3:7]
+set zr [-2:6]
+
+set style line 1 lt 1 lw 2 ps 1 pt 5 lc rgb "black"
+set style line 2 lt 1 lw 2 ps 1 pt 7 lc rgb "red"
+set style line 3 lt 1 lw 2 ps 1 pt 9 lc rgb "blue"
+
+set key bottom left
+
+set pm3d map
+
+spl "./histo_wall" u 1:2:(-log($3)) w pm3d notitle
+
+pause -1

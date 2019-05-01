@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,7 +37,7 @@ protected:
   double lower, upper;
   std::map< std::pair <unsigned,unsigned>, double> targets;
 /// Read in NOPBC, LOWER_CUTOFF and UPPER_CUTOFF
-  void readBounds();
+  void readBounds( const PDB& );
 public:
   explicit DRMSD( const ReferenceConfigurationOptions& ro );
 /// This sets upper and lower bounds on distances to be used in DRMSD

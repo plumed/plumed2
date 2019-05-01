@@ -2,21 +2,23 @@
 
 PortSystem          1.0
 
-name                plumed
+# Notice that this rules out gcc variants.
+# See https://github.com/macports/macports-ports/pull/1252
+PortGroup           cxx11 1.1
 PortGroup           mpi 1.0
 PortGroup           linear_algebra 1.0
 PortGroup           debug 1.0
-PortGroup           cxx11 1.1
 
 version             @_VERSION_@
 revision            @_REVISION_@
+name                plumed
 categories          science
 
 # Most of the PLUMED code is L-GPL3. However, PLUMED containts
 # molfile plugins from VMD that are released with a BSD-like license
 # http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/
 license             LGPL-3 BSD
-maintainers         gmail.com:giovanni.bussi openmaintainer
+maintainers         {gmail.com:giovanni.bussi @GiovanniBussi} openmaintainer
 description         PLUMED is a plugin for molecular dynamics
 long_description    PLUMED is a plugin for molecular dynamics that can be used \
                     in combination with popular molecular dynamics codes to perform biased simulations. \
@@ -28,23 +30,35 @@ homepage            http://www.plumed.org/
 
 @_FETCH_@
 
-# This is required so that patch made with "git format-patch" work correctly
+### This is required so that patch made with "git format-patch" work correctly
 # patch.pre_args -p1
-# In case patches from github should be included to fix behavior on macports one should
-# - put patch files (as obtained with git format-patch) in files/ directory
-# - list their name here:
+### In case patches from github should be included to fix behavior on macports one should
+### - put patch files (as obtained with git format-patch) in files/ directory
+### - list their name here:
+# patchfiles file1 \
+#            file2
+### etc
 
+# Enable optional features.
+# --enable-asmjit:        Compile internal asmjit. Notice that internal asmjit is protected in
+#                         PLUMED namespace so will not collide with other asmjit implementations.
 # Disable additional features.
-# They are then re-enabled when selecting proper variants
-# this is important for features that require an additional package to be
-# sure that even if the user has that package already installed plumed is
-# not going to use it.
-# Also avoid searching for doxygen.
+# --disable-doc:          Do not create documentation, and avoid searching for Doxygen.
+# --disable-libsearch:    Avoid searching libraries using their default names.
+#                         This forces the libraries names to be explicitly passed (e.g. "-lz").
+#                         It has the advantage that during compilation from source it does not
+#                         link packages that are not explicitely required.
+# --disable-static-patch: Avoid a number of tests that are only required when linking plumed
+#                         statically to an MD code.
+# --disable-mpi:          Do not search for MPI compiler (replaced when enabling mpi, see below)
 configure.args-append \
-               --disable-doc \
-               --disable-libsearch \
-               --disable-mpi 
-
+                    --enable-asmjit \
+                    --disable-doc \
+                    --disable-libsearch \
+                    --disable-static-patch \
+                    --disable-mpi \
+                    --disable-python \
+                    BASH_COMPLETION_DIR=${prefix}/share/bash-completion/completions
 
 # Hardcode path for libplumedKernel.dylib.
 # This allows to patch MD codes using the --runtime option but using as
@@ -56,28 +70,49 @@ configure.cppflags-append "-D__PLUMED_DEFAULT_KERNEL=${prefix}/lib/libplumedKern
 compilers.choose    cc cxx
 mpi.setup
 
+# To enable mpi, replace a configure flag
 if {[mpi_variant_isset]} {
-  configure.args-replace --disable-mpi --enable-mpi
+    configure.args-replace --disable-mpi --enable-mpi
+# command should be included in a pre-configure block to access properly the mpi.exec variable
+    pre-configure {
+# MPIEXEC is stored so that it can be used to perform tests
+        configure.args-append MPIEXEC="${mpi.exec}"
+    }
 }
 
-# libraries
-configure.ldflags-append -lmatheval -lxdrfile -lz -lgsl
-depends_lib-append port:libmatheval port:xdrfile port:zlib port:gsl
+# Libraries.
+# Library names are specified here to make sure that
+# only requested packages are linked.
+configure.ldflags-append \
+                    -lxdrfile -lz -lgsl
+depends_lib-append  port:gsl \
+                    port:xdrfile \
+                    port:zlib
+
+# C++ library
+# Required in order to use clang with gcc library on old OSX versions.
+# See https://github.com/macports/macports-ports/pull/1254
+if [string match *clang* ${configure.compiler}] {
+    configure.ldflags-append -stdlib=${configure.cxx_stdlib}
+}
 
 # This variant enables optional modules in PLUMED.
+# Notice that one of the optional modules (drr) requires boost_serialization
 variant allmodules description {Enable all optional modules} {
-  configure.args-append --enable-modules=all
+    configure.args-append --enable-modules=all
+    configure.args-append --enable-boost-serialization
+    configure.ldflags-append -lboost_serialization-mt
+    depends_lib-append port:boost
 }
 
+# Link lapack/blas libraries
 pre-configure {
-  # commands should be included in a pre-configure block to access tcl variables
-  configure.ldflags-append ${linalglib}
+    # commands should be included in a pre-configure block to access tcl variables
+    configure.ldflags-append ${linalglib}
 }
 
-# This is required since PLUMED installation does not do it explicitly.
-# It might be removed when this will be incorporated upstream
-post-destroot {
-    system "install_name_tool -id ${prefix}/lib/libplumed.dylib ${destroot}${prefix}/lib/libplumed.dylib"
-    system "install_name_tool -id ${prefix}/lib/libplumedKernel.dylib ${destroot}${prefix}/lib/libplumedKernel.dylib"
-}
+# Allow running tests from MacPorts
+test.run yes
+test.target check
+
 

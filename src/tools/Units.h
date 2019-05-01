@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -59,15 +59,15 @@ public:
   Units();
 /// Set energy units from string.
 /// Also understands the following strings:
-/// kj/mol, kcal/mol, j/mol, and eV.
+/// kj/mol, kcal/mol, j/mol, eV, and Ha.
   void setEnergy(const std::string &);
 /// Set time units from string.
 /// Also understands the following strings:
-/// ps, ns, fs.
+/// ps, ns, fs, and atomic.
   void setTime(const std::string &);
 /// Set lengh units from string.
 /// Also understands the following strings:
-/// nm, A, um.
+/// nm, A, um, and Bohr.
   void setLength(const std::string &);
 /// Set charge units from string.
   void setCharge(const std::string &);

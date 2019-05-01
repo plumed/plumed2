@@ -1,0 +1,504 @@
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=9.0000   TYPE=EUCLIDEAN
+REMARK smap.1=15.5177  smap.2=22.0853  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=6.0322   d2=3.5000   d3=3.3223   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=6.0000   TYPE=EUCLIDEAN
+REMARK smap.1=11.8369  smap.2=21.4021  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=6.0322   d2=7.0000   d3=3.3223   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=6.0000   TYPE=EUCLIDEAN
+REMARK smap.1=6.4594   smap.2=20.6655  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=6.0322   d2=10.5000  d3=3.3223   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=6.0000   TYPE=EUCLIDEAN
+REMARK smap.1=1.3187   smap.2=20.1859  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=6.0322   d2=14.0000  d3=3.3223   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=6.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-3.8628  smap.2=19.9176  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=6.0322   d2=17.5000  d3=3.3223   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=6.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-9.0345  smap.2=19.8723  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=6.0322   d2=21.0000  d3=3.3223   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=6.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-14.1290 smap.2=20.0774  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=6.0322   d2=24.5000  d3=3.3223   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=6.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-19.0152 smap.2=20.5648  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=6.0322   d2=28.0000  d3=3.3223   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=6.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-22.8200 smap.2=21.2599  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=6.0322   d2=31.5000  d3=3.3223   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=21.9351  smap.2=18.6099  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=4.1457   d2=0.0000   d3=6.0755   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=17.5205  smap.2=19.8444  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=4.1457   d2=3.5000   d3=6.0755   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=12.1296  smap.2=18.1641  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=4.1457   d2=7.0000   d3=6.0755   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=6.8477   smap.2=17.6039  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=4.1457   d2=10.5000  d3=6.0755   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=1.5502   smap.2=17.1278  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=4.1457   d2=14.0000  d3=6.0755   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-3.7777  smap.2=16.8540  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=4.1457   d2=17.5000  d3=6.0755   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-9.1068  smap.2=16.7956  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=4.1457   d2=21.0000  d3=6.0755   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-14.4023 smap.2=16.9532  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=4.1457   d2=24.5000  d3=6.0755   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-19.6583 smap.2=17.3636  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=4.1457   d2=28.0000  d3=6.0755   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-24.5875 smap.2=18.7694  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=4.1457   d2=31.5000  d3=6.0755   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=24.1142  smap.2=12.7668  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=1.2318   d2=0.0000   d3=7.6974   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=19.9632  smap.2=12.0777  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=1.2318   d2=3.5000   d3=7.6974   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=14.3142  smap.2=10.6214  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=1.2318   d2=7.0000   d3=7.6974   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=8.3102   smap.2=9.4373   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=1.2318   d2=10.5000  d3=7.6974   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=2.3488   smap.2=8.7628   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=1.2318   d2=14.0000  d3=7.6974   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-3.6017  smap.2=8.4574   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=1.2318   d2=17.5000  d3=7.6974   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-9.5728  smap.2=8.5051   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=1.2318   d2=21.0000  d3=7.6974   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-15.5809 smap.2=8.9446   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=1.2318   d2=24.5000  d3=7.6974   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-21.4386 smap.2=9.7588   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=1.2318   d2=28.0000  d3=7.6974   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-25.7059 smap.2=10.2594  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=1.2318   d2=31.5000  d3=7.6974   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=25.2679  smap.2=7.2381   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-2.0918  d2=0.0000   d3=7.9407   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=21.0871  smap.2=6.3813   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-2.0918  d2=3.5000   d3=7.9407   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=15.3032  smap.2=5.0403   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-2.0918  d2=7.0000   d3=7.9407   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=9.1687   smap.2=3.8298   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-2.0918  d2=10.5000  d3=7.9407   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=2.8923   smap.2=3.0443   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-2.0918  d2=14.0000  d3=7.9407   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-3.4468  smap.2=2.7032   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-2.0918  d2=17.5000  d3=7.9407   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-9.7557  smap.2=2.7995   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-2.0918  d2=21.0000  d3=7.9407   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-15.9742 smap.2=3.3065   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-2.0918  d2=24.5000  d3=7.9407   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-21.9158 smap.2=4.0154   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-2.0918  d2=28.0000  d3=7.9407   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-26.1744 smap.2=4.4440   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-2.0918  d2=31.5000  d3=7.9407   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=26.1869  smap.2=1.9691   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-5.2330  d2=0.0000   d3=6.8340   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=21.9639  smap.2=1.1043   
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-5.2330  d2=3.5000   d3=6.8340   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=16.1299  smap.2=-0.1727  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-5.2330  d2=7.0000   d3=6.8340   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=9.9981   smap.2=-1.3417  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-5.2330  d2=10.5000  d3=6.8340   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=3.4224   smap.2=-2.0209  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-5.2330  d2=14.0000  d3=6.8340   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-3.3811  smap.2=-2.3964  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-5.2330  d2=17.5000  d3=6.8340   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-9.9792  smap.2=-2.4433  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-5.2330  d2=21.0000  d3=6.8340   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-16.2321 smap.2=-1.9579  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-5.2330  d2=24.5000  d3=6.8340   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-22.2339 smap.2=-1.3282  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-5.2330  d2=28.0000  d3=6.8340   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-26.5380 smap.2=-0.9185  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-5.2330  d2=31.5000  d3=6.8340   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=27.1339  smap.2=-3.1836  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-7.7117  d2=0.0000   d3=4.6123   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=22.9209  smap.2=-4.0880  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-7.7117  d2=3.5000   d3=4.6123   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=17.1121  smap.2=-5.2944  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-7.7117  d2=7.0000   d3=4.6123   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=11.3526  smap.2=-6.1233  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-7.7117  d2=10.5000  d3=4.6123   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=4.1556   smap.2=-5.8965  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-7.7117  d2=14.0000  d3=4.6123   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-3.6735  smap.2=-6.3365  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-7.7117  d2=17.5000  d3=4.6123   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-10.7656 smap.2=-7.3589  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-7.7117  d2=21.0000  d3=4.6123   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-16.6162 smap.2=-7.1515  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-7.7117  d2=24.5000  d3=4.6123   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-22.6686 smap.2=-6.5939  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-7.7117  d2=28.0000  d3=4.6123   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-26.9893 smap.2=-6.1742  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-7.7117  d2=31.5000  d3=4.6123   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=28.2546  smap.2=-8.3473  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.2039  d2=0.0000   d3=1.6385   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=24.1048  smap.2=-9.3495  
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.2039  d2=3.5000   d3=1.6385   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=18.4223  smap.2=-10.6211 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.2039  d2=7.0000   d3=1.6385   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=13.7502  smap.2=-11.5441 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.2039  d2=10.5000  d3=1.6385   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-12.5143 smap.2=-13.0607 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.2039  d2=21.0000  d3=1.6385   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-17.2884 smap.2=-12.6914 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.2039  d2=24.5000  d3=1.6385   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-23.3012 smap.2=-12.0910 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.2039  d2=28.0000  d3=1.6385   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-27.6364 smap.2=-11.6054 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.2039  d2=31.5000  d3=1.6385   
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=29.7251  smap.2=-14.2088 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.5531  d2=0.0000   d3=-1.6688  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=25.6739  smap.2=-16.1431 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.5531  d2=3.5000   d3=-1.6688  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=20.2705  smap.2=-17.5318 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.5531  d2=7.0000   d3=-1.6688  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=15.6004  smap.2=-19.0821 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.5531  d2=10.5000  d3=-1.6688  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-13.7472 smap.2=-21.5400 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.5531  d2=21.0000  d3=-1.6688  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-18.5937 smap.2=-20.1251 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.5531  d2=24.5000  d3=-1.6688  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-23.8117 smap.2=-19.5738 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.5531  d2=28.0000  d3=-1.6688  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-28.7350 smap.2=-19.8396 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-9.5531  d2=31.5000  d3=-1.6688  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=1.0000   TYPE=EUCLIDEAN
+REMARK smap.1=31.9017  smap.2=-21.3482 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-8.7586  d2=0.0000   d3=-4.8970  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=2.0000   TYPE=EUCLIDEAN
+REMARK smap.1=27.2513  smap.2=-20.6509 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-8.7586  d2=3.5000   d3=-4.8970  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=3.0000   TYPE=EUCLIDEAN
+REMARK smap.1=20.3226  smap.2=-21.0994 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-8.7586  d2=7.0000   d3=-4.8970  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=6.0000   TYPE=EUCLIDEAN
+REMARK smap.1=16.8655  smap.2=-21.8287 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-8.7586  d2=10.5000  d3=-4.8970  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=6.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-15.3267 smap.2=-24.1385 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-8.7586  d2=21.0000  d3=-4.8970  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=5.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-19.0614 smap.2=-23.4211 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-8.7586  d2=24.5000  d3=-4.8970  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=5.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-23.9223 smap.2=-22.8875 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-8.7586  d2=28.0000  d3=-4.8970  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=5.0000   TYPE=EUCLIDEAN
+REMARK smap.1=-27.7863 smap.2=-22.7959 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-8.7586  d2=31.5000  d3=-4.8970  
+END
+DESCRIPTION: analysis data from calculation done at time 167.000000 
+REMARK WEIGHT=11.0000  TYPE=EUCLIDEAN
+REMARK smap.1=33.9584  smap.2=-23.2784 
+REMARK ARG=d1,d2,d3,smap.1,smap.2
+REMARK d1=-6.9489  d2=0.0000   d3=-7.6844  
+END

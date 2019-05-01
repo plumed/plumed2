@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,7 +28,7 @@ namespace gridtools {
 
 void ActionWithGrid::registerKeywords( Keywords& keys ) {
   vesselbase::ActionWithAveraging::registerKeywords( keys );
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
+  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","CONCENTRATION","the concentration parameter for Von Mises-Fisher distributions");
@@ -41,7 +41,7 @@ ActionWithGrid::ActionWithGrid( const ActionOptions& ao):
 {
 }
 
-void ActionWithGrid::createGrid( const std::string& type, const std::string& inputstr ) {
+std::unique_ptr<GridVessel> ActionWithGrid::createGrid( const std::string& type, const std::string& inputstr ) {
   // Start creating the input for the grid
   std::string vstring = inputstr;
   if( keywords.exists("KERNEL") ) {
@@ -57,15 +57,18 @@ void ActionWithGrid::createGrid( const std::string& type, const std::string& inp
   vesselbase::VesselOptions da("mygrid","",-1,vstring,this);
   Keywords keys; gridtools::AverageOnGrid::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
+  std::unique_ptr<GridVessel> grid;
   if( type=="histogram" ) {
-    mygrid = new HistogramOnGrid(dar);
+    grid.reset( new HistogramOnGrid(dar) );
   } else if( type=="average" ) {
-    mygrid = new AverageOnGrid(dar);
+    grid.reset( new AverageOnGrid(dar) );
   } else if( type=="grid" ) {
-    mygrid = new GridVessel(dar);
+    grid.reset( new GridVessel(dar) );
   } else {
     plumed_merror("no way to create grid of type " + type );
   }
+  mygrid=grid.get();
+  return grid;
 }
 
 void ActionWithGrid::turnOnDerivatives() {
@@ -97,7 +100,7 @@ void ActionWithGrid::calculate() {
   if( mygrid ) mygrid->reset();
 }
 
-void ActionWithGrid::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+void ActionWithGrid::runTask( const unsigned& current, MultiValue& myvals ) const {
   // Set the weight of this point
   myvals.setValue( 0, cweight ); compute( current, myvals );
 }

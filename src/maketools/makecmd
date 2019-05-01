@@ -13,15 +13,17 @@ awk -v opt=$1 '
   }END{
   n=i;
   if(opt=="enum"){
-    print "enum {"
     for(i=1;i<=n;i++){
-      comma=","
-      if(i==n) comma=""
-      print enum[i],comma;
+      comma=",";
+      if(i==n) comma="";
+      printf("%s%s\n",enum[i],comma);
     }
-    print "};"
   } else if(opt=="map"){
-    for(i=1;i<=n;i++) printf("  word_map[\"%s\"]=%s;\n",string[i],enum[i]);
+    for(i=1;i<=n;i++) {
+      comma=",";
+      if(i==n) comma="";
+      printf("  {\"%s\",%s}%s\n",string[i],enum[i],comma);
+    }
   }
   }'
 

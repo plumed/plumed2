@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -96,8 +96,6 @@ private:
 protected:
 /// The start of this Vessel's buffer in buffer in the underlying ActionWithVessel
   unsigned bufstart;
-/// A copy of the communicator
-  Communicator& comm;
 /// Return the numerical label
   int getNumericalLabel() const ;
 /// Report an error
@@ -123,8 +121,6 @@ protected:
 /// Set the size of the data buffer
   void resizeBuffer( const unsigned& n );
 public:
-/// Reference to the log on which to output details
-  Log& log;
 /// Reserve any keywords for this particular vessel
   static void registerKeywords( Keywords& keys );
 /// Convert the name to the label of the component

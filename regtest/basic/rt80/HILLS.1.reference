@@ -1,5 +1,6 @@
 #! FIELDS time phi sigma_phi height biasf
 #! SET multivariate false
+#! SET kerneltype gaussian
 #! SET min_phi -pi
 #! SET max_phi pi
       0.050000      0.443934      0.200000      0.500000      1.000000

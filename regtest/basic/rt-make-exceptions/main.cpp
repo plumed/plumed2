@@ -1,5 +1,9 @@
+#ifdef __PLUMED_LIBCXX11
+// In order to correctly catch the thrown C++11 exceptions,
+// we notify the Plumed wrapper that those exceptions are recognized by the compiler.
+#define __PLUMED_WRAPPER_LIBCXX11 1
+#endif
 #include "plumed/tools/Stopwatch.h"
-#include "plumed/tools/Exception.h"
 #include "plumed/wrapper/Plumed.h"
 #include <fstream>
 #include <iostream>
@@ -13,7 +17,7 @@ void test_line(std::ostream & ofs,Plumed & p,const std::string & arg){
   try{
     p.cmd(cmd.c_str(),arg.c_str());
     ofs<<"+++ !!!! uncatched !!!!"<<std::endl;
-  } catch(Exception&e) {
+  } catch(Plumed::Exception&e) {
     ofs<<"+++ catched"<<std::endl;
   }
 }
@@ -25,7 +29,7 @@ void test_this(std::ostream & ofs,Plumed & p,const std::string & cmd,const void*
   try{
     p.cmd(cmd.c_str(),arg);
     ofs<<"+++ !!!! uncatched !!!!"<<std::endl;
-  } catch(Exception&e) {
+  } catch(Plumed::Exception&e) {
     ofs<<"+++ catched"<<std::endl;
   }
 }
@@ -41,7 +45,8 @@ int main(){
     try{
       sw.pause();
       ofs<<"+++ !!!! uncatched !!!!"<<std::endl;
-    } catch(Exception& e) {
+// this is not of type PLMD::Plumed::Exception since it is thrown within the library
+    } catch(std::exception & e) {
       ofs<<"+++ catched"<<std::endl;
     }
   }
@@ -88,6 +93,10 @@ int main(){
   test_line(ofs,plumed,"d: COORDINATION GROUPA=1 GROUPB=2 SWITCH={WRONGNAME R_0=1.0}");
   test_line(ofs,plumed,"d: RMSD REFERENCE=missing.pdb");
   test_line(ofs,plumed,"d: RMSD REFERENCE=test-too-many-atoms.pdb");
+  test_line(ofs,plumed,"d: RMSD TYPE=OPTIMAL REFERENCE=test_zero_displace_weight.pdb");
+  test_line(ofs,plumed,"d: RMSD TYPE=OPTIMAL REFERENCE=test_zero_align_weight.pdb");
+  test_line(ofs,plumed,"d: RMSD TYPE=SIMPLE REFERENCE=test_zero_displace_weight.pdb");
+  test_line(ofs,plumed,"d: RMSD TYPE=SIMPLE REFERENCE=test_zero_align_weight.pdb");
   test_line(ofs,plumed,"d: DRMSD REFERENCE=missing.pdb LOWER_CUTOFF=0.0 UPPER_CUTOFF=15.0");
 
 // these should not fail
@@ -95,6 +104,13 @@ int main(){
   plumed.cmd("readInputLine","d1: DISTANCE ATOMS={1 2}"); // check if braces are parsed correctly
   plumed.cmd("readInputLine","t: TORSION ATOMS=1,2,3,4");
   plumed.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1");
+
+// check regexp not surrounded by parentheses (bug in 2.3.3).
+  test_line(ofs,plumed,"RESTRAINT ARG=x(d) KAPPA=5 AT=0");
+  test_line(ofs,plumed,"RESTRAINT ARG=(d)x KAPPA=5 AT=0");
+
+// check error in regular expression
+  test_line(ofs,plumed,"RESTRAINT ARG=([a) KAPPA=5 AT=0");
 
   test_line(ofs,plumed,"EXTERNAL ARG=d FILE=potential LABEL=ext");
   test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=0 FILE=H1 RESTART=WHAT");
@@ -133,6 +149,66 @@ int main(){
 
 // this should fail
     test_this(ofs,plumed,"setMasses",&masses[0]);
+  }
+
+  {
+    PLMD::Plumed p;
+
+#define TEST_STD(type) try { p.cmd("throw", #type " msg"); } catch (type & e ) { plumed_assert(std::string(e.what())== #type " msg"); }
+    TEST_STD(std::logic_error);
+    TEST_STD(std::invalid_argument);
+    TEST_STD(std::domain_error);
+    TEST_STD(std::length_error);
+    TEST_STD(std::out_of_range);
+    TEST_STD(std::runtime_error);
+    TEST_STD(std::range_error);
+    TEST_STD(std::overflow_error);
+    TEST_STD(std::underflow_error);
+
+#define TEST_STD_NOMSG(type) try { p.cmd("throw", #type);} catch (type & e ) { }
+    TEST_STD_NOMSG(std::bad_cast);
+#ifdef __PLUMED_LIBCXX11
+    TEST_STD_NOMSG(std::bad_weak_ptr);
+    TEST_STD_NOMSG(std::bad_function_call);
+#endif
+    TEST_STD_NOMSG(std::bad_typeid);
+    TEST_STD_NOMSG(std::bad_alloc);
+#ifdef __PLUMED_LIBCXX11
+    TEST_STD_NOMSG(std::bad_array_new_length);
+#endif
+    TEST_STD_NOMSG(std::bad_exception);
+
+
+    try { p.cmd("throw","PLMD::Exception msg"); } catch (PLMD::Plumed::Exception &e) {
+    }
+    try { p.cmd("throw","PLMD::ExceptionError msg"); } catch (PLMD::Plumed::ExceptionError &e) {
+    }
+    try { p.cmd("throw","PLMD::ExceptionDebug msg"); } catch (PLMD::Plumed::ExceptionDebug &e) {
+    }
+    try { p.cmd("throw","PLMD::lepton::Exception msg"); } catch (PLMD::Plumed::LeptonException &e) {
+      plumed_assert(std::string(e.what())=="PLMD::lepton::Exception msg");
+    }
+#ifdef __PLUMED_LIBCXX11
+    try { p.cmd("throw","std::system_error std::generic_category 100"); } catch (std::system_error & e) {
+      plumed_assert(e.code().value()==100)<<" value="<<e.code().value();
+      plumed_assert(e.code().category()==std::generic_category());
+    }
+    try { p.cmd("throw","std::system_error std::system_category 200"); } catch (std::system_error & e) {
+      plumed_assert(e.code().value()==200);
+      plumed_assert(e.code().category()==std::system_category());
+    }
+    try { p.cmd("throw","std::system_error std::iostream_category 300"); } catch (std::system_error & e) {
+      plumed_assert(e.code().value()==300);
+      plumed_assert(e.code().category()==std::iostream_category());
+    }
+    try { p.cmd("throw","std::system_error std::future_category 400"); } catch (std::system_error & e) {
+      plumed_assert(e.code().value()==400);
+      plumed_assert(e.code().category()==std::future_category());
+    }
+#endif
+    try { p.cmd("throw","std::ios_base::failure"); } catch (std::ios_base::failure & e) {
+    }
+
   }
 
   return 0;

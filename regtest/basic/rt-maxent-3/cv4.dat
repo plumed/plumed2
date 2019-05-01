@@ -1,0 +1,149 @@
+MOLINFO STRUCTURE=ref4.pdb  MOLTYPE=rna
+ 
+#Number of total residues: 2
+#Number of biased residues: 2
+ 
+###########################
+#### Torsions
+###########################
+ 
+#### alpha
+ 
+a2: TORSION ATOMS=@alpha-2 #biased
+ 
+#### beta
+ 
+b2: TORSION ATOMS=@beta-2 #biased
+ 
+#### gamma
+ 
+g1: TORSION ATOMS=@gamma-1 #biased
+g2: TORSION ATOMS=@gamma-2 #biased
+ 
+
+#### epsilon
+ 
+e1: TORSION ATOMS=@epsilon-1 #biased
+ 
+#### zeta
+ 
+z1: TORSION ATOMS=@zeta-1 #biased
+ 
+#### chi
+ 
+c1: TORSION ATOMS=@chi-1 #biased
+c2: TORSION ATOMS=@chi-2 #biased
+ 
+###########################
+#### Puckering
+###########################
+ 
+puck1: PUCKERING ATOMS=@sugar-1  #biased
+puck2: PUCKERING ATOMS=@sugar-2  #biased
+ 
+###########################
+#### Base COM minimum distances
+###########################
+ 
+ 
+#### Center of Mass
+ 
+WHOLEMOLECULES ENTITY0=@base-1
+com1: COM ATOMS=@base-1
+WHOLEMOLECULES ENTITY0=@base-2
+com2: COM ATOMS=@base-2
+ 
+#### Sort distances
+ 
+ 
+### Residue1
+## Distances between COMs
+d1_2: DISTANCE ATOMS=com1,com2
+ 
+## Sorting values of distances
+sort1: SORT ARG=d1_2 
+## Coordination number between the bases com
+co1: COORDINATION R_0=0.4 GROUPA=com1 GROUPB=com2  #biased
+ 
+### Residue2
+## Distances between COMs
+d2_1: DISTANCE ATOMS=com2,com1
+ 
+## Sorting values of distances
+sort2: SORT ARG=d2_1 
+## Coordination number between the bases com
+co2: COORDINATION R_0=0.4 GROUPA=com2 GROUPB=com1  #biased
+
+####J COUPLINGS###
+#Jh3h4_1
+
+n1_1: TORSION ATOMS=10,9,25,26
+n1_2: TORSION ATOMS=41,40,58,59
+n2_1: TORSION ATOMS=26,25,23,24
+n2_2: TORSION ATOMS=59,58,56,57
+n3_1: TORSION ATOMS=24,23,6,7
+n3_2: TORSION ATOMS=57,56,37,38
+n4_1: TORSION ATOMS=7,6,3,4
+n4_2: TORSION ATOMS=38,37,34,35
+n5_1: TORSION ATOMS=7,6,3,5
+n5_2: TORSION ATOMS=38,37,34,36
+chi1_1: TORSION ATOMS=10,9,11,12 
+chi1_2: TORSION ATOMS=41,40,42,43
+#check stereoisemerism
+x_1: TORSION ATOMS=9,26,27,23
+x_2: TORSION ATOMS=40,59,60,56
+
+#(Jh1'-h2')_1/2
+j1_1: MATHEVAL ARG=n1_1 FUNC=9.67*cos(x)*cos(x)-2.03*cos(x) PERIODIC=NO
+j1_2: MATHEVAL ARG=n1_2 FUNC=9.67*cos(x)*cos(x)-2.03*cos(x) PERIODIC=NO
+#(Jh2'-h3')_1/2
+j2_1: MATHEVAL ARG=n2_1 FUNC=9.67*cos(x)*cos(x)-2.03*cos(x) PERIODIC=NO
+j2_2: MATHEVAL ARG=n2_2 FUNC=9.67*cos(x)*cos(x)-2.03*cos(x) PERIODIC=NO
+#(Jh3'-h4')_1/2
+j3_1: MATHEVAL ARG=n3_1 FUNC=9.67*cos(x)*cos(x)-2.03*cos(x) PERIODIC=NO
+j3_2: MATHEVAL ARG=n3_2 FUNC=9.67*cos(x)*cos(x)-2.03*cos(x) PERIODIC=NO
+
+#(jh4'-h5')_1/2
+j4_1: MATHEVAL ARG=n4_1 FUNC=8.313*cos(x)*cos(x)-0.99*cos(x)+0.27*cos(x)*sin(x)+1.373 PERIODIC=NO
+j4_2: MATHEVAL ARG=n4_2 FUNC=8.313*cos(x)*cos(x)-0.99*cos(x)+0.27*cos(x)*sin(x)+1.373 PERIODIC=NO
+
+##(jh4'-h5'')_1/2
+j5_1: MATHEVAL ARG=n5_1 FUNC=8.313*cos(x)*cos(x)-0.99*cos(x)-4.752*cos(x)*sin(x)+1.373 PERIODIC=NO
+j5_2: MATHEVAL ARG=n5_2 FUNC=8.313*cos(x)*cos(x)-0.99*cos(x)-4.752*cos(x)*sin(x)+1.373 PERIODIC=NO
+
+
+##(jc4-jh')_1/2
+j6_2: MATHEVAL ARG=c2 FUNC=3.6*cos(x-(pi/180.0)*68.6)*cos(x-(pi/180.0)*68.6)+1.8*cos(x-(pi/180.0)*68.6)+0.4 PERIODIC=NO
+j6_1: MATHEVAL ARG=c1 FUNC=3.9*cos(x-(pi/180.0)*70.4)*cos(x-(pi/180.0)*70.4)+1.7*cos(x-(pi/180.0)*70.4)+0.3 PERIODIC=NO
+##(jc8-h1')_1/2
+j7_2: MATHEVAL ARG=chi1_2 FUNC=4.2*cos(x+(pi/180.0)*(60.0-68.9))*cos(x+(pi/180.0)*(60.0-68.9))-0.5*cos(x+(pi/180.0)*(60.0-68.9))+0.3 PERIODIC=NO
+j7_1: MATHEVAL ARG=chi1_1 FUNC=4.8*cos(x+(pi/180.0)*(60.0-66.9))*cos(x+(pi/180.0)*(60.0-66.9))+0.7*cos(x+(pi/180.0)*(60.0-66.9))+0.3 PERIODIC=NO
+##(JC4'-P)_1/2
+j11_1: MATHEVAL ARG=e1 FUNC=6.9*cos(x)*cos(x)-3.4*cos(x)+0.7 PERIODIC=NO
+j11_2: MATHEVAL ARG=b2 FUNC=6.9*cos(x)*cos(x)-3.4*cos(x)+0.7 PERIODIC=NO
+
+#Jh5'-P
+j8: MATHEVAL ARG=b2 FUNC=18.1*cos(x-2.0944)*cos(x-2.0944)-4.8*cos(x-2.0944) PERIODIC=NO
+
+##Jh5''-P
+j9: MATHEVAL ARG=b2 FUNC=18.1*cos(x+2.0944)*cos(x+2.0944)-4.8*cos(x+2.0944) PERIODIC=NO
+
+##Jh3'-P
+j10: MATHEVAL ARG=e1 FUNC=15.3*cos(x+2.0944)*cos(x+2.0944)-6.1*cos(x+2.0944)+1.6 PERIODIC=NO
+
+
+#Jc2'-p
+j12: MATHEVAL ARG=e1 FUNC=6.9*cos(x-2.0944)*cos(x-2.0944)-3.4*cos(x-2.0944)+0.7 PERIODIC=NO
+
+
+
+j1: COMBINE ARG=j1_1,j1_2 PERIODIC=NO
+j2: COMBINE ARG=j2_1,j2_2 PERIODIC=NO
+j4: COMBINE ARG=j4_1,j4_2 PERIODIC=NO
+j5: COMBINE ARG=j5_1,j5_2 PERIODIC=NO
+jA3: COMBINE ARG=j3_2 PERIODIC=NO
+jA6: COMBINE ARG=j6_2 PERIODIC=NO
+jA7: COMBINE ARG=j7_2 PERIODIC=NO
+jC3: COMBINE ARG=j3_1 PERIODIC=NO 
+jC6: COMBINE ARG=j6_1 PERIODIC=NO
+jC7: COMBINE ARG=j7_1 PERIODIC=NO

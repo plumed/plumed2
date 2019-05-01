@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,6 +26,7 @@
 
 #include <string>
 #include <cmath>
+#include <memory>
 
 using namespace std;
 
@@ -35,9 +36,13 @@ namespace colvar {
 //+PLUMEDOC COLVAR CONTACTMAP
 /*
 Calculate the distances between a number of pairs of atoms and transform each distance by a switching function.
+
 The transformed distance can be compared with a reference value in order to calculate the squared distance
 between two contact maps. Each distance can also be weighted for a given value. CONTACTMAP can be used together
 with \ref FUNCPATHMSD to define a path in the contactmap space.
+
+The individual contact map distances related to each contact can be accessed as components
+named `cm.contact-1`, `cm.contact-2`, etc, assuming that the label of the CONTACTMAP is `cm`.
 
 \par Examples
 
@@ -52,7 +57,7 @@ PRINT ARG=f1.* FILE=colvar
 
 The following example calculates the difference of the current contact map with respect
 to a reference provided. In this case REFERENCE is the fraction of contact that is formed
-(i.e. the distance between two atoms transformed with the SWITH), while R_0 is the contact
+(i.e. the distance between two atoms transformed with the SWITCH), while R_0 is the contact
 distance. WEIGHT gives the relative weight of each contact to the final distance measure.
 
 \plumedfile
@@ -106,13 +111,12 @@ PRINT ARG=cmap FILE=colvar
 class ContactMap : public Colvar {
 private:
   bool pbc, serial, docomp, dosum, docmdist;
-  NeighborList *nl;
+  std::unique_ptr<NeighborList> nl;
   std::vector<SwitchingFunction> sfs;
   vector<double> reference, weight;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ContactMap(const ActionOptions&);
-  ~ContactMap();
 // active methods:
   virtual void calculate();
   void checkFieldsAllowed() {}
@@ -138,7 +142,7 @@ void ContactMap::registerKeywords( Keywords& keys ) {
            "weight value for each contact.");
   keys.reset_style("SWITCH","compulsory");
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
-  keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contant map");
+  keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contact map");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addOutputComponent("contact","default","By not using SUM or CMDIST each contact will be stored in a component");
 }
@@ -177,7 +181,7 @@ ContactMap::ContactMap(const ActionOptions&ao):
     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact-"+num); componentIsNotPeriodic("contact-"+num);}
   }
   // Create neighbour lists
-  nl= new NeighborList(ga_lista,gb_lista,true,pbc,getPbc());
+  nl.reset(new NeighborList(ga_lista,gb_lista,true,pbc,getPbc()));
 
   // Read in switching functions
   std::string errors; sfs.resize( ga_lista.size() ); unsigned nswitch=0;
@@ -257,18 +261,14 @@ ContactMap::ContactMap(const ActionOptions&ao):
   checkRead();
 }
 
-ContactMap::~ContactMap() {
-  delete nl;
-}
-
 void ContactMap::calculate() {
 
   double ncoord=0.;
   Tensor virial;
   std::vector<Vector> deriv(getNumberOfAtoms());
 
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
+  unsigned stride;
+  unsigned rank;
   if(serial) {
     // when using components the parallelisation do not work
     stride=1;

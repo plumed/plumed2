@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,11 +23,16 @@
 #define __PLUMED_tools_BiasRepresentation_h
 
 #include "Exception.h"
-#include "KernelFunctions.h"
-#include "File.h"
-#include "Grid.h"
+#include <memory>
+#include <vector>
 
 namespace PLMD {
+
+class Value;
+class Grid;
+class IFile;
+class KernelFunctions;
+class Communicator;
 
 //+PLUMEDOC INTERNAL biasrepresentation
 /*
@@ -50,8 +55,6 @@ public:
                      const std::vector<unsigned> & nbin, bool doInt, double lowI_, double uppI_);
   /// create a histogram with grid representation and sigmas in input
   BiasRepresentation(const std::vector<Value*> & tmpvalues, Communicator &cc, const std::vector<std::string> & gmin, const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, const std::vector<double> & sigma);
-  /// destructor
-  ~BiasRepresentation();
   /// retrieve the number of dimension of the representation
   unsigned 	getNumberOfDimensions();
   /// add the grid to the representation
@@ -77,7 +80,7 @@ public:
   /// get the pointer to the grid
   Grid* 	getGridPtr();
   /// get a new histogram point from a file
-  KernelFunctions* readFromPoint(IFile *ifile);
+  std::unique_ptr<KernelFunctions> readFromPoint(IFile *ifile);
   /// get an automatic min/max from the set so to know how to configure the grid
   void getMinMaxBin(std::vector<double> &vmin, std::vector<double> &vmax, std::vector<unsigned> &vbin);
   /// clear the representation (grid included)
@@ -91,11 +94,11 @@ private:
   double uppI_;
   std::vector<Value*> values;
   std::vector<std::string> names;
-  std::vector<KernelFunctions*> hills;
+  std::vector<std::unique_ptr<KernelFunctions>> hills;
   std::vector<double> biasf;
   std::vector<double> histosigma;
   Communicator& mycomm;
-  Grid* BiasGrid_;
+  std::unique_ptr<Grid> BiasGrid_;
 };
 
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "ActionWithInputGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS INTERPOLATE_GRID
@@ -33,7 +32,7 @@ function on to a finer grained grid.  The interpolation within this algorithm is
 
 \par Examples
 
-The input below can be used to postprocess a trajectory.  It calculates a \ref HISTOGRAM as a function the
+The input below can be used to post process a trajectory.  It calculates a \ref HISTOGRAM as a function the
 distance between atoms 1 and 2 using kernel density estimation.  During the calculation the values of the kernels
 are evaluated at 100 points on a uniform grid between 0.0 and 3.0.  Prior to outputting this function at the end of the
 simulation this function is interpolated onto a finer grid of 200 points between 0.0 and 3.0.
@@ -76,7 +75,8 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   plumed_assert( ingrid->getNumberOfComponents()==1 );
   if( ingrid->noDerivatives() ) error("cannot interpolate a grid that does not have derivatives");
   // Create the input from the old string
-  createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString()  );
+  auto grid=createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString()  );
+  // notice that createGrid also sets mygrid=grid.get()
 
   std::vector<unsigned> nbin; parseVector("GRID_BIN",nbin);
   std::vector<double> gspacing; parseVector("GRID_SPACING",gspacing);
@@ -85,8 +85,8 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   }
 
   // Need this for creation of tasks
-  mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), nbin, gspacing );
-  setAveragingAction( mygrid, true );
+  grid->setBounds( ingrid->getMin(), ingrid->getMax(), nbin, gspacing );
+  setAveragingAction( std::move(grid), true );
 
   // Now create task list
   for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) addTaskToList(i);

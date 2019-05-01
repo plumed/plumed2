@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,7 +22,6 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithArguments.h"
-#include "reference/MultiReferenceBase.h"
 #include "reference/MetricRegister.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
@@ -34,7 +33,7 @@
 Projection on principal component eigenvectors or other high dimensional linear subspace
 
 The collective variables described in \ref dists allow one to calculate the distance between the
-instaneous structure adopted by the system and some high-dimensional, reference configuration.  The
+instantaneous structure adopted by the system and some high-dimensional, reference configuration.  The
 problem with doing this is that, as one gets further and further from the reference configuration, the
 distance from it becomes a progressively poorer and poorer collective variable.  This happens because
 the ``number" of structures at a distance \f$d\f$ from a reference configuration is proportional to \f$d^N\f$ in
@@ -65,7 +64,7 @@ of the metrics detailed on \ref dists to calculate the displacement, \f$\mathbf{
 The matrix \f$A\f$ can be found by various means including principal component analysis and normal mode analysis.  In both these methods the
 rows of \f$A\f$ would be the principle eigenvectors of a square matrix.  For PCA the covariance while for normal modes the Hessian.
 
-\bug It is not possible to use the \ref DRMSD metric with this variable.  You can get around this by listing the set of distances you wish to calculate for your DRMSD in the plumed file explicitally and using the EUCLIDEAN metric.  MAHALONOBIS and NORM-EUCLIDEAN also do not work with this variable but using these options makes little sense when projecting on a linear subspace.
+\bug It is not possible to use the \ref DRMSD metric with this variable.  You can get around this by listing the set of distances you wish to calculate for your DRMSD in the plumed file explicitly and using the EUCLIDEAN metric.  MAHALONOBIS and NORM-EUCLIDEAN also do not work with this variable but using these options makes little sense when projecting on a linear subspace.
 
 \par Examples
 
@@ -82,7 +81,7 @@ PRINT ARG=pca2.* FILE=colvar2
 \endplumedfile
 
 The reference configurations can be specified using a pdb file.  The first configuration that you provide is the reference configuration,
-which is refered to in the above as \f$X^{ref}\f$ subsequent configurations give the directions of row vectors that are contained in
+which is referred to in the above as \f$X^{ref}\f$ subsequent configurations give the directions of row vectors that are contained in
 the matrix \f$A\f$ above.  These directions can be specified by specifying a second configuration - in this case a vector will
 be constructed by calculating the displacement of this second configuration from the reference configuration.  A pdb input prepared
 in this way would look as follows:
@@ -106,7 +105,7 @@ ATOM     21 HH32 NME     3      18.572 -13.148 -16.346  1.00  1.00
 END
 \endverbatim
 
-Alternatively, the second configuration can specify the components of \f$A\f$ explicitally.  In this case you need to include the
+Alternatively, the second configuration can specify the components of \f$A\f$ explicitly.  In this case you need to include the
 keyword TYPE=DIRECTION in the remarks to the pdb as shown below.
 
 \verbatim
@@ -176,15 +175,15 @@ private:
   MultiValue myvals;
   ReferenceValuePack mypack;
 /// The position of the reference configuration (the one we align to)
-  ReferenceConfiguration* myref;
+  std::unique_ptr<ReferenceConfiguration> myref;
 /// The eigenvectors we are interested in
   std::vector<Direction> directions;
 /// Stuff for applying forces
   std::vector<double> forces, forcesToApply;
+  bool nopbc;
 public:
   static void registerKeywords( Keywords& keys );
   explicit PCAVars(const ActionOptions&);
-  ~PCAVars();
   unsigned getNumberOfDerivatives();
   void lockRequests();
   void unlockRequests();
@@ -200,7 +199,7 @@ void PCAVars::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
-  componentsAreNotOptional(keys);
+  componentsAreNotOptional(keys); keys.use("ARG");
   keys.addOutputComponent("eig","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
   keys.addOutputComponent("residual","default","the distance of the configuration from the linear subspace defined "
                           "by the vectors, \\f$e_i\\f$, that are contained in the rows of \\f$A\\f$.  In other words this is "
@@ -209,7 +208,7 @@ void PCAVars::registerKeywords( Keywords& keys ) {
                           "reference point.");
   keys.add("compulsory","REFERENCE","a pdb file containing the reference configuration and configurations that define the directions for each eigenvector");
   keys.add("compulsory","TYPE","OPTIMAL","The method we are using for alignment to the reference structure");
-  keys.addFlag("NORMALIZE",false,"calculate the length of the eigenvector input and divide the components by it so as to have a normalised vector");
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
 PCAVars::PCAVars(const ActionOptions& ao):
@@ -218,11 +217,14 @@ PCAVars::PCAVars(const ActionOptions& ao):
   ActionAtomistic(ao),
   ActionWithArguments(ao),
   myvals(1,0),
-  mypack(0,0,myvals)
+  mypack(0,0,myvals),
+  nopbc(false)
 {
 
   // What type of distance are we calculating
   std::string mtype; parse("TYPE",mtype);
+
+  parseFlag("NOPBC",nopbc);
 
   // Open reference file
   std::string reference; parse("REFERENCE",reference);
@@ -230,25 +232,28 @@ PCAVars::PCAVars(const ActionOptions& ao):
   if(!fp) error("could not open reference file " + reference );
 
   // Read all reference configurations
-  MultiReferenceBase myframes( "", false );
+  // MultiReferenceBase myframes( "", false );
+  std::vector<std::unique_ptr<ReferenceConfiguration> > myframes;
   bool do_read=true; unsigned nfram=0;
   while (do_read) {
     PDB mypdb;
     // Read the pdb file
     do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
     // Fix argument names
-    expandArgKeywordInPDB( mypdb );
     if(do_read) {
       if( nfram==0 ) {
-        myref = metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
-        Direction* tdir = dynamic_cast<Direction*>( myref );
+        myref=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
+        Direction* tdir = dynamic_cast<Direction*>( myref.get() );
         if( tdir ) error("first frame should be reference configuration - not direction of vector");
         if( !myref->pcaIsEnabledForThisReference() ) error("can't do PCA with reference type " + mtype );
-        std::vector<std::string> remarks( mypdb.getRemark() ); std::string rtype;
-        bool found=Tools::parse( remarks, "TYPE", rtype );
-        if(!found) { std::vector<std::string> newrem(1); newrem[0]="TYPE="+mtype; mypdb.addRemark(newrem); }
-        myframes.readFrame( mypdb );
-      } else myframes.readFrame( mypdb );
+        // std::vector<std::string> remarks( mypdb.getRemark() ); std::string rtype;
+        // bool found=Tools::parse( remarks, "TYPE", rtype );
+        // if(!found){ std::vector<std::string> newrem(1); newrem[0]="TYPE="+mtype; mypdb.addRemark(newrem); }
+        // myframes.push_back( metricRegister().create<ReferenceConfiguration>( "", mypdb ) );
+      } else {
+        auto mymsd = metricRegister().create<ReferenceConfiguration>( "", mypdb );
+        myframes.emplace_back( std::move(mymsd) );
+      }
       nfram++;
     } else {
       break;
@@ -256,15 +261,18 @@ PCAVars::PCAVars(const ActionOptions& ao):
   }
   fclose(fp);
 
-  if( nfram<=2 ) error("no eigenvectors were specified");
+  if( nfram<=1 ) error("no eigenvectors were specified");
   log.printf("  found %u eigenvectors in file %s \n",nfram-1,reference.c_str() );
 
   // Finish the setup of the mapping object
   // Get the arguments and atoms that are required
-  std::vector<AtomNumber> atoms; std::vector<std::string> args;
-  myframes.getAtomAndArgumentRequirements( atoms, args );
+  std::vector<AtomNumber> atoms; myref->getAtomRequests( atoms, false );
+  std::vector<std::string> args; myref->getArgumentRequests( args, false );
   requestAtoms( atoms ); std::vector<Value*> req_args;
   interpretArgumentList( args, req_args ); requestArguments( req_args );
+
+  // And now check that the atoms/arguments are the same in all the eigenvalues
+  for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, false ); myframes[i]->getArgumentRequests( args, false ); }
 
   // Setup the derivative pack
   if( atoms.size()>0 ) myvals.resize( 1, args.size() + 3*atoms.size() + 9 );
@@ -272,30 +280,33 @@ PCAVars::PCAVars(const ActionOptions& ao):
   mypack.resize( args.size(), atoms.size() );
   for(unsigned i=0; i<atoms.size(); ++i) mypack.setAtomIndex( i, i );
   /// This sets up all the storage data required by PCA in the pack
-  myframes.getFrame(0)->setupPCAStorage( mypack );
+  myref->setupPCAStorage( mypack );
 
-  // Retrieve the position of the first frame, as we use this for alignment
-  myref->setNamesAndAtomNumbers( atoms, args );
   // Check there are no periodic arguments
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->isPeriodic() ) error("cannot use periodic variables in pca projections");
   }
   // Work out if the user wants to normalise the input vector
-  bool nflag; parseFlag("NORMALIZE",nflag);
   checkRead();
 
+  if(nopbc) log.printf("  without periodic boundary conditions\n");
+  else      log.printf("  using periodic boundary conditions\n");
+
   // Resize the matrices that will hold our eivenvectors
-  for(unsigned i=1; i<nfram; ++i) {
-    directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")));
-    directions[i-1].setNamesAndAtomNumbers( atoms, args );
+  PDB mypdb; mypdb.setAtomNumbers( atoms ); mypdb.addBlockEnd( atoms.size() );
+  if( args.size()>0 ) mypdb.setArgumentNames( args );
+  // Resize the matrices that will hold our eivenvectors
+  for(unsigned i=0; i<myframes.size(); ++i) {
+    directions.push_back( Direction(ReferenceConfigurationOptions("DIRECTION"))); directions[i].read( mypdb );
   }
 
   // Create fake periodic boundary condition (these would only be used for DRMSD which is not allowed)
   // Now calculate the eigenvectors
-  for(unsigned i=1; i<nfram; ++i) {
-    myframes.getFrame(i)->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), false, nflag, directions[i-1] );
+  for(unsigned i=0; i<myframes.size(); ++i) {
+    // Calculate distance from reference configuration
+    myframes[i]->extractDisplacementVector( myref->getReferencePositions(), getArguments(), myref->getReferenceArguments(), true, directions[i] );
     // Create a component to store the output
-    std::string num; Tools::convert( i, num );
+    std::string num; Tools::convert( i+1, num );
     addComponentWithDerivatives("eig-"+num); componentIsNotPeriodic("eig-"+num);
   }
   addComponentWithDerivatives("residual"); componentIsNotPeriodic("residual");
@@ -310,11 +321,7 @@ PCAVars::PCAVars(const ActionOptions& ao):
 
   // Resize all derivative arrays
   forces.resize( nder ); forcesToApply.resize( nder );
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
-}
-
-PCAVars::~PCAVars() {
-  delete myref;
+  for(int i=0; i<getNumberOfComponents(); ++i) getPntrToComponent(i)->resizeDerivatives(nder);
 }
 
 unsigned PCAVars::getNumberOfDerivatives() {
@@ -335,6 +342,9 @@ void PCAVars::unlockRequests() {
 }
 
 void PCAVars::calculate() {
+
+  if(!nopbc) makeWhole();
+
   // Clear the reference value pack
   mypack.clear();
   // Calculate distance between instaneous configuration and reference
@@ -352,9 +362,8 @@ void PCAVars::calculate() {
 
   // Now calculate projections on pca vectors
   Vector adif, ader; Tensor fvir, tvir;
-  for(unsigned i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
-    double proj=myref->projectDisplacementOnVector( directions[i], getPositions(), getArguments(), args, mypack );
-
+  for(int i=0; i<getNumberOfComponents()-1; ++i) { // One less component as we also have residual
+    double proj=myref->projectDisplacementOnVector( directions[i], getArguments(), args, mypack );
     // And now accumulate derivatives
     Value* eid=getPntrToComponent(i);
     for(unsigned j=0; j<getNumberOfArguments(); ++j) eid->addDerivative( j, mypack.getArgumentDerivative(j) );
@@ -409,11 +418,11 @@ void PCAVars::calculateNumericalDerivatives( ActionWithValue* a ) {
   }
   if( getNumberOfAtoms()>0 ) {
     Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
     }
     calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
     }
   }
@@ -422,7 +431,7 @@ void PCAVars::calculateNumericalDerivatives( ActionWithValue* a ) {
 void PCAVars::apply() {
 
   bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+  for(int i=0; i<getNumberOfComponents(); ++i) {
     if( getPntrToComponent(i)->applyForce( forces ) ) {
       wasforced=true;
       for(unsigned i=0; i<forces.size(); ++i) forcesToApply[i]+=forces[i];

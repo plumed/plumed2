@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,7 +55,7 @@ actions.
 \par Examples
 
 The following example shows perhaps the simplest way in which this action can be used.  The following
-input computes the density of atoms at each point on the grid and ouptuts this quantity to a file.  In
+input computes the density of atoms at each point on the grid and outputs this quantity to a file.  In
 other words this input instructs plumed to calculate \f$\rho(\mathbf{r}) = \sum_i K(\mathbf{r} - \mathbf{r}_i )\f$
 
 \plumedfile
@@ -66,7 +66,7 @@ DUMPGRID GRID=grid STRIDE=500 FILE=density
 
 In the above example density is added to the grid on every step.  The PRINT_GRID instruction thus tells PLUMED to
 output the average density at each point on the grid every 500 steps of simulation.  Notice that the that grid output
-on step 1000 is an average over all 1000 frames of the trajectory.  If you would like to analyse these two blocks
+on step 1000 is an average over all 1000 frames of the trajectory.  If you would like to analyze these two blocks
 of data separately you must use the CLEAR flag.
 
 This second example computes an order parameter (in this case \ref FCCUBIC) and constructs a phase field model
@@ -118,19 +118,19 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ) {
   keys.add("optional","SPACING","the approximate grid spacing (to be used as an alternative or together with NBINS)");
   keys.addFlag("FRACTIONAL",false,"use fractional coordinates for the various axes");
   keys.addFlag("XREDUCED",false,"limit the calculation of the density/average to a portion of the z-axis only");
-  keys.add("optional","XLOWER","this is required if you are using XREDUCED. It specifes the lower bound for the region of the x-axis that for "
+  keys.add("optional","XLOWER","this is required if you are using XREDUCED. It specifies the lower bound for the region of the x-axis that for "
            "which you are calculating the density/average");
-  keys.add("optional","XUPPER","this is required if you are using XREDUCED. It specifes the upper bound for the region of the x-axis that for "
+  keys.add("optional","XUPPER","this is required if you are using XREDUCED. It specifies the upper bound for the region of the x-axis that for "
            "which you are calculating the density/average");
   keys.addFlag("YREDUCED",false,"limit the calculation of the density/average to a portion of the y-axis only");
-  keys.add("optional","YLOWER","this is required if you are using YREDUCED. It specifes the lower bound for the region of the y-axis that for "
+  keys.add("optional","YLOWER","this is required if you are using YREDUCED. It specifies the lower bound for the region of the y-axis that for "
            "which you are calculating the density/average");
-  keys.add("optional","YUPPER","this is required if you are using YREDUCED. It specifes the upper bound for the region of the y-axis that for "
+  keys.add("optional","YUPPER","this is required if you are using YREDUCED. It specifies the upper bound for the region of the y-axis that for "
            "which you are calculating the density/average");
   keys.addFlag("ZREDUCED",false,"limit the calculation of the density/average to a portion of the z-axis only");
-  keys.add("optional","ZLOWER","this is required if you are using ZREDUCED. It specifes the lower bound for the region of the z-axis that for "
+  keys.add("optional","ZLOWER","this is required if you are using ZREDUCED. It specifies the lower bound for the region of the z-axis that for "
            "which you are calculating the density/average");
-  keys.add("optional","ZUPPER","this is required if you are using ZREDUCED. It specifes the upper bound for the region of the z-axis that for "
+  keys.add("optional","ZUPPER","this is required if you are using ZREDUCED. It specifies the upper bound for the region of the z-axis that for "
            "which you are calculating the density/average");
 }
 
@@ -228,10 +228,12 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   // Create a task list
   for(unsigned i=0; i<mycolv->getFullNumberOfTasks(); ++i) addTaskToList(i);
   // And create the grid
-  if( mycolv->isDensity() ) createGrid( "histogram", vstring );
-  else createGrid( "average", vstring );
+  std::unique_ptr<gridtools::GridVessel> grid;
+  if( mycolv->isDensity() ) grid=createGrid( "histogram", vstring );
+  else grid=createGrid( "average", vstring );
+  mygrid=grid.get();
   // And finish the grid setup
-  setAveragingAction( mygrid, true );
+  setAveragingAction( std::move(grid), true );
 
   // Enusre units for cube files are set correctly
   if( !fractional ) {

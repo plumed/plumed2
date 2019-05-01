@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,8 +36,8 @@ public:
   void setupPCAStorage( ReferenceValuePack& mypack ) {
     mypack.switchOnPCAOption(); mypack.getAtomsDisplacementVector().resize( getNumberOfAtoms() );
   }
-  void extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& direction ) const ;
-  double projectAtomicDisplacementOnVector( const std::vector<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ;
+  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const ;
+  double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const ;
 };
 
 PLUMED_REGISTER_METRIC(SimpleRMSD,"SIMPLE")
@@ -60,21 +60,20 @@ double SimpleRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myd
   return d;
 }
 
-void SimpleRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& direction ) const {
+void SimpleRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const {
   std::vector<Vector> tder( getNumberOfAtoms() );
   double d=myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), tder, direction, true );
-  double scale=1.0; if( anflag ) scale = 1.0 / static_cast<double>( pos.size() );
-  for(unsigned i=0; i<pos.size(); ++i) direction[i] = scale*direction[i];
+  for(unsigned i=0; i<pos.size(); ++i) direction[i] = getDisplace()[i]*direction[i];
 }
 
-double SimpleRMSD::projectAtomicDisplacementOnVector( const std::vector<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
+double SimpleRMSD::projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const {
   plumed_dbg_assert( mypack.calcUsingPCAOption() ); Vector comder; comder.zero();
-  for(unsigned j=0; j<pos.size(); ++j) {
+  for(unsigned j=0; j<vecs.size(); ++j) {
     for(unsigned k=0; k<3; ++k) comder[k] += getAlign()[j]*vecs[j][k];
   }
 
   double proj=0; mypack.clear();
-  for(unsigned j=0; j<pos.size(); ++j) {
+  for(unsigned j=0; j<vecs.size(); ++j) {
     for(unsigned k=0; k<3; ++k) {
       proj += vecs[j][k]*mypack.getAtomsDisplacementVector()[j][k];
     }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,6 +28,7 @@
 #include "tools/DynamicList.h"
 #include "tools/MultiValue.h"
 #include <vector>
+#include "tools/ForwardDecl.h"
 
 namespace PLMD {
 class Value;
@@ -69,7 +70,7 @@ private:
 /// Tolerance for quantities being put in neighbor lists
   double nl_tolerance;
 /// Pointers to the functions we are using on each value
-  std::vector<Vessel*> functions;
+  std::vector<std::unique_ptr<Vessel>> functions;
 /// Tempory storage for forces
   std::vector<double> tmpforces;
 /// Ths full list of tasks we have to perform
@@ -86,8 +87,9 @@ private:
   std::vector<double> buffer;
 /// Do we want to output information on the timings of different parts of the calculation
   bool timers;
+  ForwardDecl<Stopwatch> stopwatch_fwd;
 /// The stopwatch that times the different parts of the calculation
-  Stopwatch& stopwatch;
+  Stopwatch& stopwatch=*stopwatch_fwd;
 /// These are used to minmise computational expense in complex functions
   bool dertime_can_be_off;
 protected:
@@ -105,7 +107,7 @@ protected:
   std::vector<unsigned> taskFlags;
 /// Add a vessel to the list of vessels
   void addVessel( const std::string& name, const std::string& input, const int numlab=0 );
-  void addVessel( Vessel* vv );
+  void addVessel( std::unique_ptr<Vessel> vv );
 /// Add a bridging vessel to the list of vessels
   BridgeVessel* addBridgingVessel( ActionWithVessel* tome );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
@@ -218,7 +220,7 @@ unsigned ActionWithVessel::getNumberOfQuantities() const {
 inline
 Vessel* ActionWithVessel::getPntrToVessel( const unsigned& i ) {
   plumed_dbg_assert( i<functions.size() );
-  return functions[i];
+  return functions[i].get();
 }
 
 inline

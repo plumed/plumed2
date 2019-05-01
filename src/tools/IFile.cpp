@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,7 +48,7 @@ size_t IFile::llread(char*ptr,size_t s) {
     if(rr<0)    err=true;
     r=rr;
 #else
-    plumed_merror("trying to use a gz file without zlib being linked");
+    plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
   } else {
     r=fread(ptr,1,s,fp);
@@ -64,7 +64,8 @@ IFile& IFile::advanceField() {
   bool done=false;
   while(!done) {
     getline(line);
-    if(!*this) {return *this;}
+// using explicit conversion not to confuse cppcheck 1.86
+    if(!bool(*this)) {return *this;}
     std::vector<std::string> words=Tools::getWords(line);
     if(words.size()>=2 && words[0]=="#!" && words[1]=="FIELDS") {
       fields.clear();
@@ -94,7 +95,7 @@ IFile& IFile::advanceField() {
         }
         done=true;
       } else if( !words.empty() ) {
-        plumed_merror(getPath() + " mismatch between number of fields in file and expected number");
+        plumed_merror("file " + getPath() + ": mismatch between number of fields in file and expected number");
       }
     }
   }
@@ -115,7 +116,7 @@ IFile& IFile::open(const std::string&path) {
 #ifdef __PLUMED_HAS_ZLIB
     gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"r");
 #else
-    plumed_merror("trying to use a gz file without zlib being linked");
+    plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
   }
   if(plumed) plumed->insertFile(*this);
@@ -124,7 +125,8 @@ IFile& IFile::open(const std::string&path) {
 
 IFile& IFile::scanFieldList(std::vector<std::string>&s) {
   if(!inMiddleOfField) advanceField();
-  if(!*this) return *this;
+// using explicit conversion not to confuse cppcheck 1.86
+  if(!bool(*this)) return *this;
   s.clear();
   for(unsigned i=0; i<fields.size(); i++)
     s.push_back(fields[i].name);
@@ -141,7 +143,8 @@ bool IFile::FieldExist(const std::string& s) {
 
 IFile& IFile::scanField(const std::string&name,std::string&str) {
   if(!inMiddleOfField) advanceField();
-  if(!*this) return *this;
+// using explicit conversion not to confuse cppcheck 1.86
+  if(!bool(*this)) return *this;
   unsigned i=findField(name);
   str=fields[i].value;
   fields[i].read=true;
@@ -163,7 +166,7 @@ IFile& IFile::scanField(const std::string&name,int &x) {
 }
 
 IFile& IFile::scanField(Value* val) {
-  double ff=NAN; // this is to be sure a NAN value is replaced upon failure
+  double ff=std::numeric_limits<double>::quiet_NaN(); // this is to be sure a NaN value is replaced upon failure
   scanField(  val->getName(), ff );
   val->set( ff );
   if( FieldExist("min_" + val->getName() ) ) {
@@ -230,7 +233,9 @@ IFile& IFile::getline(std::string &str) {
 unsigned IFile::findField(const std::string&name)const {
   unsigned i;
   for(i=0; i<fields.size(); i++) if(fields[i].name==name) break;
-  if(i>=fields.size()) plumed_merror(name);
+  if(i>=fields.size()) {
+    plumed_merror("file " + getPath() + ": field " + name + " cannot be found");
+  }
   return i;
 }
 

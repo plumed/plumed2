@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,9 +36,10 @@ If more than one collective variable is given for each argument then they
 are averaged separately. The average is stored in a component labelled <em>label</em>.cvlabel.
 
 \par Examples
+
 The following input tells plumed to calculate the chemical shifts for four
-different proteins in the same simulation box then average them, calcualated
-the sum of the squared deviation with respect to the experiemntal values and
+different proteins in the same simulation box then average them, calculated
+the sum of the squared deviation with respect to the experimental values and
 applies a linear restraint.
 \plumedfile
 MOLINFO STRUCTURE=data/template.pdb
@@ -109,7 +110,7 @@ LocalEnsemble::LocalEnsemble(const ActionOptions&ao):
     vector<Value*> larg;
     if(!parseArgumentList("ARG",i,larg)) break;
     for(unsigned j=0; j<larg.size(); j++) arg.push_back(larg[j]);
-    if(oldsize!=-1&&oldsize!=larg.size()) error("In LOCALENSEMBLE you should have the same number of arguments for each ARG keyword");
+    if(oldsize!=-1&&oldsize!=static_cast<int>(larg.size())) error("In LOCALENSEMBLE you should have the same number of arguments for each ARG keyword");
     oldsize = larg.size();
     if(!larg.empty()) {
       log.printf("  with arguments %u: ", i);

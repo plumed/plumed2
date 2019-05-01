@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,6 +37,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 using namespace std;
 
@@ -50,7 +51,7 @@ This action is used to align a molecule to a template.
 This can be used to move the coordinates stored in plumed
 so as to be aligned with a provided template in PDB format. Pdb should contain
 also weights for alignment (see the format of PDB files used e.g. for \ref RMSD).
-Make sure your PDB file is correclty formatted as explained \ref pdbreader "in this page".
+Make sure your PDB file is correctly formatted as explained \ref pdbreader "in this page".
 Weights for displacement are ignored, since no displacement is computed here.
 Notice that all atoms (not only those in the template) are aligned.
 To see what effect try
@@ -76,6 +77,17 @@ which are below it in the input script will see the corrected positions.
 As a general rule, put it at the top of the input file. Also, unless you
 know exactly what you are doing, leave the default stride (1), so that
 this action is performed at every MD step.
+
+When running with periodic boundary conditions, the atoms should be
+in the proper periodic image. This is done automatically since PLUMED 2.5,
+by considering the ordered list of atoms and rebuilding the molecules using a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED.
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
 
 \par Examples
 
@@ -114,7 +126,7 @@ frame of an aligned molecule. It could be for instance the center of mass
 of a ligand with respect to a protein
 \plumedfile
 # center of the ligand:
-ce: CENTER ATOMS=100-110
+center: CENTER ATOMS=100-110
 
 FIT_TO_TEMPLATE REFERENCE=protein.pdb TYPE=OPTIMAL
 
@@ -122,20 +134,20 @@ FIT_TO_TEMPLATE REFERENCE=protein.pdb TYPE=OPTIMAL
 fix: FIXEDATOM AT=1.0,1.1,1.0
 
 # take the distance between the fixed atom and the center of the ligand
-d: DISTANCE ATOMS=ce,fix
+d: DISTANCE ATOMS=center,fix
 
 # apply a restraint
 RESTRAINT ARG=d AT=0.0 KAPPA=100.0
 \endplumedfile
 
 Notice that you could have obtained an (almost) identical result adding a fictitious
-atom to `ref.pdb` with the serial number corresponding to the `ce` atom (there is no automatic way
+atom to `ref.pdb` with the serial number corresponding to the atom labelled `center` (there is no automatic way
 to get it, but in this example it should be the number of atoms of the system plus one),
 and properly setting the weights for alignment and displacement in \ref RMSD.
 There are two differences to be expected:
 (ab) \ref FIT_TO_TEMPLATE might be slower since it has to rototranslate all the available atoms and
-(b) variables employing PBCs (such as \ref DISTANCE without `NOPBC`, as in the example above)
-  are allowed after \ref FIT_TO_TEMPLATE, whereas \ref RMSD expects PBCs to be already solved.
+(b) variables employing periodic boundary conditions (such as \ref DISTANCE without `NOPBC`, as in the example above)
+  are allowed after \ref FIT_TO_TEMPLATE, whereas \ref RMSD expects the issues related to the periodic boundary conditions to be already solved.
 The latter means that before the \ref RMSD statement one should use \ref WRAPAROUND or \ref WHOLEMOLECULES to properly place
 the ligand.
 
@@ -150,15 +162,17 @@ class FitToTemplate:
   public ActionWithValue
 {
   std::string type;
+  bool nopbc;
   std::vector<double> weights;
   std::vector<AtomNumber> aligned;
   Vector center;
   Vector shift;
   // optimal alignment related stuff
-  PLMD::RMSD* rmsd;
+  std::unique_ptr<PLMD::RMSD> rmsd;
   Tensor rotation;
   Matrix< std::vector<Vector> > drotdpos;
-  std::vector<Vector> positions;
+  // not used anymore (see notes below at doNotRetrieve())
+  // std::vector<Vector> positions;
   std::vector<Vector> DDistDRef;
   std::vector<Vector> ddistdpos;
   std::vector<Vector> centeredpositions;
@@ -167,7 +181,6 @@ class FitToTemplate:
 
 public:
   explicit FitToTemplate(const ActionOptions&ao);
-  ~FitToTemplate();
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply();
@@ -182,6 +195,7 @@ void FitToTemplate::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
 FitToTemplate::FitToTemplate(const ActionOptions&ao):
@@ -189,13 +203,14 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   ActionPilot(ao),
   ActionAtomistic(ao),
   ActionWithValue(ao),
-  rmsd(NULL)
+  nopbc(false)
 {
   string reference;
   parse("REFERENCE",reference);
   type.assign("SIMPLE");
   parse("TYPE",type);
 
+  parseFlag("NOPBC",nopbc);
 // if(type!="SIMPLE") error("Only TYPE=SIMPLE is implemented in FIT_TO_TEMPLATE");
 
   checkRead();
@@ -214,7 +229,11 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
 
 
   // normalize weights
-  double n=0.0; for(unsigned i=0; i<weights.size(); ++i) n+=weights[i]; n=1.0/n;
+  double n=0.0; for(unsigned i=0; i<weights.size(); ++i) n+=weights[i];
+  if(n==0.0) {
+    error("PDB file " + reference + " has zero weights. Please check the occupancy column.");
+  }
+  n=1.0/n;
   for(unsigned i=0; i<weights.size(); ++i) weights[i]*=n;
 
   // normalize weights for rmsd calculation
@@ -227,14 +246,24 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   for(unsigned i=0; i<weights.size(); ++i) positions[i]-=center;
 
   if(type=="OPTIMAL" or type=="OPTIMAL-FAST" ) {
-    rmsd=new RMSD();
+    rmsd.reset(new RMSD());
     rmsd->set(weights,weights_measure,positions,type,false,false);// note: the reference is shifted now with center in the origin
     log<<"  Method chosen for fitting: "<<rmsd->getMethod()<<" \n";
+  }
+  if(nopbc) {
+    log<<"  Ignoring PBCs when doing alignment, make sure your molecule is whole!<n";
   }
   // register the value of rmsd (might be useful sometimes)
   addValue(); setNotPeriodic();
 
-  doNotRetrieve();
+  // I remove this optimization now in order to use makeWhole()
+  // Notice that for FIT_TO_TEMPLATE TYPE=OPTIMAL a copy was made anyway
+  // (due to the need to store position to propagate forces on rotational matrix later)
+  // For FIT_TO_TEMPLATE TYPE=SIMPLE in principle we could use it and write an ad hoc
+  // version of makeWhole that only computes the center. Too lazy to do it now.
+  // In case we do it later, remember that uncommenting this line means that
+  // getPositions will not work anymore! GB
+  // doNotRetrieve();
 
   // this is required so as to allow modifyGlobalForce() to return correct
   // also for forces that are not owned (and thus not zeored) by all processors.
@@ -244,32 +273,28 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
 
 void FitToTemplate::calculate() {
 
-  Vector cc;
-
-  for(unsigned i=0; i<aligned.size(); ++i) {
-    cc+=weights[i]*modifyPosition(aligned[i]);
-  }
+  if(!nopbc) makeWhole();
 
   if (type=="SIMPLE") {
+    Vector cc;
+
+    for(unsigned i=0; i<aligned.size(); ++i) {
+      cc+=weights[i]*getPosition(i);
+    }
+
     shift=center-cc;
     setValue(shift.modulo());
     for(unsigned i=0; i<getTotAtoms(); i++) {
-      Vector & ato (modifyPosition(AtomNumber::index(i)));
+      Vector & ato (modifyGlobalPosition(AtomNumber::index(i)));
       ato+=shift;
     }
   }
   else if( type=="OPTIMAL" or type=="OPTIMAL-FAST") {
-// we store positions here to be used in apply()
-// notice that in apply() it is not guaranteed that positions are still equal to their value here
-// since they could have been changed by a subsequent FIT_TO_TEMPLATE
-    positions.resize(aligned.size());
-    for (unsigned i=0; i<aligned.size(); i++) positions[i]=modifyPosition(aligned[i]);
-
     // specific stuff that provides all that is needed
-    double r=rmsd->calc_FitElements( positions, rotation,  drotdpos, centeredpositions, center_positions);
+    double r=rmsd->calc_FitElements( getPositions(), rotation,  drotdpos, centeredpositions, center_positions);
     setValue(r);
     for(unsigned i=0; i<getTotAtoms(); i++) {
-      Vector & ato (modifyPosition(AtomNumber::index(i)));
+      Vector & ato (modifyGlobalPosition(AtomNumber::index(i)));
       ato=matmul(rotation,ato-center_positions)+center;
     }
 // rotate box
@@ -320,15 +345,11 @@ void FitToTemplate::apply() {
 // here it the contribution to the virial
 // notice that here we can use absolute positions since, for the alignment to be defined,
 // positions should be in one well defined periodic image
-      virial+=extProduct(positions[i],g);
+      virial+=extProduct(getPosition(i),g);
     }
 // finally, correction to the virial
     virial+=extProduct(matmul(transpose(rotation),center),totForce);
   }
-}
-
-FitToTemplate::~FitToTemplate() {
-  if(rmsd) delete rmsd;
 }
 
 }

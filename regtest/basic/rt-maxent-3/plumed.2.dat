@@ -1,0 +1,3 @@
+RESTART
+INCLUDE FILE=cv2.dat
+INCLUDE FILE=plumedcommon_all.dat

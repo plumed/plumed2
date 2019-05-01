@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,7 +34,7 @@ The ensemble average for a non-periodic, collective variable, \f$s\f$ is given b
 \f]
 
 Here the sum runs over a the trajectory and \f$s(t')\f$ is used to denote the value of the collective variable
-at time \f$t'\f$.  The final quantity evalulated is a weighted
+at time \f$t'\f$.  The final quantity evaluated is a weighted
 average as the weights, \f$w(t')\f$, allow us to negate the effect any bias might have on the region of phase space
 sampled by the system.  This is discussed in the section of the manual on \ref Analysis.
 
@@ -60,7 +60,7 @@ PRINT ARG=d1a FILE=colvar STRIDE=100
 The following example calculates the ensemble average for the torsional angle involving atoms 1, 2, 3 and 4.
 At variance with the previous example this quantity is periodic so the second formula in the above introduction
 is used to calculate the average.  Furthermore, by using the CLEAR keyword we have specified that block averages
-are to be calculated.  Consequently, after 100 steps all the information aquired thus far in the simulation is
+are to be calculated.  Consequently, after 100 steps all the information acquired thus far in the simulation is
 forgotten and the process of averaging is begun again.  The quantities output in the colvar file are thus the
 block averages taken over the first 100 frames of the trajectory, the block average over the second 100 frames
 of trajectory and so on.
@@ -73,7 +73,7 @@ PRINT ARG=t1a FILE=colvar STRIDE=100
 
 This third example incorporates a bias.  Notice that the effect the bias has on the ensemble average is removed by taking
 advantage of the \ref REWEIGHT_BIAS method.  The final ensemble averages output to the file are thus block ensemble averages for the
-unbiased canononical ensemble at a temperature of 300 K.
+unbiased canonical ensemble at a temperature of 300 K.
 
 \plumedfile
 t1: TORSION ATOMS=1,2,3,4
@@ -101,6 +101,7 @@ public:
   void finishAveraging();
   bool isPeriodic() { return false; }
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
+  void accumulateAverage( MultiValue& myvals ) const ;
 };
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")
@@ -127,11 +128,18 @@ Average::Average( const ActionOptions& ao ):
   vesselbase::VesselOptions da("myaverage","",-1,instring,this);
   Keywords keys; AverageVessel::registerKeywords( keys );
   vesselbase::VesselOptions dar( da, keys );
-  myaverage = new AverageVessel(dar); setAveragingAction( myaverage, false );
+  std::unique_ptr<AverageVessel> average( new AverageVessel(dar) );
+  myaverage = average.get();
+  setAveragingAction( std::move(average), false );
 }
 
 void Average::performOperations( const bool& from_update ) {
   myaverage->accumulate( cweight, getArgument(0) );
+}
+
+void Average::accumulateAverage( MultiValue& myvals ) const {
+  plumed_dbg_assert( myvals.getNumberOfValues()==3 );
+  myaverage->accumulate( myvals.get(0), myvals.get(1) );
 }
 
 void Average::finishAveraging() {

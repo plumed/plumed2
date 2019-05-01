@@ -1,0 +1,29 @@
+#! /bin/bash
+# cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C "$(DESTDIR)$(includedir)/$(program_name)/"
+
+cd ../../src
+
+where="$1"
+shift
+
+script=""
+includedir=
+dirs=$*
+
+for dir in $dirs
+do
+script="$script"'
+s|^# *include *"'$dir'/|#include "../'$dir'/|'
+done
+export LC_ALL=C
+
+for dir in $dirs
+do
+for file in $dir/*.h
+do
+  if test -e $file ; then
+    mkdir -p "$where/${file%/*}"
+    cat $file | sed "$script" > "$where/$file"
+  fi
+done
+done

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,10 +37,9 @@ private:
 /// Blocks containing start and end points for all the domains
   std::vector<unsigned> blocks;
 /// Each of the domains we are calculating the distance from
-  std::vector<SingleDomainRMSD*> domains;
+  std::vector<std::unique_ptr<SingleDomainRMSD>> domains;
 public:
   explicit MultiDomainRMSD( const ReferenceConfigurationOptions& ro );
-  ~MultiDomainRMSD();
 /// Read in the input from a pdb
   void read( const PDB& );
 /// Set the input from an analysis object (don't know how this will work yet so currently just a plumed_error)
@@ -50,8 +49,8 @@ public:
   double calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const ;
 ///
   bool pcaIsEnabledForThisReference();
-  void extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& direction ) const ;
-  double projectAtomicDisplacementOnVector( const std::vector<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ;
+  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const ;
+  double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const ;
   void setupPCAStorage( ReferenceValuePack& mypack );
 };
 

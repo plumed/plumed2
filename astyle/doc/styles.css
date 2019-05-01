@@ -34,3 +34,26 @@ a:hover { color: #F00000; text-decoration: underline; }
 img { border: none; }
 
 pre { margin-left: 0.3in; color: navy; font-weight: bold; }
+
+/*- the following styles are for the 'top' button
+    the corresponding javascript is in the html document from
+    https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_scroll_to_top
+*/
+#topBtn {
+    display: none;          /* Hidden by default */
+    position: fixed;        /* Fixed/sticky position */
+    bottom: 55px;           /* Place the button from the bottom */
+    right: 10px;            /* Place the button from the right */
+    z-index: 99;            /* Make sure it does not overlap */
+    border: none;           /* Remove borders */
+    outline: none;          /* Remove outline */
+    background-color: #ccc; /* Set a background color */
+    color: #0000C0;         /* Text color */
+    cursor: pointer;        /* Add a mouse pointer on hover */
+    padding: 10px;          /* Some padding */
+    border-radius: 10px;    /* Rounded corners */
+}
+
+#topBtn:hover {
+    background-color: #aaa; /* Add a darker background on hover */
+}

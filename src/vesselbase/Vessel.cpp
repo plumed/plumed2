@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -74,9 +74,7 @@ Vessel::Vessel( const VesselOptions& da ):
   action(da.action),
   line(Tools::getWords( da.parameters )),
   keywords(da.keywords),
-  finished_read(false),
-  comm(da.action->comm),
-  log((da.action)->log)
+  finished_read(false)
 {
   if( da.mylabel.length()>0) {
     mylabel=da.mylabel;
@@ -127,18 +125,25 @@ void Vessel::parseFlag(const std::string&key, bool & t) {
 void Vessel::checkRead() {
   if(!line.empty()) {
     std::string msg="cannot understand the following words from input : ";
-    for(unsigned i=0; i<line.size(); i++) msg = msg + line[i] + ", ";
+    for(unsigned i=0; i<line.size(); i++) {
+      if(i>0) msg = msg + ", ";
+      msg = msg + line[i];
+    }
     error(msg);
   }
   finished_read=true;
   std::string describe=description();
-  if( describe.length()>0 ) log.printf("  %s\n", describe.c_str() );
+  if( describe.length()>0 && action ) action->log.printf("  %s\n", describe.c_str() );
 }
 
 void Vessel::error( const std::string& msg ) {
-  action->log.printf("ERROR for keyword %s in action %s with label %s : %s \n \n",myname.c_str(), (action->getName()).c_str(), (action->getLabel()).c_str(), msg.c_str() );
-  if(finished_read) keywords.print( log );
-  plumed_merror("ERROR for keyword " + myname + " in action "  + action->getName() + " with label " + action->getLabel() + " : " + msg );
+  if( action ) {
+    action->log.printf("ERROR for keyword %s in action %s with label %s : %s \n \n",myname.c_str(), (action->getName()).c_str(), (action->getLabel()).c_str(), msg.c_str() );
+    if(finished_read) keywords.print( action->log );
+    plumed_merror("ERROR for keyword " + myname + " in action "  + action->getName() + " with label " + action->getLabel() + " : " + msg );
+  } else {
+    plumed_merror("ERROR: " + msg);
+  }
 }
 
 }

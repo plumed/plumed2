@@ -1,0 +1,21 @@
+#! FIELDS idx_phi ves1.coeffs index
+#! SET time 20.000000
+#! SET iteration  10
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_phi  11
+       0     0.000000           0
+       1     0.205729           1
+       2    -4.971305           2
+       3    -3.756567           3
+       4    -0.842988           4
+       5    -1.697444           5
+       6     3.054607           6
+       7     2.568698           7
+       8     2.208072           8
+       9     2.266734           9
+      10    -1.877002          10
+#!-------------------
+
+

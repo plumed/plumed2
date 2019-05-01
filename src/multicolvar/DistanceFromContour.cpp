@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -49,13 +49,13 @@ In other words, it is a set of points, \f$(x',y',z')\f$, in your box which have:
 p(x',y',z') = \rho
 \f]
 
-where \f$\rho\f$ is some target density.  This action caculates the distance projected on the \f$x, y\f$ or
+where \f$\rho\f$ is some target density.  This action calculates the distance projected on the \f$x, y\f$ or
 \f$z\f$ axis between the position of some test particle and this surface of constant field density.
 
 \par Examples
 
-In this example atoms 2-100 are assumed to be concentraed along some part of the \f$z\f$ axis so that you
-an interface between a liquid/solid and the vapour.  The quantity dc measures the distance between the
+In this example atoms 2-100 are assumed to be concentrated along some part of the \f$z\f$ axis so that you
+an interface between a liquid/solid and the vapor.  The quantity dc measures the distance between the
 surface at which the density of 2-100 atoms is equal to 0.2 and the position of the test particle atom 1.
 
 \plumedfile
@@ -77,7 +77,7 @@ private:
   double contour;
   double pbc_param;
   std::string kerneltype;
-  std::vector<Value*> pval;
+  std::vector<std::unique_ptr<Value>> pval;
   std::vector<double> bw, pos1, pos2, dirv, dirv2;
   std::vector<double> forces;
   std::vector<unsigned> perp_dirs;
@@ -87,7 +87,6 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromContour( const ActionOptions& );
-  ~DistanceFromContour();
   bool isDensity() const { return true; }
   void calculate();
   unsigned getNumberOfQuantities() const ;
@@ -108,7 +107,7 @@ void DistanceFromContour::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("thickness","default","the distance between the two contours on the line from the reference atom");
   keys.add("compulsory","DATA","The input base multicolvar which is being used to calculate the contour");
   keys.add("atoms","ATOM","The atom whose perpendicular distance we are calculating from the contour");
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
+  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("compulsory","DIR","the direction perpendicular to the contour that you are looking for");
@@ -116,7 +115,7 @@ void DistanceFromContour::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","TOLERANCE","0.1","this parameter is used to manage periodic boundary conditions.  The problem "
            "here is that we can be between contours even when we are not within the membrane "
            "because of periodic boundary conditions.  When we are in the contour, however, we "
-           "should have it so that the sums of the absoluate values of the distances to the two "
+           "should have it so that the sums of the absolute values of the distances to the two "
            "contours is approximately the distance between the two contours.  There can be numerical errors in these calculations, however, so "
            "we specify a small tolerance here");
 }
@@ -161,7 +160,7 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
   for(unsigned i=0; i<mybasemulticolvars[0]->getFullNumberOfTasks(); ++i) addTaskToList(i);
   // And a cutoff
   std::vector<double> pp( bw.size(),0 );
-  KernelFunctions kernel( pp, bw, kerneltype, false, 1.0, true );
+  KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 );
   double rcut = kernel.getCutoff( bw[0] );
   for(unsigned j=1; j<bw.size(); ++j) {
     if( kernel.getCutoff(bw[j])>rcut ) rcut=kernel.getCutoff(bw[j]);
@@ -185,11 +184,7 @@ DistanceFromContour::DistanceFromContour( const ActionOptions& ao ):
   plumed_assert( myvalue_vessel && myderiv_vessel ); resizeFunctions();
 
   // Create the vector of values that holds the position
-  for(unsigned i=0; i<3; ++i) pval.push_back( new Value() );
-}
-
-DistanceFromContour::~DistanceFromContour() {
-  for(unsigned i=0; i<3; ++i) delete pval[i];
+  for(unsigned i=0; i<3; ++i) pval.emplace_back( new Value() );
 }
 
 unsigned DistanceFromContour::getNumberOfQuantities() const {
@@ -206,9 +201,10 @@ void DistanceFromContour::calculate() {
   // Set bracket as center of mass of membrane in active region
   deactivateAllTasks();
   Vector myvec = getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(0) ); pos2[dir]=myvec[dir];
-  taskFlags[0]=1; double d2, mindist = myvec.modulo2();
+  taskFlags[0]=1; double mindist = myvec.modulo2();
   for(unsigned j=1; j<getNumberOfAtoms()-1; ++j) {
     Vector distance=getSeparation( getPosition(getNumberOfAtoms()-1), getPosition(j) );
+    double d2;
     if( (d2=distance[perp_dirs[0]]*distance[perp_dirs[0]])<rcut2 &&
         (d2+=distance[perp_dirs[1]]*distance[perp_dirs[1]])<rcut2 ) {
       d2+=distance[dir]*distance[dir];
@@ -308,9 +304,12 @@ double DistanceFromContour::compute( const unsigned& tindex, AtomValuePack& myat
   Vector distance = getSeparation( getPosition(getNumberOfAtoms()-1), myatoms.getPosition(0) );
   std::vector<double> pp(3), der(3,0); for(unsigned j=0; j<3; ++j) pp[j] = distance[j];
 
+  // convert the pointer once
+  auto pval_ptr=Tools::unique2raw(pval);
+
   // Now create the kernel and evaluate
-  KernelFunctions kernel( pp, bw, kerneltype, false, 1.0, true );
-  double newval = kernel.evaluate( pval, der, true );
+  KernelFunctions kernel( pp, bw, kerneltype, "DIAGONAL", 1.0 );
+  kernel.normalize( pval_ptr ); double newval = kernel.evaluate( pval_ptr, der, true );
 
   if( mybasemulticolvars[0]->isDensity() ) {
     if( !doNotCalculateDerivatives() && derivTime ) {

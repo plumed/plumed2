@@ -1,0 +1,4 @@
+plumed_needs="cregex"
+type=driver
+# this is to test a different name
+arg="--plumed plumed.dat --mf_pdb peptide.pdb"

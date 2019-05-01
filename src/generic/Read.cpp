@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,6 +26,7 @@
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
 #include "tools/IFile.h"
+#include <memory>
 
 namespace PLMD {
 namespace generic {
@@ -40,9 +41,9 @@ an MD simulation
 \par Description of components
 
 The READ command will read those fields that are labelled with the text string given to the
-VALUE keyword.  It will also read in any fields that are labelleled with the text string
+VALUE keyword.  It will also read in any fields that are labeled with the text string
 given to the VALUE keyword followed by a dot and a further string. If a single Value is read in
-this value can be referenced using the label of the Action.  Alternatively, if multiple quanties
+this value can be referenced using the label of the Action.  Alternatively, if multiple quantities
 are read in, they can be referenced elsewhere in the input by using the label for the Action
 followed by a dot and the character string that appeared after the dot in the title of the field.
 
@@ -71,12 +72,16 @@ private:
   bool cloned_file;
   unsigned nlinesPerStep;
   std::string filename;
+/// Unique pointer with the same scope as ifile.
+  std::unique_ptr<IFile> ifile_ptr;
+/// Pointer to input file.
+/// It is either pointing to the content of ifile_ptr
+/// or to the file it is cloned from.
   IFile* ifile;
-  std::vector<Value*> readvals;
+  std::vector<std::unique_ptr<Value>> readvals;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Read(const ActionOptions&);
-  ~Read();
   void prepare();
   void apply() {}
   void calculate();
@@ -94,13 +99,13 @@ void Read::registerKeywords(Keywords& keys) {
   ActionPilot::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   keys.add("compulsory","STRIDE","1","the frequency with which the file should be read.");
-  keys.add("compulsory","EVERY","1","only read every ith line of the colvar file. This should be used if the colvar was written more frequently than the trajectory.");
+  keys.add("compulsory","EVERY","1","only read every \\f$n\\f$th line of the colvar file. This should be used if the colvar was written more frequently than the trajectory.");
   keys.add("compulsory","VALUES","the values to read from the file");
   keys.add("compulsory","FILE","the name of the file from which to read these quantities");
   keys.addFlag("IGNORE_TIME",false,"ignore the time in the colvar file. When this flag is not present read will be quite strict "
                "about the start time of the simulation and the stride between frames");
   keys.addFlag("IGNORE_FORCES",false,"use this flag if the forces added by any bias can be safely ignored.  As an example forces can be "
-               "safely ignored if you are doing postprocessing that does not involve outputting forces");
+               "safely ignored if you are doing post processing that does not involve outputting forces");
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -131,7 +136,8 @@ Read::Read(const ActionOptions&ao):
     }
   }
   if( !cloned_file ) {
-    ifile=new IFile();
+    ifile_ptr.reset(new IFile());
+    ifile=ifile_ptr.get();
     if( !ifile->FileExist(filename) ) error("could not find file named " + filename);
     ifile->link(*this);
     ifile->open(filename);
@@ -153,35 +159,30 @@ Read::Read(const ActionOptions&ao):
       ifile->scanFieldList( fieldnames );
       for(unsigned i=0; i<fieldnames.size(); ++i) {
         if( fieldnames[i].substr(0,dot)==label ) {
-          readvals.push_back(new Value(this, fieldnames[i], false) ); addComponentWithDerivatives( fieldnames[i].substr(dot+1) );
+          readvals.emplace_back(new Value(this, fieldnames[i], false) ); addComponentWithDerivatives( fieldnames[i].substr(dot+1) );
           if( ifile->FieldExist("min_" + fieldnames[i]) ) componentIsPeriodic( fieldnames[i].substr(dot+1), "-pi","pi" );
           else componentIsNotPeriodic( fieldnames[i].substr(dot+1) );
         }
       }
     } else {
-      readvals.push_back(new Value(this, valread[0], false) ); addComponentWithDerivatives( name );
+      readvals.emplace_back(new Value(this, valread[0], false) ); addComponentWithDerivatives( name );
       if( ifile->FieldExist("min_" + valread[0]) ) componentIsPeriodic( valread[0].substr(dot+1), "-pi", "pi" );
       else componentIsNotPeriodic( valread[0].substr(dot+1) );
       for(unsigned i=1; i<valread.size(); ++i) {
         if( valread[i].substr(0,dot)!=label ) error("all values must be from the same Action when using READ");;
-        readvals.push_back(new Value(this, valread[i], false) ); addComponentWithDerivatives( valread[i].substr(dot+1) );
+        readvals.emplace_back(new Value(this, valread[i], false) ); addComponentWithDerivatives( valread[i].substr(dot+1) );
         if( ifile->FieldExist("min_" + valread[i]) ) componentIsPeriodic( valread[i].substr(dot+1), "-pi", "pi" );
         else componentIsNotPeriodic( valread[i].substr(dot+1) );
       }
     }
   } else {
     if( valread.size()!=1 ) error("all values must be from the same Action when using READ");
-    readvals.push_back(new Value(this, valread[0], false) ); addValueWithDerivatives();
+    readvals.emplace_back(new Value(this, valread[0], false) ); addValueWithDerivatives();
     if( ifile->FieldExist("min_" + valread[0]) ) setPeriodic( "-pi", "pi" );
     else setNotPeriodic();
     log.printf("  reading value %s and storing as %s\n",valread[0].c_str(),getLabel().c_str() );
   }
   checkRead();
-}
-
-Read::~Read() {
-  if( !cloned_file ) { ifile->close(); delete ifile; }
-  for(unsigned i=0; i<readvals.size(); ++i) delete readvals[i];
 }
 
 std::string Read::getFilename() const {
@@ -216,7 +217,9 @@ void Read::prepare() {
 void Read::calculate() {
   std::string smin, smax;
   for(unsigned i=0; i<readvals.size(); ++i) {
-    ifile->scanField( readvals[i] );
+// .get  returns the raw pointer
+// ->get calls the Value::get() method
+    ifile->scanField( readvals[i].get() );
     getPntrToComponent(i)->set( readvals[i]->get() );
     if( readvals[i]->isPeriodic() ) {
       readvals[i]->getDomain( smin, smax );

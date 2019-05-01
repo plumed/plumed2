@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,7 +30,7 @@ Calculate properties of the distribution of some quantities that are part of a c
 This collective variable was developed for looking at nucleation phenomena, where you are
 interested in using studying the behavior of atoms in small aggregates or nuclei.  In these sorts of
 problems you might be interested in the degree the atoms in a nucleus have adopted their crystalline
-structure or (in the case of heterogenous nucleation of a solute from a solvent) you might be
+structure or (in the case of heterogeneous nucleation of a solute from a solvent) you might be
 interested in how many atoms are present in the largest cluster \cite tribello-clustering.
 
 \par Examples

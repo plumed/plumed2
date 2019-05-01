@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -72,16 +72,12 @@ public:
   unsigned getNumberOfReferenceArguments() const ;
 /// Get the arguments required
   void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false );
-/// Set the names of the arguments
-  void setArgumentNames( const std::vector<std::string>& arg_vals );
 /// Set the positions of the refernce arguments
   void setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma );
 /// Set the positions of the reference arguments
   void moveReferenceArguments( const std::vector<double>& arg_vals );
 /// Get the value of the ith reference argument
   double getReferenceArgument( const unsigned& i ) const ;
-/// Print the arguments out
-  void printArguments( OFile& ofile, const std::string& fmt ) const ;
 /// Return all the reference arguments
   const std::vector<double>& getReferenceArguments() const ;
   const std::vector<double>& getReferenceMetric();

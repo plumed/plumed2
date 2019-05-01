@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,6 +27,8 @@
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
+#include "tools/MultiValue.h"
+#include "analysis/AnalysisBase.h"
 #include "ActionWithVessel.h"
 #include "AveragingVessel.h"
 
@@ -56,7 +58,10 @@ private:
 /// The weights we are going to use for reweighting
   std::vector<Value*> weights;
 /// Are we accumulated the unormalized quantity
-  bool unormalised;
+  bool activated;
+/// An object in which analysis data has been stored
+  analysis::AnalysisBase* my_analysis_object;
+  enum {t,f,ndata} normalization;
 protected:
 /// This ensures runAllTasks is used
   bool useRunAllTasks;
@@ -65,9 +70,11 @@ protected:
 /// The current weight and its logarithm
   double lweight, cweight;
 /// Set the averaging action
-  void setAveragingAction( AveragingVessel* av_vessel, const bool& usetasks );
+  void setAveragingAction( std::unique_ptr<AveragingVessel> av_vessel, const bool& usetasks );
 /// Check if we are using the normalization condition when calculating this quantity
   bool noNormalization() const ;
+/// Are we storing data then averaging
+  bool storeThenAverage() const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithAveraging( const ActionOptions& );
@@ -75,6 +82,7 @@ public:
   void unlockRequests();
   void calculateNumericalDerivatives(PLMD::ActionWithValue*);
   virtual unsigned getNumberOfDerivatives() { return 0; }
+  virtual unsigned getNumberOfQuantities() const ;
   unsigned getNumberOfArguments() const ;
 /// Overwrite ActionWithArguments getArguments() so that we don't return the bias
   std::vector<Value*> getArguments();
@@ -85,8 +93,18 @@ public:
   virtual void prepareForAveraging() {}
 /// This does the averaging operation
   virtual void performOperations( const bool& from_update );
+/// Does the calculation
+  virtual void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+///
+  virtual void runTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
+///
+  virtual void accumulateAverage( MultiValue& myvals ) const {}
 /// This is done once the averaging is finished
   virtual void finishAveraging() {}
+///
+  void runFinalJobs();
+///
+  bool ignoreNormalization() const ;
 };
 
 inline
@@ -103,7 +121,13 @@ std::vector<Value*> ActionWithAveraging::getArguments() {
 
 inline
 bool ActionWithAveraging::noNormalization() const {
-  return unormalised;
+  return normalization==f;
+}
+
+inline
+bool ActionWithAveraging::storeThenAverage() const {
+  if( my_analysis_object ) return true;
+  return false;
 }
 
 }

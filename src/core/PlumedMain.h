@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,12 +23,14 @@
 #define __PLUMED_core_PlumedMain_h
 
 #include "WithCmd.h"
+#include "tools/ForwardDecl.h"
 #include <cstdio>
 #include <string>
 #include <vector>
 #include <set>
 #include <stack>
-
+#include <memory>
+#include <map>
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE DEFINITIONS WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -61,6 +63,7 @@ class Stopwatch;
 class Citations;
 class ExchangePatterns;
 class FileBase;
+class DataFetchingObject;
 
 /**
 Main plumed object.
@@ -72,26 +75,64 @@ It does not contain any static data.
 class PlumedMain:
   public WithCmd
 {
+/// Pointers to files opened in actions associated to this object.
+/// Notice that with the current implementation this should be at the top of this
+/// structure. Indeed, this should be destroyed *after* all the actions allocated
+/// in this PlumedMain object have been destroyed.
+  std::set<FileBase*> files;
+/// Forward declaration.
+  ForwardDecl<Communicator> comm_fwd;
 public:
 /// Communicator for plumed.
 /// Includes all the processors used by plumed.
-  Communicator&comm;
-  Communicator&multi_sim_comm;
+  Communicator&comm=*comm_fwd;
 
 private:
-  DLLoader& dlloader;
+/// Forward declaration.
+  ForwardDecl<Communicator> multi_sim_comm_fwd;
+public:
+  Communicator&multi_sim_comm=*multi_sim_comm_fwd;
 
-  WithCmd* cltool;
-  Stopwatch& stopwatch;
-  WithCmd* grex;
+private:
+/// Error handler.
+/// Pointer to a function that is called an exception thrown within
+/// the library is about to leave the library.
+/// Can be used to remap exceptions in case the plumed wrapper was compiled
+/// with a different version of the C++ standard library.
+/// Should only be called from \ref plumed_plumedmain_cmd().
+  typedef struct {
+    void* ptr;
+    void(*handler)(void* ptr,int code,const char*);
+  } plumed_error_handler;
+
+  plumed_error_handler error_handler= {NULL,NULL};
+
+/// Forward declaration.
+  ForwardDecl<DLLoader> dlloader_fwd;
+  DLLoader& dlloader=*dlloader_fwd;
+
+  std::unique_ptr<WithCmd> cltool;
+
+  std::unique_ptr<WithCmd> grex;
 /// Flag to avoid double initialization
   bool  initialized;
 /// Name of MD engine
   std::string MDEngine;
+
+/// Forward declaration.
+  ForwardDecl<Log> log_fwd;
 /// Log stream
-  Log& log;
+  Log& log=*log_fwd;
+
+/// Forward declaration.
+/// Should be placed after log since its constructor takes a log reference as an argument.
+  ForwardDecl<Stopwatch> stopwatch_fwd;
+  Stopwatch& stopwatch=*stopwatch_fwd;
+
+/// Forward declaration.
+  ForwardDecl<Citations> citations_fwd;
 /// tools/Citations.holder
-  Citations& citations;
+  Citations& citations=*citations_fwd;
 
 /// Present step number.
   long int step;
@@ -104,11 +145,22 @@ private:
 /// Name of the input file
   std::string plumedDat;
 
-/// Object containing information about atoms (such as positions,...).
-  Atoms&    atoms;           // atomic coordinates
+/// Object containing data we would like to grab and pass back
+  std::unique_ptr<DataFetchingObject> mydatafetcher;
 
+/// End of input file.
+/// Set to true to terminate reading
+  bool endPlumed;
+
+/// Forward declaration.
+  ForwardDecl<Atoms> atoms_fwd;
+/// Object containing information about atoms (such as positions,...).
+  Atoms&    atoms=*atoms_fwd;           // atomic coordinates
+
+/// Forward declaration.
+  ForwardDecl<ActionSet> actionSet_fwd;
 /// Set of actions found in plumed.dat file
-  ActionSet& actionSet;
+  ActionSet& actionSet=*actionSet_fwd;
 
 /// Set of Pilot actions.
 /// These are the action the, if they are Pilot::onStep(), can trigger execution
@@ -124,8 +176,10 @@ private:
 /// This computed by accumulating the change in external potentials.
   double work;
 
+/// Forward declaration.
+  ForwardDecl<ExchangePatterns> exchangePatterns_fwd;
 /// Class of possible exchange patterns, used for BIASEXCHANGE but also for future parallel tempering
-  ExchangePatterns& exchangePatterns;
+  ExchangePatterns& exchangePatterns=*exchangePatterns_fwd;
 
 /// Set to true if on an exchange step
   bool exchangeStep;
@@ -136,7 +190,6 @@ private:
 /// Flag for checkpointig
   bool doCheckPoint;
 
-  std::set<FileBase*> files;
 
 /// Stuff to make plumed stop the MD code cleanly
   int* stopFlag;
@@ -152,6 +205,10 @@ public:
 
 /// Flag to switch on detailed timers
   bool detailedTimers;
+
+/// Generic map string -> double
+/// intended to pass information across Actions
+  std::map<std::string,double> passMap;
 
 /// Add a citation, returning a string containing the reference number, something like "[10]"
   std::string cite(const std::string&);
@@ -181,7 +238,7 @@ public:
    and an MD engine, this is the right place
    Notice that this interface should always keep retro-compatibility
   */
-  void cmd(const std::string&key,void*val=NULL);
+  void cmd(const std::string&key,void*val=NULL) override;
   ~PlumedMain();
   /**
     Read an input file.
@@ -330,6 +387,12 @@ public:
   void updateFlagsPop();
 /// Get top of update flags
   bool updateFlagsTop();
+/// Set end of input file
+  void setEndPlumed();
+/// Call error handler.
+/// Should only be called from \ref plumed_plumedmain_cmd().
+/// If the error handler was not set, returns false.
+  bool callErrorHandler(int code,const char* msg)const;
 };
 
 /////
@@ -394,6 +457,20 @@ inline
 bool PlumedMain::updateFlagsTop() {
   return updateFlags.top();
 }
+
+inline
+void PlumedMain::setEndPlumed() {
+  endPlumed=true;
+}
+
+inline
+bool PlumedMain::callErrorHandler(int code,const char* msg)const {
+  if(error_handler.handler) {
+    error_handler.handler(error_handler.ptr,code,msg);
+    return true;
+  } else return false;
+}
+
 
 }
 

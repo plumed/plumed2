@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -71,7 +71,7 @@ LABEL=ab
 PRINT ARG=ab FILE=colvar STRIDE=10
 \endplumedfile
 
-Writing out the atoms involved in all the torsions in this way can be rather tedious. Thankfully if you are working with protein you
+Writing out the atoms involved in all the torsion angles in this way can be rather tedious. Thankfully if you are working with protein you
 can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
@@ -87,7 +87,7 @@ PRINT ARG=ab FILE=colvar STRIDE=10
 \endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
-Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
+Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the fourth residue of the protein.
 
 
 */
@@ -96,6 +96,7 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 class AlphaBeta : public MultiColvarBase {
 private:
   std::vector<double> target;
+  std::vector<double> coefficient;
 public:
   static void registerKeywords( Keywords& keys );
   explicit AlphaBeta(const ActionOptions&);
@@ -114,8 +115,11 @@ void AlphaBeta::registerKeywords( Keywords& keys ) {
            "action will depend on what functions of the distribution you choose to calculate.");
   keys.reset_style("ATOMS","atoms");
   keys.add("numbered","REFERENCE","the reference values for each of the torsional angles.  If you use a single REFERENCE value the "
-           "same reference value is used for all torsions");
+           "same reference value is used for all torsional angles");
+  keys.add("numbered","COEFFICIENT","the coefficient for each of the torsional angles.  If you use a single COEFFICIENT value the "
+           "same reference value is used for all torsional angles");
   keys.reset_style("REFERENCE","compulsory");
+  keys.reset_style("COEFFICIENT","optional");
 }
 
 AlphaBeta::AlphaBeta(const ActionOptions&ao):
@@ -128,6 +132,8 @@ AlphaBeta::AlphaBeta(const ActionOptions&ao):
   setupMultiColvarBase( all_atoms );
   // Resize target
   target.resize( getFullNumberOfTasks() );
+  // Resize coeff
+  coefficient.resize( getFullNumberOfTasks(), 1.0);
   // Setup central atom indices
   std::vector<bool> catom_ind(4, false);
   catom_ind[1]=catom_ind[2]=true;
@@ -144,6 +150,19 @@ AlphaBeta::AlphaBeta(const ActionOptions&ao):
     for(unsigned i=1; i<target.size(); ++i) target[i]=target[0];
   } else if( ntarget!=target.size() ) {
     error("found wrong number of REFERENCE values");
+  }
+
+  // Read in reference values
+  unsigned ncoefficient=0;
+  for(unsigned i=0; i<coefficient.size(); ++i) {
+    if( !parseNumbered( "COEFFICIENT", i+1, coefficient[i] ) ) break;
+    ncoefficient++;
+  }
+  if( ncoefficient==0 ) {
+    parse("COEFFICIENT",coefficient[0]);
+    for(unsigned i=1; i<coefficient.size(); ++i) coefficient[i]=coefficient[0];
+  } else if( ncoefficient !=coefficient.size() ) {
+    error("found wrong number of COEFFICIENT values");
   }
 
   // And setup the ActionWithVessel
@@ -165,8 +184,8 @@ double AlphaBeta::compute( const unsigned& tindex, AtomValuePack& myatoms ) cons
   Vector dd0,dd1,dd2;
   PLMD::Torsion t;
   const double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
-  const double svalue = -0.5*sin(value-target[tindex]);
-  const double cvalue = 1.+cos(value-target[tindex]);
+  const double svalue = -0.5*coefficient[tindex]*sin(value-target[tindex]);
+  const double cvalue = coefficient[tindex]*(1.+cos(value-target[tindex]));
 
   dd0 *= svalue;
   dd1 *= svalue;

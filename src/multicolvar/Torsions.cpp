@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,7 +38,7 @@ Calculate whether or not a set of torsional angles are within a particular range
 
 \par Examples
 
-The following provides an example of the input for the torsions command
+The following provides an example of the input for the TORSIONS command
 
 \plumedfile
 TORSIONS ...
@@ -50,7 +50,7 @@ LABEL=ab
 PRINT ARG=ab.* FILE=colvar STRIDE=10
 \endplumedfile
 
-Writing out the atoms involved in all the torsions in this way can be rather tedious. Thankfully if you are working with protein you
+Writing out the atoms involved in all the torsion angles in this way can be rather tedious. Thankfully if you are working with protein you
 can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
@@ -66,7 +66,7 @@ PRINT ARG=ab FILE=colvar STRIDE=10
 \endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
-Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
+Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the fourth residue of the protein.
 
 
 */
@@ -85,11 +85,11 @@ PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")
 
 void Torsions::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
-  keys.reserve("numbered","ATOMS","the atoms involved in each of the torsion angles you wish to calculate. "
-               "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one torsion will be "
-               "calculated for each ATOM keyword you specify (all ATOM keywords should "
-               "provide the indices of four atoms).  The eventual number of quantities calculated by this "
-               "action will depend on what functions of the distribution you choose to calculate.");
+  keys.add("numbered","ATOMS","the atoms involved in each of the torsion angles you wish to calculate. "
+           "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one torsion will be "
+           "calculated for each ATOM keyword you specify (all ATOM keywords should "
+           "provide the indices of four atoms).  The eventual number of quantities calculated by this "
+           "action will depend on what functions of the distribution you choose to calculate.");
   keys.reset_style("ATOMS","atoms");
   keys.use("BETWEEN"); keys.use("HISTOGRAM");
 }

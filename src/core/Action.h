@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,7 +25,6 @@
 #include <string>
 #include <set>
 #include "tools/Keywords.h"
-#include "Value.h"
 #include "tools/Tools.h"
 #include "tools/Log.h"
 
@@ -34,6 +33,7 @@ namespace PLMD {
 class PDB;
 class PlumedMain;
 class Communicator;
+class ActionWithValue;
 
 /// This class is used to bring the relevant information to the Action constructor.
 /// Only Action and ActionRegister class can access to its content, which is
@@ -57,8 +57,8 @@ public:
 /// Base class for all the input Actions.
 /// The input Actions are more or less corresponding to the directives
 /// in the plumed.dat file and are applied in order at each time-step.
-class Action
-{
+class Action {
+  friend class ActionShortcut;
 
 /// Name of the directive in the plumed.dat file.
   const std::string name;
@@ -168,10 +168,10 @@ public:
 /// Destructor
   virtual ~Action();
 private:
-/// Copy constructor is disabled (private and unimplemented)
-  explicit Action(const Action&a);
-/// Assignment operator is disabled (private and unimplemented)
-  Action& operator=(const Action&a);
+/// Copy constructor is deleted
+  Action(const Action&a) = delete;
+/// Assignment operator is deleted
+  Action& operator=(const Action&a) = delete;
   int replica_index;
 public:
 /// Check if Action was properly read.
@@ -375,7 +375,8 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
         log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
         this->exit(1);
       } else {
-        for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+        if(t.size()>0) for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+        else t.push_back(val);
       }
     } else if( keywords.style(key,"compulsory") ) {
       error("keyword " + key + " is compulsory for this action");

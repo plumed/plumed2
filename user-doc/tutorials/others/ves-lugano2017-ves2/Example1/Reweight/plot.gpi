@@ -1,0 +1,29 @@
+# Terminal settings
+#set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+#set output "plot.png"
+#set border lw 1.5
+
+# Set axes labels
+set xlabel "Distance (nm)"
+set ylabel "-log p(s)"
+
+# Set range
+set xr [0.24:0.7]
+set yr [-0.25:5.5]
+
+# Define colors
+set style line 1 lt 1 lw 4 ps 1.5 pt 7 lc rgb "#e41a1c"
+set style line 2 lt 1 lw 4 ps 1.5 pt 7 lc rgb "#377eb8"
+set style line 3 lt 1 lw 4 ps 1.5 pt 7 lc rgb "#4daf4a"
+
+set key top right sample 1.
+
+biasFactor=5
+invBiasFactor=1./biasFactor
+everyValue=10
+
+pl "./histo_unbiased" u 1:(-log($2)+1.12) every 1 w l ls 1 title "P(s)", \
+  "./histo_unbiased" u 1:(-log($2**invBiasFactor)+0.22) every 1  w l ls 2 title "[P(s)]^(1/gamma)", \
+  "< paste ./histo_biased ../targetdist.b1.iter-0.data" u 1:(-log($2/$5)+0.36) every everyValue w p ls 3 title "Sampled p(s)"
+
+pause -1

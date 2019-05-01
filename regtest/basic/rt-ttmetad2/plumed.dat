@@ -1,0 +1,67 @@
+RESTART
+
+psi:   ANGLE ATOMS=7,9,15
+
+METAD ...
+ LABEL=metadnp1
+ ARG=psi
+ SIGMA=0.20
+ HEIGHT=1.20
+ TTBIASFACTOR=2.0
+ TRANSITIONWELL0=1.0
+ TRANSITIONWELL1=2.0
+ TEMP=300.0
+ PACE=500
+ FILE=HILLS
+ GRID_RFILE=grid-nonperiodic
+ GRID_MIN=0
+ GRID_MAX=pi
+ GRID_BIN=10
+ FMT=%12.5f
+... METAD
+
+METAD ...
+ LABEL=metadnp1thresh
+ ARG=psi
+ SIGMA=0.20
+ HEIGHT=1.20
+ TTBIASFACTOR=2.0
+ TTBIASTHRESHOLD=0.2
+ TRANSITIONWELL0=1.0
+ TRANSITIONWELL1=2.0
+ TEMP=300.0
+ PACE=500
+ FILE=HILLS-thresh
+ GRID_RFILE=grid-nonperiodic-thresh
+ GRID_MIN=0
+ GRID_MAX=pi
+ GRID_BIN=10
+ FMT=%12.5f
+... METAD
+
+METAD ...
+ LABEL=metadnp1threshhalf
+ ARG=psi
+ SIGMA=0.20
+ HEIGHT=1.20
+ TTBIASFACTOR=2.0
+ TTBIASTHRESHOLD=0.2
+ TTALPHA=0.5
+ TRANSITIONWELL0=1.0
+ TRANSITIONWELL1=2.0
+ TEMP=300.0
+ PACE=500
+ FILE=HILLS-threshhalf
+ GRID_RFILE=grid-nonperiodic-threshhalf
+ GRID_MIN=0
+ GRID_MAX=pi
+ GRID_BIN=10
+ FMT=%12.5f
+... METAD
+
+PRINT ...
+ ARG=psi,metadnp1.bias,metadnp1thresh.bias,metadnp1threshhalf.bias,metadnp1.transbias,metadnp1thresh.transbias,metadnp1threshhalf.transbias
+ STRIDE=500
+ FILE=COLVAR
+ FMT=%8.4f
+... PRINT

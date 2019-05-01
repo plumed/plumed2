@@ -1,0 +1,90 @@
+#! FIELDS idx_arg aver.targetdist-0 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  7
+#! SET shape_arg  7
+       0      1.000000       0  f0(s)
+       1     -0.000000       1  f1(s)
+       2      0.000001       2  f2(s)
+       3     -0.000000       3  f3(s)
+       4      0.000003       4  f4(s)
+       5     -0.000000       5  f5(s)
+       6      0.000007       6  f6(s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-1 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  7
+#! SET shape_arg  7
+       0      1.000000       0  f0(s)
+       1      0.000000       1  f1(s)
+       2      0.000011       2  f2(s)
+       3      0.000000       3  f3(s)
+       4      0.000037       4  f4(s)
+       5      0.000000       5  f5(s)
+       6      0.000078       6  f6(s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-2 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  7
+#! SET shape_arg  7
+       0      1.000000       0  f0(s)
+       1      0.000000       1  f1(s)
+       2     -0.476563       2  f2(s)
+       3     -0.000000       3  f3(s)
+       4      0.319611       4  f4(s)
+       5     -0.000000       5  f5(s)
+       6     -0.223554       6  f6(s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-3 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  7
+#! SET shape_arg  7
+       0      1.000000       0  f0(s)
+       1     -0.499967       1  f1(s)
+       2     -0.101597       2  f2(s)
+       3      0.378944       3  f3(s)
+       4     -0.241955       4  f4(s)
+       5     -0.052946       5  f5(s)
+       6      0.201846       6  f6(s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-4 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  7
+#! SET shape_arg  7
+       0      1.000000       0  f0(s)
+       1      0.499967       1  f1(s)
+       2     -0.101597       2  f2(s)
+       3     -0.378944       3  f3(s)
+       4     -0.241955       4  f4(s)
+       5      0.052946       5  f5(s)
+       6      0.201846       6  f6(s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-5 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  7
+#! SET shape_arg  7
+       0      1.000000       0  f0(s)
+       1      0.083250       1  f1(s)
+       2     -0.466167       2  f2(s)
+       3     -0.113677       3  f3(s)
+       4      0.296674       4  f4(s)
+       5      0.120042       5  f5(s)
+       6     -0.190543       6  f6(s)
+#!-------------------
+
+

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,6 +22,8 @@
 #include "Tensor.h"
 #include "Exception.h"
 
+#include "lapack/lapack.h"
+
 namespace PLMD {
 
 /// Small auxiliary class.
@@ -35,6 +37,15 @@ public:
     plumed_merror("sizeof(Tensor)!=9*sizeof(double). PLUMED cannot work properly in these conditions.");
   }
 } checks;
+
+void TensorGenericAux::local_dsyevr(const char *jobz, const char *range, const char *uplo, int *n,
+                                    double *a, int *lda, double *vl, double *vu, int *
+                                    il, int *iu, double *abstol, int *m, double *w,
+                                    double *z__, int *ldz, int *isuppz, double *work,
+                                    int *lwork, int *iwork, int *liwork, int *info) {
+  plumed_lapack_dsyevr(jobz,range,uplo,n,a,lda,vl,vu,il,iu,abstol,m,w,z__,ldz,isuppz,work,lwork,iwork,liwork,info);
+}
+
 
 }
 

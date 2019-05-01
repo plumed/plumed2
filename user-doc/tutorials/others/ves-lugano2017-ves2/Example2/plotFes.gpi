@@ -1,0 +1,26 @@
+# Terminal settings
+#set terminal pngcairo size 1000,700 enhanced font 'Verdana,18'
+#set output "plotFes.png"
+#set border lw 1.5
+
+# Set color palette
+set palette defined ( 0 0.05 0.05 0.2, 0.1 0 0 1, 0.25 0.7 0.85 0.9,\
+     0.4 0 0.75 0, 0.5 1 1 0,\
+     0.7 1 0 0 )
+
+set xlabel "Distance (nm)"
+set ylabel "Coordination Na-O"
+set cblabel "Free energy (kT)"
+
+set xr [0.23:0.7]
+set yr [3:7]
+set zr [0:6]
+set cbr [0:6]
+
+set key bottom left
+
+set pm3d map
+
+spl "./fes.b1.iter-10000.data" u 1:2:($3/2.5-1.5) w pm3d notitle
+
+pause -1

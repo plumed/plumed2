@@ -1,0 +1,24 @@
+# load the pdb to better select torsions later
+MOLINFO STRUCTURE=reference.pdb
+# Compute the backbone dihedral angle phi, defined by atoms C-N-CA-C
+phi: TORSION ATOMS=@phi-2
+# Compute the backbone dihedral angle psi, defined by atoms N-CA-C-N
+psi: TORSION ATOMS=@psi-2
+
+metad: METAD ...
+# Activate well-tempered metadynamics
+# Deposit a Gaussian every 500 time steps, with initial height equal
+# to 1.2 kJoule/mol, biasfactor equal to 10.0
+# Remember: replica 0 and 1: no bias
+# replica 2, bias on psi
+  ARG=@replicas:{phi,psi,psi}
+  HEIGHT=@replicas:{0.0,0.0,1.2} # make sure that replicas 0 and 1 feel no potential!
+  PACE=500
+  BIASFACTOR=10.0
+  SIGMA=0.35
+# Gaussians will be written to file and also stored on grid
+  FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
+...
+
+# Print both collective variables and the value of the bias potential on COLVAR file
+PRINT ARG=phi,psi FILE=COLVAR STRIDE=10

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -42,8 +42,8 @@ public:
     mypack.displacement.resize( getNumberOfAtoms() );
     mypack.DRotDPos.resize(3,3); mypack.rot.resize(1);
   }
-  void extractAtomicDisplacement( const std::vector<Vector>& pos, const bool & anflag, std::vector<Vector>& direction ) const ;
-  double projectAtomicDisplacementOnVector( const std::vector<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ;
+  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const ;
+  double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const ;
 };
 
 PLUMED_REGISTER_METRIC(OptimalRMSD,"OPTIMAL")
@@ -64,7 +64,8 @@ double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& my
   if( myder.calcUsingPCAOption() ) {
     std::vector<Vector> centeredreference( getNumberOfAtoms () );
     d=myrmsd.calc_PCAelements(pos,myder.getAtomVector(),myder.rot[0],myder.DRotDPos,myder.getAtomsDisplacementVector(),myder.centeredpos,centeredreference,squared);
-    unsigned nat = pos.size(); for(unsigned i=0; i<nat; ++i) myder.getAtomsDisplacementVector()[i] -= getReferencePosition(i);
+    unsigned nat = pos.size();
+    for(unsigned i=0; i<nat; ++i) { myder.getAtomsDisplacementVector()[i] -= getReferencePosition(i); myder.getAtomsDisplacementVector()[i] *= getDisplace()[i]; }
   } else if( fast ) {
     if( getAlign()==getDisplace() ) d=myrmsd.optimalAlignment<false,true>(getAlign(),getDisplace(),pos,getReferencePositions(),myder.getAtomVector(),squared);
     else d=myrmsd.optimalAlignment<false,false>(getAlign(),getDisplace(),pos,getReferencePositions(),myder.getAtomVector(),squared);
@@ -77,34 +78,38 @@ double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& my
   return d;
 }
 
-void OptimalRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& direction ) const {
+void OptimalRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const {
   std::vector<Tensor> rot(1);  Matrix<std::vector<Vector> > DRotDPos( 3, 3 );
   std::vector<Vector> centeredreference( getNumberOfAtoms() ), centeredpos( getNumberOfAtoms() ), avector( getNumberOfAtoms() );
   double d=myrmsd.calc_PCAelements(pos,avector,rot[0],DRotDPos,direction,centeredpos,centeredreference,true);
-  unsigned nat = pos.size(); double scale=1.0; if( anflag ) scale = 1.0 / static_cast<double>( nat );
-  for(unsigned i=0; i<nat; ++i) direction[i] = scale*( direction[i] - getReferencePosition(i) );
+  unsigned nat = pos.size(); for(unsigned i=0; i<nat; ++i) direction[i] = getDisplace()[i]*( direction[i] - getReferencePosition(i) );
 }
 
-double OptimalRMSD::projectAtomicDisplacementOnVector( const std::vector<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
+double OptimalRMSD::projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const {
   plumed_dbg_assert( mypack.calcUsingPCAOption() );
 
   double proj=0.0; mypack.clear();
-  for(unsigned i=0; i<pos.size(); ++i) {
+  for(unsigned i=0; i<vecs.size(); ++i) {
     proj += dotProduct( mypack.getAtomsDisplacementVector()[i], vecs[i] );
   }
   for(unsigned a=0; a<3; a++) {
     for(unsigned b=0; b<3; b++) {
+      double tmp1=0.; for(unsigned n=0; n<getNumberOfAtoms(); n++) tmp1+=mypack.centeredpos[n][b]*vecs[n][a];
+
       for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) {
-        double tmp1=0.;
-        for(unsigned n=0; n<getNumberOfAtoms(); n++) tmp1+=mypack.centeredpos[n][b]*vecs[n][a];
-        mypack.addAtomDerivatives( iat, mypack.DRotDPos[a][b][iat]*tmp1 );
+        if( normalized ) mypack.addAtomDerivatives( iat, getDisplace()[iat]*mypack.DRotDPos[a][b][iat]*tmp1 );
+        else mypack.addAtomDerivatives( iat, mypack.DRotDPos[a][b][iat]*tmp1 );
       }
     }
   }
   Tensor trot=mypack.rot[0].transpose();
   Vector v1; v1.zero(); double prefactor = 1. / static_cast<double>( getNumberOfAtoms() );
   for(unsigned n=0; n<getNumberOfAtoms(); n++) v1+=prefactor*matmul(trot,vecs[n]);
-  for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) mypack.addAtomDerivatives( iat, matmul(trot,vecs[iat])-v1 );
+  if( normalized ) {
+    for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) mypack.addAtomDerivatives( iat, getDisplace()[iat]*(matmul(trot,vecs[iat]) - v1) );
+  } else {
+    for(unsigned iat=0; iat<getNumberOfAtoms(); iat++) mypack.addAtomDerivatives( iat, (matmul(trot,vecs[iat]) - v1) );
+  }
   if( !mypack.updateComplete() ) mypack.updateDynamicLists();
 
   return proj;

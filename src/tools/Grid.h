@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,6 +26,7 @@
 #include <string>
 #include <map>
 #include <cmath>
+#include <memory>
 
 namespace PLMD {
 
@@ -43,16 +44,16 @@ class BiasWeight:public WeightBase {
 public:
   double beta,invbeta;
   explicit BiasWeight(double v) {beta=v; invbeta=1./beta;}
-  double projectInnerLoop(double &input, double &v) {return  input+exp(beta*v);}
-  double projectOuterLoop(double &v) {return -invbeta*std::log(v);}
+  double projectInnerLoop(double &input, double &v) override {return  input+exp(beta*v);}
+  double projectOuterLoop(double &v) override {return -invbeta*std::log(v);}
 };
 
 class ProbWeight:public WeightBase {
 public:
   double beta,invbeta;
   explicit ProbWeight(double v) {beta=v; invbeta=1./beta;}
-  double projectInnerLoop(double &input, double &v) {return  input+v;}
-  double projectOuterLoop(double &v) {return -invbeta*std::log(v);}
+  double projectInnerLoop(double &input, double &v) override {return  input+v;}
+  double projectOuterLoop(double &v) override {return -invbeta*std::log(v);}
 };
 
 
@@ -76,10 +77,13 @@ public:
   typedef size_t index_t;
 // to restore old implementation (unsigned) use the following instead:
 // typedef unsigned index_t;
+/// Maximum dimension (exaggerated value).
+/// Can be used to replace local std::vectors with std::arrays (allocated on stack).
+  static constexpr size_t maxdim=64;
 private:
   double contour_location;
   std::vector<double> grid_;
-  std::vector< std::vector<double> > der_;
+  std::vector<double> der_;
 protected:
   std::string funcname;
   std::vector<std::string> argnames;
@@ -92,7 +96,8 @@ protected:
   bool dospline_, usederiv_;
   std::string fmt_; // format for output
 /// get "neighbors" for spline
-  std::vector<index_t> getSplineNeighbors(const std::vector<unsigned> & indices)const;
+  void getSplineNeighbors(const std::vector<unsigned> & indices, std::vector<index_t>& neigh, unsigned& nneigh )const;
+// std::vector<index_t> getSplineNeighbors(const std::vector<unsigned> & indices)const;
 
 
 public:
@@ -117,6 +122,7 @@ public:
   std::vector<std::string> getMax() const;
 /// get bin size
   std::vector<double> getDx() const;
+  double getDx(index_t j) const ;
 /// get bin volume
   double getBinVolume() const;
 /// get number of bins
@@ -127,8 +133,12 @@ public:
   unsigned getDimension() const;
 /// get argument names  of this grid
   std::vector<std::string> getArgNames() const;
+/// get if the grid has derivatives
+  bool hasDerivatives() const {return usederiv_;}
 
 /// methods to handle grid indices
+  void getIndices(index_t index, std::vector<unsigned>& rindex) const;
+  void getIndices(const std::vector<double> & x, std::vector<unsigned>& rindex) const;
   std::vector<unsigned> getIndices(index_t index) const;
   std::vector<unsigned> getIndices(const std::vector<double> & x) const;
   index_t getIndex(const std::vector<unsigned> & indices) const;
@@ -145,16 +155,19 @@ public:
   std::vector<index_t> getNeighbors(index_t index,const std::vector<unsigned> & neigh) const;
   std::vector<index_t> getNeighbors(const std::vector<unsigned> & indices,const std::vector<unsigned> & neigh) const;
   std::vector<index_t> getNeighbors(const std::vector<double> & x,const std::vector<unsigned> & neigh) const;
+/// get nearest neighbors (those separated by exactly one lattice unit)
+  std::vector<index_t> getNearestNeighbors(const index_t index) const;
+  std::vector<index_t> getNearestNeighbors(const std::vector<unsigned> &indices) const;
 
 /// write header for grid file
   void writeHeader(OFile& file);
 
 /// read grid from file
-  static Grid* create(const std::string&,const std::vector<Value*>&,IFile&,bool,bool,bool);
+  static std::unique_ptr<Grid> create(const std::string&,const std::vector<Value*>&,IFile&,bool,bool,bool);
 /// read grid from file and check boundaries are what is expected from input
-  static Grid* create(const std::string&,const std::vector<Value*>&, IFile&,
-                      const std::vector<std::string>&,const std::vector<std::string>&,
-                      const std::vector<unsigned>&,bool,bool,bool);
+  static std::unique_ptr<Grid> create(const std::string&,const std::vector<Value*>&, IFile&,
+                                      const std::vector<std::string>&,const std::vector<std::string>&,
+                                      const std::vector<unsigned>&,bool,bool,bool);
 /// get grid size
   virtual index_t getSize() const;
 /// get grid value
@@ -210,10 +223,15 @@ public:
   void projectOnLowDimension(double &val, std::vector<int> &varHigh, WeightBase* ptr2obj );
 /// set output format
   void setOutputFmt(const std::string & ss) {fmt_=ss;}
+/// reset output format to the default %14.9f format
+  void resetToDefaultOutputFmt() {fmt_="%14.9f";}
 /// Integrate the function calculated on the grid
   double integrate( std::vector<unsigned>& npoints );
 ///
   void mpiSumValuesAndDerivatives( Communicator& comm );
+/// Find the maximum over paths of the minimum value of the gridded function along the paths
+/// for all paths of neighboring grid lattice points from a source point to a sink point.
+  virtual double findMaximalPathMinimum(const std::vector<double> &source, const std::vector<double> &sink);
 };
 
 
@@ -224,7 +242,7 @@ class SparseGrid : public Grid
   std::map< index_t,std::vector<double> > der_;
 
 protected:
-  void clear();
+  void clear() override;
 
 public:
   SparseGrid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin,
@@ -258,7 +276,7 @@ public:
   void addValueAndDerivatives(index_t index, double value, std::vector<double>& der);
 
 /// dump grid on file
-  void writeToFile(OFile&);
+  void writeToFile(OFile&) override;
 
   virtual ~SparseGrid() {}
 };

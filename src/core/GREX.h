@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #define __PLUMED_core_GREX_h
 
 #include "WithCmd.h"
+#include "tools/ForwardDecl.h"
 #include <string>
 #include <vector>
 
@@ -36,8 +37,10 @@ class GREX:
   public WithCmd
 {
   bool initialized;
-  Communicator& intracomm;
-  Communicator& intercomm;
+  ForwardDecl<Communicator> intracomm_fwd;
+  Communicator& intracomm=*intracomm_fwd;
+  ForwardDecl<Communicator> intercomm_fwd;
+  Communicator& intercomm=*intercomm_fwd;
   PlumedMain& plumedMain;
   Atoms&      atoms;
   int partner;
@@ -51,7 +54,7 @@ class GREX:
 public:
   explicit GREX(PlumedMain&);
   ~GREX();
-  void cmd(const std::string&key,void*val=NULL);
+  void cmd(const std::string&key,void*val=NULL) override;
   void calculate();
   void savePositions();
 };

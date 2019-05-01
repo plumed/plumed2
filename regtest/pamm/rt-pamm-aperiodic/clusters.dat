@@ -1,0 +1,5 @@
+#! FIELDS height fcc sigma_fcc_fcc
+#! SET multivariate von-misses
+#! SET kerneltype gaussian
+      4.13163724E-0001      1.44833887E-0002      2.52246630E-0002 
+      5.86836276E-0001      8.72359830E-0001      1.71959514E-0002 

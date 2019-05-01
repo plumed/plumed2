@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,6 +25,7 @@
 #include <vector>
 #include <string>
 #include "WithCmd.h"
+#include "tools/ForwardDecl.h"
 
 
 namespace PLMD {
@@ -83,7 +84,8 @@ class CLToolMain:
   std::vector<std::string> argv;
   FILE*in;
   FILE*out;
-  Communicator&comm;
+  ForwardDecl<Communicator> comm_fwd;
+  Communicator&comm=*comm_fwd;
   static int run(int argc, char **argv,FILE*in,FILE*out,Communicator&pc);
 public:
   CLToolMain();
@@ -91,7 +93,7 @@ public:
   /**
   Send messages to the CLToolMain.
   */
-  void cmd(const std::string& key,void*val=NULL);
+  void cmd(const std::string& key,void*val=NULL) override;
 };
 
 }

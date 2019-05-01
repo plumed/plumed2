@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -49,6 +49,7 @@ is periodic.
 
 
 \par Examples
+
 The following input tells plumed to print the distance between atoms 3 and 5
 its square (as computed from the x,y,z components) and the distance
 again as computed from the square root of the square.
@@ -98,7 +99,7 @@ void Combine::registerKeywords(Keywords& keys) {
   keys.add("compulsory","COEFFICIENTS","1.0","the coefficients of the arguments in your function");
   keys.add("compulsory","PARAMETERS","0.0","the parameters of the arguments in your function");
   keys.add("compulsory","POWERS","1.0","the powers to which you are raising each of the arguments in your function");
-  keys.addFlag("NORMALIZE",false,"normalize all the coefficents so that in total they are equal to one");
+  keys.addFlag("NORMALIZE",false,"normalize all the coefficients so that in total they are equal to one");
 }
 
 Combine::Combine(const ActionOptions&ao):

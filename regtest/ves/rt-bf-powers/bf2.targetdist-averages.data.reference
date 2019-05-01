@@ -1,0 +1,78 @@
+#! FIELDS idx_arg aver.targetdist-0 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  5
+#! SET shape_arg  5
+       0      1.000000       0  1
+       1     -2.500000       1  s^1
+       2     11.583344       2  s^2
+       3    -55.625080       3  s^3
+       4    290.263240       4  s^4
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-1 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  5
+#! SET shape_arg  5
+       0      1.000000       0  1
+       1     -2.500000       1  s^1
+       2     11.583452       2  s^2
+       3    -55.625889       3  s^3
+       4    290.270737       4  s^4
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-2 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  5
+#! SET shape_arg  5
+       0      1.000000       0  1
+       1     -2.500000       1  s^1
+       2      6.500000       2  s^2
+       3    -17.500000       3  s^3
+       4     48.625000       4  s^4
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-3 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  5
+#! SET shape_arg  5
+       0      1.000000       0  1
+       1     -4.499790       1  s^1
+       2     20.498610       2  s^2
+       3    -94.490801       3  s^3
+       4    440.564129       4  s^4
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-4 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  5
+#! SET shape_arg  5
+       0      1.000000       0  1
+       1     -0.500051       1  s^1
+       2      0.499917       2  s^2
+       3     -0.500135       3  s^3
+       4      0.624779       4  s^4
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-5 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  5
+#! SET shape_arg  5
+       0      1.000000       0  1
+       1     -2.167000       1  s^1
+       2      4.945889       2  s^2
+       3    -11.801241       3  s^3
+       4     29.282707       4  s^4
+#!-------------------
+
+

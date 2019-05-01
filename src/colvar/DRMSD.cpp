@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,6 +26,7 @@
 #include "reference/DRMSD.h"
 #include "reference/MetricRegister.h"
 #include "core/Atoms.h"
+#include <memory>
 
 using namespace std;
 
@@ -45,7 +46,7 @@ often cheaper and easier to calculate the distances between all the pairs of ato
 between the two structures, \f$\mathbf{X}^a\f$ and \f$\mathbf{X}^b\f$ can then be measured as:
 
 \f[
-d(\mathbf{X}^A, \mathbf{X}^B) = \frac{1}{N(N-1)} \sum_{i \ne j} [ d(\mathbf{x}_i^a,\mathbf{x}_j^a) - d(\mathbf{x}_i^b,\mathbf{x}_j^b) ]^2
+d(\mathbf{X}^A, \mathbf{X}^B) = \sqrt{\frac{1}{N(N-1)} \sum_{i \ne j} [ d(\mathbf{x}_i^a,\mathbf{x}_j^a) - d(\mathbf{x}_i^b,\mathbf{x}_j^b) ]^2}
 \f]
 
 where \f$N\f$ is the number of atoms and \f$d(\mathbf{x}_i,\mathbf{x}_j)\f$ represents the distance between
@@ -102,11 +103,10 @@ class DRMSD : public Colvar {
   bool pbc_;
   MultiValue myvals;
   ReferenceValuePack mypack;
-  PLMD::DRMSD* drmsd_;
+  std::unique_ptr<PLMD::DRMSD> drmsd_;
 
 public:
   explicit DRMSD(const ActionOptions&);
-  ~DRMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -146,9 +146,9 @@ DRMSD::DRMSD(const ActionOptions&ao):
 
   // store target_ distance
   std::string type; parse("TYPE",type);
-  drmsd_= metricRegister().create<PLMD::DRMSD>( type );
+  drmsd_=metricRegister().create<PLMD::DRMSD>( type );
   drmsd_->setBoundsOnDistances( !nopbc, lcutoff, ucutoff );
-  drmsd_->set( pdb );
+  drmsd_->read( pdb );
   checkRead();
 
   std::vector<AtomNumber> atoms;
@@ -163,10 +163,6 @@ DRMSD::DRMSD(const ActionOptions&ao):
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
 
-}
-
-DRMSD::~DRMSD() {
-  delete drmsd_;
 }
 
 // calculator

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -85,11 +85,10 @@ void TopologyMatrix::registerKeywords( Keywords& keys ) {
            "other \\ref mcolv or \\ref multicolvarfunction commands is useful, however, as you can then exploit a much wider "
            "variety of functions of the contact matrix as described in \\ref contactmatrix");
   keys.add("atoms","ATOMS","");
-  keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
-           "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
+  keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
+           "The following provides information on the \\ref switchingfunction that are available.");
   keys.add("numbered","RADIUS","");
-  keys.add("numbered","CYLINDER_SWITCH","a switching function on ( r_ij . r_ik - 1 )/r_ij");
+  keys.add("numbered","CYLINDER_SWITCH","a switching function on \\f$(r_{ij}\\cdot r_{ik}-1)/r_{ij}\\f$");
   keys.add("numbered","BIN_SIZE","the size to use for the bins");
   keys.add("compulsory","DENSITY_THRESHOLD","");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");

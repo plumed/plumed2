@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -33,13 +33,15 @@ void GridPrintingBase::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","0","the frequency with which the grid should be output to the file.  The default "
            "value of 0 ensures that the grid is only output at the end of the trajectory");
   keys.add("compulsory","FILE","density","the file on which to write the grid.");
+  keys.add("compulsory","REPLICA","0","the replicas for which you would like to output this information");
   keys.add("optional","FMT","the format that should be used to output real numbers");
 }
 
 GridPrintingBase::GridPrintingBase(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
-  fmt("%f")
+  fmt("%f"),
+  output_for_all_replicas(false)
 {
   std::string mlab; parse("GRID",mlab);
   vesselbase::ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<vesselbase::ActionWithVessel*>(mlab);
@@ -60,21 +62,45 @@ GridPrintingBase::GridPrintingBase(const ActionOptions&ao):
   } else {
     log.printf("\n");
   }
+  std::vector<std::string> rep_data; parseVector("REPLICA",rep_data);
+  if( rep_data.size()==1 ) {
+    if( rep_data[0]=="all" ) output_for_all_replicas=true;
+    else {
+      preps.resize(1); Tools::convert( rep_data[0], preps[0] );
+    }
+  } else {
+    preps.resize( rep_data.size() );
+    for(unsigned i=0; i<rep_data.size(); ++i) Tools::convert( rep_data[i], preps[i] );
+  }
 }
 
 void GridPrintingBase::update() {
+  if( !output_for_all_replicas ) {
+    bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
+    for(unsigned i=0; i<preps.size(); ++i) {
+      if( myrep==preps[i] ) { found=true; break; }
+    }
+    if( !found ) return;
+  }
   if( getStep()==0 || getStride()==0 ) return ;
 
   OFile ofile; ofile.link(*this);
   ofile.setBackupString("analysis");
-  ofile.open( filename ); printGrid( ofile ); ofile.close();
+  ofile.open( filename ); printGrid( ofile );
 }
 
 void GridPrintingBase::runFinalJobs() {
+  if( !output_for_all_replicas ) {
+    bool found=false; unsigned myrep=plumed.multi_sim_comm.Get_rank();
+    for(unsigned i=0; i<preps.size(); ++i) {
+      if( myrep==preps[i] ) { found=true; break; }
+    }
+    if( !found ) return;
+  }
   if( getStride()>0 ) return;
 
   OFile ofile; ofile.link(*this);
-  ofile.open( filename ); printGrid( ofile ); ofile.close();
+  ofile.open( filename ); printGrid( ofile );
 }
 
 }

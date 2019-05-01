@@ -42,5 +42,5 @@ ifndef XLF
 endif
 
 #
-CLEANLIST=*~ *.tmp *.xxd *.o *.so *.dylib *.gcda *.gcno
+CLEANLIST=*~ *.tmp *.xxd *.o *.so *.dylib *.gcda *.gcno *.a
 

@@ -72,7 +72,7 @@ modules=$(
 cd ../
 for dir in *
 do
-  if test -f $dir/module.type
+  if test -f "$dir/module.type"
   then
     mtype="$(cat "$dir/module.type")"
     is=""
@@ -100,6 +100,16 @@ done
 echo "# version strings"
 echo "# syntax: version short/long/git number"
 echo "$version"
+echo
+echo "# python executable"
+echo "# syntax: python_bin executable"
+echo "# empty string means that python has not been configured"
+echo "python_bin $python_bin"
+echo
+echo "# command to lauch mpi processes"
+echo "# syntax: mpiexec command"
+echo "# empty string means that mpiexec was not chosen at configure time"
+echo "mpiexec $mpiexec"
 echo
 echo "# list of 'has' options"
 echo "# syntax: has name on/of"
@@ -131,6 +141,10 @@ echo
 echo "# list of modules"
 echo "# syntax: module name on/off (default-on/default-off/always)"
 echo "$modules" | sort
+echo
+echo "# Makefile.conf file"
+echo "# syntax: makefile_conf followed by a single space followed by a line from makefile_conf"
+cat "$makefile_conf" | awk '{printf("makefile_conf %s\n",$0)}'
 
 }> $file~
 

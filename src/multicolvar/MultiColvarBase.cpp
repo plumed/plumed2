@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,6 +30,7 @@
 #include "AtomValuePack.h"
 #include <vector>
 #include <string>
+#include <limits>
 
 using namespace std;
 
@@ -51,11 +52,11 @@ void MultiColvarBase::registerKeywords( Keywords& keys ) {
                                  "This Action can be used to calculate the following scalar quantities directly.  These quantities are calculated by "
                                  "employing the keywords listed below. "
                                  "These quantities can then be referenced elsewhere in the input file by using this Action's label "
-                                 "followed by a dot and the name of the quantity. Some amongst them can be calculated multiple times "
+                                 "followed by a dot and the name of the quantity. Some of them can be calculated multiple times "
                                  "with different parameters.  In this case the quantities calculated can be referenced elsewhere in the "
                                  "input by using the name of the quantity followed by a numerical identifier "
                                  "e.g. <em>label</em>.lessthan-1, <em>label</em>.lessthan-2 etc.  When doing this and, for clarity we have "
-                                 "made the label of the components customizable. As such by using the LABEL keyword in the description of the keyword "
+                                 "made it so that the user can set a particular label for each of the components. As such by using the LABEL keyword in the description of the keyword "
                                  "input you can customize the component name");
   keys.reserve("atoms-3","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
                "one coordination number for each of the atoms specified.  Each of these coordination numbers specifies how many of the "
@@ -64,11 +65,12 @@ void MultiColvarBase::registerKeywords( Keywords& keys ) {
                "in the previous multicolvar.  This is useful if you would like to calculate the Steinhardt parameter for those atoms that have a "
                "coordination number more than four for example");
   keys.reserve("atoms-4","SPECIESA","this keyword is used for colvars such as the coordination number.  In that context it species that plumed should calculate "
-               "one coordination number for each of the atoms specified in SPECIESA.  Each of these cooordination numbers specifies how many "
+               "one coordination number for each of the atoms specified in SPECIESA.  Each of these coordination numbers specifies how many "
                "of the atoms specifies using SPECIESB is within the specified cutoff.  As with the species keyword the input can also be specified "
                "using the label of another multicolvar");
   keys.reserve("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see "
                "the documentation for that keyword");
+  keys.add("hidden","ALL_INPUT_SAME_TYPE","remove this keyword to remove certain checks in the input on the sanity of your input file.  See code for details");
 }
 
 MultiColvarBase::MultiColvarBase(const ActionOptions&ao):
@@ -139,9 +141,9 @@ bool MultiColvarBase::parseMultiColvarAtomList(const std::string& key, const int
     // Check all base multicolvars are of same type
     if( i==0 ) {
       mname = mycolv->getName();
-      if( mycolv->isPeriodic() ) error("multicolvar functions don't work with this multicolvar");
+      if( keywords.exists("ALL_INPUT_SAME_TYPE") && mycolv->isPeriodic() ) error("multicolvar functions don't work with this multicolvar");
     } else {
-      if( mname!=mycolv->getName() ) error("All input multicolvars must be of same type");
+      if( keywords.exists("ALL_INPUT_SAME_TYPE") && mname!=mycolv->getName() ) error("All input multicolvars must be of same type");
     }
     // And track which variable stores each colvar
     for(unsigned j=0; j<mycolv->getFullNumberOfTasks(); ++j) atom_lab.push_back( std::pair<unsigned,unsigned>( mybasemulticolvars.size()+1, j ) );
@@ -465,9 +467,7 @@ void MultiColvarBase::setupMultiColvarBase( const std::vector<AtomNumber>& atoms
     for(unsigned j=0; j<tmp_atoms.size(); ++j) all_atoms.push_back( tmp_atoms[j] );
   }
   // Copy atom lists from input
-  if( !usespecies ) {
-    for(unsigned i=0; i<atoms.size(); ++i) all_atoms.push_back( atoms[i] );
-  }
+  for(unsigned i=0; i<atoms.size(); ++i) all_atoms.push_back( atoms[i] );
 
   // Now make sure we get all the atom positions
   ActionAtomistic::requestAtoms( all_atoms );
@@ -497,8 +497,14 @@ void MultiColvarBase::turnOnDerivatives() {
 void MultiColvarBase::setLinkCellCutoff( const double& lcut, double tcut ) {
   plumed_assert( usespecies || ablocks.size()<4 );
   if( tcut<0 ) tcut=lcut;
-  linkcells.setCutoff( lcut );
-  threecells.setCutoff( tcut );
+
+  if( !linkcells.enabled() ) {
+    linkcells.setCutoff( lcut );
+    threecells.setCutoff( tcut );
+  } else {
+    if( lcut>linkcells.getCutoff() ) linkcells.setCutoff( lcut );
+    if( tcut>threecells.getCutoff() ) threecells.setCutoff( tcut );
+  }
 }
 
 double MultiColvarBase::getLinkCellCutoff()  const {
@@ -760,7 +766,7 @@ void MultiColvarBase::calculate() {
   if( !usespecies && ablocks.size()>1 ) {
     // This loop finds the first active atom, which is always checked because
     // of a peculiarity in linkcells
-    unsigned first_active;
+    unsigned first_active=std::numeric_limits<unsigned>::max();
     for(unsigned i=0; i<ablocks[0].size(); ++i) {
       if( !isCurrentlyActive( ablocks[1][i] ) ) continue;
       else {
@@ -800,7 +806,6 @@ void MultiColvarBase::mergeInputDerivatives( const unsigned& ival, const unsigne
   // Get start of indices for this atom
   unsigned basen=0; for(unsigned i=0; i<mmc; ++i) basen+=mybasemulticolvars[i]->getNumberOfDerivatives() - 9;
   plumed_dbg_assert( basen%3==0 ); // Check the number of atoms is consistent with input derivatives
-
   unsigned virbas = myvals.getNumberOfDerivatives()-9;
   for(unsigned j=0; j<myder.getNumberActive(); ++j) {
     unsigned jder=myder.getActiveIndex(j);

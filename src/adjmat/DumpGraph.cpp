@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,7 +32,7 @@ namespace adjmat {
 
 //+PLUMEDOC CONCOMP DUMPGRAPH
 /*
-Write out the connnectivity of the nodes in the graph in dot format.
+Write out the connectivity of the nodes in the graph in dot format.
 
 \par Examples
 
@@ -64,7 +64,7 @@ PLUMED_REGISTER_ACTION(DumpGraph,"DUMPGRAPH")
 
 void DumpGraph::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionPilot::registerKeywords( keys );
-  keys.add("compulsory","MATRIX","the action that calcualtes the adjacency matrix vessel we would like to analyse");
+  keys.add("compulsory","MATRIX","the action that calculates the adjacency matrix vessel we would like to analyze");
   keys.add("compulsory","STRIDE","1","the frequency with which you would like to output the graph");
   keys.add("compulsory","FILE","the name of the file on which to output the data");
   keys.add("compulsory","MAXCONNECT","0","maximum number of connections that can be formed by any given node in the graph. "
@@ -106,7 +106,7 @@ void DumpGraph::update() {
   unsigned nedge; std::vector<std::pair<unsigned,unsigned> > edge_list( mymatrix->getNumberOfRows()*maxconnections );
   mymatrix->retrieveEdgeList( nedge, edge_list );
   for(unsigned i=0; i<nedge; ++i) ofile.printf("%u -- %u \n", edge_list[i].first, edge_list[i].second );
-  ofile.printf("} \n"); ofile.close();
+  ofile.printf("} \n");
 }
 
 }

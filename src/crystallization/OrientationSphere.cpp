@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,7 +34,7 @@ void OrientationSphere::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
@@ -69,7 +69,7 @@ OrientationSphere::OrientationSphere(const ActionOptions&ao):
 }
 
 double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-  double d2, sw, value=0, denom=0, dfunc; Vector ddistance;
+  double sw, value=0, denom=0, dfunc; Vector ddistance;
   unsigned ncomponents=getBaseMultiColvar(0)->getNumberOfQuantities();
   std::vector<double> catom_orient( ncomponents ), this_orient( ncomponents );
   std::vector<double> this_der( ncomponents ), catom_der( ncomponents );
@@ -79,6 +79,7 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
 
   for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
     Vector& distance=myatoms.getPosition(i);
+    double d2;
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
          (d2+=distance[2]*distance[2])<rcut2 &&

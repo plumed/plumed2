@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,7 +30,7 @@ namespace PLMD {
 /*
 Functions that are used to construct histograms
 
-Constructing histograms is something you learnt to do relatively early in life. You perform an experiment a number of times,
+Constructing histograms is something you learned to do relatively early in life. You perform an experiment a number of times,
 count the number of times each result comes up and then draw a bar graph that describes how often each of the results came up.
 This only works when there are a finite number of possible results.  If the result a number between 0 and 1 the bar chart is
 less easy to draw as there are as many possible results as there are numbers between zero and one - an infinite number.
@@ -65,7 +65,7 @@ The following variants are available.
 </tr> <tr>
 <td> gaussian </td> <td> \f$f(r) = \frac{1}{(2 \pi)^{n} \sqrt{|\Sigma^{-1}|}} \exp\left(-0.5 r^2 \right)\f$ </td>
 </tr> <tr>
-<td> truncated-gaussian </td> <td> \f$f(r) = \frac{1}{(2 \pi)^{n} \sqrt{|\Sigma^{-1}|} \left(\frac{\erf(-6.25/sqrt{2}) - \erf(-6.25/sqrt{2})}{2}\right)^n} \exp\left(-0.5 r^2 \right)\f$ </td>
+<td> truncated-gaussian </td> <td> \f$f(r) = \frac{1}{(2 \pi)^{n} \sqrt{|\Sigma^{-1}|} \left(\frac{\mathrm{erf}(-6.25/sqrt{2}) - \mathrm{erf}(-6.25/sqrt{2})}{2}\right)^n} \exp\left(-0.5 r^2 \right)\f$ </td>
 </tr> <tr>
 <td> triangular </td> <td> \f$f(r) = \frac{3}{V} ( 1 - | r | )H(1-|r|) \f$ </td>
 </tr> <tr>
@@ -74,7 +74,7 @@ The following variants are available.
 </table>
 
 In the above \f$H(y)\f$ is a function that is equal to one when \f$y>0\f$ and zero when \f$y \le 0\f$. \f$n\f$ is
-the dimensionality of the vector \f$\mathbf{x}\f$ and \f$V\f$ is the volume of an elipse in an \f$n\f$ dimensional
+the dimensionality of the vector \f$\mathbf{x}\f$ and \f$V\f$ is the volume of an ellipse in an \f$n\f$ dimensional
 space which is given by:
 
 \f{eqnarray*}{
@@ -86,13 +86,13 @@ In \ref METAD the normalization constants are ignored so that the value of the f
 to one.  In addition in \ref METAD we must be able to differentiate the bias in order to get forces.  This limits
 the kernels we can use in this method.  Notice also that Gaussian kernels should have infinite support.  When used
 with grids, however, they are assumed to only be non-zero over a finite range.  The difference between the
-truncated-gaussian and regular gaussian is that the trucated gaussian is scaled so that its integral over the grid
-is equal to one when it is normalised.  The integral of a regular gaussian when it is evaluated on a grid will be
+truncated-gaussian and regular gaussian is that the truncated gaussian is scaled so that its integral over the grid
+is equal to one when it is normalized.  The integral of a regular gaussian when it is evaluated on a grid will be
 slightly less that one because of the truncation of a function that should have infinite support.
 */
 //+ENDPLUMEDOC
 
-KernelFunctions::KernelFunctions( const std::string& input, const bool& normed ) {
+KernelFunctions::KernelFunctions( const std::string& input ) {
   std::vector<std::string> data=Tools::getWords(input);
   std::string name=data[0];
   data.erase(data.begin());
@@ -105,7 +105,9 @@ KernelFunctions::KernelFunctions( const std::string& input, const bool& normed )
   if(!founds) plumed_merror("failed to find sigma keyword in definition of kernel");
 
   bool multi=false; Tools::parseFlag(data,"MULTIVARIATE",multi);
+  bool vonmises=false; Tools::parseFlag(data,"VON-MISSES",vonmises);
   if( center.size()==1 && multi ) plumed_merror("one dimensional kernel cannot be multivariate");
+  if( center.size()==1 && vonmises ) plumed_merror("one dimensional kernal cannot be von-misses");
   if( center.size()==1 && sig.size()!=1 ) plumed_merror("size mismatch between center size and sigma size");
   if( multi && center.size()>1 && sig.size()!=0.5*center.size()*(center.size()-1) ) plumed_merror("size mismatch between center size and sigma size");
   if( !multi && center.size()>1 && sig.size()!=center.size() ) plumed_merror("size mismatch between center size and sigma size");
@@ -114,23 +116,39 @@ KernelFunctions::KernelFunctions( const std::string& input, const bool& normed )
   bool foundh = Tools::parse(data,"HEIGHT",h);
   if( !foundh) h=1.0;
 
-  setData( at, sig, name, multi, h, normed );
+  if( multi ) setData( at, sig, name, "MULTIVARIATE", h );
+  else if( vonmises ) setData( at, sig, name, "VON-MISSES", h );
+  else setData( at, sig, name, "DIAGONAL", h );
 }
 
-KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate, const double& w, const bool norm ) {
-  setData( at, sig, type, multivariate, w, norm );
+KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w ) {
+  setData( at, sig, type, mtype, w );
 }
 
-void KernelFunctions::setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate, const double& w, const bool norm ) {
+KernelFunctions::KernelFunctions( const KernelFunctions* in ):
+  dtype(in->dtype),
+  ktype(in->ktype),
+  center(in->center),
+  width(in->width),
+  height(in->height)
+{
+}
 
+void KernelFunctions::setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w ) {
+
+  height=w;
   center.resize( at.size() ); for(unsigned i=0; i<at.size(); ++i) center[i]=at[i];
   width.resize( sig.size() ); for(unsigned i=0; i<sig.size(); ++i) width[i]=sig[i];
-  diagonal=false;
-  if (multivariate==false ) diagonal=true;
+  if( mtype=="MULTIVARIATE" ) dtype=multi;
+  else if( mtype=="VON-MISSES" ) dtype=vonmises;
+  else if( mtype=="DIAGONAL" ) dtype=diagonal;
+  else plumed_merror(mtype + " is not a valid metric type");
 
   // Setup the kernel type
-  if(type=="GAUSSIAN" || type=="gaussian" || type=="TRUNCATED-GAUSSIAN" || type=="truncated-gaussian" ) {
+  if(type=="GAUSSIAN" || type=="gaussian" ) {
     ktype=gaussian;
+  } else if(type=="TRUNCATED-GAUSSIAN" || type=="truncated-gaussian" ) {
+    ktype=truncatedgaussian;
   } else if(type=="UNIFORM" || type=="uniform") {
     ktype=uniform;
   } else if(type=="TRIANGULAR" || type=="triangular") {
@@ -138,25 +156,28 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   } else {
     plumed_merror(type+" is an invalid kernel type\n");
   }
+}
 
-  if( norm ) {
-    double det; unsigned ncv=ndim();
-    if(diagonal) {
-      det=1; for(unsigned i=0; i<width.size(); ++i) det*=width[i]*width[i];
-    } else {
-      Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
-      Invert(mymatrix,myinv); double logd;
-      logdet( myinv, logd );
-      det=std::exp(logd);
-    }
+void KernelFunctions::normalize( const std::vector<Value*>& myvals ) {
+
+  double det=1.;
+  unsigned ncv=ndim();
+  if(dtype==diagonal) {
+    for(unsigned i=0; i<width.size(); ++i) det*=width[i]*width[i];
+  } else if(dtype==multi) {
+    Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
+    Invert(mymatrix,myinv); double logd;
+    logdet( myinv, logd );
+    det=std::exp(logd);
+  }
+  if( dtype==diagonal || dtype==multi ) {
     double volume;
     if( ktype==gaussian ) {
-      if( type=="GAUSSIAN" || type=="gaussian" ) volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
-      else {
-        // This makes it so the gaussian integrates to one over the range over which it has support
-        const double DP2CUTOFF=sqrt(6.25);
-        volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 ) * pow( 0.5 * ( erf(DP2CUTOFF) - erf(-DP2CUTOFF) ), ncv);
-      }
+      volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
+    } else if( ktype==truncatedgaussian ) {
+      // This makes it so the gaussian integrates to one over the range over which it has support
+      const double DP2CUTOFF=sqrt(6.25);
+      volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 ) * pow( 0.5 * ( erf(DP2CUTOFF) - erf(-DP2CUTOFF) ), ncv);
     } else if( ktype==uniform || ktype==triangular ) {
       if( ncv%2==1 ) {
         double dfact=1;
@@ -172,15 +193,71 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
     } else {
       plumed_merror("not a valid kernel type");
     }
-    height=w / volume;
-  } else {
-    height=w;
+    height /= volume;
+    return;
   }
+  plumed_assert( dtype==vonmises && ktype==gaussian );
+  // Now calculate determinant for aperiodic variables
+  unsigned naper=0;
+  for(unsigned i=0; i<ncv; ++i) {
+    if( !myvals[i]->isPeriodic() ) naper++;
+  }
+  // Now construct sub matrix
+  double volume=1;
+  if( naper>0 ) {
+    unsigned isub=0;
+    Matrix<double> mymatrix( getMatrix() ), mysub( naper, naper );
+    for(unsigned i=0; i<ncv; ++i) {
+      if( myvals[i]->isPeriodic() ) continue;
+      unsigned jsub=0;
+      for(unsigned j=0; j<ncv; ++j) {
+        if( myvals[j]->isPeriodic() ) continue;
+        mysub( isub, jsub ) = mymatrix( i, j ); jsub++;
+      }
+      isub++;
+    }
+    Matrix<double> myisub( naper, naper ); double logd;
+    Invert( mysub, myisub ); logdet( myisub, logd );
+    det=std::exp(logd);
+    volume=pow( 2*pi, 0.5*ncv ) * pow( det, 0.5 );
+  }
+
+  // Calculate volume of periodic variables
+  unsigned nper=0;
+  for(unsigned i=0; i<ncv; ++i) {
+    if( myvals[i]->isPeriodic() ) nper++;
+  }
+
+  // Now construct sub matrix
+  if( nper>0 ) {
+    unsigned isub=0;
+    Matrix<double> mymatrix( getMatrix() ),  mysub( nper, nper );
+    for(unsigned i=0; i<ncv; ++i) {
+      if( !myvals[i]->isPeriodic() ) continue;
+      unsigned jsub=0;
+      for(unsigned j=0; j<ncv; ++j) {
+        if( !myvals[j]->isPeriodic() ) continue;
+        mysub( isub, jsub ) = mymatrix( i, j ); jsub++;
+      }
+      isub++;
+    }
+    Matrix<double>  eigvec( nper, nper );
+    std::vector<double> eigval( nper );
+    diagMat( mysub, eigval, eigvec );
+    unsigned iper=0; volume=1;
+    for(unsigned i=0; i<ncv; ++i) {
+      if( myvals[i]->isPeriodic() ) {
+        volume *= myvals[i]->getMaxMinusMin()*Tools::bessel0(eigval[iper])*std::exp(-eigval[iper]);
+        iper++;
+      }
+    }
+  }
+  height /= volume;
 }
 
 double KernelFunctions::getCutoff( const double& width ) const {
   const double DP2CUTOFF=6.25;
-  if( ktype==gaussian ) return sqrt(2.0*DP2CUTOFF)*width;
+  if( ktype==gaussian || ktype==truncatedgaussian ) return sqrt(2.0*DP2CUTOFF)*width;
   else if(ktype==triangular ) return width;
   else if(ktype==uniform) return width;
   else plumed_merror("No valid kernel type");
@@ -190,15 +267,15 @@ double KernelFunctions::getCutoff( const double& width ) const {
 std::vector<double> KernelFunctions::getContinuousSupport( ) const {
   unsigned ncv=ndim();
   std::vector<double> support( ncv );
-  if(diagonal) {
+  if(dtype==diagonal) {
     for(unsigned i=0; i<ncv; ++i) support[i]=getCutoff(width[i]);
-  } else {
+  } else if(dtype==multi) {
     Matrix<double> mymatrix( getMatrix() ), myinv( ncv,ncv );
     Invert(mymatrix,myinv);
     Matrix<double> myautovec(ncv,ncv); std::vector<double> myautoval(ncv);
     diagMat(myinv,myautoval,myautovec);
-    double maxautoval; maxautoval=0.;
-    unsigned ind_maxautoval;
+    double maxautoval=0.;
+    unsigned ind_maxautoval=0;
     for (unsigned i=0; i<ncv; i++) {
       if(myautoval[i]>maxautoval) {maxautoval=myautoval[i]; ind_maxautoval=i;}
     }
@@ -206,6 +283,8 @@ std::vector<double> KernelFunctions::getContinuousSupport( ) const {
       double extent=fabs(sqrt(maxautoval)*myautovec(i,ind_maxautoval));
       support[i]=getCutoff( extent );
     }
+  } else {
+    plumed_merror("cannot find support if metric is not multi or diagonal type");
   }
   return support;
 }
@@ -229,13 +308,13 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
     if(pos[0]->get()>uppI_) pos[0]->set(uppI_);
   }
   double r2=0;
-  if(diagonal) {
+  if(dtype==diagonal) {
     for(unsigned i=0; i<ndim(); ++i) {
       derivatives[i]=-pos[i]->difference( center[i] ) / width[i];
       r2+=derivatives[i]*derivatives[i];
       derivatives[i] /= width[i];
     }
-  } else {
+  } else if(dtype==multi) {
     Matrix<double> mymatrix( getMatrix() );
     for(unsigned i=0; i<mymatrix.nrows(); ++i) {
       double dp_i, dp_j; derivatives[i]=0;
@@ -248,9 +327,36 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
         r2+=dp_i*dp_j*mymatrix(i,j);
       }
     }
+  } else if(dtype==vonmises) {
+    std::vector<double> costmp( ndim() ), sintmp( ndim() ), sinout( ndim(), 0.0 );
+    for(unsigned i=0; i<ndim(); ++i) {
+      if( pos[i]->isPeriodic() ) {
+        sintmp[i]=sin( 2.*pi*(pos[i]->get() - center[i])/pos[i]->getMaxMinusMin() );
+        costmp[i]=cos( 2.*pi*(pos[i]->get() - center[i])/pos[i]->getMaxMinusMin() );
+      } else {
+        sintmp[i]=pos[i]->get() - center[i];
+        costmp[i]=1.0;
+      }
+    }
+
+    Matrix<double> mymatrix( getMatrix() );
+    for(unsigned i=0; i<mymatrix.nrows(); ++i) {
+      derivatives[i]=0;
+      if( pos[i]->isPeriodic() ) {
+        r2+=2*( 1 - costmp[i] )*mymatrix(i,i);
+      } else {
+        r2+=sintmp[i]*sintmp[i]*mymatrix(i,i);
+      }
+      for(unsigned j=0; j<mymatrix.ncols(); ++j) {
+        if( i!=j ) sinout[i]+=mymatrix(i,j)*sintmp[j];
+      }
+      derivatives[i] = mymatrix(i,i)*sintmp[i] + sinout[i]*costmp[i];
+      if( pos[i]->isPeriodic() ) derivatives[i] *= (2*pi/pos[i]->getMaxMinusMin());
+    }
+    for(unsigned i=0; i<sinout.size(); ++i) r2+=sintmp[i]*sinout[i];
   }
   double kderiv, kval;
-  if(ktype==gaussian) {
+  if(ktype==gaussian || ktype==truncatedgaussian) {
     kval=height*std::exp(-0.5*r2); kderiv=-kval;
   } else {
     double r=sqrt(r2);
@@ -277,37 +383,45 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
   return kval;
 }
 
-KernelFunctions* KernelFunctions::read( IFile* ifile, const std::vector<std::string>& valnames ) {
+std::unique_ptr<KernelFunctions> KernelFunctions::read( IFile* ifile, const bool& cholesky, const std::vector<std::string>& valnames ) {
+  double h;
+  if( !ifile->scanField("height",h) ) return NULL;;
+
   std::string sss; ifile->scanField("multivariate",sss);
-  std::vector<double> cc( valnames.size() ), sig;
-  bool multivariate;
+  std::string ktype="gaussian"; if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
+  plumed_massert( sss=="false" || sss=="true" || sss=="von-misses", "multivariate flag must be either false, true or von-misses");
+
+  // Read the position of the center
+  std::vector<double> cc( valnames.size() );
+  for(unsigned i=0; i<valnames.size(); ++i) ifile->scanField(valnames[i],cc[i]);
+
+  std::vector<double> sig;
   if( sss=="false" ) {
-    multivariate=false;
     sig.resize( valnames.size() );
     for(unsigned i=0; i<valnames.size(); ++i) {
-      ifile->scanField(valnames[i],cc[i]);
       ifile->scanField("sigma_"+valnames[i],sig[i]);
+      if( !cholesky ) sig[i]=sqrt(sig[i]);
     }
-  } else if( sss=="true" ) {
-    multivariate=true;
-    unsigned ncv=valnames.size();
-    sig.resize( (ncv*(ncv+1))/2 );
-    Matrix<double> upper(ncv,ncv), lower(ncv,ncv);
-    for(unsigned i=0; i<ncv; ++i) {
-      ifile->scanField(valnames[i],cc[i]);
-      for(unsigned j=0; j<ncv-i; j++) { ifile->scanField("sigma_" +valnames[j+i] + "_" + valnames[j], lower(j+i,j) ); upper(j,j+i)=lower(j+i,j); }
-    }
-    Matrix<double> mymult( ncv, ncv ), invmatrix(ncv,ncv);
-    mult(lower,upper,mymult); Invert( mymult, invmatrix );
-    unsigned k=0;
-    for(unsigned i=0; i<ncv; i++) {
-      for(unsigned j=i; j<ncv; j++) { sig[k]=invmatrix(i,j); k++; }
-    }
-  } else {
-    plumed_merror("multivariate flag should equal true or false");
+    return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "DIAGONAL", h ) );
   }
-  double h; ifile->scanField("height",h);
-  return new KernelFunctions( cc, sig, "gaussian", multivariate,h, false);
+
+  unsigned ncv=valnames.size();
+  sig.resize( (ncv*(ncv+1))/2 );
+  Matrix<double> upper(ncv,ncv), lower(ncv,ncv), mymult( ncv, ncv ), invmatrix(ncv,ncv);
+  for(unsigned i=0; i<ncv; ++i) {
+    for(unsigned j=0; j<ncv-i; j++) {
+      ifile->scanField("sigma_" +valnames[j+i] + "_" + valnames[j], lower(j+i,j) );
+      upper(j,j+i)=lower(j+i,j); mymult(j+i,j)=mymult(j,j+i)=lower(j+i,j);
+    }
+  }
+  if( cholesky ) mult(lower,upper,mymult);
+  Invert( mymult, invmatrix );
+  unsigned k=0;
+  for(unsigned i=0; i<ncv; i++) {
+    for(unsigned j=i; j<ncv; j++) { sig[k]=invmatrix(i,j); k++; }
+  }
+  if( sss=="true" ) return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "MULTIVARIATE", h ) );
+  return std::unique_ptr<KernelFunctions>(new KernelFunctions( cc, sig, ktype, "VON-MISSES", h ) );
 }
 
 }

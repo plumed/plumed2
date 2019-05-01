@@ -1,0 +1,2 @@
+type=plumed
+arg="pdbrenumber --ipdb in.pdb --opdb out.pdb --firstatomnumber 99999"

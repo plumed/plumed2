@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -161,7 +161,9 @@ void AdjacencyMatrixBase::finishMatrixSetup( const bool& symmetric, const std::v
 
   vesselbase::VesselOptions da("","",0,param,this);
   Keywords keys; AdjacencyMatrixVessel::registerKeywords( keys );
-  vesselbase::VesselOptions da2(da,keys); mat = new AdjacencyMatrixVessel(da2); addVessel( mat );
+  vesselbase::VesselOptions da2(da,keys);
+  std::unique_ptr<AdjacencyMatrixVessel> ves( new AdjacencyMatrixVessel(da2) );
+  addVessel( std::move( ves ) );
   setupMultiColvarBase( all_atoms );
 }
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,25 +27,11 @@
 #include <sstream>
 #include <unordered_map>
 
-#include "GREXEnum.inc"
-
 using namespace std;
 namespace PLMD {
 
-const std::unordered_map<std::string, int> & GREXWordMap() {
-  static std::unordered_map<std::string, int> word_map;
-  static bool init=false;
-  if(!init) {
-#include "GREXMap.inc"
-  }
-  init=true;
-  return word_map;
-}
-
 GREX::GREX(PlumedMain&p):
   initialized(false),
-  intracomm(*new Communicator),
-  intercomm(*new Communicator),
   plumedMain(p),
   atoms(p.getAtoms()),
   partner(-1), // = unset
@@ -59,8 +45,7 @@ GREX::GREX(PlumedMain&p):
 }
 
 GREX::~GREX() {
-  delete &intercomm;
-  delete &intracomm;
+// empty destructor to delete unique_ptr
 }
 
 #define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after GREX initialization")
@@ -68,14 +53,25 @@ GREX::~GREX() {
 #define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
 
 void GREX::cmd(const string&key,void*val) {
+
+// Enumerate all possible commands:
+  enum {
+#include "GREXEnum.inc"
+  };
+
+// Static object (initialized once) containing the map of commands:
+  const static std::unordered_map<std::string, int> word_map = {
+#include "GREXMap.inc"
+  };
+
   std::vector<std::string> words=Tools::getWords(key);
   unsigned nw=words.size();
   if(nw==0) {
     // do nothing
   } else {
     int iword=-1;
-    const auto it=GREXWordMap().find(words[0]);
-    if(it!=GREXWordMap().end()) iword=it->second;
+    const auto it=word_map.find(words[0]);
+    if(it!=word_map.end()) iword=it->second;
     switch(iword) {
     case cmd_initialized:
       CHECK_NOTNULL(val,key);

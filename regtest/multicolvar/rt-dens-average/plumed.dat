@@ -3,7 +3,7 @@ UNITS NATURAL
 dens: COORDINATIONNUMBER SPECIESA=2 SPECIESB=3-5 SWITCH={RATIONAL D_0=1.1 R_0=0.001 D_MAX=2.0}  
 
 # Print the average (whole trajectory) density with a stride of one 
-dens1: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 UNORMALIZED BANDWIDTH=0.2 
+dens1: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 NORMALIZATION=false BANDWIDTH=0.2 
 DUMPGRID GRID=dens1 STRIDE=1 FILE=dens1 FMT=%8.4f
 # Print the average density with a stride of two 
 DUMPGRID GRID=dens1 STRIDE=2 FILE=dens2 FMT=%8.4f
@@ -15,7 +15,7 @@ dens1a: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 BANDWIDTH=0.2
 DUMPGRID GRID=dens1a FILE=dens5a FMT=%8.4f
 
 # Print unormalized averages (over two frames) of the density
-dens1b: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 CLEAR=1 UNORMALIZED BANDWIDTH=0.2
+dens1b: MULTICOLVARDENS DATA=dens ORIGIN=1 DIR=x NBINS=50 CLEAR=1 NORMALIZATION=false BANDWIDTH=0.2
 DUMPGRID GRID=dens1b STRIDE=1 FILE=dens1b FMT=%8.4f
 
 # Print block averages (over two frames) of the density

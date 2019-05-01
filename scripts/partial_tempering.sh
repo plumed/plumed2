@@ -1,5 +1,12 @@
+#! /bin/bash
+# vim:ft=awk
 if [ "$1" = --description ] ; then
   echo "create a new collective variable from a template"
+  exit 0
+fi
+
+if [ "$1" = --options ] ; then
+  echo "--description --gromacs4 --help -h --options"
   exit 0
 fi
 
@@ -7,7 +14,7 @@ if [ "$1" = --help ] || [ "$1" = -h ] ; then
   cat <<EOF
 Usage:
 
-  plumed partial_tempering scale < processed.top
+  plumed partial_tempering [--gromacs4] scale < processed.top
 
 where scale is the Hamiltonian scaling factor and
 processed.top is a post-processed topology file (i.e. produced with grompp -pp)
@@ -55,7 +62,14 @@ EOF
   exit
 fi
 
-awk -v scale=$1 '
+gromacs5=1
+
+if [ "$1" == --gromacs4 ] ; then
+  gromacs5=0
+  shift
+fi
+
+awk -v scale=$1 -v gromacs5=$gromacs5 '
 BEGIN{
   combrule=1;
 }
@@ -72,6 +86,39 @@ function error(msg)
 function warning(msg)
 {
      print "WARNING:",msg | "cat 1>&2"
+}
+function find_matching_torsion(params,atype, a1,a2,a3,a4,iswitch,progression,test,array,param,countX,bestCountX,bestMatch)
+{
+   progression=NR
+   bestCountX=5
+   for(iswitch=0;iswitch<32;iswitch++){
+     countX=0
+     if(iswitch%2==0){
+       a1=atype[1]; a2=atype[2]; a3=atype[3]; a4=atype[4];
+     } else {
+       a1=atype[4]; a2=atype[3]; a3=atype[2]; a4=atype[1];
+     }
+     if(int(iswitch/2)%2==1){ a1="X"; countX++; }
+     if(int(iswitch/4)%2==1){ a2="X"; countX++; }
+     if(int(iswitch/8)%2==1){ a3="X"; countX++; }
+     if(int(iswitch/16)%2==1){a4="X"; countX++; }
+     test=a1"-"a2"-"a3"-"a4"-"$5;
+     if(test in params){
+       split(params[test],array,":");
+       bestMatch=0;
+       if(gromacs5) {
+         if(countX<bestCountX || (countX==bestCountX && array[1]<progression)) bestMatch=1
+       } else {
+         if(array[1]<progression) bestMatch=1;
+       }
+       if(bestMatch){
+         progression=array[1];
+         bestCountX=countX
+         param=params[test];
+       }
+     }
+   }
+   return param;
 }
 {
 # This is the suffix for "hot" atoms:
@@ -185,27 +232,9 @@ function warning(msg)
        atype[2]=bondtype[ato[$2]]
        atype[3]=bondtype[ato[$3]]
        atype[4]=bondtype[ato[$4]]
+
+       param=find_matching_torsion(params,atype);
        
-       progression=NR
-       for(iswitch=0;iswitch<32;iswitch++){
-         if(iswitch%2==0){
-           a1=atype[1]; a2=atype[2]; a3=atype[3]; a4=atype[4];
-         } else {
-           a1=atype[4]; a2=atype[3]; a3=atype[2]; a4=atype[1];
-         }
-         if(int(iswitch/2)%2==1) a1="X";
-         if(int(iswitch/4)%2==1) a2="X";
-         if(int(iswitch/8)%2==1) a3="X";
-         if(int(iswitch/16)%2==1) a4="X";
-         test=a1"-"a2"-"a3"-"a4"-"$5;
-         if(test in params){
-           split(params[test],array,":");
-           if(array[1]<progression){
-             progression=array[1];
-             param=params[test];
-           }
-         }
-       }
        
     n=split(param,array,":");
     if(n<=1) error("params not found "$1" "$2" "$3" "$4" "$5" "atype[1]" "atype[2]" "atype[3]" "atype[4]);

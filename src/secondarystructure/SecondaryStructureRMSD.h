@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,6 +41,8 @@ class SecondaryStructureRMSD :
   public vesselbase::ActionWithVessel
 {
 private:
+/// Are we operating without periodic boundary conditions
+  bool nopbc;
 /// The type of rmsd we are calculating
   std::string alignType;
 /// List of all the atoms we require
@@ -48,7 +50,7 @@ private:
 /// The atoms involved in each of the secondary structure segments
   std::vector< std::vector<unsigned> > colvar_atoms;
 /// The list of reference configurations
-  std::vector<SingleDomainRMSD*> references;
+  std::vector<std::unique_ptr<SingleDomainRMSD>> references;
 /// Variables for strands cutoff
   bool align_strands;
   double s_cutoff2;

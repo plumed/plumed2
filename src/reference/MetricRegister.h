@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,7 +38,7 @@ class PDB;
 class MetricRegister {
 private:
 /// Pointer to a function which, given the type for a ReferenceConfiguration, creates it
-  typedef ReferenceConfiguration*(*creator_pointer)(const ReferenceConfigurationOptions&);
+  typedef std::unique_ptr<ReferenceConfiguration> (*creator_pointer)(const ReferenceConfigurationOptions&);
 /// The set of possible distribution functions we can work with
   std::map<std::string,creator_pointer> m;
 public:
@@ -52,24 +52,24 @@ public:
   bool check(std::string type);
 /// Create a reference configuration and don't set a point of reference
   template <class T>
-  T* create( const std::string& type );
+  std::unique_ptr<T> create( const std::string& type );
 /// Create a reference configuration and set the point of reference from the pdb
   template <class T>
-  T* create( const std::string& type, const PDB& pdb );
+  std::unique_ptr<T> create( const std::string& type, const PDB& pdb );
 };
 
 MetricRegister& metricRegister();
 
 #define PLUMED_REGISTER_METRIC(classname,type) \
   static class classname##RegisterMe{ \
-    static PLMD::ReferenceConfiguration * create(const PLMD::ReferenceConfigurationOptions&ro){return new classname(ro);} \
+    static std::unique_ptr<ReferenceConfiguration> create(const PLMD::ReferenceConfigurationOptions&ro){return std::unique_ptr<ReferenceConfiguration>( new classname(ro) );} \
   public: \
     classname##RegisterMe(){PLMD::metricRegister().add(type,create);}; \
     ~classname##RegisterMe(){PLMD::metricRegister().remove(create);}; \
   } classname##RegisterMeObject;
 
 template <class T>
-T* MetricRegister::create( const std::string& type ) {
+std::unique_ptr<T> MetricRegister::create( const std::string& type ) {
   std::string ftype;
   if( type.find("MULTI-")!=std::string::npos ) {
     ftype="MULTI";
@@ -79,24 +79,32 @@ T* MetricRegister::create( const std::string& type ) {
   }
   plumed_massert( check(ftype), "metric " + ftype + " does not exist" );
   ReferenceConfigurationOptions ro( type );
-  ReferenceConfiguration* conf=m[ftype]( ro );
-  T* confout = dynamic_cast<T*>( conf );
-  if(!confout) plumed_merror( type + " metric is not valid in this context");
-  return confout;
+// put immediately the result in a safe pointer
+  std::unique_ptr<ReferenceConfiguration> conf( m[ftype]( ro ) );
+// try conversion
+  T*ptr=dynamic_cast<T*>( conf.get() );
+// if this throws, the unique_ptr conf is deleted.
+// Notice that with the original version of the code (2.4) an error here
+// would have lead to a memory leak.
+  if(!ptr ) plumed_merror( type + " metric is not valid in this context");
+// release ownership in order to transfer it to returned pointer
+  conf.release();
+// notice that I should pass ptr here rather than conf.release(),
+// since the type is different
+  return std::unique_ptr<T>(ptr);
 }
 
 template <class T>
-T* MetricRegister::create( const std::string& type, const PDB& pdb ) {
+std::unique_ptr<T> MetricRegister::create( const std::string& type, const PDB& pdb ) {
   std::string rtype;
   if( type.length()==0 ) {
-    std::vector<std::string> remarks( pdb.getRemark() );
-    bool found=Tools::parse( remarks, "TYPE", rtype );
-    if(!found) plumed_merror("TYPE not specified in pdb input file");
+    rtype=pdb.getMtype();
+    plumed_massert(rtype.length()>0, "TYPE not specified in pdb input file");
   } else {
     rtype=type;
   }
-  T* confout=create<T>( rtype );
-  confout->set( pdb );
+  std::unique_ptr<T> confout( create<T>( rtype ) );
+  confout->read( pdb );
   return confout;
 }
 

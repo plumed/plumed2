@@ -32,8 +32,12 @@ then
   COPYRIGHT="$FIX_COPYRIGHT"
   echo -n "Custom header for file: $file"
 else
-  years=$(git log --follow --format=%aD $file |
-    awk '{if(NR==1)last=$4;}END{
+    years=$(git log --follow -M75% --format=%aD $file |
+    sort -r -n -k 4 |
+    awk -v now="$(date +%Y)" '{if(NR==1)last=$4;}END{
+# override last with now
+    last=now
+# Notice that the script could be simplified, I leave it as is for reference:
     first=$4
     if(first=="") print ""
     else if(first==last) print first;
@@ -88,8 +92,8 @@ awk -v plus=$plus 'BEGIN{
 
 } > $file.tmp
 
-case "$file" in
-(*h)
+if [[ "$file" == *h && ! "$file" == asmjit_apibegin.h && ! "$file" == asmjit_apiend.h ]] ; then
+# if [[ "$file" == *h ]] ; then 
 ff="${file//./_}"
 guard="__PLUMED_${dir}_${ff}"
 
@@ -116,7 +120,7 @@ if(!found) print "#endif"
 }' $file.tmp > $file.tmp2
 mv $file.tmp2 $file.tmp
 
-esac
+fi
 
 if cmp -s $file $file.tmp ; then
   echo 

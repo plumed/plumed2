@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,7 +22,6 @@
 #include "SecondaryStructureRMSD.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace secondarystructure {
@@ -31,14 +30,14 @@ namespace secondarystructure {
 /*
 Probe the parallel beta sheet content of your protein structure.
 
-Two protein segments containing three continguous residues can form a parallel beta sheet.
+Two protein segments containing three contiguous residues can form a parallel beta sheet.
 Although if the two segments are part of the same protein chain they must be separated by
 a minimum of 3 residues to make room for the turn. This colvar thus generates the set of
 all possible six residue sections that could conceivably form a parallel beta sheet
 and calculates the RMSD distance between the configuration in which the residues find themselves
 and an idealized parallel beta sheet structure. These distances can be calculated by either
 aligning the instantaneous structure with the reference structure and measuring each
-atomic displacement or by calculating differences between the set of interatomic
+atomic displacement or by calculating differences between the set of inter-atomic
 distances in the reference and instantaneous structures.
 
 This colvar is based on the following reference \cite pietrucci09jctc.  The authors of
@@ -63,7 +62,7 @@ options you no longer need to specify NN, R_0, MM and D_0.
 
 Please be aware that for codes like gromacs you must ensure that plumed
 reconstructs the chains involved in your CV when you calculate this CV using
-anthing other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
+anything other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
 
 \par Examples
 
@@ -71,8 +70,16 @@ The following input calculates the number of six residue segments of
 protein that are in an parallel beta sheet configuration.
 
 \plumedfile
+MOLINFO STRUCTURE=beta.pdb
+pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1
+\endplumedfile
+
+Here the same is done use RMSD instead of DRMSD
+
+\plumedfile
 MOLINFO STRUCTURE=helix.pdb
-PARABETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
+WHOLEMOLECULES ENTITY0=1-100
+hh: PARABETARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1  STRANDS_CUTOFF=1
 \endplumedfile
 
 */
@@ -119,11 +126,11 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
 
   // This constructs all conceivable sections of antibeta sheet in the backbone of the chains
   if( intra_chain ) {
-    unsigned nres, nprevious=0; std::vector<unsigned> nlist(30);
+    unsigned nprevious=0; std::vector<unsigned> nlist(30);
     for(unsigned i=0; i<chains.size(); ++i) {
       if( chains[i]<40 ) error("segment of backbone is not long enough to form an antiparallel beta hairpin. Each backbone fragment must contain a minimum of 8 residues");
       // Loop over all possible triples in each 8 residue segment of protein
-      nres=chains[i]/5;
+      unsigned nres=chains[i]/5;
       if( chains[i]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
       for(unsigned ires=0; ires<nres-8; ires++) {
         for(unsigned jres=ires+6; jres<nres-2; jres++) {
@@ -140,15 +147,15 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   // This constructs all conceivable sections of antibeta sheet that form between chains
   if( inter_chain ) {
     if( chains.size()==1 && style!="all" ) error("there is only one chain defined so cannot use inter_chain option");
-    unsigned iprev,jprev,inres,jnres; std::vector<unsigned> nlist(30);
+    std::vector<unsigned> nlist(30);
     for(unsigned ichain=1; ichain<chains.size(); ++ichain) {
-      iprev=0; for(unsigned i=0; i<ichain; ++i) iprev+=chains[i];
-      inres=chains[ichain]/5;
+      unsigned iprev=0; for(unsigned i=0; i<ichain; ++i) iprev+=chains[i];
+      unsigned inres=chains[ichain]/5;
       if( chains[ichain]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
       for(unsigned ires=0; ires<inres-2; ++ires) {
         for(unsigned jchain=0; jchain<ichain; ++jchain) {
-          jprev=0; for(unsigned i=0; i<jchain; ++i) jprev+=chains[i];
-          jnres=chains[jchain]/5;
+          unsigned jprev=0; for(unsigned i=0; i<jchain; ++i) jprev+=chains[i];
+          unsigned jnres=chains[jchain]/5;
           if( chains[jchain]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
           for(unsigned jres=0; jres<jnres-2; ++jres) {
             for(unsigned k=0; k<15; ++k) {

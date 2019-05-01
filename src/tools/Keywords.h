@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -60,6 +60,8 @@ class Keywords {
 private:
 /// Is this an action or driver (this bool affects what style==atoms does in print)
   bool isaction;
+/// This allows us to overwrite the behavior of the atoms type in analysis actions
+  bool isatoms;
 /// The names of the allowed keywords
   std::vector<std::string> keys;
 /// The names of the reserved keywords
@@ -92,9 +94,11 @@ private:
   void printKeyword( const std::string& j, FILE* out ) const ;
 public:
 /// Constructor
-  Keywords() : isaction(true) {}
+  Keywords() : isaction(true), isatoms(true) {}
 ///
   void isDriver() { isaction=false; }
+///
+  void isAnalysis() { isatoms=false; }
 /// find out whether flag key is on or off by default.
   bool getLogicalDefault( std::string key, bool& def ) const ;
 /// Get the value of the default for the keyword named key
@@ -109,6 +113,8 @@ public:
   void print( Log& log ) const ;
 /// Print the documentation to a file (use by PLUMED::CLTool::readCommandLineArgs)
   void print( FILE* out ) const ;
+/// Print a file containing the list of keywords for a particular action (used for spell checking)
+  void print_spelling() const ;
 /// Reserve a keyword
   void reserve( const std::string & t, const std::string & k, const std::string & d );
 /// Reserve a flag
@@ -146,7 +152,8 @@ public:
                  std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
                  std::map<std::string,std::string>& atags, std::vector<std::string>& cnam, std::map<std::string,std::string>& ck,
                  std::map<std::string,std::string>& cd ) const ;
-/// Clear everything from the keywords object
+/// Clear everything from the keywords object.
+/// Not actually needed if your Keywords object is going out of scope.
   void destroyData();
 /// Set the text that introduces how the components for this action are introduced
   void setComponentsIntroduction( const std::string& instr );
@@ -154,6 +161,8 @@ public:
   void addOutputComponent( const std::string& name, const std::string& key, const std::string& descr );
 /// Has a component with this name been added?
   bool outputComponentExists( const std::string& name, const bool& custom ) const ;
+/// Reference to keys
+  std::vector<std::string> getKeys() const { return keys; }
 };
 
 }

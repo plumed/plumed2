@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,7 +36,7 @@ namespace multicolvar {
 //+PLUMEDOC MCOLVAR COORDINATIONNUMBER
 /*
 Calculate the coordination numbers of atoms so that you can then calculate functions of the distribution of
-coordination numbers such as the minimum, the number less than a certain quantity and so on.
+ coordination numbers such as the minimum, the number less than a certain quantity and so on.
 
 To make the calculation of coordination numbers differentiable the following function is used:
 
@@ -105,7 +105,7 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","R_POWER","Multiply the coordination number function by a power of r, "
            "as done in White and Voth (see note above, default: no)");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
            "The following provides information on the \\ref switchingfunction that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
@@ -157,9 +157,10 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
 
 double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   // Calculate the coordination number
-  double dfunc, d2, sw, d, raised;
+  double dfunc, sw, d, raised;
   for(unsigned i=1; i<myatoms.getNumberOfAtoms(); ++i) {
     Vector& distance=myatoms.getPosition(i);
+    double d2;
     if ( (d2=distance[0]*distance[0])<rcut2 &&
          (d2+=distance[1]*distance[1])<rcut2 &&
          (d2+=distance[2]*distance[2])<rcut2 &&

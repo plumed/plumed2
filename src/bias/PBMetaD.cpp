@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,6 +35,7 @@
 #include <iostream>
 #include <limits>
 #include <ctime>
+#include <memory>
 
 #define DP2CUTOFF 6.25
 
@@ -46,11 +47,11 @@ namespace bias {
 
 //+PLUMEDOC BIAS PBMETAD
 /*
-Used to performed Parallel Bias MetaDynamics.
+Used to performed Parallel Bias metadynamics.
 
-This action activate Parallel Bias MetaDynamics (PBMetaD) \cite pbmetad, a version of MetaDynamics \cite metad in which
+This action activate Parallel Bias Metadynamics (PBMetaD) \cite pbmetad, a version of metadynamics \cite metad in which
 multiple low-dimensional bias potentials are applied in parallel.
-In the current implementation, these have the form of mono-dimensional MetaDynamics bias
+In the current implementation, these have the form of mono-dimensional metadynamics bias
 potentials:
 
 \f[
@@ -113,7 +114,7 @@ and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid
 This default choice should be reasonable for most applications.
 
 Another option that is available is well-tempered metadynamics \cite Barducci:2008. In this
-variant of PBMetaD the heights of the Gaussian hills are rescaled at each step by the
+variant of PBMetaD the heights of the Gaussian hills are scaled at each step by the
 additional well-tempered metadynamics term.
 This  ensures that each bias converges more smoothly. It should be noted that, in the case of well-tempered metadynamics, in
 the output printed the Gaussian height is re-scaled using the bias factor.
@@ -125,27 +126,28 @@ Note that you can use here also the flexible gaussian approach  \cite Branduardi
 in which you can adapt the gaussian to the extent of Cartesian space covered by a variable or
 to the space in collective variable covered in a given time. In this case the width of the deposited
 gaussian potential is denoted by one value only that is a Cartesian space (ADAPTIVE=GEOM) or a time
-(ADAPTIVE=DIFF). Note that a specific integration technique for the deposited gaussians
+(ADAPTIVE=DIFF). Note that a specific integration technique for the deposited Gaussian kernels
 should be used in this case. Check the documentation for utility sum_hills.
 
 With the keyword INTERVAL one changes the metadynamics algorithm setting the bias force equal to zero
 outside boundary \cite baftizadeh2012protein. If, for example, metadynamics is performed on a CV s and one is interested only
-to the free energy for s > sw, the history dependent potential is still updated according to the above
-equations but the metadynamics force is set to zero for s < sw. Notice that Gaussians are added also
-if s < sw, as the tails of these Gaussians influence VG in the relevant region s > sw. In this way, the
-force on the system in the region s > sw comes from both metadynamics and the force field, in the region
-s < sw only from the latter. This approach allows obtaining a history-dependent bias potential VG that
+to the free energy for s > boundary, the history dependent potential is still updated according to the above
+equations but the metadynamics force is set to zero for s < boundary. Notice that Gaussians are added also
+if s < boundary, as the tails of these Gaussians influence VG in the relevant region s > boundary. In this way, the
+force on the system in the region s > boundary comes from both metadynamics and the force field, in the region
+s < boundary only from the latter. This approach allows obtaining a history-dependent bias potential VG that
 fluctuates around a stable estimator, equal to the negative of the free energy far enough from the
 boundaries. Note that:
 - It works only for one-dimensional biases;
 - It works both with and without GRID;
-- The interval limit sw in a region where the free energy derivative is not large;
-- If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should
-  be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at sw.
+- The interval limit boundary in a region where the free energy derivative is not large;
+- If in the region outside the limit boundary the system has a free energy minimum, the INTERVAL keyword should
+  be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at boundary.
 
 Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
 \par Examples
+
 The following input is for PBMetaD calculation using as
 collective variables the distance between atoms 3 and 5
 and the distance between atoms 2 and 4. The value of the CVs and
@@ -159,7 +161,7 @@ PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
 (See also \ref DISTANCE and \ref PRINT).
 
 \par
-If you use well-tempered metadynamics, you should specify a single biasfactor and initial
+If you use well-tempered metadynamics, you should specify a single bias factor and initial
 Gaussian height.
 \plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
@@ -233,9 +235,9 @@ private:
   vector<double> sigma0min_;
   vector<double> sigma0max_;
   vector< vector<Gaussian> > hills_;
-  vector<OFile*> hillsOfiles_;
-  vector<OFile*> gridfiles_;
-  vector<Grid*> BiasGrids_;
+  vector<std::unique_ptr<OFile>> hillsOfiles_;
+  vector<std::unique_ptr<OFile>> gridfiles_;
+  vector<std::unique_ptr<Grid>> BiasGrids_;
   bool    grid_;
   double  height0_;
   double  biasf_;
@@ -251,7 +253,7 @@ private:
   unsigned mpi_nw_;
   unsigned mpi_id_;
   vector<string> hillsfname;
-  vector<IFile*> ifiles;
+  vector<std::unique_ptr<IFile>> ifiles;
   vector<string> ifilesnames;
   vector<double> uppI_;
   vector<double> lowI_;
@@ -259,9 +261,13 @@ private:
   int adaptive_;
   vector<FlexibleBin> flexbin;
   bool isFirstStep;
+  // variable for selector
+  string selector_;
+  bool  do_select_;
+  unsigned select_value_;
+  unsigned current_value_;
 
   void   readGaussians(unsigned iarg, IFile*);
-  bool   readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n);
   void   writeGaussian(unsigned iarg, const Gaussian&, OFile*);
   void   addGaussian(unsigned iarg, const Gaussian&);
   double getBiasAndDerivatives(unsigned iarg, const vector<double>&, double* der=NULL);
@@ -272,7 +278,6 @@ private:
 
 public:
   explicit PBMetaD(const ActionOptions&);
-  ~PBMetaD();
   void calculate();
   void update();
   static void registerKeywords(Keywords& keys);
@@ -289,9 +294,9 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","FILE","files in which the lists of added hills are stored, default names are assigned using arguments if FILE is not found");
   keys.add("optional","HEIGHT","the height of the Gaussian hills, one for all biases. Compulsory unless TAU, TEMP and BIASFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
-  keys.add("optional","BIASFACTOR","use well tempered metadynamics with this biasfactor, one for all biases.  Please note you must also specify temp");
+  keys.add("optional","BIASFACTOR","use well tempered metadynamics with this bias factor, one for all biases.  Please note you must also specify temp");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
-  keys.add("optional","TAU","in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
+  keys.add("optional","TAU","in well tempered metadynamics, sets height to (\\f$k_B \\Delta T\\f$*pace*timestep)/tau");
   keys.add("optional","GRID_RFILES", "read grid for the bias");
   keys.add("optional","GRID_WSTRIDE", "frequency for dumping the grid");
   keys.add("optional","GRID_WFILES", "dump grid for the bias, default names are used if GRID_WSTRIDE is used without GRID_WFILES.");
@@ -301,12 +306,14 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
+  keys.add("optional","SELECTOR", "add forces and do update based on the value of SELECTOR");
+  keys.add("optional","SELECTOR_ID", "value of SELECTOR");
   keys.add("optional","WALKERS_ID", "walker id");
   keys.add("optional","WALKERS_N", "number of walkers");
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
-  keys.add("optional","INTERVAL_MIN","monodimensional lower limits, outside the limits the system will not feel the biasing force.");
-  keys.add("optional","INTERVAL_MAX","monodimensional upper limits, outside the limits the system will not feel the biasing force.");
+  keys.add("optional","INTERVAL_MIN","one dimensional lower limits, outside the limits the system will not feel the biasing force.");
+  keys.add("optional","INTERVAL_MAX","one dimensional upper limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
@@ -316,25 +323,6 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.use("UPDATE_UNTIL");
 }
 
-PBMetaD::~PBMetaD() {
-  for(unsigned i=0; i<BiasGrids_.size();   ++i) delete BiasGrids_[i];
-  for(unsigned i=0; i<hillsOfiles_.size(); ++i) {
-    hillsOfiles_[i]->close();
-    delete hillsOfiles_[i];
-  }
-  if(wgridstride_ > 0) {
-    for(unsigned i=0; i<gridfiles_.size(); ++i) {
-      gridfiles_[i]->close();
-      delete gridfiles_[i];
-    }
-  }
-  // close files
-  for(unsigned i=0; i<ifiles.size(); ++i) {
-    if(ifiles[i]->isOpen()) ifiles[i]->close();
-    delete ifiles[i];
-  }
-}
-
 PBMetaD::PBMetaD(const ActionOptions& ao):
   PLUMED_BIAS_INIT(ao),
   grid_(false), height0_(std::numeric_limits<double>::max()),
@@ -342,7 +330,8 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   mw_n_(1), mw_dir_(""), mw_id_(0), mw_rstride_(1),
   walkers_mpi(false), mpi_nw_(0),
   adaptive_(FlexibleBin::none),
-  isFirstStep(true)
+  isFirstStep(true),
+  do_select_(false)
 {
   // parse the flexible hills
   string adaptiveoption;
@@ -532,6 +521,13 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     else doInt_[i]=true;
   }
 
+  // parse selector stuff
+  parse("SELECTOR", selector_);
+  if(selector_.length()>0) {
+    do_select_ = true;
+    parse("SELECTOR_ID", select_value_);
+  }
+
   checkRead();
 
   log.printf("  Gaussian width ");
@@ -548,6 +544,11 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     log.printf("  Well-Tempered Bias Factor %f\n",biasf_);
     log.printf("  Hills relaxation time (tau) %f\n",tau);
     log.printf("  KbT %f\n",kbt_);
+  }
+
+  if(do_select_) {
+    log.printf("  Add forces and update bias based on the value of SELECTOR %s\n",selector_.c_str());
+    log.printf("  Id of the SELECTOR for this action %u\n", select_value_);
   }
 
   if(mw_n_>1) {
@@ -629,7 +630,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       gmin_t[0] = gmin[i];
       gmax_t[0] = gmax[i];
       gbin_t[0] = gbin[i];
-      Grid* BiasGrid_;
+      std::unique_ptr<Grid> BiasGrid_;
       // Read grid from file
       if(gridreadfilenames_.size()>0) {
         IFile gridfile;
@@ -640,25 +641,26 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           error("The GRID file you want to read: " + gridreadfilenames_[i] + ", cannot be found!");
         }
         string funcl = getLabel() + ".bias";
-        BiasGrid_ = Grid::create(funcl, args, gridfile, gmin_t, gmax_t, gbin_t, sparsegrid, spline, true);
-        gridfile.close();
+        BiasGrid_=Grid::create(funcl, args, gridfile, gmin_t, gmax_t, gbin_t, sparsegrid, spline, true);
         if(BiasGrid_->getDimension() != args.size()) {
           error("mismatch between dimensionality of input grid and number of arguments");
         }
         if(getPntrToArgument(i)->isPeriodic() != BiasGrid_->getIsPeriodic()[0]) {
           error("periodicity mismatch between arguments and input bias");
         }
-        log.printf("  Restarting from %s:",gridreadfilenames_[i].c_str());
+        log.printf("  Restarting from %s:\n",gridreadfilenames_[i].c_str());
         if(getRestart()) restartedFromGrid=true;
       } else {
-        if(!sparsegrid) {BiasGrid_=new Grid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true);}
-        else           {BiasGrid_=new SparseGrid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true);}
+        if(!sparsegrid) {BiasGrid_.reset( new Grid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true) );}
+        else           {BiasGrid_.reset( new SparseGrid(funcl,args,gmin_t,gmax_t,gbin_t,spline,true) );}
         std::vector<std::string> actualmin=BiasGrid_->getMin();
         std::vector<std::string> actualmax=BiasGrid_->getMax();
-        if(gmin_t[0]!=actualmin[0]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[0]<<" to fit periodicity\n";
-        if(gmax_t[0]!=actualmax[0]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[0]<<" to fit periodicity\n";
+        std::string is;
+        Tools::convert(i,is);
+        if(gmin_t[0]!=actualmin[0]) error("GRID_MIN["+is+"] must be adjusted to "+actualmin[0]+" to fit periodicity");
+        if(gmax_t[0]!=actualmax[0]) error("GRID_MAX["+is+"] must be adjusted to "+actualmax[0]+" to fit periodicity");
       }
-      BiasGrids_.push_back(BiasGrid_);
+      BiasGrids_.emplace_back(std::move(BiasGrid_));
     }
   }
 
@@ -686,19 +688,23 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
           fname = hillsfname[i];
         }
       }
-      IFile *ifile = new IFile();
+      ifiles.emplace_back(new IFile());
+      // this is just a shortcut pointer to the last element:
+      IFile *ifile = ifiles.back().get();
       ifile->link(*this);
-      ifiles.push_back(ifile);
       ifilesnames.push_back(fname);
       if(ifile->FileExist(fname)) {
         ifile->open(fname);
         if(getRestart()&&!restartedFromGrid) {
           log.printf("  Restarting from %s:",ifilesnames[k].c_str());
-          readGaussians(i,ifiles[k]);
+          readGaussians(i,ifiles[k].get());
         }
         ifiles[k]->reset(false);
         // close only the walker own hills file for later writing
         if(j==mw_id_) ifiles[k]->close();
+      } else {
+        // in case a file does not exist and we are restarting, complain that the file was not found
+        if(getRestart()) log<<"  WARNING: restart file "<<fname<<" not found\n";
       }
     }
   }
@@ -708,7 +714,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   // open hills files for writing
   for(unsigned i=0; i<hillsfname.size(); ++i) {
-    OFile *ofile = new OFile();
+    std::unique_ptr<OFile> ofile(new OFile());
     ofile->link(*this);
     // if MPI multiple walkers, only rank 0 will write to file
     if(walkers_mpi) {
@@ -722,6 +728,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     ofile->open(ifilesnames[mw_id_*hillsfname.size()+i]);
     if(fmt.length()>0) ofile->fmtField(fmt);
     ofile->addConstantField("multivariate");
+    ofile->addConstantField("kerneltype");
     if(doInt_[i]) {
       ofile->addConstantField("lower_int").printField("lower_int",lowI_[i]);
       ofile->addConstantField("upper_int").printField("upper_int",uppI_[i]);
@@ -730,13 +737,13 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     // output periodicities of variables
     ofile->setupPrintValue( getPntrToArgument(i) );
     // push back
-    hillsOfiles_.push_back(ofile);
+    hillsOfiles_.emplace_back(std::move(ofile));
   }
 
   // Dump grid to files
   if(wgridstride_ > 0) {
     for(unsigned i = 0; i < gridfilenames_.size(); ++i) {
-      OFile *ofile = new OFile();
+      std::unique_ptr<OFile> ofile(new OFile());
       ofile->link(*this);
       string gridfname_tmp = gridfilenames_[i];
       if(walkers_mpi) {
@@ -753,7 +760,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       if(mw_n_>1) ofile->enforceSuffix("");
       ofile->open(gridfname_tmp);
       ofile->setHeavyFlush();
-      gridfiles_.push_back(ofile);
+      gridfiles_.emplace_back(std::move(ofile));
     }
   }
 
@@ -787,35 +794,12 @@ void PBMetaD::readGaussians(unsigned iarg, IFile *ifile)
   log.printf("      %d Gaussians read\n",nhills);
 }
 
-bool PBMetaD::readChunkOfGaussians(unsigned iarg, IFile *ifile, unsigned n)
-{
-  vector<double> center(1);
-  vector<double> sigma(1);
-  double height;
-  unsigned nhills=0;
-  bool multivariate=false;
-  std::vector<Value> tmpvalues;
-  tmpvalues.push_back( Value( this, getPntrToArgument(iarg)->getName(), false ) );
-
-  while(scanOneHill(iarg,ifile,tmpvalues,center,sigma,height,multivariate)) {
-    ;
-    if(welltemp_) {height*=(biasf_-1.0)/biasf_;}
-    addGaussian(iarg, Gaussian(center,sigma,height,multivariate));
-    if(nhills==n) {
-      log.printf("      %u Gaussians read\n",nhills);
-      return true;
-    }
-    nhills++;
-  }
-  log.printf("      %u Gaussians read\n",nhills);
-  return false;
-}
-
 void PBMetaD::writeGaussian(unsigned iarg, const Gaussian& hill, OFile *ofile)
 {
   ofile->printField("time",getTimeStep()*getStep());
   ofile->printField(getPntrToArgument(iarg),hill.center[0]);
 
+  ofile->printField("kerneltype","gaussian");
   if(hill.multivariate) {
     ofile->printField("multivariate","true");
     double lower = sqrt(1./hill.sigma[0]);
@@ -973,9 +957,9 @@ void PBMetaD::calculate()
   double ncv = (double) getNumberOfArguments();
   double bmin = 1.0e+19;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    cv[0] = getArgument(i);
-    der[0] = 0.0;
-    bias[i] = getBiasAndDerivatives(i, cv, der);
+    cv[0]    = getArgument(i);
+    der[0]   = 0.0;
+    bias[i]  = getBiasAndDerivatives(i, cv, der);
     deriv[i] = der[0];
     if(bias[i] < bmin) bmin = bias[i];
   }
@@ -984,10 +968,18 @@ void PBMetaD::calculate()
     ene += exp((-bias[i]+bmin)/kbt_);
   }
 
-  // set Forces
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    const double f = - exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i];
-    setOutputForce(i, f);
+  // set Forces - set them to zero if SELECTOR is active
+  if(do_select_) current_value_ = static_cast<unsigned>(plumed.passMap[selector_]);
+
+  if(!do_select_ || (do_select_ && select_value_==current_value_)) {
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      const double f = - exp((-bias[i]+bmin)/kbt_) / (ene) * deriv[i];
+      setOutputForce(i, f);
+    }
+  }
+
+  if(do_select_ && select_value_!=current_value_) {
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) setOutputForce(i, 0.0);
   }
 
   // set bias
@@ -1014,7 +1006,7 @@ void PBMetaD::update()
     multivariate=false;
   }
 
-  if(nowAddAHill) {
+  if(nowAddAHill && (!do_select_ || (do_select_ && select_value_==current_value_))) {
     // get all biases and heights
     vector<double> cv(getNumberOfArguments());
     vector<double> bias(getNumberOfArguments());
@@ -1075,7 +1067,7 @@ void PBMetaD::update()
           sigma_tmp[0] = all_sigma[j*cv.size()+i];
           Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height_tmp, multivariate);
           addGaussian(i, newhill);
-          writeGaussian(i, newhill, hillsOfiles_[i]);
+          writeGaussian(i, newhill, hillsOfiles_[i].get());
         }
       }
       // just add your own hills
@@ -1086,7 +1078,7 @@ void PBMetaD::update()
         else sigma_tmp[0] = sigma0_[i];
         Gaussian newhill = Gaussian(cv_tmp, sigma_tmp, height[i], multivariate);
         addGaussian(i, newhill);
-        writeGaussian(i, newhill, hillsOfiles_[i]);
+        writeGaussian(i, newhill, hillsOfiles_[i].get());
       }
     }
   }
@@ -1124,7 +1116,7 @@ void PBMetaD::update()
           // otherwise read the new Gaussians
         } else {
           log.printf("  Reading hills from %s:",ifilesnames[k].c_str());
-          readGaussians(i,ifiles[k]);
+          readGaussians(i,ifiles[k].get());
           ifiles[k]->reset(false);
         }
       }
@@ -1150,12 +1142,14 @@ bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile, vector<Value> &tmpvalues,
       }
     }
     center[0]=tmpvalues[0].get();
+    std::string ktype="gaussian";
+    if( ifile->FieldExist("kerneltype") ) ifile->scanField("kerneltype",ktype);
+
     std::string sss;
     ifile->scanField("multivariate",sss);
     if(sss=="true") multivariate=true;
     else if(sss=="false") multivariate=false;
     else plumed_merror("cannot parse multivariate = "+ sss);
-
     if(multivariate) {
       ifile->scanField("sigma_"+getPntrToArgument(iarg)->getName()+"_"+
                        getPntrToArgument(iarg)->getName(),sigma[0]);

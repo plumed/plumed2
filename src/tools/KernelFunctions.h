@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,19 +22,19 @@
 #ifndef __PLUMED_tools_KernelFunctions_h
 #define __PLUMED_tools_KernelFunctions_h
 
-#include "Tools.h"
 #include "Matrix.h"
 #include "core/Value.h"
 #include <vector>
+#include <memory>
 
 namespace PLMD {
 
 class KernelFunctions {
 private:
 /// Is the metric matrix diagonal
-  bool diagonal;
+  enum {diagonal,multi,vonmises} dtype;
 /// What type of kernel are we using
-  enum {gaussian,uniform,triangular} ktype;
+  enum {gaussian,truncatedgaussian,uniform,triangular} ktype;
 /// The center of the kernel function
   std::vector<double> center;
 /// The width of the kernel
@@ -42,12 +42,15 @@ private:
 /// The height of the kernel
   double height;
 /// Used to set all the data in the kernel during construction - avoids double coding as this has two constructors
-  void setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate,const double& w, const bool norm );
+  void setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
 /// Convert the width into matrix form
   Matrix<double> getMatrix() const;
 public:
-  KernelFunctions( const std::string& input, const bool& normed );
-  KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate,const double& w, const bool norm );
+  explicit KernelFunctions( const std::string& input );
+  KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const std::string& mtype, const double& w );
+  explicit KernelFunctions( const KernelFunctions* in );
+/// Normalise the function and scale the height accordingly
+  void normalize( const std::vector<Value*>& myvals );
 /// Get the dimensionality of the kernel
   unsigned ndim() const;
 /// Get the cutoff for a kernel
@@ -61,7 +64,7 @@ public:
 /// Evaluate the kernel function with constant intervals
   double evaluate( const std::vector<Value*>& pos, std::vector<double>& derivatives, bool usederiv=true, bool doInt=false, double lowI_=-1, double uppI_=-1 ) const;
 /// Read a kernel function from a file
-  static KernelFunctions* read( IFile* ifile, const std::vector<std::string>& valnames );
+  static std::unique_ptr<KernelFunctions> read( IFile* ifile, const bool& cholesky, const std::vector<std::string>& valnames );
 };
 
 inline

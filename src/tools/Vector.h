@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,12 +24,8 @@
 
 #include <cmath>
 #include <iosfwd>
+#include <array>
 #include "LoopUnroller.h"
-
-#ifdef _GLIBCXX_DEBUG
-#include "Exception.h"
-#endif
-
 
 namespace PLMD {
 
@@ -81,13 +77,18 @@ int main(){
 
 template <unsigned n>
 class VectorGeneric {
-  double d[n];
+  std::array<double,n> d;
+/// Auxiliary private function for constructor
+  void auxiliaryConstructor();
+/// Auxiliary private function for constructor
+  template<typename... Args>
+  void auxiliaryConstructor(double first,Args... arg);
 public:
-/// Create it with preassigned components.
-/// Only available for sizes 2, 3 and 4
-  VectorGeneric(double,double);
-  VectorGeneric(double,double,double);
-  VectorGeneric(double,double,double,double);
+/// Constructor accepting n double parameters.
+/// Can be used as Vector<3>(1.0,2.0,3.0) or Vector<2>(2.0,3.0).
+/// In case a wrong number of parameters is given, a static assertion will fail.
+  template<typename... Args>
+  VectorGeneric(double first,Args... arg);
 /// create it null
   VectorGeneric();
 /// set it to zero
@@ -153,93 +154,77 @@ public:
   friend std::ostream & operator<<(std::ostream &os, const VectorGeneric<m>&);
 };
 
-template<>
-inline
-VectorGeneric<2>:: VectorGeneric(double x0,double x1) {
-  d[0]=x0;
-  d[1]=x1;
+template <unsigned n>
+void VectorGeneric<n>::auxiliaryConstructor()
+{}
+
+template <unsigned n>
+template<typename... Args>
+void VectorGeneric<n>::auxiliaryConstructor(double first,Args... arg)
+{
+  d[n-(sizeof...(Args))-1]=first;
+  auxiliaryConstructor(arg...);
 }
 
-template<>
-inline
-VectorGeneric<3>:: VectorGeneric(double x0,double x1,double x2) {
-  d[0]=x0;
-  d[1]=x1;
-  d[2]=x2;
-}
-
-template<>
-inline
-VectorGeneric<4>:: VectorGeneric(double x0,double x1,double x2,double x3) {
-  d[0]=x0;
-  d[1]=x1;
-  d[2]=x2;
-  d[3]=x3;
+template <unsigned n>
+template<typename... Args>
+VectorGeneric<n>::VectorGeneric(double first,Args... arg)
+{
+  static_assert((sizeof...(Args))+1==n,"you are trying to initialize a Vector with the wrong number of arguments");
+  auxiliaryConstructor(first,arg...);
 }
 
 template <unsigned n>
 void VectorGeneric<n>::zero() {
-  LoopUnroller<n>::_zero(d);
+  LoopUnroller<n>::_zero(d.data());
 }
 
 template <unsigned n>
 VectorGeneric<n>::VectorGeneric() {
-  LoopUnroller<n>::_zero(d);
+  LoopUnroller<n>::_zero(d.data());
 }
 
 template <unsigned n>
 double & VectorGeneric<n>::operator[](unsigned i) {
-#ifdef _GLIBCXX_DEBUG
-  plumed_assert(i<n);
-#endif
   return d[i];
 }
 
 template <unsigned n>
 const double & VectorGeneric<n>::operator[](unsigned i)const {
-#ifdef _GLIBCXX_DEBUG
-  plumed_assert(i<n);
-#endif
   return d[i];
 }
 
 template <unsigned n>
 double & VectorGeneric<n>::operator()(unsigned i) {
-#ifdef _GLIBCXX_DEBUG
-  plumed_assert(i<n);
-#endif
   return d[i];
 }
 
 template <unsigned n>
 const double & VectorGeneric<n>::operator()(unsigned i)const {
-#ifdef _GLIBCXX_DEBUG
-  plumed_assert(i<n);
-#endif
   return d[i];
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator +=(const VectorGeneric<n>& b) {
-  LoopUnroller<n>::_add(d,b.d);
+  LoopUnroller<n>::_add(d.data(),b.d.data());
   return *this;
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator -=(const VectorGeneric<n>& b) {
-  LoopUnroller<n>::_sub(d,b.d);
+  LoopUnroller<n>::_sub(d.data(),b.d.data());
   return *this;
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator *=(double s) {
-  LoopUnroller<n>::_mul(d,s);
+  LoopUnroller<n>::_mul(d.data(),s);
   return *this;
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator /=(double s) {
-  LoopUnroller<n>::_mul(d,1.0/s);
+  LoopUnroller<n>::_mul(d.data(),1.0/s);
   return *this;
 }
 
@@ -251,7 +236,7 @@ VectorGeneric<n>  VectorGeneric<n>::operator +()const {
 template <unsigned n>
 VectorGeneric<n> VectorGeneric<n>::operator -()const {
   VectorGeneric<n> r;
-  LoopUnroller<n>::_neg(r.d,d);
+  LoopUnroller<n>::_neg(r.d.data(),d.data());
   return r;
 }
 
@@ -290,12 +275,12 @@ VectorGeneric<n> delta(const VectorGeneric<n>&v1,const VectorGeneric<n>&v2) {
 
 template <unsigned n>
 double VectorGeneric<n>::modulo2()const {
-  return LoopUnroller<n>::_sum2(d);
+  return LoopUnroller<n>::_sum2(d.data());
 }
 
 template <unsigned n>
 double dotProduct(const VectorGeneric<n>& v1,const VectorGeneric<n>& v2) {
-  return LoopUnroller<n>::_dot(v1.d,v2.d);
+  return LoopUnroller<n>::_dot(v1.d.data(),v2.d.data());
 }
 
 inline
@@ -330,6 +315,9 @@ std::ostream & operator<<(std::ostream &os, const VectorGeneric<n>& v) {
 
 
 /// \ingroup TOOLBOX
+/// Alias for one dimensional vectors
+typedef VectorGeneric<1> Vector1d;
+/// \ingroup TOOLBOX
 /// Alias for two dimensional vectors
 typedef VectorGeneric<2> Vector2d;
 /// \ingroup TOOLBOX
@@ -338,6 +326,9 @@ typedef VectorGeneric<3> Vector3d;
 /// \ingroup TOOLBOX
 /// Alias for four dimensional vectors
 typedef VectorGeneric<4> Vector4d;
+/// \ingroup TOOLBOX
+/// Alias for five dimensional vectors
+typedef VectorGeneric<5> Vector5d;
 /// \ingroup TOOLBOX
 /// Alias for three dimensional vectors
 typedef Vector3d Vector;

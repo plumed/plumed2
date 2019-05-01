@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,6 +37,17 @@ This variable computes the progress along a given set of frames that is provided
 in input ("sss" component) and the distance from them ("zzz" component).
 (see below).
 
+When running with periodic boundary conditions, the atoms should be
+in the proper periodic image. This is done automatically since PLUMED 2.5,
+by considering the ordered list of atoms and rebuilding molecules with a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED.
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
+
 \par Examples
 
 Here below is a case where you have defined three frames and you want to
@@ -47,9 +58,9 @@ p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=4 NEIGH_SIZE=8
 PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 \endplumedfile
 
-note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighborlist parameter (optional but
+note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighbor list parameter (optional but
 recommended for performance) and states that the neighbor list will be calculated every 4
-timesteps and consider only the closest 8 member to the actual md snapshots.
+steps and consider only the closest 8 member to the actual md snapshots.
 
 In the REFERENCE PDB file the frames must be separated either using END or ENDMDL.
 

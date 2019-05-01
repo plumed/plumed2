@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -61,7 +61,7 @@ it is required during the simulation if collective variables need atoms to be in
 
 Consider that the computational cost grows with the product
 of the size of the two lists (ATOMS and AROUND), so that this action can become very expensive.
-If you are using it to analyse a trajectory this is usually not a big problem. If you use it to
+If you are using it to analyze a trajectory this is usually not a big problem. If you use it to
 analyze a simulation on the fly, e.g. with \ref DUMPATOMS to store a properly wrapped trajectory,
 consider the possibility of using the STRIDE keyword here (with great care).
 \par Examples
@@ -129,8 +129,8 @@ each of size GROUPBY. The first atom of the group will be brought
 close to the AROUND atoms. The following atoms of the group
 will be just brought close to the first atom of the group.
 Assuming that oxygen is the first atom of each water molecules,
-in the following examples all the water oxygens will be brought
-close to the solute, and all the hydrogens will be kept close
+in the following examples all the water oxygen atoms will be brought
+close to the solute, and all the hydrogen atoms will be kept close
 to their related oxygen.
 
 \plumedfile
@@ -209,11 +209,11 @@ WrapAround::WrapAround(const ActionOptions&ao):
 
 void WrapAround::calculate() {
   for(unsigned i=0; i<atoms.size(); i+=groupby) {
-    Vector & first (modifyPosition(atoms[i]));
+    Vector & first (modifyGlobalPosition(atoms[i]));
     double mindist2=std::numeric_limits<double>::max();
     int closest=-1;
     for(unsigned j=0; j<reference.size(); ++j) {
-      Vector & second (modifyPosition(reference[j]));
+      Vector & second (modifyGlobalPosition(reference[j]));
       Vector distance=pbcDistance(first,second);
       double distance2=modulo2(distance);
       if(distance2<mindist2) {
@@ -222,12 +222,12 @@ void WrapAround::calculate() {
       }
     }
     plumed_massert(closest>=0,"closest not found");
-    Vector & second (modifyPosition(reference[closest]));
+    Vector & second (modifyGlobalPosition(reference[closest]));
 // place first atom of the group
     first=second+pbcDistance(second,first);
 // then place other atoms close to the first of the group
     for(unsigned j=1; j<groupby; j++) {
-      Vector & second (modifyPosition(atoms[i+j]));
+      Vector & second (modifyGlobalPosition(atoms[i+j]));
       second=first+pbcDistance(first,second);
     }
   }

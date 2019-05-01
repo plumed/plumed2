@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,8 +36,7 @@ namespace generic {
 
 //+PLUMEDOC GENERIC GROUP
 /*
-Define a group of atoms so that a particular list of atoms can be referenced with a single label
-in definitions of CVs or virtual atoms.
+Define a group of atoms so that a particular list of atoms can be referenced with a single label in definitions of CVs or virtual atoms.
 
 Atoms can be listed as comma separated numbers (i.e. `1,2,3,10,45,7,9`) , simple positive ranges
 (i.e. `20-40`), ranges with a stride either positive or negative (i.e. `20-40:2` or `80-50:-2`) or as
@@ -50,11 +49,11 @@ It is also possible to remove atoms from a list and or sort them using keywords 
 The flow is the following:
 - If `ATOMS` is present, then take the ordered list of atoms from the `ATOMS` keyword as a starting list.
 - If `NDX_FILE` is present, then append to it the list obtained from the gromacs group.
-- If `REMOVE` is present, then remove the first occurence of each of these atoms from the list.
+- If `REMOVE` is present, then remove the first occurrence of each of these atoms from the list.
   If one tries to remove an atom that was not listed plumed adds a notice in the output.
   An atom that is present twice in the original list might be removed twice.
 - If `SORT` is present, then the resulting list is sorted by increasing serial number.
-- If `UNIQUE` is present, then the resuling list is sorted by increasing serial number _and_ duplicate elements are removed.
+- If `UNIQUE` is present, then the resulting list is sorted by increasing serial number _and_ duplicate elements are removed.
 
 Notice that this command just creates a shortcut, and does not imply any real calculation.
 So, having a huge group defined does not slow down your calculation in any way.
@@ -104,7 +103,7 @@ DUMPATOMS ATOMS=pro FILE=traj.gro
 
 A list can be edited with `REMOVE`. For instance, if you
 are using a water model with three atoms per molecule, you can
-easily construct the list of hydrogens in this manner
+easily construct the list of hydrogen atoms in this manner
 \plumedfile
 # take one atom every three, that is oxygens
 ox: GROUP ATOMS=1-90:3

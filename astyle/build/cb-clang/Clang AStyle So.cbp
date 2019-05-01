@@ -59,7 +59,7 @@
 					<Add option="-Wno-sign-conversion" />
 					<Add option="-Wno-weak-vtables" />
 					<Add option="-DASTYLE_LIB" />
-					<Add option="-DDNDEBUG" />
+					<Add option="-DNDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -68,7 +68,7 @@
 			</Target>
 			<Environment>
 				<Variable name="MAJORVER" value="3" />
-				<Variable name="MINORVER" value="0" />
+				<Variable name="MINORVER" value="1" />
 				<Variable name="PATCHVER" value="0" />
 				<Variable name="SOLIBVER" value="$(MAJORVER).$(MINORVER).$(PATCHVER)" />
 			</Environment>

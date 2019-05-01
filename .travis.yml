@@ -1,90 +1,131 @@
 language: cpp
+cache: ccache
 matrix:
   include:
 # list of configurations to be attempted:
 # MPI + doc
-# this is the "master" one, it is going to update the manual if log contains [makedoc]
+# this is the "master" one, it is going to update the manual every time
 # Variable PLUMED_ALL_TESTS=yes ensures that all the regtests can be run.
 # If some of them is not enabled, the whole suite will fail.
-  - os: linux
+  - name: Run all tests and build doc. All features enabled (system blas and lapack + asmjit)
+    os: linux
     dist: trusty
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes CONFIG_FLAGS=--enable-cxx-exceptions
-# the following are with debug flags
-  - os: linux
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=yes
+  - name: Run all tests and scan coverage
+    os: linux
+    dist: trusty
+    sudo: required
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKECOVERAGE=yes PLUMED_ALL_TESTS=yes
+  - name: Debug flags, no MPI
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=gcc   PLUMED_CXX=g++    CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-  - os: linux
+  - name: Debug flags, MPI
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-# cppcheck - takes a lot of time to compile the code, so I place it closer
-# to the beginning of the list
-  - os: linux
+  - name: Cppcheck and codecheck
+    os: linux
     dist: trusty
     sudo: required
-    env: CPPCHECK=yes CPPCHECK_VERSION=1.78
-# then check with different optimization flags
-  - os: linux
+    env: CPPCHECK=yes CPPCHECK_VERSION=1.87
+  - name: External blas with internal lapack, including asmjit
+    os: linux
+    if: branch =~ ^test- OR type IN(pull_request)
     dist: trusty
     sudo: required
-    env: PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
-# test using external blas with internal lapack
-  - os: linux
-    dist: trusty
+    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack" ASMJIT=yes
+  - name: Docker image (ubuntu 17, with gcc6)
     sudo: required
-    env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
-# osx serial
-  - os: osx
+    if: branch =~ ^test- OR type IN(pull_request)
+    services: docker
+    env: PLUMED_DOCKER=yes
+  - name: MacOS, serial build
+    os: osx
+    if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
-# osx parallel
-  - os: osx
+# this should not be required. I add it since it looks like with OSX it does not work otherwise
+    cache:
+      directories:
+      - $HOME/.ccache
+  - name: MacOS, MPI build
+    os: osx
+    if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
-# osx serial macports
-  - os: osx
+# this should not be required. I add it since it looks like with OSX it does not work otherwise
+    cache:
+      directories:
+      - $HOME/.ccache
+  - name: MacPorts, default modules
+    os: osx
+    if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
-    env: PLUMED_MACPORTS="plumed"
-# osx serial macports debug variant
-  - os: osx
+    env: PLUMED_MACPORTS="plumed" PLUMED_PYTHON="2.7 3.6 3.7"
+    cache:
+      directories:
+      - $HOME/.macports-ci-ccache
+  - name: MacPorts, all modules
+    os: osx
+    if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
-    env: PLUMED_MACPORTS="plumed +allmodules"
-# osx serial macports debug variant
-  - os: osx
-    osx_image: xcode8.2
-    env: PLUMED_MACPORTS="plumed +allmodules"
+    env: PLUMED_MACPORTS="plumed +allmodules" PLUMED_PYTHON="2.7 3.6 3.7"
+    cache:
+      directories:
+      - $HOME/.macports-ci-ccache
+  - name: MacPorts 8.3, all modules
+    os: osx
+    osx_image: xcode8.3
+    env: PLUMED_MACPORTS="plumed +allmodules" PLUMED_PYTHON="2.7 3.6 3.7"
+    cache:
+      directories:
+      - $HOME/.macports-ci-ccache
 # I don't put any mpi variant with macports since it takes too long to compile
 ## This command can be used to allow failures:
-##  allow_failures:
-## # I allow this to fail temporarily
-##    - env: CPPCHECK=yes CPPCHECK_VERSION=1.74
+  allow_failures:
+# I allow this to fail temporarily
+  - env: PLUMED_DOCKER=yes
+# this is failing due to problems in installing MPI, should be allowed to fail until we fix it.
+  - env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
 ## Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
 # setup environment to allow install on the home directory
   - export PATH="$HOME/opt/bin:$PATH"
-  - export CPATH="$HOME/opt/include:$CPATH"
-  - export INCLUDE="$HOME/opt/include:$INCLUDE"
-  - export LIBRARY_PATH="$HOME/opt/lib:$LIBRARY_PATH"
-  - export LD_LIBRARY_PATH="$HOME/opt/lib:$LD_LIBRARY_PATH"
-# build the manual, only if log contains string [makedoc]
+  - export CPATH="$HOME/opt/include:$HOME/opt/arrayfire/include:$CPATH"
+  - export INCLUDE="$HOME/opt/include:$HOME/opt/arrayfire/include:$INCLUDE"
+  - export LIBRARY_PATH="$HOME/opt/lib:$HOME/opt/arrayfire/lib:$LIBRARY_PATH"
+  - export LD_LIBRARY_PATH="$HOME/opt/lib:$HOME/opt/arrayfire/lib:$LD_LIBRARY_PATH"
+  - export PYTHONPATH="$HOME/opt/lib/plumed/python:$PYTHONPATH"
+# Setting the TMPDIR in this way allegedly prevents problems with the compilation of 
+# PLUMED + Python on macos
+  - export TMPDIR="/tmp" 
+# on travis, better dump stack trace in case there is an error
+  - export PLUMED_STACK_TRACE=yes
   - export PLUMED_NUM_THREADS=2
-# accept both [makedoc] and [makedocs] as an option
-  - ./.travis/check.log makedoc  || ./.travis/check.log makedocs || MAKEDOC=no
   - ./.travis/check.log valgrind || VALGRIND=no
 # update packages
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then brew update > /dev/null ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then
+      brew update > /dev/null ;
+      brew install ccache ;
+      export PLUMED_MPIRUN="mpirun --oversubscribe" ;
+    fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq ; fi
 # install some package - these are fast, we install them anyway
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libmatheval-dev libfftw3-dev gsl-bin libgsl0-dev ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libfftw3-dev gsl-bin libgsl0-dev  libboost-serialization-dev ; fi
   - if test "$PLUMED_CXX" ; then ./.travis/install.xdrfile ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      ./.travis/install.ccache v3.5 ;
+    fi
 # cppcheck:
 # I use 1.71 since 1.72 seems to report a lot of false positive
   - if test "$CPPCHECK" == yes ; then  ./.travis/install.cppcheck $CPPCHECK_VERSION ; fi
 # for plumedcheck I need latest gawk
-  - if test "$CPPCHECK" == yes ; then  ./.travis/install.gawk 4.1.4 ; fi
+  - if test "$CPPCHECK" == yes ; then  ./.travis/install.gawk 4.2.1 ; fi
 # for plumedcheck I need astyle
   - if test "$CPPCHECK" == yes ; then make -j 4 -C astyle ; fi
 # installation of these packages takes a lot of time
@@ -94,17 +135,29 @@ install:
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y graphviz            ; fi
 # install doxygen-latex
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y doxygen-latex ; fi
+# install aspell
+  - if test "$MAKEDOC" == yes ; then sudo apt-get install -y aspell aspell-en  ; fi
 # install lcov
-  - if test "$MAKEDOC" == yes ; then sudo apt-get install -y lcov ; fi
+  - if test "$MAKECOVERAGE" == yes ; then ./.travis/install.lcov v1.14 ; fi
+# install numpy and cython for python interface
+# only for linux and homebrew (no macports)
+  - if test "$PLUMED_CXX" ; then
+      sudo pip install --upgrade pip ;
+      sudo pip install numpy ;
+      sudo pip install Cython ;
+      sudo pip install nose ;
+    fi
 # then replace doxygen with the desided version
 # I use 1.8.10 instead of 1.8.11 since it looks like 1.8.11 have troubles with
 # non case sensitive files (it writes capitalized filenames)
-  - if test "$MAKEDOC" == yes ; then ./.travis/install.doxygen Release_1_8_13 ; fi
+  - if test "$MAKEDOC" == yes ; then ./.travis/install.doxygen Release_1_8_14 ; fi
   - if test "$VALGRIND" == yes ; then sudo apt-get install -y valgrind           ; fi
   - if test "$LAPACK" == yes ; then sudo apt-get -y install libatlas-base-dev      ; fi
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
 # I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
   - if test -n "$LD_LIBRARY_PATH" ; then PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" ; fi
+# arrayfire
+  - if test "$ARRAYFIRE" == yes; then ./.travis/install.arrayfire ; fi 
 # macports related stuff
 # configure macports
   - if test -n "$PLUMED_MACPORTS" ; then
@@ -115,35 +168,71 @@ install:
       PATH="/opt/local/bin:$PATH" ;
       make macports ;
       ./macports-ci localports macports ;
+      ./macports-ci ccache ;
     fi
 script:
 # make sure all modules are enabled
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-modules=all"
+# disable tracking dependencies, to build faster
+  - CONFIG_FLAGS="$CONFIG_FLAGS --disable-dependency-tracking"
 # we enable fftw, which is off by default
   - CONFIG_FLAGS="$CONFIG_FLAGS --enable-fftw"
+# enable boost_serialization to test drr module
+  - CONFIG_FLAGS="$CONFIG_FLAGS --enable-boost_serialization"
   - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-pdfdoc" ; fi
-  - if test "$MAKEDOC" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
-# when running lcov plumed should be compiled with -O0
-  - if test "$MAKEDOC" == yes ; then PLUMED_CXXFLAGS=-O0 ; fi
+  - if test "$MAKECOVERAGE" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-gcov" ; fi
+  - if test "$ARRAYFIRE" == yes; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-af_cpu"; fi
+# when running lcov plumed use moderate optimization
+  - if test "$MAKECOVERAGE" == yes ; then PLUMED_CXXFLAGS=-O ; fi
+  - if test "$ASMJIT" == yes ; then CONFIG_FLAGS="$CONFIG_FLAGS --enable-asmjit" ; fi
 
 # BUILD:
 # this is done only if PLUMED_CXX is defined
-# we have to pass the full path since on travis machines sudo does not have compilers in the path
-  - if test "$PLUMED_CXX" ; then ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $CONFIG_FLAGS ; fi
-  - if test "$PLUMED_CXX" ; then make -j 4 ; fi
-# we install plumed so that it is in the path
-  - if test "$PLUMED_CXX" ; then make install prefix="$HOME/opt" ; fi
+  - if test "$PLUMED_CXX" ; then
+      ccache -s ;
+      ./configure CXX="ccache $(which $PLUMED_CXX)" CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $CONFIG_FLAGS --prefix="$HOME/opt" ;
+      make -j 4 ;
+      make install ;
+      ccache -s ;
+    fi
 
 # build using macports
-  - if test -n "$PLUMED_MACPORTS" ; then sudo port -N install $PLUMED_MACPORTS ; fi
+  - if test -n "$PLUMED_MACPORTS" ; then
+      travis_wait sudo port -N -k install $PLUMED_MACPORTS ;
+      plumed config show ;
+      ./macports-ci ccache --save ;
+      for p in $PLUMED_PYTHON ; do
+        travis_wait sudo port -N install py${p//./}-plumed ;
+      done
+    fi
+
+# build docker container
+  - if test "$PLUMED_DOCKER" = yes ; then make -C docker ; fi
 
 # TEST:
   - if test "$VALGRIND" == yes ; then OPT=valgrind ; else OPT="" ; fi
-  - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make -C regtest $OPT ; fi
+# --no-print-directory make it more silent
+  - if test "$PLUMED_CXX" ; then make --no-print-directory -C regtest $OPT ; fi
+
+# test with gcc6
+  - if test "$PLUMED_DOCKER" = yes ; then docker run -v "$PWD/regtest":/home/plumed/regtest -it plumed /bin/bash -c "make -C regtest" ; fi
+# currently, gcc6 fails for numerical reasons. Once this is fixed we can add the "make -C regtest checkfail" command below
+
   - if test "$MAKEDOC" == yes ; then make -C regtest copytodoc ; fi
-  - if test "$MAKEDOC" == yes ; then make -C developer-doc coverage ; fi
+  - if test "$MAKECOVERAGE" == yes ; then make -C developer-doc coverage ; fi
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
-  - if test "$PLUMED_CXX" || test -n "$PLUMED_MACPORTS" ; then make -C regtest checkfail ; fi
+  - if test "$PLUMED_CXX" ; then make -C regtest checkfail ; fi
+# OpenBLAS is needed for numpy, I install it separately since it takes a long time
+  - if test -n "$PLUMED_MACPORTS" ; then
+      travis_wait sudo port -N -d test $PLUMED_MACPORTS ;
+      travis_wait sudo port -N install OpenBLAS ;
+      for p in $PLUMED_PYTHON ; do
+        travis_wait sudo port test py${p//./}-plumed ;
+      done
+    fi
+  - if test "$PLUMED_CXX" ; then
+        nosetests -v -w python ;
+    fi
 
 # CPPCHECK:
 # this is required so as to have all the include files inplace:
@@ -154,4 +243,6 @@ script:
 # script which check if coding policies are satisfied
   - if test "$CPPCHECK" == yes ; then make codecheck ; fi
 after_success:
-  - if test "$MAKEDOC" == yes ; then ./.travis/pushdoc ; fi 
+  - if test "$MAKEDOC" == yes ; then ./.travis/push doc ; fi 
+  - if test "$MAKECOVERAGE" == yes ; then ./.travis/push coverage ; fi 
+  - if test "$MAKECOVERAGE" == yes ; then bash <(curl -s https://codecov.io/bash) > /dev/null ; fi

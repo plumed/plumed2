@@ -1,0 +1,210 @@
+#! FIELDS idx_psi ves3.gradient index
+#! SET time 2.000000
+#! SET iteration  1
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_psi  11
+       0     0.000000       0
+       1    -0.649171       1
+       2    -0.738460       2
+       3     0.121825       3
+       4    -0.925796       4
+       5     0.713211       5
+       6    -0.470016       6
+       7     0.718439       7
+       8     0.210136       8
+       9     0.242757       9
+      10     0.573496      10
+#!-------------------
+
+
+#! FIELDS idx_psi ves3.gradient index
+#! SET time 4.000000
+#! SET iteration  2
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_psi  11
+       0     0.000000       0
+       1    -0.477430       1
+       2    -0.806739       2
+       3     0.364548       3
+       4    -0.664050       4
+       5     0.482586       5
+       6    -0.015599       6
+       7     0.079299       7
+       8     0.124625       8
+       9     0.093200       9
+      10    -0.183592      10
+#!-------------------
+
+
+#! FIELDS idx_psi ves3.gradient index
+#! SET time 6.000000
+#! SET iteration  3
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_psi  11
+       0     0.000000       0
+       1    -0.622865       1
+       2    -0.775048       2
+       3     0.210300       3
+       4    -0.954426       4
+       5     0.850510       5
+       6    -0.421473       6
+       7     0.826012       7
+       8     0.382584       8
+       9     0.207358       9
+      10     0.835717      10
+#!-------------------
+
+
+#! FIELDS idx_psi ves3.gradient index
+#! SET time 8.000000
+#! SET iteration  4
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_psi  11
+       0     0.000000       0
+       1    -0.231334       1
+       2    -0.972841       2
+       3     0.892848       3
+       4    -0.450073       4
+       5     0.644313       5
+       6     0.764384       6
+       7    -0.594459       7
+       8     0.803488       8
+       9    -0.918949       9
+      10    -0.392340      10
+#!-------------------
+
+
+#! FIELDS idx_psi ves3.gradient index
+#! SET time 10.000000
+#! SET iteration  5
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_psi  11
+       0     0.000000       0
+       1    -0.000163       1
+       2    -0.510129       2
+       3    -0.479537       3
+       4     0.000306       4
+       5    -0.000956       5
+       6    -0.999380       6
+       7     0.540087       7
+       8    -0.000689       8
+       9    -0.000715       9
+      10    -0.448352      10
+#!-------------------
+
+
+#! FIELDS idx_psi ves3.gradient index
+#! SET time 12.000000
+#! SET iteration  6
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_psi  11
+       0     0.000000       0
+       1     0.741182       1
+       2    -0.458691       2
+       3    -0.231768       3
+       4     0.464932       4
+       5    -0.003114       5
+       6    -0.033847       6
+       7    -0.277030       7
+       8    -0.367531       8
+       9     0.779507       9
+      10     0.302986      10
+#!-------------------
+
+
+#! FIELDS idx_psi ves3.gradient index
+#! SET time 14.000000
+#! SET iteration  7
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_psi  11
+       0     0.000000       0
+       1    -0.014631       1
+       2    -0.121466       2
+       3    -0.942318       3
+       4     0.230350       4
+       5    -0.126588       5
+       6    -0.336696       6
+       7    -0.782577       7
+       8     0.406918       8
+       9    -0.324672       9
+      10    -0.475212      10
+#!-------------------
+
+
+#! FIELDS idx_psi ves3.gradient index
+#! SET time 16.000000
+#! SET iteration  8
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_psi  11
+       0     0.000000       0
+       1    -0.037889       1
+       2    -0.357513       2
+       3    -0.725027       3
+       4     0.155419       4
+       5    -0.278052       5
+       6    -0.848265       6
+       7    -0.090884       7
+       8     0.040841       8
+       9    -0.485763       9
+      10    -0.833032      10
+#!-------------------
+
+
+#! FIELDS idx_psi ves3.gradient index
+#! SET time 18.000000
+#! SET iteration  9
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_psi  11
+       0     0.000000       0
+       1    -0.508508       1
+       2    -0.852001       2
+       3     0.459960       3
+       4    -0.852842       4
+       5     0.929757       5
+       6    -0.040452       6
+       7     0.482214       7
+       8     0.733495       8
+       9    -0.353715       9
+      10     0.730138      10
+#!-------------------
+
+
+#! FIELDS idx_psi ves3.gradient index
+#! SET time 20.000000
+#! SET iteration  10
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_psi  11
+       0     0.000000       0
+       1    -0.441454       1
+       2    -0.883954       2
+       3     0.572227       3
+       4    -0.761468       4
+       5     0.879562       5
+       6     0.161210       6
+       7     0.226595       7
+       8     0.782403       8
+       9    -0.525874       9
+      10     0.485089      10
+#!-------------------
+
+

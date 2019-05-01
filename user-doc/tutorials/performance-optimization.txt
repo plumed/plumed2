@@ -1,0 +1,332 @@
+/**
+\page performance-optimization Optimizing PLUMED performance
+
+\authors Giovanni Bussi
+\date February 19, 2019
+
+This document describes the PLUMED tutorial held at CINECA, February 2019.
+The aim of this tutorial is to learn how to optimize simulations performed using PLUMED.
+Although the presented input files are correct,
+the users are invited to **refer to the literature to understand how the
+parameters of enhanced sampling methods should be chosen in a real application.**
+
+Users are also encouraged to follow the links to the full PLUMED reference documentation
+and to wander around in the manual to discover the many available features
+and to do the other, more complete, tutorials.
+
+\section performance-optimization-2-optimization How to optimize a simulation performed with PLUMED
+
+The input files for this exercise can be found in this \tarball{performance-optimization}.
+
+We will now learn how to optimize a simulation where PLUMED is used on-the-fly to
+compute or bias collective variables. You should use the provided `topol.tpr` file.
+
+\subsection performance-optimization-2a Run a simulation with GROMACS alone
+
+In order to run a simulation with gromacs you can use the following command
+\verbatim
+gmx_mpi mdrun -nsteps 500 -v -nb cpu -ntomp 12 -pin on
+\endverbatim
+This will run a simulation for 500 steps, without using any GPU-acceleration, and with 12 OpenMP 
+threads. Later at the end of the tutorial we will see how the speed of GROMACS+PLUMED changes 
+when using the GPU.
+Adjust the number of threads based on the number of processors that you have on each node.
+500 steps should be sufficient to get an estimate of the simulation speed if you use OpenMP only.
+Notice that if you use MPI parallelism with GROMACS more steps are needed due to dynamic load balancing.
+
+As a first step, make a table showing the performance (ns per day) with different number of OpenMP threads.
+On my workstation the result is
+
+| Number of threads | Performance (ns/day) |  Wallclock time (s) |
+|:-----------------:|:--------------------:|:-------------------:|
+| 12                | 27.225               | 3.180               |
+| 6                 | 12.677               | 6.829               |
+| 3                 | 8.827                | 9.807               |
+| 1                 | 3.685                | 23.491              |
+
+Scaling is approximately linear.
+
+\subsection performance-optimization-2b Run a simulation with GROMACS+PLUMED
+
+Now you can run GROMACS with PLUMED using the following input file
+
+\plumedfile
+MOLINFO STRUCTURE=conf.pdb
+# @water and @hydrogens are special groups introduce in PLUMED 2.5!
+wat: GROUP ATOMS=@water
+ow:  GROUP ATOMS=@water REMOVE=@hydrogens
+mg:  GROUP ATOMS=10484
+p:   GROUP ATOMS=@P-2
+dp:    DISTANCE ATOMS=mg,p
+cn:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261
+PRINT ARG=dp,cn
+\endplumedfile
+
+The command to run the simulation will be
+\verbatim
+gmx_mpi mdrun -nsteps 500 -v -nb cpu -ntomp 12 -pin on -plumed plumed.dat
+\endverbatim
+
+The total time required by this simulation should **increase**. This is because PLUMED occupies some of the
+CPU cycles in order to:
+- copy the coordinates of the requested atoms
+- compute the requested collective variables
+- print them on a file
+
+Take note of the increment in the wall-clock time. On my workstation it is approx 1.5 seconds more for these 500 steps with 12 OpenMP threads.
+Check how much is the impact when you change the number of threads.
+
+\subsection performance-optimization-2c Timing individual variables
+
+In order to know which of your collective variables is taking more time to be computed, you should
+use the \ref DEBUG DETAILED_TIMERS flag (place it after \ref MOLINFO). The end of the `md.log` file should now look
+similar to this
+\verbatim
+PLUMED:                                                    1     1.138360     1.138360     1.138360     1.138360
+PLUMED: 1 Prepare dependencies                           501     0.001654     0.000003     0.000003     0.000014
+PLUMED: 2 Sharing data                                   501     0.052691     0.000105     0.000092     0.004898
+PLUMED: 3 Waiting for data                               501     0.004488     0.000009     0.000008     0.000030
+PLUMED: 4 Calculating (forward loop)                     501     0.444763     0.000888     0.000849     0.001809
+PLUMED: 4A 1 @1                                          501     0.001294     0.000003     0.000002     0.000010
+PLUMED: 4A 6 dp                                          501     0.007342     0.000015     0.000013     0.000045
+PLUMED: 4A 7 cn                                          501     0.422879     0.000844     0.000807     0.001701
+PLUMED: 4A 8 @8                                          501     0.001087     0.000002     0.000002     0.000014
+PLUMED: 5 Applying (backward loop)                       501     0.112352     0.000224     0.000210     0.002120
+PLUMED: 5A 0 @8                                          501     0.000713     0.000001     0.000001     0.000009
+PLUMED: 5A 1 cn                                          501     0.069576     0.000139     0.000132     0.000324
+PLUMED: 5A 2 dp                                          501     0.002932     0.000006     0.000005     0.000018
+PLUMED: 5A 7 @1                                          501     0.000806     0.000002     0.000001     0.000010
+PLUMED: 5B Update forces                                 501     0.029823     0.000060     0.000050     0.001948
+PLUMED: 6 Update                                         501     0.009887     0.000020     0.000017     0.000110
+\endverbatim
+
+Notice that running with DETAILED_TIMERS might slow down a bit more your simulation.
+
+Each line tells you how expensive was the calculation of each collective variable.
+Find which is the most expensive! We will focus on it in the next points
+
+\subsection performance-optimization-2d Optimizing coordination numbers using neighbor lists
+
+The \ref COORDINATION of multiple atoms can be very expensive for a number of reasons:
+- It might require the calculation of a large number of distances
+- It might require many atoms to be copied from GROMACS to PLUMED
+
+In this specific example, the coordination number will require a number of calculations that is proportional
+to the number of water molecules in the system.
+
+Repeat the timing above using neighbor lists. Here's how you should modify the line computing the COORDINATION
+in order to enable neighbor lists
+
+\plumedfile
+cn:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261 NLIST NL_STRIDE=20 NL_CUTOFF=1.0
+\endplumedfile
+
+There are two critical parameters:
+- the stride for the neighbor lists (here 20 steps).
+- the cutoff distance (here 1 nm).
+
+You should be **very careful** since using neighbor lists introduces approximations that might invalidate your calculation!
+The recommended procedure is to first perform a simulation where you compute your variable with different settings and compare the result.
+For instance:
+
+\plumedfile
+MOLINFO STRUCTURE=conf.pdb
+wat: GROUP ATOMS=@water
+ow:  GROUP ATOMS=@water REMOVE=@hydrogens
+mg:  GROUP ATOMS=10484
+p:   GROUP ATOMS=@P-2
+dp:    DISTANCE ATOMS=mg,p
+cn:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261
+# use increasing values of the stride
+cn2:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261 NLIST NL_STRIDE=2  NL_CUTOFF=1.0
+cn10:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261 NLIST NL_STRIDE=10 NL_CUTOFF=1.0
+cn20:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261 NLIST NL_STRIDE=20 NL_CUTOFF=1.0
+cn50:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261 NLIST NL_STRIDE=50 NL_CUTOFF=1.0
+# notice that here we are using a regular expression to select all coordination numbers
+PRINT ARG=dp,(cn.*) FILE=COLVAR STRIDE=1
+\endplumedfile
+
+In the `COLVAR` files you will see multiple columns corresponding to values computed using different strides.
+You should pick a column such that the reported value is not too different from the one in the third column (that is: without neighbor lists).
+"Not too different" of course depends on how much you want to trade in accuracy vs speed.
+
+\warning As of PLUMED 2.5, the construction of the neighbor list is not parallelized! As a consequence, the advantage of using it
+  might be not compensated by the slow time required to construct it. This might change in a future PLUMED version.
+  In addition, notice that the time for constructing the list
+  is not present in the breakdown of the timers seen above, but is part of the "Prepare dependencies" stage.
+
+Once you picked a setting that gives you results that are accurate enough, you can measure the speed using that setting alone
+using an input where only that specific setting is used.
+You will probably see that using neighbor lists is usually inconvenient unless you run with a single or very few cores.
+
+\subsection performance-optimization-2e Biasing your CVs: multiple time stepping
+
+So far we have used PLUMED to analyze a CV on the fly. In principle, when you analyze CVs you typically only print them with a given
+stride (say, every 100 steps). This of course moderates significantly their cost. However, when you bias a CV you typically need to
+compute it at every step.
+Let's say that you want to use a restraint to make sure that the Mg ion is always six coordinated with water.
+This can be obtained using a \ref RESTRAINT located AT=6. Remove the \ref PRINT action from your input file
+and replace it with the following actions:
+\plumedfile
+# apply a restraint. this will be computed at every step by default
+RESTRAINT ARG=cn AT=6 KAPPA=5.0
+# only print every 100 steps
+PRINT ARG=dp,cn FILE=COLVAR STRIDE=100
+\endplumedfile
+
+Now measure the speed of your simulation. You should see some overhead due to PLUMED.
+You can now try to use multiple-time-stepping \cite{Ferrarotti2015}.
+To do so add a `STRIDE` option to the \ref RESTRAINT line.
+You can also use the \ref EFFECTIVE_ENERGY_DRIFT action to print a kind of "total energy drift" due to the application
+of the PLUMED bias. In molecular dynamics simulation you usually monitor the drift in the total energy in order to choose the
+time step. Here you can use the value of the effective energy drift to choose the stride for multiple-time-stepping.
+\plumedfile
+RESTRAINT ARG=cn AT=6 KAPPA=5.0 STRIDE=2
+EFFECTIVE_ENERGY_DRIFT PRINT_STRIDE=100 FILE=eff
+\endplumedfile
+
+Using a `STRIDE=5` you should get something like this
+\verbatim
+#! FIELDS time effective-energy
+ 0.000000 0.000000
+ 0.200000 0.012010
+ 0.400000 0.024574
+ 0.600000 0.105866
+ 0.800000 0.178739
+ 1.000000 0.254018
+\endverbatim
+The effective energy will drift quickly!
+Using a `STRIDE=2` instead the effective energy will be very stable
+\verbatim
+#! FIELDS time effective-energy
+ 0.000000 0.000000
+ 0.200000 0.000980
+ 0.400000 0.000041
+ 0.600000 -0.000162
+ 0.800000 0.000078
+ 1.000000 -0.000395
+\endverbatim
+
+\note The `STRIDE` option is not included in the manual, but can be used
+  for all the bias actions to activate multiple-time-stepping.
+
+\subsection performance-optimization-2f Using grids in metadynamics
+
+
+Let's try to perform a metadynamics simulation biasing the coordination number and
+the distance between the magnesium ion and the phosphate. Parameters are similar to those used in \cite{cunha2017unraveling},
+although we use here a shorter deposition pace in order to artificially increase the computational cost.
+
+\plumedfile
+MOLINFO STRUCTURE=conf.pdb
+wat: GROUP ATOMS=@water
+ow:  GROUP ATOMS=@water REMOVE=@hydrogens
+mg:  GROUP ATOMS=10484
+p:   GROUP ATOMS=@P-2
+dp:    DISTANCE ATOMS=mg,p
+cn:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261
+metadP: METAD ARG=dp,cn SIGMA=0.05,0.1 HEIGHT=0.3 PACE=100 TEMP=300 BIASFACTOR=15
+PRINT ARG=dp,cn FILE=COLVAR STRIDE=100
+\endplumedfile
+
+If you use this input for a very long simulation you will realize that most of the time is spent
+within the `METAD` action. The reason is simple: in its standard implementation, metadynamics is implemented
+as a history dependent potential where, every time we need to compute the force, a sum over the past history
+is performed. The history is saved in the `HILLS` file (have a look at it). When this file becomes too large the simulation
+will slow down. Without the need to run a very long simulation, we can see the problem by artificially creating a very long
+HILLS file. Every line of the HILLS file contains:
+- The value of time.
+- The coordinates at which the Gaussian function was deposited.
+- The width of the deposited Gaussian function
+- The height
+- A number called bias-factor (check \ref METAD manual to know what it means).
+
+We can make an artificially long HILLS file and then use it to restart our simulation.
+\verbatim
+var="$(<HILLS)
+for((i=0;i<=10000;i++)) ; do echo "$var" ; done | awk '{if($1!="#!") print $1,$2,$3,$4,$5,$6/100000,$7; else print}' > HILLS_long
+\endverbatim
+
+Now modify your `plumed.dat` file so that it will read the `HILLS_long` file:
+\plumedfile
+MOLINFO STRUCTURE=conf.pdb
+wat: GROUP ATOMS=@water
+ow:  GROUP ATOMS=@water REMOVE=@hydrogens
+mg:  GROUP ATOMS=10484
+p:   GROUP ATOMS=@P-2
+dp:    DISTANCE ATOMS=mg,p
+cn:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261
+metadP: METAD ARG=dp,cn SIGMA=0.05,0.1 HEIGHT=0.3 PACE=100 TEMP=300 BIASFACTOR=15 FILE=HILLS_long RESTART=YES
+PRINT ARG=dp,cn FILE=COLVAR STRIDE=100
+\endplumedfile
+
+Run your simulation and check the timing. Which is the most expensive action now?
+
+The standard solution to the problem above is to use a grid to store the Gaussian functions.
+In this manner, at the first step PLUMED will take some time to put all the Gaussian functions
+on the grid, but subsequent calculations of the force will be much faster, since they will just
+require a grid lookup (rather than a sum over the history).
+
+Time the simulation using the following lines to perform METAD:
+\plumedfile
+metadP: METAD ARG=dp,cn SIGMA=0.05,0.1 HEIGHT=0.3 PACE=100 TEMP=300 BIASFACTOR=15 FILE=HILLS_long RESTART=YES GRID_MIN=3,4 GRID_MAX=4,6
+\endplumedfile
+
+Which is the most expensive action now?
+
+\warning If a simulation reaches a point outside of the grid PLUMED will stop! You should be generous in the boundaries, but not too much or 
+  your simulation might require too much memory and crash
+
+\subsection performance-optimization-2g Running GROMACS on the GPU
+
+All the exercises so far were done running GROMACS on the CPU. 
+You should have noticed that the wall-clock time of a simulation run using PLUMED is approximately equal to
+the sum of:
+- the wall-clock time of an equivalent simulation **not** using PLUMED, plus
+- the total time required by PLUMED, shown at the end of the `md.log` file.
+
+Let's see what happens using the GPU. In this case the first couple of thousands steps are kind of different since
+GROMACS tries to optimize the GPU load, so we should run a longer simulation to estimate the simulation speed.
+For simplicity, use the following `plumed.dat` file:
+\plumedfile
+# vim:ft=plumed
+MOLINFO STRUCTURE=conf.pdb
+DEBUG DETAILED_TIMERS
+wat: GROUP ATOMS=@water
+ow:  GROUP ATOMS=@water REMOVE=@hydrogens
+mg:  GROUP ATOMS=27275
+p:   GROUP ATOMS=@P-2
+dp:    DISTANCE ATOMS=mg,p
+cn:    COORDINATION GROUPA=mg GROUPB=ow R_0=0.261
+PRINT ARG=dp,(cn.*) FILE=COLVAR STRIDE=100
+RESTRAINT ARG=cn AT=5 KAPPA=5.0
+\endplumedfile
+Let's compare the timings with/without GPU and with/without PLUMED using the following commands
+\verbatim
+gmx_mpi mdrun -nsteps 10000 -v -ntomp 12 -pin on -nb cpu
+gmx_mpi mdrun -nsteps 10000 -v -ntomp 12 -pin on -plumed plumed.dat -nb cpu
+gmx_mpi mdrun -nsteps 10000 -v -ntomp 12 -pin on 
+gmx_mpi mdrun -nsteps 10000 -v -ntomp 12 -pin on -plumed plumed.dat 
+\endverbatim
+When we run with PLUMED, let's also take note of the total time spent in PLUMED, written in the `md.log` file.
+Here's the result on my workstation:
+
+| GPU | PLUMED | Wall t (s) | PLUMED time (s) |
+|:---:|:------:|:----------:|:---------------:|
+| no  |  no    | 49.931     |        /        |
+| no  |  yes   | 65.469     |     13.44       |
+| yes |  no    | 19.648     |        /        |
+| yes |  yes   | 21.745     |     12.36       |
+
+PLUMED is not running on the GPU, so the total time spent in PLUMED is roughly the same both with and without GPU
+(12-13 seconds).
+However, when GROMACS runs using the GPU the load balancing transfers part of the load to the GPU.
+As a consequence, the total wall time is incremented by approximately 1 sec.
+
+*/
+
+link: @subpage performance-optimization
+
+description: A short 1.5 hours tutorial that introduces performance optimization
+
+additional-files: performance-optimization

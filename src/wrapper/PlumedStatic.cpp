@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2016 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,10 +20,25 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*
-  We here compile a version of Plumed.c which is statically bound to the plumed library,
-  for which it is not possible to redefine the location of plumed kernel at runtime.
-  Since Plumed.c can be compiled with both C and C++, we opt here for C++
-  so as to further check compatibilities
+  Define _plumed_symbol_table_reexport().
+  Only required in the installed libplumed.so
 */
-#define __PLUMED_STATIC_KERNEL
-#include "Plumed.c"
+#define __PLUMED_WRAPPER_REEXPORT_SYMBOL_TABLE 1
+
+/*
+  Make sure the inline C++ interface is not included here.
+  Should not be necessary, but it doesn't hurt.
+*/
+#define __PLUMED_WRAPPER_CXX 0
+
+/*
+  Tell Plumed.h to emit the whole implementation
+*/
+#define __PLUMED_WRAPPER_IMPLEMENTATION 1
+
+/*
+  Emit fortran wrappers
+*/
+#define __PLUMED_WRAPPER_FORTRAN 1
+
+#include "Plumed.h"

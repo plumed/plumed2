@@ -1,0 +1,23 @@
+# vim:ft=plumed
+
+phi:   TORSION ATOMS=5,7,9,15     NOPBC
+
+bf1: BF_FOURIER ORDER=6 MINIMUM=-pi MAXIMUM=pi
+
+VES_LINEAR_EXPANSION ...
+ ARG=phi
+ BASIS_FUNCTIONS=bf1
+ LABEL=ves1
+ TEMP=300.0
+ GRID_BINS=100
+ COEFFS=coeffs-in.data
+... VES_LINEAR_EXPANSION
+
+PRINT ...
+  STRIDE=500
+  ARG=phi,ves1.bias,ves1.force2
+  FILE=colvar.data FMT=%6.3f
+... PRINT
+
+ENDPLUMED
+

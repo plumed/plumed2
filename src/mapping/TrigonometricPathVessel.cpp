@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "TrigonometricPathVessel.h"
 #include "vesselbase/VesselRegister.h"
+#include "tools/PDB.h"
 
 namespace PLMD {
 namespace mapping {
@@ -71,7 +72,9 @@ TrigonometricPathVessel::TrigonometricPathVessel( const vesselbase::VesselOption
 
   cargs.resize( mymap->getNumberOfArguments() ); std::vector<std::string> argument_names( mymap->getNumberOfArguments() );
   for(unsigned i=0; i<mymap->getNumberOfArguments(); ++i) argument_names[i] = (mymap->getPntrToArgument(i))->getName();
-  projdir.setNamesAndAtomNumbers( mymap->getAbsoluteIndexes(), argument_names );
+  PDB mypdb; mypdb.setAtomNumbers( mymap->getAbsoluteIndexes() ); mypdb.addBlockEnd( mymap->getAbsoluteIndexes().size() );
+  if( argument_names.size()>0 ) mypdb.setArgumentNames( argument_names );
+  projdir.read( mypdb );
   mypack1.resize( mymap->getNumberOfArguments(), mymap->getNumberOfAtoms() ); ref0->setupPCAStorage( mypack1 );
   mypack2.resize( mymap->getNumberOfArguments(), mymap->getNumberOfAtoms() ); ref0->setupPCAStorage( mypack2 );
   mypack3.resize( mymap->getNumberOfArguments(), mymap->getNumberOfAtoms() );
@@ -136,26 +139,32 @@ void TrigonometricPathVessel::finish( const std::vector<double>& buffer ) {
     v2v2=(mymap->getReferenceConfiguration( iclose2 ))->calc( conf2->getReferencePositions(), mymap->getPbc(), mymap->getArguments(),
          conf2->getReferenceArguments(), mypack2, true );
     (mymap->getReferenceConfiguration( iclose2 ))->extractDisplacementVector( conf2->getReferencePositions(), mymap->getArguments(),
-        conf2->getReferenceArguments(), true, false, projdir );
+        conf2->getReferenceArguments(), false, projdir );
   } else {
     ReferenceConfiguration* conf2=mymap->getReferenceConfiguration( iclose3 );
     v2v2=(mymap->getReferenceConfiguration( iclose1 ))->calc( conf2->getReferencePositions(), mymap->getPbc(), mymap->getArguments(),
          conf2->getReferenceArguments(), mypack2, true );
     (mymap->getReferenceConfiguration( iclose1 ))->extractDisplacementVector( conf2->getReferencePositions(), mymap->getArguments(),
-        conf2->getReferenceArguments(), true, false, projdir );
+        conf2->getReferenceArguments(), false, projdir );
   }
 
   // Stash derivatives of v1v1
   for(unsigned i=0; i<mymap->getNumberOfArguments(); ++i) mypack1_stashd_args[i]=mypack1.getArgumentDerivative(i);
-  for(unsigned i=0; i<mymap->getNumberOfAtoms(); ++i) mypack1_stashd_atoms[i]=mypack1.getAtomDerivative(i);
+  if( mymap->getNumberOfAtoms()>0 ) {
+    ReferenceAtoms* at = dynamic_cast<ReferenceAtoms*>( mymap->getReferenceConfiguration( iclose1 ) );
+    const std::vector<double> & displace( at->getDisplace() );
+    for(unsigned i=0; i<mymap->getNumberOfAtoms(); ++i) {
+      mypack1_stashd_atoms[i]=mypack1.getAtomDerivative(i); mypack1.getAtomsDisplacementVector()[i] /= displace[i];
+    }
+  }
   // Calculate the dot product of v1 with v2
-  double v1v2 = (mymap->getReferenceConfiguration(iclose1))->projectDisplacementOnVector( projdir, mymap->getPositions(), mymap->getArguments(), cargs, mypack1 );
+  double v1v2 = (mymap->getReferenceConfiguration(iclose1))->projectDisplacementOnVector( projdir, mymap->getArguments(), cargs, mypack1 );
 
   // This computes s value
-  double spacing = mymap->getPropertyValue( iclose1, 0 ) - mymap->getPropertyValue( iclose2, 0 );
+  double spacing = mymap->getPropertyValue( iclose1, (mymap->property.begin())->first ) - mymap->getPropertyValue( iclose2, (mymap->property.begin())->first );
   double root = sqrt( v1v2*v1v2 - v2v2 * ( v1v1 - v3v3) );
   dx = 0.5 * ( (root + v1v2) / v2v2 - 1.);
-  double path_s = mymap->getPropertyValue(iclose1, 0) + spacing * dx; sp->set( path_s );
+  double path_s = mymap->getPropertyValue(iclose1, (mymap->property.begin())->first ) + spacing * dx; sp->set( path_s );
   double fact = 0.25*spacing / v2v2;
   // Derivative of s wrt arguments
   for(unsigned i=0; i<mymap->getNumberOfArguments(); ++i) {
@@ -174,18 +183,16 @@ void TrigonometricPathVessel::finish( const std::vector<double>& buffer ) {
     unsigned nbase=narg+3*mymap->getNumberOfAtoms();
     for(unsigned i=0; i<3; ++i) for(unsigned j=0; j<3; ++j) sp->setDerivative( nbase+3*i+j, vir(i,j) );
   }
-
   // Now compute z value
   ReferenceConfiguration* conf2=mymap->getReferenceConfiguration( iclose1 );
   double v4v4=(mymap->getReferenceConfiguration( iclose2 ))->calc( conf2->getReferencePositions(), mymap->getPbc(), mymap->getArguments(),
               conf2->getReferenceArguments(), mypack2, true );
   // Extract vector connecting frames
   (mymap->getReferenceConfiguration( iclose2 ))->extractDisplacementVector( conf2->getReferencePositions(), mymap->getArguments(),
-      conf2->getReferenceArguments(), true, false, projdir );
+      conf2->getReferenceArguments(), false, projdir );
   // Calculate projection of vector on line connnecting frames
-  double proj = (mymap->getReferenceConfiguration(iclose1))->projectDisplacementOnVector( projdir, mymap->getPositions(), mymap->getArguments(), cargs, mypack1 );
+  double proj = (mymap->getReferenceConfiguration(iclose1))->projectDisplacementOnVector( projdir, mymap->getArguments(), cargs, mypack1 );
   double path_z = v1v1 + dx*dx*v4v4 - 2*dx*proj;
-
   // Derivatives for z path
   path_z = sqrt(path_z); zp->set( path_z ); vir.zero();
   for(unsigned i=0; i<mymap->getNumberOfArguments(); ++i) zp->setDerivative( i, (mypack1_stashd_args[i] - 2*dx*mypack1.getArgumentDerivative(i))/(2.0*path_z) );

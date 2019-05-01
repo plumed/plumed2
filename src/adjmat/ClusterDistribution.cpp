@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,8 +40,8 @@ that atoms with a high value for the local q6 Steinhardt parameter have with oth
 value for the local q6 Steinhardt parameter is then computed.  A contact matrix is then computed that measures
 whether atoms atoms \f$i\f$ and \f$j\f$ have a high value for this coordination number and if they are within
 3.6 nm of each other.  The connected components of this matrix are then found using a depth first clustering
-algorithm on the corresponding graph. The number of componets in this graph that contain more than 27 atoms is then computed.
-As discussed in \cite tribello-clustering this input was used to analyse the formation of a polycrystal of GeTe from amorphous
+algorithm on the corresponding graph. The number of components in this graph that contain more than 27 atoms is then computed.
+As discussed in \cite tribello-clustering this input was used to analyze the formation of a polycrystal of GeTe from amorphous
 GeTe.
 
 \plumedfile

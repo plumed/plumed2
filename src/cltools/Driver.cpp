@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,7 +22,7 @@
 #include "CLTool.h"
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
-#include "wrapper/Plumed.h"
+#include "core/PlumedMain.h"
 #include "tools/Communicator.h"
 #include "tools/Random.h"
 #include "tools/Pbc.h"
@@ -30,6 +30,7 @@
 #include <cstring>
 #include <vector>
 #include <map>
+#include <memory>
 #include "tools/Units.h"
 #include "tools/PDB.h"
 #include "tools/FileBase.h"
@@ -101,7 +102,7 @@ will read a file produced by \ref DUMPMASSCHARGE .
 
 \par Examples
 
-The following command tells plumed to postprocess the trajectory contained in `trajectory.xyz`
+The following command tells plumed to post process the trajectory contained in `trajectory.xyz`
  by performing the actions described in the input file `plumed.dat`.  If an action that takes the
 stride keyword is given a stride equal to \f$n\f$ then it will be performed only on every \f$n\f$th
 frames in the trajectory file.
@@ -131,7 +132,7 @@ PRINT ARG=d FILE=colvar
 In this case, the driver reads the `xyz` file assuming it to contain coordinates in Angstrom units.
 However, the resulting `colvar` file contains a distance expressed in nm.
 
-The following command tells plumed to postprocess the trajectory contained in trajectory.xyz.
+The following command tells plumed to post process the trajectory contained in trajectory.xyz.
  by performing the actions described in the input file plumed.dat.
 \verbatim
 plumed driver --plumed plumed.dat --ixyz trajectory.xyz --trajectory-stride 100 --timestep 0.001
@@ -142,7 +143,7 @@ and the `--timestep` is equal to the simulation timestep.  As such the `STRIDE` 
 files are referred to the original timestep and any files output resemble those that would have been generated
 had we run the calculation we are running with driver when the MD simulation was running.
 
-PLUMED can read natively xyz files (in PLUMED units) and gro files (in nm). In addition,
+PLUMED can read xyz files (in PLUMED units) and gro files (in nm). In addition,
 PLUMED includes by default support for a
 subset of the trajectory file formats supported by VMD, e.g. xtc and dcd:
 
@@ -200,7 +201,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Driver(const CLToolOptions& co );
   int main(FILE* in,FILE*out,Communicator& pc);
-  void evaluateNumericalDerivatives( const long int& step, Plumed& p, const std::vector<real>& coordinates,
+  void evaluateNumericalDerivatives( const long int& step, PlumedMain& p, const std::vector<real>& coordinates,
                                      const std::vector<real>& masses, const std::vector<real>& charges,
                                      std::vector<real>& cell, const double& base, std::vector<real>& numder );
   string description()const;
@@ -218,8 +219,9 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
            " currently working only for xtc/trr files read with --ixtc/--trr)"
 #endif
           );
-  keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs mpi)");
+  keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs MPI)");
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
+  keys.addFlag("--parse-only",false,"read the plumed input file and stop");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("atoms","--igro","the trajectory in gro format");
 #ifdef __PLUMED_HAS_XDRFILE
@@ -229,27 +231,28 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--mass-units","units for mass in pdb and mc file, either as a string or a number");
   keys.add("optional","--charge-units","units for charge in pdb and mc file, either as a string or a number");
+  keys.add("optional","--kt","set \\f$k_B T\\f$, it will not be necessary to specify temperature in input file");
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
   keys.addFlag("--dump-full-virial",false,"with --dump-forces, it dumps the 9 components of the virial");
   keys.add("optional","--pdb","provides a pdb with masses and charges");
   keys.add("optional","--mc","provides a file with masses and charges as produced with DUMPMASSCHARGE");
-  keys.add("optional","--box","comma-separated box dimensions (3 for orthorombic, 9 for generic)");
+  keys.add("optional","--box","comma-separated box dimensions (3 for orthorhombic, 9 for generic)");
   keys.add("optional","--natoms","provides number of atoms - only used if file format does not contain number of atoms");
+  keys.add("optional","--initial-step","provides a number for the initial step, default is 0");
   keys.add("optional","--debug-forces","output a file containing the forces due to the bias evaluated using numerical derivatives "
            "and using the analytical derivatives implemented in plumed");
-  keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
-  keys.add("hidden","--debug-dd","use a fake domain decomposition");
-  keys.add("hidden","--debug-pd","use a fake particle decomposition");
+  keys.add("hidden","--debug-float","[yes/no] turns on the single precision version (to check float interface)");
+  keys.add("hidden","--debug-dd","[yes/no] use a fake domain decomposition");
+  keys.add("hidden","--debug-pd","[yes/no] use a fake particle decomposition");
   keys.add("hidden","--debug-grex","use a fake gromacs-like replica exchange, specify exchange stride");
   keys.add("hidden","--debug-grex-log","log file for debug=grex");
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
   MOLFILE_INIT_ALL
   MOLFILE_REGISTER_ALL(NULL, register_cb)
-  for(int i=0; i<plugins.size(); i++) {
+  for(unsigned i=0; i<plugins.size(); i++) {
     string kk="--mf_"+string(plugins[i]->name);
     string mm=" molfile: the trajectory in "+string(plugins[i]->name)+" format " ;
-    //cerr<<"REGISTERING "<<kk<<mm<<endl;
     keys.add("atoms",kk,mm);
   }
 #endif
@@ -274,27 +277,50 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   if( printhelpdebug ) {
     fprintf(out,"%s",
             "Additional options for debug (only to be used in regtest):\n"
-            "  [--debug-float]         : turns on the single precision version (to check float interface)\n"
-            "  [--debug-dd]            : use a fake domain decomposition\n"
-            "  [--debug-pd]            : use a fake particle decomposition\n"
+            "  [--debug-float yes]     : turns on the single precision version (to check float interface)\n"
+            "  [--debug-dd yes]        : use a fake domain decomposition\n"
+            "  [--debug-pd yes]        : use a fake particle decomposition\n"
            );
     return 0;
   }
   // Are we reading trajectory data
   bool noatoms; parseFlag("--noatoms",noatoms);
+  bool parseOnly; parseFlag("--parse-only",parseOnly);
 
   std::string fakein;
-  bool debugfloat=parse("--debug-float",fakein);
-  if(debugfloat && sizeof(real)!=sizeof(float)) {
-    CLTool* cl=cltoolRegister().create(CLToolOptions("driver-float"));    //new Driver<float>(*this);
+  bool debug_float=false;
+  fakein="";
+  if(parse("--debug-float",fakein)) {
+    if(fakein=="yes") debug_float=true;
+    else if(fakein=="no") debug_float=false;
+    else error("--debug-float should have argument yes or no");
+  }
+
+  if(debug_float && sizeof(real)!=sizeof(float)) {
+    auto cl=cltoolRegister().create(CLToolOptions("driver-float"));
     cl->setInputData(this->getInputData());
     int ret=cl->main(in,out,pc);
-    delete cl;
     return ret;
   }
 
-  bool debug_pd=parse("--debug-pd",fakein);
-  bool debug_dd=parse("--debug-dd",fakein);
+  bool debug_pd=false;
+  fakein="";
+  if(parse("--debug-pd",fakein)) {
+    if(fakein=="yes") debug_pd=true;
+    else if(fakein=="no") debug_pd=false;
+    else error("--debug-pd should have argument yes or no");
+  }
+  if(debug_pd) fprintf(out,"DEBUGGING PARTICLE DECOMPOSITION\n");
+
+  bool debug_dd=false;
+  fakein="";
+  if(parse("--debug-dd",fakein)) {
+    if(fakein=="yes") debug_dd=true;
+    else if(fakein=="no") debug_dd=false;
+    else error("--debug-dd should have argument yes or no");
+  }
+  if(debug_dd) fprintf(out,"DEBUGGING DOMAIN DECOMPOSITION\n");
+
   if( debug_pd || debug_dd ) {
     if(noatoms) error("cannot debug without atoms");
   }
@@ -350,6 +376,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   if( debugforces!="" && (debug_dd || debug_pd) ) error("cannot debug forces and domain/particle decomposition at same time");
   if( debugforces!="" && sizeof(real)!=sizeof(double) ) error("cannot debug forces in single precision mode");
 
+  real kt=-1.0;
+  parse("--kt",kt);
   string trajectory_fmt;
 
   bool use_molfile=false;
@@ -357,7 +385,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   molfile_plugin_t *api=NULL;
   void *h_in=NULL;
   molfile_timestep_t ts_in; // this is the structure that has the timestep
-  ts_in.coords=NULL;
+// a std::unique_ptr<float> with the same scope as ts_in
+// it is necessary in order to store the pointer to ts_in.coords
+  std::unique_ptr<float[]> ts_in_coords;
+  ts_in.coords=ts_in_coords.get();
   ts_in.A=-1; // we use this to check whether cell is provided or not
 #endif
 
@@ -376,7 +407,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     parse("--itrr",traj_trr);
 #endif
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-    for(int i=0; i<plugins.size(); i++) {
+    for(unsigned i=0; i<plugins.size(); i++) {
       string molfile_key="--mf_"+string(plugins[i]->name);
       string traj_molfile;
       parse(molfile_key,traj_molfile);
@@ -417,7 +448,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       trajectoryFile=traj_trr;
       trajectory_fmt="xdr-trr";
     }
-    if(trajectoryFile.length()==0) {
+    if(trajectoryFile.length()==0&&!parseOnly) {
       fprintf(stderr,"ERROR: missing trajectory data\n");
       if(grex_log)fclose(grex_log);
       return 1;
@@ -457,16 +488,19 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
   }
 
-  if( debug_dd && debug_pd ) error("cannot use debug-dd and debug-pd at the same time");
+
+  if(debug_dd && debug_pd) error("cannot use debug-dd and debug-pd at the same time");
   if(debug_pd || debug_dd) {
     if( !Communicator::initialized() ) error("needs mpi for debug-pd");
   }
 
-  Plumed p;
+  PlumedMain p;
   int rr=sizeof(real);
   p.cmd("setRealPrecision",&rr);
   int checknatoms=-1;
   long int step=0;
+  parse("--initial-step",step);
+
   if(Communicator::initialized()) {
     if(multi) {
       if(intracomm.Get_rank()==0) p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
@@ -485,11 +519,17 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
   int natoms;
 
+  if(parseOnly) {
+    if(command_line_natoms<0) error("--parseOnly requires setting the number of atoms with --natoms");
+    natoms=command_line_natoms;
+  }
+
+
   FILE* fp=NULL; FILE* fp_forces=NULL; OFile fp_dforces;
 #ifdef __PLUMED_HAS_XDRFILE
   XDRFILE* xd=NULL;
 #endif
-  if(!noatoms) {
+  if(!noatoms&&!parseOnly) {
     if (trajectoryFile=="-")
       fp=in;
     else {
@@ -507,7 +547,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           if(command_line_natoms>=0) natoms=command_line_natoms;
           else error("this file format does not provide number of atoms; use --natoms on the command line");
         }
-        ts_in.coords = new float [3*natoms];
+        ts_in_coords.reset(new float [3*natoms]);
+        ts_in.coords = ts_in_coords.get();
 #endif
       } else if(trajectory_fmt=="xdr-xtc" || trajectory_fmt=="xdr-trr") {
 #ifdef __PLUMED_HAS_XDRFILE
@@ -525,8 +566,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         if(!fp) {
           string msg="ERROR: Error opening trajectory file "+trajectoryFile;
           fprintf(stderr,"%s\n",msg.c_str());
-// cppcheck detects a false positive here. I suppress it:
-// cppcheck-suppress memleak
           return 1;
         }
       }
@@ -573,16 +612,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   Random rnd;
 
   while(true) {
-    if(!noatoms) {
+    if(!noatoms&&!parseOnly) {
       if(use_molfile==true) {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
         int rc;
         rc = api->read_next_timestep(h_in, natoms, &ts_in);
-        //if(rc==MOLFILE_SUCCESS){
-        //       printf(" read this one :success \n");
-        //}
         if(rc==MOLFILE_EOF) {
-          //printf(" read this one :eof or error \n");
           break;
         }
 #endif
@@ -592,7 +627,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
 
     bool first_step=false;
-    if(!noatoms) {
+    if(!noatoms&&!parseOnly) {
       if(use_molfile==false && (trajectory_fmt=="xyz" || trajectory_fmt=="gro")) {
         if(trajectory_fmt=="gro") if(!Tools::getline(fp,line)) error("premature end of trajectory file");
         sscanf(line.c_str(),"%100d",&natoms);
@@ -602,8 +637,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       pd_nlocal=natoms;
       pd_start=0;
       first_step=true;
-      masses.assign(natoms,NAN);
-      charges.assign(natoms,NAN);
+      masses.assign(natoms,std::numeric_limits<real>::quiet_NaN());
+      charges.assign(natoms,std::numeric_limits<real>::quiet_NaN());
 //case pdb: structure
       if(pdbfile.length()>0) {
         for(unsigned i=0; i<pdb.size(); ++i) {
@@ -627,9 +662,13 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       natoms=0;
     }
     if( checknatoms<0 ) {
+      if(kt>=0) {
+        p.cmd("setKbT",&kt);
+      }
       checknatoms=natoms;
       p.cmd("setNatoms",&natoms);
       p.cmd("init");
+      if(parseOnly) break;
     }
     if(checknatoms!=natoms) {
       std::string stepstr; Tools::convert(step,stepstr);
@@ -687,7 +726,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           }
         }
         if(intracomm.Get_rank()==0) {
-          fprintf(out,"\nDRIVER: Reassigning particle decomposition\n");
+          fprintf(out,"\nDRIVER: Reassigning domain decomposition\n");
         }
         p.cmd("setAtomsNlocal",&dd_nlocal);
         p.cmd("setAtomsGatindex",&dd_gatindex[0]);
@@ -725,7 +764,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         }
         // info on coords
         // the order is xyzxyz...
-        for(unsigned i=0; i<3*natoms; i++) {
+        for(int i=0; i<3*natoms; i++) {
           coordinates[i]=real(ts_in.coords[i]/10.); //convert to nm
           //cerr<<"COOR "<<coordinates[i]<<endl;
         }
@@ -735,18 +774,17 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         int localstep;
         float time;
         matrix box;
-        rvec* pos=new rvec[natoms];
+        std::unique_ptr<rvec[]> pos(new rvec[natoms]);
         float prec,lambda;
-        int ret;
-        if(trajectory_fmt=="xdr-xtc") ret=read_xtc(xd,natoms,&localstep,&time,box,pos,&prec);
-        if(trajectory_fmt=="xdr-trr") ret=read_trr(xd,natoms,&localstep,&time,&lambda,box,pos,NULL,NULL);
+        int ret=exdrOK;
+        if(trajectory_fmt=="xdr-xtc") ret=read_xtc(xd,natoms,&localstep,&time,box,pos.get(),&prec);
+        if(trajectory_fmt=="xdr-trr") ret=read_trr(xd,natoms,&localstep,&time,&lambda,box,pos.get(),NULL,NULL);
         if(stride==0) step=localstep;
         if(ret==exdrENDOFFILE) break;
         if(ret!=exdrOK) break;
         for(unsigned i=0; i<3; i++) for(unsigned j=0; j<3; j++) cell[3*i+j]=box[i][j];
-        for(unsigned i=0; i<natoms; i++) for(unsigned j=0; j<3; j++)
+        for(int i=0; i<natoms; i++) for(unsigned j=0; j<3; j++)
             coordinates[3*i+j]=real(pos[i][j]);
-        delete [] pos;
 #endif
       } else {
         if(trajectory_fmt=="xyz") {
@@ -837,10 +875,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         p.cmd("setMasses",&dd_masses[0]);
         p.cmd("setCharges",&dd_charges[0]);
       } else {
-        p.cmd("setForces",&forces[3*pd_start]);
-        p.cmd("setPositions",&coordinates[3*pd_start]);
-        p.cmd("setMasses",&masses[pd_start]);
-        p.cmd("setCharges",&charges[pd_start]);
+// this is required to avoid troubles when the last domain
+// contains zero atoms
+// Basically, for empty domains we pass null pointers
+#define fix_pd(xx) (pd_nlocal!=0?&xx:NULL)
+        p.cmd("setForces",fix_pd(forces[3*pd_start]));
+        p.cmd("setPositions",fix_pd(coordinates[3*pd_start]));
+        p.cmd("setMasses",fix_pd(masses[pd_start]));
+        p.cmd("setCharges",fix_pd(charges[pd_start]));
       }
       p.cmd("setBox",&cell[0]);
       p.cmd("setVirial",&virial[0]);
@@ -877,7 +919,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         p.cmd("GREX shareAllDeltaBias");
         for(int i=0; i<n; i++) {
           string s; Tools::convert(i,s);
-          real a; s="GREX getDeltaBias "+s; p.cmd(s.c_str(),&a);
+          real a=std::numeric_limits<real>::quiet_NaN(); s="GREX getDeltaBias "+s; p.cmd(s.c_str(),&a);
           if(grex_log) fprintf(grex_log," %f",a);
         }
         if(grex_log) fprintf(grex_log,"\n");
@@ -922,7 +964,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       }
     }
 
-    if(noatoms && plumedStopCondition) break;
+    if(plumedStopCondition) break;
 
     step+=stride;
   }
@@ -936,7 +978,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 #endif
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
   if(h_in) api->close_file_read(h_in);
-  if(ts_in.coords) delete [] ts_in.coords;
 #endif
   if(grex_log) fclose(grex_log);
 
@@ -944,7 +985,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 }
 
 template<typename real>
-void Driver<real>::evaluateNumericalDerivatives( const long int& step, Plumed& p, const std::vector<real>& coordinates,
+void Driver<real>::evaluateNumericalDerivatives( const long int& step, PlumedMain& p, const std::vector<real>& coordinates,
     const std::vector<real>& masses, const std::vector<real>& charges,
     std::vector<real>& cell, const double& base, std::vector<real>& numder ) {
 

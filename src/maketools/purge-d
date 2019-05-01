@@ -1,0 +1,10 @@
+#! /bin/bash
+
+for d
+do
+  case "$d" in
+  (-DPACKAGE*) ;;
+  (*) echo -n " $d" ;;
+  esac
+done
+

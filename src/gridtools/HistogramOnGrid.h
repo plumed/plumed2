@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #define __PLUMED_gridtools_HistogramOnGrid_h
 
 #include "GridVessel.h"
+#include <memory>
 
 namespace PLMD {
 
@@ -51,8 +52,8 @@ public:
   virtual void accumulate( const unsigned& ipoint, const double& weight, const double& dens, const std::vector<double>& der, std::vector<double>& buffer ) const ;
   virtual void accumulateForce( const unsigned& ipoint, const double& weight, const std::vector<double>& der, std::vector<double>& intforce ) const ;
   unsigned getNumberOfBufferPoints() const ;
-  KernelFunctions* getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const;
-  std::vector<Value*> getVectorOfValues() const ;
+  std::unique_ptr<KernelFunctions> getKernelAndNeighbors( std::vector<double>& point, unsigned& num_neigh, std::vector<unsigned>& neighbors ) const;
+  std::vector<std::unique_ptr<Value>> getVectorOfValues() const ;
   void addOneKernelEachTimeOnly() { addOneKernelAtATime=true; }
   virtual void getFinalForces( const std::vector<double>& buffer, std::vector<double>& finalForces );
   bool noDiscreteKernels() const ;

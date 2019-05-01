@@ -1,4 +1,11 @@
+virtual: CENTER ATOMS=1
 p2: PATH REFERENCE=all.pdb LAMBDA=69087    
+p2b: PATH REFERENCE=all1.pdb LAMBDA=69087    
 p3: PATHMSD REFERENCE=all.pdb LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=5
 PRINT ARG=p2.spath,p2.zpath,p3.sss,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 DUMPDERIVATIVES ARG=p2.spath,p2.zpath,p3.sss,p3.zzz STRIDE=1 FILE=deriv FMT=%8.4f
+PRINT ARG=p2.spath,p2.zpath,p2b.spath,p2b.zpath FILE=colvarb FMT=%8.4f
+
+# dummy action to activate the virtual atom every ten frames, as a check
+p3b: PATHMSD REFERENCE=all1.pdb LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=5
+PRINT ARG=p3b.sss,p3b.zzz FILE=colvarc STRIDE=500 FMT=%8.4f

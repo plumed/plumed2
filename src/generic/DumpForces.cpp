@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,6 +41,7 @@ by specifying more than one argument. You can control the buffering of output us
 
 
 \par Examples
+
 The following input instructs plumed to write a file called forces that contains
 the force acting on the distance between atoms 1 and 2.
 \plumedfile

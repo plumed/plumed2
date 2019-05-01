@@ -1,0 +1,13 @@
+#! FIELDS idx_dim1 pot.coeffs index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  7
+#! SET shape_dim1  7
+       0         0.0000000000000000e-00       0  L0(s)
+       1        -2.0000000000000000e+00       1  L1(s)
+       2         0.0000000000000000e+00       2  L2(s)
+       3         0.0000000000000000e+00       3  L3(s)
+       4         1.0000000000000000e+01       4  L4(s)
+       5         0.0000000000000000e+00       5  L5(s)
+       6         0.0000000000000000e+00       6  L6(s)
+#!-------------------

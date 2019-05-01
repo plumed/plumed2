@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,6 +22,7 @@
 
 #include "Stopwatch.h"
 #include "Exception.h"
+#include "Log.h"
 
 #include <cstdio>
 #include <iostream>
@@ -37,40 +38,17 @@ std::ostream& operator<<(std::ostream&os,const Stopwatch&sw) {
   return sw.log(os);
 }
 
-void Stopwatch::Watch::start() {
-  running++;
-  lastStart=std::chrono::high_resolution_clock::now();
+Stopwatch::~Stopwatch() {
+  if(mylog && mylog->isOpen()) {
+// Make sure paused watches are stopped.
+// this is necessary e.g. to make sure the main watch present in PlumedMain
+// is stopped correctly.
+    for(auto & w : watches) {
+      if(w.second.state==Watch::State::paused) w.second.start().stop();
+    }
+    *mylog << *this;
+  }
 }
-
-void Stopwatch::Watch::stop() {
-  pause();
-  cycles++;
-  total+=lap;
-  if(lap>max)max=lap;
-  if(min>lap || cycles==1)min=lap;
-  lap=0;
-}
-
-void Stopwatch::Watch::pause() {
-  plumed_assert(running>0);
-  running--;
-  if(running!=0) return;
-  auto t=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-lastStart);
-  lap+=t.count();
-}
-
-void Stopwatch::start(const std::string & name) {
-  watches[name].start();
-}
-
-void Stopwatch::stop(const std::string & name) {
-  watches[name].stop();
-}
-
-void Stopwatch::pause(const std::string & name) {
-  watches[name].pause();
-}
-
 
 std::ostream& Stopwatch::log(std::ostream&os)const {
   char buffer[1000];

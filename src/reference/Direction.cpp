@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,12 +29,13 @@ PLUMED_REGISTER_METRIC(Direction,"DIRECTION")
 Direction::Direction( const ReferenceConfigurationOptions& ro ):
   ReferenceConfiguration(ro),
   ReferenceAtoms(ro),
-  ReferenceArguments(ro)
+  ReferenceArguments(ro),
+  normalized(false)
 {
 }
 
 void Direction::read( const PDB& pdb ) {
-  readAtomsFromPDB( pdb );
+  readAtomsFromPDB( pdb, true );
   readArgumentsFromPDB( pdb );
 }
 
@@ -49,7 +50,7 @@ void Direction::setDirection( const std::vector<Vector>& conf, const std::vector
 void Direction::addDirection( const double& weight, const Direction& dir ) {
   plumed_dbg_assert( dir.getNumberOfReferenceArguments()==getNumberOfReferenceArguments() && dir.reference_atoms.size()==reference_atoms.size() );
   for(unsigned i=0; i<reference_args.size(); ++i) reference_args[i] += weight*dir.reference_args[i];
-  for(unsigned i=0; i<reference_atoms.size(); ++i) reference_atoms[i] += weight*dir.reference_atoms[i];
+  for(unsigned i=0; i<reference_atoms.size(); ++i) reference_atoms[i] += weight*reference_atoms.size()*dir.reference_atoms[i];
 }
 
 void Direction::zeroDirection() {
@@ -66,7 +67,7 @@ void Direction::extractArgumentDisplacement( const std::vector<Value*>& vals, co
   for(unsigned i=0; i<getNumberOfReferenceArguments(); ++i) dirout[i]=getReferenceArgument(i);
 }
 
-void Direction::extractAtomicDisplacement( const std::vector<Vector>& pos, const bool& anflag, std::vector<Vector>& dirout ) const {
+void Direction::extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& dirout ) const {
   for(unsigned i=0; i<getNumberOfAtoms(); ++i) dirout[i]=getReferencePosition(i);
 }
 

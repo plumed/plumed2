@@ -1,7 +1,13 @@
 #!/bin/bash
 
+if test -n "$PLUMED_PREPEND_PATH" ; then
+  PATH="$PLUMED_PREPEND_PATH:$PATH"
+fi
+
+plumed="${PLUMED_PROGRAM_NAME:-plumed}"
+
 for action in $(
-  cat $(plumed info --root)/src/*/*.cpp |  grep PLUMED_REGISTER_ACTION |
+  cat $($plumed --no-mpi info --root)/src/*/*.cpp |  grep PLUMED_REGISTER_ACTION |
   sed -e 's/,/ /g
           s/(/ /g
           s/)/ /g' | awk '{print $3}' | sed -e 's/\([\"]\)//g'

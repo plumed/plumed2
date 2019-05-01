@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,7 +34,7 @@ namespace multicolvar {
 //+PLUMEDOC MCOLVAR DENSITY
 /*
 Calculate functions of the density of atoms as a function of the box.  This allows one to calculate
-the number of atoms in half the box.
+ the number of atoms in half the box.
 
 \par Examples
 

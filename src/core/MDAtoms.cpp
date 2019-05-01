@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,8 +23,10 @@
 #include "tools/Tools.h"
 #include "tools/OpenMP.h"
 #include "tools/Exception.h"
+#include "tools/Units.h"
 #include <algorithm>
 #include <string>
+#include <map>
 
 using namespace std;
 
@@ -47,37 +49,53 @@ class MDAtomsTyped:
   T *fx; T *fy; T *fz;
   T *box;
   T *virial;
+  std::map<std::string,T*> extraCV;
+  std::map<std::string,T*> extraCVForce;
 public:
   MDAtomsTyped();
-  void setm(void*m);
-  void setc(void*m);
-  void setBox(void*);
-  void setp(void*p);
-  void setVirial(void*);
-  void setf(void*f);
-  void setp(void*p,int i);
-  void setf(void*f,int i);
-  void setUnits(const Units&,const Units&);
-  void MD2double(const void*m,double&d)const {
+  void setm(void*m) override;
+  void setc(void*m) override;
+  void setBox(void*) override;
+  void setp(void*p) override;
+  void setVirial(void*) override;
+  void setf(void*f) override;
+  void setp(void*p,int i) override;
+  void setf(void*f,int i) override;
+  void setUnits(const Units&,const Units&) override;
+  void setExtraCV(const std::string &name,void*p) override {
+    extraCV[name]=static_cast<T*>(p);
+  }
+  void setExtraCVForce(const std::string &name,void*p) override {
+    extraCVForce[name]=static_cast<T*>(p);
+  }
+  double getExtraCV(const std::string &name) override {
+    return static_cast<double>(*extraCV[name]);
+  }
+  void updateExtraCVForce(const std::string &name,double f) override {
+    *extraCVForce[name]+=static_cast<T>(f);
+  }
+  void MD2double(const void*m,double&d)const override {
     d=double(*(static_cast<const T*>(m)));
   }
-  void double2MD(const double&d,void*m)const {
+  void double2MD(const double&d,void*m) const override {
     *(static_cast<T*>(m))=T(d);
   }
-  Vector getMDforces(const unsigned index)const {
+  Vector getMDforces(const unsigned index) const override {
     Vector force(fx[stride*index],fy[stride*index],fz[stride*index]);
     return force/scalef;
   }
-  void getBox(Tensor &)const;
-  void getPositions(const vector<int>&index,vector<Vector>&positions)const;
-  void getPositions(unsigned j,unsigned k,vector<Vector>&positions)const;
-  void getLocalPositions(std::vector<Vector>&p)const;
-  void getMasses(const vector<int>&index,vector<double>&)const;
-  void getCharges(const vector<int>&index,vector<double>&)const;
-  void updateVirial(const Tensor&)const;
-  void updateForces(const vector<int>&index,const vector<Vector>&);
-  void rescaleForces(const vector<int>&index,double factor);
-  unsigned  getRealPrecision()const;
+  void getBox(Tensor &) const override;
+  void getPositions(const vector<int>&index,vector<Vector>&positions) const override;
+  void getPositions(const std::set<AtomNumber>&index,const vector<unsigned>&i,vector<Vector>&positions) const override;
+  void getPositions(unsigned j,unsigned k,vector<Vector>&positions) const override;
+  void getLocalPositions(std::vector<Vector>&p) const override;
+  void getMasses(const vector<int>&index,vector<double>&) const override;
+  void getCharges(const vector<int>&index,vector<double>&) const override;
+  void updateVirial(const Tensor&) const override;
+  void updateForces(const vector<int>&index,const vector<Vector>&) override;
+  void updateForces(const std::set<AtomNumber>&index,const vector<unsigned>&i,const vector<Vector>&forces) override;
+  void rescaleForces(const vector<int>&index,double factor) override;
+  unsigned  getRealPrecision()const override;
 };
 
 template <class T>
@@ -109,6 +127,18 @@ void MDAtomsTyped<T>::getPositions(const vector<int>&index,vector<Vector>&positi
     positions[index[i]][0]=px[stride*i]*scalep;
     positions[index[i]][1]=py[stride*i]*scalep;
     positions[index[i]][2]=pz[stride*i]*scalep;
+  }
+}
+
+template <class T>
+void MDAtomsTyped<T>::getPositions(const std::set<AtomNumber>&index,const vector<unsigned>&i, vector<Vector>&positions)const {
+// cannot be parallelized with omp because access to positions is not ordered
+  unsigned k=0;
+  for(const auto & p : index) {
+    positions[p.index()][0]=px[stride*i[k]]*scalep;
+    positions[p.index()][1]=py[stride*i[k]]*scalep;
+    positions[p.index()][2]=pz[stride*i[k]]*scalep;
+    k++;
   }
 }
 
@@ -149,6 +179,17 @@ void MDAtomsTyped<T>::getCharges(const vector<int>&index,vector<double>&charges)
 template <class T>
 void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const {
   if(this->virial) for(int i=0; i<3; i++)for(int j=0; j<3; j++) this->virial[3*i+j]+=T(virial(i,j)*scalev);
+}
+
+template <class T>
+void MDAtomsTyped<T>::updateForces(const std::set<AtomNumber>&index,const vector<unsigned>&i,const vector<Vector>&forces) {
+  unsigned k=0;
+  for(const auto & p : index) {
+    fx[stride*i[k]]+=scalef*T(forces[p.index()][0]);
+    fy[stride*i[k]]+=scalef*T(forces[p.index()][1]);
+    fz[stride*i[k]]+=scalef*T(forces[p.index()][2]);
+    k++;
+  }
 }
 
 template <class T>
@@ -260,11 +301,11 @@ MDAtomsTyped<T>::MDAtomsTyped():
   virial(NULL)
 {}
 
-MDAtomsBase* MDAtomsBase::create(unsigned p) {
+std::unique_ptr<MDAtomsBase> MDAtomsBase::create(unsigned p) {
   if(p==sizeof(double)) {
-    return new MDAtomsTyped<double>;
+    return std::unique_ptr<MDAtomsTyped<double>>(new MDAtomsTyped<double>);
   } else if (p==sizeof(float)) {
-    return new MDAtomsTyped<float>;
+    return std::unique_ptr<MDAtomsTyped<float>>(new MDAtomsTyped<float>);
   }
   std::string pp;
   Tools::convert(p,pp);

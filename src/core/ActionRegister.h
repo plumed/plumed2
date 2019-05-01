@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,6 +27,7 @@
 #include <set>
 #include <iosfwd>
 #include "tools/Keywords.h"
+#include <memory>
 
 namespace PLMD {
 
@@ -46,7 +47,7 @@ class ActionRegister {
 /// Write on a stream the list of registered directives
   friend std::ostream &operator<<(std::ostream &,const ActionRegister&);
 /// Pointer to a function which, given the options, create an Action
-  typedef Action*(*creator_pointer)(const ActionOptions&);
+  typedef std::unique_ptr<Action>(*creator_pointer)(const ActionOptions&);
 /// Pointer to a function which, returns the keywords allowed
   typedef void(*keywords_pointer)(Keywords&);
 /// Map action to a function which creates the related object
@@ -65,9 +66,9 @@ public:
   bool check(std::string action);
 /// Create an Action of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
-  Action* create(const ActionOptions&ao);
+  std::unique_ptr<Action> create(const ActionOptions&ao);
 /// Print out the keywords for an action in html/vim ready for input into the manual
-  bool printManual(const std::string& action, const bool& vimout);
+  bool printManual(const std::string& action, const bool& vimout, const bool& spellout);
 /// Print out a template command for an action
   bool printTemplate(const std::string& action, bool include_optional);
   void remove(creator_pointer);
@@ -97,7 +98,7 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
 /// This macro should be used in the .cpp file of the corresponding class
 #define PLUMED_REGISTER_ACTION(classname,directive) \
   static class  PLUMED_UNIQUENAME(classname##RegisterMe){ \
-    static PLMD::Action* create(const PLMD::ActionOptions&ao){return new classname(ao);} \
+    static std::unique_ptr<PLMD::Action> create(const PLMD::ActionOptions&ao){return std::unique_ptr<classname>(new classname(ao));} \
   public: \
     PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().add(directive,create,classname::registerKeywords);} \
     ~PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().remove(create);} \

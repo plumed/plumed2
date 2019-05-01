@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,10 +24,13 @@
 #include "tools/Exception.h"
 #include "tools/Communicator.h"
 #include "tools/BiasRepresentation.h"
+#include "tools/KernelFunctions.h"
 #include "tools/File.h"
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
+#include "tools/Grid.h"
 #include <iostream>
+#include <memory>
 
 using namespace std;
 
@@ -37,10 +40,7 @@ namespace function {
 
 //+PLUMEDOC FUNCTION FUNCSUMHILLS
 /*
-This function is intended to be called by the command line tool sum_hills
-and it is meant to integrate a HILLS file or an HILLS file interpreted as
-a histogram i a variety of ways. Therefore it is not expected that you use this
-during your dynamics (it will crash!)
+This function is intended to be called by the command line tool sum_hills.  It is meant to integrate a HILLS file or an HILLS file interpreted as a histogram in a variety of ways. It is, therefore, not expected that you use this during your dynamics (it will crash!)
 
 In the future one could implement periodic integration during the metadynamics
 or straightforward MD as a tool to check convergence
@@ -54,7 +54,7 @@ There are currently no examples for this keyword.
 
 class FilesHandler {
   vector <string> filenames;
-  vector <IFile*>  ifiles;
+  vector <std::unique_ptr<IFile>>  ifiles;
   Action *action;
   Log *log;
   bool parallelread;
@@ -66,21 +66,16 @@ public:
   bool scanOneHill(BiasRepresentation *br, IFile *ifile );
   void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin);
   void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin, vector<double> &histosigma);
-  ~FilesHandler();
 };
 FilesHandler::FilesHandler(const vector<string> &filenames, const bool &parallelread, Action &action, Log &mylog ):filenames(filenames),log(&mylog),parallelread(parallelread),beingread(0),isopen(false) {
   this->action=&action;
   for(unsigned i=0; i<filenames.size(); i++) {
-    IFile *ifile = new IFile();
+    std::unique_ptr<IFile> ifile(new IFile());
     ifile->link(action);
-    ifiles.push_back(ifile);
     plumed_massert((ifile->FileExist(filenames[i])), "the file "+filenames[i]+" does not exist " );
+    ifiles.emplace_back(std::move(ifile));
   }
 
-}
-
-FilesHandler::~FilesHandler() {
-  for(unsigned i=0; i<ifiles.size(); i++) delete ifiles[i];
 }
 
 // note that the FileHandler is completely transparent respect to the biasrepresentation
@@ -95,7 +90,7 @@ bool FilesHandler::readBunch(BiasRepresentation *br, int stride = -1) {
     // read one by one hills
     // is the type defined? if not, assume it is a gaussian
     IFile *ff;
-    ff=ifiles[beingread];
+    ff=ifiles[beingread].get();
     if(!isopen) {
       (*log)<<"  opening file "<<filenames[beingread]<<"\n";
       ff->open(filenames[beingread]); isopen=true;
@@ -119,7 +114,7 @@ bool FilesHandler::readBunch(BiasRepresentation *br, int stride = -1) {
         (*log)<<"  now total "<<br->getNumberOfKernels()<<" kernels \n";
         beingread++;
         if(beingread<ifiles.size()) {
-          ff=ifiles[beingread]; ff->open(filenames[beingread]);
+          ff=ifiles[beingread].get(); ff->open(filenames[beingread]);
           (*log)<<"  opening file "<<filenames[beingread]<<"\n";
           isopen=true;
         } else {
@@ -196,11 +191,10 @@ class FuncSumHills :
   double uppI_;
   double beta;
   string outhills,outhisto,fmt;
-  BiasRepresentation *biasrep;
-  BiasRepresentation *historep;
+  std::unique_ptr<BiasRepresentation> biasrep;
+  std::unique_ptr<BiasRepresentation> historep;
 public:
   explicit FuncSumHills(const ActionOptions&);
-  ~FuncSumHills();
   void calculate(); // this probably is not needed
   bool checkFilesAreExisting(const vector<string> & hills );
   static void registerKeywords(Keywords& keys);
@@ -214,20 +208,20 @@ void FuncSumHills::registerKeywords(Keywords& keys) {
   keys.add("optional","HILLSFILES"," source file for hills creation(may be the same as HILLS)"); // this can be a vector!
   keys.add("optional","HISTOFILES"," source file for histogram creation(may be the same as HILLS)"); // also this can be a vector!
   keys.add("optional","HISTOSIGMA"," sigmas for binning when the histogram correction is needed    ");
-  keys.add("optional","PROJ"," only with sumhills: the projection on the cvs");
-  keys.add("optional","KT"," only with sumhills: the kt factor when projection on cvs");
+  keys.add("optional","PROJ"," only with sumhills: the projection on the CVs");
+  keys.add("optional","KT"," only with sumhills: the kt factor when projection on CVs");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.add("optional","INTERVAL","set monodimensional INTERVAL");
+  keys.add("optional","INTERVAL","set one dimensional INTERVAL");
   keys.add("optional","OUTHILLS"," output file for hills ");
   keys.add("optional","OUTHISTO"," output file for histogram ");
   keys.add("optional","INITSTRIDE"," stride if you want an initial dump ");
   keys.add("optional","STRIDE"," stride when you do it on the fly ");
-  keys.addFlag("ISCLTOOL",true,"use via plumed commandline: calculate at read phase and then go");
+  keys.addFlag("ISCLTOOL",true,"use via plumed command line: calculate at read phase and then go");
   keys.addFlag("PARALLELREAD",false,"read parallel HILLS file");
-  keys.addFlag("NEGBIAS",false,"dump  negative bias ( -bias )   instead of the free energy: needed in welltempered with flexible hills ");
+  keys.addFlag("NEGBIAS",false,"dump  negative bias ( -bias )   instead of the free energy: needed in well tempered with flexible hills ");
   keys.addFlag("NOHISTORY",false,"to be used with INITSTRIDE:  it splits the bias/histogram in pieces without previous history  ");
   keys.addFlag("MINTOZERO",false,"translate the resulting bias/histogram to have the minimum to zero  ");
   keys.add("optional","FMT","the format that should be used to output real numbers");
@@ -248,9 +242,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
   lowI_(-1.),
   uppI_(-1.),
   beta(-1.),
-  fmt("%14.9f"),
-  biasrep(NULL),
-  historep(NULL)
+  fmt("%14.9f")
 {
 
   // format
@@ -466,7 +458,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     // check if the files exists
     if(integratehills) {
       checkFilesAreExisting(hillsFiles);
-      biasrep=new BiasRepresentation(tmphillsvalues,comm, gmin, gmax, gbin, doInt, lowI_, uppI_);
+      biasrep.reset(new BiasRepresentation(tmphillsvalues,comm, gmin, gmax, gbin, doInt, lowI_, uppI_));
       if(negativebias) {
         biasrep->setRescaledToBias(true);
         log<<"  required the -bias instead of the free energy \n";
@@ -489,7 +481,7 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     // the list of the collective variable one want to consider
     if(integratehisto) {
       checkFilesAreExisting(histoFiles);
-      historep=new BiasRepresentation(tmphistovalues,comm,gmin,gmax,gbin,histoSigma);
+      historep.reset(new BiasRepresentation(tmphistovalues,comm,gmin,gmax,gbin,histoSigma));
     }
 
     // decide how to source hills ( serial/parallel )
@@ -499,18 +491,17 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
     // of hills (i.e. a list of hills and the associated grid)
 
     // decide how to source colvars ( serial parallel )
-    FilesHandler *hillsHandler;
-    FilesHandler *histoHandler;
+    std::unique_ptr<FilesHandler> hillsHandler;
+    std::unique_ptr<FilesHandler> histoHandler;
 
-    hillsHandler=NULL;
-    histoHandler=NULL;
+    if(integratehills)	hillsHandler.reset(new FilesHandler(hillsFiles,parallelread,*this, log));
+    if(integratehisto)	histoHandler.reset(new FilesHandler(histoFiles,parallelread,*this, log));
 
-    if(integratehills)	hillsHandler=new FilesHandler(hillsFiles,parallelread,*this, log);
-    if(integratehisto)	histoHandler=new FilesHandler(histoFiles,parallelread,*this, log);
+// Stopwatch is logged when it goes out of scope
+    Stopwatch sw(log);
 
-    Stopwatch sw;
-
-    sw.start("0 Summing hills");
+// Stopwatch is stopped when swh goes out of scope
+    auto swh=sw.startStop("0 Summing hills");
 
     // read a number of hills and put in the bias representation
     int nfiles=0;
@@ -519,13 +510,13 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
       if(  integratehills  && ibias  ) {
         if(nohistory) {biasrep->clear(); log<<"  clearing history before reading a new block\n";};
         log<<"  reading hills: \n";
-        ibias=hillsHandler->readBunch(biasrep,initstride) ; log<<"\n";
+        ibias=hillsHandler->readBunch(biasrep.get(),initstride) ; log<<"\n";
       }
 
       if(  integratehisto  && ihisto ) {
         if(nohistory) {historep->clear(); log<<"  clearing history before reading a new block\n";};
         log<<"  reading histogram: \n";
-        ihisto=histoHandler->readBunch(historep,initstride) ;  log<<"\n";
+        ihisto=histoHandler->readBunch(historep.get(),initstride) ;  log<<"\n";
       }
 
       // dump: need to project?
@@ -567,7 +558,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           if(minTOzero) histoGrid.setMinToZero();
           histoGrid.setOutputFmt(fmt);
           histoGrid.writeToFile(gridfile);
-          gridfile.close();
 
           if(!ihisto)integratehisto=false;// once you get to the final bunch just give up
         }
@@ -589,7 +579,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           if(minTOzero) biasGrid.setMinToZero();
           biasGrid.setOutputFmt(fmt);
           biasGrid.writeToFile(gridfile);
-          gridfile.close();
           // rescale back prior to accumulate
           if(!ibias)integratehills=false;// once you get to the final bunch just give up
         }
@@ -611,7 +600,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
           if(minTOzero) histoGrid.setMinToZero();
           histoGrid.setOutputFmt(fmt);
           histoGrid.writeToFile(gridfile);
-          gridfile.close();
 
           if(!ihisto)integratehisto=false; // once you get to the final bunch just give up
         }
@@ -620,10 +608,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
 
       nfiles++;
     }
-
-    sw.stop("0 Summing hills");
-
-    log<<sw;
 
     return;
   }
@@ -640,19 +624,13 @@ void FuncSumHills::calculate() {
   plumed_merror("You should have never got here: this stuff is not yet implemented!");
 }
 
-FuncSumHills::~FuncSumHills() {
-  if(historep) delete historep;
-  if(biasrep) delete biasrep;
-}
-
 bool FuncSumHills::checkFilesAreExisting(const vector<string> & hills ) {
   plumed_massert(hills.size()!=0,"the number of  files provided should be at least one" );
-  IFile *ifile = new IFile();
+  std::unique_ptr<IFile> ifile(new IFile());
   ifile->link(*this);
   for(unsigned i=0; i< hills.size(); i++) {
     plumed_massert(ifile->FileExist(hills[i]),"missing file "+hills[i]);
   }
-  delete ifile;
   return true;
 
 }

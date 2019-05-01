@@ -10,7 +10,7 @@ simple collective variable and we will use them to analyze existing trajectories
 
 Once this tutorial is completed students will be able to:
 
-- Write a simple PLUMED input file and use it with the PLUMED \ref driver to analyse a trajectory.
+- Write a simple PLUMED input file and use it with the PLUMED \ref driver to analyze a trajectory.
 - Use the \ref GROUP keyword to make the input file compact and easy to read and to quickly build complex atom groups.
 - Print collective variables such as distances
   (\ref DISTANCE), torsional angles (\ref TORSION), gyration radius (\ref GYRATION),
@@ -29,6 +29,9 @@ The \tarball{trieste-1} for this project contains the following files:
 
 This tutorial has been tested on a pre-release version of version 2.4. However, it should not take advantage
 of 2.4-only features, thus should also work with version 2.3.
+
+Also notice that in the `.solutions` directory of the tarball you will find correct input files.
+Please only look at these files after you have tried to solve the problems yourself.
 
 \section trieste-1-intro Introduction
 
@@ -70,6 +73,10 @@ molecular dynamics, or a posteriori, using PLUMED as a post-processing tool. In 
 one should create an input file with a specific PLUMED syntax. A sample input file is below:
 
 \plumedfile
+# this is optional and tell to VIM that this is a PLUMED file
+# vim: ft=plumed
+# see comments just below this input file
+
 # Compute distance between atoms 1 and 10.
 # Atoms are ordered as in the trajectory files and their numbering starts from 1.
 # The distance is called "d" for future reference.
@@ -104,7 +111,7 @@ PRINT ARG=phi STRIDE=100 FILE=COLVAR2
 \note If you are a VIM user, you might find convenient configuring PLUMED syntax files, see \ref VimSyntax.
       Syntax highlighting is particularly useful for beginners since it allows you to identify simple
       mistakes without the need to run PLUMED. In addition, VIM has a full dictionary of available
-      keywords and can help you autocompleting your commands.
+      keywords and can help you by autocomplete your commands.
 
 In the input file above, each line defines a so-called action. An action could either compute a distance,
 or the center between two or more atoms, or print some value on a file. Each action supports a number of keywords,
@@ -144,7 +151,7 @@ the command `vmd ref.pdb traj-whole.xtc`.
 
 In the following we will make practice with computing and printing collective variables.
 
-\subsection trieste-1-ex-1 Exercize 1: Computing and printing collective variables
+\subsection trieste-1-ex-1 Exercise 1: Computing and printing collective variables
 
 Analyze the `traj-whole.xtc` trajectory and produce a colvar file with the following collective variables.
 
@@ -154,11 +161,11 @@ Analyze the `traj-whole.xtc` trajectory and produce a colvar file with the follo
 - The torsional angle (\ref TORSION) corresponding to the glycosidic chi angle \f$\chi\f$ of the first nucleotide.
   Since this nucleotide is a purine (guanine), the proper atoms to compute the torsion are O4' C1 N9 C4. Find their serial number
   in the `ref.pdb` file or learn how to select a special angle reading the \ref MOLINFO documentation.
-- The total number of contacts (\ref COORDINATION) between all RNA atoms and all water oxygens.
+- The total number of contacts (\ref COORDINATION) between all RNA atoms and all water oxygen atoms.
   For \ref COORDINATION, set reference distance `R_0` to 2.5 A (be careful with units!!).
-  Try to be smart in selecting the water oxygens without listing all of them explicitly.
+  Try to be smart in selecting the water oxygen atoms without listing all of them explicitly.
 - Same as before but against water hydrogen.
-  Also in this case you should be smart to select water hydrogens. Documentation of \ref GROUP might help.
+  Also in this case you should be smart to select water hydrogen atoms. Documentation of \ref GROUP might help.
 - Distance between the Mg ion and the geometric center of the RNA duplex (use \ref CENTER and \ref DISTANCE).
 
 Notice that some of the atom selections can be made in a easier manner by using the \ref MOLINFO keyword with
@@ -209,7 +216,7 @@ Once your `plumed.dat` file is complete, you can use it with the following comma
 \endverbatim
 
 Scroll in your terminal to read the PLUMED log. As you can see,
-PLUMED gives a lot of feedbacks about the input that he is reading. There's the
+PLUMED gives a lot of feedback about the input that he is reading. There's the
 place where you can check if PLUMED understood correctly your input.
 
 The command above will create a file `COLVAR` like this one:
@@ -217,11 +224,11 @@ The command above will create a file `COLVAR` like this one:
 #! FIELDS time r c co ch d
 #! SET min_c -pi
 #! SET max_c pi
- 0.000000 0.788694 -2.963150 207.795793 502.029431 0.595611
- 1.000000 0.804101 -2.717302 208.021688 499.770382 0.951945
- 2.000000 0.788769 -2.939333 208.347867 500.555764 1.014850
- 3.000000 0.790232 -2.940726 211.274315 514.748191 1.249502
- 4.000000 0.796395 3.050949 212.352810 507.888856 2.270682
+ 0.000000 0.788694 -2.963150 207.795793 502.027244 0.595611
+ 1.000000 0.804101 -2.717302 208.021688 499.792595 0.951945
+ 2.000000 0.788769 -2.939333 208.347867 500.552127 1.014850
+ 3.000000 0.790232 -2.940726 211.274315 514.749124 1.249502
+ 4.000000 0.796395 3.050949 212.352810 507.892198 2.270682
 \endverbatim
 Notice that the first line informs you about the content of each column and
 the second and third lines tell you that variable `c` (the \f$\chi\f$ torsion) is
@@ -242,7 +249,7 @@ of your input file.
 \hidden{Combining collective variables}
 
 
-In this first exercize we only computed simple functions of the atomic coordinates.
+In this first exercise we only computed simple functions of the atomic coordinates.
 PLUMED is very flexible and allows you to also combine these functions to create more complicated
 variables. These variables can be useful when you want to describe a complex conformational change.
 PLUMED implements a number of functions that can be used to this aim that are described in the
@@ -285,9 +292,9 @@ any arbitrarily complex collective variable using just \ref DISTANCE and \ref MA
 Anyway, if the CV combinations that you are willing to use can be computed easily with some
 external program, do it and compare the results with the output of the PLUMED driver.
 
-\subsection trieste-1-ex-1b Exercize 1b: Combining collective variables
+\subsection trieste-1-ex-1b Exercise 1b: Combining collective variables
 
-As an optional exercize, create a file with the following quantities:
+As an optional exercise, create a file with the following quantities:
 - The sum of the distances between Mg and each of the phosphorous atoms.
 - The distance between Mg and the closest phosphorous atom.
 
@@ -309,6 +316,7 @@ d1: DISTANCE ATOMS=mg,33
 d2: DISTANCE __FILL__
 __FILL__
 d6: DISTANCE __FILL__
+# You can use serial numbers, but you might also use MOLINFO strings
 
 # Compute the sum of these distances
 c: COMBINE __FILL__
@@ -316,7 +324,7 @@ c: COMBINE __FILL__
 # Compute the distance between Mg and the closest phosphorous atom
 s: SORT __FILL__
 
-# Print the required variables
+# Print the requested variables
 PRINT FILE=COLVAR __FILL__
 \endplumedfile
 
@@ -345,10 +353,10 @@ be used in the following cases:
 - To dump snapshots of our molecule conditioned to some value of some collective variable (see \ref UPDATE_IF).
 - To dump coordinates of atoms that have been moved by PLUMED.
 
-The last point is perhaps the most surpising one. Some of the PLUMED actions can indeed move the stored atoms to
+The last point is perhaps the most surprising one. Some of the PLUMED actions can indeed move the stored atoms to
 positions better suitable for the calculation of collective variables.
 
-The previous exercize was done on a trajectory where the RNA was already whole. For the next exercize you will use the
+The previous exercise was done on a trajectory where the RNA was already whole. For the next exercise you will use the
 `traj-broken.xtc` file instead, which is a real trajectory produced by GROMACS. Open it with VMD to understand
 what we mean with broken
 \verbatim
@@ -360,10 +368,10 @@ This is not a problem during MD because of periodic boundary conditions. However
 to analyze this trajectory. In addition, some collective variables that you might want to compute
 could require the molecules to be whole (an example of such variables is \ref RMSD).
 
-You might think that there are alternative programs that can be used to reconstruct PBCs correctly
+You might think that there are alternative programs that can be used to reconstruct the molecules the molecules that are broken by the periodic boundary correctly
 in your trajectory *before* analyzing it. However, you should keep in mind that if you need to
 compute CVs on the fly to add a bias potential on those (as we will to in the next tutorials) you will
-have to learn how to reconstruct PBCs within PLUMED. If you know alternative tools that can reconstruct PBCs,
+have to learn how to reconstruct the molecules that are broken by the periodic boundary within PLUMED. If you know alternative tools that can reconstruct the molecules that are broken by the periodic boundary,
 it is a good idea to also use them and compare the result with PLUMED.
 
 
@@ -375,8 +383,8 @@ Analyze the provided trajectory `traj-broken.xtc` and use the \ref DUMPATOMS act
   Notice that you should provide to \ref FIT_TO_TEMPLATE a pdb file with only the atoms that you wish to align.
   Use the `ref.pdb` file as a starting point and remove the lines non containing RNA atoms.
   More details on PDB files in PLUMED can be found \ref pdbreader "here".
-- The whole RNA duplex and Mg ion, but only including the snapshots where Mg is at a distance equal to at most 3 A from phosphorous atom
-  of residue 2. Search for the serial number of the proper phosphorous atom in the PDB file and use the \ref UPDATE_IF action
+- The whole RNA duplex and Mg ion, but only including the snapshots where Mg is at a distance equal to at most 4 A from phosphorous atom
+  of residue 8. Search for the serial number of the proper phosphorous atom in the PDB file and use the \ref UPDATE_IF action
   to select the frames.
 - The whole RNA duplex plus water molecules and mg ion wrapped around the center of the duplex. Compute first the center of the duplex with \ref CENTER then
   wrap the molecules with \ref WRAPAROUND. Make sure that individual water molecules are not broken after the move!
@@ -408,20 +416,20 @@ FIT_TO_TEMPLATE REFERENCE=__FILL__ TYPE=OPTIMAL
 # Dump the aligned RNA on a separate file
 DUMPATOMS ATOMS=rna FILE=rna-aligned.gro
 
-# Compute the distance between the Mg and the Phosphorous from residue 2
+# Compute the distance between the Mg and the Phosphorous from residue 8
 d: DISTANCE ATOMS=mg,__FILL__ ## put the serial number of the correct phosphorous here
 
 # here we only dump frames conditioned to the value of d
 UPDATE_IF ARG=d __FILL__
 DUMPATOMS ATOMS=rna,mg FILE=rna-select.gro
-UPDATE_IF ARG=d # this command is required to close the UPDATE_IF above
+UPDATE_IF ARG=d __FILL__ # this command is required to close the UPDATE_IF above
 
 # compute the center of the RNA molecule
 center: CENTER ATOMS=rna
 
 # Wrap atoms correctly
 WRAPAROUND ATOMS=mg AROUND=__FILL__
-WRAPAROUND ATOMS=water AROUND=center __FILL__ # anything missing here?
+WRAPAROUND ATOMS=wat AROUND=center __FILL__ # anything missing here?
 
 # Dump the last trajectory
 DUMPATOMS ATOMS=rna,wat,mg FILE=rna-wrap.gro
@@ -455,7 +463,7 @@ In case the two molecules can separate from each other this would be rather prob
 
 We will now see what happens when using \ref WHOLEMOLECULES on multiple molecules *incorrectly*.
 
-\subsection trieste-1-ex-2b Exercize 2b: Mistakes with WHOLEMOLECULES
+\subsection trieste-1-ex-2b Exercise 2b: Mistakes with WHOLEMOLECULES
 
 Prepare a PLUMED input file that makes all the water molecules whole. Use the following template
 \plumedfile
@@ -487,13 +495,13 @@ that the system is doing what you expect.
 
 \hidden{Mastering FIT_TO_TEMPLATE}
 
-In an exercize above we used \ref FIT_TO_TEMPLATE. This action uses as a reference a PDB file
+In an exercise above we used \ref FIT_TO_TEMPLATE. This action uses as a reference a PDB file
 which typically contains a subset of atoms (those that are fitted). However,
 when you apply \ref FIT_TO_TEMPLATE with `TYPE=OPTIMAL`, the whole system
 is translated and rotated.
 The whole system here means all atoms plus the vectors defining the periodic box.
 
-\subsection trieste-1-ex-2c Exercize 2c: Mastering FIT_TO_TEMPLATE
+\subsection trieste-1-ex-2c Exercise 2c: Mastering FIT_TO_TEMPLATE
 
 Check how the periodic box rotates when using \ref FIT_TO_TEMPLATE.
 Use the following template
@@ -538,18 +546,18 @@ You should obtains files like the ones reported below.
 `CELL_AFTER` should be
 \verbatim
 #! FIELDS time cell_after.ax cell_after.ay cell_after.az cell_after.bx cell_after.by cell_after.bz cell_after.cx cell_after.cy cell_after.cz
- 0.000000 4.532612 -0.054817 0.083377 0.053329 4.532675 0.080890 2.233341 2.182443 3.286902
- 1.000000 -0.648906 -2.868906 -3.450047 2.674989 2.551396 -2.624755 3.560387 -1.863791 -2.098695
- 2.000000 -3.817881 -1.642277 -1.811420 2.010018 -4.020529 -0.591352 -1.888348 -3.751409 1.707531
- 3.000000 2.239255 1.142120 -3.773040 0.048153 -4.346863 -1.287241 -1.643585 -1.181143 -4.056861
- 4.000000 2.081897 3.894322 1.026881 -2.781014 2.226201 -2.804375 -2.409439 3.525462 1.523258
+ 0.000000 4.533710 -0.000059 -0.000008 0.000059 4.533710 -0.000172 2.266895 2.266952 3.205730
+ 1.000000 -0.396226 4.289476 -1.413481 -1.244340 1.260309 4.173460 2.249665 3.307132 2.134590
+ 2.000000 -3.016552 1.123968 -3.192434 -1.055123 -4.375593 -0.543533 -4.309790 -1.356178 0.375612
+ 3.000000 -4.083873 1.923282 -0.421306 0.339577 -0.267554 -4.513051 -3.243502 -2.069026 -2.398628
+ 4.000000 -4.020722 2.094622 -0.029688 -1.060483 -1.979827 3.938298 -1.263169 2.532008 3.542306
 \endverbatim
 
 As you can see, the generating vectors of the periodic lattice *before* fitting are constant.
 On the other hand, *after* fitting these vectors change so as to keep RNA correctly aligned to its reference structure.
 
 Later on you will learn how to add a bias potential on a give collective variable. In principle, you could
-also add a \ref RESTRAINT ro the `cell_after.*` variables of the last example. This would allow you to
+also add a \ref RESTRAINT to the `cell_after.*` variables of the last example. This would allow you to
 force your molecule to a specific orientation.
 
 \endhidden
@@ -561,7 +569,7 @@ In summary, in this tutorial you should have learned how to use PLUMED to:
 - Compute collective variables.
 
 All of this was done by just reading an already available trajectory.
-Notice that there are many alternative tools that could have been used to do the same exercize.
+Notice that there are many alternative tools that could have been used to do the same exercise.
 Indeed, if you are familiar with other tools, it might be a good idea to also try them and compare the results.
 The special things of working with PLUMED are the following:
 - PLUMED implements a vast library of useful collective variables.

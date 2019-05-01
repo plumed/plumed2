@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,6 +34,9 @@
 #include <cstdlib>
 #include <cerrno>
 
+#include <memory>
+#include <utility>
+
 #ifdef __PLUMED_HAS_ZLIB
 #include <zlib.h>
 #endif
@@ -49,7 +52,7 @@ size_t OFile::llwrite(const char*ptr,size_t s) {
 #ifdef __PLUMED_HAS_ZLIB
       r=gzwrite(gzFile(gzfp),ptr,s);
 #else
-      plumed_merror("trying to use a gz file without zlib being linked");
+      plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
     } else {
       r=fwrite(ptr,1,s,fp);
@@ -78,17 +81,12 @@ OFile::OFile():
   fmtField();
   buflen=1;
   actual_buffer_length=0;
-  buffer=new char[buflen];
+  buffer.reset(new char [buflen]);
 // these are set to zero to avoid valgrind errors
-  for(unsigned i=0; i<buflen; ++i) buffer[i]=0;
-  buffer_string=new char [1000];
+  for(int i=0; i<buflen; ++i) buffer[i]=0;
+  buffer_string.reset(new char [1000]);
 // these are set to zero to avoid valgrind errors
   for(unsigned i=0; i<1000; ++i) buffer_string[i]=0;
-}
-
-OFile::~OFile() {
-  delete [] buffer_string;
-  delete [] buffer;
 }
 
 OFile& OFile::link(OFile&l) {
@@ -111,11 +109,10 @@ int OFile::printf(const char*fmt,...) {
   if(r>=buflen-actual_buffer_length) {
     int newlen=buflen;
     while(newlen<=r+actual_buffer_length) newlen*=2;
-    char* newbuf=new char [newlen];
-    memmove(newbuf,buffer,buflen);
+    std::unique_ptr<char[]> newbuf{new char [newlen]};
+    memmove(newbuf.get(),buffer.get(),buflen);
     for(int k=buflen; k<newlen; k++) newbuf[k]=0;
-    delete [] buffer;
-    buffer=newbuf;
+    buffer=std::move(newbuf);
     buflen=newlen;
     va_list arg;
     va_start(arg, fmt);
@@ -125,7 +122,7 @@ int OFile::printf(const char*fmt,...) {
   plumed_massert(r>-1 && r<buflen-actual_buffer_length,"error using fmt string " + std::string(fmt));
 
 // Line is buffered until newline, then written with a PLUMED: prefix
-  char*p1=buffer;
+  char*p1=buffer.get();
   char*p2;
 // newline is only searched in the just added portion:
   char*psearch=p1+actual_buffer_length;
@@ -137,7 +134,7 @@ int OFile::printf(const char*fmt,...) {
     p1=p2+1;
     psearch=p1;
   };
-  if(buffer!=p1) memmove(buffer,p1,actual_buffer_length);
+  if(buffer.get()!=p1) memmove(buffer.get(),p1,actual_buffer_length);
   return r;
 }
 
@@ -167,14 +164,18 @@ OFile& OFile::fmtField() {
 }
 
 OFile& OFile::printField(const std::string&name,double v) {
-  sprintf(buffer_string,fieldFmt.c_str(),v);
-  printField(name,buffer_string);
+// When one tries to print -nan we print nan instead.
+// The distinction between +nan and -nan is not well defined
+// Always printing nan simplifies some regtest (special functions computed our of range).
+  if(std::isnan(v)) v=std::numeric_limits<double>::quiet_NaN();
+  sprintf(buffer_string.get(),fieldFmt.c_str(),v);
+  printField(name,buffer_string.get());
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,int v) {
-  sprintf(buffer_string," %d",v);
-  printField(name,buffer_string);
+  sprintf(buffer_string.get()," %d",v);
+  printField(name,buffer_string.get());
   return *this;
 }
 
@@ -301,7 +302,7 @@ OFile& OFile::open(const std::string&path) {
 #ifdef __PLUMED_HAS_ZLIB
       gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"a9");
 #else
-      plumed_merror("trying to use a gz file without zlib being linked");
+      plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
     }
   } else {
@@ -313,7 +314,7 @@ OFile& OFile::open(const std::string&path) {
 #ifdef __PLUMED_HAS_ZLIB
       gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"w9");
 #else
-      plumed_merror("trying to use a gz file without zlib being linked");
+      plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
     }
   }

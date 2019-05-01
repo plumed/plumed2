@@ -1,0 +1,24 @@
+# vim:ft=plumed
+
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+VES_DELTA_F ...
+  LABEL=ves
+  ARG=psi
+  TEMP=300.0
+  FILE_F0=fesA.data
+  FILE_F1=fesB.data
+  AV_STRIDE=50
+  M_STEP=1
+  PRINT_STRIDE=1
+  FMT=%f
+  INITIAL_ALPHA=2
+  TAU_MEAN=100
+  ALPHA_FILE=Alpha.data
+... VES_DELTA_F
+
+PRINT FMT=%g STRIDE=50 FILE=Colvar.data ARG=phi,psi,ves.bias,ves.rct,ves.work
+
+ENDPLUMED
+

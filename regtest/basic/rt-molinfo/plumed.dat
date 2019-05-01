@@ -1,0 +1,8 @@
+MOLINFO STRUCTURE=test.pdb
+DUMPATOMS ATOMS=@nucleic FILE=nucleic.gro
+DUMPATOMS ATOMS=@water FILE=water.gro
+DUMPATOMS ATOMS=@ions FILE=ions.gro
+# notice that here water is labeled as chain C:
+DUMPATOMS ATOMS=@OW-C8 FILE=oneox.gro
+DUMPATOMS ATOMS=@hydrogens FILE=h.gro
+DUMPATOMS ATOMS=@nonhydrogens FILE=nh.gro

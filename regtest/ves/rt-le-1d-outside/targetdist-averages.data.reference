@@ -1,0 +1,23 @@
+#! FIELDS idx_phi2 ves1.targetdist_averages index
+#! SET time 0.000000
+#! SET iteration  0
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  13
+#! SET shape_phi2  13
+       0     1.000000       0
+       1     0.000000       1
+       2     0.000000       2
+       3     0.000000       3
+       4     0.000000       4
+       5     0.000000       5
+       6     0.000000       6
+       7     0.000000       7
+       8     0.000000       8
+       9     0.000000       9
+      10     0.000000      10
+      11     0.000000      11
+      12     0.000000      12
+#!-------------------
+
+

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,11 +24,11 @@
 #include "tools/KernelFunctions.h"
 #include "tools/SwitchingFunction.h"
 #include "ActionVolume.h"
+#include <memory>
 
 //+PLUMEDOC VOLUMES INENVELOPE
 /*
-This quantity can be used to calculate functions of the distribution of collective
-variables for the atoms that lie in a region where the density of a certain type of atom is high.
+This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a region where the density of a certain type of atom is high.
 
 This collective variable can be used to determine whether colvars are within region where the density
 of a particular atom is high.  This is achieved by calculating the following function at the point where
@@ -48,11 +48,11 @@ The input below calculates a density field from the positions of atoms 1-14400. 
 that are specified in the DENSITY action that are within a region where the density field is greater than
 2.0 is then calculated.
 
-\verbatim
+\plumedfile
 d1: DENSITY SPECIES=14401-74134:3 LOWMEM
 fi: INENVELOPE DATA=d1 ATOMS=1-14400 CONTOUR={RATIONAL D_0=2.0 R_0=1.0} BANDWIDTH=0.1,0.1,0.1 LOWMEM
 PRINT ARG=fi,rr.* FILE=colvar
-\endverbatim
+\endplumedfile
 
 */
 //+ENDPLUMEDOC
@@ -63,15 +63,14 @@ namespace multicolvar {
 class VolumeInEnvelope : public ActionVolume {
 private:
   LinkCells mylinks;
-  KernelFunctions* kernel;
-  std::vector<Value*> pos;
+  std::unique_ptr<KernelFunctions> kernel;
+  std::vector<std::unique_ptr<Value>> pos;
   std::vector<Vector> ltmp_pos;
   std::vector<unsigned> ltmp_ind;
   SwitchingFunction sfunc;
 public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeInEnvelope(const ActionOptions& ao);
-  ~VolumeInEnvelope();
   void setupRegions();
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
 };
@@ -81,8 +80,8 @@ PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE")
 void VolumeInEnvelope::registerKeywords( Keywords& keys ) {
   ActionVolume::registerKeywords( keys ); keys.remove("SIGMA");
   keys.add("atoms","ATOMS","the atom whose positions we are constructing a field from");
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","CONTOUR","a switching funciton that tells PLUMED how large the density should be");
+  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density estimation");
+  keys.add("compulsory","CONTOUR","a switching function that tells PLUMED how large the density should be");
 }
 
 VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
@@ -104,18 +103,14 @@ VolumeInEnvelope::VolumeInEnvelope(const ActionOptions& ao):
 
   std::vector<double> pp(3,0.0), bandwidth(3); parseVector("BANDWIDTH",bandwidth);
   log.printf("  using %s kernel with bandwidths %f %f %f \n",getKernelType().c_str(),bandwidth[0],bandwidth[1],bandwidth[2] );
-  kernel = new KernelFunctions( pp, bandwidth, getKernelType(), false, 1.0, true );
-  for(unsigned i=0; i<3; ++i) { pos.push_back(new Value()); pos[i]->setNotPeriodic(); }
+  kernel.reset( new KernelFunctions( pp, bandwidth, getKernelType(), "DIAGONAL", 1.0 ) );
+  for(unsigned i=0; i<3; ++i) { pos.emplace_back(new Value()); pos[i]->setNotPeriodic(); }
   std::vector<double> csupport( kernel->getContinuousSupport() );
   double maxs = csupport[0];
   for(unsigned i=1; i<csupport.size(); ++i) {
     if( csupport[i]>maxs ) maxs = csupport[i];
   }
   checkRead(); requestAtoms(atoms); mylinks.setCutoff( maxs );
-}
-
-VolumeInEnvelope::~VolumeInEnvelope() {
-  delete kernel; for(unsigned j=0; j<3; ++j) delete pos[j];
 }
 
 void VolumeInEnvelope::setupRegions() {
@@ -128,10 +123,14 @@ double VolumeInEnvelope::calculateNumberInside( const Vector& cpos, Vector& deri
   mylinks.addRequiredCells( mylinks.findMyCell( cpos ), ncells_required, cells_required );
   indices[0]=getNumberOfAtoms(); mylinks.retrieveAtomsInCells( ncells_required, cells_required, natoms, indices );
   double value=0; std::vector<double> der(3); Vector tder;
+
+  // convert pointer once
+  auto pos_ptr=Tools::unique2raw(pos);
+
   for(unsigned i=1; i<natoms; ++i) {
     Vector dist = getSeparation( cpos, getPosition( indices[i] ) );
     for(unsigned j=0; j<3; ++j) pos[j]->set( dist[j] );
-    value += kernel->evaluate( pos, der, true );
+    value += kernel->evaluate( pos_ptr, der, true );
     for(unsigned j=0; j<3; ++j) {
       derivatives[j] -= der[j]; refders[ indices[i] ][j] += der[j]; tder[j]=der[j];
     }

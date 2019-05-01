@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,20 +24,21 @@
 namespace PLMD {
 namespace mapping {
 
-PathReparameterization::PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<ReferenceConfiguration*>& pp ):
+PathReparameterization::PathReparameterization( const Pbc& ipbc, const std::vector<Value*>& iargs, std::vector<std::unique_ptr<ReferenceConfiguration>>& pp ):
   mydpack( 1, pp[0]->getNumberOfReferenceArguments() + 3*pp[0]->getNumberOfReferencePositions() + 9 ),
   mypack( pp[0]->getNumberOfReferenceArguments(), pp[0]->getNumberOfReferencePositions(), mydpack ),
-  mypath(pp),
+  mydir(ReferenceConfigurationOptions("DIRECTION")),
   pbc(ipbc),
   args(iargs),
-  mydir(ReferenceConfigurationOptions("DIRECTION")),
+  mypath(pp),
   len(pp.size()),
   sumlen(pp.size()),
   sfrac(pp.size()),
   MAXCYCLES(100)
 {
-  mydir.setNamesAndAtomNumbers( pp[0]->getAbsoluteIndexes(), pp[0]->getArgumentNames() );
-  mydir.zeroDirection(); pp[0]->setupPCAStorage( mypack );
+  mypdb.setAtomNumbers(  pp[0]->getAbsoluteIndexes() ); mypdb.addBlockEnd( pp[0]->getAbsoluteIndexes().size() );
+  if( pp[0]->getArgumentNames().size()>0 ) mypdb.setArgumentNames( pp[0]->getArgumentNames() );
+  mydir.read( mypdb ); mydir.zeroDirection(); pp[0]->setupPCAStorage( mypack );
 }
 
 bool PathReparameterization::loopEnd( const int& index, const int& end, const int& inc ) const {
@@ -79,8 +80,7 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
 
   std::vector<Direction> newpath;
   for(unsigned i=0; i<mypath.size(); ++i) {
-    newpath.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")) );
-    newpath[i].setNamesAndAtomNumbers( mypath[i]->getAbsoluteIndexes(), mypath[i]->getArgumentNames() );
+    newpath.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")) ); newpath[i].read( mypdb );
   }
 
   double prevsum=0.;
@@ -109,7 +109,7 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
       // Copy the reference configuration from the configuration to a tempory direction
       newpath[i].setDirection( mypath[k]->getReferencePositions(), mypath[k]->getReferenceArguments() );
       // Get the displacement of the path
-      mypath[k]->extractDisplacementVector( mypath[k+incr]->getReferencePositions(), args, mypath[k+incr]->getReferenceArguments(), false, false, mydir );
+      mypath[k]->extractDisplacementVector( mypath[k+incr]->getReferencePositions(), args, mypath[k+incr]->getReferenceArguments(), false, mydir );
       // Set our direction equal to the displacement
       // mydir.setDirection( mypack );
       // Shift the reference configuration by this ammount
@@ -118,7 +118,9 @@ void PathReparameterization::reparameterizePart( const int& istart, const int& i
 
     // Copy the positions of the new path to the new paths
     for(int i=istart+incr; loopEnd(i,cfin,incr)==false; i+=incr) {
-      mypath[i]->setReferenceConfig( newpath[i].getReferencePositions(), newpath[i].getReferenceArguments(), mypath[i]->getReferenceMetric() );
+      mypdb.setAtomPositions( newpath[i].getReferencePositions() );
+      for(unsigned j=0; j<newpath[i].getNumberOfReferenceArguments(); ++j) mypdb.setArgumentValue( mypath[i]->getArgumentNames()[j], newpath[i].getReferenceArgument(j) );
+      mypath[i]->read( mypdb );
     }
 
     // Recompute the separations between frames

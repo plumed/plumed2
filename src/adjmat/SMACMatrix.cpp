@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,7 +38,7 @@ A_{ij} = \sigma(r_{ij}) \sum_n K_n(\theta_{ij})
 In this expression \f$r_{ij}\f$ is the distance between molecule \f$i\f$ and molecule \f$j\f$ and \f$\sigma(r_{ij}\f$ is a
 \ref switchingfunction that acts on this distance.  The $K_n functions are \ref kernelfunctions that take the torsion angle, \f$\theta_{ij}\f$, between the
 internal orientation vectors for molecules \f$i\f$ and \f$j\f$ as input.  These kernel functions should be set so that they are
-equal to one when the relative orientation of the moleclues are as they are in the solid and equal to zero otherwise.
+equal to one when the relative orientation of the molecules are as they are in the solid and equal to zero otherwise.
 As the above matrix element is a product of functions it is only equal to one when the centers of mass of molecules \f$i\f$ and\f$j\f$
 are with a certain distance of each other and when the molecules are aligned in some desirable way.
 
@@ -47,7 +47,7 @@ are with a certain distance of each other and when the molecules are aligned in 
 In the following example an adjacency matrix is constructed in which the \f$(i,j)\f$ element is equal to one if
 molecules \f$i\f$ and \f$j\f$ are within 6 angstroms of each other and if the torsional angle between the orientations
 of these molecules is close to 0 or \f$\pi\f$.  The various connected components of this matrix are determined using the
-\ref DFSCLUSTERING algorithm and then the size of the largest cluster of connectes molecules is output to a colvar file
+\ref DFSCLUSTERING algorithm and then the size of the largest cluster of connects molecules is output to a colvar file
 
 \plumedfile
 UNITS LENGTH=A
@@ -109,7 +109,7 @@ SMACMatrix::SMACMatrix( const ActionOptions& ao ):
 
 void SMACMatrix::readOrientationConnector( const unsigned& iv, const unsigned& jv, const std::vector<std::string>& desc ) {
   for(int i=0; i<desc.size(); i++) {
-    KernelFunctions mykernel( desc[i], false );
+    KernelFunctions mykernel( desc[i] );
     kernels(iv,jv).push_back( mykernel );
     if( jv!=iv ) kernels(jv,iv).push_back( mykernel );
   }
@@ -122,7 +122,8 @@ double SMACMatrix::computeVectorFunction( const unsigned& iv, const unsigned& jv
 
   unsigned nvectors = ( vec1.size() - 2 ) / 3; plumed_assert( (vec1.size()-2)%3==0 );
   std::vector<Vector> dv1(nvectors), dv2(nvectors), tdconn(nvectors); Torsion t; std::vector<Vector> v1(nvectors), v2(nvectors);
-  std::vector<Value*> pos; for(unsigned i=0; i<nvectors; ++i) { pos.push_back( new Value() ); pos[i]->setDomain( "-pi", "pi" ); }
+  std::vector<std::unique_ptr<Value>> pos;
+  for(unsigned i=0; i<nvectors; ++i) { pos.emplace_back( new Value() ); pos[i]->setDomain( "-pi", "pi" ); }
 
   for(unsigned j=0; j<nvectors; ++j) {
     for(unsigned k=0; k<3; ++k) {
@@ -133,14 +134,16 @@ double SMACMatrix::computeVectorFunction( const unsigned& iv, const unsigned& jv
   }
 
   double ans=0; std::vector<double> deriv( nvectors ), df( nvectors, 0 );
+
+  auto pos_ptr=Tools::unique2raw(pos);
+
   for(unsigned i=0; i<kernels(iv,jv).size(); ++i) {
-    ans += kernels(iv,jv)[i].evaluate( pos, deriv );
+    ans += kernels(iv,jv)[i].evaluate( pos_ptr, deriv );
     for(unsigned j=0; j<nvectors; ++j) df[j] += deriv[j];
   }
   dconn.zero(); for(unsigned j=0; j<nvectors; ++j) dconn += df[j]*tdconn[j];
   for(unsigned j=0; j<nvectors; ++j) {
     for(unsigned k=0; k<3; ++k) { dvec1[2+3*j+k]=df[j]*dv1[j][k]; dvec2[2+3*j+k]=df[j]*dv2[j][k]; }
-    delete pos[j];
   }
   return ans;
 }

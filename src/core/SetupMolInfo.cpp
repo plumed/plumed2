@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,14 +48,13 @@ void SetupMolInfo::registerKeywords( Keywords& keys ) {
 }
 
 SetupMolInfo::~SetupMolInfo() {
-  delete &pdb;
+// empty destructor to delete unique_ptr
 }
 
 SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
   Action(ao),
   ActionSetup(ao),
-  ActionAtomistic(ao),
-  pdb(*new(PDB))
+  ActionAtomistic(ao)
 {
   // Read what is contained in the pdb file
   parse("MOLTYPE",mytype);

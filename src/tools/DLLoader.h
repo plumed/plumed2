@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,10 +40,10 @@ namespace PLMD {
 class DLLoader {
   std::stack<void*> handles;
   std::string lastError;
-/// Private copy constructor
-  DLLoader(const DLLoader&);
-/// Private assignment
-  DLLoader&operator=(const DLLoader&);
+/// Deleted copy constructor
+  DLLoader(const DLLoader&) = delete;
+/// Deleted assignment
+  DLLoader&operator=(const DLLoader&) = delete;
 public:
 /// Default constructor
   DLLoader();

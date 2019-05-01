@@ -23,7 +23,10 @@ obj: all
 
 config.txt: ../../Makefile.conf
 	@echo "Updating config.txt file"
-	@ ../maketools/update-config-txt.sh config.txt $(CPPFLAGS)
+	@makefile_conf="$(realpath ../../Makefile.conf)" \
+         python_bin="$(python_bin)" \
+         mpiexec="$(mpiexec)" \
+         ../maketools/update-config-txt.sh config.txt $(CPPFLAGS)
 
 version.h:
 	@echo "Updating version.h"
@@ -64,10 +67,21 @@ Makefile.conf.xxd: ../../Makefile.conf
 	cat ../../Makefile.conf | xxd -i > Makefile.conf.xxd
 
 # file to import compilation options inside a bash script
-compile_options.sh:
+compile_options.sh: ../../Makefile.conf
 	@echo Building compile_options.sh, a sourceable bash script with some compilation options
 	@echo "compile='"$(CXX) -c -I'"$$PLUMED_INCLUDEDIR/$$PLUMED_PROGRAM_NAME"'/ $(CPPFLAGS) $(CXXFLAGS) -o"'" > $@
-	@echo "link='"$(LDSO) $(DYNAMIC_LIBS) -o"'" >> $@
+# on osx, in order to use two-level namespace, we should back link the Kernel library
+# the path to the kernel is different for installed and not-installed plumed.
+# notice that $(DYNAMIC_LIBS) are needed as well in order to allow using functions
+# that are exported from plumed (e.g. blas/lapack/mpi functions).
+# on linux linking the kernel is not necessary, due to flat namespace.
+# however, we do the same for consistency
+# As an alternative, on osx we could use -undefined dynamic_lookup. I prefer to use
+# the default option (two level namespace) since it should give linking errors in advance,
+# but we might change it later.
+	@echo "link_installed='"$(LDSHARED) $(DYNAMIC_LIBS) $(libdir)/lib$(program_name)Kernel.$(SOEXT) -o"'" >> $@
+# this is removed with a grep statement in src/lib/Makefile (see https://github.com/plumed/plumed2/issues/408)
+	@echo "link_uninstalled='"$(LDSHARED) $(DYNAMIC_LIBS) $(CURDIR:/config=)/lib/libplumedKernel.$(SOEXT) -o"'" >> $@
 	@echo "soext='"$(SOEXT)"'" >> $@
 
 .PHONY: clean

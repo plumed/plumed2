@@ -1,0 +1,4 @@
+mpiprocs=2
+type=driver
+arg="--plumed plumed.dat --mf_pdb template.pdb"
+plumed_needs="gsl"

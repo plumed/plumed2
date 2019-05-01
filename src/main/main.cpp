@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "wrapper/Plumed.h"
 #include <cstring>
+#include <memory>
 
 #ifdef __PLUMED_HAS_MPI
 #include <mpi.h>
@@ -38,13 +39,17 @@ using namespace std;
 int main(int argc,char**argv) {
 #ifdef __PLUMED_HAS_MPI
   bool nompi=false;
-  if(argc>1 && !strcmp(argv[1],"--no-mpi")) nompi=true;
-  if(argc>1 && !strcmp(argv[1],"--mpi"))    nompi=false;
+  for(unsigned iarg=1; iarg<argc; iarg++) {
+    if(!strcmp(argv[iarg],"--no-mpi")) nompi=true;
+    if(!strcmp(argv[iarg],"--mpi"))    nompi=false;
+// stop at first non-option
+    if(argv[iarg] && argv[iarg][0]!='-') break;
+  }
   if(!nompi) MPI_Init(&argc,&argv);
 #endif
   int ret=0;
 
-  PLMD::Plumed* p=new PLMD::Plumed;
+  std::unique_ptr<PLMD::Plumed> p(new PLMD::Plumed);
   p->cmd("CLTool setArgc",&argc);
   p->cmd("CLTool setArgv",argv);
 #ifdef __PLUMED_HAS_MPI
@@ -55,7 +60,7 @@ int main(int argc,char**argv) {
   }
 #endif
   p->cmd("CLTool run",&ret);
-  delete p;
+  p.reset(); // this is to delete p here
 
 #ifdef __PLUMED_HAS_MPI
   if(!nompi) MPI_Finalize();

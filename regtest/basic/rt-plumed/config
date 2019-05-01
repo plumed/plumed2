@@ -1,0 +1,4 @@
+type=driver
+plumed_needs=dlopen
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz ala12_trajectory.xyz --dump-forces ff --dump-full-virial --mc mc"

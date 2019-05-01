@@ -1,0 +1,37 @@
+# Terminal settings
+#set term postscript enhanced "Helvetica" 14 eps size 8.6cm,5.cm
+#set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+#set output "plot.png"
+#set border lw 1.5
+
+# Set labels
+set xlabel "Distance (nm)"
+set ylabel "Free energy (kT)"
+
+# Set plot range and tic options
+set yr [-27:0]
+set xtics 5
+set xr [0.05:0.8]
+set xtics 0.1
+
+# Define colors
+set style line 1 lt 1 lw 3 lc rgb "#e41a1c"
+set style line 2 lt 1 lw 3 lc rgb "#377eb8"
+set style line 3 lt 1 lw 3 lc rgb "#4daf4a"
+set style line 4 lt 1 lw 3 lc rgb "#984ea3"
+set style line 5 lt 1 lw 3 lc rgb "#ff7f00"
+set style line 6 lt 1 lw 3 lc rgb "#ffff33"
+set style line 7 lt 1 lw 3 lc rgb "#a65628"
+
+
+set key bottom left sample 1.
+
+pl "fes_2.dat" u 1:($2/2.494) w l ls 1 title "0.2 ns", \
+ "fes_5.dat" u 1:($2/2.494) w l ls 2 title "0.5 ns", \
+ "fes_10.dat" u 1:($2/2.494) w l ls 3 title "1 ns", \
+ "fes_20.dat" u 1:($2/2.494) w l ls 4 title "2 ns", \
+ "fes_30.dat" u 1:($2/2.494) w l ls 5 title "3 ns", \
+ "fes_60.dat" u 1:($2/2.494) w l ls 6 title "6 ns", \
+ "fes_100.dat" u 1:($2/2.494) w l ls 7 title "10 ns"
+
+pause -1

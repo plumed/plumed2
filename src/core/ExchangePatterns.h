@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,13 +22,16 @@
 #ifndef __PLUMED_core_ExchangePatterns_h
 #define __PLUMED_core_ExchangePatterns_h
 
+#include "tools/ForwardDecl.h"
+
 namespace PLMD {
 class Random;
 
 class ExchangePatterns {
   int    PatternFlag;
   int    NumberOfReplicas;
-  Random& random;
+  ForwardDecl<Random> random_fwd;
+  Random& random=*random_fwd;
 public:
   ExchangePatterns();
   ~ExchangePatterns();

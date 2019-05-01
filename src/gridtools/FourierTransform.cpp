@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016,2017 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,7 +24,7 @@
 #include "ActionWithInputGrid.h"
 #include "core/ActionRegister.h"
 #ifdef __PLUMED_HAS_FFTW
-#include "fftw3.h" // FFTW interface
+#include <fftw3.h> // FFTW interface
 #endif
 
 namespace PLMD {
@@ -55,7 +55,8 @@ The keyword "FOURIER_PARAMETERS" deserves just a note on the usage. This keyword
 The default values of these parameters are: \f$a=1\f$ and \f$b=1\f$.
 
 \par Examples
-The following example tells Plumed to compute the complex 2D 'backward' Discrete Fourier Transform by taking the data saved on a grid called 'density', and normalizing the output by \f$ \frac{1}{\sqrt{N_x\, N_y}}\f$, where \f$N_x\f$ and \f$N_y\f$ are the number of data on the grid (it can be the case that \f$N_x \neq N_y\f$):
+
+The following example tells Plumed to compute the complex 2D 'backward' Discrete Fourier Transform by taking the data saved on a grid called 'density', and normalizing the output by \f$ \frac{1}{\sqrt{N_x\, N_y}}\f$, where \f$N_x\f$ and \f$N_y\f$ are the number of data on the grid (it can be the case that \f$N_x\neq N_y\f$):
 
 \plumedfile
 FOURIER_TRANSFORM STRIDE=1 GRID=density FT_TYPE=complex FOURIER_PARAMETERS=0,-1 FILE=fourier.dat
@@ -162,9 +163,9 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
 
 
   // Create a grid on which to store the fourier transform of the input grid
-  createGrid( "grid", vstring );
-  if( ingrid->noDerivatives() ) mygrid->setNoDerivatives();
-  setAveragingAction( mygrid, false );
+  auto grid=createGrid( "grid", vstring );
+  if( ingrid->noDerivatives() ) grid->setNoDerivatives();
+  setAveragingAction( std::move(grid), false );
 
   checkRead();
 #endif

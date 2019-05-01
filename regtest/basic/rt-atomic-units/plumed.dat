@@ -1,0 +1,26 @@
+UNITS LENGTH=Bohr TIME=atomic ENERGY=Ha CHARGE=e MASS=amu
+d1_bohr: DISTANCE ATOMS=1,2 NOPBC
+d2_bohr: DISTANCE ATOMS=1,6 NOPBC
+d1_angs: CUSTOM ARG=d1_bohr FUNC=0.52917721067*x PERIODIC=NO
+d2_angs: CUSTOM ARG=d2_bohr FUNC=0.52917721067*x PERIODIC=NO
+
+UPPER_WALLS ...
+ ARG=d1_bohr
+ AT=7.0
+ KAPPA=1000.0
+ LABEL=uw_d1
+... UPPER_WALLS
+
+UPPER_WALLS ...
+ ARG=d2_bohr
+ AT=7.0
+ KAPPA=1000.0
+ LABEL=uw_d2
+... UPPER_WALLS
+
+PRINT ...
+ STRIDE=1
+ ARG=d1_bohr,d2_bohr,d1_angs,d2_angs,uw_d1.*,uw_d2.*
+ FILE=colvar.data
+ FMT=%8.4f
+... PRINT 

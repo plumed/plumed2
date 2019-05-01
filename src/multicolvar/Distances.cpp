@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,7 +36,7 @@ namespace multicolvar {
 //+PLUMEDOC MCOLVAR DISTANCES
 /*
 Calculate the distances between one or many pairs of atoms.  You can then calculate functions of the distribution of
-distances such as the minimum, the number less than a certain quantity and so on.
+ distances such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
 
@@ -85,7 +85,7 @@ PRINT ARG=d1.min FILE=colvar STRIDE=10
 \endplumedfile
 (see \ref DISTANCES and \ref PRINT)
 
-In order to ensure differentiability the minimum is calculated using the following function:
+In order to ensure that the minimum value has continuous derivatives we use the following function:
 
 \f[
 s = \frac{\beta}{ \log \sum_i \exp\left( \frac{\beta}{s_i} \right) }
@@ -94,7 +94,7 @@ s = \frac{\beta}{ \log \sum_i \exp\left( \frac{\beta}{s_i} \right) }
 where \f$\beta\f$ is a user specified parameter.
 
 This input is used rather than a separate MINDIST colvar so that the same routine and the same input style can be
-used to calculate minimum coordinatetion numbers (see \ref COORDINATIONNUMBER), minimum
+used to calculate minimum coordination numbers (see \ref COORDINATIONNUMBER), minimum
 angles (see \ref ANGLES) and many other variables.
 
 This new way of calculating mindist is part of plumed 2's multicolvar functionality.  These special actions
@@ -149,9 +149,9 @@ void Distances::registerKeywords( Keywords& keys ) {
   keys.reset_style("ATOMS","atoms");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-           "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+           "the atoms in GROUPB. This must be used in conjunction with GROUPB.");
   keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-           "in GROUPB. This must be used in conjuction with GROUPA.");
+           "in GROUPB. This must be used in conjunction with GROUPA.");
 }
 
 Distances::Distances(const ActionOptions&ao):
@@ -167,8 +167,8 @@ Distances::Distances(const ActionOptions&ao):
   checkRead();
 
   // Now check if we can use link cells
-  bool use_link=false; double rcut;
   if( getNumberOfVessels()>0 ) {
+    bool use_link=false; double rcut;
     vesselbase::LessThan* lt=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(0) );
     if( lt ) {
       use_link=true; rcut=lt->getCutoff();

@@ -40,5 +40,5 @@ int main () {
   }
   out.close();
 
-  return 1;
+  return 0;
 }

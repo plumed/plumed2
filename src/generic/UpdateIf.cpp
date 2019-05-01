@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -60,6 +60,7 @@ particular sense. For example, conditionally updating a \ref METAD keyword
 can lead to unexpected results.
 
 \par Examples
+
 The following input instructs plumed dump all the snapshots where an atom is in touch with
 the solute.
 \plumedfile

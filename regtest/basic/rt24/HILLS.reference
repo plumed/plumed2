@@ -1,5 +1,6 @@
 #! FIELDS time ex.t1_fict ex.t2_fict sigma_ex.t1_fict sigma_ex.t2_fict height biasf
 #! SET multivariate false
+#! SET kerneltype gaussian
 #! SET min_ex.t1_fict -pi
 #! SET max_ex.t1_fict pi
 #! SET min_ex.t2_fict -pi

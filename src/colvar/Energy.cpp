@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -47,6 +47,7 @@ potential energy function. This is for instance not true when
 using GROMACS with lambda replica exchange of with plumed-hrex branch.
 
 \par Examples
+
 The following input instructs plumed to print the energy of the system
 \plumedfile
 ene: ENERGY

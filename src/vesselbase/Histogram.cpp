@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,11 +40,12 @@ void Histogram::registerKeywords( Keywords& keys ) {
   HistogramBead::registerKeywords( keys );
   keys.add("compulsory","NBINS","The number of equal width bins you want to divide the range into");
   keys.addFlag("NORM",false,"calculate the fraction of values rather than the number");
+  keys.add("compulsory","COMPONENT","1","the component of the vector for which to calculate this quantity");
 }
 
 void Histogram::reserveKeyword( Keywords& keys ) {
-  keys.reserve("vessel","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
-               "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
+  keys.reserve("vessel","HISTOGRAM","calculate how many of the values fall in each of the bins of a histogram. "
+               "This shortcut allows you to calculates NBIN quantities like BETWEEN.");
 }
 
 Histogram::Histogram( const VesselOptions& da ):
@@ -52,6 +53,8 @@ Histogram::Histogram( const VesselOptions& da ):
 {
   bool norm; parseFlag("NORM",norm); std::string normstr="";
   if(norm) normstr=" NORM";
+  std::string compstr; parse("COMPONENT",compstr);
+  normstr+=" COMPONENT=" + compstr;
   std::vector<std::string> bins; HistogramBead::generateBins( getAllInput(), bins );
   for(unsigned i=0; i<bins.size(); ++i) addVessel("BETWEEN",bins[i] + normstr);
 }

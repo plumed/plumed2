@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -106,7 +106,7 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
 #define LINKC_MAX(n) ((n<3)? 1 : 2)
 #define LINKC_PBC(n,num) ((n<0)? num-1 : n%num )
 
-void LinkCells::addRequiredCells( const std::vector<unsigned>& celn, unsigned& ncells_required,
+void LinkCells::addRequiredCells( const std::array<unsigned,3>& celn, unsigned& ncells_required,
                                   std::vector<unsigned>& cells_required ) const {
   unsigned nnew_cells=0;
   for(int nx=LINKC_MIN(ncells[0]); nx<LINKC_MAX(ncells[0]); ++nx) {
@@ -153,8 +153,9 @@ void LinkCells::retrieveAtomsInCells( const unsigned& ncells_required,
   }
 }
 
-std::vector<unsigned> LinkCells::findMyCell( const Vector& pos ) const {
-  Vector fpos=mypbc.realToScaled( pos ); std::vector<unsigned> celn(3);
+std::array<unsigned,3> LinkCells::findMyCell( const Vector& pos ) const {
+  Vector fpos=mypbc.realToScaled( pos );
+  std::array<unsigned,3> celn;
   for(unsigned j=0; j<3; ++j) {
     celn[j] = std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
     plumed_assert( celn[j]>=0 && celn[j]<ncells[j] ); // Check that atom is in box
@@ -167,7 +168,7 @@ unsigned LinkCells::convertIndicesToIndex( const unsigned& nx, const unsigned& n
 }
 
 unsigned LinkCells::findCell( const Vector& pos ) const {
-  std::vector<unsigned> celn( findMyCell(pos ) );
+  std::array<unsigned,3> celn( findMyCell(pos ) );
   return convertIndicesToIndex( celn[0], celn[1], celn[2] );
 }
 

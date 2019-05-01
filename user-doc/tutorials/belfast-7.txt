@@ -22,7 +22,7 @@ In PT, exchanges are usually attempted between adjacent temperatures
 with the following acceptance probability:
 
 \f[
-p(i \rightarrow j) = min \{ 1,\Delta_{i,j}^{PT} \},
+p(i \rightarrow j) = min \{ 1,e^{\Delta_{i,j}^{PT}} \},
 \f]
 
 with
@@ -53,7 +53,7 @@ must be modified in order to account for the presence of a bias potential:
 											 \frac{1}{k_B T_j} \left [  V_G^{j}(s(R_j),t) - V_G^{j}(s(R_i),t) \right ],
 \f]
 
-where \f$ V_G^{i} \f$ and \f$ V_G^{j} \f$ are the bias potentials acting on the i-th and j-th replicas, respectively.
+where \f$ V_G^{i} \f$ and \f$ V_G^{j} \f$ are the bias potentials acting on the \f$i\f$th and \f$j\f$th replicas, respectively.
 
 PTMetaD is particularly effective because it compensates for some of the weaknesses of each method alone.
 The  effect of neglecting a slow degree of freedom in the choice of the metadynamics CVs is alleviated by PT, 
@@ -67,7 +67,7 @@ well-tempered metadynamics CVs.
 The well-tempered metadynamics bias leads to the sampling of a well-defined distribution called Well-Tempered Ensemble (WTE)
  \cite Bonomi:2009p17935.
 In this ensemble, the average energy remains close to the canonical value 
-but its fluctuations are enhanced in a tunable way, thus improving sampling.  
+but its fluctuations are enhanced in a way that can be tuned, thus improving sampling.  
 In the so-called PTMetaD-WTE scheme \cite ct300297t, each replica diffusion in temperature space is enhanced by 
 the increased energy fluctuations at all temperatures.
 
@@ -89,7 +89,7 @@ The <a href="tutorial-resources/belfast-7.tar.gz" download="belfast-7.tar.gz"> t
 - Exercise_3: run a PTMetaD simulation
 - Exercise_4: run a PT, PT-WTE and PTMetaD-WTE simulations
 
-Each directory contains a TOPO subdirectory where topology and configuration files for Gromacs are stored.
+Each directory contains a TOPO sub-directory where topology and configuration files for Gromacs are stored.
 
 
 \section belfast-7-instructions Instructions
@@ -122,8 +122,8 @@ To submit this simulation with Gromacs, we need the following command line.
 mpirun -np 2 gmx_mpi mdrun -s TOPO/topol -plumed -multi 2 -replex 100
 \endverbatim
 
-This command will execute two MPI processess in parallel, using the topology files
-topol0.tpr and topol1.tpr stored in the TOPO subdirectory. These two binary files
+This command will execute two MPI processes in parallel, using the topology files
+topol0.tpr and topol1.tpr stored in the TOPO sub-directory. These two binary files
 have been created using the usual Gromacs procedure (see Gromacs manual for further details)
 and setting the temperature of the two simulations at 300K and 305K in the configuration files.
 An exchange between the configurations of the two simulations will be attempted every 100 steps.

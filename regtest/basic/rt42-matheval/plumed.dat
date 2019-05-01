@@ -1,0 +1,5 @@
+# this is to test issue #249
+# in particular, this should work correctly when running with multiple threads
+c: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={MATHEVAL R_0=1 FUNC=1/(1+x^6)}
+PRINT ARG=c FILE=colvar FMT=%8.4f STRIDE=1
+FLUSH STRIDE=1

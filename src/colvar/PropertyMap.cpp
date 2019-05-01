@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -35,7 +35,7 @@ This Colvar calculates the property maps according to the work of Spiwok \cite S
 
 
 Basically it calculates
-\f{eqnarray}
+\f{eqnarray*}{
 X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
 Y=\frac{\sum_i Y_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
 \cdots\\
@@ -43,17 +43,30 @@ zzz=-\frac{1}{\lambda}\log(\sum_i  \exp(-\lambda D_i(x)))
 \f}
 
 where the parameters \f$X_i\f$  and  \f$Y_i\f$ are provided in the input pdb (allv.pdb in this case) and
- \f$D_i(x)\f$  is the MSD after optimal alignment calculated on the pdb frames you input (see Kearsley).
+ \f$D_i(x)\f$  is the mean squared displacement after optimal alignment calculated on the pdb frames you input (see Kearsley).
+
+
+When running with periodic boundary conditions, the atoms should be
+in the proper periodic image. This is done automatically since PLUMED 2.5,
+by considering the ordered list of atoms and rebuilding molecules using a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED.
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
 
 \par Examples
+
 \plumedfile
 p3: PROPERTYMAP REFERENCE=../../trajectories/path_msd/allv.pdb PROPERTY=X,Y LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=4
 PRINT ARG=p3.X,p3.Y,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 \endplumedfile
 
-note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighborlist parameter (optional but
+note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighbor list parameter (optional but
 recommended for performance) and states that the neighbor list will be calculated every 4
-timesteps and consider only the closest 8 member to the actual md snapshots.
+steps and consider only the closest 8 member to the actual md snapshots.
 
 In this case the input line instructs plumed to look for two properties X and Y with attached values in the REMARK
 line of the reference pdb (Note: No spaces from X and = and 1 !!!!).
@@ -117,12 +130,11 @@ PropertyMap::PropertyMap(const ActionOptions&ao):
     addComponentWithDerivatives("zzz"); componentIsNotPeriodic("zzz");
     //reparse the REMARK field and pick the index
     for(unsigned i=0; i<pdbv.size(); i++) {
-      vector<std::string> myv(pdbv[i].getRemark());
       // now look for X=1.34555 Y=5.6677
       vector<double> labelvals;
       for(unsigned j=0; j<labels.size(); j++) {
         double val;
-        if(Tools::parse(myv,labels[j],val)) {labelvals.push_back(val);}
+        if( pdbv[i].getArgumentValue(labels[j],val) ) {labelvals.push_back(val);}
         else {
           char buf[500];
           sprintf(buf,"PROPERTY LABEL \" %s \" NOT FOUND IN REMARK FOR FRAME %u \n",labels[j].c_str(),i);

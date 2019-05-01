@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -121,6 +121,8 @@ public:
 /// Operations on one of the elements of grid point specified by vector
   double getGridElement( const std::vector<unsigned>&, const unsigned& ) const ;
   void setGridElement( const std::vector<unsigned>&, const unsigned&, const double& );
+/// Set the values and derivatives of a particular element
+  void setValueAndDerivatives( const unsigned&, const unsigned&, const double&, const std::vector<double>& );
 /// Set the size of the buffer equal to nper*npoints
   virtual void resize();
 /// Get the number of points in the grid
@@ -159,7 +161,7 @@ public:
   void getNeighbors( const std::vector<unsigned>& indices, const std::vector<unsigned>& nneigh,
                      unsigned& num_neighbors, std::vector<unsigned>& neighbors ) const ;
 /// Get the points neighboring a particular spline point
-  void getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh ) const ;
+  void getSplineNeighbors( const unsigned& mybox, unsigned& nneighbors, std::vector<unsigned>& mysneigh ) const ;
 /// Get the spacing between grid points
   const std::vector<double>& getGridSpacing() const ;
 /// Get the extent of the grid in one of the axis

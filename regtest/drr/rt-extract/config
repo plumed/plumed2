@@ -1,0 +1,4 @@
+type=plumed
+plumed_needs=boost_serialization
+plumed_modules=drr
+arg="drr_tool --extract test.drrstate -v"

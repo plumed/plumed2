@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -89,7 +89,7 @@ void BiasValue::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   // Should be _bias below
-  keys.addOutputComponent("_bias","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+  keys.addOutputComponent("_bias","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "these quantities will named with  the arguments of the bias followed by "
                           "the character string _bias. These quantities tell the user how much the bias is "
                           "due to each of the colvars.");

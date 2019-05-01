@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -46,6 +46,7 @@ of arguments to the action.
 Additional material and examples can be also found in the tutorial \ref belfast-4
 
 \par Examples
+
 The following input tells plumed to restrain the distance between atoms 3 and 5
 and the distance between atoms 2 and 4, at different equilibrium
 values, and to print the energy of the restraint

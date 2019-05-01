@@ -1,0 +1,43 @@
+# vim:ft=plumed
+# First load information about the molecule.
+MOLINFO STRUCTURE=ref.pdb
+
+# Define here the groups that you need.
+# Same as in the previous exercise.
+rna: GROUP ATOMS=1-258
+mg:  GROUP ATOMS=6580
+wat: GROUP ATOMS=259-6579
+
+# Make RNA duplex whole.
+WHOLEMOLECULES ENTITY0=rna
+
+# Dump first trajectory in gro format.
+# Notice that PLUMED understands the format based on the file extension
+DUMPATOMS ATOMS=rna FILE=rna-whole.gro
+
+# Align RNA duplex to a reference structure
+# This should not be the ref.pdb file but a new file with only RNA atoms.
+FIT_TO_TEMPLATE REFERENCE=ref-rna.pdb TYPE=OPTIMAL
+# Notice that before using FIT_TO_TEMPLATE we used WHOLEMOLECULES to make RNA whole
+# This is necessary otherwise you would align a broken molecule!
+
+# Dump the aligned RNA on a separate file
+DUMPATOMS ATOMS=rna FILE=rna-aligned.gro
+
+# Compute the distance between the Mg and the Phosphorous from residue 2
+d: DISTANCE ATOMS=mg,@P-2 ## put the serial number of the correct phosphorous here
+
+# here we only dump frames conditioned to the value of d
+UPDATE_IF ARG=d LESS_THAN=0.3
+DUMPATOMS ATOMS=rna,mg FILE=rna-select.gro
+UPDATE_IF ARG=d # this command is required to close the UPDATE_IF above
+
+# compute the center of the RNA molecule
+center: CENTER ATOMS=rna
+
+# Wrap atoms correctly
+WRAPAROUND ATOMS=mg AROUND=center
+WRAPAROUND ATOMS=wat AROUND=center GROUPBY=3 # anything missing here?
+
+# Dump the last trajectory
+DUMPATOMS ATOMS=rna,wat,mg FILE=rna-wrap.gro

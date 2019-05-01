@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,6 +26,7 @@
 #include "reference/MultiDomainRMSD.h"
 #include "reference/MetricRegister.h"
 #include "core/Atoms.h"
+#include <memory>
 
 
 using namespace std;
@@ -35,14 +36,14 @@ namespace colvar {
 
 class MultiRMSD : public Colvar {
 
-  PLMD::MultiDomainRMSD* rmsd;
+  std::unique_ptr<PLMD::MultiDomainRMSD> rmsd;
   bool squared;
   MultiValue myvals;
   ReferenceValuePack mypack;
+  bool nopbc;
 
 public:
   explicit MultiRMSD(const ActionOptions&);
-  ~MultiRMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -50,7 +51,7 @@ public:
 
 using namespace std;
 
-//+PLUMEDOC DCOLVAR MULTI-RMSD
+//+PLUMEDOC DCOLVAR MULTI_RMSD
 /*
 Calculate the RMSD distance moved by a number of separated domains from their positions in a reference structure.
 
@@ -97,18 +98,18 @@ with the TER keyword being used to separate the various domains in you protein.
 
 The following tells plumed to calculate the RMSD distance between
 the positions of the atoms in the reference file and their instantaneous
-position.  The Kearseley algorithm for each of the domains.
+position.  The Kearsley algorithm for each of the domains.
 
 \plumedfile
-MULTI-RMSD REFERENCE=file.pdb TYPE=MULTI-OPTIMAL
+MULTI_RMSD REFERENCE=file.pdb TYPE=MULTI-OPTIMAL
 \endplumedfile
 
-The following tells plumed to calculate the RMSD distance btween the positions of
+The following tells plumed to calculate the RMSD distance between the positions of
 the atoms in the domains of reference the reference structure and their instantaneous
 positions.  Here distances are calculated using the \ref DRMSD measure.
 
 \plumedfile
-MULTI-RMSD REFERENCE=file.pdb TYPE=MULTI-DRMSD
+MULTI_RMSD REFERENCE=file.pdb TYPE=MULTI-DRMSD
 \endplumedfile
 
 in this case it is possible to use the following DRMSD options in the pdb file using the REMARK syntax:
@@ -146,18 +147,17 @@ END
 */
 //+ENDPLUMEDOC
 
-PLUMED_REGISTER_ACTION(MultiRMSD,"MULTI-RMSD")
+PLUMED_REGISTER_ACTION(MultiRMSD,"MULTI_RMSD")
 
 void MultiRMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","MULTI-SIMPLE","the manner in which RMSD alignment is performed.  Should be MULTI-OPTIMAL, MULTI-OPTIMAL-FAST,  MULTI-SIMPLE or MULTI-DRMSD.");
-  keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
-  keys.remove("NOPBC");
+  keys.addFlag("SQUARED",false," This should be set if you want the mean squared displacement instead of the root mean squared displacement");
 }
 
 MultiRMSD::MultiRMSD(const ActionOptions&ao):
-  PLUMED_COLVAR_INIT(ao),squared(false),myvals(1,0), mypack(0,0,myvals)
+  PLUMED_COLVAR_INIT(ao),squared(false),myvals(1,0), mypack(0,0,myvals),nopbc(false)
 {
   string reference;
   parse("REFERENCE",reference);
@@ -165,9 +165,8 @@ MultiRMSD::MultiRMSD(const ActionOptions&ao):
   type.assign("SIMPLE");
   parse("TYPE",type);
   parseFlag("SQUARED",squared);
-
+  parseFlag("NOPBC",nopbc);
   checkRead();
-
 
   addValueWithDerivatives(); setNotPeriodic();
   PDB pdb;
@@ -176,7 +175,9 @@ MultiRMSD::MultiRMSD(const ActionOptions&ao):
   if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
     error("missing input file " + reference );
 
-  rmsd = metricRegister().create<MultiDomainRMSD>(type,pdb);
+  rmsd=metricRegister().create<MultiDomainRMSD>(type,pdb);
+  // Do not align molecule if we are doing DRMSD for domains and NOPBC has been specified in input
+  if( pdb.hasFlag("NOPBC") ) nopbc=true;
 
   std::vector<AtomNumber> atoms;
   rmsd->getAtomRequests( atoms );
@@ -191,13 +192,9 @@ MultiRMSD::MultiRMSD(const ActionOptions&ao):
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
 }
 
-MultiRMSD::~MultiRMSD() {
-  delete rmsd;
-}
-
-
 // calculator
 void MultiRMSD::calculate() {
+  if(!nopbc) makeWhole();
   double r=rmsd->calculate( getPositions(), getPbc(), mypack, squared );
 
   setValue(r);

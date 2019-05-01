@@ -10,12 +10,11 @@ of the collective variables used, and estimating the associated error.
 \section trieste-4-objectives Objectives
 
 Once this tutorial is completed students will be able to:
-
 - Write the PLUMED input file to perform metadynamics simulations 
 - Calculate the free energy from a metadynamics run
 - Compute the error associated to the reconstructed free energy
 - Evaluate the convergence of a metadynamics simulation
-- Assert the choice of the collective variables
+- Assess the choice of the collective variables
 
 \section trieste-4-resources Resources
 
@@ -27,7 +26,7 @@ The \tarball{trieste-4} for this project contains the following files:
 This tutorial has been tested on a pre-release version of version 2.4. However, it should not take advantage
 of 2.4-only features, thus should also work with version 2.3.
 
-\note We suggest to run the three exercizes in three separate directories. For Exercize 3, you will need the output of the first two exercizes, so don't delete it!
+\note We suggest to run the three exercises in three separate directories. For Exercise 3, you will need the output of the first two exercises, so don't delete it!
  
 \section trieste-4-intro Introduction
 
@@ -42,8 +41,8 @@ Here you can find a brief recap of the metadynamics theory.
 \hidden{Summary of theory}
 
 In metadynamics, an external history-dependent bias potential is constructed in the space of 
-a few selected degrees of freedom \f$ \vec{s}({q}) \f$, generally called collective variables (CVs) \cite metad.
-This potential is built as a sum of Gaussians deposited along the trajectory in the CVs space:
+a few selected degrees of freedom \f$ \vec{s}({q})\f$, generally called collective variables (CVs) \cite metad.
+This potential is built as a sum of Gaussian kernels deposited along the trajectory in the CVs space:
 
 \f[
 V(\vec{s},t) = \sum_{ k \tau < t} W(k \tau)
@@ -53,7 +52,7 @@ V(\vec{s},t) = \sum_{ k \tau < t} W(k \tau)
 \f]
 
 where \f$ \tau \f$ is the Gaussian deposition stride, 
-\f$ \sigma_i \f$ the width of the Gaussian for the ith CV, and \f$ W(k \tau) \f$ the
+\f$ \sigma_i \f$ the width of the Gaussian for the \f$i\f$th CV, and \f$ W(k \tau) \f$ the
 height of the Gaussian. The effect of the metadynamics bias potential is to push the system away 
 from local minima into visiting new regions of the phase space. Furthermore, in the long
 time limit, the bias potential converges to minus the free energy as a function of the CVs:
@@ -62,7 +61,7 @@ time limit, the bias potential converges to minus the free energy as a function 
 V(\vec{s},t\rightarrow \infty) = -F(\vec{s}) + C.
 \f]
 
-In standard metadynamics, Gaussians of constant height are added for the entire course of a 
+In standard metadynamics, Gaussian kernels of constant height are added for the entire course of a 
 simulation. As a result, the system is eventually pushed to explore high free-energy regions
 and the estimate of the free energy calculated from the bias potential oscillates around
 the real value. 
@@ -86,16 +85,16 @@ where \f$ T \f$ is the temperature of the system.
 In the long time limit, the CVs thus sample an ensemble
 at a temperature \f$ T+\Delta T \f$ which is higher than the system temperature \f$ T \f$.
 The parameter \f$ \Delta T \f$ can be chosen to regulate the extent of free-energy exploration:
- \f$ \Delta T = 0\f$ corresponds to standard MD, \f$ \Delta T \rightarrow \infty \f$ to standard
+ \f$ \Delta T = 0\f$ corresponds to standard MD, \f$ \Delta T \rightarrow\infty\f$ to standard
 metadynamics. In well-tempered metadynamics literature and in PLUMED, you will often encounter
-the term "biasfactor" which is the ratio between the temperature of the CVs (\f$ T+\Delta T \f$) 
+the term "bias factor" which is the ratio between the temperature of the CVs (\f$ T+\Delta T \f$) 
 and the system temperature (\f$ T \f$):
 
 \f[
 \gamma = \frac{T+\Delta T}{T}.
 \f]
 
-The biasfactor should thus be carefully chosen in order for the relevant free-energy barriers to be crossed
+The bias factor should thus be carefully chosen in order for the relevant free-energy barriers to be crossed
 efficiently in the time scale of the simulation.
  
 Additional information can be found in the several review papers on metadynamics 
@@ -116,11 +115,11 @@ It is conventional use to characterize the two states in terms of Ramachandran d
 \image html belfast-2-transition.png "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
 
 
-\section trieste-4-ex-1 Exercize 1: my first metadynamics calculation
+\section trieste-4-ex-1 Exercise 1: my first metadynamics calculation
 
-\subsection trieste-4-ex-1a Exercize 1a: setup and run 
+\subsection trieste-4-ex-1a Exercise 1a: setup and run 
 
-In this excercise we will setup and perform a well-tempered metadynamics run using the backbone dihedral \f$ \phi \f$
+In this exercise we will setup and perform a well-tempered metadynamics run using the backbone dihedral \f$ \phi \f$
 as collective variable. During the calculation, we will also monitor the behavior of the other backbone dihedral \f$ \psi \f$.
 
 Here you can find a sample `plumed.dat` file that you can use as a template.
@@ -134,9 +133,10 @@ psi: TORSION ATOMS=__FILL__
 
 # Activate well-tempered metadynamics in phi
 metad: __FILL__ ARG=__FILL__ ...
-# Deposit a Gaussian every 500 time steps, with initial height equal
-# to 1.2 kJoule/mol, biasfactor equal to 10.0
-PACE=500 HEIGHT=1.2 BIASFACTOR=10.0
+# Deposit a Gaussian every 500 time steps, with initial height equal to 1.2 kJ/mol
+PACE=500 HEIGHT=1.2 
+# the bias factor should be wisely chosen
+BIASFACTOR=__FILL__
 # Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
 SIGMA=__FILL__
 # Gaussians will be written to file and also stored on grid
@@ -151,7 +151,7 @@ The syntax for the command \ref METAD is simple.
 The directive is followed by a keyword ARG followed by the labels of the CVs
 on which the metadynamics potential will act.
 The keyword PACE determines the stride of Gaussian deposition in number of time steps,
-while the keyword HEIGHT specifies the height of the Gaussian in kJoule/mol. For each CVs, one has
+while the keyword HEIGHT specifies the height of the Gaussian in kJ/mol. For each CVs, one has
 to specify the width of the Gaussian by using the keyword SIGMA. Gaussian will be written
 to the file indicated by the keyword FILE.
 
@@ -186,7 +186,7 @@ by the metadynamics bias potential to visit the other local minimum. As the simu
 the bias potential fills the underlying free-energy landscape, and the system is able to diffuse in the
 entire phase space.
 
-The HILLS file contains a list of the Gaussians deposited along the simulation.
+The HILLS file contains a list of the Gaussian kernels deposited along the simulation.
 If we give a look at the header of this file, we can find relevant information about its content:
 
 \verbatim
@@ -197,7 +197,7 @@ If we give a look at the header of this file, we can find relevant information a
 \endverbatim 
 
 The line starting with FIELDS tells us what is displayed in the various columns of the HILLS file:
-the simulation time, the instantaneous value of \f$ \phi \f$, the Gaussian width and height, and the biasfactor. 
+the simulation time, the instantaneous value of \f$ \phi \f$, the Gaussian width and height, and the bias factor. 
 We can use the HILLS file to visualize the decrease of the Gaussian height during the simulation,
 according to the well-tempered recipe:
 
@@ -205,14 +205,14 @@ according to the well-tempered recipe:
 \image html munster-metad-phihills.png "Time evolution of the Gaussian height."
 
 If we look carefully at the scale of the y-axis, we will notice that in the beginning the value
-of the Gaussian height is higher than the initial height specified in the input file, which should be 1.2 kJoule/mol.
-In fact, this column reports the height of the Gaussian rescaled by the pre-factor that
+of the Gaussian height is higher than the initial height specified in the input file, which should be 1.2 kJ/mol.
+In fact, this column reports the height of the Gaussian scaled by the pre-factor that
 in well-tempered metadynamics relates the bias potential to the free energy.
 
-\subsection trieste-4-ex-1b Exercize 1b: estimating the free energy 
+\subsection trieste-4-ex-1b Exercise 1b: estimating the free energy 
 
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
-bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussians
+bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussian kernels
 deposited during the simulation and stored in the HILLS file.  
 To calculate the free energy as a function of \f$ \phi \f$, it is sufficient to use the following command line:
 
@@ -239,7 +239,7 @@ The result should look like this:
 
 To assess the convergence of a metadynamics simulation, one can calculate the estimate of the free energy as a function
 of simulation time. At convergence, the reconstructed profiles should be similar.
-The option \-\-stride should be used to give an estimate of the free energy every N Gaussians deposited, and
+The option \-\-stride should be used to give an estimate of the free energy every N Gaussian kernels deposited, and
 the option \-\-mintozero can be used to align the profiles by setting the global minimum to zero.
 If we use the following command line:
 
@@ -247,11 +247,11 @@ If we use the following command line:
 plumed sum_hills --hills HILLS --stride 100 --mintozero
 \endverbatim
 
-one free energy is calculated every 100 Gaussians deposited, and the global minimum is set to zero in all profiles.
+one free energy is calculated every 100 Gaussian kernels deposited, and the global minimum is set to zero in all profiles.
 The resulting plot should look like the following:
 
 \anchor trieste-4-metad-phifest-fig
-\image html munster-metad-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 100 Gaussians deposited."
+\image html munster-metad-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 100 Gaussian kernels deposited."
 
 These two qualitative observations:
 - the system is diffusing efficiently in the collective variable space (Figure \ref trieste-4-phi-fig) 
@@ -264,20 +264,20 @@ of your metadynamics simulation!
 
 \note The two observations above are necessary, but qualitative conditions for convergence.
 A quantitative assessment of convergence can be obtained by performing an error analysis of the
-reconstructed free-energy profile, as explained in the last exercize
+reconstructed free-energy profile, as explained in the last exercise
 
-\section trieste-4-ex-2 Exercize 2: playing with collective variables
+\section trieste-4-ex-2 Exercise 2: playing with collective variables
 
-In this exercize, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, this time
+In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, this time
 using as CV the backbone dihedral \f$ \psi \f$. 
-Please complete the template `plumed.dat` file used in the previous exercize to run this calculation.
+Please complete the template `plumed.dat` file used in the previous exercise to run this calculation.
 
 Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics simulations with the following command
 \verbatim
 > gmx mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat
 \endverbatim
 
-As we did in the previous exercize, we can use COLVAR to visualize the behavior of the CV during the simulation.
+As we did in the previous exercise, we can use COLVAR to visualize the behavior of the CV during the simulation.
 Here we will plot at the same time the evolution of the metadynamics CV \f$ \psi \f$ and of the other dihedral \f$ \phi \f$.
 
 \verbatim
@@ -287,17 +287,17 @@ gnuplot> p "COLVAR" u 1:2, "" u 1:3
 \anchor trieste-4-metad-psi-phi-fig
 \image html munster-metad-psi-phi.png "Time evolution of the dihedrals phi and psi during a 10-ns long metadynamics simulation using psi as CV."
 
-By inspecting Figure \ref trieste-4-metad-psi-phi-fig, we notice that something different happened compared to the previous exercize.
+By inspecting Figure \ref trieste-4-metad-psi-phi-fig, we notice that something different happened compared to the previous exercise.
 At first the behavior of \f$ \psi \f$ looks diffusive in the entire CV space. However, around t=1 ns, \f$ \psi \f$ 
 seems trapped in a region of the CV space in which it was previously diffusing without problems. 
 The reason is that the non-biased CV \f$ \phi \f$ after a while has jumped into a different local minima.
 Since \f$ \phi \f$ is not directly biased, one has to wait for this (slow) degree of freedom to 
 equilibrate before the free energy along \f$ \psi \f$ can converge.
 
-Try to repeat the analysis done in the previous exercize, i.e.  calculate the estimate of the free energy as a function of time,
+Try to repeat the analysis done in the previous exercise, i.e.  calculate the estimate of the free energy as a function of time,
 first step to assess the convergence of this metadynamics simulation.
 
-\section trieste-4-ex-3 Exercize 3: estimating the error in free-energies with block-analysis
+\section trieste-4-ex-3 Exercise 3: estimating the error in free-energies using block-analysis
 
 In this exercise, we will calculate the error associated to the free-energy reconstructed
 by a well-tempered metadynamics simulation. The free energy and the errors will be calculated
@@ -306,7 +306,7 @@ The procedure can be used to estimate the error in the free-energy as a function
 collective variable(s) used in the metadynamics simulation, or for any other function of
 the coordinates of the system.
 
-First, we will calculate the "unbiasing" weights associated to each conformation sampled
+First, we will calculate the "un-biasing" weights associated to each conformation sampled
 during the metadynamics run. In order to calculate these weights, we can use either of these
 two approaches:
 
@@ -320,7 +320,7 @@ In this exercise we will use the umbrella-sampling-like reweighting approach (Me
 
 To calculate the weights, we need to use the PLUMED \ref driver utility and read the HILLS
 file along with the GROMACS trajectory file produced during the metadynamics simulation.
-Let's consider the metadynamics simulation carried out in Exercize 1.
+Let's consider the metadynamics simulation carried out in Exercise 1.
 We need to prepare the `plumed.dat` input file to use in combination with \ref driver.
 Here you can find a sample `plumed.dat` file that you can use as a template.
 Whenever you see an highlighted \highlight{FILL} string, this is a string that you should replace.
@@ -336,7 +336,7 @@ psi: TORSION ATOMS=__FILL__
 # Activate well-tempered metadynamics in phi
 metad: __FILL__ ARG=__FILL__ ...
 # Set the deposition stride to a large number 
-PACE=10000000 HEIGHT=1.2 BIASFACTOR=10.0
+PACE=10000000 HEIGHT=1.2 BIASFACTOR=__FILL__
 # Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
 SIGMA=__FILL__
 # Gaussians will be read from file and stored on grid
@@ -347,7 +347,7 @@ FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
 PRINT ARG=__FILL__ FILE=COLVAR STRIDE=1
 \endplumedfile
 
-Once your `plumed.dat` file is complete, you can use the \ref driver utility to back-calculated the quantites
+Once your `plumed.dat` file is complete, you can use the \ref driver utility to back-calculated the quantities
 needed for the error calculation 
 \verbatim
 plumed driver --plumed plumed.dat --mf_xtc traj_comp.xtc
@@ -370,13 +370,13 @@ The COLVAR file produced by \ref driver should look like this:
 
 Please check your `plumed.dat` file if your output looks different!
 Once the final bias has been evaluated on the entire metadynamics simulations, we can
-easily calculate the "unbiasing weights" using the umbrella-sampling-like approach:
+easily calculate the "un-biasing weights" using the umbrella-sampling-like approach:
 
 \verbatim
 # find maximum value of bias
 bmax=`awk 'BEGIN{max=0.}{if($1!="#!" && $4>max)max=$4}END{print max}' COLVAR`
 
-# print phi value and weights
+# print phi values and weights
 awk '{if($1!="#!") print $2,exp(($4-bmax)/kbt)}' kbt=2.494339 bmax=$bmax COLVAR > phi.weight
 \endverbatim
 
@@ -404,7 +404,7 @@ for i in `seq 1 10 1000`; do python3 do_block_fes.py phi.weight 1 -3.141593 3.01
 \endverbatim 
 
 For each value of block length `N`, you will obtain a separate `fes.N.dat` file, containing the value
-of the \f$ \phi \f$ variable on a grid, the average free-energy, and the associated error (in Kjoule/mol):
+of the \f$ \phi \f$ variable on a grid, the average free-energy, and the associated error (in kJ/mol):
 
 \verbatim
    -3.141593       23.184653     0.080659
@@ -432,13 +432,19 @@ of the block that exceeds the correlation between data points (Fig. \ref trieste
 \anchor trieste-4-block-phi
 \image html trieste-4-block-phi.png "Block analysis of a metadynamics simulation using phi as CV"
 
-To complete this exercize, you should do the following:
-- calculate the error associated to the free energy as a function of the collective variable \f$ \psi \f$ from Exercize 1
-- calculate the error associated to the free energy as a function of the collective variable \f$ \psi \f$ from Exercize 2
-- compare the different behaviors in Exercize 1 and 2
+To complete this exercise, you should do the following:
+- calculate the error associated to the free energy as a function of the collective variable \f$ \psi \f$ from Exercise 1
+- calculate the error associated to the free energy as a function of the collective variable \f$ \psi \f$ from Exercise 2
+- compare the different behaviors in Exercise 1 and 2
 
 What can we learn from this analysis about the convergence of the two metadynamics simulations
 and the quality of the collective variables chosen?
+
+At this time, the most important question of this lecture becomes:
+
+- Could we distinguish the different behavior (in terms of convergence) of the simulations in Exercise 1 and 2
+simply by looking at the time series of the Gaussian height?
+
 
 \section trieste-4-conclusions Conclusions
 

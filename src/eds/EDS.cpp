@@ -15,6 +15,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
+#include "core/ActionAtomistic.h"
 #include "core/ActionRegister.h"
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
@@ -36,32 +37,57 @@ using namespace bias;
 namespace PLMD {
 namespace eds {
 
-//+PLUMEDOC BIAS EDS
+//+PLUMEDOC EDSMOD_BIAS EDS
 /*
 Add a linear bias on a set of observables.
 
-This force is the same as the linear part of the bias in \ref RESTRAINT,
-but this bias has the ability to compute prefactors
-adaptively using the scheme of White and Voth
-\cite white2014efficient in order to match
-target observable values for a set of CVs.
+This force is the same as the linear part of the bias in \ref
+RESTRAINT, but this bias has the ability to compute the prefactors
+adaptively using the scheme of White and Voth \cite white2014efficient
+in order to match target observable values for a set of CVs.
+Further updates to the algorithm are described in \cite hocky2017cgds
+and you can read a review on the method and its applications here: \cite Amirkulova2019Recent.
+
+You can
+see a tutorial on EDS specifically for biasing coordination number at
+<a
+href="http://thewhitelab.org/Blog/tutorial/2017/05/10/lammps-coordination-number-tutorial/">
+Andrew White's webpage</a>.
 
 The addition to the potential is of the form
 \f[
   \sum_i \frac{\alpha_i}{s_i} x_i
 \f]
 
-where for CV \f$x_i\f$, a coupling \f${\alpha}_i\f$ is determined
+where for CV \f$x_i\f$, a coupling constant \f${\alpha}_i\f$ is determined
 adaptively or set by the user to match a target value for
 \f$x_i\f$. \f$s_i\f$ is a scale parameter, which by default is set to
 the target value. It may also be set separately.
 
 \warning
-It is not possible to set the target value of the observable to zero with the default value of \f$s_i\f$ as this will cause a divide-by-zero error. Instead, set \f$s_i=1\f$ or modify the CV so the desired target value is no longer zero.
+It is not possible to set the target value of the observable
+to zero with the default value of \f$s_i\f$ as this will cause a
+divide-by-zero error. Instead, set \f$s_i=1\f$ or modify the CV so the
+desired target value is no longer zero.
+
+Notice that a similar method is available as \ref MAXENT, although with different features and using a different optimization algorithm.
+
+\par Virial
+
+The bias forces modify the virial and this can change your simulation density if the bias is used in an NPT simulation.
+One way to avoid changing the virial contribution from the bias is to add the keyword VIRIAL=1.0, which changes how the bias
+is computed to minimize its contribution to the virial. This can also lead to smaller magnitude biases that are more robust if
+transferred to other systems.  VIRIAL=1.0 can be a reasonable starting point and increasing the value changes the balance between matching
+the set-points and minimizing the virial. See \cite Amirkulova2019Recent for details on the equations. Since the coupling constants
+are unique with a single CV, VIRIAL is not applicable with a single CV. When used with multiple CVs, the CVs should be correlated
+which is almost always the case.
 
 \par Examples
 
-The following input for a harmonic oscillator of two beads will adaptively find a linear bias to change the mean and variance to the target values. The PRINT line shows how to access the value of the coupling constants.
+The following input for a harmonic oscillator of two beads will
+adaptively find a linear bias to change the mean and variance to the
+target values. The PRINT line shows how to access the value of the
+coupling constants.
 
 \plumedfile
 dist: DISTANCE ATOMS=1,2
@@ -73,7 +99,7 @@ eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0
 PRINT ARG=dist,dist2,eds.dist_coupling,eds.dist2_coupling,eds.bias,eds.force2 FILE=colvars.dat STRIDE=100
 \endplumedfile
 
-Rather than trying to find the coupling constants adaptively, can ramp up to a constant value.
+Rather than trying to find the coupling constants adaptively, one can ramp up to a constant value.
 \plumedfile
 #ramp couplings from 0,0 to -1,1 over 50000 steps
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
@@ -82,21 +108,29 @@ eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
 \endplumedfile
 
-A restart file can be added to dump information needed to restart/continue simulation using these parameters every STRIDE.
+A restart file can be added to dump information needed to restart/continue simulation using these parameters every PERIOD.
 \plumedfile
 #add the option to write to a restart file
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 OUT_RESTART=restart.dat
+\endplumedfile
 
-#add the option to read in a previous restart file. Adding RESTART flag makes output append
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat RESTART=yes
+Read in a previous restart file. Adding RESTART flag makes output append
+\plumedfile
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat RESTART
+\endplumedfile
 
-#add the option to read in a previous restart file and freeze the bias at the final level from the previous simulation
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat FREEZE
+Read in a previous restart file and freeze the bias at the final level from the previous simulation
+\plumedfile
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 TEMP=1.0 IN_RESTART=restart.dat FREEZE
+\endplumedfile
 
-#add the option to read in a previous restart file and freeze the bias at the mean from the previous simulation
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat FREEZE MEAN
+Read in a previous restart file and freeze the bias at the mean from the previous simulation
+\plumedfile
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 TEMP=1.0 IN_RESTART=restart.dat FREEZE MEAN
+\endplumedfile
 
-#add the option to read in a previous restart file and continue the bias, but use the mean from the previous run as the starting point
+Read in a previous restart file and continue the bias, but use the mean from the previous run as the starting point
+\plumedfile
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat MEAN
 \endplumedfile
 
@@ -113,18 +147,24 @@ private:
   std::vector<double> center_;
   std::vector<Value*> center_values_;
   std::vector<double> scale_;
-  std::vector<double> current_coupling_;
-  std::vector<double> set_coupling_;
-  std::vector<double> target_coupling_;
-  std::vector<double> max_coupling_range_;
-  std::vector<double> max_coupling_grad_;
+  std::vector<double> current_coupling_; //actually current coupling
+  std::vector<double> set_coupling_; //what our coupling is ramping up to. Equal to current_coupling when gathering stats
+  std::vector<double> target_coupling_; //used when loaded to reach a value
+  std::vector<double> max_coupling_range_; //used for adaptive range
+  std::vector<double> max_coupling_grad_; //maximum allowed gradient
   std::vector<double> coupling_rate_;
   std::vector<double> coupling_accum_;
   std::vector<double> means_;
+  std::vector<double> differences_;
+  std::vector<double> alpha_vector_;
+  std::vector<double> alpha_vector_2_;
   std::vector<double> ssds_;
   std::vector<double> step_size_;
+  std::vector<double> pseudo_virial_;
   std::vector<Value*> out_coupling_;
   Matrix<double> covar_;
+  Matrix<double> covar2_;
+  Matrix<double> lm_inv_;
   std::string in_restart_name_;
   std::string out_restart_name_;
   std::string fmt_;
@@ -138,16 +178,21 @@ private:
   bool b_covar_;
   bool b_restart_;
   bool b_write_restart_;
-  bool b_hard_c_range_;
+  bool b_lm_;
+  bool b_virial_;
+  bool b_update_virial_;
   int seed_;
   int update_period_;
   int avg_coupling_count_;
   int update_calls_;
   double kbt_;
-  double c_range_increase_f_;
   double multi_prop_;
+  double lm_mixing_par_;
+  double virial_scaling_;
+  double pseudo_virial_sum_; //net virial for all cvs in current period
   Random rand_;
   Value* value_force2_;
+  Value* value_pressure_;
 
   /*read input restart. b_mean sets if we use mean or final value for freeze*/
   void readInRestart(const bool b_mean);
@@ -156,6 +201,8 @@ private:
   /*write output restart*/
   void writeOutRestart();
   void update_statistics();
+  void update_pseudo_virial();
+  void calc_lm_step_size();
   void calc_covar_step_size();
   void calc_ssd_step_size();
   void reset_statistics();
@@ -176,22 +223,26 @@ PLUMED_REGISTER_ACTION(EDS,"EDS")
 void EDS::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("optional","CENTER","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing. This is for fixed values");
+  keys.add("optional","CENTER","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing. This is for fixed centers");
   keys.add("optional","CENTER_ARG","The desired centers (equilibrium values) which will be sought during the adaptive linear biasing. "
            "CENTER_ARG is for calculated centers, e.g. from a CV or analysis. ");
 
-  keys.add("compulsory","PERIOD","Steps over which to adjust bias");
-
-  keys.add("compulsory","RANGE","3.0","The largest magnitude of the force constant which one expects (in kBT) for each CV based");
+  keys.add("optional","PERIOD","Steps over which to adjust bias for adaptive or ramping");
+  keys.add("compulsory","RANGE","25.0","The (starting) maximum increase in coupling constant per PERIOD (in \\f$k_B T\\f$/[BIAS_SCALE unit]) for each CV based");
   keys.add("compulsory","SEED","0","Seed for random order of changing bias");
-  keys.add("compulsory","INIT","0","Starting value for coupling coefficients");
-  keys.add("compulsory","FIXED","0","Fixed target values for bias factors (not adaptive)");
+  keys.add("compulsory","INIT","0","Starting value for coupling constant");
+  keys.add("compulsory","FIXED","0","Fixed target values for coupling constant. Non-adaptive.");
   keys.add("optional","BIAS_SCALE","A divisor to set the units of the bias. "
-           "If not set, this will be the experimental value by default (as is done in White and Voth 2014).");
+           "If not set, this will be the CENTER value by default (as is done in White and Voth 2014).");
   keys.add("optional","TEMP","The system temperature. If not provided will be taken from MD code (if available)");
   keys.add("optional","MULTI_PROP","What proportion of dimensions to update at each step. "
            "Must be in interval [1,0), where 1 indicates all and any other indicates a stochastic update. "
            "If not set, default is 1 / N, where N is the number of CVs. ");
+  keys.add("optional","VIRIAL","Add an update penalty for having non-zero virial contributions. Only makes sense with multiple correlated CVs.");
+
+  keys.addFlag("LM",false,"Use Levenberg-Marquadt algorithm along with simultaneous keyword. Otherwise use gradient descent.");
+  keys.addFlag("LM_MIXING","1","Initial mixing parameter when using Levenberg-Marquadt minimization.");
+
   keys.add("optional","RESTART_FMT","the format that should be used to output real numbers in EDS restarts");
   keys.add("optional","OUT_RESTART","Output file for all information needed to continue EDS simulation. "
            "If you have the RESTART directive set (global or for EDS), this file will be appended to. "
@@ -202,12 +253,14 @@ void EDS::registerKeywords(Keywords& keys) {
 
   keys.addFlag("RAMP",false,"Slowly increase bias constant to a fixed value");
   keys.addFlag("COVAR",false,"Utilize the covariance matrix when updating the bias. Default Off, but may be enabled due to other options");
-  keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting). Can also set PERIOD=0 if not using RESTART.");
+  keys.addFlag("FREEZE",false,"Fix bias at current level (only used for restarting).");
   keys.addFlag("MEAN",false,"Instead of using final bias level from restart, use average. Can only be used in conjunction with FREEZE");
+
 
   keys.use("RESTART");
 
   keys.addOutputComponent("force2","default","squared value of force from the bias");
+  keys.addOutputComponent("pressure","default","If using virial keyword, this is the curent sum of virials. It is in units of pressure (energy / vol^3)");
   keys.addOutputComponent("_coupling","default", "For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
 }
 
@@ -218,12 +271,13 @@ EDS::EDS(const ActionOptions&ao):
   current_coupling_(ncvs_,0.0),
   set_coupling_(ncvs_,0.0),
   target_coupling_(ncvs_,0.0),
-  max_coupling_range_(ncvs_,3.0),
+  max_coupling_range_(ncvs_,25.0),
   max_coupling_grad_(ncvs_,0.0),
   coupling_rate_(ncvs_,1.0),
-  coupling_accum_(ncvs_,1.0),
+  coupling_accum_(ncvs_,0.0),
   means_(ncvs_,0.0),
   step_size_(ncvs_,0.0),
+  pseudo_virial_(ncvs_),
   out_coupling_(ncvs_,NULL),
   in_restart_name_(""),
   out_restart_name_(""),
@@ -235,14 +289,16 @@ EDS::EDS(const ActionOptions&ao):
   b_covar_(false),
   b_restart_(false),
   b_write_restart_(false),
-  b_hard_c_range_(false),
+  b_lm_(false),
+  b_virial_(false),
   seed_(0),
   update_period_(0),
   avg_coupling_count_(1),
   update_calls_(0),
   kbt_(0.0),
-  c_range_increase_f_(1.25),
   multi_prop_(-1.0),
+  lm_mixing_par_(0.1),
+  pseudo_virial_sum_(0.0),
   value_force2_(NULL)
 {
   double temp=-1.0;
@@ -252,7 +308,7 @@ EDS::EDS(const ActionOptions&ao):
   componentIsNotPeriodic("force2");
   value_force2_ = getPntrToComponent("force2");
 
-  for(unsigned int i = 0; i<ncvs_; i++) {
+  for(unsigned int i = 0; i<ncvs_; ++i) {
     std::string comp = getPntrToArgument(i)->getName() + "_coupling";
     addComponent(comp);
     componentIsNotPeriodic(comp);
@@ -269,9 +325,12 @@ EDS::EDS(const ActionOptions&ao):
   parse("TEMP",temp);
   parse("SEED",seed_);
   parse("MULTI_PROP",multi_prop_);
+  parse("LM_MIXING",lm_mixing_par_);
   parse("RESTART_FMT", fmt_);
+  parse("VIRIAL",virial_scaling_);
   fmt_ = " " + fmt_;//add space since parse strips them
   parse("OUT_RESTART",out_restart_name_);
+  parseFlag("LM",b_lm_);
   parseFlag("RAMP",b_ramp_);
   parseFlag("FREEZE",b_freeze_);
   parseFlag("MEAN",b_mean);
@@ -280,7 +339,7 @@ EDS::EDS(const ActionOptions&ao):
   checkRead();
 
   /*
-   * Things that are different when usnig changing centers:
+   * Things that are different when using changing centers:
    * 1. Scale
    * 2. The log file
    * 3. Reading Restarts
@@ -317,19 +376,30 @@ EDS::EDS(const ActionOptions&ao):
     log.printf(" (default) ");
 
     scale_.resize(ncvs_);
-    for(unsigned int i = 0; i < scale_.size(); i++) {
+    for(unsigned int i = 0; i < scale_.size(); ++i) {
       if(center_[i]==0)
         error("BIAS_SCALE parameter has been set to CENTER value of 0 (as is default). This will divide by 0, so giving up. See doc for EDS bias");
       scale_[i] = center_[i];
     }
   } else {
-    for(unsigned int i = 0; i < scale_.size(); i++)
+    for(unsigned int i = 0; i < scale_.size(); ++i)
       log.printf(" %f",scale_[i]);
   }
   log.printf("\n");
 
 
-  if(b_covar_) {
+  if (b_lm_) {
+    log.printf("  EDS will perform Levenberg-Marquardt minimization with mixing parameter = %f\n",lm_mixing_par_);
+    differences_.resize(ncvs_);
+    alpha_vector_.resize(ncvs_);
+    alpha_vector_2_.resize(ncvs_);
+    covar_.resize(ncvs_, ncvs_);
+    covar2_.resize(ncvs_, ncvs_);
+    lm_inv_.resize(ncvs_, ncvs_);
+    covar2_*=0; lm_inv_*=0;
+    if(multi_prop_ != 1) log.printf("     WARNING - doing LM minimization but MULTI_PROP!=1\n");
+  }
+  else if(b_covar_) {
     log.printf("  EDS will utilize covariance matrix for update steps\n");
     covar_.resize(ncvs_, ncvs_);
   } else {
@@ -337,8 +407,27 @@ EDS::EDS(const ActionOptions&ao):
     ssds_.resize(ncvs_);
   }
 
+  b_virial_ = virial_scaling_;
 
-  if (b_mean == true and b_freeze_ == false) {
+  if(b_virial_) {
+    if(ncvs_ == 1)
+      error("Minimizing the virial is only valid with multiply correlated collective variables.");
+    //check that the CVs can be used to compute pseudo-virial
+    log.printf("  EDS will compute virials of CVs and penalize with scale of %f. Checking CVs are valid...", virial_scaling_);
+    for(unsigned int i = 0; i < ncvs_; ++i) {
+      auto a = dynamic_cast<ActionAtomistic*>(getPntrToArgument(i)->getPntrToAction());
+      if(!a)
+        error("If using VIRIAL keyword, you must have normal CVs as arguments to EDS. Offending action: " + getPntrToArgument(i)->getPntrToAction()->getName());
+      if(!(a->getPbc().isOrthorombic()))
+        log.printf("  WARNING: EDS Virial should have a orthorombic cell\n");
+    }
+    log.printf("done.\n");
+    addComponent("pressure");
+    componentIsNotPeriodic("pressure");
+    value_pressure_ = getPntrToComponent("pressure");
+  }
+
+  if (b_mean && !b_freeze_) {
     error("EDS keyworkd MEAN can only be used along with keyword FREEZE");
   }
 
@@ -364,12 +453,12 @@ EDS::EDS(const ActionOptions&ao):
 
     if(!b_c_values_) {
       log.printf("  with centers:");
-      for(unsigned int i = 0; i< ncvs_; i++) {
+      for(unsigned int i = 0; i< ncvs_; ++i) {
         log.printf(" %f ",center_[i]);
       }
     } else {
       log.printf("  with actions centers:");
-      for(unsigned int i = 0; i< ncvs_; i++) {
+      for(unsigned int i = 0; i< ncvs_; ++i) {
         log.printf(" %s ",center_values_[i]->getName().c_str());
         //add dependency on these actions
         addDependency(center_values_[i]->getPntrToAction());
@@ -377,10 +466,12 @@ EDS::EDS(const ActionOptions&ao):
     }
 
     log.printf("\n  with initial ranges / rates:\n");
-    for(unsigned int i = 0; i<max_coupling_range_.size(); i++) {
+    for(unsigned int i = 0; i<max_coupling_range_.size(); ++i) {
       //this is just an empirical guess. Bigger range, bigger grads. Less frequent updates, bigger changes
+      //
+      //using the current maxing out scheme, max_coupling_range is the biggest step that can be taken in any given interval
       max_coupling_range_[i]*=kbt_;
-      max_coupling_grad_[i] = max_coupling_range_[i]*update_period_/100.;
+      max_coupling_grad_[i] = max_coupling_range_[i];
       log.printf("    %f / %f\n",max_coupling_range_[i],max_coupling_grad_[i]);
     }
 
@@ -397,10 +488,10 @@ EDS::EDS(const ActionOptions&ao):
       }
 
       log.printf("  with starting coupling constants");
-      for(unsigned int i = 0; i<set_coupling_.size(); i++) log.printf(" %f",set_coupling_[i]);
+      for(unsigned int i = 0; i<set_coupling_.size(); ++i) log.printf(" %f",set_coupling_[i]);
       log.printf("\n");
       log.printf("  and final coupling constants");
-      for(unsigned int i = 0; i<target_coupling_.size(); i++) log.printf(" %f",target_coupling_[i]);
+      for(unsigned int i = 0; i<target_coupling_.size(); ++i) log.printf(" %f",target_coupling_[i]);
       log.printf("\n");
     }
 
@@ -409,7 +500,7 @@ EDS::EDS(const ActionOptions&ao):
       update_period_*=-1;
     }
 
-    for(unsigned int i = 0; i<set_coupling_.size(); i++) current_coupling_[i] = set_coupling_[i];
+    for(unsigned int i = 0; i<set_coupling_.size(); ++i) current_coupling_[i] = set_coupling_[i];
 
     // if b_adaptive_, then first half will be used for equilibrating and second half for statistics
     if(update_period_>0) {
@@ -445,21 +536,13 @@ EDS::EDS(const ActionOptions&ao):
   }
 
   log<<"  Bibliography "<<plumed.cite("White and Voth, J. Chem. Theory Comput. 10 (8), 3023-3030 (2014)")<<"\n";
+  log<<"  Bibliography "<<plumed.cite("G. M. Hocky, T. Dannenhoffer-Lafage, G. A. Voth, J. Chem. Theory Comput. 13 (9), 4593-4603 (2017)")<<"\n";
 }
 
 void EDS::readInRestart(const bool b_mean) {
   int adaptive_i;
 
   in_restart_.open(in_restart_name_);
-
-  //some sample code to get the field names:
-  /*
-    std::vector<std::string> fields;
-    in_restart_.scanFieldList(fields);
-    log.printf("field");
-    for(unsigned int i = 0;i<fields.size();i++) log.printf(" %s",fields[i].c_str());
-    log.printf("\n");
-  */
 
   if(in_restart_.FieldExist("kbt")) {
     in_restart_.scanField("kbt",kbt_);
@@ -485,7 +568,8 @@ void EDS::readInRestart(const bool b_mean) {
     rand_.setSeed(seed_);
   }
 
-  double time;
+
+  double time, tmp;
   std::vector<double> avg_bias = std::vector<double>(center_.size());
   unsigned int N = 0;
   std::string cv_name;
@@ -500,6 +584,16 @@ void EDS::readInRestart(const bool b_mean) {
       in_restart_.scanField(cv_name + "_coupling",current_coupling_[i]);
       in_restart_.scanField(cv_name + "_maxrange",max_coupling_range_[i]);
       in_restart_.scanField(cv_name + "_maxgrad",max_coupling_grad_[i]);
+      in_restart_.scanField(cv_name + "_accum",coupling_accum_[i]);
+      in_restart_.scanField(cv_name + "_mean",means_[i]);
+      if(in_restart_.FieldExist(cv_name + "_pseudovirial")) {
+        if(b_virial_)
+          in_restart_.scanField(cv_name + "_pseudovirial",pseudo_virial_[i]);
+        else //discard the field
+          in_restart_.scanField(cv_name + "_pseudovirial",tmp);
+      }
+      //unused due to difference between covar/nocovar
+      in_restart_.scanField(cv_name + "_std",tmp);
 
       avg_bias[i] += current_coupling_[i];
     }
@@ -510,16 +604,16 @@ void EDS::readInRestart(const bool b_mean) {
 
 
   log.printf("  with centers:");
-  for(unsigned int i = 0; i<center_.size(); i++) {
+  for(unsigned int i = 0; i<center_.size(); ++i) {
     log.printf(" %f",center_[i]);
   }
   log.printf("\n  and scaling:");
-  for(unsigned int i = 0; i<scale_.size(); i++) {
+  for(unsigned int i = 0; i<scale_.size(); ++i) {
     log.printf(" %f",scale_[i]);
   }
 
   log.printf("\n  with initial ranges / rates:\n");
-  for(unsigned int i = 0; i<max_coupling_range_.size(); i++) {
+  for(unsigned int i = 0; i<max_coupling_range_.size(); ++i) {
     log.printf("    %f / %f\n",max_coupling_range_[i],max_coupling_grad_[i]);
   }
 
@@ -529,18 +623,18 @@ void EDS::readInRestart(const bool b_mean) {
 
   if(b_mean) {
     log.printf("Loaded in averages for coupling constants...\n");
-    for(unsigned int i = 0; i<current_coupling_.size(); i++) current_coupling_[i] = avg_bias[i] / N;
-    for(unsigned int i = 0; i<current_coupling_.size(); i++) set_coupling_[i] = avg_bias[i] / N;
+    for(unsigned int i = 0; i<current_coupling_.size(); ++i) current_coupling_[i] = avg_bias[i] / N;
+    for(unsigned int i = 0; i<current_coupling_.size(); ++i) set_coupling_[i] = avg_bias[i] / N;
   }
 
   log.printf("  with current coupling constants:\n    ");
-  for(unsigned int i = 0; i<current_coupling_.size(); i++) log.printf(" %f",current_coupling_[i]);
+  for(unsigned int i = 0; i<current_coupling_.size(); ++i) log.printf(" %f",current_coupling_[i]);
   log.printf("\n");
   log.printf("  with initial coupling constants:\n    ");
-  for(unsigned int i = 0; i<set_coupling_.size(); i++) log.printf(" %f",set_coupling_[i]);
+  for(unsigned int i = 0; i<set_coupling_.size(); ++i) log.printf(" %f",set_coupling_[i]);
   log.printf("\n");
   log.printf("  and final coupling constants:\n    ");
-  for(unsigned int i = 0; i<target_coupling_.size(); i++) log.printf(" %f",target_coupling_[i]);
+  for(unsigned int i = 0; i<target_coupling_.size(); ++i) log.printf(" %f",target_coupling_[i]);
   log.printf("\n");
 
   in_restart_.close();
@@ -571,6 +665,15 @@ void EDS::writeOutRestart() {
     out_restart_.printField(cv_name + "_coupling",current_coupling_[i]);
     out_restart_.printField(cv_name + "_maxrange",max_coupling_range_[i]);
     out_restart_.printField(cv_name + "_maxgrad",max_coupling_grad_[i]);
+    out_restart_.printField(cv_name + "_accum",coupling_accum_[i]);
+    out_restart_.printField(cv_name + "_mean",means_[i]);
+    if(b_virial_)
+      out_restart_.printField(cv_name + "_pseudovirial",pseudo_virial_[i]);
+    if(!b_covar_ && !b_lm_)
+      out_restart_.printField(cv_name + "_std",ssds_[i] / (fmax(1, update_calls_ - 1)));
+    else
+      out_restart_.printField(cv_name + "_std",covar_(i,i) / (fmax(1, update_calls_ - 1)));
+
   }
   out_restart_.printField();
 }
@@ -585,10 +688,213 @@ void EDS::calculate() {
       center_[i] = center_values_[i]->get();
 
   apply_bias();
+}
 
+void EDS::apply_bias() {
+  //Compute linear force as in "restraint"
+  double ene = 0, totf2 = 0, cv, m, f;
+
+  for(unsigned int i = 0; i < ncvs_; ++i) {
+    cv = difference(i, center_[i], getArgument(i));
+    m = current_coupling_[i];
+    f = -m;
+    ene += m*cv;
+    setOutputForce(i,f);
+    totf2 += f*f;
+  }
+
+  setBias(ene);
+  value_force2_->set(totf2);
+
+
+}
+
+void EDS::update_statistics()  {
+  double s;
+  double N = fmax(1,update_calls_);
+  std::vector<double> deltas(ncvs_);
+  //Welford, West, and Hanso online variance method
+  for(unsigned int i = 0; i < ncvs_; ++i)  {
+    deltas[i] = difference(i,means_[i],getArgument(i));
+    means_[i] += deltas[i]/N;
+    if(!b_covar_ && !b_lm_)
+      ssds_[i] += deltas[i]*difference(i,means_[i],getArgument(i));
+  }
+  if(b_covar_ || b_lm_) {
+    for(unsigned int i = 0; i < ncvs_; ++i) {
+      for(unsigned int j = i; j < ncvs_; ++j) {
+        s = (N - 1) * deltas[i] * deltas[j] / N / N - covar_(i,j) / N;
+        covar_(i,j) += s;
+        //do this so we don't double count
+        covar_(j,i) = covar_(i,j);
+      }
+    }
+  }
+  if(b_virial_)
+    update_pseudo_virial();
+}
+
+void EDS::reset_statistics() {
+  for(unsigned int i = 0; i < ncvs_; ++i)  {
+    means_[i] = 0;
+    if(!b_covar_ && !b_lm_)
+      ssds_[i] = 0;
+  }
+  if(b_covar_ || b_lm_)
+    for(unsigned int i = 0; i < ncvs_; ++i)
+      for(unsigned int j = 0; j < ncvs_; ++j)
+        covar_(i,j) = 0;
+  if(b_virial_) {
+    for(unsigned int i = 0; i < ncvs_; ++i)
+      pseudo_virial_[i] = 0;
+    pseudo_virial_sum_ = 0;
+  }
+}
+
+void EDS::calc_lm_step_size() {
+  //calulcate step size
+  //uses scale here, which by default is center
+
+  mult(covar_,covar_,covar2_);
+  for(unsigned int i = 0; i< ncvs_; ++i) {
+    differences_[i] = difference(i, center_[i], means_[i]);
+    covar2_[i][i]+=lm_mixing_par_*covar2_[i][i];
+  }
+
+// "step_size_vec" = 2*inv(covar*covar+ lambda diag(covar*covar))*covar*(mean-center)
+  mult(covar_,differences_,alpha_vector_);
+  Invert(covar2_,lm_inv_);
+  mult(lm_inv_,alpha_vector_,alpha_vector_2_);
+
+  for(unsigned int i = 0; i< ncvs_; ++i) {
+    step_size_[i] = 2 * alpha_vector_2_[i] / kbt_ / scale_[i];
+  }
+
+}
+
+void EDS::calc_covar_step_size() {
+  //calulcate step size
+  //uses scale here, which by default is center
+  double tmp;
+  for(unsigned int i = 0; i< ncvs_; ++i) {
+    tmp = 0;
+    for(unsigned int j = 0; j < ncvs_; ++j)
+      tmp += difference(i, center_[i], means_[i]) * covar_(i,j);
+    step_size_[i] = 2 * tmp / kbt_ / scale_[i] * update_calls_ / fmax(1,update_calls_ - 1);
+  }
+
+}
+
+void EDS::calc_ssd_step_size() {
+  double tmp;
+  for(unsigned int i = 0; i< ncvs_; ++i) {
+    tmp = 2. * difference(i, center_[i], means_[i]) * ssds_[i] / fmax(1,update_calls_ - 1);
+    step_size_[i] = tmp / kbt_/scale_[i];
+  }
+}
+
+void EDS::update_pseudo_virial() {
+  //We want to compute the bias force on each atom times the position
+  // of the atoms.
+  double p, netp = 0, netpv = 0;
+  double volume = 0;
+  for(unsigned int i = 0; i < ncvs_; ++i) {
+    //checked in setup to ensure this cast is valid.
+    ActionAtomistic* cv = dynamic_cast<ActionAtomistic*> (getPntrToArgument(i)->getPntrToAction());
+    Tensor &v(cv->modifyVirial());
+    Tensor box(cv->getBox());
+    const unsigned int natoms=cv->getNumberOfAtoms();
+    if(!volume)
+      volume = box.determinant();
+
+    //pressure contribution is -dBias / dV
+    //dBias / dV = alpha / w * dCV / dV
+    //to get partial of CV wrt to volume
+    //dCV/dV = sum dCV/dvij * vij / V
+    //where vij is box element
+    //add diagonal of virial tensor to get net pressure
+    //TODO: replace this with adjugate (Jacobi's Formula)   for non-orthorombic case(?)
+    p = v(0,0) * box(0,0) + v(1,1) * box(1,1) + v(2,2) * box(2,2);
+    p /= volume;
+
+    netp += p;
+
+    //now scale for correct units in EDS algorithm
+    p *= (volume) / (kbt_ * natoms);
+
+    //compute running mean of scaled
+    if(set_coupling_[i] != 0)
+      pseudo_virial_[i] = (p - pseudo_virial_[i]) / (fmax(1, update_calls_));
+    else
+      pseudo_virial_[i] = 0;
+    //update net pressure
+    netpv += pseudo_virial_[i];
+  }
+  //update pressure
+  value_pressure_->set( netp );
+  pseudo_virial_sum_ = netpv;
+}
+
+void EDS::update_bias()
+{
+  log.flush();
+  if (b_lm_)
+    calc_lm_step_size();
+  else if(b_covar_)
+    calc_covar_step_size();
+  else
+    calc_ssd_step_size();
+
+  for(unsigned int i = 0; i< ncvs_; ++i) {
+
+    //multidimesional stochastic step
+    if(ncvs_ == 1 || (rand_.RandU01() < (multi_prop_) ) ) {
+
+      if(b_virial_) {
+        //apply virial regularization
+        // P * dP/dcoupling
+        // coupling is already included in virial term due to plumed propogating from bias to forces
+        // thus we need to divide by it to get the derivative (since force is linear in coupling)
+        if(fabs(set_coupling_[i]) > 0.000000001) //my heuristic for if EDS has started to prevent / 0
+          //scale^2 here is to align units
+          step_size_[i] -= 2 * scale_[i] * scale_[i] * virial_scaling_ * pseudo_virial_sum_ * pseudo_virial_sum_ / set_coupling_[i];
+      }
+      std::cout << step_size_[i] << std::endl;
+      if(step_size_[i] == 0)
+        continue;
+
+      // clip gradient
+      step_size_[i] = copysign(fmin(fabs(step_size_[i]), max_coupling_grad_[i]), step_size_[i]);
+      coupling_accum_[i] += step_size_[i] * step_size_[i];
+
+      std::cout << step_size_[i] <<  " " << coupling_accum_[i] << std::endl;
+      //equation 5 in White and Voth, JCTC 2014
+      //no negative sign because it's in step_size
+      set_coupling_[i] += step_size_[i] * max_coupling_range_[i] / sqrt(coupling_accum_[i]);
+      coupling_rate_[i] = (set_coupling_[i]-current_coupling_[i]) / update_period_;
+
+    } else {
+      //do not change the bias
+      coupling_rate_[i] = 0;
+    }
+  }
+
+  //reset means/vars
+  reset_statistics();
+}
+
+
+
+void EDS::update() {
   //adjust parameters according to EDS recipe
   update_calls_++;
 
+  //if we aren't wating for the bias to equilibrate, set flag to collect data
+  //want statistics before writing restart
+  if(!b_equil_ && update_period_ > 0)
+    update_statistics();
+
+  //write restart with correct statistics before bias update
   //check if we're ramping or doing normal updates and then restart if needed. The ramping check
   //is complicated because we could be frozen, finished ramping or not ramping.
   //The + 2 is so we have an extra line showing that the bias isn't changing (for my sanity and yours)
@@ -602,8 +908,6 @@ void EDS::calculate() {
   int b_finished_equil_flag = 1;
 
   //assume forces already applied and saved
-
-
   //are we ramping to a constant value and not done equilibrating?
   if(update_period_ < 0) {
     if(update_calls_ <= fabs(update_period_) && !b_freeze_) {
@@ -615,10 +919,7 @@ void EDS::calculate() {
   } else if(update_period_ == 0) { //do we have a no-update case?
     //not updating
     //pass
-  } else if(!b_equil_) {
-    //if we aren't wating for the bias to equilibrate, collect data
-    update_statistics();
-  } else {
+  } else if(b_equil_) {
     // equilibrating
     //check if we've reached the setpoint
     for(unsigned int i = 0; i < ncvs_; ++i) {
@@ -628,16 +929,6 @@ void EDS::calculate() {
       else {
         current_coupling_[i] += coupling_rate_[i];
         b_finished_equil_flag = 0;
-      }
-    }
-  }
-
-  //Update max coupling range if not hard
-  if(!b_hard_c_range_) {
-    for(unsigned int i = 0; i < ncvs_; ++i) {
-      if(fabs(current_coupling_[i])>max_coupling_range_[i]) {
-        max_coupling_range_[i]*=c_range_increase_f_;
-        max_coupling_grad_[i]*=c_range_increase_f_;
       }
     }
   }
@@ -660,116 +951,7 @@ void EDS::calculate() {
   for(unsigned int i = 0; i<ncvs_; ++i) {
     out_coupling_[i]->set(current_coupling_[i]);
   }
-}
 
-void EDS::apply_bias() {
-  //Compute linear force as in "restraint"
-  double ene = 0, totf2 = 0, cv, m, f;
-
-  for(unsigned int i = 0; i < ncvs_; ++i) {
-    cv = difference(i, center_[i], getArgument(i));
-    m = current_coupling_[i];
-    f = -m;
-    ene += m*cv;
-    setOutputForce(i,f);
-    totf2 += f*f;
-  };
-
-  setBias(ene);
-  value_force2_->set(totf2);
-
-}
-
-void EDS::update_statistics()  {
-  double s;
-  std::vector<double> deltas(ncvs_);
-  //Welford, West, and Hanso online variance method
-  for(unsigned int i = 0; i < ncvs_; ++i)  {
-    deltas[i] = difference(i,means_[i],getArgument(i));
-    means_[i] += deltas[i]/update_calls_;
-    if(!b_covar_)
-      ssds_[i] += deltas[i]*difference(i,means_[i],getArgument(i));
-  }
-  if(b_covar_) {
-    for(unsigned int i = 0; i < ncvs_; ++i) {
-      for(unsigned int j = i; j < ncvs_; ++j) {
-        s = (update_calls_ - 1) * deltas[i] * deltas[j] / update_calls_ / update_calls_ - covar_(i,j) / update_calls_;
-        covar_(i,j) += s;
-        //do this so we don't double count
-        covar_(j,i) = covar_(i,j);
-      }
-    }
-  }
-}
-
-void EDS::reset_statistics() {
-  for(unsigned int i = 0; i < ncvs_; ++i)  {
-    means_[i] = 0;
-    if(!b_covar_)
-      ssds_[i] = 0;
-  }
-  if(b_covar_)
-    for(unsigned int i = 0; i < ncvs_; ++i)
-      for(unsigned int j = 0; j < ncvs_; ++j)
-        covar_(i,j) = 0;
-}
-
-void EDS::calc_covar_step_size() {
-  //calulcate step size
-  //uses scale here, which by default is center
-  double tmp;
-  for(unsigned int i = 0; i< ncvs_; ++i) {
-    tmp = 0;
-    for(unsigned int j = 0; j < ncvs_; ++j)
-      tmp += difference(i, means_[i], center_[i]) * covar_(i,j);
-    step_size_[i] = 2 * tmp / kbt_ / scale_[i] * update_calls_ / (update_calls_ - 1);
-  }
-
-}
-
-void EDS::calc_ssd_step_size() {
-  double tmp;
-  for(unsigned int i = 0; i< ncvs_; ++i) {
-    tmp = 2. * difference(i, means_[i], center_[i]) * ssds_[i] / (update_calls_ - 1);
-    step_size_[i] = tmp / kbt_/scale_[i];
-  }
-}
-
-void EDS::update_bias()
-{
-  if(b_covar_)
-    calc_covar_step_size();
-  else
-    calc_ssd_step_size();
-
-  for(unsigned int i = 0; i< ncvs_; ++i) {
-
-    //check if the step_size exceeds maximum possible gradient
-    step_size_[i] = copysign(fmin(fabs(step_size_[i]), max_coupling_grad_[i]), step_size_[i]);
-
-    //reset means/vars
-    reset_statistics();
-
-    //multidimesional stochastic step
-    if(ncvs_ == 1 || (rand_.RandU01() < (multi_prop_) ) ) {
-      coupling_accum_[i] += step_size_[i] * step_size_[i];
-
-      //equation 5 in White and Voth, JCTC 2014
-      //no negative sign because it's in step_size
-      set_coupling_[i] += max_coupling_range_[i]/sqrt(coupling_accum_[i])*step_size_[i];
-      coupling_rate_[i] = (set_coupling_[i]-current_coupling_[i])/update_period_;
-
-    } else {
-      //do not change the bias
-      coupling_rate_[i] = 0;
-    }
-  }
-}
-
-
-
-void EDS::update() {
-  //pass
 }
 
 EDS::~EDS() {

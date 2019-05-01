@@ -1,0 +1,5 @@
+type=driver
+plumed_modules=eds
+arg="--plumed plumed.dat --ixyz trajectory.xyz"
+extra_files="../../trajectories/trajectory.xyz"
+

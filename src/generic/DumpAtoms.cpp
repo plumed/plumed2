@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,6 +28,7 @@
 #include "core/Atoms.h"
 #include "tools/Units.h"
 #include <cstdio>
+#include <memory>
 #include "core/SetupMolInfo.h"
 #include "core/ActionSet.h"
 
@@ -48,7 +49,7 @@ namespace generic {
 Dump selected atoms on a file.
 
 This command can be used to output the positions of a particular set of atoms.
-The atoms required are ouput in a xyz or gro formatted file.
+The atoms required are output in a xyz or gro formatted file.
 If PLUMED has been compiled with xdrfile support, then also xtc and trr files can be written.
 To this aim one should install xdrfile library (http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library).
 If the xdrfile library is installed properly the PLUMED configure script should be able to
@@ -81,7 +82,7 @@ following input
 COM ATOMS=11-20 LABEL=c1
 DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1 UNITS=A
 \endplumedfile
-As an alternative, you might want to set all the lentght used by PLUMED to Angstrom using the \ref UNITS
+As an alternative, you might want to set all the length used by PLUMED to Angstrom using the \ref UNITS
 action. However, this latter choice will affect all your input and output.
 
 The following input is very similar but dumps a .gro (gromacs) file,
@@ -178,11 +179,7 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   if(file.length()==0) error("name out output file was not specified");
   type=Tools::extension(file);
   log<<"  file name "<<file<<"\n";
-  if(type=="gro" || type=="xyz"
-#ifdef __PLUMED_HAS_XDRFILE
-      || type=="xtc" || type=="trr"
-#endif
-    ) {
+  if(type=="gro" || type=="xyz" || type=="xtc" || type=="trr") {
     log<<"  file extension indicates a "<<type<<" file\n";
   } else {
     log<<"  file extension not detected, assuming xyz\n";
@@ -191,14 +188,14 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   string ntype;
   parse("TYPE",ntype);
   if(ntype.length()>0) {
-    if(ntype!="xyz" && ntype!="gro"
-#ifdef __PLUMED_HAS_XDRFILE
-        && ntype!="xtc" && ntype!="trr"
-#endif
+    if(ntype!="xyz" && ntype!="gro" && ntype!="xtc" && ntype!="trr"
       ) error("TYPE cannot be understood");
     log<<"  file type enforced to be "<<ntype<<"\n";
     type=ntype;
   }
+#ifndef __PLUMED_HAS_XDRFILE
+  if(type=="xtc" || type=="trr") error("types xtc and trr require PLUMED to be linked with the xdrfile library. Please install it and recompile PLUMED.");
+#endif
 
   fmt_gro_pos="%8.3f";
   fmt_gro_box="%12.7f";
@@ -308,16 +305,13 @@ void DumpAtoms::update() {
     float time=getTime()/plumed.getAtoms().getUnits().getTime();
     float precision=Tools::fastpow(10.0,iprecision);
     for(int i=0; i<3; i++) for(int j=0; j<3; j++) box[i][j]=lenunit*t(i,j);
-    rvec* pos=new rvec [natoms];
-// Notice that code below cannot throw any exception.
-// Thus, this pointer is excepton safe
+    std::unique_ptr<rvec[]> pos(new rvec [natoms]);
     for(int i=0; i<natoms; i++) for(int j=0; j<3; j++) pos[i][j]=lenunit*getPosition(i)(j);
     if(type=="xtc") {
       write_xtc(xd,natoms,step,time,box,&pos[0],precision);
     } else if(type=="trr") {
       write_trr(xd,natoms,step,time,0.0,box,&pos[0],NULL,NULL);
     }
-    delete [] pos;
 #endif
   } else plumed_merror("unknown file type "+type);
 }

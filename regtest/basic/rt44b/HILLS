@@ -1,5 +1,6 @@
 #! FIELDS time phi psi.x sigma_phi sigma_psi.x height biasf
 #! SET multivariate false
+#! SET kerneltype gaussian
 #! SET min_phi -pi
 #! SET max_phi pi
 #! SET min_psi.x -pi

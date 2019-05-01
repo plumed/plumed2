@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #define __PLUMED_core_ActionSet_h
 
 #include "Action.h"
+#include <memory>
 
 namespace PLMD {
 
@@ -36,7 +37,7 @@ class PlumedMain;
 /// Finally, since it holds pointers, there is a clearDelete() function
 /// which deletes the pointers before deleting the vector
 class ActionSet:
-  public std::vector<Action*>
+  public std::vector<std::unique_ptr<Action>>
 {
   PlumedMain& plumed;
 public:
@@ -61,8 +62,12 @@ public:
   template <class T>
   T selectWithLabel(const std::string&s)const;
 /// get the labels in the list of actions in form of a string (useful to debug)
+/// Only classes that can be dynamic casted to T are reported
+  template <class T>
   std::string getLabelList() const;
 /// get the labels in the form of a vector of strings
+/// Only classes that can be dynamic casted to T are reported
+  template <class T>
   std::vector<std::string> getLabelVector() const;
 };
 
@@ -73,7 +78,7 @@ template <class T>
 std::vector<T> ActionSet::select()const {
   std::vector<T> ret;
   for(const auto & p : (*this)) {
-    T t=dynamic_cast<T>(p);
+    T t=dynamic_cast<T>(p.get());
     if(t) ret.push_back(t);
   };
   return ret;
@@ -82,7 +87,7 @@ std::vector<T> ActionSet::select()const {
 template <class T>
 T ActionSet::selectWithLabel(const std::string&s)const {
   for(const auto & p : (*this)) {
-    T t=dynamic_cast<T>(p);
+    T t=dynamic_cast<T>(p.get());
     if(t && dynamic_cast<Action*>(t)->getLabel()==s) return t;
   };
   return NULL;
@@ -93,10 +98,31 @@ std::vector<Action*> ActionSet::selectNot()const {
   std::vector<Action*> ret;
   for(const auto & p : (*this)) {
     T t=dynamic_cast<T>(p);
-    if(!t) ret.push_back(p);
+    if(!t) ret.push_back(p.get());
   };
   return ret;
 }
+
+template <class T>
+std::string ActionSet::getLabelList() const {
+  std::string outlist;
+  for(const auto & p : (*this)) {
+    if(dynamic_cast<T>(p.get())) outlist+=p->getLabel()+" ";
+  };
+  return  outlist;
+}
+
+
+template <class T>
+std::vector<std::string> ActionSet::getLabelVector() const {
+  std::vector<std::string> outlist;
+  for(const auto & p : (*this)) {
+    if(dynamic_cast<T>(p.get())) outlist.push_back(p->getLabel());
+  };
+  return  outlist;
+}
+
+
 
 }
 

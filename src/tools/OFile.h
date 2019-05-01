@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,6 +25,7 @@
 #include "FileBase.h"
 #include <vector>
 #include <sstream>
+#include <memory>
 
 namespace PLMD {
 
@@ -53,7 +54,6 @@ int main(){
   pof.printField("x1",10.0).printField("x3",-1e70*20.12345678901234567890).printField();
   pof.printField("x3",10.0).printField("x2",777.0).printField("x1",-1e70*20.12345678901234567890).printField();
   pof.printField("x3",67.0).printField("x1",18.0).printField();
-  pof.close();
   return 0;
 }
 \endverbatim
@@ -136,10 +136,13 @@ int main(){
 // rarely to avoid excessive slow down
 
   }
-
-  snp.close();
-  grw.close();
 }
+
+\notice
+Notice that it is not necessary to explicitely close files, since they are closed implicitely
+when the object goes out of scope. In case you need to explicitly close the file before it is
+destroyed, please check it the procedure is exception safe and, if necessary, add some `try/catch`
+statement.
 
 \endverbatim
 */
@@ -150,13 +153,13 @@ class OFile:
 /// see link(OFile&)
   OFile* linked;
 /// Internal buffer for printf
-  char* buffer_string;
+  std::unique_ptr<char[]> buffer_string;
 /// Internal buffer (generic use)
-  char* buffer;
+  std::unique_ptr<char[]> buffer;
 /// Internal buffer length
   int buflen;
 /// This variables stores the actual buffer length
-  unsigned actual_buffer_length;
+  int actual_buffer_length;
 /// Class identifying a single field for fielded output
   class Field:
     public FieldBase {
@@ -192,8 +195,6 @@ class OFile:
 public:
 /// Constructor
   OFile();
-/// Destructor
-  ~OFile();
 /// Allows overloading of link
   using FileBase::link;
 /// Allows overloading of open
@@ -214,7 +215,7 @@ public:
 /// bck.0.analysis.1.<filename> and bck.0.<filename>
   void backupAllFiles( const std::string& str );
 /// Opens the file using automatic append/backup
-  OFile& open(const std::string&name);
+  OFile& open(const std::string&name) override;
 /// Set the prefix for output.
 /// Typically "PLUMED: ". Notice that lines with a prefix cannot
 /// be parsed using fields in a IFile.
@@ -256,7 +257,7 @@ public:
 /// Rewind a file
   OFile&rewind();
 /// Flush a file
-  virtual FileBase&flush();
+  FileBase&flush() override;
 /// Enforce restart, also if the attached plumed object is not restarting.
 /// Useful for tests
   OFile&enforceRestart();

@@ -1,3 +1,7 @@
 type=driver
-arg="--plumed plumed.dat --trajectory-stride 1 --timestep 0.005 --igro traj_3dec.gro "
-extra_files="../../trajectories/grofiles/traj_3dec.gro ../../trajectories/grofiles/sugar.dat "
+# traj broken.gro has been obtained doing:
+# f: FIXEDATOM AT=0,0,0
+# WRAPAROUND ATOMS=1-24 AROUND=f
+# DUMPATOMS ATOMS=1-24 FILE=broken.gro
+# in order to test pbc reconstruction in PATHMSD
+arg="--plumed plumed.dat --trajectory-stride 1 --timestep 0.005 --igro broken.gro"

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,87 +22,70 @@
 #ifndef __PLUMED_analysis_LandmarkSelectionBase_h
 #define __PLUMED_analysis_LandmarkSelectionBase_h
 
-#include "reference/ReferenceConfiguration.h"
-#include "AnalysisWithLandmarks.h"
+#include "AnalysisBase.h"
 
 namespace PLMD {
 namespace analysis {
 
-class LandmarkSelectionOptions {
-  friend class LandmarkRegister;
-  friend class LandmarkSelectionBase;
+class LandmarkSelectionBase : public AnalysisBase {
+  friend class ReselectLandmarks;
 private:
-  std::vector<std::string> words;
-  AnalysisWithLandmarks* action;
-public:
-  LandmarkSelectionOptions( const std::vector<std::string>& input, AnalysisWithLandmarks* myanalysis );
-};
-
-class LandmarkSelectionBase {
-  friend class AnalysisWithLandmarks;
-  friend class CopyAllFrames;
-private:
-/// Name of the method we are using for landmark selection
-  std::string style;
 /// The number of landmarks we are selecting
   unsigned nlandmarks;
-/// The input to the landmark selection object
-  std::vector<std::string> input;
-/// A pointer to the underlying action
-  AnalysisWithLandmarks* action;
+/// The weights of the landmark points
+  std::vector<double> lweights;
+/// The indices of the landmarks in the original data set
+  std::vector<unsigned> landmark_indices;
 /// How do we treat weights
   bool novoronoi, noweights;
 protected:
-/// Return the numbe of landmarks
-  unsigned getNumberOfLandmarks() const ;
-/// Return the communicator
-  Communicator& getCommunicator();
-/// Read a keywords from the input
-  template <class T>
-  void parse(const std::string&,T& );
-/// Read a flag from the input
-  void parseFlag(const std::string& key, bool& t);
-/// Get the number of frames in the underlying action
-  unsigned getNumberOfFrames() const;
-/// Get the weight of the ith frame
-  double getWeightOfFrame( const unsigned& );
-/// Calculate the distance between the ith and jth frames
-  double getDistanceBetweenFrames( const unsigned&, const unsigned&  );
 /// Transfer frame i in the underlying action to the object we are going to analyze
-  void selectFrame( const unsigned&, MultiReferenceBase* );
+  void selectFrame( const unsigned& );
+/// Do a voronoi analysis
+  void voronoiAnalysis( const std::vector<unsigned>& myindices, std::vector<double>& lweights, std::vector<unsigned>& assignments ) const ;
 public:
-  explicit LandmarkSelectionBase( const LandmarkSelectionOptions& lo );
-  virtual ~LandmarkSelectionBase();
-/// Check everything was read in
-  void checkRead() const ;
-/// Return a description of the landmark selection protocol
-  std::string description();
-/// Overwrite this to have a more descriptive output
-  virtual std::string rest_of_description() { return ""; };
-/// Actually do landmark selection
-  void selectLandmarks( MultiReferenceBase* );
-  virtual void select( MultiReferenceBase* )=0;
+  static void registerKeywords( Keywords& keys );
+  LandmarkSelectionBase( const ActionOptions& ao );
+/// Return the number of data points
+  unsigned getNumberOfDataPoints() const ;
+/// Return the index of the data point in the base class
+  unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
+/// Get the weight
+  double getWeight( const unsigned& idata );
+/// Get a reference configuration
+  DataCollectionObject& getStoredData( const unsigned& idat, const bool& calcdist );
+/// Select landmark configurations
+  void performAnalysis();
+  virtual void selectLandmarks()=0;
+/// Get the squared dissimilarity between two reference configurations
+  double getDissimilarity( const unsigned& i, const unsigned& j );
+/// This does nothing - it just ensures the final class is not abstract
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 };
 
 inline
-unsigned LandmarkSelectionBase::getNumberOfLandmarks() const {
+unsigned LandmarkSelectionBase::getNumberOfDataPoints() const {
   return nlandmarks;
 }
 
 inline
-Communicator& LandmarkSelectionBase::getCommunicator() {
-  return action->comm;
+unsigned LandmarkSelectionBase::getDataPointIndexInBase( const unsigned& idata ) const {
+  return AnalysisBase::getDataPointIndexInBase( landmark_indices[idata] );
 }
 
 inline
-unsigned LandmarkSelectionBase::getNumberOfFrames() const {
-  return action->getNumberOfDataPoints();
+double LandmarkSelectionBase::getWeight( const unsigned& idata ) {
+  return lweights[idata];
 }
 
-template <class T>
-void LandmarkSelectionBase::parse( const std::string& key, T& t ) {
-  bool found=Tools::parse(input,key,t);
-  if(!found) plumed_merror("landmark seleciton style " + style + " requires " + key + " keyword");
+inline
+DataCollectionObject& LandmarkSelectionBase::getStoredData( const unsigned& idat, const bool& calcdist ) {
+  return AnalysisBase::getStoredData( landmark_indices[idat], calcdist );
+}
+
+inline
+double LandmarkSelectionBase::getDissimilarity( const unsigned& i, const unsigned& j ) {
+  return AnalysisBase::getDissimilarity( landmark_indices[i], landmark_indices[j] );
 }
 
 }

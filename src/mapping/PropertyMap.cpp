@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 /*
 Property maps but with a more flexible framework for the distance metric being used.
 
-This colvar calculates a property map using the formalism developed by Spiwork \cite Spiwok:2011ce.
+This colvar calculates a property map using the formalism developed by Spiwok \cite Spiwok:2011ce.
 In essence if you have the value of some property, \f$X_i\f$, that it takes at a set of high-dimensional
 positions then you calculate the value of the property at some arbitrary point in the high-dimensional space
 using:
@@ -36,8 +36,8 @@ X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))}
 \f]
 
 Within PLUMED there are multiple ways to define the distance from a high-dimensional configuration, \f$D_i\f$.  You could calculate
-the RMSD distance or you could calculate the ammount by which a set of collective variables change.  As such this implementation
-of the propertymap allows one to use all the different distance metric that are discussed in \ref dists. This is as opposed to
+the RMSD distance or you could calculate the amount by which a set of collective variables change.  As such this implementation
+of the property map allows one to use all the different distance metric that are discussed in \ref dists. This is as opposed to
 the alternative implementation \ref PROPERTYMAP which is a bit faster but which only allows one to use the RMSD distance.
 
 \par Examples
@@ -117,9 +117,8 @@ PropertyMap::PropertyMap(const ActionOptions& ao):
 
   std::string empty;
   if(!nos) {
-    for(unsigned i=0; i<getNumberOfProperties(); ++i) {
-      empty="LABEL="+getPropertyName(i);
-      addVessel( "SPATH", empty, 0 );
+    for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end(); ++it) {
+      empty="LABEL="+it->first; addVessel( "SPATH", empty, 0 );
     }
   }
   readVesselKeywords();

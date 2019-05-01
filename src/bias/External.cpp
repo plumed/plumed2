@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,6 +24,7 @@
 #include "tools/Grid.h"
 #include "tools/Exception.h"
 #include "tools/File.h"
+#include <memory>
 
 
 using namespace std;
@@ -37,6 +38,7 @@ namespace bias {
 Calculate a restraint that is defined on a grid that is read during start up
 
 \par Examples
+
 The following is an input for a calculation with an external potential that is
 defined in the file bias.dat and that acts on the distance between atoms 3 and 5.
 \plumedfile
@@ -54,8 +56,7 @@ The header in the file bias.dat should read:
 \endverbatim
 
 This should then be followed by the value of the potential and its derivative
-at 100 equally spaced points along the distance between 0 and 1. If you run
-with NOSPLINE you do not need to provide derivative information.
+at 100 equally spaced points along the distance between 0 and 1.
 
 You can also include grids that are a function of more than one collective
 variable.  For instance the following would be the input for an external
@@ -84,8 +85,8 @@ value of t1 (the value in the first column) is kept fixed and the value of
 the function is given at 100 equally spaced values for t2 between \f$-pi\f$ and \f$+pi\f$.  In the
 second block of data t1 is fixed at \f$-pi + \frac{2pi}{100}\f$ and the value of the function is
 given at 100 equally spaced values for t2 between \f$-pi\f$ and \f$+pi\f$. In the third block of
-data the same is done but t1 is fixed at \f$-pi + \frac{4pi}{100}\f$ and so on untill you get to
-the 100th block of data where t1 is fixed at \f$+pi\f$.
+data the same is done but t1 is fixed at \f$-pi + \frac{4pi}{100}\f$ and so on until you get to
+the one hundredth block of data where t1 is fixed at \f$+pi\f$.
 
 Please note the order that the order of arguments in the plumed.dat file must be the same as
 the order of arguments in the header of the grid file.
@@ -95,11 +96,11 @@ the order of arguments in the header of the grid file.
 class External : public Bias {
 
 private:
-  Grid* BiasGrid_;
+  std::unique_ptr<Grid> BiasGrid_;
+  double scale_;
 
 public:
   explicit External(const ActionOptions&);
-  ~External();
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -112,15 +113,11 @@ void External::registerKeywords(Keywords& keys) {
   keys.add("compulsory","FILE","the name of the file containing the external potential.");
   keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
   keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
-}
-
-External::~External() {
-  delete BiasGrid_;
+  keys.add("compulsory","SCALE","1.0","a factor that multiplies the external potential, useful to invert free energies");
 }
 
 External::External(const ActionOptions& ao):
-  PLUMED_BIAS_INIT(ao),
-  BiasGrid_(NULL)
+  PLUMED_BIAS_INIT(ao)
 {
   string filename;
   parse("FILE",filename);
@@ -130,10 +127,12 @@ External::External(const ActionOptions& ao):
   bool nospline=false;
   parseFlag("NOSPLINE",nospline);
   bool spline=!nospline;
+  parse("SCALE",scale_);
 
   checkRead();
 
   log.printf("  External potential from file %s\n",filename.c_str());
+  log.printf("  Multiplied by %lf\n",scale_);
   if(spline) {log.printf("  External potential uses spline interpolation\n");}
   if(sparsegrid) {log.printf("  External potential uses sparse grid\n");}
 
@@ -141,7 +140,6 @@ External::External(const ActionOptions& ao):
   IFile gridfile; gridfile.open(filename);
   std::string funcl=getLabel() + ".bias";
   BiasGrid_=Grid::create(funcl,getArguments(),gridfile,sparsegrid,spline,true);
-  gridfile.close();
   if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
@@ -155,12 +153,12 @@ void External::calculate()
 
   for(unsigned i=0; i<ncv; ++i) {cv[i]=getArgument(i);}
 
-  double ene=BiasGrid_->getValueAndDerivatives(cv,der);
+  double ene=scale_*BiasGrid_->getValueAndDerivatives(cv,der);
 
   setBias(ene);
 
   for(unsigned i=0; i<ncv; ++i) {
-    const double f=-der[i];
+    const double f=-scale_*der[i];
     setOutputForce(i,f);
   }
 }

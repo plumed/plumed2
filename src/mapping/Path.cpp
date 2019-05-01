@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -43,8 +43,8 @@ z = -\frac{1}{\lambda} \ln\left[ \sum_{i=1}^N \exp( -\lambda R[X - X_i] ) \right
 In these expressions \f$N\f$ high-dimensional frames (\f$X_i\f$) are used to describe the path in the high-dimensional
 space. The two expressions above are then functions of the distances from each of the high-dimensional frames \f$R[X - X_i]\f$.
 Within PLUMED there are multiple ways to define the distance from a high-dimensional configuration.  You could calculate
-the RMSD distance or you could calculate the ammount by which a set of collective variables change.  As such this implementation
-of the path cv allows one to use all the difference distance metrics that are discussed in \ref dists. This is as opposed to
+the RMSD distance or you could calculate the amount by which a set of collective variables change.  As such this implementation
+of the path CV allows one to use all the difference distance metrics that are discussed in \ref dists. This is as opposed to
 the alternative implementation of path (\ref PATHMSD) which is a bit faster but which only allows one to use the RMSD distance.
 
 The \f$s\f$ and \f$z\f$ variables are calculated using the above formulas by default.  However, there is an alternative method
@@ -80,7 +80,7 @@ PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 
 In the example below the path is defined using the values of two torsional angles (t1 and t2).
 In addition, the \f$s\f$ and \f$z\f$ are calculated using the geometric expressions described
-above rather than the alegebraic expressions that are used by default.
+above rather than the algebraic expressions that are used by default.
 
 \plumedfile
 t1: TORSION ATOMS=5,7,9,15
@@ -169,9 +169,6 @@ Path::Path(const ActionOptions& ao):
 
   std::string empty;
   if(!nos) {
-    if( getPropertyIndex("spath")!=0 || getNumberOfProperties()>1 ) {
-      error("paths only work when there is a single property called sss being calculated");
-    }
     if( getLambda()==0 ) error("you must set LAMBDA parameter in order to calculate spath position.  Use LAMBDA/NOSPATH keyword");
     empty="LABEL=spath";
     addVessel("SPATH",empty,0);

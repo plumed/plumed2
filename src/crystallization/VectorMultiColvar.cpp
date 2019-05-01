@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,6 +27,23 @@ namespace crystallization {
 
 void VectorMultiColvar::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
+  keys.setComponentsIntroduction("When the label of this action is used as the input for a second you are not referring to a scalar quantity as you are in "
+                                 "regular collective variables.  The label is used to reference the full set of vectors calculated by "
+                                 "the action.  This is usual when using \\ref multicolvarfunction. Generally when doing this the previously calculated "
+                                 "multicolvar will be referenced using the DATA keyword rather than ARG.\n\n"
+                                 "This Action can be used to calculate the following scalar quantities directly.  These quantities are calculated by "
+                                 "employing the keywords listed below. "
+                                 "These quantities can then be referenced elsewhere in the input file by using this Action's label "
+                                 "followed by a dot and the name of the quantity. All of them can be calculated multiple times "
+                                 "with different parameters.  In this case the quantities calculated can be referenced elsewhere in the "
+                                 "input by using the name of the quantity followed by a numerical identifier "
+                                 "e.g. <em>label</em>.lessthan-1, <em>label</em>.lessthan-2 etc.  When doing this and, for clarity we have "
+                                 "made it so that the user can set the label for the components. As such by using the LABEL keyword in the description of the keyword "
+                                 "input you can customize the component name.  In addition, you can calculate all of these scalar functions for "
+                                 "one particular component of the calculated vector by making use of the COMPONENT keyword.  The first component is used to "
+                                 "refer to the norm of the vector.  The individual components can then be referenced using the numbers 2, 3, and so on.  So "
+                                 "as an example MEAN1={COMPONENT=1} calculates the average vector norm.  MEAN2={COMPONENT=2} by contrast calculates the mean "
+                                 "for all of the first components of the vectors.");
 }
 
 VectorMultiColvar::VectorMultiColvar(const ActionOptions& ao):

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,19 +55,15 @@ Mapping::Mapping(const ActionOptions&ao):
   // Read the input
   std::string mtype; parse("TYPE",mtype);
   bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
-  // Setup the object that does the mapping
-  mymap = new PointWiseMapping( mtype, skipchecks );
 
   // Read the properties we require
+  bool ispath=false;
   if( keywords.exists("PROPERTY") ) {
-    std::vector<std::string> property;
-    parseVector("PROPERTY",property);
-    if(property.size()==0) error("no properties were specified");
-    mymap->setPropertyNames( property, false );
+    std::vector<std::string> propnames; parseVector("PROPERTY",propnames);
+    if(propnames.size()==0) error("no properties were specified");
+    for(unsigned i=0; i<propnames.size(); ++i) property.insert( std::pair<std::string,std::vector<double> >( propnames[i], std::vector<double>() ) );
   } else {
-    std::vector<std::string> property(1);
-    property[0]="spath";
-    mymap->setPropertyNames( property, true );
+    property.insert( std::pair<std::string,std::vector<double> >( "spath", std::vector<double>() ) ); ispath=true;
   }
 
   // Open reference file
@@ -76,35 +72,43 @@ Mapping::Mapping(const ActionOptions&ao):
   if(!fp) error("could not open reference file " + reference );
 
   // Read all reference configurations
-  bool do_read=true; std::vector<double> weights;
-  unsigned nfram=0, wnorm=0., ww;
+  bool do_read=true; unsigned nfram=0; double wnorm=0., ww;
   while (do_read) {
-    PDB mypdb;
     // Read the pdb file
-    do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+    PDB mypdb; do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+    // Break if we are done
+    if( !do_read ) break ;
+    // Check for required properties
+    if( !ispath ) {
+      double prop;
+      for(std::map<std::string,std::vector<double> >::iterator it=property.begin(); it!=property.end(); ++it) {
+        if( !mypdb.getArgumentValue( it->first, prop ) ) error("pdb input does not have contain property named " + it->first );
+        it->second.push_back(prop);
+      }
+    } else {
+      property.find("spath")->second.push_back( myframes.size()+1 );
+    }
     // Fix argument names
     expandArgKeywordInPDB( mypdb );
-    if(do_read) {
-      mymap->readFrame( mypdb ); ww=mymap->getWeight( nfram );
-      weights.push_back( ww );
-      wnorm+=ww; nfram++;
-    } else {
-      break;
-    }
+    // And read the frame
+    myframes.emplace_back( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
+    if( !mypdb.getArgumentValue( "WEIGHT", ww ) ) ww=1.0;
+    weights.push_back( ww ); wnorm+=ww; nfram++;
   }
   fclose(fp);
 
   if(nfram==0 ) error("no reference configurations were specified");
   log.printf("  found %u configurations in file %s\n",nfram,reference.c_str() );
-  for(unsigned i=0; i<weights.size(); ++i) weights[i] /= wnorm;
-  mymap->setWeights( weights );
+  for(unsigned i=0; i<weights.size(); ++i) weights[i] = weights[i]/wnorm;
 
   // Finish the setup of the mapping object
   // Get the arguments and atoms that are required
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
-  mymap->getAtomAndArgumentRequirements( atoms, args );
-  requestAtoms( atoms ); std::vector<Value*> req_args;
-  interpretArgumentList( args, req_args ); requestArguments( req_args );
+  for(unsigned i=0; i<myframes.size(); ++i) { myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
+  std::vector<Value*> req_args; interpretArgumentList( args, req_args );
+  if( req_args.size()>0 && atoms.size()>0 ) error("cannot mix atoms and arguments");
+  if( req_args.size()>0 ) requestArguments( req_args );
+  if( atoms.size()>0 ) requestAtoms( atoms );
   // Duplicate all frames (duplicates are used by sketch-map)
   // mymap->duplicateFrameList();
   // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
@@ -124,42 +128,6 @@ void Mapping::turnOnDerivatives() {
   needsDerivatives();
 }
 
-Mapping::~Mapping() {
-  delete mymap;
-}
-
-void Mapping::prepare() {
-  if( mymap->mappingNeedsSetup() ) {
-    // Get the arguments and atoms that are required
-    std::vector<AtomNumber> atoms; std::vector<std::string> args;
-    mymap->getAtomAndArgumentRequirements( atoms, args );
-    requestAtoms( atoms ); std::vector<Value*> req_args;
-    interpretArgumentList( args, req_args ); requestArguments( req_args );
-    // Duplicate all frames (duplicates are used by sketch-map)
-    //mymap->duplicateFrameList();
-    // Get the number of frames in the path
-    // unsigned nfram=getNumberOfReferencePoints();
-    // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
-    // plumed_assert( !mymap->mappingNeedsSetup() );
-    // Resize all derivative arrays
-    // mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
-    // Resize forces array
-    if( getNumberOfAtoms()>0 ) {
-      forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
-    } else {
-      forcesToApply.resize( getNumberOfArguments() );
-    }
-  }
-}
-
-unsigned Mapping::getPropertyIndex( const std::string& name ) const {
-  return mymap->getPropertyIndex( name );
-}
-
-void Mapping::setPropertyValue( const unsigned& iframe, const unsigned& jprop, const double& property ) {
-  mymap->setProjectionCoordinate( iframe, jprop, property );
-}
-
 double Mapping::getLambda() {
   plumed_merror("lambda is not defined in this mapping type");
 }
@@ -175,18 +143,19 @@ std::string Mapping::getArgumentName( unsigned& iarg ) {
 }
 
 void Mapping::finishPackSetup( const unsigned& ifunc, ReferenceValuePack& mypack ) const {
-  ReferenceConfiguration* myref=mymap->getFrame(ifunc); mypack.setValIndex(0);
-  unsigned nargs2=myref->getNumberOfReferenceArguments(); unsigned nat2=myref->getNumberOfReferencePositions();
+  mypack.setValIndex(0);
+  unsigned nargs2=myframes[ifunc]->getNumberOfReferenceArguments();
+  unsigned nat2=myframes[ifunc]->getNumberOfReferencePositions();
   if( mypack.getNumberOfAtoms()!=nat2 || mypack.getNumberOfArguments()!=nargs2 ) mypack.resize( nargs2, nat2 );
   if( nat2>0 ) {
-    ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myref ); plumed_dbg_assert( myat2 );
+    ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myframes[ifunc].get() ); plumed_dbg_assert( myat2 );
     for(unsigned i=0; i<nat2; ++i) mypack.setAtomIndex( i, myat2->getAtomIndex(i) );
   }
 }
 
 double Mapping::calculateDistanceFunction( const unsigned& ifunc, ReferenceValuePack& myder, const bool& squared ) const {
   // Calculate the distance
-  double dd = mymap->calcDistanceFromConfiguration( ifunc, getPositions(), getPbc(), getArguments(), myder, squared );
+  double dd = myframes[ifunc]->calculate( getPositions(), getPbc(), getArguments(), myder, squared );
   // Transform distance by whatever
   double df, ff=transformHD( dd, df ); myder.scaleAllDerivatives( df );
   // And the virial
@@ -199,7 +168,7 @@ double Mapping::calculateDistanceFunction( const unsigned& ifunc, ReferenceValue
 }
 
 ReferenceConfiguration* Mapping::getReferenceConfiguration( const unsigned& ifunc ) {
-  return mymap->getFrame( ifunc );
+  return myframes[ifunc].get();
 }
 
 void Mapping::calculateNumericalDerivatives( ActionWithValue* a ) {
@@ -208,11 +177,11 @@ void Mapping::calculateNumericalDerivatives( ActionWithValue* a ) {
   }
   if( getNumberOfAtoms()>0 ) {
     Matrix<double> save_derivatives( getNumberOfComponents(), getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) save_derivatives(j,i)=getPntrToComponent(j)->getDerivative(i);
     }
     calculateAtomicNumericalDerivatives( a, getNumberOfArguments() );
-    for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+    for(int j=0; j<getNumberOfComponents(); ++j) {
       for(unsigned i=0; i<getNumberOfArguments(); ++i) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
     }
   }

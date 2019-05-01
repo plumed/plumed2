@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,65 +32,100 @@
 #include <cstdio>
 #include <iostream>
 #include <algorithm>
+#include <memory>
+#include <unordered_map>
 
 using namespace std;
+
 namespace PLMD {
 
 CLToolMain::CLToolMain():
   argc(0),
   in(stdin),
-  out(stdout),
-  comm(*new Communicator)
+  out(stdout)
 {
 }
 
 CLToolMain::~CLToolMain() {
-  delete &comm;
+// empty destructor to delete unique_ptr
 }
 
 #define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"CLTool " + word + "\")");
 
 void CLToolMain::cmd(const std::string& word,void*val) {
-  if(false) {
-  } else if(word=="setArgc") {
-    CHECK_NULL(val,word);
-    argc=*static_cast<int*>(val);
-  } else if(word=="setArgv") {
-    CHECK_NULL(val,word);
-    char**v=static_cast<char**>(val);
-    for(int i=0; i<argc; ++i) argv.push_back(string(v[i]));
-  } else if(word=="setArgvLine") {
-    CHECK_NULL(val,word);
-    const char*v=static_cast<char*>(val);
-    argv=Tools::getWords(v);
-  } else if(word=="setIn") {
-    CHECK_NULL(val,word);
-    in=static_cast<FILE*>(val);
-  } else if(word=="setOut") {
-    CHECK_NULL(val,word);
-    out=static_cast<FILE*>(val);
-  } else if(word=="setMPIComm") {
-    comm.Set_comm(val);
-  } else if(word=="setMPIFComm") {
-    comm.Set_fcomm(val);
-  } else if(word=="run") {
-    CHECK_NULL(val,word);
-    argc=argv.size();
-    int n=0; for(int i=0; i<argc; ++i) n+=argv[i].length()+1;
-    std::vector<char> args(n);
-    std::vector<char*> v(argc);
-    char* ptr=&args[0];
-    for(int i=0; i<argc; ++i) {
-      v[i]=ptr;
-      for(unsigned c=0; c<argv[i].length(); ++c) {
-        *ptr=argv[i][c]; ptr++;
-      }
-      *ptr=0; ptr++;
-    }
-    int ret=run(argc,&v[0],in,out,comm);
-    *static_cast<int*>(val)=ret;
+
+// Enumerate all possible commands:
+  enum {
+#include "CLToolMainEnum.inc"
+  };
+
+// Static object (initialized once) containing the map of commands:
+  const static std::unordered_map<std::string, int> word_map = {
+#include "CLToolMainMap.inc"
+  };
+
+  std::vector<std::string> words=Tools::getWords(word);
+  unsigned nw=words.size();
+  if(nw==0) {
+    // do nothing
   } else {
-    plumed_merror("cannot interpret cmd(\"CLTool " + word + "\"). check plumed developers manual to see the available commands.");
+    int iword=-1;
+    char**v;
+    char*vv;
+    const auto it=word_map.find(words[0]);
+    if(it!=word_map.end()) iword=it->second;
+    switch(iword) {
+    case cmd_setArgc:
+      CHECK_NULL(val,word);
+      argc=*static_cast<int*>(val);
+      break;
+    case cmd_setArgv:
+      CHECK_NULL(val,word);
+      v=static_cast<char**>(val);
+      for(int i=0; i<argc; ++i) argv.push_back(string(v[i]));
+      break;
+    case cmd_setArgvLine:
+      CHECK_NULL(val,word);
+      vv=static_cast<char*>(val);
+      argv=Tools::getWords(vv);
+      break;
+    case cmd_setIn:
+      CHECK_NULL(val,word);
+      in=static_cast<FILE*>(val);
+      break;
+    case cmd_setOut:
+      CHECK_NULL(val,word);
+      out=static_cast<FILE*>(val);
+      break;
+    case cmd_setMPIComm:
+      comm.Set_comm(val);
+      break;
+    case cmd_setMPIFComm:
+      comm.Set_fcomm(val);
+      break;
+    case cmd_run:
+      CHECK_NULL(val,word);
+      argc=argv.size();
+      {
+        int n=0; for(int i=0; i<argc; ++i) n+=argv[i].length()+1;
+        std::vector<char> args(n);
+        std::vector<char*> vvv(argc);
+        char* ptr=&args[0];
+        for(int i=0; i<argc; ++i) {
+          vvv[i]=ptr;
+          for(unsigned c=0; c<argv[i].length(); ++c) {
+            *ptr=argv[i][c]; ptr++;
+          }
+          *ptr=0; ptr++;
+        }
+        int ret=run(argc,&vvv[0],in,out,comm);
+        *static_cast<int*>(val)=ret;
+      }
+      break;
+    default:
+      plumed_merror("cannot interpret cmd(\"CLTool " + word + "\"). check plumed developers manual to see the available commands.");
+      break;
+    }
   }
 }
 
@@ -121,8 +156,6 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     } else if(a=="--has-mpi") {
       if(Communicator::initialized()) return 0;
       else return 1;
-    } else if(a=="--has-matheval") {
-      return (config::hasMatheval()?0:1);
     } else if(a=="--has-cregex") {
       return (config::hasCregex()?0:1);
     } else if(a=="--has-dlopen") {
@@ -139,16 +172,10 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       return (config::isInstalled()?0:1);
     } else if(a=="--no-mpi") {
 // this is ignored, as it is parsed in main
-      if(i>1) {
-        fprintf(stderr,"--no-mpi option can only be used as the first option");
-        return 1;
-      }
+      continue;
     } else if(a=="--mpi") {
 // this is ignored, as it is parsed in main
-      if(i>1) {
-        fprintf(stderr,"--mpi option can only be used as the first option");
-        return 1;
-      }
+      continue;
     } else if(a=="--standalone-executable") {
       standalone_executable=true;
     } else if(Tools::startWith(a,"--load=")) {
@@ -202,17 +229,15 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       "  [help|-h|--help]          : to print this help\n"
       "  [--is-installed]          : fails if plumed is not installed\n"
       "  [--has-mpi]               : fails if plumed is running without MPI\n"
-      "  [--has-matheval]          : fails if plumed is compiled without matheval\n"
       "  [--has-dlopen]            : fails if plumed is compiled without dlopen\n"
       "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
       "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n"
       "Commands:\n";
     fprintf(out,"%s",msg.c_str());
     for(unsigned j=0; j<availableCxx.size(); ++j) {
-      CLTool *cl=cltoolRegister().create(CLToolOptions(availableCxx[j]));
+      auto cl=cltoolRegister().create(CLToolOptions(availableCxx[j]));
       plumed_assert(cl);
       string manual=availableCxx[j]+" : "+cl->description();
-      delete cl;
       fprintf(out,"  plumed %s\n", manual.c_str());
     }
     for(unsigned j=0; j<availableShell.size(); ++j) {
@@ -235,12 +260,11 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   string command(argv[i]);
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()) {
-    CLTool *cl=cltoolRegister().create(CLToolOptions(command));
+    auto cl=cltoolRegister().create(CLToolOptions(command));
     plumed_assert(cl);
     // Read the command line options (returns false if we are just printing help)
-    if( !cl->readInput( argc-i,&argv[i],in,out ) ) { delete cl; return 0; }
+    if( !cl->readInput( argc-i,&argv[i],in,out ) ) { return 0; }
     int ret=cl->main(in,out,pc);
-    delete cl;
     return ret;
   }
 

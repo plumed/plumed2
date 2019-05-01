@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -32,14 +32,14 @@ This action allows you to take a free energy surface that was calculated using t
 action and to convert it to a free energy surface.  This transformation performed by doing:
 
 \f[
-F(x) = -k_B T \ln H(x)\f$
+F(x) = -k_B T \ln H(x)
 \f]
 
 The free energy calculated on a grid is output by this action and can be printed using \ref DUMPGRID
 
 \par Examples
 
-This is a typical example showing how CONVERT_TO_FES might be used when postprocessing a trajectory.
+This is a typical example showing how CONVERT_TO_FES might be used when post processing a trajectory.
 The input below calculates the free energy as a function of the distance between atom 1 and atom 2.
 This is done by accumulating a histogram as a function of this distance using kernel density estimation
 and the HISTOGRAM action.  All the data within this trajectory is used in the construction of this
@@ -81,7 +81,7 @@ void ConvertToFES::registerKeywords( Keywords& keys ) {
   ActionWithInputGrid::registerKeywords( keys );
   keys.add("optional","TEMP","the temperature at which you are operating");
   keys.remove("STRIDE"); keys.remove("KERNEL"); keys.remove("BANDWIDTH");
-  keys.remove("LOGWEIGHTS"); keys.remove("CLEAR"); keys.remove("UNORMALIZED");
+  keys.remove("LOGWEIGHTS"); keys.remove("CLEAR"); keys.remove("NORMALIZATION");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
@@ -92,11 +92,11 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   plumed_assert( ingrid->getNumberOfComponents()==1 );
 
   // Create a grid
-  createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString() );
-  if( ingrid->noDerivatives() ) mygrid->setNoDerivatives();
+  auto grid=createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString() );
+  if( ingrid->noDerivatives() ) grid->setNoDerivatives();
   std::vector<double> fspacing;
-  mygrid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing);
-  setAveragingAction( mygrid, true );
+  grid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing);
+  setAveragingAction( std::move(grid), true );
 
   simtemp=0.; parse("TEMP",simtemp);
   if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();

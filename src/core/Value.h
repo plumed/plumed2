@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -141,6 +141,8 @@ public:
   ActionWithValue* getPntrToAction();
 /// Bring back one value into the correct pbc if needed, else give back the value
   double bringBackInPbc(double d1)const;
+/// Get the difference between max and minimum of domain
+  double getMaxMinusMin()const;
 /// This sets up the gradients
   void setGradients();
   static double projection(const Value&,const Value&);
@@ -292,12 +294,18 @@ double Value::difference(double d1,double d2)const {
 
 inline
 double Value::bringBackInPbc(double d1)const {
-  return difference(min+max_minus_min/2., d1);
+  return min+max_minus_min/2.+difference(min+max_minus_min/2., d1);
 }
 
 inline
 double Value::difference(double d)const {
   return difference(get(),d);
+}
+
+inline
+double Value::getMaxMinusMin()const {
+  plumed_dbg_assert( periodicity==periodic );
+  return max_minus_min;
 }
 
 }

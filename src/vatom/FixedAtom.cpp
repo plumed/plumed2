@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,8 +34,8 @@ namespace vatom {
 Add a virtual atom in a fixed position.
 
 This action creates a virtual atom at a fixed position.
-The coordinates can be specified in cartesian components (by default)
-or in scaled coordinats (SCALED_COMPONENTS).
+The coordinates can be specified in Cartesian components (by default)
+or in scaled coordinates (SCALED_COMPONENTS).
 It is also possible to assign a predefined charge or mass to the atom.
 
 \attention
@@ -64,7 +64,7 @@ and then compute the distance of one of its atom from the point
 \plumedfile
 FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=SIMPLE
 a: FIXEDATOM AT=10,20,30
-d: DISTANCE ARG=a,20
+d: DISTANCE ATOMS=a,20
 PRINT ARG=d FILE=colvar
 \endplumedfile
 

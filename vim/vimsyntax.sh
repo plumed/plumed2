@@ -216,13 +216,13 @@ for a in b:plumedActions
     elseif(b["menu"]=="(flag)")
       let string='"\v<' . b["word"] . '>"'
     endif
-    execute 'syntax match   plumedKeywords' . action_ . ' ' . string . ' contained contains=plumedStringInKeyword'
+    execute 'syntax match   plumedKeywords' . action_ . ' ' . string . ' contained contains=plumedStringInKeyword,plumedFillTodo'
   endfor
 
 " single line, with explicit LABEL
 " matching action at beginning of line, till the end of the line
 " can contain all the keywords associated with this action, plus strings, label, and comments
-execute 'syntax region plumedLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*' . action . '>/ excludenl end=/$/ contains=plumedComment,plumedKeywords' . action_ . ',plumedLabel,plumedStringOneline fold'
+execute 'syntax region plumedLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*' . action . '>/ excludenl end=/$/ contains=plumedComment,plumedKeywords' . action_ . ',plumedLabel,plumedStringOneline,plumedFillTodo fold'
 " multiple line, with explicit LABEL
 " first row might contain extra words before arriving at the dots
 " thus continuation dots are matched by plumedDots
@@ -230,12 +230,12 @@ execute 'syntax region plumedLine' . action_ . ' matchgroup=plumedAction' . acti
 " ends on dots, possibly followed by the same action name and possibly a comment
 " comments and initial dots are not part of the match
 " can contain all the keywords associated with this action, plus strings, label, and comments
-execute 'syntax region plumedCLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*' . action . '>(.+\.\.\.\s*(#.*)*$)@=/ end=/\v^\s*\.\.\.(\s+' . action . ')?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywords' . action_ . ',plumedLabel,plumedString,plumedDots fold'
+execute 'syntax region plumedCLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*' . action . '>(.+\.\.\.\s*(#.*)*$)@=/ end=/\v^\s*\.\.\.(\s+' . action . ')?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywords' . action_ . ',plumedLabel,plumedString,plumedDots,plumedFillTodo fold'
 " single line, with label: syntax
 " matching label followed by action
 " can contain all the keywords associated with this action, plus strings and comments
 " labels are not allwed
-execute 'syntax region plumedLLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*[^ #@][^ #]*:\s+' . action . '/ excludenl end=/$/ contains=plumedComment,plumedKeywords' . action_ . ',plumedStringOneline fold'
+execute 'syntax region plumedLLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*[^ #@][^ #]*:\s+' . action . '/ excludenl end=/$/ contains=plumedComment,plumedKeywords' . action_ . ',plumedStringOneline,plumedFillTodo fold'
 " multiple line, with label: syntax
 " first row might contain extra words before arriving at the dots
 " thus continuation dots are matched by plumedDots
@@ -243,7 +243,7 @@ execute 'syntax region plumedLLine' . action_ . ' matchgroup=plumedAction' . act
 " comments and dots are not part of the match
 " ends on dots, possibly followed by the same label and possibly a comment
 " comments and initial dots are not part of the match
-execute 'syntax region plumedLCLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*\z([^ #@][^ #]*\:)\s+' . action . '>(.+\.\.\.\s*(#.*)*$)@=/ end=/\v^\s*\.\.\.(\s+\z1)?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywords' . action_ . ',plumedString,plumedDots fold'
+execute 'syntax region plumedLCLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*\z([^ #@][^ #]*\:)\s+' . action . '>(.+\.\.\.\s*(#.*)*$)@=/ end=/\v^\s*\.\.\.(\s+\z1)?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywords' . action_ . ',plumedString,plumedDots,plumedFillTodo fold'
 " this is a hack required to match the ACTION when it is in the second line
 execute 'syntax match plumedSpecial' . action_ . ' /\v(\.\.\.\s*(#.*)*\_s*)@<=' . action . '>/ contained'
 execute 'highlight link plumedSpecial' . action_ . ' Type'
@@ -252,7 +252,7 @@ execute 'highlight link plumedSpecial' . action_ . ' Type'
 " matching label, dots, possibly comments, newline, then action name
 " comments, dots, and action are not part of the match
 " ends on dots possibly followed by the same label and possibly a comment
-execute 'syntax region plumedLCLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*\z([^ #@][^ #]*\:)\s+(\.\.\.\s*(#.*)*\_s*' . action . ')@=/ end=/\v^\s*\.\.\.(\s+\z1)?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywords' . action_ . ',plumedString,plumedSpecial' . action_ . ',plumedDots fold'
+execute 'syntax region plumedLCLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*\z([^ #@][^ #]*\:)\s+(\.\.\.\s*(#.*)*\_s*' . action . ')@=/ end=/\v^\s*\.\.\.(\s+\z1)?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywords' . action_ . ',plumedString,plumedSpecial' . action_ . ',plumedDots,plumedFillTodo fold'
 execute 'highlight link plumedAction' . action_ . ' Type'
 execute 'highlight link plumedKeywords' . action_ . ' Statement'
 endfor
@@ -266,12 +266,18 @@ syntax match   plumedStringInKeyword /\v(<[^ #]+\=)@<=[^ #]+/ contained
 highlight link plumedStringInKeyword String
 
 " Matching label
-syntax match   plumedLabel "\v<LABEL\=[^ #]*" contained contains=plumedLabelWrong
+syntax match   plumedLabel "\v<LABEL\=[^ #]*" contained contains=plumedLabelWrong,plumedFillTodo
 highlight link plumedLabel Type
 
 " Errors
 syntax match   plumedLabelWrong "\v<LABEL\=\@[^ #]*" contained
 highlight link plumedLabelWrong Error
+
+" Todo
+" This is used since the Trieste tutorials to indicate
+" parts that should be filled by the user
+syntax match   plumedFillTodo "__FILL__"
+highlight link plumedFillTodo Todo
 
 syntax region  plumedComment start="\v^\s*ENDPLUMED>" end="\%$" fold
 syntax match   plumedComment excludenl "\v#.*$"

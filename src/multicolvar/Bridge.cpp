@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -48,7 +48,7 @@ where the sum over \f$i\f$ is over all the ``bridging atoms" and
 \par Examples
 
 The following example instructs plumed to calculate the number of water molecules
-that are bridging betweeen atoms 1-10 and atoms 11-20 and to print the value
+that are bridging between atoms 1-10 and atoms 11-20 and to print the value
 to a file
 
 \plumedfile

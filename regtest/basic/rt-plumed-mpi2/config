@@ -1,0 +1,5 @@
+mpiprocs=6
+type=driver
+arg="--plumed=plumedx.dat --timestep=0.05 --ixyz trajectory.xyz --dump-forces ff --pdb test.pdb --multi 3
+     --debug-dd yes --debug-grex 2 --debug-grex-log log.grex"
+extra_files="../rt-mpi3/traj* ../rt-mpi3/ff*.reference ../rt-mpi3/deriv*reference"

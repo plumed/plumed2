@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -34,8 +34,7 @@ namespace multicolvar {
 //+PLUMEDOC MCOLVAR XDISTANCES
 /*
 Calculate the x components of the vectors connecting one or many pairs of atoms.
-You can then calculate functions of the distribution of
-values such as the minimum, the number less than a certain quantity and so on.
+You can then calculate functions of the distribution of values such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
 
@@ -81,8 +80,7 @@ PRINT ARG=d1.gt0.1
 //+PLUMEDOC MCOLVAR YDISTANCES
 /*
 Calculate the y components of the vectors connecting one or many pairs of atoms.
-You can then calculate functions of the distribution of
-values such as the minimum, the number less than a certain quantity and so on.
+You can then calculate functions of the distribution of values such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
 
@@ -129,8 +127,7 @@ PRINT ARG=d1.gt0.1
 //+PLUMEDOC MCOLVAR ZDISTANCES
 /*
 Calculate the z components of the vectors connecting one or many pairs of atoms.
-You can then calculate functions of the distribution of
-values such as the minimum, the number less than a certain quantity and so on.
+You can then calculate functions of the distribution of values such as the minimum, the number less than a certain quantity and so on.
 
 \par Examples
 
@@ -205,9 +202,9 @@ void XDistances::registerKeywords( Keywords& keys ) {
   keys.reset_style("ATOMS","atoms");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
-           "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+           "the atoms in GROUPB. This must be used in conjunction with GROUPB.");
   keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
-           "in GROUPB. This must be used in conjuction with GROUPA.");
+           "in GROUPB. This must be used in conjunction with GROUPA.");
 }
 
 XDistances::XDistances(const ActionOptions&ao):

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,9 +25,9 @@
 
 //+PLUMEDOC MCOLVAR Q6
 /*
-Calculate 6th order Steinhardt parameters.
+Calculate sixth order Steinhardt parameters.
 
-The 6th order Steinhardt parameters allow us to measure the degree to which the first coordination shell
+The sixth order Steinhardt parameters allow us to measure the degree to which the first coordination shell
 around an atom is ordered.  The Steinhardt parameter for atom, \f$i\f$ is complex vector whose components are
 calculated using the following formula:
 
@@ -35,7 +35,7 @@ calculated using the following formula:
 q_{6m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{6m}(\mathbf{r}_{ij}) }{\sum_j \sigma( r_{ij} ) }
 \f]
 
-where \f$Y_{6m}\f$ is one of the 6th order spherical harmonics so \f$m\f$ is a number that runs from \f$-6\f$ to
+where \f$Y_{6m}\f$ is one of the sixth order spherical harmonics so \f$m\f$ is a number that runs from \f$-6\f$ to
 \f$+6\f$.  The function \f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between
 atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set so that it the function is equal to one
 when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.
@@ -73,9 +73,9 @@ Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20
 PRINT ARG=q6.* FILE=colvar
 \endplumedfile
 
-The following command could be used to measure the Q6 paramters that describe the arrangement of chlorine ions around the
-sodium atoms in NaCl.  The imagined system here is composed of 64 NaCl formula units and the atoms are arranged in the input
-with the 64 Na\f$^+\f$ ions followed by the 64 Cl\f$-\f$ ions.  Once again the average Q6 paramter is calculated and output to a
+The following command could be used to measure the Q6 parameters that describe the arrangement of chlorine ions around the
+sodium atoms in sodium chloride.  The imagined system here is composed of 64 NaCl formula units and the atoms are arranged in the input
+with the 64 Na\f$^+\f$ ions followed by the 64 Cl\f$-\f$ ions.  Once again the average Q6 parameter is calculated and output to a
 file called colvar
 
 \plumedfile
@@ -88,8 +88,7 @@ PRINT ARG=q6.mean FILE=colvar
 
 //+PLUMEDOC MCOLVARF LOCAL_Q6
 /*
-Calculate the local degree of order around an atoms by taking the average dot product between the \f$q_6\f$ vector on the central atom and the \f$q_6\f$ vector
-on the atoms in the first coordination sphere.
+Calculate the local degree of order around an atoms by taking the average dot product between the \f$q_6\f$ vector on the central atom and the \f$q_6\f$ vector on the atoms in the first coordination sphere.
 
 The \ref Q6 command allows one to calculate one complex vectors for each of the atoms in your system that describe the degree of order in the coordination sphere
 around a particular atom. The difficulty with these vectors comes when combining the order parameters from all of the individual atoms/molecules so as to get a
@@ -115,7 +114,7 @@ biased dynamics what is really required is an order parameter that measures:
 - Whether or not the coordination spheres around atoms are ordered
 - Whether or not the atoms that are ordered are clustered together in a crystalline nucleus
 
-\ref LOCAL_AVERAGE and \ref NLINKS are variables that can be combined with the Steinhardt parameteters allow to calculate variables that satisfy these requirements.
+\ref LOCAL_AVERAGE and \ref NLINKS are variables that can be combined with the Steinhardt parameters allow to calculate variables that satisfy these requirements.
 LOCAL_Q6 is another variable that can be used in these sorts of calculations. The LOCAL_Q6 parameter for a particular atom is a number that measures the extent to
 which the orientation of the atoms in the first coordination sphere of an atom match the orientation of the central atom.  It does this by calculating the following
 quantity for each of the atoms in the system:
@@ -124,7 +123,7 @@ quantity for each of the atoms in the system:
  s_i = \frac{ \sum_j \sigma( r_{ij} ) \sum_{m=-6}^6 q_{6m}^{*}(i)q_{6m}(j) }{ \sum_j \sigma( r_{ij} ) }
 \f]
 
-where \f$q_{6m}(i)\f$ and \f$q_{6m}(j)\f$ are the 6th order Steinhardt vectors calculated for atom \f$i\f$ and atom \f$j\f$ respectively and the asterix denotes
+where \f$q_{6m}(i)\f$ and \f$q_{6m}(j)\f$ are the sixth order Steinhardt vectors calculated for atom \f$i\f$ and atom \f$j\f$ respectively and the asterisk denotes
 complex conjugation.  The function
 \f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set
 so that it the function is equal to one when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.  The sum in the numerator
@@ -138,7 +137,7 @@ quantity to a file called colvar.
 
 \plumedfile
 Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=q6
-LOCAL_Q6 ARG=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=lq6
+LOCAL_Q6 SPECIES=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=lq6
 PRINT ARG=lq6.mean FILE=colvar
 \endplumedfile
 
@@ -146,7 +145,7 @@ The following input calculates the distribution of LOCAL_Q6 parameters at any gi
 
 \plumedfile
 Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=q6
-LOCAL_Q6 ARG=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} LABEL=lq6
+LOCAL_Q6 SPECIES=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=1.0 NBINS=20 SMEAR=0.1} LABEL=lq6
 PRINT ARG=lq6.* FILE=colvar
 \endplumedfile
 
@@ -157,7 +156,7 @@ are done with those of all the other atoms in the system.  The final quantity is
 Q6 SPECIESA=1-5 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q6a
 Q6 SPECIESA=6-64 SPECIESB=1-64 D_0=1.3 R_0=0.2 LABEL=q6b
 
-LOCAL_Q6 ARG=q4a,q4b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LOWMEM LABEL=w4
+LOCAL_Q6 SPECIES=q4a,q4b SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LOWMEM LABEL=w4
 PRINT ARG=w6.* FILE=colvar
 \endplumedfile
 

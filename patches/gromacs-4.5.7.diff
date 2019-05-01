@@ -1,4 +1,4 @@
-patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 --- ./src/kernel/md.c.preplumed
 +++ ./src/kernel/md.c
 @@ -86,10 +86,16 @@
@@ -183,7 +183,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
          
          if (bTCR)
 EOF_EOF
-patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
 --- ./src/kernel/mdrun.c.preplumed
 +++ ./src/kernel/mdrun.c
 @@ -54,10 +54,16 @@
@@ -269,7 +269,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
    if (MULTIMASTER(cr)) {
        thanx(stderr);
 EOF_EOF
-patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 --- ./src/kernel/repl_ex.c.preplumed
 +++ ./src/kernel/repl_ex.c
 @@ -49,10 +49,16 @@

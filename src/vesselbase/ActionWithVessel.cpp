@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -37,12 +37,12 @@ namespace vesselbase {
 
 void ActionWithVessel::registerKeywords(Keywords& keys) {
   keys.add("hidden","TOL","this keyword can be used to speed up your calculation. When accumulating sums in which the individual "
-           "terms are numbers inbetween zero and one it is assumed that terms less than a certain tolerance "
+           "terms are numbers in between zero and one it is assumed that terms less than a certain tolerance "
            "make only a small contribution to the sum.  They can thus be safely ignored as can the the derivatives "
            "wrt these small quantities.");
   keys.add("hidden","MAXDERIVATIVES","The maximum number of derivatives that can be used when storing data.  This controls when "
            "we have to start using lowmem");
-  keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
+  keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not use MPI");
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
   keys.addFlag("TIMINGS",false,"output information on the timings of the various parts of the calculation");
   keys.reserveFlag("HIGHMEM",false,"use a more memory intensive version of this collective variable");
@@ -56,7 +56,6 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   noderiv(true),
   actionIsBridged(false),
   nactive_tasks(0),
-  stopwatch(*new Stopwatch),
   dertime_can_be_off(false),
   dertime(true),
   contributorsAreUnlocked(false),
@@ -91,45 +90,54 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
 }
 
 ActionWithVessel::~ActionWithVessel() {
-  for(unsigned i=0; i<functions.size(); ++i) delete functions[i];
   stopwatch.start(); stopwatch.stop();
   if(timers) {
     log.printf("timings for action %s with label %s \n", getName().c_str(), getLabel().c_str() );
     log<<stopwatch;
   }
-  delete &stopwatch;
 }
 
 void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab ) {
   VesselOptions da(name,"",numlab,input,this);
-  Vessel* vv=vesselRegister().create(name,da);
-  FunctionVessel* fv=dynamic_cast<FunctionVessel*>(vv);
+  auto vv=vesselRegister().create(name,da);
+  FunctionVessel* fv=dynamic_cast<FunctionVessel*>(vv.get());
   if( fv ) {
     std::string mylabel=Vessel::transformName( name );
     plumed_massert( keywords.outputComponentExists(mylabel,false), "a description of the value calculated by vessel " + name + " has not been added to the manual");
   }
-  addVessel(vv);
+  addVessel(std::move(vv));
 }
 
-void ActionWithVessel::addVessel( Vessel* vv ) {
-  ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(vv);
-  if(!sv) { vv->checkRead(); functions.push_back(vv); }
-  else { delete sv; return; }
+void ActionWithVessel::addVessel( std::unique_ptr<Vessel> vv_ptr ) {
 
-  StoreDataVessel* mm=dynamic_cast<StoreDataVessel*>( vv );
+// In the original code, the dynamically casted pointer was deleted here.
+// Now that vv_ptr is a unique_ptr, the object will be deleted automatically when
+// exiting this routine.
+  if(dynamic_cast<ShortcutVessel*>(vv_ptr.get())) return;
+
+  vv_ptr->checkRead();
+
+  StoreDataVessel* mm=dynamic_cast<StoreDataVessel*>( vv_ptr.get() );
   if( mydata && mm ) error("cannot have more than one StoreDataVessel in one action");
   else if( mm ) mydata=mm;
   else dertime_can_be_off=false;
+
+// Ownership is transfered to functions
+  functions.emplace_back(std::move(vv_ptr));
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ) {
   VesselOptions da("","",0,"",this);
-  BridgeVessel* bv=new BridgeVessel(da);
+  std::unique_ptr<BridgeVessel> bv(new BridgeVessel(da));
   bv->setOutputAction( tome );
   tome->actionIsBridged=true; dertime_can_be_off=false;
-  functions.push_back( dynamic_cast<Vessel*>(bv) );
+// store this pointer in order to return it later.
+// notice that I cannot access this with functions.tail().get()
+// since functions contains pointers to a different class (Vessel)
+  auto toBeReturned=bv.get();
+  functions.emplace_back( std::move(bv) );
   resizeFunctions();
-  return bv;
+  return toBeReturned;
 }
 
 StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionThatUses ) {
@@ -139,9 +147,9 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( ActionWithVessel* actionTha
   }
 
   VesselOptions da("","",0,"",this);
-  StoreDataVessel* mm=new StoreDataVessel(da);
+  std::unique_ptr<StoreDataVessel> mm( new StoreDataVessel(da) );
   if( actionThatUses ) mm->addActionThatUses( actionThatUses );
-  addVessel(mm);
+  addVessel(std::move(mm));
 
   // Make sure resizing of vessels is done
   resizeFunctions();
@@ -220,7 +228,7 @@ void ActionWithVessel::lockContributors() {
   }
   plumed_dbg_assert( n==nactive_tasks );
   for(unsigned i=0; i<functions.size(); ++i) {
-    BridgeVessel* bb = dynamic_cast<BridgeVessel*>( functions[i] );
+    BridgeVessel* bb = dynamic_cast<BridgeVessel*>( functions[i].get() );
     if( bb ) bb->copyTaskFlags();
   }
   // Resize mydata to accomodate all active tasks
@@ -265,8 +273,7 @@ void ActionWithVessel::runAllTasks() {
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks ) nt=nactive_tasks/stride/10;
-  if( nt==0 || !threadSafe() ) nt=1;
+  if( nt*stride*2>nactive_tasks || !threadSafe()) nt=1;
 
   // Get size for buffer
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize );
@@ -274,11 +281,6 @@ void ActionWithVessel::runAllTasks() {
   buffer.assign( buffer.size(), 0.0 );
   // Switch off calculation of derivatives in main loop
   if( dertime_can_be_off ) dertime=false;
-  // std::vector<unsigned> der_list;
-  // if( mydata ) der_list.resize( mydata->getSizeOfDerivativeList(), 0 );
-
-  // Build storage stuff for loop
-  // std::vector<double> buffer( bufsize, 0.0 );
 
   if(timers) stopwatch.start("2 Loop over tasks");
   #pragma omp parallel num_threads(nt)
@@ -289,7 +291,7 @@ void ActionWithVessel::runAllTasks() {
     MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
     myvals.clearAll(); bvals.clearAll();
 
-    #pragma omp for nowait
+    #pragma omp for nowait schedule(dynamic)
     for(unsigned i=rank; i<nactive_tasks; i+=stride) {
       // Calculate the stuff in the loop for this action
       performTask( indexOfTaskInFullList[i], partialTaskList[i], myvals );
@@ -386,7 +388,7 @@ Vessel* ActionWithVessel::getVesselWithName( const std::string& mynam ) {
       else error("found more than one " + mynam + " object in action");
     }
   }
-  return functions[target];
+  return functions[target].get();
 }
 
 }

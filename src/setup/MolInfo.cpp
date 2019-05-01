@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,21 +38,54 @@ using this command you can find the backbone atoms in your structure automatical
 
 \warning
 Please be aware that the PDB parser in plumed is far from perfect. You should thus check the log file
-and examine what plumed is actually doing whenenver you use the MOLINFO action.
+and examine what plumed is actually doing whenever you use the MOLINFO action.
 Also make sure that the atoms are listed in the pdb with the correct order.
 If you are using gromacs, the safest way is to use reference pdb file
 generated with `gmx editconf -f topol.tpr -o reference.pdb`.
 
 More information of the PDB parser implemented in PLUMED can be found \ref pdbreader "at this page".
 
-
-Using MOLINFO with a protein's or nucleic acid's pdb extends the possibility of atoms selection using the @ special
-symbol.
-
 Providing `MOLTYPE=protein`, `MOLTYPE=rna`, or `MOLTYPE=dna` will instruct plumed to look
 for known residues from these three types of molecule. In other words, this is available for
 historical reasons and to allow future extensions where alternative lists will be provided.
-As of now, you can just ignore this keyoword.
+As of now, you can just ignore this keyword.
+
+Using \ref MOLINFO extends the possibility of atoms selection using the @ special
+symbol. The following shortcuts are available that do not refer to one specific residue:
+
+\verbatim
+@nucleic : all atoms that are part of a DNA or RNA molecule
+@protein : all atoms that are part of a protein
+@water : all water molecules
+@ions : all the ions
+@hydrogens : all hydrogen atoms (those for which the first non-number in the name is a H)
+@nonhydrogens : all non hydrogen atoms (those for which the first non-number in the name is not a H)
+\endverbatim
+
+\warning
+Be careful since these choices are based on common names used in PDB files. Always check if
+the selected atoms are correct.
+
+In addition, atoms from a specific residue can be selected with a symbol in this form:
+
+\verbatim
+@"definition"-chain_residuenum
+@"definition"-chainresiduenum
+@"definition"-residuenum
+\endverbatim
+
+So for example
+
+\verbatim
+@psi-1 will select the atoms defining the psi torsion of residue 1
+@psi-C1  or @psi-C_1 will define the same torsion for residue 1 of chain C.
+@psi-3_1 will define the same torsion for residue 1 of chain 3.
+\endverbatim
+
+Using the underscore to separate chain and residue is available as of PLUMED 2.5 and allows selecting chains
+with a numeric id.
+
+In the following are listed the current available definitions:
 
 For protein residues, the following groups are available:
 
@@ -61,6 +94,10 @@ For protein residues, the following groups are available:
 @psi-#
 @omega-#
 @chi1-#
+@chi2-#
+@chi3-#
+@chi4-#
+@chi5-#
 \endverbatim
 
 that select the appropriate atoms that define each dihedral angle for residue #.
@@ -90,14 +127,23 @@ For DNA or RNA residues, the following groups are available:
 @back-#
 @sugar-#
 @base-#
+
+# ordered triplets of atoms on the 6-membered ring of nucleobases
+# namely:
+#  C2/C4/C6 for pyrimidines
+#  C2/C6/C4 for purines
+@lcs-#
 \endverbatim
 
 Notice that `zeta` and `epsilon` groups should not be used on 3' end residue and `alpha` and `beta`
 should not be used on 5' end residue.
 
-If the chosen group name does not match any of the default ones, the parser looks for a single atom
-with the same name. This means that it is also possible to pick single atoms using the syntax
-`@atom-residue`.
+Furthermore it is also possible to pick single atoms using the syntax
+`atom-chain_residuenum`, `@atom-chainresiduenum` or `@atom-residuenum`.
+As of PLUMED 2.5, this also works when the residue is not a protein/rna/dna residue.
+For instance, `@OW-100` will select oxygen of water molecule with residue number 100.
+
+Finally, notice that other shortcuts are available even when not using the \ref MOLINFO command (see \ref atomSpecs).
 
 \warning If a residue-chain is repeated twice in the reference pdb only the first entry will be selected.
 
@@ -129,6 +175,14 @@ hb3: DISTANCE ATOMS=@O6-1,@N4-14
 PRINT ARG=hb1,hb2,hb3
 \endplumedfile
 
+This example use MOLINFO to calculate torsion angles
+
+\plumedfile
+MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
+t1: TORSION ATOMS=@phi-3
+t2: TORSION ATOMS=@psi-4
+PRINT ARG=t1,t2 FILE=colvar STRIDE=10
+\endplumedfile
 
 */
 //+ENDPLUMEDOC

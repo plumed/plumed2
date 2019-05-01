@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,7 +31,7 @@ Find an isocontour in a smooth function.
 
 As discussed in the part of the manual on \ref Analysis PLUMED contains a number of tools that allow you to calculate
 a function on a grid.  The function on this grid might be a \ref HISTOGRAM as a function of a few collective variables
-or it might be a phase field that has been calcualted using \ref MULTICOLVARDENS.  If this function has one or two input
+or it might be a phase field that has been calculated using \ref MULTICOLVARDENS.  If this function has one or two input
 arguments it is relatively straightforward to plot the function.  If by contrast the data has a three or more dimensions
 it can be difficult to visualize.
 

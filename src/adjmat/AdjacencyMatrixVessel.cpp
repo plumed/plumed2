@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -85,7 +85,6 @@ void AdjacencyMatrixVessel::getMatrixIndices( const unsigned& code, unsigned& i,
 }
 
 void AdjacencyMatrixVessel::retrieveMatrix( DynamicList<unsigned>& myactive_elements, Matrix<double>& mymatrix ) {
-  unsigned vin; double df;
   myactive_elements.deactivateAll(); std::vector<double> vals( getNumberOfComponents() );
   for(unsigned i=0; i<getNumberOfStoredValues(); ++i) {
     retrieveSequentialValue( i, false, vals );

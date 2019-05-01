@@ -46,8 +46,8 @@ The <a href="tutorial-resources/cambridge-1.tar.gz" download="cambridge-1.tar.gz
 \subsection cambridge-exercise-1-0 Summary of theory
 
 In metadynamics, an external history-dependent bias potential is constructed in the space of 
-a few selected degrees of freedom \f$ \vec{s}({q}) \f$, generally called collective variables (CVs) \cite metad.
-This potential is built as a sum of Gaussians deposited along the trajectory in the CVs space:
+a few selected degrees of freedom \f$\vec{s}({q}) \f$, generally called collective variables (CVs) \cite metad.
+This potential is built as a sum of Gaussian kernels deposited along the trajectory in the CVs space:
 
 \f[
 V(\vec{s},t) = \sum_{ k \tau < t} W(k \tau)
@@ -57,7 +57,7 @@ V(\vec{s},t) = \sum_{ k \tau < t} W(k \tau)
 \f]
 
 where \f$ \tau \f$ is the Gaussian deposition stride, 
-\f$ \sigma_i \f$ the width of the Gaussian for the ith CV, and \f$ W(k \tau) \f$ the
+\f$ \sigma_i \f$ the width of the Gaussian for the \f$i\f$th CV, and \f$ W(k \tau) \f$ the
 height of the Gaussian. The effect of the metadynamics bias potential is to push the system away 
 from local minima into visiting new regions of the phase space. Furthermore, in the long
 time limit, the bias potential converges to minus the free energy as a function of the CVs:
@@ -66,7 +66,7 @@ time limit, the bias potential converges to minus the free energy as a function 
 V(\vec{s},t\rightarrow \infty) = -F(\vec{s}) + C.
 \f]
 
-In standard metadynamics, Gaussians of constant height are added for the entire course of a 
+In standard metadynamics, Gaussian kernels of constant height are added for the entire course of a 
 simulation. As a result, the system is eventually pushed to explore high free-energy regions
 and the estimate of the free energy calculated from the bias potential oscillates around
 the real value. 
@@ -90,22 +90,22 @@ where \f$ T \f$ is the temperature of the system.
 In the long time limit, the CVs thus sample an ensemble
 at a temperature \f$ T+\Delta T \f$ which is higher than the system temperature \f$ T \f$.
 The parameter \f$ \Delta T \f$ can be chosen to regulate the extent of free-energy exploration:
- \f$ \Delta T = 0\f$ corresponds to standard molecular dynamics, \f$ \Delta T \rightarrow \infty \f$ to standard
+ \f$ \Delta T = 0\f$ corresponds to standard molecular dynamics, \f$ \Delta T \rightarrow\infty\f$ to standard
 metadynamics. In well-tempered metadynamics literature and in PLUMED, you will often encounter
-the term "biasfactor" which is the ratio between the temperature of the CVs (\f$ T+\Delta T \f$) 
+the term "bias factor" which is the ratio between the temperature of the CVs (\f$ T+\Delta T \f$) 
 and the system temperature (\f$ T \f$):
 
 \f[
 \gamma = \frac{T+\Delta T}{T}.
 \f]
 
-The biasfactor should thus be carefully chosen in order for the relevant free-energy barriers to be crossed
+The bias factor should thus be carefully chosen in order for the relevant free-energy barriers to be crossed
 efficiently in the time scale of the simulation.
  
 Additional information can be found in the several review papers on metadynamics 
 \cite gerv-laio09review \cite WCMS:WCMS31 \cite WCMS:WCMS1103.
 
-\subsection cambridge-exercise-1-1  Setup, run, and analyse a well-tempered metadynamics simulation
+\subsection cambridge-exercise-1-1  Setup, run, and analyze a well-tempered metadynamics simulation
 
 In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, 
 using as CVs the two backbone dihedral angles phi and psi. 
@@ -119,7 +119,7 @@ psi: TORSION ATOMS=7,9,15,17
 #
 # Activate metadynamics in phi and psi
 # depositing a Gaussian every 500 time steps,
-# with height equal to 1.2 kJoule/mol,
+# with height equal to 1.2 kJ/mol,
 # and width 0.35 rad for both CVs.
 # Well-tempered metadynamics is activated,
 # and the biasfactor is set to 6.0
@@ -136,7 +136,7 @@ The syntax for the command \ref METAD is simple.
 The directive is followed by a keyword ARG followed by the labels of the CVs
 on which the metadynamics potential will act.
 The keyword PACE determines the stride of Gaussian deposition in number of time steps,
-while the keyword HEIGHT specifies the height of the Gaussian in kJoule/mol. 
+while the keyword HEIGHT specifies the height of the Gaussian in kJ/mol. 
 To run well-tempered metadynamics, we need two additional keywords BIASFACTOR and TEMP, which
 specify how fast the bias potential is decreasing with time and the temperature of the simulation, respectively.
 For each CVs, one has to specify the width of the Gaussian by using the keyword SIGMA. Gaussian will be written
@@ -152,10 +152,10 @@ gmx_mpi mdrun -plumed
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
 The COLVAR file contains all the information specified by the PRINT command, in this case
 the value of the CVs every 10 steps of simulation, along with the current value of the metadynamics
-bias potential. The HILLS file contains a list of the Gaussians deposited along the simulation.
+bias potential. The HILLS file contains a list of the Gaussian kernels deposited along the simulation.
 If we give a look at the header of this file, we can find relevant information about its content.
-The last column contains the value of the biasfactor used, while
-the last but one the height of the Gaussian, which is rescaled during the simulation following
+The last column contains the value of the bias factor used, while
+the last but one the height of the Gaussian, which is scaled during the simulation following
 the well-tempered recipe.
 
 \verbatim
@@ -172,15 +172,15 @@ the well-tempered recipe.
 \endverbatim 
 
 If we carefully look at the height column, we will notice that in the beginning the value
-reported is higher than the initial height specified in the input file, which should be 1.2 kJoule/mol.
-In fact, this column reports the height of the Gaussian rescaled by the pre-factor that 
+reported is higher than the initial height specified in the input file, which should be 1.2 kJ/mol.
+In fact, this column reports the height of the Gaussian scaled by the pre-factor that 
 in well-tempered metadynamics relates the bias potential to the free energy. In this way, when
-we will use \ref sum_hills, the sum of the Gaussians deposited will directly provide the free-energy,
+we will use \ref sum_hills, the sum of the Gaussian kernels deposited will directly provide the free-energy,
 without further rescaling needed.
 
 We can plot the time evolution of the CVs along with the height of the Gaussian.
 
-\image html belfast-6-wtb6.png "Time evolution of the CVs and Gaussian height during the first 2.5 ns of a well-tempered metadynamics simulation with biasfactor equal to 6."
+\image html belfast-6-wtb6.png "Time evolution of the CVs and Gaussian height during the first 2.5 ns of a well-tempered metadynamics simulation with bias factor equal to 6."
 
 The system is initialized in one of the local minimum where it starts accumulating bias.
 As the simulation progresses and the bias added grows, the Gaussian height is progressively reduced.
@@ -192,7 +192,7 @@ becomes smaller and smaller while the system diffuses in the entire CVs space.
 \subsection cambridge-exercise-1-2  Calculate free-energies and monitor convergence 
 
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
-bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussians
+bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussian kernels
 deposited during the simulation and stored in the HILLS file.  
 
 To calculate the two-dimensional free energy as a function of phi and psi, it is sufficient to use the 
@@ -226,7 +226,7 @@ The result should look like this:
 
 To assess the convergence of a metadynamics simulation, one can calculate the estimate of the free energy as a function
 of simulation time. At convergence, the reconstructed profiles should be similar.
-The option --stride should be used to give an estimate of the free energy every N Gaussians deposited, and
+The option --stride should be used to give an estimate of the free energy every N Gaussian kernels deposited, and
 the option --mintozero can be used to align the profiles by setting the global minimum to zero.
 If we use the following command line:
 
@@ -234,7 +234,7 @@ If we use the following command line:
 plumed sum_hills --hills HILLS --idw phi --kt 2.5 --stride 500 --mintozero
 \endverbatim
 
-one free energy is calculated every 500 Gaussians deposited, and the global minimum is set to zero in all profiles.
+one free energy is calculated every 500 Gaussian kernels deposited, and the global minimum is set to zero in all profiles.
 Try to visualize the different estimates of the free energy as a function of time.
 
 To assess the convergence of the simulation more quantitatively, we can calculate the free-energy difference between the two
@@ -270,7 +270,7 @@ This limitation can be severe when studying complex transformations or reactions
 more than say three relevant CVs can be identified.
 
 Alternative solutions employ metadynamics together with other enhanced sampling techniques (i.e. Parallel
-Tempering or more generally Hamiltionan Replica Exchange). In particular in Bias-Exchange metadynamics the
+Tempering or more generally Hamiltonian Replica Exchange). In particular in Bias-Exchange metadynamics the
 problem of sampling a multi-dimensional free-energy surface is recast in that of sampling many one-dimensional
 free-energies. In this approach a relatively large number N of CVs  is chosen to describe the possible transformations
 of the system (e.g., to study the conformations of a peptide one may consider all the dihedral angles between amino acids).
@@ -294,10 +294,10 @@ and \f$ V_{G}^{a(b)}\left(x,t\right) \f$ is the metadynamics potential acting on
 Each trajectory evolves through the high dimensional free energy landscape in the space of the CVs sequentially biased by
 different metadynamics potentials acting on one CV at each time. The results of the simulation are N one-dimensional projections of the free energy.
 
-\subsection cambridge-exercise-2-1  Setup, run, and analyse a well-tempered bias-exchange metadynamics simulation
+\subsection cambridge-exercise-2-1  Setup, run, and analyze a well-tempered bias-exchange metadynamics simulation
 
 
-In the following example, a bias-exchange simulation is performed on Alanine di-peptide. A typical input file for BE-WTMetaD is the following:
+In the following example, a bias-exchange simulation is performed on Alanine di-peptide. A typical input file for bias exchange well tempered metadynamics is the following:
 
 - a common input file in which all the collective variables are defined:
 
@@ -371,8 +371,8 @@ variables with respect to a free energy surface obtained by sampling in two dime
 
 The main features are that all the replicas can sample all the relevant free energy minima even if their collective variable is not meant to
 sample them, only the replicas with a collective variable meant to pass a barrier can sample that transition, so high energy regions are sampled
-only locally. This can seem a weakness in the case of alanine dipeptide but is the real strength of BE-MetaD, indeed by not knowing anything
-of a system it is possible to choose as many collective variables as possible and even if most of them are not particularly usefull a posteriori,
+only locally. This can seem a weakness in the case of alanine dipeptide but is the real strength of bias exchange metadynamics, indeed by not knowing anything
+of a system it is possible to choose as many collective variables as possible and even if most of them are not particularly useful a posteriori,
 they all gain from the good ones and nothing is lost.
 
 \subsection cambridge-exercise-2-2  Calculate free-energies and monitor convergence
@@ -398,7 +398,7 @@ The result should look like this (compared with the one obtained before):
 
 As above we can assess the convergence of a metadynamics simulation by calculating the estimate of the free energy as a function
 of simulation time. At convergence, the reconstructed profiles should be similar.
-The option --stride should be used to give an estimate of the free energy every N Gaussians deposited, and
+The option --stride should be used to give an estimate of the free energy every N Gaussian kernels deposited, and
 the option --mintozero can be used to align the profiles by setting the global minimum to zero.
 If we use the following command line:
 
@@ -527,13 +527,13 @@ RESTRAINT ARG=ed1.d1 KAPPA=100000 AT=0.656214
 Step 2: Setup the Bias-Exchange simulations
 
 We will run Bias-Exchange simulations using four CVs, two of them have already been chosen (see plumed-common.dat) while the others should be selected by you.
-Additionally Metadynamics parameters \ref METAD for the two selected cvs should be added in the plumed.dat.0 and plumed.dat.1 files. In particular while the
-PACE, HEIGHT and BIASFACTOR can be kept the same of those defined for the preselected CVs, the SIGMA should be half of the fluctuations of the
+Additionally Metadynamics parameters \ref METAD for the two selected collective variables should be added in the plumed.dat.0 and plumed.dat.1 files. In particular while the
+PACE, HEIGHT and BIASFACTOR can be kept the same of those defined for the selected CVs, the SIGMA should be half of the fluctuations of the
 chosen CV in an unbiased run (>1 ns).
 
 Step 3: Run
 
-The simulation should be run until convergence of the four monodimensional free energies, this will tipically take more than 200 ns per replica. 
+The simulation should be run until convergence of the four one dimensional free energies, this will typically take more than 200 ns per replica. 
 
 Step 4: Analysis
 

@@ -1,0 +1,3 @@
+mpiprocs=4
+type=driver
+arg="--plumed plumed.dat --trajectory-stride 1 --timestep 0.005 --ixyz ala12_trajectory.xyz --multi 2  --dump-forces allforce"

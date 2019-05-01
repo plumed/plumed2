@@ -1,0 +1,79 @@
+RESTART
+
+psi:   ANGLE ATOMS=7,9,15
+phi:   TORSION ATOMS=5,7,9,15     NOPBC
+
+METAD ...
+ LABEL=metadnp1
+ ARG=psi
+ SIGMA=0.20
+ HEIGHT=1.20
+ CALC_TRANSITION_BIAS
+ TRANSITIONWELL0=1.0
+ TRANSITIONWELL1=2.0
+ TEMP=300.0
+ PACE=500
+ FILE=HILLS-nonperiodic-case1
+ GRID_RFILE=grid-nonperiodic-case1
+ GRID_MIN=0
+ GRID_MAX=pi
+ GRID_BIN=10
+... METAD
+
+METAD ...
+ LABEL=metadnp2
+ ARG=psi
+ SIGMA=0.20
+ HEIGHT=1.20
+ CALC_TRANSITION_BIAS
+ TRANSITIONWELL0=1.0
+ TRANSITIONWELL1=2.0
+ TEMP=300.0
+ PACE=500
+ FILE=HILLS-nonperiodic-case2
+ GRID_RFILE=grid-nonperiodic-case2
+ GRID_MIN=0
+ GRID_MAX=pi
+ GRID_BIN=10
+... METAD
+
+METAD ...
+ LABEL=metadp1
+ ARG=phi
+ SIGMA=0.20
+ HEIGHT=1.20
+ CALC_TRANSITION_BIAS
+ TRANSITIONWELL0=-1.0
+ TRANSITIONWELL1=1.0
+ TEMP=300.0
+ PACE=500
+ FILE=HILLS-periodic-case1
+ GRID_RFILE=grid-periodic-case1
+ GRID_MIN=-pi
+ GRID_MAX=pi
+ GRID_BIN=10
+... METAD
+
+METAD ...
+ LABEL=metadp2
+ ARG=phi
+ SIGMA=0.20
+ HEIGHT=1.20
+ CALC_TRANSITION_BIAS
+ TRANSITIONWELL0=-1.0
+ TRANSITIONWELL1=1.0
+ TEMP=300.0
+ PACE=500
+ FILE=HILLS-periodic-case2
+ GRID_RFILE=grid-periodic-case2
+ GRID_MIN=-pi
+ GRID_MAX=pi
+ GRID_BIN=10
+... METAD
+
+PRINT ...
+ ARG=psi,phi,metadnp1.bias,metadnp2.bias,metadp1.bias,metadp2.bias,metadnp1.transbias,metadnp2.transbias,metadp1.transbias,metadp2.transbias
+ STRIDE=500
+ FILE=COLVAR
+ FMT=%8.4f
+... PRINT

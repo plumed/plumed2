@@ -2,4 +2,4 @@ mpiprocs=6
 type=driver
 # this is to test a different name
 arg="--plumed=plumed.dat --timestep=0.05 --ixyz trajectory.xyz --dump-forces ff --pdb test.pdb --multi 3
-     --debug-dd --debug-grex 2 --debug-grex-log log.grex"
+     --debug-dd yes --debug-grex 2 --debug-grex-log log.grex"

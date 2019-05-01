@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,6 +24,8 @@
 #include <cstdlib>
 #include <sstream>
 #include <iostream>
+#include <iterator>
+#include <functional>
 
 namespace PLMD {
 
@@ -69,7 +71,6 @@ double Random::U01d ()
   u += U01() * fact;
   return (u < 1.0) ? u : (u - 1.0);
 }
-
 
 double Random::U01() {
   int j,k;
@@ -154,5 +155,14 @@ double Random::Gaussian() {
   switchGaussian=true;
   return v2*fac;
 }
+
+void Random::Shuffle(std::vector<unsigned>& vec) {
+  std::iterator_traits<std::vector<unsigned>::iterator >::difference_type i, n;
+  n = vec.end() - vec.begin();
+  for(i=n-1; i>0; --i) {
+    std::swap(vec[i], vec[(int)round(RandU01() * IM) % i]);
+  }
+}
+
 
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -49,7 +49,7 @@ including \f$\psi\f$ in the numerator is there to ensure that only those molecul
 number of molecules.  It is important to include this "more than" switching function when you are simulating nucleation
 from solution with this CV.  Lastly, the $K_n functions are \ref kernelfunctions that take the torsion angle, \f$\theta_{ij}\f$, between the
 internal orientation vectors for molecules \f$i\f$ and \f$j\f$ as input.  These kernel functions should be set so that they are
-equal to one when the relative orientation of the moleclues are as they are in the solid and equal to zero otherwise.
+equal to one when the relative orientation of the molecules are as they are in the solid and equal to zero otherwise.
 The final \f$s_i\f$ quantity thus measures whether (on average) the molecules in the first coordination sphere around molecule \f$i\f$
 are oriented as they would be in the solid.  Furthermore, this Action is a multicolvar so you can calculate the \f$s_i\f$ values
 for all the molecules in your system simultaneously and then determine the average, the number less than and so on.
@@ -155,7 +155,7 @@ SMAC::SMAC(const ActionOptions& ao):
   std::string kernelinpt;
   for(int i=1;; i++) {
     if( !parseNumbered("KERNEL",i,kernelinpt) ) break;
-    KernelFunctions mykernel( kernelinpt, false );
+    KernelFunctions mykernel( kernelinpt );
     kernels.push_back( mykernel );
   }
   if( kernels.size()==0 ) error("no kernels defined");
@@ -172,7 +172,8 @@ double SMAC::computeVectorFunction( const Vector& conn, const std::vector<double
 
   unsigned nvectors = ( vec1.size() - 2 ) / 3; plumed_assert( (vec1.size()-2)%3==0 );
   std::vector<Vector> dv1(nvectors), dv2(nvectors), tdconn(nvectors); Torsion t; std::vector<Vector> v1(nvectors), v2(nvectors);
-  std::vector<Value*> pos; for(unsigned i=0; i<nvectors; ++i) { pos.push_back( new Value() ); pos[i]->setDomain( "-pi", "pi" ); }
+  std::vector<std::unique_ptr<Value>> pos;
+  for(unsigned i=0; i<nvectors; ++i) { pos.emplace_back( new Value() ); pos[i]->setDomain( "-pi", "pi" ); }
 
   for(unsigned j=0; j<nvectors; ++j) {
     for(unsigned k=0; k<3; ++k) {
@@ -182,15 +183,16 @@ double SMAC::computeVectorFunction( const Vector& conn, const std::vector<double
     pos[j]->set( angle );
   }
 
+  auto pos_ptr=Tools::unique2raw(pos);
+
   double ans=0; std::vector<double> deriv( nvectors ), df( nvectors, 0 );
   for(unsigned i=0; i<kernels.size(); ++i) {
-    ans += kernels[i].evaluate( pos, deriv );
+    ans += kernels[i].evaluate( pos_ptr, deriv );
     for(unsigned j=0; j<nvectors; ++j) df[j] += deriv[j];
   }
   dconn.zero(); for(unsigned j=0; j<nvectors; ++j) dconn += df[j]*tdconn[j];
   for(unsigned j=0; j<nvectors; ++j) {
     for(unsigned k=0; k<3; ++k) { dvec1[2+3*j+k]=df[j]*dv1[j][k]; dvec2[2+3*j+k]=df[j]*dv2[j][k]; }
-    delete pos[j];
   }
   return ans;
 }

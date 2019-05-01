@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -76,6 +76,7 @@ class EffectiveEnergyDrift:
   public ActionPilot {
   OFile output;
   long int printStride;
+  string fmt;
 
   double eed;
 
@@ -130,6 +131,7 @@ void EffectiveEnergyDrift::registerKeywords( Keywords& keys ) {
   keys.add("compulsory", "FILE", "file on which to output the effective energy drift.");
   keys.add("compulsory", "PRINT_STRIDE", "frequency to which output the effective energy drift on FILE");
   keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");
+  keys.add("optional","FMT","the format that should be used to output real numbers");
   keys.use("RESTART");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -138,6 +140,7 @@ void EffectiveEnergyDrift::registerKeywords( Keywords& keys ) {
 EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   Action(ao),
   ActionPilot(ao),
+  fmt("%f"),
   eed(0.0),
   atoms(plumed.getAtoms()),
   nProc(plumed.comm.Get_size()),
@@ -158,6 +161,12 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
   //parse PRINT_STRIDE
   parse("PRINT_STRIDE",printStride);
 
+
+  //parse FMT
+  parse("FMT",fmt);
+  fmt=" "+fmt;
+  log.printf("  with format %s\n",fmt.c_str());
+
   //parse ENSEMBLE
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
@@ -165,7 +174,7 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
     if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
   }
 
-  log<<"Bibliography "<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, submitted (2014)")<<"\n";
+  log<<"Bibliography "<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
 
   //construct biases from ActionWithValue with a component named bias
   vector<ActionWithValue*> tmpActions=plumed.getActionSet().select<ActionWithValue*>();
@@ -213,8 +222,6 @@ void EffectiveEnergyDrift::update() {
     pNLocalAtoms = pGatindex.size();
     pPositions=positions;
     pForces=forces;
-    pPositions=positions;
-    pForces=forces;
     pbox=box;
     pfbox=fbox;
     initialBias=plumed.getBias();
@@ -249,8 +256,8 @@ void EffectiveEnergyDrift::update() {
     }
 
     //share stored data
-    plumed.comm.Allgatherv(&indexS[0], pNLocalAtoms, &indexR[0], &indexCnt[0], &indexDsp[0]);
-    plumed.comm.Allgatherv(&dataS[0], pNLocalAtoms*6, &dataR[0], &dataCnt[0], &dataDsp[0]);
+    plumed.comm.Allgatherv((!indexS.empty()?&indexS[0]:NULL), pNLocalAtoms, &indexR[0], &indexCnt[0], &indexDsp[0]);
+    plumed.comm.Allgatherv((!dataS.empty()?&dataS[0]:NULL), pNLocalAtoms*6, &dataR[0], &dataCnt[0], &dataDsp[0]);
 
     //resize vectors to store the proper amount of data
     pGatindex.resize(nLocalAtoms);
@@ -309,8 +316,9 @@ void EffectiveEnergyDrift::update() {
       else effective=0.;
       plumed.comm.Sum(&effective,1);
     }
-
+    output.fmtField(" %f");
     output.printField("time",getTime());
+    output.fmtField(fmt);
     output.printField("effective-energy",effective);
     output.printField();
   }

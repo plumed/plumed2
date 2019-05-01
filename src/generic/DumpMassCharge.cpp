@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -95,10 +95,14 @@ class DumpMassCharge:
 {
   string file;
   bool first;
+  bool second;
+  bool print_masses;
+  bool print_charges;
 public:
   explicit DumpMassCharge(const ActionOptions&);
   ~DumpMassCharge();
   static void registerKeywords( Keywords& keys );
+  void prepare();
   void calculate() {}
   void apply() {}
   void update();
@@ -111,27 +115,48 @@ void DumpMassCharge::registerKeywords( Keywords& keys ) {
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
-  keys.add("atoms", "ATOMS", "the atom indices whose positions you would like to print out");
-  keys.add("compulsory", "FILE", "file on which to output coordinates. .gro extension is automatically detected");
+  keys.add("atoms", "ATOMS", "the atom indices whose charges and masses you would like to print out");
+  keys.add("compulsory", "FILE", "file on which to output charges and masses.");
+  keys.addFlag("ONLY_MASSES",false,"Only output masses to file");
+  keys.addFlag("ONLY_CHARGES",false,"Only output charges to file");
 }
 
 DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionPilot(ao),
-  first(true)
+  first(true),
+  second(true),
+  print_masses(true),
+  print_charges(true)
 {
   vector<AtomNumber> atoms;
   parse("FILE",file);
-  if(file.length()==0) error("name out output file was not specified");
+  if(file.length()==0) error("name of output file was not specified");
+  log.printf("  output written to file %s\n",file.c_str());
 
   parseAtomList("ATOMS",atoms);
 
   if(atoms.size()==0) {
-    for(unsigned i=0; i<plumed.getAtoms().getNatoms(); i++) {
+    for(int i=0; i<plumed.getAtoms().getNatoms(); i++) {
       atoms.push_back(AtomNumber::index(i));
     }
   }
+
+  bool only_masses = false;
+  parseFlag("ONLY_MASSES",only_masses);
+  if(only_masses) {
+    print_charges = false;
+    log.printf("  only masses will be written to file\n");
+  }
+
+  bool only_charges = false;
+  parseFlag("ONLY_CHARGES",only_charges);
+  if(only_charges) {
+    print_masses = false;
+    log.printf("  only charges will be written to file\n");
+  }
+
 
   checkRead();
 
@@ -139,6 +164,18 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
   requestAtoms(atoms);
+
+  if(only_masses && only_charges) {
+    plumed_merror("using both ONLY_MASSES and ONLY_CHARGES doesn't make sense");
+  }
+
+}
+
+void DumpMassCharge::prepare() {
+  if(!first && second) {
+    requestAtoms(vector<AtomNumber>());
+    second=false;
+  }
 }
 
 void DumpMassCharge::update() {
@@ -149,11 +186,11 @@ void DumpMassCharge::update() {
   of.link(*this);
   of.open(file);
 
-  for(int i=0; i<getNumberOfAtoms(); i++) {
+  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
     int ii=getAbsoluteIndex(i).index();
     of.printField("index",ii);
-    of.printField("mass",getMass(i));
-    of.printField("charge",getCharge(i));
+    if(print_masses) {of.printField("mass",getMass(i));}
+    if(print_charges) {of.printField("charge",getCharge(i));}
     of.printField();
   }
 }

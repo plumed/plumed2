@@ -17,7 +17,6 @@
 					<Add option="-g" />
 					<Add option="-w3" />
 					<Add option="-Wextra" />
-					<Add option="-std=c++11" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fPIC" />
 					<Add option="-DASTYLE_JNI" />
@@ -41,7 +40,6 @@
 					<Add option="-Wall" />
 					<Add option="-w3" />
 					<Add option="-Wextra" />
-					<Add option="-std=c++11" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fPIC" />
 					<Add option="-wd11074,11076" />
@@ -59,7 +57,7 @@
 			</Target>
 			<Environment>
 				<Variable name="MAJORVER" value="3" />
-				<Variable name="MINORVER" value="0" />
+				<Variable name="MINORVER" value="1" />
 				<Variable name="PATCHVER" value="0" />
 				<Variable name="SOLIBVER" value="$(MAJORVER).$(MINORVER).$(PATCHVER)" />
 			</Environment>

@@ -1,0 +1,18 @@
+#UNITS NATURAL
+#
+#d1: DISTANCE ATOMS=1,2 COMPONENTS
+#ff: MATHEVAL ARG=d1.x,d1.y PERIODIC=NO FUNC=(-200*exp(-(x-1)^2-10*(y)^2)-100*exp(-(x-0)^2-10*(y-0.5)^2)-170*exp(-6.5*(x+0.5)^2+11*(x+0.5)*(y-1.5)-6.5*(y-1.5)^2)+15*exp(0.7*(x+1.0)^2+0.6*(x+1.0)*(y-1.0)+0.7*(y-1.0)^2))
+#
+#bb: BIASVALUE ARG=ff
+#
+#pb: PATHCV ARG=d1.x,d1.y INFILE=initial-path.xy FIXED=5,15 PACE=500
+
+d1: READ VALUES=d1.x,d1.y FILE=incolvar IGNORE_TIME
+
+pp: ADAPTIVE_PATH TYPE=EUCLIDEAN FIXED=5,15 UPDATE=50 WFILE=out-path.pdb WSTRIDE=50 FMT=%8.4f REFERENCE=mypath.pdb
+
+PRINT ARG=d1.x,d1.y,pp.* FMT=%8.4f FILE=colvar
+
+# mm: METAD ARG=pp.gspath PACE=100 SIGMA=0.1 HEIGHT=5 
+
+# PRINT ARG=d1.x,d1.y,ff,bb.*,pb.*,pp.*,mm.* FILE=colvar 

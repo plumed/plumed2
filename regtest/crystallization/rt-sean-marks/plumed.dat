@@ -1,0 +1,22 @@
+# Water oxygens: atoms 1-N with stride 4 (TIP4P geometry)
+ow: GROUP ATOMS=1-16500:4
+
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+
+# Calculates q_{l,m}(i)
+q6: Q6 SPECIES=ow SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} LOWMEM
+
+# Calculates Lechner & Dellago's \bar{q}_{l,m}(i)
+qbar6: LOCAL_AVERAGE SPECIES=q6 SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} LOWMEM
+
+# Probe volume
+sphere: INSPHERE ATOM=center DATA=qbar6 RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52} SUM LOWMEM
+
+# Renormalize
+lambdav: COMBINE ARG=sphere.sum COEFFICIENTS=1.732125 PARAMETERS=0.0 POWERS=1.0 PERIODIC=NO
+
+# Bias the mean value of the OP in the sphere
+restraint: RESTRAINT ARG=lambdav AT=0.5 KAPPA=1000.0 SLOPE=0.0
+
+print: PRINT ARG=lambdav,restraint.bias FILE=bias_lambdav_plumed.out FMT=%8.4f

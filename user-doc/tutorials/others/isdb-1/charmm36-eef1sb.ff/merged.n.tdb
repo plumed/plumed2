@@ -1,0 +1,82 @@
+
+[ None ]
+
+[ GLY-NH3+ ]
+[ replace ]
+ N  N   NH3     14.0070 -0.90
+ CA CA  CT2     12.011  0.20
+ HA   HA    HB2     1.008    0.10
+ HA   HA    HB2     1.008    0.10
+[ Add ]
+ 3  4   H   N   CA  C
+    HC  1.008   0.20    -1
+[ delete ]
+ HN
+
+[ NH3+ ]
+[ replace ]
+ N    N NH3     14.0070 -0.90
+ CA   CA    CT1     12.011  0.20
+ HA   HA    HB1     1.008    0.10
+[ Add ]
+ 3       4       H       N       CA      C
+         HC      1.008   0.20    -1
+[ delete ]
+ HN
+
+[ PRO-NH2+ ]
+[ replace ]
+ N    N NP       14.0070 -0.90
+ CA   CA    CP1      12.011  0.20
+ CD   CD    CP3      12.011  0.16
+[ add ]
+ 2       4       HN      N       CA      C
+         HC      1.008   0.24    -1
+
+; Created by Michel Cuendet
+[ NH2 ]
+[ replace ]
+ N      NH2     14.0070 -0.90
+ CA     CT1     12.011  0.20
+ HA     HB1     1.008   0.10
+[ add ]
+ 2  4   HT  N   CA  C
+    H   1.008   0.34    -1
+[ delete ]
+ HN
+
+
+; Created by Bjelkmar 
+[ GLY-NH2 ]
+[ replace ]
+ N      NH2     14.0070 -0.90
+ CA     CT2     12.011  0.20
+[ add ]
+ 2  4   HT  N   CA  C
+    H   1.008   0.34    -1
+[ delete ]
+ HN
+
+
+; Created by Bjelkmar 
+[ PRO-NH ]
+[ replace ]
+ N      NP  14.0070 -0.90
+ CA     CP1 12.011  -0.20
+ CD     CP3 12.011  -0.10
+[ add ]
+ 1  4   H   N   CA  C
+ HC 1.008   0.31    -1
+
+; added by Justin Lemkul 
+[ 5TER ]
+[ replace ]
+ O5'    ON5  15.9994 -0.66
+ C5'    CN8B 12.011   0.05
+[ add ]
+ 1  2  H5T  O5'  C5'  C4'
+    HN5  1.008  0.43    -1
+[ delete ]
+ P
+ O1P
+ O2P

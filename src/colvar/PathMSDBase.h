@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,7 +27,6 @@
 
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
-#include "tools/Tools.h"
 
 namespace PLMD {
 namespace colvar {
@@ -59,6 +58,8 @@ class PathMSDBase : public Colvar {
     }
   };
 
+  bool nopbc;
+
   double lambda;
   int neigh_size;
   int neigh_stride;
@@ -67,6 +68,18 @@ class PathMSDBase : public Colvar {
   std::vector<Vector> derivs_s;
   std::vector<Vector> derivs_z;
   std::vector <ImagePath> imgVec; // this can be used for doing neighlist
+
+  //variables used for the close structure method, i is the number of reference structures
+  double epsilonClose; //the maximal distance between the close and the current structure before reassignment
+  int debugClose; //turns on debug mode
+  int logClose; //turns on logging
+  RMSD rmsdPosClose; //rmsd between the current and the close structure
+  bool firstPosClose; //flag indicating the first time we need to calculate the distance between the close and the current structure
+  bool computeRefClose; //flag indicating necessity to recompute accurately all distances and rotation matrices between the close structure and reference str
+  std::vector<Tensor> rotationRefClose; //Tensor[i] saved rotation matrices between the close structure and reference structures
+  Tensor rotationPosClose; //rotation matrix between the close and the current structure
+  std::array<std::array<Tensor,3>,3> drotationPosCloseDrr01; //Tensor[3][3]; //derivation of the rotation matrix w.r.t rr01, necessary for calculation of derivations
+  std::vector<unsigned> savedIndices; //saved indices of imgVec from previous steps, used for recalculating after neighbourlist update
 protected:
   std::vector<PDB> pdbv;
   std::vector<std::string> labels;
@@ -74,6 +87,7 @@ protected:
   unsigned nframes;
 public:
   explicit PathMSDBase(const ActionOptions&);
+  ~PathMSDBase();
 // active methods:
   virtual void calculate();
 //  virtual void prepare();

@@ -1,0 +1,21 @@
+# dummy stuff using during optimization of the code:
+# DEBUG DETAILED_TIMERS
+# gg: GROUP ATOMS=1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
+# g: GROUP ATOMS=gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg,gg
+
+## NOTE
+## I used this with --debug-forces to debug forces on CENTER PHASES
+## since phases are disabled when PBC matrix is null
+## they clearly cannot agree with numerical difference in that case.
+## GB
+g: GROUP ATOMS=1,2,3
+ce1: CENTER ATOMS=g NOPBC
+ce2: CENTER ATOMS=g 
+ce3: CENTER ATOMS=g PHASES
+ce4: CENTER ATOMS=1,2,3 PHASES WEIGHTS=2,1,0
+ce5: CENTER ATOMS=1,1,2 PHASES
+DUMPATOMS ATOMS=1,2,3,ce1,ce2,ce3,ce4,ce5 FILE=centers
+de:  DISTANCE ATOMS=1,ce3
+dev: BIASVALUE ARG=de
+
+

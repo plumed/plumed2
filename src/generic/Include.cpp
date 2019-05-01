@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/Action.h"
+#include "core/ActionAnyorder.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Exception.h"
@@ -33,7 +34,9 @@ namespace generic {
 /*
 Includes an external input file, similar to "#include" in C preprocessor.
 
-Useful to split very large plumed.dat files.
+Useful to split very large plumed.dat files. Notice that in PLUMED 2.4 this action
+cannot be used before the initial setup part of the file (e.g. in the part with \ref UNITS, \ref MOLINFO, etc).
+As of PLUMED 2.5, \ref INCLUDE can be used in any position of the file.
 
 \par Examples
 
@@ -41,13 +44,13 @@ This input:
 \plumedfile
 c1: COM ATOMS=1-100
 c2: COM ATOMS=101-202
-d: DISTANCE ARG=c1,c2
+d: DISTANCE ATOMS=c1,c2
 PRINT ARG=d
 \endplumedfile
 can be replaced with this input:
 \plumedfile
 INCLUDE FILE=pippo.dat
-d: DISTANCE ARG=c1,c2
+d: DISTANCE ATOMS=c1,c2
 PRINT ARG=d
 \endplumedfile
 where the content of file pippo.dat is
@@ -141,7 +144,7 @@ RESTRAINT ARG=t AT=1.2 KAPPA=10
 //+ENDPLUMEDOC
 
 class Include :
-  public Action
+  public ActionAnyorder
 {
 public:
   static void registerKeywords( Keywords& keys );
@@ -158,7 +161,8 @@ void Include::registerKeywords( Keywords& keys ) {
 }
 
 Include::Include(const ActionOptions&ao):
-  Action(ao)
+  Action(ao),
+  ActionAnyorder(ao)
 {
   std::string f;
   parse("FILE",f);

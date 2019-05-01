@@ -1,0 +1,114 @@
+#! FIELDS idx_arg aver.targetdist-0 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1      0.000000       1  cos(1*s)
+       2      0.000000       2  cos(2*s)
+       3      0.000000       3  cos(3*s)
+       4      0.000000       4  cos(4*s)
+       5      0.000000       5  cos(5*s)
+       6      0.000000       6  cos(6*s)
+       7      0.000000       7  cos(7*s)
+       8      0.000000       8  cos(8*s)
+       9      0.000000       9  cos(9*s)
+      10      0.000000      10  cos(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-1 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1      0.000000       1  cos(1*s)
+       2      0.000000       2  cos(2*s)
+       3      0.000000       3  cos(3*s)
+       4      0.000000       4  cos(4*s)
+       5     -0.000000       5  cos(5*s)
+       6      0.000000       6  cos(6*s)
+       7     -0.000000       7  cos(7*s)
+       8      0.000000       8  cos(8*s)
+       9     -0.000000       9  cos(9*s)
+      10      0.000000      10  cos(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-2 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1      0.925791       1  cos(1*s)
+       2      0.734603       2  cos(2*s)
+       3      0.499595       3  cos(3*s)
+       4      0.291213       4  cos(4*s)
+       5      0.145489       5  cos(5*s)
+       6      0.062298       6  cos(6*s)
+       7      0.022864       7  cos(7*s)
+       8      0.007192       8  cos(8*s)
+       9      0.001939       9  cos(9*s)
+      10      0.000448      10  cos(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-3 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1      0.000028       1  cos(1*s)
+       2     -0.734630       2  cos(2*s)
+       3      0.000026       3  cos(3*s)
+       4      0.291188       4  cos(4*s)
+       5      0.000023       5  cos(5*s)
+       6     -0.062319       6  cos(6*s)
+       7      0.000019       7  cos(7*s)
+       8      0.007174       8  cos(8*s)
+       9      0.000016       9  cos(9*s)
+      10     -0.000462      10  cos(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-4 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1      0.000035       1  cos(1*s)
+       2     -0.734637       2  cos(2*s)
+       3      0.000033       3  cos(3*s)
+       4      0.291181       4  cos(4*s)
+       5      0.000030       5  cos(5*s)
+       6     -0.062326       6  cos(6*s)
+       7      0.000027       7  cos(7*s)
+       8      0.007167       8  cos(8*s)
+       9      0.000023       9  cos(9*s)
+      10     -0.000469      10  cos(10*s)
+#!-------------------
+
+
+#! FIELDS idx_arg aver.targetdist-5 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1      0.894309       1  cos(1*s)
+       2      0.636377       2  cos(2*s)
+       3      0.353545       3  cos(3*s)
+       4      0.145870       4  cos(4*s)
+       5      0.037839       5  cos(5*s)
+       6      0.000098       6  cos(6*s)
+       7     -0.005877       7  cos(7*s)
+       8     -0.003583       8  cos(8*s)
+       9     -0.001368       9  cos(9*s)
+      10     -0.000387      10  cos(10*s)
+#!-------------------
+
+

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #include "ReferenceAtoms.h"
 #include "tools/OFile.h"
 #include "core/Value.h"
+#include "tools/PDB.h"
 
 namespace PLMD {
 
@@ -35,17 +36,21 @@ ReferenceArguments::ReferenceArguments( const ReferenceConfigurationOptions& ro 
 
 void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ) {
   ReferenceAtoms* aref=dynamic_cast<ReferenceAtoms*>( this );
-  if( !aref ) parseVector( "ARG", arg_names );
-  else parseVector( "ARG", arg_names, true );
+  arg_names.resize( pdb.getArgumentNames().size() );
+  for(unsigned i=0; i<arg_names.size(); ++i) arg_names[i]=pdb.getArgumentNames()[i];
+  if( !aref && arg_names.size()==0 ) error("no arguments in input PDB file");
 
-  reference_args.resize( arg_names.size() );
-  for(unsigned i=0; i<arg_names.size(); ++i) parse( arg_names[i], reference_args[i] );
+  reference_args.resize( arg_names.size() ); arg_der_index.resize( arg_names.size() );
+  for(unsigned i=0; i<arg_names.size(); ++i) {
+    if( !pdb.getArgumentValue(arg_names[i], reference_args[i]) ) error("argument " + arg_names[i] + " was not set in pdb input");
+    arg_der_index[i]=i;
+  }
 
   if( hasweights ) {
     plumed_massert( !hasmetric, "should not have weights if we are using metric");
     weights.resize( arg_names.size() ); sqrtweight.resize( arg_names.size() );
     for(unsigned i=0; i<reference_args.size(); ++i) {
-      parse( "sigma_" + arg_names[i], weights[i] );
+      if( !pdb.getArgumentValue("sigma_" + arg_names[i], weights[i]) ) error("value sigma_" + arg_names[i] + " was not set in pdb input");
       sqrtweight[i] = sqrt( weights[i] );
     }
   } else if( hasmetric ) {
@@ -53,7 +58,9 @@ void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ) {
     double thissig; metric.resize( arg_names.size(), arg_names.size() );
     for(unsigned i=0; i<reference_args.size(); ++i) {
       for(unsigned j=i; j<reference_args.size(); ++j) {
-        parse( "sigma_" + arg_names[i] + "_" + arg_names[j], thissig );
+        if( !pdb.getArgumentValue("sigma_" + arg_names[i] + "_" + arg_names[j], thissig) ) {
+          error("value sigma_" + arg_names[i] + "_" + arg_names[j] + " was not set in pdb input");
+        }
         metric(i,j)=metric(j,i)=thissig;
       }
     }
@@ -61,17 +68,6 @@ void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ) {
     weights.resize( arg_names.size() ); sqrtweight.resize( arg_names.size() );
     for(unsigned i=0; i<weights.size(); ++i) sqrtweight[i]=weights[i]=1.0;
   }
-}
-
-void ReferenceArguments::setArgumentNames( const std::vector<std::string>& arg_vals ) {
-  reference_args.resize( arg_vals.size() );
-  arg_names.resize( arg_vals.size() );
-  arg_der_index.resize( arg_vals.size() );
-  for(unsigned i=0; i<arg_vals.size(); ++i) {
-    arg_names[i]=arg_vals[i]; arg_der_index[i]=i;
-  }
-  if( hasmetric ) metric.resize( arg_vals.size(), arg_vals.size() );
-  else weights.resize( arg_vals.size() );
 }
 
 void ReferenceArguments::setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma ) {
@@ -109,11 +105,11 @@ void ReferenceArguments::getArgumentRequests( std::vector<std::string>& argout, 
       if( arg_names.size()!=argout.size() ) error("mismatched numbers of arguments in pdb frames");
     }
     for(unsigned i=0; i<arg_names.size(); ++i) {
-      bool found=false;
       if(!disable_checks) {
         if( argout[i]!=arg_names[i] ) error("found mismatched arguments in pdb frames");
         arg_der_index[i]=i;
       } else {
+        bool found=false;
         for(unsigned j=0; j<arg_names.size(); ++j) {
           if( argout[j]==arg_names[i] ) { found=true; arg_der_index[i]=j; break; }
         }
@@ -123,28 +119,6 @@ void ReferenceArguments::getArgumentRequests( std::vector<std::string>& argout, 
       }
     }
   }
-}
-
-void ReferenceArguments::printArguments( OFile& ofile, const std::string& fmt ) const {
-  if( arg_names.size()>0 ) {
-    ofile.printf("REMARK ARG=%s", arg_names[0].c_str() );
-    for(unsigned i=1; i<arg_names.size(); ++i) ofile.printf(",%s", arg_names[i].c_str() );
-    ofile.printf("\n");
-
-    ofile.printf("REMARK ");
-    std::string descr2;
-    if(fmt.find("-")!=std::string::npos) {
-      descr2="%s=" + fmt + " ";
-    } else {
-      // This ensures numbers are left justified (i.e. next to the equals sign
-      std::size_t psign=fmt.find("%");
-      plumed_assert( psign!=std::string::npos );
-      descr2="%s=%-" + fmt.substr(psign+1) + " ";
-    }
-    for(unsigned i=0; i<arg_names.size(); ++i) ofile.printf( descr2.c_str(),arg_names[i].c_str(), reference_args[i] );
-    ofile.printf("\n");
-  }
-  // Missing print out of metrics
 }
 
 const std::vector<double>& ReferenceArguments::getReferenceMetric() {

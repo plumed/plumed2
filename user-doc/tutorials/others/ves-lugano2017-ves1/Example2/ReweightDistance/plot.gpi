@@ -1,0 +1,25 @@
+# Terminal settings
+#set terminal pngcairo size 1000,600 enhanced font 'Verdana,18'
+#set output "plotReweight.png"
+#set border lw 1.5
+
+# Set axes labels
+set xlabel "Distance (nm)"
+set ylabel "Free energy (kT)"
+
+# Set range
+set xr [0.2:0.7]
+set yr [-0.2:7]
+
+# Define colors
+set style line 1 lt 1 lw 3 ps 1 pt 5 lc rgb "#e41a1c"
+set style line 2 lt 1 lw 3 ps 1.5 pt 7 lc rgb "#377eb8"
+
+set key bottom left sample 1.
+
+everyValue=2
+
+pl "../fes.b1.iter-10000.data" u 1:($2/2.5) w l ls 1 title "F(s)=-V(s)-kT log p(s)", \
+   "./histo" u 1:(-log($2)+1.15) every everyValue w p ls 2 title "Reweight"
+
+pause -1

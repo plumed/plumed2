@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -41,6 +41,7 @@ This function sorts its arguments according to their magnitudes. The lowest argu
 labelled <em>label</em>.1, the second lowest will be labelled <em>label</em>.2 and so on.
 
 \par Examples
+
 The following input tells plumed to print the distance of the closest and of
 the farthest atoms to atom 1, chosen among atoms from 2 to 5
 \plumedfile

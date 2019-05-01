@@ -17,7 +17,89 @@
     <p>
         &nbsp;</p>
 
+    <h3>Artistic Style 3.1&nbsp; (January 2018)</h3>
+
+    <p>
+        The Windows default option file location has been changed from USERPROFILE to APPDATA. This 
+        moves the file from the User directory and to the user's hidden AppData<strong>\</strong>Roaming directory. The
+        USERPROFILE location has been depreciated and will be removed in a future release. You will need to relocate the
+        options file manually, Artistic Style will not change it. If the options file is in both locations, the new APPDATA
+        location will be used.</p>
+    <p>
+        The console build now accepts option file input encoded in UTF-16, or UTF-8 with a Byte Order Mark (BOM or signature).
+    </p>
+    <p>
+        New options, &quot;break-return-type&quot; and &quot;break-return-type-decl&quot;, will break the return type
+        from function definitions and function declarations. Additional new options, &quot;attach-return-type&quot; and
+        &quot;attach-return-type-decl&quot;, will attach the broken return types to function definitions and function
+        declarations. There is more information in the &quot;Formatting Options&quot; section of the documentation.
+    </p>
+    <p>
+        A new option, &quot;style=ratliff&quot;, has been added as an alternate for banner style.</p>
+    <p>
+        Several changes have been made to Objective-C which will improve formatting in certain cases.</p>
+    <p>
+        CMake can now be used to compile the AStyle builds. It is run from the top level folder instead of the 
+        &quot;build&quot; folder, and builds a Release configuration by default. The &quot;Install&nbsp;Information&quot;
+        contains additional information. </p>
+    <p>
+        When formatting files from the command line, multiple file extensions may now be used. The file 
+        extensions should be separated by commas or semicolons. For example, to format C++ files, use 
+        &quot;astyle /home/project/*.cpp,*.h&quot;. This will change the processing sequence to format all requested files
+        in a directory rather than formatting a directory once for each file extension. There is additional information
+        in the &quot;Usage&quot; section of the documentation.
+    </p>
+    <p>
+        New options &quot;project&quot;, &quot;project=####&quot;, and &quot;project=none&quot;will allow the use of an
+        optional project option file. This may be used to supplement or replace the command line options and the default
+        option file. The file is identified by a file name only and resides in the top level folder of a project. The
+        default file names are .astylerc or _astylerc. A specific file name may also be specified. Instead of an
+        option, the environment variable ARTISTIC_STYLE_PROJECT_OPTION may be used. Using the environment variable 
+        will make the project file the default for all projects. When formatting files in a project, the project option
+        file will be obtained from the files directory or a parent directory. The documentation has the details
+        in the &quot;Option Files&quot; section. The &quot;project&quot; option is described in the 
+        &quot;Command Line Only&quot; section.</p>
+    <p>
+        Allowing both option files enables them to be used for different purposes. For example, the default 
+        options could contain the file formatting options and the project options could contain the excludes for the 
+        given project. The order of precedence, highest to lowest, is command line options, project options, and default
+        options. Options with a value (e.g. style=kr, indent=spaces) may be replaced by an option with a higher precedence.
+        The binary options (indent-classes, pad-oper) cannot be changed. Once they are set they stay set. Both the 
+        default and project option files may be disabled if they are present and not required. When testing the 
+        option files, the options &quot;verbose&quot; and &quot;dry-run&quot; may be used. The option files used
+        will be displayed by the "verbose" option.</p>
+    <p>
+        When making changes to more than one file in a project, it may be desirable to format an entire folder. Wildcards
+        may be used in a single folder without recursive. The current directory is used if a path is not given. So,
+        for example, to format all changed files in the current directory using the project options, use the command:
+        &quot;astyle&nbsp;--project&nbsp;-A9s&nbsp;*.cpp,*.h&quot;. This example uses the project option file .astylerc
+        or _astylerc and overrides the project options with the command line -A9s options.</p>
+    <p>
+        Language translations have been added for the new project option file. A few of the other messages were changed
+        as well. If there is a better translation available report the change as a bug report. Be sure to include the
+        new translation. Translations are in the ASLocalizer.cpp file.</p>
+    <p>
+        A new virtual method, getPeekStart(), has been added to the pure virtual class ASSourceIterator. If you have 
+        inherited this class to access the formatter, you will need to add a method similar to getPeekStart() in the 
+        ASStreamIterator class in astyle_main.h.</p>
+    <p>
+        The Artistic Style source code has been fuzz tested with American Fuzzy Lop (AFL) and libFuzzer from Clang. This
+        will help prevent crashes caused by invalid input. There were about 30 corrections made to the source code. Most
+        of the crashes were caused by asserts which would not be present in a release version. There were a couple of
+        corrections that required logic changes. The changes should not affect the way the code is formatted.</p>
+    <p>
+        The documentation file, astyle.html, now has a sticky button in the lower right corner. It appears after you 
+        have scrolled past the Contents section. It is labeled &quot;Top&quot; but actually takes you back to the Contents.
+        The purpose is to improve speed in navigating the document. </p>
+    <p>
+        Thanks to Rian Quinn, David Haney, and Tamás Kurucsai for their contributions.</p>
+
     <h3>Artistic Style 3.0&nbsp; (April 2017)</h3>
+
+    <p>
+        Release 3.0.1 (May 2017) is a maintenance release and no new features were added. A list of changes is in
+        the Release Notes. The following information is for the original 3.0 release. Thanks to Juan Alday for his 
+        contribution. </p>
 
     <p>
         In the Artistic Style documentation, in General Information, Other Considerations, there is a list of

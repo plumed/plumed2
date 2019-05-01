@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -27,10 +27,13 @@
 #include <vector>
 #include <string>
 #include <map>
+#include "Tensor.h"
 
 
 namespace PLMD {
 
+class SetupMolInfo;
+class OFile;
 class Log;
 
 /// Minimalistic pdb parser.
@@ -43,10 +46,15 @@ class PDB {
   std::vector<Vector> positions;
   std::vector<double> occupancy;
   std::vector<double> beta;
-  std::vector<std::string> remark;
   std::vector<AtomNumber> numbers;
   std::map<AtomNumber,unsigned> number2index;
   std::vector<std::string> residuenames;
+  std::string mtype;
+  std::vector<std::string> flags;
+  std::vector<std::string> argnames;
+  std::map<std::string,double> arg_data;
+  Vector BoxXYZ,BoxABG;
+  Tensor Box;
 public:
 /// Read the pdb from a file, scaling positions by a factor scale
   bool read(const std::string&file,bool naturalUnits,double scale);
@@ -58,15 +66,12 @@ public:
   const std::vector<double>     & getOccupancy()const;
 /// Access to the beta array
   const std::vector<double>     & getBeta()const;
-/// This is used to set the keyword ARG - this is so we
-/// we can use a1.* in the input for reference configurations
-  void setArgKeyword( const std::string& new_args );
-/// Add information to the remark
-  void addRemark( const std::vector<std::string>& v1 );
-/// Access to the lines of REMARK
-  const std::vector<std::string>     & getRemark()const;
 /// Access to the indexes
   const std::vector<AtomNumber> & getAtomNumbers()const;
+///
+  std::vector<std::string> getArgumentNames()const;
+/// Add data to argnames map
+  void addRemark( std::vector<std::string>& v1 );
 /// Returns the number of atoms
   unsigned                        size()const;
 /// Get the names of all the chains in the pdb file
@@ -99,6 +104,20 @@ public:
 /// Return the atom named aname from residue number resnum and chain.
 /// Chain=="*" matches any chain and makes it equivalent to getNamedAtomFromResidue.
   AtomNumber getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chain ) const;
+/// Check if the properties that are required are in this pdb this is used in PLMD::mapping::Mapping
+//  bool hasRequiredProperties( const std::vector<std::string>& inproperties );
+/// This is used in PLMD::analysis::AnalysisWithDataCollection to add the sizes of the domains for PLMD::MultiRMSD
+  void addBlockEnd( const unsigned& end );
+/// This is used in PLMD::analysis::AnalysisWithDataCollection to add the numbers of the atoms
+  void setAtomNumbers( const std::vector<AtomNumber>& atoms );
+/// This is used in PLMD::analysis::AnalysisWithDataCollection to set the atom positions
+  void setAtomPositions( const std::vector<Vector>& pos );
+/// Set the argument names that you would like to use
+  void setArgumentNames( const std::vector<std::string>& argument_names );
+/// This is used in PLMD::analysis::AnalysisWithDataCollection to set the argument values
+  void setArgumentValue( const std::string& argname, const double& val );
+/// Get the value of one of the arguments in the PDB file
+  bool getArgumentValue( const std::string& name, double& value ) const ;
 /// Access to the atoms of a residue
   std::vector<AtomNumber> getAtomsInResidue(const unsigned& resnum,const std::string& chainid)const;
 /// Access to the atoms of a chain
@@ -111,6 +130,18 @@ public:
   void setPositions(const std::vector<Vector> &v);
 /// Access to the position array
   Vector getPosition(AtomNumber a)const;
+/// Print out a PDB object
+  void print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, const std::string& fmt );
+/// Does the PDB have this flag
+  bool hasFlag( const std::string& fname ) const ;
+/// Get the metric type
+  std::string getMtype() const ;
+/// Returns box axis lengths
+  const Vector & getBoxAxs()const;
+/// Returns box axis angles
+  const Vector & getBoxAng()const;
+/// Returns box axis vectors
+  const Tensor & getBoxVec()const;
 };
 
 }

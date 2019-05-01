@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2017 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -52,8 +52,6 @@ private:
 /// This is stuff for link cells
   std::vector<unsigned> cells_required;
 ///
-  void addDerivative( const unsigned&, const unsigned&, const double& );
-///
   void addAtomsDerivatives( const unsigned&, const unsigned&, const Vector& );
 ///
   void addTemporyAtomsDerivatives( const unsigned& jder, const Vector& der );
@@ -97,6 +95,8 @@ public:
   void addComDerivatives( const int&, const Vector&, CatomPack& );
 ///
   MultiValue& getUnderlyingMultiValue();
+///
+  void addDerivative( const unsigned&, const unsigned&, const double& );
 };
 
 inline

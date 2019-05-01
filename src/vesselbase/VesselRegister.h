@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,6 +26,7 @@
 #include <cstring>
 #include <vector>
 #include <map>
+#include <memory>
 #include "tools/Exception.h"
 #include "tools/Keywords.h"
 
@@ -38,7 +39,7 @@ class VesselOptions;
 class VesselRegister {
 private:
 /// Pointer to a function which, given the keyword for a distribution function, creates it
-  typedef Vessel*(*creator_pointer)(const VesselOptions&);
+  typedef std::unique_ptr<Vessel>(*creator_pointer)(const VesselOptions&);
 /// Pointer to the function that reserves the keyword for the distribution
   typedef void(*keyword_pointer)(Keywords&);
 /// The set of possible distribution functions we can work with
@@ -57,7 +58,7 @@ public:
 /// Verify if a distribution keyword is present in the register
   bool check(std::string keyname);
 /// Create a distribution function of the specified type
-  Vessel* create(std::string keyword, const VesselOptions&da);
+  std::unique_ptr<Vessel> create(std::string keyword, const VesselOptions&da);
 /// Return the keywords
   Keywords getKeywords();
 };
@@ -66,7 +67,7 @@ VesselRegister& vesselRegister();
 
 #define PLUMED_REGISTER_VESSEL(classname,keyword) \
   static class classname##RegisterMe{ \
-    static PLMD::vesselbase::Vessel * create(const PLMD::vesselbase::VesselOptions&da){return new classname(da);} \
+    static std::unique_ptr<PLMD::vesselbase::Vessel> create(const PLMD::vesselbase::VesselOptions&da){return std::unique_ptr<classname>( new classname(da) );} \
   public: \
     classname##RegisterMe(){PLMD::vesselbase::vesselRegister().add(keyword,create,classname::reserveKeyword,classname::registerKeywords);} \
     ~classname##RegisterMe(){PLMD::vesselbase::vesselRegister().remove(create);} \

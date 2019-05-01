@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -30,7 +30,8 @@ namespace function {
 //+PLUMEDOC FUNCTION STATS
 /*
 Calculates statistical properties of a set of collective variables with respect to a set of reference values.
-In particular it calculates and store as components the sum of the squared deviations, the correlation, the
+
+In particular it calculates and stores as components the sum of the squared deviations, the correlation, the
 slope and the intercept of a linear fit.
 
 The reference values can be either provided as values using PARAMETERS or using value without derivatives
@@ -38,6 +39,7 @@ from other actions using PARARG (for example using experimental values from coll
 \ref CS2BACKBONE, \ref RDC, \ref NOE, \ref PRE).
 
 \par Examples
+
 The following input tells plumed to print the distance between three couple of atoms
 and compare them with three reference distances.
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2017 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -62,15 +62,13 @@ bool VesselRegister::check(std::string key) {
   return false;
 }
 
-Vessel* VesselRegister::create(std::string keyword, const VesselOptions&da) {
-  Vessel* df;
+std::unique_ptr<Vessel> VesselRegister::create(std::string keyword, const VesselOptions&da) {
+  std::unique_ptr<Vessel> df;
   if(check(keyword)) {
     Keywords keys; mk[keyword](keys);
     VesselOptions nda( da,keys );
     df=m[keyword](nda);
-    keys.destroyData();
   }
-  else df=NULL;
   return df;
 }
 

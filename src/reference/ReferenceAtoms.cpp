@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ReferenceAtoms.h"
+#include "core/SetupMolInfo.h"
 #include "tools/OFile.h"
 #include "tools/PDB.h"
 
@@ -34,52 +35,52 @@ ReferenceAtoms::ReferenceAtoms( const ReferenceConfigurationOptions& ro ):
 void ReferenceAtoms::readAtomsFromPDB( const PDB& pdb, const bool allowblocks  ) {
   if( !allowblocks && pdb.getNumberOfAtomBlocks()!=1 ) error("found multi-atom-block pdb format but expecting only one block of atoms");
 
+  indices.resize(0); reference_atoms.resize(0); align.resize(0); displace.resize(0); atom_der_index.resize(0);
   for(unsigned i=0; i<pdb.size(); ++i) {
     indices.push_back( pdb.getAtomNumbers()[i] ); reference_atoms.push_back( pdb.getPositions()[i] );
-    align.push_back( pdb.getOccupancy()[i] ); displace.push_back( pdb.getBeta()[i] );
-  }
-  atom_der_index.resize( reference_atoms.size() );
-}
-
-void ReferenceAtoms::setAtomNumbers( const std::vector<AtomNumber>& numbers ) {
-  reference_atoms.resize( numbers.size() ); align.resize( numbers.size() );
-  displace.resize( numbers.size() ); atom_der_index.resize( numbers.size() );
-  indices.resize( numbers.size() );
-  for(unsigned i=0; i<numbers.size(); ++i) {
-    indices[i]=numbers[i]; atom_der_index[i]=i;
+    align.push_back( pdb.getOccupancy()[i] ); displace.push_back( pdb.getBeta()[i] ); atom_der_index.push_back(i);
   }
 }
 
-void ReferenceAtoms::printAtoms( OFile& ofile, const double& lunits ) const {
-  plumed_assert( indices.size()==reference_atoms.size() && align.size()==reference_atoms.size() && displace.size()==reference_atoms.size() );
-  for(unsigned i=0; i<reference_atoms.size(); ++i) {
-    ofile.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                 indices[i].serial(), i,
-                 lunits*reference_atoms[i][0], lunits*reference_atoms[i][1], lunits*reference_atoms[i][2],
-                 align[i], displace[i] );
-  }
-}
+// void ReferenceAtoms::setAtomNumbers( const std::vector<AtomNumber>& numbers ) {
+//   reference_atoms.resize( numbers.size() ); align.resize( numbers.size() );
+//   displace.resize( numbers.size() ); atom_der_index.resize( numbers.size() );
+//   indices.resize( numbers.size() );
+//   for(unsigned i=0; i<numbers.size(); ++i) {
+//     indices[i]=numbers[i]; atom_der_index[i]=i;
+//   }
+// }
 
-bool ReferenceAtoms::parseAtomList( const std::string& key, std::vector<unsigned>& numbers ) {
-  plumed_assert( numbers.size()==0 );
+// void ReferenceAtoms::printAtoms( OFile& ofile, const double& lunits ) const {
+//   plumed_assert( indices.size()==reference_atoms.size() && align.size()==reference_atoms.size() && displace.size()==reference_atoms.size() );
+//   for(unsigned i=0; i<reference_atoms.size(); ++i) {
+//     ofile.printf("ATOM  %5d  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+//                  indices[i].serial(), i,
+//                  lunits*reference_atoms[i][0], lunits*reference_atoms[i][1], lunits*reference_atoms[i][2],
+//                  align[i], displace[i] );
+//   }
+// }
 
-  std::vector<std::string> strings;
-  if( !parseVector(key,strings,true) ) return false;
-  Tools::interpretRanges(strings);
-
-  numbers.resize( strings.size() );
-  for(unsigned i=0; i<strings.size(); ++i) {
-    AtomNumber atom;
-    if( !Tools::convert(strings[i],atom ) ) error("could not convert " + strings[i] + " into atom number");
-
-    bool found=false;
-    for(unsigned j=0; j<indices.size(); ++j) {
-      if( atom==indices[j] ) { found=true; numbers[i]=j; break; }
-    }
-    if(!found) error("atom labelled " + strings[i] + " is not present in pdb input file");
-  }
-  return true;
-}
+// bool ReferenceAtoms::parseAtomList( const std::string& key, std::vector<unsigned>& numbers ) {
+//   plumed_assert( numbers.size()==0 );
+//
+//   std::vector<std::string> strings;
+//   if( !parseVector(key,strings,true) ) return false;
+//   Tools::interpretRanges(strings);
+//
+//   numbers.resize( strings.size() );
+//   for(unsigned i=0; i<strings.size(); ++i) {
+//     AtomNumber atom;
+//     if( !Tools::convert(strings[i],atom ) ) error("could not convert " + strings[i] + " into atom number");
+//
+//     bool found=false;
+//     for(unsigned j=0; j<indices.size(); ++j) {
+//       if( atom==indices[j] ) { found=true; numbers[i]=j; break; }
+//     }
+//     if(!found) error("atom labelled " + strings[i] + " is not present in pdb input file");
+//   }
+//   return true;
+// }
 
 void ReferenceAtoms::getAtomRequests( std::vector<AtomNumber>& numbers, bool disable_checks ) {
   singleDomainRequests(numbers,disable_checks);
@@ -99,9 +100,8 @@ void ReferenceAtoms::singleDomainRequests( std::vector<AtomNumber>& numbers, boo
       if( numbers.size()!=indices.size() ) error("mismatched numbers of atoms in pdb frames");
     }
 
-    bool found;
     for(unsigned i=0; i<indices.size(); ++i) {
-      found=false;
+      bool found=false;
       if(!disable_checks) {
         if( indices[i]!=numbers[i] ) error("found mismatched reference atoms in pdb frames");
         atom_der_index[i]=i;
@@ -119,7 +119,7 @@ void ReferenceAtoms::singleDomainRequests( std::vector<AtomNumber>& numbers, boo
 
 void ReferenceAtoms::displaceReferenceAtoms( const double& weight, const std::vector<Vector>& dir ) {
   plumed_dbg_assert( dir.size()==reference_atoms.size() );
-  for(unsigned i=0; i<dir.size(); ++i) reference_atoms[i] += weight*dir[i];
+  for(unsigned i=0; i<dir.size(); ++i) reference_atoms[i] += weight*dir.size()*dir[i];
 }
 
 }

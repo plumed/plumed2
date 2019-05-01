@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -108,7 +108,6 @@ double MinimiseBase<FCLASS>::linemin( const std::vector<double>& dir, std::vecto
 
 template <class FCLASS>
 double MinimiseBase<FCLASS>::calcDerivatives( const std::vector<double>& p, std::vector<double>& der, engf_pointer myfunc ) {
-
   return (myclass_func->*myfunc)( p, der );
 }
 

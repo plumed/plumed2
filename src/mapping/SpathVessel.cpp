@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2017 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,7 +29,6 @@ namespace mapping {
 class SpathVessel : public vesselbase::FunctionVessel {
 private:
   bool foundoneclose;
-  unsigned mycoordnumber;
   Mapping* mymap;
 public:
   static void registerKeywords( Keywords& keys );
@@ -58,7 +57,6 @@ SpathVessel::SpathVessel( const vesselbase::VesselOptions& da ):
   mymap=dynamic_cast<Mapping*>( getAction() );
   plumed_massert( mymap, "SpathVessel can only be used with mappings");
   // Retrieve the index of the property in the underlying mapping
-  mycoordnumber=mymap->getPropertyIndex( getLabel() );
   usetol=true; norm=true;
 
   for(unsigned i=0; i<mymap->getFullNumberOfTasks(); ++i) {
@@ -75,7 +73,7 @@ void SpathVessel::prepare() {
 }
 
 void SpathVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const {
-  double pp=mymap->getPropertyValue( current, mycoordnumber ), weight=myvals.get(0);
+  double pp=mymap->getPropertyValue( current, getLabel() ), weight=myvals.get(0);
   if( weight<getTolerance() ) return;
   unsigned nderivatives=getFinalValue()->getNumberOfDerivatives();
   buffer[bufstart] += weight*pp; buffer[bufstart+1+nderivatives] += weight;

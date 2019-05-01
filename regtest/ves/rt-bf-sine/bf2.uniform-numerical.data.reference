@@ -1,0 +1,19 @@
+#! FIELDS idx_arg aver.targetdist-0 index description
+#! SET type LinearBasisSet
+#! SET ndimensions  1
+#! SET ncoeffs_total  11
+#! SET shape_arg  11
+       0      1.000000       0  1
+       1      0.000000       1  sin(1*s)
+       2      0.000000       2  sin(2*s)
+       3      0.000000       3  sin(3*s)
+       4     -0.000000       4  sin(4*s)
+       5      0.000000       5  sin(5*s)
+       6      0.000000       6  sin(6*s)
+       7     -0.000000       7  sin(7*s)
+       8      0.000000       8  sin(8*s)
+       9      0.000000       9  sin(9*s)
+      10     -0.000000      10  sin(10*s)
+#!-------------------
+
+

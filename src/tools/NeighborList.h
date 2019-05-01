@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2017 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -79,6 +79,8 @@ public:
 /// Get the list of neighbors of the i-th atom
   std::vector<unsigned> getNeighbors(unsigned i);
   ~NeighborList() {}
+/// Get the i-th pair of AtomNumbers from the neighbor list
+  std::pair<AtomNumber,AtomNumber> getClosePairAtomNumber(unsigned i) const;
 };
 
 }
