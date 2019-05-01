@@ -188,8 +188,8 @@ d7: DISTANCE __FILL__
 UPPER_WALLS __FILL__
 \endplumedfile
 
-<b> Copy and paste the content above into the file plumed.dat and then fill in the blanks by looking up the documentation for these actions online and by reading the description of the calculation that you are to run above.
-Once you have got a working plumed.dat file run a calculation using simplemd again at a temperature of \f$k_B T = 0.2 \epsilon\f$ and check to see if the bias potential is indeed preventing the cluster from evaporating. </b>
+Copy and paste the content above into the file plumed.dat and then fill in the blanks by looking up the documentation for these actions online and by reading the description of the calculation that you are to run above.
+Once you have got a working plumed.dat file run a calculation using simplemd again at a temperature of \f$k_B T = 0.2 \epsilon\f$ and check to see if the bias potential is indeed preventing the cluster from evaporating. 
 
 \subsubsection lyon-ex0-ext Extensions
 
@@ -210,7 +210,7 @@ Furthermore, we can compute the coordination number of our Lennard Jones atoms u
 \f[
 c_i = \sum_{i \ne j } \frac{1 - \left(\frac{r_{ij}}{1.5}\right)^8}{1 - \left(\frac{r_{ij}}{1.5}\right)^{16} }
 \f]
-where \f$r_{ij}\f$__FILL__ is the distance between atom \f$i\f$ and atom \f$j\f$.  The following cell contains a skeleton input file for PLUMED that gets it to calculate and print the values these two quantities take every 100 time steps 
+where \f$r_{ij}\f$ __FILL__ is the distance between atom \f$i\f$ and atom \f$j\f$.  The following cell contains a skeleton input file for PLUMED that gets it to calculate and print the values these two quantities take every 100 time steps 
 to a file called colvar.
 
 \plumedfile
@@ -218,14 +218,14 @@ c1: COORDINATIONNUMBER SPECIES=__FILL__ MOMENTS=__FILL__ SWITCH={RATIONAL __FILL
 PRINT ARG=__FILL__ FILE=colvar STRIDE=100
 \endplumedfile
 
-<b> Copy and paste the content above into your plumed.dat file after the lines that you added in the previous exercise that added the restraints to stop the cluster from evaporating.  Fill in the blanks in the input above and,
+Copy and paste the content above into your plumed.dat file after the lines that you added in the previous exercise that added the restraints to stop the cluster from evaporating.  Fill in the blanks in the input above and,
 once you have a working plumed.dat file, run a calculation using simplemd at a temperature of \f$k_B T = 0.2 \epsilon\f$.  Once you have generated the trajectory plot the time series of second and third moment values using 
-gnuplot or some other plotting package. </b>
+gnuplot or some other plotting package.
 
 \hidden{Example time series}
 
 \anchor lyon-time-series
-\image html lyon-time-series.png "Time series for the second and third moments of the distribution of coordination numbers for two trajectories of Lennard Jones 7.  The time series on the left was computed from a trajectory that was performed at \f$k_B T = 0.2 \epsilon\f$, while the two time series on the right were computed at a temperature of \f$k_B T = 0.1 \epsilon\f$.  You can see that at the higher temperature there are jumps between distinct minima in the energy landscape.  At the lower temperature, however, the system remains trapped in a single basin in the energy lanscape"
+\image html lyon-time-series.png "Time series for the second and third moments of the distribution of coordination numbers for two trajectories of Lennard Jones 7.  The time series on the left was computed from a trajectory that was performed at k_B T = 0.2 epsilon, while the two time series on the right were computed at a temperature of k_B T = 0.1 epsilon.  You can see that at the higher temperature there are jumps between distinct minima in the energy landscape.  At the lower temperature, however, the system remains trapped in a single basin in the energy lanscape"
 
 \endhidden
 
@@ -255,8 +255,8 @@ fes: CONVERT_TO_FES GRID=_FILL__ __FILL__=0.2
 DUMPGRID GRID=__FILL__ FILE=fes.dat
 \endplumedfile
 
-<b> Copy and paste the content above into your plumed.dat file after the lines that you added in the previous two exercises.  Fill in the blanks in the input above and, once you have a working plumed.dat file, run a calculation using simplemd 
-at a temperature of \f$k_B T = 0.2 \epsilon\f$.  Once you have generated the trajectory create a contour plot of the free energy surface that is contained in fes.dat using gnuplot or some other plotting package. </b> 
+Copy and paste the content above into your plumed.dat file after the lines that you added in the previous two exercises.  Fill in the blanks in the input above and, once you have a working plumed.dat file, run a calculation using simplemd 
+at a temperature of \f$k_B T = 0.2 \epsilon\f$.  Once you have generated the trajectory create a contour plot of the free energy surface that is contained in fes.dat using gnuplot or some other plotting package.
 
 \hidden{What your free energy surface should look like}
 The free energy surface that you get from this calculation should look something like the figure shown on the left below.  Please note that in order to fully sample configuration space and in order to get a reasonably converged estimate of the free energy
@@ -264,7 +264,7 @@ you are going to have to use many more time steps than you did in previous exerc
 configuration space is explored at this lower temperature
 
 \anchor lyon-lj7-fes
-\image html lyon-histograms-highT.png "The free energy for Lennard Jones seven calculated by computing a histogram based on an MD trajectory at \f$k_B T = 0.2 \epsilon\f$ (left) and \f$k_B T = 0.1 \epsilon\f$."
+\image html lyon-histograms-highT.png "The free energy for Lennard Jones seven calculated by computing a histogram based on an MD trajectory at k_B T = 0.2 epsilon (left) and k_B T = 0.1 epsilon."
 
 \endhidden
 
@@ -278,7 +278,7 @@ in a lower temperature simulation.  The fact that the histogram shows that the p
 is not converged.  The free energy will thus look like the one shown below instead of looking like the one in the previous hidden section:
 
 \anchor lyon-lj7-fes2
-\image html lyon-histograms-lowT.png "The free energy for Lennard Jones seven calculated by computing a histogram based on an MD trajectory at \f$k_B T = 0.2 \epsilon\f$ (left) and \f$k_B T = 0.1 \epsilon\f$."
+\image html lyon-histograms-lowT.png "The free energy for Lennard Jones seven calculated by computing a histogram based on an MD trajectory at k_B T = 0.2 epsilon (left) and k_B T = 0.1 epsilon."
   
 \endhidden
 
@@ -308,8 +308,8 @@ that we have been using thus far and you would add a line like the one shown bel
 METAD ARG=__FILL__ HEIGHT=__FILL__ PACE=__FILL__ SIGMA=__FILL__ GRID_MIN=-1.5,-1.5 GRID_MAX=2.5,2.5 GRID_BIN=500,500 BIASFACTOR=5
 \endplumedfile
 
-<b> This input should be modified to instruct PLUMED to add Gaussian kernels with a bandwidth of 0.1 in both the second and third moment of the distribution of coordination numbers and a height of 0.05 \f$\epsilon\f$ every 50 MD 
-steps.  The metadynamics calculation should then be run using simplemd at a temperature of \f$k_B T = 0.1 \epsilon\f$. </b>
+This input should be modified to instruct PLUMED to add Gaussian kernels with a bandwidth of 0.1 in both the second and third moment of the distribution of coordination numbers and a height of 0.05 \f$\epsilon\f$ every 50 MD 
+steps.  The metadynamics calculation should then be run using simplemd at a temperature of \f$k_B T = 0.1 \epsilon\f$.
 
 A nice feature of the metadynamics method is that, if the simulation is converged, the final bias potential is a related to the underlying free energy surface by:
 \f[

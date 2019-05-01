@@ -239,9 +239,9 @@ that were output from the calculation above by using gnuplot and the following c
 gnuplot> p 'colvar' u 1:2 w l
 \endverbatim
 
-If you try this now you should see that all the average values that were calculated are relatively consistent but that there are differences between them.  <b> Try to 
+If you try this now you should see that all the average values that were calculated are relatively consistent but that there are differences between them.  Try to 
 calculate the size of \f$\epsilon\f$ for a 90 % confidence limit around this random variable using the formula that was provided above.  How many of the averages that 
-you extracted using PLUMED lie within this range?  Is this behavior inline with your expectations based on your understanding of what a confidence limit is? </b>
+you extracted using PLUMED lie within this range?  Is this behavior inline with your expectations based on your understanding of what a confidence limit is?
 
 We can also perform block averaging when we estimate histograms using PLUMED.  The following input will calculate these block averaged histograms for the data we 
 generated at the start of this exercise using PLUMED.
