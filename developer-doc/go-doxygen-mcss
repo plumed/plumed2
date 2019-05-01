@@ -1,0 +1,8 @@
+#! /bin/bash
+
+for file in html/*.html
+do
+ # add user manual
+ sed -e "s/Manual<\/a>/Manual<\/a><a href=\"..\/..\/user-doc\/html\/index.html\" class=\"m-thin m-right-m\"\>User Manual<\/a>/g" $file > $file.tmp
+ mv $file.tmp $file
+done
