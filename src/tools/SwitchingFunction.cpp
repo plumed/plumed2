@@ -111,10 +111,13 @@ s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right)
 </td> <td> </td>
 </tr> <tr>
 <td> COSINUS </td> <td>
-\f$
-s(r) &= 1  & if r<=d0
-s(r) &= 0.5 \left( \cos ( \frac{ r - d_0 }{ r_0 } * PI ) + 1 \right) & if d0<r<=d0+r0
-s(r) &= 0  & if r> d0+r0
+\f$ s(r) = \left\{
+  \begin{array}{lr}
+    1 & : r<=d0 \\
+    0.5 \left( \cos ( \frac{ r - d_0 }{ r_0 } * \pi ) + 1 \right) & : d0<r<=d0+r0  \\
+    0 & : r> d0+r0
+  \end{array}
+\right.
 \f$
 </td> <td>
 {COSINUS R_0=\f$r_0\f$ D_0=\f$d_0\f$}
