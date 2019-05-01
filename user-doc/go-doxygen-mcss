@@ -2,6 +2,9 @@
 
 for file in html/*.html
 do
+ # color PLUMED syntax
  awk -f plumed-syntax-mcss.awk $file > $file.tmp
- mv $file.tmp $file
+ # add developer manual
+ sed -e "s/Manual<\/a>/Manual<\/a><a href=\"..\/..\/developer-doc\/html\/index.html\" class=\"m-thin m-right-m\"\>Developer Manual<\/a>/g" $file.tmp > $file
+ rm $file.tmp
 done
