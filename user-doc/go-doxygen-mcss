@@ -3,6 +3,10 @@
 # get PLUMED version
 source ../sourceme.sh
 PROJECT_NUMBER=`../src/lib/plumed --no-mpi info --long-version`
+# check if master
+if [[ "$PROJECT_NUMBER" == *"dev"* ]]; then
+ PROJECT_NUMBER=master
+fi 
 
 for file in html/*.html
 do
