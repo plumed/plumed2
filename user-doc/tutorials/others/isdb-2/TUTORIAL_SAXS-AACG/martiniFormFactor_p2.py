@@ -7,6 +7,7 @@
 from __future__ import division
 import sys,logging
 logging.basicConfig(format='%(levelname)-7s    %(message)s',level=9)
+
     
 # This is a simple and versatily option class that allows easy
 # definition and parsing of options. 
@@ -29,7 +30,6 @@ class Option:
             self.value = [ self.func(i) for i in v ]
     
 options = [
-
     ("-f",        Option(str,1,None, "PDB Input file.\n\t\tDifferent chains (or chain breaks) should be separated by TER or named with different chain-ID.\n\t\tOnly one model is expected. ENDMDL is accepted only at the end of the file.")),
     ("-dat",      Option(str,1,None,"Experimental Data Input file.\n\t\tEach line should contain momentum transfer (in inverse Ang) and non-zero intensity, separated by blanks or comma.\n\t\tIf momentum transfer is in inverse nm, use the option \"-unit nm\"")),
     ("-unit",     Option(str,1,"Ang","Unit of the momentum transfer [Ang/nm]. Default: Ang")),
@@ -68,8 +68,6 @@ def help():
             print("%10s  %s" % (item[0], item[1].description))
     print
     sys.exit()
-
-
 
 
 #################################################
@@ -530,6 +528,7 @@ class Residue(list):
             for i in self:
                 if i[0] == tag:
                     return i
+            return
         if tag[1]:
             return [i for i in self if tag[0] in i[0]] # Return partial matches
         else:
@@ -631,6 +630,10 @@ class Chain:
     def __eq__(self,other):
         return (self.seq        == other.seq    and 
                 self.breaks     == other.breaks )
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
     # Extract a residue by number or the list of residues of a given type
     # This facilitates selecting residues for links, like chain["CYS"]
@@ -646,29 +649,26 @@ class Chain:
             for i in self.cg():
                 if other == i[:4]:
                     return i
-            else:
-                for i in self.atoms():
-                    if other[:3] == i[:3]:
-                        return i
-                else:
-                    return []
+            for i in self.atoms():
+                if other[:3] == i[:3]:
+                    return i
+            return []
+        elif type(other) == slice:
+            # This implements the old __getslice__ method 
+            i, j = other.start, other.stop
+            newchain = Chain(self.options, name=self.id)
+            # Extract the slices from all lists
+            for attr in self._attributes:
+                setattr(newchain, attr, getattr(self, attr)[i:j])
+            # Breaks that fall within the start and end of this chain need to be passed on.
+            # Residue numbering is increased by 20 bits!!
+            ch_sta, ch_end      = newchain.residues[0][0][2], newchain.residues[-1][0][2]
+            newchain.breaks     = [crack for crack in self.breaks if ch_sta < (crack << 20) < ch_end]
+            newchain.natoms     = len(newchain.atoms())
+            # newchain.type()
+            # Return the chain slice
+            return newchain
         return self.sequence[other]
-
-    # Extract a piece of a chain as a new chain
-    def __getslice__(self,i,j):
-        newchain = Chain(self.options,name=self.id)        
-        # Extract the slices from all lists
-        for attr in self._attributes:           
-            setattr(newchain, attr, getattr(self,attr)[i:j])
-        # Breaks that fall within the start and end of this chain need to be passed on.
-        # Residue numbering is increased by 20 bits!!
-        # XXX I don't know if this works.
-        ch_sta,ch_end = newchain.residues[0][0][2],newchain.residues[-1][0][2]
-        newchain.breaks     = [crack for crack in self.breaks if ch_sta < (crack<<20) < ch_end]
-        newchain.natoms     = len(newchain.atoms())
-        newchain.type()
-        # Return the chain slice
-        return newchain
 
     def _contains(self,atomlist,atom):
         atnm,resn,resi,chn = atom
@@ -1056,7 +1056,6 @@ if __name__ == '__main__':
 
     options = option_parser(args,options)
 
-
     if options["-f"].value is None:
         logging.error("No input PDB file. Try to use the option -h for help.")
         sys.exit(1)
@@ -1065,11 +1064,8 @@ if __name__ == '__main__':
         logging.error("No input data file. Try to use the option -h for help.")
         sys.exit(1)
 
-
-
     main(options)
 
-        
     stop = time.time()
     stoploc = time.localtime(stop)
     logging.info("\n\nEnded at time: {}:{}:{} of {}/{}/{}.".format(stoploc[3],stoploc[4],stoploc[5],stoploc[2],stoploc[1],stoploc[0]))
