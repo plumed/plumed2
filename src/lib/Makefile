@@ -313,7 +313,7 @@ ifdef python_bin
 	cp -pr ../../python install 
 	cd install/python && rm -fr *.so plumed.cpp build && \
           unset CXX && unset CC && unset CFLAGS && unset CXXFLAGS && unset LDSHARED && \
-          plumed_program_name="$(program_name)" \
+          plumed_program_name=plumed \
           plumed_version=$(VERSION) \
           plumed_include_dir=../../../wrapper \
           plumed_default_kernel="$(libdir)/lib$(program_name)Kernel.$(SOEXT)" \
