@@ -40,7 +40,7 @@ export VERSION=`date +%Y.%m.%d`
 
 # Disabled because it fails
 if [[ -n "$CONDA_UPLOAD_TOKEN" ]]; then
-    USER=tonigi			# fix this
+    USER=plumed  # the conda channel
     anaconda -t $CONDA_UPLOAD_TOKEN upload -u $USER -l testing \
 	     $CONDA_HOME/conda-bld/$TRAVIS_OS_NAME-64/plumed*.tar.bz2 --force
 fi

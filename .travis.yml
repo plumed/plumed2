@@ -85,11 +85,13 @@ matrix:
       - $HOME/.macports-ci-ccache
 # linux conda package
   - os: linux
+    if: branch =~ ^test- OR tag IS present OR type IN(pull_request)
     dist: trusty
     sudo: required
     env: PLUMED_CONDA=yes
 # osx conda package
   - os: osx
+    if: branch =~ ^test- OR tag IS present OR type IN(pull_request)
     osx_image: xcode8.3
     env: PLUMED_CONDA=yes
 # I don't put any mpi variant with macports since it takes too long to compile
