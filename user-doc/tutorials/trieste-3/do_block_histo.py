@@ -1,4 +1,3 @@
-import math
 import glob
 import numpy as np
 # Here are some numbers you will need to change if you run this script on grids generated in different contexts
