@@ -272,7 +272,8 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
           for(unsigned j=0; j<arguments[i]->store_data_for.size(); ++j) {
             bool found=false;
             for(unsigned k=0; k<arguments.size(); ++k) {
-              if( arguments[i]->store_data_for[j].first==(arguments[k]->getPntrToAction())->getLabel() ) { found=true; break; }
+              if( arguments[i]->store_data_for[j].first==(arguments[k]->getPntrToAction())->getLabel() && 
+                  arguments[k]->getPntrToAction()->getName()!="NEIGHBORS" ) { found=true; break; }
             }
             if( found ) { arguments[i]->buildDataStore( getLabel() ); break; }
           }

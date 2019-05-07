@@ -1,0 +1,2 @@
+type=driver
+arg="--ixyz diamond_conf_64C.xyz --dump-forces forces --dump-forces-fmt %8.4f" # --debug-forces=forces.num"

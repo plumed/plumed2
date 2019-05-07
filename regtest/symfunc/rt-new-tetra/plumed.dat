@@ -1,0 +1,8 @@
+# Calculate the CV
+cv: TETRA_RADIAL SPECIES=1-64 SUM MEAN
+# Print values of CV
+PRINT ATOMS=cv ARG=cv FILE=mcolv.xyz FMT=%8.4f 
+# Print SUM and MEAN of cv
+PRINT ARG=cv_sum,cv_mean FILE=colvar FMT=%8.4f 
+# Add force on value
+BIASVALUE ARG=cv

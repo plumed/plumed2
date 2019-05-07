@@ -86,7 +86,7 @@ Neighbors::Neighbors(const ActionOptions&ao):
 }
 
 unsigned Neighbors::getNumberOfDerivatives() const {
-  return (getPntrToArgument(0)->getPntrToAction())->getNumberOfDerivatives();
+  return 0;
 }
 
 void Neighbors::performTask( const unsigned& current, MultiValue& myvals ) const {
@@ -116,10 +116,9 @@ void Neighbors::performTask( const unsigned& current, MultiValue& myvals ) const
   for(unsigned i=0; i<number; ++i) {
     myvals.setValue( matout, 1.0 );
     unsigned colno = rows[nind-1-i].second; if( lowest ) colno = rows[i].second;
-    av->runTask( av->getLabel(), myvals.getTaskIndex(), current, getFullNumberOfTasks()+colno, myvals );
+    av->runTask( av->getLabel(), myvals.getTaskIndex(), current, myvals.getNumberOfIndicesInFirstBlock()+colno, myvals );
     av->clearMatrixElements( myvals );
   }
-  if( !doNotCalculateDerivatives() ) plumed_merror("I have not implemented this yet");
 }
 
 }
