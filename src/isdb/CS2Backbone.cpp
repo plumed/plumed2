@@ -631,7 +631,7 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
     }
   }
 
-  requestAtoms(used_atoms);
+  requestAtoms(used_atoms, false);
   setDerivatives();
   checkRead();
 }

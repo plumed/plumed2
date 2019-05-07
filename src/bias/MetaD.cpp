@@ -1020,7 +1020,7 @@ MetaD::MetaD(const ActionOptions& ao):
     log.printf("  calculation on the fly of the transition bias V*(t)\n");
     addComponent("transbias");
     componentIsNotPeriodic("transbias");
-    log.printf("  Number of transition wells %d\n", transitionwells_.size());
+    log<<"  Number of transition wells "<<transitionwells_.size()<<"\n";
     if (transitionwells_.size() == 0) error("Calculating the transition bias on the fly requires definition of at least one transition well");
     // Check that a grid is in use.
     if (!grid_) error(" transition barrier finding requires a grid for the bias");

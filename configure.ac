@@ -760,7 +760,7 @@ if test $python == true  ; then
   if test -n "$PYTHON_BIN"
   then
     AC_MSG_NOTICE([Python executable is $PYTHON_BIN])
-    AC_MSG_CHECKING([support for required python modules (setuptools, cython, numpy, subprocess, os, shutil)])
+    AC_MSG_CHECKING([support for required python modules (setuptools, cython, subprocess, os, shutil)])
 testimport="
 from setuptools import setup
 from setuptools import Extension
@@ -769,7 +769,6 @@ import os
 import os.path
 import sys
 from shutil import copyfile
-import numpy
 from Cython.Build import cythonize
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then

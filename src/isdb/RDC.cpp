@@ -328,7 +328,7 @@ RDC::RDC(const ActionOptions&ao):
     addComponent("Syz"); componentIsNotPeriodic("Syz");
   }
 
-  requestAtoms(atoms);
+  requestAtoms(atoms, false);
   if(getDoScore()) {
     setParameters(coupl);
     Initialise(coupl.size());

@@ -55,7 +55,7 @@ ReadAnalysisFrames::ReadAnalysisFrames( const ActionOptions& ao ):
   weights_calculated(false)
 {
   parse("CLEAR",clearstride);
-  if( clearstride!=0 ) log.printf("  clearing stored data every %d steps\n");
+  if( clearstride!=0 ) log.printf("  clearing stored data every %u steps\n",clearstride);
   // Get the names of the argumes
   argument_names.resize( getNumberOfArguments() );
   for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i]=getPntrToArgument(i)->getName();

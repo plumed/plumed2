@@ -4,7 +4,7 @@
 \authors Giovanni Bussi
 \date February 19, 2019
 
-This document describes the PLUMED tutorial held at CINECA, Feburary 2019.
+This document describes the PLUMED tutorial held at CINECA, February 2019.
 The aim of this tutorial is to learn how to optimize simulations performed using PLUMED.
 Although the presented input files are correct,
 the users are invited to **refer to the literature to understand how the
@@ -105,7 +105,7 @@ Notice that running with DETAILED_TIMERS might slow down a bit more your simulat
 Each line tells you how expensive was the calculation of each collective variable.
 Find which is the most expensive! We will focus on it in the next points
 
-\subsection performance-optimization-2d Optmizing coordination numbers using neighbor lists
+\subsection performance-optimization-2d Optimizing coordination numbers using neighbor lists
 
 The \ref COORDINATION of multiple atoms can be very expensive for a number of reasons:
 - It might require the calculation of a large number of distances
@@ -164,7 +164,7 @@ You will probably see that using neighbor lists is usually inconvenient unless y
 So far we have used PLUMED to analyze a CV on the fly. In principle, when you analyze CVs you typically only print them with a given
 stride (say, every 100 steps). This of course moderates significantly their cost. However, when you bias a CV you typically need to
 compute it at every step.
-Let's say that you want to use a restraint to make sure that the Mg ion is always hexacoordinated with water.
+Let's say that you want to use a restraint to make sure that the Mg ion is always six coordinated with water.
 This can be obtained using a \ref RESTRAINT located AT=6. Remove the \ref PRINT action from your input file
 and replace it with the following actions:
 \plumedfile

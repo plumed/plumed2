@@ -80,7 +80,7 @@ public:
 /// during the simulation, atoms will be available at the next step
 /// MAYBE WE HAVE TO FIND SOMETHING MORE CLEAR FOR DYNAMIC
 /// LISTS OF ATOMS
-  void requestAtoms(const std::vector<AtomNumber> & a);
+  void requestAtoms(const std::vector<AtomNumber> & a, const bool clearDep=true);
 /// Get position of i-th atom (access by relative index)
   const Vector & getPosition(int)const;
 /// Get position of i-th atom (access by absolute AtomNumber).

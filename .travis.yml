@@ -7,43 +7,44 @@ matrix:
 # this is the "master" one, it is going to update the manual every time
 # Variable PLUMED_ALL_TESTS=yes ensures that all the regtests can be run.
 # If some of them is not enabled, the whole suite will fail.
-  - os: linux
+  - name: Run all tests and build doc. All features enabled (system blas and lapack + asmjit)
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=673dcefa
-# coverage scan
-  - os: linux
+  - name: Run all tests and scan coverage
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKECOVERAGE=yes PLUMED_ALL_TESTS=yes
-# the following are with debug flags
-  - os: linux
+  - name: Debug flags, no MPI
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=gcc   PLUMED_CXX=g++    CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-  - os: linux
+  - name: Debug flags, MPI
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-# cppcheck
-  - os: linux
+  - name: Cppcheck and codecheck
+    os: linux
     dist: trusty
     sudo: required
     env: CPPCHECK=yes CPPCHECK_VERSION=1.87
-# test using external blas with internal lapack
-  - os: linux
+  - name: External blas with internal lapack
+    os: linux
     if: branch =~ ^test- OR type IN(pull_request)
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
-# test using docker image.
-# currently it means ubuntu 17, with gcc6
-  - sudo: required
+  - name: Docker image (ubuntu 17, with gcc6)
+    sudo: required
     if: branch =~ ^test- OR type IN(pull_request)
     services: docker
     env: PLUMED_DOCKER=yes
-# osx serial
-  - os: osx
+  - name: MacOS, serial build
+    os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
@@ -51,8 +52,8 @@ matrix:
     cache:
       directories:
       - $HOME/.ccache
-# osx parallel
-  - os: osx
+  - name: MacOS, MPI build
+    os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
@@ -60,24 +61,24 @@ matrix:
     cache:
       directories:
       - $HOME/.ccache
-# osx serial macports
-  - os: osx
+  - name: MacPorts, default modules
+    os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_MACPORTS="plumed" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
       - $HOME/.macports-ci-ccache
-# osx serial macports debug variant
-  - os: osx
+  - name: MacPorts, all modules
+    os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_MACPORTS="plumed +allmodules" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
       - $HOME/.macports-ci-ccache
-# osx serial macports debug variant
-  - os: osx
+  - name: MacPorts 8.3, all modules
+    os: osx
     osx_image: xcode8.3
     env: PLUMED_MACPORTS="plumed +allmodules" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
@@ -110,6 +111,7 @@ install:
   - export INCLUDE="$HOME/opt/include:$HOME/opt/arrayfire/include:$INCLUDE"
   - export LIBRARY_PATH="$HOME/opt/lib:$HOME/opt/arrayfire/lib:$LIBRARY_PATH"
   - export LD_LIBRARY_PATH="$HOME/opt/lib:$HOME/opt/arrayfire/lib:$LD_LIBRARY_PATH"
+  - export PYTHONPATH="$HOME/opt/lib/plumed/python:$PYTHONPATH"
 # Setting the TMPDIR in this way allegedly prevents problems with the compilation of 
 # PLUMED + Python on macos
   - export TMPDIR="/tmp" 
@@ -149,13 +151,14 @@ install:
 # install aspell
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y aspell aspell-en  ; fi
 # install lcov
-  - if test "$MAKECOVERAGE" == yes ; then ./.travis/install.lcov v1.13 ; fi
+  - if test "$MAKECOVERAGE" == yes ; then ./.travis/install.lcov v1.14 ; fi
 # install numpy and cython for python interface
 # only for linux and homebrew (no macports)
   - if test "$PLUMED_CXX" ; then
       sudo pip install --upgrade pip ;
       sudo pip install numpy ;
       sudo pip install Cython ;
+      sudo pip install nose ;
     fi
 # then replace doxygen with the desided version
 # I use 1.8.10 instead of 1.8.11 since it looks like 1.8.11 have troubles with
@@ -209,11 +212,11 @@ script:
 
 # build using macports
   - if test -n "$PLUMED_MACPORTS" ; then
-      sudo port -N -k install $PLUMED_MACPORTS ;
+      travis_wait sudo port -N -k install $PLUMED_MACPORTS ;
       plumed config show ;
       ./macports-ci ccache --save ;
       for p in $PLUMED_PYTHON ; do
-        sudo port -N install py${p//./}-plumed ;
+        travis_wait sudo port -N install py${p//./}-plumed ;
       done
     fi
 
@@ -236,12 +239,16 @@ script:
   - if test "$MAKECOVERAGE" == yes ; then make -C developer-doc coverage ; fi
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
   - if test "$PLUMED_CXX" ; then make -C regtest checkfail ; fi
+# OpenBLAS is needed for numpy, I install it separately since it takes a long time
   - if test -n "$PLUMED_MACPORTS" ; then
-      sudo port -N -d test $PLUMED_MACPORTS ;
+      travis_wait sudo port -N -d test $PLUMED_MACPORTS ;
+      travis_wait sudo port -N install OpenBLAS ;
       for p in $PLUMED_PYTHON ; do
-        sudo port install py${p//./}-nose ;
-        nosetests-$p -v -w python ;
+        travis_wait sudo port test py${p//./}-plumed ;
       done
+    fi
+  - if test "$PLUMED_CXX" ; then
+        nosetests -v -w python ;
     fi
 
 # CPPCHECK:

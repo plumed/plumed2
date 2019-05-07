@@ -690,7 +690,7 @@ There are two ways to install Python wrappers.
 
 \subsection installingpython-inside Installing Python wrappers within PLUMED
 
-If `./configure` finds a `python` executable that also has the modules `numpy` and `cython` available, Python wrappers will be installed within `/prefix/lib/plumed/python`. In order to access them, you should add this directory to the environment variable `PYTHONPATH`. Notice that if your python interpreter has a different name you might have to pass it to `./configure` with `PYTHON_BIN=python3.6`. The whole thing would then be:
+If `./configure` finds a `python` executable that also has the `cython` module available, Python wrappers will be installed within `/prefix/lib/plumed/python`. In order to access them, you should add this directory to the environment variable `PYTHONPATH`. Notice that if your python interpreter has a different name you might have to pass it to `./configure` with `PYTHON_BIN=python3.6`. The whole thing would then be:
 
 ````
 ./configure PYTHON_BIN=python3.6 --prefix=$HOME/opt
@@ -707,7 +707,6 @@ Notice that in this manner you will have to commit to a specific python version 
 If you use multiple python versions, you might find it easier to install the Python wrappers separately from PLUMED. The simplest way is to do it with `pip`:
 
 ````
-pip3.6 install --user numpy
 pip3.6 install --user plumed
 ````
 
@@ -724,8 +723,7 @@ If you want to install using pip the development version of the wrappers you sho
 the following commands:
 
 ````
-pip3.6 install --user cython # also cython is required in this case
-pip3.6 install --user numpy
+pip3.6 install --user cython # cython is required in this case
 cd plumed2/python
 make pip
 pip3.6 install --user .

@@ -701,7 +701,7 @@ PIV::PIV(const ActionOptions&ao):
           lmt1+=1;
         }
       }
-      log.printf("       |%10i|%15i|%15i|%15i|\n", j, rPIV[j].size(), lmt0, lmt1);
+      log.printf("       |%10i|%15zu|%15i|%15i|\n", j, rPIV[j].size(), lmt0, lmt1);
     }
   }
 
@@ -808,7 +808,7 @@ void PIV::calculate()
           lmt1+=1;
         }
       }
-      log.printf("       |%10i|%15i|%15i|%15i|\n", j, rPIV[j].size(), lmt0, lmt1);
+      log.printf("       |%10i|%15zu|%15i|%15i|\n", j, rPIV[j].size(), lmt0, lmt1);
     }
     log << "\n";
   }

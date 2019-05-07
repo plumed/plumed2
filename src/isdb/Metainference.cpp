@@ -81,7 +81,7 @@ SIGMA_BIAS is an uncertainty parameter, sampled by a MC algorithm in the bounded
 defined by SIGMA_MIN and SIGMA_MAX. The initial value is set at SIGMA0. The MC move is a
 random displacement of maximum value equal to DSIGMA. If the number of data point is
 too large and the acceptance rate drops it is possible to make the MC move over mutually
-exclusive, random subset of size MC_CHUNKSIZE and run more than one move setting MC_STRIDE
+exclusive, random subset of size MC_CHUNKSIZE and run more than one move setting MC_STEPS
 in such a way that MC_CHUNKSIZE*MC_STEPS will cover all the data points.
 
 Calculated and experimental data can be compared modulo a scaling factor and/or an offset
@@ -314,8 +314,8 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance");
   keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
   keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives with respect to the bias");
-  keys.addOutputComponent("scale",        "default",      "scale parameter");
-  keys.addOutputComponent("offset",       "default",      "offset parameter");
+  keys.addOutputComponent("scale",        "SCALEDATA",    "scale parameter");
+  keys.addOutputComponent("offset",       "ADDOFFSET",    "offset parameter");
   keys.addOutputComponent("ftilde",       "GENERIC",      "ensemble average estimator");
 }
 
@@ -526,28 +526,43 @@ Metainference::Metainference(const ActionOptions&ao):
   vector<double> readsigma;
   parseVector("SIGMA0",readsigma);
   if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma.size()>1)
-    error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS");
+    error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
-    if(readsigma.size()==narg) {
-      sigma_.resize(narg);
-      sigma_=readsigma;
-    } else if(readsigma.size()==1) {
-      sigma_.resize(narg,readsigma[0]);
-    } else {
-      error("SIGMA0 can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS)");
-    }
+    sigma_.resize(readsigma.size());
+    sigma_=readsigma;
   } else sigma_.resize(1, readsigma[0]);
 
-  double read_smin_;
-  parse("SIGMA_MIN",read_smin_);
-  sigma_min_.resize(sigma_.size(),read_smin_);
-  double read_smax_;
-  parse("SIGMA_MAX",read_smax_);
-  sigma_max_.resize(sigma_.size(),read_smax_);
-  double read_dsigma_=-1.;
-  parse("DSIGMA",read_dsigma_);
-  if(read_dsigma_<0) read_dsigma_ = 0.05*(read_smax_ - read_smin_);
-  Dsigma_.resize(sigma_.size(),read_dsigma_);
+  vector<double> readsigma_min;
+  parseVector("SIGMA_MIN",readsigma_min);
+  if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma_min.size()>1)
+    error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
+  if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+    sigma_min_.resize(readsigma_min.size());
+    sigma_min_=readsigma_min;
+  } else sigma_min_.resize(1, readsigma_min[0]);
+
+  vector<double> readsigma_max;
+  parseVector("SIGMA_MAX",readsigma_max);
+  if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma_max.size()>1)
+    error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
+  if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+    sigma_max_.resize(readsigma_max.size());
+    sigma_max_=readsigma_max;
+  } else sigma_max_.resize(1, readsigma_max[0]);
+
+  if(sigma_max_.size()!=sigma_min_.size()) error("The number of values for SIGMA_MIN and SIGMA_MAX must be the same");
+
+  vector<double> read_dsigma;
+  parseVector("DSIGMA",read_dsigma);
+  if((noise_type_!=MGAUSS&&noise_type_!=MOUTLIERS&&noise_type_!=GENERIC)&&readsigma_max.size()>1)
+    error("If you want to use more than one SIGMA you should use NOISETYPE=MGAUSS|MOUTLIERS|GENERIC");
+  if(read_dsigma.size()>0) {
+    Dsigma_.resize(read_dsigma.size());
+    Dsigma_=read_dsigma;
+  } else {
+    Dsigma_.resize(sigma_max_.size());
+    for(unsigned i=0; i<sigma_max_.size(); i++) Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
+  }
 
   // monte carlo stuff
   parse("MC_STEPS",MCsteps_);
@@ -563,6 +578,34 @@ Metainference::Metainference(const ActionOptions&ao):
   if(kbt_==0.0) error("Unless the MD engine passes the temperature to plumed, you must specify it using TEMP");
 
   checkRead();
+
+  // set sigma_bias
+  if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
+    if(sigma_.size()==1) {
+      double tmp = sigma_[0];
+      sigma_.resize(narg, tmp);
+    } else if(sigma_.size()>1&&sigma_.size()!=narg) {
+      error("SIGMA0 can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS|GENERIC)");
+    }
+    if(sigma_min_.size()==1) {
+      double tmp = sigma_min_[0];
+      sigma_min_.resize(narg, tmp);
+    } else if(sigma_min_.size()>1&&sigma_min_.size()!=narg) {
+      error("SIGMA_MIN can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS|GENERIC)");
+    }
+    if(sigma_max_.size()==1) {
+      double tmp = sigma_max_[0];
+      sigma_max_.resize(narg, tmp);
+    } else if(sigma_max_.size()>1&&sigma_max_.size()!=narg) {
+      error("SIGMA_MAX can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS|GENERIC)");
+    }
+    if(Dsigma_.size()==1) {
+      double tmp = Dsigma_[0];
+      Dsigma_.resize(narg, tmp);
+    } else if(Dsigma_.size()>1&&Dsigma_.size()!=narg) {
+      error("DSIGMA can accept either one single value or as many values as the number of arguments (with NOISETYPE=MGAUSS|MOUTLIERS|GENERIC)");
+    }
+  }
 
   IFile restart_sfile;
   restart_sfile.link(*this);
@@ -683,9 +726,15 @@ Metainference::Metainference(const ActionOptions&ao):
   log.printf("  initial data uncertainties");
   for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f", sigma_[i]);
   log.printf("\n");
-  log.printf("  minimum data uncertainty %f\n",read_smin_);
-  log.printf("  maximum data uncertainty %f\n",read_smax_);
-  log.printf("  maximum MC move of data uncertainty %f\n",read_dsigma_);
+  log.printf("  minimum data uncertainties");
+  for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f",sigma_min_[i]);
+  log.printf("\n");
+  log.printf("  maximum data uncertainties");
+  for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f",sigma_max_[i]);
+  log.printf("\n");
+  log.printf("  maximum MC move of data uncertainties");
+  for(unsigned i=0; i<sigma_.size(); ++i) log.printf(" %f",Dsigma_[i]);
+  log.printf("\n");
   log.printf("  temperature of the system %f\n",kbt_);
   log.printf("  MC steps %u\n",MCsteps_);
   log.printf("  MC stride %u\n",MCstride_);
