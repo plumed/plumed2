@@ -891,6 +891,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       p.cmd("setStopFlag",&plumedStopCondition);
     }
     p.cmd("calc");
+    if(debugforces.length()>0) {
+      virial.assign(9,real(0.0));
+      forces.assign(3*natoms,real(0.0));
+      p.cmd("prepareCalc");
+      p.cmd("performCalcNoUpdate");
+    }
 
 // this is necessary as only processor zero is adding to the virial:
     intracomm.Bcast(virial,0);
