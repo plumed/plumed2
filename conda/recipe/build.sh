@@ -3,13 +3,16 @@
 env | sort
 
 # GB: install xdrfile library
-wget http://ftp.gromacs.org/pub/contrib/xdrfile-1.1.4.tar.gz
-tar xzf xdrfile-1.1.4.tar.gz
-cd xdrfile-1.1.4
-./configure --prefix=$PREFIX --enable-shared
-make
-make install
-cd ../
+if false; then
+    # TG - disabling because it fails to link for no rational cause
+    wget http://ftp.gromacs.org/pub/contrib/xdrfile-1.1.4.tar.gz
+    tar xzf xdrfile-1.1.4.tar.gz
+    cd xdrfile-1.1.4
+    ./configure --prefix=$PREFIX --enable-shared
+    make
+    make install
+    cd ../
+fi
 
 # TG: The "disabled" features are workaround for possible
 #     conda+configure bugs in library search: building is ok but
@@ -18,7 +21,7 @@ cd ../
 
 # TODO: re-enable them and see. Also to do: install docs?
 
-./configure --prefix=$PREFIX --enable-shared --disable-python --disable-zlib --disable-external-lapack --disable-external-blas LDFLAGS=-L$PREFIX/lib
+./configure --prefix=$PREFIX --enable-shared --disable-python --disable-zlib --disable-external-lapack --disable-external-blas 
 make -j4
 make install
 
