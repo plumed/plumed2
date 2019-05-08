@@ -85,13 +85,15 @@ matrix:
       directories:
       - $HOME/.macports-ci-ccache
 # linux conda package
-  - os: linux
+  - name: Conda build, linux
+    os: linux
     if: branch =~ ^test- OR tag IS present OR type IN(pull_request)
     dist: trusty
     sudo: required
     env: PLUMED_CONDA=yes
 # osx conda package
-  - os: osx
+  - name: Conda build, MacOS
+    os: osx
     if: branch =~ ^test- OR tag IS present OR type IN(pull_request)
     osx_image: xcode8.3
     env: PLUMED_CONDA=yes
