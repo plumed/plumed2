@@ -221,7 +221,7 @@ script:
     fi
 
 # build conda package
-  - if test -n "$PLUMED_CONDA" ; then make -C conda ; fi
+  - if test -n "$PLUMED_CONDA" ; then VERSION="${TRAVIS_TAG:-unspecified}" make -C conda ; fi
 
 # build docker container
   - if test "$PLUMED_DOCKER" = yes ; then make -C docker ; fi
