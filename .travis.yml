@@ -221,7 +221,8 @@ script:
     fi
 
 # build conda package
-  - if test -n "$PLUMED_CONDA" ; then VERSION="${TRAVIS_TAG:-unspecified}" make -C conda ; fi
+  - if test -n "${TRAVIS_TAG}" ; then CONDA_VERSION="${TRAVIS_TAG//-/_}" ; else CONDA_VERSION=unspecified ; fi
+  - if test -n "$PLUMED_CONDA" ; then VERSION="$CONDA_VERSION" make -C conda ; fi
 
 # build docker container
   - if test "$PLUMED_DOCKER" = yes ; then make -C docker ; fi
@@ -264,4 +265,4 @@ after_success:
   - if test "$MAKECOVERAGE" == yes ; then ./.travis/push coverage ; fi 
   - if test "$MAKECOVERAGE" == yes ; then bash <(curl -s https://codecov.io/bash) > /dev/null ; fi
 # upload conda package
-  - if test -n "$PLUMED_CONDA" && test -n "$TRAVIS_TAG" ; then VERSION="$TRAVIS_TAG" make -C conda upload ; fi
+  - if test -n "$PLUMED_CONDA" && test -n "$TRAVIS_TAG" ; then VERSION="$CONDA_VERSION" make -C conda upload ; fi
