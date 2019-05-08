@@ -264,4 +264,4 @@ after_success:
   - if test "$MAKECOVERAGE" == yes ; then ./.travis/push coverage ; fi 
   - if test "$MAKECOVERAGE" == yes ; then bash <(curl -s https://codecov.io/bash) > /dev/null ; fi
 # upload conda package
-  - if test -n "$PLUMED_CONDA" && test -n "$TRAVIS_TAG" ; then make -C conda upload ; fi
+  - if test -n "$PLUMED_CONDA" && test -n "$TRAVIS_TAG" ; then VERSION="$TRAVIS_TAG" make -C conda upload ; fi

@@ -1,5 +1,5 @@
 {% set name = "plumed2" %}
-{% set version = "2.5" %}
+{% set version = environ['VERSION'] %}
 
 package:
   name: {{ name|lower }}

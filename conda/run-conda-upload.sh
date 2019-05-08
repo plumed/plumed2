@@ -13,7 +13,6 @@ else
 fi
     
 export PATH="$CONDA_HOME/bin:$PATH"
-export VERSION=$TRAVIS_TAG
 
 # Disabled because it fails
 if [[ -n "$CONDA_UPLOAD_TOKEN" ]]; then
