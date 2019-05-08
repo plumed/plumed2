@@ -66,10 +66,10 @@ about:
   license: LGPL
   license_file: COPYING.LESSER
   summary: 'Free energy calculations in molecular systems'
-  description: |
+  description: >
     PLUMED is an open source library for free energy calculations in
     molecular systems which works together with some of the most
     popular molecular dynamics engines.
-  doc_url: https://plumed.github.io/doc-v2.4/user-doc/html/index.html
+  doc_url: https://plumed.github.io/doc-v2.5/user-doc/html/index.html
   dev_url: https://github.com/plumed/plumed2
 
