@@ -34,6 +34,7 @@ requirements:
     - m2-sed  # [win]
     - m2-which  # [win]
     - m2-tar  # [win]
+    - zlib
     - {{ compiler('m2w64_fortran') }}  # [win]
     - {{ compiler('m2w64_c') }}  # [win]
     - {{ compiler('m2w64_cxx') }}  # [win]
@@ -72,6 +73,6 @@ about:
     PLUMED is an open source library for free energy calculations in
     molecular systems which works together with some of the most
     popular molecular dynamics engines.
-  doc_url: https://plumed.github.io/doc-v2.4/user-doc/html/index.html
+  doc_url: https://plumed.github.io/doc-v2.5/user-doc/html/index.html
   dev_url: https://github.com/plumed/plumed2
 
