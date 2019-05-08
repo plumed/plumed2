@@ -626,6 +626,21 @@ is hard coded. As a consequence:
 This is especially useful if you are developing PLUMED since you will be able to install
 gromacs once for all and combine it with your working version of PLUMED.
 
+\section Installation-conda Installing PLUMED with conda
+
+If you use the conda package manager you can install a precompiled PLUMED binary using the following command:
+\verbatim
+> conda install -c plumed/label/testing plumed
+\endverbatim
+
+\warning Currently this is a test version. Starting with PLUMED 2.5.2 it will be possible to download
+the latest official release.
+
+Notice that binaries are only available for Linux and MacOS and that they have a limited number of features.
+In particular, they do not support MPI, nor the other optional libraries used by PLUMED, and do not
+include optional modules. However, they can be used to quickly install a working PLUMED version
+without the need to have a compiler.
+
 \section installingonacluster Installing PLUMED on a cluster
 
 If you are installing PLUMED on a cluster and you want several users to take advantage of it
