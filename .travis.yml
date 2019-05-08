@@ -222,8 +222,11 @@ script:
       done
     fi
 
-# build conda package
+# set CONDA_VERSION to TRAVIS_TAG, if available
   - if test -n "${TRAVIS_TAG}" ; then CONDA_VERSION="${TRAVIS_TAG//-/_}" ; else CONDA_VERSION=unspecified ; fi
+# remove initial v - only makes sense with official releases
+  - CONDA_VERSION="${CONDA_VERSION#v}"
+# build conda package
   - if test -n "$PLUMED_CONDA" ; then VERSION="$CONDA_VERSION" make -C conda ; fi
 
 # build docker container
