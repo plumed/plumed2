@@ -122,7 +122,7 @@ install:
   - export PLUMED_NUM_THREADS=2
   - ./.travis/check.log valgrind || VALGRIND=no
 # update packages
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -n "$PLUMED_CXX" ; then
       brew update > /dev/null ;
       brew install ccache ;
       export PLUMED_MPIRUN="mpirun --oversubscribe" ;
