@@ -1,4 +1,4 @@
-{% set name = "plumed2" %}
+{% set name = "plumed" %}
 {% set version = environ['VERSION'] %}
 
 package:
