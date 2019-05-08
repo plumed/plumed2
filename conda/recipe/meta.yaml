@@ -43,6 +43,8 @@ requirements:
     - pip
     - cython
     - zlib
+# cannot link gsl on MacOS
+    - gsl # [linux]
     - m2w64-binutils  # [win]
     - m2w64-gcc  # [win]
     - m2w64-tools-git  # [win]
@@ -50,6 +52,7 @@ requirements:
   run:
     - python
     - zlib
+    - gsl # [linux]
 
 test:
   # TODO. In principle these could be the official regtests.
