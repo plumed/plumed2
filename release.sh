@@ -132,7 +132,7 @@ if ! test "$VALIDATED" ; then
   echo "and wait for travis to finish the tests"
   echo "In case of failures, fix and repeat the procedure"
   echo "Also check the online manual, that should be here:"
-  echo "  http://plumed.github.io/doc-v$shortversion"
+  echo "  http://www.plumed.org/doc-v$shortversion"
   echo "In case of success, relaunch this script as \"./release.sh --validated\""
 else
   update_changelog CHANGES/v$shortversion.md $version $shortversion "$(date '+%b %e, %Y' | sed 's/  / /g')"
