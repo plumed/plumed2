@@ -13,6 +13,6 @@ fi
 for file in html/*.html
 do
  # add user manual
- sed -e "s/Manual<\/a>/Manual<\/a> <span class=\"m-breadcrumb\">|<\/span> <a class=\"m-breadcrumb\">$PROJECT_NUMBER<\/a> <a href=\"..\/..\/developer-doc\/html\/index.html\" class=\"m-thin m-right-m\"\>User Manual<\/a>/g" $file > $file.tmp
+ sed -e "s/Manual<\/a>/Manual<\/a> <span class=\"m-breadcrumb\">|<\/span> <a class=\"m-breadcrumb\">$PROJECT_NUMBER<\/a> <a href=\"..\/..\/user-doc\/html\/index.html\" class=\"m-thin m-right-m\"\>User Manual<\/a>/g" $file > $file.tmp
  mv $file.tmp $file 
 done
