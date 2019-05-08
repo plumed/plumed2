@@ -1,8 +1,18 @@
 #! /bin/bash
 
+# get PLUMED version
+source ../sourceme.sh
+PROJECT_NUMBER=`../src/lib/plumed --no-mpi info --long-version`
+# check if master
+if [[ "$PROJECT_NUMBER" == *"dev"* ]]; then
+ PROJECT_NUMBER="development version"
+else
+ PROJECT_NUMBER=v$PROJECT_NUMBER
+fi
+
 for file in html/*.html
 do
  # add user manual
- sed -e "s/Manual<\/a>/Manual<\/a><a href=\"..\/..\/user-doc\/html\/index.html\" class=\"m-thin m-right-m\"\>User Manual<\/a>/g" $file > $file.tmp
- mv $file.tmp $file
+ sed -e "s/Manual<\/a>/Manual<\/a> <span class=\"m-breadcrumb\">|<\/span> <a class=\"m-breadcrumb\">$PROJECT_NUMBER<\/a> <a href=\"..\/..\/developer-doc\/html\/index.html\" class=\"m-thin m-right-m\"\>User Manual<\/a>/g" $file > $file.tmp
+ mv $file.tmp $file 
 done
