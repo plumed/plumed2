@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e 
+
 # Anywhere but outside of the repository
 export CONDA_HOME=/var/tmp/miniconda
 
