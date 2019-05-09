@@ -136,59 +136,6 @@ OPT_AVERAGED_SGD ...
 \endplumedfile
 
 The multicanonical target distribution can also be used to explore a temperature interval in which a first order phase transitions is observed.
-Consider a system of 250 atoms that crystallizes in the fcc crystal structure.
-The interval of temperature that will be explored is 350-450 K.
-We assume that the melting temperature is in this range.
-In this case in addition to the energy an order parameter must also be biased.
-The energy and an order parameter are used as collective variables to construct the bias potential.
-We choose as order parameter the \ref FCCUBIC.
-Legendre polynomials are used to construct the two dimensional bias potential.
-The averaged stochastic gradient descent algorithm is chosen to optimize the VES functional.
-The target distribution is updated every 100 optimization steps (200 ps here) using the last estimation of the free energy.
-
-\plumedfile
-# Use energy and volume as CVs
-energy: ENERGY
-
-# Basis functions
-bf1: BF_LEGENDRE ORDER=10 MINIMUM=-25000 MAXIMUM=-23500
-bf2: BF_LEGENDRE ORDER=10 MINIMUM=0.0 MAXIMUM=256.0
-
-# Target distributions
-TD_MULTICANONICAL ...
- LABEL=td_multitp
- MIN_TEMP=350.0
- MAX_TEMP=450.0
- SIGMA=250.0,10.0
- THRESHOLD=15
- STEPS_TEMP=20
-... TD_MULTICANONICAL
-
-# Expansion
-VES_LINEAR_EXPANSION ...
- ARG=energy,op.morethan
- BASIS_FUNCTIONS=bf1,bf2
- TEMP=400.0
- GRID_BINS=200,200
- TARGET_DISTRIBUTION=td_multitp
- LABEL=b1
-... VES_LINEAR_EXPANSION
-
-# Optimization algorithm
-OPT_AVERAGED_SGD ...
-  BIAS=b1
-  STRIDE=500
-  LABEL=o1
-  STEPSIZE=1.0
-  FES_OUTPUT=500
-  BIAS_OUTPUT=500
-  TARGETDIST_OUTPUT=500
-  COEFFS_OUTPUT=10
-  TARGETDIST_STRIDE=100
-... OPT_AVERAGED_SGD
-
-\endplumedfile
-
 
 */
 //+ENDPLUMEDOC
@@ -213,10 +160,10 @@ PLUMED_REGISTER_ACTION(TD_Multicanonical,"TD_MULTICANONICAL")
 
 void TD_Multicanonical::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
-  keys.add("compulsory","THRESHOLD","1","Maximum exploration free energy in KT.");
+  keys.add("compulsory","THRESHOLD","1","Maximum exploration free energy in kT.");
   keys.add("compulsory","MIN_TEMP","Minimum temperature.");
   keys.add("compulsory","MAX_TEMP","Maximum temperature.");
-  keys.add("optional","STEPS_TEMP","20","Number of temperature steps. Only for the 2D version, i.e. energy and order parameter.");
+  keys.add("optional","STEPS_TEMP","Number of temperature steps. Only for the 2D version, i.e. energy and order parameter.");
   keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels used for smoothing the target distribution. One value must be specified for each argument, i.e. one value per CV. A value of 0.0 means that no smooting is performed, this is the default behavior.");
 }
 
