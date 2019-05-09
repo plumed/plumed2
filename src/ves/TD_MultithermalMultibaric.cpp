@@ -87,7 +87,7 @@ with \f$C\f$ such that \f$F_{\beta',P'}(E_m,\mathcal{V}_m,s_m)=0\f$ with \f$E_{m
 Therefore \f$ p(E,\mathcal{V},s) \f$ is determined iteratively as done in the well tempered target distribution \cite Valsson-JCTC-2015.
 
 The output of these simulations can be reweighted in order to obtain information at all temperatures and pressures in the targeted region of TP plane.
-The reweighting can be performed using the action \ref REWEIGHT_TEMPERATURE_PRESSURE.
+The reweighting can be performed using the action \ref REWEIGHT_TEMP_PRESS.
 
 The multicanonical ensemble (fixed volume) can be targeted using \ref TD_MULTICANONICAL.
 

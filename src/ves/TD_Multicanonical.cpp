@@ -36,13 +36,14 @@ namespace ves {
 /*
 Multicanonical target distribution (dynamic).
 
-Use the target distribution to sample the multicanonical ensemble \cite wanglandau \cite Berg-PRL-1992 \cite Piaggi-PRL-2019.
+Use the target distribution to sample the multicanonical ensemble \cite Berg-PRL-1992 \cite Piaggi-PRL-2019.
 In this way, in a single molecular dynamics simulation one can obtain information about the system in a range of temperatures.
 This range is determined through the keywords MIN_TEMP and MAX_TEMP.
 
 The collective variables (CVs) used to construct the bias potential must be:
-1) the energy or,
-2) the energy and an order parameter.
+ 1. the energy or,
+ 2. the energy and an order parameter.
+
 Other choices of CVs or a different order of the above mentioned CVs are nonsensical.
 The second CV, the order parameter, must be used when one aims at studying a first order phase transition in the chosen temperature interval \cite Piaggi-arXiv-2019.
 
@@ -52,8 +53,9 @@ If only the energy is biased, i.e. no phase transition is considered, then TRESH
 If also an order parameter is used then the THRESHOLD should be greater than the barrier for the transformation in kT.
 For small systems undergoing a freezing transition THRESHOLD is typically between 20 and 50.
 
-When only the potential energy is used as CV the method is equivalent to the Wang-Landau algorithm.
+When only the potential energy is used as CV the method is equivalent to the Wang-Landau algorithm \cite wanglandau.
 The advantage with respect to Wang-Landau is that instead of sampling the potential energy indiscriminately, an interval is chosen on the fly based on the minimum and maximum targeted temperatures.
+
 The algorithm works as follows.
 The target distribution for the potential energy is chosen to be:
 \f[
@@ -81,7 +83,113 @@ This iterative approach is similar to that in \ref TD_WELLTEMPERED.
 The version of this algorithm in which the energy and an order parameter are biased is similar to the one described in \ref TD_MULTITHERMAL_MULTIBARIC.
 
 The output of these simulations can be reweighted in order to obtain information at all temperatures in the targeted temperature interval.
-The reweighting can be performed using the action \ref REWEIGHT_TEMPERATURE_PRESSURE.
+The reweighting can be performed using the action \ref REWEIGHT_TEMP_PRESS.
+
+\par Examples
+
+The following input can be used to run a simulation in the multicanonical ensemble.
+The temperature interval to be explored is 400-600 K.
+The energy is used as collective variable.
+Legendre polynomials are used to construct the bias potential.
+The averaged stochastic gradient descent algorithm is chosen to optimize the VES functional.
+The target distribution is updated every 100 optimization steps (200 ps here) using the last estimation of the free energy.
+
+\plumedfile
+# Use energy and volume as CVs
+energy: ENERGY
+
+# Basis functions
+bf1: BF_LEGENDRE ORDER=20 MINIMUM=-25000 MAXIMUM=-23500
+
+# Target distributions
+TD_MULTICANONICAL ...
+ LABEL=td_multi
+ SIGMA=50.0
+ MIN_TEMP=400
+ MAX_TEMP=600
+ THRESHOLD=1
+... TD_MULTICANONICAL
+
+# Expansion
+VES_LINEAR_EXPANSION ...
+ ARG=energy
+ BASIS_FUNCTIONS=bf1
+ TEMP=500.0
+ GRID_BINS=1000
+ TARGET_DISTRIBUTION=td_multi
+ LABEL=b1
+... VES_LINEAR_EXPANSION
+
+# Optimization algorithm
+OPT_AVERAGED_SGD ...
+  BIAS=b1
+  STRIDE=500
+  LABEL=o1
+  STEPSIZE=1.0
+  FES_OUTPUT=500
+  BIAS_OUTPUT=500
+  TARGETDIST_OUTPUT=500
+  COEFFS_OUTPUT=10
+  TARGETDIST_STRIDE=100
+... OPT_AVERAGED_SGD
+
+\endplumedfile
+
+The multicanonical target distribution can also be used to explore a temperature interval in which a first order phase transitions is observed.
+Consider a system of 250 atoms that crystallizes in the fcc crystal structure.
+The interval of temperature that will be explored is 350-450 K.
+We assume that the melting temperature is in this range.
+In this case in addition to the energy an order parameter must also be biased.
+The energy and an order parameter are used as collective variables to construct the bias potential.
+We choose as order parameter the \ref FCCUBIC.
+Legendre polynomials are used to construct the two dimensional bias potential.
+The averaged stochastic gradient descent algorithm is chosen to optimize the VES functional.
+The target distribution is updated every 100 optimization steps (200 ps here) using the last estimation of the free energy.
+
+\plumedfile
+# Use energy and volume as CVs
+energy: ENERGY
+
+# Basis functions
+bf1: BF_LEGENDRE ORDER=10 MINIMUM=-25000 MAXIMUM=-23500
+bf2: BF_LEGENDRE ORDER=10 MINIMUM=0.0 MAXIMUM=256.0
+
+# Target distributions
+TD_MULTICANONICAL ...
+ LABEL=td_multitp
+ MIN_TEMP=350.0
+ MAX_TEMP=450.0
+ SIGMA=250.0,10.0
+ THRESHOLD=15
+ STEPS_TEMP=20
+... TD_MULTICANONICAL
+
+# Expansion
+VES_LINEAR_EXPANSION ...
+ ARG=energy,op.morethan
+ BASIS_FUNCTIONS=bf1,bf2
+ TEMP=400.0
+ GRID_BINS=200,200
+ TARGET_DISTRIBUTION=td_multitp
+ LABEL=b1
+... VES_LINEAR_EXPANSION
+
+# Optimization algorithm
+OPT_AVERAGED_SGD ...
+  BIAS=b1
+  STRIDE=500
+  LABEL=o1
+  STEPSIZE=1.0
+  FES_OUTPUT=500
+  BIAS_OUTPUT=500
+  TARGETDIST_OUTPUT=500
+  COEFFS_OUTPUT=10
+  TARGETDIST_STRIDE=100
+... OPT_AVERAGED_SGD
+
+\endplumedfile
+
+
 */
 //+ENDPLUMEDOC
 
@@ -105,11 +213,11 @@ PLUMED_REGISTER_ACTION(TD_Multicanonical,"TD_MULTICANONICAL")
 
 void TD_Multicanonical::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
-  keys.add("compulsory","THRESHOLD","Maximum exploration free energy in KT.");
+  keys.add("compulsory","THRESHOLD","1","Maximum exploration free energy in KT.");
   keys.add("compulsory","MIN_TEMP","Minimum temperature.");
   keys.add("compulsory","MAX_TEMP","Maximum temperature.");
-  keys.add("optional","STEPS_TEMP","Number of temperature steps. Only for the 2D version, i.e. energy and order parameter.");
-  keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels. You should give one value for each argument. Value of 0.0 means that switch is done without a smooth switching function, this is the default behavior.");
+  keys.add("optional","STEPS_TEMP","20","Number of temperature steps. Only for the 2D version, i.e. energy and order parameter.");
+  keys.add("optional","SIGMA","The standard deviation parameters of the Gaussian kernels used for smoothing the target distribution. One value must be specified for each argument, i.e. one value per CV. A value of 0.0 means that no smooting is performed, this is the default behavior.");
 }
 
 
