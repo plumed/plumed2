@@ -26,9 +26,6 @@ else
 # LD_LIBRARY_PATH or encoded configuring with -rpath.
 # Conda does not use LD_LIBRARY_PATH and it is thus necessary to suggest where libraries are.
   opt=STATIC_LIBS=-Wl,-rpath-link,$PREFIX/lib
-# Needed due to asmjit. See
-# See https://github.com/Bumblebee-Project/Bumblebee/issues/76
-  export LIBS="$LIBS -lrt"
 fi
 
 export CPPFLAGS="-D__PLUMED_DEFAULT_KERNEL=$PREFIX/lib/libplumedKernel$SHLIB_EXT $CPPFLAGS"
