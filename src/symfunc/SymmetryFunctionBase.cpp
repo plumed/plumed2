@@ -139,9 +139,6 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
           error("mismatched shapes of matrices in input");
         }
       } else if( wval[0]->getRank()==1 && wval[0]->getShape()[0]!=vecs[0]->getShape()[0] ) error("mismatched shapes of vectors in input");
-      if( (wval[0]->getPntrToAction())->getLabel()!=(vecs[0]->getPntrToAction())->getLabel() ) {
-        error("found mismatched vectors and weights in input to symmetry function - current not available, please email plumed list");
-      }
       if( ((wval[0]->getPntrToAction())->getActionThatCalculates())->getLabel()!=((vecs[0]->getPntrToAction())->getActionThatCalculates())->getLabel() ) {
         error("found mismatched vectors and weights in input to symmetry function (2nd version) - current not available, please email plumed list");
       }

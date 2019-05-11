@@ -1,2 +1,2 @@
-#! FIELDS time cv_sum cv_mean
- 0.000000  64.0000   1.0000
+#! FIELDS time cv_sum cv_mean acv_sum acv_mean
+ 0.000000  64.0000   1.0000  64.0000   1.0000

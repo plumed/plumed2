@@ -108,8 +108,8 @@ void Neighbors::performTask( const unsigned& current, MultiValue& myvals ) const
     if( !lowest && weighti<epsilon ) continue ;
     rows[n].first=weighti; rows[n].second=iind; n++;
   }
-  // Now do the sort
-  std::sort( rows.begin(), rows.end() );
+  // Now do the sort and clear all the stored values ready for recompute
+  std::sort( rows.begin(), rows.end() ); myvals.clearAll();
   // And do everything that follows me for only the relevant elements of the matrix
   unsigned matout = getPntrToOutput(0)->getPositionInStream();
   ActionWithValue* av = (getPntrToArgument(0)->getPntrToAction())->getActionThatCalculates();

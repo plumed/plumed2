@@ -1,8 +1,10 @@
-# Calculate the CV
+# Calculate the radial CV
 cv: TETRA_RADIAL SPECIES=1-64 SUM MEAN
+# And the angular CV
+acv: TETRA_ANGULAR SPECIES=1-64 SUM MEAN
 # Print values of CV
-PRINT ATOMS=cv ARG=cv FILE=mcolv.xyz FMT=%8.4f 
+PRINT ATOMS=cv ARG1=cv ARG2=acv FILE=mcolv.xyz FMT=%8.4f   
 # Print SUM and MEAN of cv
-PRINT ARG=cv_sum,cv_mean FILE=colvar FMT=%8.4f 
+PRINT ARG=cv_sum,cv_mean,acv_sum,acv_mean FILE=colvar FMT=%8.4f 
 # Add force on value
-BIASVALUE ARG=cv
+BIASVALUE ARG=cv_sum

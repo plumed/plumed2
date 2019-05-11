@@ -76,6 +76,9 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
     } else if( stype=="g7" ) {
       ftypes.push_back(7); prefactor[i-1] = 2.0;
       log.printf("  component labelled %s is of type g7 with parameters nu=%f and alpha=%f\n", lab.c_str(), nu[i-1], alpha[i-1]);
+    } else if( stype=="g8" ) {
+      ftypes.push_back(8); prefactor[i-1] = 1.0;
+      log.printf("  component labelled %s is of type g8 \n", lab.c_str() );
     }
   }
   if( hasg4 ) {
@@ -183,6 +186,17 @@ void ThreeBodyGFunctions::computeSymmetryFunction( const unsigned& current, Mult
           myvals.setSymfuncTemporyIndex( jind );
           addWeightDerivative( n, g7_nonweight*weighti, myvals );
           addVectorDerivatives( n, g7_vder*dd_j, myvals );
+        } else if( ftypes[n]==8 ) {
+          double g8_vder = cos( ang ) + (1./3.);
+          double g8_nonweight = g8_vder*g8_vder; 
+          g8_vder = -2*g8_vder*weightij*sin( ang );
+          addToValue( n, g8_nonweight*weightij, myvals );
+          myvals.setSymfuncTemporyIndex( iind );
+          addWeightDerivative( n, g8_nonweight*weightj, myvals );
+          addVectorDerivatives( n, g8_vder*dd_i, myvals );
+          myvals.setSymfuncTemporyIndex( jind );
+          addWeightDerivative( n, g8_nonweight*weighti, myvals );
+          addVectorDerivatives( n, g8_vder*dd_j, myvals ); 
         } else {
           plumed_merror("invalid symmetry function type");
         }
