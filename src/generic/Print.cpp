@@ -157,8 +157,7 @@ Print::Print(const ActionOptions&ao):
 {
   parse("FILE",file);
   if(file.length()>0) {
-    std::size_t dot=file.find_first_of(".");
-    if( dot!=std::string::npos ) tstyle=file.substr(dot+1);
+    tstyle = Tools::extension( file ); 
     if( tstyle!="xyz" && tstyle!="ndx" && tstyle!="grid" && tstyle!="cube" && tstyle!="dot" && tstyle!="pdb" ) tstyle="colvar";
     log.printf("  on file %s\n",file.c_str());
     if( tstyle!="grid" && tstyle!="cube" && tstyle!="pdb" ) { ofile.link(*this); ofile.open(file); }
