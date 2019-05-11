@@ -18,6 +18,8 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifdef __PLUMED_HAS_ASMJIT
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 // [AsmJit]
 // Complete x86/x64 JIT and Remote Assembler for C++.
 //
@@ -717,4 +719,5 @@ size_t CodeHolder::relocate(void* _dst, uint64_t baseAddress) const noexcept {
 
 // [Api-End]
 #include "./asmjit_apiend.h"
+#pragma GCC diagnostic pop
 #endif // __PLUMED_HAS_ASMJIT
