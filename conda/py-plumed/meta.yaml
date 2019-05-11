@@ -1,4 +1,4 @@
-{% set name = "plumed" %}
+{% set name = "py-plumed" %}
 {% set version = environ['VERSION'] %}
 
 package:
@@ -7,44 +7,36 @@ package:
 
 source:
   path: ../..
-  # Tar is preferred, but a symlink therein crashes windows builds. Git is ok.
-  # url: https://github.com/plumed/{{ name }}/archive/v{{ version }}.tar.gz
-  # sha256: f4cf55c63a6798a0607f4e47eeeee7c1bc191668772c83ce4dabf3a5ba407426
 
 build:
   number: 0
   skip: True  # [win]
-  skip: True  # [py<35]
   # Note: --no-deps is currently required due to https://github.com/conda/conda-build/issues/3254
   # Once resolved, it should be removed.
   # script: "{{ PYTHON }} -m pip install . --no-deps -vv"
 
 requirements:
-  build:
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
-#    - ccache-toolchain
   host:
-    - zlib
-# cannot link gsl on MacOS
-    - gsl # [linux]
+    - python
+    - pip
+    - cython
 
   run:
-    - zlib
-    - gsl # [linux]
+# make sure to test with this version
+    - python
 
 test:
+  requires:
+    - plumed
   # TODO. In principle these could be the official regtests.
   commands:
-    - plumed info --root
-    - plumed info --version
-    - plumed info --long-version
+    - python -c "import plumed; p=plumed.Plumed(); print(p)"
 
 about:
   home: http://www.plumed.org/
   license: LGPL
   license_file: COPYING.LESSER
-  summary: 'Free energy calculations in molecular systems'
+  summary: 'Python wrappers for plumed library'
   description: >
     PLUMED is an open source library for free energy calculations in
     molecular systems which works together with some of the most
