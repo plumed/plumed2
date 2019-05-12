@@ -31,6 +31,8 @@ else
   export LIBS="$LIBS -lrt"
 fi
 
+export CPPFLAGS="-D__PLUMED_DEFAULT_KERNEL=$PREFIX/lib/libplumedKernel$SHLIB_EXT $CPPFLAGS"
+
 ./configure --prefix=$PREFIX --enable-shared --disable-python --disable-external-lapack --disable-external-blas --enable-asmjit $opt
 
 make -j4
