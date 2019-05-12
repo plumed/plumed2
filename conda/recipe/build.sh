@@ -28,6 +28,8 @@ else
   opt=STATIC_LIBS=-Wl,-rpath-link,$PREFIX/lib
 fi
 
+export CPPFLAGS="-D__PLUMED_DEFAULT_KERNEL=$PREFIX/lib/libplumedKernel$SHLIB_EXT $CPPFLAGS"
+
 ./configure --prefix=$PREFIX --enable-shared --disable-python --disable-external-lapack --disable-external-blas $opt
 
 make -j4
