@@ -6,5 +6,10 @@ acv: TETRA_ANGULAR SPECIES=1-64 SUM MEAN
 PRINT ATOMS=cv ARG1=cv ARG2=acv FILE=mcolv.xyz FMT=%8.4f   
 # Print SUM and MEAN of cv
 PRINT ARG=cv_sum,cv_mean,acv_sum,acv_mean FILE=colvar FMT=%8.4f 
-# Add force on value
+# # Add force on value
 BIASVALUE ARG=cv_sum
+# # Add more forces so we actually have some
+cv1: TETRA_RADIAL SPECIESA=1 SPECIESB=1-64 SUM
+BIASVALUE ARG=cv1
+# And forces on angular business
+# BIASVALUE ARG=acv_sum
