@@ -139,6 +139,13 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
           error("mismatched shapes of matrices in input");
         }
       } else if( wval[0]->getRank()==1 && wval[0]->getShape()[0]!=vecs[0]->getShape()[0] ) error("mismatched shapes of vectors in input");
+      // This checks if the weights come from a different action than the vectors
+      bool found=false;
+      for(unsigned j=0;j<wval.size();++j) {
+          if( wval[j]->getPntrToAction()->getLabel()==vecs[0]->getPntrToAction()->getLabel() ) { found=true; break; }
+      }
+      if( !found ) nderivatives += (vecs[0]->getPntrToAction())->getNumberOfDerivatives();
+
       if( ((wval[0]->getPntrToAction())->getActionThatCalculates())->getLabel()!=((vecs[0]->getPntrToAction())->getActionThatCalculates())->getLabel() ) {
         error("found mismatched vectors and weights in input to symmetry function (2nd version) - current not available, please email plumed list");
       }

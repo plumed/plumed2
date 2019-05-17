@@ -12,4 +12,4 @@ BIASVALUE ARG=cv_sum
 cv1: TETRA_RADIAL SPECIESA=1 SPECIESB=1-64 SUM
 BIASVALUE ARG=cv1
 # And forces on angular business
-# BIASVALUE ARG=acv_sum
+BIASVALUE ARG=acv_sum
