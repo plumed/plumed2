@@ -40,6 +40,7 @@ public:
   explicit Neighbors(const ActionOptions&);
   unsigned getNumberOfDerivatives() const ;
   void calculate() { if( !actionInChain() ) plumed_error(); }
+  bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
   void apply() {}
 };
@@ -68,7 +69,7 @@ Neighbors::Neighbors(const ActionOptions&ao):
   std::vector<unsigned> shape(2); getPntrToArgument(0)->buildDataStore( getLabel() );
   shape[0]=getPntrToArgument(0)->getShape()[0]; shape[1]=getPntrToArgument(0)->getShape()[1];
   for(unsigned i=0; i<shape[0]; ++i) addTaskToList( i );
-  addValue( shape );
+  addValue( shape ); getPntrToOutput(0)->neverStoreValues();
 
   unsigned nlow; parse("NLOWEST",nlow);
   unsigned nhigh; parse("NHIGHEST",nhigh);
@@ -86,7 +87,17 @@ Neighbors::Neighbors(const ActionOptions&ao):
 }
 
 unsigned Neighbors::getNumberOfDerivatives() const {
-  return 0;
+  return getPntrToArgument(0)->getPntrToAction()->getNumberOfDerivatives();
+}
+
+bool Neighbors::performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const {
+  unsigned matind = getPntrToOutput(0)->getPositionInMatrixStash();
+  for(unsigned i=0;i<myvals.getNumberOfStashedMatrixElements(matind); ++i) {
+     if( index2==myvals.getStashedMatrixIndex(matind,i) ) {
+         myvals.setValue( getPntrToOutput(0)->getPositionInStream(), 1.0 ); return true; 
+     }
+  }
+  return false;
 }
 
 void Neighbors::performTask( const unsigned& current, MultiValue& myvals ) const {
@@ -109,16 +120,16 @@ void Neighbors::performTask( const unsigned& current, MultiValue& myvals ) const
     rows[n].first=weighti; rows[n].second=iind; n++;
   }
   // Now do the sort and clear all the stored values ready for recompute
-  std::sort( rows.begin(), rows.end() ); myvals.clearAll();
-  // And do everything that follows me for only the relevant elements of the matrix
-  unsigned matout = getPntrToOutput(0)->getPositionInStream();
-  ActionWithValue* av = (getPntrToArgument(0)->getPntrToAction())->getActionThatCalculates();
-  for(unsigned i=0; i<number; ++i) {
-    myvals.setValue( matout, 1.0 );
-    unsigned colno = rows[nind-1-i].second; if( lowest ) colno = rows[i].second;
-    av->runTask( av->getLabel(), myvals.getTaskIndex(), current, myvals.getNumberOfIndicesInFirstBlock()+colno, myvals );
-    av->clearMatrixElements( myvals );
+  std::sort( rows.begin(), rows.end() ); myvals.clearAll(); 
+  // Stash the active matrix elements for this set of neighbors
+  for(unsigned i=0; i<number;++i) {
+     unsigned colno = rows[nind-1-i].second; if( lowest ) colno = rows[i].second;
+     myvals.stashMatrixElement( getPntrToOutput(0)->getPositionInMatrixStash(), colno, 1.0 );
   }
+  // Retrieve the element that does this calculation
+  ActionWithValue* av = (getPntrToArgument(0)->getPntrToAction())->getActionThatCalculates();
+  // And redo the calcuation but on the correct list of atoms
+  av->performTask( current, myvals ); 
 }
 
 }

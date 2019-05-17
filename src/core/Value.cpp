@@ -42,6 +42,7 @@ Value::Value():
   shape(std::vector<unsigned>()),
   alwaysstore(false),
   storedata(true),
+  neverstore(false),
   columnsums(false),
   symmetric(false),
   bufstart(0),
@@ -65,6 +66,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   name(name),
   hasDeriv(withderiv),
   alwaysstore(false),
+  neverstore(false),
   columnsums(false),
   symmetric(false),
   bufstart(0),
@@ -104,6 +106,7 @@ void Value::setupPeriodicity() {
 }
 
 void Value::buildDataStore( const std::string& actlabel ) {
+  if( neverstore ) return ;
   bool found=false;
   for(unsigned i=0; i<store_data_for.size(); ++i) {
     if( actlabel==store_data_for[i].first ) found=true;
@@ -113,7 +116,11 @@ void Value::buildDataStore( const std::string& actlabel ) {
 }
 
 void Value::alwaysStoreValues() {
-  alwaysstore=true; storedata=true;
+  plumed_assert( !neverstore); alwaysstore=true; storedata=true;
+}
+
+void Value::neverStoreValues() {
+  plumed_assert( !alwaysstore ); neverstore=true;
 }
 
 void Value::buildColumnSums() {

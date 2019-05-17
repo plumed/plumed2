@@ -77,7 +77,7 @@ private:
 /// This is used by actions that always store data.  They cannot operate without storing all values
   bool alwaysstore;
 /// Are we storing the data
-  bool storedata;
+  bool storedata, neverstore;
   std::vector<std::pair<std::string,int> > store_data_for;
 /// Are we taking column sums
   bool columnsums;
@@ -175,6 +175,7 @@ public:
 /// Build the store of data
   void buildDataStore( const std::string& actlabel );
   void alwaysStoreValues();
+  void neverStoreValues();
   void buildColumnSums();
 ///
   unsigned getRank() const ;
