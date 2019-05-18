@@ -1488,9 +1488,10 @@ void EMMIVOX::calculate()
     }
     #pragma omp critical
     for(unsigned i=0; i<atom_der_.size(); ++i) atom_der_[i] += atom_der[i];
-    #pragma omp for
-    for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
   }
+
+  #pragma omp parallel for
+  for(unsigned i=0; i<atom_der_.size(); ++i) setAtomsDerivatives(getPntrToComponent("scoreb"), i, atom_der_[i]);
 
   // set score and virial
   getPntrToComponent("scoreb")->set(ene_);
