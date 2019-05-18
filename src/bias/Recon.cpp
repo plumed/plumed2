@@ -59,12 +59,18 @@ ActionShortcut(ao)
 {
   // Read the reference file and determine how many clusters we have
   bool truncate=false; parseFlag("TRUNCATE_GRIDS",truncate);
-  std::string argstr; parse("ARG",argstr); std::vector<unsigned> neigv; 
+  std::string argstr; parse("ARG",argstr); std::vector<unsigned> neigv; std::vector<bool> resid; 
   std::string fname; parse("REFERENCE",fname); std::vector<double> weights;
   IFile ifile; ifile.open(fname); ifile.allowIgnoredFields(); double h;
   for(unsigned k=0;; ++k) {
      if( !ifile.scanField("height",h) ) break;
      int meig; ifile.scanField("neigv",meig); neigv.push_back( meig );
+     if( meig>0 ) {
+         std::string ires; ifile.scanField("residual",ires); 
+         if( ires=="true" ) resid.push_back( true );
+         else if( ires=="false" ) resid.push_back( false );
+         else error("residual flag should be set to true/false");
+     } else resid.push_back( false );
      // Create a reference configuration for this cluster
      std::string num; Tools::convert( k+1, num );
      readInputLine( getShortcutLabel() + "_ref" + num + ": READ_CLUSTER ARG=" + argstr + " NUMBER=" + num + " REFERENCE=" + fname + " READ_COVARIANCE");
@@ -96,8 +102,10 @@ ActionShortcut(ao)
         readInputLine( getShortcutLabel() + "_pdist-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist-" + num + " FUNC=0-x PERIODIC=NO");
       } else {
         // This computes the projections of the difference between the current point and the origin on the various eigenvectors
+        std::string argstr = "ARG1=" + getShortcutLabel() + "_dist-" + num; std::string coeffstr="COEFFICIENTS=1"; std::string powstr="POWERS=2";  
         for(unsigned i=0;i<neigv[k];++i) {
-            std::string eignum; Tools::convert( i+1, eignum );
+            coeffstr +=",-1"; powstr +=",2"; std::string anum, eignum; Tools::convert( i+1, eignum ); 
+            Tools::convert( i+2, anum ); argstr += " ARG" + anum + "=" + getShortcutLabel() + "_proj" + eignum + "-" + num + " ";
             // Multiply difference in CVs by eigenvector - returns a vector
             readInputLine( getShortcutLabel() + "_dproj" + eignum + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist-" + num + "_diff"
                + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vecs-" + eignum + " FUNC=x*y PERIODIC=NO");
@@ -105,7 +113,12 @@ ActionShortcut(ao)
             readInputLine( getShortcutLabel() + "_udproj" + eignum + "-" + num + ": COMBINE ARG=" + getShortcutLabel() + "_dproj" + eignum + "-" + num + " PERIODIC=NO");
             // And divide the projection on the eigenvector by the eigenvalue so that gaussian widths are in units of covariance
             readInputLine( getShortcutLabel() + "_proj" + eignum + "-" + num + ": MATHEVAL ARG1="+  getShortcutLabel() + "_udproj" + eignum + "-" + num 
-               + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vals-" + eignum + " FUNC=x/y PERIODIC=NO");
+               + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vals-" + eignum + " FUNC=x/sqrt(y) PERIODIC=NO");
+        }
+        // Add this command to compute the residual distance
+        if( resid[k] ) {
+            readInputLine( getShortcutLabel() + "_resid2-" + num + ": COMBINE PERIODIC=NO " + argstr + coeffstr + " " + powstr );
+            readInputLine( getShortcutLabel() + "_resid-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_resid2-" + num + " FUNC=sqrt(x) PERIODIC=NO");
         }
       }
   }
@@ -135,6 +148,11 @@ ActionShortcut(ao)
               std::string eignum; Tools::convert( i+1, eignum );
               input += " ARG" + eignum + "=" + getShortcutLabel() + "_proj" + eignum + "-" + num;
               gminstr += ",-" + gmax; gmaxstr += "," + gmax; bandstr += "," + sigma; gbinstr += "," + grid_nbins; 
+          }
+          if( resid[k] ) {
+              std::string eignum; Tools::convert( neigv[k]+1, eignum );
+              input += " ARG" + eignum + "=" + getShortcutLabel() + "_resid-" + num;
+              gminstr += ",-" + gmax; gmaxstr += "," + gmax; bandstr += "," + sigma; gbinstr += "," + grid_nbins;
           }
           readInputLine( input + " " + gminstr + " " + gmaxstr + " " + bandstr + " " + gbinstr );
       }
