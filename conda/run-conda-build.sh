@@ -23,8 +23,10 @@ conda update -q conda
 conda info -a
 conda install conda-build conda-verify anaconda-client
 
-conda-build recipe
-conda-build py-plumed
+export CPU_COUNT=4
+
+conda-build -c conda-forge plumed
+conda-build -c conda-forge py-plumed
 
 ls -l $CONDA_HOME/conda-bld/
 ls -l $CONDA_HOME/conda-bld/$TRAVIS_OS_NAME-64
