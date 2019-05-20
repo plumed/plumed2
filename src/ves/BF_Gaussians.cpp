@@ -58,7 +58,7 @@ The basis functions are given by
   f_i(x) &= \exp\left(-\frac{{\left(x-\mu_i\right)}^2}{2\sigma^2}\right)
 \f}
 
-It is possible to specify the width \f$\sigma\f$ (i.e. the standart deviation)
+It is possible to specify the width \f$\sigma\f$ (i.e. the standard deviation)
 of the Gaussians using the WIDTH keyword.
 By default it is set to the sub-intervall length.
 
@@ -71,7 +71,7 @@ The bias is expanded with Gaussian functions in the intervall from 0.0 to
 This results in 22 basis functions.
 
 \plumedfile
-bfG: BF_GAUSSIAN MINIMUM=0.0 MAXIMUM=10.0 ORDER=20
+bfG: BF_GAUSSIANS MINIMUM=0.0 MAXIMUM=10.0 ORDER=20
 \endplumedfile
 
 Because it was not specified, the width of the Gaussians is by default
@@ -80,13 +80,13 @@ To e.g. enhance the overlap between neighbouring basis functions, it can be
 specified explicitely:
 
 \plumedfile
-bfG: BF_GAUSSIAN MINIMUM=0.0 MAXIMUM=10.0 ORDER=20 WIDTH=0.7
+bfG: BF_GAUSSIANS MINIMUM=0.0 MAXIMUM=10.0 ORDER=20 WIDTH=0.7
 \endplumedfile
 
 */
 //+ENDPLUMEDOC
 
-class BF_Gaussian : public BasisFunctions {
+class BF_Gaussians : public BasisFunctions {
   // width of the Gaussians
   double width_;
   // positions of the means
@@ -94,22 +94,22 @@ class BF_Gaussian : public BasisFunctions {
   virtual void setupLabels();
 public:
   static void registerKeywords( Keywords&);
-  explicit BF_Gaussian(const ActionOptions&);
+  explicit BF_Gaussians(const ActionOptions&);
   double getValue(const double, const unsigned int, double&, bool&) const;
   void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
 };
 
 
-PLUMED_REGISTER_ACTION(BF_Gaussian,"BF_GAUSSIAN")
+PLUMED_REGISTER_ACTION(BF_Gaussians,"BF_GAUSSIANS")
 
 
-void BF_Gaussian::registerKeywords(Keywords& keys) {
+void BF_Gaussians::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
   keys.add("optional","WIDTH","The width (i.e. standart deviation) of the Gaussian functions. By default it is equal to the sub-intervall size.");
   keys.remove("NUMERICAL_INTEGRALS");
 }
 
-BF_Gaussian::BF_Gaussian(const ActionOptions&ao):
+BF_Gaussians::BF_Gaussians(const ActionOptions&ao):
   PLUMED_VES_BASISFUNCTIONS_INIT(ao),
   width_((intervalMax()-intervalMin()) / getOrder())
 {
@@ -134,7 +134,7 @@ BF_Gaussian::BF_Gaussian(const ActionOptions&ao):
 }
 
 
-void BF_Gaussian::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
+void BF_Gaussians::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
   inside_range=true;
   argT=checkIfArgumentInsideInterval(arg,inside_range);
   values[0]=1.0;
@@ -148,7 +148,7 @@ void BF_Gaussian::getAllValues(const double arg, double& argT, bool& inside_rang
 
 
 // label according to positions?
-void BF_Gaussian::setupLabels() {
+void BF_Gaussians::setupLabels() {
   for(unsigned int i=0; i < getNumberOfBasisFunctions(); i++) {
     std::string is; Tools::convert(mean_[i],is);
     setLabel(i,"s="+is);
