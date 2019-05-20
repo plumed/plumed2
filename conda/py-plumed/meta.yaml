@@ -26,16 +26,16 @@ requirements:
 test:
   requires:
     - plumed
-  # TODO. In principle these could be the official regtests.
   commands:
     - python -c "import plumed; p=plumed.Plumed(); print(p)"
 
 about:
   home: http://www.plumed.org/
-  license: LGPL
+  license: LGPL-3.0
+  license_family: GPL
   license_file: COPYING.LESSER
   summary: 'Python wrappers for plumed library'
-  description: >
+  description: |
     PLUMED is an open source library for free energy calculations in
     molecular systems which works together with some of the most
     popular molecular dynamics engines.
