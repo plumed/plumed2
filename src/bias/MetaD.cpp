@@ -375,7 +375,7 @@ private:
     Gaussian(const vector<double> & center,const vector<double> & sigma,double height, bool multivariate ):
       center(center),sigma(sigma),height(height),multivariate(multivariate),invsigma(sigma) {
       // to avoid troubles from zero element in flexible hills
-      for(unsigned i=0; i<invsigma.size(); ++i) if(abs(invsigma[i])>1.e-20) invsigma[i]=1.0/invsigma[i] ; else invsigma[i]=0.0;
+        for(unsigned i=0; i<invsigma.size(); ++i) if(abs(invsigma[i])>1.e-20) invsigma[i]=1.0/invsigma[i] ; else invsigma[i]=0.0;
     }
   };
   struct TemperingSpecs {
