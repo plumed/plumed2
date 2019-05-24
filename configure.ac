@@ -656,12 +656,18 @@ fi
 AC_OPENMP
 
 if test $asmjit == true ; then
-  AC_MSG_NOTICE([Enabling embedded asmjit])
-  AC_DEFINE([__PLUMED_HAS_ASMJIT])
-
+  found=ko
 # asmjit calls clock_gettime and thus should be linked to rt on Linux
   if test `(uname)` = Linux ; then
-    PLUMED_SEARCH_LIBS([clock_gettime],[rt],[])
+    PLUMED_SEARCH_LIBS([clock_gettime],[rt],[found=ok])
+  else
+    found=ok
+  fi
+  if test "$found" = ok ; then
+    AC_MSG_NOTICE([Enabling embedded asmjit])
+    AC_DEFINE([__PLUMED_HAS_ASMJIT])
+  else
+    AC_MSG_WARN([cannot link clock_gettime on this Linux, asmjit will not be enabled])
   fi
 fi
 

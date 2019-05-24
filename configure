@@ -6897,11 +6897,7 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
 
 
 if test $asmjit == true ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling embedded asmjit" >&5
-$as_echo "$as_me: Enabling embedded asmjit" >&6;}
-  $as_echo "#define __PLUMED_HAS_ASMJIT 1" >>confdefs.h
-
-
+  found=ko
 # asmjit calls clock_gettime and thus should be linked to rt on Linux
   if test `(uname)` = Linux ; then
 
@@ -6959,7 +6955,7 @@ $as_echo "$ac_cv_search_clock_gettime" >&6; }
 ac_res=$ac_cv_search_clock_gettime
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
+  found=ok
 fi
 
   else
@@ -7016,11 +7012,22 @@ $as_echo "$ac_cv_search_clock_gettime" >&6; }
 ac_res=$ac_cv_search_clock_gettime
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
+  found=ok
 fi
 
   fi
 
+  else
+    found=ok
+  fi
+  if test "$found" = ok ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling embedded asmjit" >&5
+$as_echo "$as_me: Enabling embedded asmjit" >&6;}
+    $as_echo "#define __PLUMED_HAS_ASMJIT 1" >>confdefs.h
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot link clock_gettime on this Linux, asmjit will not be enabled" >&5
+$as_echo "$as_me: WARNING: cannot link clock_gettime on this Linux, asmjit will not be enabled" >&2;}
   fi
 fi
 
