@@ -224,6 +224,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.addFlag("--parse-only",false,"read the plumed input file and stop");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("atoms","--igro","the trajectory in gro format");
+  keys.add("atoms","--idlp4","the trajectory in DL_POLY_4 format");
 #ifdef __PLUMED_HAS_XDRFILE
   keys.add("atoms","--ixtc","the trajectory in xtc format (xdrfile implementation)");
   keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation)");
@@ -400,6 +401,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   if(!noatoms) {
     std::string traj_xyz; parse("--ixyz",traj_xyz);
     std::string traj_gro; parse("--igro",traj_gro);
+    std::string traj_dlp4; parse("--idlp4",traj_dlp4);
     std::string traj_xtc;
     std::string traj_trr;
 #ifdef __PLUMED_HAS_XDRFILE
@@ -424,6 +426,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
       int nn=0;
       if(traj_xyz.length()>0) nn++;
       if(traj_gro.length()>0) nn++;
+      if(traj_dlp4.length()>0) nn++;
       if(traj_xtc.length()>0) nn++;
       if(traj_trr.length()>0) nn++;
       if(nn>1) {
@@ -439,6 +442,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     if(traj_gro.length()>0 && trajectoryFile.length()==0) {
       trajectoryFile=traj_gro;
       trajectory_fmt="gro";
+    }
+    if(traj_dlp4.length()>0 && trajectoryFile.length()==0) {
+      trajectoryFile=traj_dlp4;
+      trajectory_fmt="dlp4";
     }
     if(traj_xtc.length()>0 && trajectoryFile.length()==0) {
       trajectoryFile=traj_xtc;
@@ -518,6 +525,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   p.cmd("setLog",out);
 
   int natoms;
+  int lvl=0;
+  int pb=1;
 
   if(parseOnly) {
     if(command_line_natoms<0) error("--parseOnly requires setting the number of atoms with --natoms");
@@ -611,6 +620,13 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 // random stream to choose decompositions
   Random rnd;
 
+  if(trajectory_fmt=="dlp4") {
+    if(!Tools::getline(fp,line)) error("error reading title");
+    if(!Tools::getline(fp,line)) error("error reading atoms");
+    sscanf(line.c_str(),"%d %d %d",&lvl,&pb,&natoms);
+
+  }
+  bool lstep=true;
   while(true) {
     if(!noatoms&&!parseOnly) {
       if(use_molfile==true) {
@@ -621,16 +637,26 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           break;
         }
 #endif
-      } else if(trajectory_fmt=="xyz" || trajectory_fmt=="gro") {
+      } else if(trajectory_fmt=="xyz" || trajectory_fmt=="gro" || trajectory_fmt=="dlp4") {
         if(!Tools::getline(fp,line)) break;
       }
     }
-
     bool first_step=false;
     if(!noatoms&&!parseOnly) {
       if(use_molfile==false && (trajectory_fmt=="xyz" || trajectory_fmt=="gro")) {
         if(trajectory_fmt=="gro") if(!Tools::getline(fp,line)) error("premature end of trajectory file");
         sscanf(line.c_str(),"%100d",&natoms);
+      }
+      if(use_molfile==false && trajectory_fmt=="dlp4") {
+        char xa[9];
+        int xb,xc,xd;
+        double t;
+        sscanf(line.c_str(),"%8s %ld %d %d %d %lf",xa,&step,&xb,&xc,&xd,&t);
+        timestep = real(t);
+        if (lstep) {
+          p.cmd("setTimestep",&timestep);
+          lstep = false;
+        }
       }
     }
     if(checknatoms<0 && !noatoms) {
@@ -807,6 +833,20 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           }
           for(unsigned i=0; i<9; i++)cell[i]=real(celld[i]);
         }
+        if(trajectory_fmt=="dlp4") {
+          std::vector<double> celld(9,0.0);
+          if(pbc_cli_given==false) {
+            if(!Tools::getline(fp,line)) error("error reading vector a of cell");
+            sscanf(line.c_str(),"%lf %lf %lf",&celld[0],&celld[1],&celld[2]);
+            if(!Tools::getline(fp,line)) error("error reading vector b of cell");
+            sscanf(line.c_str(),"%lf %lf %lf",&celld[3],&celld[4],&celld[5]);
+            if(!Tools::getline(fp,line)) error("error reading vector c of cell");
+            sscanf(line.c_str(),"%lf %lf %lf",&celld[6],&celld[7],&celld[8]);
+          } else {
+            celld=pbc_cli_box;
+          }
+          for(auto i=0; i<9; i++)cell[i]=real(celld[i])*0.1;
+        }
         int ddist=0;
         // Read coordinates
         for(int i=0; i<natoms; i++) {
@@ -836,6 +876,24 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             Tools::convert(line.substr(20,ddist),cc[0]);
             Tools::convert(line.substr(20+ddist,ddist),cc[1]);
             Tools::convert(line.substr(20+ddist+ddist,ddist),cc[2]);
+          } else if(trajectory_fmt=="dlp4") {
+            char dummy[9];
+            int idummy;
+            double m,c;
+            sscanf(line.c_str(),"%8s %d %lf %lf",dummy,&idummy,&m,&c);
+            masses[i]=real(m);
+            charges[i]=real(c);
+            if(!Tools::getline(fp,line)) error("error reading coordinates");
+            sscanf(line.c_str(),"%lf %lf %lf",&cc[0],&cc[1],&cc[2]);
+            cc[0]*=0.1;
+            cc[1]*=0.1;
+            cc[2]*=0.1;
+            if(lvl>0) {
+              if(!Tools::getline(fp,line)) error("error skipping velocities");
+            }
+            if(lvl>1) {
+              if(!Tools::getline(fp,line)) error("error skipping forces");
+            }
           } else plumed_error();
           if(!debug_pd || ( i>=pd_start && i<pd_start+pd_nlocal) ) {
             coordinates[3*i]=real(cc[0]);
