@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -58,7 +58,7 @@ void ActionAtomistic::registerKeywords( Keywords& keys ) {
 }
 
 
-void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a) {
+void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a, const bool clearDep) {
   plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
   int nat=a.size();
   indexes=a;
@@ -67,7 +67,7 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a) {
   masses.resize(nat);
   charges.resize(nat);
   int n=atoms.positions.size();
-  clearDependencies();
+  if(clearDep) clearDependencies();
   unique.clear();
   for(unsigned i=0; i<indexes.size(); i++) {
     if(indexes[i].index()>=n) error("atom out of range");

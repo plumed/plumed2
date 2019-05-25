@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,8 +26,7 @@
 
 //+PLUMEDOC VOLUMES AROUND
 /*
-This quantity can be used to calculate functions of the distribution of collective
-variables for the atoms that lie in a particular, user-specified part of of the cell.
+This quantity can be used to calculate functions of the distribution of collective variables for the atoms that lie in a particular, user-specified part of of the cell.
 
 Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three
 dimensional space. For example, if we have the coordination numbers for all the atoms in the

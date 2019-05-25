@@ -1,0 +1,6 @@
+type=simplemd
+plumed_modules=logmfd
+arg="--plumed plumed.dat < in"
+extra_files="../input.xyz"
+
+

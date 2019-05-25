@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -80,7 +80,7 @@ then it provides a result identical to \ref COM.
 
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.2,
-by considering the ordered list of atoms and rebuilding PBCs with a procedure
+by considering the ordered list of atoms and rebuilding the molecule using a procedure
 that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
 rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
 which actually modifies the coordinates stored in PLUMED.
@@ -90,7 +90,7 @@ In that case you need to take care that atoms are in the correct
 periodic image.
 
 \note As an experimental feature, CENTER also supports a keyword PHASES.
-This keyword solves PBCs by computing scaled coordinates and average
+This keyword finds the center of mass for sets of atoms that have been split by the period boundaries by computing scaled coordinates and average
 trigonometric functions, similarly to \ref CENTER_OF_MULTICOLVAR.
 Notice that by construction this center position is
 not invariant with respect to rotations of the atoms at fixed cell lattice.
@@ -131,7 +131,7 @@ For arbitrary weights (e.g. geometric center) see \ref CENTER.
 
 When running with periodic boundary conditions, the atoms should be
 in the proper periodic image. This is done automatically since PLUMED 2.2,
-by considering the ordered list of atoms and rebuilding PBCs with a procedure
+by considering the ordered list of atoms and rebuilding the molecule using a procedure
 that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
 rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
 which actually modifies the coordinates stored in PLUMED.
@@ -173,7 +173,7 @@ class Center:
 public:
   explicit Center(const ActionOptions&ao);
   void calculate();
-  void apply();
+  void apply() override;
   static void registerKeywords( Keywords& keys );
   unsigned getNumberOfDerivatives() const ;
   void setStashIndices( unsigned& nquants );
@@ -235,7 +235,7 @@ Center::Center(const ActionOptions&ao):
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( str_weights[0].substr(0,dot) );
         if( !action ) {
           std::string str=" (hint! the actions in this ActionSet are: ";
-          str+=plumed.getActionSet().getLabelList()+")";
+          str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
           error("cannot find action named " + str_weights[0] +str);
         }
         action->interpretDataLabel( str_weights[0], this, nargs, args );
@@ -243,7 +243,7 @@ Center::Center(const ActionOptions&ao):
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( str_weights[0] );
         if( !action ) {
           std::string str=" (hint! the actions in this ActionSet are: ";
-          str+=plumed.getActionSet().getLabelList()+")";
+          str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
           error("cannot find action named " + str_weights[0] +str);
         }
         action->interpretDataLabel( str_weights[0], this, nargs, args );

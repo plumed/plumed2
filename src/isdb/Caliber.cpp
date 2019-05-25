@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2018 The plumed team
+   Copyright (c) 2018,2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -33,7 +33,8 @@ namespace isdb {
 //+PLUMEDOC ISDB_BIAS CALIBER
 /*
 Add a time-dependent, harmonic restraint on one or more variables.
-This allows implementing a maximum caliber restraint on one or more experimental time serie by replica-averaged restrained simulations.
+
+This allows implementing a maximum caliber restraint on one or more experimental time series by replica-averaged restrained simulations.
 See \cite Capelli:2018jt .
 
 The time resolved experiments are read from a text file and intermediate values are obtained by splines.
@@ -80,10 +81,10 @@ CALIBER ...
 ... CALIBER
 \endplumedfile
 
-In particular the file expsaxs.dat contains the time traces for the 15 intensities at the selected scattering lengths, organised as time, q_1, etc.
-The strenght of the bias is automatically evaluated from the standard error of the mean over AVERAGING steps and multiplied by KAPPA. This is usefull when working with multiple experimental data
-Because \ref SAXS is usually defined irrespectively of a scaling factor the scaling is evaluated from a linear fit every REGRES_ZERO step. Alternatively it can be given as a fixed constant as SCALE.
-The bias is here applied every 10th steps.
+In particular the file expsaxs.dat contains the time traces for the 15 intensities at the selected scattering lengths, organized as time, q_1, etc.
+The strength of the bias is automatically evaluated from the standard error of the mean over AVERAGING steps and multiplied by KAPPA. This is useful when working with multiple experimental data
+Because \ref SAXS is usually defined in a manner that is irrespective of a scaling factor the scaling is evaluated from a linear fit every REGRES_ZERO step. Alternatively it can be given as a fixed constant as SCALE.
+The bias is here applied every tenth step.
 
 */
 //+ENDPLUMEDOC
@@ -128,7 +129,7 @@ void Caliber::registerKeywords( Keywords& keys ) {
   keys.use("ARG");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
   keys.add("compulsory","FILE","the name of the file containing the time-resolved values");
-  keys.add("compulsory","KAPPA","a force constant, this can be use to scale a constant estimanted on-the-fly using AVERAGING");
+  keys.add("compulsory","KAPPA","a force constant, this can be use to scale a constant estimated on-the-fly using AVERAGING");
   keys.add("optional","AVERAGING", "Stride for calculation of the optimum kappa, if 0 only KAPPA is used.");
   keys.add("compulsory","TSCALE","1.0","Apply a time scaling on the experimental time scale");
   keys.add("compulsory","SCALE","1.0","Apply a constant scaling on the data provided as arguments");

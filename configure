@@ -721,6 +721,7 @@ enable_bsymbolic
 enable_ld_r
 enable_ar_cr
 enable_static_archive
+enable_asmjit
 enable_mpi
 enable_external_lapack
 enable_external_blas
@@ -738,9 +739,11 @@ enable_gsl
 enable_xdrfile
 enable_boost_graph
 enable_boost_serialization
-enable_asmjit
 enable_fftw
 enable_python
+enable_af_ocl
+enable_af_cuda
+enable_af_cpu
 enable_openmp
 '
       ac_precious_vars='build_alias
@@ -1409,6 +1412,7 @@ Optional Features:
                           yes
   --enable-static-archive enable try to build libplumed.a for static linking,
                           default: yes
+  --enable-asmjit         enable enable embedded asmjit, default: no
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
@@ -1432,9 +1436,12 @@ Optional Features:
   --enable-boost_graph    enable search for boost graph, default: no
   --enable-boost_serialization
                           enable search for boost serialization, default: no
-  --enable-asmjit         enable search for asmjit, default: no
   --enable-fftw           enable search for fftw, default: no
   --enable-python         enable search for python, default: yes
+  --enable-af_ocl         enable arrayfire_opencl, default: search for
+                          arrayfire
+  --enable-af_cuda        enable arrayfire_cuda, default: search for arrayfire
+  --enable-af_cpu         enable arrayfire_cpu, default: search for arrayfire
   --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
@@ -2830,6 +2837,24 @@ fi
 
 
 
+asmjit=
+# Check whether --enable-asmjit was given.
+if test "${enable_asmjit+set}" = set; then :
+  enableval=$enable_asmjit; case "${enableval}" in
+             (yes) asmjit=true ;;
+             (no)  asmjit=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-asmjit" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) asmjit=true ;;
+             (no)  asmjit=false ;;
+  esac
+
+fi
+
+
+
 mpi=
 # Check whether --enable-mpi was given.
 if test "${enable_mpi+set}" = set; then :
@@ -3136,24 +3161,6 @@ fi
 
 
 
-asmjit=
-# Check whether --enable-asmjit was given.
-if test "${enable_asmjit+set}" = set; then :
-  enableval=$enable_asmjit; case "${enableval}" in
-             (yes) asmjit=true ;;
-             (no)  asmjit=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-asmjit" "$LINENO" 5 ;;
-  esac
-else
-  case "no" in
-             (yes) asmjit=true ;;
-             (no)  asmjit=false ;;
-  esac
-
-fi
-
-
-
 fftw=
 # Check whether --enable-fftw was given.
 if test "${enable_fftw+set}" = set; then :
@@ -3184,6 +3191,60 @@ else
   case "yes" in
              (yes) python=true ;;
              (no)  python=false ;;
+  esac
+
+fi
+
+
+
+af_ocl=
+# Check whether --enable-af_ocl was given.
+if test "${enable_af_ocl+set}" = set; then :
+  enableval=$enable_af_ocl; case "${enableval}" in
+             (yes) af_ocl=true ;;
+             (no)  af_ocl=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-af_ocl" "$LINENO" 5 ;;
+  esac
+else
+  case "search for arrayfire" in
+             (yes) af_ocl=true ;;
+             (no)  af_ocl=false ;;
+  esac
+
+fi
+
+
+
+af_cuda=
+# Check whether --enable-af_cuda was given.
+if test "${enable_af_cuda+set}" = set; then :
+  enableval=$enable_af_cuda; case "${enableval}" in
+             (yes) af_cuda=true ;;
+             (no)  af_cuda=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-af_cuda" "$LINENO" 5 ;;
+  esac
+else
+  case "search for arrayfire" in
+             (yes) af_cuda=true ;;
+             (no)  af_cuda=false ;;
+  esac
+
+fi
+
+
+
+af_cpu=
+# Check whether --enable-af_cpu was given.
+if test "${enable_af_cpu+set}" = set; then :
+  enableval=$enable_af_cpu; case "${enableval}" in
+             (yes) af_cpu=true ;;
+             (no)  af_cpu=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-af_cpu" "$LINENO" 5 ;;
+  esac
+else
+  case "search for arrayfire" in
+             (yes) af_cpu=true ;;
+             (no)  af_cpu=false ;;
   esac
 
 fi
@@ -5167,7 +5228,69 @@ $as_echo "$as_me: WARNING: Your compiler appears not to support C++11" >&2;}
 $as_echo "$as_me: WARNING: Please change compiler or make sure that everything works correctly" >&2;}
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ library supports C++11 exceptions" >&5
+$as_echo_n "checking whether C++ library supports C++11 exceptions... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
 
+#include <new>
+#include <functional>
+#include <memory>
+#include <system_error>
+#include <ios>
+#include <future>
+// capable to catch:
+void func(void) {
+  try{
+  } catch(std::bad_array_new_length &) {
+  } catch(std::bad_function_call &) {
+  } catch(std::bad_weak_ptr &) {
+  } catch(std::ios_base::failure &e) {
+    if(e.code().category()==std::generic_category()) {}
+    else if(e.code().category()==std::system_category()) {}
+    else if(e.code().category()==std::iostream_category()) {}
+    else if(e.code().category()==std::future_category()) {}
+  } catch(std::system_error &e) {
+    if(e.code().category()==std::generic_category()) {}
+    else if(e.code().category()==std::system_category()) {}
+    else if(e.code().category()==std::iostream_category()) {}
+    else if(e.code().category()==std::future_category()) {}
+  }
+// capable to throw:
+  auto a=std::bad_array_new_length();
+  auto b=std::bad_function_call();
+  auto c=std::bad_weak_ptr();
+  auto d=std::system_error(10,std::generic_category(),"msg");
+  auto e=std::system_error(10,std::system_category(),"msg");
+  auto f=std::system_error(10,std::iostream_category(),"msg");
+  auto g=std::system_error(10,std::future_category(),"msg");
+  auto h=std::ios_base::failure("msg",std::error_code(10,std::generic_category()));
+  auto i=std::ios_base::failure("msg",std::error_code(10,std::system_category()));
+  auto j=std::ios_base::failure("msg",std::error_code(10,std::iostream_category()));
+  auto k=std::ios_base::failure("msg",std::error_code(10,std::future_category()));
+}
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; };
+  $as_echo "#define __PLUMED_LIBCXX11 1" >>confdefs.h
+
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
 
@@ -6703,6 +6826,135 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
     esac
   fi
 
+
+
+if test $asmjit == true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling embedded asmjit" >&5
+$as_echo "$as_me: Enabling embedded asmjit" >&6;}
+  $as_echo "#define __PLUMED_HAS_ASMJIT 1" >>confdefs.h
+
+
+# asmjit calls clock_gettime and thus should be linked to rt on Linux
+  if test `(uname)` = Linux ; then
+
+  if test "${libsearch}" == true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing clock_gettime" >&5
+$as_echo_n "checking for library containing clock_gettime... " >&6; }
+if ${ac_cv_search_clock_gettime+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char clock_gettime ();
+int
+main ()
+{
+return clock_gettime ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' rt; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_clock_gettime=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_clock_gettime+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_clock_gettime+:} false; then :
+
+else
+  ac_cv_search_clock_gettime=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_clock_gettime" >&5
+$as_echo "$ac_cv_search_clock_gettime" >&6; }
+ac_res=$ac_cv_search_clock_gettime
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing clock_gettime" >&5
+$as_echo_n "checking for library containing clock_gettime... " >&6; }
+if ${ac_cv_search_clock_gettime+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char clock_gettime ();
+int
+main ()
+{
+return clock_gettime ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_clock_gettime=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_clock_gettime+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_clock_gettime+:} false; then :
+
+else
+  ac_cv_search_clock_gettime=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_clock_gettime" >&5
+$as_echo "$ac_cv_search_clock_gettime" >&6; }
+ac_res=$ac_cv_search_clock_gettime
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  fi
+
+  fi
+fi
 
 
 if test $readdir_r == true ; then
@@ -8375,78 +8627,6 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_BOOST_SERIALIZATION" >&2;}
 # notice: macports install libraries with -mt suffix
 fi
 
-if test $asmjit == true ; then
-
-    found=ko
-    __PLUMED_HAS_ASMJIT=no
-    if test "${libsearch}" == true ; then
-      testlibs="asmjit"
-    else
-      testlibs=""
-    fi
-    for testlib in "" $testlibs
-    do
-      save_LIBS="$LIBS"
-      if test -n "$testlib" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking asmjit with -l$testlib" >&5
-$as_echo_n "checking asmjit with -l$testlib... " >&6; }
-        LIBS="-l$testlib $LIBS"
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking asmjit without extra libs" >&5
-$as_echo_n "checking asmjit without extra libs... " >&6; }
-      fi
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <asmjit/asmjit.h>
-#include <stdio.h>
-using namespace asmjit;
-typedef int (*Func)(void);
-int main(int argc, char* argv[]) {
-  JitRuntime rt;
-  CodeHolder code;
-  code.init(rt.getCodeInfo());
-  X86Assembler a(&code);
-  a.mov(x86::eax, 1);
-  a.ret();
-  Func fn;
-  Error err = rt.add(&fn, &code);
-  if (err) return 1;
-  int result = fn();
-  printf("%d\n", result);
-  rt.release(fn);
-  return 0;
-}
-
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  found=ok
-          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-      if test $found == ok ; then
-        break
-      fi
-      LIBS="$save_LIBS"
-    done
-    if test $found == ok ; then
-      $as_echo "#define __PLUMED_HAS_ASMJIT 1" >>confdefs.h
-
-      __PLUMED_HAS_ASMJIT=yes
-    else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ASMJIT" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ASMJIT" >&2;}
-      LIBS="$save_LIBS"
-    fi
-
-fi
-
 if test $fftw == true ; then
 
     found=ko
@@ -8637,15 +8817,17 @@ done
   then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Python executable is $PYTHON_BIN" >&5
 $as_echo "$as_me: Python executable is $PYTHON_BIN" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (distutils, cython, numpy, subprocess, os)" >&5
-$as_echo_n "checking support for required python modules (distutils, cython, numpy, subprocess, os)... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (setuptools, cython, subprocess, os, shutil)" >&5
+$as_echo_n "checking support for required python modules (setuptools, cython, subprocess, os, shutil)... " >&6; }
 testimport="
-from distutils.core import setup
-from distutils.extension import Extension
-from Cython.Build import cythonize
-import numpy
+from setuptools import setup
+from setuptools import Extension
 import subprocess
 import os
+import os.path
+import sys
+from shutil import copyfile
+from Cython.Build import cythonize
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
@@ -8663,6 +8845,421 @@ $as_echo "$as_me: WARNING: cannot enable python interface" >&2;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable python interface" >&5
 $as_echo "$as_me: WARNING: cannot enable python interface" >&2;}
   fi
+fi
+
+if test "$af_ocl" == true ; then
+
+    found=ko
+    __PLUMED_HAS_ARRAYFIRE=no
+    ac_fn_cxx_check_header_mongrel "$LINENO" "arrayfire.h" "ac_cv_header_arrayfire_h" "$ac_includes_default"
+if test "x$ac_cv_header_arrayfire_h" = xyes; then :
+
+
+  if test "${libsearch}" == true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
+$as_echo_n "checking for library containing af_is_double... " >&6; }
+if ${ac_cv_search_af_is_double+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char af_is_double ();
+int
+main ()
+{
+return af_is_double ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' afopencl; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_af_is_double=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_af_is_double+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_af_is_double+:} false; then :
+
+else
+  ac_cv_search_af_is_double=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_af_is_double" >&5
+$as_echo "$ac_cv_search_af_is_double" >&6; }
+ac_res=$ac_cv_search_af_is_double
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
+$as_echo_n "checking for library containing af_is_double... " >&6; }
+if ${ac_cv_search_af_is_double+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char af_is_double ();
+int
+main ()
+{
+return af_is_double ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_af_is_double=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_af_is_double+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_af_is_double+:} false; then :
+
+else
+  ac_cv_search_af_is_double=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_af_is_double" >&5
+$as_echo "$ac_cv_search_af_is_double" >&6; }
+ac_res=$ac_cv_search_af_is_double
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  fi
+
+
+fi
+
+
+    if test $found == ok ; then
+       $as_echo "#define __PLUMED_HAS_ARRAYFIRE 1" >>confdefs.h
+
+       __PLUMED_HAS_ARRAYFIRE=yes
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
+    fi
+
+fi
+if test "$af_cuda" == true ; then
+
+    found=ko
+    __PLUMED_HAS_ARRAYFIRE=no
+    ac_fn_cxx_check_header_mongrel "$LINENO" "arrayfire.h" "ac_cv_header_arrayfire_h" "$ac_includes_default"
+if test "x$ac_cv_header_arrayfire_h" = xyes; then :
+
+
+  if test "${libsearch}" == true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
+$as_echo_n "checking for library containing af_is_double... " >&6; }
+if ${ac_cv_search_af_is_double+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char af_is_double ();
+int
+main ()
+{
+return af_is_double ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' afcuda; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_af_is_double=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_af_is_double+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_af_is_double+:} false; then :
+
+else
+  ac_cv_search_af_is_double=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_af_is_double" >&5
+$as_echo "$ac_cv_search_af_is_double" >&6; }
+ac_res=$ac_cv_search_af_is_double
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
+$as_echo_n "checking for library containing af_is_double... " >&6; }
+if ${ac_cv_search_af_is_double+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char af_is_double ();
+int
+main ()
+{
+return af_is_double ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_af_is_double=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_af_is_double+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_af_is_double+:} false; then :
+
+else
+  ac_cv_search_af_is_double=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_af_is_double" >&5
+$as_echo "$ac_cv_search_af_is_double" >&6; }
+ac_res=$ac_cv_search_af_is_double
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  fi
+
+
+fi
+
+
+    if test $found == ok ; then
+       $as_echo "#define __PLUMED_HAS_ARRAYFIRE 1" >>confdefs.h
+
+       __PLUMED_HAS_ARRAYFIRE=yes
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
+    fi
+
+fi
+if test "$af_cpu" == true ; then
+
+    found=ko
+    __PLUMED_HAS_ARRAYFIRE=no
+    ac_fn_cxx_check_header_mongrel "$LINENO" "arrayfire.h" "ac_cv_header_arrayfire_h" "$ac_includes_default"
+if test "x$ac_cv_header_arrayfire_h" = xyes; then :
+
+
+  if test "${libsearch}" == true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
+$as_echo_n "checking for library containing af_is_double... " >&6; }
+if ${ac_cv_search_af_is_double+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char af_is_double ();
+int
+main ()
+{
+return af_is_double ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' afcpu; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_af_is_double=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_af_is_double+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_af_is_double+:} false; then :
+
+else
+  ac_cv_search_af_is_double=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_af_is_double" >&5
+$as_echo "$ac_cv_search_af_is_double" >&6; }
+ac_res=$ac_cv_search_af_is_double
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
+$as_echo_n "checking for library containing af_is_double... " >&6; }
+if ${ac_cv_search_af_is_double+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char af_is_double ();
+int
+main ()
+{
+return af_is_double ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_af_is_double=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_af_is_double+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_af_is_double+:} false; then :
+
+else
+  ac_cv_search_af_is_double=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_af_is_double" >&5
+$as_echo "$ac_cv_search_af_is_double" >&6; }
+ac_res=$ac_cv_search_af_is_double
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  fi
+
+
+fi
+
+
+    if test $found == ok ; then
+       $as_echo "#define __PLUMED_HAS_ARRAYFIRE 1" >>confdefs.h
+
+       __PLUMED_HAS_ARRAYFIRE=yes
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
+    fi
+
 fi
 
 # in non-debug mode, add -DNDEBUG
@@ -9362,7 +9959,7 @@ EOF
       test -n "$testlib" && comment=" with library $testlib"
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $name can link a C++ object$comment" >&5
 $as_echo_n "checking whether $name can link a C++ object$comment... " >&6; }
-      $compexe $LDFLAGS $testlib $LIBS conftest.o conftest-main.o -o conftest.exe 1>/dev/null 2>/dev/null
+      $compexe conftest.o conftest-main.o $LDFLAGS $testlib $LIBS -o conftest.exe 1>/dev/null 2>/dev/null
       if test -f conftest.exe
       then
         found=yes
@@ -9397,9 +9994,6 @@ if test "$prefix" == NONE
 then
   prefix=/usr/local
 fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking If prefix is equal to present working directory" >&5
-$as_echo_n "checking If prefix is equal to present working directory... " >&6; }
 
 pkgconfig_bin=""
 

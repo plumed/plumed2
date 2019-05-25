@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -122,15 +122,8 @@ void Grid::Init(const std::string& funcl, const std::vector<std::string> &names,
 }
 
 void Grid::clear() {
-  grid_.resize(maxsize_);
-  if(usederiv_) der_.resize(maxsize_);
-  for(index_t i=0; i<maxsize_; ++i) {
-    grid_[i]=0.0;
-    if(usederiv_) {
-      (der_[i]).resize(dimension_);
-      for(unsigned int j=0; j<dimension_; ++j) der_[i][j]=0.0;
-    }
-  }
+  grid_.assign(maxsize_,0.0);
+  if(usederiv_) der_.assign(maxsize_*dimension_,0.0);
 }
 
 vector<std::string> Grid::getMin() const {
@@ -451,7 +444,8 @@ double Grid::getValue(const vector<double> & x) const {
 double Grid::getValueAndDerivatives
 (index_t index, vector<double>& der) const {
   plumed_dbg_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
-  der=der_[index];
+  der.resize(dimension_);
+  for(unsigned i=0; i<dimension_; i++) der[i]=der_[dimension_*index+i];
   return grid_[index];
 }
 
@@ -526,7 +520,7 @@ void Grid::setValueAndDerivatives
 (index_t index, double value, vector<double>& der) {
   plumed_dbg_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
   grid_[index]=value;
-  der_[index]=der;
+  for(unsigned i=0; i<dimension_; i++) der_[dimension_*index+i]=der[i];
 }
 
 void Grid::setValueAndDerivatives
@@ -547,7 +541,7 @@ void Grid::addValueAndDerivatives
 (index_t index, double value, vector<double>& der) {
   plumed_dbg_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
   grid_[index]+=value;
-  for(unsigned int i=0; i<dimension_; ++i) der_[index][i]+=der[i];
+  for(unsigned int i=0; i<dimension_; ++i) der_[index*dimension_+i]+=der[i];
 }
 
 void Grid::addValueAndDerivatives
@@ -559,7 +553,7 @@ void Grid::scaleAllValuesAndDerivatives( const double& scalef ) {
   if(usederiv_) {
     for(index_t i=0; i<grid_.size(); ++i) {
       grid_[i]*=scalef;
-      for(unsigned j=0; j<dimension_; ++j) der_[i][j]*=scalef;
+      for(unsigned j=0; j<dimension_; ++j) der_[i*dimension_+j]*=scalef;
     }
   } else {
     for(index_t i=0; i<grid_.size(); ++i) grid_[i]*=scalef;
@@ -570,7 +564,7 @@ void Grid::logAllValuesAndDerivatives( const double& scalef ) {
   if(usederiv_) {
     for(index_t i=0; i<grid_.size(); ++i) {
       grid_[i] = scalef*log(grid_[i]);
-      for(unsigned j=0; j<dimension_; ++j) der_[i][j] = scalef/der_[i][j];
+      for(unsigned j=0; j<dimension_; ++j) der_[i*dimension_+j] = scalef/der_[i*dimension_+j];
     }
   } else {
     for(index_t i=0; i<grid_.size(); ++i) grid_[i] = scalef*log(grid_[i]);
@@ -587,7 +581,7 @@ void Grid::applyFunctionAllValuesAndDerivatives( double (*func)(double val), dou
   if(usederiv_) {
     for(index_t i=0; i<grid_.size(); ++i) {
       grid_[i]=func(grid_[i]);
-      for(unsigned j=0; j<dimension_; ++j) der_[i][j]=funcder(der_[i][j]);
+      for(unsigned j=0; j<dimension_; ++j) der_[i*dimension_+j]=funcder(der_[i*dimension_+j]);
     }
   } else {
     for(index_t i=0; i<grid_.size(); ++i) grid_[i]=func(grid_[i]);
@@ -989,8 +983,8 @@ double Grid::integrate( std::vector<unsigned>& npoints ) {
   for(unsigned i=0; i<ntotgrid; ++i) {
     t_index[0]=(i%npoints[0]);
     unsigned kk=i;
-    for(unsigned j=1; j<dimension_-1; ++j) { kk=(kk-t_index[j-1])/npoints[i-1]; t_index[j]=(kk%npoints[i]); }
-    if( dimension_>=2 ) t_index[dimension_-1]=((kk-t_index[dimension_-1])/npoints[dimension_-2]);
+    for(unsigned j=1; j<dimension_-1; ++j) { kk=(kk-t_index[j-1])/npoints[j-1]; t_index[j]=(kk%npoints[j]); }
+    if( dimension_>=2 ) t_index[dimension_-1]=((kk-t_index[dimension_-2])/npoints[dimension_-2]);
 
     for(unsigned j=0; j<dimension_; ++j) vals[j]=min_[j] + t_index[j]*ispacing[j];
 

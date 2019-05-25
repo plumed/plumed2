@@ -25,6 +25,7 @@ else
 fi
 
 mkdir -p science/plumed
+mkdir -p python/py-plumed
 
 modules=$(
   grep default-off ../src/*/module.type | sed "s|.*/src/||" | sed "s|/.*||" | awk '{printf("%s ",$1)}'
@@ -84,6 +85,22 @@ sed "
 
   } else print
 }'  > science/plumed/Portfile
+
+
+cat PortfilePython.in |
+sed "
+  s/@_VERSION_@/$version/
+  s/@_REVISION_@/0/
+" | awk '{
+  if($1=="@_FETCH_@"){
+    print "fetch.type          git"
+    print "git.url             '$repository'"
+# notice that if instead of hashtag we want to put a version, then it should be
+# git.branch          v${version}
+    print "git.branch          '$prefix'${version}"
+  } else print
+}' > python/py-plumed/Portfile
+
 
 
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -85,11 +85,13 @@ std::unique_ptr<Action> ActionRegister::create(const ActionOptions&ao) {
   return action;
 }
 
-bool ActionRegister::printManual( const std::string& action, const bool& vimout ) {
+bool ActionRegister::printManual( const std::string& action, const bool& vimout, const bool& spellout ) {
   if ( check(action) ) {
     Keywords keys; mk[action](keys);
     if( vimout ) {
       printf("%s",action.c_str()); keys.print_vim(); printf("\n");
+    } else if( spellout ) {
+      keys.print_spelling();
     } else {
       keys.print_html();
     }

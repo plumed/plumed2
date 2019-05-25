@@ -3,6 +3,7 @@
 [![codecov](https://codecov.io/gh/plumed/plumed2/branch/master/graph/badge.svg)](https://codecov.io/gh/plumed/plumed2)
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
 [![Github Releases](https://img.shields.io/github/release/plumed/plumed2.svg)](https://github.com/plumed/plumed2/releases)
+[![Anaconda-Server Badge](https://anaconda.org/plumed/plumed/badges/version.svg)](https://anaconda.org/plumed/plumed)
 [![Twitter Follow](https://img.shields.io/twitter/follow/plumed_org.svg?style=social&label=Follow)](https://twitter.com/plumed_org)
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/plumed.svg)](https://repology.org/metapackage/plumed)
@@ -42,9 +43,9 @@ Below you find the status on [Travis-CI](http://travis-ci.org/plumed/plumed2) fo
 | Branch   |      Status   | First stable release (year) | Still supported |
 |:--------:|:-------------:|:--------:|:------:|
 | master   | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=master)](https://travis-ci.org/plumed/plumed2) | 2019 (expected) | / |
-| v2.5     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.5)](https://travis-ci.org/plumed/plumed2)   | 2018 (expected) | / |
+| v2.5     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.5)](https://travis-ci.org/plumed/plumed2)   | 2018 | yes |
 | v2.4     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.4)](https://travis-ci.org/plumed/plumed2)   | 2017 | yes |
-| v2.3     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.3)](https://travis-ci.org/plumed/plumed2)   | 2016 | yes |
+| v2.3     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.3)](https://travis-ci.org/plumed/plumed2)   | 2016 | no |
 | v2.2     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.2)](https://travis-ci.org/plumed/plumed2)   | 2015 | no |
 | v2.1     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.1)](https://travis-ci.org/plumed/plumed2)   | 2014 | no |
 | v2.0     | Not available | 2013 | no |
@@ -68,6 +69,7 @@ Here's a description of the content of each file and directory in the root PLUME
     docker           : directory where Docker is generated
     macports         : directory where Portfiles are generated
     patches          : patch scripts
+    python           : python stuff
     regtest          : regression tests, including reference results
     release.sh       : developer utility to publish releases
     scripts          : shell tools
@@ -110,6 +112,7 @@ Quick instructions:
     ./configure --prefix=$HOME/opt
     make
     make doc # optional
+    make test # optional
 
 User documentation can be found at `user-doc/html/index.html`.
 Developer documentation can be found at `developer-doc/html/index.html`.

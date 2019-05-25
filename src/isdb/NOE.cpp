@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,7 +36,7 @@ namespace isdb {
 //+PLUMEDOC ISDB_COLVAR NOE
 /*
 Calculates NOE intensities as sums of 1/r^6, also averaging over multiple equivalent atoms
-or ambiguous NOE.
+ or ambiguous NOE.
 
 Each NOE is defined by two groups containing the same number of atoms, distances are
 calculated in pairs, transformed in 1/r^6, summed and saved as components.
@@ -196,7 +196,7 @@ NOE::NOE(const ActionOptions&ao):
     }
   }
 
-  requestAtoms(nl->getFullAtomList());
+  requestAtoms(nl->getFullAtomList(), false);
   if(getDoScore()) {
     setParameters(noedist);
     Initialise(nga.size());

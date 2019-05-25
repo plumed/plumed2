@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2018,2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -68,9 +68,9 @@ const std::string & ActionShortcut::getShortcutLabel() const {
 std::string ActionShortcut::convertInputLineToString() {
   std::string output;
   for(auto p=line.begin(); p!=line.end(); ++p) {
-      if( (*p).find("= " )!=std::string::npos ) {
+      if( (*p).find(" " )!=std::string::npos ) {
           std::size_t eq = (*p).find_first_of("=");
-          output += " " + (*p).substr(0,eq) + "={" + (*p).substr(eq+2) + "}";  
+          output += " " + (*p).substr(0,eq) + "={" + (*p).substr(eq+1) + "}";  
       } else output += " " + (*p);
   } 
   line.resize(0); return output;

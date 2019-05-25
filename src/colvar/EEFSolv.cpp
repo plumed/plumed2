@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,7 +54,7 @@ where \f$\Delta G^\mathrm{solv}_i\f$ is the free energy of solvation, \f$\Delta 
 \f]
 where \f$\Delta G^\mathrm{free}_i\f$ is the solvation free energy of the isolated group, \f$\lambda_i\f$ is the correlation length equal to the width of the first solvation shell and \f$R_i\f$ is the van der Waals radius of atom \f$i\f$.
 
-The output from this collective variable, the free energy of solvation, can be used with the \ref BIASVALUE keyword to provide implicit solvation to a system. All parameters are designed to be used with a modified CHARMM36 force field. It takes only non-hydrogen atoms as input, these can be conveniently specified using the \ref GROUP action with the NDX_GROUP parameter. To speed up the calculation, EEFSOLV internally uses a neighbourlist with a cutoff dependent on the type of atom (maximum of 1.95 nm). This cutoff can be extended further by using the NL_BUFFER keyword.
+The output from this collective variable, the free energy of solvation, can be used with the \ref BIASVALUE keyword to provide implicit solvation to a system. All parameters are designed to be used with a modified CHARMM36 force field. It takes only non-hydrogen atoms as input, these can be conveniently specified using the \ref GROUP action with the NDX_GROUP parameter. To speed up the calculation, EEFSOLV internally uses a neighbor list with a cutoff dependent on the type of atom (maximum of 1.95 nm). This cutoff can be extended further by using the NL_BUFFER keyword.
 
 \par Examples
 
@@ -65,7 +65,7 @@ WHOLEMOLECULES ENTITY0=1-111
 # This allows us to select only non-hydrogen atoms
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 
-# We extend the cutoff by 0.2 nm and update the neighbourlist every 10 steps
+# We extend the cutoff by 0.2 nm and update the neighbor list every 10 steps
 solv: EEFSOLV ATOMS=protein-h NL_STRIDE=10 NL_BUFFER=0.2
 
 # Here we actually add our calculated energy back to the potential
@@ -106,7 +106,7 @@ void EEFSolv::registerKeywords(Keywords& keys) {
   useCustomisableComponents(keys);
   keys.add("atoms", "ATOMS", "The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory", "NL_BUFFER", "The buffer to the intrinsic cutoff used when calculating pairwise interactions.");
-  keys.add("compulsory", "NL_STRIDE", "The frequency with which the neighbourlist is updated.");
+  keys.add("compulsory", "NL_STRIDE", "The frequency with which the neighbor list is updated.");
   keys.addFlag("TEMP_CORRECTION", false, "Correct free energy of solvation constants for temperatures different from 298.15 K");
 }
 
@@ -186,8 +186,7 @@ void EEFSolv::calculate() {
   Tensor deriv_box;
   unsigned nt=OpenMP::getNumThreads();
   const unsigned nn=nl.size();
-  if(nt*10>nn) nt=nn/10;
-  if(nt==0)nt=1;
+  if(nt*10>nn) nt=1;
   #pragma omp parallel num_threads(nt)
   {
     vector<Vector> deriv_omp(size);

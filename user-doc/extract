@@ -48,7 +48,7 @@ EOF
 
   cat << EOF
 
-\note This command line tool is implemented as a shell script. It's help message is pasted below:
+\note This command line tool is implemented as a shell script. Its help message is pasted below:
 
 \verbatim
 EOF
@@ -162,7 +162,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
       cmd="grep reference: " array[1]".md | sed -e 's/reference://'"
       cmd | getline reference 
       close(cmd)
-      printf "<tr><td width=%s>\\subpage %s </td><td> %s </td><td> %s </td><td> %s </td></tr>\n", "10%", array[1], describe, authors, reference >> afile
+      printf "<tr><td width=%s> \\subpage %s </td><td> %s </td><td> %s </td><td> %s </td></tr>\n", "10%", array[1], describe, authors, reference >> afile
     }
   }
 }'

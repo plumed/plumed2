@@ -1,3 +1,4 @@
+#! /bin/bash
 # vim:ft=awk
 if [ "$1" = --description ] ; then
   echo "create a new collective variable from a template"

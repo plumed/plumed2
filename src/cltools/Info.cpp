@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -100,14 +100,14 @@ int Info::main(FILE* in, FILE*out,Communicator& pc) {
     std::string userdoc=config::getPlumedHtmldir()+"/user-doc/html/index.html";
     FILE *ff=std::fopen(userdoc.c_str(),"r");
     if(ff) std::fclose(ff);
-    else userdoc="http://plumed.github.io/doc-v" + config::getVersion() + "/user-doc/html/index.html";
+    else userdoc="http://www.plumed.org/doc-v" + config::getVersion() + "/user-doc/html/index.html";
     fprintf(out,"%s\n",userdoc.c_str());
   }
   if(printdeveloperdoc) {
     std::string developerdoc=config::getPlumedHtmldir()+"/developer-doc/html/index.html";
     FILE *ff=std::fopen(developerdoc.c_str(),"r");
     if(ff) std::fclose(ff);
-    else developerdoc="http://plumed.github.io/doc-v" + config::getVersion() + "/developer-doc/html/index.html";
+    else developerdoc="http://www.plumed.org/doc-v" + config::getVersion() + "/developer-doc/html/index.html";
     fprintf(out,"%s\n",developerdoc.c_str());
   }
   if(printversion) fprintf(out,"%s\n",config::getVersion().c_str());

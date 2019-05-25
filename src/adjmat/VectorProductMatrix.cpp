@@ -143,7 +143,7 @@ Value* VectorProductMatrix::convertStringToValue( const std::string& name ) {
     ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( name.substr(0,dot) );
     if( !action ) {
       std::string str=" (hint! the actions in this ActionSet are: ";
-      str+=plumed.getActionSet().getLabelList()+")";
+      str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
       error("cannot find action named " + name + str);
     }
     action->interpretDataLabel( name, this, nargs, args );
@@ -151,7 +151,7 @@ Value* VectorProductMatrix::convertStringToValue( const std::string& name ) {
     ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>( name );
     if( !action ) {
       std::string str=" (hint! the actions in this ActionSet are: ";
-      str+=plumed.getActionSet().getLabelList()+")";
+      str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
       error("cannot find action named " + name + str);
     }
     action->interpretDataLabel( name, this, nargs, args );

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -33,7 +33,7 @@ function on to a finer grained grid.  The interpolation within this algorithm is
 
 \par Examples
 
-The input below can be used to postprocess a trajectory.  It calculates a \ref HISTOGRAM as a function the
+The input below can be used to post process a trajectory.  It calculates a \ref HISTOGRAM as a function the
 distance between atoms 1 and 2 using kernel density estimation.  During the calculation the values of the kernels
 are evaluated at 100 points on a uniform grid between 0.0 and 3.0.  Prior to outputting this function at the end of the
 simulation this function is interpolated onto a finer grid of 200 points between 0.0 and 3.0.

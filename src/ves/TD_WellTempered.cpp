@@ -47,10 +47,10 @@ p(\mathbf{s}) =
 \f]
 where \f$\gamma\f$ is a so-called bias factor and \f$P_{0}(\mathbf{s})\f$ is the
 unbiased canonical distribution of the CVs. This target distribution thus
-correponds to a biased ensemble where, as compared to the unbiased one,
-the probability peaks have been broaden and the fluctations of the CVs are
+corresponds to a biased ensemble where, as compared to the unbiased one,
+the probability peaks have been broaden and the fluctuations of the CVs are
 enhanced.
-The value of the bias factor \f$\gamma\f$ determines by how much the fluctations
+The value of the bias factor \f$\gamma\f$ determines by how much the fluctuations
 are enhanced.
 
 The well-tempered distribution can be view as sampling on

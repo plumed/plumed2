@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -388,12 +388,14 @@ void Print::update() {
   if( tstyle=="colvar" ) {
     ofile.fmtField(" %f");
     ofile.printField("time",getTime());
-    if( getNumberOfArguments()>1 || getPntrToArgument(0)->getRank()==0 ) {
-      for(unsigned i=0; i<getNumberOfArguments(); i++) {
-        ofile.fmtField(fmt); getPntrToArgument(i)->print( getLabel(), ofile );
-      }
-    } else {
-      for(unsigned i=0; i<getNumberOfArguments(); i++) { ofile.fmtField(fmt); getPntrToArgument(i)->print( getLabel(), ofile ); }
+    if( getNumberOfArguments()>0 ) {
+        if( getNumberOfArguments()>1 || getPntrToArgument(0)->getRank()==0 ) {
+          for(unsigned i=0; i<getNumberOfArguments(); i++) {
+            ofile.fmtField(fmt); getPntrToArgument(i)->print( getLabel(), ofile );
+          }
+        } else {
+          for(unsigned i=0; i<getNumberOfArguments(); i++) { ofile.fmtField(fmt); getPntrToArgument(i)->print( getLabel(), ofile ); }
+        }
     }
     ofile.printField();
   } else if( tstyle=="xyz") {

@@ -415,18 +415,20 @@ bool ABF::store_getbias(const vector<double> &pos, const vector<double> &f,
   unsigned long int &count = samples[baseaddr];
   ++count;
   double factor = 2 * (static_cast<double>(count)) / mFullSamples - 1;
-  // Clamp to [0,maxFactor]
-  factor = factor < 0 ? 0 : factor > mMaxFactor ? mMaxFactor : factor;
   auto it_fa = begin(forces) + baseaddr * ndims;
   auto it_fb = begin(fbias);
   auto it_f = begin(f);
+  auto it_maxFactor = begin(mMaxFactors);
   do {
+    // Clamp to [0,maxFactors]
+    factor = factor < 0 ? 0 : factor > (*it_maxFactor) ? (*it_maxFactor) : factor;
     (*it_fa) += (*it_f); // Accumulate instantaneous force
     (*it_fb) = factor * (*it_fa) * (-1.0) /
                static_cast<double>(count); // Calculate bias force
     ++it_fa;
     ++it_fb;
     ++it_f;
+    ++it_maxFactor;
   } while (it_f != end(f));
 
   return true;
@@ -500,6 +502,27 @@ CZAR CZAR::mergewindow(const CZAR &cWA, const CZAR &cWB) {
   }
   return result;
 }
+
+void CZAR:: writeZCount(const string &filename) const {
+  string countname = filename + ".zcount";
+  vector<double> pos(ndims, 0);
+  FILE *pCount;
+  pCount = fopen(countname.c_str(), "w");
+  char *buffer;
+  buffer = (char *)malloc((sizeof(double)) * sampleSize * ndims);
+  setvbuf(pCount, buffer, _IOFBF, (sizeof(double)) * sampleSize * ndims);
+  fwrite(headers.c_str(), sizeof(char), strlen(headers.c_str()), pCount);
+  for (size_t i = 0; i < sampleSize; ++i) {
+    for (size_t j = 0; j < ndims; ++j) {
+      pos[j] = table[j][i];
+      fprintf(pCount, " %.9f", table[j][i]);
+    }
+    fprintf(pCount, " %lu\n", getCount(pos, true));
+  }
+  fclose(pCount);
+  free(buffer);
+}
+
 }
 }
 

@@ -10,7 +10,7 @@ simple collective variable and we will use them to analyze existing trajectories
 
 Once this tutorial is completed students will be able to:
 
-- Write a simple PLUMED input file and use it with the PLUMED \ref driver to analyse a trajectory.
+- Write a simple PLUMED input file and use it with the PLUMED \ref driver to analyze a trajectory.
 - Use the \ref GROUP keyword to make the input file compact and easy to read and to quickly build complex atom groups.
 - Print collective variables such as distances
   (\ref DISTANCE), torsional angles (\ref TORSION), gyration radius (\ref GYRATION),
@@ -111,7 +111,7 @@ PRINT ARG=phi STRIDE=100 FILE=COLVAR2
 \note If you are a VIM user, you might find convenient configuring PLUMED syntax files, see \ref VimSyntax.
       Syntax highlighting is particularly useful for beginners since it allows you to identify simple
       mistakes without the need to run PLUMED. In addition, VIM has a full dictionary of available
-      keywords and can help you autocompleting your commands.
+      keywords and can help you by autocomplete your commands.
 
 In the input file above, each line defines a so-called action. An action could either compute a distance,
 or the center between two or more atoms, or print some value on a file. Each action supports a number of keywords,
@@ -161,11 +161,11 @@ Analyze the `traj-whole.xtc` trajectory and produce a colvar file with the follo
 - The torsional angle (\ref TORSION) corresponding to the glycosidic chi angle \f$\chi\f$ of the first nucleotide.
   Since this nucleotide is a purine (guanine), the proper atoms to compute the torsion are O4' C1 N9 C4. Find their serial number
   in the `ref.pdb` file or learn how to select a special angle reading the \ref MOLINFO documentation.
-- The total number of contacts (\ref COORDINATION) between all RNA atoms and all water oxygens.
+- The total number of contacts (\ref COORDINATION) between all RNA atoms and all water oxygen atoms.
   For \ref COORDINATION, set reference distance `R_0` to 2.5 A (be careful with units!!).
-  Try to be smart in selecting the water oxygens without listing all of them explicitly.
+  Try to be smart in selecting the water oxygen atoms without listing all of them explicitly.
 - Same as before but against water hydrogen.
-  Also in this case you should be smart to select water hydrogens. Documentation of \ref GROUP might help.
+  Also in this case you should be smart to select water hydrogen atoms. Documentation of \ref GROUP might help.
 - Distance between the Mg ion and the geometric center of the RNA duplex (use \ref CENTER and \ref DISTANCE).
 
 Notice that some of the atom selections can be made in a easier manner by using the \ref MOLINFO keyword with
@@ -216,7 +216,7 @@ Once your `plumed.dat` file is complete, you can use it with the following comma
 \endverbatim
 
 Scroll in your terminal to read the PLUMED log. As you can see,
-PLUMED gives a lot of feedbacks about the input that he is reading. There's the
+PLUMED gives a lot of feedback about the input that he is reading. There's the
 place where you can check if PLUMED understood correctly your input.
 
 The command above will create a file `COLVAR` like this one:
@@ -353,7 +353,7 @@ be used in the following cases:
 - To dump snapshots of our molecule conditioned to some value of some collective variable (see \ref UPDATE_IF).
 - To dump coordinates of atoms that have been moved by PLUMED.
 
-The last point is perhaps the most surpising one. Some of the PLUMED actions can indeed move the stored atoms to
+The last point is perhaps the most surprising one. Some of the PLUMED actions can indeed move the stored atoms to
 positions better suitable for the calculation of collective variables.
 
 The previous exercise was done on a trajectory where the RNA was already whole. For the next exercise you will use the
@@ -368,10 +368,10 @@ This is not a problem during MD because of periodic boundary conditions. However
 to analyze this trajectory. In addition, some collective variables that you might want to compute
 could require the molecules to be whole (an example of such variables is \ref RMSD).
 
-You might think that there are alternative programs that can be used to reconstruct PBCs correctly
+You might think that there are alternative programs that can be used to reconstruct the molecules the molecules that are broken by the periodic boundary correctly
 in your trajectory *before* analyzing it. However, you should keep in mind that if you need to
 compute CVs on the fly to add a bias potential on those (as we will to in the next tutorials) you will
-have to learn how to reconstruct PBCs within PLUMED. If you know alternative tools that can reconstruct PBCs,
+have to learn how to reconstruct the molecules that are broken by the periodic boundary within PLUMED. If you know alternative tools that can reconstruct the molecules that are broken by the periodic boundary,
 it is a good idea to also use them and compare the result with PLUMED.
 
 
@@ -557,7 +557,7 @@ As you can see, the generating vectors of the periodic lattice *before* fitting 
 On the other hand, *after* fitting these vectors change so as to keep RNA correctly aligned to its reference structure.
 
 Later on you will learn how to add a bias potential on a give collective variable. In principle, you could
-also add a \ref RESTRAINT ro the `cell_after.*` variables of the last example. This would allow you to
+also add a \ref RESTRAINT to the `cell_after.*` variables of the last example. This would allow you to
 force your molecule to a specific orientation.
 
 \endhidden

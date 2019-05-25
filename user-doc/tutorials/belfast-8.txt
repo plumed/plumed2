@@ -4,7 +4,7 @@
 \section belfast-8-aim Aims
 
 The aim of this tutorial is to introduce the users to the use of Bias-Exchange Metadynamics. We will go through the writing of
-the input files for BEMETA for a simple case of three peptide and we will use METAGUI to to analyse them. We will compare
+the input files for BEMETA for a simple case of three peptide and we will use METAGUI to to analyze them. We will compare
 the results of WT-BEMETA and STANDARD-BEMETA with four independent runs on the four Collective Variables. Finally we will
 use a simplified version of BEMETA that is Multiple Walkers Metadynamics.
 
@@ -13,7 +13,7 @@ use a simplified version of BEMETA that is Multiple Walkers Metadynamics.
 Once this tutorial is completed students will:
 
 - Know how to run a Bias-Exchange simulation using PLUMED and GROMACS 
-- Know how to analyse the results of BEMETA with the help of METAGUI
+- Know how to analyze the results of BEMETA with the help of METAGUI
 - Know how to run a Multiple Walker simulation 
 
 \section belfast-8-res Resources
@@ -90,9 +90,9 @@ PRINT ARG=cv1,cv2,cv3,cv4 STRIDE=1000 FILE=COLVAR
 \endverbatim
 
 NOTE:
-1. in COLVAR we \ref PRINT only the four collective variables, always in the same order in such a way that COLVARs are compatible
+1. in COLVAR we \ref PRINT only the four collective variables, always in the same order in such a way that COLVAR files are compatible
 with METAGUI
-2. if you want to print additional information, like the \ref METAD bias it is possibile to use additional \ref PRINT keyword
+2. if you want to print additional information, like the \ref METAD bias it is possible to use additional \ref PRINT keyword
 
 \verbatim
 PRINT ARG=cv1,be.bias STRIDE=xxx FILE=BIAS
@@ -114,11 +114,11 @@ The same simulation can be run using WELLTEMPERED metadynamics.
 \subsection belfast-8-bxcon   Convergence of the Simulations
 In the resources for this tutorial you can find the results for a 40ns long Well-Tempered Bias Exchange simulation. First of all we
 can try to assess the convergence of the simulations by looking at the profiles. In the "convergence" folder there is a script that
-calculates the free energy from the HILLS.0 file at incresing simulation lengths (i.e. every more 0.8 ns of simulation). The
+calculates the free energy from the HILLS.0 file at increasing simulation lengths (i.e. every more 0.8 ns of simulation). The
 scripts also generate two measures of the evolution of the profiles in time:
 
 1. time-diff.HILLS.0: where it is stored the average deviation between two successive profiles
-2. KL.HILLS.0: where it is stored the average deviation between profiles correctly weigheted for the free energy of the profiles themselves (Symmetrized Kullback-Lieber divergence) 
+2. KL.HILLS.0: where it is stored the average deviation between profiles correctly weighted for the free energy of the profiles themselves (Symmetrized Kullback-Lieber divergence) 
 
 From both plots one can deduce that after 8 ns the profiles don't change significantly thus suggesting that averaging over the range 8-40ns should result in
 a accurate profile (we will test this using metagui). Another test is that of looking at the fluctuations of the profiles in a time window instead of looking
@@ -129,15 +129,15 @@ at successive profiles:
 
 \subsection belfast-8-metagui Bias-Exchange Analysis with METAGUI
 In principle Bias-Exchange Metadynamics can give as a results only N 1D free energy profiles. But the information
-contained in all the replicas can be used to recover multidensional free energy surfaces in >=N dimensions. A simple
+contained in all the replicas can be used to recover multidimensional free energy surfaces in >=N dimensions. A simple
 way to perform this analysis is to use METAGUI. METAGUI performs the following operations:
 
-1. Clusterizes the trajectories on a multidimensional GRID defined by at least the biased coordinates.
+1. Clusters the frames in the trajectories on a multidimensional GRID defined by at least the biased coordinates.
 2. By using the 1D free energy profiles and the clustering assigns a free energy to the cluster using a WHAM procedure.
 3. Lets the user visualize the clusters.
 4. Approximates the kinetics among clusters.
 
-METAGUI (Biarnes et. al) is a plugin for VMD  that implements the approch developed by Marinelli et. al 2009. It can be
+METAGUI (Biarnes et. al) is a plugin for VMD  that implements the approach developed by Marinelli et. al 2009. It can be
 downloaded from the PLUMED website.
 
 In order for the colvar and hills file to be compatible with METAGUI their header must be formatted as following:
@@ -151,9 +151,9 @@ COLVAR.#:
 \endverbatim
 
 NOTE: 
-1. the COLVAR.# files should contain ALL the collective variables employed (all those biased in at least one replica plus those additionaly analysed). They MUST be named cv1 ... cvN.
-2. the COLVAR.# files must be synchronised with the trajectories, this means that for each frame in the trajectory at time t there must be a line in each colvar at time t and viceversa. The best option is usually to analyse the trajectories a posteriori using plumed driver.
-3. a keyword #! ACTIVE NBIASEDCV BIASEDCV LABEL is needed, where NBIASEDCV is the number of biased cv in that replica (not overall), BIASEDCV is the index of the biased cv in that replica (i.e. 1 for the first replica and so on); LABEL is a letter that identify the replica (usually is simply A for the first, B for the second and so on) this is usufull if two replicas are biasing the same collective variable:
+1. the COLVAR.# files should contain ALL the collective variables employed (all those biased in at least one replica plus those additionally analyzed). They MUST be named cv1 ... cv\f$\f$N.
+2. the COLVAR.# files must be synchronized with the trajectories, this means that for each frame in the trajectory at time t there must be a line in each colvar at time t and vice versa. The best option is usually to analyze the trajectories a posteriori using plumed driver.
+3. a keyword #! ACTIVE NBIASEDCV BIASEDCV LABEL is needed, where NBIASEDCV is the number of biased collective variables in that replica (not overall), BIASEDCV is the index of the biased collective variables in that replica (i.e. 1 for the first replica and so on); LABEL is a letter that identify the replica (usually is simply A for the first, B for the second and so on) this is useful if two replicas are biasing the same collective variable:
 
 \verbatim
 COLVAR.0:
@@ -192,7 +192,7 @@ HILLS.#:
 \endverbatim
 
 The above notes hold for the HILLS files as well. In the folder metagui the script check_for_metagui.sh checks if the header of your file is compatible
-with METAGUI, but remember that this is not enough! Synchronisation of COLVAR and trajectory files is also needed. HILLS files can be written with a
+with METAGUI, but remember that this is not enough! Synchronization of COLVAR and trajectory files is also needed. HILLS files can be written with a
 different frequency but times must be consistent. 
 
 NOTE: It is important to copy HILLS files in the metagui folder.
@@ -241,27 +241,27 @@ Now let's start with the analysis:
 3. In the left section of the interface "load all" the trajectories
 4. Find the Microstates
 
-In order to visualise the microstate it is convenient to align all the structures using the VMD RMSD Trajectory tool that can be found
+In order to visualize the microstate it is convenient to align all the structures using the VMD RMSD Trajectory tool that can be found
 in Extensions->Analysis.
 
-One or more microstates can be visualised by selecting them and clicking show.
+One or more microstates can be visualized by selecting them and clicking show.
 
 You can sort the microstates using the column name tabs, for example by clicking on size the microstates will be ordered from the larger
 to the smaller. If you look at the largest one it is possible to observe that by using the four selected collective variables the backbone
-conformation of the peptide is well defined while the sidechains can populate different rotameric states.
+conformation of the peptide is well defined while the side chains can populate different rotameric states.
 
 The equilibrium time in the analysis panel should be such that by averaging over the two halves of the remind of the simulation the profiles
 are the same (i.e the profile averaged between Teq and Teq+(Ttot-Teq)/2  should be the same of that averaged from Teq+(Ttot-Teq)/2 and Ttot).
 By clicking on COMPUTE FREE ENERGIES, the program will first generate the 1D free energy profiles from the HILLS files and then run
 the WHAM analysis on the microstates. Once the analysis is done it is possible to visually check the convergence of the 1D profiles one by
-one by clicking on the K bottons next to the HILLS.# files. The BLUE and the RED profiles are the two profiles just defined, while the GREEN
+one by clicking on the K buttons next to the HILLS.# files. The BLUE and the RED profiles are the two profiles just defined, while the GREEN
 is the average of the two. Now it is possible for example to sort the microstates as a function of the free energy and save them by dumping
 the structures for further analysis.
 
 \anchor belfast-8-mg1-fig
 \image html belfast-8-mg1.png "METAGUI Interface after loading metagui.input file" 
 
-If you look in the metagui folder you will see a lot of files, some of them can be very usefull:
+If you look in the metagui folder you will see a lot of files, some of them can be very useful:
 
 metagui/MICROSTATES: is the content of the microstates list table
 metagui/WHAM_RUN/VG_HILLS.#: are the opposite of the free energies calculated from the hills files
@@ -284,7 +284,7 @@ and edit the script to select the two columns of MICROSTATES on which show the i
 
 \subsection belfast-8-mw Multiple Walker Metadynamics
 
-Multiple Walker metadynamics is the simplest way to parallelise a MetaD calculation: multiple simulation of the same system
+Multiple Walker metadynamics is the simplest way to parallelize a metadynamics calculation: multiple simulation of the same system
 are run in parallel using metadynamics on the same set of collective variables. The deposited bias is shared among the replicas
 in such a way that the history dependent potential depends on the whole history.
 
@@ -317,8 +317,8 @@ mpirun -np 4 gmx_mpi mdrun -s topol -plumed plumed -multi 4  >& log &
 \endverbatim
 
 alternatively Multiple Walkers can be run as independent simulations sharing via the file system the biasing potential,
-this is usefull because it provides a parallelisation that does not need a parallel code. In this case the walkers read with
-a given frequency the gaussians deposited by the others and add them to their own \ref METAD.
+this is useful because it provides a parallelization that does not need a parallel code. In this case the walkers read with
+a given frequency the Gaussian kernels deposited by the others and add them to their own \ref METAD.
 
 \section belfast-8-refer Reference
 
@@ -326,8 +326,8 @@ This tutorial is freely inspired to the work of Biarnes et al.
 
 More materials can be found in
 
-1. Marinelli, F., Pietrucci, F., Laio, A. & Piana, S. A kinetic model of trp-cage folding from multiple biased molecular dynamics simulations. PLoS Comput. Biol. 5, e1000452 (2009).
-2. Biarnés, X., Pietrucci, F., Marinelli, F. & Laio, A. METAGUI. A VMD interface for analyzing metadynamics and molecular dynamics simulations. Comput. Phys. Commun. 183, 203–211 (2012).
+1. Marinelli, F., Pietrucci, F., Laio, A. & Piana, S. A kinetic model of TRP-cage folding from multiple biased molecular dynamics simulations. PLoS Comput. Biol. 5, e1000452 (2009).
+2. Biarnes, X., Pietrucci, F., Marinelli, F. & Laio, A. METAGUI. A VMD interface for analyzing metadynamics and molecular dynamics simulations. Comput. Phys. Commun. 183, 203–211 (2012).
 3. Baftizadeh, F., Cossio, P., Pietrucci, F. & Laio, A. Protein folding and ligand-enzyme binding from bias-exchange metadynamics simulations. Current Physical Chemistry 2, 79–91 (2012).
 4. Granata, D., Camilloni, C., Vendruscolo, M. & Laio, A. Characterization of the free-energy landscapes of proteins by NMR-guided metadynamics. Proc. Natl. Acad. Sci. U.S.A. 110, 6817–6822 (2013).
 5. Raiteri, P., Laio, A., Gervasio, F. L., Micheletti, C. & Parrinello, M. Efficient reconstruction of complex free energy landscapes by multiple walkers metadynamics. J. Phys. Chem. B 110, 3533–3539 (2006).

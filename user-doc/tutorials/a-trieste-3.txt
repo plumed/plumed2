@@ -9,7 +9,7 @@ The aim of this tutorial is to introduce the users to the use of constant biases
 
 - Apply a restraint on a simulations over one or more collective variables 
 - Understand the effect of a restraint on the acquired statistics
-- Perform a simple unbiasing of a restrained simulation
+- Perform a simple un-biasing of a restrained simulation
 - Add an external potential in the form of an analytical or numerical function
 
 \section trieste-3-resources Resources
@@ -26,7 +26,7 @@ of 2.4-only features, thus should also work with version 2.3.
 
 \section trieste-3-intro Introduction
 
-PLUMED can calculate conformational properties of a system a posteriori as well as on-the-fly. This information can be use to manipulate a simulation on-the-fly. This means adding energy terms in addition to those of the original Hamiltonian. This additional energy terms are usually refered as \ref Bias. In the following we will see how to apply a constant bias potential with PLUMED. It is preferable to run each exercise in a separate folder.
+PLUMED can calculate conformational properties of a system a posteriori as well as on-the-fly. This information can be use to manipulate a simulation on-the-fly. This means adding energy terms in addition to those of the original Hamiltonian. This additional energy terms are usually referred as \ref Bias. In the following we will see how to apply a constant bias potential with PLUMED. It is preferable to run each exercise in a separate folder.
 
 \hidden{Summary of theory}
 \subsection trieste-3-theory-biased-sampling Biased sampling
@@ -104,9 +104,9 @@ than frames that has been explored with a less disfavoring bias potential.
 
 \endhidden
 
-We will make use of two toy models: the first is a water dimer, i.e. two molecules of water in vacuo, that we will use to compare the effect of a constant bias on the equilibrium properties of the system that in this case can be readily computed. The second toy model is alanine dipeptide in vacuo. This system is more challanging to characterise with a standard MD simulation and we will see how we can use an interative approach to to build a constant bias that will help in flattening the underlying free energy surface and thus sped up the sampling.
+We will make use of two toy models: the first is a water dimer, i.e. two molecules of water in vacuo, that we will use to compare the effect of a constant bias on the equilibrium properties of the system that in this case can be readily computed. The second toy model is alanine dipeptide in vacuo. This system is more challenging to characterize with a standard MD simulation and we will see how we can use an interactive approach to to build a constant bias that will help in flattening the underlying free energy surface and thus sped up the sampling.
 
-\note Create a folder for each exercise and use subfolders if you want to run the same simulation with multiple choices for the parameters
+\note Create a folder for each exercise and use sub-folders if you want to run the same simulation with multiple choices for the parameters
 
 \section trieste-3-ex-1 Exercise 1: converged histogram of the water dimer relative distance
 
@@ -121,7 +121,7 @@ First of all let's start to learn something about the water dimer system by runn
 In this way we have a 25ns long trajectory that we can use to have a first look at the behavior of the system.
 Is the sampling of the relative distance between the two water molecules converged?
 
-Use plumed driver to analyse the trajectory and evaluate the quality of the sampling.
+Use plumed driver to analyze the trajectory and evaluate the quality of the sampling.
 
 Here you can find a sample `plumed.dat` file that you can use as a template.
 Whenever you see an highlighted \highlight{FILL} string, this is a string that you should replace.
@@ -133,7 +133,7 @@ d: DISTANCE ATOMS=1,4
 #accumulate block histograms
 hh: HISTOGRAM ARG=d STRIDE=10 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200 KERNEL=DISCRETE CLEAR=10000
 #and dump them
-DUMPGRID GRID=hh FILE=myhist.dat STRIDE=10000
+DUMPGRID GRID=hh FILE=my_histogram.dat STRIDE=10000
 # Print the collective variable.
 PRINT ARG=d STRIDE=10 FILE=distance.dat 
 \endplumedfile
@@ -152,8 +152,8 @@ Notice the peak at 0.9 nm, this is the effect of using cut-off for the calculati
 \section trieste-3-ex-2 Exercise 2: Apply a linear restraint on the same collective variable 
 Now we will try to apply a linear restraint on the relative distance and compare the resulting distribution.
 The new sampling will reflect the effect of the bias.
-Be carefull about the statistics: in the simulation of exercise 1 you were postprocessing a trajectory of 125000 frames accumulating one frame every ten in an histogram and clearing
-the histogram after 10000 steps. As a result you had 12 blocks in the form of 11 analysis.* files and a final block named myhist.dat. In the following try to accumulate on the fly
+Be careful about the statistics: in the simulation of exercise 1 you were post processing a trajectory of 125000 frames accumulating one frame every ten in an histogram and clearing
+the histogram after 10000 steps. As a result you had 12 blocks in the form of 11 analysis.* files and a final block named my_histogram.dat. In the following try to accumulate on the fly
 the same amount of statistics. Look into the .mdp file to see how often frames are written in a trajectory. If you write too many analysis.* files (i.e. 100 files plumed will fail
 with an error).
 
@@ -173,7 +173,7 @@ lr: RESTRAINT ARG=d KAPPA=0 AT=0 SLOPE=2.5
 PRINT __FILL__ 
 \endplumedfile
 
-In a new folder we can run this new simulation this time biasing and analysing the simulation on-the-fly.
+In a new folder we can run this new simulation this time biasing and analyzing the simulation on-the-fly.
 
 \verbatim
 > gmx mdrun -s dimer.tpr -plumed plumed.dat 
@@ -182,9 +182,9 @@ In a new folder we can run this new simulation this time biasing and analysing t
 The histogram should look different.
 
 The effect of a constant bias is that of systematically changing the probability of each conformation by a factor
-\f$ \exp(+V_{bias}/k_{B}T) \f$. This means that it is easely possible to recover the unbias distribution at least in the regions of the conformational space that have been througly sampled. In practice the statistical weight of each frame is not 1 anymore but is given by the exponential of the bias.
+\f$ \exp(+V_{bias}/k_{B}T) \f$. This means that it is easily possible to recover the un-biased distribution at least in the regions of the conformational space that have been thoroughly sampled. In practice the statistical weight of each frame is not 1 anymore but is given by the exponential of the bias.
 
-In order to recover the unbiased distribution we can post process the simulation using plumed driver to recalculate the bias felt by each frame and store this information to analyse any property. Furthermore plumed can also automatically use the bias to reweight the accumulated histogram.
+In order to recover the unbiased distribution we can post process the simulation using plumed driver to recalculate the bias felt by each frame and store this information to analyze any property. Furthermore plumed can also automatically use the bias to reweight the accumulated histogram.
 
 \plumedfile
 # vim:ft=plumed
@@ -206,13 +206,13 @@ DUMPGRID __FILL__
 PRINT ARG=*.* FILE=COLVAR STRIDE=1
 \endplumedfile
 
-Be carefull again about the difference in the way statistics is accumulated on-the-fly or for post processising. This is not critical for the result but is important in order to have comparable histograms, that is histograms with comparable noise. Remember to give different names to the new histogram otherwise the one obtained before will be overwritten.
+Be careful again about the difference in the way statistics is accumulated on-the-fly or for post processing. This is not critical for the result but is important in order to have comparable histograms, that is histograms with comparable noise. Remember to give different names to the new histogram otherwise the one obtained before will be overwritten.
 
 \verbatim
 > plumed driver --mf_xtc traj_comp.xtc --plumed plumed.dat  
 \endverbatim
 
-\note To run block analysis of both sets of histograms you need to edit the python script because the file name is hardcoded.
+\note To run block analysis of both sets of histograms you need to edit the python script because the file name is hard coded.
 
 \verbatim
 > python3 do_block_histo.py > histo-biased.dat 
@@ -223,7 +223,7 @@ Now the resulting histogram should be comparable to the reference one.
 
 \section trieste-3-ex-3 Exercise 3: Apply a quadratic restraint on the same collective variable 
 
-Do you expect a different behaviour? This time we can write the plumed input file in such a way to compare directly the biased and unbiased histograms.
+Do you expect a different behavior? This time we can write the plumed input file in such a way to compare directly the biased and unbiased histograms.
 
 \plumedfile
 # vim:ft=plumed
@@ -234,7 +234,7 @@ lr: RESTRAINT ARG=d KAPPA=10 AT=0.5
 #accumulate the biased histogram
 hh: HISTOGRAM ARG=d STRIDE=500 GRID_MIN=0 GRID_MAX=4.0 GRID_BIN=200 KERNEL=DISCRETE CLEAR=500000
 #dumpit
-DUMPGRID GRID=hh FILE=myhist.dat STRIDE=500000
+DUMPGRID GRID=hh FILE=my_histogram.dat STRIDE=500000
 #calculate the weights from the constant bias
 as: REWEIGHT_BIAS TEMP=298
 #accumulate the unbiased histogram
@@ -247,7 +247,7 @@ PRINT ARG=d,lr.bias FILE=distance.dat STRIDE=50
 
 The comparison of the two histograms with the former will show the effect of the weak quadratic bias on the simulation.
 
-\note To run block analysis of both sets of histograms you need to edit the python script because the file name is hardcoded.
+\note To run block analysis of both sets of histograms you need to edit the python script because the file name is hard coded.
 
 \verbatim
 > python3 do_block_histo.py > histo-biased.dat 
@@ -255,7 +255,7 @@ The comparison of the two histograms with the former will show the effect of the
 \endverbatim
 
 \section trieste-3-ex-4 Exercise 4: Apply an upper wall on the distance.
-In the above cases we have always applied weak biases. Sometimes biases are usefull to prevent the system in reaching some region of the conformational space. In this case instead of using \ref RESTRAINT , we can make use of lower or upper restraints, e.g. \ref LOWER_WALLS and \ref UPPER_WALLS.
+In the above cases we have always applied weak biases. Sometimes biases are useful to prevent the system in reaching some region of the conformational space. In this case instead of using \ref RESTRAINT , we can make use of lower or upper restraints, e.g. \ref LOWER_WALLS and \ref UPPER_WALLS.
 
 What happen to the histogram when we use walls? 
 
@@ -283,12 +283,12 @@ Run it.
 > gmx mdrun -s dimer.tpr -plumed plumed.dat 
 \endverbatim
 
-If we have not sampled a region througly enough it is not possible to estimate the histogram in that region even using reweighting (reweighting is not magic!).
+If we have not sampled a region thoroughly enough it is not possible to estimate the histogram in that region even using reweighting (reweighting is not magic!).
 
 \section trieste-3-ex-5 Exercise 5: Evaluate the free energy and use it as an external restraint
 
-The main issue in sampling rare events is that importance sampling algorithms spend more time in low energy regions and if two low energy regions are separated by a high energy one is unlikely for the sampling algorithm to cross the high energy region and reach the other low energy one. From this point of view an algorithm based on random sampling will work better in crossing the barrier. A particularly efficient sampling can be obtained if one would know the underlying free energy and thus use that to bias the sampling and make the sampling probability uniform in the regions of relavent interest.
-In this exercise we will make use of the free-energy estimate along the distance collective variable to bias the sampling of the same collective variable in the dimer simulation. To do so we will make use of a table potential applied using the \ref Bias \ref EXTERNAL. We first need to get a smooth estimate of the free-energy from our fist reference simulations, we will do this by accumulating a histogram with kernel functions, that is continuos function centered at the value of the accumulated point and added accumulated on the discrete represattion of the histogram, see <a href="https://en.wikipedia.org/wiki/Kernel_density_estimation"> Kernel density estimation </a>.
+The main issue in sampling rare events is that importance sampling algorithms spend more time in low energy regions and if two low energy regions are separated by a high energy one is unlikely for the sampling algorithm to cross the high energy region and reach the other low energy one. From this point of view an algorithm based on random sampling will work better in crossing the barrier. A particularly efficient sampling can be obtained if one would know the underlying free energy and thus use that to bias the sampling and make the sampling probability uniform in the regions of relevant interest.
+In this exercise we will make use of the free-energy estimate along the distance collective variable to bias the sampling of the same collective variable in the dimer simulation. To do so we will make use of a table potential applied using the \ref Bias \ref EXTERNAL. We first need to get a smooth estimate of the free-energy from our fist reference simulations, we will do this by accumulating a histogram with kernel functions, that is continuous function centered at the value of the accumulated point and added accumulated on the discrete representation of the histogram, see <a href="https://en.wikipedia.org/wiki/Kernel_density_estimation"> Kernel density estimation </a>.
 
 \plumedfile
 # vim:ft=plumed
@@ -376,7 +376,7 @@ How do the biased and unbiased histograms look like? In the following we will ap
 
 \section trieste-3-ex-6 Exercise 6: Preliminary run with Alanine dipeptide
 
-Alanine dipeptide is characterised by multiple minima separated by relatively high free energy barriers. Here we will explore the conformational space of
+Alanine dipeptide is characterized by multiple minima separated by relatively high free energy barriers. Here we will explore the conformational space of
 alanine dipeptide using a standard MD simulation, then instead of using the free energy as an external potential we will try to fit the potential using
 gnuplot and add a bias using an analytical function of a collective variable with \ref MATHEVAL and \ref BIASVALUE .
 
@@ -398,10 +398,10 @@ PRINT ARG=phi,psi FILE=colvar.dat STRIDE=10
 \endplumedfile
 
 from the colvar file it is clear that we can quickly explore two minima but that the region for positive phi is not accessible. Instead of using the opposite
-of the free energy as a table potential here we introduce the function \ref MATHEVAL that allows definining complex analytical functions of collective variables,
-and the bias \ref BIASVALUE that allows using any continuos function of the positions as a bias.
+of the free energy as a table potential here we introduce the function \ref MATHEVAL that allows defining complex analytical functions of collective variables,
+and the bias \ref BIASVALUE that allows using any continuous function of the positions as a bias.
 
-So first we need to fit the opposite of the free energy as a function of phi in the region explored with a periodic function, becasue of the gaussian like look
+So first we need to fit the opposite of the free energy as a function of phi in the region explored with a periodic function, because of the gaussian like look
 of the minima we can fit it using <a href="https://en.wikipedia.org/wiki/Von_Mises_distribution"> the von Mises distribution</a>. In gnuplot
 
 \verbatim

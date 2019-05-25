@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,19 +31,19 @@ namespace secondarystructure {
 /*
 Probe the antiparallel beta sheet content of your protein structure.
 
-Two protein segments containing three continguous residues can form an antiparallel beta sheet.
+Two protein segments containing three contiguous residues can form an antiparallel beta sheet.
 Although if the two segments are part of the same protein chain they must be separated by
 a minimum of 2 residues to make room for the turn. This colvar thus generates the set of
 all possible six residue sections that could conceivably form an antiparallel beta sheet
 and calculates the RMSD distance between the configuration in which the residues find themselves
 and an idealized antiparallel beta sheet structure. These distances can be calculated by either
 aligning the instantaneous structure with the reference structure and measuring each
-atomic displacement or by calculating differences between the set of interatomic
+atomic displacement or by calculating differences between the set of inter-atomic
 distances in the reference and instantaneous structures.
 
 This colvar is based on the following reference \cite pietrucci09jctc.  The authors of
 this paper use the set of distances from the anti parallel beta sheet configurations to measure
-the number of segments that have an configuration that resemebles an anti paralel beta sheet. This is done by calculating
+the number of segments that have an configuration that resembles an anti parallel beta sheet. This is done by calculating
 the following sum of functions of the rmsd distances:
 
 \f[
@@ -63,7 +63,7 @@ options you no longer need to specify NN, R_0, MM and D_0.
 
 Please be aware that for codes like gromacs you must ensure that plumed
 reconstructs the chains involved in your CV when you calculate this CV using
-anthing other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
+anything other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
 
 \par Examples
 

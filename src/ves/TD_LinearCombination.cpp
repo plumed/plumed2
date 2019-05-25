@@ -95,10 +95,10 @@ TD_LINEAR_COMBINATION ...
 ... TD_LINEAR_COMBINATION
 \endplumedfile
 
-In the above example the two Gaussians are given using two separate
+In the above example the two Gaussian kernels are given using two separate
 DISTRIBUTION keywords. As the \ref TD_GAUSSIAN target distribution allows multiple
 centers is it also possible to use just one DISTRIBUTION keyword for the two
-Gaussians. This is shown in the following example which will give the
+Gaussian kernels. This is shown in the following example which will give the
 exact same result as the one above as the weights have been appropriately
 adjusted
 \plumedfile

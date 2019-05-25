@@ -4,7 +4,7 @@
 In plumed you can bring a system in a specific state in a collective variable
 by means of the \ref MOVINGRESTRAINT directive.
 This directive is very flexible and allows for a programmed series
-of draggings and can be used also to sample multiple events
+moving restraints.  This technique can be used also to sample multiple events
 within a single simulation. Here I will explain the concepts of it and show some examples
 
 \section belfast-5-resources Resources
@@ -29,18 +29,18 @@ H_\lambda(X,t)&=&H(X)+U_\lambda(X,t)\\
 \f} 
 This means that if the \f$ k \f$ is tight enough the system will follow closely the center of the moving harmonic
 spring. But be careful, if the spring constant is too hard your equations of motion will now keep up since they are tuned
-to the fastest motion in your system so if you artificially introduce a higher freqeuncy in your system you'll screw up the dynamics. 
+to the fastest motion in your system so if you artificially introduce a higher frequency in your system you'll screw up the dynamics. 
 The same is true for the pulling speed \f$ v \f$. As a matter of fact I never encountered the case where I had to lower the time step and I could
 all the time be happy just by making a softer spring constant or a slower steering speed. Generally, integrators of equations of motion like velocity-Verlet are very 
 tolerant. Note that one can also make the spring constant depend on time and this,  as we will see later in the examples 
 is particularly useful to prepare your state. 
 
 
-In simulations, it is more convenient to adopt a situation where you specify only the starting point, the final point of cvs and the time in which you want to cover 
+In simulations, it is more convenient to adopt a situation where you specify only the starting point, the final point of collective variables and the time in which you want to cover 
 the transition. That's why the plumed input is done in such a way. 
 
 For example, let's go back to the alanine dipeptide example encountered in \ref belfast-2-ala.
-Let's say that now we want to steer from \f$ C_7eq \f$ to \f$ C_7ax \f$.
+Let's say that now we want to steer from \f$C_7eq \f$ to \f$ C_7ax \f$.
 If you think, just by dragging along the \f$ \Phi \f$  dihedral angle from a value of -1 to a value 1 should be enough to the state of interest. 
 Additionally, it might be important to you not to stress the system too much, so you might want first to increase the \f$ k \f$ first so to lock 
 the system in  \f$ \Phi =-1 \f$, then move it gently to  \f$ \Phi =1 \f$ and then release again your spring constant so to end up to an equilibrated and 
@@ -64,9 +64,9 @@ restraint: ...
 PRINT STRIDE=10 ARG=* FILE=COLVAR
 \endverbatim
 
-Please note the syntax of \ref MOVINGRESTRAINT : You need one (or more) argument(s) and a set of steps denote by ATX, STEPX, KAPPAX where X is a incremental starting from 0
-that assign the center and the harness of the spring at step STEPX. What happens in between is a linear interpolation of the AT and KAPPA parameters. If those
-are identical in two consecutive steps then nothing is happening to that parameter. So if you put the same KAPPA and AT in two different STEPs then this will give you 
+Please note the syntax of \ref MOVINGRESTRAINT : You need one (or more) argument(s) and a set of steps denote by AT\f$x\f$, STEP\f$x\f$, KAPPA\f$x\f$ where \f$x\f$ is a incremental starting from 0
+that assign the center and the harness of the spring at step STEP\f$x\f$. What happens in between is a linear interpolation of the AT and KAPPA parameters. If those
+are identical in two consecutive steps then nothing is happening to that parameter. So if you put the same KAPPA and AT value in two different STEP keywords then this will give you 
 an umbrella potential placed in the same point between the two time intervals defined by STEP. 
 Note that you need to run a bit more than 6000 steps because after this your system has no more restraints so the actual thermalization period starts here. 
 
@@ -100,11 +100,11 @@ Note that the actual force on an atom of the system involved in a CV is instead
 \f}
 
 This is important because in CVs that  have a derivative that change significantly with space then you might have regions in which no force is exerted while in others you
-might have an enormous force on it. Typically this is the case of sigmoids that are used in coordination numbers in which, in the tails, they are basically flat as a function 
+might have an enormous force on it. Typically this is the case of sigmoid functions that are used in coordination numbers in which, in the tails, they are basically flat as a function 
 of particle positions. Additionally note that this happens on any force-based enhanced-sampling algorithm so keep it in mind. Very often people miss this aspect and complain either
 that a CV or a enhanced-sampling method does not work. This is another good reason to use tight spring force so to compensate in the force the lack of derivative from the CV.
 
-The other argument in colvar is  restraint.phi_cntr which is the center of the harmonic potential. This is a useful quantity so you may know how close the system is follwing the 
+The other argument in colvar is  restraint.phi_cntr which is the center of the harmonic potential. This is a useful quantity so you may know how close the system is following the 
 center of harmonic potential (more on this below). The last parameter is restraint.phi_work.
 The work is defined as 
 
@@ -146,9 +146,9 @@ Another couple of interesting thing that you can check is
 
 \section belfast-5-path Moving on a more complex path
 
-Very often it is useful to use this movingrestraint to make a fancier schedule by using nice properties of \ref MOVINGRESTRAINT. For example you can plan a schedule to drive multiple
+Very often it is useful to use this moving restraint to make a fancier schedule by using nice properties of \ref MOVINGRESTRAINT. For example you can plan a schedule to drive multiple
 CVs at the same time in specific point of the phase space and also to stop for a while in specific using a fixed harmonic potential. This can be handy in case of an umbrella sampling run 
-where you might want to explore a 1-dimensional landscape by acquiring some statistics in one point and then moving to the next to acquire more statistics. With \ref MOVINGRESTRAINT you can do it in only one file. To give an example of such capabilities, let's say that we want to move from \f$ C7eq \f$ vertically toward \f$ \Phi =-1.5 ; \Psi=-1.3 \f$, stop by for a while (e.g. to acquire a statistics that you might need for an umbrella sampling), then moving toward \f$ \Phi =1.3 ; \Psi=-1.3 \f$ which roughly corresponds to \f$ C7ax \f$.
+where you might want to explore a 1-dimensional landscape by acquiring some statistics in one point and then moving to the next to acquire more statistics. With \ref MOVINGRESTRAINT you can do it in only one file. To give an example of such capabilities, let's say that we want to move from \f$C7eq \f$ vertically toward \f$ \Phi =-1.5 ; \Psi=-1.3 \f$, stop by for a while (e.g. to acquire a statistics that you might need for an umbrella sampling), then moving toward \f$ \Phi =1.3 ; \Psi=-1.3 \f$ which roughly corresponds to \f$ C7ax \f$.
 
 This can be programmed conveniently with \ref MOVINGRESTRAINT by adopting the following schedule 
 
@@ -171,10 +171,10 @@ restraint: ...
 PRINT STRIDE=10 ARG=* FILE=COLVAR
 \endverbatim
 
-Note that by adding two arguments for movingrestraint, now I am allowed to put two values (separated by comma, as usual for multiple values in PLUMED)
-and correspondingly two KAPPA values. One for each variable. Please note that no space must be used bewtween the arguments! This is a very common fault in writing the inputs.
+Note that by adding two arguments for moving restraint, now I am allowed to put two values (separated by comma, as usual for multiple values in PLUMED)
+and correspondingly two KAPPA values. One for each variable. Please note that no space must be used between the arguments! This is a very common fault in writing the inputs.
 
-By plotting the instataneous value of the variables and the value of the center of the harmonic potentials we can inspect the pathways that we make the system
+By plotting the instantaneous value of the variables and the value of the center of the harmonic potentials we can inspect the pathways that we make the system
 walk on the Ramachandran plot. (How to do this? Have a look to the header of COLVAR file to plot the right fields)
 
 \anchor belfast-5-doublesteer.png
@@ -186,14 +186,14 @@ Plot of the double steering schedule using \ref MOVINGRESTRAINT
 
 \section belfast-5-work Why work is important?
 
-The work as we have seen is the cumulative change of the hamiltonian in time. So it is connected with the change in energy of your system while you move it around.
+The work as we have seen is the cumulative change of the Hamiltonian in time. So it is connected with the change in energy of your system while you move it around.
 It has also a more important connection with the free energy via the Jarzynski equation which reads
 \f[
 \Delta F=-\beta^{-1}\ln \langle \exp^{-\beta W} \rangle
 \f]
 This is important and says that potentially you can calculate the free energy even by driving your system very fast and out of equilibrium between two states of your interest. 
 Unfortunately this in practice not possible since the accurate calculation of the quantity \f$ \langle \exp^{-\beta W} \rangle \f$ has a huge associated error bar since it involves the 
-average of a noisy quantity (the work) being exponentiated.
+average of a noisy quantity (the work) that appears in the exponential.
 So, before going wild with SMD, I want to make a small exercise on how tricky that is even for the smallest system.
 
 Now we run, say 30 SMD run and we calculate the free energy difference by using Jarzynski equality and see how this differs from the average.
@@ -222,7 +222,7 @@ What you see is something like in Fig.
 \image html belfast-5-jarz.png "Plot of the works produced"
 
 There are a number of interesting fact here. First you see that different starting points may end with very different work values. Not bad, one would say, since Jarzyinsi equality 
-is saying that we can make an average and everything will be ok. 
+is saying that we can make an average and everything will be OK. 
 So now calculate the average work by using the following bash one-liner:
 
 \verbatim
@@ -276,13 +276,13 @@ PRINT STRIDE=10 ARG=* FILE=COLVAR
 Note that \ref RMSD should be provided a reference structure in pdb format and can contain part of the system but the second column (the index) must reflect that of the full pdb so that PLUMED knows specifically which atom to drag where. 
 The \ref MOVINGRESTRAINT bias potential here acts on the rmsd, and the other two
 variables (phi and psi) are untouched. Notice that whereas the force from the restraint
-should be applied at every step (thus rmsd is computed at every step) the two torsions
+should be applied at every step (thus rmsd is computed at every step) the two torsion angles
 are computed only every 10 steps. PLUMED automatically detect which variables are used
 at every step, leading to better performance when complicated and computationally
-expensive variables are monitored - this is not the case here, since the two torsions
+expensive variables are monitored - this is not the case here, since the two torsion angles
 are very fast to compute.
 Note that here the work always increase with time and never gets lower which is somewhat surprising
-if you tink that we are moving in another metastable state. One would expect this to bend and give a 
+if you think that we are moving in another metastable state. One would expect this to bend and give a 
 signal of approaching a minimum like before. Nevertheless consider what you we are doing: we are constraining the system in one specific 
 conformation and this is completely unnatural for a system at 300 kelvin so, even for this small system adopting a specific conformation in
 which all the heavy atoms are in a precise position is rather unrealistic. This means that this state is an high free energy state. 

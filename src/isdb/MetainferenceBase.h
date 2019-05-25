@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017,2018 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -103,7 +103,6 @@ private:
   // Monte Carlo stuff
   std::vector<Random> random;
   unsigned MCsteps_;
-  unsigned MCstride_;
   long unsigned MCaccept_;
   long unsigned MCacceptScale_;
   long unsigned MCacceptFT_;
@@ -158,17 +157,17 @@ private:
   double getEnergyGJE(const std::vector<double> &mean, const std::vector<double> &sigma,
                       const double scale, const double offset);
   void   setMetaDer(const unsigned index, const double der);
-  double getEnergyForceSP(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
-  double getEnergyForceSPE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
-  double getEnergyForceGJ(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
-  double getEnergyForceGJE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
-  double getEnergyForceMIGEN(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
+  void getEnergyForceSP(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
+  void getEnergyForceSPE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
+  void getEnergyForceGJ(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
+  void getEnergyForceGJE(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
+  void getEnergyForceMIGEN(const std::vector<double> &mean, const std::vector<double> &dmean_x, const std::vector<double> &dmean_b);
   double getCalcData(const unsigned index);
   void get_weights(double &fact, double &var_fact);
   void replica_averaging(const double fact, std::vector<double> &mean, std::vector<double> &dmean_b);
   void get_sigma_mean(const double fact, const double var_fact, const std::vector<double> &mean);
   void do_regression_zero(const std::vector<double> &mean);
-  void doMonteCarlo(const std::vector<double> &mean);
+  double doMonteCarlo(const std::vector<double> &mean);
 
 
 public:
@@ -312,7 +311,7 @@ void MetainferenceBase::unlockRequests() {
 }
 
 inline
-void MetainferenceBase::calculateNumericalDerivatives( ActionWithValue* a ) {
+void MetainferenceBase::calculateNumericalDerivatives( ActionWithValue* a=NULL ) {
   if( getNumberOfArguments()>0 ) {
     ActionWithArguments::calculateNumericalDerivatives( a );
   }

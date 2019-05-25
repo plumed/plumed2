@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -47,11 +47,11 @@ namespace bias {
 
 //+PLUMEDOC BIAS PBMETAD
 /*
-Used to performed Parallel Bias MetaDynamics.
+Used to performed Parallel Bias metadynamics.
 
-This action activate Parallel Bias MetaDynamics (PBMetaD) \cite pbmetad, a version of MetaDynamics \cite metad in which
+This action activate Parallel Bias Metadynamics (PBMetaD) \cite pbmetad, a version of metadynamics \cite metad in which
 multiple low-dimensional bias potentials are applied in parallel.
-In the current implementation, these have the form of mono-dimensional MetaDynamics bias
+In the current implementation, these have the form of mono-dimensional metadynamics bias
 potentials:
 
 \f[
@@ -114,7 +114,7 @@ and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid
 This default choice should be reasonable for most applications.
 
 Another option that is available is well-tempered metadynamics \cite Barducci:2008. In this
-variant of PBMetaD the heights of the Gaussian hills are rescaled at each step by the
+variant of PBMetaD the heights of the Gaussian hills are scaled at each step by the
 additional well-tempered metadynamics term.
 This  ensures that each bias converges more smoothly. It should be noted that, in the case of well-tempered metadynamics, in
 the output printed the Gaussian height is re-scaled using the bias factor.
@@ -126,23 +126,23 @@ Note that you can use here also the flexible gaussian approach  \cite Branduardi
 in which you can adapt the gaussian to the extent of Cartesian space covered by a variable or
 to the space in collective variable covered in a given time. In this case the width of the deposited
 gaussian potential is denoted by one value only that is a Cartesian space (ADAPTIVE=GEOM) or a time
-(ADAPTIVE=DIFF). Note that a specific integration technique for the deposited gaussians
+(ADAPTIVE=DIFF). Note that a specific integration technique for the deposited Gaussian kernels
 should be used in this case. Check the documentation for utility sum_hills.
 
 With the keyword INTERVAL one changes the metadynamics algorithm setting the bias force equal to zero
 outside boundary \cite baftizadeh2012protein. If, for example, metadynamics is performed on a CV s and one is interested only
-to the free energy for s > sw, the history dependent potential is still updated according to the above
-equations but the metadynamics force is set to zero for s < sw. Notice that Gaussians are added also
-if s < sw, as the tails of these Gaussians influence VG in the relevant region s > sw. In this way, the
-force on the system in the region s > sw comes from both metadynamics and the force field, in the region
-s < sw only from the latter. This approach allows obtaining a history-dependent bias potential VG that
+to the free energy for s > boundary, the history dependent potential is still updated according to the above
+equations but the metadynamics force is set to zero for s < boundary. Notice that Gaussians are added also
+if s < boundary, as the tails of these Gaussians influence VG in the relevant region s > boundary. In this way, the
+force on the system in the region s > boundary comes from both metadynamics and the force field, in the region
+s < boundary only from the latter. This approach allows obtaining a history-dependent bias potential VG that
 fluctuates around a stable estimator, equal to the negative of the free energy far enough from the
 boundaries. Note that:
 - It works only for one-dimensional biases;
 - It works both with and without GRID;
-- The interval limit sw in a region where the free energy derivative is not large;
-- If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should
-  be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at sw.
+- The interval limit boundary in a region where the free energy derivative is not large;
+- If in the region outside the limit boundary the system has a free energy minimum, the INTERVAL keyword should
+  be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at boundary.
 
 Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
@@ -161,7 +161,7 @@ PRINT ARG=d1,d2,pb.bias STRIDE=100 FILE=COLVAR
 (See also \ref DISTANCE and \ref PRINT).
 
 \par
-If you use well-tempered metadynamics, you should specify a single biasfactor and initial
+If you use well-tempered metadynamics, you should specify a single bias factor and initial
 Gaussian height.
 \plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
@@ -294,9 +294,9 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","FILE","files in which the lists of added hills are stored, default names are assigned using arguments if FILE is not found");
   keys.add("optional","HEIGHT","the height of the Gaussian hills, one for all biases. Compulsory unless TAU, TEMP and BIASFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
-  keys.add("optional","BIASFACTOR","use well tempered metadynamics with this biasfactor, one for all biases.  Please note you must also specify temp");
+  keys.add("optional","BIASFACTOR","use well tempered metadynamics with this bias factor, one for all biases.  Please note you must also specify temp");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
-  keys.add("optional","TAU","in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
+  keys.add("optional","TAU","in well tempered metadynamics, sets height to (\\f$k_B \\Delta T\\f$*pace*timestep)/tau");
   keys.add("optional","GRID_RFILES", "read grid for the bias");
   keys.add("optional","GRID_WSTRIDE", "frequency for dumping the grid");
   keys.add("optional","GRID_WFILES", "dump grid for the bias, default names are used if GRID_WSTRIDE is used without GRID_WFILES.");
@@ -312,8 +312,8 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","WALKERS_N", "number of walkers");
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
-  keys.add("optional","INTERVAL_MIN","monodimensional lower limits, outside the limits the system will not feel the biasing force.");
-  keys.add("optional","INTERVAL_MAX","monodimensional upper limits, outside the limits the system will not feel the biasing force.");
+  keys.add("optional","INTERVAL_MIN","one dimensional lower limits, outside the limits the system will not feel the biasing force.");
+  keys.add("optional","INTERVAL_MAX","one dimensional upper limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");

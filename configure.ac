@@ -244,6 +244,7 @@ PLUMED_CONFIG_ENABLE([bsymbolic],[use -Bsymbolic flag in making shared libraries
 PLUMED_CONFIG_ENABLE([ld-r],[group object files],[yes])
 PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
+PLUMED_CONFIG_ENABLE([asmjit],[enable embedded asmjit],[no])
 PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
@@ -261,9 +262,11 @@ PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
 PLUMED_CONFIG_ENABLE([xdrfile],[search for xdrfile],[yes])
 PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
-PLUMED_CONFIG_ENABLE([asmjit],[search for asmjit],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[no])
 PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
+PLUMED_CONFIG_ENABLE([af_ocl],[arrayfire_opencl],[search for arrayfire],[no])
+PLUMED_CONFIG_ENABLE([af_cuda],[arrayfire_cuda],[search for arrayfire],[no])
+PLUMED_CONFIG_ENABLE([af_cpu],[arrayfire_cpu],[search for arrayfire],[no])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -386,7 +389,51 @@ then
    AC_MSG_WARN([Please change compiler or make sure that everything works correctly])
 fi
 
-
+AC_MSG_CHECKING([whether C++ library supports C++11 exceptions])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#include <new>
+#include <functional>
+#include <memory>
+#include <system_error>
+#include <ios>
+#include <future>
+// capable to catch:
+void func(void) {
+  try{
+  } catch(std::bad_array_new_length &) {
+  } catch(std::bad_function_call &) {
+  } catch(std::bad_weak_ptr &) {
+  } catch(std::ios_base::failure &e) {
+    if(e.code().category()==std::generic_category()) {}
+    else if(e.code().category()==std::system_category()) {}
+    else if(e.code().category()==std::iostream_category()) {}
+    else if(e.code().category()==std::future_category()) {}
+  } catch(std::system_error &e) {
+    if(e.code().category()==std::generic_category()) {}
+    else if(e.code().category()==std::system_category()) {}
+    else if(e.code().category()==std::iostream_category()) {}
+    else if(e.code().category()==std::future_category()) {}
+  }
+// capable to throw:
+  auto a=std::bad_array_new_length();
+  auto b=std::bad_function_call();
+  auto c=std::bad_weak_ptr();
+  auto d=std::system_error(10,std::generic_category(),"msg");
+  auto e=std::system_error(10,std::system_category(),"msg");
+  auto f=std::system_error(10,std::iostream_category(),"msg");
+  auto g=std::system_error(10,std::future_category(),"msg");
+  auto h=std::ios_base::failure("msg",std::error_code(10,std::generic_category()));
+  auto i=std::ios_base::failure("msg",std::error_code(10,std::system_category()));
+  auto j=std::ios_base::failure("msg",std::error_code(10,std::iostream_category()));
+  auto k=std::ios_base::failure("msg",std::error_code(10,std::future_category()));
+}
+])],
+[
+  AC_MSG_RESULT([yes]);
+  AC_DEFINE([__PLUMED_LIBCXX11])
+],
+[AC_MSG_RESULT([no])
+])
 
 AC_SUBST(disable_dependency_tracking)
 
@@ -594,6 +641,17 @@ fi
 # when configuring with --disable-openmp
 AC_OPENMP
 
+if test $asmjit == true ; then
+  AC_MSG_NOTICE([Enabling embedded asmjit])
+  AC_DEFINE([__PLUMED_HAS_ASMJIT])
+
+# asmjit calls clock_gettime and thus should be linked to rt on Linux
+  if test `(uname)` = Linux ; then
+    PLUMED_SEARCH_LIBS([clock_gettime],[rt],[])
+  fi
+fi
+
+
 if test $readdir_r == true ; then
   PLUMED_CHECK_PACKAGE([dirent.h],[readdir_r],[__PLUMED_HAS_READDIR_R])
 fi
@@ -676,30 +734,6 @@ int main() {
 # notice: macports install libraries with -mt suffix
 fi
 
-if test $asmjit == true ; then
-  PLUMED_CHECK_CXX_PACKAGE([asmjit],[
-#include <asmjit/asmjit.h>
-#include <stdio.h>
-using namespace asmjit;
-typedef int (*Func)(void);
-int main(int argc, char* argv[[]]) {
-  JitRuntime rt;
-  CodeHolder code;
-  code.init(rt.getCodeInfo());
-  X86Assembler a(&code);
-  a.mov(x86::eax, 1);
-  a.ret();
-  Func fn;
-  Error err = rt.add(&fn, &code);
-  if (err) return 1;
-  int result = fn();
-  printf("%d\n", result);
-  rt.release(fn);
-  return 0;
-}
-  ], [__PLUMED_HAS_ASMJIT],[asmjit])
-fi
-
 if test $fftw == true ; then
   PLUMED_CHECK_PACKAGE([fftw3.h],[fftw_execute],[__PLUMED_HAS_FFTW],[fftw3])
 fi
@@ -713,14 +747,16 @@ if test $python == true  ; then
   if test -n "$PYTHON_BIN"
   then
     AC_MSG_NOTICE([Python executable is $PYTHON_BIN])
-    AC_MSG_CHECKING([support for required python modules (distutils, cython, numpy, subprocess, os)])
+    AC_MSG_CHECKING([support for required python modules (setuptools, cython, subprocess, os, shutil)])
 testimport="
-from distutils.core import setup
-from distutils.extension import Extension
-from Cython.Build import cythonize
-import numpy
+from setuptools import setup
+from setuptools import Extension
 import subprocess
 import os
+import os.path
+import sys
+from shutil import copyfile
+from Cython.Build import cythonize
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        AC_MSG_RESULT([yes])
@@ -733,6 +769,16 @@ import os
   else
     AC_MSG_WARN([cannot enable python interface])
   fi
+fi
+
+if test "$af_ocl" == true ; then
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
+fi
+if test "$af_cuda" == true ; then
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcuda])
+fi
+if test "$af_cpu" == true ; then
+  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcpu])
 fi
 
 # in non-debug mode, add -DNDEBUG
@@ -1157,7 +1203,7 @@ EOF
       comment=
       test -n "$testlib" && comment=" with library $testlib"
       AC_MSG_CHECKING([whether $name can link a C++ object$comment])
-      $compexe $LDFLAGS $testlib $LIBS conftest.o conftest-main.o -o conftest.exe 1>/dev/null 2>/dev/null
+      $compexe conftest.o conftest-main.o $LDFLAGS $testlib $LIBS -o conftest.exe 1>/dev/null 2>/dev/null
       if test -f conftest.exe
       then
         found=yes
@@ -1186,8 +1232,6 @@ if test "$prefix" == NONE
 then
   prefix=/usr/local
 fi
-
-AC_MSG_CHECKING([If prefix is equal to present working directory])
 
 pkgconfig_bin=""
 

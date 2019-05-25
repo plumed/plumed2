@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -39,7 +39,7 @@ The free energy calculated on a grid is output by this action and can be printed
 
 \par Examples
 
-This is a typical example showing how CONVERT_TO_FES might be used when postprocessing a trajectory.
+This is a typical example showing how CONVERT_TO_FES might be used when post processing a trajectory.
 The input below calculates the free energy as a function of the distance between atom 1 and atom 2.
 This is done by accumulating a histogram as a function of this distance using kernel density estimation
 and the HISTOGRAM action.  All the data within this trajectory is used in the construction of this

@@ -473,7 +473,7 @@ In this case the tar ball you add is called mytute.tar.gz.  The user can downloa
 
 \section updating-web-manuals Updating web manuals
 
-Precompiled versions of PLUMED manuals can be found on github at an address such as http://plumed.github.io/doc-v2.1/user-doc/html/index.html
+Precompiled versions of PLUMED manuals can be found on github at an address such as http://www.plumed.org/doc-v2.1/user-doc/html/index.html
 (replace v2.1 with the actual version number). These manuals take advantage of a nice github feature: any branch named gh-pages
 is shown as a webpage. In this example, the repository is located at http://github.com/plumed/doc-v2.1 .
 Before version 2.1.1 it was necessary to upload the precompiled manual by hand. Since version 2.1.1, this is done

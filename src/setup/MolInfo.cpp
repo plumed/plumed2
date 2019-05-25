@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -38,7 +38,7 @@ using this command you can find the backbone atoms in your structure automatical
 
 \warning
 Please be aware that the PDB parser in plumed is far from perfect. You should thus check the log file
-and examine what plumed is actually doing whenenver you use the MOLINFO action.
+and examine what plumed is actually doing whenever you use the MOLINFO action.
 Also make sure that the atoms are listed in the pdb with the correct order.
 If you are using gromacs, the safest way is to use reference pdb file
 generated with `gmx editconf -f topol.tpr -o reference.pdb`.
@@ -48,7 +48,7 @@ More information of the PDB parser implemented in PLUMED can be found \ref pdbre
 Providing `MOLTYPE=protein`, `MOLTYPE=rna`, or `MOLTYPE=dna` will instruct plumed to look
 for known residues from these three types of molecule. In other words, this is available for
 historical reasons and to allow future extensions where alternative lists will be provided.
-As of now, you can just ignore this keyoword.
+As of now, you can just ignore this keyword.
 
 Using \ref MOLINFO extends the possibility of atoms selection using the @ special
 symbol. The following shortcuts are available that do not refer to one specific residue:
@@ -94,6 +94,10 @@ For protein residues, the following groups are available:
 @psi-#
 @omega-#
 @chi1-#
+@chi2-#
+@chi3-#
+@chi4-#
+@chi5-#
 \endverbatim
 
 that select the appropriate atoms that define each dihedral angle for residue #.
@@ -171,7 +175,7 @@ hb3: DISTANCE ATOMS=@O6-1,@N4-14
 PRINT ARG=hb1,hb2,hb3
 \endplumedfile
 
-This example use MOLINFO to calculate torsions angles
+This example use MOLINFO to calculate torsion angles
 
 \plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb

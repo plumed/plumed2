@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -22,6 +22,36 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "multicolvar/MultiColvarBase.h"
+
+//+PLUMEDOC CONCOMP CLUSTER_PROPERTIES
+/*
+Calculate properties of the distribution of some quantities that are part of a connected component
+
+This collective variable was developed for looking at nucleation phenomena, where you are
+interested in using studying the behavior of atoms in small aggregates or nuclei.  In these sorts of
+problems you might be interested in the degree the atoms in a nucleus have adopted their crystalline
+structure or (in the case of heterogeneous nucleation of a solute from a solvent) you might be
+interested in how many atoms are present in the largest cluster \cite tribello-clustering.
+
+\par Examples
+
+The input below calculates the coordination numbers of atoms 1-100 and then computes the an adjacency
+matrix whose elements measures whether atoms \f$i\f$ and \f$j\f$ are within 0.55 nm of each other.  The action
+labelled dfs then treats the elements of this matrix as zero or ones and thus thinks of the matrix as defining
+a graph.  This dfs action then finds the largest connected component in this graph.  The sum of the coordination
+numbers for the atoms in this largest connected component are then computed and this quantity is output to a colvar
+file.  The way this input can be used is described in detail in \cite tribello-clustering.
+
+\plumedfile
+lq: COORDINATIONNUMBER SPECIES=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55} LOWMEM
+cm: CONTACT_MATRIX ATOMS=lq  SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
+dfs: DFSCLUSTERING MATRIX=cm
+clust1: CLUSTER_PROPERTIES CLUSTERS=dfs CLUSTER=1 SUM
+PRINT ARG=clust1.* FILE=colvar
+\endplumedfile
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
 namespace adjmat {

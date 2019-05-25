@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -29,7 +29,7 @@ void SketchMapBase::registerKeywords( Keywords& keys ) {
   keys.remove("NLOW_DIM");
   keys.add("compulsory","HIGH_DIM_FUNCTION","as in input action","the parameters of the switching function in the high dimensional space");
   keys.add("compulsory","LOW_DIM_FUNCTION","as in input action","the parameters of the switching function in the low dimensional space");
-  keys.add("compulsory","MIXPARAM","0.0","the ammount of the pure distances to mix into the stress function");
+  keys.add("compulsory","MIXPARAM","0.0","the amount of the pure distances to mix into the stress function");
 }
 
 SketchMapBase::SketchMapBase( const ActionOptions& ao ):

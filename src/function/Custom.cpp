@@ -1,0 +1,371 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2011-2019 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed.org for more information.
+
+   This file is part of plumed, version 2.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "ActionRegister.h"
+#include "Function.h"
+#include "tools/OpenMP.h"
+#include "lepton/Lepton.h"
+
+namespace PLMD {
+namespace function {
+
+//+PLUMEDOC FUNCTION CUSTOM
+/*
+Calculate a combination of variables using a custom expression.
+
+This action computes an  arbitrary function of one or more
+collective variables. Arguments are chosen with the ARG keyword,
+and the function is provided with the FUNC string. Notice that this
+string should contain no space. Within FUNC, one can refer to the
+arguments as x,y,z, and t (up to four variables provided as ARG).
+This names can be customized using the VAR keyword (see examples below).
+
+This function is implemented using the Lepton library, that allows to evaluate
+algebraic expressions and to automatically differentiate them.
+
+If you want a function that depends not only on collective variables
+but also on time you can use the \subpage TIME action.
+
+\par Examples
+
+The following input tells plumed to perform a metadynamics
+using as a CV the difference between two distances.
+\plumedfile
+dAB: DISTANCE ATOMS=10,12
+dAC: DISTANCE ATOMS=10,15
+diff: CUSTOM ARG=dAB,dAC FUNC=y-x PERIODIC=NO
+# notice: the previous line could be replaced with the following
+# diff: COMBINE ARG=dAB,dAC COEFFICIENTS=-1,1
+METAD ARG=diff WIDTH=0.1 HEIGHT=0.5 BIASFACTOR=10 PACE=100
+\endplumedfile
+(see also \ref DISTANCE, \ref COMBINE, and \ref METAD).
+Notice that forces applied to diff will be correctly propagated
+to atoms 10, 12, and 15.
+Also notice that since CUSTOM is used without the VAR option
+the two arguments should be referred to as x and y in the expression FUNC.
+For simple functions
+such as this one it is possible to use \ref COMBINE.
+
+The following input tells plumed to print the angle between vectors
+identified by atoms 1,2 and atoms 2,3
+its square (as computed from the x,y,z components) and the distance
+again as computed from the square root of the square.
+\plumedfile
+DISTANCE LABEL=d1 ATOMS=1,2 COMPONENTS
+DISTANCE LABEL=d2 ATOMS=2,3 COMPONENTS
+CUSTOM ...
+  LABEL=theta
+  ARG=d1.x,d1.y,d1.z,d2.x,d2.y,d2.z
+  VAR=ax,ay,az,bx,by,bz
+  FUNC=acos((ax*bx+ay*by+az*bz)/sqrt((ax*ax+ay*ay+az*az)*(bx*bx+by*by+bz*bz))
+  PERIODIC=NO
+... CUSTOM
+PRINT ARG=theta
+\endplumedfile
+(See also \ref PRINT and \ref DISTANCE).
+
+Notice that this action implements a large number of functions (trigonometric, exp, log, etc).
+Among the useful functions, have a look at the step function (that is the Heaviside function).
+`step(x)` is defined as 1 when `x` is positive and `0` when x is negative. This allows for
+a straightforward implementation of if clauses.
+
+For example, imagine that you want to implement a restraint that only acts when a
+distance is larger than 0.5. You can do it with
+\plumedfile
+d: DISTANCE ATOMS=10,15
+m: CUSTOM ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
+# check the function you are applying:
+PRINT ARG=d,n FILE=checkme
+RESTRAINT ARG=d AT=0.5 KAPPA=10.0
+\endplumedfile
+(see also \ref DISTANCE, \ref PRINT, and \ref RESTRAINT)
+
+The meaning of the function `0.5*step(0.5-x)+x*step(x-0.5)` is:
+- If x<0.5 (step(0.5-x)!=0) use 0.5
+- If x>0.5 (step(x-0.5)!=0) use x
+Notice that the same could have been obtained using an \ref UPPER_WALLS
+However, with CUSTOM you can create way more complex definitions.
+
+\warning If you apply forces on the variable (as in the previous example) you should
+make sure that the variable is continuous!
+Conversely, if you are just analyzing a trajectory you can safely use
+discontinuous variables.
+
+A possible continuity check with gnuplot is
+\verbatim
+# this allow to step function to be used in gnuplot:
+gnuplot> step(x)=0.5*(erf(x*10000000)+1)
+# here you can test your function
+gnuplot> p 0.5*step(0.5-x)+x*step(x-0.5)
+\endverbatim
+
+Also notice that you can easily make logical operations on the conditions that you
+create. The equivalent of the AND operator is the product: `step(1.0-x)*step(x-0.5)` is
+only equal to 1 when x is between 0.5 and 1.0. By combining negation and AND you can obtain an OR. That is,
+`1-step(1.0-x)*step(x-0.5)` is only equal to 1 when x is outside the 0.5-1.0 interval.
+
+CUSTOM can be used in combination with \ref DISTANCE to implement variants of the
+DISTANCE keyword that were present in PLUMED 1.3 and that allowed to compute
+the distance of a point from a line defined by two other points, or the progression
+along that line.
+\plumedfile
+# take center of atoms 1 to 10 as reference point 1
+p1: CENTER ATOMS=1-10
+# take center of atoms 11 to 20 as reference point 2
+p2: CENTER ATOMS=11-20
+# take center of atoms 21 to 30 as reference point 3
+p3: CENTER ATOMS=21-30
+
+# compute distances
+d12: DISTANCE ATOMS=p1,p2
+d13: DISTANCE ATOMS=p1,p3
+d23: DISTANCE ATOMS=p2,p3
+
+# compute progress variable of the projection of point p3
+# along the vector joining p1 and p2
+# notice that progress is measured from the middle point
+onaxis: CUSTOM ARG=d13,d23,d12 FUNC=(0.5*(y^2-x^2)/z) PERIODIC=NO
+
+# compute between point p3 and the vector joining p1 and p2
+fromaxis: CUSTOM ARG=d13,d23,d12,onaxis VAR=x,y,z,o FUNC=(0.5*(y^2+x^2)-o^2-0.25*z^2) PERIODIC=NO
+
+PRINT ARG=onaxis,fromaxis
+
+\endplumedfile
+
+Notice that these equations have been used to combine \ref RMSD
+from different snapshots of a protein so as to define
+progression (S) and distance (Z) variables \cite perez2015atp.
+
+
+*/
+//+ENDPLUMEDOC
+
+
+class Custom :
+  public Function
+{
+/// Check if only multiplication is done in function.  If only multiplication is done we can do some tricks
+/// to speed things up
+  std::vector<unsigned> check_multiplication_vars;
+/// Lepton expression.
+/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!  
+  std::vector<lepton::CompiledExpression> expression;
+/// Lepton expression for derivative
+/// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
+  std::vector<std::vector<lepton::CompiledExpression> > expression_deriv;
+  std::vector<std::string> var;
+  std::vector<double*> lepton_ref;
+  std::vector<double*> lepton_ref_deriv;
+  std::string func;
+public:
+  explicit Custom(const ActionOptions&);
+  bool writeInGraph( std::string& exline ) const ;
+  void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
+  void calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const;
+  static void registerKeywords(Keywords& keys);
+};
+
+PLUMED_REGISTER_ACTION(Custom,"CUSTOM")
+
+//+PLUMEDOC FUNCTION MATHEVAL
+/*
+An alias to the \ref CUSTOM function.
+
+This alias is kept in order to maintain compatibility with previous PLUMED versions.
+However, notice that as of PLUMED 2.5 the libmatheval library is not linked anymore,
+and the \ref MATHEVAL function is implemented using the Lepton library.
+
+\par Examples
+
+Just replace \ref CUSTOM with \ref MATHEVAL.
+
+\plumedfile
+d: DISTANCE ATOMS=10,15
+m: MATHEVAL ARG=d FUNC=0.5*step(0.5-x)+x*step(x-0.5) PERIODIC=NO
+# check the function you are applying:
+PRINT ARG=d,n FILE=checkme
+RESTRAINT ARG=d AT=0.5 KAPPA=10.0
+\endplumedfile
+(see also \ref DISTANCE, \ref PRINT, and \ref RESTRAINT)
+
+*/
+//+ENDPLUMEDOC
+
+class Matheval :
+  public Custom {
+};
+
+PLUMED_REGISTER_ACTION(Custom,"MATHEVAL")
+
+void Custom::registerKeywords(Keywords& keys) {
+  Function::registerKeywords(keys);
+  keys.use("ARG"); keys.use("PERIODIC");
+  keys.add("compulsory","FUNC","the function you wish to evaluate");
+  keys.add("optional","VAR","the names to give each of the arguments in the function.  If you have up to three arguments in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
+}
+
+Custom::Custom(const ActionOptions&ao):
+  Action(ao),
+  Function(ao),
+  expression(OpenMP::getNumThreads()),
+  expression_deriv(getNumberOfArguments()),
+  lepton_ref(OpenMP::getNumThreads()*getNumberOfArguments(),nullptr),
+  lepton_ref_deriv(OpenMP::getNumThreads()*getNumberOfArguments()*getNumberOfArguments(),nullptr)
+{
+  // Resize the expression for the derivatives
+  for(unsigned i=0;i<expression_deriv.size();++i) expression_deriv[i].resize(OpenMP::getNumThreads());
+
+  // Read in the variables
+  parseVector("VAR",var);
+  if(var.size()==0) {
+    var.resize(getNumberOfArguments());
+    if(getNumberOfArguments()>3)
+      error("Using more than 3 arguments you should explicitly write their names with VAR");
+    if(var.size()>0) var[0]="x";
+    if(var.size()>1) var[1]="y";
+    if(var.size()>2) var[2]="z";
+  }
+  if(var.size()!=getNumberOfArguments())
+    error("Size of VAR array should be the same as number of arguments");
+  parse("FUNC",func);
+  // Check for operations that are not multiplication (this can probably be done much more cleverly)
+  bool onlymultiplication = func.find("*")!=std::string::npos;
+  // Find first bracket in expression
+  if( func.find("(")!=std::string::npos ) {
+     std::size_t br = func.find_first_of("("); std::string subexpr=func.substr(0,br); onlymultiplication = func.find("*")!=std::string::npos;
+     if( subexpr.find("/")!=std::string::npos || subexpr.find("+")!=std::string::npos || subexpr.find("-")!=std::string::npos ) onlymultiplication=false;
+     // Now work out which vars are in multiplication
+     if( onlymultiplication ) {
+         for(unsigned i=0;i<var.size();++i) {
+             if( subexpr.find(var[i])!=std::string::npos ) check_multiplication_vars.push_back(i);
+         }
+     }
+  } else if( func.find("/")!=std::string::npos || func.find("+")!=std::string::npos || func.find("-")!=std::string::npos ) {
+      onlymultiplication=false;
+  } else {
+      for(unsigned i=0;i<var.size();++i) check_multiplication_vars.push_back(i);
+  }
+  if( check_multiplication_vars.size()>0 ) {
+      log.printf("  optimizing implementation as function only involves multiplication \n");
+  }
+  addValueWithDerivatives();
+  checkRead();
+
+  log.printf("  with function : %s\n",func.c_str());
+  log.printf("  with variables :");
+  for(unsigned i=0; i<var.size(); i++) log.printf(" %s",var[i].c_str());
+  log.printf("\n");
+
+  lepton::ParsedExpression pe=lepton::Parser::parse(func).optimize(lepton::Constants());
+  log<<"  function as parsed by lepton: "<<pe<<"\n"; unsigned nt=0;
+  for(auto & e : expression) {
+     e=pe.createCompiledExpression();
+     for(unsigned j=0;j<getNumberOfArguments();++j) {
+         try {
+             lepton_ref[nt*getNumberOfArguments()+j]=&const_cast<lepton::CompiledExpression*>(&expression[nt])->getVariableReference(var[j]);
+         } catch(const PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=0*x      
+         }
+     }
+     nt++;
+  }
+  for(auto & p : expression[0].getVariables()) {
+    if(std::find(var.begin(),var.end(),p)==var.end()) error("variable " + p + " is not defined");
+  }
+  log<<"  derivatives as computed by lepton:\n";
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    lepton::ParsedExpression pe=lepton::Parser::parse(func).differentiate(var[i]).optimize(lepton::Constants());
+    log<<"    "<<pe<<"\n"; nt=0;
+    for(auto & e : expression_deriv[i]) {
+        e=pe.createCompiledExpression();
+        for(unsigned j=0;j<getNumberOfArguments();++j) {
+            try {
+                lepton_ref_deriv[i*OpenMP::getNumThreads()*getNumberOfArguments() + nt*getNumberOfArguments()+j]=&const_cast<lepton::CompiledExpression*>(&expression_deriv[i][nt])->getVariableReference(var[j]);
+            } catch(const PLMD::lepton::Exception& exc) {
+// this is necessary since in some cases lepton things a variable is not present even though it is present
+// e.g. func=0*x      
+            }
+        }
+        nt++;
+    }
+  } 
+}
+
+bool Custom::writeInGraph( std::string& exline ) const { 
+  exline = "FUNC=" + func; return true;
+}
+
+void Custom::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
+  if( check_multiplication_vars.size()>0 ) {
+      bool foundarg=false;
+      for(unsigned i=0;i<check_multiplication_vars.size();++i) {
+          std::string argact = getPntrToArgument(check_multiplication_vars[i])->getPntrToAction()->getLabel();
+          for(unsigned j=0;j<actionsThatSelectTasks.size();++j) {
+              if( argact==actionsThatSelectTasks[j] ){ foundarg=true; break; }
+          } 
+          if( foundarg ) break;
+      }
+      if( foundarg ) actionsThatSelectTasks.push_back( getLabel() );
+  } else {
+      Function::buildCurrentTaskList( forceAllTasks, actionsThatSelectTasks, tflags );
+  }
+}
+
+void Custom::calculateFunction( const std::vector<double>& args, MultiValue& myvals ) const {
+  if( args.size()>1 ) {
+      bool allzero;
+      if( check_multiplication_vars.size()>0 ) {
+          allzero=false;
+          for(unsigned i=0; i<check_multiplication_vars.size(); ++i) {
+            if( fabs(args[check_multiplication_vars[i]])<epsilon ) { allzero=true; break; }
+          } 
+      } else if( check_multiplication_vars.size()==0 ) {
+          allzero=(fabs(args[0])<epsilon);
+          for(unsigned i=1; i<args.size(); ++i) {
+            if( fabs(args[i])>epsilon ) { allzero=false; break; }
+          }
+      }
+      if( allzero ) {
+          addValue(0, 0.0, myvals ); for(unsigned i=0; i<getNumberOfArguments(); i++) addDerivative(0, i, 0.0, myvals );
+          return;
+      }
+  }
+
+  const unsigned t=OpenMP::getThreadNum(), tbas=t*getNumberOfArguments(); plumed_assert(t<expression.size());
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    if( lepton_ref[tbas+i] ) *lepton_ref[tbas+i] = args[i];
+  }
+  addValue(0, expression[t].evaluate(), myvals );
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    unsigned dbas = i*OpenMP::getNumThreads()*getNumberOfArguments() + t*getNumberOfArguments();
+    for(unsigned j=0; j<getNumberOfArguments(); j++) {
+      if(lepton_ref_deriv[dbas+j] ) *lepton_ref_deriv[dbas+j] = args[j];
+    }
+    addDerivative(0, i, expression_deriv[i][t].evaluate(), myvals);
+  }
+}
+
+}
+}
+
+

@@ -167,7 +167,7 @@ int main(){
 
 // test valid
     {
-      PLMD::Plumed p(PLMD::Plumed::invalid());
+      PLMD::Plumed p(PLMD::Plumed::makeInvalid());
       if(p) plumed_error();
     }
 
