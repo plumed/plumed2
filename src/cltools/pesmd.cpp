@@ -243,7 +243,7 @@ public:
       double lrand=sqrt((1.-lscale*lscale)*temp);
       for(unsigned j=0; j<nat; ++j) {
         for(unsigned k=0; k<3; ++k) {
-          if( 3*j+k>dim ) break;
+          if( 3*j+k>dim-1 ) break;
           therm_eng=therm_eng+0.5*velocities[j][k]*velocities[j][k];
           velocities[j][k]=lscale*velocities[j][k]+lrand*random.Gaussian();
           therm_eng=therm_eng-0.5*velocities[j][k]*velocities[0][k];
@@ -253,7 +253,7 @@ public:
       // First step of velocity verlet
       for(unsigned j=0; j<nat; ++j) {
         for(unsigned k=0; k<3; ++k) {
-          if( 3*j+k>dim ) break;
+          if( 3*j+k>dim-1 ) break;
           velocities[j][k] = velocities[j][k] + 0.5*tstep*forces[1+j][k];
           positions[1+j][k] = positions[1+j][k] + tstep*velocities[j][k];
           // Apply pbc
@@ -279,7 +279,7 @@ public:
       // Second step of velocity verlet
       for(unsigned j=0; j<nat; ++j) {
         for(unsigned k=0; k<3; ++k) {
-          if( 3*j+k>dim ) break;
+          if( 3*j+k>dim-1 ) break;
           velocities[j][k] = velocities[j][k] + 0.5*tstep*forces[1+j][k];
         }
       }
@@ -289,7 +289,7 @@ public:
       lrand=sqrt((1.-lscale*lscale)*temp);
       for(unsigned j=0; j<nat; ++j) {
         for(unsigned k=0; k<3; ++k) {
-          if( 3*j+k>dim ) break;
+          if( 3*j+k>dim-1 ) break;
           therm_eng=therm_eng+0.5*velocities[j][k]*velocities[j][k];
           velocities[j][k]=lscale*velocities[j][k]+lrand*random.Gaussian();
           therm_eng=therm_eng-0.5*velocities[j][k]*velocities[j][k];
@@ -299,7 +299,7 @@ public:
       tke=0;
       for(unsigned i=0; i<nat; ++i) {
         for(unsigned j=0; j<3; ++j) {
-          if( 3*i+j>dim ) break;
+          if( 3*i+j>dim-1 ) break;
           tke += 0.5*velocities[i][j]*velocities[i][j];
         }
       }
