@@ -487,8 +487,22 @@ fi
 
 # first look for blas
 if test "$external_blas" == true ; then
-  PLUMED_SEARCH_LIBS([dgemv],[blas],[blas_found=nounderscore], [
-    PLUMED_SEARCH_LIBS([dgemv_],[blas],[blas_found=underscore])
+  AC_MSG_CHECKING([whether dgemv can be linked with no library])
+  AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv])],[
+    AC_MSG_RESULT([yes])
+    blas_found=nounderscore
+    ],[
+    AC_MSG_RESULT([no])
+    AC_MSG_CHECKING([whether dgemv_ can be linked with no library])
+    AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv_])],[
+      AC_MSG_RESULT([yes])
+      blas_found=underscore
+    ],[
+      AC_MSG_RESULT([no])
+      PLUMED_SEARCH_LIBS([dgemv],[blas],[blas_found=nounderscore],[
+        PLUMED_SEARCH_LIBS([dgemv_],[blas],[blas_found=underscore])
+      ])
+    ])
   ])
 fi
 
@@ -642,12 +656,18 @@ fi
 AC_OPENMP
 
 if test $asmjit == true ; then
-  AC_MSG_NOTICE([Enabling embedded asmjit])
-  AC_DEFINE([__PLUMED_HAS_ASMJIT])
-
+  found=ko
 # asmjit calls clock_gettime and thus should be linked to rt on Linux
   if test `(uname)` = Linux ; then
-    PLUMED_SEARCH_LIBS([clock_gettime],[rt],[])
+    PLUMED_SEARCH_LIBS([clock_gettime],[rt],[found=ok])
+  else
+    found=ok
+  fi
+  if test "$found" = ok ; then
+    AC_MSG_NOTICE([Enabling embedded asmjit])
+    AC_DEFINE([__PLUMED_HAS_ASMJIT])
+  else
+    AC_MSG_WARN([cannot link clock_gettime on this Linux, asmjit will not be enabled])
   fi
 fi
 

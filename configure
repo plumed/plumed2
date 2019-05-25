@@ -5758,6 +5758,66 @@ fi
 
 # first look for blas
 if test "$external_blas" == true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether dgemv can be linked with no library" >&5
+$as_echo_n "checking whether dgemv can be linked with no library... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dgemv ();
+int
+main ()
+{
+return dgemv ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    blas_found=nounderscore
+
+else
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether dgemv_ can be linked with no library" >&5
+$as_echo_n "checking whether dgemv_ can be linked with no library... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dgemv_ ();
+int
+main ()
+{
+return dgemv_ ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+      blas_found=underscore
+
+else
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 
   if test "${libsearch}" == true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dgemv" >&5
@@ -6115,6 +6175,14 @@ fi
 
   fi
 
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 fi
 
 # if not found, then use internal lapack and blas
@@ -6829,11 +6897,7 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
 
 
 if test $asmjit == true ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling embedded asmjit" >&5
-$as_echo "$as_me: Enabling embedded asmjit" >&6;}
-  $as_echo "#define __PLUMED_HAS_ASMJIT 1" >>confdefs.h
-
-
+  found=ko
 # asmjit calls clock_gettime and thus should be linked to rt on Linux
   if test `(uname)` = Linux ; then
 
@@ -6891,7 +6955,7 @@ $as_echo "$ac_cv_search_clock_gettime" >&6; }
 ac_res=$ac_cv_search_clock_gettime
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
+  found=ok
 fi
 
   else
@@ -6948,11 +7012,22 @@ $as_echo "$ac_cv_search_clock_gettime" >&6; }
 ac_res=$ac_cv_search_clock_gettime
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
+  found=ok
 fi
 
   fi
 
+  else
+    found=ok
+  fi
+  if test "$found" = ok ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling embedded asmjit" >&5
+$as_echo "$as_me: Enabling embedded asmjit" >&6;}
+    $as_echo "#define __PLUMED_HAS_ASMJIT 1" >>confdefs.h
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot link clock_gettime on this Linux, asmjit will not be enabled" >&5
+$as_echo "$as_me: WARNING: cannot link clock_gettime on this Linux, asmjit will not be enabled" >&2;}
   fi
 fi
 
