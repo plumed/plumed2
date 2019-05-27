@@ -26,6 +26,8 @@
 #include "ActionAtomistic.h"
 #include "tools/Exception.h"
 #include "tools/ForwardDecl.h"
+#include "tools/Subprocess.h"
+#include <memory>
 
 namespace PLMD {
 
@@ -42,6 +44,7 @@ private:
   std::string mytype;
 /// The backbone that was read in from the pdb file
   std::vector< std::vector<AtomNumber> > read_backbone;
+  std::unique_ptr<Subprocess> selector;
 public:
   ~SetupMolInfo();
   static void registerKeywords( Keywords& keys );
@@ -50,7 +53,7 @@ public:
   std::string getAtomName(AtomNumber a)const;
   unsigned getResidueNumber(AtomNumber a)const;
   std::string getResidueName(AtomNumber a)const;
-  void interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms )const;
+  void interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms );
 };
 
 }

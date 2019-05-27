@@ -256,6 +256,7 @@ PLUMED_CONFIG_ENABLE([cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([chdir],[search for chdir function],[yes])
+PLUMED_CONFIG_ENABLE([subprocess],[search for functions needed to manage a subprocess],[yes])
 PLUMED_CONFIG_ENABLE([getcwd],[search for getcwd function],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
@@ -696,6 +697,41 @@ fi
 
 if test $chdir == true ; then
   PLUMED_CHECK_PACKAGE([unistd.h],[chdir],[__PLUMED_HAS_CHDIR])
+fi
+
+if test $subprocess == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([subprocess],[
+/* random program calling all the functions needed to manage a subprocess */
+#include <cstdio>
+#include <unistd.h>
+#include <csignal>
+
+int
+main ()
+{
+// notice that [[]] is required to cheat autoconf
+  int cp[[2]];
+  FILE* fp;
+  char* arr[[3]];
+  arr[[0]]=NULL;
+  arr[[1]]=NULL;
+  arr[[2]]=NULL;
+  arr[[3]]=NULL;
+  if(pipe(cp)>=0)
+  if(fork()>=0)
+  if(close(1)>=0)
+  if(dup(cp[[1]])>=0) {
+    fp=fdopen(cp[[0]],"w");
+    execv(arr[[0]],arr);
+  }
+  auto p=fork();
+  kill(p,SIGINT);
+  kill(p,SIGCONT);
+  kill(p,SIGSTOP);
+  return 0;
+}
+
+  ], [__PLUMED_HAS_SUBPROCESS])
 fi
 
 if test $getcwd == true ; then
