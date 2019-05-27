@@ -857,6 +857,24 @@ void SparseGrid::writeToFile(OFile& ofile) {
   }
 }
 
+double SparseGrid::getMinValue() const {
+  double minval;
+  minval=0.0;
+  for(auto const & i : map_) {
+    if(i.second<minval) minval=i.second;
+  }
+  return minval;
+}
+
+double SparseGrid::getMaxValue() const {
+  double maxval;
+  maxval=0.0;
+  for(auto const & i : map_) {
+    if(i.second>maxval) maxval=i.second;
+  }
+  return maxval;
+}
+
 
 void Grid::projectOnLowDimension(double &val, std::vector<int> &vHigh, WeightBase * ptr2obj ) {
   unsigned i=0;
