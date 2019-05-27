@@ -16,15 +16,17 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
+    - make
   host:
     - python
     - pip
     - cython
   run:
+    - plumed
     - python
 
 test:
-  requires:
+  imports:
     - plumed
   commands:
     - python -c "import plumed; p=plumed.Plumed(); print(p)"
@@ -39,6 +41,9 @@ about:
     PLUMED is an open source library for free energy calculations in
     molecular systems which works together with some of the most
     popular molecular dynamics engines.
-  doc_url: https://plumed.github.io/doc-v2.5/user-doc/html/index.html
+  doc_url: https://www.plumed.org/doc
   dev_url: https://github.com/plumed/plumed2
 
+extra:
+  recipe-maintainers:
+    - GiovanniBussi
