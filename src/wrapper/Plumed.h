@@ -2481,7 +2481,7 @@ void plumed_cmd(plumed p,const char*key,const void*val) {
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
   if(!pimpl->p) {
-    __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use plumed, but it is not available. +++\n");
+    __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use an invalid plumed object. +++\n");
     if(pimpl->used_plumed_kernel) __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
     __PLUMED_WRAPPER_STD exit(1);
   }
