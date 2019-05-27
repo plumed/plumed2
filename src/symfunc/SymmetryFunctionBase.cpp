@@ -114,8 +114,8 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
   Action(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
-  done_with_matrix_comput(true),
-  usecols(false)
+  usecols(false),
+  done_with_matrix_comput(true)
 {
   if( keywords.exists("USECOLS") ) {
     parseFlag("USECOLS",usecols);
@@ -270,19 +270,19 @@ void SymmetryFunctionBase::performTask( const unsigned& current, MultiValue& myv
               unsigned ostrn = getPntrToOutput(i)->getPositionInStream();
               for(unsigned k=0; k<myvals.getNumberActive(my_w); ++k) {
                 unsigned kind=myvals.getActiveIndex(my_w,k);
-                myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_w[wstart+jind]*myvals.getDerivative( my_w, kind ) );
+                myvals.addDerivative( ostrn, arg_deriv_starts[0] + kind, tmp_w[wstart+jind]*myvals.getDerivative( my_w, kind ) );
               }
               for(unsigned k=0; k<myvals.getNumberActive(my_x); ++k) {
                 unsigned kind=myvals.getActiveIndex(my_x,k);
-                myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_x[wstart+jind]*myvals.getDerivative( my_x, kind ) );
+                myvals.addDerivative( ostrn, arg_deriv_starts[1] + kind, tmp_x[wstart+jind]*myvals.getDerivative( my_x, kind ) );
               }
               for(unsigned k=0; k<myvals.getNumberActive(my_y); ++k) {
                 unsigned kind=myvals.getActiveIndex(my_y,k);
-                myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_y[wstart+jind]*myvals.getDerivative( my_y, kind ) );
+                myvals.addDerivative( ostrn, arg_deriv_starts[2] + kind, tmp_y[wstart+jind]*myvals.getDerivative( my_y, kind ) );
               }
               for(unsigned k=0; k<myvals.getNumberActive(my_z); ++k) {
                 unsigned kind=myvals.getActiveIndex(my_z,k);
-                myvals.addDerivative( ostrn, arg_deriv_starts[i] + kind, tmp_z[wstart+jind]*myvals.getDerivative( my_z, kind ) );
+                myvals.addDerivative( ostrn, arg_deriv_starts[3] + kind, tmp_z[wstart+jind]*myvals.getDerivative( my_z, kind ) );
               }
               tmp_w[wstart+jind]=tmp_x[wstart+jind]=tmp_y[wstart+jind]=tmp_z[wstart+jind]=0;
               wstart += getPntrToArgument(0)->getShape()[1];
@@ -325,6 +325,22 @@ void SymmetryFunctionBase::updateDerivativeIndices( MultiValue& myvals ) const {
       unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
       myvals.updateIndex( ostrn, mat_indices[i] );
     }
+  }
+  if( getNumberOfArguments()>1 ) {
+    if( arg_deriv_starts[1]>0 && getPntrToArgument(1)->getRank()==2 ) {
+       istrn = getPntrToArgument(1)->getPositionInMatrixStash();
+       std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( istrn ) );
+       for(unsigned i=0; i<myvals.getNumberOfMatrixIndices(istrn); ++i) {
+         for(unsigned j=0; j<getNumberOfComponents(); ++j) {
+           unsigned ostrn = getPntrToOutput(j)->getPositionInStream();
+           myvals.updateIndex( ostrn, arg_deriv_starts[1] + mat_indices[i] );
+         }
+       }   
+    }
+    // It would be easy enough to extend to allow vector components to come from different actions.  This will 
+    // likely be of no use to anyone though so for the moment I just have this assert to prevent people from doing
+    // wrong things.
+    plumed_dbg_assert( arg_deriv_starts[2]==arg_deriv_starts[1] && arg_deriv_starts[3]==arg_deriv_starts[1] ); 
   }
 }
 
