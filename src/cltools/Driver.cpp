@@ -766,17 +766,17 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         if(pbc_cli_given==false) {
           if(ts_in.A>0.0) { // this is negative if molfile does not provide box
             // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution
-            real cosBC=cos(ts_in.alpha*pi/180.);
+            real cosBC=cos(real(ts_in.alpha)*pi/180.);
             //double sinBC=sin(ts_in.alpha*pi/180.);
-            real cosAC=cos(ts_in.beta*pi/180.);
-            real cosAB=cos(ts_in.gamma*pi/180.);
-            real sinAB=sin(ts_in.gamma*pi/180.);
-            real Ax=ts_in.A;
-            real Bx=ts_in.B*cosAB;
-            real By=ts_in.B*sinAB;
-            real Cx=ts_in.C*cosAC;
-            real Cy=(ts_in.C*ts_in.B*cosBC-Cx*Bx)/By;
-            real Cz=sqrt(ts_in.C*ts_in.C-Cx*Cx-Cy*Cy);
+            real cosAC=cos(real(ts_in.beta)*pi/180.);
+            real cosAB=cos(real(ts_in.gamma)*pi/180.);
+            real sinAB=sin(real(ts_in.gamma)*pi/180.);
+            real Ax=real(ts_in.A);
+            real Bx=real(ts_in.B)*cosAB;
+            real By=real(ts_in.B)*sinAB;
+            real Cx=real(ts_in.C)*cosAC;
+            real Cy=(real(ts_in.C)*real(ts_in.B)*cosBC-Cx*Bx)/By;
+            real Cz=sqrt(real(ts_in.C)*real(ts_in.C)-Cx*Cx-Cy*Cy);
             cell[0]=Ax/10.; cell[1]=0.; cell[2]=0.;
             cell[3]=Bx/10.; cell[4]=By/10.; cell[5]=0.;
             cell[6]=Cx/10.; cell[7]=Cy/10.; cell[8]=Cz/10.;
@@ -791,7 +791,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         // info on coords
         // the order is xyzxyz...
         for(int i=0; i<3*natoms; i++) {
-          coordinates[i]=real(ts_in.coords[i]/10.); //convert to nm
+          coordinates[i]=real(ts_in.coords[i])/real(10.); //convert to nm
           //cerr<<"COOR "<<coordinates[i]<<endl;
         }
 #endif
