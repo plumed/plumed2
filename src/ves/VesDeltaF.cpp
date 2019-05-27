@@ -116,7 +116,7 @@ private:
   bool isFirstStep_;
 
 //local basins
-  std::vector< std::unique_ptr<Grid> > grid_p_; //pointers because of Grid::create
+  std::vector< std::unique_ptr<Grid> > grid_p_; //pointers because of GridBase::create
   std::vector<double> norm_;
 
 //optimizer-related stuff

@@ -157,10 +157,10 @@ TD_Grid::TD_Grid(const ActionOptions& ao):
 
   IFile gridfile; gridfile.open(filename);
   if(has_deriv) {
-    distGrid_=Grid::create(gridlabel,arguments,gridfile,false,true,true);
+    distGrid_=GridBase::create(gridlabel,arguments,gridfile,false,true,true);
   }
   else {
-    distGrid_=Grid::create(gridlabel,arguments,gridfile,false,false,false);
+    distGrid_=GridBase::create(gridlabel,arguments,gridfile,false,false,false);
   }
   gridfile.close();
 
