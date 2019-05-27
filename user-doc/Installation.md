@@ -630,16 +630,26 @@ gromacs once for all and combine it with your working version of PLUMED.
 
 If you use the conda package manager you can install a precompiled PLUMED binary using the following command:
 \verbatim
-> conda install -c plumed/label/testing plumed
+> conda install -c conda-forge plumed
+\endverbatim
+Similarly, the python wrappers can be installed with
+\verbatim
+> conda install -c conda-forge py-plumed
 \endverbatim
 
-\warning Currently this is a test version. Starting with PLUMED 2.5.2 it will be possible to download
-the latest official release.
+These packages are part of [conda-forge](https://anaconda.org/conda-forge) and as such should be binary compatible
+with other codes from the same distribution. Notice that it should also be possible to combine the installed
+plumed kernel with an MD code compiled outside of conda (or within a different conda environment)
+if plumed is linked in runtime mode.
+The only variable that you need to set in order to access to the installed plumed kernel is
+`PLUMED_KERNEL` (e.g., `export PLUMED_KERNEL=/conda/prefix/lib/libplumedKernel.so`).
 
 Notice that binaries are only available for Linux and MacOS and that they have a limited number of features.
-In particular, they do not support MPI, nor the other optional libraries used by PLUMED, and do not
-include optional modules. However, they can be used to quickly install a working PLUMED version
-without the need to have a compiler.
+In particular, they do not support MPI and do not include optional modules.
+However, they can be used to quickly install a working PLUMED version without the need to have a compiler.
+
+Notice that there are additional conda packages on the [plumed](https://anaconda.org/plumed/plumed) channel.
+Those packages are for testing only.
 
 \section installingonacluster Installing PLUMED on a cluster
 
