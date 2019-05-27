@@ -271,6 +271,10 @@ public:
   void writeToFile(OFile&);
 
   virtual ~SparseGrid() {}
+
+  virtual double getMaxValue() const;
+  virtual double getMinValue() const;
+
 };
 }
 
