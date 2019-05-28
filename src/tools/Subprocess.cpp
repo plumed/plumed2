@@ -144,6 +144,7 @@ void Subprocess::flush() {
 
 Subprocess & Subprocess::getline(std::string & line) {
   child_to_parent.getline(line);
+  if(!child_to_parent) plumed_error() <<"error reading subprocess";
   return (*this);
 }
 

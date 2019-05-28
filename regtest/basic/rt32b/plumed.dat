@@ -1,5 +1,5 @@
 # explicitly enable python interpreter:
-MOLINFO STRUCTURE=helix.pdb PYTHON_BIN=default 
+MOLINFO STRUCTURE=helix.pdb
 TORSION ATOMS=@phi-4 LABEL=t1 
 TORSION ATOMS=@psi-6 LABEL=t2
 PRINT ARG=t1,t2 FILE=colvar FMT=%8.4f

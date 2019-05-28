@@ -154,6 +154,61 @@ may not be true - GLY is problematic for secondary structure residues as it is a
 ( 18 amino acids + 2 terminal groups = 20 residues ) the code will fail as it will not be able to
 interpret terminal residue 1.
 
+\par Advanced atom selection with mdtraj or MDAnalysis
+
+Since PLUMED 2.6 it is possible to use the expressive selection syntax of [mdtraj](http://mdtraj.org/latest/atom_selection.html) and/or [MDAnalysis](https://www.mdanalysis.org/docs/documentation_pages/selections.html):
+
+\plumedfile
+MOLINFO STRUCTURE=helix.pdb PYTHON_BIN=python
+g1: GROUP ATOMS=@mda:backbone 
+g2: GROUP ATOMS={@mda:{resnum 1 or resid 3:5}}
+g3: GROUP ATOMS={@mda:{resid 3:5} @mda:{resnum 1}}
+g4: GROUP ATOMS={@mdt:{protein and (backbone or resname ALA)}}
+g5: GROUP ATOMS={@mdt:{mass 5.5 to 20}} # masses guessed by mdtraj based on atom type!
+g6: GROUP ATOMS={@mda:{resid 3:5} @mda:{resnum 1} 1-10}
+\endplumedfile
+
+Here `@mda:` indicates that `MDAnalysis` language is used, whereas `@mdt:` indicates that `mdtraj` language is used. Notice that these languages typically select atoms in order. If you want to specify a different order, you can chain definitions as in `g3` above (compare with `g2`). Selections can be also chained with standard PLUMED selections (see `g6`).
+
+The double braces are required due to the way PLUMED parses atom lists. In particular:
+
+- The outer braces are needed to show PLUMED where the `ATOMS=...` option ends.
+- The inner braces are needed to show PLUMED where each selector ends.
+
+MDAnalysis also supports geometric selectors based on atomic coordinates. These selectors **are static** and return lists computed using the coordinates stored in the `MOLINFO` pdb file.
+
+In order to use this syntax you should check the following points at runtime:
+
+1. `plumed --no-mpi config has subprocess` prints `subprocess on` (should be ok on most UNIX systems).
+2. You have a python interpreter with mdtraj and/or MDAnalysis installed. You can check using:
+   - `python -c "import mdtraj"`
+   - `python -c "import MDAnalysis"`
+
+   In order to install these packages refer to their documentation. Pip or conda install should be ok, provided you make sure the correct python interpreter is in the execution PATH at runtime. Notice that you will only need the package(s) related to the syntax that you want to use.
+3. In case you installed these modules on a python with a different name (e.g. `python3.6`), the correct check is:
+   - `python3.6 -c "import mdtraj"`
+   - `python3.6 -c "import MDAnalysis"`
+
+   If this is the case, you should set the environment variable `export PYTHON_BIN=python3.6` or `export PLUMED_PYTHON_BIN=python3.6` (higher priority). Alternatively, directly provide the interpreter in the PLUMED input file
+   using `MOLINFO PYTHON_BIN=python3.6` (even higher priority).
+4. The PDB file that you provide to `MOLINFO` should have consecutive atom numbers starting from 1. This is currently enforced since reading atom numbers out of order (as PLUMED does) is not supported by other packages.
+
+\par Advanced atom selection with VMD (experimental)
+
+Similarly to the `@mda:` and `@mdt:` selectors above, you can use the two following selectors in order to
+access to [VMD](https://www.ks.uiuc.edu/Research/vmd/) syntax for atoms selection:
+- `@vmdexec:`: This selector launches an instance of VMD, so `vmd` executable should be in your execution path.
+  Might be very slow or even crash your simulation. Notice that even if `vmd` executable is used,
+  the implementation is still python based and so a working python interpreter should be provided.
+- `@vmd:`: This selector tries to import the `vmd` python module. Notice that the best way to obtain this module
+  is not within the standard VMD installer but rather by installing the python
+  module that can be found at [this link](http://github.com/Eigenstate/vmd-python).
+  The module is also available on [conda](https://anaconda.org/conda-forge/vmd-python).
+  You should make sure the module is available in the python interpreter used by MOLINFO
+  (check using the command `python -c "import vmd"`).
+
+These two selectors are experimental and might be removed at some point.
+
 \par Examples
 
 In the following example the MOLINFO command is used to provide the information on which atoms

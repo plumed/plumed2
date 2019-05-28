@@ -27,33 +27,37 @@ def read_mdt(path):
     return mdtraj.load(path).top
 
 def read_vmd(path):
+    import vmd as vmd_python
+    return vmd_python.molecule.load("pdb",path)
+
+def read_vmdexec(path):
     import subprocess
-    vmd = subprocess.Popen(["vmd", "-dispdev", "none",path,"-eofexit"],
+    vmdexec = subprocess.Popen(["vmd", "-dispdev", "none",path,"-eofexit"],
           stdin=subprocess.PIPE, stdout=subprocess.PIPE,universal_newlines=True)
     # print("fconfigure stdout -buffering none",file=vmd.stdin) # does not work as expected
-    vmd.stdin.flush()
-    return vmd
+    vmdexec.stdin.flush()
+    return vmdexec
 
 dummyline="DUMMYLINE"
 
-def select_vmd(vmd,selection):
+def select_vmdexec(vmdexec,selection):
     import os
     try:
         bufferlines=int(os.environ['PLUMED_VMD_BUFFERLINES'])
     except:
         bufferlines=1000
         
-    print("puts 'NEXT'",file=vmd.stdin)
-    print("[atomselect top { " + selection + " }] get index\n",file=vmd.stdin)
+    print("puts 'NEXT'",file=vmdexec.stdin)
+    print("[atomselect top { " + selection + " }] get index\n",file=vmdexec.stdin)
     for i in range(bufferlines):
-      print("puts '"+dummyline+"'",file=vmd.stdin)
-    # print("for {set i 1} {$i < 2000} {incr i} { puts '" + dummyline +"' }",file=vmd.stdin) # does not work
-    print("flush stdout",file=vmd.stdin) # useless
-    vmd.stdin.flush()
+      print("puts '"+dummyline+"'",file=vmdexec.stdin)
+    # print("for {set i 1} {$i < 2000} {incr i} { puts '" + dummyline +"' }",file=vmdexec.stdin) # does not work
+    print("flush stdout",file=vmdexec.stdin) # useless
+    vmdexec.stdin.flush()
     is_next=False
     is_error=False
     error_msg=""
-    for line in vmd.stdout:
+    for line in vmdexec.stdout:
         lines=line.rstrip()
         if is_error:
           if(lines=="'"+dummyline+"'"):
@@ -77,6 +81,7 @@ path=None
 
 mda=None
 mdt=None
+vmdexec=None
 vmd=None
 
 help="""
@@ -122,6 +127,7 @@ while True:
         mda=None
         mdt=None
         vmd=None
+        vmdexec=None
     else:
       if path is None:
            sys.stdout.write("Error: provide pdb file");
@@ -129,7 +135,14 @@ while True:
            sys.stdout.flush()
       if cmd == "mda" :
         if mda is None:
-           mda=read_mda(path)
+           try:
+               mda=read_mda(path)
+           except Exception as e:
+               sys.stdout.write("Error importing MDAnalysis module: ");
+               sys.stdout.write(str(e));
+               sys.stdout.write("\n")
+               sys.stdout.flush()
+               continue
         try:
            sel=mda.select_atoms(arg).indices
         except Exception as e:
@@ -140,7 +153,14 @@ while True:
            continue
       elif cmd == "mdt" :
         if mdt is None:
-           mdt=read_mdt(path)
+           try:
+               mdt=read_mdt(path)
+           except Exception as e:
+               sys.stdout.write("Error importing mdtraj module: ");
+               sys.stdout.write(str(e));
+               sys.stdout.write("\n")
+               sys.stdout.flush()
+               continue
         try:
            sel=mdt.select(arg)
         except Exception as e:
@@ -150,10 +170,29 @@ while True:
            sys.stdout.flush()
            continue
       elif cmd == "vmd" :
-         if vmd is None:
-           vmd=read_vmd(path)
+        if vmd is None:
+           try:
+               vmd=read_vmd(path)
+           except Exception as e:
+               sys.stdout.write("Error importing vmd_python module: ");
+               sys.stdout.write(str(e));
+               sys.stdout.write("\n")
+               sys.stdout.flush()
+               continue
+        try:
+           import vmd as vmd_python
+           sel=vmd_python.atomsel(arg, vmd).index
+        except Exception as e:
+           sys.stdout.write("Error parsing vmd-python expression: ");
+           sys.stdout.write(str(e));
+           sys.stdout.write("\n")
+           sys.stdout.flush()
+           continue
+      elif cmd == "vmdexec" :
+         if vmdexec is None:
+           vmdexec=read_vmdexec(path)
          try:
-           sel=select_vmd(vmd,arg)
+           sel=select_vmdexec(vmdexec,arg)
          except Exception as e:
            sys.stdout.write("Error parsing vmd expression: ");
            sys.stdout.write(str(e));
@@ -165,15 +204,16 @@ while True:
          sys.stdout.write(cmd)
          sys.stdout.write("\n")
          sys.stdout.flush()
-      outstr=""
+      outstr="Selection:"
       for i in range(len(sel)):
-          if i>0:
-              outstr+=" "
+          outstr+=" "
           outstr+=str(sel[i]+1)
       outstr+="\n"
       sys.stdout.write(outstr)
       sys.stdout.flush()
 
 EOF
+
+set -e
 
 "${PLUMED_PYTHON_BIN}" $TEMP $@
