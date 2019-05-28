@@ -33,15 +33,13 @@ contained in trajectories and obtain ensemble averages at different temperatures
 
 Consider the ensemble average of an observable \f$O(\mathbf{R},\mathcal{V})\f$ that depends on the atomic coordinates \f$\mathbf{R}\f$ and the volume \f$\mathcal{V}\f$.
 This observable is in practice any collective variable (CV) calculated by Plumed.
-The ensemble average of the observable in an ensemble \f$ \xi' \f$  can be calculated from a simulation performed in and ensemble \f$ \xi \f$ using:
+The ensemble average of the observable in an ensemble \f$ \xi' \f$  can be calculated from a simulation performed in an ensemble \f$ \xi \f$ using:
 \f[
 \langle O(\mathbf{R},\mathcal{V}) \rangle_{\xi'} = \frac{\langle O(\mathbf{R},\mathcal{V}) w(\mathbf{R},\mathcal{V}) \rangle_{\xi}}
                                                      {\langle w(\mathbf{R},\mathcal{V}) \rangle_{\xi}}
 \f]
 where \f$\langle \cdot \rangle_{\xi}\f$ and  \f$\langle \cdot \rangle_{\xi'}\f$ are mean values in the simulated and targeted ensemble, respectively, \f$ E(\mathbf{R}) \f$ is the potential energy of the system, and \f$ w (\mathbf{R},\mathcal{V}) \f$ are the appropriate weights to take from \f$ \xi \f$ to \f$ \xi' \f$.
-This action calculates the weights  \f$ w (\mathbf{R},\mathcal{V}) \f$.
-
-This action handles 4 different cases:
+This action calculates the weights  \f$ w (\mathbf{R},\mathcal{V}) \f$ and handles 4 different cases:
   1. Change of temperature from T to T' at constant volume. That is to say, from a simulation performed in the N\f$\mathcal{V}\f$T (canonical) ensemble, obtain an ensemble average in the N\f$\mathcal{V}\f$T' ensemble. The weights in this case are  \f$ w(\mathbf{R},\mathcal{V}) = e^{(\beta-\beta')E(\mathbf{R})} \f$ with \f$ \beta \f$ and \f$ \beta' \f$ the inverse temperatures.
   2. Change of temperature from T to T' at constant pressure. That is to say, from a simulation performed in the NPT (isothermal-isobaric) ensemble, obtain an ensemble average in the NPT' ensemble. The weights in this case are \f$ w(\mathbf{R},\mathcal{V}) = e^{(\beta-\beta')(E(\mathbf{R}) + P\mathcal{V}) } \f$.
   3. Change of pressure from P to P' at constant temperature. That is to say, from a simulation performed in the NPT (isothermal-isobaric) ensemble, obtain an ensemble average in the NP'T ensemble. The weights in this case are \f$ w(\mathbf{R},\mathcal{V}) = e^{\beta (P - P') \mathcal{V}} \f$.
@@ -62,7 +60,7 @@ The ensemble average of the observable in the ensemble \f$ \xi' \f$ can be calcu
                                                      {\langle w (\mathbf{R},\mathcal{V})  e^{\beta V(\mathbf{s})}  \rangle_{\xi,V}}
 \f]
 where \f$\langle \cdot \rangle_{\xi,V}\f$ is a mean value in the biased ensemble with static bias \f$ V(\mathbf{s}) \f$.
-Therefore in order to reweight the trajectory at different temperatures and/or pressures one must use the weights calculated by this action \f$ w (\mathbf{R},\mathcal{V}) \f$ together with the weights of \ref REWEIGHT_BIAS (see example below).
+Therefore in order to reweight the trajectory at different temperatures and/or pressures one must use the weights calculated by this action \f$ w (\mathbf{R},\mathcal{V}) \f$ together with the weights of \ref REWEIGHT_BIAS (see the examples below).
 
 The bias potential \f$ V(\mathbf{s}) \f$ can be constructed with \ref METAD using \ref ENERGY as a CV \cite mich+04prl.
 More specialized tools are available, for instance using bespoke target distributions such as \ref TD_MULTICANONICAL and \ref TD_MULTITHERMAL_MULTIBARIC \cite Piaggi-PRL-2019 \cite Piaggi-arXiv-2019 within \ref VES.
