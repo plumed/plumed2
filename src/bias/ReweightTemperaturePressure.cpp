@@ -78,7 +78,7 @@ energy: READ FILE=COLVAR VALUES=energy  IGNORE_TIME
 distance: READ FILE=COLVAR VALUES=distance  IGNORE_TIME
 mybias: READ FILE=COLVAR VALUES=mybias.bias  IGNORE_TIME
 
-# Shift energy
+# Shift energy (to avoid numerical issues)
 renergy: COMBINE ARG=energy PARAMETERS=-13250 PERIODIC=NO
 
 # Weights
@@ -100,7 +100,7 @@ energy: READ FILE=COLVAR VALUES=energy  IGNORE_TIME
 volume: READ FILE=COLVAR VALUES=volume  IGNORE_TIME
 mybias: READ FILE=COLVAR VALUES=mybias.bias  IGNORE_TIME
 
-# Shift energy and volume
+# Shift energy and volume (to avoid numerical issues)
 rvol: COMBINE ARG=vol PARAMETERS=7.8 PERIODIC=NO
 renergy: COMBINE ARG=energy PARAMETERS=-13250 PERIODIC=NO
 
@@ -122,7 +122,7 @@ In the next example we calculate the ensemble average of the (particle) density 
 volume: READ FILE=COLVAR VALUES=volume  IGNORE_TIME
 mybias: READ FILE=COLVAR VALUES=mybias.bias  IGNORE_TIME
 
-# Shift volume
+# Shift volume (to avoid numerical issues)
 rvol: COMBINE ARG=vol PARAMETERS=7.8 PERIODIC=NO
 
 # Weights
@@ -145,7 +145,7 @@ energy: READ FILE=COLVAR VALUES=energy  IGNORE_TIME
 volume: READ FILE=COLVAR VALUES=volume  IGNORE_TIME
 mybias: READ FILE=COLVAR VALUES=mybias.bias  IGNORE_TIME
 
-# Shift energy and volume
+# Shift energy and volume (to avoid numerical issues)
 rvol: COMBINE ARG=vol PARAMETERS=7.8 PERIODIC=NO
 renergy: COMBINE ARG=energy PARAMETERS=-13250 PERIODIC=NO
 
