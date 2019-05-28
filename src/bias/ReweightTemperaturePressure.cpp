@@ -215,7 +215,7 @@ ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao)
 
   parseArgumentList("VOLUME",myvol);
   if(!myvol.empty()) {
-    log.printf("  and volumes: ");
+    log.printf("  with volumes: ");
     for(unsigned i=0; i<myvol.size(); i++) log.printf(" %s",myvol[i]->getName().c_str());
     log.printf("\n");
   }
@@ -242,11 +242,7 @@ ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao)
 
 double ReweightTemperaturePressure::getLogWeight() {
   double energy=0;
-  for(unsigned i=0; i<myenergy.size(); i++)  energy += myenergy[i]->get();
-  //log.printf("Print energy %f \n",energy);
   double volume=0;
-  for(unsigned i=0; i<myvol.size(); i++)  volume += myvol[i]->get();
-  //log.printf("Print volume %f \n",volume);
   // 4 possible cases
   // Case 1) Reweight from T to T' with V=const (canonical)
   if (rtemp_>=0 && press_<0 && rpress_<0) return ((1.0/simtemp)- (1.0/rtemp_) )*energy;
