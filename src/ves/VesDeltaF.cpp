@@ -116,7 +116,7 @@ private:
   bool isFirstStep_;
 
 //local basins
-  std::vector< std::unique_ptr<Grid> > grid_p_; //pointers because of Grid::create
+  std::vector< std::unique_ptr<Grid> > grid_p_; //pointers because of GridBase::create
   std::vector<double> norm_;
 
 //optimizer-related stuff
@@ -233,7 +233,15 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
     fes_names.push_back(filename);
     IFile gridfile;
     gridfile.open(filename);
-    grid_p_.push_back(Grid::create(funcl,getArguments(),gridfile,sparsegrid,spline,true));
+    auto g=GridBase::create(funcl,getArguments(),gridfile,sparsegrid,spline,true);
+// we assume this cannot be sparse. in case we want it to be sparse, some of the methods
+// that are available only in Grid should be ported to GridBase
+    auto gg=dynamic_cast<Grid*>(g.get());
+// if this throws, g is deleted
+    plumed_assert(gg);
+// release ownership in order to transfer it to emplaced pointer
+    g.release();
+    grid_p_.emplace_back(gg);
   }
   plumed_massert(grid_p_.size()>1,"at least 2 basins must be defined, starting from FILE_F0");
   alpha_size_=grid_p_.size()-1;
