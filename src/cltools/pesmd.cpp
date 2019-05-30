@@ -212,7 +212,7 @@ public:
     double tke=0;
     for(int i=0; i<nat; ++i) {
       for(int j=0; j<3; ++j) {
-        if( 3*i+j>dim ) break;
+        if( 3*i+j>dim-1 ) break;
         tke += 0.5*velocities[i][j]*velocities[i][j];
       }
     }
