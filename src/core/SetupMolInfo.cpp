@@ -230,10 +230,10 @@ void SetupMolInfo::interpretSymbol( const std::string& symbol, std::vector<AtomN
         std::string res;
         std::vector<std::string> words;
         while(true) {
-            selector->getline(res);
-            words=Tools::getWords(res);
-            if(!words.empty() && words[0]=="Error") plumed_error()<<res;
-            if(!words.empty() && words[0]=="Selection:") break;
+          selector->getline(res);
+          words=Tools::getWords(res);
+          if(!words.empty() && words[0]=="Error") plumed_error()<<res;
+          if(!words.empty() && words[0]=="Selection:") break;
         }
         words.erase(words.begin());
         atoms.resize(0);

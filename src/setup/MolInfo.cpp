@@ -160,7 +160,7 @@ Since PLUMED 2.6 it is possible to use the expressive selection syntax of [mdtra
 
 \plumedfile
 MOLINFO STRUCTURE=helix.pdb PYTHON_BIN=python
-g1: GROUP ATOMS=@mda:backbone 
+g1: GROUP ATOMS=@mda:backbone
 g2: GROUP ATOMS={@mda:{resnum 1 or resid 3:5}}
 g3: GROUP ATOMS={@mda:{resid 3:5} @mda:{resnum 1}}
 g4: GROUP ATOMS={@mdt:{protein and (backbone or resname ALA)}}
