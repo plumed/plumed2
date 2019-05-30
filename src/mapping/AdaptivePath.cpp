@@ -22,7 +22,7 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "tools/Pdb.h"
+#include "tools/PDB.h"
 #include "Path.h"
 
 //+PLUMEDOC COLVAR ADAPTIVE_PATH

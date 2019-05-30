@@ -691,7 +691,7 @@ void DynamicReferenceRestraining::calculate() {
   long long int step_now = getStep();
   if (firsttime) {
     for (size_t i = 0; i < ndims; ++i) {
-      fict[i] = getArgument(i);
+      fict[i] = getArgumentScalar(i);
     }
     firsttime = false;
   }
@@ -730,7 +730,7 @@ void DynamicReferenceRestraining::calculate() {
   if (withExternalForce == false) {
     double ene = 0.0;
     for (size_t i = 0; i < ndims; ++i) {
-      real[i] = getArgument(i);
+      real[i] = getArgumentScalar(i);
       springlength[i] = difference(i, fict[i], real[i]);
       fictNoPBC[i] = real[i] - springlength[i];
       double f = -kappa[i] * springlength[i];
@@ -777,7 +777,7 @@ void DynamicReferenceRestraining::update() {
     for (size_t i = 0; i < ndims; ++i) {
       // consider additional forces on the fictitious particle
       // (e.g. MetaD stuff)
-      ffict[i] += fictValue[i]->getForce();
+      ffict[i] += fictValue[i]->getForce(0);
       if (!nobias) {
         ffict[i] += fbias[i];
       }

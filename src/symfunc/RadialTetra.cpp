@@ -37,6 +37,7 @@ PLUMED_REGISTER_ACTION(RadialTetra,"TETRA_RADIAL")
 
 void RadialTetra::registerKeywords( Keywords& keys ) {
   SymmetryFunctionBase::shortcutKeywords( keys ); 
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("compulsory","CUTOFF","-1","ignore distances that have a value larger than this cutoff");
   keys.remove("NN"); keys.remove("MM"); keys.remove("D_0"); keys.remove("R_0"); keys.remove("SWITCH");
 }
@@ -46,14 +47,16 @@ Action(ao),
 ActionShortcut(ao)
 {
   // Read species input and create the matrix
+  bool nopbc; parseFlag("NOPBC",nopbc); 
+  std::string pbcstr=""; if( nopbc ) pbcstr = " NOPBC";
   std::string sp_str, rcut; parse("SPECIES",sp_str); parse("CUTOFF",rcut);
   if( sp_str.length()>0 ) {
-     readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX GROUP=" + sp_str + " CUTOFF=" + rcut ); 
+     readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX GROUP=" + sp_str + " CUTOFF=" + rcut + pbcstr ); 
   } else {
      std::string specA, specB; parse("SPECIESA",specA); parse("SPECIESB",specB);
      if( specA.length()==0 ) error("missing input atoms");
      if( specB.length()==0 ) error("missing SPECIESB keyword");
-     readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX GROUPA=" + specA + " GROUPB=" + specB + " CUTOFF=" + rcut );
+     readInputLine( getShortcutLabel() + "_mat: DISTANCE_MATRIX GROUPA=" + specA + " GROUPB=" + specB + " CUTOFF=" + rcut + pbcstr);
   }
   // Get the neighbors matrix
   readInputLine( getShortcutLabel() + "_neigh: NEIGHBORS ARG=" + getShortcutLabel() + "_mat.w NLOWEST=4");

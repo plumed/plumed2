@@ -22,6 +22,7 @@
 #include "PathProjectionCalculator.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
+#include <string.h>
 
 namespace PLMD {
 namespace mapping {

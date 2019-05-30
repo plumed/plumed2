@@ -23,7 +23,7 @@
 #include "cltools/CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/Pbc.h"
-#include "tools/Pdb.h"
+#include "tools/PDB.h"
 #include "core/ActionWithValue.h"
 #include "core/ActionSet.h"
 #include "core/Value.h"
