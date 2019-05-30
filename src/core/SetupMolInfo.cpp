@@ -28,8 +28,6 @@
 #include "tools/PDB.h"
 #include "config/Config.h"
 
-#include <iostream>
-
 namespace PLMD {
 
 
