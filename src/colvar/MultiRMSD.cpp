@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -147,6 +147,28 @@ END
 //+ENDPLUMEDOC
 
 PLUMED_REGISTER_ACTION(MultiRMSD,"MULTI-RMSD")
+
+//+PLUMEDOC DCOLVAR MULTI_RMSD
+/*
+An alias to the \ref MULTI-RMSD function.
+
+\par Examples
+
+Just replace \ref MULTI-RMSD with \ref MULTI_RMSD
+
+\plumedfile
+MULTI_RMSD REFERENCE=file.pdb TYPE=MULTI-DRMSD
+\endplumedfile
+
+*/
+//+ENDPLUMEDOC
+
+class Multi_RMSD :
+  public MultiRMSD {
+};
+
+PLUMED_REGISTER_ACTION(MultiRMSD,"MULTI_RMSD")
+
 
 void MultiRMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2018 The plumed team
+   Copyright (c) 2014-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -407,6 +407,7 @@ void RDC::do_svd()
   }
   gsl_matrix_free(coef_mat);
   gsl_matrix_free(A);
+  gsl_matrix_free(V);
   gsl_vector_free(rdc_vec);
   gsl_vector_free(bc);
   gsl_vector_free(Stmp);

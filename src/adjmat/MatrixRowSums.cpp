@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2018 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -76,7 +76,7 @@ PLUMED_REGISTER_ACTION(MatrixRowSums,"ROWSUMS")
 
 void MatrixRowSums::registerKeywords( Keywords& keys ) {
   ActionWithInputMatrix::registerKeywords( keys );
-  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("MEAN");
+  keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST");
   keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
 }

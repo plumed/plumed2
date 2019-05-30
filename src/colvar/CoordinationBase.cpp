@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -140,8 +140,8 @@ void CoordinationBase::calculate()
     nl->update(getPositions());
   }
 
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
+  unsigned stride;
+  unsigned rank;
   if(serial) {
     stride=1;
     rank=0;

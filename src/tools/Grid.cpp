@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -819,6 +819,24 @@ void SparseGrid::writeToFile(OFile& ofile) {
     if(usederiv_) { for(unsigned j=0; j<dimension_; ++j) ofile.printField("der_" + argnames[j],der[j]); }
     ofile.printField();
   }
+}
+
+double SparseGrid::getMinValue() const {
+  double minval;
+  minval=0.0;
+  for(auto const & i : map_) {
+    if(i.second<minval) minval=i.second;
+  }
+  return minval;
+}
+
+double SparseGrid::getMaxValue() const {
+  double maxval;
+  maxval=0.0;
+  for(auto const & i : map_) {
+    if(i.second>maxval) maxval=i.second;
+  }
+  return maxval;
 }
 
 

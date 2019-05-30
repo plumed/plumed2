@@ -48,7 +48,7 @@ EOF
 
   cat << EOF
 
-\note This command line tool is implemented as a shell script. It's help message is pasted below:
+\note This command line tool is implemented as a shell script. Its help message is pasted below:
 
 \verbatim
 EOF

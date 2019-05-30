@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -186,7 +186,10 @@ void SwitchingFunction::registerKeywords( Keywords& keys ) {
 
 void SwitchingFunction::set(const std::string & definition,std::string& errormsg) {
   vector<string> data=Tools::getWords(definition);
-  if( data.size()<1 ) errormsg="missing all input for switching function";
+  if( data.size()<1 ) {
+    errormsg="missing all input for switching function";
+    return;
+  }
   string name=data[0];
   data.erase(data.begin());
   invr0=0.0;

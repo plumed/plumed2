@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -148,8 +148,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           // Take all the values from an action with a specific name
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
           if(!action) {
-            std::string str=" (hint! the actions in this ActionSet are: ";
-            str+=plumed.getActionSet().getLabelList()+")";
+            std::string str=" (hint! the actions with value in this ActionSet are: ";
+            str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
             error("cannot find action named " + a + str);
           }
           if( action->getNumberOfComponents()==0 ) error("found " + a +".* indicating use all components calculated by action with label " + a + " but this action has no components");
@@ -168,8 +168,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           // Take values with a specific name
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
           if(!action) {
-            std::string str=" (hint! the actions in this ActionSet are: ";
-            str+=plumed.getActionSet().getLabelList()+")";
+            std::string str=" (hint! the actions with value in this ActionSet are: ";
+            str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
             error("cannot find action named " + a +str);
           }
           if( !(action->exists(c[i])) ) {
@@ -190,8 +190,8 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         } else {
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
           if(!action) {
-            std::string str=" (hint! the actions in this ActionSet are: ";
-            str+=plumed.getActionSet().getLabelList()+")";
+            std::string str=" (hint! the actions with value in this ActionSet are: ";
+            str+=plumed.getActionSet().getLabelList<ActionWithValue*>()+")";
             error("cannot find action named " + c[i] + str );
           }
           if( !(action->exists(c[i])) ) {

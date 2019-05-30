@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2017,2018 The plumed team
+   Copyright (c) 2017-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,7 +54,7 @@ PLUMED_REGISTER_ACTION(MultiColvarProduct,"MCOLV_PRODUCT")
 void MultiColvarProduct::registerKeywords( Keywords& keys ) {
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","DATA","the multicolvars you are calculating the product of");
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM"); keys.use("HISTOGRAM");
+  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("SUM"); keys.use("LESS_THAN"); keys.use("HISTOGRAM");
   keys.use("MIN"); keys.use("MAX"); keys.use("LOWEST"); keys.use("HIGHEST"); keys.use("ALT_MIN"); keys.use("BETWEEN"); keys.use("MOMENTS");
 }
 

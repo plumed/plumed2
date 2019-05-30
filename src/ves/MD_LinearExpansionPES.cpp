@@ -236,8 +236,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   parse("nstep",nsteps);
   double tstep;
   parse("tstep",tstep);
-  //
-  double temp;
+  // initialize to solve a cppcheck 1.86 warning
+  double temp=0.0;
   std::vector<double> temps_vec(0);
   parseVector("temperature",temps_vec);
   if(temps_vec.size()==1) {

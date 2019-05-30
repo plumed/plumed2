@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -170,8 +170,8 @@ double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myat
       if(r_power > 0) {
         d = sqrt(d2); raised = pow( d, r_power - 1 );
         accumulateSymmetryFunction( 1, i, sw * raised * d,
-                                    (dfunc * d * raised + sw * r_power) * distance,
-                                    (-dfunc * d * raised - sw * r_power) * Tensor(distance, distance),
+                                    (dfunc * d * raised + sw * r_power * raised / d) * distance,
+                                    (-dfunc * d * raised - sw * r_power * raised / d) * Tensor(distance, distance),
                                     myatoms );
       } else {
         accumulateSymmetryFunction( 1, i, sw, (dfunc)*distance, (-dfunc)*Tensor(distance,distance), myatoms );

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2018 The plumed team
+   Copyright (c) 2011-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -1862,8 +1862,8 @@ void MetaD::computeReweightingFactor()
   for(unsigned i=rank; i<ntotgrid; i+=stride) {
     t_index[0]=(i%rewf_grid_[0]);
     unsigned kk=i;
-    for(unsigned j=1; j<ncv-1; ++j) { kk=(kk-t_index[j-1])/rewf_grid_[i-1]; t_index[j]=(kk%rewf_grid_[i]); }
-    if( ncv>=2 ) t_index[ncv-1]=((kk-t_index[ncv-1])/rewf_grid_[ncv-2]);
+    for(unsigned j=1; j<ncv-1; ++j) { kk=(kk-t_index[j-1])/rewf_grid_[j-1]; t_index[j]=(kk%rewf_grid_[j]); }
+    if( ncv>=2 ) t_index[ncv-1]=((kk-t_index[ncv-2])/rewf_grid_[ncv-2]);
 
     for(unsigned j=0; j<ncv; ++j) vals[j]=dmin[j] + t_index[j]*grid_spacing[j];
 

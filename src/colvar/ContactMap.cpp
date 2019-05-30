@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -271,8 +271,8 @@ void ContactMap::calculate() {
   Tensor virial;
   std::vector<Vector> deriv(getNumberOfAtoms());
 
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank();
+  unsigned stride;
+  unsigned rank;
   if(serial) {
     // when using components the parallelisation do not work
     stride=1;

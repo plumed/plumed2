@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2018 The plumed team
+   Copyright (c) 2012-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -139,7 +139,10 @@ void HistogramBead::generateBins( const std::string& params, std::vector<std::st
 
 void HistogramBead::set( const std::string& params, std::string& errormsg ) {
   std::vector<std::string> data=Tools::getWords(params);
-  if(data.size()<1) errormsg="No input has been specified";
+  if(data.size()<1) {
+    errormsg="No input has been specified";
+    return;
+  }
 
   std::string name=data[0]; const double DP2CUTOFF=6.25;
   if(name=="GAUSSIAN") { type=gaussian; cutoff=sqrt(2.0*DP2CUTOFF); }

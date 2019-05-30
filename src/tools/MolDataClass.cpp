@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2018 The plumed team
+   Copyright (c) 2013-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -206,7 +206,6 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
     std::string chainid;
     if(firstnum==dash+1) {
       Tools::convert( symbol.substr(dash+1), resnum );
-      resname= mypdb.getResidueName(resnum);
       chainid="*"; // this is going to match the first chain
     } else {
       // if chain id is provided:

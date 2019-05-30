@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The plumed team
+   Copyright (c) 2016-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -97,7 +97,8 @@ void GridToXYZ::printGrid( OFile& ofile ) const {
   ofile.printf("Grid converted to xyz file \n");
   for(unsigned i=0; i<ingrid->getNumberOfPoints(); ++i) {
     ingrid->getGridPointCoordinates( i, point );
-    ofile.printf("X"); double val=ingrid->getGridElement( i, 0 );
+    ofile.printf("X");
+    double val;
     if( ingrid->getType()=="flat" ) val=1.0;
     else val=ingrid->getGridElement( i, 0 );
     for(unsigned j=0; j<3; ++j) { ofile.printf( (" " + fmt).c_str(), val*lenunit*point[j] ); }
