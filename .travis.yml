@@ -163,7 +163,7 @@ install:
       sudo pip install numpy ;
       sudo pip install six ;
       sudo pip install pandas ;
-      sudo pip install mdtraj ;
+      sudo pip install mdtraj==1.9.2 ;
       sudo pip install MDAnalysis ;
       python -c "import MDAnalysis" ;
       python -c "import mdtraj" ;
