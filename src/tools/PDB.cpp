@@ -25,7 +25,7 @@
 #include "h36.h"
 #include <cstdio>
 #include <iostream>
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "Tensor.h"
 
 using namespace std;
@@ -535,7 +535,7 @@ std::string PDB::getMtype() const {
   return mtype;
 }
 
-void PDB::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, const std::string& fmt ) {
+void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, const std::string& fmt ) {
   if( argnames.size()>0 ) {
     ofile.printf("REMARK ARG=%s", argnames[0].c_str() );
     for(unsigned i=1; i<argnames.size(); ++i) ofile.printf(",%s",argnames[i].c_str() );

@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 
 namespace PLMD {
 namespace generic {
@@ -258,7 +258,7 @@ Anyway, it is registered here, so that excluding this module from
 compilation will exclude it from plumed.
 */
 
-typedef PLMD::SetupMolInfo MolInfo;
+typedef PLMD::GenericMolInfo MolInfo;
 
 PLUMED_REGISTER_ACTION(MolInfo,"MOLINFO")
 

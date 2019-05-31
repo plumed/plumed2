@@ -26,7 +26,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 
 //+PLUMEDOC COLVAR ADAPTIVE_PATH
 /*
@@ -241,7 +241,7 @@ void AdaptivePath::update() {
     pathfile<<"# PATH AT STEP "<<getStep();
     pathfile.printf(" TIME %f \n",getTime());
     std::vector<std::unique_ptr<ReferenceConfiguration>>& myconfs=getAllReferenceConfigurations();
-    auto* mymoldat=plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
+    auto* mymoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
     std::vector<std::string> argument_names( getNumberOfArguments() );
     for(unsigned i=0; i<getNumberOfArguments(); ++i) argument_names[i] = getPntrToArgument(i)->getName();
     PDB mypdb; mypdb.setArgumentNames( argument_names );

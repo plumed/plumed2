@@ -26,7 +26,7 @@
 #include "ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/OpenMP.h"
 #include <initializer_list>
 
@@ -311,7 +311,7 @@ void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<doub
   map<string, map<string, string> > typemap;
   valuemap = setupValueMap();
   typemap  = setupTypeMap();
-  auto * moldat = plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
+  auto * moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   bool cter=false;
   if (moldat) {
     log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";

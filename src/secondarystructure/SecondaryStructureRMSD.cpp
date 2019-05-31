@@ -22,7 +22,7 @@
 #include "SecondaryStructureRMSD.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "core/Atoms.h"
 #include "vesselbase/Vessel.h"
 #include "reference/MetricRegister.h"
@@ -109,7 +109,7 @@ void SecondaryStructureRMSD::setAtomsFromStrands( const unsigned& atom1, const u
 }
 
 void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std::vector<unsigned>& chain_lengths ) {
-  auto* moldat=plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( ! moldat ) error("Unable to find MOLINFO in input");
 
   std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );

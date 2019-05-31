@@ -26,7 +26,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/PDB.h"
 
 namespace PLMD {
@@ -72,7 +72,7 @@ OutputPDBFile::OutputPDBFile( const ActionOptions& ao ):
   mypdb.setArgumentNames( my_input_data->getArgumentNames() );
 
   // Find a moldata object
-  auto* moldat=plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( ! moldat ) warning("PDB output files do not have atom types unless you use MOLDATA");
 
   parse("FILE",filename); parse("FMT",fmt);
@@ -82,7 +82,7 @@ OutputPDBFile::OutputPDBFile( const ActionOptions& ao ):
 
 void OutputPDBFile::performAnalysis() {
   // Find a moldata object
-  auto* mymoldat=plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
+  auto* mymoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   // Output the embedding in plumed pdb format
   OFile afile; afile.link(*this); afile.setBackupString("analysis"); std::size_t psign=fmt.find("%");
   afile.open( filename.c_str() ); std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + "\n";

@@ -29,7 +29,7 @@
 #include "tools/Units.h"
 #include <cstdio>
 #include <memory>
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
 
 #if defined(__PLUMED_HAS_XDRFILE)
@@ -246,7 +246,7 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   for(unsigned i=0; i<atoms.size(); ++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
   requestAtoms(atoms);
-  auto* moldat=plumed.getActionSet().selectLatest<SetupMolInfo*>(this);
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   if( moldat ) {
     log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     names.resize(atoms.size());

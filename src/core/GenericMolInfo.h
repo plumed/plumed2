@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_core_SetupMolInfo_h
-#define __PLUMED_core_SetupMolInfo_h
+#ifndef __PLUMED_core_GenericMolInfo_h
+#define __PLUMED_core_GenericMolInfo_h
 
 #include "ActionSetup.h"
 #include "ActionPilot.h"
@@ -35,7 +35,7 @@ namespace PLMD {
 
 class PDB;
 
-class SetupMolInfo :
+class GenericMolInfo :
   public ActionAnyorder,
   public ActionPilot,
   public ActionAtomistic {
@@ -56,11 +56,11 @@ private:
 /// Selector subprocess
   std::unique_ptr<Subprocess> selector;
 public:
-  ~SetupMolInfo();
+  ~GenericMolInfo();
   void calculate() override {}
   void apply() override {}
   static void registerKeywords( Keywords& keys );
-  explicit SetupMolInfo(const ActionOptions&ao);
+  explicit GenericMolInfo(const ActionOptions&ao);
   void getBackbone( std::vector<std::string>& resstrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone );
   std::string getAtomName(AtomNumber a)const;
   bool checkForAtom(AtomNumber a)const;
