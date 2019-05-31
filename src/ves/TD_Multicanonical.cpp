@@ -63,7 +63,7 @@ p(E)= \begin{cases}
          \frac{1}{E_2-E_1} & \mathrm{if} \quad E_1<E<E_2 \\
          0 & \mathrm{otherwise}
       \end{cases}
-\f] 
+\f]
 where the energy limits \f$E_1\f$ and \f$E_2\f$ are yet to be determined.
 Clearly the interval \f$E_1–E_2\f$ chosen is related to the interval of temperatures \f$T_1-T_2\f$.
 To link these two intervals we make use of the following relation:
@@ -72,12 +72,12 @@ To link these two intervals we make use of the following relation:
 \f]
 where \f$F_{\beta}(E)\f$ is determined during the optimization and we shall choose \f$C\f$ such that \f$F_{\beta'}(E_{m})=0\f$ with \f$E_{m}\f$ the position of the free energy minimum.
 Using this relation we employ an iterative procedure to find the energy interval.
-At iteration \f$k\f$ we have the estimates \f$E_1^k\f$ and \f$E_2^k\f$ for \f$E_1\f$ and \f$E_2\f$, and the target distribution is: 
+At iteration \f$k\f$ we have the estimates \f$E_1^k\f$ and \f$E_2^k\f$ for \f$E_1\f$ and \f$E_2\f$, and the target distribution is:
 \f[
-p^k(E)=\frac{1}{E_2^k-E_1^k} \quad \mathrm{for} \quad E_1^k<E<E_2^k. 
+p^k(E)=\frac{1}{E_2^k-E_1^k} \quad \mathrm{for} \quad E_1^k<E<E_2^k.
 \f]
-\f$E_1^k\f$ and \f$E_2^k\f$ are obtained from the leftmost solution of \f$\beta_2 F_{\beta_2}^{k-1}(E_1^k)=\epsilon\f$ and the rightmost solution of \f$\beta_1 F_{\beta_1}^{k-1}(E_2^k)=\epsilon\f$. 
-The procedure is repeated until convergence. 
+\f$E_1^k\f$ and \f$E_2^k\f$ are obtained from the leftmost solution of \f$\beta_2 F_{\beta_2}^{k-1}(E_1^k)=\epsilon\f$ and the rightmost solution of \f$\beta_1 F_{\beta_1}^{k-1}(E_2^k)=\epsilon\f$.
+The procedure is repeated until convergence.
 This iterative approach is similar to that in \ref TD_WELLTEMPERED.
 
 The version of this algorithm in which the energy and an order parameter are biased is similar to the one described in \ref TD_MULTITHERMAL_MULTIBARIC.
@@ -353,7 +353,7 @@ void TD_Multicanonical::updateGrid() {
         double value = 0.0;
         targetDistGrid().setValue(l,value);
       }
-      // Loop over temperatures   
+      // Loop over temperatures
       for(unsigned i=0; i<steps_temp_; i++) {
         double beta_prime=beta_prime_min + (beta_prime_max-beta_prime_min)*i/(steps_temp_-1);
         // Find minimum for this temperature

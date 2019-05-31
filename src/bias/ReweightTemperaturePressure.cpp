@@ -45,7 +45,7 @@ This action calculates the weights  \f$ w (\mathbf{R},\mathcal{V}) \f$ and handl
   3. Change of pressure from P to P' at constant temperature. That is to say, from a simulation performed in the NPT (isothermal-isobaric) ensemble, obtain an ensemble average in the NP'T ensemble. The weights in this case are \f$ w(\mathbf{R},\mathcal{V}) = e^{\beta (P - P') \mathcal{V}} \f$.
   4. Change of temperature and pressure from T,P to T',P'. That is to say, from a simulation performed in the NPT (isothermal-isobaric) ensemble, obtain an ensemble average in the NP'T' ensemble. The weights in this case are \f$ w(\mathbf{R},\mathcal{V}) = e^{(\beta-\beta')E(\mathbf{R}) + (\beta P - \beta' P') \mathcal{V}} \f$.
 
-These weights can be used in any action that computes ensemble averages. 
+These weights can be used in any action that computes ensemble averages.
 For example this action can be used in tandem with \ref HISTOGRAM or \ref AVERAGE.
 
 
@@ -182,7 +182,7 @@ PLUMED_REGISTER_ACTION(ReweightTemperaturePressure,"REWEIGHT_TEMP_PRESS")
 
 void ReweightTemperaturePressure::registerKeywords(Keywords& keys ) {
   ReweightBase::registerKeywords( keys );
-  keys.remove("ARG"); 
+  keys.remove("ARG");
   keys.add("optional","ENERGY","Energy");
   keys.add("optional","VOLUME","Volume");
   keys.add("optional","REWEIGHT_PRESSURE","Reweighting pressure");
@@ -226,11 +226,11 @@ ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao)
   // 4 possible cases
   // Case 1) Reweight from T to T' with V=const (canonical)
   if (rtemp_>=0 && press_<0 && rpress_<0 && !myenergy.empty() && myvol.empty() ) {
-    log.printf("  reweighting simulation from temperature %f to temperature %f at constant volume \n",simtemp/plumed.getAtoms().getKBoltzmann() ,rtemp_/plumed.getAtoms().getKBoltzmann() );
+    log.printf("  reweighting simulation from temperature %f to temperature %f at constant volume \n",simtemp/plumed.getAtoms().getKBoltzmann(),rtemp_/plumed.getAtoms().getKBoltzmann() );
     log.printf("  WARNING: If the simulation is performed at constant pressure add the keywords PRESSURE and VOLUME \n" );
   }
   // Case 2) Reweight from T to T' with P=const (isothermal-isobaric)
-  else if (rtemp_>=0 && press_>=0 && rpress_<0 && !myenergy.empty() && !myvol.empty() ) log.printf("  reweighting simulation from temperature %f to temperature %f at constant pressure %f \n",simtemp/plumed.getAtoms().getKBoltzmann() ,rtemp_/plumed.getAtoms().getKBoltzmann(), press_ );
+  else if (rtemp_>=0 && press_>=0 && rpress_<0 && !myenergy.empty() && !myvol.empty() ) log.printf("  reweighting simulation from temperature %f to temperature %f at constant pressure %f \n",simtemp/plumed.getAtoms().getKBoltzmann(),rtemp_/plumed.getAtoms().getKBoltzmann(), press_ );
   // Case 3) Reweight from P to P' with T=const (isothermal-isobaric)
   else if (rtemp_<0 && press_>=0 && rpress_>=0 && myenergy.empty() && !myvol.empty() ) log.printf("  reweighting simulation from pressure %f to pressure %f at constant temperature %f\n",press_,rpress_,simtemp/plumed.getAtoms().getKBoltzmann() );
   // Case 4) Reweight from T,P to T',P' (isothermal-isobaric)

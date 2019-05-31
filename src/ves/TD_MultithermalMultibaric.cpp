@@ -40,7 +40,7 @@ Use the target distribution to sample the multithermal-multibaric ensemble \cite
 In this way, in a single molecular dynamics simulation one can obtain information
 about the simulated system in a range of temperatures and pressures.
 This range is determined through the keywords MIN_TEMP, MAX_TEMP, MIN_PRESSURE, and MAX_PRESSURE.
-One should also specified the target pressure of the barostat with the keyword PRESSURE. 
+One should also specified the target pressure of the barostat with the keyword PRESSURE.
 
 The collective variables (CVs) used to construct the bias potential must be:
   1. the potential energy and the volume or,
@@ -151,7 +151,7 @@ OPT_AVERAGED_SGD ...
 
 The multithermal-multibaric target distribution can also be used to explore regions of the phase diagram crossed by first order phase transitions.
 Consider a system of 250 atoms that crystallizes in the fcc crystal structure.
-The region of the temperature-pressure plane that will be explored is 350-450 K and 1bar-1GPa. 
+The region of the temperature-pressure plane that will be explored is 350-450 K and 1bar-1GPa.
 We assume that inside this region we can find the liquid-fcc coexistence line that we would like to obtain.
 In this case in addition to the energy and volume, an order parameter must also be biased.
 The energy, volume, and an order parameter are used as collective variables to construct the bias potential.
@@ -319,7 +319,7 @@ void TD_MultithermalMultibaric::updateGrid() {
       double value = 0.0;
       targetDistGrid().setValue(l,value);
     }
-    // Loop over pressures and temperatures   
+    // Loop over pressures and temperatures
     for(unsigned i=0; i<steps_temp_; i++) {
       double beta_prime=beta_prime_min + (beta_prime_max-beta_prime_min)*i/(steps_temp_-1);
       for(unsigned j=0; j<steps_pressure_; j++) {
@@ -380,7 +380,7 @@ void TD_MultithermalMultibaric::updateGrid() {
               // Apply gaussian
               double gaussian_value = 1;
               for(unsigned k=0; k<dim; k++) {
-                gaussian_value *= GaussianSwitchingFunc(point_prime[k],point[k],sigma_[k]); 
+                gaussian_value *= GaussianSwitchingFunc(point_prime[k],point[k],sigma_[k]);
               }
               if (value_prime<gaussian_value) {
                 targetDistGrid().setValue(index_prime,gaussian_value);
@@ -401,7 +401,7 @@ void TD_MultithermalMultibaric::updateGrid() {
                 // Apply gaussian
                 double gaussian_value = 1;
                 for(unsigned k=0; k<dim; k++) {
-                  gaussian_value *= GaussianSwitchingFunc(point_prime[k],point[k],sigma_[k]); 
+                  gaussian_value *= GaussianSwitchingFunc(point_prime[k],point[k],sigma_[k]);
                 }
                 if (value_prime<gaussian_value) {
                   targetDistGrid().setValue(index_prime,gaussian_value);
