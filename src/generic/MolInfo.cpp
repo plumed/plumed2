@@ -23,7 +23,7 @@
 #include "core/SetupMolInfo.h"
 
 namespace PLMD {
-namespace setup {
+namespace generic {
 
 //+PLUMEDOC TOPOLOGY MOLINFO
 /*
