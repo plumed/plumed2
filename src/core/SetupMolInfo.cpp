@@ -55,6 +55,7 @@ SetupMolInfo::~SetupMolInfo() {
 
 SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
   Action(ao),
+  ActionAnyorder(ao),
   ActionPilot(ao),
   ActionAtomistic(ao)
 {

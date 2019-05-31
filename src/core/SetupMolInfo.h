@@ -25,6 +25,7 @@
 #include "ActionSetup.h"
 #include "ActionPilot.h"
 #include "ActionAtomistic.h"
+#include "ActionAnyorder.h"
 #include "tools/Exception.h"
 #include "tools/ForwardDecl.h"
 #include "tools/Subprocess.h"
@@ -35,6 +36,7 @@ namespace PLMD {
 class PDB;
 
 class SetupMolInfo :
+  public ActionAnyorder,
   public ActionPilot,
   public ActionAtomistic {
 private:
