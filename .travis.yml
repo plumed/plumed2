@@ -87,14 +87,14 @@ matrix:
 # linux conda package
   - name: Conda build, linux
     os: linux
-    if: branch =~ ^test- OR tag IS present OR type IN(pull_request)
+    if: branch =~ ^test- OR tag IS present OR type IN(pull_request) OR type IN(cron)
     dist: trusty
     sudo: required
     env: PLUMED_CONDA=yes
 # osx conda package
   - name: Conda build, MacOS
     os: osx
-    if: branch =~ ^test- OR tag IS present OR type IN(pull_request)
+    if: branch =~ ^test- OR tag IS present OR type IN(pull_request) OR type IN(cron)
     osx_image: xcode8.3
     env: PLUMED_CONDA=yes
 # I don't put any mpi variant with macports since it takes too long to compile
@@ -222,10 +222,20 @@ script:
       done
     fi
 
+  - CONDA_VERSION=none
+  - export CONDA_LABEL=
 # set CONDA_VERSION to TRAVIS_TAG, if available
-  - if test -n "${TRAVIS_TAG}" ; then CONDA_VERSION="${TRAVIS_TAG//-/_}" ; else CONDA_VERSION=unspecified ; fi
-# remove initial v - only makes sense with official releases
-  - CONDA_VERSION="${CONDA_VERSION#v}"
+  - if test -n "${TRAVIS_TAG}" ; then
+       CONDA_VERSION="${TRAVIS_TAG//-/_}" ;
+       CONDA_VERSION="${CONDA_VERSION#v}" ;
+       CONDA_LABEL=tags ;
+    fi
+# set CONDA_VERSION to branch + date when on nightly build
+  - if test "$TRAVIS_EVENT_TYPE" = cron ; then
+       if test "$TRAVIS_BRANCH" = master ; then CONDA_VERSION=2.99.$(date +%y%m%d) ; fi ;
+       if [[ "$TRAVIS_BRANCH" =~ ^v2.[0-9]+$ ]] ; then CONDA_VERSION=${TRAVIS_BRANCH#v}.$(date +%y%m%d) ; fi ;
+       CONDA_LABEL=nightly ;
+    fi
 # build conda package
   - if test -n "$PLUMED_CONDA" ; then VERSION="$CONDA_VERSION" make -C conda ; fi
 
@@ -270,4 +280,4 @@ after_success:
   - if test "$MAKECOVERAGE" == yes ; then ./.travis/push coverage ; fi 
   - if test "$MAKECOVERAGE" == yes ; then bash <(curl -s https://codecov.io/bash) > /dev/null ; fi
 # upload conda package
-  - if test -n "$PLUMED_CONDA" && test -n "$TRAVIS_TAG" ; then VERSION="$CONDA_VERSION" make -C conda upload ; fi
+  - if test -n "$PLUMED_CONDA" && test -n "$CONDA_LABEL" ; then make -C conda upload ; fi
