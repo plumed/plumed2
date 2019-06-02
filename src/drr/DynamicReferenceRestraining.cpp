@@ -748,7 +748,7 @@ void DynamicReferenceRestraining::calculate() {
     ABFGrid.store_getbias(fict, ffict_measured, fbias);
   } else {
     for (size_t i = 0; i < ndims; ++i) {
-      real[i] = getArgument(i);
+      real[i] = getArgumentScalar(i);
       ffict_measured[i] = externalForceValue[i]->get();
       if (withExternalFict) {
         fictNoPBC[i] = externalFictValue[i]->get();
