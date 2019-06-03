@@ -1,2 +1,0 @@
-type=plumed
-arg="pesmd input.dat" 
