@@ -36,7 +36,6 @@ test:
     - plumed-patch -h
     - plumed config has external_blas external_lapack gsl xdrfile zlib
     - $PREFIX/lib/plumed/plumed-runtime -h
-    - test -f $PREFIX/lib/libplumed.a
     - test -f $PREFIX/lib/libplumed$SHLIB_EXT
     - test -f $PREFIX/lib/libplumedWrapper.a
     - test -f $PREFIX/lib/libplumedKernel$SHLIB_EXT
