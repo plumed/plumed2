@@ -11,6 +11,9 @@ fi
 # we also store path so that software linking libplumedWrapper.a knows where libplumedKernel can be found.
 export CPPFLAGS="-D__PLUMED_DEFAULT_KERNEL=$PREFIX/lib/libplumedKernel$SHLIB_EXT $CPPFLAGS"
 
+# enable optimization
+export CXXFLAGS="${CXXFLAGS//-O2/-O3}"
+
 # libraries are explicitly listed here due to --disable-libsearch
 export LIBS="-lgsl -lgslcblas -llapack -lblas -lxdrfile -lz $LIBS"
 
