@@ -1,0 +1,1299 @@
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/f90depends" << \EOF_EOF
+--- f90depends.preplumed	2019-06-07 02:45:26.266309842 +0300
++++ f90depends	2019-06-07 02:45:26.266309842 +0300
+@@ -1247,10 +1247,12 @@
+ runmd$(OSFX): parallel_processor$(OSFX)
+ runmd$(OSFX): pme_recip_midpoint$(OSFX)
+ runmd$(OSFX): dbg_arrays$(OSFX)
+ runmd$(OSFX): copyright.i
+ runmd$(OSFX): dbg_arrays.i
++runmd$(OSFX): Plumed_init.inc
++runmd$(OSFX): Plumed_force.inc
+ runmin$(OSFX): prmtop_dat$(OSFX)
+ runmin$(OSFX): constraints$(OSFX)
+ runmin$(OSFX): pmemd_lib$(OSFX)
+ runmin$(OSFX): extra_pnts_nb14$(OSFX)
+ runmin$(OSFX): file_io$(OSFX)
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Makefile" << \EOF_EOF
+--- Makefile.preplumed	2019-06-07 02:45:26.266309842 +0300
++++ Makefile	2019-06-07 02:45:26.266309842 +0300
+@@ -29,10 +29,15 @@
+ MIC_OFFLOAD_TOKEN=DMIC_offload
+ 
+ # Platform-specific info should be found in ../../config.h
+ include $(CONFIG_FILE)
+ 
++# PLUMED
++ifdef PLUMED_INCLUDE_FILE
++include $(PLUMED_INCLUDE_FILE)
++endif
++
+ .NOTPARALLEL: cuda_SPFP cuda_DPFP pmemd.cuda_SPFP$(SFX) pmemd.cuda_DPFP$(SFX)
+ 
+ OBJS=   gbl_constants$(OSFX) gbl_datatypes$(OSFX) state_info$(OSFX) file_io_dat$(OSFX) \
+         mdin_ctrl_dat$(OSFX) mdin_emil_dat$(OSFX) mdin_ewald_dat$(OSFX) mdin_debugf_dat$(OSFX) prmtop_dat$(OSFX) \
+         inpcrd_dat$(OSFX) dynamics_dat$(OSFX) emil$(OSFX) img$(OSFX) nbips$(OSFX) offload_allocation$(OSFX) \
+@@ -107,53 +112,59 @@
+ 
+ mic2: configured_mic2 $(BINDIR)/pmemd.MPI$(SFX)
+ 
+ mic_offload: configured_mic_offload $(BINDIR)/pmemd.mic_offload.MPI$(SFX)
+ 
+-$(BINDIR)/pmemd$(SFX): $(OBJS) $(EMIL) $(NFE_OBJECTS)
++$(BINDIR)/pmemd$(SFX): $(OBJS) $(EMIL) $(NFE_OBJECTS) $(PLUMED_DEPENDENCIES)
+ 	$(PMEMD_LD) $(PMEMD_FOPTFLAGS) $(LDOUT)$@ $(OBJS) -L$(LIBDIR) \
+-    $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS)
++    $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS) $(PLUMED_LOAD)
+ 
+-$(BINDIR)/pmemd.MPI$(SFX): $(OBJS) $(EMIL) $(NFE_OBJECTS)
++$(BINDIR)/pmemd.MPI$(SFX): $(OBJS) $(EMIL) $(NFE_OBJECTS) $(PLUMED_DEPENDENCIES)
+ 	$(PMEMD_LD) $(PMEMD_FOPTFLAGS) $(LDOUT)$@ $(OBJS) -L$(LIBDIR) \
+-    $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS)
++    $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS) $(PLUMED_LOAD)
+ 
+-$(BINDIR)/pmemd.mic_native$(SFX): $(OBJS) $(EMIL) $(NFE_OBJECTS)
++$(BINDIR)/pmemd.mic_native$(SFX): $(OBJS) $(EMIL) $(NFE_OBJECTS) $(PLUMED_DEPENDENCIES)
+ 	$(PMEMD_LD) $(PMEMD_FOPTFLAGS) $(LDOUT)$@ $(OBJS) -L$(LIBDIR) $(NETCDFLIBF) \
+-      $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS)
++      $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS) $(PLUMED_LOAD)
+ 
+-$(BINDIR)/pmemd.mic_offload.MPI$(SFX): $(OBJS) $(EMIL)
++$(BINDIR)/pmemd.mic_offload.MPI$(SFX): $(OBJS) $(EMIL) $(PLUMED_DEPENDENCIES)
+ 	$(PMEMD_LD) $(PMEMD_FOPTFLAGS) $(LDOUT)$@ $(OBJS) -L$(LIBDIR) $(NETCDFLIBF) \
+-      $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS)
++      $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS) $(PLUMED_LOAD)
+ 
+-$(BINDIR)/pmemd.mic_native.MPI$(SFX): $(OBJS) $(EMIL)
++$(BINDIR)/pmemd.mic_native.MPI$(SFX): $(OBJS) $(EMIL) $(PLUMED_DEPENDENCIES)
+ 	$(PMEMD_LD) $(PMEMD_FOPTFLAGS) $(LDOUT)$@ $(OBJS) -L$(LIBDIR) $(NETCDFLIBF) \
+-      $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS)
++      $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS) $(PLUMED_LOAD)
+ 
+-$(BINDIR)/pmemd.cuda_SPFP$(SFX): $(OBJS) cuda_spfp_libs $(EMIL) $(NFE_OBJECTS)
++$(BINDIR)/pmemd.cuda_SPFP$(SFX): $(OBJS) cuda_spfp_libs $(EMIL) $(NFE_OBJECTS) $(PLUMED_DEPENDENCIES)
+ 	$(PMEMD_LD) $(PMEMD_FOPTFLAGS) $(PMEMD_CU_DEFINES) $(LDOUT)$@ $(OBJS) \
+-      $(PMEMD_CU_LIBS) -L$(LIBDIR) $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS)
++      $(PMEMD_CU_LIBS) -L$(LIBDIR) $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS) $(PLUMED_LOAD)
+ 
+-$(BINDIR)/pmemd.cuda_SPFP.MPI$(SFX): $(OBJS) cuda_spfp_libs $(EMIL) $(NFE_OBJECTS)
++$(BINDIR)/pmemd.cuda_SPFP.MPI$(SFX): $(OBJS) cuda_spfp_libs $(EMIL) $(NFE_OBJECTS) $(PLUMED_DEPENDENCIES)
+ 	$(PMEMD_LD) $(PMEMD_FOPTFLAGS) $(PMEMD_CU_DEFINES) $(LDOUT)$@ $(OBJS) \
+-     $(PMEMD_CU_LIBS) -L$(LIBDIR) $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS)
++     $(PMEMD_CU_LIBS) -L$(LIBDIR) $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS) $(PLUMED_LOAD)
+ 
+-$(BINDIR)/pmemd.cuda_DPFP$(SFX): $(OBJS) cuda_dpfp_libs $(EMIL) $(NFE_OBJECTS)
++$(BINDIR)/pmemd.cuda_DPFP$(SFX): $(OBJS) cuda_dpfp_libs $(EMIL) $(NFE_OBJECTS) $(PLUMED_DEPENDENCIES)
+ 	$(PMEMD_LD) $(PMEMD_FOPTFLAGS) $(PMEMD_CU_DEFINES) $(LDOUT)$@ $(OBJS) \
+-      $(PMEMD_CU_LIBS) -L$(LIBDIR) $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS)
++      $(PMEMD_CU_LIBS) -L$(LIBDIR) $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS) $(PLUMED_LOAD)
+ 
+-$(BINDIR)/pmemd.cuda_DPFP.MPI$(SFX): $(OBJS) cuda_dpfp_libs $(EMIL) $(NFE_OBJECTS)
++$(BINDIR)/pmemd.cuda_DPFP.MPI$(SFX): $(OBJS) cuda_dpfp_libs $(EMIL) $(NFE_OBJECTS) $(PLUMED_DEPENDENCIES)
+ 	$(PMEMD_LD) $(PMEMD_FOPTFLAGS) $(PMEMD_CU_DEFINES) $(LDOUT)$@ $(OBJS) \
+-     $(PMEMD_CU_LIBS) -L$(LIBDIR) $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS)
++     $(PMEMD_CU_LIBS) -L$(LIBDIR) $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS) $(PLUMED_LOAD)
+ 
+-$(BINDIR)/pmemd.cuda_SPXP$(SFX): $(OBJS) cuda_spxp_libs $(EMIL) $(NFE_OBJECTS)
++$(BINDIR)/pmemd.cuda_SPXP$(SFX): $(OBJS) cuda_spxp_libs $(EMIL) $(NFE_OBJECTS) $(PLUMED_DEPENDENCIES)
+ 	$(PMEMD_LD) $(PMEMD_FOPTFLAGS) $(PMEMD_CU_DEFINES) $(LDOUT)$@ $(OBJS) \
+-      $(PMEMD_CU_LIBS) -L$(LIBDIR) $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS)
++      $(PMEMD_CU_LIBS) -L$(LIBDIR) $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS) $(PLUMED_LOAD)
+ 
+-$(BINDIR)/pmemd.cuda_SPXP.MPI$(SFX): $(OBJS) cuda_spxp_libs $(EMIL) $(NFE_OBJECTS)
++$(BINDIR)/pmemd.cuda_SPXP.MPI$(SFX): $(OBJS) cuda_spxp_libs $(EMIL) $(NFE_OBJECTS) $(PLUMED_DEPENDENCIES)
+ 	$(PMEMD_LD) $(PMEMD_FOPTFLAGS) $(PMEMD_CU_DEFINES) $(LDOUT)$@ $(OBJS) \
+-     $(PMEMD_CU_LIBS) -L$(LIBDIR) $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS)
++     $(PMEMD_CU_LIBS) -L$(LIBDIR) $(NETCDFLIBF) $(LDFLAGS) $(PMEMD_FLIBSF) $(NFE_OBJECTS) $(PLUMED_LOAD)
++
++# PLUMED
++ifndef PLUMED_INCLUDE_FILE
++Plumed.o: Plumed.c
++	$(PMEMD_CC) $(CFLAGS) $(AMBERCFLAGS) -o Plumed.o -c Plumed.c
++endif
+ 
+ EMIL:
+ 	$(MAKE) -C ../../../AmberTools/src/emil install
+ 
+ depends:
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/mdin_ctrl_dat.F90" << \EOF_EOF
+--- mdin_ctrl_dat.F90.preplumed	2019-06-07 02:45:26.266309842 +0300
++++ mdin_ctrl_dat.F90	2019-06-07 02:45:26.266309842 +0300
+@@ -35,10 +35,11 @@
+                                 scaledMD, icnstph, ntcnstph, ntrelax, icnste, &
+                                 ntcnste, ntrelaxe, ntwf, &
+                                 iphmd, & !PHMD
+                                 igamd,irest_gamd,iE,iVm,igamdlag,ntcmd,nteb, &
+                                 ntcmdprep,ntebprep, &
++                                plumed, & ! PLUMED
+                                 w_amd, emil_do_calc,isgld,isgsta,isgend,fixcom, &
+                                 tishake, emil_sc,iemap, lj1264, efn,mcwat,mcint,&
+                                 nucat, & ! gbneck2nu: check if atom belong to nucleic or not
+                                 mcrescyc,nmd,nmc,mcverbosity, &
+                                 infe, & ! added by FENG PAN
+@@ -75,13 +76,14 @@
+                                 mask_from_ref, mbar_states,           &   ! 96
+                                 geq_nstep, ginit_vel,  gsyn_mass, & !99
+                                 gremd_acyc, gti_cpu_output, & !101
+                                 mcint,nmd,mcrescyc,nmc,mcverbosity, & !106
+                                 ineb,skmin,skmax,tmode,vv,  & !111
+-                                iphmd, midpoint !113
++                                iphmd, midpoint, & !113
++                                plumed !114 (PLUMED)
+ 
+-  integer, parameter    :: mdin_ctrl_int_cnt = 113
++  integer, parameter    :: mdin_ctrl_int_cnt = 114 ! 113 + 1 (with PLUMED)
+ 
+   save  :: / mdin_ctrl_int /
+ 
+   ! Note - ndfmin is not intended to be settable by the user.  We permit it to
+   !        show up in the namelist but issue a warning and ignore it.
+@@ -177,10 +179,13 @@
+   ! Amber masks
+ 
+   character(256), public   :: restraintmask, bellymask, timask1, timask2, &
+                               crgmask, noshakemask, scmask1, scmask2
+ 
++  ! PLUMED
++  character(256), public   :: plumedfile
++
+   ! Note - gb_alpha, gb_beta, gb_gamma, gb_fs_max, gb_kappa and gb_neckscale
+   !        would be better factored elsewhere, but as usual the sander order
+   !        of operations makes this difficult...
+ 
+   ! Master-only PMEMD-specific control variables:
+@@ -275,10 +280,11 @@
+                         lastist, lastrst, no_intermolecular_bonds, &
+                         ene_avg_sampling, &
+                         amber7_compat, amber8_mdout_format, &
+                         mdinfo_flush_interval, &
+                         mdout_flush_interval, &
++                        plumed, plumedfile, & ! PLUMED
+                         dbg_atom_redistribution, &
+                         loadbal_verbose, &
+                         es_cutoff, vdw_cutoff, &
+                         dtemp, dxm, heat, alpb, arad, &
+                         ifqnt, icnstph, ntcnstph, solvph, ntrelax, &
+@@ -518,10 +524,15 @@
+   itgtmd = 0            ! not supported...
+   tgtrmsd = 0.d0        ! not actually used...
+   tgtmdfrc = 0.d0       ! not actually used...
+   tgtrmsmask = ''       ! not actually used...
+   tgtfitmask = ''       ! not actually used...
++
++! PLUMED
++  plumed = 0
++  plumedfile = 'plumed.dat'
++
+   maxcyc = 1
+   ncyc = 10
+   ntmin = 1
+   dx0 = 0.01d0
+   drms = 1.0d-4
+@@ -1509,10 +1520,16 @@
+     write(mdout, '(a,a)') error_hdr, 'tgtfitmask is only used if itgtmd != 0!'
+     inerr = 1
+   end if
+ #endif
+ 
++  ! PLUMED
++  if (plumed .eq. 1) then
++    write(mdout, '(a)') 'PLUMED is on'
++    write(mdout, '(a,a)') 'PLUMED file is ', plumedfile
++  endif
++
+   if (ifqnt .ne. 0) then
+     write(mdout, '(a,a)') error_hdr, 'ifqnt must == 0!'
+     write(mdout, '(a,a,a)') extra_line_hdr, prog_name, &
+       ' does not support QM/MM calculations.'
+     write(mdout, '(a)') use_sander
+@@ -2876,10 +2893,14 @@
+   call mpi_bcast(imin, mdin_ctrl_int_cnt, mpi_integer, 0, &
+                  pmemd_comm, err_code_mpi)
+   call mpi_bcast(dielc, mdin_ctrl_dbl_cnt, mpi_double_precision, 0, &
+                  pmemd_comm, err_code_mpi)
+ 
++! PLUMED
++  call mpi_bcast(plumed, 1, mpi_integer, 0, pmemd_comm, err_code_mpi)
++  call mpi_bcast(plumedfile, 256, mpi_character, 0, pmemd_comm, err_code_mpi)
++
+ ! Broadcast the NO_NTT3_SYNC Flag
+   call mpi_bcast(no_ntt3_sync, 1, mpi_integer, 0, pmemd_comm, err_code_mpi)
+ 
+ ! Broadcast usemidpoint
+   call mpi_bcast(usemidpoint, 1, mpi_logical, 0, mpi_comm_world, err_code_mpi)
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed.c" << \EOF_EOF
+--- Plumed.c.preplumed	2019-06-07 02:43:03.836596505 +0300
++++ Plumed.c	2019-06-07 02:45:26.266309842 +0300
+@@ -0,0 +1,324 @@
++/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   Copyright (c) 2011-2014 The plumed team
++   (see the PEOPLE file at the root of the distribution for a list of names)
++
++   See http://www.plumed-code.org for more information.
++
++   This file is part of plumed, version 2.
++
++   plumed is free software: you can redistribute it and/or modify
++   it under the terms of the GNU Lesser General Public License as published by
++   the Free Software Foundation, either version 3 of the License, or
++   (at your option) any later version.
++
++   plumed is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public License
++   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
++#ifdef __PLUMED_HAS_DLOPEN
++#include <dlfcn.h>
++#endif
++
++#include "Plumed.h"
++#include <stdio.h>
++#include <assert.h>
++#include <stdlib.h>
++#include <limits.h>
++
++/* DECLARATION USED ONLY IN THIS FILE */
++
++#ifdef __cplusplus
++ extern "C" {
++#endif
++
++/**
++   Holder for plumedmain function pointers.
++*/
++typedef struct {
++  void*(*create)(void);
++  void(*cmd)(void*,const char*,const void*);
++  void(*finalize)(void*);
++} plumed_plumedmain_function_holder;
++
++/**
++  Register for plumedmain function pointers
++*/
++plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmain_function_holder*);
++
++#ifdef __PLUMED_STATIC_KERNEL
++/* Real interface */
++void*plumedmain_create(void);
++void plumedmain_cmd(void*,const char*,const void*);
++void plumedmain_finalize(void*);
++#else
++/* dummy interface */
++void*plumed_dummy_create(void);
++void plumed_dummy_cmd(void*,const char*,const void*);
++void plumed_dummy_finalize(void*);
++#endif
++
++#ifdef __cplusplus
++ }
++#endif
++
++/* END OF DECLARATION USED ONLY IN THIS FILE */
++
++/* These are the dummy routines which are used when plumed is not available */
++
++#ifdef __PLUMED_STATIC_KERNEL
++
++static int installed=1;
++
++#else
++
++static int installed=0;
++
++static int dummy;
++
++void*plumed_dummy_create(void){
++  return (void*)&dummy;
++}
++
++void plumed_dummy_cmd(void*p,const char*key,const void*val){
++  (void) p;   /* avoid warning on unused parameter */
++  (void) key; /* avoid warning on unused parameter */
++  (void) val; /* avoid warning on unused parameter */
++  fprintf(stderr,"+++ ERROR: you are trying to use plumed, but it is not available +++\n");
++  fprintf(stderr,"+++ Check your PLUMED_KERNEL environment variable +++\n");
++  exit(1);
++}
++
++void plumed_dummy_finalize(void*p){
++  (void) p; /* avoid warning on unused parameter */
++}
++
++#endif
++
++plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmain_function_holder* f){
++#ifdef __PLUMED_STATIC_KERNEL
++/*
++  When __PLUMED_STATIC_KERNEL is defined, the function holder is initialized
++  to statically bound plumedmain_create,plumedmain_cmd,plumedmain_finalize and
++  cannot be changed. This saves from mis-set values for PLUMED_KERNEL
++*/
++  static plumed_plumedmain_function_holder g={plumedmain_create,plumedmain_cmd,plumedmain_finalize};
++  (void) f; /* avoid warning on unused parameter */
++  return &g;
++#else
++/*
++  On the other hand, for runtime binding, we allow to reset the function holder on the
++  first call to plumed_kernel_register.
++  Notice that in principle plumed_kernel_register is entered *twice*: one for the first
++  plumed usage, and then from the PlumedMainInitializer object of the shared library.
++  This is why we set "first=0" only *after* loading the shared library.
++  Also notice that we should put some guard here for safe multithread calculations.
++*/
++  static plumed_plumedmain_function_holder g={plumed_dummy_create,plumed_dummy_cmd,plumed_dummy_finalize};
++  static int first=1;
++#ifdef __PLUMED_HAS_DLOPEN
++  char* path;
++  void* p;
++  if(first && f==NULL){
++    path=getenv("PLUMED_KERNEL");
++    if(path && (*path)){
++      fprintf(stderr,"+++ Loading the PLUMED kernel runtime +++\n");
++      fprintf(stderr,"+++ PLUMED_KERNEL=\"%s\" +++\n",path);
++      p=dlopen(path,RTLD_NOW|RTLD_GLOBAL);
++      if(p){
++        fprintf(stderr,"+++ PLUMED kernel successfully loaded +++\n");
++        installed=1;
++      } else{
++        fprintf(stderr,"+++ PLUMED kernel not found ! +++\n");
++        fprintf(stderr,"+++ error message from dlopen(): %s\n",dlerror());
++      }
++    }
++  }
++#endif
++  first=0;
++  if(f) g=*f;
++  return &g;
++#endif
++}
++
++/* C wrappers: */
++
++plumed plumed_create(void){
++  plumed p;
++  p.p=(*(plumed_kernel_register(NULL)->create))();
++  return p;
++}
++
++void plumed_cmd(plumed p,const char*key,const void*val){
++  (*(plumed_kernel_register(NULL)->cmd))(p.p,key,val);
++}
++
++void plumed_finalize(plumed p){
++  (*(plumed_kernel_register(NULL)->finalize))(p.p);
++}
++
++int plumed_installed(void){
++  plumed_kernel_register(NULL);
++  return installed;
++}
++
++/* we declare a Plumed_g_main object here, in such a way that it is always available */
++
++static plumed gmain={NULL};
++
++plumed plumed_global(void){
++  return gmain;
++}
++
++void plumed_gcreate(void){
++  assert(gmain.p==NULL);
++  gmain=plumed_create();
++}
++
++void plumed_gcmd(const char*key,const void*val){
++  plumed_cmd(gmain,key,val);
++}
++
++void plumed_gfinalize(void){
++  plumed_finalize(gmain);
++  gmain.p=NULL;
++}
++
++int plumed_ginitialized(void){
++  if(gmain.p) return 1;
++  else                return 0;
++}
++
++void plumed_c2f(plumed p,char*c){
++  unsigned i;
++  unsigned char* cc;
++/*
++  Convert the address stored in p.p into a proper FORTRAN string
++  made of only ASCII characters. For this to work, the two following
++  assertions should be satisfied:
++*/
++  assert(CHAR_BIT<=12);
++  assert(sizeof(p.p)<=16);
++
++  assert(c);
++  cc=(unsigned char*)&p.p;
++  for(i=0;i<sizeof(p.p);i++){
++/*
++  characters will range between '0' (ASCII 48) and 'o' (ASCII 111=48+63)
++*/
++    c[2*i]=cc[i]/64+48;
++    c[2*i+1]=cc[i]%64+48;
++  }
++}
++
++plumed plumed_f2c(const char*c){
++  plumed p;
++  unsigned i;
++  unsigned char* cc;
++
++  assert(CHAR_BIT<=12);
++  assert(sizeof(p.p)<=16);
++
++  assert(c);
++  cc=(unsigned char*)&p.p;
++  for(i=0;i<sizeof(p.p);i++){
++/*
++  perform the reversed transform
++*/
++    cc[i]=(c[2*i]-48)*64 + (c[2*i+1]-48);
++  }
++  return p;
++}
++
++
++#ifdef __cplusplus
++ extern "C" {
++#endif
++
++/*
++  Fortran wrappers
++  These are just like the global C wrappers. They are 
++  just defined here and not declared in the .h file since they
++  should not be used from c/c++ anyway.
++*/
++
++/*
++  First we assume no name mangling
++*/
++
++void plumed_f_installed(int*i){
++  *i=plumed_installed();
++}
++
++void plumed_f_ginitialized(int*i){
++  *i=plumed_ginitialized();
++}
++
++void plumed_f_gcreate(void){
++  plumed_gcreate();
++}
++
++void plumed_f_gcmd(char*key,void*val){
++  plumed_gcmd(key,val);
++}
++
++void plumed_f_gfinalize(void){
++  plumed_gfinalize();
++}
++
++void plumed_f_create(char*c){
++  plumed p;
++  p=plumed_create();
++  plumed_c2f(p,c);
++}
++
++void plumed_f_cmd(char*c,char*key,void*val){
++  plumed p;
++  p=plumed_f2c(c);
++  plumed_cmd(p,key,val);
++} 
++
++void plumed_f_finalize(char*c){
++  plumed p;
++  p=plumed_f2c(c);
++  plumed_finalize(p);
++}
++
++void plumed_f_global(char*c){
++  plumed_c2f(gmain,c);
++}
++
++/*
++  Then we add wrappers for there functions to cover all
++  the possible fortran mangling schemes, which should be:
++  without underscore, with one underscore and with two underscores
++  lower or upper case
++*/
++
++#define IMPLEMENT(lower,upper,implem) \
++  void lower ##_  implem \
++  void lower ##__ implem \
++  void upper      implem \
++  void upper ##_  implem \
++  void upper ##__ implem
++
++IMPLEMENT(plumed_f_gcreate,     PLUMED_F_GCREATE,     (void){plumed_f_gcreate();})
++IMPLEMENT(plumed_f_gcmd,        PLUMED_F_GCMD,        (char* key,void* val){plumed_f_gcmd(key,val);})
++IMPLEMENT(plumed_f_gfinalize,   PLUMED_F_GFINALIZE,   (void){plumed_f_gfinalize();})
++IMPLEMENT(plumed_f_ginitialized,PLUMED_F_GINITIALIZED,(int*i){plumed_f_ginitialized(i);})
++IMPLEMENT(plumed_f_create,      PLUMED_F_CREATE,      (char*c){plumed_f_create(c);})
++IMPLEMENT(plumed_f_cmd,         PLUMED_F_CMD,         (char*c,char* key,void* val){plumed_f_cmd(c,key,val);})
++IMPLEMENT(plumed_f_finalize,    PLUMED_F_FINALIZE,    (char*c){plumed_f_finalize(c);})
++IMPLEMENT(plumed_f_installed,   PLUMED_F_INSTALLED,   (int*i){plumed_f_installed(i);})
++IMPLEMENT(plumed_f_global,      PLUMED_F_GLOBAL,      (char*c){plumed_f_global(c);})
++
++#ifdef __cplusplus
++}
++#endif
++
++
++
++
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed_force.inc" << \EOF_EOF
+--- Plumed_force.inc.preplumed	2019-06-07 02:43:16.946879378 +0300
++++ Plumed_force.inc	2019-06-07 02:45:26.266309842 +0300
+@@ -0,0 +1,59 @@
++
++    plumed_stopflag=0
++    call plumed_f_gcmd("setStep"//char(0), nstep)
++    call plumed_f_gcmd("setPositions"//char(0), crd)
++    call plumed_f_gcmd("setMasses"//char(0), mass)
++    call plumed_f_gcmd("setCharges"//char(0), atm_qterm)
++    if (using_pme_potential) then
++        call plumed_f_gcmd("setEnergy"//char(0), pme_pot_ene)
++    else if (using_gb_potential) then
++        call plumed_f_gcmd("setEnergy"//char(0), gb_pot_ene)
++    end if
++    call plumed_f_gcmd("setForces"//char(0), frc)
++    call plumed_f_gcmd("setStopFlag"//char(0), plumed_stopflag)
++    plumed_box = 0.0
++    if (ifbox == 0) then
++      continue
++    else if (ifbox == 1) then
++      plumed_box(1,1) = pbc_box(1)
++      plumed_box(2,2) = pbc_box(2)
++      plumed_box(3,3) = pbc_box(3)
++    else if (ifbox == 2) then
++
++      ! For a truncated octahedron, corresponding to a bcc lattice
++      ! in AMBER convention, box(1) is the length of the lattice vector
++      ! a is defined so as the bcc lattice is (a/2,a/2,a/2) (-a/2,-a/2,a/2)
++      ! (a/2,-a/2,-a/2).
++      plumed_box(1,1) = sqrt(1.0/3.0)*pbc_box(1)
++      plumed_box(2,1) = sqrt(1.0/3.0)*pbc_box(1)
++      plumed_box(3,1) = sqrt(1.0/3.0)*pbc_box(1)
++      plumed_box(1,2) = -sqrt(1.0/3.0)*pbc_box(1)
++      plumed_box(2,2) = -sqrt(1.0/3.0)*pbc_box(1)
++      plumed_box(3,2) = sqrt(1.0/3.0)*pbc_box(1)
++      plumed_box(1,3) = sqrt(1.0/3.0)*pbc_box(1)
++      plumed_box(2,3) = -sqrt(1.0/3.0)*pbc_box(1)
++      plumed_box(3,3) = -sqrt(1.0/3.0)*pbc_box(1)
++    else
++      write (6,*) "!!!!! PLUMED ERROR: Only orthorhombic and truncted &
++                   &octahedron cells are supported in this release."
++      write (6,*) "!!!!! ABORTING RUN"
++      call mexit(6, 1)
++    endif
++    plumed_virial=0.0
++
++    ! It's not completely clear where the factor 2.0 comes from.
++    ! Anyway, I was able to match a change in press of 1000 bar with
++    ! a corresponding SLOPE=66.02 added to VOLUME CV in PLUMED GB.
++    plumed_virial(1,1)=2.0*virial(1)
++    plumed_virial(2,2)=2.0*virial(2)
++    plumed_virial(3,3)=2.0*virial(3)
++    call plumed_f_gcmd("setVirial"//char(0), plumed_virial)
++    call plumed_f_gcmd("setBox"//char(0), plumed_box)
++    call plumed_f_gcmd("calc"//char(0), 0);
++#ifdef MPI
++    ! This is required since PLUMED only updates virial on master processor
++    call mpi_bcast(plumed_virial, 9, mpi_double_precision, 0, pmemd_comm, err_code_mpi)
++#endif
++    virial(1)=0.5*plumed_virial(1,1)
++    virial(2)=0.5*plumed_virial(2,2)
++    virial(3)=0.5*plumed_virial(3,3)
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed.h" << \EOF_EOF
+--- Plumed.h.preplumed	2019-06-07 02:43:09.270047138 +0300
++++ Plumed.h	2019-06-07 02:45:26.266309842 +0300
+@@ -0,0 +1,494 @@
++/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++   Copyright (c) 2011-2014 The plumed team
++   (see the PEOPLE file at the root of the distribution for a list of names)
++
++   See http://www.plumed-code.org for more information.
++
++   This file is part of plumed, version 2.
++
++   plumed is free software: you can redistribute it and/or modify
++   it under the terms of the GNU Lesser General Public License as published by
++   the Free Software Foundation, either version 3 of the License, or
++   (at your option) any later version.
++
++   plumed is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public License
++   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
++#ifndef __PLUMED_wrapper_Plumed_h
++#define __PLUMED_wrapper_Plumed_h
++
++/**
++\page ReferencePlumedH Reference for interfacing MD codes with PLUMED
++
++  Plumed.h and Plumed.c contain the external plumed interface, which is used to
++  integrate it with MD engines. This interface is very general, and is expected
++  not to change across plumed versions. Plumed.c also implements a dummy version
++  of the interface, so as to allow a code to be fully linked even if the plumed
++  library is not available yet. These files could be directly included in the official
++  host MD distribution. In this manner, it will be sufficient to link the plumed
++  library at link time (on all systems) or directly at runtime (on system where
++  dynamic loading is enabled) to include plumed features.
++
++  Why is Plumed.c written in C and not C++? The reason is that the resulting Plumed.o
++  needs to be linked with the host MD code immediately (whereas the rest of plumed
++  could be linked a posteriori). Imagine the MD code is written in FORTRAN: when we
++  link the Plumed.o file we would like not to need any C++ library linked. In this
++  manner, we do not need to know which C++ compiler will be used to compile plumed.
++  The C++ library is only linked to the "rest" of plumed, which actually use it.
++  Anyway, Plumed.c is written in such a manner to allow its compilation also in C++
++  (C++ is a bit stricter than C; compatibility is checked when PlumedStatic.cpp,
++  which basically includes Plumed.c, is compiled with the C++ compiler). This will
++  allow e.g. MD codes written in C++ to just incorporate Plumed.c (maybe renamed into
++  Plumed.cpp), without the need of configuring a plain C compiler.
++
++  Plumed interface can be used from C, C++ and FORTRAN. Everything concerning plumed
++  is hidden inside a single object type, which is described in C by a structure
++  (struct \ref plumed), in C++ by a class (PLMD::Plumed) and in FORTRAN by a
++  fixed-length string (CHARACTER(LEN=32)). Obviously C++ can use both struct
++  and class interfaces, but the first should be preferred. The reference interface
++  is the C one, whereas FORTRAN and C++ interfaces are implemented as wrappers
++  around it.
++
++  In the C++ interface, all the routines are implemented as methods of PLMD::Plumed.
++  In the C and FORTRAN interfaces, all the routines are named plumed_*, to
++  avoid potential name clashes. Notice that the entire plumed library
++  is implemented in C++, and it is hidden inside the PLMD namespace.
++
++  Handlers to the plumed object can be converted among different representations,
++  to allow inter-operability among languages. In C, there are tools to convert
++  to/from FORTRAN, whereas in C++ there are tools to convert to/from FORTRAN and C.
++
++  These handlers only contain a pointer to the real structure, so that
++  when a plumed object is brought from one language to another,
++  it brings a reference to the same environment.
++
++  Moreover, to simplify life in all cases where a single Plumed object is
++  required for the entire simulation (which covers most of the practical
++  applications with conventional MD codes) it is possible to take advantage
++  of a global interface, which is implicitly referring to a unique global instance.
++  The global object should still be initialized and finalized properly.
++
++  The basic method to send a message to plumed is
++\verbatim
++  (C) plumed_cmd
++  (C++) PLMD::Plumed::cmd
++  (FORTRAN)  PLUMED_F_CMD
++\endverbatim
++
++  To initialize a plumed object, use:
++\verbatim
++  (C)        plumed_create
++  (C++)      (constructor of PLMD::Plumed)
++  (FORTRAN)  PLUMED_F_CREATE
++\endverbatim
++
++  To finalize it, use
++\verbatim
++  (C)        plumed_finalize
++  (C++)      (destructor of PLMD::Plumed)
++  (FORTRAN)  PLUMED_F_FINALIZE
++\endverbatim
++
++  To access to the global-object, use
++\verbatim
++  (C)        plumed_gcreate, plumed_gfinalize, plumed_gcmd
++  (C++)      PLMD::Plumed::gcreate, PLMD::Plumed::gfinalize, PLMD::Plumed::gcmd
++  (FORTRAN)  PLUMED_F_GCREATE, PLUMED_F_GFINALIZE, PLUMED_F_GCMD
++\endverbatim
++
++  To check if the global object has been initialized, use
++\verbatim
++  (C)        plumed_ginitialized
++  (C++)      PLMD::Plumed::ginitialized
++  (FORTRAN)  PLUMED_F_GINITIALIZED
++\endverbatim
++
++  To check if plumed library is available (this is useful for runtime linking), use
++\verbatim
++  (C)        plumed_installed 
++  (C++)      PLMD::Plumed::installed
++  (FORTRAN)  PLUMED_F_INSTALLED
++\endverbatim
++
++  To convert handlers use
++\verbatim
++  (C)        plumed_c2f                 (C to FORTRAN)
++  (C)        plumed_f2c                 (FORTRAN to C)
++  (C++)      Plumed(plumed) constructor (C to C++)
++  (C++)      operator plumed() cast     (C++ to C)
++  (C++)      Plumed(char*)  constructor (FORTRAN to C++)
++  (C++)      toFortran(char*)           (C++ to FORTRAN)
++\endverbatim
++
++\verbatim
++  FORTRAN interface
++    SUBROUTINE PLUMED_F_INSTALLED(i)
++      INTEGER,           INTENT(OUT)   :: i
++    SUBROUTINE PLUMED_F_GINITIALIZED(i)
++      INTEGER,           INTENT(OUT)   :: i
++    SUBROUTINE PLUMED_F_GCREATE()
++    SUBROUTINE PLUMED_F_GCMD(key,val)
++      CHARACTER(LEN=*), INTENT(IN)     :: key
++      UNSPECIFIED_TYPE, INTENT(INOUT)  :: val(*)
++    SUBROUTINE PLUMED_F_GFINALIZE()
++    SUBROUTINE PLUMED_F_GLOBAL(p)
++      CHARACTER(LEN=32), INTENT(OUT)   :: p
++    SUBROUTINE PLUMED_F_CREATE(p)
++      CHARACTER(LEN=32), INTENT(OUT)   :: p
++    SUBROUTINE PLUMED_F_CMD(p,key,val)
++      CHARACTER(LEN=32), INTENT(IN)    :: p
++      CHARACTER(LEN=*),  INTENT(IN)    :: key
++      UNSPECIFIED_TYPE,  INTENT(INOUT) :: val(*)
++    SUBROUTINE PLUMED_F_FINALIZE(p)
++      CHARACTER(LEN=32), INTENT(IN)    :: p
++\endverbatim
++
++  The main routine is "cmd", which accepts two arguments:
++  key is a string containing the name of the command
++  val is the argument. it is declared const so as to use allow passing const objects, but in practice plumed
++      is going to modify val in several cases (using a const_cast).
++  In some cases val can be omitted: just pass a NULL pointer (in C++, val is optional and can be omitted).
++  The set of possible keys is the real API of the plumed library, and will be expanded with time.
++  New commands will be added, but backward compatibility will be retained as long as possible.
++
++  To pass plumed a callback function use the following syntax (not available in FORTRAN yet)
++\verbatim
++    plumed_function_holder ff;
++    ff.p=your_function;
++    plumed_cmd(plumed,"xxxx",&ff);
++\endverbatim
++  (this is passing the your_function() function to the "xxxx" command)
++*/
++
++#ifdef __cplusplus
++ extern "C" {
++#endif
++
++/* Generic function pointer */
++typedef void (*plumed_function_pointer)(void);
++
++/**
++  \brief Holder for function pointer.
++
++  To pass plumed a callback function use the following syntax:
++\verbatim
++    plumed_function_holder ff;
++    ff.p=your_function;
++    plumed_cmd(plumed,"xxxx",&ff);
++\endverbatim
++  (this is going to pass the your_function() function to the "xxxx" command)
++*/
++
++typedef struct {
++  plumed_function_pointer p;
++} plumed_function_holder;
++
++/**
++  \brief Main plumed object
++
++  This is an object containing a Plumed instance, which should be used in
++  the MD engine. It should first be initialized with plumed_create(),
++  then it communicates with the MD engine using plumed_cmd(). Finally,
++  before the termination, it should be deallocated with plumed_finalize().
++  Its interface is very simple and general, and is expected
++  not to change across plumed versions. See \ref ReferencePlumedH.
++*/
++typedef struct {
++/**
++  \private
++  \brief Void pointer holding the real PlumedMain structure
++*/
++  void*p;
++} plumed;
++
++/** \relates plumed
++    \brief Constructor
++
++    \return The constructed plumed object
++*/
++plumed plumed_create(void);
++
++/** \relates plumed
++    \brief Tells p to execute a command
++
++    \param p The plumed object on which command is acting
++    \param key The name of the command to be executed
++    \param val The argument. It is declared as const to allow calls like plumed_cmd(p,"A","B"),
++               but for some choice of key it can change the content
++*/
++void plumed_cmd(plumed p,const char*key,const void*val);
++
++/** \relates plumed
++    \brief Destructor
++
++    \param p The plumed object to be deallocated
++*/
++void plumed_finalize(plumed p);
++
++/** \relates plumed
++    \brief Check if plumed is installed (for runtime binding)
++
++    \return 1 if plumed is installed, to 0 otherwise
++*/
++int plumed_installed(void);
++
++/** \relates plumed
++    \brief Retrieves an handler to the global structure.
++*/
++plumed plumed_global(void);
++
++/** \relates plumed
++    \brief Check if the global interface has been initialized
++
++    \return 1 if plumed has been initialized, 0 otherwise
++*/
++int plumed_ginitialized(void);
++
++/* global C interface, working on a global object */
++
++/** \relates plumed
++    \brief Constructor for the global interface.
++
++    \note Equivalent to plumed_create(), but initialize a static global plumed object
++*/
++void plumed_gcreate(void);
++
++/** \relates plumed
++    \brief Tells to the global interface to execute a command.
++
++    \param key The name of the command to be executed
++    \param val The argument. It is declared as const to allow calls like plumed_gcmd("A","B"),
++               but for some choice of key it can change the content
++
++    \note Equivalent to plumed_cmd(), but skipping the plumed argument
++*/
++void plumed_gcmd(const char* key,const void* val);
++
++/** \relates plumed
++    \brief Destructor for the global interface.
++
++    \note Equivalent to plumed_finalize(), but skipping the plumed argument
++*/
++void plumed_gfinalize(void);
++
++/* routines to convert char handler from/to plumed objects */
++
++/** \related plumed
++    \brief Converts a C handler to a FORTRAN handler
++
++    \param p The C handler
++    \param c The FORTRAN handler (a char[32])
++*/
++void   plumed_c2f(plumed p,char* c);
++
++/** \related plumed
++    \brief Converts a FORTRAN handler to a C handler
++    \param c The FORTRAN handler (a char[32])
++    \return The C handler
++*/
++plumed plumed_f2c(const char* c);
++
++#ifdef __cplusplus
++ }
++#endif
++
++#ifdef __cplusplus
++
++/* this is to include the NULL pointer */
++#include <cstdlib>
++
++/* C++ interface is hidden in PLMD namespace (same as plumed library) */
++namespace PLMD {
++
++/**
++  C++ wrapper for \ref plumed.
++
++  This class provides a C++ interface to PLUMED.
++*/
++
++class Plumed{
++  plumed main;
++/**
++   keeps track if the object was created from scratch using 
++   the defaults destructor (cloned=false) or if it was imported
++   from C or FORTRAN (cloned-true). In the latter case, the
++   plumed_finalize() method is not called when destructing the object,
++   since it is expected to be finalized in the C/FORTRAN code
++*/
++  bool cloned;
++public:
++/**
++   Check if plumed is installed (for runtime binding)
++   \return true if plumed is installed, false otherwise
++*/
++  static bool installed();
++/**
++   Check if global-plumed has been initialized
++   \return true if global plumed object (see global()) is initialized (i.e. if gcreate() has been
++           called), false otherwise.
++*/
++  static bool ginitialized();
++/**
++   Initialize global-plumed
++*/
++  static void gcreate();
++/**
++   Send a command to global-plumed
++    \param key The name of the command to be executed
++    \param val The argument. It is declared as const to allow calls like gcmd("A","B"),
++               but for some choice of key it can change the content
++*/
++  static void gcmd(const char* key,const void* val);
++/**
++   Finalize global-plumed
++*/
++  static void gfinalize();
++/**
++   Returns the Plumed global object
++   \return The Plumed global object
++*/
++  static Plumed global();
++/**
++   Constructor
++*/
++  Plumed();
++/**
++   Clone a Plumed object from a FORTRAN char* handler
++   \param c The FORTRAN handler (a char[32]).
++
++ \attention The Plumed object created in this manner
++            will not finalize the corresponding plumed structure.
++            It is expected that the FORTRAN code calls plumed_c_finalize for it
++*/
++  Plumed(const char*c);
++/**
++   Clone a Plumed object from a C plumed structure
++   \param p The C plumed structure.
++
++ \attention The Plumed object created in this manner
++            will not finalize the corresponding plumed structure.
++            It is expected that the C code calls plumed_finalize for it
++*/
++  Plumed(plumed p);
++private:
++/** Copy constructor is disabled (private and unimplemented)
++  The problem here is that after copying it will not be clear who is
++  going to finalize the corresponding plumed structure.
++*/
++  Plumed(const Plumed&);
++/** Assignment operator is disabled (private and unimplemented)
++  The problem here is that after copying it will not be clear who is
++  going to finalize the corresponding plumed structure.
++*/
++  Plumed&operator=(const Plumed&);
++public:
++/**
++   Retrieve the C plumed structure for this object
++*/
++  operator plumed()const;
++/**
++   Retrieve a FORTRAN handler for this object
++    \param c The FORTRAN handler (a char[32]).
++*/
++  void toFortran(char*c)const;
++/**
++   Send a command to this plumed object
++    \param key The name of the command to be executed
++    \param val The argument. It is declared as const to allow calls like p.cmd("A","B"),
++               but for some choice of key it can change the content
++*/
++  void cmd(const char*key,const void*val=NULL);
++/**
++   Destructor
++
++   Destructor is virtual so as to allow correct inheritance from Plumed object.
++   To avoid linking problems with g++, I specify "inline" also here (in principle
++   it should be enough to specify it down in the definition of the function, but
++   for some reason that I do not understand g++ does not inline it properly in that
++   case and complains when Plumed.h is included but Plumed.o is not linked. Anyway, the
++   way it is done here seems to work properly).
++*/
++  inline virtual ~Plumed();
++};
++
++/* All methods are inlined so as to avoid the compilation of an extra c++ file */
++
++inline
++bool Plumed::installed(){
++  return plumed_installed();
++}
++
++inline
++Plumed::Plumed():
++  main(plumed_create()),
++  cloned(false)
++{}
++
++inline
++Plumed::Plumed(const char*c):
++  main(plumed_f2c(c)),
++  cloned(true)
++{}
++
++inline
++Plumed::Plumed(plumed p):
++  main(p),
++  cloned(true)
++{}
++
++inline
++Plumed::operator plumed()const{
++  return main;
++}
++
++inline
++void Plumed::toFortran(char*c)const{
++  plumed_c2f(main,c);
++}
++
++inline
++void Plumed::cmd(const char*key,const void*val){
++  plumed_cmd(main,key,val);
++}
++
++inline
++Plumed::~Plumed(){
++  if(!cloned)plumed_finalize(main);
++}
++
++inline
++bool Plumed::ginitialized(){
++  return plumed_ginitialized();
++}
++
++inline
++void Plumed::gcreate(){
++  plumed_gcreate();
++}
++
++inline
++void Plumed::gcmd(const char* key,const void* val){
++  plumed_gcmd(key,val);
++}
++
++inline
++void Plumed::gfinalize(){
++  plumed_gfinalize();
++}
++
++inline
++Plumed Plumed::global(){
++  return plumed_global();
++}
++
++}
++
++#endif
++
++
++#endif
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed_init.inc" << \EOF_EOF
+--- Plumed_init.inc.preplumed	2019-06-07 02:43:25.010386429 +0300
++++ Plumed_init.inc	2019-06-07 02:45:26.266309842 +0300
+@@ -0,0 +1,36 @@
++!  to be included in runmd.F90
++
++    call plumed_f_gcreate()
++    call plumed_f_gcmd("setRealPrecision"//char(0), 8)
++    call plumed_f_gcmd("getApiVersion"//char(0), plumed_version)
++    if (plumed_version>1) then
++      plumed_kbt = 2.0 * temp0 * boltz2
++      call plumed_f_gcmd("setKbT"//char(0), plumed_kbt)
++    endif
++    plumed_energyUnits = 4.184
++    plumed_lengthUnits = 0.1
++    plumed_timeUnits = 1.0
++    plumed_chargeUnits = 1.0/18.2223
++    call plumed_f_gcmd("setMDEnergyUnits"//char(0), plumed_energyUnits)
++    call plumed_f_gcmd("setMDLengthUnits"//char(0), plumed_lengthUnits)
++    call plumed_f_gcmd("setMDTimeUnits"//char(0), plumed_timeUnits)
++    if (plumed_version > 3) then
++      call plumed_f_gcmd("setMDChargeUnits"//char(0), plumed_chargeUnits)
++    endif
++    call plumed_f_gcmd("setPlumedDat"//char(0), &
++                       trim(adjustl(plumedfile))//char(0))
++    call plumed_f_gcmd("setNatoms"//char(0), atm_cnt) ! natom
++    call plumed_f_gcmd("setMDEngine"//char(0), "amber")
++    call plumed_f_gcmd("setTimestep"//char(0), dt)
++#  ifdef MPI
++    call plumed_f_gcmd("setMPIFComm"//char(0), pmemd_comm)
++    if (numgroups>1) then
++      call plumed_f_gcmd("GREX setMPIFIntracomm"//char(0), pmemd_comm)
++      if (master) then
++        call plumed_f_gcmd("GREX setMPIFIntercomm"//char(0), pmemd_master_comm)
++      endif
++      call plumed_f_gcmd("GREX init"//char(0), 0)
++    endif
++#  endif
++    call plumed_f_gcmd("init"//char(0), 0)
++
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/runmd.F90" << \EOF_EOF
+--- runmd.F90.preplumed	2019-06-07 02:45:26.269643246 +0300
++++ runmd.F90	2019-06-07 02:52:59.555733252 +0300
+@@ -255,10 +255,16 @@
+   logical               :: update_gamd
+   double precision      :: VmaxDt,VminDt,VavgDt,sigmaVDt
+   double precision      :: VmaxPt,VminPt,VavgPt,sigmaVPt
+   integer,save          :: counts=0
+ 
++! PLUMED
++  double precision      :: plumed_box(3,3), plumed_virial(3,3), plumed_kbt
++  integer               :: plumed_version, plumed_stopflag
++  double precision      :: plumed_energyUnits, plumed_timeUnits, plumed_lengthUnits
++  double precision      :: plumed_chargeUnits
++
+ ! Runmd operates in kcal/mol units for energy, amu for masses,
+ ! and angstoms for distances.  To convert the input time parameters
+ ! from picoseconds to internal units, multiply by 20.455
+ ! (which is 10.0 * sqrt(4.184)).
+ 
+@@ -493,10 +499,15 @@
+ 
+ ! Clean up the velocity if belly run:
+ 
+   if (belly) call bellyf(atm_cnt, atm_igroup, vel)
+ 
++! PLUMED
++  if (plumed == 1) then
++#   include "Plumed_init.inc"
++  endif
++
+ ! Make a first dynamics step:
+ 
+   irespa = 1    ! PME respa step counter.
+   if (usemidpoint) then
+    proc_new_list = .true.
+@@ -648,10 +659,26 @@
+     ! local NMR step counter:
+     if (.not. usemidpoint) then
+       call nmrdcp
+     end if
+ 
++! PLUMED
++    plumed_stopflag = 0
++
++    if (plumed == 1) then
++#ifdef CUDA
++      call gpu_download_crd(crd)
++      call gpu_download_frc(frc)
++#endif
++
++#     include "Plumed_force.inc"
++
++#ifdef CUDA
++      call gpu_upload_frc(frc)
++#endif
++    end if
++
+     irespa = 1
+ 
+     ! The coordinates will not be changed between here and the next
+     ! run of force, so we can just set new_list to .false.
+ 
+@@ -1298,10 +1325,19 @@
+                         (mod(total_nstep+1, ntwe) .eq. 0 .and. onstep)
+       else
+         need_pot_enes = mod(total_nstep+1, steps_per_avg) .eq. 0
+       end if
+ 
++! PLUMED
++! Actually it's disputed if we should always retrieve potential energies
++! (seems like it's only needed if one want to apply bias to the energy itself;
++! may be additional flag in config file is needed because calculation of
++! potential energies is very costly)
++      if (plumed == 1) then
++          need_pot_enes = .true.
++      end if
++
+ #ifdef EMIL
+       if ( emil_do_calc .gt. 0 ) then
+         need_pot_enes = .true.
+       end if
+ #endif
+@@ -1547,10 +1583,25 @@
+ #endif
+         end if
+         ti_ekin0(1) = ti_fac(1,1) * temp0
+         ti_ekin0(2) = ti_fac(2,1) * temp0
+       end if
++
++! PLUMED
++      if (plumed == 1) then
++#ifdef CUDA
++        call gpu_download_crd(crd)
++        call gpu_download_frc(frc)
++#endif
++
++#       include "Plumed_force.inc"
++
++#ifdef CUDA
++        call gpu_upload_frc(frc)
++#endif
++      end if
++
+       ! Pressure coupling:
+ 
+       if (ntp .gt. 0) then
+ 
+         si(si_volume) = uc_volume
+@@ -4041,11 +4092,15 @@
+           end if
+         end if  ! end timlim check
+ 
+         call update_time(runmd_time)
+ 
++! PLUMED
++        if (plumed .ne. 0 .and. plumed_stopflag .ne. 0) goto 534
+       end do ! Major cycle back to new step unless we have reached our limit:
++      
++      534 continue
+ 
+ #ifdef MPI
+       ! If timlim has been exceeded exit the REMD loop
+       if (timlim_exceeded .and.local_remd_method .ne. 0) then
+         local_numexchg = mdloop
+@@ -4174,10 +4229,13 @@
+ 
+   if (ti_mode .ne. 0) call ti_cleanup
+ 
+   call update_time(runmd_time)
+ 
++! PLUMED
++  if (plumed .ne. 0) call plumed_f_gfinalize()
++
+   return
+ 
+   540 format(/5x, ' A V E R A G E S   O V E R ', i7, ' S T E P S', /)
+   541 format(/5x,' DV/DL, AVERAGES OVER ',i7,' STEPS',/)
+   542 format('|',79('='))
+EOF_EOF
