@@ -198,8 +198,6 @@ Center::Center(const ActionOptions&ao):
     log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
   }
   deriv.resize( getNumberOfAtoms() );
-  // And create task list
-  for(unsigned i=0; i<getNumberOfAtoms(); ++i) addTaskToList( i );
 }
 
 void Center::setupEntity() {

@@ -39,6 +39,7 @@ void WeightedAtomAverage::registerKeywords(Keywords& keys) {
            "the label of an action is provided PLUMED assumes that that action calculates a list of symmetry functions that can be used "
            "as weights. Lastly, an explicit list of numbers to use as weights can be provided");
   keys.addFlag("MASS",false,"calculate the center of mass");
+  keys.addFlag("UNORMALIZED",false,"do not divide by the sum of the weights");
 }
 
 WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
@@ -48,27 +49,37 @@ WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
   weight_mass(false),
   weight_charge(false),
   first(true),
+  unorm(false),
   val_weights(NULL)
 {
-  vector<AtomNumber> atoms;
+  vector<AtomNumber> atoms, catom; parseFlag("UNORMALIZED",unorm);
   parseAtomList("ATOMS",atoms); bool usemass = false; parseFlag("MASS",usemass);
   if(atoms.size()==0) error("at least one atom should be specified");
+  if( keywords.exists("CENTER") ) {
+      parseAtomList("CENTER",catom);
+      if(catom.size()!=1) error("should be one central atom only");
+      log.printf("  computing the gyration tensor around atom %d \n", catom[0].serial() );
+  }
   std::vector<std::string> str_weights; parseVector("WEIGHTS",str_weights);
   if( usemass ) {
       if( str_weights.size()>0 ) error("USEMASS is incompatible with WEIGHTS");
       str_weights.resize(1); str_weights[0]="@masses";
   }
+  std::string norm_str=""; if(unorm) norm_str = " unormalized";
   if( str_weights.size()==0 ) {
-    log<<"  computing the geometric center of atoms:\n";
+    if( catom.size()==0 ) log<<"  computing" + norm_str + " the geometric center of atoms:\n";
+    else log<<"  computing" + norm_str + " gyration tensor\n";
     weights.resize( atoms.size() );
     for(unsigned i=0; i<atoms.size(); i++) weights[i] = 1.;
   } else if( str_weights.size()==1 ) {
     if( str_weights[0]=="@masses" ) {
       weight_mass=true;
-      log<<"  computing the center of mass of atoms:\n";
+      if( catom.size()==0 ) log<<"  computing" + norm_str + " the center of mass of atoms:\n";
+      else log<<"  computing" + norm_str + " moment of inertia tensor\n";
     } else if( str_weights[0]=="@charges" ) {
       weight_charge=true;
-      log<<"  computing the center of charge of atoms:\n";
+      if( catom.size()==0 ) log<<"  computing" + norm_str + " the center of charge of atoms:\n";
+      else log<<"  computing" + norm_str + " moment of charge tensor\n";
     } else {
       std::size_t dot=str_weights[0].find_first_of("."); unsigned nargs=0; std::vector<Value*> args;
       if( dot!=std::string::npos ) {
@@ -93,6 +104,8 @@ WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
       val_weights = args[0]; std::vector<std::string> empty(1); empty[0] = (val_weights->getPntrToAction())->getLabel();
       if( (val_weights->getPntrToAction())->valuesComputedInChain() ) (val_weights->getPntrToAction())->addActionToChain( empty, this );
       log.printf("  atoms are weighted by values in vector labelled %s \n",val_weights->getName().c_str() );
+      if( unorm ) log.printf("  final sum is not divided by sum of weights \n");
+      else log<<"  final sum is divided by sum of weights \n";
     }
   } else {
     log<<" with weights:";
@@ -103,6 +116,8 @@ WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
       Tools::convert( str_weights[i], weights[i] ); log.printf(" %f",weights[i]);
     }
     log.printf("\n");
+    if( unorm ) log.printf("  final sum is not divided by sum of weights \n");
+    else log<<"  final sum is divided by sum of weights \n";
   }
   log.printf("  of atoms:");
   for(unsigned i=0; i<atoms.size(); ++i) {
@@ -110,6 +125,8 @@ WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
     log.printf("  %d",atoms[i].serial());
   }
   log<<"\n";
+  for(unsigned i=0;i<atoms.size();++i) addTaskToList(i);
+  if( catom.size()>0 ) atoms.push_back( catom[0] );
   requestAtoms(atoms); if( val_weights ) addDependency( val_weights->getPntrToAction() ); 
 }
 
@@ -201,7 +218,7 @@ void WeightedAtomAverage::gatherForVirtualAtom( const MultiValue& myvals, std::v
   for(unsigned i=0;i<ntmp_vals;++i) { buffer[bstart] += myvals.get(myx+i); bstart += nspace; }
 
   if( !doNotCalculateDerivatives() ) {
-      bstart = bufstart;
+      bstart = bufstart; 
       for(unsigned i=0;i<ntmp_vals;++i) {
           for(unsigned k=0; k<myvals.getNumberActive(myx+i); ++k) {
               unsigned kindex = myvals.getActiveIndex(myx+i,k);
@@ -215,7 +232,7 @@ void WeightedAtomAverage::gatherForVirtualAtom( const MultiValue& myvals, std::v
 
 void WeightedAtomAverage::transformFinalValueAndDerivatives( const std::vector<double>& buffer ) {
   unsigned ntmp_vals = getNumberOfStoredQuantities(); 
-  double ww = buffer[bufstart + ntmp_vals*nspace];
+  double ww = buffer[bufstart + ntmp_vals*nspace]; if( unorm ) ww = 1.0;
   // This finalizes the value 
   for(unsigned i=0;i<ntmp_vals;++i) final_vals[i] = buffer[bufstart+i*nspace]/ww;
   finalizeValue( final_vals );

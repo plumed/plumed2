@@ -32,7 +32,7 @@ private:
   std::vector<double> weights;
   unsigned myx, myw, nspace, bufstart;
   bool weight_mass, weight_charge;
-  bool first;
+  bool first, unorm;
   Value* val_weights;
   std::vector<double> final_vals;
   std::vector<double> weight_deriv, val_forces;
