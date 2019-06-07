@@ -1,6 +1,6 @@
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/f90depends" << \EOF_EOF
---- f90depends.preplumed	2019-06-07 02:45:26.266309842 +0300
-+++ f90depends	2019-06-07 02:45:26.266309842 +0300
+--- ./src/pmemd/src/f90depends.preplumed	2019-06-07 02:45:26.266309842 +0300
++++ ./src/pmemd/src/f90depends	2019-06-07 02:45:26.266309842 +0300
 @@ -1247,10 +1247,12 @@
  runmd$(OSFX): parallel_processor$(OSFX)
  runmd$(OSFX): pme_recip_midpoint$(OSFX)
@@ -16,8 +16,8 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/f90depends" << \EOF_
  runmin$(OSFX): file_io$(OSFX)
 EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Makefile" << \EOF_EOF
---- Makefile.preplumed	2019-06-07 02:45:26.266309842 +0300
-+++ Makefile	2019-06-07 02:45:26.266309842 +0300
+--- ./src/pmemd/src/Makefile.preplumed	2019-06-07 02:45:26.266309842 +0300
++++ ./src/pmemd/src/Makefile	2019-06-07 02:45:26.266309842 +0300
 @@ -29,10 +29,15 @@
  MIC_OFFLOAD_TOKEN=DMIC_offload
  
@@ -118,8 +118,8 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Makefile" << \EOF_EO
  depends:
 EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/mdin_ctrl_dat.F90" << \EOF_EOF
---- mdin_ctrl_dat.F90.preplumed	2019-06-07 02:45:26.266309842 +0300
-+++ mdin_ctrl_dat.F90	2019-06-07 02:45:26.266309842 +0300
+--- ./src/pmemd/src/mdin_ctrl_dat.F90.preplumed	2019-06-07 02:45:26.266309842 +0300
++++ ./src/pmemd/src/mdin_ctrl_dat.F90	2019-06-07 02:45:26.266309842 +0300
 @@ -35,10 +35,11 @@
                                  scaledMD, icnstph, ntcnstph, ntrelax, icnste, &
                                  ntcnste, ntrelaxe, ntwf, &
@@ -225,8 +225,8 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/mdin_ctrl_dat.F90" <
    call mpi_bcast(usemidpoint, 1, mpi_logical, 0, mpi_comm_world, err_code_mpi)
 EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed.c" << \EOF_EOF
---- Plumed.c.preplumed	2019-06-07 02:43:03.836596505 +0300
-+++ Plumed.c	2019-06-07 02:45:26.266309842 +0300
+--- ./src/pmemd/src/Plumed.c.preplumed	2019-06-07 02:43:03.836596505 +0300
++++ ./src/pmemd/src/Plumed.c	2019-06-07 02:45:26.266309842 +0300
 @@ -0,0 +1,324 @@
 +/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 +   Copyright (c) 2011-2014 The plumed team
@@ -554,8 +554,8 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed.c" << \EOF_EO
 +
 EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed_force.inc" << \EOF_EOF
---- Plumed_force.inc.preplumed	2019-06-07 02:43:16.946879378 +0300
-+++ Plumed_force.inc	2019-06-07 02:45:26.266309842 +0300
+--- ./src/pmemd/src/Plumed_force.inc.preplumed	2019-06-07 02:43:16.946879378 +0300
++++ ./src/pmemd/src/Plumed_force.inc	2019-06-07 02:45:26.266309842 +0300
 @@ -0,0 +1,59 @@
 +
 +    plumed_stopflag=0
@@ -618,8 +618,8 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed_force.inc" <<
 +    virial(3)=0.5*plumed_virial(3,3)
 EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed.h" << \EOF_EOF
---- Plumed.h.preplumed	2019-06-07 02:43:09.270047138 +0300
-+++ Plumed.h	2019-06-07 02:45:26.266309842 +0300
+--- ./src/pmemd/src/Plumed.h.preplumed	2019-06-07 02:43:09.270047138 +0300
++++ ./src/pmemd/src/Plumed.h	2019-06-07 02:45:26.266309842 +0300
 @@ -0,0 +1,494 @@
 +/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 +   Copyright (c) 2011-2014 The plumed team
@@ -1117,8 +1117,8 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed.h" << \EOF_EO
 +#endif
 EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed_init.inc" << \EOF_EOF
---- Plumed_init.inc.preplumed	2019-06-07 02:43:25.010386429 +0300
-+++ Plumed_init.inc	2019-06-07 02:45:26.266309842 +0300
+--- ./src/pmemd/src/Plumed_init.inc.preplumed	2019-06-07 02:43:25.010386429 +0300
++++ ./src/pmemd/src/Plumed_init.inc	2019-06-07 02:45:26.266309842 +0300
 @@ -0,0 +1,36 @@
 +!  to be included in runmd.F90
 +
@@ -1158,8 +1158,8 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed_init.inc" << 
 +
 EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/runmd.F90" << \EOF_EOF
---- runmd.F90.preplumed	2019-06-07 02:45:26.269643246 +0300
-+++ runmd.F90	2019-06-07 02:52:59.555733252 +0300
+--- ./src/pmemd/src/runmd.F90.preplumed	2019-06-07 02:45:26.269643246 +0300
++++ ./src/pmemd/src/runmd.F90	2019-06-07 02:52:59.555733252 +0300
 @@ -255,10 +255,16 @@
    logical               :: update_gamd
    double precision      :: VmaxDt,VminDt,VavgDt,sigmaVDt
