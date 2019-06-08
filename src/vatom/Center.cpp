@@ -166,7 +166,6 @@ public:
   explicit Center(const ActionOptions&ao);
   void apply() override;
   void setupEntity() override;
-  unsigned getNumberOfDerivatives() const ;
   unsigned getNumberOfStoredQuantities() const ;
   void compute( const unsigned& task_index, const double& w, const Vector& pos, MultiValue& myvals ) const override;
   void finalizeValue( const std::vector<double>& final_vals );
@@ -223,10 +222,6 @@ void Center::setupEntity() {
 unsigned Center::getNumberOfStoredQuantities() const {
   if( phases ) return 6;
   return 3;
-}
-
-unsigned Center::getNumberOfDerivatives() const {
-  return 3*getNumberOfAtoms() + getNumberOfWeightDerivatives();
 }
 
 void Center::compute( const unsigned& task_index, const double& w, const Vector& pos, MultiValue& myvals ) const {

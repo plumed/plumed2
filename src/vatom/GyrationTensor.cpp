@@ -31,12 +31,11 @@ namespace vatom {
 class GyrationTensor : public WeightedAtomAverage {
 private:
   bool nopbc;
-  std::vector<double> forcesToApply;
+  std::vector<std::vector<Vector> > atom_deriv;
 public:
   static void registerKeywords(Keywords& keys);
   explicit GyrationTensor(const ActionOptions&);
   void setupEntity() override;
-  unsigned getNumberOfDerivatives() const ;
   unsigned getNumberOfStoredQuantities() const ;
   void compute( const unsigned& task_index, const double& w, const Vector& pos, MultiValue& myvals ) const override;
   void finalizeValue( const std::vector<double>& final_vals );
@@ -57,7 +56,7 @@ GyrationTensor::GyrationTensor(const ActionOptions&ao):
   Action(ao),
   WeightedAtomAverage(ao),
   nopbc(false),
-  forcesToApply(9)
+  atom_deriv(9)
 {
   parseFlag("NOPBC",nopbc); 
   checkRead();
@@ -73,6 +72,7 @@ GyrationTensor::GyrationTensor(const ActionOptions&ao):
 
   std::vector<unsigned> shape(2); shape[0]=shape[1]=3;
   addValue(shape); setNotPeriodic(); 
+  for(unsigned i=0;i<9;++i) atom_deriv[i].resize( getNumberOfAtoms() );
 }
 
 void GyrationTensor::setupEntity() {
@@ -83,14 +83,26 @@ unsigned GyrationTensor::getNumberOfStoredQuantities() const {
   return 9;
 }
 
-unsigned GyrationTensor::getNumberOfDerivatives() const {
-  return 3*getNumberOfAtoms() + 9 + getNumberOfWeightDerivatives();
-}
-
 void GyrationTensor::compute( const unsigned& task_index, const double& w, const Vector& pos, MultiValue& myvals ) const {
   Vector diff=delta( getPosition(getNumberOfAtoms()-1), pos );
   for(unsigned i=0;i<3;++i) {
       for(unsigned j=0;j<3;++j) addToValue( 3*i + j, w*diff[i]*diff[j], myvals );
+  }
+  if( !doNotCalculateDerivatives() ) {
+      unsigned n = getNumberOfAtoms()-1;
+      for(unsigned i=0;i<3;++i) {
+          for(unsigned j=0;j<3;++j) {
+              if( i==j ) { 
+                  addDerivative( 3*i+j, 3*n + i, -2*diff[i], myvals );
+                  addDerivative( 3*i+j, 3*task_index+i, 2*diff[i], myvals ); 
+              } else {
+                  addDerivative( 3*i+j, 3*n+i, -diff[j], myvals ); 
+                  addDerivative( 3*i+j, 3*task_index+i, diff[j], myvals );
+                  addDerivative( 3*i+j, 3*n+j, -diff[i], myvals ); 
+                  addDerivative( 3*i+j, 3*task_index+j, diff[i], myvals );
+              }
+          }
+      }
   }
 }
 
@@ -100,65 +112,39 @@ void GyrationTensor::finalizeValue( const std::vector<double>& final_vals ) {
 
 void GyrationTensor::finalizeDerivatives( const std::vector<double>& final_vals, const std::vector<std::vector<double> >& final_deriv,
                                           const std::vector<double>& weight_deriv, std::vector<std::vector<double> >& val_deriv ) {
-
+   for(unsigned i=0;i<9;++i) {
+       for(unsigned j=0;j<getNumberOfAtoms();++j) {
+          for(unsigned k=0;k<3;++k) atom_deriv[i][j][k] = final_deriv[i][3*j+k];
+       }
+   }
+   if( getNumberOfDerivatives()>3*getNumberOfAtoms() ) {
+       unsigned k=0;
+       for(unsigned i=3*getNumberOfAtoms(); i<getNumberOfDerivatives(); ++i ) {
+           for(unsigned j=0; j<9; ++j) val_deriv[k][j] = final_deriv[i][j] - final_vals[j]*weight_deriv[i];
+           k++;
+       }
+   }
 }
 
 void GyrationTensor::apply() {
-
+   Tensor gyr_forces; Value* myval = getPntrToOutput(0); double sumf2 = 0; 
+   for(unsigned i=0;i<3;++i) {
+       for(unsigned j=0;j<3;++j) { gyr_forces[i][j] = myval->getForce(3*i+j); sumf2 += gyr_forces[i][j]*gyr_forces[i][j]; }
+   }
+   if( sumf2>epsilon ) {
+       Vector ff; unsigned n = getNumberOfAtoms()-1;
+       std::vector<Vector>& f(modifyForces());
+       Tensor&              v(modifyVirial()); 
+       for(unsigned i=0;i<9;++i) {
+           double val_force = myval->getForce(i);
+           for(unsigned j=0;j<n;++j) {
+               for(unsigned k=0; k<3; ++k) ff[k] = val_force*atom_deriv[i][j][k]; 
+               f[j] += ff; v-= Tensor( getPosition(j), ff );         
+           }
+           for(unsigned k=0; k<3; ++k) f[n][k] += val_force*atom_deriv[i][n][k];
+       }
+   }
 }
-
-
-// void GyrationTensor::calculate() {
-// 
-//   if(!nopbc) makeWhole(0, getNumberOfAtoms()-1);
-// 
-//   double totmass = static_cast<double>(getNumberOfAtoms()-1);
-// 
-//   Tensor3d gyr_tens;
-//   //calculate gyration tensor
-//   for(unsigned i=0; i<getNumberOfAtoms()-1; i++) {
-//     const Vector diff=delta( getPosition(getNumberOfAtoms()-1), getPosition(i) );
-//     gyr_tens[0][0]+=diff[0]*diff[0];
-//     gyr_tens[1][1]+=diff[1]*diff[1];
-//     gyr_tens[2][2]+=diff[2]*diff[2];
-//     gyr_tens[0][1]+=diff[0]*diff[1];
-//     gyr_tens[0][2]+=diff[0]*diff[2];
-//     gyr_tens[1][2]+=diff[1]*diff[2];
-//   }
-//   if( unorm ) totmass = 1.0;
-// 
-//   Value* myval=getPntrToOutput(0); 
-//   myval->set(0, gyr_tens[0][0] / totmass );
-//   myval->set(1, gyr_tens[0][1] / totmass );
-//   myval->set(2, gyr_tens[0][2] / totmass );
-//   myval->set(3, gyr_tens[0][1] / totmass );
-//   myval->set(4, gyr_tens[1][1] / totmass );
-//   myval->set(5, gyr_tens[1][2] / totmass );
-//   myval->set(6, gyr_tens[0][2] / totmass );
-//   myval->set(7, gyr_tens[1][2] / totmass );
-//   myval->set(8, gyr_tens[2][2] / totmass );
-// }
-// 
-// void GyrationTensor::apply(){
-//   if( doNotCalculateDerivatives() ) return ;
-//   
-//   // Retrieve the forces from the values
-//   double totmass = static_cast<double>(getNumberOfAtoms()-1);
-//   if( unorm ) totmass = 1.0;
-//   for(unsigned i=0;i<9;++i) forcesToApply[i] = getPntrToOutput(0)->getForce( i ) / totmass;
-// 
-//   unsigned n=getNumberOfAtoms()-1; Vector ff;
-//   std::vector<Vector>& f(modifyForces());
-//   Tensor&              v(modifyVirial());
-//   for(unsigned i=0; i<getNumberOfAtoms()-1; i++) {
-//       const Vector diff=delta( getPosition(getNumberOfAtoms()-1), getPosition(i) );
-//       ff[0] = 2*forcesToApply[0]*diff[0] + (forcesToApply[1]+forcesToApply[3])*diff[1] + (forcesToApply[2]+forcesToApply[6])*diff[2]; 
-//       ff[1] = (forcesToApply[1]+forcesToApply[3])*diff[0] + 2*forcesToApply[4]*diff[1] + (forcesToApply[5]+forcesToApply[7])*diff[2]; 
-//       ff[2] = (forcesToApply[2]+forcesToApply[6])*diff[0] + (forcesToApply[5]+forcesToApply[7])*diff[1] + 2*forcesToApply[8]*diff[2];
-//       f[i] += ff; f[n] -= ff;
-//       v -= Tensor(getPosition(i),ff);
-//   }
-// }
 
 }
 }

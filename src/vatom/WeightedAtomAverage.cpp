@@ -130,10 +130,10 @@ WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
   requestAtoms(atoms); if( val_weights ) addDependency( val_weights->getPntrToAction() ); 
 }
 
-unsigned WeightedAtomAverage::getNumberOfWeightDerivatives() const {
-  if( val_weights ) return (val_weights->getPntrToAction())->getNumberOfDerivatives();
-  return 0;
-}
+unsigned WeightedAtomAverage::getNumberOfDerivatives() const {
+  if( val_weights ) return 3*getNumberOfAtoms() + (val_weights->getPntrToAction())->getNumberOfDerivatives(); 
+  return 3*getNumberOfAtoms(); 
+} 
 
 void WeightedAtomAverage::setStashIndices( unsigned& nquants ) {
   myx = nquants; myw = nquants + getNumberOfStoredQuantities(); 

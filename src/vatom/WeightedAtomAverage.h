@@ -38,13 +38,13 @@ private:
   std::vector<double> weight_deriv, val_forces;
   std::vector<std::vector<double> > val_deriv, final_deriv;
 protected:
-  unsigned getNumberOfWeightDerivatives() const ;
   void addToValue( const unsigned& ival, const double& val, MultiValue& myvals ) const ;
   void addDerivative( const unsigned& ival, const unsigned& jder, const double& der, MultiValue& myvals ) const ;
   void applyForcesToValue( const std::vector<double>& fff );
 public:
   static void registerKeywords( Keywords& keys );
   explicit WeightedAtomAverage(const ActionOptions&ao);
+  unsigned getNumberOfDerivatives() const override;
   void calculate();
   void setStashIndices( unsigned& nquants ) override;
   void getSizeOfBuffer( const unsigned& nactive_tasks, unsigned& bufsize ) override;
