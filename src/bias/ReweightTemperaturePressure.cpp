@@ -239,8 +239,8 @@ ReweightTemperaturePressure::ReweightTemperaturePressure(const ActionOptions&ao)
 }
 
 double ReweightTemperaturePressure::getLogWeight() {
-  double energy=0;
-  double volume=0;
+  double energy=getArgument(0);
+  double volume=getArgument(1);
   // 4 possible cases
   // Case 1) Reweight from T to T' with V=const (canonical)
   if (rtemp_>=0 && press_<0 && rpress_<0) return ((1.0/simtemp)- (1.0/rtemp_) )*energy;
