@@ -136,7 +136,7 @@ void AdjacencyMatrixBase::setLinkCellCutoff( const bool& symmetric, const double
 
   if( tcut<0 ) tcut=lcut;
   if( nl_cut>0 ) linkcells.setCutoff( nl_cut ); else linkcells.setCutoff( lcut );
-  log.printf("  set link cell cutoff to %f \n", linkcells.getCutoff() );
+  if( linkcells.getCutoff()<std::numeric_limits<double>::max() ) log.printf("  set link cell cutoff to %f \n", linkcells.getCutoff() );
   threecells.setCutoff( tcut );
 }
 
@@ -152,7 +152,7 @@ void AdjacencyMatrixBase::prepareForTasks( const unsigned& nactive, const std::v
       for(unsigned i=0; i<ablocks.size(); ++i) ltmp_pos[i]=ActionAtomistic::getPosition( ablocks[i] );
       linkcells.buildCellLists( ltmp_pos, ablocks, getPbc() );
       // Set the number of neighbors to zero for all ranks
-      nlist.assign(getFullNumberOfTasks(),0);  
+      nlist.assign(nlist.size(),0);
       // Now get stuff to do parallel implementation
       unsigned stride=comm.Get_size(); unsigned rank=comm.Get_rank();
       if( runInSerial() ) { stride=1; rank=0; }
