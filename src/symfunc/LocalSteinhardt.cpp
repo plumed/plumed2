@@ -32,6 +32,9 @@ public:
   explicit LocalSteinhardt(const ActionOptions&);
 };
 
+PLUMED_REGISTER_ACTION(LocalSteinhardt,"LOCAL_Q1")
+PLUMED_REGISTER_ACTION(LocalSteinhardt,"LOCAL_Q3")
+PLUMED_REGISTER_ACTION(LocalSteinhardt,"LOCAL_Q4")
 PLUMED_REGISTER_ACTION(LocalSteinhardt,"LOCAL_Q6")
 
 void LocalSteinhardt::registerKeywords( Keywords& keys ) {

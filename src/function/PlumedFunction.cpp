@@ -27,6 +27,7 @@
 #include "setup/SetupReferenceBase.h"
 #include "tools/OpenMP.h"
 
+#include <string.h>
 #include <cmath>
 
 using namespace std;
