@@ -32,4 +32,4 @@ avg_vol: AVERAGE ARG=vol LOGWEIGHTS=bias_weights,temp_press_weights
 # Ensemble average of the density at 350 K and 300 MPa
 avg_density: CUSTOM ARG=avg_vol FUNC=256.0/x PERIODIC=NO
 
-PRINT ARG=energy,vol,avg_density FILE=COLVAR STRIDE=1
+PRINT ARG=energy,vol,temp_press_weights,avg_density FILE=COLVAR STRIDE=1
