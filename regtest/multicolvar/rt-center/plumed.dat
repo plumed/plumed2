@@ -7,3 +7,23 @@ DUMPATOMS ATOMS=cc FILE=cluster-com.xyz PRECISION=5
 
 d1: DISTANCE ATOMS=cc,21
 r: RESTRAINT ARG=d1 AT=13.0 KAPPA=0.5
+
+# Compute a gyration tensor with weights specified in input
+ccc: CENTER ATOMS=2,3,11 PHASES WEIGHTS=0.022207,0.954373,0.266057
+gy_t: GYRATION_TENSOR ATOMS=2,3,11 CENTER=ccc WEIGHTS=0.022207,0.954373,0.266057
+gy_tt: COMBINE ARG=gy_t.1.1,gy_t.2.2,gy_t.3.3 PERIODIC=NO
+
+# Compute a gyration tensor with weights computed by PLUMED
+c12: COORDINATIONNUMBER SPECIESA=2,3,11 SPECIESB=1-512 SWITCH={EXP D_0=4.0 R_0=0.5}
+cf2: MORE_THAN ARG1=c12 SWITCH={RATIONAL D_0=7.0 R_0=1.0}
+PRINT ARG=cf2 ATOMS=c12 FILE=weights.xyz
+cc2: CENTER ATOMS=c12 PHASES WEIGHTS=cf2
+gy_tens: GYRATION_TENSOR ATOMS=c12 CENTER=cc2 WEIGHTS=cf2
+gy: COMBINE ARG=gy_tens.1.1,gy_tens.2.2,gy_tens.3.3 PERIODIC=NO
+gyf: MATHEVAL ARG=gy FUNC=sqrt(x) PERIODIC=NO
+
+# These two numbers should be the same
+PRINT ARG=gy_tt,gy FILE=colv FMT=%8.3f
+
+# Add a bias to the gyration tensor 
+BIASVALUE ARG=gyf

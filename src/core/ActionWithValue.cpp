@@ -765,7 +765,9 @@ bool ActionWithValue::getForcesFromValues( std::vector<double>& forces ) {
 
     // Now determine how big the multivalue needs to be
     unsigned nderiv=0; av->getNumberOfStreamedDerivatives( nderiv );
-    unsigned nquants=0, ncols=0, nmatrices=0; av->getNumberOfStreamedQuantities( nquants, ncols, nmatrices );
+    unsigned nquants=0, ncols=0, nmatrices=0; 
+    av->getNumberOfStreamedQuantities( nquants, ncols, nmatrices );
+    av->setupVirtualAtomStashes( nquants );
     #pragma omp parallel num_threads(nt)
     {
       std::vector<double> omp_forces;

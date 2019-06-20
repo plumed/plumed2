@@ -102,7 +102,8 @@ WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
       if( args.size()!=1 ) error("should only have one value as input to WEIGHT");
       if( args[0]->getRank()!=1 || args[0]->getShape()[0]!=atoms.size() ) error("value input for WEIGHTS has wrong shape");
       val_weights = args[0]; std::vector<std::string> empty(1); empty[0] = (val_weights->getPntrToAction())->getLabel();
-      if( (val_weights->getPntrToAction())->valuesComputedInChain() ) (val_weights->getPntrToAction())->addActionToChain( empty, this );
+      if( catom.size()==0 && (val_weights->getPntrToAction())->valuesComputedInChain() ) (val_weights->getPntrToAction())->addActionToChain( empty, this );
+      else val_weights->buildDataStore( getLabel() );
       log.printf("  atoms are weighted by values in vector labelled %s \n",val_weights->getName().c_str() );
       if( unorm ) log.printf("  final sum is not divided by sum of weights \n");
       else log<<"  final sum is divided by sum of weights \n";
@@ -131,7 +132,8 @@ WeightedAtomAverage::WeightedAtomAverage(const ActionOptions&ao):
 }
 
 unsigned WeightedAtomAverage::getNumberOfDerivatives() const {
-  if( val_weights ) return 3*getNumberOfAtoms() + (val_weights->getPntrToAction())->getNumberOfDerivatives(); 
+  if( val_weights && actionInChain() ) return 3*getNumberOfAtoms() + (val_weights->getPntrToAction())->getNumberOfDerivatives(); 
+  if( val_weights ) return 3*getNumberOfAtoms() + val_weights->getNumberOfValues( getLabel() );
   return 3*getNumberOfAtoms(); 
 } 
 
@@ -147,8 +149,9 @@ void WeightedAtomAverage::getSizeOfBuffer( const unsigned& nactive_tasks, unsign
       final_vals.resize( ntmp_vals ); weight_deriv.resize( getNumberOfDerivatives() );
       final_deriv.resize( ntmp_vals ); for(unsigned i=0;i<ntmp_vals;++i) final_deriv[i].resize( getNumberOfDerivatives() );
       if( val_weights ) {
-          val_deriv.resize( 3 ); val_forces.resize( (val_weights->getPntrToAction())->getNumberOfDerivatives() );
-          for(unsigned i=0;i<3;++i) val_deriv[i].resize( (val_weights->getPntrToAction())->getNumberOfDerivatives() );
+          val_deriv.resize( 9 ); unsigned nder = val_weights->getNumberOfValues( getLabel() ); 
+          if( actionInChain() ) nder = (val_weights->getPntrToAction())->getNumberOfDerivatives(); 
+          val_forces.resize( nder ); for(unsigned i=0;i<9;++i) val_deriv[i].resize( nder );
       }
   }
   ActionWithValue::getSizeOfBuffer( nactive_tasks, bufsize );
@@ -203,12 +206,17 @@ void WeightedAtomAverage::performTask( const unsigned& task_index, MultiValue& m
   myvals.addValue( myw, w ); compute( task_index, w, pos, myvals );
   if( !doNotCalculateDerivatives() && val_weights && fabs(w)>epsilon ) {
       double invw = 1 / w; unsigned base = 3*getNumberOfAtoms();
-      unsigned istrn = val_weights->getPositionInStream();
-      for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
-          unsigned kindex = myvals.getActiveIndex(istrn,k);
-          double der = myvals.getDerivative( istrn, kindex );
-          for(unsigned j=0; j<ntmp_vals;++j) addDerivative( j, base+kindex, der*invw*myvals.get(myx+j), myvals );
-          myvals.addDerivative( myw, base+kindex, der ); myvals.updateIndex( myw, base+kindex );
+      if( actionInChain() ) {
+          unsigned istrn = val_weights->getPositionInStream();
+          for(unsigned k=0; k<myvals.getNumberActive(istrn); ++k) {
+              unsigned kindex = myvals.getActiveIndex(istrn,k);
+              double der = myvals.getDerivative( istrn, kindex );
+              for(unsigned j=0; j<ntmp_vals;++j) addDerivative( j, base+kindex, der*invw*myvals.get(myx+j), myvals );
+              myvals.addDerivative( myw, base+kindex, der ); myvals.updateIndex( myw, base+kindex );
+          } 
+      } else {
+          for(unsigned j=0; j<ntmp_vals;++j) addDerivative( j, base+task_index, invw*myvals.get(myx+j), myvals );
+          myvals.addDerivative( myw, base+task_index, 1.0 ); myvals.updateIndex( myw, base+task_index );
       }
   }
 }
@@ -252,11 +260,12 @@ void WeightedAtomAverage::applyForcesToValue( const std::vector<double>& fff ) {
   for(unsigned j=0;j<fff.size();++j) {
       for(unsigned k=0;k<val_deriv[j].size();++k ) val_forces[k] += fff[j]*val_deriv[j][k]; 
   }
-  ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( val_weights->getPntrToAction() );
-  ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( val_weights->getPntrToAction() );
-  unsigned start=0; 
-  if( aarg ) aarg->setForcesOnArguments( 0, val_forces, start );
-  if( aat ) aat->setForcesOnAtoms( val_forces, start ); 
+  if( actionInChain() ) {
+      unsigned start=0; ActionWithArguments::setForcesOnActionChain( val_forces, start, val_weights->getPntrToAction() );
+  } else {
+      unsigned narg_v = val_weights->getNumberOfValues( getLabel() );
+      for(unsigned j=0; j<narg_v; ++j) val_weights->addForce( j, val_forces[j] ); 
+  }
 }
 
 }

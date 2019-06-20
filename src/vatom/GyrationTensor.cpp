@@ -93,13 +93,13 @@ void GyrationTensor::compute( const unsigned& task_index, const double& w, const
       for(unsigned i=0;i<3;++i) {
           for(unsigned j=0;j<3;++j) {
               if( i==j ) { 
-                  addDerivative( 3*i+j, 3*n + i, -2*diff[i], myvals );
-                  addDerivative( 3*i+j, 3*task_index+i, 2*diff[i], myvals ); 
+                  addDerivative( 3*i+j, 3*n + i, -2*w*diff[i], myvals );
+                  addDerivative( 3*i+j, 3*task_index+i, 2*w*diff[i], myvals ); 
               } else {
-                  addDerivative( 3*i+j, 3*n+i, -diff[j], myvals ); 
-                  addDerivative( 3*i+j, 3*task_index+i, diff[j], myvals );
-                  addDerivative( 3*i+j, 3*n+j, -diff[i], myvals ); 
-                  addDerivative( 3*i+j, 3*task_index+j, diff[i], myvals );
+                  addDerivative( 3*i+j, 3*n+i, -w*diff[j], myvals ); 
+                  addDerivative( 3*i+j, 3*task_index+i, w*diff[j], myvals );
+                  addDerivative( 3*i+j, 3*n+j, -w*diff[i], myvals ); 
+                  addDerivative( 3*i+j, 3*task_index+j, w*diff[i], myvals );
               }
           }
       }
@@ -120,16 +120,16 @@ void GyrationTensor::finalizeDerivatives( const std::vector<double>& final_vals,
    if( getNumberOfDerivatives()>3*getNumberOfAtoms() ) {
        unsigned k=0;
        for(unsigned i=3*getNumberOfAtoms(); i<getNumberOfDerivatives(); ++i ) {
-           for(unsigned j=0; j<9; ++j) val_deriv[k][j] = final_deriv[i][j] - final_vals[j]*weight_deriv[i];
+           for(unsigned j=0; j<9; ++j) val_deriv[j][k] = final_deriv[j][i] - final_vals[j]*weight_deriv[i];  
            k++;
        }
    }
 }
 
 void GyrationTensor::apply() {
-   Tensor gyr_forces; Value* myval = getPntrToOutput(0); double sumf2 = 0; 
+   Value* myval = getPntrToOutput(0); double sumf2 = 0; 
    for(unsigned i=0;i<3;++i) {
-       for(unsigned j=0;j<3;++j) { gyr_forces[i][j] = myval->getForce(3*i+j); sumf2 += gyr_forces[i][j]*gyr_forces[i][j]; }
+       for(unsigned j=0;j<3;++j) { double tmp = myval->getForce(3*i+j); sumf2 += tmp*tmp; }
    }
    if( sumf2>epsilon ) {
        Vector ff; unsigned n = getNumberOfAtoms()-1;
@@ -142,6 +142,11 @@ void GyrationTensor::apply() {
                f[j] += ff; v-= Tensor( getPosition(j), ff );         
            }
            for(unsigned k=0; k<3; ++k) f[n][k] += val_force*atom_deriv[i][n][k];
+       }
+       if( getNumberOfDerivatives()>3*getNumberOfAtoms() ) {
+           std::vector<double> val_forces(9); 
+           for(unsigned i=0;i<9;++i) val_forces[i]=myval->getForce(i);
+           applyForcesToValue( val_forces );  
        }
    }
 }
