@@ -627,17 +627,21 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
   }
 }
 
+void ActionWithArguments::setForcesOnActionChain( const std::vector<double>& forces, unsigned& start, ActionWithValue* av ) {
+  plumed_dbg_massert( start<forces.size(), "not enough forces have been saved" );
+  ParallelPlumedActions* pp = dynamic_cast<ParallelPlumedActions*>( av );
+  if( pp ) pp->setForcesOnPlumedActions( forces, start ); 
+  ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( av );
+  if( aarg ) aarg->setForcesOnArguments( 0, forces, start );
+  ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( av );
+  if( aat ) aat->setForcesOnAtoms( forces, start );
+}
+
 void ActionWithArguments::setForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& start ) {
   if( done_over_stream ) {
     for(unsigned i=0; i<distinct_arguments.size(); ++i) {
       if( distinct_arguments[i].second==0 ) {
-        plumed_dbg_massert( start<forces.size(), "not enough forces have been saved in " + getLabel() );
-        ParallelPlumedActions* pp = dynamic_cast<ParallelPlumedActions*>( distinct_arguments[i].first );
-        if( pp ) pp->setForcesOnPlumedActions( forces, start ); 
-        ActionWithArguments* aarg = dynamic_cast<ActionWithArguments*>( distinct_arguments[i].first );
-        if( aarg ) aarg->setForcesOnArguments( 0, forces, start );
-        ActionAtomistic* aat = dynamic_cast<ActionAtomistic*>( distinct_arguments[i].first );
-        if( aat ) aat->setForcesOnAtoms( forces, start );
+        setForcesOnActionChain( forces, start, distinct_arguments[i].first ); 
       } else {
         for(unsigned j=argstart; j<arguments.size(); ++j) {
           bool hasstored=false;

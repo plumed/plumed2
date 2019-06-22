@@ -90,6 +90,8 @@ public:
   void requestArguments(const std::vector<Value*> &arg, const bool& allow_streams);
 /// Set the forces on the arguments
   void setForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& start );
+/// This sets the forces on if the action is in a chain
+  static void setForcesOnActionChain( const std::vector<double>& forces, unsigned& start, ActionWithValue* av );
 public:
   explicit ActionWithArguments(const ActionOptions&);
   virtual ~ActionWithArguments() {}

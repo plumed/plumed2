@@ -38,12 +38,14 @@ ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   ActionWithValue(ao),
   boxDerivatives(3)
 {
-  index=atoms.addVirtualAtom(this);
-  log.printf("  serial associated to this virtual atom is %u\n",index.serial());
+  if( getName()!="GYRATION_TENSOR" ) {
+      index=atoms.addVirtualAtom(this);
+      log.printf("  serial associated to this virtual atom is %u\n",index.serial());
+  }
 }
 
 ActionWithVirtualAtom::~ActionWithVirtualAtom() {
-  atoms.removeVirtualAtom(this);
+  if( getName()!="GYRATION_TENSOR" ) atoms.removeVirtualAtom(this);
 }
 
 void ActionWithVirtualAtom::apply() {
