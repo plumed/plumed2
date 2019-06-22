@@ -132,7 +132,7 @@ void GyrationTensor::apply() {
        for(unsigned j=0;j<3;++j) { double tmp = myval->getForce(3*i+j); sumf2 += tmp*tmp; }
    }
    if( sumf2>epsilon ) {
-       Vector ff; unsigned n = getNumberOfAtoms()-1;
+       Vector ff; unsigned n = getNumberOfAtoms();
        std::vector<Vector>& f(modifyForces());
        Tensor&              v(modifyVirial()); 
        for(unsigned i=0;i<9;++i) {
@@ -141,7 +141,6 @@ void GyrationTensor::apply() {
                for(unsigned k=0; k<3; ++k) ff[k] = val_force*atom_deriv[i][j][k]; 
                f[j] += ff; v-= Tensor( getPosition(j), ff );         
            }
-           for(unsigned k=0; k<3; ++k) f[n][k] += val_force*atom_deriv[i][n][k];
        }
        if( getNumberOfDerivatives()>3*getNumberOfAtoms() ) {
            std::vector<double> val_forces(9); 
