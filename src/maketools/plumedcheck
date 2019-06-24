@@ -210,7 +210,7 @@ BEGINFILE{
         sub("/[^/]*$","",path);
 # an explicit cd is required since the command might be run from a different directory
         system("cd " path "; make show_used_modules 2>/dev/null > " tempfile)
-        if(getline < tempfile >0 && $1=="used_modules") for(i=2;i<=NF;i++) used_modules[module][$i]=1
+        while(getline < tempfile >0) if($1=="used_modules") for(i=2;i<=NF;i++) used_modules[module][$i]=1
         close(tempfile)
         system("rm " tempfile)
         used_modules_here=""
