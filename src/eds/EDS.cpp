@@ -89,37 +89,51 @@ PRINT ARG=dist,dist2,eds.dist_coupling,eds.dist2_coupling,eds.bias,eds.force2 FI
 
 Rather than trying to find the coupling constants adaptively, one can ramp up to a constant value.
 \plumedfile
+dist: DISTANCE ATOMS=1,2
+dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
+
 #ramp couplings from 0,0 to -1,1 over 50000 steps
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
 
 #same as above, except starting at -0.5,0.5 rather than default of 0,0
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
+eds2: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
 \endplumedfile
 
 A restart file can be added to dump information needed to restart/continue simulation using these parameters every PERIOD.
 \plumedfile
+dist: DISTANCE ATOMS=1,2
+dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
+
 #add the option to write to a restart file
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 OUT_RESTART=restart.dat
 \endplumedfile
 
 Read in a previous restart file. Adding RESTART flag makes output append
 \plumedfile
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat RESTART
+d1: DISTANCE ATOMS=1,2
+
+eds: EDS ARG=d1 CENTER=2.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat RESTART=YES
 \endplumedfile
 
 Read in a previous restart file and freeze the bias at the final level from the previous simulation
 \plumedfile
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 TEMP=1.0 IN_RESTART=restart.dat FREEZE
+d1: DISTANCE ATOMS=1,2
+
+eds: EDS ARG=d1 CENTER=2.0 TEMP=1.0 IN_RESTART=restart.dat FREEZE
 \endplumedfile
 
 Read in a previous restart file and freeze the bias at the mean from the previous simulation
 \plumedfile
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 TEMP=1.0 IN_RESTART=restart.dat FREEZE MEAN
+d1: DISTANCE ATOMS=1,2
+
+eds: EDS ARG=d1 CENTER=2.0 TEMP=1.0 IN_RESTART=restart.dat FREEZE MEAN
 \endplumedfile
 
 Read in a previous restart file and continue the bias, but use the mean from the previous run as the starting point
 \plumedfile
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat MEAN
+d1: DISTANCE ATOMS=1,2
+
+eds: EDS ARG=d1 CENTER=2.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat FREEZE MEAN
 \endplumedfile
 
 
