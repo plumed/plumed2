@@ -279,9 +279,9 @@ BEGINFILE{
 # detect copyright lines
     if($0=="/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++") in_copyright=1;
 # check direct inclusion of headers that would bypass module dependencies
-    if(module && match($0,"^# *include +\\\"\\.\\.")) {
+    if(module && match($0,"^# *include +\"\\.\\.")) {
       included_module_name=$0;
-      sub("^# *include +\\\"\\.\\./","",included_module_name);
+      sub("^# *include +\"\\.\\./","",included_module_name);
       sub("/.*$","",included_module_name);
 # DOC: :include_dots:
 # DOC: It is considered an error to include a file using a path starting with `../dir`,
@@ -305,7 +305,7 @@ BEGINFILE{
 ## it is a bad habit to include local headers after system headers
 ## notice that I explicitly check for the final "h" in the included file so as to exclude
 ## included files ending with tmp that are somewhere used in plumed to include automatically generated source code
-#   if(match($0,"^# *include +\\\".*h\\\"")){
+#   if(match($0,"^# *include +\".*h\"")){
 #     if(found_include_system_header && !report_include_system_headers){
 #       style("include_system_headers","include system headers before local headers is discouraged");
 #       report_include_system_headers=1 # only report once per file
@@ -459,7 +459,7 @@ BEGINFILE{
 #print match($0,"^ *\\\\verbatim *$"),"X" $0 "X"
 
 # take note of actions or cltools that provide examples
-    if(match($0,"\\par Examples")){
+    if(match($0,"\\\\par Examples")){
       provide_examples[in_plumed_doc]=FILENAME ":" FNR;
     }
 
