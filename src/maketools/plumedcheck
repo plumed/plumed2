@@ -351,6 +351,16 @@ BEGINFILE{
 # DOC: not installed. They should not be directly included in header files, otherwise
 # DOC: those header files could be not usable once PLUMED is installed.
       if(filetype=="header" && h!~"\\.h") error("non_h_header","including non '.h' file " h " in a header file");
+      if(h~"^[A-Za-z0-9_][A-Za-z0-9_]*/") {
+        sub("/.*$","",h)
+# DOC: :include_non_used_module:
+# DOC: When including a file in the form `"dir/file.h"`, `dir` should be an used module.
+# DOC: This makes sure that we do not include system files that by chance are named as PLUMED modules.
+# DOC: Indeed, when including `"file"` if the file is not found in the current path it is searched in
+# DOC: system directories.
+        if(!isarray(used_modules[module]) || (h in used_modules[module])==0)
+            error("include_non_used_module","including file in form " h "/file where " h " is not a used module");
+      }
     }
 
 # check if namespace PLMD is present
