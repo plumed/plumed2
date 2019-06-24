@@ -149,6 +149,7 @@ BEGIN{
 
 # create tmp dir for future usage
   "mktemp -dt plumed.XXXXXX" | getline tmpdir
+  close("mktemp -dt plumed.XXXXXX")
 
 # checking astyle presence
   astyle_available=!system(astyle " --version > /dev/null 2> /dev/null") 
