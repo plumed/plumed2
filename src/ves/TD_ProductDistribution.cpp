@@ -69,7 +69,7 @@ argument 1 and a Gaussian distribution for argument 2.
 \plumedfile
 target_uniform: TD_UNIFORM
 
-target_Gaussian: TD_GAUSSIAN CENTER=-2.0 SIGMA=0.5
+target_Gaussian: TD_GAUSSIAN CENTER1=-2.0 SIGMA1=0.5
 
 td_pd: TD_PRODUCT_DISTRIBUTION DISTRIBUTIONS=target_uniform,target_Gaussian
 \endplumedfile

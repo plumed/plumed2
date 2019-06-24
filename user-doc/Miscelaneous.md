@@ -471,13 +471,14 @@ RESTRAINT ARG=dist
 could be split up into two files as shown below:
  
 \plumedfile
-DISTANCE ATOMS=0,1 LABEL=dist
-INCLUDE FILE=toBeIncluded.dat
+DISTANCE ATOMS=1,2 LABEL=dist
+INCLUDE FILE=toBeIncluded.inc
 \endplumedfile
-plus a "toBeIncluded.dat" file
-\plumedfile
-RESTRAINT ARG=dist
-\endplumedfile
+plus a "toBeIncluded.inc" file
+\plumedincludefile
+# this is toBeIncluded.inc
+RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
+\endplumedincludefile
 
 However, when you do this it is important to recognize that \ref INCLUDE is a real directive that is only resolved
 after all the \ref comments have been stripped and the \ref ContinuationLines have been unrolled.  This means it
@@ -529,7 +530,7 @@ file with common definitions and specific input files with replica-dependent key
 However, as of PLUMED 2.4, we introduced a simpler manner to manipulate multiple replica
 inputs with tiny differences. Look at the following example:
 
-\plumedfile
+\plumedmultireplicafile{3}
 # Compute a distance
 d: DISTANCE ATOMS=1,2
 
@@ -541,7 +542,7 @@ RESTRAINT ARG=d AT=@replicas:1.0,1.1,1.2 KAPPA=1.0
 #   RESTRAINT ARG=d AT=1.1 KAPPA=1.0
 # On replica 2, this means:
 #   RESTRAINT ARG=d AT=1.2 KAPPA=1.0
-\endplumedfile
+\endplumedmultireplicafile
 
 If you prepare a single `plumed.dat` file like this one and feeds it to PLUMED while using 3 replicas,
 the 3 replicas will see the very same input except for the `AT` keyword, that sets the position of the restraint.
@@ -549,7 +550,7 @@ Replica 0 will see a restraint centered at 1.0, replica 1 centered at 1.1, and r
 
 The `@replicas:` keyword is not special for \ref RESTRAINT or for the `AT` keyword. Any keyword in PLUMED can accept that syntax.
 For instance, the following single input file can be used to setup a bias exchange metadynamics \cite piana simulations:
-\plumedfile
+\plumedmultireplicafile{2}
 # Compute distance between atoms 1 and 2
 d: DISTANCE ATOMS=1,2
 
@@ -569,7 +570,7 @@ METAD ...
 #  METAD ARG=d HEIGHT=1.0 PACE=100 SIGMA=0.1 GRID_MIN=0.0 GRID_MAX=2.0
 # On replica 1, this means:
 #  METAD ARG=t HEIGHT=1.0 PACE=100 SIGMA=0.3 GRID_MIN=-pi GRID_MAX=+pi
-\endplumedfile
+\endplumedmultireplicafile
 
 This would be a typical setup for a bias exchange simulation.
 Notice that even though variables `d` and `t` are both read in both replicas,
@@ -579,7 +580,7 @@ This is because variables that are defined but not used are never actually calcu
 If the value that should be provided for each replica is a vector, you should use curly braces as delimiters.
 For instance, if the restraint acts on two variables, you can use the following input:
 
-\plumedfile
+\plumedmultireplicafile{3}
 # Compute distance between atoms 1 and 2
 d: DISTANCE ATOMS=10,20
 
@@ -598,13 +599,13 @@ RESTRAINT ...
 #  RESTRAINT ARG=d AT=3.0,4.0 KAPPA=1.0,3.0
 # On replica 2 this means:
 #  RESTRAINT ARG=d AT=5.0,6.0 KAPPA=1.0,3.0
-\endplumedfile
+\endplumedmultireplicafile
 
 Notice the double curly braces. The outer ones are used by PLUMED to know there the argument of the `AT` keyword ends,
 whereas the inner ones are used to group the values corresponding to each replica.
 Also notice that the last example can be split in multiple lines exploiting the fact that
 within multi-line statements (enclosed by pairs of `...`) newlines are replaced with simple spaces:
-\plumedfile
+\plumedmultireplicafile{3}
 d: DISTANCE ATOMS=10,20
 t: TORSION ATOMS=30,31,32,33
 RESTRAINT ...
@@ -616,9 +617,9 @@ RESTRAINT ...
     {3.0,4.0}
     {5.0,6.0}
   }
-  KAPPA=1.0
+  KAPPA=1.0,3.0
 ...
-\endplumedfile
+\endplumedmultireplicafile
 
 In short, whenever there are keywords that should vary across replicas, you should set them using the `@replicas:` keyword.
 As mentioned above, you can always use the old syntax with separate input file, and this is recommended when the

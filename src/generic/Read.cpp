@@ -59,6 +59,19 @@ rphi2:       READ FILE=input_colvar.data  VALUES=phi2
 PRINT ARG=rphi1,rphi2 STRIDE=500  FILE=output_colvar.data
 \endplumedfile
 
+The file input_colvar.data is just a normal colvar file as shown below
+
+\auxfile{input_colvar.data}
+#! FIELDS time phi psi metad.bias metad.rbias metad.rct
+#! SET min_phi -pi
+#! SET max_phi pi
+#! SET min_psi -pi
+#! SET max_psi pi
+ 0.000000  -1.2379   0.8942   0.0000   0.0000   0.0000
+ 1.000000  -1.4839   1.0482   0.0000   0.0000   0.0089
+ 2.000000  -1.3243   0.6055   0.0753   0.0664   0.0184
+\endauxfile
+
 */
 //+ENDPLUMEDOC
 

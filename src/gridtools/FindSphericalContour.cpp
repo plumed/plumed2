@@ -83,13 +83,13 @@ the droplet from the surrounding gas.  The value of the phase field on this isoc
 
 \plumedfile
 # Calculate coordination numbers
-c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
+c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0} 
 # Select coordination numbers that are more than 2.0
 cf: MFILTER_MORE DATA=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM
 # Build a contact matrix
 mat: CONTACT_MATRIX ATOMS=cf SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 # Find largest cluster
-dfs: DFSCLUSTERING MATRIX=mat
+dfs: DFSCLUSTERING MATRIX=mat LOWMEM
 clust1: CLUSTER_PROPERTIES CLUSTERS=dfs CLUSTER=1
 # Find center of largest cluster
 trans1: MTRANSFORM_MORE DATA=clust1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM
@@ -97,7 +97,9 @@ cent: CENTER_OF_MULTICOLVAR DATA=trans1
 # Calculate the phase field of the coordination
 dens: MULTICOLVARDENS DATA=trans1 ORIGIN=cent DIR=xyz NBINS=30,30,30 BANDWIDTH=2.0,2.0,2.0
 # Find the isocontour around the nucleus
-FIND_SPHERICAL_CONTOUR GRID=dens CONTOUR=0.85 INNER_RADIUS=10.0 OUTER_RADIUS=40.0 FILE=mysurface.xyz UNITS=A PRECISION=4 NPOINTS=100
+sc: FIND_SPHERICAL_CONTOUR GRID=dens CONTOUR=0.85 INNER_RADIUS=10.0 OUTER_RADIUS=40.0 NPOINTS=100
+# And print the grid to a file
+GRID_TO_XYZ GRID=sc FILE=mysurface.xyz UNITS=A
 \endplumedfile
 
 */
