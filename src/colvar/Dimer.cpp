@@ -113,7 +113,7 @@ like in the previous examples, and each replica will read its own DSIGMA value. 
 a unique plumed.dat is given, DSIGMA has to be a list containing a value for each replica.
 For 4 replicas:
 \plumedfile
-dim: DIMER TEMP=300 Q=0.5 ATOMS1=1,5,7 ATOMS2=23,27,29 DSIGMA=0.002,0.002,0.004,0.01
+dim: DIMER TEMP=300 Q=0.5 ATOMS1=1,5,7 ATOMS2=23,27,29 DSIGMA=@replicas:0.002,0.002,0.004,0.01
 \endplumedfile
 
 
@@ -141,7 +141,7 @@ protected:
   bool trimer,useall;
   int myrank, nranks;
   double qexp,temperature,beta,dsigma;
-  vector<double> dsigmas;
+  // vector<double> dsigmas;
 private:
   void consistencyCheck();
   vector<AtomNumber> usedatoms1;
@@ -173,7 +173,7 @@ Dimer::Dimer(const ActionOptions& ao):
 {
 
   log<<" Bibliography "<<plumed.cite("M Nava, F. Palazzesi, C. Perego and M. Parrinello, J. Chem. Theory Comput. 13, 425(2017)")<<"\n";
-  parseVector("DSIGMA",dsigmas);
+  parse("DSIGMA",dsigma);
   parse("Q",qexp);
   parse("TEMP",temperature);
 
@@ -187,10 +187,10 @@ Dimer::Dimer(const ActionOptions& ao):
 
   nranks=multi_sim_comm.Get_size();
   myrank=multi_sim_comm.Get_rank();
-  if(dsigmas.size()==1)
-    dsigma=dsigmas[0];
-  else
-    dsigma=dsigmas[myrank];
+  // if(dsigmas.size()==1)
+  //   dsigma=dsigmas[0];
+  // else
+  //   dsigma=dsigmas[myrank];
 
 
 
@@ -313,10 +313,11 @@ void Dimer::consistencyCheck()
   if(temperature<0)
     error("Please, use a positive value for the temperature...");
 
+  // NOW USING @replicas syntax for dsigma so this check id done automatically GAT
   // if dsigmas has only one element means that either
   // you are using different plumed.x.dat files or a plumed.dat with a single replica
-  if(dsigmas.size()!=nranks && dsigmas.size()!=1)
-    error("Mismatch between provided sigmas and number of replicas");
+  // if(dsigmas.size()!=nranks && dsigmas.size()!=1)
+  //   error("Mismatch between provided sigmas and number of replicas");
 
 }
 
