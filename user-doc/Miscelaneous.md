@@ -23,7 +23,7 @@ erm... yes add lines of comments or trailing comments to your hearts content as 
 
 \plumedfile
 # This is the distance between two atoms:
-DISTANCE ATOM=1,2 LABEL=d1
+d1: DISTANCE ATOMS=1,2 
 UPPER_WALLS ARG=d1 AT=3.0 KAPPA=3.0 LABEL=Snout # In this same interlude it doth befall.
 # That I, one Snout by name, present a wall.
 \endplumedfile
@@ -61,8 +61,7 @@ DISTANCES ...
 Notice that the closing `...` is followed by the word `DISTANCES`. This is optional, but might be
 useful to find more easily which is the matching start of the statement. The following is equally correct
 \plumedfile
-DISTANCES ...
-  LABEL=dist
+dist: DISTANCES ...
 # we can also insert comments here
   ATOMS1=1,300
 # multiple kewords per line are allowed
@@ -313,6 +312,8 @@ learn more.
 In case you want to use this feature, we suggest you to put both label
 and action type on the first line of multi-line statements. E.g.
 \plumedfile
+d: DISTANCE ATOMS=1,2
+
 m: METAD ...
   ARG=d
   HEIGHT=1.0
@@ -322,10 +323,14 @@ m: METAD ...
 \endplumedfile
 will be folded to
 \verbatim
+d: DISTANCE ATOMS=1,2
+
 +--  6 lines: m: METAD ...------------------------------------------------------
 \endverbatim
 and
 \plumedfile
+d: DISTANCE ATOMS=1,2
+
 METAD LABEL=m ...
   ARG=d
   HEIGHT=1.0
@@ -335,6 +340,8 @@ METAD LABEL=m ...
 \endplumedfile
 will be folded to
 \verbatim
+d: DISTANCE ATOMS=1,2
+
 +--  6 lines: METAD LABEL=m ...-------------------------------------------------
 \endverbatim
 This will allow you to easily identify the folded lines by seeing the most important information,
@@ -464,8 +471,8 @@ INCLUDE FILE=filename
 So, for example, a single "plumed.dat" file:
 
 \plumedfile
-DISTANCE ATOMS=0,1 LABEL=dist
-RESTRAINT ARG=dist
+DISTANCE ATOMS=1,2 LABEL=dist
+RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
 \endplumedfile
 
 could be split up into two files as shown below:
@@ -487,7 +494,7 @@ is not possible to do things like:
 \plumedfile
 # this is wrong:
 DISTANCE INCLUDE FILE=options.dat
-RESTRAINT ARG=dist
+RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
 \endplumedfile
 
 \page load Loading shared libraries
