@@ -51,6 +51,7 @@ Random::Random(const std::string & name):
 }
 
 void Random::setSeed(int idum_) {
+  if(idum_>0) idum_=-idum_;
   idum=idum_;
   incPrec=false;
 }
