@@ -50,9 +50,9 @@ Here below is a case where you have defined three frames and you want to
 calculate the progress along the path and the distance from it in p1
 
 \plumedfile
-t1: RMSD REFERENCE=frame_1.dat TYPE=OPTIMAL SQUARED
-t2: RMSD REFERENCE=frame_21.dat TYPE=OPTIMAL SQUARED
-t3: RMSD REFERENCE=frame_42.dat TYPE=OPTIMAL SQUARED
+t1: RMSD REFERENCE=frame_1.pdb TYPE=OPTIMAL SQUARED
+t2: RMSD REFERENCE=frame_21.pdb TYPE=OPTIMAL SQUARED
+t3: RMSD REFERENCE=frame_42.pdb TYPE=OPTIMAL SQUARED
 p1: FUNCPATHMSD ARG=t1,t2,t3 LAMBDA=500.0
 PRINT ARG=t1,t2,t3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
 \endplumedfile
@@ -135,7 +135,7 @@ PIV ...
 LABEL=c1
 PRECISION=1000
 NLIST
-REF_FILE=Ref1.pdb
+REFERENCE=Ref1.pdb
 PIVATOMS=2
 ATOMTYPES=A,B
 ONLYDIRECT
@@ -151,7 +151,7 @@ PIV ...
 LABEL=c2
 PRECISION=1000
 NLIST
-REF_FILE=Ref2.pdb
+REFERENCE=Ref2.pdb
 PIVATOMS=2
 ATOMTYPES=A,B
 ONLYDIRECT

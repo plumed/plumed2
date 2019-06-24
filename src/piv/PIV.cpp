@@ -63,7 +63,7 @@ PIV ...
 LABEL=Pivd1
 PRECISION=1000
 NLIST
-REF_FILE=Ref1.pdb
+REFERENCE=Ref1.pdb
 PIVATOMS=3
 ATOMTYPES=A,B,C
 SFACTOR=0.3,0.5,1.0,0.2,0.2,0.2
@@ -82,7 +82,7 @@ PIV ...
 LABEL=Pivd2
 PRECISION=1000
 NLIST
-REF_FILE=Ref2.pdb
+REFERENCE=Ref2.pdb
 PIVATOMS=3
 ATOMTYPES=A,B,C
 SFACTOR=0.3,0.5,1.0,0.2,0.2,0.2
@@ -101,7 +101,7 @@ PIV ...
 LABEL=Pivd3
 PRECISION=1000
 NLIST
-REF_FILE=Ref3.pdb
+REFERERENCE=Ref3.pdb
 PIVATOMS=3
 ATOMTYPES=A,B,C
 SFACTOR=0.3,0.5,1.0,0.2,0.2,0.2
@@ -140,7 +140,7 @@ LABEL=c1
 PRECISION=1000
 VOLUME=12.15
 NLIST
-REF_FILE=Ref1.pdb
+REFERENCE=Ref1.pdb
 PIVATOMS=2
 ATOMTYPES=A,B
 ONLYDIRECT
@@ -157,7 +157,7 @@ LABEL=c2
 PRECISION=1000
 VOLUME=12.15
 NLIST
-REF_FILE=Ref2.pdb
+REFERENCE=Ref2.pdb
 PIVATOMS=2
 ATOMTYPES=A,B
 ONLYDIRECT
@@ -229,7 +229,7 @@ void PIV::registerKeywords( Keywords& keys )
            "Details of the various switching "
            "functions you can use are provided on \\ref switchingfunction.");
   keys.add("compulsory","PRECISION","the precision for approximating reals with integers in sorting.");
-  keys.add("compulsory","REF_FILE","PDB file name that contains the \\f$i\\f$th reference structure.");
+  keys.add("compulsory","REFERENCE","PDB file name that contains the \\f$i\\f$th reference structure.");
   keys.add("compulsory","PIVATOMS","Number of atoms to use for PIV.");
   keys.add("compulsory","SORT","Whether to sort or not the PIV block.");
   keys.add("compulsory","ATOMTYPES","The atom types to use for PIV.");
@@ -362,7 +362,7 @@ PIV::PIV(const ActionOptions&ao):
   //if(atype.size()!=getNumberOfArguments() && atype.size()!=0) error("not enough values for ATOMTYPES");
 
   // Reference PDB file
-  parse("REF_FILE",ref_file);
+  parse("REFERENCE",ref_file);
   PDB mypdb;
   FILE* fp=fopen(ref_file.c_str(),"r");
   if (fp!=NULL) {
