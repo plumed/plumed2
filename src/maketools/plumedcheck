@@ -199,6 +199,7 @@ BEGINFILE{
 # DOC: they should be explicitly enabled, and `always`, which means they are always required.
         if(!(module_type[module] in allowed_module_types)) error("wrong_module_type","module " module " has a wrong module type '" module_type[module] "'");
       }
+      close(path)
     }
 # detect used modules
     if(filetype=="source" || filetype=="header") {
@@ -209,6 +210,7 @@ BEGINFILE{
 # an explicit cd is required since the command might be run from a different directory
         system("cd " path "; make show_used_modules 2>/dev/null > " tempfile)
         if(getline < tempfile >0 && $1=="used_modules") for(i=2;i<=NF;i++) used_modules[module][$i]=1
+        close(tempfile)
         system("rm " tempfile)
         used_modules_here=""
         if(isarray(used_modules[module])) {
@@ -566,6 +568,7 @@ ENDFILE{
          break;
        }
      }
+     close(cppfile)
    }
 }
 
