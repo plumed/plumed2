@@ -63,6 +63,43 @@ PCARMSD AVERAGE=file.pdb EIGENVECTORS=eigenvectors.pdb
 \endplumedfile
 
 The input is taken so to be compatible with the output you get from g_covar utility of gromacs (suitably adapted to have a pdb input format).
+The reference configuration (file.pdb) will thus be in a file that looks something like this:
+
+\auxfile{file.pdb}
+TITLE     Average structure
+MODEL        1
+ATOM      1  CL  ALA     1       1.042  -3.070   0.946  1.00  0.00
+ATOM      5  CLP ALA     1       0.416  -2.033   0.132  1.00  0.00
+ATOM      6  OL  ALA     1       0.415  -2.082  -0.976  1.00  0.00
+ATOM      7  NL  ALA     1      -0.134  -1.045   0.677  1.00  0.00
+ATOM      9  CA  ALA     1      -0.774   0.053   0.003  1.00  0.00
+TER
+ENDMDL
+\endauxfile
+
+while the eigenvectors will be in a pdb file (eigenvectors.pdb) that looks something like this:
+
+\auxfile{eigenvectors.pdb}
+TITLE     frame t= -1.000
+MODEL        1
+ATOM      1  CL  ALA     1       1.194  -2.988   0.724  1.00  0.00
+ATOM      5  CLP ALA     1      -0.996   0.042   0.144  1.00  0.00
+ATOM      6  OL  ALA     1      -1.246  -0.178  -0.886  1.00  0.00
+ATOM      7  NL  ALA     1      -2.296   0.272   0.934  1.00  0.00
+ATOM      9  CA  ALA     1      -0.436   2.292   0.814  1.00  0.00
+TER
+ENDMDL
+TITLE     frame t= 0.000
+MODEL        1
+ATOM      1  CL  ALA     1       1.042  -3.070   0.946  1.00  0.00
+ATOM      5  CLP ALA     1      -0.774   0.053   0.003  1.00  0.00
+ATOM      6  OL  ALA     1      -0.849  -0.166  -1.034  1.00  0.00
+ATOM      7  NL  ALA     1      -2.176   0.260   0.563  1.00  0.00
+ATOM      9  CA  ALA     1       0.314   1.825   0.962  1.00  0.00
+TER
+ENDMDL
+
+\endauxfile
 
 */
 //+ENDPLUMEDOC

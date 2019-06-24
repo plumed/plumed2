@@ -94,10 +94,21 @@ PRINT ARG=c FILE=colvar
 \endplumedfile
 The `groups.dat` file could be very long and include lists of thousand atoms without cluttering the main plumed.dat file.
 
-A GROMACS index file can also be imported
+A GROMACS index file such as the one shown below:
+
+\auxfile{index.ndx}
+[ Protein ]
+1 3 5 7 9
+2 4 6 8 10
+[ Group2 ]
+30 31 32 33 34 35 36 37 38 39 40
+5
+\endauxfile
+
+can also be imported by using the GROUP keyword as shown below
 \plumedfile
-# import group named 'protein' from file index.ndx
-pro: GROUP NDX_FILE=index.ndx NDX_GROUP=protein
+# import group named 'Protein' from file index.ndx
+pro: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein
 # dump all the atoms of the protein on a trajectory file
 DUMPATOMS ATOMS=pro FILE=traj.gro
 \endplumedfile

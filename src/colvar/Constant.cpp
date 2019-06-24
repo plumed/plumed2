@@ -53,7 +53,7 @@ PRINT ARG=sss.2
 In case you want to pass a single value you can use VALUE:
 \plumedfile
 cn: CONSTANT VALUE=1.0
-dis: DISTANCE ATOMS=1
+dis: DISTANCE ATOMS=1,2
 sss: SORT ARG=cn,dis
 PRINT ARG=sss.1
 \endplumedfile

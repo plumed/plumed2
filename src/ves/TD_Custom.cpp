@@ -104,7 +104,7 @@ variable. It is also possible to use the \f$k_B T\f$ variable. The following
 syntax will give the exact same results as the syntax above
 \plumedfile
 TD_CUSTOM ...
- FUNCTION=exp(-(1.0/(kBT*10.0))*FE)}
+ FUNCTION=exp(-(1.0/(kBT*10.0))*FE)
  LABEL=td
 ... TD_CUSTOM
 \endplumedfile

@@ -42,7 +42,7 @@ The following example calculates the number of atoms in one half of the simulati
 
 \plumedfile
 DENSITY SPECIES=1-100 LABEL=d
-AROUND ARG=d XLOWER=0.0 XUPPER=0.5 LABEL=d1
+AROUND ATOM=101 DATA=d SIGMA=0.1 XLOWER=0.0 XUPPER=0.5 LABEL=d1
 PRINT ARG=d1.* FILE=colvar1 FMT=%8.4f
 \endplumedfile
 

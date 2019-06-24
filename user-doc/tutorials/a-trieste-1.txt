@@ -263,7 +263,7 @@ d2: DISTANCE ATOMS=1,3
 d3: DISTANCE ATOMS=1,4
 
 # Compute the sum of the squares of those three distances:
-c: COMBINE ARG=d1,d2,d3 POWERS=2 PERIODIC=NO
+c: COMBINE ARG=d1,d2,d3 POWERS=2,2,2 PERIODIC=NO
 
 # Sort the three distances:
 s: SORT ARG=d1,d2,d3

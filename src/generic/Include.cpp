@@ -122,11 +122,11 @@ This is true also for files opened by INCLUDE!
 
 As an example, the same result of the inputs above could have been obtained using
 `plumed.dat`:
-\plumedfile
+\plumedmultireplicafile{2}
 # this is plumed.dat
 t: TORSION ATOMS=1,2,3,4
 INCLUDE FILE=other.inc
-\endplumedfile
+\endplumedmultireplicafile
 Then `other.0.inc`:
 \plumedincludefile 
 # this is other.0.inc

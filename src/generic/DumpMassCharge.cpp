@@ -52,7 +52,7 @@ file that you use during an MD simulations:
 \plumedfile
 c1: COM ATOMS=1-10
 c2: COM ATOMS=11-20
-PRINT ARG=c1,c2 FILE=colvar STRIDE=100
+DUMPATOMS ATOMS=c1,c2 FILE=coms.xyz STRIDE=100
 
 DUMPMASSCHARGE FILE=mcfile
 \endplumedfile
