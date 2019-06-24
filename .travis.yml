@@ -138,7 +138,7 @@ install:
 # I use 1.71 since 1.72 seems to report a lot of false positive
   - if test "$CPPCHECK" == yes ; then  ./.travis/install.cppcheck $CPPCHECK_VERSION ; fi
 # for plumedcheck I need latest gawk
-  - if test "$CPPCHECK" == yes ; then  ./.travis/install.gawk 4.2.1 ; fi
+  - if test "$CPPCHECK" == yes ; then  ./.travis/install.gawk 5.0.1 ; fi
 # for plumedcheck I need astyle
   - if test "$CPPCHECK" == yes ; then make -j 4 -C astyle ; fi
 # installation of these packages takes a lot of time
