@@ -70,7 +70,7 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a, const bool clea
   if(clearDep) clearDependencies();
   unique.clear();
   for(unsigned i=0; i<indexes.size(); i++) {
-    if(indexes[i].index()>=n) error("atom out of range");
+    if(indexes[i].index()>=n) { std::string num; Tools::convert( indexes[i].serial(),num ); error("atom " + num + " out of range"); }
     if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
 // only real atoms are requested to lower level Atoms class
     else unique.insert(indexes[i]);
