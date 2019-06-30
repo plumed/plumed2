@@ -81,8 +81,8 @@ mpirun -np ${totalCores} ${EXE} < start.lmp > out.lmp
 This command runs LAMMPS using 2 MPI threads.
 The use of partitions will be discussed when using multiple walkers
 
-Once the simulation is launched, the so called COLVAR file is written. In this case it contains the following:
-\verbatim
+Once the simulation is launched, the so called COLVAR file is written. In this case the first few lines of this file will look somthing like this:
+\auxfile{COLVAR}
 #! FIELDS time d1 coord
  0.200000 0.568067 5.506808
  0.400000 0.500148 4.994588
@@ -94,10 +94,7 @@ Once the simulation is launched, the so called COLVAR file is written. In this c
  1.600000 0.458768 4.940097
  1.800000 0.471886 4.952868
  2.000000 0.489058 4.897593
-.
-.
-.
-\endverbatim
+\endauxfile
 If you plot the time (column 1) vs the distance (column 2), for instance in
 gnuplot:
 \verbatim
@@ -143,6 +140,7 @@ and therefore the system will evolve under an effective free energy:
 that is to say, the largest barrier will be of around 1 \f$k_\mathrm{B} T\f$.
 The input is:
 \plumedfile
+d1:  DISTANCE ATOMS=319,320
 METAD ...
  LABEL=metad
  ARG=d1
@@ -154,10 +152,10 @@ METAD ...
  GRID_MIN=0.2
  GRID_MAX=1.0
  GRID_BIN=300
- REWEIGHTING_NGRID=300
+ CALC_RCT 
 ... METAD
 \endplumedfile
-Here the REWEIGHTING_NGRID keyword turns on the calculation of the
+Here the CALC_RCT keyword turns on the calculation of the
 time dependent constant \f$ c(t) \f$ that we will use below when
 reweighting the simulations.
 
@@ -173,6 +171,7 @@ The wall will focus the sampling in the most interesting region of the free
 energy surface. The effect of this bias potential will have to be corrected later in order to calculate
  ensemble averages. The syntax in Plumed 2 is:
 \plumedfile
+d1:  DISTANCE ATOMS=319,320
 UPPER_WALLS ...
  ARG=d1
  AT=0.6
@@ -431,6 +430,18 @@ You can use the input files from Example2.tar and changed the plumed.dat file.
 To construct a 2 dimensional bias with metadynamics use the following
 input:
 \plumedfile
+d1:  DISTANCE ATOMS=319,320
+
+COORDINATION ...
+ GROUPA=319
+ GROUPB=1-318:3
+ SWITCH={RATIONAL R_0=0.315 D_MAX=0.5 NN=12 MM=24}
+ NLIST
+ NL_CUTOFF=0.55
+ NL_STRIDE=10
+ LABEL=coord
+... COORDINATION
+
 METAD ...
  LABEL=metad
  ARG=d1,coord
@@ -442,7 +453,7 @@ METAD ...
  GRID_MIN=0.15,2.
  GRID_MAX=0.9,9.
  GRID_BIN=400,400
- REWEIGHTING_NGRID=400,400
+ CALC_RCT
 ... METAD
 \endplumedfile
 
