@@ -351,20 +351,20 @@ the user-doc directory you will find a bibtex file called bibliography.bib that 
 the references that are included in the user documentation for plumed.  To add your reference
 you should add bibliographic data for the article you want to cite in this file.
 
-\subsection Examples
+\section Examples
 
-Your manual entry <b>must</b> contain some examples as to how your PLMD::Action.  These should be included as follows:
+Manual entries for actions and tutorials <b>must</b> contain some examples.  The most basic way to include these is as follows:
 
 \verbatim
 \par Example
 
 The following input tells plumed to print the distance between atoms 3 and 5,
 the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
-\verbatim
+\plumedfile
 DISTANCE ATOMS=3,5             LABEL=d1
 DISTANCE ATOMS=2,4 COMPONENTS  LABEL=d2
 PRINT ARG=d1,d2,d2.x
-\ endverbatim  /*** But with no space between the \ and the endverbatim
+\ endplumedfile /*** But with no space between the \ and the endplumedfile
 \endverbatim 
 
 In the manual this will be converted to:
@@ -373,15 +373,118 @@ In the manual this will be converted to:
 
 The following input tells plumed to print the distance between atoms 3 and 5,
 the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
-\verbatim
-DISTANCE ATOMS=3,5             LABEL=d1
-DISTANCE ATOMS=2,4 COMPONENTS  LABEL=d2
-PRINT ARG=d1,d2,d2.x
-\endverbatim
+<pre class="fragment">
+<a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTANCE</a> ATOMS=3,5             LABEL=d1
+<a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTANCE</a> ATOMS=2,4 COMPONENTS  LABEL=d2
+<a href="../../user-doc/html/_p_r_i_n_t.html" style="color:green">PRINT</a> ARG=d1,d2,d2.x
+</pre>
 
 Please be aware of the blank line between after the title of the paragraph.  If this line is not present your manual will look ugly.  
 Also be aware that your Examples section <b> must </b> be called Examples and not Example because of a perculiarity in the 
 script that generates the manual.
+
+By including the example input in a plumedfile environment you ensure two things:
+
+- That the action names are converted to links to the relevant pages in the manual when the manual is constructed.
+- That the code to construct the user manual will test to see if your example input can be parsed by PLUMED whenever the user manual is built.
+
+To achieve the second of these objectives with the input shown above it is sufficient to include the example input in a plumedfile environment.
+As detailed in the following sections, however, there are some cases where things are a little more complicated.
+
+\subsection multirepeg Including example inputs for multiple replica simulations
+
+If you have an input for a simulation that is to be run with three replicas such as the one below:
+
+<pre class="fragment">
+<span style="color:blue"># Compute a distance</span>
+d: <a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTANCE</a> ATOMS=1,2
+<span style="color:blue"># Apply a restraint.</span>
+<a href="../../user-doc/html/_r_e_s_t_r_a_i_n_t.html" style="color:green">RESTRAINT</a> ARG=d AT=@replicas:1.0,1.1,1.2 KAPPA=1.0
+</pre>
+
+This must be included in a plumedmultiplereplicafile environment as shown below:
+
+\verbatim
+\plumedmultiplereplicafile{3}
+# Compute a distance
+d: DISTANCE ATOMS=1,2
+# Apply a restraint.
+RESTRAINT ARG=d AT=@replicas:1.0,1.1,1.2 KAPPA=1.0
+\ endplumedmultiplereplicafile /*** But with no space between the \ and the endmultiplereplicasfile
+\endverbatim
+
+The 3 in braces after the plumedmultiplereplicafile environment command tells the script that checks the examples when constructing the user manual that this
+calculation must be run using three parallel replicas.
+
+\subsection auxfileeg Including example inputs that require an auxiliary file
+
+Suppose that you have an input such as the one below:
+
+<pre class="fragment">
+<a href="../../user-doc/html/_r_m_s_d.html" style="color:green">RMSD</a> REFERENCE=file.pdb TYPE=OPTIMAL
+</pre>
+
+As RMSD has been used here you are also required to provide an input file which in this case would be called file.pdb.  You can include 
+this input in an auxfile environment as shown below:
+
+\verbatim
+\auxfile{file.pdb}
+ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
+ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
+ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
+ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
+ATOM      8  HL  ALA     1      -1.845   0.961  -0.011  1.00  1.00
+END
+\ endauxfile /*** But with no space between the \ and the endauxfile
+\endverbatim
+
+Obviously, the file.pdb inside the curly braces in the top line here indicates that the auxiliary file to be constructed from this data should be named 
+file.pdb.  Files input in this way can be given any name but:
+
+- If two auxfiles are used on the same page they must be given different names (if they are on different pages it does not matter)
+- auxfiles should not be named *.dat as the script that builds the user manual assumes that all *.dat files are plumed input files. 
+
+\subsection incfileeg Using INCLUDE in your example input files
+
+Suppose that you have split your input by using an INCLUDE file as shown below:
+
+<pre class="fragment">
+<a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTANCE</a> ATOMS=1,2 LABEL=dist
+<a href="../../user-doc/html/_i_n_c_l_u_d_e.html" style="color:green">INCLUDE</a> FILE=toBeIncluded.inc
+</pre>
+
+<pre class="fragment">
+<span style="color:blue"># this is toBeIncluded.inc</span>
+<a href="../../user-doc/html/_r_e_s_t_r_a_i_n_t.html" style="color:green">RESTRAINT</a> ARG=dist AT=2.0 KAPPA=1.0
+</pre>
+
+To include an input like this in the manul you would write the following:
+
+\verbatim
+\plumedfile
+DISTANCE ATOMS=1,2 LABEL=dist
+INCLUDE FILE=toBeIncluded.inc
+\ endplumedfile    /*** But with no space between the \ and the endplumedfile
+
+\plumedincludefile
+# this is toBeIncluded.inc
+RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
+\ endplumedincludefile   /*** But with no space between the \ and the endplumedincludefile
+\endverbatim
+
+Please note that it is essential that you write:
+
+\verbatim
+# this is <filename>
+\endverbatim
+
+on the second line in the plumedincludefile environment as this is where the script that builds the user documentation gets the name of the included file
+from.  Also notice that if, as in the example above, the included file is not (by itself) a valid plumed input it CANNOT be called *.dat as the script that 
+checks the input will complain.  
+
+\subsection molfileeg Using MOLFILE in your example input files
+
+To be written
 
 \section tutorials Writing how-to instructions
 
