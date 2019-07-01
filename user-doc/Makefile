@@ -19,6 +19,7 @@ ifeq ($(make_doc),yes)
 	make_pdfdoc=$(make_pdfdoc) ./extract
 	# temporarily removed for travis to build:
 	#./go-spelling
+	./go-example-check
 	make_pdfdoc=$(make_pdfdoc) ./go-doxygen
 	cp *png html/
 	./report_errors
