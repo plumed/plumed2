@@ -41,6 +41,7 @@ Bias::Bias(const ActionOptions&ao):
     log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
   }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->getRank()>0 ) error("cannot use multiple rank CVs as input to this action");
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
 
