@@ -535,8 +535,12 @@ void PDB::print( const double& lunits, SetupMolInfo* mymoldat, OFile& ofile, con
   if( argnames.size()>0 ) ofile.printf("\n");
   if( !mymoldat ) {
     for(unsigned i=0; i<positions.size(); ++i) {
-      ofile.printf("ATOM  %5d  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                   numbers[i].serial(), i,
+      std::array<char,6> at;
+      const char* msg = h36::hy36encode(5,numbers[i].serial(),&at[0]);
+      plumed_assert(msg==nullptr) << msg;
+      at[5]=0;
+      ofile.printf("ATOM  %s  X   RES  %4u    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                   &at[0], i,
                    lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
                    occupancy[i], beta[i] );
     }
