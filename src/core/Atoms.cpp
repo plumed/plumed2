@@ -213,8 +213,8 @@ void Atoms::share(const std::set<AtomNumber>& unique) {
   int ndata=3;
   if(!massAndChargeOK) {
     ndata=5;
-    masses.assign(masses.size(),std::numeric_limits<double>::quiet_NaN());
-    charges.assign(charges.size(),std::numeric_limits<double>::quiet_NaN());
+    masses.assign(natoms,std::numeric_limits<double>::quiet_NaN());
+    charges.assign(natoms,std::numeric_limits<double>::quiet_NaN());
     mdatoms->getCharges(gatindex,charges);
     mdatoms->getMasses(gatindex,masses);
   }
