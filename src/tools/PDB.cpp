@@ -528,11 +528,11 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       AtomNumber a; unsigned resno;
       double o,b;
       Vector p;
-      Tools::convert(serial,a);
-
       {
         int result;
-        const char* errmsg = h36::hy36decode(5, serial.c_str(),5, &result);
+        auto trimmed=serial;
+        Tools::trim(trimmed);
+        const char* errmsg = h36::hy36decode(5, trimmed.c_str(),trimmed.length(), &result);
         if(errmsg) {
           std::string msg(errmsg);
           plumed_merror(msg);
