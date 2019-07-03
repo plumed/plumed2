@@ -25,7 +25,7 @@
 #include "core/ActionAtomistic.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Average.h"
+#include "core/AverageBase.h"
 #include "core/SetupMolInfo.h"
 #include "core/ActionSet.h"
 #include "setup/SetupReferenceBase.h"
@@ -378,7 +378,7 @@ void Print::update() {
   if( getStep()==0 ) {
     bool dontprint=getNumberOfArguments()>0;
     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      Average* av = dynamic_cast<Average*>( getPntrToArgument(i)->getPntrToAction() );
+      AverageBase* av = dynamic_cast<AverageBase*>( getPntrToArgument(i)->getPntrToAction() );
       if( !av ) { dontprint=false; break; }
     }
     if( dontprint ) return;  // If everything is an average don't print on first step

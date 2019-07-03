@@ -27,7 +27,7 @@
 #include "tools/PDB.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
-#include "Average.h"
+#include "AverageBase.h"
 #include <iostream>
 #ifdef __PLUMED_HAS_CREGEX
 #include <cstring>
@@ -239,7 +239,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
   // Now check if we need to store data
   for(unsigned i=argstart; i<arguments.size(); ++i) {
     if( arguments[i]->getRank()>0 ) allrankzero=false;
-    Average* av=dynamic_cast<Average*>( arguments[i]->getPntrToAction() ); 
+    AverageBase* av=dynamic_cast<AverageBase*>( arguments[i]->getPntrToAction() ); 
     if( av || arguments[i]->alwaysstore || arguments[i]->columnsums || !usingAllArgs[i] ) { storing=true; break; }
     if( this->getCaller()!="plumedmain" && (arguments[i]->getPntrToAction())->getCaller()=="plumedmain" ) { storing=true; break; }
     if( plumed.getPntrToValue( arguments[i]->getName() ) ) { storing=true; break; }
@@ -255,7 +255,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
         } else {
           name=fullname;
         }
-        Average* av = dynamic_cast<Average*>( arguments[i]->getPntrToAction() );
+        AverageBase* av = dynamic_cast<AverageBase*>( arguments[i]->getPntrToAction() );
         if( av ) { 
             averageInArguments=true;
         } else {
@@ -268,7 +268,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
         plumed_massert(action,"cannot find action named (in requestArguments - this is weird)" + name);
         if( i<argstart ) {
             // We don't add the depedency if we the previous one is an average
-            Average* av=dynamic_cast<Average*>( action ); 
+            AverageBase* av=dynamic_cast<AverageBase*>( action ); 
             if( !av ) addDependency(action);
         }
         if( i<argstart ) continue;

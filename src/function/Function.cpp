@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
-#include "core/Average.h"
+#include "core/AverageBase.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/OpenMP.h"
