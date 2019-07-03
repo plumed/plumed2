@@ -94,14 +94,13 @@ SetupReferenceBase(ao)
          // Now make virtual atoms for all these positions and set them to the pdb positions
          unsigned natoms=pdb.getPositions().size(); 
          if( natoms>0 ) {
-             hasatoms=true; myindices.resize( natoms ); double mtot=0, qtot=0;
-             for(unsigned i=0;i<natoms;++i) { mtot += pdb.getOccupancy()[i]; qtot += pdb.getBeta()[i]; }
+             hasatoms=true; myindices.resize( natoms ); 
              for(unsigned i=0;i<natoms;++i){
                  myindices[i] = pdb.getAtomNumbers()[i];
                  AtomNumber index = atoms.addVirtualAtom( this );
                  mygroup.push_back( index ); 
-                 atoms.setVatomMass( index, pdb.getOccupancy()[i]/mtot );
-                 atoms.setVatomCharge( index, pdb.getBeta()[i]/qtot );
+                 atoms.setVatomMass( index, pdb.getOccupancy()[i] );
+                 atoms.setVatomCharge( index, pdb.getBeta()[i] );
                  atoms.setVatomPosition( index, pdb.getPositions()[i] - center );
              }
              atoms.insertGroup( getLabel(), mygroup );

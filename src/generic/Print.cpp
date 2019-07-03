@@ -568,7 +568,7 @@ void Print::update() {
   } else if( tstyle=="pdb" ) {
     OFile opdbf; opdbf.link(*this);
     opdbf.setBackupString("analysis");
-    opdbf.open( file ); unsigned n=0; 
+    opdbf.open( file ); unsigned nn=0; 
     opdbf.printf("# PATH AT STEP %d TIME %f \n", getStep(), getTime() ); 
     std::size_t psign=fmt.find("%"); plumed_assert( psign!=std::string::npos ); 
     std::string descr2="%s=%-" + fmt.substr(psign+1) + " ";
@@ -604,11 +604,11 @@ void Print::update() {
             }
         }
         for(unsigned j=0;j<reference_atoms[i].size();++j) {
-            Vector pos=getPosition(n); 
+            Vector pos=getPosition(nn); 
             opdbf.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                          reference_atoms[i][j].serial(), j,
-                         lenunits*pos[0], lenunits*pos[1], lenunits*pos[2], getMass(n), getCharge(n) ); 
-            n++;
+                         lenunits*pos[0], lenunits*pos[1], lenunits*pos[2], getMass(nn), getCharge(nn) ); 
+            nn++;
         }
         opdbf.printf("\nEND\n");
     }
