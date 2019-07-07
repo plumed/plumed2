@@ -175,7 +175,7 @@ PRINT ARG=dp,cn FILE=COLVAR STRIDE=100
 \endplumedfile
 
 Now measure the speed of your simulation. You should see some overhead due to PLUMED.
-You can now try to use multiple-time-stepping \cite{Ferrarotti2015}.
+You can now try to use multiple-time-stepping \cite Ferrarotti2015.
 To do so add a `STRIDE` option to the \ref RESTRAINT line.
 You can also use the \ref EFFECTIVE_ENERGY_DRIFT action to print a kind of "total energy drift" due to the application
 of the PLUMED bias. In molecular dynamics simulation you usually monitor the drift in the total energy in order to choose the
@@ -214,7 +214,7 @@ Using a `STRIDE=2` instead the effective energy will be very stable
 
 
 Let's try to perform a metadynamics simulation biasing the coordination number and
-the distance between the magnesium ion and the phosphate. Parameters are similar to those used in \cite{cunha2017unraveling},
+the distance between the magnesium ion and the phosphate. Parameters are similar to those used in \cite cunha2017unraveling,
 although we use here a shorter deposition pace in order to artificially increase the computational cost.
 
 \plumedfile
