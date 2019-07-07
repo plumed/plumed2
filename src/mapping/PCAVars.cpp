@@ -268,14 +268,14 @@ PCAVars::PCAVars(const ActionOptions& ao):
   // Get the arguments and atoms that are required
   std::vector<AtomNumber> atoms; myref->getAtomRequests( atoms, false );
   std::vector<std::string> args; myref->getArgumentRequests( args, false );
-  if( atoms.size()>0 ) { 
-      log.printf("  found %d atoms in input \n",atoms.size());
-      log.printf("  with indices : ");
-      for(unsigned i=0; i<atoms.size(); ++i) {
-        if(i%25==0) log<<"\n";
-        log.printf("%d ",atoms[i].serial());
-      }
-      log.printf("\n");
+  if( atoms.size()>0 ) {
+    log.printf("  found %d atoms in input \n",atoms.size());
+    log.printf("  with indices : ");
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      if(i%25==0) log<<"\n";
+      log.printf("%d ",atoms[i].serial());
+    }
+    log.printf("\n");
   }
   requestAtoms( atoms ); std::vector<Value*> req_args;
   interpretArgumentList( args, req_args ); requestArguments( req_args );

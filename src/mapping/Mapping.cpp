@@ -109,14 +109,14 @@ Mapping::Mapping(const ActionOptions&ao):
   if( req_args.size()>0 && atoms.size()>0 ) error("cannot mix atoms and arguments");
   if( req_args.size()>0 ) requestArguments( req_args );
   if( atoms.size()>0 ) {
-      log.printf("  found %d atoms in input \n",atoms.size());
-      log.printf("  with indices : ");
-      for(unsigned i=0; i<atoms.size(); ++i) {
-        if(i%25==0) log<<"\n";
-        log.printf("%d ",atoms[i].serial());
-      }
-      log.printf("\n");
-      requestAtoms( atoms );
+    log.printf("  found %d atoms in input \n",atoms.size());
+    log.printf("  with indices : ");
+    for(unsigned i=0; i<atoms.size(); ++i) {
+      if(i%25==0) log<<"\n";
+      log.printf("%d ",atoms[i].serial());
+    }
+    log.printf("\n");
+    requestAtoms( atoms );
   }
   // Duplicate all frames (duplicates are used by sketch-map)
   // mymap->duplicateFrameList();
