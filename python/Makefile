@@ -45,4 +45,4 @@ pypi:
 	echo "now use: $(python_bin) -m twine upload dist/plumed-$(VERSION).tar.gz"
 
 clean:
-	rm -fr *.so plumed.cpp build Plumed.h VERSION pypi test/logfile test/bck* pypi
+	rm -fr *.so plumed.cpp build Plumed.h VERSION pypi test/logfile test/bck* test/dataframe.? test/dataframe pypi

@@ -155,7 +155,7 @@ install:
 # install cython for python interface
 # nose and other packages are needed for running tests
 # only for linux and homebrew (no macports)
-# pandas: needed by mdtraj
+# pandas: needed by mdtraj and by plumed
   - if test "$PLUMED_CXX" ; then
       sudo pip install --upgrade pip ;
       sudo pip install Cython ;
