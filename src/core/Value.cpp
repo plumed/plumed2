@@ -39,6 +39,7 @@ Value::Value():
   norm(1.0),
   hasForce(false),
   hasDeriv(true),
+  istimeseries(false),
   shape(std::vector<unsigned>()),
   alwaysstore(false),
   storedata(true),
@@ -65,6 +66,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   hasForce(false),
   name(name),
   hasDeriv(withderiv),
+  istimeseries(false),
   alwaysstore(false),
   neverstore(false),
   columnsums(false),
@@ -117,6 +119,10 @@ void Value::buildDataStore( const std::string& actlabel ) {
 
 void Value::alwaysStoreValues() {
   plumed_assert( !neverstore); alwaysstore=true; storedata=true;
+}
+
+void Value::makeTimeSeries() {
+  plumed_assert( shape.size()==1 ); istimeseries=true;
 }
 
 void Value::neverStoreValues() {

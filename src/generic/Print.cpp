@@ -99,6 +99,7 @@ class Print :
   vector<Value*> rotateArguments;
   vector<double> lower, upper;
 /////////////////////////////////////////
+  bool timeseries;
   double dot_connection_cutoff;
   std::vector<unsigned> refarg_ends;
   std::vector<std::vector<AtomNumber> > reference_atoms;
@@ -153,14 +154,26 @@ Print::Print(const ActionOptions&ao):
   lenunit(1.0),
   gridinput(false),
   rotate(0),
+  timeseries(false),
   dot_connection_cutoff(0.)
 {
   parse("FILE",file);
+  // This checks if we are printing a stored time series
+  if( getNumberOfArguments()>0 ) {
+      timeseries=getPntrToArgument(0)->isTimeSeries();
+      if( timeseries ) {
+          unsigned nv=getPntrToArgument(0)->getNumberOfValues( getLabel() );
+          for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+              if( !getPntrToArgument(i)->isTimeSeries() ) error("cannot mix time series and non-time series data");
+              if( getPntrToArgument(i)->getNumberOfValues( getLabel() )!=nv ) error("for printing of time series all arguments must have same number of values");
+          }
+      }
+  }
   if(file.length()>0) {
     tstyle = Tools::extension( file ); 
     if( tstyle!="xyz" && tstyle!="ndx" && tstyle!="grid" && tstyle!="cube" && tstyle!="dot" && tstyle!="pdb" ) tstyle="colvar";
     log.printf("  on file %s\n",file.c_str());
-    if( tstyle!="grid" && tstyle!="cube" && tstyle!="pdb" ) { ofile.link(*this); ofile.open(file); }
+    if( !timeseries && tstyle!="grid" && tstyle!="cube" && tstyle!="pdb" ) { ofile.link(*this); ofile.open(file); }
   } else {
     log.printf("  on plumed log file\n");
     ofile.link(log);
@@ -170,14 +183,17 @@ Print::Print(const ActionOptions&ao):
   else fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
   if( tstyle=="colvar" ) {
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) { // ofile.setupPrintValue( getPntrToArgument(i) );
-      getPntrToArgument(i)->buildDataStore( getLabel() );
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) { 
+      if( !timeseries ) getPntrToArgument(i)->buildDataStore( getLabel() );
       if( getPntrToArgument(i)->isPeriodic() ) {
         ofile.addConstantField("min_" + getPntrToArgument(i)->getName() );
         ofile.addConstantField("max_" + getPntrToArgument(i)->getName() );
       }
     }
-    if( getStride()==0 ) { setStride(1); log.printf("  with stride %d\n",getStride()); }
+    if( getStride()==0 ) { 
+        if( timeseries ) { setStride(10000); printAtEnd=true; log.printf("  printing time series at end of calculation \n"); }
+        else { setStride(1); log.printf("  with stride %d\n",getStride()); }
+    }
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
@@ -385,7 +401,7 @@ void Print::update() {
   }
   if( printAtEnd ) return ;
 
-  if( tstyle=="colvar" ) {
+  if( !timeseries && tstyle=="colvar" ) {
     ofile.fmtField(" %f");
     ofile.printField("time",getTime());
     if( getNumberOfArguments()>0 ) {
@@ -398,6 +414,28 @@ void Print::update() {
         }
     }
     ofile.printField();
+  } else if( tstyle=="colvar" ) {
+    OFile ogfile; ogfile.link(*this); 
+    ogfile.setBackupString("analysis"); ogfile.open( file );
+    unsigned nv = getPntrToArgument(0)->getNumberOfValues( getLabel() );
+    std::vector<std::string> arg_names( getNumberOfArguments() );
+    for(unsigned j=0;j<getNumberOfArguments();++j) {
+        arg_names[j] = getPntrToArgument(j)->getName();
+        AverageBase* myav = dynamic_cast<AverageBase*>( getPntrToArgument(j)->getPntrToAction() );
+        if( myav ) { std::size_t dot=arg_names[j].find_first_of("."); arg_names[j] = arg_names[j].substr(dot+1); }
+    }
+    for(unsigned i=0; i<nv; ++i) {  
+        for(unsigned j=0;j<getNumberOfArguments();++j) {
+            ogfile.fmtField(fmt); 
+            if( getPntrToArgument(j)->isPeriodic() ) { 
+                std::string str_min, str_max; getPntrToArgument(j)->getDomain( str_min, str_max );
+                ogfile.printField( "min_" + arg_names[j], str_min ); ogfile.printField("max_" + arg_names[j], str_max ); 
+            }
+            ogfile.printField( arg_names[j], getPntrToArgument(j)->get(i) );
+        }
+        ogfile.printField();
+    }
+    ogfile.close();
   } else if( tstyle=="xyz") {
     if( getNumberOfAtoms()>0 ) {
       unsigned natoms=0, ntatoms=getNumberOfAtoms(); if( hasorigin ) ntatoms = ntatoms - 1;

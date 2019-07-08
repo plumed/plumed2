@@ -96,6 +96,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
+  void resizeValues();
   bool allowComponentsAndValue() const { return true; }
   void clearAccumulatedData();
   void accumulateData( const double& cweight );
@@ -105,6 +106,7 @@ PLUMED_REGISTER_ACTION(Average,"AVERAGE")
 
 void Average::registerKeywords( Keywords& keys ) {
   AverageBase::registerKeywords( keys );
+  keys.add("compulsory","ARG","the quantity that we are calculating an ensemble average for");
   keys.add("compulsory","NORMALIZATION","true","This controls how the data is normalized it can be set equal to true, false or ndata.  The differences between "
            "these options are explained in the manual page for \\ref HISTOGRAM");
   keys.addOutputComponent("sin","default","this value is only added when the input argument is periodic.  These tempory values are required as with periodic arguments we need to use Berry phase averages.");
@@ -118,9 +120,9 @@ Average::Average( const ActionOptions& ao):
 {
   // Now read in the instructions for the normalization
   std::string normstr; parse("NORMALIZATION",normstr);
-  if( normstr=="true" ) normalization=t;
-  else if( normstr=="false" ) normalization=f;
-  else if( normstr=="ndata" ) normalization=ndata;
+  if( normstr=="true" ) { normalization=t; clearnorm=true; }
+  else if( normstr=="false" ) { normalization=f; clearnorm=false; }
+  else if( normstr=="ndata" ) { normalization=ndata; clearnorm=true; }
   else error("invalid instruction for NORMALIZATION flag should be true, false, or ndata");
 
   // Create a value
@@ -141,18 +143,9 @@ Average::Average( const ActionOptions& ao):
   }
 }
 
-void Average::clearAccumulatedData() {
-  getPntrToOutput(0)->clearDerivatives();
-  if( normalization!=f ) {
-    if( getPntrToArgument(0)->isPeriodic() ) {
-      getPntrToOutput(1)->set(0.0);
-      getPntrToOutput(1)->setNorm(0.0);
-      getPntrToOutput(2)->set(0.0); 
-      getPntrToOutput(2)->setNorm(0.0);
-    } else {
-      getPntrToOutput(0)->set(0.0);
-      getPntrToOutput(0)->setNorm(0.0);
-    }
+void Average::resizeValues() {
+  if( getPntrToOutput(0)->getNumberOfValues( getLabel() )!=getPntrToArgument(0)->getNumberOfValues( getLabel() ) ) {
+      getPntrToOutput(0)->setShape( getPntrToArgument(0)->getShape() );
   }
 }
 

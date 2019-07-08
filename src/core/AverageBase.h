@@ -34,12 +34,16 @@ class AverageBase :
   public ActionWithValue,
   public ActionWithArguments {
 private:
-  bool firststep, clearnextstep;
+  bool clearnextstep, firststep;
+protected:
+  bool clearnorm;
   unsigned clearstride;
+  unsigned n_real_args;
 public:
   static void registerKeywords( Keywords& keys );
   explicit AverageBase( const ActionOptions& );
   void clearDerivatives( const bool& force=false ) {}
+  virtual void resizeValues() {}
   unsigned getNumberOfDerivatives() const ;
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
                              std::vector<std::string>& max, std::vector<unsigned>& nbin,
@@ -53,7 +57,6 @@ public:
   void calculate() {}
   void apply() {}
   void update();
-  virtual void clearAccumulatedData() = 0;
   virtual void accumulateData( const double& cweight ) = 0;
 };
 

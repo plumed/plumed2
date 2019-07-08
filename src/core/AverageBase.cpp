@@ -30,7 +30,7 @@ namespace PLMD {
 void AverageBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
   ActionPilot::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
-  ActionWithArguments::registerKeywords( keys ); keys.use("ARG"); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
+  ActionWithArguments::registerKeywords( keys ); keys.remove("ARG"); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
            "of 0 implies that all the data will be used and that the grid will never be cleared");
@@ -43,9 +43,12 @@ AverageBase::AverageBase( const ActionOptions& ao):
   ActionAtomistic(ao),
   ActionWithValue(ao),
   ActionWithArguments(ao),
+  clearnextstep(false),
   firststep(true),
-  clearnextstep(false)
+  clearnorm(false),
+  n_real_args(getNumberOfArguments())
 {
+  plumed_assert( keywords.exists("ARG") );
   std::vector<std::string> wwstr; parseVector("LOGWEIGHTS",wwstr);
   if( wwstr.size()>0 ) log.printf("  reweighting using weights from ");
   std::vector<Value*> arg( getArguments() );
@@ -104,21 +107,25 @@ void AverageBase::unlockRequests() {
 }
 
 void AverageBase::update() {
-  if( firststep ) {
-    if( getPntrToOutput(0)->getNumberOfValues( getLabel() )!=getPntrToArgument(0)->getNumberOfValues( getLabel() ) ) {
-      getPntrToOutput(0)->setShape( getPntrToArgument(0)->getShape() );
-    }
-    firststep=false;
-  }
-
+  // Resize values if they need resizing
+  if( firststep ) { resizeValues(); firststep=false; }
+  // Check if we need to accumulate
   if( (clearstride!=1 && getStep()==0) || !onStep() ) return;
 
-  if( clearnextstep ) { clearAccumulatedData(); clearnextstep=false; }
+  if( clearnextstep ) { 
+      for(unsigned i=0;i<getNumberOfComponents();++i) {
+          getPntrToOutput(i)->clearDerivatives(); getPntrToOutput(i)->set(0.0); 
+      }
+      if( clearnorm ) {
+          for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->setNorm(0.0);
+      }
+      clearnextstep=false; 
+  }
 
-  // Get weight information
+  // Get the weight information
   double cweight=1.0;
-  if ( getNumberOfArguments()>1 ) {
-    double sum=0; for(unsigned i=1; i<getNumberOfArguments(); ++i) sum+=getPntrToArgument(i)->get();
+  if ( getNumberOfArguments()>n_real_args ) {
+    double sum=0; for(unsigned i=n_real_args; i<getNumberOfArguments(); ++i) sum+=getPntrToArgument(i)->get();
     cweight = exp( sum );
   }
 
