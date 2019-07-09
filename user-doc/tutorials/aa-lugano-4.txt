@@ -5,7 +5,7 @@
 
 This tutorial will teach you how to use block averaging techniques to compute the error bars on the estimates for the ensemble average and the free 
 energy that you obtain from a biased simulation.  Please note that the ensemble averages that you obtain from simulations are always estimates and that
-you should thus <b>always</b> endeavor to provide an esimtate of the erorr bar.
+you should thus <b>always</b> endeavor to provide an estimate of the error bar.
 
 \section lugano-4-lo Objectives
 
@@ -52,7 +52,7 @@ statistical mechanics that, if we are in the canonical (NVT) ensemble, the value
 \f[
 \langle A \rangle = \frac{ \int \textrm{d}x \textrm{d}p A(x) e^{-\frac{H(x,p)}{k_B T}} }{ \int \textrm{d}x\textrm{d}p e^{-\frac{H(x,p)}{k_B T}} }
 \f]
-where \f$H(x,p)\f$ is the Hamiltonian for our system, \f$T\f$ is the temperature and $\fk_B\f$ is Boltzmann's constant.  We also know, however, that for all but the
+where \f$H(x,p)\f$ is the Hamiltonian for our system, \f$T\f$ is the temperature and \f$k_B\f$ is Boltzmann's constant.  We also know, however, that for all but the
 simplest possible systems, it is impossible to solve the integrals in this expression analytically.  Furthermore, because this expression involves integrals over all
 the \f$3N\f$ position and \f$3N\f$ momentum coordinates, using a numerical integration method that employs a set of regularly spaced grid points in the \f$6N\f$
 dimensional phase space would be prohibitively expensive.  We are thus forced to instead generate a time series of random variables and to approximate the ensemble average
@@ -64,12 +64,12 @@ where each \f$A_t\f$ in the expression above is a sample from the distribution:
 \f[
 P(A_t = a ) = \frac{ \int \textrm{d}x \textrm{d}p \delta(A(x)-a) e^{-\frac{H(x,p)}{k_B T}} }{ \int \textrm{d}x\textrm{d}p e^{-\frac{H(x,p)}{k_B T}} }
 \f]
-This distribution (thanfully) is exactly the distribution we are sampling from if we compute the values the observable \f$A\f$ takes during the course of in an equilibrated molecular
+This distribution (thankfully) is exactly the distribution we are sampling from if we compute the values the observable \f$A\f$ takes during the course of in an equilibrated molecular
 dynamics trajectory.  We can thus calculate an approximate value for \f$\langle A\rangle\f$ by computing the value of \f$A\f$ for each of the frames in our trajectory and
 by computing the average value that \f$A\f$ takes over the trajectory using equation 1.  It is critical to remember, however, that the value we obtain for \f$\langle A\rangle\f$
 when we compute it this way is itself a random variable.  When reporting ensemble averages calculated in this way we should thus endeavor to quantify the error in our estimate
 of this quantity by computing multiple estimates for \f$\langle A\rangle\f$ and by using these multiple estimates to compute a variance for the underlying random variable.  This
-tutorial will explain how this such error bars are compupted in practise.  At some stage you may find it useful to watch the following videos in order to understand the theory
+tutorial will explain how this such error bars are computed in practice.  At some stage you may find it useful to watch the following videos in order to understand the theory
 that is behind these calculations a little better.   
 
 @htmlonly
@@ -85,8 +85,8 @@ that is behind these calculations a little better.
 
 \subsection lugano-4-simplemd Using PLUMED as an MD code
 
-Before getting into the business of computing an ensemble average we first need to setup the system we are going to study.  In this tutorial we are going to use PLUMED's inbuilt
-MD code <b>simplemd</b>.  You can run this code by issuing the command:
+Before getting into the business of computing an ensemble average we first need to setup the system we are going to study.  In this tutorial we are going to use the
+MD code <b>simplemd</b> that is part of PLUMED.  You can run this code by issuing the command:
 
 \verbatim
 plumed simplemd < in
@@ -136,7 +136,7 @@ To prevent the cluster from evaporating you need to lower the temperature in the
 <b> 
 Now try to think how we can use a bias potential to stop the cluster from evaporating. Why might using a bias potential be preferable to the method that you have just employed? 
 N.B. The next exercise is in the hidden section below so you need to expand it.  Please try to come up with your own answer to the question of what bias potential we should be using 
-before expanding this section by thinking abouot the material that was covered in \ref a-lugano-2.
+before expanding this section by thinking about the material that was covered in \ref a-lugano-2.
 </b>
 
 \hidden{The bias potential}
@@ -147,7 +147,7 @@ center of mass of the cluster.  As the masses of all the atoms in the cluster ar
 \f[
 \mathbf{x}_\textrm{com} = \frac{1}{N} \sum_{i=1}^N \mathbf{x}_i
 \f]
-where \f$\mathbf{x}_i\f$ is the position of the \f$i\f$th atom.   The distance between the \f$i\f$th atom and the position of this center of mass, \f$d_i\f$, can be computed using Pythagoras' theorem.  These distances
+where \f$\mathbf{x}_i\f$ is the position of the atom with the index \f$i\f$.   The distance between the atom with index \f$i\f$ and the position of this center of mass, \f$d_i\f$, can be computed using Pythagoras' theorem.  These distances
 are then restrained by using the following potential:
 \f[
 V(d_i) = \begin{cases}
@@ -208,7 +208,7 @@ trajectory yourself for a simple case in order to better understand the theory. 
 data to analyze.  
 
 <b> Run a simulation of the Lennard Jones cluster at \f$k_B T = 0.2 \epsilon\f$ using for 12000 steps using the input file below (but with the blanks filled in obviously). This calculation outputs the potential energy of the system for every 
-10th step in the trajectory to a file called energy. </b> 
+tenth step in the trajectory to a file called energy. </b> 
 
 \plumedfile
 # this optional command tells VIM that this is a PLUMED file and to color the text accordingly
@@ -329,7 +329,7 @@ so as to resolve these issues.
 \subsection luganoo-4-metad Running the metadynamics simulation
 
 We can drive transitions between the four possible minima in the Lennard-Jones-seven potential energy landscape by biasing the second and third central moments of the distribution of coordination numbers.
-The \f$n\f$th central moment of a set of numbers, \f$\{X_i\}\f$ can be calculated using:
+The nth central moment of a set of numbers, \f$\{X_i\}\f$ can be calculated using:
 \f[
 \mu^n = \frac{1}{N} \sum_{i=1}^N ( X_i - \langle X \rangle )^n \qquad \textrm{where} \qquad \langle X \rangle = \frac{1}{N} \sum_{i=1}^N X_i
 \f]
@@ -337,7 +337,7 @@ Furthermore, we can compute the coordination number of our Lennard Jones atoms u
 \f[ 
 c_i = \sum_{i \ne j } \frac{1 - \left(\frac{r_{ij}}{1.5}\right)^8}{1 - \left(\frac{r_{ij}}{1.5}\right)^{16} }
 \f]
-where \f$r_{ij}\f$__FILL__ is the distance between atom \f$i\f$ and atom \f$j\f$.  The following cell contains a skeleton input file for PLUMED that gets it to perform metadynamics usnig the second and third central 
+where \f$r_{ij}\f$__FILL__ is the distance between atom \f$i\f$ and atom \f$j\f$.  The following cell contains a skeleton input file for PLUMED that gets it to perform metadynamics using the second and third central 
 moments of the distribution of coordination numbers as a CV.
 
 \plumedfile
@@ -412,7 +412,7 @@ plumed simplemd < in
 
 \subsection lugano-4-post Extracting block averages for the histogram
 
-Having now run the metadynamis we will need to postprocess our trajectory with <b> driver </b> in order to extract the free energy by reweighting.  Furthermore, notice that, in order to do our block averaging, we are going 
+Having now run the metadynamics we will need to post process our trajectory with <b> driver </b> in order to extract the free energy by reweighting.  Furthermore, notice that, in order to do our block averaging, we are going 
 to want to extract multiple estimates for the histogram so that we can do our block averaging.  We are thus going to use the following input file to extract our estimates of the histogram:
 
 \plumedfile
@@ -445,7 +445,7 @@ Once you have filled in the blanks in this input you can then run the calculatio
 \endverbatim
 
 You must make sure that the HILLS file that was output by your metadynamics simulation is available in the directory where you run the above command.
-If that condition is satisifed though you should generate a number of files containing histograms that will be called: analysis.0.my_histogram.dat, 
+If that condition is satisfied though you should generate a number of files containing histograms that will be called: analysis.0.my_histogram.dat, 
 analysis.1.myhistogram.dat etc.  These files contain the histograms constructed from each of the blocks of data in your trajectory.  You can merge
 them all to get the final free energy surface, which can be calculated using the well known relation between the histogram, \f$P(s)\f$, and the 
 free energy surface, \f$F(s)\f$:
@@ -550,7 +550,7 @@ Similarly you can get a sense of how the error in the estimate of the free energ
 gnuplot> sp 'final-histogram.dat' u 1:2:4 w pm3d
 \endverbatim
 
-More usefullly, however, if you open the final-histogram.dat file you find that the first line reads:
+More usefully, however, if you open the final-histogram.dat file you find that the first line reads:
 
 \verbatim
 # Average error for historgram is <average-histogram-error> and thus average energy in free energy is <average-free-energy-error>
@@ -562,7 +562,7 @@ You can thus read off the average error in the estimate of the free energy from 
 
 \hidden{Expected result}
 You should be able to extract a graph that looks something like the one shown below.  The error is small when the block size is small because the correlations between the trajectory frames cause this quantity to be underestimated.  As the block
-size increases, however, the error increases until it eventually platteaus.
+size increases, however, the error increases until it eventually flattens out.
 
 \anchor lugano-4-lj7-errors
 \image html lugano-4-lj7-errors.png "The error in the estimate of the free energy as a function of the size of the blocks."
@@ -571,7 +571,7 @@ size increases, however, the error increases until it eventually platteaus.
 
 \section lugano-4-extensions Conclusions and extensions
 
-This exercise has explained the block averaging technique and has shown you how this technique can be useed to extract the errors in estimates of the free energy. 
+This exercise has explained the block averaging technique and has shown you how this technique can be used to extract the errors in estimates of the free energy. 
 You can learn more about the background to this technique and the business of reweighting biased trajectories in particular by working through \ref trieste-2 or 
 by reading https://arxiv.org/abs/1812.08213.
 
