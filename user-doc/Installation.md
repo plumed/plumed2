@@ -628,7 +628,7 @@ gromacs once for all and combine it with your working version of PLUMED.
 
 \section Installation-conda Installing PLUMED with conda
 
-If you use the conda package manager you can install a precompiled PLUMED binary using the following command:
+If you use the conda package manager you can install a pre-compiled PLUMED binary using the following command:
 \verbatim
 > conda install -c conda-forge plumed
 \endverbatim
