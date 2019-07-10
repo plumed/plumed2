@@ -39,6 +39,10 @@ protected:
   bool clearnorm;
   unsigned clearstride;
   unsigned n_real_args;
+/// This is used to setup the components for the actions that store data
+  void setupComponents( const unsigned& nreplicas );
+/// This is used to transfer the data in runFinalJobs for actions that collect data
+  void transferCollectedDataToValue( const std::vector<std::vector<double> >& mydata, const std::vector<double>& myweights );
 public:
   static void registerKeywords( Keywords& keys );
   explicit AverageBase( const ActionOptions& );

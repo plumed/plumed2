@@ -19,10 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "AverageBase.h"
-#include "PlumedMain.h"
-#include "ActionSet.h"
-#include "ActionRegister.h"
+#include "core/AverageBase.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/ActionRegister.h"
 
 //+PLUMEDOC GRIDCALC AVERAGE
 /*
@@ -88,6 +88,7 @@ PRINT ARG=t1a FILE=colvar STRIDE=100
 //+ENDPLUMEDOC
 
 namespace PLMD {
+namespace analysis {
 
 class Average : public AverageBase {
 private:
@@ -149,9 +150,9 @@ void Average::resizeValues() {
   }
 }
 
-void Average::accumulateData( const double& cweight ) {
+void Average::accumulateData( const double& lweight ) {
   // Accumulate normalization
-  Value* arg0=getPntrToArgument(0); Value* val=getPntrToOutput(0);
+  Value* arg0=getPntrToArgument(0); Value* val=getPntrToOutput(0); double cweight = exp( lweight );
 
   if( arg0->isPeriodic() ) {
     Value* valsin=getPntrToOutput(1); Value* valcos=getPntrToOutput(2);
@@ -182,4 +183,5 @@ void Average::accumulateData( const double& cweight ) {
   }
 }
 
+}
 }

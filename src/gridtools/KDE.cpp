@@ -382,10 +382,10 @@ void KDE::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& ar
   for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
     unsigned k=i; if( arg_ends.size()>0 ) k = arg_ends[i];
     argn[i] = getPntrToArgument( k )->getName(); double gmin, gmax;
-    if( gridobject.getMin().size()>0 ) {
+    if( isdists && gridobject.getMin().size()>0 ) {
       Tools::convert( gridobject.getMin()[i], gmin ); Tools::convert( gmin*units, min[i] );
       Tools::convert( gridobject.getMax()[i], gmax ); Tools::convert( gmax*units, max[i] );
-    }
+    } else if( gridobject.getMin().size()>0 ) { min[i] = gridobject.getMin()[i]; max[i] = gridobject.getMax()[i]; }
     if( nbin.size()>0 ) out_nbin[i]=nbin[i];
     if( gspacing.size()>0 ) spacing[i]=units*gspacing[i];
     pbc[i]=gridobject.isPeriodic(i);

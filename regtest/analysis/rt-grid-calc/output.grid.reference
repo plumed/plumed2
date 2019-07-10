@@ -1,7 +1,7 @@
 #! FIELDS x ffg dffg_x
 #! SET normalisation    1.0000
 #! SET min_x 0
-#! SET max_x 3.14159
+#! SET max_x pi
 #! SET nbins_x  20
 #! SET periodic_x false
    0.0000   0.0000   1.0000

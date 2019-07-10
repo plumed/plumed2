@@ -82,11 +82,7 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
 {
   // Check all the values have the right size
   if( arg_ends.size()>0 ) {
-    numberOfKernels=0; for(unsigned i=arg_ends[0]; i<arg_ends[1]; ++i) numberOfKernels += getPntrToArgument(i)->getNumberOfValues( getLabel() );
-    for(unsigned i=1; i<arg_ends.size()-1; ++i) {
-      unsigned tvals=0; for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
-      if( numberOfKernels!=tvals ) error("mismatch between numbers of values in input arguments");
-    }
+    setNumberOfKernels();
   } else {
     arg_ends.push_back(0); for(unsigned i=0; i<getNumberOfArguments(); ++i) arg_ends.push_back(i+1);
   }
@@ -114,23 +110,7 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
   bool hasrank = getPntrToArgument(0)->getRank()>0; done_over_stream = false;
   if( hasrank ) {
     for(unsigned i=0; i<getNumberOfArguments(); ++i) { getPntrToArgument(i)->buildDataStore( getLabel() ); plumed_assert( getPntrToArgument(i)->getRank()>0 ); }
-    if( getPntrToArgument(0)->getRank()==2 ) {
-       bool symmetric=true; std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
-       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-           if( !getPntrToArgument(i)->isSymmetric() ) symmetric=false;
-       }
-       if( symmetric ) {
-           for(unsigned j=0;j<shape[0];++j) {
-               for(unsigned k=0;k<=j;++k) addTaskToList( j*shape[0] + k );
-           }
-       } else {
-           for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
-       }
-    } else if( getPntrToArgument(0)->getRank()==1 ) {
-       for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
-    } else {
-       error("do not know how to build histograms for objects with this rank");
-    }
+    buildTasksFromBasedOnRankOfInputData();
   } else {
     one_kernel_at_a_time=true; for(unsigned i=0; i<arg_ends.size(); ++i) { if( arg_ends[i]!=i ) { one_kernel_at_a_time=false; break; } }
     if( !one_kernel_at_a_time ) for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
@@ -140,6 +120,36 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
   unsigned nvals_t=0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) nvals_t += getPntrToArgument(i)->getNumberOfValues( getLabel() );
   forcesToApply.resize( nvals_t );
+}
+
+void HistogramBase::setNumberOfKernels() {
+  numberOfKernels=0; for(unsigned i=arg_ends[0]; i<arg_ends[1]; ++i) numberOfKernels += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+  for(unsigned i=1; i<arg_ends.size()-1; ++i) {
+    unsigned tvals=0; for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) tvals += getPntrToArgument(j)->getNumberOfValues( getLabel() );
+    if( numberOfKernels!=tvals ) error("mismatch between numbers of values in input arguments");
+  }
+}
+
+void HistogramBase::buildTasksFromBasedOnRankOfInputData() {
+  plumed_dbg_assert( getRank()>0 );
+  // Now build the data task list based on the rank of the input data
+  if( getPntrToArgument(0)->getRank()==2 ) {
+     bool symmetric=true; std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+         if( !getPntrToArgument(i)->isSymmetric() ) symmetric=false;
+     }
+     if( symmetric ) {
+         for(unsigned j=0;j<shape[0];++j) {
+             for(unsigned k=0;k<=j;++k) addTaskToList( j*shape[0] + k );
+         }
+     } else {
+         for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
+     }
+  } else if( getPntrToArgument(0)->getRank()==1 ) {
+     for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
+  } else {
+     error("do not know how to build histograms for objects with this rank");
+  }
 }
 
 void HistogramBase::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
@@ -164,10 +174,24 @@ void HistogramBase::getGridPointAsCoordinate( const unsigned& ind, const bool& s
 
 void HistogramBase::calculate() {
   // Everything is done elsewhere
-  if( actionInChain() ) return;
+  if( actionInChain() || hasAverageAsArgument() ) return;
   // This is done if we are calculating a function of multiple cvs
   runAllTasks();
 }
+
+void HistogramBase::update() {
+  if( !hasAverageAsArgument() ) return;
+  plumed_dbg_assert( !actionInChain() );
+  // This is done if we are doing a histogram from a time series
+  runAllTasks();
+}
+
+void HistogramBase::runFinalJobs() {
+  if( !hasAverageAsArgument() ) return;
+  plumed_assert( !actionInChain() );
+  // Need to create tasks here
+  if( getFullNumberOfTasks()==0 ) { setNumberOfKernels(); buildTasksFromBasedOnRankOfInputData(); runAllTasks(); }
+} 
 
 void HistogramBase::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   completeGridObjectSetup(); actionsThatSelectTasks.push_back( getLabel() );

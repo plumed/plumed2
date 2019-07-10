@@ -70,8 +70,7 @@ void CreateGridInSetup::getInfoForGridHeader( std::string& gtype, std::vector<st
     for(unsigned i=0; i<getPntrToOutput(0)->getRank(); ++i) {
       argn[i]=labels[i]; double gmin, gmax;
       if( gridobject.getMin().size()>0 ) {
-        Tools::convert( gridobject.getMin()[i], gmin ); Tools::convert( gmin, min[i] );
-        Tools::convert( gridobject.getMax()[i], gmax ); Tools::convert( gmax, max[i] );
+        min[i] = gridobject.getMin()[i]; max[i] = gridobject.getMax()[i];
       }
       if( nbin.size()>0 ) out_nbin[i]=nbin[i];
       if( spacing.size()>0 ) spacing[i]=gridobject.getGridSpacing()[i];

@@ -51,12 +51,9 @@ AverageBase::AverageBase( const ActionOptions& ao):
   plumed_assert( keywords.exists("ARG") );
   std::vector<std::string> wwstr; parseVector("LOGWEIGHTS",wwstr);
   if( wwstr.size()>0 ) log.printf("  reweighting using weights from ");
-  std::vector<Value*> arg( getArguments() );
-  for(unsigned i=0; i<wwstr.size(); ++i) {
-    ActionWithValue* val = plumed.getActionSet().selectWithLabel<ActionWithValue*>(wwstr[i]);
-    if( !val ) error("could not find value named");
-    arg.push_back( val->copyOutput(val->getLabel()) );
-    log.printf("%s ",wwstr[i].c_str() );
+  std::vector<Value*> arg( getArguments() ), biases; interpretArgumentList( wwstr, biases );
+  for(unsigned i=0; i<biases.size(); ++i) {
+    arg.push_back( biases[i] ); log.printf("%s ",biases[i]->getName().c_str() );
   }
   if( wwstr.size()>0 ) log.printf("\n");
   else log.printf("  weights are all equal to one\n");
@@ -68,6 +65,23 @@ AverageBase::AverageBase( const ActionOptions& ao):
     if( clearstride%getStride()!=0 ) error("CLEAR parameter must be a multiple of STRIDE");
     log.printf("  clearing average every %u steps \n",clearstride);
   }
+}
+
+void AverageBase::setupComponents( const unsigned& nreplicas ) { 
+  unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() );
+  std::vector<unsigned> shape( 1 ); shape[0]=(clearstride / getStride() )*nvals*nreplicas; 
+  for(unsigned j=0;j<n_real_args;++j) {
+      if( getPntrToArgument(j)->getNumberOfValues( getLabel() )!=nvals ) error("all values input to store object must have same length");
+      addComponent( getPntrToArgument(j)->getName(), shape ); 
+      if( getPntrToArgument(j)->isPeriodic() ) { 
+          std::string min, max; getPntrToArgument(j)->getDomain( min, max ); 
+          componentIsPeriodic( getPntrToArgument(j)->getName(), min, max );
+      } else componentIsNotPeriodic( getPntrToArgument(j)->getName() );
+      getPntrToOutput(j)->makeTimeSeries();
+  }
+  // And create a component to store the weights
+  addComponent( "logweights", shape ); componentIsNotPeriodic( "logweights" ); 
+  getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
 }
 
 unsigned AverageBase::getNumberOfDerivatives() const {
@@ -123,10 +137,9 @@ void AverageBase::update() {
   }
 
   // Get the weight information
-  double cweight=1.0;
+  double cweight=0.0; 
   if ( getNumberOfArguments()>n_real_args ) {
-    double sum=0; for(unsigned i=n_real_args; i<getNumberOfArguments(); ++i) sum+=getPntrToArgument(i)->get();
-    cweight = exp( sum );
+       for(unsigned i=n_real_args; i<getNumberOfArguments(); ++i) cweight+=getPntrToArgument(i)->get();
   }
 
   // Accumulate the data required for this round
@@ -134,6 +147,17 @@ void AverageBase::update() {
 
   // Clear if required
   if( (clearstride>0 && getStep()%clearstride==0) ) clearnextstep=true;
+}
+
+void AverageBase::transferCollectedDataToValue( const std::vector<std::vector<double> >& mydata, const std::vector<double>& myweights ) {
+  if( clearstride>0 ) return;
+  std::vector<unsigned> shape(1); shape[0]=myweights.size();
+  for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->setShape( shape );
+
+  for(unsigned i=0;i<myweights.size();++i) {
+      for(unsigned j=0;j<getNumberOfComponents()-1;++j) { getPntrToOutput(j)->set( i, mydata[i][j] ); }
+      getPntrToOutput(getNumberOfComponents()-1)->set( i, myweights[i] );
+  }
 }
 
 }

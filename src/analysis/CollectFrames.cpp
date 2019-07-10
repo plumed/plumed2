@@ -19,12 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "AverageBase.h"
-#include "PlumedMain.h"
-#include "ActionSet.h"
-#include "ActionRegister.h"
+#include "core/AverageBase.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
+namespace analysis {
 
 class CollectFrames : public AverageBase {
 private:
@@ -44,7 +45,7 @@ PLUMED_REGISTER_ACTION(CollectFrames,"COLLECT_FRAMES")
 void CollectFrames::registerKeywords( Keywords& keys ) {
   AverageBase::registerKeywords( keys ); ActionWithValue::useCustomisableComponents( keys );
   keys.add("compulsory","ARG","the data that you would like to collect to analyze later");
-  keys.addOutputComponent("weights","default","this value stores the weights of the stored configurations");
+  keys.addOutputComponent("logweights","default","this value stores the logarithms of the weights of the stored configurations");
 }
 
 CollectFrames::CollectFrames( const ActionOptions& ao):
@@ -55,21 +56,9 @@ CollectFrames::CollectFrames( const ActionOptions& ao):
 {
   if( getPntrToArgument(0)->hasDerivatives() && getPntrToArgument(0)->getRank()>0 ) {
       error("cannot collect grid input for later analysis -- if you need this email gareth.tribello@gmail.com");
-  } 
-  unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() );
-  std::vector<unsigned> shape( 1 ); shape[0]=(clearstride / getStride() )*nvals; 
-  for(unsigned j=0;j<n_real_args;++j) {
-      if( getPntrToArgument(j)->getNumberOfValues( getLabel() )!=nvals ) error("all values input to store object must have same length");
-      addComponent( getPntrToArgument(j)->getName(), shape ); 
-      if( getPntrToArgument(j)->isPeriodic() ) { 
-          std::string min, max; getPntrToArgument(j)->getDomain( min, max ); 
-          componentIsPeriodic( getPntrToArgument(j)->getName(), min, max );
-      } else componentIsNotPeriodic( getPntrToArgument(j)->getName() );
-      getPntrToOutput(j)->makeTimeSeries();
   }
-  // And create a component to store the weights
-  addComponent( "weights", shape ); componentIsNotPeriodic( "weights" ); 
-  getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
+  // Setup the components
+  setupComponents( 1 ); 
 }
 
 void CollectFrames::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
@@ -95,14 +84,8 @@ void CollectFrames::accumulateData( const double& cweight ) {
 }
 
 void CollectFrames::runFinalJobs() {
-  if( clearstride>0 ) return;
-  std::vector<unsigned> shape(1); shape[0]=allweights.size(); 
-  for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->setShape( shape );
-
-  for(unsigned i=0;i<allweights.size();++i) {
-      for(unsigned j=0;j<getNumberOfComponents()-1;++j) { getPntrToOutput(j)->set( i, alldata[i][j] ); }
-      getPntrToOutput(getNumberOfComponents()-1)->set( i, allweights[i] ); 
-  }
+  transferCollectedDataToValue( alldata, allweights );
 }
 
+}
 }
