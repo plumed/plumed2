@@ -77,6 +77,7 @@ class PRE :
 {
 private:
   bool             pbc;
+  bool             doratio;
   double           constant;
   double           inept;
   vector<double>   rtwo;
@@ -97,6 +98,7 @@ void PRE::registerKeywords( Keywords& keys ) {
   useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+  keys.addFlag("NORATIO",false,"Set to TRUE if you want to compute PRE without Intensity Ratio");
   keys.add("compulsory","INEPT","is the INEPT time (in ms).");
   keys.add("compulsory","TAUC","is the correlation time (in ns) for this electron-nuclear interaction.");
   keys.add("compulsory","OMEGA","is the Larmor frequency of the nuclear spin (in MHz).");
@@ -115,11 +117,16 @@ void PRE::registerKeywords( Keywords& keys ) {
 
 PRE::PRE(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
-  pbc(true)
+  pbc(true),
+  doratio(true)
 {
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
+
+  bool noratio=!doratio;
+  parseFlag("NORATIO",noratio);
+  doratio=!noratio;
 
   vector<AtomNumber> atom;
   parseAtomList("SPINLABEL",atom);
@@ -137,15 +144,17 @@ PRE::PRE(const ActionOptions&ao):
 
   // Read in reference values
   rtwo.resize( nga.size() );
-  unsigned ntarget=0;
-  for(unsigned i=0; i<nga.size(); ++i) {
-    if( !parseNumbered( "RTWO", i+1, rtwo[i] ) ) break;
-    ntarget++;
+  if(doratio) {
+    unsigned ntarget=0;
+    for(unsigned i=0; i<nga.size(); ++i) {
+      if( !parseNumbered( "RTWO", i+1, rtwo[i] ) ) break;
+      ntarget++;
+    }
+    if( ntarget==0 ) {
+      parse("RTWO",rtwo[0]);
+      for(unsigned i=1; i<nga.size(); ++i) rtwo[i]=rtwo[0];
+    } else if( ntarget!=nga.size() ) error("found wrong number of RTWO values");
   }
-  if( ntarget==0 ) {
-    parse("RTWO",rtwo[0]);
-    for(unsigned i=1; i<nga.size(); ++i) rtwo[i]=rtwo[0];
-  } else if( ntarget!=nga.size() ) error("found wrong number of RTWO values");
 
   double tauc=0.;
   parse("TAUC",tauc);
@@ -156,9 +165,11 @@ PRE::PRE(const ActionOptions&ao):
   if(omega==0.) error("OMEGA must be set");
 
   inept=0.;
-  parse("INEPT",inept);
-  if(inept==0.) error("INEPT must be set");
-  inept *= 0.001; // ms2s
+  if(doratio) {
+    parse("INEPT",inept);
+    if(inept==0.) error("INEPT must be set");
+    inept *= 0.001; // ms2s
+  }
 
   const double ns2s   = 0.000000001;
   const double MHz2Hz = 1000000.;
@@ -280,9 +291,16 @@ void PRE::calculate()
       deriv[index+j] = -tmpir8*distance;
       if(!getDoScore()) dervir   +=  Tensor(distance,deriv[index+j]);
     }
-    const double ratio = rtwo[i]*exp(-pre*inept) / (rtwo[i]+pre);
-    fact[i] = -ratio*(inept+1./(rtwo[i]+pre));
-    val->set(ratio);
+    double tmpratio;
+    if(!doratio) {
+      tmpratio = pre ; //prova a caso per vedere se lui da problemi
+      fact[i] = 1.; //prova a caso per vedere se lui da problemi
+    } else {
+      tmpratio = rtwo[i]*exp(-pre*inept) / (rtwo[i]+pre);
+      fact[i] = -tmpratio*(inept+1./(rtwo[i]+pre));
+    }
+    const double ratio = tmpratio;
+    val->set(ratio) ;
     if(!getDoScore()) {
       setBoxDerivatives(val, fact[i]*dervir);
       for(unsigned j=0; j<nga[i]; j++) {
