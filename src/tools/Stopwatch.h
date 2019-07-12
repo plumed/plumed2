@@ -338,7 +338,15 @@ inline
 Stopwatch::Handler & Stopwatch::Handler::operator=(Handler && handler) noexcept {
   if(this!=&handler) {
     if(watch) {
-      if(stop) watch->stop();
+      if(stop) {
+        try {
+          watch->stop();
+        } catch(...) {
+// this is to avoid problems with cppcheck, given than this method is declared as
+// noexcept and stop might throw in case of an internal bug
+          std::terminate();
+        }
+      }
       else watch->pause();
     }
 // cppcheck complains about this:
