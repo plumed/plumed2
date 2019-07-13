@@ -32,6 +32,16 @@ from cpython cimport array
 import array
 import re
 import gzip
+import math
+import sys
+import warnings
+
+# When possible, we use python3 specific stuff
+if (sys.version_info > (3, 0)):
+   _HAS_PYTHON3=True
+else:
+   _HAS_PYTHON3=False
+
 
 try:
      import numpy as np
@@ -132,13 +142,86 @@ class FormatError(Exception):
     """
     pass
 
-def read_as_pandas(file,chunksize=None,usecols=None,skiprows=None,nrows=None):
+def _fix_file(file,mode):
+    """Internal utility: returns a file open with mode.
+
+       Takes care of opening file (if it receives a string)
+       and or unzipping (if the file has ".gz" suffix).
+    """
+# allow passing a string
+    if _HAS_PYTHON3:
+        if isinstance(file,str):
+            file=open(file,mode)
+    else:
+        if isinstance(file,basestring):
+            file=open(file,mode)
+# takes care of gzipped files
+    if re.match(".*\.gz",file.name):
+        file = gzip.open(file.name,mode)
+    return file
+
+def _build_convert_function(kernel=None):
+    """Internal utility: returns a function that can be used for conversions.
+
+       kernel : Plumed instance or str
+           The object used to perform conversion.
+           Pass a string to load a Plumed() instance giving the
+           path to the libplumedKernel library, or pass None
+           to load the default Plumed() instance.
+
+       In case of failure, it writes a warning and returns None.
+
+       Notice that this function will store a reference to the passed Plumed() object,
+       thus potentially increasing its lifetime.
+    """
+    try:
+# if necessary, load a kernel
+        if not isinstance(kernel,Plumed):
+            kernel=Plumed(kernel=kernel)
+    except:
+        warnings.warn("cannot load PLUMED instance, conversions will not be available")
+        return None
+    try:
+# define a function to convert data
+        def convert_func(a):
+            r=array.array('d',[float('nan')])
+            convert_func.kernel.cmd("convert "+str(a),r)
+            if math.isnan(r[0]):
+               return a
+            return r[0];
+        convert_func.kernel=kernel
+# check if convert_func is working correctly
+        if (convert_func("pi")=="pi"):
+            warnings.warn("PLUMED instance seems to have a non-working convert cmd, conversions do not work and will be disabled")
+            return None
+# set convert
+        return convert_func
+    except:
+        warnings.warn("PLUMED instance is too old, conversions do not work and will be disabled")
+        return None
+
+def read_as_pandas(file_or_path,enable_constants=True,enable_conversion=True,kernel=None,chunksize=None,usecols=None,skiprows=None,nrows=None):
     """Import a plumed data file as a pandas dataset.
 
-       file : either path to a file or open filed object
+       file_or_path : str or file
+           Either string containing the path of the file or an already opened file object.
+
+       enable_constants : str or boolean, optional (default is True)
+           If 'columns', constants are read and added as constant columns.
+           If 'metadata' or True, constants are read and stored as metadata.
+           If 'no' or False, constants are not read at all.
+       enable_conversion : str or boolean, optional (default is True)
+           If 'constant' or True, only constants are converted.
+           If 'all', all data are converted. Might be slow and probably useless.
+           If 'no' or False, no data are converted.
+       kernel : str or Plumed, optional
+           The Plumed kernel used for conversions. If a string, it is interpreted
+           as the path to a kernel. If None, the default Plumed loading procedure is used
+           (with PLUMED_KERNEL env val). If an existing Plumed object, a pointer is stored
+           and this object is used for conversion.
 
        chunksize : int, optional
-           Return an iterable object.
+           Return an iterable object. Useful to process large files in chunks.
        usecols : list-like or callable, optional
            Directly passed to pandas.
        skiprows : list-like, int or callable, optional
@@ -148,7 +231,16 @@ def read_as_pandas(file,chunksize=None,usecols=None,skiprows=None,nrows=None):
 
        Returns
        -------
-       DataFrame (when chunksize is not provided) or iterable TextFileReader (when chunksize is provided).
+       By default, it returns a special subclass of pandas.DataFrame that includes
+       metadata with constant values in an attribute named `plumed_constants`.
+       If using `enable_constants='no'` or `enable_constants='columns'`,
+       it returns a plain pandas.DataFrame.
+
+       If `chunksize` is provided, it returns a special subclass of pandas.io.parsers.TextFileReader
+       that can be iterated in order to read a file in chunks. Every iteration returns an object
+       equivalent to the one that would have been returned with a call to
+       read_pandas with chunksize=None (that is: either a pandas.DataFrame
+       or a subclass of it).
 
        Comments
        --------
@@ -157,62 +249,193 @@ def read_as_pandas(file,chunksize=None,usecols=None,skiprows=None,nrows=None):
 
        `pandas` module is imported the first time this function is used. Since importing `pandas` is quite slow,
        the first call to this function will be significantly slower than the following ones.
-       Following calls should be fast. The overall speed is comparable or better to loading with `numpy.loadtxt`.
+       Following calls should be faster. The overall speed is comparable or better to loading with `numpy.loadtxt`.
 
        Examples
        --------
 
        colvar=plumed.read_as_pandas("COLVAR")
        print(colvar) # show the datasheet
+       print(colvar.plumed_constants) # show the constant columns
 
        colvar=plumed.read_as_pandas("COLVAR",usecols=[0,4])
        print(colvar) # show the datasheet
+       print(colvar.plumed_constants) # show the constant columns
 
        colvar=plumed.read_as_pandas("COLVAR",usecols=["time","distance"])
        print(colvar) # show the datasheet
+       print(colvar.plumed_constants) # show the constant columns
+
+       colvar=plumed.read_as_pandas("COLVAR",enable_constants='columns')
+       print(colvar) # this dataframe will contain extra columns with the constants
 
        for chunk in plumed.read_as_pandas("COLVAR",chunksize=10):
            print(chunk) # show the datasheet. actually here you should process the chunk
+           print(chunk.plumed_constants) # show the constant columns
 
        Limitations
        -----------
 
-       1. Constants are presently ignored. As a consequence it is not possible to retrieve
-       information such as ranges of variables.
-
-       2. Text variables are not converted using standard PLUMED conversions (e.g. `pi` converted to
-       the value of pi and arithmetic operations resolved).
-
-       3. Only the initial header is read, which implies that files resulting from concatenating
+       Only the initial header is read, which implies that files resulting from concatenating
        datasets with a different number of columns or different column names will not
-       be read correctly.
+       be read correctly and that only constants set at the beginning of the file will be considered.
 
-       Issue 1 could be solved parsing the `#! SET` lines in python.
-       Issue 2 could be solved calling `PLMD::Tools::convert`, which
-       could be easily done through the `plumed_cmd` interface (TODO).
- 
-       Alternatively, all issues might be solved using `PLMD::IFile` for reading,
-       which could be useful but possibly more complicated to implement.
+       This issues might be solved using `PLMD::IFile` for reading,
+       which could be useful but possibly a bit complicated to implement.
+    """
+
+# importing pandas is pretty slow, so we only do it when needed
+    import pandas as pd
+
+# special classes used to attach metadata
+# they are defined inside this function since they need pandas to be imported
+# see https://pandas.pydata.org/pandas-docs/stable/development/extending.html
+    class PlumedSeries(pd.Series):
+        @property
+        def _constructor(self):
+            return PlumedSeries
+        @property
+        def _constructor_expanddim(self):
+            return PlumedDataFrame
+
+    class PlumedDataFrame(pd.DataFrame):
+        _metadata=["plumed_constants"]
+        @property
+        def _constructor(self):
+            return PlumedDataFrame
+        @property
+        def _constructor_sliced(self):
+            return PlumedSeries
+
+# auxiliary function to process a dataframe
+# it is defined here since it requires PlumedDataFrame to be defined
+    def process_dataframe(df,enable_constants,constants,convert_all):
+        if convert_all: df=df.applymap(convert_all)
+        if enable_constants=='columns':
+            for c in constants: df[c[0]]=c[1]
+        if enable_constants=='metadata':
+            df=PlumedDataFrame(df)
+            df.plumed_constants=constants
+        return df
+
+# process arguments:
+    if enable_conversion is True:
+       enable_conversion='constants'
+    if enable_conversion is False:
+       enable_conversion='no'
+    if enable_constants is True:
+       enable_constants='metadata'
+    if enable_constants is False:
+       enable_constants='no'
+
+# check arguments:
+    if not (enable_conversion=='no' or enable_conversion=='constants' or enable_conversion=='all'):
+        raise ValueError("enable_conversion not valid")
+    if not (enable_constants=='no' or enable_constants=='metadata' or enable_constants=='columns'):
+        raise ValueError("enable_conversion not valid")
+
+# conversions functions:
+    convert=None
+    convert_all=None
+# only create them if needed
+    if (enable_conversion=='constants' and enable_constants) or enable_conversion=='all':
+        convert=_build_convert_function(kernel)
+# if necessary, set convert_all
+        if enable_conversion=='all': convert_all=convert
+         
+# handle file
+    file_or_path=_fix_file(file_or_path,'rt')
+
+# read first line
+    line = file_or_path.readline()
+    columns = line.split()
+
+# check header
+    if len(columns)<2:
+        raise FormatError("Error reading PLUMED file "+file_or_path.name + ". Not enough columns")
+    if columns[0] != "#!" or columns[1] != "FIELDS":
+        raise FormatError("Error reading PLUMED file" +file_or_path.name + ". Columns: "+columns[0]+" "+columns[1])
+
+# read column names
+    columns = columns[2:]
+
+# read constants
+    constants=[]
+    if enable_constants!='no':
+        while True:
+            pos=file_or_path.tell()
+            line = file_or_path.readline()
+            file_or_path.seek(pos)
+            if not line:
+                break
+            sets = line.split()
+            if len(sets) < 4:
+                break
+            if sets[0]!="#!" or sets[1]!="SET":
+                break
+            if(convert):
+                v=convert(sets[3])
+            else:
+                v=sets[3]
+# name / value / string
+            constants.append((sets[2],v,sets[3]))
+            file_or_path.readline() # read again to go to next line
+
+# read the rest of the file
+# notice that if chunksize was provided the result will be an iterable object
+    df=pd.read_csv(file_or_path, delim_whitespace=True, comment="#", header=None,names=columns,
+                    usecols=usecols,skiprows=skiprows,nrows=nrows,chunksize=chunksize)
+
+    if chunksize is None:
+# just perform conversions and attach constants to the dataframe
+        return process_dataframe(df,enable_constants,constants,convert_all)
+    else:
+# declare an alternate class that is iterable to read the file in chunks
+        class TextFileReader(type(df)):
+            """Subclass of pandas.io.TestFileReader, needed for storing constants"""
+# some information (constant values and conversion function)
+# should be stored in the class to be used while iterating on it
+            def __init__(self,reader,enable_constants,constants,convert_all):
+                self.TextFileReader=reader
+                self.enable_constants=enable_constants
+                self.constants=constants
+                self.convert_all=convert_all
+            def __next__(self):
+# override __next__
+                df=self.TextFileReader.__next__()
+                return process_dataframe(df,self.enable_constants,self.constants,self.convert_all)
+        return TextFileReader(df,enable_constants,constants,convert_all)
+
+def write_pandas(df,file_or_path=None):
+    """Save a pandas dataframe as a PLUMED file.
+
+       df: pandas dataframe or derived class
+           the dataframe. If it contains a list attribute `plumed_constants`, this is
+           interpreted as a list of constants and written with `SET` lines.
+
+       file_or_path: str, file, or None (default is None)
+           path to the file to be written, or already opened file object.
+           If None, stdout is used.
     """
 # importing pandas is pretty slow, so we only do it when needed
     import pandas as pd
-# allow passing a string
-    if isinstance(file,str):
-        file=open(file)
-# take care of gzipped files
-    if re.match(".*\.gz",file.name):
-        file = gzip.open(file.name,'rt')
-# read first line
-    line = file.readline()
-    columns = line.split()
-# check header
-    if len(columns)<2:
-        raise FormatError("Error reading PLUMED file "+file.name + ". Not enough columns")
-    if columns[0] != "#!" or columns[1] != "FIELDS":
-        raise FormatError("Error reading PLUMED file" +file.name + ". Columns: "+columns[0]+" "+columns[1])
-# set column names
-    columns = columns[2:]
-# read the rest of the file
-# notice that if chunksize was provided the result will be an iterable object
-    return pd.read_csv(file, delim_whitespace=True, comment="#", header=None,names=columns,
-                       usecols=usecols,skiprows=skiprows,nrows=nrows,chunksize=chunksize)
+# handle file
+    if file_or_path is None:
+        file_or_path=sys.stdout
+    file_or_path=_fix_file(file_or_path,'wt')
+# write header
+    file_or_path.write("#! FIELDS")
+    for n in df.columns:
+        file_or_path.write(" "+str(n))
+    file_or_path.write("\n")
+# write constants
+    if hasattr(df,"plumed_constants") and isinstance(df.plumed_constants,list):
+        for c in df.plumed_constants:
+# notice that string constants are written (e.g. pi) rather than the numeric ones (e.g. 3.14...)
+            file_or_path.write("#! SET "+c[0]+" "+c[2]+"\n")
+# write data
+    for i in range(df.shape[0]):
+        for j in df.columns:
+            file_or_path.write(" "+str(df[j][i]))
+        file_or_path.write("\n")
+
