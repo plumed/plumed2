@@ -20,14 +20,18 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
+    - llvm-openmp  # [osx]
 # xxd is provided by package vim and used during build
     - vim  # [linux]
   host:
     - gsl
     - libblas
     - liblapack
+    - llvm-openmp  # [osx]
     - xdrfile
     - zlib
+  run:
+    - llvm-openmp  # [osx]
 
 test:
   commands:
