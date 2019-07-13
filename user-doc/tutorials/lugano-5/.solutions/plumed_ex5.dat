@@ -1,0 +1,68 @@
+# This reads in the template pdb file and thus allows us to use the @nonhydrogens
+# special group later in the input
+MOLINFO STRUCTURE=beta-hairpin.pdb MOLTYPE=protein
+
+# This stores the positions of all the nonhydrogen atoms for later analysis
+cc: COLLECT_FRAMES ATOMS=@nonhydrogens
+# This should output the atomic positions for the frames that were collected and analyzed using MDS
+OUTPUT_ANALYSIS_DATA_TO_PDB USE_OUTPUT_DATA_FROM=cc FILE=traj.pdb
+
+# The following commands compute all the Ramachandran angles of the protein for you
+r2-phi: TORSION ATOMS=@phi-2
+r2-psi: TORSION ATOMS=@psi-2
+r3-phi: TORSION ATOMS=@phi-3
+r3-psi: TORSION ATOMS=@psi-3
+r4-phi: TORSION ATOMS=@phi-4
+r4-psi: TORSION ATOMS=@psi-4
+r5-phi: TORSION ATOMS=@phi-5 
+r5-psi: TORSION ATOMS=@psi-5 
+r6-phi: TORSION ATOMS=@phi-6 
+r6-psi: TORSION ATOMS=@psi-6 
+r7-phi: TORSION ATOMS=@phi-7 
+r7-psi: TORSION ATOMS=@psi-7 
+r8-phi: TORSION ATOMS=@phi-8 
+r8-psi: TORSION ATOMS=@psi-8 
+r9-phi: TORSION ATOMS=@phi-9 
+r9-psi: TORSION ATOMS=@psi-9 
+r10-phi: TORSION ATOMS=@phi-10  
+r10-psi: TORSION ATOMS=@psi-10  
+r11-phi: TORSION ATOMS=@phi-11  
+r11-psi: TORSION ATOMS=@psi-11  
+r12-phi: TORSION ATOMS=@phi-12  
+r12-psi: TORSION ATOMS=@psi-12  
+r13-phi: TORSION ATOMS=@phi-13  
+r13-psi: TORSION ATOMS=@psi-13  
+r14-phi: TORSION ATOMS=@phi-14  
+r14-psi: TORSION ATOMS=@psi-14  
+r15-phi: TORSION ATOMS=@phi-15  
+r15-psi: TORSION ATOMS=@psi-15  
+r16-phi: TORSION ATOMS=@phi-16  
+r16-psi: TORSION ATOMS=@psi-16  
+
+# This command stores all the Ramachandran angles that were computed
+angles: COLLECT_FRAMES ARG=r2-phi,r2-psi,r3-phi,r3-psi,r4-phi,r4-psi,r5-phi,r5-psi,r6-phi,r6-psi,r7-phi,r7-psi,r8-phi,r8-psi,r9-phi,r9-psi,r10-phi,r10-psi,r11-phi,r11-psi,r12-phi,r12-psi,r13-phi,r13-psi,r14-phi,r14-psi,r15-phi,r15-psi,r16-phi,r16-psi
+# Lets now compute the matrix of distances between the frames in the space of the Ramachandran angles
+distmat: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=angles METRIC=EUCLIDEAN
+# Now select 500 landmark points to analyze
+fps: LANDMARK_SELECT_FPS USE_OUTPUT_DATA_FROM=distmat NLANDMARKS=500
+# Run sketch-map on the landmarks
+smap: SKETCH_MAP MATRIX=fps NLOW_DIM=2 HIGH_DIM_FUNCTION={SMAP R_0=6 A=8 B=2} LOW_DIM_FUNCTION={SMAP R_0=6 A=2 B=2} CGTOL=1E-3 CGRID_SIZE=20 FGRID_SIZE=200 ANNEAL_STEPS=0
+# Project the remaining trajectory data
+osample: PROJECT_ALL_ANALYSIS_DATA USE_OUTPUT_DATA_FROM=distmat PROJECTION=smap
+
+# This command outputs all the projections of all the points in the low dimensional space
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=osample ARG=osample.* FILE=smap_data
+
+# These next three commands calculate the secondary structure variables.  These
+# variables measure how much of the structure resembles an alpha helix, an antiparallel beta sheet
+# and a parallel beta sheet.  Configurations that have different secondary structures should be projected
+# in different parts of the low dimensional space.
+alpha: ALPHARMSD RESIDUES=all
+abeta: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
+pbeta: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
+
+# These commands collect and output the secondary structure variables so that we can use this information to
+# determine how good our projection of the trajectory data is.
+cc2: COLLECT_FRAMES ARG=alpha,abeta,pbeta
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=cc2 ARG=cc2.* FILE=secondary_structure_data
+

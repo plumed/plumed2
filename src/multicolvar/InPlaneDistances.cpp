@@ -90,6 +90,7 @@ InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readThreeGroups("GROUP","VECTORSTART","VECTOREND",false,false,all_atoms);
+  setupMultiColvarBase( all_atoms );
 
   // Check atoms are OK
   if( getFullNumberOfTasks()!=getNumberOfAtoms()-2 ) error("you should specify one atom for VECTORSTART and one atom for VECTOREND only");

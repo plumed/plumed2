@@ -1,0 +1,18 @@
+# Specify that we are in natural units
+UNITS NATURAL
+
+# Retrieve the value of the potential energy
+ee: ENERGY
+# Retrieve the 3 cell vectors
+cell: CELL
+# Compute the square moduli of three cell vectors
+aaa2: COMBINE ARG=cell.ax,cell.ay,cell.az POWERS=2,2,2 PERIODIC=NO
+bbb2: COMBINE ARG=cell.bx,cell.by,cell.bz POWERS=2,2,2 PERIODIC=NO
+ccc2: COMBINE ARG=cell.cx,cell.cy,cell.cz POWERS=2,2,2 PERIODIC=NO
+# Compute the moduli of the three cell vectors
+aaa: CUSTOM ARG=aaa2 FUNC=sqrt(x) PERIODIC=NO
+bbb: CUSTOM ARG=bbb2 FUNC=sqrt(x) PERIODIC=NO
+ccc: CUSTOM ARG=ccc2 FUNC=sqrt(x) PERIODIC=NO
+
+# Print the energy and the moduli of the three cell vectors
+PRINT ARG=ee,aaa,bbb,ccc FILE=colvar STRIDE=10
