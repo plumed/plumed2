@@ -36,7 +36,7 @@ Please only look at these files after you have tried to solve the problems yours
 \section trieste-1-intro Introduction
 
 This tutorial asks you to compute a variety of different collective variables using PLUMED for a particular trajectory and to compare the files and graphs that you obtain with the correct ones that are shown online.  Compared to some of the other tutorials that are available here this tutorial contains considerably less guidance so in doing this tutorial you will have to
-learn how to consult the manual.  If you would like a more guided introduction to PLUMED it might be better to start with the tutorials \ref belfast-1 or \ref lugano-1.  
+learn how to consult the manual.  If you would like a more guided introduction to PLUMED it might be better to start with the tutorials \ref belfast-1 or \ref marvel-1.
 Also notice that, whereas this tutorial was tested using a pre-release
 version of PLUMED 2.4, it should be completely feasible using
 PLUMED 2.3.
