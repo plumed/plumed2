@@ -23,7 +23,7 @@ The <a href="tutorial-resources/belfast-1.tar.gz" download="belfast-1.tar.gz"> t
 
 \section belfast-1-instructions Instructions
 
-PLUMED2 is a library that can be accessed by multiple codes adding a relatively simple and well documented interface.
+PLUMED is a library that can be accessed by multiple codes adding a relatively simple and well documented interface.
 Once PLUMED is installed you can run a plumed executable that can be used for multiple purposes:
 
 \verbatim
@@ -87,7 +87,7 @@ should be:
 
 NOTE: the first line of the file COLVAR tells you what is the content of each column.
 
-In PLUMED2 the commands defined in the input files are executed in the same order in which they are written, this means that the
+In PLUMED the commands defined in the input files are executed in the same order in which they are written, this means that the
 following input file is wrong:
 
 \verbatim
@@ -184,7 +184,7 @@ Now 'ca' is not a virtual atom but a simple list of atoms.
 
 Sometimes it can be useful to calculate properties of many similar collective variables at the same time, for example one can be interested
 in calculating the properties of the distances between a group of atoms, or properties linked to the distribution of the dihedral angles
-of a chain and so on. In PLUMED2 this kind of collective variables fall under the name of MULTICOLVAR (cf. \ref mcolv.)
+of a chain and so on. In PLUMED this kind of collective variables fall under the name of MULTICOLVAR (cf. \ref mcolv.)
 Here we are going to analyze the distances between CA carbons along the chain:
 
 \verbatim
@@ -202,7 +202,7 @@ we have defined four collective variables that are calculated using the distance
 collective variables are stored as components of the defined action 'dd': dd.mean, dd.min, dd.max,
 dd.moment-2.
 
-The infrastructure of multicolvar has been used to develop many PLUMED2 collective variables as
+The infrastructure of multicolvar has been used to develop many PLUMED collective variables as
 for example the set of Secondary Structure CVs (\ref ANTIBETARMSD, \ref PARABETARMSD and \ref ALPHARMSD).
 
 \verbatim
@@ -246,7 +246,7 @@ system along that CV. Estimating the probability distribution of the conformatio
 'sampling'.
 
 In order to estimate a probability distribution one needs to make \ref HISTOGRAM from the calculated CVs.
-PLUMED2 includes the possibility of constructing a histogram from data both on the fly as well as a posteriori as we
+PLUMED includes the possibility of constructing a histogram from data both on the fly as well as a posteriori as we
 are going to do now.
 
 \verbatim
