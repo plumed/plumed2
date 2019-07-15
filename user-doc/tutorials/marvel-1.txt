@@ -27,24 +27,24 @@ The <a href="tutorial-resources/marvel-1.tar.gz" download="marvel-1.tar.gz"> tar
 
 \section marvel-1-instructions Instructions
 
-PLUMED2 is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
-Once it is incorporated you can use PLUMED2 to perform a variety of different analyzes on the fly and to bias 
-the sampling in the molecular dynamics engine.  PLUMED2 can also, however, be used as a standalone code for analyzing trajectories.
-If you are using the code in this way you can, once PLUMED2 is compiled, run the plumed executable by issuing the command:
+PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
+Once it is incorporated you can use PLUMED to perform a variety of different analyzes on the fly and to bias 
+the sampling in the molecular dynamics engine.  PLUMED can also, however, be used as a standalone code for analyzing trajectories.
+If you are using the code in this way you can, once PLUMED is compiled, run the plumed executable by issuing the command:
 
 \verbatim
 plumed <instructions>
 \endverbatim
 
-Let's start by getting a feel for the range of calculations that we can use PLUMED2 to perform.  Issue the following command now:
+Let's start by getting a feel for the range of calculations that we can use PLUMED to perform.  Issue the following command now:
 
 \verbatim
 plumed --help 
 \endverbatim
 
-What is output when this command is run is a list of the tasks you can use PLUMED2 to perform.  There are commands that allow you
+What is output when this command is run is a list of the tasks you can use PLUMED to perform.  There are commands that allow you
 to patch an MD code, commands that allow you to run molecular dynamics and commands that allow you to build the manual.  In this
-tutorial we will mostly be using PLUMED2 to analyze trajectories, however.  As such most of the calculations we will perform will be performed 
+tutorial we will mostly be using PLUMED to analyze trajectories, however.  As such most of the calculations we will perform will be performed 
 using the driver tool.  Let's look at the options we can issue to plumed driver by issuing the following command:  
 
 \verbatim
@@ -53,10 +53,10 @@ plumed driver --help
 
 As you can see we can do a number of things with plumed driver.  For all of these options, however, we are going to need to write 
 a PLUMED input file.  Before we get on to writing input files for PLUMED there is information \ref codes here which provides details 
-on what the other PLUMED2 tools do and instructions for how to interface PLUMED with an MD code.  You may like to look at this information
+on what the other PLUMED tools do and instructions for how to interface PLUMED with an MD code.  You may like to look at this information
 now or you might prefer to return after you have finished the exercises here.
 
-\subsection marvel-1-units PLUMED2's internal units
+\subsection marvel-1-units PLUMED's internal units
 
 By default the PLUMED inputs and outputs quantities in the following units:
 
@@ -161,7 +161,7 @@ The fact that this quantity is stored in a variable is important as it ensures t
 later in the input file.  So in the second line above we print a quantity.  What quantity should be printed? e2edist - the distance between atom 2 and atom 253. Easy!
 
 So why does the second input, that has the order of these two commands reversed, not work?  Well the variable e2edist has to be defined before it can be used
-because in PLUMED2 the commands are executed in the same order as they are defined in the input file. We thus cannot do anything with e2edist (i.e. \ref PRINT it)
+because in PLUMED the commands are executed in the same order as they are defined in the input file. We thus cannot do anything with e2edist (i.e. \ref PRINT it)
 without first explaining how it is calculated.
 
 This input demonstrates the key idea of the PLUMED syntax.  Quantities calculated by commands such as \ref DISTANCE are given labels (e2edist) so that 
@@ -354,7 +354,7 @@ ENDPLUMED
 Try to copy this input now and to use it to analyze the trajectory you downloaded at the start of the exercise using the commands 
 described in section \ref marvel-1-introinput.  
 
-Multicolvar is not just for \ref DISTANCES though.  The infrastructure of multicolvar has been used to develop many PLUMED2 collective variables. 
+Multicolvar is not just for \ref DISTANCES though.  The infrastructure of multicolvar has been used to develop many PLUMED collective variables. 
 One interesting example is the set of Secondary Structure CVs (\ref ANTIBETARMSD, \ref PARABETARMSD and \ref ALPHARMSD).  You can use the input 
 below to calculate the degree of anti-beta secondary structure in each of the trajectory frames by copying this input to a PLUMED input file
 and by exploiting the commands to run driver that were described in section \ref marvel-1-introinput. 
