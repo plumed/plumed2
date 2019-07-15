@@ -109,7 +109,7 @@ Variationally Enhanced Sampling:
 
 \par Tuesday February 14
 
-\ref lugano-1 "Tutorial 1": Introduction to PLUMED and analyzing molecular simulations
+\ref marvel-1 "Tutorial 1": Introduction to PLUMED and analyzing molecular simulations
 
 \par Wednesday February 15
 
@@ -122,7 +122,7 @@ Variationally Enhanced Sampling:
 \ref ves-lugano2017-ves2 "Tutorial 4": Further on variationally enhanced sampling
 
 Tutorial 5: Advanced collective variables
-- \ref lugano-2 "Path CVs"
+- \ref marvel-2 "Path CVs"
 - \ref belfast-10 "Multicolvar"
 - \ref belfast-3 "Dimensionality reduction"
 
