@@ -1,12 +1,12 @@
 /** 
-\page lugano-2 Lugano tutorial: Path CVs
+\page marvel-2 MARVEL tutorial: Path CVs
 
-\section lugano-2-aims Aims
+\section marvel-2-aims Aims
 
 Consider the two overlain protein structures that are shown in the figure below.  
 Can you see the difference between these two structures?  Can you think of a collective variable that could be used to study the substantial change in structure?
 
-\anchor lugano-2-cdk-fig
+\anchor marvel-2-cdk-fig
 \image html belfast-2-cdk.png "CDK2 conformational change, PDB code 2C5X and 2C5Y."
 
 Your answers to the questions posed above are hopefully: yes I can see the difference between the two structures - the upper loop is radically different in the two 
@@ -26,7 +26,7 @@ tutorial study how these coordinates work in a two-dimensional space as this wil
 you will be able to use what you learn from this tutorial to generalize these ideas so that you can use \ref PATH and \ref PCAVARS in 
 higher-dimensional spaces.  
 
-\section lugano-2-lo Learning Outcomes
+\section marvel-2-lo Learning Outcomes
 
 Once this tutorial is completed students will:
 
@@ -36,9 +36,9 @@ Once this tutorial is completed students will:
 - be able to write PLUMED input files that calculate \ref PATH collective variables for a range of different metrics.
 - be able to measure the quality of a transition state by calculating the isocommittor.
 
-\section lugano-2-resources Resources
+\section marvel-2-resources Resources
 
-The <a href="tutorial-resources/lugano-2.tar.gz" download="lugano-2.tar.gz"> tarball </a> for this project contains the following files:
+The <a href="tutorial-resources/marvel-2.tar.gz" download="marvel-2.tar.gz"> tarball </a> for this project contains the following files:
 
 - transformation.pdb : a trajectory that shows the transition between the \f$C_7ax\f$ and \f$C_7eq\f$ conformers of alanine dipeptide.
 - pca-reference.pdb : a file that gives the start and end points of the vector that connects the \f$C_7ax\f$ and \f$C_7eq\f$ conformers.  This file contains the positions of the atoms in these two structures.
@@ -46,29 +46,29 @@ The <a href="tutorial-resources/lugano-2.tar.gz" download="lugano-2.tar.gz"> tar
 - PATH-isocommittor : a directory containing the files required to run isocommittor simulations that monitor the values of the \ref PATH collective variable \f$S(X)\f$.
 - 2CV-isocommittor : a directory containing the files required to run isocommittor simulations that monitor the values of the \ref PATH collective variables \f$S(X)\f$ and \f$Z(X)\f$ 
 
-\section lugano-2-instructions Instructions
+\section marvel-2-instructions Instructions
 
 In this tutorial we are going to be considering a conformational transition of alanine dipeptide.  In particular we are going to be considering the transition
 between the two conformers of this molecule shown below:
 
-\anchor lugano-2-transition-fig
+\anchor marvel-2-transition-fig
 \image html belfast-2-transition.png  "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
 
 Alanine dipeptide is a rather well-studied biomolecule (in fact it is an over studied molecule!).  It is well known that you can 
 understand the inter-conversion of the two conformers shown above by looking at the free energy surface as a function of the \f$\phi\f$ and \f$\psi\f$ 
 Ramachandran angles as shown below:
 
-\anchor lugano-2-rama-fig
+\anchor marvel-2-rama-fig
 \image html belfast-2-rama.png  "The Free energy landscape of alanine dipeptide in Ramachandran angles in the CHARMM27 force field."
  
 In this tutorial we are not going to use these coordinates to study alanine dipeptide.  Instead we are going to see if we can find a single collective 
 variable that can distinguish between these two states.
 
-\subsection lugano-2-pca1 PCA coordinates
+\subsection marvel-2-pca1 PCA coordinates
 
-Consider the free energy surface shown in figure \ref lugano-2-rama-fig.  It is clear that either the \f$\phi\f$ (\f$x\f$-axis) or the 
+Consider the free energy surface shown in figure \ref marvel-2-rama-fig.  It is clear that either the \f$\phi\f$ (\f$x\f$-axis) or the 
 \f$\psi\f$ (\f$y\f$-axis) angle of the molecule can be used to distinguish between the two configurations shown in 
-figure \ref lugano-2-transition-fig.  Having said that, however, given the shape of landscape and the associated thermal fluctuations we would 
+figure \ref marvel-2-transition-fig.  Having said that, however, given the shape of landscape and the associated thermal fluctuations we would 
 expect to see in the values of these angles during a typical simulation, it seems likely that \f$\phi\f$ will do a better job
 at distinguishing between the two configurations.   \f$\psi\f$ would most likely be a bad coordinate as when the molecule is in the \f$C_7eq\f$ 
 configuration the \f$\psi\f$ angle can fluctuate to any value with only a very small energetic cost.  If we only had information on how the \f$\psi\f$
@@ -98,7 +98,7 @@ monotonically as the transition progresses.
 We can perhaps come up with a better coordinate that incorporates changes in both \f$\phi\f$ and \f$\psi\f$ by using the coordinate illustrated in the figure below.
 
 \anchor pca-figure
-\image html lugano-2-pca-coordinates.png "An illustration showing how PCAVARS coorditates work.  The vector connecting some reference state to any state the system is in can be in (purple and orange points) can be projected onto the vector connecting the two states of interest (black arrow) by using the dot product of the vectors shown here."
+\image html marvel-2-pca-coordinates.png "An illustration showing how PCAVARS coorditates work.  The vector connecting some reference state to any state the system is in can be in (purple and orange points) can be projected onto the vector connecting the two states of interest (black arrow) by using the dot product of the vectors shown here."
 
 We can even use PLUMED to calculate this coordinate by using the input shown below:
 
@@ -147,7 +147,7 @@ We cannot, however, do this in practice (we also shouldn't really use the previo
 to define our vectors here are periodic.  In this next section we will thus look at how we can avoid this problem of periodicity by working 
 in a higher dimensional space. 
 
-\subsection lugano-2-metric1 PCA with the RMSD metric
+\subsection marvel-2-metric1 PCA with the RMSD metric
 
 In the previous section I showed how we can use the projection of a displacement on a vector as a collective variable.  I demonstrated this
 in a two dimensional space as this makes it easy to visualize the vectors involved.  We are not forced to work with two dimensional vectors,
@@ -176,10 +176,10 @@ s = \sum_{i=1}^{3N} (x^{(2)}_i - x^{(1)}_i ) (x^{(3)}_i - x^{(1)}_i )
 \f]
 in a manner of speaking.  The point is that we would not want to calculate exactly this quantity because the vectors of displacements that
 are calculated in this way includes both rotational and translational motion.  This is a problem as the majority of the change
-in moving from the \f$C_7ax\f$ configuration shown in figure \ref lugano-2-transition-fig to the \f$C_7eq\f$ configuration shown in figure 
-\ref lugano-2-transition-fig comes from the translation of all the atoms.  To put this another way if I had, in figure \ref lugano-2-transition-fig,
+in moving from the \f$C_7ax\f$ configuration shown in figure \ref marvel-2-transition-fig to the \f$C_7eq\f$ configuration shown in figure 
+\ref marvel-2-transition-fig comes from the translation of all the atoms.  To put this another way if I had, in figure \ref marvel-2-transition-fig,
 shown two images of the \f$C_7ax\f$ configuration side by side the displacement in the positions of the atoms in those two structures would be
-similar to the displacement of the atoms in \ref lugano-2-transition-fig as as the majority of the displacement in the vector of atomic positions 
+similar to the displacement of the atoms in \ref marvel-2-transition-fig as as the majority of the displacement in the vector of atomic positions 
 comes about because I have translated all the atoms in the molecule
 rightwards by a fixed amount.  I can, however, remove these translational displacements from consideration when calculating these vectors.  In addition,
 I can also remove any displacements due rotation in the frame of reference of the molecule.  If you are interested in how this is done in practice you can 
@@ -188,7 +188,7 @@ use the OPTIMAL metric we are calculating a vector which tells us how far the at
 B in a way that excludes any displacements due to translation of the center of mass of the molecule or any displacements that occur due to rotation
 of the Cartesian frame. 
  
-\subsection lugano-2-iso The isocommittor surface
+\subsection marvel-2-iso The isocommittor surface
 
 In the previous sections I have been rather loose when talking about better and worse collective variables in that I have not been clear in my distinction
 between what makes a collective variable good and what makes a collective variable bad.  In this section I thus want to discuss one method that we can use
@@ -261,18 +261,18 @@ close to 50%.  In fact the CV is not even particularly good at capturing the dif
 it is perhaps clear why.
 
 \anchor ala-tstate
-\image html "lugano-2-trans-state.png" "The PCAVARS coordinate and the transition state are highlighted on this figure.  As you can see the coordinate does not pass through the transition state" 
+\image html "marvel-2-trans-state.png" "The PCAVARS coordinate and the transition state are highlighted on this figure.  As you can see the coordinate does not pass through the transition state" 
 
 You can see the location of the saddle point between these two states in this surface and it is very clear that the vector connecting the \f$C_7eq\f$ state to the 
 \f$C_7ax\f$ state does not pass through this point.  In fact it would be extremely fortuitous if a vector connecting an initial state and a final state also passed
 through the intermediate transition state between them.  We can, after all, define the equation of straight line (a vector) if we are given only two points 
 on it.  In the next section we are thus going to see how we can resolve this problem by introducing a non-linear (or curvilinear) coordinate.
 
-\subsection lugano-2-pathcvs Path collective variables
+\subsection marvel-2-pathcvs Path collective variables
 
 Consider the black path that connects the \f$C_7ax\f$ and \f$C_7eq\f$ states in the free energy shown below:
 
-\anchor lugano-2-good-bad-path-fig
+\anchor marvel-2-good-bad-path-fig
 \image html belfast-2-good-bad-path.png "Examples of good and bad paths:  the black path follows the minimum free energy path connecting the two metastable states, while the red path connects the two states directly via a linear path that passes through high energy"
 
 This black pathways appears to be the "perfect" coordinate for modelling this conformational transition as it passes along the lowest 
@@ -305,7 +305,7 @@ configurations that moved to \f$C_7ax\f$ from those that moved to \f$C_7eq\f$.  
 trajectories that move rightwards and the number that move leftwards.  We are thus still a long way from unambiguously identifying the location of the 
 transition state ensemble for this system.
 
-\subsection lugano-2-pathcvs2 The mathematics of path collective variables  
+\subsection marvel-2-pathcvs2 The mathematics of path collective variables  
 
 Let's now take a moment to discuss the mathematics of these coordinates, which is not so complicated if we think about what they do through an analogy.
 Suppose that you were giving your friend instructions as to how to get to your house and lets suppose these instructions read something like this:
@@ -331,10 +331,10 @@ In this expression \f$\vert X-X_i \vert\f$ is the distance between the instantan
 will thus be the one that corresponds to the point that is closest to where the system currently lies.  In other words, \f$S(X)\f$, measures the position 
 on a (curvilinear) path that connects two states of interest as shown in red in the figure below:
 
-\anchor lugano-2-ab-sz-fig
+\anchor marvel-2-ab-sz-fig
 \image html belfast-2-ab-sz.png "The S variable can be thought as the length of the red segment, while the Z variable is the length of the green one." 
 
-\subsection lugano-2-pathz The Z(X) collective variable
+\subsection marvel-2-pathz The Z(X) collective variable
 
 You may reasonably ask what the purpose these \ref PATH collective variables variables serve given that in this case they seem to do no better than 
 \f$\phi\f$ when it comes to the tests we have performed on calculating the isocommittor.  To answer this question we are going to run one final set of 
@@ -368,7 +368,7 @@ on the y-axis:
 Z(X)=-\frac{1}{\lambda}\log (\sum_{i=1}^{N} \ \exp^{-\lambda \vert X-X_i \vert })
 \f]
 
-What this quantity measures is shown in green in the figure \ref lugano-2-ab-sz-fig.  Essentially it measures the distance between the instantaneous configuration 
+What this quantity measures is shown in green in the figure \ref marvel-2-ab-sz-fig.  Essentially it measures the distance between the instantaneous configuration 
 the system finds itself in and the path that is marked out using the way markers.  If you plot the data using script_path.gplt what you thus see is that the 
 system never moves very far from the path that is defined using the \ref PATH command.  In short the system follows this path from the transition state back to 
 either the \f$C_7eq\f$ or \f$C_7ax\f$ configuration.
@@ -392,7 +392,7 @@ this distance can be calculated using the \ref RMSD distance or it can be calcul
 in collective variable values (see \ref TARGET).  Changing the manner in which the distance between path way points is calculated thus provides a 
 way to control the level of detail that is incorporated in the description of the reaction \ref PATH.
 
-\subsection lugano-2-pathcv-find Optimizing path collective variables
+\subsection marvel-2-pathcv-find Optimizing path collective variables
 
 Hopefully the previous sections have allowed you to understand how \ref PATH collective variables work and the sorts of problems they might be used to 
 solve.  If you have one of these problems to solve the next reasonable question to ask is: how to collect the set of reference frames that serve as the 
@@ -405,25 +405,25 @@ this that we will focus on in this section.  The first thing that you will need 
 distances between way markers.  That is to say you will have to calculate the distance \f$\vert X_j - X_i \vert\f$ between each pair of frames.
 The values of the distance in this matrix for a good \ref PATH are shown in the figure below:
 
-\anchor lugano-2-good-matrix-fig
+\anchor marvel-2-good-matrix-fig
 \image html belfast-2-good-matrix.png "A good distance matrix for path variables has the gull wing shape shape shown here." 
 
 For contrast the values of the distances in this matrix for a bad \ref PATH are shown in the figure below:
 
-\anchor lugano-2-bad-matrix-fig
+\anchor marvel-2-bad-matrix-fig
 \image html belfast-2-bad-matrix.png "A bad distance matrix for path variables is rather irregular."
 
 If the distance matrix looks like the second of the two figures shown above this is indicates that the frames in the \ref PATH that have been chosen 
 are not particularly effective.  Lets suppose that we have a \ref PATH with four way markers upon it.  In order for the \f$S(x)\f$ CV that was defined 
 earlier to work well frame number 3 must be further from frame number 1 than frame number 2.  Similarly frame number 4 must be still further
-from frame number 1 than frame number 3.  This is what the gull wing shape in \ref lugano-2-good-matrix-fig is telling us.  The order of the frames in the 
+from frame number 1 than frame number 3.  This is what the gull wing shape in \ref marvel-2-good-matrix-fig is telling us.  The order of the frames in the 
 rows and columns of the matrix is the same as the order that they are run through in the sums in the equation for \f$S(X)\f$.  The shape of the surface 
 in this figure shows that the distance between frames \f$i\f$ and \f$j\f$ increases monotonically as the magnitude of the difference between \f$i\f$ and 
 \f$j\f$ is increased, which is what is required.
 
 A second important requirement of a good \ref PATH is shown in the figure below:  
 
-\anchor lugano-2-good-vs-bad-fig
+\anchor marvel-2-good-vs-bad-fig
 \image html belfast-2-good-vs-bad.png "Comparison between the distances between neighboring frames on the PATH.  A good PATH will have a set of frames that are all approximately equally spaced along it."
 
 A good \ref PATH has an approximately equal spacing between the neighboring frames along it.  In other words, the distance between frame 1 and frame 2 
@@ -434,10 +434,10 @@ suitable \f$\lambda\f$ parameter to use is:
 \lambda=\frac{2.3 (N-1) }{\sum_{i=1}^{N-1} \vert X_i-X_{i+1} \vert }
 \f]
 
-\section lugano-2-conc Conclusions and further work
+\section marvel-2-conc Conclusions and further work
 
 If you have worked through all of this tutorial make sure that you have understood it by ensuring that you understand what the list of learning outcomes
-in section \ref lugano-2-lo means and that you can use PLUMED to perform all these tasks.  You might then want to read the original paper on the \ref PATH
+in section \ref marvel-2-lo means and that you can use PLUMED to perform all these tasks.  You might then want to read the original paper on the \ref PATH
 collective variable method as well as a few other articles in which these coordinates have been used to analyze simulations and to accelerate sampling.
 
 - Davide Branduardi and Francesco Luigi Gervasio and Michele Parrinello <a href="http://aip.scitation.org/doi/10.1063/1.2432340"> From A to B in free energy space </a> J. Chem. Phys., 126, 054103 (2007)
@@ -446,8 +446,8 @@ If you are interested in learning more about isocommittor surfaces and the trans
 
 */
 
-link: @subpage lugano-2
+link: @subpage marvel-2
 
 description: This tutorial explains how to use various kinds of path collective variables
 
-additional-files: lugano-2
+additional-files: marvel-2
