@@ -10,14 +10,13 @@ and print simple collective variables on a pre-calculated trajectory.
 
 Once this tutorial is completed, students will be able to:
 
-- TODO
 - Write a simple PLUMED input file and use it with the PLUMED \ref driver to analyze a trajectory.
-- Use the \ref GROUP keyword to make the input file compact and easy to read and to quickly build complex atom groups.
 - Print collective variables such as distances
   (\ref DISTANCE), torsional angles (\ref TORSION), gyration radius (\ref GYRATION), and RMSD (\ref RMSD) using the \ref PRINT action.
-- Learn how to use \ref MOLINFO shortcuts
+- Use \ref MOLINFO shortcuts
+- Define and use virtual atoms, such as \ref CENTER
 - Take care of periodic boundary conditions within PLUMED using \ref WHOLEMOLECULES and be able to verify the result with \ref DUMPATOMS.
-
+- Write their own CVs directly in the input file using the \ref COMBINE action
 
 \section lugano-1-resources Resources
 
