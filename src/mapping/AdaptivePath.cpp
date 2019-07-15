@@ -138,7 +138,7 @@ AdaptivePath::AdaptivePath(const ActionOptions& ao):
       if( wfilename.find(".pdb")==std::string::npos ) error("output must be to a pdb file");
       std::string ofmt, pframes, wstride; parse("WSTRIDE",wstride); parse("FMT",ofmt); 
       for(unsigned i=0;i<nframes;++i) { std::string num; Tools::convert( i+1, num ); pframes += " CONFIG" + num + "=" + getShortcutLabel() + "_ref" + num; }
-      readInputLine("PRINT STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + pframes );
+      readInputLine("PRINT DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + pframes );
   }
   log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
 }

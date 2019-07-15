@@ -107,8 +107,8 @@ public:
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
   unsigned getNumberOfDerivatives() const ;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
-  void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-                               const unsigned& bufstart, std::vector<double>& buffer ) const ;
+  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                          const unsigned& bufstart, std::vector<double>& buffer ) const ;
   void jobsAfterLoop();
 };
 
@@ -154,7 +154,9 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   gridcoords.setup( "flat", ipbc, 0, 0.0 );
 
   // Now add a value
-  std::vector<unsigned> shape( gridobject.getDimension()-1 ); addValueWithDerivatives( shape ); setNotPeriodic();
+  std::vector<unsigned> shape( gridobject.getDimension()-1 ); 
+  addValueWithDerivatives( shape ); setNotPeriodic();
+  getPntrToOutput(0)->alwaysStoreValues();
 }
 
 void FindContourSurface::finishOutputSetup() {
@@ -297,9 +299,9 @@ void FindContourSurface::performTask( const unsigned& current, MultiValue& myval
   myvals.setValue( getPntrToOutput(0)->getPositionInStream(), minp );
 }
 
-void FindContourSurface::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-    const unsigned& bufstart, std::vector<double>& buffer ) const {
-  unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
+void FindContourSurface::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                            const unsigned& bufstart, std::vector<double>& buffer ) const {
+  plumed_dbg_assert( valindex==0 ); unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
   unsigned valout = getPntrToOutput(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
 }
 

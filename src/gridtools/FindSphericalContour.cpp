@@ -123,8 +123,8 @@ public:
   void getGridPointAsCoordinate( const unsigned& ind, const bool& setlength, std::vector<double>& coords ) const ;
   unsigned getNumberOfDerivatives() const ;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
-  void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-                               const unsigned& bufstart, std::vector<double>& buffer ) const ;
+  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                          const unsigned& bufstart, std::vector<double>& buffer ) const ;
 };
 
 PLUMED_REGISTER_ACTION(FindSphericalContour,"FIND_SPHERICAL_CONTOUR")
@@ -151,7 +151,8 @@ FindSphericalContour::FindSphericalContour(const ActionOptions&ao):
   std::vector<bool> ipbc( 3, false ); gridcoords.setup( "fibonacci", ipbc, npoints, 0.0 );
   // Now create a value
   std::vector<unsigned> shape( 3 ); shape[0]=npoints; shape[1]=shape[2]=1;
-  addValueWithDerivatives( shape ); setNotPeriodic(); checkRead();
+  addValueWithDerivatives( shape ); setNotPeriodic(); 
+  getPntrToOutput(0)->alwaysStoreValues(); checkRead();
   // Create a task list
   for(unsigned i=0; i<npoints; ++i) addTaskToList( i );
 }
@@ -197,9 +198,9 @@ void FindSphericalContour::performTask( const unsigned& current, MultiValue& myv
   if( !found ) error("range does not bracket the dividing surface");
 }
 
-void FindSphericalContour::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-    const unsigned& bufstart, std::vector<double>& buffer ) const {
-  unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
+void FindSphericalContour::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                              const unsigned& bufstart, std::vector<double>& buffer ) const {
+  plumed_assert( valindex==0 ); unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
   unsigned valout = getPntrToOutput(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );
 }
 

@@ -37,6 +37,7 @@ private:
   std::vector<double> eigvals;
   Matrix<double> eigvecs;
   std::vector<double> forcesToApply;
+  void diagonalizeMatrix();
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -45,6 +46,8 @@ public:
   unsigned getNumberOfDerivatives() const { return getPntrToArgument(0)->getNumberOfValues(getLabel()); }
 /// Do the calculation
   void calculate();
+  void update();
+  void runFinalJobs();
 ///
   void apply();
 };
@@ -102,7 +105,7 @@ DiagonalizeMatrix::DiagonalizeMatrix(const ActionOptions& ao):
   forcesToApply.resize( evec_shape[0]*evec_shape[0] );
 }
 
-void DiagonalizeMatrix::calculate() {
+void DiagonalizeMatrix::diagonalizeMatrix() {
   // Retrieve the matrix from input
   unsigned k = 0;
   for(unsigned i=0; i<mymatrix.nrows(); ++i) {
@@ -132,8 +135,23 @@ void DiagonalizeMatrix::calculate() {
   }
 }
 
+void DiagonalizeMatrix::calculate() {
+  if( hasAverageAsArgument() ) return;
+  diagonalizeMatrix();
+}
+
+void DiagonalizeMatrix::update() {
+  if( !hasAverageAsArgument() ) return;
+  diagonalizeMatrix();
+}
+
+void DiagonalizeMatrix::runFinalJobs() {
+  if( !hasAverageAsArgument() ) return;
+  diagonalizeMatrix();
+}
+
 void DiagonalizeMatrix::apply() {
-  if( doNotCalculateDerivatives() ) return;
+  if( hasAverageAsArgument() || doNotCalculateDerivatives() ) return;
 
   // Forces on eigenvalues
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;

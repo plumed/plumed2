@@ -120,7 +120,7 @@ Average::Average( const ActionOptions& ao):
   lbound(0.0),pfactor(0.0)
 {
   // Now read in the instructions for the normalization
-  std::string normstr; parse("NORMALIZATION",normstr);
+  std::string normstr; std::vector<unsigned> shape; parse("NORMALIZATION",normstr);
   if( normstr=="true" ) { normalization=t; clearnorm=true; }
   else if( normstr=="false" ) { normalization=f; clearnorm=false; }
   else if( normstr=="ndata" ) { normalization=ndata; clearnorm=true; }
@@ -128,15 +128,15 @@ Average::Average( const ActionOptions& ao):
 
   // Create a value
   if( getPntrToArgument(0)->hasDerivatives() ) addValueWithDerivatives( getPntrToArgument(0)->getShape() );
-  else addValue( getPntrToArgument(0)->getShape() );
+  else addValue( shape );
 
   if( getPntrToArgument(0)->isPeriodic() ) {
     std::string min, max;
     getPntrToArgument(0)->getDomain( min, max ); setPeriodic( min, max );
     Tools::convert( min, lbound ); double ubound; Tools::convert( max, ubound );
-    pfactor = ( ubound - lbound ) / (2*pi);
-    addComponent( "sin", getPntrToArgument(0)->getShape() ); componentIsNotPeriodic( "sin" );
-    addComponent( "cos", getPntrToArgument(0)->getShape() ); componentIsNotPeriodic( "cos" );
+    pfactor = ( ubound - lbound ) / (2*pi); 
+    addComponent( "sin", shape ); componentIsNotPeriodic( "sin" );
+    addComponent( "cos", shape ); componentIsNotPeriodic( "cos" );
     if( normalization!=f ) { getPntrToOutput(1)->setNorm(0.0); getPntrToOutput(2)->setNorm(0.0); }
   } else {
     setNotPeriodic();
@@ -145,7 +145,7 @@ Average::Average( const ActionOptions& ao):
 }
 
 void Average::resizeValues() {
-  if( getPntrToOutput(0)->getNumberOfValues( getLabel() )!=getPntrToArgument(0)->getNumberOfValues( getLabel() ) ) {
+  if( getPntrToOutput(0)->hasDerivatives() && getPntrToOutput(0)->getNumberOfValues( getLabel() )!=getPntrToArgument(0)->getNumberOfValues( getLabel() ) ) {
       getPntrToOutput(0)->setShape( getPntrToArgument(0)->getShape() );
   }
 }
@@ -156,28 +156,31 @@ void Average::accumulateData( const double& lweight ) {
 
   if( arg0->isPeriodic() ) {
     Value* valsin=getPntrToOutput(1); Value* valcos=getPntrToOutput(2);
-    // Accumulate normalization
-    if( normalization==t ) { valsin->setNorm( valsin->getNorm() + cweight ); valcos->setNorm( valcos->getNorm() + cweight ); }
-    else if( normalization==ndata ) { valsin->setNorm( valsin->getNorm() + 1.0 ); valcos->setNorm( valcos->getNorm() + 1.0 ); }
     // Now calcualte average
     for(unsigned i=0; i<arg0->getNumberOfValues( getLabel() ); ++i) {
+      // Accumulate normalization
+      if( normalization==t ) { valsin->setNorm( valsin->getNorm() + cweight ); valcos->setNorm( valcos->getNorm() + cweight ); }
+      else if( normalization==ndata ) { valsin->setNorm( valsin->getNorm() + 1.0 ); valcos->setNorm( valcos->getNorm() + 1.0 ); }
       double tval = ( arg0->getRequiredValue( getLabel(), i) - lbound ) / pfactor;
-      valsin->add( i, cweight*sin(tval) ); valcos->add( i, cweight*cos(tval) );
+      valsin->add( 0, cweight*sin(tval) ); valcos->add( 0, cweight*cos(tval) );
       val->set( i, lbound + pfactor*atan2( valsin->get(i), valcos->get(i)) );
     }
   } else {
     // Accumulate normalization
-    if( normalization==t ) val->setNorm( val->getNorm() + cweight );
-    else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 );
+    if( arg0->getRank()>0 && arg0->hasDerivatives() ) {
+        if( normalization==t ) val->setNorm( val->getNorm() + cweight );
+        else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 );
+    }
     // Now accumulate average
     for(unsigned i=0; i<arg0->getNumberOfValues( getLabel() ); ++i) {
-      if( arg0->getRank()==0 && arg0->hasDerivatives() ) {
-        for(unsigned j=0; j<val->getNumberOfDerivatives(); ++j) val->addDerivative( j, cweight*arg0->getDerivative( j ) );
-      } else if( arg0->hasDerivatives() ) {
+      if( arg0->getRank()>0 && arg0->hasDerivatives() ) {
         unsigned nder=val->getNumberOfDerivatives(); val->add( i*(1+nder), cweight*arg0->getRequiredValue(getLabel(), i) );
         for(unsigned j=0; j<nder; ++j) val->add( i*(1+nder)+1+j, cweight*arg0->getGridDerivative( i, j ) );
       } else {
-        val->add( i, cweight*arg0->getRequiredValue(getLabel(), i) );
+        val->add( cweight*arg0->getRequiredValue(getLabel(), i) );
+        // Accumulate normalization
+        if( normalization==t ) val->setNorm( val->getNorm() + cweight );
+        else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 );
       }
     }
   }

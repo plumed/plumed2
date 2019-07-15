@@ -65,8 +65,8 @@ public:
   void getGridPointIndicesAndCoordinates( const unsigned& ind, std::vector<unsigned>& indices, std::vector<double>& coords ) const ;
   void finishOutputSetup();
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
-  void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-                               const unsigned& bufstart, std::vector<double>& buffer ) const ;
+  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                          const unsigned& bufstart, std::vector<double>& buffer ) const ;
 };
 
 PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
@@ -104,6 +104,7 @@ InterpolateGrid::InterpolateGrid(const ActionOptions&ao):
   } else {
     setNotPeriodic();
   }
+  getPntrToOutput(0)->alwaysStoreValues();
 }
 
 void InterpolateGrid::finishOutputSetup() {
@@ -144,9 +145,9 @@ void InterpolateGrid::performTask( const unsigned& current, MultiValue& myvals )
   for(unsigned i=0; i<gridcoords.getDimension(); ++i) { myvals.addDerivative( ostrn, i, der[i] ); myvals.updateIndex( ostrn, i ); }
 }
 
-void InterpolateGrid::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-    const unsigned& bufstart, std::vector<double>& buffer ) const {
-  unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
+void InterpolateGrid::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                         const unsigned& bufstart, std::vector<double>& buffer ) const {
+  plumed_dbg_assert( valindex==0 ); unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
   unsigned istart = bufstart + (1+getNumberOfDerivatives())*code; buffer[istart] += myvals.get( ostrn );
   for(unsigned i=0; i<gridcoords.getDimension(); ++i) buffer[istart+1+i] += myvals.getDerivative( ostrn, i );
 }

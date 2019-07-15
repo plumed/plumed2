@@ -67,7 +67,7 @@ public:
   void buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags );
   virtual void completeGridObjectSetup()=0;
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
-  void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
+  void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
   void apply();
   void gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const ;
   virtual void addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const = 0;

@@ -230,7 +230,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     raction->update();
 
     // And print the final reference configurations
-    std::string pinput="PRINT FILE=" + ofilename + " FMT=" + ofmt;
+    std::string pinput="PRINT STRIDE=1 DESCRIPTION=PATH FILE=" + ofilename + " FMT=" + ofmt;
     for(unsigned i=0;i<nfram;++i){ std::string num; Tools::convert( i+1, num ); pinput += " CONFIG" + num + "=ref_" + num; }
     const char* pcinp=pinput.c_str(); plmd.cmd("readInputLine",pcinp);
     Action* paction = plmd.getActionSet()[plmd.getActionSet().size()-1].get();
@@ -322,7 +322,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   }
 
   // This prints out our final reference configurations
-  std::string pinput="PRINT FILE=" + ofilename + " FMT=" + ofmt; 
+  std::string pinput="PRINT STRIDE=1 DESCRIPTION=PATH FILE=" + ofilename + " FMT=" + ofmt; 
   for(unsigned i=0;i<nframes;++i){ std::string num; Tools::convert( i+1, num ); pinput += " CONFIG" + num + "=frame" + num; }
   const char* pcinp=pinput.c_str(); plmd.cmd("readInputLine",pcinp); 
   Action* paction = plmd.getActionSet()[plmd.getActionSet().size()-1].get();

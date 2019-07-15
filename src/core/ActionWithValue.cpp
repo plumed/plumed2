@@ -641,13 +641,41 @@ void ActionWithValue::rerunTask( const unsigned& task_index, MultiValue& myvals 
 
 }
 
+void ActionWithValue::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                         const unsigned& bufstart, std::vector<double>& buffer ) const {
+  plumed_dbg_assert( !values[valindex]->hasDeriv && values[valindex]->getRank()>0 );
+  unsigned sind = values[valindex]->streampos;
+  // This looks after storing for matrices
+  if( values[valindex]->getRank()==2 ) {
+    unsigned ncols = values[valindex]->getShape()[1];
+    unsigned vindex = bufstart + code*ncols; unsigned matind = values[valindex]->getPositionInMatrixStash();
+    for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
+      unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+      plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[valindex]->getName() );
+      buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
+    }
+    // This looks after sums over columns of matrix
+  } else if ( values[valindex]->getRank()==1 && values[valindex]->columnsums ) {
+    unsigned vindex = bufstart; unsigned matind = values[valindex]->getPositionInMatrixStash();
+    for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
+      unsigned jind = myvals.getStashedMatrixIndex(matind,j);
+      buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
+    } 
+ // This looks after storing in all other cases
+  } else {
+    unsigned nspace=1; if( values[valindex]->hasDeriv ) nspace=(1 + values[valindex]->getNumberOfDerivatives() );
+    unsigned vindex = bufstart + code*nspace; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() );
+    buffer[vindex] += myvals.get(sind);
+  }
+} 
+
 void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiValue& myvals, std::vector<double>& buffer ) const {
   if( isActive() ) {
     for(unsigned i=0; i<values.size(); ++i) {
-      unsigned sind = values[i]->streampos, bufstart = values[i]->bufstart;
+      unsigned bufstart = values[i]->bufstart;
       if( values[i]->getRank()==0 ) {
         plumed_dbg_massert( bufstart<buffer.size(), "problem in " + getLabel() );
-        buffer[bufstart] += myvals.get(sind);
+        unsigned sind = values[i]->streampos; buffer[bufstart] += myvals.get(sind);
         if( values[i]->hasDerivatives() ) {
           unsigned ndmax = (values[i]->getPntrToAction())->getNumberOfDerivatives();
           for(unsigned k=0; k<myvals.getNumberActive(sind); ++k) {
@@ -656,32 +684,9 @@ void ActionWithValue::gatherAccumulators( const unsigned& taskCode, const MultiV
             buffer[bufstart + 1 + kindex] += myvals.getDerivative(sind,kindex);
           }
         }
-        // This looks after grids
-      } else if( values[i]->hasDerivatives() ) {
-        gatherGridAccumulators( taskCode, myvals, bufstart, buffer );
+        // This looks after storing of data
       } else if( values[i]->storedata ) {
-        // This looks after storing for matrices
-        if( values[i]->getRank()==2 && !values[i]->hasDeriv ) {
-          unsigned ncols = values[i]->getShape()[1];
-          unsigned vindex = bufstart + taskCode*ncols; unsigned matind = values[i]->getPositionInMatrixStash();
-          for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
-            unsigned jind = myvals.getStashedMatrixIndex(matind,j);
-            plumed_dbg_massert( vindex+jind<buffer.size(), "failing in " + getLabel() + " on value " + values[i]->getName() );
-            buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
-          }
-          // This looks after sums over columns of matrix
-        } else if ( values[i]->getRank()==1 && values[i]->columnsums ) {
-          unsigned vindex = bufstart; unsigned matind = values[i]->getPositionInMatrixStash();
-          for(unsigned j=0; j<myvals.getNumberOfStashedMatrixElements(matind); ++j) {
-            unsigned jind = myvals.getStashedMatrixIndex(matind,j);
-            buffer[vindex + jind] += myvals.getStashedMatrixElement( matind, jind );
-          }
-          // This looks after storing in all other cases
-        } else {
-          unsigned nspace=1; if( values[i]->hasDeriv ) nspace=(1 + values[i]->getNumberOfDerivatives() );
-          unsigned vindex = bufstart + taskCode*nspace; plumed_dbg_massert( vindex<buffer.size(), "failing in " + getLabel() );
-          buffer[vindex] += myvals.get(sind);
-        }
+        gatherStoredValue( i, taskCode, myvals, bufstart, buffer ); 
       }
     }
     // Special method for dealing with centers

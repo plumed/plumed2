@@ -239,6 +239,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
   // Now check if we need to store data
   for(unsigned i=argstart; i<arguments.size(); ++i) {
     if( arguments[i]->getRank()>0 ) allrankzero=false;
+    if( !allow_streams ) { storing=true; break; }
     AverageBase* av=dynamic_cast<AverageBase*>( arguments[i]->getPntrToAction() ); 
     if( av || arguments[i]->alwaysstore || arguments[i]->columnsums || !usingAllArgs[i] ) { storing=true; break; }
     if( this->getCaller()!="plumedmain" && (arguments[i]->getPntrToAction())->getCaller()=="plumedmain" ) { storing=true; break; }
@@ -309,7 +310,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
     }
   } else if(!thisAsActionWithValue) return;
   
-  if( !allow_streams || storing ) {
+  if( storing ) {
     done_over_stream=false;
   } else if( f_actions.size()>1 ) {
     done_over_stream=true;

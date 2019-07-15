@@ -154,6 +154,7 @@ void HistogramBase::buildTasksFromBasedOnRankOfInputData() {
 
 void HistogramBase::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
   ActionWithValue::addValueWithDerivatives( shape ); setNotPeriodic();
+  getPntrToOutput(0)->alwaysStoreValues();
   if( one_kernel_at_a_time ) {
     for(unsigned i=0; i<gridobject.getNumberOfPoints(); ++i) addTaskToList(i);
   }
@@ -228,8 +229,9 @@ void HistogramBase::retrieveArgumentsAndHeight( const MultiValue& myvals, std::v
   for(unsigned i=0; i<args.size(); ++i) args[i]=argsh[i];
 }
 
-void HistogramBase::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-    const unsigned& bufstart, std::vector<double>& buffer ) const {
+void HistogramBase::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                       const unsigned& bufstart, std::vector<double>& buffer ) const {
+  plumed_dbg_assert( valindex==0 );
   if( one_kernel_at_a_time ) {
     unsigned istart = bufstart + (1+getNumberOfDerivatives())*code;
     unsigned valout = getPntrToOutput(0)->getPositionInStream(); buffer[istart] += myvals.get( valout );

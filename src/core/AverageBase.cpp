@@ -84,6 +84,20 @@ void AverageBase::setupComponents( const unsigned& nreplicas ) {
   getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
 }
 
+std::string AverageBase::getStrideClearAndWeights() const {
+  std::string stridestr; Tools::convert( getStride(), stridestr );
+  std::string outstr = " STRIDE=" + stridestr;
+  if( clearstride>0 ) {
+      std::string clearstr; Tools::convert( clearstride, clearstr );
+      outstr = " CLEAR=" + clearstr;
+  }
+  if( getNumberOfArguments()>n_real_args ) {
+       outstr += " LOGWEIGHTS=" + getPntrToArgument(n_real_args)->getName();
+       for(unsigned i=n_real_args+1; i<getNumberOfArguments(); ++i) outstr += "," + getPntrToArgument(i)->getName();
+  }
+  return outstr;
+}
+
 unsigned AverageBase::getNumberOfDerivatives() const {
   return getPntrToArgument(0)->getNumberOfDerivatives();
 }

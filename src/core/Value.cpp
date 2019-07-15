@@ -68,6 +68,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   hasDeriv(withderiv),
   istimeseries(false),
   alwaysstore(false),
+  storedata(true),
   neverstore(false),
   columnsums(false),
   symmetric(false),
@@ -79,15 +80,13 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv,
   max_minus_min(0.0),
   inv_max_minus_min(0.0)
 {
+  if( ss.size()>0 ) storedata=false;
   setShape( ss );
 }
 
 void Value::setShape( const std::vector<unsigned>&ss ) {
   shape.resize( ss.size() );
   for(unsigned i=0; i<shape.size(); ++i) shape[i]=ss[i];
-
-  if( ss.size()>0 && !alwaysstore ) storedata=false;
-  else storedata=true;
 
   if( shape.size()>0 ) data.resize(getSize());
   else if( hasDeriv ) data.resize( 1 +  action->getNumberOfDerivatives() );

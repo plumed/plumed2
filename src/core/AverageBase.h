@@ -62,6 +62,7 @@ public:
   void apply() {}
   void update();
   virtual void accumulateData( const double& cweight ) = 0;
+  std::string getStrideClearAndWeights() const ;
 };
 
 }

@@ -277,8 +277,8 @@ public:
 ///
   virtual void performTask( const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
 ///
-  virtual void gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-                                       const unsigned& bufstart, std::vector<double>& buffer ) const { plumed_error(); }
+  virtual void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                  const unsigned& bufstart, std::vector<double>& buffer ) const ; 
 /// This one calculates matrix elements
   virtual bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const { return true; }
 ///

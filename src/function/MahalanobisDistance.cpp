@@ -38,7 +38,7 @@ PLUMED_REGISTER_ACTION(MahalanobisDistance,"MAHALANOBIS_DISTANCE")
 
 void MahalanobisDistance::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
-  keys.add("compulsory","ARG1","The poin that we are calculating the distance from");
+  keys.add("compulsory","ARG1","The point that we are calculating the distance from");
   keys.add("compulsory","ARG2","The point that we are calculating the distance to");
   keys.add("compulsory","METRIC","The inverse covariance matrix that should be used when calculating the distance");
   keys.addFlag("SQUARED",false,"The squared distance should be calculated");

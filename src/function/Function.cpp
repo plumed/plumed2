@@ -97,12 +97,10 @@ Function::Function(const ActionOptions&ao):
         }
     }
     if( hasscalar && hasrank ) {
-      unsigned nscalars=0, nranks=0;
+      unsigned nscalars=0;
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
         if( getPntrToArgument(i)->getRank()==0 ) nscalars++;
-        else {
-          nranks++; npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
-        }
+        else npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
       }
       if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
       // Now create a task list for the function
@@ -206,9 +204,11 @@ void Function::addValueWithDerivatives() {
   }
 
   if( arg_ends.size()==0 ) {
-    if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape ); 
-    else if( hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape ); 
-    else if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape ); 
+    if( actionInChain() && shape.size()>0 && hasGridOutput() ) {
+       ActionWithValue::addValueWithDerivatives( shape ); getPntrToOutput(0)->alwaysStoreValues();
+    } else if( hasGridOutput() ) { 
+      ActionWithValue::addValueWithDerivatives( shape ); getPntrToOutput(0)->alwaysStoreValues();
+    } else if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape ); 
     else if( shape.size()==0 ) ActionWithValue::addValueWithDerivatives( shape );
     else ActionWithValue::addValue( shape );
     if(period.size()==1 && period[0]=="NO") setNotPeriodic();
@@ -217,9 +217,11 @@ void Function::addValueWithDerivatives() {
     Value* myval = getPntrToValue();
     if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
   } else if( arg_ends[1]-arg_ends[0]==1 || getName()=="DIFFERENCE" ) {
-    if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
-    else if( hasGridOutput() ) ActionWithValue::addValueWithDerivatives( shape );
-    else if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape );
+    if( actionInChain() && shape.size()>0 && hasGridOutput() ) {
+        ActionWithValue::addValueWithDerivatives( shape ); getPntrToOutput(0)->alwaysStoreValues();
+    } else if( hasGridOutput() ) {
+        ActionWithValue::addValueWithDerivatives( shape ); getPntrToOutput(0)->alwaysStoreValues();
+    } else if( actionInChain() && shape.size()>0 ) ActionWithValue::addValue( shape );
     else if( shape.size()==0 ) ActionWithValue::addValueWithDerivatives( shape );
     else { 
       if( shape.size()==1 && shape[0]==1 ) {
@@ -247,8 +249,8 @@ void Function::addValueWithDerivatives() {
     if( !allone ) {
         for(unsigned i=0; i<arg_ends.size()-1; ++i) {
           std::string num; Tools::convert(i+1,num);
-          if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
-          else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
+          if( actionInChain() && shape.size()>0 && hasGridOutput() ) error("cannot create function that outputs multiple grids");
+          else if( hasGridOutput() ) error("cannot create function that outputs multiple grids");
           else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent( "arg_" + num, shape );
           else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives( "arg_" + num, shape );
           else ActionWithValue::addComponent( "arg_" + num, shape );
@@ -276,8 +278,8 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
   }
 
   if( arg_ends.size()==0 ) {
-    if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape);
-    else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape );
+    if( actionInChain() && shape.size()>0 && hasGridOutput() ) error("cannot create function with output components that are grids");
+    else if( hasGridOutput() ) error("cannot create function with output components that are grids");
     else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent(name,shape);
     else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives(name,shape);
     else ActionWithValue::addComponent(name,shape);
@@ -285,8 +287,8 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
     Value* myval = getPntrToComponent(getNumberOfComponents()-1);
     if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setSymmetric(symmetric);
   } else if( arg_ends[1]-arg_ends[0]==1 ) {
-    if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape);
-    else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name,shape );
+    if( actionInChain() && shape.size()>0 && hasGridOutput() ) error("cannot create function with output components that are grids");
+    else if( hasGridOutput() ) error("cannot create function with output components that are grids");
     else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent(name,shape);
     else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives(name,shape);
     else ActionWithValue::addComponent(name,shape);
@@ -297,8 +299,8 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
     std::string num;
     for(unsigned i=0; i<arg_ends.size()-1; ++i) {
       Tools::convert(i+1,num);
-      if( actionInChain() && shape.size()>0 && hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name + "_arg_" + num, shape);
-      else if( hasGridOutput() ) ActionWithValue::addComponentWithDerivatives(name + "_arg_" + num, shape);
+      if( actionInChain() && shape.size()>0 && hasGridOutput() ) error("cannot create function with output components that are grids");
+      else if( hasGridOutput() ) error("cannot create function with output components that are grids");
       else if( actionInChain() && shape.size()>0 ) ActionWithValue::addComponent( name + "_arg_" + num, shape );
       else if( shape.size()==0 ) ActionWithValue::addComponentWithDerivatives(name + "_arg_" + num, shape);
       else ActionWithValue::addComponent( name + "_arg_" + num, shape );
@@ -358,6 +360,22 @@ void Function::update() {
 void Function::runFinalJobs() {
   if( !hasAverageAsArgument() ) return;
   plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
+  if( getFullNumberOfTasks()==0 ) {
+      unsigned nscalars=0, npoints;
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+        if( getPntrToArgument(i)->getRank()==0 ) nscalars++;
+        else npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      }
+      if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
+      // Now create a task list for the function
+      for(unsigned j=0; j<npoints; ++j) addTaskToList(j); 
+      // And resize the output values
+      std::vector<unsigned> shape(1); shape[0]=npoints;
+      for(unsigned i=0;i<getNumberOfComponents();++i) {
+          if( getPntrToOutput(i)->getRank()!=1 ) error("should only be rank one variables");
+          getPntrToOutput(i)->setShape(shape);
+      }
+  }
   evaluateAllFunctions();
 }
 
@@ -466,12 +484,14 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
   }
 }
 
-void Function::gatherGridAccumulators( const unsigned& code, const MultiValue& myvals,
-                                       const unsigned& bufstart, std::vector<double>& buffer ) const {
-  plumed_dbg_assert( getNumberOfComponents()==1 && getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() );
-  unsigned nder = getPntrToOutput(0)->getRank(), ostr = getPntrToOutput(0)->getPositionInStream();
-  unsigned kp = bufstart + code*(1+nderivatives); buffer[kp] += myvals.get( ostr );
-  for(unsigned i=0; i<nderivatives; ++i) buffer[kp + 1 + i] += myvals.getDerivative( ostr, i );
+void Function::gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals,
+                                  const unsigned& bufstart, std::vector<double>& buffer ) const {
+  if( getPntrToOutput(0)->getRank()>0 && getPntrToOutput(0)->hasDerivatives() ) {
+      plumed_dbg_assert( getNumberOfComponents()==1 && valindex==0 );
+      unsigned nder = getPntrToOutput(0)->getRank(), ostr = getPntrToOutput(0)->getPositionInStream();
+      unsigned kp = bufstart + code*(1+nderivatives); buffer[kp] += myvals.get( ostr );
+      for(unsigned i=0; i<nderivatives; ++i) buffer[kp + 1 + i] += myvals.getDerivative( ostr, i );
+  } else ActionWithValue::gatherStoredValue( valindex, code, myvals, bufstart, buffer );
 }
 
 void Function::apply()
