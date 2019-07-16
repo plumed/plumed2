@@ -373,6 +373,47 @@ What is happening to the protein during the course of the simulation? Are the tw
 
 \subsection lugano-1-ex-6 Exercise 6: Creating your own CV directly in the PLUMED input file
 
+In PLUMED, you can define your own CV directly in the input file by writing it as a function
+of existing CVs using the \ref CUSTOM action. PLUMED will then automatically calculate the derivatives with the respect to the atoms positions.
+
+Let's look at the following example.
+
+\plumedfile
+dAB: DISTANCE ATOMS=10,12
+dAC: DISTANCE ATOMS=10,15
+diff: CUSTOM ARG=dAB,dAC FUNC=y-x PERIODIC=NO
+\endplumedfile
+
+In this example, a custom CV is defined as the difference of two distances between pairs of atoms.
+
+Please complete the following input file to calculate two new CVs from those defined in \ref lugano-1-ex-5:
+- the average between \ref RMSD and \ref DRMSD, calculated on all the CA atoms of GB1 (easy)
+- the minimum value between \ref RMSD and \ref DRMSD (a bit more difficult).
+To define this function, you can creatively take inspiration from the path CV `s` (see \ref PATH).
+
+\plumedfile
+# RMSD on CA atoms
+rmsd: RMSD REFERENCE=__FILL__
+
+# DRMSD on CA atoms
+drmsd: DRMSD REFERENCE=__FILL__
+
+# average between RMSD and DRMSD
+ave: CUSTOM ARG=rmsd,drmsd FUNC=__FILL__ PERIODIC=NO
+
+# minimum value between RMSD and DRMSD
+min: CUSTOM ARG=rmsd,drmsd FUNC=__FILL__ PERIODIC=NO
+
+# print all 4 CVs to file
+PRINT ARG=__FILL__ STRIDE=1 FILE=COLVAR 
+\endplumedfile
+
+Once your `plumed.dat` file is complete, you can use it with the following command
+\verbatim
+> plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
+\endverbatim
+
+and then check that the calculation of the new CVs is correct by plotting the resulting `COLVAR` file with `gnuplot`.
 
 
 */
