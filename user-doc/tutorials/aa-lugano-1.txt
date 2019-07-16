@@ -331,6 +331,45 @@ We can now visualize the timeline of the two CVs and compare it with the results
 
 \subsection lugano-1-ex-5 Exercise 5: Using CVs that measure the distance from a reference conformation
 
+In many cases, it is useful to define a CV that quantifies the distance of the system from a reference conformation. In PLUMED, this can be achieved using a variety of different CVs.
+Please, have a look <a href="../../user-doc/html/dists.html"> here </a>
+for more info.
+
+In this exercise, we will learn how to use the \ref RMSD and \ref DRMSD CVs.
+In order to do so, we need to edit a reference pdb file and identify:
+- for \ref RMSD, the atoms that you want to use for alignment and RMSD calculation
+- for \ref DRMSD, the atoms that you want to use for the DRMSD calculation
+
+Please refer to the manual to understand how to specify the atoms needed to calculate
+the CA-RMSD and CA-DRMSD with respect to the native GB1 structure.
+After editing the reference pdb file, please complete the following input file:
+
+\plumedfile
+# RMSD on CA atoms
+rmsd: RMSD REFERENCE=__FILL__
+
+# DRMSD on CA atoms
+drmsd: DRMSD REFERENCE=__FILL__
+
+# print both CVs to file
+PRINT ARG=__FILL__ STRIDE=1 FILE=COLVAR 
+\endplumedfile
+
+Once your `plumed.dat` file is complete, you can use it with the following command
+\verbatim
+> plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
+\endverbatim
+
+and also on the trajectory file in which PBCs have been fixed:
+
+\verbatim
+> plumed driver --plumed plumed.dat --mf_xtc traj-whole.xtc
+\endverbatim
+
+Can you comment the results obtained and the differences - if any - between the two trajectories?
+What is happening to the protein during the course of the simulation? Are the two metrics,
+\ref RMSD and \ref DRMSD, equivalent?
+
 
 \subsection lugano-1-ex-6 Exercise 6: Creating your own CV directly in the PLUMED input file
 
