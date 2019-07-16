@@ -281,6 +281,53 @@ Are the results identical?
 
 \subsection lugano-1-ex-4 Exercise 4: Taking care of periodic boundary conditions
 
+As you should have noticed, in this tutorial we are working with two different trajectories of
+the GB1 protein:
+- traj-broken.xtc: the original GROMACS trajectory in which GB1 is broken by periodic boundary conditions
+- traj-whole.xtc: the trajectory processed by the `gmx trjconv` utility to fix PBCs discontinuities
+
+In many PLUMED CVs, PBCs are automatically taken into account unless a special option (\ref NOPBC) is used.
+In this way, the user can work directly with the raw trajectory `traj-broken.xtc`.
+Alternatively, PLUMED can reconstruct internally the coordinates of the system and thus fix discontinuities due to PBCs.
+In order to do so, the \ref WHOLEMOLECULES action should be used.
+
+In this exercise, we will learn how to use the \ref WHOLEMOLECULES action.
+Let's ask PLUMED to internally make the structure of GB1 whole and print the new atoms positions
+on a new file, called `dump.gro`, every 10 steps.
+
+\plumedfile
+# let's use the range syntax to specify all GB1 atoms
+WHOLEMOLECULES ENTITY0=__FILL__
+DUMPATOMS FILE=dump.gro STRIDE=__FILL__
+\endplumedfile
+
+Once your `plumed.dat` file is complete, you can use it with the following command
+\verbatim
+> plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
+\endverbatim
+
+and look at the output file with vmd. Have PBCs been fixed?
+
+At this point, we can repeat  \ref lugano-1-ex-3 after adding the \ref WHOLEMOLECULES action
+at the beginning of the PLUMED input file:
+
+\plumedfile
+# make protein whole
+WHOLEMOLECULES ENTITY0=__FILL__
+
+# geometric center of mass of first residue
+first: CENTER ATOMS=1,2,3,4,5,6,7,8
+# geometric center of last residue
+last: CENTER ATOMS=427-436
+
+d1: DISTANCE ATOMS=first,last
+d2: DISTANCE ATOMS=first,last NOPBC
+
+PRINT ARG=d1,d2 STRIDE=1 FILE=COLVAR 
+\endplumedfile
+
+We can now visualize the timeline of the two CVs and compare it with the results of
+\ref lugano-1-ex-3. Which CVs are identical and which are not? Why?
 
 \subsection lugano-1-ex-5 Exercise 5: Using CVs that measure the distance from a reference conformation
 
