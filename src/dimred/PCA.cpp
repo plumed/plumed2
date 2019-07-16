@@ -153,6 +153,11 @@ PCA::PCA( const ActionOptions& ao ) :
       } 
       readInputLine("PRINT DESCRIPTION=PCA FILE=" + filename + " FMT=" + fmt + " ARG1=" + avlist + " " + eiglist );
   }
+  // And calculate the projections of the stored data on to the PCA vectors
+  for(unsigned i=0;i<ndim;++i) {
+      std::string num; Tools::convert( i+1, num );
+      readInputLine( getShortcutLabel() + "-" + num + ": PROJECT_ON_VECTOR " + argstr + " VECTOR=" + getShortcutLabel() + "_eig.vecs-" + num ); 
+  }
 }
 
 }

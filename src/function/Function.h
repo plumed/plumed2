@@ -46,6 +46,7 @@ private:
   bool hasGridOutput() const ;
   std::vector<unsigned> getShape();
   void evaluateAllFunctions();
+  void fixTimeSeries();
 protected:
   bool getPeriodFromArg;
   void addValueWithDerivatives();

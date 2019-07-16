@@ -107,8 +107,8 @@ Function::Function(const ActionOptions&ao):
       for(unsigned j=0; j<npoints; ++j) addTaskToList(j);
     } else {
       createTasksFromArguments();
-      // Now create the stream of jobs to work through
-      if( distinct_arguments.size()>0 ) {  // This is for if we have a function that needs to store - needs though GAT
+      // Now create the stream of jobs to work through      
+      if( distinct_arguments.size()>0 && getName()!="PROJECT_ON_VECTOR" ) {  // This is for if we have a function that needs to store - needs though GAT
         // Create the chain of actions that will calculate the function
         nderivatives = setupActionInChain(0);
         // Set forces to apply to correct size
@@ -116,6 +116,7 @@ Function::Function(const ActionOptions&ao):
       }
     }
   }
+
   // This creates a group of atoms that have these weights -- not entirely foolproof and could be improved GAT
   bool checkforrank=false;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
@@ -263,6 +264,18 @@ void Function::addValueWithDerivatives() {
     }
   }
   if( actionInChain() && matinp ) matout=getPntrToOutput(0)->getRank()==2;
+  // Check if input arguments are time series
+  fixTimeSeries();
+}
+
+void Function::fixTimeSeries() {
+  bool timeseries=false;
+  for(unsigned i=0;i<getNumberOfArguments();++i) {
+      if( getPntrToArgument(i)->isTimeSeries() ) { timeseries=true; break; }
+  }
+  if( timeseries ) {
+      for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->makeTimeSeries();
+  }
 }
 
 void Function::addComponentWithDerivatives( const std::string& name ) {
@@ -315,6 +328,8 @@ void Function::addComponentWithDerivatives( const std::string& name ) {
       for(unsigned i=1; i<getNumberOfComponents(); ++i) plumed_dbg_assert( getPntrToOutput(i)->getRank()==2 );
     } 
   } 
+  // Check if input arguments are time series
+  fixTimeSeries();
 }
 
 void Function::evaluateAllFunctions() {
@@ -362,9 +377,11 @@ void Function::runFinalJobs() {
   plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
   if( getFullNumberOfTasks()==0 ) {
       unsigned nscalars=0, npoints;
-      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        if( getPntrToArgument(i)->getRank()==0 ) nscalars++;
-        else npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
+      for(unsigned i=0; i<arg_ends.size()-1; ++i) {
+        for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
+            if( getPntrToArgument(j)->getRank()==0 ) nscalars++;
+            else npoints=getPntrToArgument(j)->getNumberOfValues( getLabel() );
+        }
       }
       if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
       // Now create a task list for the function

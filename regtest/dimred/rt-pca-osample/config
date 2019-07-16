@@ -1,3 +1,0 @@
-type=driver
-plumed_modules=dimred
-arg="--plumed plumed.dat --ixyz diala_traj_nm.xyz"

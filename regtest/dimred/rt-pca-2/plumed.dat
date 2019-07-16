@@ -3,4 +3,4 @@ c2: READ FILE=colvar.in VALUES=cv2
 
 ff: COLLECT_FRAMES ARG=c1,c2 
 pca: PCA ARG=ff NLOW_DIM=2 FILE=pca-comp.pdb FMT=%8.4f
-# OUTPUT_PCA_PROJECTION USE_OUTPUT_DATA_FROM=pca FILE=pca-comp.pdb FMT=%8.4f 
+PRINT ARG=pca-1,pca-2,pca_weights FILE=colvar FMT=%8.4f
