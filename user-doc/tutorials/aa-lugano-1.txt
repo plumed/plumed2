@@ -1,5 +1,5 @@
 /**
-\page lugano-1 Lugano tutorial: Introduction to PLUMED syntax and analyzing CVs
+\page lugano-1 Lugano tutorial: Brief guide to PLUMED syntax and analyzing trajectories
 
 \section lugano-1-aims Aims
 
@@ -20,6 +20,12 @@ Once this tutorial is completed, students will be able to:
 
 \section lugano-1-resources Resources
 
+Before starting the tutorial, please create a separate directory, named `handson_1`, and enter it:
+\verbatim
+mkdir handson_1
+cd handson_1
+\endverbatim
+
 The reference trajectories and other files needed for the exercises proposed in this tutorial
 can be downloaded from `github` using the following command:
 
@@ -32,7 +38,12 @@ The zip archive contains the following files:
 - traj-whole.xtc: A trajectory in xtc format. To make the exercise easier, GB1 has been made whole already.
 - traj-broken.xtc: The same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions and should be fixed.
 
-This tutorial has been tested on a pre-release version of PLUMED 2.6. However, it should also work with PLUMED version 2.5.
+The archive can be opened with the following command:
+\verbatim
+tar xvzf handson_1.tgz
+\endverbatim
+
+This tutorial has been tested on PLUMED version 2.5.1.
 
 \section lugano-1-instructions Instructions
 
@@ -216,9 +227,15 @@ in question in two different ways:  using the \ref MOLINFO shortcut to define ps
 and with an explicit list of 4 atoms.
 
 \plumedfile
+# activate MOLINFO functionalities
 MOLINFO STRUCTURE=__FILL__
+
+# define phi dihedral of residue 2 as a list of 4 atoms
 t1: TORSION ATOMS=__FILL__
+# define the same dihedral using MOLINFO shortcuts
 t2: TORSION ATOMS=__FILL__
+
+# print the value of t1 and t2 every 10 steps
 PRINT ARG=__FILL__ FILE=COLVAR STRIDE=10
 \endplumedfile
 
@@ -236,14 +253,17 @@ In this exercise, you will learn how to specify virtual atoms and later use them
 Let's start by having a look at the PLUMED input file below.
 
 \plumedfile
-# geometric center of mass of first residue
+# geometric center of first residue
 first: CENTER ATOMS=1,2,3,4,5,6,7,8
 # geometric center of last residue
 last: CENTER ATOMS=427-436
 
+# distance between centers of first and last residues, with PBCs
 d1: DISTANCE ATOMS=first,last
+# distance between centers of first and last residues, without PBCs
 d2: DISTANCE ATOMS=first,last NOPBC
 
+# print the two distances every step
 PRINT ARG=d1,d2 STRIDE=1 FILE=COLVAR 
 \endplumedfile
 
@@ -296,9 +316,11 @@ Let's ask PLUMED to internally make the structure of GB1 whole and print the new
 on a new file, called `dump.gro`, every 10 steps.
 
 \plumedfile
+# use WHOLEMOLECULES to make the entire protein whole
 # let's use the range syntax to specify all GB1 atoms
 WHOLEMOLECULES ENTITY0=__FILL__
-DUMPATOMS FILE=dump.gro STRIDE=__FILL__
+# print the positions of all atoms every 10 steps
+DUMPATOMS FILE=dump.gro ATOMS=__FILL__ STRIDE=__FILL__
 \endplumedfile
 
 Once your `plumed.dat` file is complete, you can use it with the following command
@@ -315,14 +337,17 @@ at the beginning of the PLUMED input file:
 # make protein whole
 WHOLEMOLECULES ENTITY0=__FILL__
 
-# geometric center of mass of first residue
+# geometric center of first residue
 first: CENTER ATOMS=1,2,3,4,5,6,7,8
 # geometric center of last residue
 last: CENTER ATOMS=427-436
 
+# distance between centers of first and last residues, with PBCs
 d1: DISTANCE ATOMS=first,last
+# distance between centers of first and last residues, without PBCs
 d2: DISTANCE ATOMS=first,last NOPBC
 
+# print the two distances every step
 PRINT ARG=d1,d2 STRIDE=1 FILE=COLVAR 
 \endplumedfile
 
@@ -345,11 +370,13 @@ the CA-RMSD and CA-DRMSD with respect to the native GB1 structure.
 After editing the reference pdb file, please complete the following input file:
 
 \plumedfile
-# RMSD on CA atoms
-rmsd: RMSD REFERENCE=__FILL__
+# RMSD on CA atoms, after optimal alignment
+rmsd: RMSD REFERENCE=__FILL__ TYPE=OPTIMAL
 
 # DRMSD on CA atoms
-drmsd: DRMSD REFERENCE=__FILL__
+# Only pairs of atoms whose distance in the reference structure
+# is within 0.1 and 0.8 nm are considered
+drmsd: DRMSD REFERENCE=__FILL__ LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
 
 # print both CVs to file
 PRINT ARG=__FILL__ STRIDE=1 FILE=COLVAR 
@@ -379,32 +406,41 @@ of existing CVs using the \ref CUSTOM action. PLUMED will then automatically cal
 Let's look at the following example.
 
 \plumedfile
+# distance between atoms 10 and 12
 dAB: DISTANCE ATOMS=10,12
+# distance between atoms 10 and 15
 dAC: DISTANCE ATOMS=10,15
+
+# custom CV defined as the difference between dAC->y and dAB->x
 diff: CUSTOM ARG=dAB,dAC FUNC=y-x PERIODIC=NO
+
+# print the 3 CVs to file every 10 steps
+PRINT ARG=dAB,dAC,diff FILE=COLVAR STRIDE=10
 \endplumedfile
 
 In this example, a custom CV is defined as the difference of two distances between pairs of atoms.
 
 Please complete the following input file to calculate two new CVs from those defined in \ref lugano-1-ex-5:
-- the average between \ref RMSD and \ref DRMSD, calculated on all the CA atoms of GB1 (easy)
-- the minimum value between \ref RMSD and \ref DRMSD (a bit more difficult).
+- the average of \ref RMSD and \ref DRMSD, calculated on all the CA atoms of GB1 (easy)
+- the minimum distance between \ref RMSD and \ref DRMSD (a bit more difficult).
 To define this function, you can creatively take inspiration from the path CV `s` (see \ref PATH).
 
 \plumedfile
-# RMSD on CA atoms
-rmsd: RMSD REFERENCE=__FILL__
+# RMSD on CA atoms, after optimal alignment
+rmsd: RMSD REFERENCE=__FILL__ TYPE=OPTIMAL
 
 # DRMSD on CA atoms
-drmsd: DRMSD REFERENCE=__FILL__
+# Only pairs of atoms whose distance in the reference structure
+# is within 0.1 and 0.8 nm are considered
+drmsd: DRMSD REFERENCE=__FILL__ LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
 
-# average between RMSD and DRMSD
+# average of RMSD and DRMSD
 ave: CUSTOM ARG=rmsd,drmsd FUNC=__FILL__ PERIODIC=NO
 
-# minimum value between RMSD and DRMSD
+# minimum distance between RMSD and DRMSD
 min: CUSTOM ARG=rmsd,drmsd FUNC=__FILL__ PERIODIC=NO
 
-# print all 4 CVs to file
+# print all 4 CVs to file every step
 PRINT ARG=__FILL__ STRIDE=1 FILE=COLVAR 
 \endplumedfile
 
@@ -413,7 +449,7 @@ Once your `plumed.dat` file is complete, you can use it with the following comma
 > plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
 \endverbatim
 
-and then check that the calculation of the new CVs is correct by plotting the resulting `COLVAR` file with `gnuplot`.
+and then check that the custom CVs are indeed what they are expected by plotting the `COLVAR` file with `gnuplot`.
 
 
 */
