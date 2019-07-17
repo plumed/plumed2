@@ -100,7 +100,8 @@ public:
   void resizeValues();
   bool allowComponentsAndValue() const { return true; }
   void clearAccumulatedData();
-  void accumulateData( const double& cweight );
+  void accumulateGrid( const double& cweight );
+  void accumulateValue( const double& cweight, const std::vector<double>& val );
 };
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")
@@ -150,39 +151,33 @@ void Average::resizeValues() {
   }
 }
 
-void Average::accumulateData( const double& lweight ) {
+void Average::accumulateGrid( const double& lweight ) {
+  double cweight = exp( lweight ); Value* val=getPntrToOutput(0);
   // Accumulate normalization
-  Value* arg0=getPntrToArgument(0); Value* val=getPntrToOutput(0); double cweight = exp( lweight );
+  if( normalization==t ) val->setNorm( val->getNorm() + cweight );
+  else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 );
+  // And accumulate the grid
+  Value* arg0=getPntrToArgument(0); unsigned nvals=arg0->getNumberOfValues( getLabel() );
+  for(unsigned i=0; i<nvals; ++i) {
+      unsigned nder=val->getNumberOfDerivatives(); val->add( i*(1+nder), cweight*arg0->getRequiredValue(getLabel(), i) );
+      for(unsigned j=0; j<nder; ++j) val->add( i*(1+nder)+1+j, cweight*arg0->getGridDerivative( i, j ) );
+  }
+}
 
-  if( arg0->isPeriodic() ) {
-    Value* valsin=getPntrToOutput(1); Value* valcos=getPntrToOutput(2);
-    // Now calcualte average
-    for(unsigned i=0; i<arg0->getNumberOfValues( getLabel() ); ++i) {
-      // Accumulate normalization
+void Average::accumulateValue( const double& lweight, const std::vector<double>& dval ) {
+  plumed_dbg_assert( dval.size()==0 ); double cweight = exp( lweight );
+  if( getPntrToArgument(0)->isPeriodic() ) {
+      Value* valsin=getPntrToOutput(1); Value* valcos=getPntrToOutput(2);
       if( normalization==t ) { valsin->setNorm( valsin->getNorm() + cweight ); valcos->setNorm( valcos->getNorm() + cweight ); }
       else if( normalization==ndata ) { valsin->setNorm( valsin->getNorm() + 1.0 ); valcos->setNorm( valcos->getNorm() + 1.0 ); }
-      double tval = ( arg0->getRequiredValue( getLabel(), i) - lbound ) / pfactor;
+      double tval = ( dval[0] - lbound ) / pfactor;
       valsin->add( 0, cweight*sin(tval) ); valcos->add( 0, cweight*cos(tval) );
-      val->set( i, lbound + pfactor*atan2( valsin->get(i), valcos->get(i)) );
-    }
+      getPntrToOutput(0)->set( 0, lbound + pfactor*atan2( valsin->get(0), valcos->get(0)) );
   } else {
-    // Accumulate normalization
-    if( arg0->getRank()>0 && arg0->hasDerivatives() ) {
-        if( normalization==t ) val->setNorm( val->getNorm() + cweight );
-        else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 );
-    }
-    // Now accumulate average
-    for(unsigned i=0; i<arg0->getNumberOfValues( getLabel() ); ++i) {
-      if( arg0->getRank()>0 && arg0->hasDerivatives() ) {
-        unsigned nder=val->getNumberOfDerivatives(); val->add( i*(1+nder), cweight*arg0->getRequiredValue(getLabel(), i) );
-        for(unsigned j=0; j<nder; ++j) val->add( i*(1+nder)+1+j, cweight*arg0->getGridDerivative( i, j ) );
-      } else {
-        val->add( cweight*arg0->getRequiredValue(getLabel(), i) );
-        // Accumulate normalization
-        if( normalization==t ) val->setNorm( val->getNorm() + cweight );
-        else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 );
-      }
-    }
+      Value* val=getPntrToOutput(0); val->add( cweight*dval[0] );
+      // Accumulate normalization
+      if( normalization==t ) val->setNorm( val->getNorm() + cweight );
+      else if( normalization==ndata ) val->setNorm( val->getNorm() + 1.0 );
   }
 }
 

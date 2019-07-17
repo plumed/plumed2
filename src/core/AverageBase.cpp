@@ -46,6 +46,7 @@ AverageBase::AverageBase( const ActionOptions& ao):
   clearnextstep(false),
   firststep(true),
   clearnorm(false),
+  data(getNumberOfArguments()),
   n_real_args(getNumberOfArguments())
 {
   plumed_assert( keywords.exists("ARG") );
@@ -157,7 +158,15 @@ void AverageBase::update() {
   }
 
   // Accumulate the data required for this round
-  accumulateData( cweight );
+  if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
+      accumulateGrid( cweight );
+  } else {
+      unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() );
+      for(unsigned i=0;i<nvals;++i) {
+          for(unsigned j=0;j<n_real_args;++j) data[j] = getPntrToArgument(j)->get(i);
+          accumulateValue( cweight, data );
+      }
+  }
 
   // Clear if required
   if( (clearstride>0 && getStep()%clearstride==0) ) clearnextstep=true;

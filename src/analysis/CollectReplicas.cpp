@@ -36,7 +36,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit CollectReplicas( const ActionOptions& );
   void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
-  void accumulateData( const double& cweight );
+  void accumulateValue( const double& cweight, const std::vector<double>& dval );
   void runFinalJobs();
 };
 
@@ -69,35 +69,27 @@ void CollectReplicas::interpretDotStar( const std::string& ulab, unsigned& nargs
   for(unsigned i=0; i<getNumberOfComponents(); ++i) copyOutput(i)->interpretDataRequest( ulab, nargs, myvals, "" );
 }
 
-void CollectReplicas::accumulateData( const double& cweight ) {
-  unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() ); 
+void CollectReplicas::accumulateValue( const double& cweight, const std::vector<double>& dval ) {
   // Collect the bias from all replicas
-  std::vector<double> biases(nreplicas,0.0), data_rep(nvals*(getNumberOfComponents()-1),0.0);
+  std::vector<double> biases(nreplicas,0.0);
   if(comm.Get_rank()==0) multi_sim_comm.Allgather(cweight,biases);
   // Collect the data from all replicas
-  for(unsigned j=0;j<getNumberOfComponents()-1;++j) {
-      for(unsigned i=0;i<nvals;++i) data_rep[nvals*j+i] = getPntrToArgument(j)->get(i);
-  }
-  std::vector<double> datap(nreplicas*data_rep.size(),0.0);
-  if(comm.Get_rank()==0) multi_sim_comm.Allgather(data_rep,datap);
+  std::vector<double> datap(nreplicas*dval.size(),0.0);
+  if(comm.Get_rank()==0) multi_sim_comm.Allgather(dval,datap);
   
 
   // Now accumulate average
   if( clearstride>0 ) {
-      for(unsigned i=0;i<nvals;++i) {
-          for(unsigned k=0; k<biases.size(); k++) {
-              for(unsigned j=0;j<getNumberOfComponents()-1;++j) getPntrToOutput(j)->set( ndata, datap[k*data_rep.size()+nvals*j+i] );
-              getPntrToOutput(getNumberOfComponents()-1)->set( ndata, biases[k] ); ndata++;
-          }
-      } 
+      for(unsigned k=0; k<biases.size(); k++) {
+          for(unsigned j=0;j<getNumberOfComponents()-1;++j) getPntrToOutput(j)->set( ndata, datap[k*dval.size()+j] );
+          getPntrToOutput(getNumberOfComponents()-1)->set( ndata, biases[k] ); ndata++;
+      }
       // Start filling the data set again from scratch
       if( getStep()%clearstride==0 ) { ndata=0; }
   } else {
-      for(unsigned i=0;i<nvals;++i) {
-          for(unsigned k=0; k<biases.size(); k++) {
-              for(unsigned j=0;j<getNumberOfComponents()-1;++j) data[j] = datap[k*data_rep.size()+nvals*j+i];
-              allweights.push_back( biases[k] ); alldata.push_back( data );
-          }
+      for(unsigned k=0; k<biases.size(); k++) {
+          for(unsigned j=0;j<getNumberOfComponents()-1;++j) data[j] = datap[k*dval.size()+j];
+          allweights.push_back( biases[k] ); alldata.push_back( data );
       }
   }
 }

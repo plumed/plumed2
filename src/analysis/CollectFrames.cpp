@@ -36,7 +36,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit CollectFrames( const ActionOptions& );
   void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
-  void accumulateData( const double& cweight );
+  void accumulateValue( const double& cweight, const std::vector<double>& dval );
   void runFinalJobs();
 };
 
@@ -65,21 +65,16 @@ void CollectFrames::interpretDotStar( const std::string& ulab, unsigned& nargs, 
   for(unsigned i=0; i<getNumberOfComponents(); ++i) copyOutput(i)->interpretDataRequest( ulab, nargs, myvals, "" );
 }
 
-void CollectFrames::accumulateData( const double& cweight ) {
+void CollectFrames::accumulateValue( const double& cweight, const std::vector<double>& dval ) {
   unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() ); 
   // Now accumulate average
   if( clearstride>0 ) {
-      for(unsigned i=0;i<nvals;++i) {
-          for(unsigned j=0;j<getNumberOfComponents()-1;++j) getPntrToOutput(j)->set( ndata, getPntrToArgument(j)->get(i) );
-          getPntrToOutput(getNumberOfComponents()-1)->set( ndata, cweight ); ndata++;
-      } 
+      for(unsigned j=0;j<dval.size();++j) getPntrToOutput(j)->set( ndata, dval[j] );
+      getPntrToOutput(getNumberOfComponents()-1)->set( ndata, cweight ); ndata++;
       // Start filling the data set again from scratch
       if( getStep()%clearstride==0 ) { ndata=0; }
   } else {
-      for(unsigned i=0;i<nvals;++i) {
-          for(unsigned j=0;j<getNumberOfComponents()-1;++j) data[j] = getPntrToArgument(j)->get(i);
-          allweights.push_back( cweight ); alldata.push_back( data );
-      }
+      allweights.push_back( cweight ); alldata.push_back( dval );
   }
 }
 

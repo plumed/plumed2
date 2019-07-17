@@ -38,6 +38,7 @@ private:
 protected:
   bool clearnorm;
   unsigned clearstride;
+  std::vector<double> data;
   unsigned n_real_args;
 /// This is used to setup the components for the actions that store data
   void setupComponents( const unsigned& nreplicas );
@@ -61,7 +62,8 @@ public:
   void calculate() {}
   void apply() {}
   void update();
-  virtual void accumulateData( const double& cweight ) = 0;
+  virtual void accumulateGrid( const double& cweight ){ plumed_error(); }
+  virtual void accumulateValue( const double& cweight, const std::vector<double>& val ) = 0;
   std::string getStrideClearAndWeights() const ;
 };
 
