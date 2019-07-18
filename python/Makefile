@@ -9,13 +9,6 @@ VERSION = $(shell if test -f ../VERSION ; then grep -v \\\# ../VERSION ; else ec
 
 plumed_compiled := $(wildcard ../src/lib/plumed)
 
-ifeq ($(strip $(plumed_compiled)),)
-
-all:
-	@echo You must compile plumed before building the cython interface
-
-else
-
 ifdef python_bin
 
 all:
@@ -31,7 +24,6 @@ else
 
 all:
 	@echo Python support was not configure
-endif
 
 endif
 
