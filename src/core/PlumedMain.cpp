@@ -553,6 +553,13 @@ void PlumedMain::cmd(const std::string & word,void*val) {
           cltool->cmd(kk.c_str(),val);
         }
         break;
+      case cmd_convert:
+      {
+        double v;
+        plumed_assert(words.size()==2);
+        if(Tools::convert(words[1],v)) atoms.double2MD(v,val);
+      }
+      break;
       default:
         plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
         break;
