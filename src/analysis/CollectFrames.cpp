@@ -29,14 +29,16 @@ namespace analysis {
 
 class CollectFrames : public AverageBase {
 private:
-  unsigned ndata;
+  unsigned ndata_for_norm, ndata;
   std::vector<double> data, allweights;
   std::vector<std::vector<double> > alldata;
 public:
   static void registerKeywords( Keywords& keys );
   explicit CollectFrames( const ActionOptions& );
   void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
+  void accumulateNorm( const double& cweight );
   void accumulateValue( const double& cweight, const std::vector<double>& dval );
+  void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir );
   void runFinalJobs();
 };
 
@@ -51,6 +53,7 @@ void CollectFrames::registerKeywords( Keywords& keys ) {
 CollectFrames::CollectFrames( const ActionOptions& ao):
   Action(ao),
   AverageBase(ao),
+  ndata_for_norm(0),
   ndata(0),
   data(n_real_args)
 {
@@ -65,17 +68,27 @@ void CollectFrames::interpretDotStar( const std::string& ulab, unsigned& nargs, 
   for(unsigned i=0; i<getNumberOfComponents(); ++i) copyOutput(i)->interpretDataRequest( ulab, nargs, myvals, "" );
 }
 
+void CollectFrames::accumulateNorm( const double& cweight ) {
+  if( clearstride>0 ) {
+      getPntrToOutput(getNumberOfComponents()-1)->set( ndata, cweight ); ndata_for_norm++;
+  } else allweights.push_back( cweight );  
+}
+
 void CollectFrames::accumulateValue( const double& cweight, const std::vector<double>& dval ) {
   unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() ); 
   // Now accumulate average
   if( clearstride>0 ) {
       for(unsigned j=0;j<dval.size();++j) getPntrToOutput(j)->set( ndata, dval[j] );
-      getPntrToOutput(getNumberOfComponents()-1)->set( ndata, cweight ); ndata++;
+      ndata++; plumed_dbg_assert( ndata_for_norm==ndata );
       // Start filling the data set again from scratch
-      if( getStep()%clearstride==0 ) { ndata=0; }
+      if( getStep()%clearstride==0 ) { ndata_for_norm=ndata=0; }
   } else {
-      allweights.push_back( cweight ); alldata.push_back( dval );
+      alldata.push_back( dval );
   }
+}
+
+void CollectFrames::accumulateAtoms( const double& cweight, const std::vector<Vector>& dir ) {
+  plumed_merror("Doesn't work");
 }
 
 void CollectFrames::runFinalJobs() {

@@ -25,6 +25,7 @@
 #include "ActionAtomistic.h"
 #include "ActionWithValue.h"
 #include "ActionWithArguments.h"
+#include "tools/RMSD.h"
 
 namespace PLMD {
 
@@ -35,15 +36,24 @@ class AverageBase :
   public ActionWithArguments {
 private:
   bool clearnextstep, firststep;
+  Tensor rot;
+  PLMD::RMSD myrmsd;
+  std::string rmsd_type;
+  Matrix<std::vector<Vector> > DRotDPos;
+  std::vector<double> data, align, displace;
+  std::vector<Vector> atom_pos, der, direction, centeredpos, centeredreference;
 protected:
   bool clearnorm;
   unsigned clearstride;
-  std::vector<double> data;
   unsigned n_real_args;
 /// This is used to setup the components for the actions that store data
   void setupComponents( const unsigned& nreplicas );
 /// This is used to transfer the data in runFinalJobs for actions that collect data
   void transferCollectedDataToValue( const std::vector<std::vector<double> >& mydata, const std::vector<double>& myweights );
+/// Get the number of atoms that we are averaging
+  unsigned getNumberOfAtomsToAverage() const ;
+/// Get the position of the ith atom in the reference configuration
+  Vector getReferencePosition(const unsigned& i );
 public:
   static void registerKeywords( Keywords& keys );
   explicit AverageBase( const ActionOptions& );
@@ -62,10 +72,23 @@ public:
   void calculate() {}
   void apply() {}
   void update();
+  virtual void accumulateNorm( const double& cweight ) = 0 ;
   virtual void accumulateGrid( const double& cweight ){ plumed_error(); }
   virtual void accumulateValue( const double& cweight, const std::vector<double>& val ) = 0;
+  virtual void setReferenceConfig();
+  virtual void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir ) = 0;
   std::string getStrideClearAndWeights() const ;
 };
+
+inline
+unsigned AverageBase::getNumberOfAtomsToAverage() const {
+  return atom_pos.size();
+}
+
+inline
+Vector AverageBase::getReferencePosition(const unsigned& i ) {
+  return myrmsd.getReference()[i];
+} 
 
 }
 #endif

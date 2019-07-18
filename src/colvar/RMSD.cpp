@@ -47,7 +47,6 @@ private:
   std::vector<double> align,displace,sqrtdisplace;
   PLMD::RMSD myrmsd;
   std::vector<Vector> forcesToApply;
-  void makeStructureWhole();
   void setReferenceConfiguration();
 public:
   explicit RMSD(const ActionOptions&);
@@ -262,8 +261,8 @@ RMSD::RMSD(const ActionOptions&ao):
 }
 
 void RMSD::setReferenceConfiguration() {
+  if( !fixed_reference && !nopbc ) makeWhole( 0, pos.size() );
   for(unsigned i=0;i<pos.size();++i) pos[i] = getPosition(i);
-  if( !fixed_reference && !nopbc ) makeStructureWhole();
 
   Vector center;
   for(unsigned i=0; i<pos.size(); ++i) center+=pos[i]*align[i];
@@ -271,22 +270,14 @@ void RMSD::setReferenceConfiguration() {
   myrmsd.clear(); myrmsd.set(align,displace,pos,type,true,norm_weights);
 }
 
-void RMSD::makeStructureWhole() {
-  for(unsigned j=0; j<pos.size()-1; ++j) {
-      const Vector & first (pos[j]); Vector & second (pos[j+1]);
-      second=first+pbcDistance(first,second);
-  }
-}
-
-
 // calculator
 void RMSD::calculate() {
   // Align reference configuration and set rmsd data
   if( !fixed_reference ) setReferenceConfiguration();
+  // Make the molecule whole
+  if( !nopbc ) makeWhole( pos.size(), getNumberOfAtoms() );
   // Retrieve instantaneous configuration
   for(unsigned i=0;i<pos.size();++i) pos[i] = getPosition(pos.size()+i);
-  // Make the molecule whole
-  if(!nopbc) makeStructureWhole();
 
   if( displacement ) {
       // Calculate RMSD displacement 
@@ -358,10 +349,10 @@ void RMSD::apply() {
         }
       }
   }
+  // Make the structure whole
+  if( !nopbc ) makeWhole( pos.size(), getNumberOfAtoms() );
   // Retrieve instantaneous configuration
   for(unsigned i=0;i<pos.size();++i) pos[i] = getPosition(pos.size()+i);
-  // Make the molecule whole
-  if(!nopbc) makeStructureWhole();
 
   Tensor& v(modifyVirial()); std::vector<Vector>& f(modifyForces()); unsigned n=pos.size();
   for(unsigned i=0; i<pos.size(); i++) {

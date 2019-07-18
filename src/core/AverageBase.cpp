@@ -31,6 +31,10 @@ void AverageBase::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys ); ActionAtomistic::registerKeywords( keys );
   ActionPilot::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.remove("ARG"); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
+  keys.add("numbered","ATOMS","the atoms that you would like to calculate the average position of"); keys.reset_style("ATOMS","atoms");
+  keys.add("compulsory","ALIGN","1.0","the weights to use when aligning to the reference structure if collecting atoms");
+  keys.add("compulsory","DISPLACE","1.0","the weights to use when calculating the displacement from the reference structure if collecting atoms");
+  keys.add("compulsory","TYPE","OPTIMAL","the manner in which RMSD alignment is performed if collecting atomic positions.  Should be OPTIMAL or SIMPLE."); 
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
            "of 0 implies that all the data will be used and that the grid will never be cleared");
@@ -45,11 +49,39 @@ AverageBase::AverageBase( const ActionOptions& ao):
   ActionWithArguments(ao),
   clearnextstep(false),
   firststep(true),
-  clearnorm(false),
+  DRotDPos(3,3),
   data(getNumberOfArguments()),
+  clearnorm(false),
   n_real_args(getNumberOfArguments())
 {
   plumed_assert( keywords.exists("ARG") );
+  std::vector<AtomNumber> all_atoms; parseAtomList( "ATOMS", all_atoms );
+  if( all_atoms.size()>0 ) {
+     atom_pos.resize( all_atoms.size() ); log.printf("  using atoms : ");
+     for(unsigned int i=0; i<all_atoms.size(); ++i) {
+       if ( (i+1) % 25 == 0 ) log.printf("  \n");
+       log.printf("  %d", all_atoms[i].serial());
+     }
+  } else {
+     std::vector<AtomNumber> t;
+     for(int i=1;; ++i ) {
+       parseAtomList("ATOMS", i, t );
+       if( t.empty() ) break;
+       if( i==1 ) atom_pos.resize( t.size() );
+       else if( t.size()!=atom_pos.size() ) {
+        std::string ss; Tools::convert(i,ss);
+        error("ATOMS" + ss + " keyword has the wrong number of atoms");
+       }
+       log.printf("  atoms in %uth group : ", i );
+       for(unsigned j=0;j<t.size();++j) {
+           if ( (i+1) % 25 == 0 ) log.printf("  \n");
+           log.printf("  %d", t[i].serial());
+           all_atoms.push_back( t[j] );
+       }
+       t.resize(0);
+     }
+  }
+
   std::vector<std::string> wwstr; parseVector("LOGWEIGHTS",wwstr);
   if( wwstr.size()>0 ) log.printf("  reweighting using weights from ");
   std::vector<Value*> arg( getArguments() ), biases; interpretArgumentList( wwstr, biases );
@@ -58,6 +90,17 @@ AverageBase::AverageBase( const ActionOptions& ao):
   }
   if( wwstr.size()>0 ) log.printf("\n");
   else log.printf("  weights are all equal to one\n");
+
+  // This makes the request to the atoms whose positions will be stored.
+  // There are problems here if vatoms are used as they will be cleared 
+  // by the call to requestArguments
+  if( all_atoms.size()>0 ) {
+      requestAtoms( all_atoms ); direction.resize( atom_pos.size() );
+      align.resize( atom_pos.size() ); parseVector("ALIGN",align);
+      displace.resize( atom_pos.size() ); parseVector("DISPLACE",displace );
+      parse("TYPE",rmsd_type); der.resize( atom_pos.size() );
+      log.printf("  aligning atoms to first frame in data set using %s algorithm \n", rmsd_type.c_str() );
+  } 
   requestArguments( arg, false );
 
   // Read in clear instructions
@@ -135,9 +178,19 @@ void AverageBase::unlockRequests() {
   ActionWithArguments::unlockRequests();
 }
 
+void AverageBase::setReferenceConfig() {
+  if( atom_pos.size()==0 ) return;
+  makeWhole( 0, atom_pos.size() );
+  for(unsigned j=0;j<atom_pos.size();++j) atom_pos[j] = getPosition(j);
+  Vector center; double wd=0;
+  for(unsigned i=0; i<atom_pos.size(); ++i) { center+=atom_pos[i]*align[i]; wd+=align[i]; }
+  for(unsigned i=0; i<atom_pos.size(); ++i) atom_pos[i] -= center / wd;
+  myrmsd.clear(); myrmsd.set(align,displace,atom_pos,rmsd_type,true,true);
+}
+
 void AverageBase::update() {
   // Resize values if they need resizing
-  if( firststep ) { resizeValues(); firststep=false; }
+  if( firststep ) { resizeValues(); setReferenceConfig(); firststep=false; }
   // Check if we need to accumulate
   if( (clearstride!=1 && getStep()==0) || !onStep() ) return;
 
@@ -148,7 +201,7 @@ void AverageBase::update() {
       if( clearnorm ) {
           for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->setNorm(0.0);
       }
-      clearnextstep=false; 
+      setReferenceConfig(); clearnextstep=false; 
   }
 
   // Get the weight information
@@ -157,16 +210,34 @@ void AverageBase::update() {
        for(unsigned i=n_real_args; i<getNumberOfArguments(); ++i) cweight+=getPntrToArgument(i)->get();
   }
 
-  // Accumulate the data required for this round
-  if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
-      accumulateGrid( cweight );
-  } else {
-      unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() );
-      for(unsigned i=0;i<nvals;++i) {
-          for(unsigned j=0;j<n_real_args;++j) data[j] = getPntrToArgument(j)->get(i);
-          accumulateValue( cweight, data );
+  if( atom_pos.size()>0 ) { 
+      double d; unsigned nat_sets = std::floor( getNumberOfAtoms() / atom_pos.size() ); plumed_dbg_assert( nat_sets*atom_pos.size()==getNumberOfAtoms() );
+      for(unsigned i=0;i<nat_sets;++i) {
+          makeWhole( i*atom_pos.size(), (i+1)*atom_pos.size() );
+          for(unsigned j=0;j<atom_pos.size();++j) atom_pos[j] = getPosition( i*atom_pos.size() +j ); 
+           
+          if( rmsd_type=="SIMPLE") {
+             d = myrmsd.simpleAlignment( align, displace, atom_pos, myrmsd.getReference(), der, direction, true );
+          } else {
+             d = myrmsd.calc_PCAelements( atom_pos, der, rot, DRotDPos, direction, centeredpos, centeredreference, true );
+             for(unsigned i=0;i<direction.size();++i) direction[i] = ( direction[i] - myrmsd.getReference()[i] );
+          }
+          accumulateAtoms( cweight, direction );
       }
   }
+
+  // Accumulate the data required for this round
+  if( n_real_args>0 ) {
+      if( getPntrToArgument(0)->getRank()>0 && getPntrToArgument(0)->hasDerivatives() ) {
+          accumulateNorm( cweight ); accumulateGrid( cweight );
+      } else {
+          unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() );
+          for(unsigned i=0;i<nvals;++i) {
+              for(unsigned j=0;j<n_real_args;++j) data[j] = getPntrToArgument(j)->get(i);
+              accumulateNorm( cweight ); accumulateValue( cweight, data );
+          }
+      }
+  } else { accumulateNorm( cweight ); }
 
   // Clear if required
   if( (clearstride>0 && getStep()%clearstride==0) ) clearnextstep=true;

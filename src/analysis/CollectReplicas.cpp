@@ -29,14 +29,16 @@ namespace analysis {
 
 class CollectReplicas : public AverageBase {
 private:
-  unsigned ndata, nreplicas;
+  unsigned ndata_for_norm, ndata, nreplicas;
   std::vector<double> data, allweights;
   std::vector<std::vector<double> > alldata;
 public:
   static void registerKeywords( Keywords& keys );
   explicit CollectReplicas( const ActionOptions& );
   void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
+  void accumulateNorm( const double& cweight ); 
   void accumulateValue( const double& cweight, const std::vector<double>& dval );
+  void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir );
   void runFinalJobs();
 };
 
@@ -52,6 +54,7 @@ CollectReplicas::CollectReplicas( const ActionOptions& ao):
   Action(ao),
   AverageBase(ao),
   ndata(0),
+  ndata_for_norm(0),
   data(n_real_args)
 {
   if( getPntrToArgument(0)->hasDerivatives() && getPntrToArgument(0)->getRank()>0 ) {
@@ -69,29 +72,44 @@ void CollectReplicas::interpretDotStar( const std::string& ulab, unsigned& nargs
   for(unsigned i=0; i<getNumberOfComponents(); ++i) copyOutput(i)->interpretDataRequest( ulab, nargs, myvals, "" );
 }
 
-void CollectReplicas::accumulateValue( const double& cweight, const std::vector<double>& dval ) {
+void CollectReplicas::accumulateNorm( const double& cweight ) {
   // Collect the bias from all replicas
   std::vector<double> biases(nreplicas,0.0);
   if(comm.Get_rank()==0) multi_sim_comm.Allgather(cweight,biases);
+  if( clearstride>0 ) {
+      for(unsigned k=0; k<nreplicas; k++) {
+          getPntrToOutput(getNumberOfComponents()-1)->set( ndata_for_norm, biases[k] );
+          ndata_for_norm++;
+      }
+  } else {
+      for(unsigned k=0; k<nreplicas; k++) allweights.push_back( biases[k] );
+  }
+}
+
+void CollectReplicas::accumulateValue( const double& cweight, const std::vector<double>& dval ) {
   // Collect the data from all replicas
   std::vector<double> datap(nreplicas*dval.size(),0.0);
   if(comm.Get_rank()==0) multi_sim_comm.Allgather(dval,datap);
-  
 
   // Now accumulate average
   if( clearstride>0 ) {
-      for(unsigned k=0; k<biases.size(); k++) {
+      for(unsigned k=0; k<nreplicas; k++) {
           for(unsigned j=0;j<getNumberOfComponents()-1;++j) getPntrToOutput(j)->set( ndata, datap[k*dval.size()+j] );
-          getPntrToOutput(getNumberOfComponents()-1)->set( ndata, biases[k] ); ndata++;
+          ndata++;
       }
+      plumed_dbg_assert( ndata_for_norm==ndata );
       // Start filling the data set again from scratch
-      if( getStep()%clearstride==0 ) { ndata=0; }
+      if( getStep()%clearstride==0 ) { ndata_for_norm=ndata=0; }
   } else {
-      for(unsigned k=0; k<biases.size(); k++) {
+      for(unsigned k=0; k<nreplicas; k++) {
           for(unsigned j=0;j<getNumberOfComponents()-1;++j) data[j] = datap[k*dval.size()+j];
-          allweights.push_back( biases[k] ); alldata.push_back( data );
+          alldata.push_back( data );
       }
   }
+}
+
+void CollectReplicas::accumulateAtoms( const double& cweight, const std::vector<Vector>& dir ) {
+  plumed_error();
 }
 
 void CollectReplicas::runFinalJobs() {
