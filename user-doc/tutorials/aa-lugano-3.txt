@@ -267,41 +267,10 @@ suggest that the simulation most likely converged.
 of your metadynamics simulation!
 
 \note The two observations above are necessary, but qualitative conditions for convergence.
-A quantitative assessment of convergence can be obtained by performing an error analysis of the
-reconstructed free-energy profile, as explained in the last exercise
+A quantitative assessment of convergence can be obtained by performing an error analysis
+in a later tutorial.
 
-\section lugano-3-ex-2 Exercise 2: playing with collective variables
-
-In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, this time
-using as CV the backbone dihedral \f$ \psi \f$. 
-Please complete the template `plumed.dat` file used in the previous exercise to run this calculation.
-
-Once your `plumed.dat` file is complete, you can run a 10-ns long metadynamics simulations with the following command
-\verbatim
-> gmx mdrun -s topol.tpr -nsteps 5000000 -plumed plumed.dat
-\endverbatim
-
-As we did in the previous exercise, we can use COLVAR to visualize the behavior of the CV during the simulation.
-Here we will plot at the same time the evolution of the metadynamics CV \f$ \psi \f$ and of the other dihedral \f$ \phi \f$.
-
-\verbatim
-gnuplot> p "COLVAR" u 1:2, "" u 1:3
-\endverbatim
-
-\anchor lugano-3-metad-psi-phi-fig
-\image html munster-metad-psi-phi.png "Time evolution of the dihedrals phi and psi during a 10-ns long metadynamics simulation using psi as CV."
-
-By inspecting Figure \ref lugano-3-metad-psi-phi-fig, we notice that something different happened compared to the previous exercise.
-At first the behavior of \f$ \psi \f$ looks diffusive in the entire CV space. However, around t=1 ns, \f$ \psi \f$ 
-seems trapped in a region of the CV space in which it was previously diffusing without problems. 
-The reason is that the non-biased CV \f$ \phi \f$ after a while has jumped into a different local minima.
-Since \f$ \phi \f$ is not directly biased, one has to wait for this (slow) degree of freedom to 
-equilibrate before the free energy along \f$ \psi \f$ can converge.
-
-Try to repeat the analysis done in the previous exercise, i.e.  calculate the estimate of the free energy as a function of time,
-first step to assess the convergence of this metadynamics simulation.
-
-\section lugano-3-ex-3 Exercise 3: larger orthogonal barriers
+\section lugano-3-ex-2 Exercise 2: larger orthogonal barriers
 
 Alanine dipeptide is often considered as a too-simple system to understand the typical problems that one
 will then see in real systems. This is very much not true! We will here see how to make the exercise arbitrarily
@@ -313,11 +282,11 @@ you are not accelerating the sampling of the orthogonal variables. The second po
 time to explore different metastable states.
 
 Often these variables are not known and they are thus called "hidden variables". In the case of alanine dipeptide, we
-can easily add a barrier on $\Psi$ with some additional PLUMED command.
-We will add a Gaussian barrier centered at $\Psi=0.5$.
+can easily add a barrier on \f$\Psi\f$ with some additional PLUMED command.
+We will add a Gaussian barrier centered at \f$\Psi=0.5\f$.
 To do so, add to the PLUMED
-input file that you prepared for the first exercise (that is: biasing $\Phi$ alone) the following lines
-\plumedinput
+input file that you prepared for the first exercise (that is: biasing \f$\Phi\f$ alone) the following lines
+\plumedfile
 # first shift the psi variable.
 # setting the new periodicity to -pi,pi will make sure that the barrier
 # is a continuous function of the coordinates
@@ -327,7 +296,7 @@ shift:   CUSTOM ARG=psi   FUNC=x-0.5 PERIODIC=-pi,pi
 barrier: CUSTOM ARG=shift FUNC=__FILL__*exp(-0.5*x^2/0.3^2) PERIODIC=NO
 # then add the barrier to the total energy of the system.
 BIASVALUE ARG=barrier
-\endplumedinput
+\endplumedfile
 
 XXX TO BE COMPLETED XXX
 
@@ -336,7 +305,6 @@ XXX TO BE COMPLETED XXX
 In summary, in this tutorial you should have learned how to use PLUMED to:
 - Setup and run a metadynamics calculation.
 - Compute free energies from the metadynamics bias potential using the \ref sum_hills utility.
-- Calculate the error in the reconstructed free energy using block analysis. 
 - Discriminate between good and bad collective variables.
 
 */
