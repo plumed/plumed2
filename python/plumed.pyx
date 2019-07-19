@@ -200,6 +200,28 @@ def _build_convert_function(kernel=None):
         warnings.warn("PLUMED instance is too old, conversions do not work and will be disabled")
         return None
 
+class Constants(list):
+   """Custom class used to store plumed constants.
+   """
+   def __init__(self,l,kernel=None,convert=None):
+       if(isinstance(l,dict)):
+           for k in l:
+              self.append((k,l[k]))
+       else:
+           self.extend(l)
+       for i in range(len(self)):
+           if(len(self[i])==2):
+               if not convert:
+                   convert=_build_convert_function(kernel)
+               if convert:
+                   self[i]=(self[i][0],convert(self[i][1]),str(self[i][1]))
+               else:
+                   self[i]=(self[i][0],self[i][1],str(self[i][1]))
+           elif(len(self[i])==3):
+               pass
+           else:
+               raise ValueError("plumed.Constants should be initialized with a list of 2- or 3-plets")
+
 def read_as_pandas(file_or_path,enable_constants=True,enable_conversion=True,kernel=None,chunksize=None,usecols=None,skiprows=None,nrows=None):
     """Import a plumed data file as a pandas dataset.
 
@@ -315,7 +337,7 @@ def read_as_pandas(file_or_path,enable_constants=True,enable_conversion=True,ker
             for c in constants: df[c[0]]=c[1]
         if enable_constants=='metadata':
             df=PlumedDataFrame(df)
-            df.plumed_constants=constants
+            df.plumed_constants=Constants(constants)
         return df
 
 # process arguments:
@@ -416,6 +438,14 @@ def write_pandas(df,file_or_path=None):
        file_or_path: str, file, or None (default is None)
            path to the file to be written, or already opened file object.
            If None, stdout is used.
+
+       Examples
+       --------
+
+       colvar=plumed.read_as_colvar("COLVAR")
+       colvar["distance"]=colvar["distance"]*2
+       plumed.write_pandas(colvar)
+      
     """
 # importing pandas is pretty slow, so we only do it when needed
     import pandas as pd
@@ -429,7 +459,7 @@ def write_pandas(df,file_or_path=None):
         file_or_path.write(" "+str(n))
     file_or_path.write("\n")
 # write constants
-    if hasattr(df,"plumed_constants") and isinstance(df.plumed_constants,list):
+    if hasattr(df,"plumed_constants") and isinstance(df.plumed_constants,Constants):
         for c in df.plumed_constants:
 # notice that string constants are written (e.g. pi) rather than the numeric ones (e.g. 3.14...)
             file_or_path.write("#! SET "+c[0]+" "+c[2]+"\n")
