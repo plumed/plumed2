@@ -93,12 +93,13 @@ namespace analysis {
 class Average : public AverageBase {
 private:
   enum {t,f,ndata} normalization;
-  double lbound, pfactor, norm;
+  double lbound, pfactor;
   std::vector<AtomNumber> mygroup;
   std::vector<Vector> displacements;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
+  AtomNumber getAtomNumber(const AtomNumber& anum ) const ;
   void resizeValues();
   bool allowComponentsAndValue() const { return true; }
   void clearAccumulatedData();
@@ -123,7 +124,7 @@ void Average::registerKeywords( Keywords& keys ) {
 Average::Average( const ActionOptions& ao):
   Action(ao),
   AverageBase(ao),
-  lbound(0.0),pfactor(0.0),norm(0.0)
+  lbound(0.0),pfactor(0.0)
 {
   // Now read in the instructions for the normalization
   std::string normstr; std::vector<unsigned> shape; parse("NORMALIZATION",normstr);
@@ -162,6 +163,13 @@ Average::Average( const ActionOptions& ao):
   } else error("found nothing to average in input");
 }
 
+AtomNumber Average::getAtomNumber(const AtomNumber& anum ) const {
+  for(unsigned i=0;i<mygroup.size();++i) {
+      if( anum==mygroup[i] ) return getAbsoluteIndex(i);
+  }    
+  plumed_error(); return getAbsoluteIndex(0);
+} 
+
 void Average::resizeValues() {
   if( n_real_args==0 ) return;
 
@@ -182,7 +190,7 @@ void Average::accumulateGrid( const double& lweight ) {
 
 void Average::accumulateNorm( const double& lweight ) {
   double cweight = exp( lweight );
-  if( getPntrToArgument(0)->isPeriodic() ) {
+  if( getPntrToOutput(0)->isPeriodic() ) {
       Value* valsin=getPntrToOutput(1); Value* valcos=getPntrToOutput(2);
       if( normalization==t ) { valsin->setNorm( valsin->getNorm() + cweight ); valcos->setNorm( valcos->getNorm() + cweight ); }
       else if( normalization==ndata ) { valsin->setNorm( valsin->getNorm() + 1.0 ); valcos->setNorm( valcos->getNorm() + 1.0 ); }
@@ -207,22 +215,21 @@ void Average::accumulateValue( const double& lweight, const std::vector<double>&
 
 void Average::setReferenceConfig() {
   AverageBase::setReferenceConfig();
-  norm = 0; for(unsigned i=0;i<displacements.size();++i) displacements[i].zero();
+  for(unsigned i=0;i<displacements.size();++i) displacements[i].zero();
 }
 
 void Average::accumulateAtoms( const double& lweight, const std::vector<Vector>& dir ) {
-   double cweight = exp( lweight ); Value* val=getPntrToOutput(0); 
-// Accumulate normalization
-   if( normalization==t ) norm += cweight;
-   else if( normalization==ndata ) norm += 1; 
+   double cweight = exp( lweight ); Value* val=getPntrToOutput(0);
+// Accumulate displacements
    for(unsigned i=0;i<displacements.size();++i) {
        displacements[i] += cweight*dir[i];
-       atoms.setVatomMass( mygroup[i], getMass(i) ); atoms.setVatomCharge( mygroup[i], getCharge(i) );
-       Vector pos = getReferencePosition(i) + displacements[i] / norm ;
+       atoms.setVatomMass( mygroup[i], align[i] ); atoms.setVatomCharge( mygroup[i], displace[i] );
+       Vector pos = getReferencePosition(i) + displacements[i] / val->getNorm();
        atoms.setVatomPosition( mygroup[i], pos );
-       for(unsigned k=0;k<3;++k) val->set( 3*i + k, pos[k] ); 
+       for(unsigned k=0;k<3;++k) val->set( 3*i + k, val->getNorm()*pos[k] ); 
    }
 }
+
 
 }
 }

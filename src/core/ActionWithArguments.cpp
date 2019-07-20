@@ -608,9 +608,9 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
   } else {
     for(unsigned i=0; i<arg_ends.size()-1; ++i) {
       unsigned k=arg_ends[i]; plumed_assert( k<arguments.size() );
-      if( arg_ends[i+1]==(k+1) && arguments[k]->getRank()==0 ) {
+      if( arg_ends[i+1]==(k+1) && arguments[k]->getNumberOfValues( getLabel() )==1 ) {
         plumed_assert( k<arguments.size() );
-        args[i] = arguments[k]->get();
+        args[i] = arguments[k]->getRequiredValue( getLabel(), 0 );
       } else {
         unsigned nt=0, nn=0; unsigned mycode;
         if( thisAsActionWithValue ) mycode = thisAsActionWithValue->getTaskCode( myvals.getTaskIndex() ); else mycode = myvals.getTaskIndex();

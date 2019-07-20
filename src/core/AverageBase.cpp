@@ -112,8 +112,10 @@ AverageBase::AverageBase( const ActionOptions& ao):
 }
 
 void AverageBase::setupComponents( const unsigned& nreplicas ) { 
-  unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() );
+  unsigned nvals = 0;
+  if( n_real_args>0 ) nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() ); else nvals = 3*getNumberOfAtoms();
   std::vector<unsigned> shape( 1 ); shape[0]=(clearstride / getStride() )*nvals*nreplicas; 
+  // Setup values to hold arguments
   for(unsigned j=0;j<n_real_args;++j) {
       if( getPntrToArgument(j)->getNumberOfValues( getLabel() )!=nvals ) error("all values input to store object must have same length");
       addComponent( getPntrToArgument(j)->getName(), shape ); 
@@ -122,6 +124,13 @@ void AverageBase::setupComponents( const unsigned& nreplicas ) {
           componentIsPeriodic( getPntrToArgument(j)->getName(), min, max );
       } else componentIsNotPeriodic( getPntrToArgument(j)->getName() );
       getPntrToOutput(j)->makeTimeSeries();
+  }
+  // Setup values to hold atomic positions
+  for(unsigned j=0;j<getNumberOfAtoms();++j) {
+      std::string num; Tools::convert( j+1, num );
+      addComponent( "posx-" + num, shape ); componentIsNotPeriodic( "posx-" + num ); getPntrToOutput(n_real_args+3*j+0)->makeTimeSeries();
+      addComponent( "posy-" + num, shape ); componentIsNotPeriodic( "posy-" + num ); getPntrToOutput(n_real_args+3*j+1)->makeTimeSeries();
+      addComponent( "posz-" + num, shape ); componentIsNotPeriodic( "posz-" + num ); getPntrToOutput(n_real_args+3*j+2)->makeTimeSeries(); 
   }
   // And create a component to store the weights
   addComponent( "logweights", shape ); componentIsNotPeriodic( "logweights" ); 
@@ -140,6 +149,20 @@ std::string AverageBase::getStrideClearAndWeights() const {
        for(unsigned i=n_real_args+1; i<getNumberOfArguments(); ++i) outstr += "," + getPntrToArgument(i)->getName();
   }
   return outstr;
+}
+
+std::string AverageBase::getAtomsData() const {
+  std::string atom_str; unsigned nat_sets = std::floor( getNumberOfAtoms() / atom_pos.size() );
+  for(unsigned j=0;j<nat_sets;++j) {
+      std::string anum, jnum; Tools::convert( j+1, jnum );
+      Tools::convert( getAbsoluteIndex(j*atom_pos.size()).serial(), anum ); atom_str += " ATOMS" + jnum + "=" + anum; 
+      for(unsigned i=1;i<atom_pos.size();++i) { Tools::convert( getAbsoluteIndex(j*atom_pos.size()+i).serial(), anum ); atom_str += "," + anum; } 
+  }
+  std::string rnum; Tools::convert( align[0], rnum ); std::string align_str=" ALIGN=" + rnum; 
+  for(unsigned i=1;i<align.size();++i) { Tools::convert( align[i], rnum ); align_str += "," + rnum; }
+  Tools::convert( displace[0], rnum ); std::string displace_str=" DISPLACE=" + rnum; 
+  for(unsigned i=1;i<displace.size();++i) { Tools::convert( displace[i], rnum ); displace_str += "," + rnum; }
+  return "TYPE=" + rmsd_type + atom_str + align_str + displace_str;
 }
 
 unsigned AverageBase::getNumberOfDerivatives() const {

@@ -341,14 +341,18 @@ Print::Print(const ActionOptions&ao):
         for(unsigned i=1;;++i) {
             std::vector<std::string> confstr;
             if( !parseNumberedVector("CONFIG",i,confstr) ) break;
-            std::vector<AtomNumber> atlist; interpretAtomList( confstr, atlist );
+            std::vector<AtomNumber> atlist; if( description!="PCA" || i==1 ) interpretAtomList( confstr, atlist );
             log.printf("  %dth configuration involves ", i ); std::vector<AtomNumber> at_flist;
             if( atlist.size()>0 ) log.printf("atoms :");
             for(unsigned j=0;j<atlist.size();++j) { 
                 all_atoms.push_back( atlist[j] ); log.printf(" %d", atlist[j].serial() ); 
                 setup::SetupReferenceBase* myset=dynamic_cast<setup::SetupReferenceBase*>( atoms.getVirtualAtomsAction(atlist[j]) );
                 if( myset ) at_flist.push_back( myset->getAtomNumber( atlist[j] ) );
-                else at_flist.push_back( atlist[j] );
+                else {
+                  AverageBase* myav=dynamic_cast<AverageBase*>( atoms.getVirtualAtomsAction(atlist[j]) );
+                  if( myav ) at_flist.push_back( myav->getAtomNumber( atlist[j] ) );
+                  else at_flist.push_back( atlist[j] );
+                }
             }
             reference_atoms.push_back( at_flist );
             // Now see if there are any arguments 
@@ -359,6 +363,11 @@ Print::Print(const ActionOptions&ao):
             log.printf("\n"); arg_ends.push_back( all_args.size() );
         }  
         requestAtoms( all_atoms ); requestArguments( all_args, false );
+        for(unsigned i=0;i<reference_atoms.size();++i) {
+            for(unsigned j=0;j<reference_atoms[i].size();++j) {
+                if( plumed.getAtoms().isVirtualAtom(reference_atoms[i][j]) ) addDependency(plumed.getAtoms().getVirtualAtomsAction(reference_atoms[i][j]) );
+            }
+        }
     } else {
         std::vector<AtomNumber> atlist; for(unsigned i=0;i<arg_ends.size()-1;++i) reference_atoms.push_back( atlist );
     }
@@ -623,14 +632,23 @@ void Print::update() {
     for(unsigned i=0;i<reference_atoms.size();++i) {
         if( getNumberOfArguments()>0 ) {
             for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-                Value* thisarg = getPntrToArgument(j); opdbf.printf("REMARK ");
+                Value* thisarg = getPntrToArgument(j); 
                 setup::SetupReferenceBase* myset = dynamic_cast<setup::SetupReferenceBase*>( thisarg->getPntrToAction() );
                 if( myset ) {
+                    opdbf.printf("REMARK ");
                     for(unsigned k=0;k<thisarg->getShape()[0];++k) {
                         opdbf.printf( descr2.c_str(), myset->getArgName(k).c_str(), thisarg->get(k) ); 
                     }
                     opdbf.printf("\n");
+                } else if( description=="PCA" && reference_atoms[0].size()>0 ) {
+                    plumed_massert( thisarg->getNumberOfValues(getLabel())==3*reference_atoms[0].size(), "output for PCA with mixtures of atoms and arguments is not implemented");
+                    for(unsigned k=0;k<reference_atoms[0].size();++k) {
+                        opdbf.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                                     reference_atoms[0][k].serial(), k,
+                                     lenunits*thisarg->get(3*k+0), lenunits*thisarg->get(3*k+1), lenunits*thisarg->get(3*k+2), getMass(k), getCharge(k) );
+                    }
                 } else {
+                    opdbf.printf("REMARK ");
                     if( thisarg->getRank()==0 ) {
                         opdbf.printf( descr2.c_str(), thisarg->getName().c_str(), thisarg->get() );
                     } else if( thisarg->getRank()==1 ) {
@@ -667,7 +685,7 @@ void Print::update() {
 
 void Print::runFinalJobs() {
   if( !printAtEnd ) return ;
-  printAtEnd=false; update();
+  printAtEnd=false; retrieveAtoms(); update();
 }
 
 Print::~Print() {

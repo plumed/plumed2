@@ -57,9 +57,11 @@ CollectReplicas::CollectReplicas( const ActionOptions& ao):
   ndata_for_norm(0),
   data(n_real_args)
 {
-  if( getPntrToArgument(0)->hasDerivatives() && getPntrToArgument(0)->getRank()>0 ) {
-      error("cannot collect grid input for later analysis -- if you need this email gareth.tribello@gmail.com");
-  } 
+  if( n_real_args>0 ) {
+      if( getPntrToArgument(0)->hasDerivatives() && getPntrToArgument(0)->getRank()>0 ) {
+          error("cannot collect grid input for later analysis -- if you need this email gareth.tribello@gmail.com");
+      } 
+  }
   // Get the number of replicas
   if(comm.Get_rank()==0) nreplicas=multi_sim_comm.Get_size();
   comm.Bcast(nreplicas,0);
@@ -81,6 +83,7 @@ void CollectReplicas::accumulateNorm( const double& cweight ) {
           getPntrToOutput(getNumberOfComponents()-1)->set( ndata_for_norm, biases[k] );
           ndata_for_norm++;
       }
+      if( getStep()%clearstride==0 ) ndata_for_norm=0;
   } else {
       for(unsigned k=0; k<nreplicas; k++) allweights.push_back( biases[k] );
   }
@@ -97,9 +100,9 @@ void CollectReplicas::accumulateValue( const double& cweight, const std::vector<
           for(unsigned j=0;j<getNumberOfComponents()-1;++j) getPntrToOutput(j)->set( ndata, datap[k*dval.size()+j] );
           ndata++;
       }
-      plumed_dbg_assert( ndata_for_norm==ndata );
       // Start filling the data set again from scratch
-      if( getStep()%clearstride==0 ) { ndata_for_norm=ndata=0; }
+      if( getStep()%clearstride==0 ) ndata=0; 
+      plumed_dbg_assert( ndata_for_norm==ndata );
   } else {
       for(unsigned k=0; k<nreplicas; k++) {
           for(unsigned j=0;j<getNumberOfComponents()-1;++j) data[j] = datap[k*dval.size()+j];

@@ -30,7 +30,7 @@ namespace analysis {
 class CollectFrames : public AverageBase {
 private:
   unsigned ndata_for_norm, ndata;
-  std::vector<double> data, allweights;
+  std::vector<double> data, allweights, posdata;
   std::vector<std::vector<double> > alldata;
 public:
   static void registerKeywords( Keywords& keys );
@@ -46,7 +46,10 @@ PLUMED_REGISTER_ACTION(CollectFrames,"COLLECT_FRAMES")
 
 void CollectFrames::registerKeywords( Keywords& keys ) {
   AverageBase::registerKeywords( keys ); ActionWithValue::useCustomisableComponents( keys );
-  keys.add("compulsory","ARG","the data that you would like to collect to analyze later");
+  keys.add("optional","ARG","the data that you would like to collect to analyze later");
+  keys.addOutputComponent("posx","ATOMS","these values store the x components of the atoms");
+  keys.addOutputComponent("posy","ATOMS","these values store the y components of the atoms"); 
+  keys.addOutputComponent("posz","ATOMS","these values store the z components of the atoms");
   keys.addOutputComponent("logweights","default","this value stores the logarithms of the weights of the stored configurations");
 }
 
@@ -55,10 +58,13 @@ CollectFrames::CollectFrames( const ActionOptions& ao):
   AverageBase(ao),
   ndata_for_norm(0),
   ndata(0),
-  data(n_real_args)
+  data(n_real_args),
+  posdata(3*getNumberOfAtoms())
 {
-  if( getPntrToArgument(0)->hasDerivatives() && getPntrToArgument(0)->getRank()>0 ) {
-      error("cannot collect grid input for later analysis -- if you need this email gareth.tribello@gmail.com");
+  if( n_real_args>0 ) {
+      if( getPntrToArgument(0)->hasDerivatives() && getPntrToArgument(0)->getRank()>0 ) {
+          error("cannot collect grid input for later analysis -- if you need this email gareth.tribello@gmail.com");
+      }
   }
   // Setup the components
   setupComponents( 1 ); 
@@ -70,7 +76,8 @@ void CollectFrames::interpretDotStar( const std::string& ulab, unsigned& nargs, 
 
 void CollectFrames::accumulateNorm( const double& cweight ) {
   if( clearstride>0 ) {
-      getPntrToOutput(getNumberOfComponents()-1)->set( ndata, cweight ); ndata_for_norm++;
+      getPntrToOutput(getNumberOfComponents()-1)->set( ndata, cweight ); 
+      ndata_for_norm++; if( getStep()%clearstride==0 ) ndata_for_norm=0; 
   } else allweights.push_back( cweight );  
 }
 
@@ -79,16 +86,30 @@ void CollectFrames::accumulateValue( const double& cweight, const std::vector<do
   // Now accumulate average
   if( clearstride>0 ) {
       for(unsigned j=0;j<dval.size();++j) getPntrToOutput(j)->set( ndata, dval[j] );
-      ndata++; plumed_dbg_assert( ndata_for_norm==ndata );
-      // Start filling the data set again from scratch
-      if( getStep()%clearstride==0 ) { ndata_for_norm=ndata=0; }
+      ndata++; if( getStep()%clearstride==0 ) ndata=0;
+      plumed_dbg_assert( ndata_for_norm==ndata );
   } else {
       alldata.push_back( dval );
   }
 }
 
 void CollectFrames::accumulateAtoms( const double& cweight, const std::vector<Vector>& dir ) {
-  plumed_merror("Doesn't work");
+  if( clearstride>0 ) {
+      Vector thispos;
+      for(unsigned i=0;i<dir.size();++i) {
+          thispos = getReferencePosition(i) + dir[i];
+          for(unsigned k=0;k<3;++k) getPntrToOutput(3*i+k)->set( ndata, thispos[k] );
+      }
+      ndata++; if( getStep()%clearstride==0 ) ndata=0; 
+      plumed_dbg_assert( ndata_for_norm==ndata );
+  } else {
+      Vector thispos;
+      for(unsigned i=0;i<dir.size();++i) {
+          thispos = getReferencePosition(i) + dir[i];
+          for(unsigned k=0;k<3;++k) posdata[3*i+k] = thispos[k];
+      }
+      alldata.push_back( posdata ); 
+  }
 }
 
 void CollectFrames::runFinalJobs() {

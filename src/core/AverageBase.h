@@ -40,12 +40,13 @@ private:
   PLMD::RMSD myrmsd;
   std::string rmsd_type;
   Matrix<std::vector<Vector> > DRotDPos;
-  std::vector<double> data, align, displace;
+  std::vector<double> data;
   std::vector<Vector> atom_pos, der, direction, centeredpos, centeredreference;
 protected:
   bool clearnorm;
   unsigned clearstride;
   unsigned n_real_args;
+  std::vector<double> align, displace;
 /// This is used to setup the components for the actions that store data
   void setupComponents( const unsigned& nreplicas );
 /// This is used to transfer the data in runFinalJobs for actions that collect data
@@ -78,6 +79,8 @@ public:
   virtual void setReferenceConfig();
   virtual void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir ) = 0;
   std::string getStrideClearAndWeights() const ;
+  std::string getAtomsData() const ;
+  virtual AtomNumber getAtomNumber(const AtomNumber& num ) const { plumed_merror("No virtual atoms " + getLabel() ); }
 };
 
 inline
@@ -88,7 +91,7 @@ unsigned AverageBase::getNumberOfAtomsToAverage() const {
 inline
 Vector AverageBase::getReferencePosition(const unsigned& i ) {
   return myrmsd.getReference()[i];
-} 
+}
 
 }
 #endif

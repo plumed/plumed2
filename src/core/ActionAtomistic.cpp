@@ -30,6 +30,7 @@
 #include "ActionWithVirtualAtom.h"
 #include "tools/Exception.h"
 #include "Atoms.h"
+#include "AverageBase.h"
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
 
@@ -216,8 +217,13 @@ void ActionAtomistic::interpretAtomList( std::vector<std::string>& strings, std:
           }
       }
     }
-    ActionSetup* as=plumed.getActionSet().selectWithLabel<ActionSetup*>(strings[i]); 
-    if( !ok && (!as || getName()!="PRINT") ) error("it was not possible to interpret atom name " + strings[i]);
+    ActionSetup* as=plumed.getActionSet().selectWithLabel<ActionSetup*>(strings[i]); bool safe=false;
+    if( !as ) { 
+      AverageBase* ab=plumed.getActionSet().selectWithLabel<AverageBase*>(strings[i]); 
+      if( ab ) safe=true;
+    } else safe=true;
+    if( !ok && ( !safe || getName()!="PRINT") ) { error("it was not possible to interpret atom name " + strings[i]); }
+    else if( ok && safe && getName()=="PRINT" ) strings.erase(strings.begin()+i); 
     // plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
   }
 }

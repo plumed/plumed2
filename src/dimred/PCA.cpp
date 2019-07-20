@@ -115,10 +115,10 @@ PCA::PCA( const ActionOptions& ao ) :
   std::string arg; parse("ARG",arg);
   AverageBase* mydata = plumed.getActionSet().selectWithLabel<AverageBase*>(arg);
   if( !mydata ) error("input to PCA should be a COLLECT_FRAMES or COLLECT_REPLICAS object");
-  std::string argstr; unsigned anum=1;
+  std::string argstr; unsigned anum=1; bool hasargs=false;
   for(unsigned i=0;i<mydata->getNumberOfComponents();++i) {
       std::string thislab = mydata->copyOutput(i)->getName();
-      if( thislab.find("logweights")==std::string::npos ) {
+      if( thislab.find(".logweights")==std::string::npos && thislab.find(".pos")==std::string::npos ) {
           std::string num; Tools::convert( anum, num ); 
           // Average for component
           std::size_t dot = thislab.find("."); std::string datalab = thislab.substr(dot+1);
@@ -126,10 +126,35 @@ PCA::PCA( const ActionOptions& ao ) :
           readInputLine( getShortcutLabel() + "_average" + num + ": AVERAGE ARG=" + datalab + mydata->getStrideClearAndWeights() );
           // This calculates the centered data vector
           readInputLine( getShortcutLabel() + "_centeredvec" + num + ": MATHEVAL ARG1=" + thislab + " ARG2=" + getShortcutLabel() + "_average" + num + " FUNC=x-y PERIODIC=NO");
-          argstr += " ARG" + num + "=" + getShortcutLabel() + "_centeredvec" + num; anum++;
+          argstr += " ARG" + num + "=" + getShortcutLabel() + "_centeredvec" + num; hasargs=true; anum++; 
       }
   }
   // Additional lines will be added here to deal with the atoms
+  if( mydata->getNumberOfAtoms()>0 ) {
+      // This calculates the average position
+      readInputLine( getShortcutLabel() + "_average_atoms: AVERAGE " + mydata->getAtomsData() + " " +  mydata->getStrideClearAndWeights() );
+      for(unsigned i=0;i<mydata->getNumberOfAtoms();++i) {
+          std::string num, pnum, atnum; Tools::convert( i+1, atnum );
+          // This calculates the centered data vector for the x component
+          Tools::convert( anum, num ); Tools::convert( 3*i + 1, pnum );
+          readInputLine( getShortcutLabel() + "_centeredvec" + num + ": MATHEVAL ARG1=" + arg + ".posx-" + atnum + 
+                                                                               " ARG2=" + getShortcutLabel() + "_average_atoms."  + pnum + 
+                                                                               " FUNC=x-y PERIODIC=NO"); 
+          argstr += " ARG" + num + "=" + getShortcutLabel() + "_centeredvec" + num; anum++;
+          // This calculates the centered data vector for the y component 
+          Tools::convert( anum, num ); Tools::convert( 3*i + 2, pnum );
+          readInputLine( getShortcutLabel() + "_centeredvec" + num + ": MATHEVAL ARG1=" + arg + ".posy-" + atnum +
+                                                                               " ARG2=" + getShortcutLabel() + "_average_atoms."  + pnum + 
+                                                                               " FUNC=x-y PERIODIC=NO");
+          argstr += " ARG" + num + "=" + getShortcutLabel() + "_centeredvec" + num; anum++;
+          // This calculates the centered data vector for the z component 
+          Tools::convert( anum, num ); Tools::convert( 3*i + 3, pnum ); 
+          readInputLine( getShortcutLabel() + "_centeredvec" + num + ": MATHEVAL ARG1=" + arg + ".posz-" + atnum +
+                                                                               " ARG2=" + getShortcutLabel() + "_average_atoms."  + pnum +
+                                                                               " FUNC=x-y PERIODIC=NO");
+          argstr += " ARG" + num + "=" + getShortcutLabel() + "_centeredvec" + num; anum++;
+      } 
+  }
   // Now antilog the weights
   readInputLine( getShortcutLabel() + "_weights: MATHEVAL ARG1=" + arg + ".logweights FUNC=exp(x) PERIODIC=NO");
   // And calculate the covariance matrix
@@ -144,14 +169,19 @@ PCA::PCA( const ActionOptions& ao ) :
   if( filename.length()>0 ) {
       if( filename.find(".pdb")==std::string::npos ) error("output file for PCA should be a PDB");
       std::string fmt; parse("FMT",fmt); if( fmt.length()==0 ) fmt="%f";
-      std::string avlist = getShortcutLabel() + "_average1"; 
-      for(unsigned i=1;i<anum-1;++i) { std::string num; Tools::convert( i+1, num ); avlist += "," + getShortcutLabel() + "_average" + num; }
-      std::string eiglist;
+      std::string atstr, avlist;
+      if( hasargs ) {
+         avlist = " CONFIG1=" + getShortcutLabel() + "_average1"; 
+         for(unsigned i=1;i<anum-1;++i) { std::string num; Tools::convert( i+1, num ); avlist += "," + getShortcutLabel() + "_average" + num; }
+         if( mydata->getNumberOfAtoms()>0 ) avlist = "," + getShortcutLabel() + "_average_atoms";
+      }
+      if( mydata->getNumberOfAtoms()>0 ) atstr = " CONFIG1=" + getShortcutLabel() + "_average_atoms";
+      std::string eiglist; 
       for(unsigned i=0;i<ndim;++i) {
           std::string lnum, num; Tools::convert( i+2, lnum ); Tools::convert( i+1, num ); 
-          eiglist += " ARG" + lnum + "=" + getShortcutLabel() + "_eig.vecs-" + num;
+          eiglist += " CONFIG" + lnum + "=" + getShortcutLabel() + "_eig.vecs-" + num;
       } 
-      readInputLine("PRINT DESCRIPTION=PCA FILE=" + filename + " FMT=" + fmt + " ARG1=" + avlist + " " + eiglist );
+      readInputLine("PRINT DESCRIPTION=PCA FILE=" + filename + " FMT=" + fmt + atstr + avlist + " " + eiglist );
   }
   // And calculate the projections of the stored data on to the PCA vectors
   for(unsigned i=0;i<ndim;++i) {

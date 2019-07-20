@@ -91,7 +91,7 @@ Function::Function(const ActionOptions&ao):
         for(unsigned i=0; i<arg_ends.size()-1; ++i ) {
             if( arg_ends[i+1]-arg_ends[i]==1 ) {
                 plumed_assert( arg_ends[i]<getNumberOfArguments() );
-                if( getPntrToArgument(arg_ends[i])->getRank()==0 ) hasscalar=true;
+                if( getPntrToArgument(arg_ends[i])->getNumberOfValues( getLabel() )==1 ) hasscalar=true;
                 else hasrank=true;
             } else hasrank=true;
         }
@@ -99,7 +99,7 @@ Function::Function(const ActionOptions&ao):
     if( hasscalar && hasrank ) {
       unsigned nscalars=0;
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-        if( getPntrToArgument(i)->getRank()==0 ) nscalars++;
+        if( getPntrToArgument(i)->getNumberOfValues( getLabel() )==1 ) nscalars++;
         else npoints=getPntrToArgument(i)->getNumberOfValues( getLabel() );
       }
       if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
@@ -379,7 +379,7 @@ void Function::runFinalJobs() {
       unsigned nscalars=0, npoints;
       for(unsigned i=0; i<arg_ends.size()-1; ++i) {
         for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-            if( getPntrToArgument(j)->getRank()==0 ) nscalars++;
+            if( getPntrToArgument(j)->getNumberOfValues( getLabel() )==1 ) nscalars++;
             else npoints=getPntrToArgument(j)->getNumberOfValues( getLabel() );
         }
       }
