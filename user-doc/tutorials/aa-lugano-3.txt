@@ -19,7 +19,6 @@ Once this tutorial is completed students will be able to:
 The \tarball{lugano-3} for this project contains the following files:
 - diala.pdb: a PDB file for alanine dipeptide in vacuo
 - topol.tpr: a GROMACS run file to perform MD of alanine dipeptide
-- do_block_fes.py: a python script to perform error analysis
 
 This tutorial has been tested on version 2.5.
 
@@ -93,7 +92,7 @@ The bias factor should thus be carefully chosen in order for the relevant free-e
 efficiently in the time scale of the simulation.
  
 Additional information can be found in the several review papers on metadynamics 
-\cite gerv-laio09review \cite WCMS:WCMS31 \cite WCMS:WCMS1103.
+\cite gerv-laio09review \cite WCMS:WCMS31 \cite WCMS:WCMS1103 \cite bussi2015free.
 
 \endhidden
 
@@ -110,9 +109,7 @@ It is conventional use to characterize the two states in terms of Ramachandran d
 \image html belfast-2-transition.png "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
 
 
-\section lugano-3-ex-1 Exercise 1: my first metadynamics calculation
-
-\subsection lugano-3-ex-1a Exercise 1a: setup and run 
+\subsection lugano-3-ex-1 Exercise 1: my first metadynamics calculation
 
 In this exercise we will setup and perform a well-tempered metadynamics run using the backbone dihedral \f$ \phi \f$
 as collective variable. During the calculation, we will also monitor the behavior of the other backbone dihedral \f$ \psi \f$.
@@ -132,13 +129,13 @@ psi: TORSION ATOMS=__FILL__
 # Activate well-tempered metadynamics in phi
 metad: __FILL__ ARG=__FILL__ ...
 # Deposit a Gaussian every 500 time steps, with initial height equal to 1.2 kJ/mol
-PACE=500 HEIGHT=1.2 
+  PACE=500 HEIGHT=1.2 
 # the bias factor should be wisely chosen
-BIASFACTOR=__FILL__
+  BIASFACTOR=__FILL__
 # Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
-SIGMA=__FILL__
+  SIGMA=__FILL__
 # Gaussians will be written to file and also stored on grid
-FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
+  FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
 ...
 
 # Print both collective variables and the value of the bias potential on COLVAR file
@@ -207,13 +204,7 @@ of the Gaussian height is higher than the initial height specified in the input 
 In fact, this column reports the height of the Gaussian scaled by the pre-factor that
 in well-tempered metadynamics relates the bias potential to the free energy.
 
-\subsection lugano-3-ex-1b Exercise 1b: the role of the bias factor
-
-Now perform the same simulation using a lower bias factor.
-
-XXX TO BE COMPLETED XXX
-
-\subsection lugano-3-ex-1c Exercise 1c: estimating the free energy 
+\subsection lugano-3-ex-2 Exercise 2: estimating the free energy 
 
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
 bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussian kernels
@@ -270,7 +261,118 @@ of your metadynamics simulation!
 A quantitative assessment of convergence can be obtained by performing an error analysis
 in a later tutorial.
 
-\section lugano-3-ex-2 Exercise 2: larger orthogonal barriers
+\subsection lugano-3-ex-3 Exercise 3: the role of the bias factor.
+
+The bias factor allows you to choose how extensive your sampling of the CV space will
+be. If you choose it too large, you will explore a large reason of the CV space 
+and your simulation will take more time to converge. If you choose it too small, you will
+not be able to cross the barriers you are interested in.
+
+Try to run your simulation with different values of the bias factor. Going low to anything that is
+greater than 1 should give meaningful results, although if the chosen value is too low the system will
+only explore a limited portion of the space.
+
+*Which is the minimum value of the bias factor that allows you to see, in the simulated time,
+transitions between the two relevant minima?*
+
+
+\section lugano-3-ex-4 Exercise 4: reweighting
+
+In the previous exercise we biased \f$\phi\f$ and compute the free energy as a function of
+the same variable. Many times you want to decide which variable you want to analyze *after*
+having performed a simulation. In order to do so you must reweight your simulation.
+
+There are multiple ways to reweight a metadynamics simulations.
+In order to calculate these weights, we can use either of these
+two approaches:
+
+1) Weights are calculated by considering the time-dependence of the metadynamics bias
+   potential \cite Tiwary_jp504920s;
+
+2) Weights are calculated using the metadynamics bias potential obtained at the end of the
+   simulation and assuming a constant bias during the entire course of the simulation \cite Branduardi:2012dl.
+
+In this exercise we will use the umbrella-sampling-like reweighting approach (Method 2).
+In order to compute the weights we will use the \ref driver tool.
+
+First of all, prepare a `plumed_reweight.dat` file that is identical to the one you used
+for running your simulation but add the keyword `RESTART=YES` to the \ref METAD command.
+This will make this action behave as if PLUMED was restarting. It will thus
+read the already accumulated hills and continue adding more.
+In addition, set hills height to zero and the pace to a large number.
+This will actually avoid adding new hills (and even if they are added they will have
+zero height). Finally, change the \ref PRINT statement so that you
+write every frame (`STRIDE=1`) and that, in addition to `phi` and `psi`,
+you also write `metad.bias.
+
+\plumedfile
+__FILL__ # here goes the definitions of the CVs
+
+# Activate well-tempered metadynamics in phi
+metad: __FILL__ ARG=__FILL__ ...
+# Deposit a Gaussian every 500 time steps, with initial height equal to 1.2 kJ/mol
+  PACE=10000000 HEIGHT=1.2 # <- this is the new stuff!
+# the bias factor should be wisely chosen
+  BIASFACTOR=__FILL__
+# Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
+  SIGMA=__FILL__
+# Gaussians will be written to file and also stored on grid
+  FILE=HILLS GRID_MIN=-pi GRID_MAX=pi
+# Say that METAD should be restarting
+  RESTART=YES # <- this is the new stuff!
+...
+
+PRINT ARG=phi,psi,metad.bias FILE=COLVAR STRIDE=1  # <- also change this one!
+\endplumedfile
+
+Then run the driver using this command
+\verbatim
+> plumed driver --ixtc traj_comp.xtc --plumed plumed.dat --kt 2.5
+\endverbatim
+Notice that you have to specify the value of kBT in energy units. While running your simulation
+this information was taken from the MD code.
+
+As a result, PLUMED will produce a new COLVAR file with an additional column. The beginning
+of the file should look like this:
+\verbatim
+#! FIELDS time phi psi metad.bias
+#! SET min_phi -pi
+#! SET max_phi pi
+#! SET min_psi -pi
+#! SET max_psi pi
+ 0.000000 -1.497988 0.273498 110.625670
+ 1.000000 -1.449714 0.576594 110.873141
+ 2.000000 -1.209587 0.831417 109.742353
+ 3.000000 -1.475975 1.279726 110.752327
+\endverbatim
+
+The last column will give as, in energy units, the logarithm of the weight of each frame.
+You can easily obtain the weight of each frame using the expression \f$ w\propto \exp\left(\frac{V(s)}{k_BT}\right)\f$.
+You might want to read the `COLVAR` file in python and compute a weighted histogram.
+
+Here we will directly use PLUMED to compute histograms, as you have learned in \ref lugano-2.
+Add the following lines to your input file
+
+\plumedfile
+as: REWEIGHT_BIAS ARG=metad.bias
+
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
+ffphi: CONVERT_TO_FES GRID=hhphi
+ffpsi: CONVERT_TO_FES GRID=hhpsi
+
+DUMPGRID GRID=ffphi FILE=ffphi.dat
+DUMPGRID GRID=ffpsi FILE=ffpsi.dat
+\endplumedfile
+
+and plot the result using gnuplot.
+
+\verbatim
+gnuplot> p "ffphi.dat"
+gnuplot> p "ffpsi.dat"
+\endverbatim
+
+\section lugano-3-ex-5 Exercise 5: larger orthogonal barriers
 
 Alanine dipeptide is often considered as a too-simple system to understand the typical problems that one
 will then see in real systems. This is very much not true! We will here see how to make the exercise arbitrarily
