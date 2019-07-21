@@ -17,11 +17,8 @@ application to perform a simple Umbrella Sampling WHAM simulation.
 \section lugano-2-resources Resources
 
 The \tarball{lugano-2} for this tutorial contains the following files:
-- wdimer.pdb: a PDB file for two molecules of water in vacuo
-- wdimer.tpr: a GROMACS run file to perform MD of two water molecules
 - diala.pdb: a PDB file for alanine dipeptide in vacuo
-- diala.tpr: a GROMACS run file to perform MD of alanine dipeptide
-- do_block_histo.py: the python script from \ref trieste-2 to perform block averaging over histograms
+- topol.tpr: a GROMACS run file to perform MD of alanine dipeptide
 
 This tutorial has been tested with version 2.5. 
 
@@ -39,7 +36,7 @@ conformations from the canonical ensemble:
 \f].
 Here \f$ q \f$ are the microscopic coordinates and \f$ k_B \f$ is the Boltzmann constant.
 Since \f$ q \f$ is a highly dimensional vector, it is often convenient to analyze it
-in terms of a few collective variables (see \ref trieste-1 ).
+in terms of a few collective variables (see \ref lugano-1 ).
 The probability distribution for a CV \f$ s\f$ is 
 \f[
   P(s)\propto \int dq  e^{-\frac{U(q)}{k_BT}} \delta(s-s(q))
@@ -270,12 +267,19 @@ DUMPGRID GRID=ffpsi FILE=ffpsi.dat
 PRINT ARG=phi,psi,b FILE=colvar.dat STRIDE=50
 \endplumedfile
 
-If you have time you can extend this in two-dimensions using at the same time the phi and psi collective variables.
+Of notice that the reweigthing is also applied to the psi collective variable. If you have performed your simulations in different folder you can compare the effect of the bias
+on phi on the free energy of psi. For a single simulation with a constant bias the reweightin is simple, the weight of each frame is exp(+bias(cv(t))/kt). So it is possible to 
+perform the reweighting by hand at any time.
 
 Now you have performed an original Umbrella Sampling calculation. This is not particularly easy to setup nor robust, even if from a modern
 perspective it is a very rough implementation of \ref METAD
 
-In the next exercise we will perform a common WHAM Umbrella Sampling simulation.
+In the next exercise we will perform a WHAM Umbrella Sampling simulation.
+
+\section lugano-2-ex-4 Exercise 4: WHAM Umbrella Sampling
+
+ 
+
 */
 
 link: @subpage lugano-2
