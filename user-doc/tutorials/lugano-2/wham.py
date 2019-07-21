@@ -65,9 +65,9 @@ for lines in open(FILENAME_, "r").readlines():
     if(riga[0]=="#!"): continue
     # read bias values
     # umbrella-sampling typical format
-    if(len(riga) == NBIAS_):
-       i0 = 0
-       i1 = NBIAS_
+    if(len(riga) == NBIAS_+1):
+       i0 = 1
+       i1 = NBIAS_+1
     # bias exchange typical format
     elif(len(riga) == 2*NBIAS_+1):
        i0 = NBIAS_+1 

@@ -305,7 +305,7 @@ restraint-phi: RESTRAINT ARG=phi KAPPA=250.0 AT=$AT
 PRINT STRIDE=20 ARG=phi,psi,restraint-phi.bias FILE=COLVAR$AT
 EOF
 
-gmx mdrun -plumed plumed.dat -nsteps 100000 -x traj$AT.xtc -nb cpu
+gmx mdrun -plumed plumed.dat -nsteps 100000 -x traj$AT.xtc -c cout$AT.gro -nb cpu
 
 done
 \endverbatim 
@@ -379,7 +379,37 @@ python do_fes.py allphi-w.dat 1 -3.1415 3.1415 50 2.49 fes.dat
 \endverbatim
 
 the resulting profile will be disappointing, error estimate and convergence will be discussed in the following tutorials,
-but clearly simulations are too short.
+but clearly simulations are too short. A more advanced approach would be to use the configurations obtained from the former
+simulations to generate multiple replicas and then perform the US again for longer time and possible in parallel. The syntax
+is presented in the following but the exercise is possible only if plumed is compiled with mpi
+
+\section lugano-2-ex-5 Exercise 5: WHAM Umbrella Sampling in parallel (optional)
+
+Here we use the "replica" syntax of plumed to write a single plumed input file for all the windows:
+
+\plumedfile
+# vim:ft=plumed
+MOLINFO STRUCTURE=diala.pdb
+phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
+#
+# Impose an umbrella potential on CV 1
+# with a spring constant of 250 kjoule/mol
+# at fixed points along phi 
+#
+restraint-phi: RESTRAINT ...
+    ARG=chi KAPPA=250.0
+    AT=@replicas:{
+    -3.00 -2.75 -2.50 -2.25 
+    -2.00 -1.75 -1.50 -1.25 
+    -1.00 -0.75 -0.50 -0.25 
+     0.00 0.25 0.50 0.75 
+     1.00 1.25 1.50 1.75 
+     2.00 2.25 2.50 2.75 3.00
+} ...
+# monitor the two variables and the bias potential from the restraint
+PRINT STRIDE=20 ARG=phi,psi,restraint-phi.bias FILE=COLVAR
+\endplumedfile
 
 
 WHAM is also natively implemented in PLUMED but requires the use of parallel processes with mpi. 
