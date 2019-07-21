@@ -113,103 +113,138 @@ We will make use as a toy-model of alanine dipeptide: we will see how we can use
 
 Alanine dipeptide is characterized by multiple minima separated by relatively high free energy barriers. Here we will explore the conformational space of
 alanine dipeptide using a standard MD simulation, then instead of using the free energy as an external potential we will try to fit the potential using
-gnuplot and add a bias using an analytical function of a collective variable with \ref MATHEVAL and \ref BIASVALUE .
-
+gnuplot and add a bias using an analytical function of a collective variable with \ref CUSTOM and \ref BIASVALUE .
 
 As a first test lets run an MD and generate on-the-fly the free energy as a function of the phi and psi collective variables separately.
 
+This is an example input file to calculate the phi and psi angles on the fly and accumulate two 1D histograms from which calculating the free energy.
+
 \plumedfile
 # vim:ft=plumed
-MOLINFO STRUCTURE=aladip.pdb
+MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
 psi: TORSION ATOMS=@psi-2
-hhphi: HISTOGRAM ARG=phi STRIDE=10 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
-hhpsi: HISTOGRAM ARG=psi STRIDE=10 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
-ffphi: CONVERT_TO_FES GRID=hhphi TEMP=298
-ffpsi: CONVERT_TO_FES GRID=hhpsi TEMP=298
-DUMPGRID GRID=ffphi FILE=ffphi.dat
-DUMPGRID GRID=ffpsi FILE=ffpsi.dat
-PRINT ARG=phi,psi FILE=colvar.dat STRIDE=10
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
+ffphi: CONVERT_TO_FES GRID=hhphi
+ffpsi: CONVERT_TO_FES GRID=hhpsi
+DUMPGRID GRID=ffphi FILE=fes_phi STRIDE=100000
+DUMPGRID GRID=ffpsi FILE=fes_psi STRIDE=100000
+PRINT ARG=phi,psi FILE=colvar.dat STRIDE=50
 \endplumedfile
 
-from the colvar file it is clear that we can quickly explore two minima but that the region for positive phi is not accessible. Instead of using the opposite
-of the free energy as a table potential here we introduce the function \ref MATHEVAL that allows defining complex analytical functions of collective variables,
-and the bias \ref BIASVALUE that allows using any continuous function of the positions as a bias.
+run it with gromacs as
+
+\verbatim
+gmx mdrun -s topol -plumed plumed.dat -nb cpu -v
+\endverbatim
+
+from the colvar file it is clear that we can quickly explore two minima but that the region for positive phi is not accessible. Ideally we would like to speed up the sampling
+of regions that are not visited spontaneously by MD. We have multiple possibilities. One option could be to use as a bias the opposite of the accumulated free-energy using \ref EXTERNAL .
+Another option can be to fit the FES and use the fit. This is what we will do, but first of all take a look at the fes accummulated in time.
+
+\verbatim
+>gnuplot
+plot [for i=0:9] 'analysis.'.i.'fes_phi' u 1:2 w l t''.i
+rep 'fes_phi' u 1:2 w l t'final'
+plot [for i=0:9] 'analysis.'.i.'fes_psi' u 1:2 w l t''.i
+rep 'fes_psi' u 1:2 w l t'final'
+\endverbatim
 
 So first we need to fit the opposite of the free energy as a function of phi in the region explored with a periodic function, because of the gaussian like look
 of the minima we can fit it using <a href="https://en.wikipedia.org/wiki/Von_Mises_distribution"> the von Mises distribution</a>. In gnuplot
 
 \verbatim
 >gnuplot
-gnuplot>plot 'ffphi.dat' u 1:(-$2+31) w l
+gnuplot>plot 'fes_phi' u 1:(-$2) w l
+\endverbatim
+
+Now find a value such as the fes is always positive, e.g. ~38
+
+\verbatim
+gnuplot>plot 'fes_phi' u 1:(-$2+38) w l
 gnuplot>f(x)=exp(k1*cos(x-a1))+exp(k2*cos(x-a2))
-gnuplot>fit [-3.:-0.6] f(x) 'ffphi.dat' u 1:(-$2+31) via k1,a1,k2,a2
+gnuplot>k1=2
+gnuplot>k2=2
+gnuplot>fit [-3.:-0.6] f(x) 'fes_phi' u 1:(-$2+38) via k1,a1,k2,a2
 gnuplot>rep f(x)
 \endverbatim
 
 The function and the resulting parameters can be used to run a new biased simulation:
 
-\section lugano-2-ex-7 Exercise 7: First biased run with Alanine dipeptide
+\section lugano-2-ex-2 Exercise 2: First biased run with alanine dipeptide
+
+To the above file we add a few lines to define using \ref CUSTOM a function of the angle phi.
 
 \plumedfile
 # vim:ft=plumed
-MOLINFO STRUCTURE=aladip.pdb
-
+MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
-__FILL__
+psi: TORSION ATOMS=@psi-2
 
-MATHEVAL ...
+CUSTOM ...
 ARG=phi 
 LABEL=doubleg
-FUNC=exp(__FILL)+__FILL__
+FUNC=exp(__FILL__*cos(x-__FILL__))+exp(__FILL__*cos(x-__FILL__))
 PERIODIC=NO
-... MATHEVAL
+... CUSTOM 
 
-b: BIASVALUE ARG=__FILL__
-PRINT __FILL__ 
+b: BIASVALUE ARG=doubleg
+
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+ffphi: CONVERT_TO_FES GRID=hhphi
+ffpsi: CONVERT_TO_FES GRID=hhpsi
+DUMPGRID GRID=ffphi FILE=fes_phi STRIDE=100000
+DUMPGRID GRID=ffpsi FILE=fes_psi STRIDE=100000
+PRINT ARG=phi,psi,b.bias FILE=colvar.dat STRIDE=50
 \endplumedfile
 
 It is now possible to run a second simulation and observe the new behavior. The system quickly explores a new minimum. While a quantitative estimate of the free energy difference of the old and new regions
 is out of the scope of the current exercise what we can do is to add a new von Mises function centered in the new minimum with a comparable height, in this way we can hope to facilitate a back and forth
-transition along the phi collective variable.
+transition along the phi collective variable. Look at the old and new free energy and add a third exponential function to \ref CUSTOM centered in the new minimun.
 
 \verbatim
->gnuplot
-gnuplot> ...
+gnuplot> plot 'fes_phi' u 1:(-$2+38) w l
+gnuplot> f(x)=exp(k3*cos(x-a3))
+gnuplot>k3=2
+gnuplot> fit f(x) 'fes_phi' u 1:(-$2+38) via k3,a3
 \endverbatim
 
 We can now run a third simulation where both regions are biased.
 
-\section lugano-2-ex-8 Exercise 8: Second biased run with Alanine dipeptide
+\section lugano-2-ex-3 Exercise 3: Second biased run with alanine dipeptide
 
 \plumedfile
-# vim:ft=plumed
-MOLINFO STRUCTURE=aladip.pdb
-
+MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
 psi: TORSION ATOMS=@psi-2
 
-
-MATHEVAL ...
+CUSTOM ...
 ARG=phi 
 LABEL=tripleg
-FUNC=exp(k1*cos(x-a1))+exp(k2*cos(x-a2))+exp(k3*cos(x+a3))
+FUNC=exp(__FILL__*cos(x-__FILL__))+exp(__FILL__*cos(x-__FILL__))+exp(__FILL__*cos(x-__FILL__))
 PERIODIC=NO
-... MATHEVAL
+... CUSTOM 
 
 b: BIASVALUE ARG=tripleg
 
-__FILL__
-
-ENDPLUMED
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+ffphi: CONVERT_TO_FES GRID=hhphi
+ffpsi: CONVERT_TO_FES GRID=hhpsi
+DUMPGRID GRID=ffphi FILE=fes_phi STRIDE=100000
+DUMPGRID GRID=ffpsi FILE=fes_psi STRIDE=100000
+PRINT ARG=phi,psi,b.bias FILE=colvar.dat STRIDE=50
 \endplumedfile
 
-With this third simulation it should be possible to visit both regions as a function on the phi torsion. Now it is possible to reweight the sampling
+With this third simulation it should be possible to visit both regions as a function on the phi torsion. The resulting free energy is now reporting about the biased simulation
+is flatter than the former even if not flat everywhere. Now it is possible to reweight the sampling
 and obtain a better free energy estimate along phi.
 
 \plumedfile
 # vim:ft=plumed
-MOLINFO STRUCTURE=aladip.pdb
+MOLINFO STRUCTURE=diala.pdb
 
 phi: TORSION ATOMS=@phi-2
 psi: TORSION ATOMS=@psi-2
@@ -222,21 +257,25 @@ PERIODIC=NO
 ... MATHEVAL
 
 b: BIASVALUE ARG=tripleg
-as: REWEIGHT_BIAS TEMP=298
-hhphi: HISTOGRAM ARG=phi STRIDE=10 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=as
-hhpsi: HISTOGRAM ARG=psi STRIDE=10 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05 LOGWEIGHTS=as
-ffphi: CONVERT_TO_FES GRID=hhphi TEMP=298
-ffpsi: CONVERT_TO_FES GRID=hhpsi TEMP=298
+as: REWEIGHT_BIAS ARG=b.bias
+
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
+ffphi: CONVERT_TO_FES GRID=hhphi
+ffpsi: CONVERT_TO_FES GRID=hhpsi
 
 DUMPGRID GRID=ffphi FILE=ffphi.dat
 DUMPGRID GRID=ffpsi FILE=ffpsi.dat
 
-PRINT ARG=phi,psi FILE=colvar.dat STRIDE=10
+PRINT ARG=phi,psi,b FILE=colvar.dat STRIDE=50
 \endplumedfile
 
 If you have time you can extend this in two-dimensions using at the same time the phi and psi collective variables.
 
+Now you have performed an original Umbrella Sampling calculation. This is not particularly easy to setup nor robust, even if from a modern
+perspective it is a very rough implementation of \ref METAD
 
+In the next exercise we will perform a common WHAM Umbrella Sampling simulation.
 */
 
 link: @subpage lugano-2
