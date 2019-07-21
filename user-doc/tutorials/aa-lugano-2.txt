@@ -20,7 +20,10 @@ The \tarball{lugano-2} for this tutorial contains the following files:
 - diala.pdb: a PDB file for alanine dipeptide in vacuo
 - topol.tpr: a GROMACS run file to perform MD of alanine dipeptide
 - run_us.sh: a script to perform a serial US wham simulation
+- wham.py: a script to perform the WHAM analysis
+- do_fes.py: a script to generate fes from CV and weights
 
+Also notice that the `.solutions` direction of the tarball contains correct input files for the exercises.
 This tutorial has been tested with version 2.5. 
 
 \section lugano-2-intro Introduction
@@ -365,16 +368,16 @@ plumed driver --mf_xtc concatenated.xtc --plumed plumed-wham.dat
 
 3) run the iterative WHAM optimisation and get a weight per frame
 \verbatim
-python wham.py biases.dat 26 2.49
+python wham.py biases.dat 25 2.49
 \endverbatim
 
-where 26 is the number of windows and 2.49 is the temperature in energy unit. After some time
+where 25 is the number of windows and 2.49 is the temperature in energy unit. After some time
 the result is a file weight.dat with one weight per frame that can be used to calculate any possible property of the system.
 For example the free energy profile along phi.
 
 To do so edit the weight.dat file to add 3 blank lines and then
 \verbatim
-paste allphi.dat weights.dat > allphi-w.dat
+paste allphi.dat weights.dat | grep -v \# > allphi-w.dat
 python do_fes.py allphi-w.dat 1 -3.1415 3.1415 50 2.49 fes.dat
 \endverbatim
 
@@ -411,8 +414,39 @@ restraint-phi: RESTRAINT ...
 PRINT STRIDE=20 ARG=phi,psi,restraint-phi.bias FILE=COLVAR
 \endplumedfile
 
+The @replicas syntax allow to define different values for a variable for the different replicas.
 
-WHAM is also natively implemented in PLUMED but requires the use of parallel processes with mpi. 
+\verbatim
+mpiexec -np 25 gmx_mpi -s topol -plumed plumed.dat -multi 25 -replex 100 -nb cpu -nsteps 100000 
+\endverbatim
+
+In this case we run 25 parallel simulations and we also try to perform replica-exchange between neighobur replicas.
+
+Once the simulation is finished the trajectories can be concatenated and analysed with WHAM making use of the plumed native implementation: 
+
+\verbatim
+gmx_mpi trjcat -f traj*.xtc -o concatenated.xtc -cat
+\endverbatim
+
+Write a new plumed-wham.dat
+
+\plumedfile
+INCLUDE FILE=plumed.dat
+  h1: WHAM_HISTOGRAM ...
+     ARG=phi BIAS=restraint-phi.bias TEMP=300
+     GRID_MIN=-pi GRID_MAX=pi GRID_BIN=100
+     BANDWIDTH=0.1
+...
+  fes1: CONVERT_TO_FES TEMP=300 GRID=h1
+  DUMPGRID GRID=fes1 FILE=fes1.dat
+\endplumedfile
+
+And again use the \ref driver in parallel:
+
+\verbatim
+mpiexec -np 25 plumed driver --mf_xtc concatenated.xtc --plumed plumed-wham.dat --multi 25
+\endverbatim
+
 link: @subpage lugano-2
 
 description: This tutorial explains how to use PLUMED to run simple restrained simulations and account for the bias in the analysis
