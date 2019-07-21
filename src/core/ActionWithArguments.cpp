@@ -607,24 +607,27 @@ void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vect
     }
   } else {
     for(unsigned i=0; i<arg_ends.size()-1; ++i) {
-      unsigned k=arg_ends[i]; plumed_assert( k<arguments.size() );
-      if( arg_ends[i+1]==(k+1) && arguments[k]->getNumberOfValues( getLabel() )==1 ) {
-        plumed_assert( k<arguments.size() );
-        args[i] = arguments[k]->getRequiredValue( getLabel(), 0 );
-      } else {
-        unsigned nt=0, nn=0; unsigned mycode;
-        if( thisAsActionWithValue ) mycode = thisAsActionWithValue->getTaskCode( myvals.getTaskIndex() ); else mycode = myvals.getTaskIndex();
-        if( (arg_ends[i+1]-arg_ends[i])>1 ) {
-            for(unsigned j=arg_ends[i]; j<arg_ends[i+1]; ++j) {
-              unsigned nv = arguments[j]->getNumberOfValues( getLabel() );
-              nt += nv; if( mycode<nt ) { k=j; break; }
-              nn += nv; k++;
-            }
-        }
-        if( usingAllArgs[k] ) args[i] = arguments[k]->get( mycode - nn );
-        else args[i] = arguments[k]->getRequiredValue( getLabel(), mycode - nn );
-      }
+      if( thisAsActionWithValue ) args[i] = retrieveRequiredArgument( i, thisAsActionWithValue->getTaskCode( myvals.getTaskIndex() ) );
+      else args[i] = retrieveRequiredArgument( i, myvals.getTaskIndex() );
     }
+  }
+}
+
+double ActionWithArguments::retrieveRequiredArgument( const unsigned& iarg, const unsigned& jcomp ) const {
+  unsigned k=arg_ends[iarg]; plumed_dbg_assert( k<arguments.size() );
+  if( arg_ends[iarg+1]==(k+1) && arguments[k]->getNumberOfValues( getLabel() )==1 ) {
+    plumed_dbg_assert( k<arguments.size() ); return arguments[k]->getRequiredValue( getLabel(), 0 );
+  } else {
+    unsigned nt=0, nn=0; unsigned mycode = jcomp;
+    if( (arg_ends[iarg+1]-arg_ends[iarg])>1 ) {
+        for(unsigned j=arg_ends[iarg]; j<arg_ends[iarg+1]; ++j) {
+          unsigned nv = arguments[j]->getNumberOfValues( getLabel() );
+          nt += nv; if( mycode<nt ) { k=j; break; }
+          nn += nv; k++;
+        } 
+    }     
+    if( usingAllArgs[k] ) return arguments[k]->get( mycode - nn );
+    else return arguments[k]->getRequiredValue( getLabel(), mycode - nn );
   }
 }
 

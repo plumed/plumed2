@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2017 The plumed team
+   Copyright (c) 2015-2019 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,60 +20,61 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "VectorProductMatrix.h"
+#include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
-#include "multicolvar/MultiColvarBase.h"
+
+//+PLUMEDOC ANALYSIS DISSIMILARITIES
+/*
+Calculate the matrix of dissimilarities between a trajectory of atomic configurations.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
 namespace adjmat {
 
-class CustomProductMatrix : public VectorProductMatrix {
+class DissimilarityMatrix : public VectorProductMatrix { 
 private:
-  bool domax, domin;
+  bool squared;
 public:
   static void registerKeywords( Keywords& keys );
-  explicit CustomProductMatrix(const ActionOptions&);
+  DissimilarityMatrix( const ActionOptions& ao );
   double computeVectorProduct( const unsigned& index1, const unsigned& index2,
                                const std::vector<double>& vec1, const std::vector<double>& vec2,
                                std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const ;
 };
 
-PLUMED_REGISTER_ACTION(CustomProductMatrix,"CUSTOM_MATRIX")
+PLUMED_REGISTER_ACTION(DissimilarityMatrix,"DISSIMILARITIES")
 
-void CustomProductMatrix::registerKeywords( Keywords& keys ) {
+void DissimilarityMatrix::registerKeywords( Keywords& keys ) {
   VectorProductMatrix::registerKeywords( keys );
-  keys.add("compulsory","FUNC","the function to apply to the input vectors.   Currently can be min/max");
+  keys.addFlag("SQUARED",false,"calculate the square of the dissimilarity matrix");
 }
 
-CustomProductMatrix::CustomProductMatrix(const ActionOptions& ao):
+DissimilarityMatrix::DissimilarityMatrix( const ActionOptions& ao ):
   Action(ao),
-  VectorProductMatrix(ao),
-  domax(false),domin(false)
+  VectorProductMatrix(ao)
 {
-  std::string fstring; parse("FUNC",fstring);
-  if( fstring=="min" ) { domin=true; log.printf("  product is minimum of input elements \n"); }
-  else if( fstring=="max" ) { domax=true; log.printf("  product is maximum of input elements \n"); }
-  else plumed_merror("if it is useful to define matrix elements that are a custom function of the input matrix elements please implement them");
-  if( domin || domax ) {
-    if( getNumberOfArguments()>2 ) error("should be at most only two arguments");
-  }
+  parseFlag("SQUARED",squared);
+  if( squared ) log.printf("  computing the square of the dissimilarity matrix\n");
   forcesToApply.resize( getNumberOfDerivatives() );
   setNotPeriodic();
 }
 
-double CustomProductMatrix::computeVectorProduct( const unsigned& index1, const unsigned& index2,
+double DissimilarityMatrix::computeVectorProduct( const unsigned& index1, const unsigned& index2,
     const std::vector<double>& vec1, const std::vector<double>& vec2,
     std::vector<double>& dvec1, std::vector<double>& dvec2, MultiValue& myvals ) const {
-  if( domin ) {
-    plumed_dbg_assert( vec1.size()==1 && vec2.size()==1 );
-    if( vec1[0]<vec2[0] ) { dvec1[0]=1; dvec2[0]=0; return vec1[0]; }
-    dvec1[0]=0; dvec2[0]=1; return vec2[0];
-  } else if( domax ) {
-    plumed_dbg_assert( vec1.size()==1 && vec2.size()==1 );
-    if( vec1[0]>vec2[0] ) { dvec1[0]=1; dvec2[0]=0; return vec1[0]; }
-    dvec1[0]=0; dvec2[0]=1; return vec2[0];
-  } else {
-    plumed_merror("this is not implemented");
-  }
+  double dist = 0; 
+  for(unsigned i=0;i<vec1.size();++i) {
+       double tmp = vec1[i] - vec2[i]; dist += tmp*tmp;
+       dvec1[i] = 2*tmp; dvec2[i] = -2*tmp;
+  } 
+  if( squared ) return dist ;
+  dist = sqrt( dist );
+  for(unsigned i=0;i<vec1.size();++i) { dvec1[i] /= 2*dist; dvec2[i] /= 2*dist; }
+  return dist;
 }
 
 }

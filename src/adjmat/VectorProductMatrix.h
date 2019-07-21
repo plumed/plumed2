@@ -34,7 +34,6 @@ class VectorProductMatrix :
   public ActionWithValue
 {
 private:
-  Value* convertStringToValue( const std::string& name );
   void updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const ;
 protected:
   unsigned ncol_args;
@@ -44,6 +43,7 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit VectorProductMatrix(const ActionOptions&);
+  unsigned getNumberOfDerivatives() const ;
   bool canBeAfterInChain( ActionWithValue* av ) const ;
   bool mustBeTreatedAsDistinctArguments() const ;
   void lockRequests();

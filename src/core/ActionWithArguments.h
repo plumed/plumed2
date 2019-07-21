@@ -92,6 +92,8 @@ public:
   void setForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& start );
 /// This sets the forces on if the action is in a chain
   static void setForcesOnActionChain( const std::vector<double>& forces, unsigned& start, ActionWithValue* av );
+/// This gets the component jcomp of argument iarg
+  double retrieveRequiredArgument( const unsigned& iarg, const unsigned& jcomp ) const ;
 public:
   explicit ActionWithArguments(const ActionOptions&);
   virtual ~ActionWithArguments() {}
