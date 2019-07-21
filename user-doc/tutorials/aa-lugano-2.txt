@@ -19,6 +19,7 @@ application to perform a simple Umbrella Sampling WHAM simulation.
 The \tarball{lugano-2} for this tutorial contains the following files:
 - diala.pdb: a PDB file for alanine dipeptide in vacuo
 - topol.tpr: a GROMACS run file to perform MD of alanine dipeptide
+- run_us.sh: a script to perform a serial US wham simulation
 
 This tutorial has been tested with version 2.5. 
 
@@ -301,7 +302,7 @@ psi: TORSION ATOMS=@psi-2
 #
 restraint-phi: RESTRAINT ARG=phi KAPPA=250.0 AT=$AT
 # monitor the two variables and the bias potential from the two restraints
-PRINT STRIDE=10 ARG=phi,psi,restraint-phi.bias FILE=COLVAR$AT
+PRINT STRIDE=20 ARG=phi,psi,restraint-phi.bias FILE=COLVAR$AT
 EOF
 
 gmx mdrun -plumed plumed.dat -nsteps 100000 -x traj$AT.xtc -nb cpu
@@ -316,7 +317,72 @@ you can run it using
 */
 
 Plotting the phi collective variable for all replica you will see that each simulation has explored a well defined region of the conformation space as defined by phi.
+To perform the WHAM merging of the windows we need to
+1) collect all the frames
+\verbatim
+gmx trjcat -f traj*.xtc -cat -o concatenated.xtc
+\endverbatim
+2) calculate the values for all employed biases applied on each frame
+for this we can write a plumed-wham.dat file including all the biases used in the former simulations:
+\plumedfile
+# vim:ft=plumed
+MOLINFO STRUCTURE=diala.pdb
+phi: TORSION ATOMS=@phi-2
 
+RESTRAINT ARG=phi KAPPA=250.0 AT=-3.00
+RESTRAINT ARG=phi KAPPA=250.0 AT=-2.75
+RESTRAINT ARG=phi KAPPA=250.0 AT=-2.50
+RESTRAINT ARG=phi KAPPA=250.0 AT=-2.25
+RESTRAINT ARG=phi KAPPA=250.0 AT=-2.00
+RESTRAINT ARG=phi KAPPA=250.0 AT=-1.75
+RESTRAINT ARG=phi KAPPA=250.0 AT=-1.50
+RESTRAINT ARG=phi KAPPA=250.0 AT=-1.25
+RESTRAINT ARG=phi KAPPA=250.0 AT=-1.00
+RESTRAINT ARG=phi KAPPA=250.0 AT=-0.75
+RESTRAINT ARG=phi KAPPA=250.0 AT=-0.50
+RESTRAINT ARG=phi KAPPA=250.0 AT=-0.25
+RESTRAINT ARG=phi KAPPA=250.0 AT=0.00
+RESTRAINT ARG=phi KAPPA=250.0 AT=0.25
+RESTRAINT ARG=phi KAPPA=250.0 AT=0.50
+RESTRAINT ARG=phi KAPPA=250.0 AT=0.75
+RESTRAINT ARG=phi KAPPA=250.0 AT=1.00
+RESTRAINT ARG=phi KAPPA=250.0 AT=1.25
+RESTRAINT ARG=phi KAPPA=250.0 AT=1.50
+RESTRAINT ARG=phi KAPPA=250.0 AT=1.75
+RESTRAINT ARG=phi KAPPA=250.0 AT=2.00
+RESTRAINT ARG=phi KAPPA=250.0 AT=2.25
+RESTRAINT ARG=phi KAPPA=250.0 AT=2.50
+RESTRAINT ARG=phi KAPPA=250.0 AT=2.75
+RESTRAINT ARG=phi KAPPA=250.0 AT=3.00
+
+PRINT ARG=*.bias FILE=biases.dat STRIDE=10
+PRINT ARG=phi FILE=allphi.dat STRIDE=10
+\endplumedfile
+
+\verbatim
+plumed driver --mf_xtc concatenated.xtc --plumed plumed-wham.dat
+\endverbatim
+
+3) run the iterative WHAM optimisation and get a weight per frame
+\verbatim
+python wham.py biases.dat 26 2.49
+\endverbatim
+
+where 26 is the number of windows and 2.49 is the temperature in energy unit. After some time
+the result is a file weight.dat with one weight per frame that can be used to calculate any possible property of the system.
+For example the free energy profile along phi.
+
+To do so edit the weight.dat file to add 3 blank lines and then
+\verbatim
+paste allphi.dat weights.dat > allphi-w.dat
+python do_fes.py allphi-w.dat 1 -3.1415 3.1415 50 2.49 fes.dat
+\endverbatim
+
+the resulting profile will be disappointing, error estimate and convergence will be discussed in the following tutorials,
+but clearly simulations are too short.
+
+
+WHAM is also natively implemented in PLUMED but requires the use of parallel processes with mpi. 
 link: @subpage lugano-2
 
 description: This tutorial explains how to use PLUMED to run simple restrained simulations and account for the bias in the analysis
