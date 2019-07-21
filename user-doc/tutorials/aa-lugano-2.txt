@@ -278,9 +278,44 @@ In the next exercise we will perform a WHAM Umbrella Sampling simulation.
 
 \section lugano-2-ex-4 Exercise 4: WHAM Umbrella Sampling
 
- 
+In this case we will run many simulations with a strong harmonic restraint centered around specific values of phi in such a way to cover all possible values, keep each simulation
+close to its specific value, allow for overlap between neighbour simulations, i.e. simulations centered aroud consecutive phi values. The simulation can be either performed in parallel
+by preparing starting configurations close to each value or sequentially, extracting a good starting conformation from the former simulations. In the specific case of alanine dipeptide
+we can even just start always from the same configuration and let the bias quickly move it close to the target values.
 
+To run the simulation in scalar you can make use of the provided bash script that is:
+
+\verbatim
+for AT in -3.00  -2.75 -2.50 -2.25 -2.00 -1.75 -1.50 -1.25 -1.00 -0.75 -0.50 -0.25 0.00 0.25 0.50 0.75 1.00 1.25 1.50 1.75 2.00 2.25 2.50 2.75 3.00
+do
+
+cat >plumed.dat << EOF
+# vim:ft=plumed
+MOLINFO STRUCTURE=diala.pdb
+phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
+#
+# Impose an umbrella potential on CV 1
+# with a spring constant of 250 kjoule/mol
+# at fixed points along phi 
+#
+restraint-phi: RESTRAINT ARG=phi KAPPA=250.0 AT=$AT
+# monitor the two variables and the bias potential from the two restraints
+PRINT STRIDE=10 ARG=phi,psi,restraint-phi.bias FILE=COLVAR$AT
+EOF
+
+gmx mdrun -plumed plumed.dat -nsteps 100000 -x traj$AT.xtc -nb cpu
+
+done
+\endverbatim 
+
+you can run it using 
+
+\verbatim
+./run_us.sh
 */
+
+Plotting the phi collective variable for all replica you will see that each simulation has explored a well defined region of the conformation space as defined by phi.
 
 link: @subpage lugano-2
 
