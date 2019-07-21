@@ -392,10 +392,11 @@ input file that you prepared for the first exercise (that is: biasing \f$\Phi\f$
 # first shift the psi variable.
 # setting the new periodicity to -pi,pi will make sure that the barrier
 # is a continuous function of the coordinates
-shift:   CUSTOM ARG=psi   FUNC=x-0.5 PERIODIC=-pi,pi
+shift1:   CUSTOM ARG=psi   FUNC=x-0.5 PERIODIC=-pi,pi
+shift2:   CUSTOM ARG=psi   FUNC=x+2.5 PERIODIC=-pi,pi
 # then compute the barrier energy.
 # this would be a Gaussian with wifth 0.3. You can pick the height as you like
-barrier: CUSTOM ARG=shift FUNC=__FILL__*exp(-0.5*x^2/0.3^2) PERIODIC=NO
+barrier: CUSTOM ARG=shift FUNC=__FILL__*exp(-0.5*x^2/0.2^2) PERIODIC=NO
 # then add the barrier to the total energy of the system.
 BIASVALUE ARG=barrier
 \endplumedfile
