@@ -18,6 +18,14 @@ Once this tutorial is completed, students will be able to:
 - Take care of periodic boundary conditions within PLUMED using \ref WHOLEMOLECULES and be able to verify the result with \ref DUMPATOMS.
 - Write their own CVs directly in the input file using the \ref CUSTOM action.
 
+\section lugano-1-install Install PLUMED
+
+You can find detailed instructions about how to install PLUMED here:
+
+\verbatim
+https://github.com/plumed/conda
+\endverbatim
+
 \section lugano-1-resources Resources
 
 Before starting the tutorial, please create a separate directory, named `handson_1`, and enter it:
@@ -278,8 +286,8 @@ instructs PLUMED to do. It tells PLUMED to:
 
 1. calculate the position of the Virtual Atom 'first' as the \ref CENTER of atoms from 1 to 8;
 2. calculate the position of the Virtual Atom 'last' as the \ref CENTER of atoms from 427 to 436;
-3. calculate the distance between the two atoms 'first' and 'last' and saves it in 'd1';
-4. calculate the distance (ignoring periodic boundary conditions) between the two atoms 'first' and 'last' and saves it in 'd2';
+3. calculate the distance between the two Virtual Atoms 'first' and 'last' and saves it in 'd1';
+4. calculate the distance (ignoring periodic boundary conditions) between the two Virtual Atom 'first' and 'last' and saves it in 'd2';
 5. print the content of 'd1' and 'd2' in the file COLVAR for every frame of the trajectory
 
 Notice that in the input above we have used two different ways of writing the atoms used in the \ref CENTER calculation:
