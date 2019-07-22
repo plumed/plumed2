@@ -37,6 +37,15 @@ from distutils.version import LooseVersion
 def is_platform_mac():
     return sys.platform == 'darwin'
 
+language_level=os.getenv("plumed_language_level")
+if language_level is None:
+  if (sys.version_info > (3, 0)):
+      language_level=3
+  else:
+      language_level=2
+else:
+  language_level=int(language_level)
+
 if os.getenv("plumed_macports") is not None:
     copyfile("../VERSION","VERSION")
     copyfile("../src/wrapper/Plumed.h","Plumed.h")
@@ -119,7 +128,8 @@ ext_modules=[Extension(
   )]
 
 if USE_CYTHON:
-    ext_modules=cythonize(ext_modules)
+    print('using language level',language_level)
+    ext_modules=cythonize(ext_modules,language_level=language_level)
 
 setup(
   name=plumedname,
