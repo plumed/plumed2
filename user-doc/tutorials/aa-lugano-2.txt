@@ -317,7 +317,7 @@ you can run it using
 
 \verbatim
 ./run_us.sh
-*/
+\endverbatim
 
 Plotting the phi collective variable for all replica you will see that each simulation has explored a well defined region of the conformation space as defined by phi.
 To perform the WHAM merging of the windows we need to
