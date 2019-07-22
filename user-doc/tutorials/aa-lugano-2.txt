@@ -446,6 +446,7 @@ And again use the \ref driver in parallel:
 \verbatim
 mpiexec -np 25 plumed driver --mf_xtc concatenated.xtc --plumed plumed-wham.dat --multi 25
 \endverbatim
+*/
 
 link: @subpage lugano-2
 
