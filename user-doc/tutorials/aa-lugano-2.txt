@@ -209,7 +209,7 @@ transition along the phi collective variable. Look at the old and new free energ
 gnuplot> plot 'fes_phi' u 1:(-$2+38) w l
 gnuplot> f(x)=exp(k3*cos(x-a3))
 gnuplot>k3=2
-gnuplot> fit f(x) [0.3:1.8] 'fes_phi' u 1:(-$2+38) via k3,a3
+gnuplot> fit [0.3:1.8] f(x) 'fes_phi' u 1:(-$2+38) via k3,a3
 \endverbatim
 
 We can now run a third simulation where both regions are biased.
