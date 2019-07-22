@@ -268,7 +268,7 @@ ffpsi: CONVERT_TO_FES GRID=hhpsi
 DUMPGRID GRID=ffphi FILE=ffphi.dat
 DUMPGRID GRID=ffpsi FILE=ffpsi.dat
 
-PRINT ARG=phi,psi,b FILE=colvar.dat STRIDE=50
+PRINT ARG=phi,psi,b.bias FILE=colvar.dat STRIDE=50
 \endplumedfile
 
 Of notice that the reweigthing is also applied to the psi collective variable. If you have performed your simulations in different folder you can compare the effect of the bias
