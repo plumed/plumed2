@@ -16,6 +16,6 @@ restraint-phi: RESTRAINT ARG=phi KAPPA=250.0 AT=$AT
 PRINT STRIDE=10 ARG=phi,psi,restraint-phi.bias FILE=COLVAR$AT
 EOF
 
-gmx_mpi mdrun -plumed plumed.dat -nsteps 100000 -x traj$AT.xtc -nb cpu
+gmx mdrun -plumed plumed.dat -nsteps 100000 -x traj$AT.xtc -nb cpu
 
 done

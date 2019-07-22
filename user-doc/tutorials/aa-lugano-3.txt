@@ -392,22 +392,35 @@ input file that you prepared for the first exercise (that is: biasing \f$\Phi\f$
 # first shift the psi variable.
 # setting the new periodicity to -pi,pi will make sure that the barrier
 # is a continuous function of the coordinates
-shift:   CUSTOM ARG=psi   FUNC=x-0.5 PERIODIC=-pi,pi
+shift1:   CUSTOM ARG=psi   FUNC=x-0.5 PERIODIC=-pi,pi
+shift2:   CUSTOM ARG=psi   FUNC=x+2.5 PERIODIC=-pi,pi
 # then compute the barrier energy.
 # this would be a Gaussian with wifth 0.3. You can pick the height as you like
-barrier: CUSTOM ARG=shift FUNC=__FILL__*exp(-0.5*x^2/0.3^2) PERIODIC=NO
+barrier: CUSTOM ARG=shift FUNC=__FILL__*exp(-0.5*x^2/0.2^2) PERIODIC=NO
 # then add the barrier to the total energy of the system.
 BIASVALUE ARG=barrier
 \endplumedfile
 
-XXX TO BE COMPLETED XXX
+Something high like 25 kj/mol should create a significant difficulty.
+Notice that this means a barrier 10 kBT high in a direction that is not being biased.
+
+You should see something like this
+
+\image html lugano-3-hysteresis.png "Time series of Phi when Psi dynamics is hindered by a barrier"
+
+If you look at this series you will clearly see that there are clear changes in the Phi dynamics.
+If you look at Psi dynamics you should be able to see that these changes correspond to transitions in Psi.
+
+This is an indication that an important slow variable is missing.
+
+*Find the minimum value of the barrier required for the simulation not to converge in the simulated timescale.*
 
 \section lugano-3-conclusions Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
 - Setup and run a metadynamics calculation.
 - Compute free energies from the metadynamics bias potential using the \ref sum_hills utility.
-- Discriminate between good and bad collective variables.
+- Identify problems when a hidden variable exhibit a large barrier
 
 */
 

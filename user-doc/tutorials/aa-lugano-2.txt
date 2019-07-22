@@ -125,8 +125,8 @@ This is an example input file to calculate the phi and psi angles on the fly and
 MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
 psi: TORSION ATOMS=@psi-2
-hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
-hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.05
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
 ffphi: CONVERT_TO_FES GRID=hhphi
 ffpsi: CONVERT_TO_FES GRID=hhpsi
 DUMPGRID GRID=ffphi FILE=fes_phi STRIDE=100000
@@ -146,9 +146,9 @@ Another option can be to fit the FES and use the fit. This is what we will do, b
 
 \verbatim
 >gnuplot
-plot [for i=0:9] 'analysis.'.i.'fes_phi' u 1:2 w l t''.i
+plot for [i=0:9] 'analysis.'.i.'.fes_phi' u 1:2 w l t''.i
 rep 'fes_phi' u 1:2 w l t'final'
-plot [for i=0:9] 'analysis.'.i.'fes_psi' u 1:2 w l t''.i
+plot for [i=0:9] 'analysis.'.i.'.fes_psi' u 1:2 w l t''.i
 rep 'fes_psi' u 1:2 w l t'final'
 \endverbatim
 
@@ -167,7 +167,7 @@ gnuplot>plot 'fes_phi' u 1:(-$2+38) w l
 gnuplot>f(x)=exp(k1*cos(x-a1))+exp(k2*cos(x-a2))
 gnuplot>k1=2
 gnuplot>k2=2
-gnuplot>fit [-3.:-0.6] f(x) 'fes_phi' u 1:(-$2+38) via k1,a1,k2,a2
+gnuplot>fit [-2.9:-0.7] f(x) 'fes_phi' u 1:(-$2+38) via k1,a1,k2,a2
 gnuplot>rep f(x)
 \endverbatim
 
@@ -209,7 +209,7 @@ transition along the phi collective variable. Look at the old and new free energ
 gnuplot> plot 'fes_phi' u 1:(-$2+38) w l
 gnuplot> f(x)=exp(k3*cos(x-a3))
 gnuplot>k3=2
-gnuplot> fit f(x) 'fes_phi' u 1:(-$2+38) via k3,a3
+gnuplot> fit [0.3:1.8] f(x) 'fes_phi' u 1:(-$2+38) via k3,a3
 \endverbatim
 
 We can now run a third simulation where both regions are biased.
@@ -262,13 +262,13 @@ as: REWEIGHT_BIAS ARG=b.bias
 
 hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
 hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
-ffphi: CONVERT_TO_FES GRID=hhphi
-ffpsi: CONVERT_TO_FES GRID=hhpsi
+ffphi: CONVERT_TO_FES GRID=hhphi STRIDE=100000
+ffpsi: CONVERT_TO_FES GRID=hhpsi STRIDE=100000
 
 DUMPGRID GRID=ffphi FILE=ffphi.dat
 DUMPGRID GRID=ffpsi FILE=ffpsi.dat
 
-PRINT ARG=phi,psi,b FILE=colvar.dat STRIDE=50
+PRINT ARG=phi,psi,b.bias FILE=colvar.dat STRIDE=50
 \endplumedfile
 
 Of notice that the reweigthing is also applied to the psi collective variable. If you have performed your simulations in different folder you can compare the effect of the bias
@@ -317,7 +317,7 @@ you can run it using
 
 \verbatim
 ./run_us.sh
-*/
+\endverbatim
 
 Plotting the phi collective variable for all replica you will see that each simulation has explored a well defined region of the conformation space as defined by phi.
 To perform the WHAM merging of the windows we need to
