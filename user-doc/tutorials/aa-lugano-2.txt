@@ -167,7 +167,7 @@ gnuplot>plot 'fes_phi' u 1:(-$2+38) w l
 gnuplot>f(x)=exp(k1*cos(x-a1))+exp(k2*cos(x-a2))
 gnuplot>k1=2
 gnuplot>k2=2
-gnuplot>fit [-3.:-0.6] f(x) 'fes_phi' u 1:(-$2+38) via k1,a1,k2,a2
+gnuplot>fit [-2.9:-0.7] f(x) 'fes_phi' u 1:(-$2+38) via k1,a1,k2,a2
 gnuplot>rep f(x)
 \endverbatim
 
