@@ -235,6 +235,13 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
     error("missing input file " + reference );
 
   requestAtoms(pdb.getAtomNumbers());
+  log.printf("  found %d atoms in input \n",pdb.getAtomNumbers().size());
+  log.printf("  with indices : ");
+  for(unsigned i=0; i<pdb.getAtomNumbers().size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf("%d ",pdb.getAtomNumbers()[i].serial());
+  }
+  log.printf("\n");
 
   std::vector<Vector> positions=pdb.getPositions();
   weights=pdb.getOccupancy();

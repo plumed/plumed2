@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DLLoader.h"
+#include <cstdlib>
 
 #ifdef __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
@@ -56,12 +57,18 @@ const std::string & DLLoader::error() {
 }
 
 DLLoader::~DLLoader() {
+  auto debug=std::getenv("PLUMED_LOAD_DEBUG");
+  if(debug) std::fprintf(stderr,"delete dlloader\n");
 #ifdef __PLUMED_HAS_DLOPEN
   while(!handles.empty()) {
-    dlclose(handles.top());
+    int ret=dlclose(handles.top());
+    if(ret) {
+      std::fprintf(stderr,"+++ error reported by dlclose: %s\n",dlerror());
+    }
     handles.pop();
   }
 #endif
+  if(debug) std::fprintf(stderr,"end delete dlloader\n");
 }
 
 DLLoader::DLLoader() {

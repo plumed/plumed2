@@ -149,6 +149,7 @@ BEGIN{
 
 # create tmp dir for future usage
   "mktemp -dt plumed.XXXXXX" | getline tmpdir
+  close("mktemp -dt plumed.XXXXXX")
 
 # checking astyle presence
   astyle_available=!system(astyle " --version > /dev/null 2> /dev/null") 
@@ -199,6 +200,7 @@ BEGINFILE{
 # DOC: they should be explicitly enabled, and `always`, which means they are always required.
         if(!(module_type[module] in allowed_module_types)) error("wrong_module_type","module " module " has a wrong module type '" module_type[module] "'");
       }
+      close(path)
     }
 # detect used modules
     if(filetype=="source" || filetype=="header") {
@@ -208,7 +210,8 @@ BEGINFILE{
         sub("/[^/]*$","",path);
 # an explicit cd is required since the command might be run from a different directory
         system("cd " path "; make show_used_modules 2>/dev/null > " tempfile)
-        if(getline < tempfile >0 && $1=="used_modules") for(i=2;i<=NF;i++) used_modules[module][$i]=1
+        while(getline < tempfile >0) if($1=="used_modules") for(i=2;i<=NF;i++) used_modules[module][$i]=1
+        close(tempfile)
         system("rm " tempfile)
         used_modules_here=""
         if(isarray(used_modules[module])) {
@@ -277,9 +280,9 @@ BEGINFILE{
 # detect copyright lines
     if($0=="/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++") in_copyright=1;
 # check direct inclusion of headers that would bypass module dependencies
-    if(module && match($0,"^# *include +\\\"\\.\\.")) {
+    if(module && match($0,"^# *include +\"\\.\\.")) {
       included_module_name=$0;
-      sub("^# *include +\\\"\\.\\./","",included_module_name);
+      sub("^# *include +\"\\.\\./","",included_module_name);
       sub("/.*$","",included_module_name);
 # DOC: :include_dots:
 # DOC: It is considered an error to include a file using a path starting with `../dir`,
@@ -303,7 +306,7 @@ BEGINFILE{
 ## it is a bad habit to include local headers after system headers
 ## notice that I explicitly check for the final "h" in the included file so as to exclude
 ## included files ending with tmp that are somewhere used in plumed to include automatically generated source code
-#   if(match($0,"^# *include +\\\".*h\\\"")){
+#   if(match($0,"^# *include +\".*h\"")){
 #     if(found_include_system_header && !report_include_system_headers){
 #       style("include_system_headers","include system headers before local headers is discouraged");
 #       report_include_system_headers=1 # only report once per file
@@ -348,6 +351,16 @@ BEGINFILE{
 # DOC: not installed. They should not be directly included in header files, otherwise
 # DOC: those header files could be not usable once PLUMED is installed.
       if(filetype=="header" && h!~"\\.h") error("non_h_header","including non '.h' file " h " in a header file");
+      if(h~"^[A-Za-z0-9_][A-Za-z0-9_]*/") {
+        sub("/.*$","",h)
+# DOC: :include_non_used_module:
+# DOC: When including a file in the form `"dir/file.h"`, `dir` should be an used module.
+# DOC: This makes sure that we do not include system files that by chance are named as PLUMED modules.
+# DOC: Indeed, when including `"file"` if the file is not found in the current path it is searched in
+# DOC: system directories.
+        if(!isarray(used_modules[module]) || (h in used_modules[module])==0)
+            error("include_non_used_module","including file in form " h "/file where " h " is not a used module");
+      }
     }
 
 # check if namespace PLMD is present
@@ -457,7 +470,7 @@ BEGINFILE{
 #print match($0,"^ *\\\\verbatim *$"),"X" $0 "X"
 
 # take note of actions or cltools that provide examples
-    if(match($0,"\\par Examples")){
+    if(match($0,"\\\\par Examples")){
       provide_examples[in_plumed_doc]=FILENAME ":" FNR;
     }
 
@@ -566,6 +579,7 @@ ENDFILE{
          break;
        }
      }
+     close(cppfile)
    }
 }
 
