@@ -146,9 +146,9 @@ Another option can be to fit the FES and use the fit. This is what we will do, b
 
 \verbatim
 >gnuplot
-plot [for i=0:9] 'analysis.'.i.'fes_phi' u 1:2 w l t''.i
+plot for [i=0:9] 'analysis.'.i.'.fes_phi' u 1:2 w l t''.i
 rep 'fes_phi' u 1:2 w l t'final'
-plot [for i=0:9] 'analysis.'.i.'fes_psi' u 1:2 w l t''.i
+plot for [i=0:9] 'analysis.'.i.'.fes_psi' u 1:2 w l t''.i
 rep 'fes_psi' u 1:2 w l t'final'
 \endverbatim
 
