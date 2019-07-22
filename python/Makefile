@@ -15,6 +15,7 @@ all:
 	@echo Building python interface for PLUMED 
 	unset CXX && unset CC && unset CFLAGS && unset CXXFLAGS && unset LDSHARED && \
           plumed_program_name=plumed \
+          plumed_force_cython=yes \
           plumed_version=$(VERSION) \
           plumed_include_dir=../src/wrapper \
           plumed_default_kernel="$$PWD/../src/lib/libplumedKernel.$(SOEXT)" \
