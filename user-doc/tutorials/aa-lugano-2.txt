@@ -414,7 +414,7 @@ restraint-phi: RESTRAINT ...
 PRINT STRIDE=20 ARG=phi,psi,restraint-phi.bias FILE=COLVAR
 \endplumedfile
 
-The @replicas syntax allow to define different values for a variable for the different replicas.
+The \@replicas syntax allow to define different values for a variable for the different replicas.
 
 \verbatim
 mpiexec -np 25 gmx_mpi -s topol -plumed plumed.dat -multi 25 -replex 100 -nb cpu -nsteps 100000 
