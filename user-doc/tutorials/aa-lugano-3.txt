@@ -311,7 +311,7 @@ __FILL__ # here goes the definitions of the CVs
 # Activate well-tempered metadynamics in phi
 metad: __FILL__ ARG=__FILL__ ...
 # Deposit a Gaussian every 500 time steps, with initial height equal to 1.2 kJ/mol
-  PACE=10000000 HEIGHT=1.2 # <- this is the new stuff!
+  PACE=10000000 HEIGHT=0.0 # <- this is the new stuff!
 # the bias factor should be wisely chosen
   BIASFACTOR=__FILL__
 # Gaussian width (sigma) should be chosen based on CV fluctuation in unbiased run
@@ -350,8 +350,8 @@ The last column will give as, in energy units, the logarithm of the weight of ea
 You can easily obtain the weight of each frame using the expression \f$ w\propto \exp\left(\frac{V(s)}{k_BT}\right)\f$.
 You might want to read the `COLVAR` file in python and compute a weighted histogram.
 
-Here we will directly use PLUMED to compute histograms, as you have learned in \ref lugano-2.
-Add the following lines to your input file
+If you want PLUMED to do the histograms for you, you can just add the following
+lines that you learnt in \ref lugano-2 to the plumed input file:
 
 \plumedfile
 as: REWEIGHT_BIAS ARG=metad.bias
@@ -396,7 +396,7 @@ shift1:   CUSTOM ARG=psi   FUNC=x-0.5 PERIODIC=-pi,pi
 shift2:   CUSTOM ARG=psi   FUNC=x+2.5 PERIODIC=-pi,pi
 # then compute the barrier energy.
 # this would be a Gaussian with wifth 0.3. You can pick the height as you like
-barrier: CUSTOM ARG=shift FUNC=__FILL__*exp(-0.5*x^2/0.2^2) PERIODIC=NO
+barrier:  CUSTOM ARG=shift1,shift2 FUNC=__FILL__*exp(-0.5*x^2/0.2^2)+__FILL__*exp(-0.5*y^2/0.2^2) PERIODIC=NO
 # then add the barrier to the total energy of the system.
 BIASVALUE ARG=barrier
 \endplumedfile
