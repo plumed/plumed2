@@ -45,7 +45,7 @@ this quantity to a file.
 
 \plumedfile
 DENSITY SPECIES=1-64 LABEL=d1
-NLINKS ARG=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=dd
+NLINKS GROUP=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=dd
 PRINT ARG=dd FILE=colvar
 \endplumedfile
 
@@ -56,7 +56,7 @@ dot product of the Q6 vectors on adjacent atoms to measure whether or not two at
 
 \plumedfile
 Q6 SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=q6
-NLINKS ARG=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=dd
+NLINKS GROUP=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=dd
 PRINT ARG=dd FILE=colvar
 \endplumedfile
 

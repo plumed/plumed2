@@ -31,12 +31,12 @@ no internal degree of freedom, and instead of a protein with a complex binding p
 We are also assuming to know which is the proper binding site, since we can easily guess that the most stable binding will
 happen on the phosphate.
 
-\section lugano-6a-exercises Exercises
+\section lugano-6b-exercises Exercises
 
 */
 
-link: @subpage lugano-6a 
+link: @subpage lugano-6b 
 
-description: An exercise on running PLUMED with LAMMPS
+description: An exercise to compute binding free energies 
 
-additional-files: lugano-6a
+additional-files: lugano-6b

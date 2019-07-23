@@ -136,7 +136,7 @@ To prevent the cluster from evaporating you need to lower the temperature in the
 <b> 
 Now try to think how we can use a bias potential to stop the cluster from evaporating. Why might using a bias potential be preferable to the method that you have just employed? 
 N.B. The next exercise is in the hidden section below so you need to expand it.  Please try to come up with your own answer to the question of what bias potential we should be using 
-before expanding this section by thinking about the material that was covered in \ref a-lugano-2.
+before expanding this section by thinking about the material that was covered in \ref lugano-2.
 </b>
 
 \hidden{The bias potential}

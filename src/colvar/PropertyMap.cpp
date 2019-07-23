@@ -60,7 +60,7 @@ periodic image.
 \par Examples
 
 \plumedfile
-p3: PROPERTYMAP REFERENCE=../../trajectories/path_msd/allv.pdb PROPERTY=X,Y LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=4
+p3: PROPERTYMAP REFERENCE=allv.pdb PROPERTY=X,Y LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=4
 PRINT ARG=p3.X,p3.Y,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 \endplumedfile
 
@@ -72,18 +72,16 @@ In this case the input line instructs plumed to look for two properties X and Y 
 line of the reference pdb (Note: No spaces from X and = and 1 !!!!).
 e.g.
 
-\verbatim
+\auxfile{allv.pdb}
 REMARK X=1 Y=2
 ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
 ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
-.......
 END
 REMARK X=2 Y=3
 ATOM      1  CL  ALA     1      -3.175   0.365   2.024  1.00  1.00
 ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
-....
 END
-\endverbatim
+\endauxfile
 
 \note
 The implementation of this collective variable and of \ref PATHMSD
