@@ -272,14 +272,14 @@ Try to run your simulation with different values of the bias factor. Going low t
 greater than 1 should give meaningful results, although if the chosen value is too low the system will
 only explore a limited portion of the space.
 
-*Which is the minimum value of the bias factor that allows you to see, in the simulated time,
-transitions between the two relevant minima?*
+_Which is the minimum value of the bias factor that allows you to see, in the simulated time,
+transitions between the two relevant minima?_
 
 
 \section lugano-3-ex-4 Exercise 4: reweighting
 
 In the previous exercise we biased \f$\phi\f$ and compute the free energy as a function of
-the same variable. Many times you want to decide which variable you want to analyze *after*
+the same variable. Many times you want to decide which variable you want to analyze _after_
 having performed a simulation. In order to do so you must reweight your simulation.
 
 There are multiple ways to reweight a metadynamics simulations.
@@ -413,7 +413,7 @@ If you look at Psi dynamics you should be able to see that these changes corresp
 
 This is an indication that an important slow variable is missing.
 
-*Find the minimum value of the barrier required for the simulation not to converge in the simulated timescale.*
+_Find the minimum value of the barrier required for the simulation not to converge in the simulated timescale._
 
 \section lugano-3-conclusions Conclusions
 
