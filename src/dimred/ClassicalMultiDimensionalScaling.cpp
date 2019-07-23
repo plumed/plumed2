@@ -52,7 +52,7 @@ The RMSD distance between atoms 1-256 have moved is used to measure the distance
 
 \plumedfile
 data: COLLECT_FRAMES ATOMS=1-256
-mat: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data 
+mat: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data
 mds: CLASSICAL_MDS USE_OUTPUT_DATA_FROM=mat NLOW_DIM=2
 OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=mds FILE=rmsd-embed
 \endplumedfile

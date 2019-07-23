@@ -57,7 +57,7 @@ p1: FUNCPATHMSD ARG=t1,t2,t3 LAMBDA=500.0
 PRINT ARG=t1,t2,t3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
 \endplumedfile
 
-For this input you would then define the position of the reference coordinates in three separate pdb files.  The contents of the 
+For this input you would then define the position of the reference coordinates in three separate pdb files.  The contents of the
 file frame_1.pdb are shown below:
 
 \auxfile{frame_1.pdb}

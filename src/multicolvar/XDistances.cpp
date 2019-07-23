@@ -42,7 +42,7 @@ The following input tells plumed to calculate the x-component of the vector conn
 the x-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
 printed
 \plumedfile
-d1: XDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} 
+d1: XDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -61,7 +61,7 @@ The following input tells plumed to calculate the x-components of all the distin
 between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).
 The average of these quantities is then calculated.
 \plumedfile
-d1: XDISTANCES GROUP=1-3 MEAN 
+d1: XDISTANCES GROUP=1-3 MEAN
 PRINT ARG=d1.mean
 \endplumedfile
 (See also \ref PRINT)
@@ -88,7 +88,7 @@ The following input tells plumed to calculate the y-component of the vector conn
 the y-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
 printed
 \plumedfile
-d1: YDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} 
+d1: YDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -135,7 +135,7 @@ The following input tells plumed to calculate the z-component of the vector conn
 the z-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
 printed
 \plumedfile
-d1: ZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} 
+d1: ZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).

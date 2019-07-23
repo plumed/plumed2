@@ -43,7 +43,7 @@ Calculate the distances between one or many pairs of atoms.  You can then calcul
 The following input tells plumed to calculate the distances between atoms 3 and 5 and between atoms 1 and 2 and to
 print the minimum for these two distances.
 \plumedfile
-d1: DISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} 
+d1: DISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -109,7 +109,7 @@ d1: DISTANCES ...
  MORE_THAN={RATIONAL R_0=2.0}
  BETWEEN={GAUSSIAN LOWER=1.0 UPPER=2.0}
  MIN={BETA=500.}
-... 
+...
 PRINT ARG=d1.lessthan,d1.morethan,d1.between,d1.min FILE=colvar STRIDE=10
 \endplumedfile
 (see \ref DISTANCES and \ref PRINT)

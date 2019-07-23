@@ -61,7 +61,7 @@ p: POSITION ATOM=3
 PRINT ARG=p.x,p.y,p.z
 \endplumedfile
 
-The reference position is specified in a pdb file like the one shown below 
+The reference position is specified in a pdb file like the one shown below
 
 \auxfile{ref.pdb}
 ATOM      3  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H

@@ -52,7 +52,7 @@ that are bridging between atoms 1-10 and atoms 11-20 and to print the value
 to a file
 
 \plumedfile
-w1: BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 SWITCH={RATIONAL R_0=0.2} 
+w1: BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 SWITCH={RATIONAL R_0=0.2}
 PRINT ARG=w1 FILE=colvar
 \endplumedfile
 

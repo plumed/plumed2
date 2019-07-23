@@ -62,7 +62,7 @@ note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighbor list parameter (optio
 recommended for performance) and states that the neighbor list will be calculated every 4
 steps and consider only the closest 8 member to the actual md snapshots.
 
-This input must be accompanied by a REFERENCE PDB file in which the positions of each of the frames are specified 
+This input must be accompanied by a REFERENCE PDB file in which the positions of each of the frames are specified
 separated using either END or ENDMDL as shown below:
 
 \auxfile{file.pdb}

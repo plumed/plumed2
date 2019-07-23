@@ -83,7 +83,7 @@ the droplet from the surrounding gas.  The value of the phase field on this isoc
 
 \plumedfile
 # Calculate coordination numbers
-c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0} 
+c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 # Select coordination numbers that are more than 2.0
 cf: MFILTER_MORE DATA=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} LOWMEM
 # Build a contact matrix

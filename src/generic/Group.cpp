@@ -79,7 +79,7 @@ PRINT ARG=c FILE=colvar
 
 Groups can be conveniently stored in a separate file.
 E.g. one could create a file named `groups.dat` which reads
-\plumedincludefile 
+\plumedincludefile
 # this is groups.dat
 o: GROUP ATOMS=1,4,7,11,14
 h: GROUP ATOMS=2,3,5,6,8,9,12,13

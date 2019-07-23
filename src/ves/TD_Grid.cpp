@@ -78,7 +78,7 @@ file.
 td: TD_GRID FILE=input-grid.data
 \endplumedfile
 
-The input grid is then specified using the usual format employed by PLUMED an example of which 
+The input grid is then specified using the usual format employed by PLUMED an example of which
 is shown below:
 
 \auxfile{input-grid.data}

@@ -133,8 +133,8 @@ END
 
 In the following example you see two completely equivalent way
 to restrain an atom close to a position that is defined in the reference
-frame of an aligned molecule. You could for instance use this command to calculate the 
-position of the center of mass of a ligand after having aligned the atoms to the reference 
+frame of an aligned molecule. You could for instance use this command to calculate the
+position of the center of mass of a ligand after having aligned the atoms to the reference
 frame of the protein that is determined by aligning the atoms in the protein to the coordinates
 provided in the file ref.pdb
 \plumedfile
