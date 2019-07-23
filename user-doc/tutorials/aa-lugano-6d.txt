@@ -1,5 +1,5 @@
 /**
-\page lugano-6d Trieste tutorial: Folding free energy for a protein described by a go-model 
+\page lugano-6d Lugano tutorial: Folding free energy for a protein described by a go-model 
 
 \section lugano-6d-aims Aims
 
