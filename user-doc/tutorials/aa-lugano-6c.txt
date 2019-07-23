@@ -15,8 +15,8 @@ Once this tutorial is completed students will
 
 The \tarball{lugano-6c} for this project contains the following files:
 
-- xx:
-- xx:
+- H-transfer.inp: a CP2K input file to perform BO-MD and Free Energy calculations with PLUMED
+- H-transfer.pdb: a PDB file with the starting configuration for a few water molecules
 
 This tutorial has been tested on v2.5 but it should also work with other versions of PLUMED.
 
