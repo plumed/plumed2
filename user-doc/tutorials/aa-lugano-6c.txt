@@ -60,7 +60,7 @@ use the plumed \ref driver and VMD to choose to water molecule relatively far ap
 \section  lugano-6c-ex-2 Exercise 2: Proton transfer
 
 In this exercise you are challanged to
-- Select two water molecule to be kept far apart using UPPER_WALLS and the distance between their two oxygen atoms.
+- Select two water molecule to be kept far apart using \ref LOWER_WALLS and the distance between their two oxygen atoms.
 - Use the distances of an hydrogen from both oxygens to setup a first \ref METAD calculation to study the proton transfer between the selected water molecules
 - Test more complex CVs maybe taking into accout the role of the other molecules.
 - Think how to study proton transfer in a general way instead than between two specif water molecules and using a specific hydrongen.
