@@ -61,18 +61,15 @@ std::unique_ptr<Grid> WaveletGrid::setupGrid(const unsigned order, unsigned grid
   if (!use_mother_wavelet) {
     // Set up the scaling grid with correct properties
     grid.reset(new Grid("db"+std::to_string(order)+"_phi", {"position"}, {"0"},
-    {std::to_string(maxsupport)}, {gridsize}, false, true, true,
-    {false}, {"0."}, {"0."}));
+    {std::to_string(maxsupport)}, {gridsize}, false, true, {false}, {"0."}, {"0."}));
   }
   else {
     // if wavelet is wanted: get the needed coefficients as well
     std::vector<double> g_coeffs = getFilterCoefficients(order, false, type);
     g_Matvec = setupMatrices(g_coeffs);
 
-    grid.reset(new Grid(
-    "db"+std::to_string(order)+"_psi", {"position"}, {"0"},
-    {std::to_string(maxsupport)}, {gridsize}, false, true, true,
-    {false}, {"0."}, {"0."}));
+    grid.reset(new Grid("db"+std::to_string(order)+"_psi", {"position"}, {"0"},
+    {std::to_string(maxsupport)}, {gridsize}, false, true, {false}, {"0."}, {"0."}));
   }
 
   BinaryMap values = cascade(h_Matvec, g_Matvec, values_at_integers, recursion_number, bins_per_int, 0, use_mother_wavelet);
