@@ -115,7 +115,7 @@ In order to do so, normalize it adding the correct entropic term \f$ k_BT \log d
 a region where the free energy is approximately constant to represent the bulk region.
 You can for instance use the following commands in gnuplot
 \verbatim
-gnuplot> p "fes_dc" u 1:2 , "" u 1:($2+2.5*log($1)
+gnuplot> p "fes_dc" u 1:2 , "" u 1:($2+2.5*log($1**2))
 \endverbatim
 
 Below you can find reference results
