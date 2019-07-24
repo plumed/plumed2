@@ -15,7 +15,10 @@ Once this tutorial is completed students will
 
 \section lugano-6b-resources Resources
 
-The reference trajectory and other files can be obtained at  XXX
+The reference trajectory and other files can be obtained at this path
+\verbatim
+https://github.com/plumed/lugano2019/raw/master/lugano-6b.tgz
+\endverbatim
 
 This tutorial has been tested on v2.5 but it should also work with other versions of PLUMED.
 
@@ -129,7 +132,7 @@ A possible way to do so you can use \ref UPDATE_IF to extract portions of
 trajectory such that the Mg is bound or unbound.
 
 Below you can find reference results
-\image html lugano-6b-ffUB.png "Free energy as a function of coordination between Mg and water oxygens, both for Mg bound and unbound"
+\image html lugano-6b-ffcnUB.png "Free energy as a function of coordination between Mg and water oxygens, both for Mg bound and unbound"
 
 \subsection lugano-6b-ex-4 Exercise 4: Standard affinity
 
@@ -138,9 +141,9 @@ compute the standard affinity of the Mg to the phosphate. In order to do
 so you should compute the relative probability of seeing the Mg bound to the phosphate
 and in the bulk region.
 
-TO COMPLETE.
-
-\subsection 
+For instance, if you define bulk the region between 1.5 and 2.5 angstrom, you should multiply the 
+weight of the unbound state by a factor \f$ \frac{4\pi}{3}(2.5^3-1.5^3)/V_{mol} \f$
+where \f$V_{mol}=1.66\f$ is the volume corresponding to the inverse of 1 mol/L concentration.
 
 */
 
