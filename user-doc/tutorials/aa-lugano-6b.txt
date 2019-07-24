@@ -141,9 +141,9 @@ compute the absolute binding affinity of the Mg to the phosphate. In order to do
 so you should compute the relative probability of seeing the Mg bound to the phosphate
 and in the bulk region and normalize to 1 mol/M concentration.
 
-For instance, if you define bulk the region between 1.5 and 2.5 angstrom, you should divide the 
+For instance, if you define bulk the region between 1.5 and 2.5 nm, you should divide the 
 weight of the unbound state by a factor \f$ \frac{4\pi}{3}(2.5^3-1.5^3)/V_{mol} \f$
-where \f$V_{mol}=1.66\f$ is the volume corresponding to the inverse of 1 mol/L concentration.
+where \f$V_{mol}=1.66 nm^3\f$ is the volume corresponding to the inverse of 1 mol/L concentration.
 The absolute binding affinity is then defined as \f$-k_BT \log \frac{w_B}{w_U} \f$.
 You should obtain a value of approximately 50.4 kj/mol
 
