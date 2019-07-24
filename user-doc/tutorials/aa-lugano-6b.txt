@@ -145,6 +145,12 @@ For instance, if you define bulk the region between 1.5 and 2.5 angstrom, you sh
 weight of the unbound state by a factor \f$ \frac{4\pi}{3}(2.5^3-1.5^3)/V_{mol} \f$
 where \f$V_{mol}=1.66\f$ is the volume corresponding to the inverse of 1 mol/L concentration.
 
+You should obtain a value of approximately 50.4 kj/mol
+
+\warning
+This trajectory is not converged! To get a statistically significant number please run the simulation
+longer. Also remember that the result might depend a lot on the used force field.
+
 */
 
 link: @subpage lugano-6b 
