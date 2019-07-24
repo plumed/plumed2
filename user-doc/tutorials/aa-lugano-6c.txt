@@ -65,6 +65,9 @@ In this exercise you are challanged to
 - Test more complex CVs maybe taking into accout the role of the other molecules.
 - Think how to study proton transfer in a general way instead than between two specif water molecules and using a specific hydrongen.
 
+The number of steps in the simulation is initially set to 100, this should be increased so to allow a more extensive exploration of the conformational space.
+This simulation can be slow and is better run on a workstation with multiple processors.
+
 */
 
 link: @subpage lugano-6c 
