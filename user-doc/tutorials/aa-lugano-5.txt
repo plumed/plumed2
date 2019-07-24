@@ -182,7 +182,7 @@ pbeta: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1.0
 # determine how good our projection of the trajectory data is.
 cc2: COLLECT_FRAMES ARG=alpha,abeta,pbeta
 OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=cc2 ARG=cc2.* FILE=secondary_structure_data
-\endplumed
+\endplumedfile
 
 To generate the projection you run the command:
 
