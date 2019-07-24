@@ -88,3 +88,5 @@ In summary, in this tutorial you should have learned how to use PLUMED to:
 link: @subpage lugano-6d
 
 description: This tutorial propose a more complex case to test your own skill with a more realistic example 
+
+additional-files: lugano-6d
