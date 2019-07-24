@@ -15,10 +15,7 @@ Once this tutorial is completed students will
 
 \section lugano-6b-resources Resources
 
-The \tarball{lugano-6b} for this project contains the following files:
-
-- xx:
-- xx:
+The reference trajectory and other files can be obtained at  XXX
 
 This tutorial has been tested on v2.5 but it should also work with other versions of PLUMED.
 
@@ -32,10 +29,14 @@ no internal degree of freedom, and instead of a protein with a complex binding p
 We are also assuming to know which is the proper binding site, since we can easily guess that the most stable binding will
 happen on the phosphate.
 
-Since running these simulations on your laptop would take too long, you will be able to download 
-all the output files for a decently long simulation at this PATH.
+Since running these simulations on your laptop would take too long, you will start 
+with the output files obtained with a decently long simulation and analyse them.
 
-Before continuing, please read carefully the `plumed.dat` file since there you will find all the explanations
+\warning The trajectory is too short (approx 20ns) to obtain converged results! 
+To get real numbers, please run it longer.
+
+Before continuing, please read carefully the `plumed.dat` file that was used to produce the 
+simulation, since there you will find all the explanations
 about which variables were biased and how.
 
 In case you want to do analysis with python, you can use the included `plumed_pandas.py` module,
@@ -61,6 +62,17 @@ It works in this way:
 
 As the title says, just compute the free-energy landscape as a function of the biased collective variable
 (namely, distance between the Mg ion and the phosphate and coordination number of the Mg ion with water oxygens).
+You should just use \ref sum_hills with the usual options. In order to visualize the result with gnuplot
+you might use something like this:
+
+\verbatim
+gnuplot> set pm3d map
+gnuplot> p "fes.dat" u 1:2:3
+\endverbatim
+
+You should obtain a plot similar to this one:
+
+\image html lugano-6b-fes.png "Free energy as a function of distance from phosphate and coordination with water"
 
 \subsection lugano-6b-ex-2 Exercise 2: Visualizing the trajectory
 
@@ -98,10 +110,26 @@ The free energy as a function of the distance between Mg and geometric center of
 be used to identify the bulk region.
 In order to do so, normalize it adding the correct entropic term \f$ k_BT \log d^2 \f$, and find
 a region where the free energy is approximately constant to represent the bulk region.
+You can for instance use the following commands in gnuplot
+\verbatim
+gnuplot> p "fes_dc" u 1:2 , "" u 1:($2+2.5*log($1)
+\endverbatim
 
+Below you can find reference results
+
+\image html lugano-6b-ffdp.png "Free energy as a function of distance between Mg and phosphate"
+\image html lugano-6b-ffdc.png "Free energy as a function of distance between Mg and RNA center"
+\image html lugano-6b-ffcn.png "Free energy as a function of coordination between Mg and water oxygens"
+
+Also try to compute conditional free energies:
 - coordination number between Mg and water _assuming Mg is bound to phosphate_.
 - coordination number between Mg and water _assuming Mg is in the bulk_.
 
+A possible way to do so you can use \ref UPDATE_IF to extract portions of
+trajectory such that the Mg is bound or unbound.
+
+Below you can find reference results
+\image html lugano-6b-ffUB.png "Free energy as a function of coordination between Mg and water oxygens, both for Mg bound and unbound"
 
 \subsection lugano-6b-ex-4 Exercise 4: Standard affinity
 
