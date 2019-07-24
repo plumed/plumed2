@@ -1,5 +1,8 @@
 #!/bin/bash
 
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
 rm -rf spelling
 mkdir spelling
 # Get names of all actions and command line tools
@@ -19,7 +22,7 @@ cat spelling/keywords spelling/allkeys spelling_words.dict >> spelling/allwords.
 
 # This is everything we have done thus far
 for file in *PP.md automatic/*.txt ../CHANGES/*.md tutorials/*.txt tutorials/*.site tutorials/others/*.txt ; do
-    echo Checking spelling for file $file
+    # echo Checking spelling for file $file
     splits=`echo $file | sed -e 's/\// /g'`
     nf=`echo $splits | awk '{print NF}'`
     fname=`echo $splits | awk -v n=$nf '{print $n}'` 
@@ -44,8 +47,22 @@ for file in *PP.md automatic/*.txt ../CHANGES/*.md tutorials/*.txt tutorials/*.s
     nerrors=`wc -l spelling/$fname.err | awk '{print $1}'`
     # Crash out if there are spelling mistakes
     if [ $nerrors -gt 0 ] ; then 
-       echo "Found spelling mistakes in documentation file $file" 
-       cat spelling/$fname.err
-       exit 1
+       echo -e "$RED>>Found spelling mistakes in documentation file $file:$NC" >> spelling_results
+       cat spelling/$fname.err >> spelling_results
     fi
 done
+
+if test -z $TRAVIS ; then
+    cat spelling_results
+else
+    ASPELL_RESULTS=`cat spelling_results`
+
+    curl -i -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Content-Type: application/json" \
+    -X POST -d "{\"body\":\"$ASPELL_RESULTS\"}" \
+    https://api.github.com/repos/plumed/plumed2/comments/1 
+fi
+
+rm -f spelling_results
+
+exit 0
