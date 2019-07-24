@@ -10,10 +10,7 @@ used for the enhanced sampled algorithm.
 
 \section lugano-6a-lo Objectives
 
-Once this tutorial is completed students will
-
-- Know how to compile LAMMPS together with PLUMED
-- Have used PLUMED coupled with LAMMPS to perform an investigation of their own design
+Once this tutorial is completed students will have used PLUMED coupled with LAMMPS to perform an investigation of their own design.
 
 \section lugano-6a-resources Resources
 
@@ -43,75 +40,15 @@ that the method proposed is not a particularly good way to investigate the pheno
 
 \subsection lugano-6a-installation Installing LAMMPS with PLUMED
 
-You can get a copy of LAMMPS from this website:
-
-https://lammps.sandia.gov/download.html
-
-In preparing the material for this exercises I downloaded the latest stable release C++ source.  You can try to download the pre-built executables.  I did
-not do this, however, as I have a Mac and have broken many things on it in the past by using homebrew.  I therefore am, as a rule, distrustful of homebrew.
-I thus instead made a directory called:
+You can find the instructions about how to install LAMMPS patched with PLUMED here:
 
 \verbatim
-/Users/gareth/Plumed-tutorial/LAMMPS
+https://github.com/plumed/conda#install-lammps
 \endverbatim
-
-On my directory, I copied the downloaded LAMMPS tar ball into this directory and extracted it from the tar ball using the command:
-
-\verbatim
-tar -xvf lammps-5Jun19.tar
-\endverbatim
-
-Once this operation was completed I found that when I ls the LAMMPS directory I created I have the following files:
-
-\verbatim
-lammps-5Jun19     lammps-5Jun19.tar
-\endverbatim
-
-Before building LAMMPS I rebuilt a version of PLUMED to link with LAMMPS.  I did this using the following commands:
-
-\verbatim
-./configure --enable-modules=all --prefix=/Users/gareth/Plumed-tutorial/LAMMPS
-make 
-make install
-\endverbatim
-
-I set the --prefix flag here to the directory I created to hold my compiled version of LAMMPS here rather than using the default in order to be able to control exactly what version of PLUMED I was linking
-LAMMPS with.  Setting the prefix in this way ensures that once the above three commands have been run the contents of the LAMMPS directory I created in the first step are as follows:
-
-\verbatim
-bin               include           lammps-5Jun19     lammps-5Jun19.tar lib
-\endverbatim 
-
-To build LAMMPS we now issue the following commands:
-
-\verbatim
-cd lammps-5Jun19
-mkdir build
-cd build
-export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/Users/gareth/Plumed-tutorial/LAMMPS/lib/pkgconfig
-cmake -D PKG_MANYBODY=yes -D PKG_KSPACE=yes -D PKG_MOLECULE=yes -D PKG_RIGID=yes -D PKG_USER-PLUMED=yes ../cmake
-\endverbatim
-
-LAMMPS requires cmake, ffmpeg, gsl and xdrfile, which for some reason were not installed on my computer.  I therefore installed these packages using the commands:
-
-\verbatim
-sudo port install cmake
-sudo port install ffmpeg
-sudo port install gsl
-sudo port install xdrfile
-\endverbatim
-
-Finally now that cmake was installed I could build LAMMPS using the command:
-
-\verbatim
-make
-\endverbatim
-
-This generates an executable called lmp in the build directory, which is used for the remainder of the exercises in this tutorial.
 
 \subsection lugano-6a-setup-equilibration Setting up the simulation and equilibrating
 
-Having compiled LAMMPS we can now run a simulation with LAMMPS.  If we take the input lammps-equilibration.in that we downloaded from the tarball we can run this simulation using the following commands:
+We can now run a simulation with LAMMPS. If we take the input lammps-equilibration.in that we downloaded from the tarball we can run this simulation using the following commands:
 
 \verbatim
 touch plumed.dat
