@@ -75,7 +75,7 @@ td_uni: TD_UNIFORM
 
 td_gauss: TD_GAUSSIAN CENTER1=-2.0 SIGMA1=0.5
 
-td_comb: TD_LINEAR_COMBINATION DISTRIBUTIONS=td_uniform,td_gaussian
+td_comb: TD_LINEAR_COMBINATION DISTRIBUTIONS=td_uni,td_gauss
 \endplumedfile
 
 Here we employ a linear combination of a uniform and two Gaussian distribution.

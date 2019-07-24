@@ -254,12 +254,10 @@ export PLUMED_USE_ASMJIT=no
 
 
 In some case using a custom expression is almost as fast as using a hard-coded
-function. For instance, with an input like this one:
+function. For instance, with an input that contained the following lines:
 \plumedfile
-...
 c: COORDINATION GROUPA=1-108 GROUPB=1-108 R_0=1
 d_fast: COORDINATION GROUPA=1-108 GROUPB=1-108 SWITCH={CUSTOM FUNC=1/(1+x2^3) R_0=1}
-...
 \endplumedfile
 I (GB) obtained the following timings (on a Macbook laptop):
 \verbatim

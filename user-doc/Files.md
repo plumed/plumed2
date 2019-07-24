@@ -54,7 +54,7 @@ This means that using in a multi-replica context an input such as
 \plumedfile
 d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=COLVAR.gz
-METAD ARG=d FILE=test.HILLS SIGMA=0.1 HEIGHT=0.1
+METAD ARG=d FILE=test.HILLS SIGMA=0.1 HEIGHT=0.1 PACE=100
 \endplumedfile
 PLUMED will write files named COLVAR.0.gz, COLVAR.1.gz, test.0.HILLS, test.1.HILLS, etc
 etc. This is useful since the preserved extension makes it easy

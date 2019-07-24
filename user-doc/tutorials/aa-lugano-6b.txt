@@ -1,0 +1,42 @@
+/**
+\page lugano-6b Lugano tutorial: Computing binding free energies
+
+\section lugano-6b-aim Aims
+
+In this tutorial I will show you how you can use PLUMED and metadynamics to compute the affinity between two molecules.
+
+\section lugano-6b-lo Objectives
+
+Once this tutorial is completed students will
+
+- Know how to enhance binding between molecules using metadynamics.
+- Know how to compute standard affinities.
+
+\section lugano-6b-resources Resources
+
+The \tarball{lugano-6b} for this project contains the following files:
+
+- xx:
+- xx:
+
+This tutorial has been tested on v2.5 but it should also work with other versions of PLUMED.
+
+\section lugano-6b-intro Introduction
+
+For this tutorial we will consider a practical application. The system is actually taken from \cite cunha2017unraveling.
+It is one of the simplest systems studied in that paper, namely a guanine dinucleotide monophosphate binding a Mg ion.
+This is a very simple binding event, but a very similar procedure might be used to study binding of a ligand on a protein.
+The reason why this exercise is particularly simple is that instead of the ligand we have a single ion, thus with
+no internal degree of freedom, and instead of a protein with a complex binding pocket we have a dinucleotide.
+We are also assuming to know which is the proper binding site, since we can easily guess that the most stable binding will
+happen on the phosphate.
+
+\section lugano-6b-exercises Exercises
+
+*/
+
+link: @subpage lugano-6b 
+
+description: An exercise to compute binding free energies 
+
+additional-files: lugano-6b

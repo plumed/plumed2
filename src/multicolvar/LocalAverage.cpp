@@ -61,7 +61,7 @@ spherical regions.  The number of averaged coordination numbers that are greater
 
 \plumedfile
 COORDINATIONNUMBER SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=d1
-LOCAL_AVERAGE ARG=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MORE_THAN={RATIONAL R_0=4} LABEL=la
+LOCAL_AVERAGE SPECIES=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MORE_THAN={RATIONAL R_0=4} LABEL=la
 PRINT ARG=la.* FILE=colvar
 \endplumedfile
 
@@ -71,7 +71,7 @@ quantities that were used in the paper by Lechner and Dellago \cite dellago-q6
 
 \plumedfile
 Q4 SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=q4
-LOCAL_AVERAGE ARG=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=la
+LOCAL_AVERAGE SPECIES=q4 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN LABEL=la
 PRINT ARG=la.* FILE=colvar
 \endplumedfile
 

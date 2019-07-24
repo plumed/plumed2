@@ -113,7 +113,7 @@ td: TD_UNIFORM
 \endplumedfile
 \plumedfile
 TD_UNIFORM ...
- MINIMA=0.0,0,2
+ MINIMA=0.0,0.2
  MAXIMA=10.0,1.0
  LABEL=td
  ... TD_UNIFORM

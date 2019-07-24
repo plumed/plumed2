@@ -49,7 +49,7 @@ of each other and which is zero otherwise.  The columns in this matrix are then 
 The final quantity output in the colvar file is thus the average coordination number.
 
 \plumedfile
-aa: CONTACT_MATRIX ATOMS=1-6 SWITCH={EXP D_0=0.2 R_0=0.1 D_MAX=0.66}
+mat: CONTACT_MATRIX ATOMS=1-6 SWITCH={EXP D_0=0.2 R_0=0.1 D_MAX=0.66}
 COLUMNSUMS MATRIX=mat MEAN LABEL=csums
 PRINT ARG=csums.* FILE=colvar
 \endplumedfile

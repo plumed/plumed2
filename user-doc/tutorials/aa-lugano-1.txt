@@ -314,7 +314,7 @@ the GB1 protein:
 - traj-broken.xtc: the original GROMACS trajectory in which GB1 is broken by periodic boundary conditions
 - traj-whole.xtc: the trajectory processed by the `gmx trjconv` utility to fix PBCs discontinuities
 
-In many PLUMED CVs, PBCs are automatically taken into account unless a special option (\ref NOPBC) is used.
+In many PLUMED CVs, PBCs are automatically taken into account unless a special option (NOPBC) is used.
 In this way, the user can work directly with the raw trajectory `traj-broken.xtc`.
 Alternatively, PLUMED can reconstruct internally the coordinates of the system and thus fix discontinuities due to PBCs.
 In order to do so, the \ref WHOLEMOLECULES action should be used.
@@ -465,5 +465,3 @@ and then check that the custom CVs are indeed what they are expected by plotting
 link: @subpage lugano-1
 
 description: This tutorial explains the syntax of the PLUMED input file and how to use PLUMED to analyze CVs
-
-additional-files: lugano-1

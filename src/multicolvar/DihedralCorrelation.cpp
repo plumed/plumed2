@@ -67,11 +67,11 @@ about the topology of the protein molecule.  This means that you can specify tor
 
 \plumedfile
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
-DIHCOR ...
+dih: DIHCOR ...
 ATOMS1=@phi-3,@psi-3
 ATOMS2=@psi-3,@phi-4
-ATOMS4=@phi-4,@psi-4
-... DIHCOR
+ATOMS3=@phi-4,@psi-4
+...
 PRINT ARG=dih FILE=colvar STRIDE=10
 \endplumedfile
 

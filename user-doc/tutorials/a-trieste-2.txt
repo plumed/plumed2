@@ -105,7 +105,17 @@ Copy the contents of the box above to a plain text file called generate_data.py,
 > python generate_data.py > my_data
 \endverbatim
 
-This will generate a file called my_data that contains 10001 uniform random variables.  PLUMED will ignore the first number in the colvar file as it assumes
+This will generate a file called my_data that contains 10001 uniform random variables.  The first few lines of this file should look something like this:
+
+\auxfile{my_data}
+#! FIELDS time rand
+0 0.7880696770414992
+1 0.6384371499082688
+2 0.01373858851099563
+3 0.30879241147755776
+\endauxfile
+
+PLUMED will ignore the first number in the colvar file as it assumes
 this is the initial configuration you provided for the trajectory.  The sample mean will thus be calculated from 10000 random variables.  Plot this data now 
 using gnuplot and the command:
 
@@ -322,6 +332,16 @@ Copy the script above to a file called gen-normal.py and then execute the python
 > python gen-normal.py > mynormal
 \endverbatim
 
+This should produce a file called mynormal.  The first few lines of this file will look something like the following:
+
+\auxfile{mynormal}
+#! FIELDS time rand
+0 0.7216627600374712
+1 0.7460765782434674
+2 0.7753011891527442
+3 0.5643419178297695
+\endauxfile
+
 <b> 
 Use what you have learned from the exercises above to estimate the ensemble average from these generated data points using PLUMED.  If you want 
 you can use block averaging but it does not matter if you do it by just considering all the data in the input file.  What would you expect the ensemble average
@@ -431,6 +451,15 @@ Copy the python script above to a filled called correlated-data.py and then exec
 > python correlated-data.py > mycorr
 \endverbatim
 
+This should output a file called mycorr.  The first few lines of this file should look something like the following:
+
+\auxfile{mycorr}
+#! FIELDS time rand
+0 0.17818391042061332
+1 0.33368077871483476
+2 0.0834749323925259
+\endauxfile
+
 The autocorrelation function, \f$R(\tau)\f$ provides a simple method for determining whether or not there are correlations between the random variables, \f$X\f$,
 in our time series.  This function is defined as follows:
 
@@ -456,7 +485,7 @@ the analysis with PLUMED and explain the results that we get at each stage of th
 distribution using the following PLUMED input:
 
 \plumedfile
-data: READ FILE=my_data VALUES=rand
+data: READ FILE=mycorr VALUES=rand
 av5: AVERAGE ARG=data STRIDE=1 CLEAR=5
 PRINT ARG=av5 FILE=colvar5 STRIDE=5
 av10: AVERAGE ARG=data STRIDE=1 CLEAR=10
@@ -589,7 +618,17 @@ Copy this script to a filled called do-monte-carlo.py and execute the contents o
 \endverbatim
 
 This will run a short Monte Carlo simulation that generates (time-correlated) random data from a (roughly) Gaussian distribution by attempting 
-random translational moves of up to 0.1 units.  An autocorrelation function that was calculated 
+random translational moves of up to 0.1 units.  The command above will generate a file called mcdata the first few lines of which should look 
+somethign like the following:
+
+\auxfile{mcdata}
+#! FIELDS time rand
+0 0.17818391042061332
+1 0.33368077871483476
+2 0.0834749323925259
+\endauxfile
+
+An autocorrelation function that was calculated 
 using data generated using this script is shown below.  You can clearly see from this figure that there are correlations between 
 the adjacent data points in the time series and that we have to do block averaging as a result.
 

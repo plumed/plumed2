@@ -84,7 +84,7 @@ c1: COORDINATION GROUPA=group GROUPB=group R_0=0.3
 # Here's coordination within a single group:
 x: COORDINATION GROUPA=group R_0=0.3
 # This is just multiplying times 2 the variable x:
-c2: COMBINE ARG=x COEFFICIENTS=2
+c2: COMBINE ARG=x COEFFICIENTS=2 PERIODIC=NO
 
 # the two variables c1 and c2 should be identical, but the calculation of c2 is twice faster
 # since it runs on half of the pairs.
