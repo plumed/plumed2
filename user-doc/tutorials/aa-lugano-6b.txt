@@ -1,15 +1,16 @@
 /**
-\page lugano-6b Lugano tutorial: Computing binding free energies
+\page lugano-6b Lugano tutorial: Binding of a ion and a dinucleotide
 
 \section lugano-6b-aim Aims
 
-In this tutorial I will show you how you can use PLUMED and metadynamics to compute the affinity between two molecules.
+In this tutorial I will show you how you can use PLUMED and metadynamics to study the binding between a ion and a dinucleotide.
 
 \section lugano-6b-lo Objectives
 
 Once this tutorial is completed students will
 
 - Know how to enhance binding between molecules using metadynamics.
+- Know how to analyze metadynamics simulations.
 - Know how to compute standard affinities.
 
 \section lugano-6b-resources Resources
@@ -31,7 +32,87 @@ no internal degree of freedom, and instead of a protein with a complex binding p
 We are also assuming to know which is the proper binding site, since we can easily guess that the most stable binding will
 happen on the phosphate.
 
+Since running these simulations on your laptop would take too long, you will be able to download 
+all the output files for a decently long simulation at this PATH.
+
+Before continuing, please read carefully the `plumed.dat` file since there you will find all the explanations
+about which variables were biased and how.
+
+In case you want to do analysis with python, you can use the included `plumed_pandas.py` module,
+which is a preview of a feature that will be available in plumed 2.6.
+It requires pandas to be installed (use `conda install pandas`) and allows to extract
+colums from a COLVAR file by name.
+It works in this way:
+\verbatim
+> import plumed_pandas
+> import matplotlib.pyplot as plt
+> df=plumed_pandas.read_as_pandas("COLVAR")
+# shows the head of the file:
+> df.head()
+# plot distance between Mg and phosphate
+> plt.plot(df["dp"][:],".")
+# plot coordination number of Mg with water
+> plt.plot(df["cn"][:],".")
+\endverbatim
+
 \section lugano-6b-exercises Exercises
+
+\subsection lugano-6b-ex-1 Exercise 1: Computing the free energy as a function of the biased variables.
+
+As the title says, just compute the free-energy landscape as a function of the biased collective variable
+(namely, distance between the Mg ion and the phosphate and coordination number of the Mg ion with water oxygens).
+
+\subsection lugano-6b-ex-2 Exercise 2: Visualizing the trajectory
+
+This exercise is optional and is not needed to continue with the next points. However, it is 
+a very good idea to do it in order to have a better understanding of what the system is doing!
+
+Beware that the periodic boundary conditions were broken. You can adjust them using 
+PLUMED with an input like this one (please fill the gaps)
+
+\plumedfile
+MOLINFO STRUCTURE=conf.pdb
+WHOLEMOLECULES ENTITY0=@nucleic
+c: CENTER ATOMS=@nucleic
+mg:  GROUP ATOMS=__FILL__ # find the serial number of the Mg ion
+WRAPAROUND AROUND=c ATOMS=mg
+
+# check documentation of WRAPAROUND!
+# you should also know how many atoms make a water molecule
+WRAPAROUND AROUND=c ATOMS=@water GROUPBY=__FILL__
+
+# dump your trajectory
+DUMPATOMS ATOMS=@mdatoms FILE=whole.xtc STRIDE=10
+# writing all atoms you will be able to reuse the same pdb for opening.
+# e.g. vmd conf.pdb whole.xtc
+\endplumedfile
+
+\subsection lugano-6b-ex-3 Exercise 3: Reweighting your free energy
+
+Now reweight your free energy and compute it as a function of:
+- distance between Mg and phosphate
+- distance between Mg and geometric center of RNA
+- coordination number between Mg and water
+
+The free energy as a function of the distance between Mg and geometric center of RNA can 
+be used to identify the bulk region.
+In order to do so, normalize it adding the correct entropic term \f$ k_BT \log d^2 \f$, and find
+a region where the free energy is approximately constant to represent the bulk region.
+
+- coordination number between Mg and water _assuming Mg is bound to phosphate_.
+- coordination number between Mg and water _assuming Mg is in the bulk_.
+
+
+\subsection lugano-6b-ex-4 Exercise 4: Standard affinity
+
+Now use the weights that you computed in the previous exercise to
+compute the standard affinity of the Mg to the phosphate. In order to do
+so you should compute the relative probability of seeing the Mg bound to the phosphate
+and in the bulk region.
+
+TO COMPLETE.
+
+\subsection 
 
 */
 
