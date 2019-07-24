@@ -70,7 +70,7 @@ you might use something like this:
 
 \verbatim
 gnuplot> set pm3d map
-gnuplot> p "fes.dat" u 1:2:3
+gnuplot> sp "fes.dat" u 1:2:3
 \endverbatim
 
 You should obtain a plot similar to this one:
@@ -97,7 +97,7 @@ WRAPAROUND AROUND=c ATOMS=mg
 WRAPAROUND AROUND=c ATOMS=@water GROUPBY=__FILL__
 
 # dump your trajectory
-DUMPATOMS ATOMS=@mdatoms FILE=whole.xtc STRIDE=10
+DUMPATOMS ATOMS=@mdatoms FILE=whole.xtc
 # writing all atoms you will be able to reuse the same pdb for opening.
 # e.g. vmd conf.pdb whole.xtc
 \endplumedfile
