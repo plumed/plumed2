@@ -21,7 +21,7 @@ Once this tutorial is completed students will
 
 \section lugano-5-resources Resources
 
-The \tarball{lugano-4} for this project contains the following files:
+The \tarball{lugano-5} for this project contains the following files:
 
 - beta-hairpin.pdb : A pdb file containing the protein that we are going to study in this tutorial in a beta hairpin configuration.  This input will be used as a template so that we can use the names of special groups in many of the inputs that follow.
 
