@@ -17,7 +17,7 @@ Once this tutorial is completed students will
 
 The reference trajectory and other files can be obtained at this path
 \verbatim
-https://github.com/plumed/lugano2019/raw/master/lugano-6b.tgz
+wget https://github.com/plumed/lugano2019/raw/master/lugano-6b.tgz
 \endverbatim
 
 This tutorial has been tested on v2.5 but it should also work with other versions of PLUMED.
@@ -35,8 +35,8 @@ happen on the phosphate.
 Since running these simulations on your laptop would take too long, you will start 
 with the output files obtained with a decently long simulation and analyse them.
 
-\warning The trajectory is too short (approx 20ns) to obtain converged results! 
-To get real numbers, please run it longer.
+\warning The trajectory is too short (approx 20ns) to obtain converged results!
+To get statistically significant numbers, please run it longer.
 
 Before continuing, please read carefully the `plumed.dat` file that was used to produce the 
 simulation, since there you will find all the explanations
@@ -147,9 +147,9 @@ where \f$V_{mol}=1.66\f$ is the volume corresponding to the inverse of 1 mol/L c
 
 You should obtain a value of approximately 50.4 kj/mol
 
-\warning
-This trajectory is not converged! To get a statistically significant number please run the simulation
-longer. Also remember that the result might depend a lot on the used force field.
+\warning The trajectory is too short (approx 20ns) to obtain converged results!
+To get statistically significant numbers, please run it longer.
+Also notice that the result might depend a lot on the used force field.
 
 */
 
