@@ -3,7 +3,7 @@ ifneq ($(MAKECMDGOALS),clean)
   -include ../Makefile.conf
 endif
 
-.PHONY: all clean
+.PHONY: all clean spelling
 
 plumed_compiled := $(wildcard ../src/lib/plumed)
 
@@ -24,6 +24,9 @@ ifeq ($(make_doc),yes)
 	./report_errors
 endif
 endif
+
+spelling:
+	./go-spelling
 
 clean:
 	rm -fr html latex automatic *~ *PP.txt *PP.md errors manual.pdf regtests
