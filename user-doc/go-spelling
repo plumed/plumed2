@@ -59,7 +59,7 @@ if [ ! -f spelling_results ] ; then
 fi
 
 if test -z $TRAVIS ; then
-    cat spelling_results   # | sed -e s/\\n/^M/g
+    awk '{for(i=1;i<=NF;++i){ if($i=="\\n") {printf("\n"); } else {printf("%s ", $i)} }}' spelling_results
 # If not a pull request add a comment on the commit message
 elif [ $TRAVIS_PULL_REQUEST=="false" ] ; then
     ASPELL_RESULTS=`cat spelling_results`
