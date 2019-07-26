@@ -161,7 +161,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
       if( fixed[0]!=0 ) error("input to --fixed should be two integers");
       fixed.resize(2); fixed[0]=0; fixed[1]=frames.size()-1;
     } else if( fixed.size()==2 ) {
-      if( fixed[0]<0 || fixed[1]<0 || fixed[0]>(frames.size()-1) || fixed[1]>(frames.size()-1) ) {
+      if( fixed[0]>(frames.size()-1) || fixed[1]>(frames.size()-1) ) {
         error("input to --fixed should be two numbers between 0 and the number of frames-1");
       }
     } else {
