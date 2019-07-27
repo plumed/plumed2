@@ -93,13 +93,13 @@ rm -rf FOURIER_TRANSFORM.txt
 # These are problems that Max and Carlo need to fix
 rm -rf NOE.txt SAXS.txt RDC.txt LOCALENSEMBLE.txt EEFSOLV.txt EMMI.txt METAINFERENCE.txt/2.dat
 # These are problems for Giovanni to fix
-rm -rf PIECEWISE.txt PUCKERING.txt/ MiscelaneousPP.md/19.dat
+rm -rf PIECEWISE.txt PUCKERING.txt/ 
 # These are things for Omar to fix
 rm -rf VES_OUTPUT_FES.txt/ VES_LINEAR_EXPANSION.txt/
 # Not sure how to get this to work - won't compile on my laptop GAT
 rm -rf DRR.txt 
 # Stuff in tutorials that doesn't quite work
-rm -f a-trieste-6.txt/1.dat a-trieste-6.txt/2.dat 
+rm -f a-trieste-6.txt/1.dat a-trieste-6.txt/2.dat Miscellaneous/17.dat
 rm -rf isdb-1.txt isdb-2.txt performance-optimization.txt
 rm -rf ves-lugano2017-02-ves1.txt ves-lugano2017-03-ves2.txt ves-lugano2017-04-kinetics.txt  
 
@@ -128,11 +128,10 @@ for dir in * ; do
         fi
 
         # Now running test with PLUMED
-        nsnip=`grep snip $file | wc -l | awk '{print $1}'`
         nload=`grep "LOAD" $file | wc -l | awk '{print $1}'`
         # Want to get rid of these
         ntarget=`grep "TARGET=" $file | wc -l | awk '{print $1}'`
-        if [ $nsnip -eq 0 ] &&  [ $nload -eq 0 ] && [ $nfill -eq 0 ] ; then
+        if [ $nload -eq 0 ] && [ $nfill -eq 0 ] ; then
             hasrep=0
             settings=`grep "#SETTINGS" $file | wc -l | awk '{print $1}'`
             if [ $settings -gt 0 ] ; then
@@ -154,8 +153,6 @@ for dir in * ; do
             echo WARNING: FILE named $dir/$file tries to LOAD external functionality
         elif [ $nfill -gt 0 ] ; then
             echo ERROR: File named $dir/$file contains a FILL statement
-        else 
-            echo ERROR: File named $dir/$file contains a snip
         fi
    done
    cd ../
