@@ -402,19 +402,19 @@ d: <a href="../../user-doc/html/_d_i_s_t_a_n_c_e.html" style="color:green">DISTA
 <a href="../../user-doc/html/_r_e_s_t_r_a_i_n_t.html" style="color:green">RESTRAINT</a> ARG=d AT=@replicas:1.0,1.1,1.2 KAPPA=1.0
 </pre>
 
-This must be included in a plumedmultiplereplicafile environment as shown below:
+Then you must specify that the input is to be run on three replicas in the first (SETTINGS) line of the input file as shown below: 
 
 \verbatim
-\plumedmultiplereplicafile{3}
+\plumedfile{3}
+#SETTINGS NREPLICAS=3
 # Compute a distance
 d: DISTANCE ATOMS=1,2
 # Apply a restraint.
 RESTRAINT ARG=d AT=@replicas:1.0,1.1,1.2 KAPPA=1.0
-\ endplumedmultiplereplicafile /*** But with no space between the \ and the endmultiplereplicasfile
+\ endplumedfile /*** But with no space between the \ and the endplumedfile
 \endverbatim
 
-The 3 in braces after the plumedmultiplereplicafile environment command tells the script that checks the examples when constructing the user manual that this
-calculation must be run using three parallel replicas.
+Notice that there should not be a space between the hash sign at the start of this line and word settings. 
 
 \subsection auxfileeg Including example inputs that require an auxiliary file
 
