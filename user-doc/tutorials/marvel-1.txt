@@ -56,7 +56,7 @@ a PLUMED input file.  Before we get on to writing input files for PLUMED there i
 on what the other PLUMED tools do and instructions for how to interface PLUMED with an MD code.  You may like to look at this information
 now or you might prefer to return after you have finished the exercises here.
 
-\subsection marvel-1-units PLUMED's internal units
+\subsection marvel-1-units The PLUMED internal units
 
 By default the PLUMED inputs and outputs quantities in the following units:
 

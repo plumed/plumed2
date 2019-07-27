@@ -945,3 +945,8 @@ gsl
 lmp
 equilibrating
 equilibrates
+trjconv
+initio
+inp
+dinucleotide
+monophosphate

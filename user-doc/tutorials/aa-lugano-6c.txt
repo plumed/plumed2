@@ -29,10 +29,10 @@ CP2K input for real-life applications.
 \section lugano-6c-exercises Exercises
 
 In this example the system is initially in a configuration where there are H3O+ and an OH- molecule separated by a few
-other water molecules. In a standard MD the system will quickly equilbrate. Here the aim is to use metadynamics to estimate
+other water molecules. In a standard MD the system will quickly equilibrate. Here the aim is to use metadynamics to estimate
 the free energy of this process and to understand the role of the solvent. 
 
-CP2K includes natively the interface for PLUMED but it must be compiled using the proper flags, check CP2K installation instructions.
+When you download CP2K it already includes the interface for PLUMED but it must be compiled using the proper flags, check CP2K installation instructions.
 
 
 \section lugano-6c-ex-1 Exercise 1: Preliminary run 
@@ -49,7 +49,7 @@ H-transfer.inp. In particular here the section to enable PLUMED is commented out
 # &END FREE_ENERGY
 \endverbatim
 
-To run a prelimnary simulation it is enough to:
+To run a preliminary simulation it is enough to:
 
 \verbatim
 cp2k.sopt H-transfer.inp >& log &
@@ -59,11 +59,11 @@ use the plumed \ref driver and VMD to choose to water molecule relatively far ap
 
 \section  lugano-6c-ex-2 Exercise 2: Proton transfer
 
-In this exercise you are challanged to
+In this exercise you are challenged to
 - Select two water molecule to be kept far apart using \ref LOWER_WALLS and the distance between their two oxygen atoms.
-- Use the distances of an hydrogen from both oxygens to setup a first \ref METAD calculation to study the proton transfer between the selected water molecules
-- Test more complex CVs maybe taking into accout the role of the other molecules.
-- Think how to study proton transfer in a general way instead than between two specif water molecules and using a specific hydrongen.
+- Use the distances of an hydrogen from both oxygen atoms to setup a first \ref METAD calculation to study the proton transfer between the selected water molecules
+- Test more complex CVs maybe taking into account the role of the other molecules.
+- Think how to study proton transfer in a general way instead than between two specif water molecules and using a specific hydrogen.
 
 The number of steps in the simulation is initially set to 100, this should be increased so to allow a more extensive exploration of the conformational space.
 This simulation can be slow and is better run on a workstation with multiple processors.
