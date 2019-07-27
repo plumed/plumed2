@@ -168,10 +168,10 @@ The following example prints the distance corresponding to the hydrogen bonds
 in a GC Watson-Crick pair.
 
 \plumedfile
-MOLINFO STRUCTURE=reference.pdb
-hb1: DISTANCE ATOMS=@N2-1,@O2-14
-hb2: DISTANCE ATOMS=@N1-1,@N3-14
-hb3: DISTANCE ATOMS=@O6-1,@N4-14
+MOLINFO STRUCTURE=reference.pdb MOLTYPE=dna
+hb1: DISTANCE ATOMS=@N2-2,@O2-15
+hb2: DISTANCE ATOMS=@N1-2,@N3-15
+hb3: DISTANCE ATOMS=@O6-2,@N4-15
 PRINT ARG=hb1,hb2,hb3
 \endplumedfile
 
