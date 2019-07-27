@@ -112,7 +112,7 @@ NOISETYPE=MGAUSS
 PARAMETERS=1.9190,2.9190,3.9190,4.9190
 SCALEDATA SCALE0=1 SCALE_MIN=0.1 SCALE_MAX=3 DSCALE=0.01
 SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.01
-SIGMA_MEAN=0.001
+SIGMA_MEAN0=0.001
 LABEL=spe
 ... METAINFERENCE
 
@@ -124,6 +124,16 @@ a single uncertainty value in a long-tailed gaussian to take into account for ou
 the data are weighted for the bias applied to other variables of the system.
 
 \plumedfile
+RDC ...
+LABEL=rdc
+SCALE=0.0001
+GYROM=-72.5388
+ATOMS1=22,23
+ATOMS2=25,27
+ATOMS3=29,31
+ATOMS4=33,34
+... RDC
+
 cv1: TORSION ATOMS=1,2,3,4
 cv2: TORSION ATOMS=2,3,4,5
 mm: METAD ARG=cv1,cv2 HEIGHT=0.5 SIGMA=0.3,0.3 PACE=200 BIASFACTOR=8 WALKERS_MPI
