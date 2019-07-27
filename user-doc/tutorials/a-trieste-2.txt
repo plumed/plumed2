@@ -405,7 +405,7 @@ reweighted histogram.
 
 \plumedfile
 UNITS NATURAL # This ensures that Boltzmann's constant is one
-data: READ FILE=mynormal VALUES=rand IGNORE_FORCES
+data: READ FILE=normal_data VALUES=rand IGNORE_FORCES
 mm: RESTRAINT ARG=data AT=0.6 KAPPA=33.333
 rw: REWEIGHT_BIAS TEMP=1
 hh: HISTOGRAM ARG=data STRIDE=1 GRID_MIN=0 GRID_MAX=1.0 GRID_BIN=20 KERNEL=DISCRETE LOGWEIGHTS=rw
