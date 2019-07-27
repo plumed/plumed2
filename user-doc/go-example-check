@@ -16,16 +16,6 @@ for file in *PP.md automatic/*.txt ../CHANGES/*.md tutorials/*.txt tutorials/*.s
            else if( $1=="\\plumedfile" ){ inp=1; }
            else if( inp==1 ){ print $0; }  
          }' > example-check/$fname.dat
-    # Multiple replica examples
-    splits=`echo $file | sed -e 's/\// /g'`
-    nf=`echo $splits | awk '{print NF}'`
-    fname=`echo $splits | awk -v n=$nf '{print $n}'`
-    cat $file |
-    awk 'BEGIN{inp=0;}{
-           if( $1=="\\endplumedmultireplicafile" ){ print ">>END OF EXAMPLE>>"; inp=0; }
-           else if( match($1,"plumedmultireplicafile") ){ inp=1; print "# " $0 }
-           else if( inp==1 ){ print $0; }  
-         }' >> example-check/$fname.dat
     # Count the number of examples found in the input
     neg=`grep ">>END OF EXAMPLE>>" example-check/$fname.dat | wc -l | awk '{print $1}'`
     if [ $neg -gt 0 ] ; then
@@ -143,9 +133,13 @@ for dir in * ; do
         # Want to get rid of these
         ntarget=`grep "TARGET=" $file | wc -l | awk '{print $1}'`
         if [ $nsnip -eq 0 ] &&  [ $nload -eq 0 ] && [ $nfill -eq 0 ] ; then
-            hasrep=`grep plumedmultireplicafile $file | wc -l | awk '{print $1}'`
+            hasrep=0
+            settings=`grep "#SETTINGS" $file | wc -l | awk '{print $1}'`
+            if [ $settings -gt 0 ] ; then
+                 hasrep=`grep "#SETTINGS" $file | grep "NREPLICAS=" | wc -l | awk '{print $1}'`
+            fi
             if [ $hasrep -gt 0 ] ; then
-                nrep=`grep plumedmultireplicafile $file | awk '{print $2}' | sed -e 's/\\\plumedmultireplicafile{//' | sed -e 's/}//'`
+                nrep=`grep "#SETTINGS" $file | awk '{for(i=1;i<=NF;++i){if(match($i,"NREPLICAS=")){print $i}}}' | sed -e 's/NREPLICAS=//'`
                 mpirun -np $nrep ../../../src/lib/plumed driver --natoms 100000 --parse-only --kt 2.49 --plumed $file --multi $nrep > check.log 
             else 
                 ../../../src/lib/plumed driver --natoms 100000 --parse-only --kt 2.49 --plumed $file > check.log

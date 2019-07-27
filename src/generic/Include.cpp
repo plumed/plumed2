@@ -121,12 +121,12 @@ a file for reading it looks for a file with the replica suffix first.
 This is true also for files opened by INCLUDE!
 
 As an example, the same result of the inputs above could have been obtained using
-`plumed.dat`:
-\plumedmultireplicafile{2}
-# this is plumed.dat
+the following `plumed.dat` file:
+\plumedfile
+#SETTINGS NREPLICAS=2
 t: TORSION ATOMS=1,2,3,4
 INCLUDE FILE=other.inc
-\endplumedmultireplicafile
+\endplumedfile
 Then `other.0.inc`:
 \plumedincludefile
 # this is other.0.inc

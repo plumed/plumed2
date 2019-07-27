@@ -138,7 +138,8 @@ is updated every 500 iterations (e.g. every 1000 ps). The target distribution is
 also output to a file every 2000 iterations (the TARGETDIST_OUTPUT keyword).
 Here we also employ MULTIPLE_WALKERS flag to enable the usage of
 multiple walkers.
-\plumedmultireplicafile{2}
+\plumedfile
+#SETTINGS NREPLICAS=2
 phi:   TORSION ATOMS=5,7,9,15
 psi:   TORSION ATOMS=7,9,15,17
 
@@ -172,7 +173,7 @@ OPT_AVERAGED_SGD ...
   TARGETDIST_STRIDE=500
   TARGETDIST_OUTPUT=2000
 ... OPT_AVERAGED_SGD
-\endplumedmultireplicafile
+\endplumedfile
 
 
 
