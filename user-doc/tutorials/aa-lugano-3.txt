@@ -354,7 +354,7 @@ If you want PLUMED to do the histograms for you, you can just add the following
 lines that you learned in \ref lugano-2 to the plumed input file:
 
 \plumedfile
-as: REWEIGHT_BIAS ARG=metad.bias
+as: REWEIGHT_BIAS ARG=__FILL__
 
 hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
 hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as

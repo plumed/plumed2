@@ -139,12 +139,12 @@ METAD ...
   PACE=100
   SIGMA=@replicas:0.1,0.3
   GRID_MIN=@replicas:0.0,-pi
-  GRID_MAX=@replicas:2.0,+pi
+  GRID_MAX=@replicas:2.0,pi
 ...
 # On replica 0, this means:
 #  METAD ARG=d HEIGHT=1.0 PACE=100 SIGMA=0.1 GRID_MIN=0.0 GRID_MAX=2.0
 # On replica 1, this means:
-#  METAD ARG=t HEIGHT=1.0 PACE=100 SIGMA=0.3 GRID_MIN=-pi GRID_MAX=+pi
+#  METAD ARG=t HEIGHT=1.0 PACE=100 SIGMA=0.3 GRID_MIN=-pi GRID_MAX=pi
 \endplumedfile
 
 This would be a typical setup for a bias exchange simulation.
@@ -194,7 +194,7 @@ RESTRAINT ...
     {3.0,4.0}
     {5.0,6.0}
   }
-  KAPPA=1.0
+  KAPPA=1.0,1.0
 ...
 \endplumedfile
 
