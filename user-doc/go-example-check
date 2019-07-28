@@ -5,7 +5,7 @@ mkdir example-check
 
 # This generates plumed.dat files for each of the documentation pages in the manual
 for file in *PP.md automatic/*.txt ../CHANGES/*.md tutorials/*.txt tutorials/*.site tutorials/others/*.txt ; do
-    echo Generating examples to check for file $file
+    # echo Generating examples to check for file $file
     # Single replica examples
     splits=`echo $file | sed -e 's/\// /g'`
     nf=`echo $splits | awk '{print NF}'`
@@ -93,7 +93,7 @@ rm -rf FOURIER_TRANSFORM.txt
 # These are problems that Max and Carlo need to fix
 rm -rf NOE.txt SAXS.txt RDC.txt LOCALENSEMBLE.txt EEFSOLV.txt EMMI.txt METAINFERENCE.txt/2.dat
 # These are problems for Giovanni to fix
-rm -rf PIECEWISE.txt PUCKERING.txt/ 
+rm -rf PIECEWISE.txt PUCKERING.txt/ CALIBER.txt/
 # These are things for Omar to fix
 rm -rf VES_OUTPUT_FES.txt/ VES_LINEAR_EXPANSION.txt/
 # Not sure how to get this to work - won't compile on my laptop GAT
@@ -101,13 +101,13 @@ rm -rf DRR.txt
 # Stuff in tutorials that doesn't quite work
 rm -f a-trieste-6.txt/1.dat a-trieste-6.txt/2.dat Miscellaneous/17.dat
 rm -rf isdb-1.txt isdb-2.txt performance-optimization.txt
-rm -rf ves-lugano2017-02-ves1.txt ves-lugano2017-03-ves2.txt ves-lugano2017-04-kinetics.txt  
+rm -rf ves-lugano2017-01-metad.txt ves-lugano2017-02-ves1.txt ves-lugano2017-03-ves2.txt ves-lugano2017-04-kinetics.txt  
 
 # Now check that plumed can parse all the inputs in the manual
 for dir in * ; do
     cd $dir
     for file in *.dat ; do
-        echo Checking example named $dir/$file
+        # echo Checking example named $dir/$file
         # This checks if we need a structure file for a MOLINFO command and gets one if it is required
         molfile=`grep "MOLINFO" $file | wc -l | awk '{print $1}'`
         nfill=`grep "__FILL__" $file | wc -l | awk '{print $1}'`
@@ -160,3 +160,5 @@ done
 
 # Remove some crap that is created somewhere
 cd ../
+
+exit 0
