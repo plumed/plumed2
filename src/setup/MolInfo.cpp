@@ -160,6 +160,7 @@ In the following example the MOLINFO command is used to provide the information 
 are in the backbone of a protein to the ALPHARMSD CV.
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=reference.pdb
 ALPHARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
 \endplumedfile
@@ -168,6 +169,7 @@ The following example prints the distance corresponding to the hydrogen bonds
 in a GC Watson-Crick pair.
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt-ermsd/ref.pdb
 MOLINFO STRUCTURE=reference.pdb MOLTYPE=dna
 hb1: DISTANCE ATOMS=@N2-2,@O2-15
 hb2: DISTANCE ATOMS=@N1-2,@N3-15
@@ -178,6 +180,7 @@ PRINT ARG=hb1,hb2,hb3
 This example use MOLINFO to calculate torsion angles
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 t1: TORSION ATOMS=@phi-3
 t2: TORSION ATOMS=@psi-4

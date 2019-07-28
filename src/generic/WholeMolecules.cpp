@@ -91,6 +91,7 @@ This command instructs plumed to reconstruct the chain of backbone atoms in a
 protein
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES RESIDUES=all MOLTYPE=protein
 \endplumedfile

@@ -478,7 +478,25 @@ checks the input will complain.
 
 \subsection molfileeg Using MOLFILE in your example input files
 
-To be written
+If you use have used a \ref MOLINFO command in the example input that you specified as has been done here:
+
+<pre class="fragment">
+<a href="./_m_o_l_i_n_f_o.html" style="color:green">MOLINFO</a> STRUCTURE=helix.pdb
+<a href="./_w_h_o_l_e_m_o_l_e_c_u_l_e_s.html" style="color:green">WHOLEMOLECULES</a> ENTITY0=1-100
+alpha: <a href="./_a_l_p_h_a_r_m_s_d.html" style="color:green">ALPHARMSD</a> RESIDUES=all TYPE=OPTIMAL R_0=0.1
+</pre> 
+
+Then you must provide information on the location from whence PLUMED can the reference input so that the example checking script can copy the input
+for the MOLINFO.   The above input would thus be included in the manual as shown below:
+
+\verbatim
+\plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+MOLINFO STRUCTURE=helix.pdb
+WHOLEMOLECULES ENTITY0=1-100
+alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1
+\ endplumedfile    /*** But with no space between the \ and the endplumedfile
+\endverbatim
 
 \section tutorials Writing how-to instructions
 

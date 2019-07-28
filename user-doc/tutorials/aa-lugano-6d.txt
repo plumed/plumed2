@@ -61,6 +61,7 @@ Once you are satisfied by the convergence of your simulation, you can use one of
 to evaluate the free-energy difference between folded and unfolded state as a function of multiple collective variables. 
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-6d/GB1_native.pdb
 #this allows you to use short-cut for dihedral angles
 MOLINFO STRUCTURE=GB1_native.pdb
 

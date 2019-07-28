@@ -643,6 +643,7 @@ You might have noticed that from time to time constants are specified using stri
 An example is the following
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
 MOLINFO STRUCTURE=AA.pdb  MOLTYPE=rna
 e1: TORSION ATOMS=@epsilon-1
 t: METAD ARG=e1 SIGMA=0.15 PACE=10 HEIGHT=2 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=200
@@ -654,6 +655,7 @@ as `0.5pi` and `-pi`. However, as of version 2.4, we use the Lepton library in o
 that we read. This means that you can also employ more complicated expressions such as `1+2` or `exp(10)`:
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
 MOLINFO STRUCTURE=AA.pdb  MOLTYPE=rna
 e1: TORSION ATOMS=@epsilon-1
 RESTRAINT ARG=e1 AT=1+0.5

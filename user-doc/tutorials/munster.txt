@@ -248,6 +248,7 @@ the atomic positions. This is a very good way to understand what \ref WHOLEMOLEC
 is actually doing. Try the following input
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/munster/TOPO/reference.pdb
 MOLINFO STRUCTURE=reference.pdb
 DUMPATOMS FILE=test1.gro ATOMS=1-22
 WHOLEMOLECULES ENTITY0=1-22

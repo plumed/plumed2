@@ -5,7 +5,7 @@ mkdir example-check
 
 # This generates plumed.dat files for each of the documentation pages in the manual
 for file in *PP.md automatic/*.txt ../CHANGES/*.md tutorials/*.txt tutorials/*.site tutorials/others/*.txt ; do
-    #echo Generating examples to check for file $file
+    # echo Generating examples to check for file $file
     # Single replica examples
     splits=`echo $file | sed -e 's/\// /g'`
     nf=`echo $splits | awk '{print NF}'`
@@ -97,19 +97,14 @@ for dir in * ; do
         molfile=`grep "MOLINFO" $file | wc -l | awk '{print $1}'`
         nfill=`grep "__FILL__" $file | wc -l | awk '{print $1}'`
         if [ $molfile -gt 0 ] && [ $nfill -eq 0 ] ; then
-             hasermds=`grep "ERMSD" $file | wc -l | awk '{print $1}'`
-             isdna=`grep "MOLTYPE=dna" $file | wc -l | awk '{print $1}'`
-             isrna=`grep "MOLTYPE=rna" $file | wc -l | awk '{print $1}'`
-             inpf=`grep "STRUCTURE=" $file | awk '{for(i=1;i<=NF;++i){ if($i ~ /STRUCTURE=/){ print $i; }}}' | sed -e 's/STRUCTURE=//'`
-             if [ $hasermds -gt 0 ] ; then
-                cp ../../../regtest/basic/rt-ermsd/ref.pdb $inpf
-             elif [ $isdna -gt 0 ] ; then
-                cp ../../../regtest/basic/rt-ermsd/ref.pdb $inpf
-             elif [ $isrna -gt 0 ] ; then
-                cp ../../../regtest/basic/rt65/AA.pdb $inpf
-             else 
-                cp ../../../regtest/basic/rt32/helix.pdb $inpf
+             hasmol=`grep "#SETTINGS" $file | grep "MOLFILE=" | wc -l | awk '{print $1}'`
+             if [ $hasmol -eq 0 ] ; then
+                  echo For example $file in $dir you need to include a MOLFILE= keyword in the SETTINGS line
+                  exit 1 
              fi
+             molname=`grep "#SETTINGS" $file | awk '{for(i=1;i<=NF;++i){if(match($i,"MOLFILE=")){print $i}}}' | sed -e 's/MOLFILE=//'`
+             inpf=`grep "STRUCTURE=" $file | awk '{for(i=1;i<=NF;++i){ if($i ~ /STRUCTURE=/){ print $i; }}}' | sed -e 's/STRUCTURE=//'`
+             cp ../../../$molname $inpf
         fi
 
         # Now running test with PLUMED

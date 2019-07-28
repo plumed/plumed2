@@ -121,6 +121,7 @@ As a first test lets run an MD and generate on-the-fly the free energy as a func
 This is an example input file to calculate the phi and psi angles on the fly and accumulate two 1D histograms from which calculating the free energy.
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
@@ -178,6 +179,7 @@ The function and the resulting parameters can be used to run a new biased simula
 To the above file we add a few lines to define using \ref CUSTOM a function of the angle phi.
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
@@ -217,6 +219,7 @@ We can now run a third simulation where both regions are biased.
 \section lugano-2-ex-3 Exercise 3: Second biased run with alanine dipeptide
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
 MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
 psi: TORSION ATOMS=@psi-2
@@ -244,6 +247,7 @@ is flatter than the former even if not flat everywhere. Now it is possible to re
 and obtain a better free energy estimate along phi.
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=diala.pdb
 
@@ -328,6 +332,7 @@ gmx trjcat -f traj*.xtc -cat -o concatenated.xtc
 2) calculate the values for all employed biases applied on each frame
 for this we can write a plumed-wham.dat file including all the biases used in the former simulations:
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
@@ -391,7 +396,7 @@ is presented in the following but the exercise is possible only if plumed is com
 Here we use the "replica" syntax of plumed to write a single plumed input file for all the windows:
 
 \plumedfile
-#SETTINGS FILENAME=plumed.dat
+#SETTINGS FILENAME=plumed.dat MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
 # this is plumed.dat
 # vim:ft=plumed
 MOLINFO STRUCTURE=diala.pdb

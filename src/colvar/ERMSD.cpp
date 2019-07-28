@@ -94,6 +94,7 @@ Calculate the eRMSD from reference structure reference.pdb using the default cut
 considering residues 1,2,3,4,5,6.
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt-ermsd/ref.pdb 
 MOLINFO STRUCTURE=reference.pdb
 eRMSD1: ERMSD REFERENCE=reference.pdb ATOMS=@lcs-1,@lcs-2,@lcs-3,@lcs-4,@lcs-5,@lcs-6
 \endplumedfile
