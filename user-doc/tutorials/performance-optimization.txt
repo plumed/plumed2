@@ -269,7 +269,7 @@ Run your simulation and check the timing. Which is the most expensive action now
 The standard solution to the problem above is to use a grid to store the Gaussian functions.
 In this manner, at the first step PLUMED will take some time to put all the Gaussian functions
 on the grid, but subsequent calculations of the force will be much faster, since they will just
-require a grid lookup (rather than a sum over the history).
+require that the action look up the value on the grid (rather than a sum over the history).
 
 Time the simulation using the following lines to perform METAD:
 \plumedfile

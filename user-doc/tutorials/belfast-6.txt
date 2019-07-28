@@ -24,7 +24,7 @@ V(\vec{s},t) = \sum_{ k \tau < t} W(k \tau)
 where \f$ \tau \f$ is the Gaussian deposition stride, 
 \f$ \sigma_i \f$ the width of the Gaussian for the \f$i\f$th CV, and \f$ W(k \tau) \f$ the
 height of the Gaussian. The effect of the metadynamics bias potential is to push the system away 
-from local minima into visiting new regions of the phase space. Furthermore, in the long
+from any local minimum and into visiting new regions of the phase space. Furthermore, in the long
 time limit, the bias potential converges to minus the free energy as a function of the CVs:
 
 \f[
@@ -301,7 +301,7 @@ The resulting plot should look like the following:
 \image html belfast-6-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 500 Gaussian kernels deposited along a 5ns-long metadynamics simulation using 2 CVs."
 
 To assess the convergence of the simulation more quantitatively, we can calculate the free-energy difference between the two
-local minima in the one-dimensional free energy along phi as a function of simulation time.
+local minimums in the one-dimensional free energy along phi as a function of simulation time.
 We can use the bash script analyze_FES.sh to integrate the multiple free-energy profiles in the two basins defined 
 by the following intervals in phi space: basin A, -3<phi<-1, basin B, 0.5<phi<1.5.
 
