@@ -390,7 +390,8 @@ is presented in the following but the exercise is possible only if plumed is com
 
 Here we use the "replica" syntax of plumed to write a single plumed input file for all the windows:
 
-\plumedincludefile
+\plumedfile
+#SETTINGS FILENAME=plumed.dat
 # this is plumed.dat
 # vim:ft=plumed
 MOLINFO STRUCTURE=diala.pdb
@@ -413,7 +414,7 @@ restraint-phi: RESTRAINT ...
 } ...
 # monitor the two variables and the bias potential from the restraint
 PRINT STRIDE=20 ARG=phi,psi,restraint-phi.bias FILE=COLVAR
-\endplumedincludefile
+\endplumedfile
 
 The \@replicas syntax allow to define different values for a variable for the different replicas.
 

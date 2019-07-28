@@ -482,10 +482,11 @@ DISTANCE ATOMS=1,2 LABEL=dist
 INCLUDE FILE=toBeIncluded.inc
 \endplumedfile
 plus a "toBeIncluded.inc" file
-\plumedincludefile
+\plumedfile
+#SETTINGS FILENAME=toBeIncluded.inc
 # this is toBeIncluded.inc
 RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
-\endplumedincludefile
+\endplumedfile
 
 However, when you do this it is important to recognize that \ref INCLUDE is a real directive that is only resolved
 after all the \ref comments have been stripped and the \ref ContinuationLines have been unrolled.  This means it

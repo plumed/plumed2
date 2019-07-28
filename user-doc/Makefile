@@ -17,7 +17,7 @@ else
 all:
 ifeq ($(make_doc),yes)
 	make_pdfdoc=$(make_pdfdoc) ./extract
-	# temporarily removed for travis to build:
+	# check examples in input file:
 	./go-example-check
 	make_pdfdoc=$(make_pdfdoc) ./go-doxygen
 	cp *png html/

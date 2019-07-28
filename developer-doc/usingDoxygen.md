@@ -466,20 +466,14 @@ DISTANCE ATOMS=1,2 LABEL=dist
 INCLUDE FILE=toBeIncluded.inc
 \ endplumedfile    /*** But with no space between the \ and the endplumedfile
 
-\plumedincludefile
-# this is toBeIncluded.inc
+\plumedfile
+#SETTINGS FILENAME=toBeIncluded.inc  
 RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
-\ endplumedincludefile   /*** But with no space between the \ and the endplumedincludefile
+\ endplumedfile   /*** But with no space between the \ and the endplumedincludefile
 \endverbatim
 
-Please note that it is essential that you write:
-
-\verbatim
-# this is <filename>
-\endverbatim
-
-on the second line in the plumedincludefile environment as this is where the script that builds the user documentation gets the name of the included file
-from.  Also notice that if, as in the example above, the included file is not (by itself) a valid plumed input it CANNOT be called *.dat as the script that 
+By including the FILENAME attribute on the SETTINGS line you can set the name of the plumed input file that is generated when the input is tested.
+Also notice that if, as in the example above, the included file is not (by itself) a valid plumed input it CANNOT be called *.dat as the script that 
 checks the input will complain.  
 
 \subsection molfileeg Using MOLFILE in your example input files
