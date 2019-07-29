@@ -183,7 +183,7 @@ void PCA::performAnalysis() {
   for(unsigned i=1; i<getNumberOfDataPoints(); ++i) {
     my_input_data->getStoredData( i, false ).transferDataToPDB( mypdb );
     for(unsigned j=0; j<getArguments().size(); ++j) mypdb.getArgumentValue( getArguments()[j]->getName(), args[j] );
-    double d = myconf0->calc( mypdb.getPositions(), getPbc(), getArguments(), args, mypack, true );
+    myconf0->calc( mypdb.getPositions(), getPbc(), getArguments(), args, mypack, true );
     // Accumulate average displacement of arguments (Here PBC could do fucked up things - really needs Berry Phase ) GAT
     for(unsigned j=0; j<myconf0->getNumberOfReferenceArguments(); ++j) sarg[j] += 0.5*getWeight(i)*mypack.getArgumentDerivative(j);
     // Accumulate average displacement of position
@@ -200,7 +200,7 @@ void PCA::performAnalysis() {
   for(unsigned i=0; i<getNumberOfDataPoints(); ++i) {
     my_input_data->getStoredData( i, false ).transferDataToPDB( mypdb );
     for(unsigned j=0; j<getArguments().size(); ++j) mypdb.getArgumentValue( getArguments()[j]->getName(), args[j] );
-    double d = myconf0->calc( mypdb.getPositions(), getPbc(), getArguments(), args, mypack, true );
+    myconf0->calc( mypdb.getPositions(), getPbc(), getArguments(), args, mypack, true );
     for(unsigned jarg=0; jarg<narg; ++jarg) {
       // Need sorting for PBC with GAT
       double jarg_d = 0.5*mypack.getArgumentDerivative(jarg) + myconf0->getReferenceArguments()[jarg] - sarg[jarg];

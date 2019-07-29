@@ -142,7 +142,6 @@ class MaxEnt : public Bias {
   double totalWork;
   double BetaReweightBias;
   double simtemp;
-  double reweight_bias2;
   vector<ActionWithValue*> biases;
   std::string type;
   std::string error_type;
