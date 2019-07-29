@@ -65,8 +65,8 @@ WHOLEMOLECULES ENTITY0=1-111
 # This allows us to select only non-hydrogen atoms
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 
-# We extend the cutoff by 0.2 nm and update the neighbor list every 10 steps
-solv: EEFSOLV ATOMS=protein-h NL_STRIDE=10 NL_BUFFER=0.2
+# We extend the cutoff by 0.1 nm and update the neighbor list every 40 steps
+solv: EEFSOLV ATOMS=protein-h NL_STRIDE=40 NL_BUFFER=0.1
 
 # Here we actually add our calculated energy back to the potential
 bias: BIASVALUE ARG=solv
@@ -115,7 +115,7 @@ EEFSolv::EEFSolv(const ActionOptions&ao):
   pbc(true),
   buffer(0.1),
   delta_g_ref(0.),
-  stride(10),
+  stride(40),
   nl_update(0)
 {
   vector<AtomNumber> atoms;
@@ -163,7 +163,7 @@ void EEFSolv::update_neighb() {
       // We choose the maximum lambda value and use a more conservative cutoff
       double mlambda = 1./parameter[i][2];
       if (1./parameter[j][2] > mlambda) mlambda = 1./parameter[j][2];
-      const double c2 = (4. * mlambda + buffer) * (4. * mlambda + buffer);
+      const double c2 = (2. * mlambda + buffer) * (2. * mlambda + buffer);
       if (d2 < c2 ) {
         nl[i].push_back(j);
         if(parameter[i][2] == parameter[j][2] && parameter[i][3] == parameter[j][3]) {
@@ -219,7 +219,7 @@ void EEFSolv::calculate() {
         // in this case we can calculate a single exponential
         if(!nlexpo[i][i_nl]) {
           // i-j interaction
-          if(inv_rij > 0.25*inv_lambda_i)
+          if(inv_rij > 0.5*inv_lambda_i)
           {
             const double inv_lambda2_i = inv_lambda_i * inv_lambda_i;
             const double rij_vdwr_diff = rij - vdw_radius_i;
@@ -230,7 +230,7 @@ void EEFSolv::calculate() {
           }
 
           // j-i interaction
-          if(inv_rij > 0.25*inv_lambda_j)
+          if(inv_rij > 0.5*inv_lambda_j)
           {
             const double inv_lambda2_j = inv_lambda_j * inv_lambda_j;
             const double rij_vdwr_diff = rij - vdw_radius_j;
@@ -241,7 +241,7 @@ void EEFSolv::calculate() {
           }
         } else {
           // i-j interaction
-          if(inv_rij > 0.25*inv_lambda_i)
+          if(inv_rij > 0.5*inv_lambda_i)
           {
             const double inv_lambda2 = inv_lambda_i * inv_lambda_i;
             const double rij_vdwr_diff = rij - vdw_radius_i;
