@@ -41,7 +41,7 @@ P(s') = \frac{ \int \textrm{d}x \textrm{d}p \delta( s(x) - s') e^{-\frac{H(x,p)}
 \f]
 
 In this expression the integral signs are used to represent \f$6N\f$-dimensional integrals that run over all the possible positions and momenta that the \f$N\f$ atoms 
-in our system can take.  \f$H(x,p)\f$ is the Hamiltonian and \f$k_B\f$ and \f$T\f$ are Boltzmann's constant and the temperature respectively.  The quantity calculated
+in our system can take.  \f$H(x,p)\f$ is the Hamiltonian and \f$k_B\f$ and \f$T\f$ are the Boltzmann constant and the temperature respectively.  The quantity calculated
 by this quotient is the probability that our CV will take a value \f$s'\f$.  The quantity in the denominator of the above expression is the canonical partition function
 while the \f$\delta\f$ function in the integral in the numerator ensures that only those configurations that have a CV value, \f$s(x)\f$, equal to \f$s'\f$ contribute 
 to the integral in the numerator.

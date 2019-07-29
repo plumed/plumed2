@@ -359,7 +359,7 @@ d2: DISTANCE ATOMS=first,last NOPBC
 PRINT ARG=d1,d2 STRIDE=1 FILE=COLVAR 
 \endplumedfile
 
-We can now visualize the timeline of the two CVs and compare it with the results of
+We can now visualize the time line of the two CVs and compare it with the results of
 \ref lugano-1-ex-3. Which CVs are identical and which are not? Why?
 
 \subsection lugano-1-ex-5 Exercise 5: Using CVs that measure the distance from a reference conformation

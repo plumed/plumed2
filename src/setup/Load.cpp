@@ -40,7 +40,7 @@ in which case the file is compiled first.
 \par Examples
 
 If you have a shared object named extensions.so and want to
-use the functionalities implemented in it within PLUMED you can
+use the functions implemented within it within PLUMED you can
 load it with the following syntax
 
 \plumedfile

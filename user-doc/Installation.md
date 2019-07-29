@@ -375,8 +375,8 @@ possible kinds of innocuous errors:
 
 \attention
 Even though we regularly perform tests on [Travis-CI](http://travis-ci.org/plumed/plumed2),
-it is possible that aggressive optimizations or even architecture dependent features
-trigger bugs that did not show up on travis. So please always perform regtests when you install
+it is possible that aggressive optimization or even architecture dependent features
+trigger bugs that did not show up on travis. So please always perform the regtests when you install
 PLUMED.
 
 Notice that the compiled executable, which now sits in 'src/lib/plumed', relies
@@ -453,7 +453,7 @@ the following things:
 - use the "plumed" executable from the command line. This is also possible before installing.
 - link against the PLUMED library using the "-lplumed" flag for the linker. This allows
   one to use PLUMED library in general purpose programs
-- use the PLUMED internal functionalities (C++ classes) including
+- use PLUMED internal functionality (C++ classes) including
   header files such as "#include <plumed/tools/Vector.h>". This is useful as it may be expedient to
   exploit the PLUMED library in general purpose programs
 

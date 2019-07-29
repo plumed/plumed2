@@ -77,7 +77,7 @@ from within the plumed2 directory.
 \subsection lyon-simplemd Using PLUMED as an MD code
 
 PLUMED is primarily used as a plugin to other larger molecular dynamics codes.  Mainly for software testing and educational purposes, however, we do have an MD code with a rather
-limited set of functionalities within PLUMED.  You can run this code by issuing the command:
+limited set of options within PLUMED.  You can run this code by issuing the command:
 
 \verbatim
 plumed simplemd < in 

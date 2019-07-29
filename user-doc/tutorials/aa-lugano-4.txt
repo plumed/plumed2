@@ -52,7 +52,7 @@ statistical mechanics that, if we are in the canonical (NVT) ensemble, the value
 \f[
 \langle A \rangle = \frac{ \int \textrm{d}x \textrm{d}p A(x) e^{-\frac{H(x,p)}{k_B T}} }{ \int \textrm{d}x\textrm{d}p e^{-\frac{H(x,p)}{k_B T}} }
 \f]
-where \f$H(x,p)\f$ is the Hamiltonian for our system, \f$T\f$ is the temperature and \f$k_B\f$ is Boltzmann's constant.  We also know, however, that for all but the
+where \f$H(x,p)\f$ is the Hamiltonian for our system, \f$T\f$ is the temperature and \f$k_B\f$ is the Boltzmann constant.  We also know, however, that for all but the
 simplest possible systems, it is impossible to solve the integrals in this expression analytically.  Furthermore, because this expression involves integrals over all
 the \f$3N\f$ position and \f$3N\f$ momentum coordinates, using a numerical integration method that employs a set of regularly spaced grid points in the \f$6N\f$
 dimensional phase space would be prohibitively expensive.  We are thus forced to instead generate a time series of random variables and to approximate the ensemble average

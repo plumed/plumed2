@@ -243,7 +243,7 @@ in VIM.
 Notice that the variable `PLUMED_VIMPATH` is also set in the `sourceme.sh` script in the build directory.
 Thus, if you modify your `.vimrc` file as suggested, you will be able to use the correct syntax both
 when using an installed PLUMED and when running from a just compiled copy.
-Finally, in case you have both a preinstalled PLUMED **and** you have your development version
+Finally, in case you have both a pre-installed PLUMED **and** you have your development version
 the following command would give you the optimal flexibility:
 \verbatim
 :let &runtimepath.=','.$PLUMED_VIMPATH.',/opt/local/lib/plumed/vim/'

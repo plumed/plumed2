@@ -952,6 +952,7 @@ dinucleotide
 monophosphate
 minima
 analytical
+eigenvector
 eigenvectors
 paramagnetic
 PDF
@@ -963,3 +964,19 @@ filename
 covariance
 peptide
 kinase
+login
+wildcard
+wildcards
+outliers
+OUTLIERS
+differentiable
+ramping
+radians
+nucleotide
+efficiencies
+filenames
+API
+SVN
+refactoring
+Boltzmann
+unweighted
