@@ -1,8 +1,7 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Copyright (c) 2015-2018
+Copyright (c) 2019
 National Institute of Advanced Industrial Science and Technology (AIST), Japan.
 This file contains module for LogMFD method proposed by Tetsuya Morishita(AIST).
-then written by Mizuho information and Research Institute, Inc.
 
 The LogMFD module is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -151,7 +150,7 @@ With the MF evaluated using the PD approach, reconstructing free energy profiles
 
 Note that LogPD calculations should always be initiated with an equilibrium \f${\bf q}\f$-configuration in each replica, because the Crooks-Jarzynski non-equilibrium work relation is invoked. Also note that LogPD is currently available only with Gromacs, while LogMFD can be performed with LAMMPS, Gromacs, and NAMD.
 
-\section Thermostat Using LogMFD with a thermostat /PD
+\section Thermostat Using LogMFD/PD with a thermostat
 
 Introducing a thermostat on \f${\bf X}\f$ is often recommended in LogMFD/PD to maintain the adiabatic decoupling between \f${\bf q}\f$ and \f${\bf X}\f$. In the framework of the LogMFD approach, the Nose-Hoover type thermostat and the Gaussian isokinetic (velocity scaling) thermostat can be used to control the kinetic energy of \f${\bf X}\f$.
 
