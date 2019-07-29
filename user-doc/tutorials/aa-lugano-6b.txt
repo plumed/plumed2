@@ -156,5 +156,3 @@ Also notice that the result might depend a lot on the used force field.
 link: @subpage lugano-6b 
 
 description: An exercise to compute binding free energies 
-
-additional-files: lugano-6b
