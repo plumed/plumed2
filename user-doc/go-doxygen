@@ -71,7 +71,6 @@ var menudata={children:[
 {text:'Home ($version)',url:'index.html'},
 {text:'Getting Started',url:'_syntax.html'},
 {text:'Tutorials',url:'tutorials.html'},
-{text:'Old Tutorials',url:'oldtutorials.html'},
 {text:'Index of Actions',url:'glossary.html'}]}
 EOF
 # end of DOXYGEN >=1.8.12
