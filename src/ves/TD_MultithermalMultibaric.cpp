@@ -253,9 +253,9 @@ TD_MultithermalMultibaric::TD_MultithermalMultibaric(const ActionOptions& ao):
   max_temp_(1000.0),
   min_press_(0.0),
   max_press_(1000.0),
+  sigma_(0.0),
   steps_temp_(20),
-  steps_pressure_(20),
-  sigma_(0.0)
+  steps_pressure_(20)
 {
   log.printf("  Multithermal-multibaric target distribution");
   log.printf("\n");

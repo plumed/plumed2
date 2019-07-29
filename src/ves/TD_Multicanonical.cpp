@@ -173,8 +173,8 @@ TD_Multicanonical::TD_Multicanonical(const ActionOptions& ao):
   threshold_(1.0),
   min_temp_(0.0),
   max_temp_(1000.0),
-  steps_temp_(20),
-  sigma_(0.0)
+  sigma_(0.0),
+  steps_temp_(20)
 {
   log.printf("  Multicanonical target distribution");
   log.printf("\n");
