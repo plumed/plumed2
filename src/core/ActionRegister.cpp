@@ -52,7 +52,7 @@ void ActionRegister::remove(creator_pointer f) {
 
 void ActionRegister::add(string key,creator_pointer f,keywords_pointer k) {
   // this force each action to be registered as an uppercase string
-  std::transform(key.begin(), key.end(), key.begin(), ::toupper);
+  if ( std::any_of( std::begin( key ), std::end( key ), []( char c ) { return ( islower( c ) ); } ) ) plumed_error() << "Action: " + key + " cannot be registered, use only UPPERCASE characters"; 
   if(m.count(key)) {
     m.erase(key);
     disabled.insert(key);
