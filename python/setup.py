@@ -33,16 +33,15 @@ import platform
 from distutils.sysconfig import get_config_var
 from distutils.version import LooseVersion
 
+assert sys.version_info > (3, 0)
+
 
 def is_platform_mac():
     return sys.platform == 'darwin'
 
 language_level=os.getenv("plumed_language_level")
 if language_level is None:
-  if (sys.version_info > (3, 0)):
-      language_level=3
-  else:
-      language_level=2
+  language_level=3
 else:
   language_level=int(language_level)
 
@@ -143,8 +142,6 @@ setup(
           'Topic :: Scientific/Engineering :: Chemistry',
           'Topic :: Scientific/Engineering :: Physics',
           'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
-          'Programming Language :: Python :: 2',
-          'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7',
@@ -154,5 +151,6 @@ setup(
   url='http://www.plumed.org',
   ext_modules = ext_modules,
   zip_safe=False,
-  test_suite='nose.collector'
+  test_suite='nose.collector',
+  python_requires='>=3'
 )
