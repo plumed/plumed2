@@ -1116,9 +1116,7 @@ double LogMFD::calcFlog() {
   const double ekin = calcEkin();
   double pot;
 
-  if( false ) {
-  }
-  else if (thermostat == "NVE") {
+  if (thermostat == "NVE") {
     pot = hlog - ekin;
   }
   else if (thermostat == "NVT") {
