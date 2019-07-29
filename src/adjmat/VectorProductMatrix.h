@@ -50,6 +50,7 @@ public:
   void unlockRequests();
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   void calculate();
+  void update();
   void performTask( const unsigned& task_index, MultiValue& myvals ) const ;
   bool performTask( const std::string& controller, const unsigned& index1, const unsigned& index2, MultiValue& myvals ) const ;
   virtual double computeVectorProduct( const unsigned& index1, const unsigned& index2,

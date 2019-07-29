@@ -19,8 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DimensionalityReductionBase.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/AverageBase.h"
 
 //+PLUMEDOC DIMRED CLASSICAL_MDS
 /*
@@ -161,50 +164,48 @@ see <a href="http://quest4rigor.com/tag/multidimensional-scaling/"> this website
 namespace PLMD {
 namespace dimred {
 
-class ClassicalMultiDimensionalScaling : public DimensionalityReductionBase {
+class ClassicalMultiDimensionalScaling : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ClassicalMultiDimensionalScaling( const ActionOptions& ao );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& );
 };
 
 PLUMED_REGISTER_ACTION(ClassicalMultiDimensionalScaling,"CLASSICAL_MDS")
 
 void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ) {
-  DimensionalityReductionBase::registerKeywords( keys );
+  ActionShortcut::registerKeywords( keys );
+  keys.add("compulsory","ARG","the arguments that you would like to make the histogram for");
+  keys.add("compulsory","NLOW_DIM","number of low-dimensional coordinates required");
 }
 
 ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const ActionOptions& ao):
   Action(ao),
-  DimensionalityReductionBase(ao)
+  ActionShortcut(ao)
 {
-  if( dimredbase ) error("input to CLASSICAL_MDS should not be output from dimensionality reduction object");
-}
-
-void ClassicalMultiDimensionalScaling::calculateProjections( const Matrix<double>& targets, Matrix<double>& projections ) {
-  // Retrieve the distances from the dimensionality reduction object
-  double half=(-0.5); Matrix<double> distances( half*targets );
-
-  // Apply centering transtion
-  unsigned n=distances.nrows(); double sum;
-  // First HM
-  for(unsigned i=0; i<n; ++i) {
-    sum=0; for(unsigned j=0; j<n; ++j) sum+=distances(i,j);
-    for(unsigned j=0; j<n; ++j) distances(i,j) -= sum/n;
+  std::string arg; parse("ARG",arg); unsigned anum=1; std::string argstr; 
+  AverageBase* mydata = plumed.getActionSet().selectWithLabel<AverageBase*>(arg);
+  if( !mydata ) error("input to PCA should be a COLLECT_FRAMES or COLLECT_REPLICAS object");
+  for(unsigned i=0;i<mydata->getNumberOfComponents();++i) {
+      std::string thislab = mydata->copyOutput(i)->getName();
+      if( thislab.find(".logweights")==std::string::npos && thislab.find(".pos")==std::string::npos ) {
+          std::string num; Tools::convert( anum, num );
+          argstr += " GROUP" + num + "=" + thislab; anum++;
+      }
   }
-  // Now (HM)H
-  for(unsigned i=0; i<n; ++i) {
-    sum=0; for(unsigned j=0; j<n; ++j) sum+=distances(j,i);
-    for(unsigned j=0; j<n; ++j) distances(j,i) -= sum/n;
-  }
-
-  // Diagonalize matrix
-  std::vector<double> eigval(n); Matrix<double> eigvec(n,n);
-  diagMat( distances, eigval, eigvec );
-
-  // Pass final projections to map object
-  for(unsigned i=0; i<n; ++i) {
-    for(unsigned j=0; j<projections.ncols(); ++j) projections(i,j)=sqrt(eigval[n-1-j])*eigvec(n-1-j,i);
+  // Calculate the dissimilarity matrix
+  readInputLine( getShortcutLabel() + "_mat: DISSIMILARITIES SQUARED " + argstr ); 
+  // Center the dissimilarity matrix
+  readInputLine( getShortcutLabel() + "_cmat: CENTER_MATRIX ARG=" + getShortcutLabel() + "_mat" );
+  // Diagonalize the centered dissimilarity matrix
+  unsigned ndim; parse("NLOW_DIM",ndim); std::string vecstr="1"; 
+  for(unsigned i=1;i<ndim;++i){ std::string num; Tools::convert( i+1, num ); vecstr += "," + num; }
+  readInputLine( getShortcutLabel() + "_eig: DIAGONALIZE ARG=" + getShortcutLabel() + "_cmat VECTORS=" + vecstr );
+  // And calculate the mds projections
+  for(unsigned i=0;i<ndim;++i) {
+      std::string num; Tools::convert( i+1, num );
+      readInputLine( getShortcutLabel() + "-" +  num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_eig.vals-" + num + 
+                                                                 " ARG2=" + getShortcutLabel() + "_eig.vecs-" + num + 
+                                                                 " FUNC=sqrt(x)*y PERIODIC=NO");
   }
 }
 

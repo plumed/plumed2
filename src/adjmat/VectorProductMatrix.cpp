@@ -143,7 +143,13 @@ void VectorProductMatrix::unlockRequests() {
 void VectorProductMatrix::calculateNumericalDerivatives( ActionWithValue* a ) { plumed_error(); }
 
 void VectorProductMatrix::calculate() {
-  if( actionInChain() ) return;
+  if( actionInChain() || hasAverageAsArgument() ) return;
+  runAllTasks();
+}
+
+void VectorProductMatrix::update() {
+  if( !hasAverageAsArgument() ) return;
+  plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
   runAllTasks();
 }
 

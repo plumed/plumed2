@@ -162,11 +162,12 @@ Print::Print(const ActionOptions&ao):
   parse("FILE",file);
   // This checks if we are printing a stored time series
   if( getNumberOfArguments()>0 ) {
-      timeseries=getPntrToArgument(0)->isTimeSeries();
+      for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+          if( getPntrToArgument(i)->isTimeSeries() ) { timeseries=true; break; }
+      }
       if( timeseries ) {
           unsigned nv=getPntrToArgument(0)->getNumberOfValues( getLabel() );
           for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-              if( !getPntrToArgument(i)->isTimeSeries() ) error("cannot mix time series and non-time series data");
               if( getPntrToArgument(i)->getNumberOfValues( getLabel() )!=nv ) error("for printing of time series all arguments must have same number of values");
           }
       }
@@ -368,8 +369,14 @@ Print::Print(const ActionOptions&ao):
                 if( plumed.getAtoms().isVirtualAtom(reference_atoms[i][j]) ) addDependency(plumed.getAtoms().getVirtualAtomsAction(reference_atoms[i][j]) );
             }
         }
-    } else {
+    } else if( arg_ends.size()>0 ) {
         std::vector<AtomNumber> atlist; for(unsigned i=0;i<arg_ends.size()-1;++i) reference_atoms.push_back( atlist );
+    } else {
+        unsigned nv=getPntrToArgument(0)->getNumberOfValues( getLabel() );
+        for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+            if( getPntrToArgument(i)->getNumberOfValues( getLabel() )!=nv ) error("for printing to pdb files all arguments must have same number of values");
+        }
+        // Need to add some sensible output here 
     }
   } else {
     error("expected output does not exist");
@@ -625,59 +632,73 @@ void Print::update() {
     OFile opdbf; opdbf.link(*this);
     opdbf.setBackupString("analysis");
     opdbf.open( file ); unsigned nn=0; 
-    if( description.length()>0 ) opdbf.printf("# %s AT STEP %d TIME %f \n", description.c_str(), getStep(), getTime() ); 
-    std::size_t psign=fmt.find("%"); plumed_assert( psign!=std::string::npos ); 
-    std::string descr2="%s=%-" + fmt.substr(psign+1) + " ";
-    double lenunits = atoms.getUnits().getLength()/0.1;
-    for(unsigned i=0;i<reference_atoms.size();++i) {
-        if( getNumberOfArguments()>0 ) {
-            for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-                Value* thisarg = getPntrToArgument(j); 
-                setup::SetupReferenceBase* myset = dynamic_cast<setup::SetupReferenceBase*>( thisarg->getPntrToAction() );
-                if( myset ) {
-                    opdbf.printf("REMARK ");
-                    for(unsigned k=0;k<thisarg->getShape()[0];++k) {
-                        opdbf.printf( descr2.c_str(), myset->getArgName(k).c_str(), thisarg->get(k) ); 
-                    }
-                    opdbf.printf("\n");
-                } else if( description=="PCA" && reference_atoms[0].size()>0 ) {
-                    plumed_massert( thisarg->getNumberOfValues(getLabel())==3*reference_atoms[0].size(), "output for PCA with mixtures of atoms and arguments is not implemented");
-                    for(unsigned k=0;k<reference_atoms[0].size();++k) {
-                        opdbf.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                                     reference_atoms[0][k].serial(), k,
-                                     lenunits*thisarg->get(3*k+0), lenunits*thisarg->get(3*k+1), lenunits*thisarg->get(3*k+2), getMass(k), getCharge(k) );
-                    }
-                } else {
-                    opdbf.printf("REMARK ");
-                    if( thisarg->getRank()==0 ) {
-                        opdbf.printf( descr2.c_str(), thisarg->getName().c_str(), thisarg->get() );
-                    } else if( thisarg->getRank()==1 ) {
-                        for(unsigned k=0;k<thisarg->getShape()[0];++k) {
-                            std::string knum; Tools::convert( k+1, knum ); 
-                            opdbf.printf( descr2.c_str(), (thisarg->getName() + "." + knum).c_str(), thisarg->get(k) );
-                        }
-                    } else if( thisarg->getRank()==2 ) { 
-                        unsigned m=0;
-                        for(unsigned k=0;k<thisarg->getShape()[0];++k) {
-                            std::string knum; Tools::convert( k+1, knum ); 
-                            for(unsigned n=0;n<thisarg->getShape()[1];++n) {
-                                std::string nnum; Tools::convert( n+1, nnum );
-                                opdbf.printf( descr2.c_str(), (thisarg->getName() + "." + knum + "." + nnum).c_str(), thisarg->get(m) ); m++;
-                            }
-                        }
-                    } else plumed_merror("do not know how to output this data");
-                    opdbf.printf("\n");
-                }
-            }
-        }
-        for(unsigned j=0;j<reference_atoms[i].size();++j) {
-            Vector pos=getPosition(nn); 
-            opdbf.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                         reference_atoms[i][j].serial(), j,
-                         lenunits*pos[0], lenunits*pos[1], lenunits*pos[2], getMass(nn), getCharge(nn) ); 
-            nn++;
-        }
-        opdbf.printf("END\n");
+    std::size_t psign=fmt.find("%"); plumed_assert( psign!=std::string::npos );  
+    std::string descr2="%s=%-" + fmt.substr(psign+1) + " "; 
+    if( arg_ends.size()>0 ) {
+       if( description.length()>0 ) opdbf.printf("# %s AT STEP %d TIME %f \n", description.c_str(), getStep(), getTime() ); 
+       double lenunits = atoms.getUnits().getLength()/0.1;
+       for(unsigned i=0;i<reference_atoms.size();++i) {
+           if( getNumberOfArguments()>0 ) {
+               for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
+                   Value* thisarg = getPntrToArgument(j); 
+                   setup::SetupReferenceBase* myset = dynamic_cast<setup::SetupReferenceBase*>( thisarg->getPntrToAction() );
+                   if( myset ) {
+                       opdbf.printf("REMARK ");
+                       for(unsigned k=0;k<thisarg->getShape()[0];++k) {
+                           opdbf.printf( descr2.c_str(), myset->getArgName(k).c_str(), thisarg->get(k) ); 
+                       }
+                       opdbf.printf("\n");
+                   } else if( description=="PCA" && reference_atoms[0].size()>0 ) {
+                       plumed_massert( thisarg->getNumberOfValues(getLabel())==3*reference_atoms[0].size(), "output for PCA with mixtures of atoms and arguments is not implemented");
+                       for(unsigned k=0;k<reference_atoms[0].size();++k) {
+                           opdbf.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                                        reference_atoms[0][k].serial(), k,
+                                        lenunits*thisarg->get(3*k+0), lenunits*thisarg->get(3*k+1), lenunits*thisarg->get(3*k+2), getMass(k), getCharge(k) );
+                       }
+                   } else {
+                       opdbf.printf("REMARK ");
+                       if( thisarg->getRank()==0 ) {
+                           opdbf.printf( descr2.c_str(), thisarg->getName().c_str(), thisarg->get() );
+                       } else if( thisarg->getRank()==1 ) {
+                           for(unsigned k=0;k<thisarg->getShape()[0];++k) {
+                               std::string knum; Tools::convert( k+1, knum ); 
+                               opdbf.printf( descr2.c_str(), (thisarg->getName() + "." + knum).c_str(), thisarg->get(k) );
+                           }
+                       } else if( thisarg->getRank()==2 ) { 
+                           unsigned m=0;
+                           for(unsigned k=0;k<thisarg->getShape()[0];++k) {
+                               std::string knum; Tools::convert( k+1, knum ); 
+                               for(unsigned n=0;n<thisarg->getShape()[1];++n) {
+                                   std::string nnum; Tools::convert( n+1, nnum );
+                                   opdbf.printf( descr2.c_str(), (thisarg->getName() + "." + knum + "." + nnum).c_str(), thisarg->get(m) ); m++;
+                               }
+                           }
+                       } else plumed_merror("do not know how to output this data");
+                       opdbf.printf("\n");
+                   }
+               }
+           }
+           for(unsigned j=0;j<reference_atoms[i].size();++j) {
+               Vector pos=getPosition(nn); 
+               opdbf.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                            reference_atoms[i][j].serial(), j,
+                            lenunits*pos[0], lenunits*pos[1], lenunits*pos[2], getMass(nn), getCharge(nn) ); 
+               nn++;
+           }
+           opdbf.printf("END\n");
+       }
+    } else {
+       std::string argstr = "ARG=" + getPntrToArgument(0)->getName();
+       for(unsigned k=1;k<getNumberOfArguments();++k) argstr += "," + getPntrToArgument(k)->getName();
+       unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() );
+       for(unsigned j=0;j<nvals;++j) {
+           opdbf.printf("REMARK %s \n", argstr.c_str() );
+           opdbf.printf("REMARK ");
+           for(unsigned k=0;k<getNumberOfArguments();++k) {
+               Value* thisarg=getPntrToArgument(k); opdbf.printf( descr2.c_str(), (thisarg->getName()).c_str(), thisarg->get(j) ); 
+           }
+           opdbf.printf("\nEND\n");
+       }
     }
     opdbf.close();
   }
