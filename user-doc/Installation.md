@@ -78,7 +78,7 @@ PLUMED is made up of modules. Some of them are on by default, some others aren't
 Since version 2.3, the activation of modules should be made during configuration using the `--enable-modules`
 option (see \ref mymodules).
 
-Notice that some functionalities of PLUMED depend on external
+Notice that some of the methods within PLUMED depend on external
 libraries which are looked for by configure. You can typically
 avoid looking for a library using the "disable" syntax, e.g.
 \verbatim

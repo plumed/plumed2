@@ -92,7 +92,7 @@ frame just after end.pdb.  All these frames would be equally spaced.
 plumed pathtools --start start.pdb --end end.pdb --nframes 4 --metric OPTIMAL --out path.pdb --nframes-before-start 2 --nframes-after-end 2
 \endverbatim
 
-Notice also that when you re-parametrize paths you must choose two frames to fix.  Generally you chose to fix the states
+Notice also that when you re-parameterize paths you must choose two frames to fix.  Generally you chose to fix the states
 that are representative of your states A and B.  By default pathtools will fix the first and last frames.  You can, however,
 change the states to fix by taking advantage of the fixed flag as shown below.
 
@@ -126,7 +126,7 @@ void PathTools::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--metric","the measure to use to calculate the distance between frames");
   keys.add("compulsory","--out","the name of the file on which to output your path");
   keys.add("compulsory","--arg-fmt","%f","the format to use for argument values in your frames");
-  keys.add("compulsory","--tolerance","1E-4","the tolerance to use for the algorithm that is used to re-parametrize the path");
+  keys.add("compulsory","--tolerance","1E-4","the tolerance to use for the algorithm that is used to re-parameterize the path");
   keys.add("compulsory","--nframes-before-start","1","the number of frames to include in the path before the first frame");
   keys.add("compulsory","--nframes","1","the number of frames between the start and end frames in your path");
   keys.add("compulsory","--nframes-after-end","1","the number of frames to put after the last frame of your path");
