@@ -803,7 +803,7 @@ if test $python == true  ; then
   if test -n "$PYTHON_BIN"
   then
     AC_MSG_NOTICE([Python executable is $PYTHON_BIN])
-    AC_MSG_CHECKING([support for required python modules (setuptools, cython, subprocess, os, shutil)])
+    AC_MSG_CHECKING([support for required python modules (python3, setuptools, cython, subprocess, os, shutil)])
 testimport="
 from setuptools import setup
 from setuptools import Extension
@@ -813,6 +813,7 @@ import os.path
 import sys
 from shutil import copyfile
 from Cython.Build import cythonize
+assert sys.version_info > (3, 0)
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        AC_MSG_RESULT([yes])
