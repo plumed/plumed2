@@ -72,7 +72,7 @@ class ReweightBias : public ReweightBase {
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightBias(const ActionOptions&ao);
-  double getLogWeight();
+  double getLogWeight() override;
 };
 
 PLUMED_REGISTER_ACTION(ReweightBias,"REWEIGHT_BIAS")

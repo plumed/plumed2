@@ -43,9 +43,9 @@ public:
 /// Read a line of input and create appropriate actions
   void readInputLine( const std::string& input );
 /// Do nothing.
-  void calculate() {}
+  void calculate() override {}
 /// Do nothing.
-  void apply() {}
+  void apply() override {}
 };
 
 }
