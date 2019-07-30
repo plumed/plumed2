@@ -19,6 +19,8 @@ cat spelling/pkeys | sed -e $'s/_/\\\n/g' | grep -v '[0-9]' | sed -e $'s/-/\\\n/
 nsafewords=`cat spelling/keywords spelling/allkeys spelling_words.dict | wc -l | awk '{print $1}'`
 echo personal_ws-1.1 en $nsafewords > ./spelling/allwords.dict
 cat spelling/keywords spelling/allkeys spelling_words.dict >> spelling/allwords.dict
+# Get the git version
+git_version="$(../src/lib/plumed --no-mpi info --git-version)"
 
 # This is everything we have done thus far
 for file in *PP.md automatic/*.txt ../CHANGES/*.md tutorials/*.txt tutorials/*.site tutorials/others/*.txt ; do
@@ -27,7 +29,7 @@ for file in *PP.md automatic/*.txt ../CHANGES/*.md tutorials/*.txt tutorials/*.s
     nf=`echo $splits | awk '{print NF}'`
     fname=`echo $splits | awk -v n=$nf '{print $n}'` 
     # This is some stuff to get rid of stuff that trips up the spell checker: the equations and the plumed examples 
-    cat $file | grep -v "\\image" | grep -v "anchor" | sed -e 's/psi-1//' | sed -e 's/-#//' | sed -e 's/@//' | sed -e 's/&//' | sed -e 's/\vdots//' | 
+    cat $file | grep -v "\\image" | grep -v $git_version | grep -v "anchor" | sed -e 's/psi-1//' | sed -e 's/-#//' | sed -e 's/@//' | sed -e 's/&//' | sed -e 's/\vdots//' | 
     awk 'BEGIN{inp=0}{
           if($1=="\\endplumedfile" || $1=="\\f]" || $1=="\\f}" || $1=="\\endauxfile" || $1=="\\endverbatim" || $1=="\\endcode"){inp=0;}
           else if($1=="\\plumedfile" || $1=="\\f[" || $1=="\\f{eqnarray*}{" || $1=="\\f{align}{" || match($1,"auxfile") || $1=="\\verbatim" || index($1,"\\code{")!=0 ){inp=1;}
