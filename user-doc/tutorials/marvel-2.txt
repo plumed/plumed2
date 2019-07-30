@@ -326,7 +326,7 @@ must pass them in a particular order in order to pass between these two conforma
 S(X)=\frac{\sum_{i=1}^{N} i\ \exp^{-\lambda \vert X-X_i \vert }}{ \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } }
 \f]
 
-In this expression \f$\vert X-X_i \vert\f$ is the distance between the instantaneous coordinate of the system, \f$X\f$, in the high-dimensional space and 
+In this expression \f$\vertX-X_i\vert\f$ is the distance between the instantaneous coordinate of the system, \f$X\f$, in the high-dimensional space and 
 \f$X_i\f$ is the coordinate of the \f$i\f$th way mark in the path.  The largest exponential in the sum that appears in the numerator and the denominator
 will thus be the one that corresponds to the point that is closest to where the system currently lies.  In other words, \f$S(X)\f$, measures the position 
 on a (curvilinear) path that connects two states of interest as shown in red in the figure below:
@@ -387,7 +387,7 @@ In the \ref PATH case, however, we can use the value of \f$Z(X)\f$ to measure ho
 
 These two coordinates, \f$S(X)\f$ and \f$Z(X)\f$, are very flexible.  They are thus been used widely in the literature on modelling conformational changes of biomolecules.
 A part of this flexibility comes because one can use any set of way markers to define the \ref PATH.  Another flexibility comes, however, when you 
-recognize that you can also change the way in which the distance, \f$ \vert X- X_i \vert \f$, is calculated in the two formulas above.  For example
+recognize that you can also change the way in which the distance, \f$\vertX- X_i\vert\f$, is calculated in the two formulas above.  For example
 this distance can be calculated using the \ref RMSD distance or it can be calculated by measuring the sum of the squares of a set of displacements
 in collective variable values (see \ref TARGET).  Changing the manner in which the distance between path way points is calculated thus provides a 
 way to control the level of detail that is incorporated in the description of the reaction \ref PATH.
@@ -402,7 +402,7 @@ and even using \ref PATH collective variables that change adaptively as the simu
 for solving your particular problem.  Having said that, however, there is some general guidance on setting up \ref PATH collective variable and it is 
 this that we will focus on in this section.  The first thing that you will need to double check is the spacing between the frames in your
 \ref PATH.  Lets suppose that your \ref PATH has \f$N\f$ of these way markers upon it you will need to calculate is the \f$N \times N\f$ matrix of 
-distances between way markers.  That is to say you will have to calculate the distance \f$\vert X_j - X_i \vert\f$ between each pair of frames.
+distances between way markers.  That is to say you will have to calculate the distance \f$\vertX_j-X_i\vert\f$ between each pair of frames.
 The values of the distance in this matrix for a good \ref PATH are shown in the figure below:
 
 \anchor marvel-2-good-matrix-fig

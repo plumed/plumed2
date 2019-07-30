@@ -28,17 +28,17 @@ https://github.com/plumed/conda
 
 \section lugano-1-resources Resources
 
-Before starting the tutorial, please create a separate directory, named `handson_1`, and enter it:
+Before starting the tutorial, please create a separate directory, named `hands_on_1`, and enter it:
 \verbatim
-mkdir handson_1
-cd handson_1
+mkdir hands_on_1
+cd hands_on_1
 \endverbatim
 
 The reference trajectories and other files needed for the exercises proposed in this tutorial
 can be downloaded from `github` using the following command:
 
 \verbatim
-wget https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz
+wget https://github.com/plumed/lugano2019/raw/master/hands_on_1/handson_1.tgz
 \endverbatim
 
 The zip archive contains the following files:
@@ -84,7 +84,7 @@ a PLUMED input file. The syntax of the PLUMED input file is the same that we wil
 so all the things that you will learn now will be useful later when you will run PLUMED coupled to an MD code.
 In the following we are going to see how to write an input file for PLUMED.
 
-\subsection lugano-1-units PLUMED's internal units
+\subsection lugano-1-units The PLUMED internal units
 
 By default the PLUMED inputs and outputs quantities in the following units:
 
@@ -312,11 +312,11 @@ Are the results identical?
 As you should have noticed, in this tutorial we are working with two different trajectories of
 the GB1 protein:
 - traj-broken.xtc: the original GROMACS trajectory in which GB1 is broken by periodic boundary conditions
-- traj-whole.xtc: the trajectory processed by the `gmx trjconv` utility to fix PBCs discontinuities
+- traj-whole.xtc: the trajectory processed by the `gmx trjconv` utility to fix discontinuities due to periodic boundary conditions
 
-In many PLUMED CVs, PBCs are automatically taken into account unless a special option (NOPBC) is used.
+In many PLUMED CVs, periodic boundary conditions are automatically taken into account unless a special option (NOPBC) is used.
 In this way, the user can work directly with the raw trajectory `traj-broken.xtc`.
-Alternatively, PLUMED can reconstruct internally the coordinates of the system and thus fix discontinuities due to PBCs.
+Alternatively, PLUMED can reconstruct internally the coordinates of the system and thus fix discontinuities due to the periodic boundary conditions.
 In order to do so, the \ref WHOLEMOLECULES action should be used.
 
 In this exercise, we will learn how to use the \ref WHOLEMOLECULES action.
@@ -336,7 +336,7 @@ Once your `plumed.dat` file is complete, you can use it with the following comma
 > plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
 \endverbatim
 
-and look at the output file with vmd. Have PBCs been fixed?
+and look at the output file with vmd. Have the problems with the periodic boundary conditions been fixed?
 
 At this point, we can repeat  \ref lugano-1-ex-3 after adding the \ref WHOLEMOLECULES action
 at the beginning of the PLUMED input file:
@@ -359,7 +359,7 @@ d2: DISTANCE ATOMS=first,last NOPBC
 PRINT ARG=d1,d2 STRIDE=1 FILE=COLVAR 
 \endplumedfile
 
-We can now visualize the timeline of the two CVs and compare it with the results of
+We can now visualize the time line of the two CVs and compare it with the results of
 \ref lugano-1-ex-3. Which CVs are identical and which are not? Why?
 
 \subsection lugano-1-ex-5 Exercise 5: Using CVs that measure the distance from a reference conformation
@@ -395,7 +395,7 @@ Once your `plumed.dat` file is complete, you can use it with the following comma
 > plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
 \endverbatim
 
-and also on the trajectory file in which PBCs have been fixed:
+and also on the trajectory file in which problems due to the periodic boundaries have been fixed:
 
 \verbatim
 > plumed driver --plumed plumed.dat --mf_xtc traj-whole.xtc

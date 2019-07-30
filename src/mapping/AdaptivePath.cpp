@@ -79,7 +79,6 @@ REMARK ARG=d1.x,d1.y d1.x=.60 d1.y=0
 END
 REMARK ARG=d1.x,d1.y d1.x=.47 d1.y=.15
 END
-
 \endauxfile
 
 Notice that one can also use RMSD frames in place of arguments like those above.

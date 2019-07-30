@@ -152,7 +152,7 @@ COLVAR.#:
 
 NOTE: 
 1. the COLVAR.# files should contain ALL the collective variables employed (all those biased in at least one replica plus those additionally analyzed). They MUST be named cv1 ... cv\f$\f$N.
-2. the COLVAR.# files must be synchronized with the trajectories, this means that for each frame in the trajectory at time t there must be a line in each colvar at time t and vice versa. The best option is usually to analyze the trajectories a posteriori using plumed driver.
+2. the COLVAR.# files must be synchronized with the trajectories, this means that for each frame in the trajectory at time t there must be a line in each colvar at time t. The best option is usually to analyze the trajectories a posteriori using plumed driver.
 3. a keyword #! ACTIVE NBIASEDCV BIASEDCV LABEL is needed, where NBIASEDCV is the number of biased collective variables in that replica (not overall), BIASEDCV is the index of the biased collective variables in that replica (i.e. 1 for the first replica and so on); LABEL is a letter that identify the replica (usually is simply A for the first, B for the second and so on) this is useful if two replicas are biasing the same collective variable:
 
 \verbatim
