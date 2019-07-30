@@ -54,13 +54,13 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit SketchMapRead( const ActionOptions& ao );
-  void minimise( Matrix<double>& );
-  analysis::DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist );
-  unsigned getNumberOfDataPoints() const ;
-  std::vector<Value*> getArgumentList();
-  unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
-  double getDissimilarity( const unsigned& i, const unsigned& j );
-  double getWeight( const unsigned& idata );
+  void minimise( Matrix<double>& ) override;
+  analysis::DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist ) override;
+  unsigned getNumberOfDataPoints() const override;
+  std::vector<Value*> getArgumentList() override;
+  unsigned getDataPointIndexInBase( const unsigned& idata ) const override;
+  double getDissimilarity( const unsigned& i, const unsigned& j ) override;
+  double getWeight( const unsigned& idata ) override;
 };
 
 PLUMED_REGISTER_ACTION(SketchMapRead,"SKETCHMAP_READ")

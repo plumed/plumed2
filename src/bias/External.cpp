@@ -119,7 +119,7 @@ private:
 
 public:
   explicit External(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

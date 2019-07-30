@@ -45,12 +45,12 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ClusterAnalysisBase(const ActionOptions&);
-  unsigned getNumberOfQuantities() const ;
-  bool isPeriodic();
-  void turnOnDerivatives();
+  unsigned getNumberOfQuantities() const override;
+  bool isPeriodic() override;
+  void turnOnDerivatives() override;
   void setupActiveTaskSet( std::vector<unsigned>& active_tasks, const std::string& input_label ) {}
-  Vector getPositionOfAtomForLinkCells( const unsigned& ) const ;
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { plumed_error(); }
+  Vector getPositionOfAtomForLinkCells( const unsigned& ) const override;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override { plumed_error(); }
 };
 
 }

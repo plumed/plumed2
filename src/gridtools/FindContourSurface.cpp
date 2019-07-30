@@ -95,12 +95,12 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContourSurface(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const { return 2; }
-  bool checkAllActive() const { return gbuffer==0; }
-  void clearAverage();
-  void prepareForAveraging();
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
-  void finishAveraging();
+  unsigned getNumberOfQuantities() const override { return 2; }
+  bool checkAllActive() const override { return gbuffer==0; }
+  void clearAverage() override;
+  void prepareForAveraging() override;
+  void compute( const unsigned& current, MultiValue& myvals ) const override;
+  void finishAveraging() override;
 };
 
 PLUMED_REGISTER_ACTION(FindContourSurface,"FIND_CONTOUR_SURFACE")

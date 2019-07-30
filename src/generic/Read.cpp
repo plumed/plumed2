@@ -95,14 +95,14 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Read(const ActionOptions&);
-  void prepare();
-  void apply() {}
-  void calculate();
-  void update();
+  void prepare() override;
+  void apply() override {}
+  void calculate() override;
+  void update() override;
   std::string getFilename() const;
   IFile* getFile();
-  unsigned getNumberOfDerivatives();
-  void turnOnDerivatives();
+  unsigned getNumberOfDerivatives() override;
+  void turnOnDerivatives() override;
 };
 
 PLUMED_REGISTER_ACTION(Read,"READ")

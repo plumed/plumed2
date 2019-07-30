@@ -77,7 +77,7 @@ plumed simplemd --help
 class SimpleMD:
   public PLMD::CLTool
 {
-  string description()const {
+  string description()const override {
     return "run lj code";
   }
 
@@ -400,7 +400,7 @@ private:
 
 
 
-  virtual int main(FILE* in,FILE*out,PLMD::Communicator& pc) {
+  int main(FILE* in,FILE*out,PLMD::Communicator& pc) override {
     int            natoms;       // number of atoms
     vector<Vector> positions;    // atomic positions
     vector<Vector> velocities;   // velocities

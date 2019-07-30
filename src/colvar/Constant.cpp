@@ -67,7 +67,7 @@ class Constant : public Colvar {
   vector<double> values;
 public:
   explicit Constant(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords( Keywords& keys );
 };
 

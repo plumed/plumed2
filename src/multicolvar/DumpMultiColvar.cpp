@@ -76,10 +76,10 @@ public:
   explicit DumpMultiColvar(const ActionOptions&);
   ~DumpMultiColvar();
   static void registerKeywords( Keywords& keys );
-  void calculate() {}
-  void calculateNumericalDerivatives( ActionWithValue* vv ) { plumed_error(); }
-  void apply() {}
-  void update();
+  void calculate() override {}
+  void calculateNumericalDerivatives( ActionWithValue* vv ) override { plumed_error(); }
+  void apply() override {}
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(DumpMultiColvar,"DUMPMULTICOLVAR")

@@ -104,7 +104,7 @@ private:
   std::unique_ptr<PLMD::ArgumentOnlyDistance> target;
 public:
   explicit Target(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys );
 };
 

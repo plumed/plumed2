@@ -41,7 +41,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FarthestPointSampling( const ActionOptions& ao );
-  void selectLandmarks();
+  void selectLandmarks() override;
 };
 
 PLUMED_REGISTER_ACTION(FarthestPointSampling,"LANDMARK_SELECT_FPS")

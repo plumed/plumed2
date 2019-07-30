@@ -44,7 +44,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit SketchMapPointwise( const ActionOptions& ao );
-  void minimise( Matrix<double>& );
+  void minimise( Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(SketchMapPointwise,"SKETCHMAP_POINTWISE")

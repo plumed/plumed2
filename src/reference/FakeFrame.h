@@ -31,8 +31,8 @@ class FakeFrame :
 {
 public:
   explicit FakeFrame( const ReferenceConfigurationOptions& ro ) : ReferenceConfiguration(ro) {}
-  void read( const PDB& ) { plumed_merror("should not be called"); }
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const {
+  void read( const PDB& ) override { plumed_merror("should not be called"); }
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const override {
     plumed_merror("should not be called"); return 1.0;
   }
 };

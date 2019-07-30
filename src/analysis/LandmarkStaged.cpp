@@ -44,7 +44,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit LandmarkStaged( const ActionOptions& ao );
-  void selectLandmarks();
+  void selectLandmarks() override;
 };
 
 PLUMED_REGISTER_ACTION(LandmarkStaged,"LANDMARK_SELECT_STAGED")

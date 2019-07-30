@@ -41,8 +41,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit MoleculePlane( const ActionOptions& ao );
-  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const ;
-  void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
+  AtomNumber getAbsoluteIndexOfCentralAtom( const unsigned& iatom ) const override;
+  void calculateVector( multicolvar::AtomValuePack& myatoms ) const override;
 };
 
 PLUMED_REGISTER_ACTION(MoleculePlane,"PLANES")

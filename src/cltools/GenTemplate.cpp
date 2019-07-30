@@ -58,8 +58,8 @@ class GenTemplate:
 public:
   static void registerKeywords( Keywords& keys );
   explicit GenTemplate(const CLToolOptions& co );
-  int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const {
+  int main(FILE* in, FILE*out,Communicator& pc) override;
+  string description()const override {
     return "print out a template input for a particular action";
   }
 };

@@ -52,9 +52,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ActionVolume(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
-  virtual unsigned getNumberOfQuantities() const ;
+  unsigned getNumberOfQuantities() const override;
 /// Calculate whats in the volume
-  void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
+  void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const override;
 /// This calculates whether or not a particular is inside the box of interest
 /// this is used for neighbour list with volumes
   bool inVolumeOfInterest( const unsigned& curr ) const ;

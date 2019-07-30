@@ -87,12 +87,12 @@ class UpdateIf:
   bool on;
   bool end;
 public:
-  void prepare();
-  void calculate();
-  void beforeUpdate();
+  void prepare() override;
+  void calculate() override;
+  void beforeUpdate() override;
   explicit UpdateIf(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply() {}
+  void apply() override {}
   ~UpdateIf();
 };
 

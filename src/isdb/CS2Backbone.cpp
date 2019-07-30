@@ -486,8 +486,8 @@ public:
 
   explicit CS2Backbone(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")

@@ -115,8 +115,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindSphericalContour(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const { return 2; }
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
+  unsigned getNumberOfQuantities() const override { return 2; }
+  void compute( const unsigned& current, MultiValue& myvals ) const override;
 };
 
 PLUMED_REGISTER_ACTION(FindSphericalContour,"FIND_SPHERICAL_CONTOUR")

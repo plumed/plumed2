@@ -49,10 +49,10 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   explicit TrigonometricPathVessel( const vesselbase::VesselOptions& da );
-  std::string description();
-  void resize();
-  void finish( const std::vector<double>& buffer );
-  bool applyForce(std::vector<double>&);
+  std::string description() override;
+  void resize() override;
+  void finish( const std::vector<double>& buffer ) override;
+  bool applyForce(std::vector<double>&) override;
 };
 
 }

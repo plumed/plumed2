@@ -102,8 +102,8 @@ private:
 public:
   static void registerKeywords(Keywords& keys);
   explicit JCoupling(const ActionOptions&);
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(JCoupling, "JCOUPLING")

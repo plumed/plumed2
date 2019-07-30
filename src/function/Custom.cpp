@@ -175,7 +175,7 @@ class Custom :
   vector<double*> lepton_ref_deriv;
 public:
   explicit Custom(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

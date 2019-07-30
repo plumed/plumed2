@@ -81,9 +81,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit OutputCluster(const ActionOptions&);
-  void calculate() {}
-  void apply() {}
-  void update();
+  void calculate() override {}
+  void apply() override {}
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(OutputCluster,"OUTPUT_CLUSTER")

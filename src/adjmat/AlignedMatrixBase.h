@@ -40,11 +40,11 @@ public:
 /// Constructor
   explicit AlignedMatrixBase(const ActionOptions&);
 ///
-  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
+  void setupConnector( const unsigned& id, const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) override;
   virtual void readOrientationConnector( const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) = 0;
 /// This actually calculates the value of the contact function
-  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, multicolvar::AtomValuePack& myatoms ) const override;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override;
 /// This transforms the dot product
   virtual double computeVectorFunction( const unsigned& iv, const unsigned& jv,
                                         const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,

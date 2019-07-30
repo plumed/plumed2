@@ -138,8 +138,8 @@ public:
   explicit Group(const ActionOptions&ao);
   ~Group();
   static void registerKeywords( Keywords& keys );
-  void calculate() {}
-  void apply() {}
+  void calculate() override {}
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(Group,"GROUP")

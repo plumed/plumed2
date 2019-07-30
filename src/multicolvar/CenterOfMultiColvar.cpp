@@ -92,7 +92,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit CenterOfMultiColvar(const ActionOptions&ao);
-  void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(CenterOfMultiColvar,"CENTER_OF_MULTICOLVAR")

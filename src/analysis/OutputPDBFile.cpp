@@ -49,8 +49,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   OutputPDBFile( const ActionOptions& );
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
-  void performAnalysis();
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
+  void performAnalysis() override;
 };
 
 PLUMED_REGISTER_ACTION(OutputPDBFile,"OUTPUT_ANALYSIS_DATA_TO_PDB")

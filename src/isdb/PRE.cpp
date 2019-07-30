@@ -87,8 +87,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit PRE(const ActionOptions&);
-  virtual void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(PRE,"PRE")

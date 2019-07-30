@@ -33,10 +33,10 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit PathBase(const ActionOptions&);
-  double getLambda();
-  void calculate();
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
-  double transformHD( const double& dist, double& df ) const ;
+  double getLambda() override;
+  void calculate() override;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
+  double transformHD( const double& dist, double& df ) const override;
 };
 
 }

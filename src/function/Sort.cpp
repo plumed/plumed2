@@ -62,7 +62,7 @@ class Sort :
 {
 public:
   explicit Sort(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

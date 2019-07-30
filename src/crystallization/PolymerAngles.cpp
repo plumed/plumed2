@@ -70,7 +70,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit PolymerAngles(const ActionOptions& ao);
   double computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
-                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const ;
+                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const override;
 };
 
 PLUMED_REGISTER_ACTION(PolymerAngles,"POLYMER_ANGLES")

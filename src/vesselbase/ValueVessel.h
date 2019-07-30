@@ -47,9 +47,9 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ValueVessel( const VesselOptions& da );
-  std::string description();
+  std::string description() override;
   virtual std::string value_descriptor()=0;
-  bool applyForce( std::vector<double>& forces );
+  bool applyForce( std::vector<double>& forces ) override;
   double getOutputValue() const ;
   Value* getFinalValue() const ;
 };

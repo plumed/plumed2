@@ -41,8 +41,8 @@ public:
   explicit CoordinationBase(const ActionOptions&);
   ~CoordinationBase();
 // active methods:
-  virtual void calculate();
-  virtual void prepare();
+  void calculate() override;
+  void prepare() override;
   virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const=0;
   static void registerKeywords( Keywords& keys );
 };

@@ -119,9 +119,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeCavity(const ActionOptions& ao);
   ~VolumeCavity();
-  void setupRegions();
-  void update();
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
+  void setupRegions() override;
+  void update() override;
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
 PLUMED_REGISTER_ACTION(VolumeCavity,"CAVITY")

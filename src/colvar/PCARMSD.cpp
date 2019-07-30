@@ -43,7 +43,7 @@ class PCARMSD : public Colvar {
   std::vector<string> pca_names;
 public:
   explicit PCARMSD(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

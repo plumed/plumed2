@@ -99,7 +99,7 @@ namespace PLMD {
 namespace cltools {
 
 class PesMD  : public PLMD::CLTool {
-  string description() const {
+  string description() const override {
     return "Langevin dynamics on PLUMED energy landscape";
   }
 public:
@@ -165,7 +165,7 @@ private:
 
 public:
 
-  int main( FILE* in, FILE* out, PLMD::Communicator& pc) {
+  int main( FILE* in, FILE* out, PLMD::Communicator& pc) override {
     std::string plumedin; std::vector<double> ipos;
     double temp, tstep, friction; bool lperiod;
     int dim, nsteps, seed; std::vector<double> periods;

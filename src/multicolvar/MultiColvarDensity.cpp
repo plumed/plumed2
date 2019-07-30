@@ -99,12 +99,12 @@ class MultiColvarDensity : public gridtools::ActionWithGrid {
 public:
   explicit MultiColvarDensity(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-  unsigned getNumberOfQuantities() const ;
-  bool isPeriodic() { return false; }
-  void clearAverage();
-  void prepareForAveraging();
-  void compute( const unsigned&, MultiValue& ) const ;
-  void apply() {}
+  unsigned getNumberOfQuantities() const override;
+  bool isPeriodic() override { return false; }
+  void clearAverage() override;
+  void prepareForAveraging() override;
+  void compute( const unsigned&, MultiValue& ) const override;
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarDensity,"MULTICOLVARDENS")

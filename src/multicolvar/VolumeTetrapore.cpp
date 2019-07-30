@@ -127,9 +127,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeTetrapore(const ActionOptions& ao);
   ~VolumeTetrapore();
-  void setupRegions();
-  void update();
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
+  void setupRegions() override;
+  void update() override;
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
 PLUMED_REGISTER_ACTION(VolumeTetrapore,"TETRAHEDRALPORE")

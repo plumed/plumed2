@@ -57,8 +57,8 @@ class Completion:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Completion(const CLToolOptions& co );
-  int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const {
+  int main(FILE* in, FILE*out,Communicator& pc) override;
+  string description()const override {
     return "dump a function usable for programmable completion";
   }
 };

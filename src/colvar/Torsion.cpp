@@ -98,7 +98,7 @@ class Torsion : public Colvar {
 public:
   explicit Torsion(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
