@@ -135,7 +135,7 @@ Value* ActionWithValue::getPntrToValue() {
 
 void ActionWithValue::addComponent( const std::string& name ) {
   if( !keywords.outputComponentExists(name,true) ) {
-    warning("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
+    plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
             "registerKeywords as described in the developer docs.");
   }
   std::string thename; thename=getLabel() + "." + name;
@@ -152,7 +152,7 @@ void ActionWithValue::addComponent( const std::string& name ) {
 
 void ActionWithValue::addComponentWithDerivatives( const std::string& name ) {
   if( !keywords.outputComponentExists(name,true) ) {
-    warning("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
+    plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
             "registerKeywords as described in the developer doc.");
   }
   std::string thename; thename=getLabel() + "." + name;
