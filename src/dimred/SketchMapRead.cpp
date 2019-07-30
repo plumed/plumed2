@@ -53,7 +53,7 @@ private:
   std::vector<std::unique_ptr<ReferenceConfiguration> > myframes;
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMapRead( const ActionOptions& ao );
+  explicit SketchMapRead( const ActionOptions& ao );
   void minimise( Matrix<double>& );
   analysis::DataCollectionObject& getStoredData( const unsigned& idata, const bool& calcdist );
   unsigned getNumberOfDataPoints() const ;

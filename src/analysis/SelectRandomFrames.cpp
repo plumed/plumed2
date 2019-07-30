@@ -40,7 +40,7 @@ private:
   unsigned seed;
 public:
   static void registerKeywords( Keywords& keys );
-  SelectRandomFrames( const ActionOptions& ao );
+  explicit SelectRandomFrames( const ActionOptions& ao );
   void selectLandmarks();
 };
 

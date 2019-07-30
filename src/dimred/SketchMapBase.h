@@ -49,7 +49,7 @@ protected:
   double mixparam;
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMapBase( const ActionOptions& );
+  explicit SketchMapBase( const ActionOptions& );
 /// This starts the process of calculating the projections
   void calculateProjections( const Matrix<double>&, Matrix<double>& );
 /// This finishes the process of calculating the prjections

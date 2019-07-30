@@ -42,7 +42,7 @@ private:
   LandmarkSelectionBase* mylandmarks;
 public:
   static void registerKeywords( Keywords& keys );
-  ReselectLandmarks( const ActionOptions& ao );
+  explicit ReselectLandmarks( const ActionOptions& ao );
   void selectLandmarks();
 };
 
