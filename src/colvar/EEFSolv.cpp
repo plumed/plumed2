@@ -105,8 +105,8 @@ void EEFSolv::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
   useCustomisableComponents(keys);
   keys.add("atoms", "ATOMS", "The atoms to be included in the calculation, e.g. the whole protein.");
-  keys.add("compulsory", "NL_BUFFER", "The buffer to the intrinsic cutoff used when calculating pairwise interactions.");
-  keys.add("compulsory", "NL_STRIDE", "The frequency with which the neighbor list is updated.");
+  keys.add("compulsory", "NL_BUFFER", "0.1", "The buffer to the intrinsic cutoff used when calculating pairwise interactions.");
+  keys.add("compulsory", "NL_STRIDE", "40", "The frequency with which the neighbor list is updated.");
   keys.addFlag("TEMP_CORRECTION", false, "Correct free energy of solvation constants for temperatures different from 298.15 K");
 }
 
@@ -134,7 +134,6 @@ EEFSolv::EEFSolv(const ActionOptions&ao):
 
   log << "  Bibliography " << plumed.cite("Lazaridis T, Karplus M, Proteins Struct. Funct. Genet. 35, 133 (1999)"); log << "\n";
 
-
   nl.resize(size);
   nlexpo.resize(size);
   parameter.resize(size, vector<double>(4, 0));
@@ -154,6 +153,7 @@ void EEFSolv::update_neighb() {
     const Vector posi = getPosition(i);
     // Loop through neighboring atoms, add the ones below cutoff
     for (unsigned j=i+1; j<size; ++j) {
+      if(parameter[i][1]==0&&parameter[j][1]==0) continue; 
       const double d2 = delta(posi, getPosition(j)).modulo2();
       if (d2 < lower_c2 && j < i+14) {
         // crude approximation for i-i+1/2 interactions,
@@ -177,9 +177,7 @@ void EEFSolv::update_neighb() {
 void EEFSolv::calculate() {
   if(pbc) makeWhole();
   if(getExchangeStep()) nl_update = 0;
-  if (nl_update == 0) {
-    update_neighb();
-  }
+  if(nl_update == 0) update_neighb();
 
   const unsigned size=getNumberOfAtoms();
   double bias = 0.0;
@@ -212,52 +210,54 @@ void EEFSolv::calculate() {
         const double rij      = dist.modulo();
         const double inv_rij  = 1.0 / rij;
         const double inv_rij2 = inv_rij * inv_rij;
-        const double fact_ij  = inv_rij2 * delta_g_free_i * vdw_volume_j * INV_PI_SQRT_PI* inv_lambda_i;
-        const double fact_ji  = inv_rij2 * delta_g_free_j * vdw_volume_i * INV_PI_SQRT_PI* inv_lambda_j;
-        double deriv = 0.;
+        const double fact_ij  = inv_rij2 * delta_g_free_i * vdw_volume_j * INV_PI_SQRT_PI * inv_lambda_i;
+        const double fact_ji  = inv_rij2 * delta_g_free_j * vdw_volume_i * INV_PI_SQRT_PI * inv_lambda_j;
 
         // in this case we can calculate a single exponential
         if(!nlexpo[i][i_nl]) {
           // i-j interaction
-          if(inv_rij > 0.5*inv_lambda_i)
+          if(inv_rij > 0.5*inv_lambda_i && delta_g_free_i!=0.)
           {
-            const double inv_lambda2_i = inv_lambda_i * inv_lambda_i;
-            const double rij_vdwr_diff = rij - vdw_radius_i;
-            const double expo = exp(-inv_lambda2_i * rij_vdwr_diff * rij_vdwr_diff);
-            const double fact = expo * fact_ij;
-            fedensity += fact;
-            deriv     += inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2_i);
+            const double e_arg = (rij - vdw_radius_i)*inv_lambda_i;
+            const double expo  = exp(-e_arg*e_arg);
+            const double fact  = expo*fact_ij;
+            const double deriv = inv_rij*fact*(inv_rij + e_arg*inv_lambda_i);
+            const Vector dd    = deriv*dist;
+            fedensity    += fact;
+            deriv_i      += dd;
+            deriv_omp[j] -= dd;
           }
 
           // j-i interaction
-          if(inv_rij > 0.5*inv_lambda_j)
+          if(inv_rij > 0.5*inv_lambda_j && delta_g_free_j!=0.)
           {
-            const double inv_lambda2_j = inv_lambda_j * inv_lambda_j;
-            const double rij_vdwr_diff = rij - vdw_radius_j;
-            const double expo = exp(-inv_lambda2_j * rij_vdwr_diff * rij_vdwr_diff);
-            const double fact = expo * fact_ji;
-            fedensity += fact;
-            deriv     += inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2_j);
+            const double e_arg = (rij - vdw_radius_j)*inv_lambda_j;
+            const double expo  = exp(-e_arg*e_arg);
+            const double fact  = expo*fact_ji;
+            const double deriv = inv_rij*fact*(inv_rij + e_arg*inv_lambda_j);
+            const Vector dd    = deriv*dist;
+            fedensity    += fact;
+            deriv_i      += dd;
+            deriv_omp[j] -= dd;
           }
         } else {
           // i-j interaction
           if(inv_rij > 0.5*inv_lambda_i)
           {
-            const double inv_lambda2 = inv_lambda_i * inv_lambda_i;
-            const double rij_vdwr_diff = rij - vdw_radius_i;
-            const double expo = exp(-inv_lambda2 * rij_vdwr_diff * rij_vdwr_diff);
-            const double fact = expo*(fact_ij + fact_ji);
-            fedensity += fact;
-            deriv     += inv_rij * fact * (inv_rij + rij_vdwr_diff * inv_lambda2);
+            const double e_arg = (rij - vdw_radius_i)*inv_lambda_i;
+            const double expo  = exp(-e_arg*e_arg);
+            const double fact  = expo*(fact_ij + fact_ji);
+            const double deriv = inv_rij*fact*(inv_rij + e_arg*inv_lambda_i);
+            const Vector dd    = deriv*dist;
+            fedensity    += fact;
+            deriv_i      += dd;
+            deriv_omp[j] -= dd;
           }
         }
 
-        const Vector dd = deriv*dist;
-        deriv_i      += dd;
-        deriv_omp[j] -= dd;
       }
       deriv_omp[i] += deriv_i;
-      bias += - 0.5 * fedensity;
+      bias += 0.5*fedensity;
     }
     #pragma omp critical
     for(unsigned i=0; i<size; i++) {
@@ -267,7 +267,7 @@ void EEFSolv::calculate() {
   }
 
   setBoxDerivatives(-deriv_box);
-  setValue(delta_g_ref + bias);
+  setValue(delta_g_ref - bias);
 
   // Keep track of the neighbourlist updates
   ++nl_update;
@@ -278,7 +278,7 @@ void EEFSolv::calculate() {
 
 void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter, bool tcorr) {
   vector<vector<double> > parameter_temp;
-  parameter_temp.resize(atoms.size());
+  parameter_temp.resize(atoms.size(), vector<double>(7,0));
   map<string, vector<double> > valuemap;
   map<string, map<string, string> > typemap;
   valuemap = setupValueMap();
