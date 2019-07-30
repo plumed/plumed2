@@ -38,7 +38,7 @@ namespace multicolvar {
 Calculate the coordination numbers of atoms so that you can then calculate functions of the distribution of
  coordination numbers such as the minimum, the number less than a certain quantity and so on.
 
-To make the calculation of coordination numbers differentiable the following function is used:
+So that the calculated coordination numbers have continuous derivatives the following function is used:
 
 \f[
 s = \frac{ 1 - \left(\frac{r-d_0}{r_0}\right)^n } { 1 - \left(\frac{r-d_0}{r_0}\right)^m }

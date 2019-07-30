@@ -43,7 +43,7 @@ private:
   double gamma;
 public:
   static void registerKeywords( Keywords& keys );
-  LandmarkStaged( const ActionOptions& ao );
+  explicit LandmarkStaged( const ActionOptions& ao );
   void selectLandmarks();
 };
 

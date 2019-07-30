@@ -66,6 +66,7 @@ can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 dih: DIHCOR ...
 ATOMS1=@phi-3,@psi-3

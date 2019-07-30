@@ -31,7 +31,7 @@ so called adjacency matrix.  An adjacency matrix is an \f$N \times N\f$ matrix i
 or not the \f$i\f$th and \f$j\f$th atoms/molecules from a set of \f$N\f$ atoms/molecules are adjacent or not.  When analyzing these matrix
 we can treat them as a graph and find connected components using some clustering algorithm.  This action is used in tandem with this form of analysis
 to output the largest of the distances between the pairs of atoms that are connected together in a particular connected component.  It is important to
-note that the quantity that is output by this action is not differentiable.  As such it cannot be used as a collective variable in a biased simulation.
+note that the quantity that is output by this action cannot be differentiated.  As such it cannot be used as a collective variable in a biased simulation.
 
 \par Examples
 

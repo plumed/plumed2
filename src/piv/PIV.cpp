@@ -207,7 +207,7 @@ private:
   bool Svol,cross,direct,doneigh,test,CompDer,com;
 public:
   static void registerKeywords( Keywords& keys );
-  PIV(const ActionOptions&);
+  explicit PIV(const ActionOptions&);
   ~PIV();
   // active methods:
   virtual void calculate();

@@ -48,7 +48,7 @@ When the variable is periodic (e.g. \ref TORSION) and has a value, \f$s\f$, in \
 
 The following example calculates the ensemble average for the distance between atoms 1 and 2
 and output this to a file called COLVAR.  In this example it is assumed that no bias is acting
-on the system and that the weights, \f$w(t')\f$ in the formulae above can thus all be set equal
+on the system and that the weights, \f$w(t')\f$ in the formulas above can thus all be set equal
 to one.
 
 \plumedfile

@@ -68,6 +68,7 @@ The following input calculates the number of six residue segments of
 protein that are in an alpha helical configuration.
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=helix.pdb
 alpha: ALPHARMSD RESIDUES=all
 \endplumedfile
@@ -75,6 +76,7 @@ alpha: ALPHARMSD RESIDUES=all
 Here the same is done use RMSD instead of DRMSD
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES ENTITY0=1-100
 alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1
