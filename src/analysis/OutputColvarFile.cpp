@@ -52,7 +52,7 @@ private:
   std::vector<std::string> req_vals;
 public:
   static void registerKeywords( Keywords& keys );
-  OutputColvarFile( const ActionOptions& );
+  explicit OutputColvarFile( const ActionOptions& );
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
   void performAnalysis();
 };

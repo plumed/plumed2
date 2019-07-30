@@ -37,6 +37,7 @@ if [ $do_cppcheck == true ] ; then
   cppcheck --std=c++11 --std=posix -j 4 --platform=unix64 --language=c++ \
   -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
   -UGMX_CYGWIN  -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE  \
+  -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
   --template='[{file}:{line}] ({severity}) :{id}: {message}' --enable=all --inline-suppr --force \
   $files
 fi

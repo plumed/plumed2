@@ -37,7 +37,7 @@ This can be used to output the data that has been stored in an Analysis object.
 class WhamWeights : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
-  WhamWeights( const ActionOptions& );
+  explicit WhamWeights( const ActionOptions& );
 };
 
 PLUMED_REGISTER_ACTION(WhamWeights,"WHAM_WEIGHTS")

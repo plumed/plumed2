@@ -530,7 +530,7 @@ EDS::EDS(const ActionOptions&ao):
 }
 
 void EDS::readInRestart(const bool b_mean) {
-  int adaptive_i;
+  int adaptive_i=0;
 
   in_restart_.open(in_restart_name_);
 

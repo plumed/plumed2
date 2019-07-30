@@ -37,7 +37,7 @@ This can be used to output the data that has been stored in an Analysis object.
 class SketchMap : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMap( const ActionOptions& );
+  explicit SketchMap( const ActionOptions& );
 };
 
 PLUMED_REGISTER_ACTION(SketchMap,"SKETCH_MAP")

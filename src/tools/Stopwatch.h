@@ -259,7 +259,7 @@ public:
 // When destructing, stopwatch is logged.
 // Make sure that log survives stopwatch. Typically, it should be declared earlier, in order
 // to be destroyed later.
-  Stopwatch(Log&log): mylog(&log) {}
+  explicit Stopwatch(Log&log): mylog(&log) {}
 // Destructor.
   ~Stopwatch();
 /// Start timer named "name"

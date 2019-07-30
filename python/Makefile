@@ -15,6 +15,7 @@ all:
 	@echo Building python interface for PLUMED 
 	unset CXX && unset CC && unset CFLAGS && unset CXXFLAGS && unset LDSHARED && \
           plumed_program_name=plumed \
+          plumed_force_cython=yes \
           plumed_version=$(VERSION) \
           plumed_include_dir=../src/wrapper \
           plumed_default_kernel="$$PWD/../src/lib/libplumedKernel.$(SOEXT)" \
@@ -41,7 +42,7 @@ pypi:
 	mkdir -p pypi
 	cp -r test pypi/
 	cp ../src/wrapper/Plumed.h README.rst MANIFEST.in cplumed.pxd plumed.pyx setup.py ../VERSION pypi/
-	cd pypi ; $(python_bin) setup.py sdist
+	cd pypi ; plumed_language_level=2 $(python_bin) setup.py sdist
 	echo "now use: $(python_bin) -m twine upload dist/plumed-$(VERSION).tar.gz"
 
 clean:

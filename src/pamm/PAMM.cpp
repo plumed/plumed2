@@ -119,6 +119,7 @@ public:
 /// We have to overwrite this here
   unsigned getNumberOfQuantities() const ;
 /// Calculate the weight of this object ( average of input weights )
+  using PLMD::multicolvar::MultiColvarBase::calculateWeight;
   void calculateWeight( multicolvar::AtomValuePack& myatoms );
 /// Actually do the calculation
   double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;

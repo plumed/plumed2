@@ -81,7 +81,7 @@ double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& my
 void OptimalRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const {
   std::vector<Tensor> rot(1);  Matrix<std::vector<Vector> > DRotDPos( 3, 3 );
   std::vector<Vector> centeredreference( getNumberOfAtoms() ), centeredpos( getNumberOfAtoms() ), avector( getNumberOfAtoms() );
-  double d=myrmsd.calc_PCAelements(pos,avector,rot[0],DRotDPos,direction,centeredpos,centeredreference,true);
+  myrmsd.calc_PCAelements(pos,avector,rot[0],DRotDPos,direction,centeredpos,centeredreference,true);
   unsigned nat = pos.size(); for(unsigned i=0; i<nat; ++i) direction[i] = getDisplace()[i]*( direction[i] - getReferencePosition(i) );
 }
 

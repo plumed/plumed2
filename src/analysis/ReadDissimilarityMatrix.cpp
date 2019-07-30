@@ -51,7 +51,7 @@ private:
   std::vector<double> weights;
 public:
   static void registerKeywords( Keywords& keys );
-  ReadDissimilarityMatrix( const ActionOptions& ao );
+  explicit ReadDissimilarityMatrix( const ActionOptions& ao );
   unsigned getNumberOfDataPoints() const ;
 // Return the index of the data point in the base class
   unsigned getDataPointIndexInBase( const unsigned& idata ) const ;

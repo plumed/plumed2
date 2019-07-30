@@ -126,8 +126,7 @@ ResetCell::ResetCell(const ActionOptions&ao):
   parse("TYPE",type);
 
   log<<"  type: "<<type<<"\n";
-  if(type=="TRIANGULAR") {
-  } else error("undefined type "+type);
+  if(type!="TRIANGULAR") error("undefined type "+type);
 
   checkRead();
 }
