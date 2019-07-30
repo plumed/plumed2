@@ -42,7 +42,7 @@ private:
   double recalculateWeights( const Matrix<double>& projections, Matrix<double>& weights );
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMapSmacof( const ActionOptions& ao );
+  explicit SketchMapSmacof( const ActionOptions& ao );
   void minimise( Matrix<double>& );
 };
 

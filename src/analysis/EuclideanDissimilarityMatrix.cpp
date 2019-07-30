@@ -44,7 +44,7 @@ private:
   Matrix<double> dissimilarities;
 public:
   static void registerKeywords( Keywords& keys );
-  EuclideanDissimilarityMatrix( const ActionOptions& ao );
+  explicit EuclideanDissimilarityMatrix( const ActionOptions& ao );
 /// Do the analysis
   void performAnalysis();
 /// This ensures that classes that use this data know that dissimilarities were set

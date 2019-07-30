@@ -35,7 +35,7 @@ private:
   const unsigned ITMAX;
   const double EPS;
 public:
-  ConjugateGradient( FCLASS* funcc ) : MinimiseBase<FCLASS>(funcc), ITMAX(200), EPS(1E-10) {}
+  explicit ConjugateGradient( FCLASS* funcc ) : MinimiseBase<FCLASS>(funcc), ITMAX(200), EPS(1E-10) {}
   void minimise( const double& ftol, std::vector<double>& p, engf_pointer myfunc );
 };
 

@@ -40,7 +40,7 @@ private:
   unsigned seed;
 public:
   static void registerKeywords( Keywords& keys );
-  FarthestPointSampling( const ActionOptions& ao );
+  explicit FarthestPointSampling( const ActionOptions& ao );
   void selectLandmarks();
 };
 

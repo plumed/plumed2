@@ -56,7 +56,7 @@ protected:
   AnalysisBase* my_input_data;
 public:
   static void registerKeywords( Keywords& keys );
-  AnalysisBase(const ActionOptions&);
+  explicit AnalysisBase(const ActionOptions&);
 /// These are required because we inherit from both ActionAtomistic and ActionWithArguments
   void lockRequests();
   void unlockRequests();
