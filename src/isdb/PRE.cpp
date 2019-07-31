@@ -95,7 +95,6 @@ PLUMED_REGISTER_ACTION(PRE,"PRE")
 
 void PRE::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("NORATIO",false,"Set to TRUE if you want to compute PRE without Intensity Ratio");
@@ -270,7 +269,7 @@ void PRE::calculate()
     for(unsigned k=0; k<i; k++) index+=nga[k];
     const double c_aver=constant/static_cast<double>(nga[i]);
     string num; Tools::convert(i,num);
-    Value* val=getPntrToComponent("pre_"+num);
+    Value* val=getPntrToComponent("pre-"+num);
     // cycle over equivalent atoms
     for(unsigned j=0; j<nga[i]; j++) {
       // the first atom is always the same (the paramagnetic group)

@@ -110,7 +110,6 @@ PLUMED_REGISTER_ACTION(JCoupling, "JCOUPLING")
 
 void JCoupling::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("numbered", "ATOMS", "the 4 atoms involved in each of the bonds for which you wish to calculate the J-coupling. "
@@ -371,7 +370,7 @@ void JCoupling::calculate()
     for (unsigned r=0; r<ncoupl_; r++) {
       const unsigned a0 = 6*r;
       string num; Tools::convert(r,num);
-      Value* val=getPntrToComponent("j_"+num);
+      Value* val=getPntrToComponent("j-"+num);
       val->set(j[r]);
       setAtomsDerivatives(val, a0, deriv[a0]);
       setAtomsDerivatives(val, a0+1, deriv[a0+1]);

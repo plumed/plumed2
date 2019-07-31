@@ -1,4 +1,4 @@
-#! FIELDS time rdca.rdc_0 rdca.rdc_1 rdca.rdc_2 rdca.rdc_3
+#! FIELDS time rdca.rdc-0 rdca.rdc-1 rdca.rdc-2 rdca.rdc-3
  0.000000 0.002505 -0.007709 -0.007084 0.002446
  0.050000 0.002061 -0.008932 -0.006907 0.001458
  0.100000 0.002700 -0.010235 -0.006898 0.000975

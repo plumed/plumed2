@@ -13,5 +13,5 @@ LABEL=provan
 NUMERICAL_DERIVATIVES
 ... NOE
 
-DUMPDERIVATIVES ARG=prova.noe_0,provan.noe_0,prova.noe_1,provan.noe_1 STRIDE=1 FILE=deriv FMT=%10.0f
+DUMPDERIVATIVES ARG=prova.noe-0,provan.noe-0,prova.noe-1,provan.noe-1 STRIDE=1 FILE=deriv FMT=%10.0f
 PRINT ARG=prova.* FILE=COLVAR STRIDE=1

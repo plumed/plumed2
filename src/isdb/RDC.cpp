@@ -224,7 +224,6 @@ PLUMED_REGISTER_ACTION(RDC,"PCS")
 
 void RDC::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.add("numbered","ATOMS","the couple of atoms involved in each of the bonds for which you wish to calculate the RDC. "
@@ -238,6 +237,12 @@ void RDC::registerKeywords( Keywords& keys ) {
   keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and useful for \\ref STATS).");
   keys.addOutputComponent("rdc","default","the calculated # RDC");
   keys.addOutputComponent("exp","SVD/ADDCOUPLINGS","the experimental # RDC");
+  keys.addOutputComponent("Sxx","SVD","Tensor component");
+  keys.addOutputComponent("Syy","SVD","Tensor component");
+  keys.addOutputComponent("Szz","SVD","Tensor component");
+  keys.addOutputComponent("Sxy","SVD","Tensor component");
+  keys.addOutputComponent("Sxz","SVD","Tensor component");
+  keys.addOutputComponent("Syz","SVD","Tensor component");
 }
 
 RDC::RDC(const ActionOptions&ao):

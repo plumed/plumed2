@@ -315,11 +315,11 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.add("optional","SELECTOR","name of selector");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
   keys.use("RESTART");
-  useCustomisableComponents(keys);
   keys.addOutputComponent("sigma",        "default",      "uncertainty parameter");
   keys.addOutputComponent("sigmaMean",    "default",      "uncertainty in the mean estimate");
-  keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance");
-  keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance");
+  keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance for sigma values");
+  keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance for scale value");
+  keys.addOutputComponent("acceptFT",     "GENERIC",      "MC acceptance for general metainference f tilde value");
   keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
   keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives with respect to the bias");
   keys.addOutputComponent("scale",        "SCALEDATA",    "scale parameter");
