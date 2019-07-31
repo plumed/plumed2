@@ -54,13 +54,14 @@ the free-energy landscape of GB1:
 - \ref ALPHABETA 
 - \ref DIHCOR
 
-Unfortunately secondary structure collective variables cannot be used in this case because the model does not include hydrogens.
+Unfortunately secondary structure collective variables cannot be used in this case because the model does not include hydrogen atoms.
 
 The users should first perform a preliminary simulations and use this to select one or more CV to be later employed for a \ref METAD or \ref RESTRAINT (umbrella sampling) simulation. 
 Once you are satisfied by the convergence of your simulation, you can use one of the reweighting algorithms proposed
 to evaluate the free-energy difference between folded and unfolded state as a function of multiple collective variables. 
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-6d/GB1_native.pdb
 #this allows you to use short-cut for dihedral angles
 MOLINFO STRUCTURE=GB1_native.pdb
 

@@ -41,7 +41,7 @@ P(s') = \frac{ \int \textrm{d}x \textrm{d}p \delta( s(x) - s') e^{-\frac{H(x,p)}
 \f]
 
 In this expression the integral signs are used to represent \f$6N\f$-dimensional integrals that run over all the possible positions and momenta that the \f$N\f$ atoms 
-in our system can take.  \f$H(x,p)\f$ is the Hamiltonian and \f$k_B\f$ and \f$T\f$ are Boltzmann's constant and the temperature respectively.  The quantity calculated
+in our system can take.  \f$H(x,p)\f$ is the Hamiltonian and \f$k_B\f$ and \f$T\f$ are the Boltzmann constant and the temperature respectively.  The quantity calculated
 by this quotient is the probability that our CV will take a value \f$s'\f$.  The quantity in the denominator of the above expression is the canonical partition function
 while the \f$\delta\f$ function in the integral in the numerator ensures that only those configurations that have a CV value, \f$s(x)\f$, equal to \f$s'\f$ contribute 
 to the integral in the numerator.
@@ -329,12 +329,12 @@ while True :
 Copy the script above to a file called gen-normal.py and then execute the python script within it using the command:
 
 \verbatim
-> python gen-normal.py > mynormal
+> python gen-normal.py > normal_data
 \endverbatim
 
-This should produce a file called mynormal.  The first few lines of this file will look something like the following:
+This should produce a file called normal_data.  The first few lines of this file will look something like the following:
 
-\auxfile{mynormal}
+\auxfile{normal_data}
 #! FIELDS time rand
 0 0.7216627600374712
 1 0.7460765782434674
@@ -387,7 +387,7 @@ values were output for you so you can calculate this estimate of the ensemble av
 
 \plumedfile
 UNITS NATURAL  # This ensures that Boltzmann's constant is one
-data: READ FILE=mynormal VALUES=rand IGNORE_FORCES
+data: READ FILE=normal_data VALUES=rand IGNORE_FORCES
 mm: RESTRAINT ARG=data AT=0.6 KAPPA=33.333
 rw: REWEIGHT_BIAS TEMP=1
 av: AVERAGE ARG=data STRIDE=1 LOGWEIGHTS=rw
@@ -405,7 +405,7 @@ reweighted histogram.
 
 \plumedfile
 UNITS NATURAL # This ensures that Boltzmann's constant is one
-data: READ FILE=mynormal VALUES=rand IGNORE_FORCES
+data: READ FILE=normal_data VALUES=rand IGNORE_FORCES
 mm: RESTRAINT ARG=data AT=0.6 KAPPA=33.333
 rw: REWEIGHT_BIAS TEMP=1
 hh: HISTOGRAM ARG=data STRIDE=1 GRID_MIN=0 GRID_MAX=1.0 GRID_BIN=20 KERNEL=DISCRETE LOGWEIGHTS=rw
@@ -448,12 +448,12 @@ for i in range(0,10001):
 Copy the python script above to a filled called correlated-data.py and then execute the script using the command:
 
 \verbatim
-> python correlated-data.py > mycorr
+> python correlated-data.py > correlated_data
 \endverbatim
 
-This should output a file called mycorr.  The first few lines of this file should look something like the following:
+This should output a file called correlated_data.  The first few lines of this file should look something like the following:
 
-\auxfile{mycorr}
+\auxfile{correlated_data}
 #! FIELDS time rand
 0 0.17818391042061332
 1 0.33368077871483476
@@ -485,7 +485,7 @@ the analysis with PLUMED and explain the results that we get at each stage of th
 distribution using the following PLUMED input:
 
 \plumedfile
-data: READ FILE=mycorr VALUES=rand
+data: READ FILE=correlated_data VALUES=rand
 av5: AVERAGE ARG=data STRIDE=1 CLEAR=5
 PRINT ARG=av5 FILE=colvar5 STRIDE=5
 av10: AVERAGE ARG=data STRIDE=1 CLEAR=10
@@ -614,14 +614,14 @@ for i in range(0,100010):
 Copy this script to a filled called do-monte-carlo.py and execute the contents of the script using the command:
 
 \verbatim
-> python do-monte-carlo.py > mcdata
+> python do-monte-carlo.py > monte_carlo_data
 \endverbatim
 
 This will run a short Monte Carlo simulation that generates (time-correlated) random data from a (roughly) Gaussian distribution by attempting 
-random translational moves of up to 0.1 units.  The command above will generate a file called mcdata the first few lines of which should look 
-somethign like the following:
+random translational moves of up to 0.1 units.  The command above will generate a file called monte_carlo_data the first few lines of which should look 
+something like the following:
 
-\auxfile{mcdata}
+\auxfile{monte_carlo_data}
 #! FIELDS time rand
 0 0.17818391042061332
 1 0.33368077871483476
@@ -639,7 +639,7 @@ We can use the following PLUMED input to calculate block averages for the unbias
 
 \plumedfile
 UNITS NATURAL # This ensures that Boltzmann's constant is one
-data: READ FILE=mcdata VALUES=rand IGNORE_FORCES
+data: READ FILE=monte_carlo_data VALUES=rand IGNORE_FORCES
 mm: RESTRAINT ARG=data AT=0.6 KAPPA=33.333
 rw: REWEIGHT_BIAS TEMP=1
 hh: HISTOGRAM ARG=data STRIDE=1 GRID_MIN=0 GRID_MAX=1.0 GRID_BIN=20 KERNEL=DISCRETE LOGWEIGHTS=rw CLEAR=500

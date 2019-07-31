@@ -60,7 +60,7 @@ From a mathematical point of view, that's rather simple. The progress along the 
 S(X)=\frac{\sum_{i=1}^{N} i\ \exp^{-\lambda \vert X-X_i \vert }}{ \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } }
 \f]
 
-where in \ref belfast-2-s-eq the \f$ \vert X-X_i \vert \f$ represents a distance between one configuration \f$ X \f$ which is analyzed and another from the set that compose the path 
+where in \ref belfast-2-s-eq the \f$\vert X-X_i\vert\f$ represents a distance between one configuration \f$ X \f$ which is analyzed and another from the set that compose the path 
 \f$ X_i \f$. The parameter \f$ \lambda \f$ is a positive value that is tuned in a way explained later.
 here are a number of things to note to make you think that this is exactly what you want.
 - The negative exponential function is something that is 1 whenever the value at the exponent is zero, and is progressively smaller when the value is larger than zero (trivially, the case with the value at the exponent larger than zero never occurs since lambda is a positive quantity and the distance is by definition positive).
@@ -80,7 +80,7 @@ It is important to note that in principle one could even have a specific \f$ \la
 
 So, at this point it is better to understand what is meant with "distance" since a distance between two conformations can be calculated in very many ways.
 The way we refer here is by using mean square deviation after optimal alignment.
-This means that at each step in which the analysis is performed, a number N of optimal alignments is performed. Namely what is calculated is \f$ \vert X-X_i \vert = d(X,X_i)^2 \f$ where \f$  d(X,X_i) \f$ is the RMSD as defined in what you see here \ref RMSD.
+This means that at each step in which the analysis is performed, a number N of optimal alignments is performed. Namely what is calculated is \f$\vert X-X_i\vert=d(X,X_i)^2\f$ where \f$  d(X,X_i) \f$ is the RMSD as defined in what you see here \ref RMSD.
 
 Using the MSD instead of RMSD is sometimes more convenient and more stable (you do not have a denominator that goes to zero in the derivatives when biasing.
 
@@ -106,7 +106,7 @@ This is defined as
 Z(X)=-\frac{1}{\lambda}\log (\sum_{i=1}^{N} \ \exp^{-\lambda \vert X-X_i \vert })
 \f]
 
-It is easy to understand that in case of perfect match of \f$  X=X_i \f$ this equation gives back the value of \f$  \vert X-X_i \vert \f$ provided that the lambda is adjusted correctly.
+It is easy to understand that in case of perfect match of \f$  X=X_i \f$ this equation gives back the value of \f$\vertX-X_i\vert\f$ provided that the lambda is adjusted correctly.
 
 So, the two variables, put together can be visualized as 
 \anchor belfast-2-ab-sz-fig

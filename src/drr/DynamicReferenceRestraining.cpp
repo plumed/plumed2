@@ -246,12 +246,12 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
   keys.add("optional", "KAPPA", "specifies that the restraint is harmonic and "
            "what the values of the force constants on "
            "each of the variables are (default to "
-           "kbt/(GRID_SPACING)^2)");
+           "\\f$k_BT\\f$/(GRID_SPACING)^2)");
   keys.add("compulsory", "TAU", "0.5", "specifies relaxation time on each of "
            "variables are, similar to "
-           "extendedTimeConstant in Colvars");
+           "extended Time Constant in Colvars");
   keys.add("compulsory", "FRICTION", "8.0",
-           "add a friction to the variable, similar to extendedLangevinDamping "
+           "add a friction to the variable, similar to extended Langevin Damping "
            "in Colvars");
   keys.add("compulsory", "GRID_MIN", "the lower bounds for the grid (GRID_BIN "
            "or GRID_SPACING should be specified)");

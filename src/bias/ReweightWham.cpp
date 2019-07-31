@@ -45,11 +45,11 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightWham(const ActionOptions&ao);
-  bool buildsWeightStore() const { return true; }
-  void calculateWeights( const unsigned& nframes );
-  void clearData();
-  double getLogWeight();
-  double getWeight( const unsigned& iweight ) const ;
+  bool buildsWeightStore() const override { return true; }
+  void calculateWeights( const unsigned& nframes ) override;
+  void clearData() override;
+  double getLogWeight() override;
+  double getWeight( const unsigned& iweight ) const override;
 };
 
 PLUMED_REGISTER_ACTION(ReweightWham,"REWEIGHT_WHAM")

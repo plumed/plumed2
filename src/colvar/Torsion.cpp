@@ -55,6 +55,7 @@ by using TORSION in combination with the \ref MOLINFO command.  This can be done
 syntax.
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 t1: TORSION ATOMS=@phi-3
 t2: TORSION ATOMS=@psi-4

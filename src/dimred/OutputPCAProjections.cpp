@@ -50,7 +50,7 @@ private:
   std::string filename;
 public:
   static void registerKeywords( Keywords& keys );
-  OutputPCAProjection( const ActionOptions& );
+  explicit OutputPCAProjection( const ActionOptions& );
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
   void performAnalysis();
 };

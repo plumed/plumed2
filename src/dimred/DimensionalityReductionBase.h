@@ -43,7 +43,7 @@ protected:
   DimensionalityReductionBase* dimredbase;
 public:
   static void registerKeywords( Keywords& keys );
-  DimensionalityReductionBase( const ActionOptions& );
+  explicit DimensionalityReductionBase( const ActionOptions& );
 /// Get the ith data point (this returns the projection)
   virtual void getProjection( const unsigned& idata, std::vector<double>& point, double& weight );
 /// Actually perform the analysis

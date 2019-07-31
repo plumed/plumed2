@@ -54,11 +54,12 @@ d: DISTANCE ATOMS=c1,c2
 PRINT ARG=d
 \endplumedfile
 where the content of file pippo.dat is
-\plumedincludefile
+\plumedfile
+#SETTINGS FILENAME=pippo.dat
 # this is pippo.dat
 c1: COM ATOMS=1-100
 c2: COM ATOMS=101-202
-\endplumedincludefile
+\endplumedfile
 
 The files in this example are rather short, but imagine a case like this one:
 \plumedfile
@@ -67,7 +68,8 @@ c: COORDINATION GROUPA=groupa GROUPB=groupb R_0=0.5
 METAD ARG=c HEIGHT=0.2 PACE=100 SIGMA=0.2 BIASFACTOR=5
 \endplumedfile
 Here `groups.dat` could be huge file containing group definitions such as
-\plumedincludefile
+\plumedfile
+#SETTINGS FILENAME=groups.dat
 # this is groups.dat
 groupa: GROUP ...
   ATOMS={
@@ -91,17 +93,18 @@ groupb: GROUP ...
     121
   }
 ...
-\endplumedincludefile
+\endplumedfile
 So, included files are the best place where one can store long definitions.
 
 Another case where INCLUDE is very useful is when running multi-replica simulations.
 Here different replicas might have different input files, but perhaps a large part of the
 input is shared. This part can be put in a common included file. For instance you could have
 `common.dat`:
-\plumedincludefile
+\plumedfile
+#SETTINGS FILENAME=common.dat
 # this is common.dat
 t: TORSION ATOMS=1,2,3,4
-\endplumedincludefile
+\endplumedfile
 Then `plumed.0.dat`:
 \plumedfile
 # this is plumed.0.dat
@@ -121,22 +124,24 @@ a file for reading it looks for a file with the replica suffix first.
 This is true also for files opened by INCLUDE!
 
 As an example, the same result of the inputs above could have been obtained using
-`plumed.dat`:
-\plumedmultireplicafile{2}
-# this is plumed.dat
+the following `plumed.dat` file:
+\plumedfile
+#SETTINGS NREPLICAS=2
 t: TORSION ATOMS=1,2,3,4
 INCLUDE FILE=other.inc
-\endplumedmultireplicafile
+\endplumedfile
 Then `other.0.inc`:
-\plumedincludefile
+\plumedfile
+#SETTINGS FILENAME=other.0.inc
 # this is other.0.inc
 RESTRAINT ARG=t AT=1.0 KAPPA=10
-\endplumedincludefile
+\endplumedfile
 And `other.1.inc`:
-\plumedincludefile
+\plumedfile
+#SETTINGS FILENAME=other.1.inc
 # this is other.1.inc
 RESTRAINT ARG=t AT=1.2 KAPPA=10
-\endplumedincludefile
+\endplumedfile
 
 
 

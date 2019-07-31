@@ -109,7 +109,7 @@ PRINT ARG=pp.* FILE=colvar
 \endplumedfile
 
 Notice that the LAMBDA parameter is not required here as we are not calculating \f$s\f$ and \f$s\f$
-using the algebraic formulae defined earlier.  The positions of the frames in the path are defined
+using the algebraic formulas defined earlier.  The positions of the frames in the path are defined
 in the file epath.pdb.  An extract from this file looks as shown below.
 
 \auxfile{epath.pdb}

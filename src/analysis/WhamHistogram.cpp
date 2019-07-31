@@ -37,7 +37,7 @@ This can be used to output the a histogram using the weighted histogram techniqu
 class WhamHistogram : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
-  WhamHistogram( const ActionOptions& );
+  explicit WhamHistogram( const ActionOptions& );
 };
 
 PLUMED_REGISTER_ACTION(WhamHistogram,"WHAM_HISTOGRAM")

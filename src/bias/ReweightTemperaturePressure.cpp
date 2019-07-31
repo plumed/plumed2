@@ -175,7 +175,7 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightTemperaturePressure(const ActionOptions&ao);
-  double getLogWeight();
+  double getLogWeight() override;
 };
 
 PLUMED_REGISTER_ACTION(ReweightTemperaturePressure,"REWEIGHT_TEMP_PRESS")

@@ -45,7 +45,7 @@ protected:
   void voronoiAnalysis( const std::vector<unsigned>& myindices, std::vector<double>& lweights, std::vector<unsigned>& assignments ) const ;
 public:
   static void registerKeywords( Keywords& keys );
-  LandmarkSelectionBase( const ActionOptions& ao );
+  explicit LandmarkSelectionBase( const ActionOptions& ao );
 /// Return the number of data points
   unsigned getNumberOfDataPoints() const ;
 /// Return the index of the data point in the base class

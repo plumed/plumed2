@@ -70,6 +70,7 @@ The following input calculates the number of six residue segments of
 protein that are in an antiparallel beta sheet configuration.
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=beta.pdb
 ab: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1
 \endplumedfile
@@ -77,6 +78,7 @@ ab: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1
 Here the same is done use RMSD instead of DRMSD
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES ENTITY0=1-100
 hh: ANTIBETARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1  STRANDS_CUTOFF=1

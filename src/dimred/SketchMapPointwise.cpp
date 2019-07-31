@@ -43,7 +43,7 @@ private:
   std::vector<unsigned> npoints, nfgrid;
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMapPointwise( const ActionOptions& ao );
+  explicit SketchMapPointwise( const ActionOptions& ao );
   void minimise( Matrix<double>& );
 };
 

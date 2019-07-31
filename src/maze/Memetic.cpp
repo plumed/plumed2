@@ -35,7 +35,7 @@ namespace maze {
 
 Calculates the biasing direction along which the ligand unbinds by
 minimizing the \ref MAZE_LOSS function. The optimal biasing direction is
-determined by performing a population-based memetic search with local
+determined by performing a population-based memetics search with local
 heuristics.
 
 \par Examples
@@ -106,13 +106,13 @@ void Memetic::registerKeywords(Keywords& keys) {
   keys.add(
     "compulsory",
     "CAUCHY_ALPHA",
-    "Mean of cauchy distribution for sampling."
+    "Mean of Cauchy distribution for sampling."
   );
 
   keys.add(
     "compulsory",
     "CAUCHY_BETA",
-    "Spread of cauchy distribution for sampling."
+    "Spread of Cauchy distribution for sampling."
   );
 
   keys.addFlag(

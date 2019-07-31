@@ -33,7 +33,7 @@ We are also assuming to know which is the proper binding site, since we can easi
 happen on the phosphate.
 
 Since running these simulations on your laptop would take too long, you will start 
-with the output files obtained with a decently long simulation and analyse them.
+with the output files obtained with a decently long simulation and analyze them.
 
 \warning The trajectory is too short (approx 20ns) to obtain converged results!
 To get statistically significant numbers, please run it longer.
@@ -45,7 +45,7 @@ about which variables were biased and how.
 In case you want to do analysis with python, you can use the included `plumed_pandas.py` module,
 which is a preview of a feature that will be available in plumed 2.6.
 It requires pandas to be installed (use `conda install pandas`) and allows to extract
-colums from a COLVAR file by name.
+columns from a COLVAR file by name.
 It works in this way:
 \verbatim
 > import plumed_pandas
@@ -64,7 +64,7 @@ It works in this way:
 \subsection lugano-6b-ex-1 Exercise 1: Computing the free energy as a function of the biased variables.
 
 As the title says, just compute the free-energy landscape as a function of the biased collective variable
-(namely, distance between the Mg ion and the phosphate and coordination number of the Mg ion with water oxygens).
+(namely, distance between the Mg ion and the phosphate and coordination number of the Mg ion with water oxygen atoms).
 You should just use \ref sum_hills with the usual options. In order to visualize the result with gnuplot
 you might use something like this:
 
@@ -111,7 +111,7 @@ Now reweight your free energy and compute it as a function of:
 
 The free energy as a function of the distance between Mg and geometric center of RNA can 
 be used to identify the bulk region.
-In order to do so, normalize it adding the correct entropic term \f$ k_BT \log d^2 \f$, and find
+In order to do so, normalize it adding the correct entropic term \f$k_BT\log d^2\f$, and find
 a region where the free energy is approximately constant to represent the bulk region.
 You can for instance use the following commands in gnuplot
 \verbatim
@@ -156,5 +156,3 @@ Also notice that the result might depend a lot on the used force field.
 link: @subpage lugano-6b 
 
 description: An exercise to compute binding free energies 
-
-additional-files: lugano-6b

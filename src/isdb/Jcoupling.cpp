@@ -64,7 +64,7 @@ dihedral \f$\psi\f$ angles in the peptide backbone. We also add the experimental
 the correlation and other measures and finally print the results.
 
 \plumedfile
-
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
 

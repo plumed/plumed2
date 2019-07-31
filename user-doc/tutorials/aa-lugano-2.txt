@@ -121,6 +121,7 @@ As a first test lets run an MD and generate on-the-fly the free energy as a func
 This is an example input file to calculate the phi and psi angles on the fly and accumulate two 1D histograms from which calculating the free energy.
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
@@ -142,7 +143,7 @@ gmx mdrun -s topol -plumed plumed.dat -nb cpu -v
 
 from the colvar file it is clear that we can quickly explore two minima but that the region for positive phi is not accessible. Ideally we would like to speed up the sampling
 of regions that are not visited spontaneously by MD. We have multiple possibilities. One option could be to use as a bias the opposite of the accumulated free-energy using \ref EXTERNAL .
-Another option can be to fit the FES and use the fit. This is what we will do, but first of all take a look at the fes accummulated in time.
+Another option can be to fit the FES and use the fit. This is what we will do, but first of all take a look at the fes accumulated in time.
 
 \verbatim
 >gnuplot
@@ -178,6 +179,7 @@ The function and the resulting parameters can be used to run a new biased simula
 To the above file we add a few lines to define using \ref CUSTOM a function of the angle phi.
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
@@ -203,7 +205,7 @@ PRINT ARG=phi,psi,b.bias FILE=colvar.dat STRIDE=50
 
 It is now possible to run a second simulation and observe the new behavior. The system quickly explores a new minimum. While a quantitative estimate of the free energy difference of the old and new regions
 is out of the scope of the current exercise what we can do is to add a new von Mises function centered in the new minimum with a comparable height, in this way we can hope to facilitate a back and forth
-transition along the phi collective variable. Look at the old and new free energy and add a third exponential function to \ref CUSTOM centered in the new minimun.
+transition along the phi collective variable. Look at the old and new free energy and add a third exponential function to \ref CUSTOM centered in the new minimum.
 
 \verbatim
 gnuplot> plot 'fes_phi' u 1:(-$2+38) w l
@@ -217,6 +219,7 @@ We can now run a third simulation where both regions are biased.
 \section lugano-2-ex-3 Exercise 3: Second biased run with alanine dipeptide
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
 MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
 psi: TORSION ATOMS=@psi-2
@@ -244,6 +247,7 @@ is flatter than the former even if not flat everywhere. Now it is possible to re
 and obtain a better free energy estimate along phi.
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=diala.pdb
 
@@ -271,8 +275,8 @@ DUMPGRID GRID=ffpsi FILE=ffpsi.dat
 PRINT ARG=phi,psi,b.bias FILE=colvar.dat STRIDE=50
 \endplumedfile
 
-Of notice that the reweigthing is also applied to the psi collective variable. If you have performed your simulations in different folder you can compare the effect of the bias
-on phi on the free energy of psi. For a single simulation with a constant bias the reweightin is simple, the weight of each frame is exp(+bias(cv(t))/kt). So it is possible to 
+Of notice that the reweighting is also applied to the psi collective variable. If you have performed your simulations in different folder you can compare the effect of the bias
+on phi on the free energy of psi. For a single simulation with a constant bias the reweighting is simple, the weight of each frame is exp(+bias(cv(t))/kt). So it is possible to 
 perform the reweighting by hand at any time.
 
 Now you have performed an original Umbrella Sampling calculation. This is not particularly easy to setup nor robust, even if from a modern
@@ -283,7 +287,7 @@ In the next exercise we will perform a WHAM Umbrella Sampling simulation.
 \section lugano-2-ex-4 Exercise 4: WHAM Umbrella Sampling
 
 In this case we will run many simulations with a strong harmonic restraint centered around specific values of phi in such a way to cover all possible values, keep each simulation
-close to its specific value, allow for overlap between neighbour simulations, i.e. simulations centered aroud consecutive phi values. The simulation can be either performed in parallel
+close to its specific value, allow for overlap between neighbor simulations, i.e. simulations centered around consecutive phi values. The simulation can be either performed in parallel
 by preparing starting configurations close to each value or sequentially, extracting a good starting conformation from the former simulations. In the specific case of alanine dipeptide
 we can even just start always from the same configuration and let the bias quickly move it close to the target values.
 
@@ -328,6 +332,7 @@ gmx trjcat -f traj*.xtc -cat -o concatenated.xtc
 2) calculate the values for all employed biases applied on each frame
 for this we can write a plumed-wham.dat file including all the biases used in the former simulations:
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
@@ -366,7 +371,7 @@ PRINT ARG=phi FILE=allphi.dat STRIDE=10
 plumed driver --mf_xtc concatenated.xtc --plumed plumed-wham.dat
 \endverbatim
 
-3) run the iterative WHAM optimisation and get a weight per frame
+3) run the iterative WHAM optimization and get a weight per frame
 \verbatim
 python wham.py biases.dat 25 2.49
 \endverbatim
@@ -391,6 +396,8 @@ is presented in the following but the exercise is possible only if plumed is com
 Here we use the "replica" syntax of plumed to write a single plumed input file for all the windows:
 
 \plumedfile
+#SETTINGS FILENAME=plumed.dat MOLFILE=user-doc/tutorials/lugano-2/diala.pdb
+# this is plumed.dat
 # vim:ft=plumed
 MOLINFO STRUCTURE=diala.pdb
 phi: TORSION ATOMS=@phi-2
@@ -401,7 +408,7 @@ psi: TORSION ATOMS=@psi-2
 # at fixed points along phi 
 #
 restraint-phi: RESTRAINT ...
-    ARG=chi KAPPA=250.0
+    ARG=phi KAPPA=250.0
     AT=@replicas:{
     -3.00 -2.75 -2.50 -2.25 
     -2.00 -1.75 -1.50 -1.25 
@@ -420,9 +427,9 @@ The \@replicas syntax allow to define different values for a variable for the di
 mpiexec -np 25 gmx_mpi -s topol -plumed plumed.dat -multi 25 -replex 100 -nb cpu -nsteps 100000 
 \endverbatim
 
-In this case we run 25 parallel simulations and we also try to perform replica-exchange between neighobur replicas.
+In this case we run 25 parallel simulations and we also try to perform replica-exchange between neighbor replicas.
 
-Once the simulation is finished the trajectories can be concatenated and analysed with WHAM making use of the plumed native implementation: 
+Once the simulation is finished the trajectories can be concatenated and analyzed with WHAM making use of the plumed native implementation: 
 
 \verbatim
 gmx_mpi trjcat -f traj*.xtc -o concatenated.xtc -cat
