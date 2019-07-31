@@ -45,7 +45,6 @@ void ReadAnalysisFrames::registerKeywords( Keywords& keys ) {
   keys.add("atoms-1","STRIDE","the frequency with which data should be stored for analysis.  By default data is collected on every step");
   keys.add("compulsory","CLEAR","0","the frequency with which data should all be deleted and restarted");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
-  keys.addOutputComponent("arg","default","components are there to point to each argument provided in input");
   ActionWithValue::useCustomisableComponents( keys );
 }
 
@@ -90,7 +89,7 @@ ReadAnalysisFrames::ReadAnalysisFrames( const ActionOptions& ao ):
   requestArguments( arg );
 
   // Now add fake components to the underlying ActionWithValue for the arguments
-  for(unsigned i=0; i<argument_names.size(); ++i) { addComponent( "arg-"+argument_names[i] ); componentIsNotPeriodic( "arg-"+argument_names[i] ); }
+  for(unsigned i=0; i<argument_names.size(); ++i) { addComponent( argument_names[i] ); componentIsNotPeriodic( argument_names[i] ); }
 }
 
 std::vector<Value*> ReadAnalysisFrames::getArgumentList() {
