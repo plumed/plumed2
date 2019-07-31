@@ -233,10 +233,9 @@ void RDC::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","GYROM","1.","Add the product of the gyromagnetic constants for the bond. ");
   keys.add("compulsory","SCALE","1.","Add the scaling factor to take into account concentration and other effects. ");
   keys.addFlag("SVD",false,"Set to TRUE if you want to back calculate using Single Value Decomposition (need GSL at compilation time).");
-  keys.addFlag("ADDCOUPLINGS",false,"Set to TRUE if you want to have fixed components with the experimental values.");
   keys.add("numbered","COUPLING","Add an experimental value for each coupling (needed by SVD and useful for \\ref STATS).");
   keys.addOutputComponent("rdc","default","the calculated # RDC");
-  keys.addOutputComponent("exp","SVD/ADDCOUPLINGS","the experimental # RDC");
+  keys.addOutputComponent("exp","SVD/COUPLING","the experimental # RDC");
   keys.addOutputComponent("Sxx","SVD","Tensor component");
   keys.addOutputComponent("Syy","SVD","Tensor component");
   keys.addOutputComponent("Szz","SVD","Tensor component");
@@ -293,19 +292,19 @@ RDC::RDC(const ActionOptions&ao):
 #endif
   if(svd&&getDoScore()) error("It is not possible to use SVD and METAINFERENCE together");
 
-  bool addexp=false;
-  parseFlag("ADDCOUPLINGS",addexp);
-  if(getDoScore()||svd) addexp=true;
-
-  if(addexp) {
-    coupl.resize( ndata );
-    unsigned ntarget=0;
-    for(unsigned i=0; i<ndata; ++i) {
-      if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
-      ntarget++;
-    }
-    if( ntarget!=ndata ) error("found wrong number of COUPLING values");
+  // Optionally add an experimental value
+  coupl.resize( ndata );
+  unsigned ntarget=0;
+  for(unsigned i=0; i<ndata; ++i) {
+    if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
+    ntarget++;
   }
+  bool addexp=false;
+  if(ntarget!=ndata && ntarget!=0) error("found wrong number of COUPLING values");
+  if(ntarget==ndata) addexp=true;
+  if(getDoScore()&&!addexp) error("with DOSCORE you need to set the COUPLING values");
+  if(svd&&!addexp) error("with SVD you need to set the COUPLING values");
+
 
   // Ouput details of all contacts
   log.printf("  Gyromagnetic moment is %f. Scaling factor is %f.",mu_s,scale);

@@ -45,7 +45,7 @@ on the type of J-coupling.
 
 This collective variable computes the J-couplings for a set of atoms defining a dihedral angle. You can specify
 the atoms involved using the \ref MOLINFO notation. You can also specify the experimental couplings using the
-ADDCOUPLINGS flag and COUPLING keywords. These will be included in the output. You must choose the type of
+ COUPLING keywords. These will be included in the output. You must choose the type of
 coupling using the type keyword, you can also supply custom Karplus parameters using TYPE=CUSTOM and the A, B, C
 and SHIFT keywords. You will need to make sure you are using the correct dihedral angle:
 
@@ -69,7 +69,6 @@ MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 JCOUPLING ...
-    ADDCOUPLINGS
     TYPE=HAN
     ATOMS1=@psi-2 COUPLING1=-0.49
     ATOMS2=@psi-4 COUPLING2=-0.54
@@ -116,7 +115,6 @@ void JCoupling::registerKeywords(Keywords& keys) {
            "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one J-coupling will be "
            "calculated for each ATOMS keyword you specify.");
   keys.reset_style("ATOMS", "atoms");
-  keys.addFlag("ADDCOUPLINGS", false, "Set this flag if you want to have fixed components with the experimental values.");
   keys.add("compulsory", "TYPE", "Type of J-coupling to compute (HAN,HAHN,CCG,NCG,CUSTOM)");
   keys.add("optional", "A", "Karplus parameter A");
   keys.add("optional", "B", "Karplus parameter B");
@@ -124,7 +122,7 @@ void JCoupling::registerKeywords(Keywords& keys) {
   keys.add("optional", "SHIFT", "Angle shift in radians");
   keys.add("numbered", "COUPLING", "Add an experimental value for each coupling");
   keys.addOutputComponent("j", "default", "the calculated J-coupling");
-  keys.addOutputComponent("exp", "ADDCOUPLINGS", "the experimental J-coupling");
+  keys.addOutputComponent("exp", "COUPLING", "the experimental J-coupling");
 }
 
 JCoupling::JCoupling(const ActionOptions&ao):
@@ -182,21 +180,16 @@ JCoupling::JCoupling(const ActionOptions&ao):
 
   // Optionally add an experimental value (like with RDCs)
   vector<double> coupl;
-  bool addcoupling = false;
-  parseFlag("ADDCOUPLINGS", addcoupling);
-  if (addcoupling||getDoScore()) {
-    coupl.resize(ncoupl_);
-    unsigned ntarget = 0;
-    for (unsigned i = 0; i < ncoupl_; ++i) {
-      if (!parseNumbered("COUPLING", i+1, coupl[i])) {
-        break;
-      }
-      ntarget++;
-    }
-    if (ntarget != ncoupl_) {
-      error("found wrong number of COUPLING values");
-    }
+  coupl.resize( ncoupl_ );
+  unsigned ntarget=0;
+  for(unsigned i=0; i<ncoupl_; ++i) {
+    if( !parseNumbered( "COUPLING", i+1, coupl[i] ) ) break;
+    ntarget++;
   }
+  bool addcoupling=false;
+  if(ntarget!=ncoupl_ && ntarget!=0) error("found wrong number of COUPLING values");
+  if(ntarget==ncoupl_) addcoupling=true;
+  if(getDoScore()&&!addcoupling) error("with DOSCORE you need to set the COUPLING values");
 
   // For custom types we allow use of custom Karplus parameters
   if (jtype_ == CUSTOM) {

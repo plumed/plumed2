@@ -97,10 +97,9 @@ void NOE::registerKeywords( Keywords& keys ) {
            "calculated for each ATOM keyword you specify.");
   keys.reset_style("GROUPA","atoms");
   keys.reset_style("GROUPB","atoms");
-  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimental reference values.");
   keys.add("numbered","NOEDIST","Add an experimental value for each NOE.");
   keys.addOutputComponent("noe","default","the # NOE");
-  keys.addOutputComponent("exp","ADDEXP","the # NOE experimental distance");
+  keys.addOutputComponent("exp","NOEDIST","the # NOE experimental distance");
 }
 
 NOE::NOE(const ActionOptions&ao):
@@ -133,21 +132,18 @@ NOE::NOE(const ActionOptions&ao):
   // Create neighbour lists
   nl.reset( new NeighborList(ga_lista,gb_lista,true,pbc,getPbc()) );
 
-  bool addexp=false;
-  parseFlag("ADDEXP",addexp);
-  if(getDoScore()) addexp=true;
-
+  // Optionally add an experimental value (like with RDCs)
   vector<double> noedist;
-  if(addexp) {
-    noedist.resize( nga.size() );
-    unsigned ntarget=0;
-
-    for(unsigned i=0; i<nga.size(); ++i) {
-      if( !parseNumbered( "NOEDIST", i+1, noedist[i] ) ) break;
-      ntarget++;
-    }
-    if( ntarget!=nga.size() ) error("found wrong number of NOEDIST values");
+  noedist.resize( nga.size() );
+  unsigned ntarget=0;
+  for(unsigned i=0; i<nga.size(); ++i) {
+    if( !parseNumbered( "NOEDIST", i+1, noedist[i] ) ) break;
+    ntarget++;
   }
+  bool addexp=false;
+  if(ntarget!=nga.size() && ntarget!=0) error("found wrong number of NOEDIST values");
+  if(ntarget==nga.size()) addexp=true;
+  if(getDoScore()&&!addexp) error("with DOSCORE you need to set the NOEDIST values");
 
   // Ouput details of all contacts
   unsigned index=0;
