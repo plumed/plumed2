@@ -635,7 +635,7 @@ bool Keywords::outputComponentExists( const std::string& name, const bool& custo
 
   std::string sname; 
   std::size_t num=name.find_first_of("-");
-  std::size_t num2=name.find_first_of("_");
+  std::size_t num2=name.find_last_of("_");
 
   if( num2!=std::string::npos ) sname=name.substr(num2);
   else if( num!=std::string::npos ) sname=name.substr(0,num);
