@@ -129,9 +129,7 @@ After this phase you see the increase due to the motion of the center and then y
 
 \anchor belfast-5-work-1-fig
 \image html belfast-5-work-1.png 
-<CENTER>
 The work profile as function of time when steering ala dipeptide along the \f$ \Phi \f$ variable.
-</CENTER>
 
 This you get with gnuplot:
 
@@ -179,9 +177,9 @@ walk on the Ramachandran plot. (How to do this? Have a look to the header of COL
 
 \anchor belfast-5-doublesteer.png
 \image html  belfast-5-doublesteer.png
-<CENTER> <B>
+<B>
 Plot of the double steering schedule using \ref MOVINGRESTRAINT
-</B> </CENTER>
+</B>
 
 
 \section belfast-5-work Why work is important?
