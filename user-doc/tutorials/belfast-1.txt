@@ -30,7 +30,7 @@ Once PLUMED is installed you can run a plumed executable that can be used for mu
 plumed --help 
 \endverbatim
 
-some of the listed options report about the plumed available functionalities, other can be used to tell plumed to do something:
+some of the listed options report about features that are available in plumed, others can be used to tell plumed to do something:
 from analyzing a trajectory to patch the source code of a MD code and so on. All the commands have further options that can
 be seen using plumed command --help, i.e.:
 

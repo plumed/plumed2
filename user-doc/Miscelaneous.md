@@ -23,7 +23,7 @@ erm... yes add lines of comments or trailing comments to your hearts content as 
 
 \plumedfile
 # This is the distance between two atoms:
-DISTANCE ATOM=1,2 LABEL=d1
+d1: DISTANCE ATOMS=1,2 
 UPPER_WALLS ARG=d1 AT=3.0 KAPPA=3.0 LABEL=Snout # In this same interlude it doth befall.
 # That I, one Snout by name, present a wall.
 \endplumedfile
@@ -61,8 +61,7 @@ DISTANCES ...
 Notice that the closing `...` is followed by the word `DISTANCES`. This is optional, but might be
 useful to find more easily which is the matching start of the statement. The following is equally correct
 \plumedfile
-DISTANCES ...
-  LABEL=dist
+dist: DISTANCES ...
 # we can also insert comments here
   ATOMS1=1,300
 # multiple kewords per line are allowed
@@ -244,7 +243,7 @@ in VIM.
 Notice that the variable `PLUMED_VIMPATH` is also set in the `sourceme.sh` script in the build directory.
 Thus, if you modify your `.vimrc` file as suggested, you will be able to use the correct syntax both
 when using an installed PLUMED and when running from a just compiled copy.
-Finally, in case you have both a preinstalled PLUMED **and** you have your development version
+Finally, in case you have both a pre-installed PLUMED **and** you have your development version
 the following command would give you the optimal flexibility:
 \verbatim
 :let &runtimepath.=','.$PLUMED_VIMPATH.',/opt/local/lib/plumed/vim/'
@@ -313,6 +312,8 @@ learn more.
 In case you want to use this feature, we suggest you to put both label
 and action type on the first line of multi-line statements. E.g.
 \plumedfile
+d: DISTANCE ATOMS=1,2
+
 m: METAD ...
   ARG=d
   HEIGHT=1.0
@@ -322,10 +323,14 @@ m: METAD ...
 \endplumedfile
 will be folded to
 \verbatim
+d: DISTANCE ATOMS=1,2
+
 +--  6 lines: m: METAD ...------------------------------------------------------
 \endverbatim
 and
 \plumedfile
+d: DISTANCE ATOMS=1,2
+
 METAD LABEL=m ...
   ARG=d
   HEIGHT=1.0
@@ -335,6 +340,8 @@ METAD LABEL=m ...
 \endplumedfile
 will be folded to
 \verbatim
+d: DISTANCE ATOMS=1,2
+
 +--  6 lines: METAD LABEL=m ...-------------------------------------------------
 \endverbatim
 This will allow you to easily identify the folded lines by seeing the most important information,
@@ -464,8 +471,8 @@ INCLUDE FILE=filename
 So, for example, a single "plumed.dat" file:
 
 \plumedfile
-DISTANCE ATOMS=0,1 LABEL=dist
-RESTRAINT ARG=dist
+DISTANCE ATOMS=1,2 LABEL=dist
+RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
 \endplumedfile
 
 could be split up into two files as shown below:
@@ -475,10 +482,11 @@ DISTANCE ATOMS=1,2 LABEL=dist
 INCLUDE FILE=toBeIncluded.inc
 \endplumedfile
 plus a "toBeIncluded.inc" file
-\plumedincludefile
+\plumedfile
+#SETTINGS FILENAME=toBeIncluded.inc
 # this is toBeIncluded.inc
 RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
-\endplumedincludefile
+\endplumedfile
 
 However, when you do this it is important to recognize that \ref INCLUDE is a real directive that is only resolved
 after all the \ref comments have been stripped and the \ref ContinuationLines have been unrolled.  This means it
@@ -487,7 +495,7 @@ is not possible to do things like:
 \plumedfile
 # this is wrong:
 DISTANCE INCLUDE FILE=options.dat
-RESTRAINT ARG=dist
+RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
 \endplumedfile
 
 \page load Loading shared libraries
@@ -530,7 +538,8 @@ file with common definitions and specific input files with replica-dependent key
 However, as of PLUMED 2.4, we introduced a simpler manner to manipulate multiple replica
 inputs with tiny differences. Look at the following example:
 
-\plumedmultireplicafile{3}
+\plumedfile 
+#SETTINGS NREPLICAS=3
 # Compute a distance
 d: DISTANCE ATOMS=1,2
 
@@ -542,7 +551,7 @@ RESTRAINT ARG=d AT=@replicas:1.0,1.1,1.2 KAPPA=1.0
 #   RESTRAINT ARG=d AT=1.1 KAPPA=1.0
 # On replica 2, this means:
 #   RESTRAINT ARG=d AT=1.2 KAPPA=1.0
-\endplumedmultireplicafile
+\endplumedfile
 
 If you prepare a single `plumed.dat` file like this one and feeds it to PLUMED while using 3 replicas,
 the 3 replicas will see the very same input except for the `AT` keyword, that sets the position of the restraint.
@@ -550,7 +559,8 @@ Replica 0 will see a restraint centered at 1.0, replica 1 centered at 1.1, and r
 
 The `@replicas:` keyword is not special for \ref RESTRAINT or for the `AT` keyword. Any keyword in PLUMED can accept that syntax.
 For instance, the following single input file can be used to setup a bias exchange metadynamics \cite piana simulations:
-\plumedmultireplicafile{2}
+\plumedfile
+#SETTINGS NREPLICAS=2
 # Compute distance between atoms 1 and 2
 d: DISTANCE ATOMS=1,2
 
@@ -564,13 +574,13 @@ METAD ...
   PACE=100
   SIGMA=@replicas:0.1,0.3
   GRID_MIN=@replicas:0.0,-pi
-  GRID_MAX=@replicas:2.0,+pi
+  GRID_MAX=@replicas:2.0,pi
 ...
 # On replica 0, this means:
 #  METAD ARG=d HEIGHT=1.0 PACE=100 SIGMA=0.1 GRID_MIN=0.0 GRID_MAX=2.0
 # On replica 1, this means:
-#  METAD ARG=t HEIGHT=1.0 PACE=100 SIGMA=0.3 GRID_MIN=-pi GRID_MAX=+pi
-\endplumedmultireplicafile
+#  METAD ARG=t HEIGHT=1.0 PACE=100 SIGMA=0.3 GRID_MIN=-pi GRID_MAX=pi
+\endplumedfile
 
 This would be a typical setup for a bias exchange simulation.
 Notice that even though variables `d` and `t` are both read in both replicas,
@@ -580,7 +590,8 @@ This is because variables that are defined but not used are never actually calcu
 If the value that should be provided for each replica is a vector, you should use curly braces as delimiters.
 For instance, if the restraint acts on two variables, you can use the following input:
 
-\plumedmultireplicafile{3}
+\plumedfile
+#SETTINGS NREPLICAS=3
 # Compute distance between atoms 1 and 2
 d: DISTANCE ATOMS=10,20
 
@@ -599,13 +610,14 @@ RESTRAINT ...
 #  RESTRAINT ARG=d AT=3.0,4.0 KAPPA=1.0,3.0
 # On replica 2 this means:
 #  RESTRAINT ARG=d AT=5.0,6.0 KAPPA=1.0,3.0
-\endplumedmultireplicafile
+\endplumedfile
 
 Notice the double curly braces. The outer ones are used by PLUMED to know there the argument of the `AT` keyword ends,
 whereas the inner ones are used to group the values corresponding to each replica.
 Also notice that the last example can be split in multiple lines exploiting the fact that
 within multi-line statements (enclosed by pairs of `...`) newlines are replaced with simple spaces:
-\plumedmultireplicafile{3}
+\plumedfile
+#SETTINGS NREPLICAS=3
 d: DISTANCE ATOMS=10,20
 t: TORSION ATOMS=30,31,32,33
 RESTRAINT ...
@@ -619,7 +631,7 @@ RESTRAINT ...
   }
   KAPPA=1.0,3.0
 ...
-\endplumedmultireplicafile
+\endplumedfile
 
 In short, whenever there are keywords that should vary across replicas, you should set them using the `@replicas:` keyword.
 As mentioned above, you can always use the old syntax with separate input file, and this is recommended when the
@@ -631,6 +643,7 @@ You might have noticed that from time to time constants are specified using stri
 An example is the following
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
 MOLINFO STRUCTURE=AA.pdb  MOLTYPE=rna
 e1: TORSION ATOMS=@epsilon-1
 t: METAD ARG=e1 SIGMA=0.15 PACE=10 HEIGHT=2 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=200
@@ -642,6 +655,7 @@ as `0.5pi` and `-pi`. However, as of version 2.4, we use the Lepton library in o
 that we read. This means that you can also employ more complicated expressions such as `1+2` or `exp(10)`:
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
 MOLINFO STRUCTURE=AA.pdb  MOLTYPE=rna
 e1: TORSION ATOMS=@epsilon-1
 RESTRAINT ARG=e1 AT=1+0.5

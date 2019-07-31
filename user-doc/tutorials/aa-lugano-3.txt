@@ -329,7 +329,7 @@ Then run the driver using this command
 \verbatim
 > plumed driver --ixtc traj_comp.xtc --plumed plumed.dat --kt 2.5
 \endverbatim
-Notice that you have to specify the value of kBT in energy units. While running your simulation
+Notice that you have to specify the value of \f$k_BT\f$ in energy units. While running your simulation
 this information was taken from the MD code.
 
 As a result, PLUMED will produce a new COLVAR file with an additional column. The beginning
@@ -347,14 +347,14 @@ of the file should look like this:
 \endverbatim
 
 The last column will give as, in energy units, the logarithm of the weight of each frame.
-You can easily obtain the weight of each frame using the expression \f$ w\propto \exp\left(\frac{V(s)}{k_BT}\right)\f$.
+You can easily obtain the weight of each frame using the expression \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$.
 You might want to read the `COLVAR` file in python and compute a weighted histogram.
 
 If you want PLUMED to do the histograms for you, you can just add the following
-lines that you learnt in \ref lugano-2 to the plumed input file:
+lines that you learned in \ref lugano-2 to the plumed input file:
 
 \plumedfile
-as: REWEIGHT_BIAS ARG=metad.bias
+as: REWEIGHT_BIAS ARG=__FILL__
 
 hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
 hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
@@ -402,7 +402,7 @@ BIASVALUE ARG=barrier
 \endplumedfile
 
 Something high like 25 kj/mol should create a significant difficulty.
-Notice that this means a barrier 10 kBT high in a direction that is not being biased.
+Notice that this means a barrier 10 \f$k_BT\f$ high in a direction that is not being biased.
 
 You should see something like this
 

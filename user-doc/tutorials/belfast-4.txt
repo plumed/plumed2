@@ -261,7 +261,7 @@ The directive is followed by a keyword ARG followed by the label of the CV
 on which the umbrella potential has to act.
 The keyword KAPPA determines the hardness of the spring constant and its units are
 [Energy units]/[Units of the CV ]. The additional potential introduced by the UMBRELLA takes the form of
-a simple Hooke’s law:
+a simple harmonic term:
 \f[
   U(s)=\frac{k}{2} (x-x_0)^2
 \f].

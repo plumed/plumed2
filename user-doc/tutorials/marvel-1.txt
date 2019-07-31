@@ -56,7 +56,7 @@ a PLUMED input file.  Before we get on to writing input files for PLUMED there i
 on what the other PLUMED tools do and instructions for how to interface PLUMED with an MD code.  You may like to look at this information
 now or you might prefer to return after you have finished the exercises here.
 
-\subsection marvel-1-units PLUMED's internal units
+\subsection marvel-1-units The PLUMED internal units
 
 By default the PLUMED inputs and outputs quantities in the following units:
 
@@ -277,6 +277,7 @@ angles).  The \ref MOLINFO command makes it particularly easy to do this.  For i
 in the sixth residue of the protein and the \f$\psi\f$ angle in the eighth residue of the protein.  You can do so using the following input:
 
 \verbatim
+#SETTINGS MOLFILE=user-doc/tutorials/marvel-1/template.pdb
 MOLINFO STRUCTURE=template.pdb
 phi6: TORSION ATOMS=@phi-6
 psi8: TORSION ATOMS=@psi-8
@@ -360,6 +361,7 @@ below to calculate the degree of anti-beta secondary structure in each of the tr
 and by exploiting the commands to run driver that were described in section \ref marvel-1-introinput. 
 
 \verbatim
+#SETTINGS MOLFILE=user-doc/tutorials/marvel-1/template.pdb
 MOLINFO STRUCTURE=template.pdb
 abeta: ANTIBETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} STRANDS_CUTOFF=1
 
@@ -564,6 +566,7 @@ We are going to calculate the \ref HISTOGRAM from our protein trajectory as a fu
 calculate perform this analysis is shown below:
 
 \verbatim
+#SETTINGS MOLFILE=user-doc/tutorials/marvel-1/template.pdb
 # Read in protein structure template
 MOLINFO STRUCTURE=template.pdb
 # Calculate collective variables
@@ -599,6 +602,7 @@ F(s) = -k_B T \ln H(s)
 If you want to use PLUMED to output the free energy rather than the histogram you need to use the \ref CONVERT_TO_FES command as shown below:
 
 \verbatim
+#SETTINGS MOLFILE=user-doc/tutorials/marvel-1/template.pdb
 # Read in protein structure template
 MOLINFO STRUCTURE=template.pdb
 # Calculate collective variables
