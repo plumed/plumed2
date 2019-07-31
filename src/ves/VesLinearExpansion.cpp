@@ -447,6 +447,7 @@ void VesLinearExpansion::update() {
   if(all_values_inside && bf_values_set) {
     addToSampledAverages(bf_values);
   }
+  std::fill(bf_values.begin(), bf_values.end(), 0.0);
   bf_values_set = false;
 }
 
