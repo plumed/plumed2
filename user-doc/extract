@@ -226,17 +226,26 @@ fi
 # Generate links to standard tutorial pages
 for file in ./tutorials/*.txt ; do
 
-    link=`grep link: $file | sed -e 's/link://'`
+    link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
     describe=`grep description: $file | sed -e 's/description://'`
 
     echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/TUTORIALS.list  
 
 done
 
+# Generate links to old tutorial pages
+for file in ./tutorials/old_tutorials/*.txt ; do
+
+    link=`grep link: $file | sed -e 's/link://' | sed -e 's/\@/\\\/'`
+    describe=`grep description: $file | sed -e 's/description://'`
+
+    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/OLDTUTORIALS.list  
+done
+
 # Generate links to websites
 for file in ./tutorials/*.site; do
 
-   link=`grep link: $file | sed -e 's/link://'`
+   link=`grep link: $file | sed -e 's/link://'  | sed -e 's/\@/\\\/'`
    describe=`grep description: $file | sed -e 's/description://'`
 
    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/WEBSITES.list
@@ -347,7 +356,7 @@ sed -ie 's/<b> --/<b> \\c \\-\\-/g' automatic/*.txt
 rm automatic/*.txte
 
 for file in COLVAR MCOLVAR MFILTERS MTRANSFORMS VOLUMES DCOLVAR MCOLVARF MCOLVARB ANALYSIS LANDMARKS MATRIX MATRIXF CONCOMP REWEIGHTING PRINTANALYSIS BIAS GLOSSARY \
-            DICTIONARY TUTORIALS WEBSITES FUNCTION TOPOLOGY VATOM GRIDCALC GRIDANALYSIS DIMRED \
+            DICTIONARY TUTORIALS OLDTUTORIALS WEBSITES FUNCTION TOPOLOGY VATOM GRIDCALC GRIDANALYSIS DIMRED \
             TOOLS
 do
   mv automatic/$file.list automatic/$file.1.list

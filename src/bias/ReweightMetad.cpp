@@ -69,7 +69,7 @@ class ReweightMetad : public ReweightBase {
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightMetad(const ActionOptions&ao);
-  double getLogWeight();
+  double getLogWeight() override;
 };
 
 PLUMED_REGISTER_ACTION(ReweightMetad,"REWEIGHT_METAD")
