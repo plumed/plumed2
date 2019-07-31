@@ -72,7 +72,7 @@ PLUMED_REGISTER_ACTION(Sort,"SORT")
 void Sort::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG");
-  ActionWithValue::useCustomisableComponents(keys);
+  useCustomisableComponents(keys);
 }
 
 Sort::Sort(const ActionOptions&ao):

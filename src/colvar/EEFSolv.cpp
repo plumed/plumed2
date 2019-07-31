@@ -104,8 +104,6 @@ PLUMED_REGISTER_ACTION(EEFSolv,"EEFSOLV")
 
 void EEFSolv::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
-  componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   keys.add("atoms", "ATOMS", "The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory", "NL_BUFFER", "0.1", "The buffer to the intrinsic cutoff used when calculating pairwise interactions.");
   keys.add("compulsory", "NL_STRIDE", "40", "The frequency with which the neighbor list is updated.");

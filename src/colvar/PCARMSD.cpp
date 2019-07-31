@@ -110,7 +110,6 @@ void PCARMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
   keys.add("compulsory","AVERAGE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","EIGENVECTORS","a file in pdb format containing the reference structure and the atoms involved in the CV.");
-  //useCustomisableComponents(keys);
   keys.addOutputComponent("eig","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
   keys.addOutputComponent("residual","default","the distance of the present configuration from the configuration supplied as AVERAGE in terms of mean squared displacement after optimal alignment ");
   keys.addFlag("SQUARED_ROOT",false," This should be set if you want RMSD instead of mean squared displacement ");

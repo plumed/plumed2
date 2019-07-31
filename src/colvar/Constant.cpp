@@ -46,7 +46,7 @@ printed. If it is lower than 1.0 (larger than 2.0), 1.0 (2.0) is printed
 \plumedfile
 cn: CONSTANT VALUES=1.0,2.0
 dis: DISTANCE ATOMS=1,2
-sss: SORT ARG=cn.v_0,dis,cn.v_1
+sss: SORT ARG=cn.v-0,dis,cn.v-1
 PRINT ARG=sss.2
 \endplumedfile
 
@@ -97,10 +97,10 @@ Constant::Constant(const ActionOptions&ao):
   } else if(values.size()>1) {
     for(unsigned i=0; i<values.size(); i++) {
       std::string num; Tools::convert(i,num);
-      if(!noderiv) addComponentWithDerivatives("v_"+num);
-      else addComponent("v_"+num);
-      componentIsNotPeriodic("v_"+num);
-      Value* comp=getPntrToComponent("v_"+num);
+      if(!noderiv) addComponentWithDerivatives("v-"+num);
+      else addComponent("v-"+num);
+      componentIsNotPeriodic("v-"+num);
+      Value* comp=getPntrToComponent("v-"+num);
       comp->set(values[i]);
     }
   }
@@ -112,7 +112,6 @@ Constant::Constant(const ActionOptions&ao):
 void Constant::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.add("optional","VALUES","The values of the constants");
   keys.add("optional","VALUE","The value of the constant");
