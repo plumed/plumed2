@@ -169,29 +169,29 @@ NOE::NOE(const ActionOptions&ao):
   if(!getDoScore()) {
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponentWithDerivatives("noe_"+num);
-      componentIsNotPeriodic("noe_"+num);
+      addComponentWithDerivatives("noe-"+num);
+      componentIsNotPeriodic("noe-"+num);
     }
     if(addexp) {
       for(unsigned i=0; i<nga.size(); i++) {
         string num; Tools::convert(i,num);
-        addComponent("exp_"+num);
-        componentIsNotPeriodic("exp_"+num);
-        Value* comp=getPntrToComponent("exp_"+num);
+        addComponent("exp-"+num);
+        componentIsNotPeriodic("exp-"+num);
+        Value* comp=getPntrToComponent("exp-"+num);
         comp->set(noedist[i]);
       }
     }
   } else {
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponent("noe_"+num);
-      componentIsNotPeriodic("noe_"+num);
+      addComponent("noe-"+num);
+      componentIsNotPeriodic("noe-"+num);
     }
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponent("exp_"+num);
-      componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num);
+      addComponent("exp-"+num);
+      componentIsNotPeriodic("exp-"+num);
+      Value* comp=getPntrToComponent("exp-"+num);
       comp->set(noedist[i]);
     }
   }

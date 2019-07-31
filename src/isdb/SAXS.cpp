@@ -321,29 +321,29 @@ SAXS::SAXS(const ActionOptions&ao):
   if(!getDoScore()) {
     for(unsigned i=0; i<numq; i++) {
       std::string num; Tools::convert(i,num);
-      addComponentWithDerivatives("q_"+num);
-      componentIsNotPeriodic("q_"+num);
+      addComponentWithDerivatives("q-"+num);
+      componentIsNotPeriodic("q-"+num);
     }
     if(exp) {
       for(unsigned i=0; i<numq; i++) {
         std::string num; Tools::convert(i,num);
-        addComponent("exp_"+num);
-        componentIsNotPeriodic("exp_"+num);
-        Value* comp=getPntrToComponent("exp_"+num);
+        addComponent("exp-"+num);
+        componentIsNotPeriodic("exp-"+num);
+        Value* comp=getPntrToComponent("exp-"+num);
         comp->set(expint[i]);
       }
     }
   } else {
     for(unsigned i=0; i<numq; i++) {
       std::string num; Tools::convert(i,num);
-      addComponent("q_"+num);
-      componentIsNotPeriodic("q_"+num);
+      addComponent("q-"+num);
+      componentIsNotPeriodic("q-"+num);
     }
     for(unsigned i=0; i<numq; i++) {
       std::string num; Tools::convert(i,num);
-      addComponent("exp_"+num);
-      componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num);
+      addComponent("exp-"+num);
+      componentIsNotPeriodic("exp-"+num);
+      Value* comp=getPntrToComponent("exp-"+num);
       comp->set(expint[i]);
     }
   }

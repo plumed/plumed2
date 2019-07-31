@@ -319,29 +319,29 @@ RDC::RDC(const ActionOptions&ao):
   if(!getDoScore()&&!svd) {
     for(unsigned i=0; i<ndata; i++) {
       std::string num; Tools::convert(i,num);
-      addComponentWithDerivatives("rdc_"+num);
-      componentIsNotPeriodic("rdc_"+num);
+      addComponentWithDerivatives("rdc-"+num);
+      componentIsNotPeriodic("rdc-"+num);
     }
     if(addexp) {
       for(unsigned i=0; i<ndata; i++) {
         std::string num; Tools::convert(i,num);
-        addComponent("exp_"+num);
-        componentIsNotPeriodic("exp_"+num);
-        Value* comp=getPntrToComponent("exp_"+num);
+        addComponent("exp-"+num);
+        componentIsNotPeriodic("exp-"+num);
+        Value* comp=getPntrToComponent("exp-"+num);
         comp->set(coupl[i]);
       }
     }
   } else {
     for(unsigned i=0; i<ndata; i++) {
       std::string num; Tools::convert(i,num);
-      addComponentWithDerivatives("rdc_"+num);
-      componentIsNotPeriodic("rdc_"+num);
+      addComponentWithDerivatives("rdc-"+num);
+      componentIsNotPeriodic("rdc-"+num);
     }
     for(unsigned i=0; i<ndata; i++) {
       std::string num; Tools::convert(i,num);
-      addComponent("exp_"+num);
-      componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num);
+      addComponent("exp-"+num);
+      componentIsNotPeriodic("exp-"+num);
+      Value* comp=getPntrToComponent("exp-"+num);
       comp->set(coupl[i]);
     }
   }
@@ -477,7 +477,7 @@ void RDC::calculate()
       dRDC[index][2] *= prod_z;
 
       string num; Tools::convert(index,num);
-      Value* val=getPntrToComponent("rdc_"+num);
+      Value* val=getPntrToComponent("rdc-"+num);
       val->set(rdc);
       if(!getDoScore()) {
         setBoxDerivatives(val, Tensor(distance,dRDC[index]));

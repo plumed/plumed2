@@ -783,15 +783,15 @@ Metainference::Metainference(const ActionOptions&ao):
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
     for(unsigned i=0; i<sigma_mean2_.size(); ++i) {
       std::string num; Tools::convert(i,num);
-      addComponent("sigmaMean_"+num); componentIsNotPeriodic("sigmaMean_"+num);
-      valueSigmaMean.push_back(getPntrToComponent("sigmaMean_"+num));
-      getPntrToComponent("sigmaMean_"+num)->set(sqrt(sigma_mean2_[i]));
-      addComponent("sigma_"+num); componentIsNotPeriodic("sigma_"+num);
-      valueSigma.push_back(getPntrToComponent("sigma_"+num));
-      getPntrToComponent("sigma_"+num)->set(sigma_[i]);
+      addComponent("sigmaMean-"+num); componentIsNotPeriodic("sigmaMean-"+num);
+      valueSigmaMean.push_back(getPntrToComponent("sigmaMean-"+num));
+      getPntrToComponent("sigmaMean-"+num)->set(sqrt(sigma_mean2_[i]));
+      addComponent("sigma-"+num); componentIsNotPeriodic("sigma-"+num);
+      valueSigma.push_back(getPntrToComponent("sigma-"+num));
+      getPntrToComponent("sigma-"+num)->set(sigma_[i]);
       if(noise_type_==GENERIC) {
-        addComponent("ftilde_"+num); componentIsNotPeriodic("ftilde_"+num);
-        valueFtilde.push_back(getPntrToComponent("ftilde_"+num));
+        addComponent("ftilde-"+num); componentIsNotPeriodic("ftilde-"+num);
+        valueFtilde.push_back(getPntrToComponent("ftilde-"+num));
       }
     }
   } else {

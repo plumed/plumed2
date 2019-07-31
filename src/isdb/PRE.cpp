@@ -220,29 +220,29 @@ PRE::PRE(const ActionOptions&ao):
   if(!getDoScore()) {
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponentWithDerivatives("pre_"+num);
-      componentIsNotPeriodic("pre_"+num);
+      addComponentWithDerivatives("pre-"+num);
+      componentIsNotPeriodic("pre-"+num);
     }
     if(addexp) {
       for(unsigned i=0; i<nga.size(); i++) {
         string num; Tools::convert(i,num);
-        addComponent("exp_"+num);
-        componentIsNotPeriodic("exp_"+num);
-        Value* comp=getPntrToComponent("exp_"+num);
+        addComponent("exp-"+num);
+        componentIsNotPeriodic("exp-"+num);
+        Value* comp=getPntrToComponent("exp-"+num);
         comp->set(exppre[i]);
       }
     }
   } else {
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponent("pre_"+num);
-      componentIsNotPeriodic("pre_"+num);
+      addComponent("pre-"+num);
+      componentIsNotPeriodic("pre-"+num);
     }
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponent("exp_"+num);
-      componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num);
+      addComponent("exp-"+num);
+      componentIsNotPeriodic("exp-"+num);
+      Value* comp=getPntrToComponent("exp-"+num);
       comp->set(exppre[i]);
     }
   }

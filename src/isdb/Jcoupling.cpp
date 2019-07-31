@@ -268,23 +268,23 @@ JCoupling::JCoupling(const ActionOptions&ao):
   if(!getDoScore()) {
     for (unsigned i = 0; i < ncoupl_; i++) {
       std::string num; Tools::convert(i, num);
-      addComponentWithDerivatives("j_" + num);
-      componentIsNotPeriodic("j_" + num);
+      addComponentWithDerivatives("j-" + num);
+      componentIsNotPeriodic("j-" + num);
     }
   } else {
     for (unsigned i = 0; i < ncoupl_; i++) {
       std::string num; Tools::convert(i, num);
-      addComponent("j_" + num);
-      componentIsNotPeriodic("j_" + num);
+      addComponent("j-" + num);
+      componentIsNotPeriodic("j-" + num);
     }
   }
 
   if (addcoupling||getDoScore()) {
     for (unsigned i = 0; i < ncoupl_; i++) {
       std::string num; Tools::convert(i, num);
-      addComponent("exp_" + num);
-      componentIsNotPeriodic("exp_" + num);
-      Value* comp = getPntrToComponent("exp_" + num);
+      addComponent("exp-" + num);
+      componentIsNotPeriodic("exp-" + num);
+      Value* comp = getPntrToComponent("exp-" + num);
       comp->set(coupl[i]);
     }
   }

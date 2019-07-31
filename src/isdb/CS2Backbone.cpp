@@ -607,14 +607,14 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
       std::string num; Tools::convert(chemicalshifts[cs].res_num,num);
       std::string chain_num; Tools::convert(chemicalshifts[cs].chain,chain_num);
       if(getDoScore()) {
-        addComponent(chemicalshifts[cs].nucleus+chain_num+"_"+num);
-        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"_"+num);
-        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"_"+num);
+        addComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
         setParameter(chemicalshifts[cs].exp_cs);
       } else {
-        addComponentWithDerivatives(chemicalshifts[cs].nucleus+chain_num+"_"+num);
-        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"_"+num);
-        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"_"+num);
+        addComponentWithDerivatives(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
       }
     }
     if(getDoScore()) Initialise(chemicalshifts.size());
@@ -624,9 +624,9 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
     for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
       std::string num; Tools::convert(chemicalshifts[cs].res_num,num);
       std::string chain_num; Tools::convert(chemicalshifts[cs].chain,chain_num);
-      addComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"_"+num);
-      componentIsNotPeriodic("exp"+chemicalshifts[cs].nucleus+chain_num+"_"+num);
-      Value* comp=getPntrToComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"_"+num);
+      addComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
+      componentIsNotPeriodic("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
+      Value* comp=getPntrToComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
       comp->set(chemicalshifts[cs].exp_cs);
     }
   }
