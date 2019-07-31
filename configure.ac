@@ -813,7 +813,8 @@ import os.path
 import sys
 from shutil import copyfile
 from Cython.Build import cythonize
-assert sys.version_info > (3, 0)
+if sys.version_info < (3,):
+    raise ImportError('PLUMED 2.6 only supports Python 3')
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        AC_MSG_RESULT([yes])

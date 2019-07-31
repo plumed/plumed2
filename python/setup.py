@@ -33,8 +33,8 @@ import platform
 from distutils.sysconfig import get_config_var
 from distutils.version import LooseVersion
 
-assert sys.version_info > (3, 0)
-
+if sys.version_info < (3,):
+    raise ImportError("PLUMED 2.6 only supports Python 3")
 
 def is_platform_mac():
     return sys.platform == 'darwin'
