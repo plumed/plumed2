@@ -45,6 +45,7 @@ void ReadAnalysisFrames::registerKeywords( Keywords& keys ) {
   keys.add("atoms-1","STRIDE","the frequency with which data should be stored for analysis.  By default data is collected on every step");
   keys.add("compulsory","CLEAR","0","the frequency with which data should all be deleted and restarted");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
+  ActionWithValue::useCustomisableComponents( keys );
 }
 
 ReadAnalysisFrames::ReadAnalysisFrames( const ActionOptions& ao ):

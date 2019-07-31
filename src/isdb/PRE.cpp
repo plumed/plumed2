@@ -95,7 +95,6 @@ PLUMED_REGISTER_ACTION(PRE,"PRE")
 
 void PRE::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("NORATIO",false,"Set to TRUE if you want to compute PRE without Intensity Ratio");
@@ -109,10 +108,9 @@ void PRE::registerKeywords( Keywords& keys ) {
   keys.reset_style("GROUPA","atoms");
   keys.add("numbered","RTWO","The relaxation of the atom/atoms in the corresponding GROUPA of atoms. "
            "Keywords like RTWO1, RTWO2, RTWO3,... should be listed.");
-  keys.addFlag("ADDEXP",false,"Set to TRUE if you want to have fixed components with the experimental values.");
   keys.add("numbered","PREINT","Add an experimental value for each PRE.");
   keys.addOutputComponent("pre","default","the # PRE");
-  keys.addOutputComponent("exp","ADDEXP","the # PRE experimental intensity");
+  keys.addOutputComponent("exp","PREINT","the # PRE experimental intensity");
 }
 
 PRE::PRE(const ActionOptions&ao):
@@ -179,21 +177,18 @@ PRE::PRE(const ActionOptions&ao):
   // in nm^6/s^2
   constant = (4.*tauc*ns2s+(3.*tauc*ns2s)/(1+omega*omega*MHz2Hz*MHz2Hz*tauc*tauc*ns2s*ns2s))*Kappa;
 
-  bool addexp=false;
-  parseFlag("ADDEXP",addexp);
-  if(getDoScore()) addexp=true;
-
+  // Optionally add an experimental value (like with RDCs)
   vector<double> exppre;
-  if(addexp) {
-    exppre.resize( nga.size() );
-    unsigned ntarget=0;
-
-    for(unsigned i=0; i<nga.size(); ++i) {
-      if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
-      ntarget++;
-    }
-    if( ntarget!=nga.size() ) error("found wrong number of PREINT values");
+  exppre.resize( nga.size() );
+  unsigned ntarget=0;
+  for(unsigned i=0; i<nga.size(); ++i) {
+    if( !parseNumbered( "PREINT", i+1, exppre[i] ) ) break;
+    ntarget++;
   }
+  bool addexp=false;
+  if(ntarget!=nga.size() && ntarget!=0) error("found wrong number of PREINT values");
+  if(ntarget==nga.size()) addexp=true;
+  if(getDoScore()&&!addexp) error("with DOSCORE you need to set the PREINT values");
 
   // Create neighbour lists
   nl.reset( new NeighborList(gb_lista,ga_lista,true,pbc,getPbc()) );
@@ -220,29 +215,29 @@ PRE::PRE(const ActionOptions&ao):
   if(!getDoScore()) {
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponentWithDerivatives("pre_"+num);
-      componentIsNotPeriodic("pre_"+num);
+      addComponentWithDerivatives("pre-"+num);
+      componentIsNotPeriodic("pre-"+num);
     }
     if(addexp) {
       for(unsigned i=0; i<nga.size(); i++) {
         string num; Tools::convert(i,num);
-        addComponent("exp_"+num);
-        componentIsNotPeriodic("exp_"+num);
-        Value* comp=getPntrToComponent("exp_"+num);
+        addComponent("exp-"+num);
+        componentIsNotPeriodic("exp-"+num);
+        Value* comp=getPntrToComponent("exp-"+num);
         comp->set(exppre[i]);
       }
     }
   } else {
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponent("pre_"+num);
-      componentIsNotPeriodic("pre_"+num);
+      addComponent("pre-"+num);
+      componentIsNotPeriodic("pre-"+num);
     }
     for(unsigned i=0; i<nga.size(); i++) {
       string num; Tools::convert(i,num);
-      addComponent("exp_"+num);
-      componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num);
+      addComponent("exp-"+num);
+      componentIsNotPeriodic("exp-"+num);
+      Value* comp=getPntrToComponent("exp-"+num);
       comp->set(exppre[i]);
     }
   }
@@ -270,7 +265,7 @@ void PRE::calculate()
     for(unsigned k=0; k<i; k++) index+=nga[k];
     const double c_aver=constant/static_cast<double>(nga[i]);
     string num; Tools::convert(i,num);
-    Value* val=getPntrToComponent("pre_"+num);
+    Value* val=getPntrToComponent("pre-"+num);
     // cycle over equivalent atoms
     for(unsigned j=0; j<nga[i]; j++) {
       // the first atom is always the same (the paramagnetic group)

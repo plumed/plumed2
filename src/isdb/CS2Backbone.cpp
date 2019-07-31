@@ -494,7 +494,6 @@ PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
 void CS2Backbone::registerKeywords( Keywords& keys ) {
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
@@ -607,14 +606,14 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
       std::string num; Tools::convert(chemicalshifts[cs].res_num,num);
       std::string chain_num; Tools::convert(chemicalshifts[cs].chain,chain_num);
       if(getDoScore()) {
-        addComponent(chemicalshifts[cs].nucleus+chain_num+"_"+num);
-        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"_"+num);
-        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"_"+num);
+        addComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
         setParameter(chemicalshifts[cs].exp_cs);
       } else {
-        addComponentWithDerivatives(chemicalshifts[cs].nucleus+chain_num+"_"+num);
-        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"_"+num);
-        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"_"+num);
+        addComponentWithDerivatives(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        componentIsNotPeriodic(chemicalshifts[cs].nucleus+chain_num+"-"+num);
+        chemicalshifts[cs].comp = getPntrToComponent(chemicalshifts[cs].nucleus+chain_num+"-"+num);
       }
     }
     if(getDoScore()) Initialise(chemicalshifts.size());
@@ -624,9 +623,9 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
     for(unsigned cs=0; cs<chemicalshifts.size(); cs++) {
       std::string num; Tools::convert(chemicalshifts[cs].res_num,num);
       std::string chain_num; Tools::convert(chemicalshifts[cs].chain,chain_num);
-      addComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"_"+num);
-      componentIsNotPeriodic("exp"+chemicalshifts[cs].nucleus+chain_num+"_"+num);
-      Value* comp=getPntrToComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"_"+num);
+      addComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
+      componentIsNotPeriodic("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
+      Value* comp=getPntrToComponent("exp"+chemicalshifts[cs].nucleus+chain_num+"-"+num);
       comp->set(chemicalshifts[cs].exp_cs);
     }
   }
@@ -686,12 +685,12 @@ void CS2Backbone::init_cs(const string &file, const string &nucl, const PDB &pdb
     ChemicalShift tmp_cs;
 
     tmp_cs.exp_cs = cs;
-    if(nucl=="CA")      tmp_cs.nucleus = "ca_";
-    else if(nucl=="CB") tmp_cs.nucleus = "cb_";
-    else if(nucl=="C")  tmp_cs.nucleus = "co_";
-    else if(nucl=="HA") tmp_cs.nucleus = "ha_";
-    else if(nucl=="H")  tmp_cs.nucleus = "hn_";
-    else if(nucl=="N")  tmp_cs.nucleus = "nh_";
+    if(nucl=="CA")      tmp_cs.nucleus = "ca-";
+    else if(nucl=="CB") tmp_cs.nucleus = "cb-";
+    else if(nucl=="C")  tmp_cs.nucleus = "co-";
+    else if(nucl=="HA") tmp_cs.nucleus = "ha-";
+    else if(nucl=="H")  tmp_cs.nucleus = "hn-";
+    else if(nucl=="N")  tmp_cs.nucleus = "nh-";
     tmp_cs.chain = ichain;
     tmp_cs.res_num = resnum;
     tmp_cs.res_type_curr = frag2enum(RES);

@@ -75,11 +75,12 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   keys.add("optional","SELECTOR","name of selector");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
   keys.use("RESTART");
-  useCustomisableComponents(keys);
+  keys.addOutputComponent("score",        "default",      "the Metainference score");
   keys.addOutputComponent("sigma",        "default",      "uncertainty parameter");
   keys.addOutputComponent("sigmaMean",    "default",      "uncertainty in the mean estimate");
-  keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance");
-  keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance");
+  keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance for sigma values");
+  keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance for scale value");
+  keys.addOutputComponent("acceptFT",     "GENERIC",      "MC acceptance for general metainference f tilde value");
   keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
   keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives with respect to the bias");
   keys.addOutputComponent("scale",        "SCALEDATA",    "scale parameter");
@@ -512,15 +513,15 @@ void MetainferenceBase::Initialise(const unsigned input)
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
     for(unsigned i=0; i<sigma_mean2_.size(); ++i) {
       std::string num; Tools::convert(i,num);
-      addComponent("sigmaMean_"+num); componentIsNotPeriodic("sigmaMean_"+num);
-      valueSigmaMean.push_back(getPntrToComponent("sigmaMean_"+num));
-      getPntrToComponent("sigmaMean_"+num)->set(sqrt(sigma_mean2_[i]));
-      addComponent("sigma_"+num); componentIsNotPeriodic("sigma_"+num);
-      valueSigma.push_back(getPntrToComponent("sigma_"+num));
-      getPntrToComponent("sigma_"+num)->set(sigma_[i]);
+      addComponent("sigmaMean-"+num); componentIsNotPeriodic("sigmaMean-"+num);
+      valueSigmaMean.push_back(getPntrToComponent("sigmaMean-"+num));
+      getPntrToComponent("sigmaMean-"+num)->set(sqrt(sigma_mean2_[i]));
+      addComponent("sigma-"+num); componentIsNotPeriodic("sigma-"+num);
+      valueSigma.push_back(getPntrToComponent("sigma-"+num));
+      getPntrToComponent("sigma-"+num)->set(sigma_[i]);
       if(noise_type_==GENERIC) {
-        addComponent("ftilde_"+num); componentIsNotPeriodic("ftilde_"+num);
-        valueFtilde.push_back(getPntrToComponent("ftilde_"+num));
+        addComponent("ftilde-"+num); componentIsNotPeriodic("ftilde-"+num);
+        valueFtilde.push_back(getPntrToComponent("ftilde-"+num));
       }
     }
   } else {
