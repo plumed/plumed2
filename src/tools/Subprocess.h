@@ -89,7 +89,7 @@ public:
     Subprocess* sp=nullptr;
     /// Private constructor.
     /// Only to be called by Subprocess::contStop()
-    Handler(Subprocess* sp) noexcept;
+    explicit Handler(Subprocess* sp) noexcept;
     friend class Subprocess;
   public:
     /// Default constructor

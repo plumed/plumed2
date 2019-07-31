@@ -48,7 +48,7 @@ private:
   std::string filename;
 public:
   static void registerKeywords( Keywords& keys );
-  OutputPDBFile( const ActionOptions& );
+  explicit OutputPDBFile( const ActionOptions& );
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
   void performAnalysis() override;
 };
