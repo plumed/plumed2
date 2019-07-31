@@ -73,6 +73,7 @@ void SketchMapRead::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","REFERENCE","the file containing the sketch-map projection");
   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   keys.addFlag("DISABLE_CHECKS",false,"disable checks on reference input structures.");
+  useCustomisableComponents(keys);
 }
 
 SketchMapRead::SketchMapRead( const ActionOptions& ao ):
