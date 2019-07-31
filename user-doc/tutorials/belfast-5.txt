@@ -129,9 +129,9 @@ After this phase you see the increase due to the motion of the center and then y
 
 \anchor belfast-5-work-1-fig
 \image html belfast-5-work-1.png 
-<CENTER> <B>
+<CENTER>
 The work profile as function of time when steering ala dipeptide along the \f$ \Phi \f$ variable.
-</B> </CENTER>
+</CENTER>
 
 This you get with gnuplot:
 
