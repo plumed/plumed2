@@ -215,8 +215,8 @@ private:
 public:
   explicit RDC(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-  virtual void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(RDC,"RDC")

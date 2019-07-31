@@ -208,16 +208,16 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Histogram(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const ;
-  void prepareForAveraging();
-  void performOperations( const bool& from_update );
-  void finishAveraging();
-  bool threadSafe() const { return !in_apply; }
-  bool isPeriodic() { return false; }
-  unsigned getNumberOfDerivatives();
-  void turnOnDerivatives();
-  void compute( const unsigned&, MultiValue& ) const ;
-  void apply();
+  unsigned getNumberOfQuantities() const override;
+  void prepareForAveraging() override;
+  void performOperations( const bool& from_update ) override;
+  void finishAveraging() override;
+  bool threadSafe() const override { return !in_apply; }
+  bool isPeriodic() override { return false; }
+  unsigned getNumberOfDerivatives() override;
+  void turnOnDerivatives() override;
+  void compute( const unsigned&, MultiValue& ) const override;
+  void apply() override;
 };
 
 PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")

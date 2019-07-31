@@ -76,8 +76,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeAround(const ActionOptions& ao);
-  void setupRegions();
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
+  void setupRegions() override;
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
 PLUMED_REGISTER_ACTION(VolumeAround,"AROUND")

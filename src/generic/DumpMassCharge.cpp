@@ -102,10 +102,10 @@ public:
   explicit DumpMassCharge(const ActionOptions&);
   ~DumpMassCharge();
   static void registerKeywords( Keywords& keys );
-  void prepare();
-  void calculate() {}
-  void apply() {}
-  void update();
+  void prepare() override;
+  void calculate() override {}
+  void apply() override {}
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(DumpMassCharge,"DUMPMASSCHARGE")

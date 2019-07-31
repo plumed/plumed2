@@ -76,11 +76,11 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit NumberOfLinks(const ActionOptions&);
 /// Do the stuff with the switching functions
-  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& myatoms ) const override;
 /// Actually do the calculation
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Is the variable periodic
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(NumberOfLinks,"NLINKS")

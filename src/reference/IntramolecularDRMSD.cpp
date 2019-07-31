@@ -30,8 +30,8 @@ private:
   std::vector<unsigned> blocks;
 public:
   explicit IntramolecularDRMSD( const ReferenceConfigurationOptions& ro );
-  void read( const PDB& pdb );
-  void setup_targets();
+  void read( const PDB& pdb ) override;
+  void setup_targets() override;
 };
 
 PLUMED_REGISTER_METRIC(IntramolecularDRMSD,"INTRA-DRMSD")

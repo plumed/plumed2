@@ -60,8 +60,8 @@ public:
   explicit EndPlumed(const ActionOptions&ao);
 /// Register all the relevant keywords for the action
   static void registerKeywords( Keywords& keys );
-  void calculate() {}
-  void apply() {}
+  void calculate() override {}
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(EndPlumed,"ENDPLUMED")

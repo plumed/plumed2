@@ -63,9 +63,9 @@ class Energy : public Colvar {
 public:
   explicit Energy(const ActionOptions&);
 // active methods:
-  void prepare();
-  virtual void calculate();
-  unsigned getNumberOfDerivatives();
+  void prepare() override;
+  void calculate() override;
+  unsigned getNumberOfDerivatives() override;
   static void registerKeywords( Keywords& keys );
 };
 

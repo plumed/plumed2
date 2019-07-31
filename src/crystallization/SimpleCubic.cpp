@@ -72,7 +72,7 @@ class SimpleCubic : public CubicHarmonicBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit SimpleCubic(const ActionOptions&);
-  double calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const ;
+  double calculateCubicHarmonic( const Vector& distance, const double& d2, Vector& myder ) const override;
 };
 
 PLUMED_REGISTER_ACTION(SimpleCubic,"SIMPLECUBIC")

@@ -112,7 +112,7 @@ class ERMSD : public Colvar {
 
 public:
   explicit ERMSD(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

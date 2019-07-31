@@ -94,10 +94,10 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Angles(const ActionOptions&);
 /// Updates neighbor list
-  virtual double compute( const unsigned& tindex, AtomValuePack& ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& ) const override;
 /// Returns the number of coordinates of the field
-  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const ;
-  bool isPeriodic() { return false; }
+  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const override;
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(Angles,"ANGLES")

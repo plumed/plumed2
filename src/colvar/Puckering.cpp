@@ -78,7 +78,7 @@ class Puckering : public Colvar {
 
 public:
   explicit Puckering(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
   void calculate5m();
   void calculate6m();

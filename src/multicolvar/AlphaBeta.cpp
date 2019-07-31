@@ -101,8 +101,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit AlphaBeta(const ActionOptions&);
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic() { return false; }
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(AlphaBeta,"ALPHABETA")

@@ -117,8 +117,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ContactMap(const ActionOptions&);
 // active methods:
-  virtual void calculate();
-  void checkFieldsAllowed() {}
+  void calculate() override;
+  void checkFieldsAllowed() override {}
 };
 
 PLUMED_REGISTER_ACTION(ContactMap,"CONTACTMAP")

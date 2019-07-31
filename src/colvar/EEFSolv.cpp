@@ -97,7 +97,7 @@ private:
 public:
   static void registerKeywords(Keywords& keys);
   explicit EEFSolv(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(EEFSolv,"EEFSOLV")

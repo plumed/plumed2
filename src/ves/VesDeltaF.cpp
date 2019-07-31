@@ -155,7 +155,7 @@ private:
   inline unsigned get_index(const unsigned, const unsigned) const;
 
 public:
-  VesDeltaF(const ActionOptions&);
+  explicit VesDeltaF(const ActionOptions&);
   void calculate();
   void update();
   static void registerKeywords(Keywords& keys);

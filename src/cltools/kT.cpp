@@ -57,8 +57,8 @@ class kt:
 public:
   static void registerKeywords( Keywords& keys );
   explicit kt(const CLToolOptions& co );
-  int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const {
+  int main(FILE* in, FILE*out,Communicator& pc) override;
+  string description()const override {
     return "print out the value of kT at a particular temperature";
   }
 };

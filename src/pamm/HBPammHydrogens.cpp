@@ -52,9 +52,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit HBPammHydrogens(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(HBPammHydrogens,"HBPAMM_SH")

@@ -65,7 +65,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit LWalls( const ActionOptions& );
-  double calcPotential( const double& val, double& df ) const ;
+  double calcPotential( const double& val, double& df ) const override;
 };
 
 PLUMED_REGISTER_ACTION(LWalls,"LWALLS")

@@ -133,7 +133,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FilterMore(const ActionOptions& ao);
-  double applyFilter( const double& val, double& df ) const ;
+  double applyFilter( const double& val, double& df ) const override;
 };
 
 PLUMED_REGISTER_ACTION(FilterMore,"MFILTER_MORE")

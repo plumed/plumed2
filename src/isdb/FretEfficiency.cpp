@@ -89,7 +89,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FretEfficiency(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(FretEfficiency,"FRET")

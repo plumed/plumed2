@@ -69,11 +69,11 @@ public:
 /// Constructor
   explicit ClusterSize(const ActionOptions&);
 ///
-  void calculate();
+  void calculate() override;
 ///
-  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const { plumed_error(); }
+  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const override { plumed_error(); }
 ///
-  void turnOnDerivatives();
+  void turnOnDerivatives() override;
 };
 
 PLUMED_REGISTER_ACTION(ClusterSize,"CLUSTER_NATOMS")

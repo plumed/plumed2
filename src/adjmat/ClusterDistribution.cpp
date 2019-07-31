@@ -75,9 +75,9 @@ public:
 /// Constructor
   explicit ClusterDistribution(const ActionOptions&);
 /// Do the calculation
-  void calculate();
+  void calculate() override;
 /// We can use ActionWithVessel to run all the calculation
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
 };
 
 PLUMED_REGISTER_ACTION(ClusterDistribution,"CLUSTER_DISTRIBUTION")

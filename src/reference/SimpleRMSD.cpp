@@ -30,14 +30,14 @@ private:
   RMSD myrmsd;
 public:
   explicit SimpleRMSD( const ReferenceConfigurationOptions& ro );
-  void read( const PDB& );
-  double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ;
-  bool pcaIsEnabledForThisReference() { return true; }
-  void setupPCAStorage( ReferenceValuePack& mypack ) {
+  void read( const PDB& ) override;
+  double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const override;
+  bool pcaIsEnabledForThisReference() override { return true; }
+  void setupPCAStorage( ReferenceValuePack& mypack ) override {
     mypack.switchOnPCAOption(); mypack.getAtomsDisplacementVector().resize( getNumberOfAtoms() );
   }
-  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const ;
-  double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const ;
+  void extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const override;
+  double projectAtomicDisplacementOnVector( const bool& normalized, const std::vector<Vector>& vecs, ReferenceValuePack& mypack ) const override;
 };
 
 PLUMED_REGISTER_METRIC(SimpleRMSD,"SIMPLE")

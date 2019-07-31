@@ -92,7 +92,7 @@ class FixedAtom:
   bool scaled_components;
 public:
   explicit FixedAtom(const ActionOptions&ao);
-  void calculate();
+  void calculate() override;
   static void registerKeywords( Keywords& keys );
 };
 

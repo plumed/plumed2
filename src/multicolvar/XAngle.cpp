@@ -92,10 +92,10 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit XAngles(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(XAngles,"XANGLES")

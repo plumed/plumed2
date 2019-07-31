@@ -38,7 +38,7 @@ class SelectWithStride : public LandmarkSelectionBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit SelectWithStride( const ActionOptions& ao );
-  void selectLandmarks();
+  void selectLandmarks() override;
 };
 
 PLUMED_REGISTER_ACTION(SelectWithStride,"LANDMARK_SELECT_STRIDE")

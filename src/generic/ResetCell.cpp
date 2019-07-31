@@ -104,8 +104,8 @@ class ResetCell:
 public:
   explicit ResetCell(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
-  void calculate();
-  void apply();
+  void calculate() override;
+  void apply() override;
 };
 
 PLUMED_REGISTER_ACTION(ResetCell,"RESET_CELL")

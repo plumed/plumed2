@@ -30,8 +30,8 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   explicit Lowest( const VesselOptions& da );
-  std::string value_descriptor();
-  bool compare( const double&, const double& );
+  std::string value_descriptor() override;
+  bool compare( const double&, const double& ) override;
 };
 
 PLUMED_REGISTER_VESSEL(Lowest,"LOWEST")

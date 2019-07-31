@@ -48,9 +48,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Time(const ActionOptions&);
 // active methods:
-  virtual void calculate();
-  virtual void apply() {}
-  unsigned getNumberOfDerivatives() { return 0; }
+  void calculate() override;
+  void apply() override {}
+  unsigned getNumberOfDerivatives() override { return 0; }
 };
 
 PLUMED_REGISTER_ACTION(Time,"TIME")

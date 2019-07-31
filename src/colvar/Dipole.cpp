@@ -69,7 +69,7 @@ class Dipole : public Colvar {
   bool nopbc;
 public:
   explicit Dipole(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

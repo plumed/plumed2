@@ -43,7 +43,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ReselectLandmarks( const ActionOptions& ao );
-  void selectLandmarks();
+  void selectLandmarks() override;
 };
 
 PLUMED_REGISTER_ACTION(ReselectLandmarks,"RESELECT_LANDMARKS")

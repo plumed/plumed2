@@ -103,11 +103,11 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdaptivePath(const ActionOptions&);
-  void calculate();
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
-  double getLambda() { return 0.0; }
-  double transformHD( const double& dist, double& df ) const ;
-  void update();
+  void calculate() override;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
+  double getLambda() override { return 0.0; }
+  double transformHD( const double& dist, double& df ) const override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(AdaptivePath,"ADAPTIVE_PATH")

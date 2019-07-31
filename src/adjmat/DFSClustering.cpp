@@ -88,7 +88,7 @@ public:
 /// Constructor
   explicit DFSClustering(const ActionOptions&);
 /// Do the clustering
-  void performClustering();
+  void performClustering() override;
 };
 
 PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")

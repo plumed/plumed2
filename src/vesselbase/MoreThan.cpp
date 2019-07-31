@@ -35,8 +35,8 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   explicit MoreThan( const VesselOptions& da );
-  std::string value_descriptor();
-  double calcTransform( const double& val, double& dv ) const ;
+  std::string value_descriptor() override;
+  double calcTransform( const double& val, double& dv ) const override;
 };
 
 PLUMED_REGISTER_VESSEL(MoreThan,"MORE_THAN")

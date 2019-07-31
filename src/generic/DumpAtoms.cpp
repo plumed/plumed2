@@ -142,9 +142,9 @@ public:
   explicit DumpAtoms(const ActionOptions&);
   ~DumpAtoms();
   static void registerKeywords( Keywords& keys );
-  void calculate() {}
-  void apply() {}
-  void update();
+  void calculate() override {}
+  void apply() override {}
+  void update() override ;
 };
 
 PLUMED_REGISTER_ACTION(DumpAtoms,"DUMPATOMS")

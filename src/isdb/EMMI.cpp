@@ -249,8 +249,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit EMMI(const ActionOptions&);
 // active methods:
-  void prepare();
-  virtual void calculate();
+  void prepare() override;
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(EMMI,"EMMI")

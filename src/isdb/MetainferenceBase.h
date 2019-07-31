@@ -189,12 +189,12 @@ public:
   void setDerivatives();
   double getMetaDer(const unsigned index);
   void writeStatus();
-  void turnOnDerivatives();
-  unsigned getNumberOfDerivatives();
-  void lockRequests();
-  void unlockRequests();
-  void calculateNumericalDerivatives( ActionWithValue* a );
-  void apply();
+  void turnOnDerivatives() override;
+  unsigned getNumberOfDerivatives() override;
+  void lockRequests() override;
+  void unlockRequests() override;
+  void calculateNumericalDerivatives( ActionWithValue* a ) override;
+  void apply() override;
   void setArgDerivatives(Value *v, const double &d);
   void setAtomsDerivatives(Value*v, const unsigned i, const Vector&d);
   void setBoxDerivatives(Value*v, const Tensor&d);

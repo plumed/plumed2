@@ -60,11 +60,11 @@ class DumpForces :
   string fmt;
   OFile of;
 public:
-  void calculate() {}
+  void calculate() override {}
   explicit DumpForces(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply() {}
-  void update();
+  void apply() override {}
+  void update() override;
   ~DumpForces();
 };
 

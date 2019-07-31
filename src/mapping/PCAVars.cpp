@@ -186,12 +186,12 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit PCAVars(const ActionOptions&);
-  unsigned getNumberOfDerivatives();
-  void lockRequests();
-  void unlockRequests();
-  void calculateNumericalDerivatives( ActionWithValue* a );
-  void calculate();
-  void apply();
+  unsigned getNumberOfDerivatives() override;
+  void lockRequests() override;
+  void unlockRequests() override;
+  void calculateNumericalDerivatives( ActionWithValue* a ) override;
+  void calculate() override;
+  void apply() override;
 };
 
 PLUMED_REGISTER_ACTION(PCAVars,"PCAVARS")

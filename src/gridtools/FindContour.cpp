@@ -104,12 +104,12 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
-  bool checkAllActive() const { return gbuffer==0; }
-  void prepareForAveraging();
-  bool isPeriodic() { return false; }
-  unsigned getNumberOfQuantities() const { return 1 + ingrid->getDimension(); }
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
-  void finishAveraging();
+  bool checkAllActive() const override { return gbuffer==0; }
+  void prepareForAveraging() override;
+  bool isPeriodic() override { return false; }
+  unsigned getNumberOfQuantities() const override { return 1 + ingrid->getDimension(); }
+  void compute( const unsigned& current, MultiValue& myvals ) const override;
+  void finishAveraging() override;
 };
 
 PLUMED_REGISTER_ACTION(FindContour,"FIND_CONTOUR")

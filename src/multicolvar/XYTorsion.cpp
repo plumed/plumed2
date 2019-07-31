@@ -141,11 +141,11 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit XYTorsion(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  double calculateWeight( const unsigned& taskCode, const double& weight, AtomValuePack& ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return true; }
-  void retrieveDomain( std::string& min, std::string& max) { min="-pi"; max="pi"; }
+  bool isPeriodic() override { return true; }
+  void retrieveDomain( std::string& min, std::string& max) override { min="-pi"; max="pi"; }
 };
 
 PLUMED_REGISTER_ACTION(XYTorsion,"XYTORSIONS")

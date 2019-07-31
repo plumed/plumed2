@@ -200,11 +200,11 @@ class Driver : public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Driver(const CLToolOptions& co );
-  int main(FILE* in,FILE*out,Communicator& pc);
+  int main(FILE* in,FILE*out,Communicator& pc) override;
   void evaluateNumericalDerivatives( const long int& step, PlumedMain& p, const std::vector<real>& coordinates,
                                      const std::vector<real>& masses, const std::vector<real>& charges,
                                      std::vector<real>& cell, const double& base, std::vector<real>& numder );
-  string description()const;
+  string description()const override;
 };
 
 template<typename real>

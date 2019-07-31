@@ -42,7 +42,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit SmacofMDS( const ActionOptions& );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& );
+  void calculateProjections( const Matrix<double>&, Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(SmacofMDS,"SMACOF_MDS")

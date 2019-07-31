@@ -143,7 +143,7 @@ class DumpGrid : public GridPrintingBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit DumpGrid(const ActionOptions&ao);
-  void printGrid( OFile& ofile ) const ;
+  void printGrid( OFile& ofile ) const override;
 };
 
 PLUMED_REGISTER_ACTION(DumpGrid,"DUMPGRID")

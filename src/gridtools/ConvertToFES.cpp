@@ -66,13 +66,13 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ConvertToFES(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const ;
-  void prepare() { activated=true; }
-  void prepareForAveraging() { ActionWithInputGrid::prepareForAveraging(); activated=false; }
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
-  bool isPeriodic() { return false; }
-  bool onStep() const { return activated; }
-  void runFinalJobs();
+  unsigned getNumberOfQuantities() const override;
+  void prepare() override { activated=true; }
+  void prepareForAveraging() override { ActionWithInputGrid::prepareForAveraging(); activated=false; }
+  void compute( const unsigned& current, MultiValue& myvals ) const override;
+  bool isPeriodic() override { return false; }
+  bool onStep() const override { return activated; }
+  void runFinalJobs() override;
 };
 
 PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")

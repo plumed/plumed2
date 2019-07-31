@@ -118,7 +118,7 @@ class DRMSD : public Colvar {
 
 public:
   explicit DRMSD(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

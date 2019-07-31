@@ -158,8 +158,8 @@ class WrapAround:
 public:
   explicit WrapAround(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
-  void calculate();
-  void apply() {}
+  void calculate() override;
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(WrapAround,"WRAPAROUND")

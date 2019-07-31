@@ -44,7 +44,7 @@ class MultiRMSD : public Colvar {
 
 public:
   explicit MultiRMSD(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
