@@ -238,6 +238,7 @@ script:
   - if test "$MAKEDOC" == yes ; then
       pyenv global 3.6.3 ;
       pip install jinja2 ;
+      pip install pygments ;
       git clone git://github.com/mosra/m.css ;
       (cd user-doc ; ../m.css/documentation/doxygen.py Doxyfile-mcss --no-doxygen) ;
       (cd user-doc ; bash go-doxygen-mcss) ;
