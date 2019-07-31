@@ -25,7 +25,7 @@ LIST="
    TutorialsPP.md
  PerformancesPP.md
  GlossaryPP.md
- automatic tutorials tutorials/others"
+ automatic tutorials tutorials/old_tutorials tutorials/others"
 
 echo $LIST
 
