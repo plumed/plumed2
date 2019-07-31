@@ -236,7 +236,7 @@ script:
 
 # NEW MANUAL STUFF:
   - if test "$MAKEDOC" == yes ; then
-      sudo apt-get install -y texlive-base texlive-latex-extra texlive-fonts-extra texlive-fonts-recommended ;
+      sudo apt-get install -y texlive-base texlive-latex-extra texlive-fonts-extra texlive-fonts-recommended texlive-extra-utils ;
       pyenv global 3.6.3 ;
       pip install jinja2 ;
       pip install pygments ;
