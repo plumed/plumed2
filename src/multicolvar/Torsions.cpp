@@ -79,9 +79,9 @@ class Torsions : public MultiColvarBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit Torsions(const ActionOptions&);
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic() { return true; }
-  void retrieveDomain( std::string& min, std::string& max ) { min="-pi"; max="pi"; }
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  bool isPeriodic() override { return true; }
+  void retrieveDomain( std::string& min, std::string& max ) override { min="-pi"; max="pi"; }
 };
 
 PLUMED_REGISTER_ACTION(Torsions,"TORSIONS")

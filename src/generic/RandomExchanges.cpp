@@ -78,8 +78,8 @@ class RandomExchanges:
 public:
   static void registerKeywords( Keywords& keys );
   explicit RandomExchanges(const ActionOptions&ao);
-  void calculate() {}
-  void apply() {}
+  void calculate() override {}
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(RandomExchanges,"RANDOM_EXCHANGES")

@@ -163,8 +163,8 @@ class MaxEnt : public Bias {
   int myrep,nrep;
 public:
   explicit MaxEnt(const ActionOptions&);
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   void update_lambda();
   static void registerKeywords(Keywords& keys);
   void ReadLagrangians(IFile &ifile);

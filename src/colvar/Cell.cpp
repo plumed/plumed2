@@ -55,7 +55,7 @@ class Cell : public Colvar {
 public:
   explicit Cell(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
 /// Register all the keywords for this action
   static void registerKeywords( Keywords& keys );
 };

@@ -46,9 +46,9 @@ protected:
 public:
   explicit Function(const ActionOptions&);
   virtual ~Function() {}
-  void apply();
+  void apply() override;
   static void registerKeywords(Keywords&);
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() override;
 };
 
 inline

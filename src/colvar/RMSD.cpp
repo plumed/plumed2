@@ -43,7 +43,7 @@ class RMSD : public Colvar {
 
 public:
   explicit RMSD(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

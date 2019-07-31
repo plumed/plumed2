@@ -39,7 +39,7 @@ class SubprocessPid {
 #ifdef __PLUMED_HAS_SUBPROCESS
 public:
   pid_t pid;
-  SubprocessPid(pid_t pid):
+  explicit SubprocessPid(pid_t pid):
     pid(pid)
   {
     plumed_assert(pid!=0 && pid!=-1);

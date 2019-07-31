@@ -38,9 +38,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit OrderingVessel( const VesselOptions& da );
-  void resize();
-  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {}
-  void finish( const std::vector<double>& buffer );
+  void resize() override;
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const override {}
+  void finish( const std::vector<double>& buffer ) override;
   virtual bool compare( const double&, const double& )=0;
 };
 

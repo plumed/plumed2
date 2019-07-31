@@ -87,8 +87,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit DihedralCorrelation(const ActionOptions&);
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic() { return false; }
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")

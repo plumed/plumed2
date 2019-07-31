@@ -130,8 +130,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit SMAC(const ActionOptions& ao);
   double computeVectorFunction( const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
-                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const ;
-  double calculateCoordinationPrefactor( const double& coord, double& df ) const ;
+                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const override;
+  double calculateCoordinationPrefactor( const double& coord, double& df ) const override;
 };
 
 PLUMED_REGISTER_ACTION(SMAC,"SMAC")

@@ -66,9 +66,9 @@ public:
 /// Constructor
   explicit ClusterProperties(const ActionOptions&);
 /// Do the calculation
-  void calculate();
+  void calculate() override;
 /// We can use ActionWithVessel to run all the calculation
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
 };
 
 PLUMED_REGISTER_ACTION(ClusterProperties,"CLUSTER_PROPERTIES")

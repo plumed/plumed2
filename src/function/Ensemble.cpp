@@ -65,7 +65,7 @@ class Ensemble :
   double   power;
 public:
   explicit Ensemble(const ActionOptions&);
-  void     calculate();
+  void     calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

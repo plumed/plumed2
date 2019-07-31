@@ -67,9 +67,9 @@ public:
     checkRead();
   }
   static void registerKeywords( Keywords& keys );
-  void calculate() {}
-  void apply() {}
-  void update() {
+  void calculate() override {}
+  void apply() override {}
+  void update() override {
     plumed.fflush();
     log.flush();
     const ActionSet & actionSet(plumed.getActionSet());

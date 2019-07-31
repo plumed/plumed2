@@ -95,13 +95,13 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Average( const ActionOptions& );
-  void calculate() {}
-  void apply() {}
-  void performOperations( const bool& from_update );
-  void finishAveraging();
-  bool isPeriodic() { return false; }
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
-  void accumulateAverage( MultiValue& myvals ) const ;
+  void calculate() override {}
+  void apply() override {}
+  void performOperations( const bool& from_update ) override;
+  void finishAveraging() override;
+  bool isPeriodic() override { return false; }
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
+  void accumulateAverage( MultiValue& myvals ) const override;
 };
 
 PLUMED_REGISTER_ACTION(Average,"AVERAGE")

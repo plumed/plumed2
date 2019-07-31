@@ -141,7 +141,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FilterBetween(const ActionOptions& ao);
-  double applyFilter( const double& val, double& df ) const ;
+  double applyFilter( const double& val, double& df ) const override;
 };
 
 PLUMED_REGISTER_ACTION(FilterBetween,"MFILTER_BETWEEN")

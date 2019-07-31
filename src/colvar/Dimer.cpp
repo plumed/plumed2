@@ -137,7 +137,7 @@ class Dimer : public Colvar {
 public:
   static void registerKeywords( Keywords& keys);
   explicit Dimer(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
 protected:
   bool trimer,useall;
   int myrank, nranks;

@@ -43,7 +43,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit SketchMapSmacof( const ActionOptions& ao );
-  void minimise( Matrix<double>& );
+  void minimise( Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(SketchMapSmacof,"SKETCHMAP_SMACOF")

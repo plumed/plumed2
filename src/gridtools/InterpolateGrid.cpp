@@ -54,9 +54,9 @@ class InterpolateGrid : public ActionWithInputGrid {
 public:
   static void registerKeywords( Keywords& keys );
   explicit InterpolateGrid(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const ;
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
-  bool isPeriodic() { return false; }
+  unsigned getNumberOfQuantities() const override;
+  void compute( const unsigned& current, MultiValue& myvals ) const override;
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")

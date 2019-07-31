@@ -55,11 +55,11 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Density(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
   /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
-  bool isDensity() const { return true; }
-  bool hasDifferentiableOrientation() const { return true; }
+  bool isPeriodic() override { return false; }
+  bool isDensity() const override { return true; }
+  bool hasDifferentiableOrientation() const override { return true; }
 //  void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no,
 //                                        const std::vector<double>& weight, MultiColvarFunction* func ){}
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );

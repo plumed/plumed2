@@ -38,7 +38,7 @@ class IntegrateGrid : public ActionWithIntegral {
 public:
   static void registerKeywords( Keywords& keys );
   explicit IntegrateGrid(const ActionOptions&ao);
-  void compute( const unsigned& current, MultiValue& myvals ) const ;
+  void compute( const unsigned& current, MultiValue& myvals ) const override;
 };
 
 PLUMED_REGISTER_ACTION(IntegrateGrid,"INTEGRATE_GRID")

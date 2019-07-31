@@ -73,7 +73,7 @@ class LWalls : public Bias {
   std::vector<double> offset;
 public:
   explicit LWalls(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

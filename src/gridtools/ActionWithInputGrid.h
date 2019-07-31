@@ -40,11 +40,11 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithInputGrid(const ActionOptions&ao);
-  virtual void clearAverage();
-  virtual void prepareForAveraging();
+  void clearAverage() override;
+  void prepareForAveraging() override;
   virtual bool checkAllActive() const { return true; }
-  virtual void performOperations( const bool& from_update );
-  virtual void apply() {};
+  void performOperations( const bool& from_update ) override;
+  void apply() override {};
 };
 
 inline

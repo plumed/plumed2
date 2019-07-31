@@ -91,13 +91,13 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit LocalAverage(const ActionOptions&);
 /// We have to overwrite this here
-  unsigned getNumberOfQuantities() const ;
+  unsigned getNumberOfQuantities() const override;
 /// Actually do the calculation
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// We overwrite this in order to have dumpmulticolvar working for local average
-  void normalizeVector( std::vector<double>& vals ) const {}
+  void normalizeVector( std::vector<double>& vals ) const override {}
 /// Is the variable periodic
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(LocalAverage,"LOCAL_AVERAGE")

@@ -217,8 +217,8 @@ class FuncPathMSD : public Function {
 public:
   explicit FuncPathMSD(const ActionOptions&);
 // active methods:
-  virtual void calculate();
-  virtual void prepare();
+  void calculate() override;
+  void prepare() override;
   static void registerKeywords(Keywords& keys);
 };
 

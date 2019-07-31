@@ -105,8 +105,8 @@ class PdbRenumber:
 public:
   static void registerKeywords( Keywords& keys );
   explicit PdbRenumber(const CLToolOptions& co );
-  int main(FILE* in, FILE*out,Communicator& pc);
-  string description()const {
+  int main(FILE* in, FILE*out,Communicator& pc) override;
+  string description()const override {
     return "Modify atom numbers in a PDB, possibly using hybrid-36 coding";
   }
 };

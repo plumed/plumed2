@@ -74,13 +74,13 @@ public:
   explicit SecondaryStructureRMSD(const ActionOptions&);
   virtual ~SecondaryStructureRMSD();
   unsigned getNumberOfFunctionsInAction();
-  unsigned getNumberOfDerivatives();
-  unsigned getNumberOfQuantities() const ;
-  void turnOnDerivatives();
-  void calculate();
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
-  void apply();
-  bool isPeriodic() { return false; }
+  unsigned getNumberOfDerivatives() override;
+  unsigned getNumberOfQuantities() const override;
+  void turnOnDerivatives() override;
+  void calculate() override;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
+  void apply() override;
+  bool isPeriodic() override { return false; }
 };
 
 inline

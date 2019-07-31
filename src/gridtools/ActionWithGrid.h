@@ -46,9 +46,9 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithGrid( const ActionOptions& );
-  virtual void turnOnDerivatives();
-  void calculate();
-  void runTask( const unsigned& current, MultiValue& myvals ) const ;
+  void turnOnDerivatives() override;
+  void calculate() override;
+  void runTask( const unsigned& current, MultiValue& myvals ) const override;
   virtual void compute( const unsigned& current, MultiValue& myvals ) const = 0;
 };
 

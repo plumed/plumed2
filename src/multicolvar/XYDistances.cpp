@@ -104,9 +104,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit XYDistances(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(XYDistances,"XYDISTANCES")

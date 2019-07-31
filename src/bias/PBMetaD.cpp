@@ -278,10 +278,10 @@ private:
 
 public:
   explicit PBMetaD(const ActionOptions&);
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   static void registerKeywords(Keywords& keys);
-  bool checkNeedsGradients()const {if(adaptive_==FlexibleBin::geometry) {return true;} else {return false;}}
+  bool checkNeedsGradients()const override {if(adaptive_==FlexibleBin::geometry) {return true;} else {return false;}}
 };
 
 PLUMED_REGISTER_ACTION(PBMetaD,"PBMETAD")

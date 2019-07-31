@@ -76,12 +76,12 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FourierTransform(const ActionOptions&ao);
 #ifndef __PLUMED_HAS_FFTW
-  void performOperations( const bool& from_update ) {}
+  void performOperations( const bool& from_update ) override {}
 #else
-  void performOperations( const bool& from_update );
+  void performOperations( const bool& from_update ) override;
 #endif
-  void compute( const unsigned&, MultiValue& ) const {}
-  bool isPeriodic() { return false; }
+  void compute( const unsigned&, MultiValue& ) const override {}
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(FourierTransform,"FOURIER_TRANSFORM")

@@ -89,7 +89,7 @@ class Angle : public Colvar {
 public:
   explicit Angle(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords( Keywords& keys );
 };
 

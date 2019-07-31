@@ -190,8 +190,8 @@ class CLToolSumHills : public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   explicit CLToolSumHills(const CLToolOptions& co );
-  int main(FILE* in,FILE*out,Communicator& pc);
-  string description()const;
+  int main(FILE* in,FILE*out,Communicator& pc) override;
+  string description()const override;
 /// find a list of variables present, if they are periodic and which is the period
 /// return false if the file does not exist
   static bool findCvsAndPeriodic(std::string filename, std::vector< std::vector <std::string> > &cvs,std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, string &lowI_, string &uppI_);

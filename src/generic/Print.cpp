@@ -85,12 +85,12 @@ class Print :
   vector<Value*> rotateArguments;
 /////////////////////////////////////////
 public:
-  void calculate() {}
-  void prepare();
+  void calculate() override {}
+  void prepare() override;
   explicit Print(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply() {}
-  void update();
+  void apply() override {}
+  void update() override;
   ~Print();
 };
 

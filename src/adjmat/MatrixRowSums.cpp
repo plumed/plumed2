@@ -69,7 +69,7 @@ class MatrixRowSums : public ActionWithInputMatrix {
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixRowSums(const ActionOptions&);
-  double compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const override;
 };
 
 PLUMED_REGISTER_ACTION(MatrixRowSums,"ROWSUMS")

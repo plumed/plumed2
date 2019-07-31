@@ -86,7 +86,7 @@ class Combine :
   std::vector<double> powers;
 public:
   explicit Combine(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

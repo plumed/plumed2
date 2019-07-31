@@ -70,11 +70,11 @@ public:
 /// Constructor
   explicit ClusterDiameter(const ActionOptions&);
 ///
-  void calculate();
+  void calculate() override;
 ///
-  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const ;
+  void performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const override;
 ///
-  void turnOnDerivatives();
+  void turnOnDerivatives() override;
 };
 
 PLUMED_REGISTER_ACTION(ClusterDiameter,"CLUSTER_DIAMETER")

@@ -82,7 +82,7 @@ class LocalEnsemble :
   unsigned narg;
 public:
   explicit LocalEnsemble(const ActionOptions&);
-  void     calculate();
+  void     calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

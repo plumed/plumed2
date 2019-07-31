@@ -67,8 +67,8 @@ class Selector:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Selector(const ActionOptions&ao);
-  void calculate() {}
-  void apply() {}
+  void calculate() override {}
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(Selector,"SELECTOR")

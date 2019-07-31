@@ -44,9 +44,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarProduct(const ActionOptions&);
 /// Actually do the calculation
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Is the variable periodic
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarProduct,"MCOLV_PRODUCT")

@@ -89,7 +89,7 @@ public:
   explicit PathMSDBase(const ActionOptions&);
   ~PathMSDBase();
 // active methods:
-  virtual void calculate();
+  void calculate() override;
 //  virtual void prepare();
   static void registerKeywords(Keywords& keys);
 };

@@ -79,8 +79,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit NOE(const ActionOptions&);
-  virtual void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(NOE,"NOE")

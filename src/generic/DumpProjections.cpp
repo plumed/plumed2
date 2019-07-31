@@ -57,12 +57,12 @@ class DumpProjections :
   string fmt;
   OFile of;
 public:
-  void calculate() {}
+  void calculate() override {}
   explicit DumpProjections(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply() {}
-  void update();
-  bool checkNeedsGradients()const {return true;}
+  void apply() override {}
+  void update() override;
+  bool checkNeedsGradients()const override {return true;}
   ~DumpProjections();
 };
 

@@ -269,8 +269,8 @@ class Metainference : public bias::Bias
 public:
   explicit Metainference(const ActionOptions&);
   ~Metainference();
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   static void registerKeywords(Keywords& keys);
 };
 

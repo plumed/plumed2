@@ -83,7 +83,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Position(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(Position,"POSITION")

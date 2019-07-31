@@ -70,8 +70,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit Committor(const ActionOptions&ao);
-  void calculate();
-  void apply() {}
+  void calculate() override;
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(Committor,"COMMITTOR")

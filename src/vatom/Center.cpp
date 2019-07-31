@@ -130,7 +130,7 @@ class Center:
   bool phases;
 public:
   explicit Center(const ActionOptions&ao);
-  void calculate();
+  void calculate() override;
   static void registerKeywords( Keywords& keys );
 };
 

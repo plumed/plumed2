@@ -54,8 +54,8 @@ protected:
 public:
   static void registerKeywords(Keywords&);
   explicit Bias(const ActionOptions&ao);
-  void apply();
-  unsigned getNumberOfDerivatives();
+  void apply() override;
+  unsigned getNumberOfDerivatives() override;
 };
 
 inline

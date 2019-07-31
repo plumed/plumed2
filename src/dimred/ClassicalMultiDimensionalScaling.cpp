@@ -163,7 +163,7 @@ class ClassicalMultiDimensionalScaling : public DimensionalityReductionBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ClassicalMultiDimensionalScaling( const ActionOptions& ao );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& );
+  void calculateProjections( const Matrix<double>&, Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(ClassicalMultiDimensionalScaling,"CLASSICAL_MDS")
