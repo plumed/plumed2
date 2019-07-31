@@ -46,7 +46,7 @@ matrix:
   - name: MacOS, serial build
     os: osx
     if: branch =~ ^test- OR type IN(pull_request)
-    osx_image: xcode7.3
+    osx_image: xcode8.3
     env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
     cache:
@@ -55,7 +55,7 @@ matrix:
   - name: MacOS, MPI build
     os: osx
     if: branch =~ ^test- OR type IN(pull_request)
-    osx_image: xcode7.3
+    osx_image: xcode8.3
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
 # this should not be required. I add it since it looks like with OSX it does not work otherwise
     cache:
@@ -64,7 +64,7 @@ matrix:
   - name: MacPorts, default modules
     os: osx
     if: branch =~ ^test- OR type IN(pull_request)
-    osx_image: xcode7.3
+    osx_image: xcode8.3
     env: PLUMED_MACPORTS="plumed" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
@@ -72,14 +72,14 @@ matrix:
   - name: MacPorts, all modules
     os: osx
     if: branch =~ ^test- OR type IN(pull_request)
-    osx_image: xcode7.3
+    osx_image: xcode8.3
     env: PLUMED_MACPORTS="plumed +allmodules" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
       - $HOME/.macports-ci-ccache
-  - name: MacPorts 8.3, all modules
+  - name: MacPorts, Xcode 9.4, all modules
     os: osx
-    osx_image: xcode8.3
+    osx_image: xcode9.4
     env: PLUMED_MACPORTS="plumed +allmodules" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
@@ -95,7 +95,7 @@ matrix:
   - name: Conda build, MacOS
     os: osx
     if: branch =~ ^test- OR tag IS present OR type IN(pull_request) OR type IN(cron)
-    osx_image: xcode9.2
+    osx_image: xcode9.4
     env: PLUMED_CONDA=yes
 # I don't put any mpi variant with macports since it takes too long to compile
 ## This command can be used to allow failures:
