@@ -289,7 +289,7 @@ void EDS::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
 
   keys.addOutputComponent("force2","default","squared value of force from the bias");
-  keys.addOutputComponent("pressure","default","If using virial keyword, this is the curent sum of virials. It is in units of pressure (energy / vol^3)");
+  keys.addOutputComponent("pressure","default","If using virial keyword, this is the current sum of virial terms. It is in units of pressure (energy / vol^3)");
   keys.addOutputComponent("_coupling","default", "For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
 }
 

@@ -13,7 +13,7 @@ maintained by [Jakub Rydzewski](http://www.fizyka.umk.pl/~jr) at the Institute
 of Physics, Nicolaus Copernicus University, Toruń, Poland. See this 
 [link](https://www.fizyka.umk.pl/~jr/maze.html) for additional information.
 
-The maze module is an optional module for PLUMED2 that needes to be enabled when 
+The maze module is an optional module for PLUMED2 that needs to be enabled when 
 configuring the compilation of PLUMED2. You can either pass a flag
 '\-\-enable-modules=maze' or a '\-\-enable-modules=all' when running the 
 configure script. 
