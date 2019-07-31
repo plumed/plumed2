@@ -631,7 +631,7 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
 }
 
 bool Keywords::outputComponentExists( const std::string& name, const bool& custom ) const {
-  if( custom && cstring.find("customized")!=std::string::npos ) return true;
+  if( custom && cstring.find("customize")!=std::string::npos ) return true;
 
   std::string sname; std::size_t num=name.find_first_of("-");
   if( num!=std::string::npos ) sname=name.substr(0,num);
