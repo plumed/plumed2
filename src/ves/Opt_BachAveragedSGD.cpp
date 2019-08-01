@@ -193,7 +193,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit Opt_BachAveragedSGD(const ActionOptions&);
   ~Opt_BachAveragedSGD();
-  void coeffsUpdate(const unsigned int c_id = 0);
+  void coeffsUpdate(const unsigned int c_id = 0) override;
 };
 
 

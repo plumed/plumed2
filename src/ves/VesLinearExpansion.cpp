@@ -290,25 +290,25 @@ private:
 public:
   explicit VesLinearExpansion(const ActionOptions&);
   ~VesLinearExpansion();
-  void calculate();
-  void updateTargetDistributions();
-  void restartTargetDistributions();
+  void calculate() override;
+  void updateTargetDistributions() override;
+  void restartTargetDistributions() override;
   //
-  void setupBiasFileOutput();
-  void writeBiasToFile();
-  void resetBiasFileOutput();
+  void setupBiasFileOutput() override;
+  void writeBiasToFile() override;
+  void resetBiasFileOutput() override;
   //
-  void setupFesFileOutput();
-  void writeFesToFile();
-  void resetFesFileOutput();
+  void setupFesFileOutput() override;
+  void writeFesToFile() override;
+  void resetFesFileOutput() override;
   //
-  void setupFesProjFileOutput();
-  void writeFesProjToFile();
+  void setupFesProjFileOutput() override;
+  void writeFesProjToFile() override;
   //
-  void writeTargetDistToFile();
-  void writeTargetDistProjToFile();
+  void writeTargetDistToFile() override;
+  void writeTargetDistProjToFile() override;
   //
-  double calculateReweightFactor() const;
+  double calculateReweightFactor() const override;
   //
   static void registerKeywords( Keywords& keys );
 };

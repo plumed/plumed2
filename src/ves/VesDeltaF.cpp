@@ -156,8 +156,8 @@ private:
 
 public:
   explicit VesDeltaF(const ActionOptions&);
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   static void registerKeywords(Keywords& keys);
 };
 
