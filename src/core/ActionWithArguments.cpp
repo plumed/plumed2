@@ -104,19 +104,19 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
             strcpy(&str[0],ss[k].c_str());
             const char *ppstr=&str[0];
             if(!regexec(&reg, ppstr, reg.re_nsub, &match, 0)) {
-              log.printf("  Something matched with \"%s\" : ",ss[k].c_str());
+              //log.printf("  Something matched with \"%s\" : ",ss[k].c_str());
               do {
                 if (match.rm_so != -1) {	/* The regex is matching part of a string */
                   size_t matchlen = match.rm_eo - match.rm_so;
                   std::vector<char> submatch(matchlen+1);
                   strncpy(submatch.data(), ppstr+match.rm_so, matchlen+1);
                   submatch[matchlen]='\0';
-                  log.printf("  subpattern %s\n", submatch.data());
+                  //log.printf("  subpattern %s\n", submatch.data());
                   // this is the match: try to see if it is a valid action
                   std::string putativeVal(submatch.data());
                   if( all[j]->exists(putativeVal) ) {
                     arg.push_back(all[j]->copyOutput(putativeVal));
-                    log.printf("  Action %s added! \n",putativeVal.c_str());
+                    //log.printf("  Action %s added! \n",putativeVal.c_str());
                   }
                 };
                 ppstr += match.rm_eo;	/* Restart from last match */
