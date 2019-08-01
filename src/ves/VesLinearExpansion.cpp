@@ -443,7 +443,9 @@ void VesLinearExpansion::calculate() {
 
 
 void VesLinearExpansion::update() {
-  plumed_assert(bf_values_set);
+  if(!bf_values_set) {
+    warning("VesLinearExpansion::update() is being called without calling VesLinearExpansion::calculate() first to calculate the basis function values. This can lead to incorrect behavior.");
+  }
   if(all_values_inside && bf_values_set) {
     addToSampledAverages(bf_values);
   }
