@@ -96,8 +96,8 @@ CAshifts.dat:
 #last of second chain
 \endverbatim
 
-The default behavior is to store the values for the active nuclei in components (ca_#, cb_#,
-co_#, ha_#, hn_#, nh_# and expca_#, expcb_#, expco_#, expha_#, exphn_#, exp_nh#) with NOEXP it is possible
+The default behavior is to store the values for the active nuclei in components (ca-#, cb-#,
+co-#, ha-#, hn-#, nh-# and expca-#, expcb-#, expco-#, expha-#, exphn-#, exp-nh#) with NOEXP it is possible
 to only store the back-calculated values, where # includes a chain and residue number.
 
 One additional file is always needed in the folder DATADIR: camshift.db. This file includes all the parameters needed to
@@ -123,11 +123,11 @@ In this second example the chemical shifts are used as replica-averaged restrain
 
 \plumedfile
 cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/
-encs: ENSEMBLE ARG=(cs\.hn_.*),(cs\.nh_.*)
-stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn_.*),(cs\.expnh_.*)
+encs: ENSEMBLE ARG=(cs\.hn-.*),(cs\.nh-.*)
+stcs: STATS ARG=encs.* SQDEVSUM PARARG=(cs\.exphn-.*),(cs\.expnh-.*)
 RESTRAINT ARG=stcs.sqdevsum AT=0 KAPPA=0 SLOPE=24
 
-PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=RESTRAINT STRIDE=100
+PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=RESTRAINT STRIDE=100
 
 \endplumedfile
 
@@ -137,7 +137,7 @@ This third example show how to use chemical shifts to calculate a \ref METAINFER
 cs: CS2BACKBONE ATOMS=1-174 DATADIR=data/ SIGMA_MEAN0=1.0 DOSCORE
 csbias: BIASVALUE ARG=cs.score
 
-PRINT ARG=(cs\.hn_.*),(cs\.nh_.*) FILE=CS.dat STRIDE=1000
+PRINT ARG=(cs\.hn-.*),(cs\.nh-.*) FILE=CS.dat STRIDE=1000
 PRINT ARG=cs.score FILE=BIAS STRIDE=100
 \endplumedfile
 
