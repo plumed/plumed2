@@ -148,8 +148,8 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit TD_Multicanonical(const ActionOptions& ao);
-  void updateGrid();
-  double getValue(const std::vector<double>&) const;
+  void updateGrid() override;
+  double getValue(const std::vector<double>&) const override;
   ~TD_Multicanonical() {}
   double GaussianSwitchingFunc(const double, const double, const double) const;
 };

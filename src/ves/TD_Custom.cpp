@@ -115,7 +115,7 @@ TD_CUSTOM ...
 
 class TD_Custom : public TargetDistribution {
 private:
-  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&);
+  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&) override;
   //
   lepton::CompiledExpression expression;
   //
@@ -138,8 +138,8 @@ private:
 public:
   static void registerKeywords( Keywords&);
   explicit TD_Custom(const ActionOptions& ao);
-  void updateGrid();
-  double getValue(const std::vector<double>&) const;
+  void updateGrid() override;
+  double getValue(const std::vector<double>&) const override;
   ~TD_Custom() {};
 };
 
