@@ -83,7 +83,6 @@ class BF_Powers : public BasisFunctions {
 public:
   static void registerKeywords( Keywords&);
   explicit BF_Powers(const ActionOptions&);
-  double getValue(const double, const unsigned int, double&, bool&) const;
   void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const override;
 };
 
