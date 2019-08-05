@@ -36,12 +36,8 @@ import math
 import sys
 import warnings
 
-# When possible, we use python3 specific stuff
-if (sys.version_info > (3, 0)):
-   _HAS_PYTHON3=True
-else:
-   _HAS_PYTHON3=False
-
+if sys.version_info < (3,):
+    raise ImportError("PLUMED 2.6 only supports Python 3")
 
 try:
      import numpy as np
@@ -149,12 +145,8 @@ def _fix_file(file,mode):
        and or unzipping (if the file has ".gz" suffix).
     """
 # allow passing a string
-    if _HAS_PYTHON3:
-        if isinstance(file,str):
-            file=open(file,mode)
-    else:
-        if isinstance(file,basestring):
-            file=open(file,mode)
+    if isinstance(file,str):
+        file=open(file,mode)
 # takes care of gzipped files
     if re.match(".*\.gz",file.name):
         file = gzip.open(file.name,mode)
