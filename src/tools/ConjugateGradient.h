@@ -35,7 +35,7 @@ private:
   const unsigned ITMAX;
   const double EPS;
 public:
-  ConjugateGradient( FCLASS* funcc ) : MinimiseBase<FCLASS>(funcc), ITMAX(200), EPS(1E-10) {}
+  explicit ConjugateGradient( FCLASS* funcc ) : MinimiseBase<FCLASS>(funcc), ITMAX(200), EPS(1E-10) {}
   void minimise( const double& ftol, std::vector<double>& p, engf_pointer myfunc );
 };
 
@@ -49,7 +49,7 @@ void ConjugateGradient<FCLASS>::minimise( const double& ftol, std::vector<double
     double fret=this->linemin( xi, p, myfunc );
     // The exit condition
     if( 2.0*fabs(fret-fp) <= ftol*(fabs(fret)+fabs(fp)+EPS)) { return; }
-    fp = fret; double igeng = this->calcDerivatives( p, xi, myfunc );
+    fp = fret; this->calcDerivatives( p, xi, myfunc );
     double ddg=0., gg=0.;
     for(unsigned j=0; j<p.size(); ++j) { gg += g[j]*g[j]; ddg += (xi[j]+g[j])*xi[j]; }
 

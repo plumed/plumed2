@@ -195,6 +195,7 @@ The users should select two of them for the \ref METAD simulation. Once you are 
 to evaluate the free-energy difference between folded and unfolded state as a function of multiple collective variables. 
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 #this allows you to use short-cut for dihedral angles
 MOLINFO STRUCTURE=GB1_native.pdb
 

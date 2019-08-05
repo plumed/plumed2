@@ -70,7 +70,7 @@ void BridgeVessel::prepare() {
 }
 
 void BridgeVessel::setBufferStart( unsigned& start ) {
-  unsigned tmp=myOutputAction->getSizeOfBuffer( start );
+  myOutputAction->getSizeOfBuffer( start );
 }
 
 MultiValue& BridgeVessel::transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) {

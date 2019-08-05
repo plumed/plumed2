@@ -45,6 +45,7 @@ TORSIONS ...
 ATOMS1=168,170,172,188
 ATOMS2=170,172,188,190
 ATOMS3=188,190,192,230
+BETWEEN={GAUSSIAN LOWER=0 UPPER=pi SMEAR=0.1}
 LABEL=ab
 ... TORSIONS
 PRINT ARG=ab.* FILE=colvar STRIDE=10
@@ -55,14 +56,16 @@ can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that
 about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 TORSIONS ...
 ATOMS1=@phi-3
 ATOMS2=@psi-3
 ATOMS3=@phi-4
+BETWEEN={GAUSSIAN LOWER=0 UPPER=pi SMEAR=0.1}
 LABEL=ab
 ... TORSIONS
-PRINT ARG=ab FILE=colvar STRIDE=10
+PRINT ARG=ab.* FILE=colvar STRIDE=10
 \endplumedfile
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.

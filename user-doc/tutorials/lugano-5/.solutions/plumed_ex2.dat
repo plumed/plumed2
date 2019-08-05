@@ -1,0 +1,42 @@
+# This reads in the template pdb file and thus allows us to use the @nonhydrogens
+# special group later in the input
+MOLINFO STRUCTURE=beta-hairpin.pdb MOLTYPE=protein
+
+# The following commands compute all the Ramachandran angles of the protein for you
+r2-phi: TORSION ATOMS=@phi-2
+r2-psi: TORSION ATOMS=@psi-2
+r3-phi: TORSION ATOMS=@phi-3
+r3-psi: TORSION ATOMS=@psi-3
+r4-phi: TORSION ATOMS=@phi-4
+r4-psi: TORSION ATOMS=@psi-4
+r5-phi: TORSION ATOMS=@phi-5 
+r5-psi: TORSION ATOMS=@psi-5 
+r6-phi: TORSION ATOMS=@phi-6 
+r6-psi: TORSION ATOMS=@psi-6 
+r7-phi: TORSION ATOMS=@phi-7 
+r7-psi: TORSION ATOMS=@psi-7 
+r8-phi: TORSION ATOMS=@phi-8 
+r8-psi: TORSION ATOMS=@psi-8 
+r9-phi: TORSION ATOMS=@phi-9 
+r9-psi: TORSION ATOMS=@psi-9 
+r10-phi: TORSION ATOMS=@phi-10  
+r10-psi: TORSION ATOMS=@psi-10  
+r11-phi: TORSION ATOMS=@phi-11  
+r11-psi: TORSION ATOMS=@psi-11  
+r12-phi: TORSION ATOMS=@phi-12  
+r12-psi: TORSION ATOMS=@psi-12  
+r13-phi: TORSION ATOMS=@phi-13  
+r13-psi: TORSION ATOMS=@psi-13  
+r14-phi: TORSION ATOMS=@phi-14  
+r14-psi: TORSION ATOMS=@psi-14  
+r15-phi: TORSION ATOMS=@phi-15  
+r15-psi: TORSION ATOMS=@psi-15  
+r16-phi: TORSION ATOMS=@phi-16  
+r16-psi: TORSION ATOMS=@psi-16  
+
+# This command stores all the Ramachandran angles that were computed
+cc: COLLECT_FRAMES ARG=r2-phi,r2-psi,r3-phi,r3-psi,r4-phi,r4-psi,r5-phi,r5-psi,r6-phi,r6-psi,r7-phi,r7-psi,r8-phi,r8-psi,r9-phi,r9-psi,r10-phi,r10-psi,r11-phi,r11-psi,r12-phi,r12-psi,r13-phi,r13-psi,r14-phi,r14-psi,r15-phi,r15-psi,r16-phi,r16-psi
+
+# This command outputs all the Ramachandran angles that were stored to a file called angles_data
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=cc ARG=cc.* FILE=angles_data
+

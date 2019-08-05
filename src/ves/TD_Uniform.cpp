@@ -113,7 +113,7 @@ td: TD_UNIFORM
 \endplumedfile
 \plumedfile
 TD_UNIFORM ...
- MINIMA=0.0,0,2
+ MINIMA=0.0,0.2
  MAXIMA=10.0,1.0
  LABEL=td
  ... TD_UNIFORM
@@ -188,10 +188,10 @@ PLUMED_REGISTER_ACTION(TD_Uniform,"TD_UNIFORM")
 
 void TD_Uniform::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
-  keys.add("optional","MINIMA","The minima of the intervals where the target distribution is taken as uniform. You should give one value for each argument.");
-  keys.add("optional","MAXIMA","The maxima of the intervals where the target distribution is taken as uniform. You should give one value for each argument.");
+  keys.add("optional","MINIMA","The minimum of the intervals where the target distribution is taken as uniform. You should give one value for each argument.");
+  keys.add("optional","MAXIMA","The maximum of the intervals where the target distribution is taken as uniform. You should give one value for each argument.");
   keys.add("optional","SIGMA_MINIMA","The standard deviation parameters of the Gaussian switching functions for the minima of the intervals. You should give one value for each argument. Value of 0.0 means that switch is done without a smooth switching function, this is the default behavior.");
-  keys.add("optional","SIGMA_MAXIMA","The standard deviation parameters of the Gaussian switching functions for the maxima of the intervals. You should give one value for each argument. Value of 0.0 means that switch is done without a smooth switching function, this is the default behavior.");
+  keys.add("optional","SIGMA_MAXIMA","The standard deviation parameters of the Gaussian switching functions for the maximum of the intervals. You should give one value for each argument. Value of 0.0 means that switch is done without a smooth switching function, this is the default behavior.");
 }
 
 

@@ -1,0 +1,76 @@
+#
+#  define units
+#
+units       lj
+
+#
+#  specify periodic boundary conditions
+#
+boundary p p p
+
+#
+#  define atom_style
+#  full covers everything
+#
+atom_style  full 
+
+#
+# Read the restart file and restart the counter on timesteps
+#
+read_restart lj.equilibration.restart.100000
+reset_timestep 0
+
+#
+#   define mass
+#
+#   mass of atom type 1
+mass        1 1.0
+mass        2 1.0
+
+#
+#  specify interaction potential
+#  pairwise interaction via the Lennard-Jones potential with a cut-off at 2.5 lj-sigma
+#
+pair_style  lj/cut 2.5
+#  specify parameters between atoms of type 1 with an atom of type 1
+#  epsilon = 1.0, sigma = 1.0, cutoff = 2.5
+pair_coeff  1 1 1.0 1.0 2.5
+pair_coeff  2 2 1.2 0.9 2.5
+
+#
+#  specify parameters for neighbor list 
+#  rnbr = rcut + 0.3
+#
+neighbor    0.3 bin
+
+#
+# Specify timestep
+#
+timestep 0.001
+
+#
+# Write thermodynamic parameters to log
+#
+thermo_style custom step pe ke etotal temp press density
+thermo 1000
+thermo_modify norm no
+
+#
+# Setup plumed and that we are going to run npt equilibration
+#
+fix     1 all plumed plumedfile plumed.dat outfile p.log
+fix     2 all nvt temp 1.0 1.0 0.1 
+
+#
+#   save trajectory and restart file
+#   dumpid = 1
+#   filename = output.xyz
+#
+dump    1       all xyz 1000 output.xyz
+dump_modify 1 element Ar Ne
+restart 100000 lj.prod.restart
+
+#
+# Run 5000000 of equilibration
+#
+run     100000

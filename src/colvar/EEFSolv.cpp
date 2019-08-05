@@ -59,6 +59,7 @@ The output from this collective variable, the free energy of solvation, can be u
 \par Examples
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
 

@@ -42,7 +42,7 @@ void Highest::registerKeywords( Keywords& keys ) {
 
 void Highest::reserveKeyword( Keywords& keys ) {
   keys.reserve("vessel","HIGHEST","this flag allows you to recover the highest of these variables.");
-  keys.addOutputComponent("highest","HIGHEST","the lowest of the quantities calculated by this action");
+  keys.addOutputComponent("highest","HIGHEST","the highest of the quantities calculated by this action");
 }
 
 Highest::Highest( const VesselOptions& da ) :

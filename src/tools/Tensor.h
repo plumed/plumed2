@@ -545,7 +545,7 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
   int lwork=work.size();
   TensorGenericAux::local_dsyevr("V", (n==m?"A":"I"), "U", &nn, const_cast<double*>(&mat[0][0]), &nn, &vl, &vu, &one, &mm,
                                  &abstol, &mout, &evals[0], &evec[0][0], &nn,
-                                 &isup[0], &work[0], &lwork, &iwork[0], &liwork, &info);
+                                 isup.data(), work.data(), &lwork, iwork.data(), &liwork, &info);
   if(info!=0) plumed_error()<<"Error diagonalizing matrix\n"
                               <<"Matrix:\n"<<mat<<"\n"
                               <<"Info: "<<info<<"\n";

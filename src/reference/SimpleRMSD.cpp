@@ -62,7 +62,7 @@ double SimpleRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myd
 
 void SimpleRMSD::extractAtomicDisplacement( const std::vector<Vector>& pos, std::vector<Vector>& direction ) const {
   std::vector<Vector> tder( getNumberOfAtoms() );
-  double d=myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), tder, direction, true );
+  myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), tder, direction, true );
   for(unsigned i=0; i<pos.size(); ++i) direction[i] = getDisplace()[i]*direction[i];
 }
 

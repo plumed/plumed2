@@ -64,7 +64,7 @@ public:
 PLUMED_REGISTER_ACTION(MoleculeOrientation,"MOLECULES")
 
 void MoleculeOrientation::registerKeywords( Keywords& keys ) {
-  VectorMultiColvar::registerKeywords( keys ); keys.use("VMEAN");
+  VectorMultiColvar::registerKeywords( keys ); keys.use("MEAN"); keys.use("VMEAN");
   keys.add("numbered","MOL","The numerical indices of the atoms in the molecule. The orientation of the molecule is equal to "
            "the vector connecting the first two atoms specified.  If a third atom is specified its position "
            "is used to specify where the molecule is.  If a third atom is not present the molecule is assumed "

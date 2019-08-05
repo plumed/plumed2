@@ -24,6 +24,8 @@
 # The main purpose of this is to convert the python types to C types that PLUMED understands
 #
 
+# cython: binding=True
+
 cimport cplumed  # This imports information from pxd file - including contents of this file here causes name clashes
 
 from cpython cimport array
@@ -87,7 +89,7 @@ cdef class Plumed:
      def cmd( self, key, val=None ):
          cdef bytes py_bytes = key.encode()
          cdef char* ckey = py_bytes
-         cdef char* cval 
+         cdef char* cval
          cdef array.array ar
          if val is None :
             self.c_plumed.cmd( ckey, NULL )
@@ -98,16 +100,16 @@ cdef class Plumed:
          elif isinstance(val, float ) :
             if key=="getBias" :
                raise ValueError("when using cmd with getBias option value must be a size one ndarray")
-            self.cmd_float(ckey, val) 
-         elif HAS_NUMPY and isinstance(val, np.ndarray) : 
+            self.cmd_float(ckey, val)
+         elif HAS_NUMPY and isinstance(val, np.ndarray) :
             if( val.dtype=="float64" ):
                self.cmd_ndarray_real(ckey, val)
-            elif( val.dtype=="int64" ) : 
+            elif( val.dtype=="int64" ) :
                self.cmd_ndarray_int(ckey, val)
             else :
                raise ValueError("ndarrys should be float64 or int64")
-         elif isinstance(val, array.array) : 
-            if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8): 
+         elif isinstance(val, array.array) :
+            if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
                ar = val
                self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
             elif( (val.typecode=="i" or val.typecode=="I") ) :
@@ -117,7 +119,7 @@ cdef class Plumed:
                raise ValueError("ndarrays should be double (size=8) or int")
          elif isinstance(val, basestring ) :
               py_bytes = val.encode()
-              cval = py_bytes 
+              cval = py_bytes
               self.c_plumed.cmd( ckey, <void*>cval )
          else :
             raise ValueError("Unknown value type ({})".format(str(type(val))))

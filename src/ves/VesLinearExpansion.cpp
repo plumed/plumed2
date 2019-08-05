@@ -287,10 +287,14 @@ private:
   LinearBasisSetExpansion* bias_expansion_pntr_;
   size_t ncoeffs_;
   Value* valueForce2_;
+  bool all_values_inside;
+  std::vector<double> bf_values;
+  bool bf_values_set;
 public:
   explicit VesLinearExpansion(const ActionOptions&);
   ~VesLinearExpansion();
   void calculate();
+  void update();
   void updateTargetDistributions();
   void restartTargetDistributions();
   //
@@ -334,7 +338,10 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   nargs_(getNumberOfArguments()),
   basisf_pntrs_(0),
   bias_expansion_pntr_(NULL),
-  valueForce2_(NULL)
+  valueForce2_(NULL),
+  all_values_inside(true),
+  bf_values(0),
+  bf_values_set(false)
 {
   std::vector<std::string> basisf_labels;
   parseMultipleValues("BASIS_FUNCTIONS",basisf_labels,nargs_);
@@ -367,6 +374,7 @@ VesLinearExpansion::VesLinearExpansion(const ActionOptions&ao):
   bias_expansion_pntr_->linkVesBias(this);
   bias_expansion_pntr_->setGridBins(this->getGridBins());
   //
+  bf_values.assign(ncoeffs_,0.0);
 
 
 
@@ -410,17 +418,16 @@ void VesLinearExpansion::calculate() {
 
   std::vector<double> cv_values(nargs_);
   std::vector<double> forces(nargs_);
-  std::vector<double> coeffsderivs_values(ncoeffs_);
 
   for(unsigned int k=0; k<nargs_; k++) {
     cv_values[k]=getArgument(k);
   }
 
-  bool all_inside = true;
-  double bias = bias_expansion_pntr_->getBiasAndForces(cv_values,all_inside,forces,coeffsderivs_values);
+  all_values_inside = true;
+  double bias = bias_expansion_pntr_->getBiasAndForces(cv_values,all_values_inside,forces,bf_values);
   if(biasCutoffActive()) {
-    applyBiasCutoff(bias,forces,coeffsderivs_values);
-    coeffsderivs_values[0]=1.0;
+    applyBiasCutoff(bias,forces,bf_values);
+    bf_values[0]=1.0;
   }
   double totalForce2 = 0.0;
   for(unsigned int k=0; k<nargs_; k++) {
@@ -430,10 +437,25 @@ void VesLinearExpansion::calculate() {
 
   setBias(bias);
   valueForce2_->set(totalForce2);
-  if(all_inside) {
-    addToSampledAverages(coeffsderivs_values);
-  }
+
+  bf_values_set = true;
 }
+
+
+void VesLinearExpansion::update() {
+  if(!bf_values_set) {
+    warning("VesLinearExpansion::update() is being called without calling VesLinearExpansion::calculate() first to calculate the basis function values. This can lead to incorrect behavior.");
+  }
+  if(all_values_inside && bf_values_set) {
+    addToSampledAverages(bf_values);
+  }
+  std::fill(bf_values.begin(), bf_values.end(), 0.0);
+  bf_values_set = false;
+}
+
+
+
+
 
 
 void VesLinearExpansion::updateTargetDistributions() {

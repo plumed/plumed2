@@ -1,13 +1,13 @@
 /**
-\page lugano-1 Lugano tutorial: Analyzing CVs
+\page marvel-1 MARVEL tutorial: Analyzing CVs
 
-\section lugano-1-aims Aims
+\section marvel-1-aims Aims
 
 The aim of this tutorial is to introduce you to the PLUMED syntax. We will go through the writing of input files to calculate
 and print simple collective variables. We will then discuss how we can use PLUMED to analyze a trajectory by calculating ensemble 
 averages, histograms and free energy surfaces. 
 
-\section lugano-1-lo Learning Outcomes
+\section marvel-1-lo Learning Outcomes
 
 Once this tutorial is completed students will:
 
@@ -16,35 +16,35 @@ Once this tutorial is completed students will:
 - Know how to write a PLUMED input file that can be used to calculate an ensemble average.
 - Know how to write a PLUMED input file that can be used to calculate a histogram.  Students will also learn how this histogram can be converted into a free energy surface.   
 
-\section lugano-1-resources Resources
+\section marvel-1-resources Resources
 
-The <a href="tutorial-resources/lugano-1.tar.gz" download="lugano-1.tar.gz"> tarball </a> for this project contains the following files:
+The <a href="tutorial-resources/marvel-1.tar.gz" download="marvel-1.tar.gz"> tarball </a> for this project contains the following files:
 
 - trajectory-short.xyz : a (short) trajectory for a 16 residue protein in xyz format. All the calculations with plumed driver that will be performed during this tutorial will use this trajectory.
 - template.pdb : a single frame from the trajectory that can be used in conjunction with the \ref MOLINFO command
 - in : An input file for the simplemd code that forms part of PLUMED 
 - input.xyz : A configuration file for Lennard-Jones solid with an FCC solid structure
 
-\section lugano-1-instructions Instructions
+\section marvel-1-instructions Instructions
 
-PLUMED2 is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
-Once it is incorporated you can use PLUMED2 to perform a variety of different analyzes on the fly and to bias 
-the sampling in the molecular dynamics engine.  PLUMED2 can also, however, be used as a standalone code for analyzing trajectories.
-If you are using the code in this way you can, once PLUMED2 is compiled, run the plumed executable by issuing the command:
+PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
+Once it is incorporated you can use PLUMED to perform a variety of different analyzes on the fly and to bias 
+the sampling in the molecular dynamics engine.  PLUMED can also, however, be used as a standalone code for analyzing trajectories.
+If you are using the code in this way you can, once PLUMED is compiled, run the plumed executable by issuing the command:
 
 \verbatim
 plumed <instructions>
 \endverbatim
 
-Let's start by getting a feel for the range of calculations that we can use PLUMED2 to perform.  Issue the following command now:
+Let's start by getting a feel for the range of calculations that we can use PLUMED to perform.  Issue the following command now:
 
 \verbatim
 plumed --help 
 \endverbatim
 
-What is output when this command is run is a list of the tasks you can use PLUMED2 to perform.  There are commands that allow you
+What is output when this command is run is a list of the tasks you can use PLUMED to perform.  There are commands that allow you
 to patch an MD code, commands that allow you to run molecular dynamics and commands that allow you to build the manual.  In this
-tutorial we will mostly be using PLUMED2 to analyze trajectories, however.  As such most of the calculations we will perform will be performed 
+tutorial we will mostly be using PLUMED to analyze trajectories, however.  As such most of the calculations we will perform will be performed 
 using the driver tool.  Let's look at the options we can issue to plumed driver by issuing the following command:  
 
 \verbatim
@@ -53,10 +53,10 @@ plumed driver --help
 
 As you can see we can do a number of things with plumed driver.  For all of these options, however, we are going to need to write 
 a PLUMED input file.  Before we get on to writing input files for PLUMED there is information \ref codes here which provides details 
-on what the other PLUMED2 tools do and instructions for how to interface PLUMED with an MD code.  You may like to look at this information
+on what the other PLUMED tools do and instructions for how to interface PLUMED with an MD code.  You may like to look at this information
 now or you might prefer to return after you have finished the exercises here.
 
-\subsection lugano-1-units PLUMED2's internal units
+\subsection marvel-1-units The PLUMED internal units
 
 By default the PLUMED inputs and outputs quantities in the following units:
 
@@ -66,7 +66,7 @@ By default the PLUMED inputs and outputs quantities in the following units:
 
 If you want to change these units you can do this using the \ref UNITS keyword. 
 
-\subsection lugano-1-introinput Introduction to the PLUMED input file
+\subsection marvel-1-introinput Introduction to the PLUMED input file
 
 Many input files for PLUMED provides specifications for one or more CVs.  These specifications are then followed by an instruction to PLUMED
 to \ref PRINT these CVs and a termination line.
@@ -96,7 +96,7 @@ plumed driver --plumed plumed.dat --ixyz trajectory-short.xyz --length-units 0.1
 \endverbatim
 
 Notice the --length-units 0.1 flag here.  This tells PLUMED to convert the positions in the xyz file here, which are in Angstroms, into nm, which
-remember are \ref lugano-1-units  
+remember are \ref marvel-1-units  
 
 When this command finishes running you should have a file called COLVAR. If you look at it's contents (using the command more COLVAR for instance) you will 
 find that the first two lines read:
@@ -119,7 +119,7 @@ as the atoms in our system move about in accordance with the various forces that
 
 Right so hopefully that wasn't too hard.  What we are going to next is we are going to try to understand the input file that we have written a bit better.
 
-\subsection lugano-1-io The PLUMED input syntax
+\subsection marvel-1-io The PLUMED input syntax
 
 The input file that we issued in the last section looked something like this:
 
@@ -161,14 +161,14 @@ The fact that this quantity is stored in a variable is important as it ensures t
 later in the input file.  So in the second line above we print a quantity.  What quantity should be printed? e2edist - the distance between atom 2 and atom 253. Easy!
 
 So why does the second input, that has the order of these two commands reversed, not work?  Well the variable e2edist has to be defined before it can be used
-because in PLUMED2 the commands are executed in the same order as they are defined in the input file. We thus cannot do anything with e2edist (i.e. \ref PRINT it)
+because in PLUMED the commands are executed in the same order as they are defined in the input file. We thus cannot do anything with e2edist (i.e. \ref PRINT it)
 without first explaining how it is calculated.
 
 This input demonstrates the key idea of the PLUMED syntax.  Quantities calculated by commands such as \ref DISTANCE are given labels (e2edist) so that 
 they can be reused when performing other commands.  This idea is discussed in more depth in the following video https://www.youtube.com/watch?v=PxJP16qNCYs.  
 If you understand this idea though you are 90% of the way to understanding how to used PLUMED.  Well done. 
 
-\subsection lugano-1-com Center of mass positions
+\subsection marvel-1-com Center of mass positions
 
 When calculating many collective variables it is useful to not think in terms of calculating them directly based on the positions of a number of atoms.
 It is useful to instead think of them as being calculated from the position of one or more virtual atoms whose positions are generated based on the position
@@ -190,7 +190,7 @@ ENDPLUMED
 \endverbatim
 
 Make a PLUMED input containing the above input and execute it on the trajectory that you downloaded at the start of the exercise by making use of the commands
-in section \ref lugano-1-introinput
+in section \ref marvel-1-introinput
 
 Before we turn to analyzing what is output from this calculation there are a few things to note about this input file.  Firstly, I should describe what this file
 instructs PLUMED to do.  It tells PLUMED to:
@@ -246,7 +246,7 @@ Lets summarize what we have learned from these sections thus far.  We have seen 
 
 Now, obviously, PLUMED can do much more than calculate the distances between pairs of atoms as we will start to see that in the following sections.  
 
-\subsection lugano-1-torsions Calculating torsion angles
+\subsection marvel-1-torsions Calculating torsion angles
 
 In the previous sections we have seen how we can use PLUMED to calculate distances and how by plotting these distances we can begin to simplify the 
 high dimensional data contained in a trajectory.  Obviously, calculating a \ref DISTANCE is not always the best way to simplify the information contained 
@@ -269,7 +269,7 @@ ENDPLUMED
 \endverbatim
 
 Copy this input to a PLUMED input file and use it to analyze the trajectory you downloaded at the start of this exercise by using the commands
-described in section \ref lugano-1-introinput then plot the CV output using gnuplot.
+described in section \ref marvel-1-introinput then plot the CV output using gnuplot.
 
 As you can hopefully see calculating \ref TORSION values and other CVs is no more difficult than calculating \ref DISTANCE values.  In fact it is 
 easier as generally when you calculate the torsion angles of a protein you often wish to calculate particular, named torsion angles (i.e. the \f$\phi\f$ and \f$\psi\f$
@@ -277,6 +277,7 @@ angles).  The \ref MOLINFO command makes it particularly easy to do this.  For i
 in the sixth residue of the protein and the \f$\psi\f$ angle in the eighth residue of the protein.  You can do so using the following input:
 
 \verbatim
+#SETTINGS MOLFILE=user-doc/tutorials/marvel-1/template.pdb
 MOLINFO STRUCTURE=template.pdb
 phi6: TORSION ATOMS=@phi-6
 psi8: TORSION ATOMS=@psi-8
@@ -284,10 +285,10 @@ PRINT ARG=phi6,psi8 FILE=colvar
 \endverbatim
 
 Copy this input to a PLUMED input file and use it to analyze the trajectory you downloaded at the start of this exercise by using the commands
-described in section \ref lugano-1-introinput then plot the CV output using gnuplot.  Notice that you will need the template.pdb file you downloaded 
+described in section \ref marvel-1-introinput then plot the CV output using gnuplot.  Notice that you will need the template.pdb file you downloaded 
 at the start of this exercise in order for this to run.
 
-\subsection lugano-1-gyration An exercise with the radius of gyration
+\subsection marvel-1-gyration An exercise with the radius of gyration
 
 Lets now see if you can use everything you have learned to setup a PLUMED input file of your own.  What I would like you to do is to write
 a PLUMED input file that measures the Radius of Gyration \ref GYRATION for the configurations in each of the frames in the trajectory that
@@ -303,7 +304,7 @@ ca: GROUP ATOMS=9,16,31,55,69,90,102,114,124,138,160,174,194,208,224,238
 
 Now 'ca' is not a virtual atom but a simple list of atoms.
 
-\subsection lugano-1-multicol Coordination numbers
+\subsection marvel-1-multicol Coordination numbers
 
 In the previous sections we have learned how PLUMED can be used to calculate simple functions of atomic positions such as the 
 \ref DISTANCE between pairs of atoms.  As discussed here (https://www.youtube.com/watch?v=iDvZmbWE5ps) many of the more complicated 
@@ -330,12 +331,12 @@ PRINT ARG=d1.* FILE=colvar
 \endverbatim  
 
 Copy this input file to a PLUMED input file. Before using it to analyze the trajectory that you downloaded at the start of the exercise using the commands 
-described in section \ref lugano-1-introinput try to guess what value this coordination number will take.  Hint: what element is atom 9? 
+described in section \ref marvel-1-introinput try to guess what value this coordination number will take.  Hint: what element is atom 9? 
 
 Now see if you can adjust the above input to calculate the coordination number of atom 5.  What is the coordination number of this atom and why does it take 
 this value?
 
-\subsection lugano-1-multicol2 Multicolvar
+\subsection marvel-1-multicol2 Multicolvar
 
 In the previous section we exploited a feature of PLUMED known as multicolvar when calculating the coordination number.  When using this feature
 we are not confined to simply calculating coordination numbers.  For instance the input below allows us to calculate a number of distances and to then
@@ -352,14 +353,15 @@ ENDPLUMED
 \endverbatim
 
 Try to copy this input now and to use it to analyze the trajectory you downloaded at the start of the exercise using the commands 
-described in section \ref lugano-1-introinput.  
+described in section \ref marvel-1-introinput.  
 
-Multicolvar is not just for \ref DISTANCES though.  The infrastructure of multicolvar has been used to develop many PLUMED2 collective variables. 
+Multicolvar is not just for \ref DISTANCES though.  The infrastructure of multicolvar has been used to develop many PLUMED collective variables. 
 One interesting example is the set of Secondary Structure CVs (\ref ANTIBETARMSD, \ref PARABETARMSD and \ref ALPHARMSD).  You can use the input 
 below to calculate the degree of anti-beta secondary structure in each of the trajectory frames by copying this input to a PLUMED input file
-and by exploiting the commands to run driver that were described in section \ref lugano-1-introinput. 
+and by exploiting the commands to run driver that were described in section \ref marvel-1-introinput. 
 
 \verbatim
+#SETTINGS MOLFILE=user-doc/tutorials/marvel-1/template.pdb
 MOLINFO STRUCTURE=template.pdb
 abeta: ANTIBETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} STRANDS_CUTOFF=1
 
@@ -371,7 +373,7 @@ ENDPLUMED
 We can do a large number of other things with multicolvar.  If you are interested this topic is described in more detail in the tutorial:
 \ref belfast-10.
 
-\subsection lugano-1-averagesintro Understanding the need for ensemble averages
+\subsection marvel-1-averagesintro Understanding the need for ensemble averages
 
 In the previous sections we have learned how we can use PLUMED to calculate collective variables from simulation trajectories and have seen how,
 by plotting how these collective variables change as a function of time, we can get a handle on what happens during the trajectory.  Generally
@@ -464,7 +466,7 @@ where the sum runs over the set of \f$T\f$ microstates, \f$q(t)\f$, in our traje
 of the collective variable from the positions of the atoms in the microstate.  When we do so we find that the values of the ensemble averages from different 
 trajectories are reasonably consistent and certainly much more consistent than the set of instantaneous CV values.
 
-\subsection lugano-1-averages Calculating ensemble averages using PLUMED
+\subsection marvel-1-averages Calculating ensemble averages using PLUMED
 
 Repeat the steps from the previous section that were used to run the two MD calculations with slightly different input configurations.  This time, however, your 
 PLUMED input should look like this:
@@ -510,7 +512,7 @@ PRINT ARG=d1,d1a FILE=colvar STRIDE=10
 
 Based on what you see when you plot the colvar file and the information on the page about the \ref AVERAGE command what is the CLEAR=10 keyword telling PLUMED to do?
 
-\subsection lugano-1-histograms Calculating histograms
+\subsection marvel-1-histograms Calculating histograms
 
 Most of the time, we are not really interested in calculating ensemble averages for particular collective variables.  What we would really like 
 is the probability that the collective variable takes a particular value or set of values.  In other words, and as discussed in the following video,
@@ -557,13 +559,14 @@ familiar with PLUMED you will find that these labels can refer to a range of dif
 Lets now see if we can bring together everything we have learned in this tutorial in order to analyze the protein trajectory that was downloaded at the start of 
 the exercise.
 
-\subsection lugano-1-analysis A histogram for the protein trajectory
+\subsection marvel-1-analysis A histogram for the protein trajectory
 
 We are going to calculate the \ref HISTOGRAM from our protein trajectory as a function of two different collective variables:
 \ref ANTIBETARMSD and the average distance between the ca atoms of our protein backbone.  The input that allows us to 
 calculate perform this analysis is shown below:
 
 \verbatim
+#SETTINGS MOLFILE=user-doc/tutorials/marvel-1/template.pdb
 # Read in protein structure template
 MOLINFO STRUCTURE=template.pdb
 # Calculate collective variables
@@ -579,7 +582,7 @@ hh: HISTOGRAM ARG=abeta.lessthan,dd.mean KERNEL=DISCRETE GRID_MIN=0,0.8 GRID_MAX
 DUMPGRID GRID=hh FILE=histo
 \endverbatim
 
-Try running the input above on the trajectory that you downloaded at the start of this exercise by using the commands detailed in section \ref lugano-1-introinput.
+Try running the input above on the trajectory that you downloaded at the start of this exercise by using the commands detailed in section \ref marvel-1-introinput.
 You can plot the two dimensional histogram output using the following commands:
 
 \verbatim
@@ -599,6 +602,7 @@ F(s) = -k_B T \ln H(s)
 If you want to use PLUMED to output the free energy rather than the histogram you need to use the \ref CONVERT_TO_FES command as shown below:
 
 \verbatim
+#SETTINGS MOLFILE=user-doc/tutorials/marvel-1/template.pdb
 # Read in protein structure template
 MOLINFO STRUCTURE=template.pdb
 # Calculate collective variables
@@ -617,18 +621,18 @@ DUMPGRID GRID=fes FILE=fes.dat
 
 Notice though that even when we do this complicated looking calculation we are still, underneath it all, calculating functions of a large number of ensemble averages.
 
-\section lugano-1-conc Conclusions and further work
+\section marvel-1-conc Conclusions and further work
 
 If you have worked through all of this tutorial make sure that you have understood it by ensuring that you understand what the list of learning outcomes
-in section \ref lugano-1-lo means and that you can use PLUMED to perform all these tasks.  In terms of further work you should investigate issues related 
+in section \ref marvel-1-lo means and that you can use PLUMED to perform all these tasks.  In terms of further work you should investigate issues related 
 to the convergence of estimates of ensemble averages such as block averaging.  You might like to investigate how long your simulations have to be in order 
 to obtain reliable estimates of the ensemble average for a collective variable and reliable estimates for the free energy as a function of a collective variable.
 Alternatively, you might like to explore other collective variables that could be used to analyze the protein trajectory that you have worked on in this tutorial.
 
 */
 
-link: @subpage lugano-1
+link: @subpage marvel-1
 
 description: This tutorial explains how to use PLUMED to analyze CVs
 
-additional-files: lugano-1
+additional-files: marvel-1

@@ -40,7 +40,7 @@ private:
   double cgtol;
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMapConjGrad( const ActionOptions& ao );
+  explicit SketchMapConjGrad( const ActionOptions& ao );
   void minimise( Matrix<double>& );
 };
 

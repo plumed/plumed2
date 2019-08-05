@@ -78,7 +78,7 @@ PLUMED is made up of modules. Some of them are on by default, some others aren't
 Since version 2.3, the activation of modules should be made during configuration using the `--enable-modules`
 option (see \ref mymodules).
 
-Notice that some functionalities of PLUMED depend on external
+Notice that some of the methods within PLUMED depend on external
 libraries which are looked for by configure. You can typically
 avoid looking for a library using the "disable" syntax, e.g.
 \verbatim
@@ -375,8 +375,8 @@ possible kinds of innocuous errors:
 
 \attention
 Even though we regularly perform tests on [Travis-CI](http://travis-ci.org/plumed/plumed2),
-it is possible that aggressive optimizations or even architecture dependent features
-trigger bugs that did not show up on travis. So please always perform regtests when you install
+it is possible that aggressive optimization or even architecture dependent features
+trigger bugs that did not show up on travis. So please always perform the regtests when you install
 PLUMED.
 
 Notice that the compiled executable, which now sits in 'src/lib/plumed', relies
@@ -453,7 +453,7 @@ the following things:
 - use the "plumed" executable from the command line. This is also possible before installing.
 - link against the PLUMED library using the "-lplumed" flag for the linker. This allows
   one to use PLUMED library in general purpose programs
-- use the PLUMED internal functionalities (C++ classes) including
+- use PLUMED internal functionality (C++ classes) including
   header files such as "#include <plumed/tools/Vector.h>". This is useful as it may be expedient to
   exploit the PLUMED library in general purpose programs
 
@@ -628,7 +628,7 @@ gromacs once for all and combine it with your working version of PLUMED.
 
 \section Installation-conda Installing PLUMED with conda
 
-If you use the conda package manager you can install a precompiled PLUMED binary using the following command:
+If you use the conda package manager you can install a pre-compiled PLUMED binary using the following command:
 \verbatim
 > conda install -c conda-forge plumed
 \endverbatim

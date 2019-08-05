@@ -161,7 +161,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
       if( fixed[0]!=0 ) error("input to --fixed should be two integers");
       fixed.resize(2); fixed[0]=0; fixed[1]=frames.size()-1;
     } else if( fixed.size()==2 ) {
-      if( fixed[0]<0 || fixed[1]<0 || fixed[0]>(frames.size()-1) || fixed[1]>(frames.size()-1) ) {
+      if( fixed[0]>(frames.size()-1) || fixed[1]>(frames.size()-1) ) {
         error("input to --fixed should be two numbers between 0 and the number of frames-1");
       }
     } else {
@@ -253,7 +253,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 // Calculate the distance between the start and the end
   MultiValue myvpack( 1, sframe->getNumberOfReferenceArguments() + 3*sframe->getNumberOfReferencePositions() + 9);
   ReferenceValuePack mypack( sframe->getNumberOfReferenceArguments(), sframe->getNumberOfReferencePositions(), myvpack );
-  double pathlen = sframe->calc( eframe->getReferencePositions(), fpbc, args_ptr, eframe->getReferenceArguments(), mypack, false );
+  sframe->calc( eframe->getReferencePositions(), fpbc, args_ptr, eframe->getReferenceArguments(), mypack, false );
 // And the spacing between frames
   double delr = 1.0 / static_cast<double>( nbetween );
 // Calculate the vector connecting the start to the end
@@ -290,16 +290,6 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     mypdb.print( 10, NULL, ofile, ofmt ); nframes++;
   }
 
-// double mean=0; printf("DISTANCE BETWEEN ORIGINAL FRAMES %f \n",pathlen);
-// for(unsigned i=1;i<final_path.size();++i){
-//    double len = final_path[i]->calc( final_path[i-1]->getReferencePositions(), fpbc, args, final_path[i-1]->getReferenceArguments(), mypack, false );
-//    printf("FINAL DISTANCE BETWEEN FRAME %u AND %u IS %f \n",i-1,i,len );
-//    mean+=len;
-// }
-// printf("SUGGESTED LAMBDA PARAMETER IS THUS %f \n",2.3/mean/static_cast<double>( final_path.size()-1 ) );
-
-// Delete the args as we don't need them anymore
-//  for(unsigned i=0; i<args.size(); ++i) delete args[i];
   ofile.close(); return 0;
 }
 

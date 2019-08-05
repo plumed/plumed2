@@ -85,6 +85,7 @@ public:
   virtual unsigned getNumberOfQuantities() const ;
   unsigned getNumberOfArguments() const ;
 /// Overwrite ActionWithArguments getArguments() so that we don't return the bias
+  using ActionWithArguments::getArguments;
   std::vector<Value*> getArguments();
   void update();
 /// This does the clearing of the action

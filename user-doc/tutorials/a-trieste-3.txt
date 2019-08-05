@@ -384,6 +384,7 @@ gnuplot and add a bias using an analytical function of a collective variable wit
 As a first test lets run an MD and generate on-the-fly the free energy as a function of the phi and psi collective variables separately.
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/trieste-3/aladip/aladip.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=aladip.pdb
 phi: TORSION ATOMS=@phi-2
@@ -417,6 +418,7 @@ The function and the resulting parameters can be used to run a new biased simula
 \section trieste-3-ex-7 Exercise 7: First biased run with Alanine dipeptide
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/trieste-3/aladip/aladip.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=aladip.pdb
 
@@ -448,6 +450,7 @@ We can now run a third simulation where both regions are biased.
 \section trieste-3-ex-8 Exercise 8: Second biased run with Alanine dipeptide
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/trieste-3/aladip/aladip.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=aladip.pdb
 
@@ -473,6 +476,7 @@ With this third simulation it should be possible to visit both regions as a func
 and obtain a better free energy estimate along phi.
 
 \plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/trieste-3/aladip/aladip.pdb
 # vim:ft=plumed
 MOLINFO STRUCTURE=aladip.pdb
 

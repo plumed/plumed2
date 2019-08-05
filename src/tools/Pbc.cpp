@@ -158,6 +158,7 @@ double Pbc::distance( const bool pbc, const Vector& v1, const Vector& v2 ) const
 void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
   if (max_index==0) max_index=dlist.size();
   if(type==unset) {
+    // do nothing
   } else if(type==orthorombic) {
 #ifdef __PLUMED_PBC_WHILE
     for(unsigned k=0; k<max_index; ++k) {
@@ -179,6 +180,7 @@ void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
 Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const {
   Vector d=delta(v1,v2);
   if(type==unset) {
+    // do nothing
   } else if(type==orthorombic) {
 #ifdef __PLUMED_PBC_WHILE
     for(unsigned i=0; i<3; i++) {

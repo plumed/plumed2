@@ -1,0 +1,584 @@
+/**
+\page lugano-4 Lugano tutorial: Calculating error bars
+
+\section lugano-4-aim Aims
+
+This tutorial will teach you how to use block averaging techniques to compute the error bars on the estimates for the ensemble average and the free 
+energy that you obtain from a biased simulation.  Please note that the ensemble averages that you obtain from simulations are always estimates and that
+you should thus <b>always</b> endeavor to provide an estimate of the error bar.
+
+\section lugano-4-lo Objectives
+
+Once this tutorial is completed students will
+
+- Be able to explain why it is important to compute error bars when calculating averages and free energy surfaces from enhanced sampling calculations.
+- Be able to use PLUMED to calculate ensemble averages and histograms using the keywords \ref AVERAGE and \ref HISTOGRAM.
+- Be able to use PLUMED to perform block analysis of trajectory data using the keywords \ref AVERAGE and \ref HISTOGRAM.
+- Be able to explain how block analysis can be used to detect problems with error bar underestimation in correlated data.
+
+\section lugano-4-resources Resources
+
+The \tarball{lugano-4} for this project contains the following files:
+
+- in : The input file for simplemd that contains the parameters for the MD simulation.
+- input.xyz : An initial configuration for the cluster that we are studying in this tutorial.
+- plumed.dat : An empty input file for PLUMED
+
+This tutorial has been tested on v2.5 but it should also work with other versions of PLUMED.
+
+Also notice that the `.solutions` direction of the tarball contains correct input files for the exercises.
+Please only look at these files once you have tried to solve the problems yourself.  Similarly the tutorial
+below contains questions for you to answer that are shown in bold.  You can reveal the answers to these questions
+by clicking on links within the tutorial but you should obviously try to answer things yourself before reading these
+answers.
+
+\section lugano-4-intro Introduction
+
+In this tutorial we are going to study a very simple physical system; namely, seven Lennard Jones atoms in a two dimensional space.   This simple system has been
+extensively studied as has often been used to benchmark new simulation techniques.  In addition, the potential energy landscape has been fully characterized and it is
+known that only the four structurally-distinct minima shown below exist:
+
+\anchor lugano-4-lj7-minima
+\image html lyon-lj7-minima.png "The four energetic minima in the energy landscape for two-dimensional Lennard Jones 7."
+
+In the exercises that follow we are going to learn how to use PLUMED to determine the relative free energies of these four structures by running molecular dynamics simulations
+as well as how to find suitable error bars on the energy of these minima.  First of all, however, we are going to learn how to estimate the average energy of this system and how 
+to compute the error on our estimate for the average.  We will thus start with a very brief recap of the theory behind taking an ensemble average.
+
+\section lugano-4-background Background
+
+When performing unbiased and biased simulations the aim is <b> always </b> to estimate the ensemble average for some quantity \f$\langle A \rangle\f$.  We know from
+statistical mechanics that, if we are in the canonical (NVT) ensemble, the value of this ensemble average is given by:
+\f[
+\langle A \rangle = \frac{ \int \textrm{d}x \textrm{d}p A(x) e^{-\frac{H(x,p)}{k_B T}} }{ \int \textrm{d}x\textrm{d}p e^{-\frac{H(x,p)}{k_B T}} }
+\f]
+where \f$H(x,p)\f$ is the Hamiltonian for our system, \f$T\f$ is the temperature and \f$k_B\f$ is the Boltzmann constant.  We also know, however, that for all but the
+simplest possible systems, it is impossible to solve the integrals in this expression analytically.  Furthermore, because this expression involves integrals over all
+the \f$3N\f$ position and \f$3N\f$ momentum coordinates, using a numerical integration method that employs a set of regularly spaced grid points in the \f$6N\f$
+dimensional phase space would be prohibitively expensive.  We are thus forced to instead generate a time series of random variables and to approximate the ensemble average
+using: 
+\f[
+\langle A \rangle \approx \frac{1}{T} \sum_{t=1}^T A_t   \qquad \qquad \textrm{Equation 1} 
+\f] 
+where each \f$A_t\f$ in the expression above is a sample from the distribution:
+\f[
+P(A_t = a ) = \frac{ \int \textrm{d}x \textrm{d}p \delta(A(x)-a) e^{-\frac{H(x,p)}{k_B T}} }{ \int \textrm{d}x\textrm{d}p e^{-\frac{H(x,p)}{k_B T}} }
+\f]
+This distribution (thankfully) is exactly the distribution we are sampling from if we compute the values the observable \f$A\f$ takes during the course of in an equilibrated molecular
+dynamics trajectory.  We can thus calculate an approximate value for \f$\langle A\rangle\f$ by computing the value of \f$A\f$ for each of the frames in our trajectory and
+by computing the average value that \f$A\f$ takes over the trajectory using equation 1.  It is critical to remember, however, that the value we obtain for \f$\langle A\rangle\f$
+when we compute it this way is itself a random variable.  When reporting ensemble averages calculated in this way we should thus endeavor to quantify the error in our estimate
+of this quantity by computing multiple estimates for \f$\langle A\rangle\f$ and by using these multiple estimates to compute a variance for the underlying random variable.  This
+tutorial will explain how this such error bars are computed in practice.  At some stage you may find it useful to watch the following videos in order to understand the theory
+that is behind these calculations a little better.   
+
+@htmlonly
+<table>
+<tr>
+<td><iframe width="560" height="315" src="https://www.youtube.com/embed/LOFnWyocr40" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></td>
+<td> <iframe width="560" height="315" src="https://www.youtube.com/embed/0KqCK0yG9T0" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe> </td> 
+</tr>
+</table> 
+@endhtmlonly
+
+\section lugano-4-s Getting started 
+
+\subsection lugano-4-simplemd Using PLUMED as an MD code
+
+Before getting into the business of computing an ensemble average we first need to setup the system we are going to study.  In this tutorial we are going to use the
+MD code <b>simplemd</b> that is part of PLUMED.  You can run this code by issuing the command:
+
+\verbatim
+plumed simplemd < in
+\endverbatim
+
+where in here is the input file from the tar ball for this tutorial, which is shown below:
+
+\verbatim
+nputfile input.xyz
+outputfile output.xyz
+temperature 0.5
+tstep 0.005
+friction 0.1
+forcecutoff 2.5
+listcutoff  3.0
+ndim 2
+nstep 200000
+nconfig 1000 trajectory.xyz
+nstat   1000 energies.dat
+\endverbatim
+
+This input instructs PLUMED to perform 200000 steps of MD at a temperature of \f$k_B T = 0.5 \epsilon\f$ starting from the configuration in input.xyz.  The timestep in this simulation
+is 0.005 \f$\sqrt{\epsilon}{m\sigma^2}\f$ and the temperature is kept fixed using a Langevin thermostat with a relaxation time of \f$0.1 \sqrt{\epsilon}{m\sigma^2}\f$.  Trajectory frames
+are output every 1000 MD steps to a file called trajectory.xyz.  Notice also that in order to run the calculation above you need to provide an empty file called plumed.dat.  This file
+is the input file to the PLUMED plugin, which, because this file is empty, is doing nothing when we run the calculation above.
+
+<b> Run a calculation using simplemd and the input above and visualize the trajectory that is output.  Describe what happens during this calculation and explain why this is happening. </b>
+
+\hidden{What happens}
+You can visualize what occurs during the trajectory by using a visualization package such as VMD (https://www.ks.uiuc.edu/Research/vmd/).  If you are using VMD you can see the MD trajectory
+by using the command:
+
+\verbatim
+vmd trajectory.xyz
+\endverbatim
+
+You should observe that all the atoms fly apart early on in the simulation and that the cluster evaporates.  The cluster evaporates because at a temperature of \f$k_B T = 0.5 \epsilon\f$ the gas
+state has a lower free energy than than the cluster state.
+\endhidden
+
+<b> Change the parameters in the input file for simplemd so as to prevent the cluster from evaporating. </b>
+
+\hidden{No evaporation}
+To prevent the cluster from evaporating you need to lower the temperature in the file in.  The cluster will not evaporate if the temperature is set equal to \f$k_B T = 0.2 \epsilon\f$.
+\endhidden
+
+<b> 
+Now try to think how we can use a bias potential to stop the cluster from evaporating. Why might using a bias potential be preferable to the method that you have just employed? 
+N.B. The next exercise is in the hidden section below so you need to expand it.  Please try to come up with your own answer to the question of what bias potential we should be using 
+before expanding this section by thinking about the material that was covered in \ref lugano-2.
+</b>
+
+\hidden{The bias potential}
+If we lower the temperature of the simulation very little will happen.  Yes the cluster will no longer evaporate but at the same time we will not see any transitions between the various basins in this
+energy landscape.  We thus can use a bias potential to prevent the cluster from exploring gaseous configurations that do not interest us instead of lowering the temperature.  In other
+words, we are going to add restraints that will prevent the cluster from evaporating.  The particular restraint we are going to use will prevent all the atoms from moving more than \f$2\sigma\f$ from the 
+center of mass of the cluster.  As the masses of all the atoms in the cluster are the same we can compute the position of the center of mass using:
+\f[
+\mathbf{x}_\textrm{com} = \frac{1}{N} \sum_{i=1}^N \mathbf{x}_i
+\f]
+where \f$\mathbf{x}_i\f$ is the position of the atom with the index \f$i\f$.   The distance between the atom with index \f$i\f$ and the position of this center of mass, \f$d_i\f$, can be computed using Pythagoras' theorem.  These distances
+are then restrained by using the following potential:
+\f[
+V(d_i) = \begin{cases}
+          100*(d_i-2.0)^2 & \textrm{if} \quad d_i > 2 \\
+          0 & \textrm{otherwise}
+\end{cases}
+\f]
+as you can see this potential has no effect on the dynamics when these distances are less than 2 \f$\epsilon\f$.  If any atom is more than 2 \f$\epsilon\f$ from the center of mass, however, this potential will drive it back
+towards the center of mass.   The following cell contains a skeleton input file for PLUMED that gets it to calculate and apply this bias potential.
+
+\plumedfile
+# this optional command tells VIM that this is a PLUMED file and to color the text accordingly
+# vim: ft=plumed
+
+# This tells PLUMED we are using Lennard Jones units
+UNITS NATURAL
+
+# Calculate the position of the center of mass.  We can then refer to this position later in the input using the label com.
+com: COM __FILL__
+
+# Add the restraint on the distance between com and the first atom
+d1: DISTANCE __FILL__
+UPPER_WALLS ARG=d1 __FILL__
+
+# Add the restraint on the distance between com and the second atom
+d2: DISTANCE __FILL__
+UPPER_WALLS  __FILL__
+
+# Add the restraint on the distance between com and the third atom
+d3: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the fourth atom
+d4: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the fifth atom
+d5: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the sixth atom
+d6: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the seventh atom
+d7: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+\endplumedfile
+
+<b> Copy and paste the content above into the file plumed.dat and then fill in the blanks by looking up the documentation for these actions online and by reading the description of the calculation that you are to run above.
+Once you have got a working plumed.dat file run a calculation using simplemd again at a temperature of \f$k_B T = 0.5 \epsilon\f$ and check to see if the bias potential is indeed preventing the cluster from evaporating. </b> \endhidden
+
+\section lugano-4-blocks Block averaging
+
+The previous sections showed you how to set up the simulations of the Lennard Jones cluster and reviewed some of the material on adding static bias potentials that was covered in the earlier hands-on sessions in the meeting.
+Now that we have completed all this we can move to the material on calculating appropriate error bars that we will cover in this tutorial.  In this section you are going to work through the process of block averaging the 
+trajectory yourself for a simple case in order to better understand the theory.  In the final section we will then apply this technique to a more complex case.  Without further ado then lets run a trajectory and collect some 
+data to analyze.  
+
+<b> Run a simulation of the Lennard Jones cluster at \f$k_B T = 0.2 \epsilon\f$ using for 12000 steps using the input file below (but with the blanks filled in obviously). This calculation outputs the potential energy of the system for every 
+tenth step in the trajectory to a file called energy. </b> 
+
+\plumedfile
+# this optional command tells VIM that this is a PLUMED file and to color the text accordingly
+# vim: ft=plumed
+
+# This tells PLUMED we are using Lennard Jones units
+UNITS NATURAL
+
+# Calculate the position of the center of mass.  We can then refer to this position later in the input using the label com.
+com: COM __FILL__
+
+# Add the restraint on the distance between com and the first atom
+d1: DISTANCE __FILL__
+UPPER_WALLS ARG=d1 __FILL__
+
+# Add the restraint on the distance between com and the second atom
+d2: DISTANCE __FILL__
+UPPER_WALLS  __FILL__ 
+
+# Add the restraint on the distance between com and the third atom
+d3: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the fourth atom
+d4: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the fifth atom
+d5: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the sixth atom
+d6: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the seventh atom
+d7: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Get the potential energy
+e: ENERGY
+# Print the potential energy to a file
+PRINT ARG=__FILL__ FILE=energy STRIDE=10
+\endplumedfile
+
+The exercise below will take you through the process of calculating block averages and hence error bars on the data you generated.
+ 
+@htmlonly
+<iframe frameborder="0" width="100%" height="600px" src="https://repl.it/student_embed/classroom/138484/b1c05b5ed64d50f1098190481877a402"></iframe>
+@endhtmlonly
+ 
+Notice that we can calculate the block averages that were required for the block averaging technique that was explained in the programming exercise using PLUMED directly.  The input below (once you fill in the gaps) calculates
+and prints block averages over windows of 100 trajectory frames.  See if you can fill in the blanks and compare the result you obtain with the result that you obtain by running a python script to convince yourself that PLUMED 
+calculates these block averages correctly.
+
+\plumedfile
+# this optional command tells VIM that this is a PLUMED file and to color the text accordingly
+# vim: ft=plumed
+
+# This tells PLUMED we are using Lennard Jones units
+UNITS NATURAL
+
+# Calculate the position of the center of mass.  We can then refer to this position later in the input using the label com.
+com: COM __FILL__
+
+# Add the restraint on the distance between com and the first atom
+d1: DISTANCE __FILL__
+UPPER_WALLS ARG=d1 __FILL__
+
+# Add the restraint on the distance between com and the second atom
+d2: DISTANCE __FILL__
+UPPER_WALLS  __FILL__
+
+# Add the restraint on the distance between com and the third atom
+d3: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the fourth atom
+d4: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the fifth atom
+d5: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the sixth atom
+d6: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the seventh atom
+d7: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Get the potential energy
+e: ENERGY
+# Calculate block averages of the potential energy
+av_e: AVERAGE ARG=__FILL__ CLEAR=__FILL__ STRIDE=__FILL__
+# Print the block averages of the potential energy to a file
+PRINT ARG=__FILL__ STRIDE=__FILL__ FILE=energy
+\endplumedfile
+
+At some point (probably not during the tutorial as you will not have time) you can use the following video and quiz to understand the theory behind this process of block averaging.
+
+\section lugano-4-together Calculating the free energy surface
+
+In this final exercise we are going to run a metadynamics simulation in order to see the Lennard Jones cluster explore all of the basins in the energy landscape that were shown in figure \ref lugano-4-lj7-minima.
+We will extract a free energy surface from this simulation trajectory and will use the block averaging technique that we learnt about in the previous section to quote error bars on this free energy surface.  There are 
+three important differences between the way we apply the block averaging techinique in this section and the way that we applied the block averaging technique in the previous section; namely:
+
+- The block averaging technique is applied on on the histogram that is estimated from the simulation.  As the free energy surface is a function of the histogram we have do some propegation of errors to get the final error bar.
+- The free energy surface we are extracting <b> is not </b> a single number as it was in the previous section.  It is a function evaluated on the grid.  We thus have to apply the block averaging technique for the value of the free energy at each grid point separately.
+- The simulation in this case is biased so we have to reweight in order to get the unbiased free energy surface.
+
+We will not dwell too much on these issues in what follows.  For the interested reader they are discussed at length in https://arxiv.org/abs/1812.08213.  Furthermore, the \ref trieste-2 tutorial deals with each of these issues in turn.
+If you have sufficient time at the end you may therefore like to work through the exercises in that tutorial in order to better understand how the block averaging technique that was discussed in the previous section has been extended 
+so as to resolve these issues.
+
+\subsection luganoo-4-metad Running the metadynamics simulation
+
+We can drive transitions between the four possible minima in the Lennard-Jones-seven potential energy landscape by biasing the second and third central moments of the distribution of coordination numbers.
+The nth central moment of a set of numbers, \f$\{X_i\}\f$ can be calculated using:
+\f[
+\mu^n = \frac{1}{N} \sum_{i=1}^N ( X_i - \langle X \rangle )^n \qquad \textrm{where} \qquad \langle X \rangle = \frac{1}{N} \sum_{i=1}^N X_i
+\f]
+Furthermore, we can compute the coordination number of our Lennard Jones atoms using:
+\f[ 
+c_i = \sum_{i \ne j } \frac{1 - \left(\frac{r_{ij}}{1.5}\right)^8}{1 - \left(\frac{r_{ij}}{1.5}\right)^{16} }
+\f]
+where \f$r_{ij}\f$__FILL__ is the distance between atom \f$i\f$ and atom \f$j\f$.  The following cell contains a skeleton input file for PLUMED that gets it to perform metadynamics using the second and third central 
+moments of the distribution of coordination numbers as a CV.
+
+\plumedfile
+# this optional command tells VIM that this is a PLUMED file and to color the text accordingly
+# vim: ft=plumed
+
+# This tells PLUMED we are using Lennard Jones units
+UNITS NATURAL
+
+# Calculate the position of the center of mass.  We can then refer to this position later in the input using the label com.
+com: COM __FILL__
+
+# Add the restraint on the distance between com and the first atom
+d1: DISTANCE __FILL__
+UPPER_WALLS ARG=d1 __FILL__
+
+# Add the restraint on the distance between com and the second atom
+d2: DISTANCE __FILL__
+UPPER_WALLS  __FILL__
+
+# Add the restraint on the distance between com and the third atom
+d3: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the fourth atom
+d4: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the fifth atom
+d5: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the sixth atom
+d6: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Add the restraint on the distance between com and the seventh atom
+d7: DISTANCE __FILL__
+UPPER_WALLS __FILL__
+
+# Calculate the collective variables
+c1: COORDINATIONNUMBER SPECIES=__FILL__ MOMENTS=__FILL__ SWITCH={RATIONAL __FILL__ }
+
+# Do metadynamics
+METAD ARG=__FILL__ HEIGHT=__FILL__ PACE=__FILL__ SIGMA=__FILL__ GRID_MIN=-1.5,-1.5 GRID_MAX=2.5,2.5 GRID_BIN=500,500 BIASFACTOR=5
+\endplumedfile
+
+<b> This input should be modified to instruct PLUMED to add Gaussian kernels with a bandwidth of 0.1 in both the second and third moment of the distribution of coordination numbers and a height of 0.05 \f$\epsilon\f$ every 500 MD
+steps.  The metadynamics calculation should then be run using simplemd at a temperature of \f$k_B T = 0.1 \epsilon\f$. </b>
+
+You can then run a simplemd calculation using the following input:
+
+\verbatim
+inputfile input.xyz
+outputfile output.xyz
+temperature 0.1
+tstep 0.005
+friction 1
+forcecutoff 2.5
+listcutoff  3.0
+ndim 2
+nstep 1000000
+nconfig 100 trajectory.xyz
+nstat   1000 energies.dat
+\endverbatim
+
+and the command
+
+\verbatim
+plumed simplemd < in
+\endverbatim
+
+\subsection lugano-4-post Extracting block averages for the histogram
+
+Having now run the metadynamics we will need to post process our trajectory with <b> driver </b> in order to extract the free energy by reweighting.  Furthermore, notice that, in order to do our block averaging, we are going 
+to want to extract multiple estimates for the histogram so that we can do our block averaging.  We are thus going to use the following input file to extract our estimates of the histogram:
+
+\plumedfile
+# this optional command tells VIM that this is a PLUMED file and to color the text accordingly
+# vim: ft=plumed
+
+UNITS NATURAL
+
+# We can delete the parts of the input that specified the walls and disregrad these in our analysis
+# It is OK to do this as we are only interested in the value of the free energy in parts of phase space
+# where the bias due to these walls is not acting.
+  
+c1: COORDINATIONNUMBER SPECIES=__FILL__ MOMENTS=__FILL__ SWITCH={RATIONAL __FILL__}
+
+# The metadynamics bias is restarted here so we consider the final bias as a static bias in our calculations
+METAD ARG=__FILL__ HEIGHT=0.05 PACE=50000000 SIGMA=0.1,0.1 GRID_MIN=-1.5,-1.5 GRID_MAX=2.5,2.5 GRID_BIN=500,500 TEMP=0.1 BIASFACTOR=5 RESTART=YES
+
+# This adjusts the weights of the sampled configurations and thereby accounts for the effect of the bias potential
+rw: REWEIGHT_BIAS TEMP=0.1
+
+# Calculate the histogram and output it to a file
+hh: HISTOGRAM ARG=c1.* GRID_MIN=-1.5,-1.5 GRID_MAX=2.5,2.5 GRID_BIN=200,200 BANDWIDTH=0.02,0.02 LOGWEIGHTS=__FILL__ CLEAR=__FILL__
+DUMPGRID GRID=hh FILE=my_histogram.dat STRIDE=2500
+\endplumedfile
+
+Once you have filled in the blanks in this input you can then run the calculation by using the command:
+
+\verbatim
+> plumed driver --ixyz trajectory.xyz  --initial-step 1
+\endverbatim
+
+You must make sure that the HILLS file that was output by your metadynamics simulation is available in the directory where you run the above command.
+If that condition is satisfied though you should generate a number of files containing histograms that will be called: analysis.0.my_histogram.dat, 
+analysis.1.myhistogram.dat etc.  These files contain the histograms constructed from each of the blocks of data in your trajectory.  You can merge
+them all to get the final free energy surface, which can be calculated using the well known relation between the histogram, \f$P(s)\f$, and the 
+free energy surface, \f$F(s)\f$:
+
+\f[
+F(s) = - k_B T \ln P(s)
+\f]
+
+that is employed in the following python script:
+
+\code{.py}
+import math
+import glob
+import numpy as np
+
+# Here are some numbers you will need to change if you run this script on grids generated in different contexts
+temp = 0.1               # Boltzmann's constant multiplied by the temperature at which the simulation was performed 
+grid_dimension = 2       # Number of collective variables that you provided using the ARG keyword
+filename = "my_histogram.dat"  # The name you specified the data to output to in the DUMPGRID command
+
+# Function to read in histogram data and normalization
+def readhistogram( fname ) :
+        # Read in the histogram data
+        data = np.loadtxt( fname )
+        with open( filename, "r" ) as myfile :
+                for line in myfile :
+                        if line.startswith("#! SET normalisation") : norm = line.split()[3]
+        return float(norm), data
+
+# Read in the grid file header to work out what fields we have
+with open( filename, "r" ) as myfile :
+        for line in myfile :
+                if line.startswith("#! FIELDS") : fieldnames = line.split()
+
+# Check if derivatives have been output in the grid by investigating the header
+nextg = 1
+if len(fieldnames)>(2+grid_dimension+1) :
+        nextg = 1 + grid_dimension
+        assert len(fieldnames)==(2+grid_dimension + nextg)
+
+# Read in a grid
+norm, griddata = readhistogram( filename )
+norm2 = norm*norm
+# Create two np array that will be used to accumulate the average grid and the average grid squared
+average = np.zeros( len(griddata[:,0]) )
+average_sq = np.zeros( len(griddata[:,0]) )
+average[:] = norm*griddata[:, grid_dimension]
+average_sq[:] = norm*griddata[:, grid_dimension]*griddata[:, grid_dimension]
+
+# Now sum the grids from all all the analysis files you have
+for filen in glob.glob( "analysis.*." + filename ) :
+        tnorm, newgrid = readhistogram( filen )
+        norm = norm + tnorm
+        norm2 = norm2 + tnorm*tnorm
+        average[:] = average[:] + tnorm*newgrid[:, grid_dimension]
+        average_sq[:] = average_sq[:] + tnorm*newgrid[:, grid_dimension]*newgrid[:, grid_dimension]
+
+# Compte the final average grid
+average = average / norm
+# Compute the sample variance for all grid points
+variance = (average_sq / norm) - average*average
+# Now multiply by bessel correction to unbias the sample variance and get the population variance
+variance = ( norm /(norm-(norm2/norm)) ) * variance
+# And lastly divide by number of grids and square root to get an error bar for each grid point
+ngrid = 1 + len( glob.glob( "analysis.*." + filename ) )
+errors = np.sqrt( variance / ngrid )
+mean_error, denom = 0, 0
+for i in range(len(errors)) :
+        if np.abs(average[i])>0 :
+                errors[i] = errors[i] / average[i]
+                mean_error = mean_error + errors[i]
+                denom = denom + 1
+        else : errors[i] = 0
+# Calculate average error over grid and output in header
+mean_error = mean_error / denom
+print("# Average error for free energy on grid equals ", mean_error )
+
+# Output the final free energy
+for i in range(0,len(griddata[:,0])) :
+        for j in range(0,grid_dimension) : print( griddata[i,j], end=" " )
+        print( -temp*np.log(average[i]), temp*errors[i] )
+        # We added spaces every time the y coordinate changes value to make the output readable by gnuplot
+        if i%201==0 and i>0 : print()
+\endcode
+
+Copy this script to a file called merge-histograms.py and then run it on your data by executing the command:
+
+\verbatim
+> python merge-histograms.py > final-histogram.dat
+\endverbatim
+
+This will output the final average histogram together with some error bars.  You can plot the free energy surface you obtain 
+by using gnuplot and the following command:
+
+\verbatim
+gnuplot> sp 'final-histogram.dat' u 1:2:3 w pm3d
+\endverbatim
+
+Similarly you can get a sense of how the error in the estimate of the free energy depends on the value of the CV by using the command:
+
+\verbatim
+gnuplot> sp 'final-histogram.dat' u 1:2:4 w pm3d
+\endverbatim
+
+More usefully, however, if you open the final-histogram.dat file you find that the first line reads:
+
+\verbatim
+# Average error for historgram is <average-histogram-error> and thus average energy in free energy is <average-free-energy-error>
+\endverbatim
+
+You can thus read off the average error in the estimate of the free energy from this top line directly.
+
+<b> Repeat the analysis of the trajectory that was discussed in this section with different block sizes.  Use the results you obtain to draw a graph showing how the average error on the estimate of the free energy depends on the block size </b>
+
+\hidden{Expected result}
+You should be able to extract a graph that looks something like the one shown below.  The error is small when the block size is small because the correlations between the trajectory frames cause this quantity to be underestimated.  As the block
+size increases, however, the error increases until it eventually flattens out.
+
+\anchor lugano-4-lj7-errors
+\image html lugano-4-lj7-errors.png "The error in the estimate of the free energy as a function of the size of the blocks."
+
+\endhidden 
+
+\section lugano-4-extensions Conclusions and extensions
+
+This exercise has explained the block averaging technique and has shown you how this technique can be used to extract the errors in estimates of the free energy. 
+You can learn more about the background to this technique and the business of reweighting biased trajectories in particular by working through \ref trieste-2 or 
+by reading https://arxiv.org/abs/1812.08213.
+
+*/
+
+link: @subpage lugano-4 
+
+description: Calculating error bars
+
+additional-files: lugano-4

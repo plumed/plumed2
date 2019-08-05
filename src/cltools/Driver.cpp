@@ -968,7 +968,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
     step+=stride;
   }
-  p.cmd("runFinalJobs");
+  if(!parseOnly) p.cmd("runFinalJobs");
 
   if(fp_forces) fclose(fp_forces);
   if(debugforces.length()>0) fp_dforces.close();

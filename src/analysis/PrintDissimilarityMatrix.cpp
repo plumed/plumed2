@@ -42,7 +42,7 @@ private:
   std::string fname;
 public:
   static void registerKeywords( Keywords& keys );
-  PrintDissimilarityMatrix( const ActionOptions& ao );
+  explicit PrintDissimilarityMatrix( const ActionOptions& ao );
   void performAnalysis();
   void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
 };

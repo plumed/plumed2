@@ -90,12 +90,12 @@ InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readThreeGroups("GROUP","VECTORSTART","VECTOREND",false,false,all_atoms);
-
-  // Check atoms are OK
-  if( getFullNumberOfTasks()!=getNumberOfAtoms()-2 ) error("you should specify one atom for VECTORSTART and one atom for VECTOREND only");
+  setupMultiColvarBase( all_atoms );
 
   // Setup the multicolvar base
   setupMultiColvarBase( all_atoms ); readVesselKeywords();
+  // Check atoms are OK
+  if( getFullNumberOfTasks()!=getNumberOfAtoms()-2 ) error("you should specify one atom for VECTORSTART and one atom for VECTOREND only");
   // And check everything has been read in correctly
   checkRead();
 

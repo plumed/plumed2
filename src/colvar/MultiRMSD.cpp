@@ -71,7 +71,7 @@ configuration.  \f$w_i\f$ is an optional weight.
 The distances for each of the domains in the above sum can be calculated using the \ref DRMSD or \ref RMSD measures or
 using a combination of these distance.  The reference configuration is specified in a pdb file like the one below:
 
-\verbatim
+\auxfile{file1.pdb}
 ATOM      2  O   ALA     2      -0.926  -2.447  -0.497  1.00  1.00      DIA  O
 ATOM      4  HNT ALA     2       0.533  -0.396   1.184  1.00  1.00      DIA  H
 ATOM      6  HT1 ALA     2      -0.216  -2.590   1.371  1.00  1.00      DIA  H
@@ -89,7 +89,7 @@ ATOM     20  HB1 ALA     2       2.670  -0.716  -2.057  1.00  1.00      DIA  H
 ATOM     21  HB2 ALA     2       2.556  -1.051  -0.295  1.00  1.00      DIA  H
 ATOM     22  HB3 ALA     2       2.070  -2.314  -1.490  1.00  1.00      DIA  H
 END
-\endverbatim
+\endauxfile
 
 with the TER keyword being used to separate the various domains in you protein.
 
@@ -101,7 +101,7 @@ the positions of the atoms in the reference file and their instantaneous
 position.  The Kearsley algorithm for each of the domains.
 
 \plumedfile
-MULTI-RMSD REFERENCE=file.pdb TYPE=MULTI-OPTIMAL
+MULTI-RMSD REFERENCE=file1.pdb TYPE=MULTI-OPTIMAL
 \endplumedfile
 
 The following tells plumed to calculate the RMSD distance between the positions of
@@ -109,7 +109,7 @@ the atoms in the domains of reference the reference structure and their instanta
 positions.  Here distances are calculated using the \ref DRMSD measure.
 
 \plumedfile
-MULTI-RMSD REFERENCE=file.pdb TYPE=MULTI-DRMSD
+MULTI-RMSD REFERENCE=file2.pdb TYPE=MULTI-DRMSD
 \endplumedfile
 
 in this case it is possible to use the following DRMSD options in the pdb file using the REMARK syntax:
@@ -120,7 +120,7 @@ UPPER_CUTOFF=# only pairs of atoms further than UPPER_CUTOFF are considered in t
 \endverbatim
 as shown in the following example
 
-\verbatim
+\auxfile{file2.pdb}
 REMARK NOPBC
 REMARK LOWER_CUTOFF=0.1
 REMARK UPPER_CUTOFF=0.8
@@ -141,7 +141,7 @@ ATOM     20  HB1 ALA     2       2.670  -0.716  -2.057  1.00  1.00      DIA  H
 ATOM     21  HB2 ALA     2       2.556  -1.051  -0.295  1.00  1.00      DIA  H
 ATOM     22  HB3 ALA     2       2.070  -2.314  -1.490  1.00  1.00      DIA  H
 END
-\endverbatim
+\endauxfile
 
 
 */
@@ -160,6 +160,28 @@ Just replace \ref MULTI-RMSD with \ref MULTI_RMSD
 \plumedfile
 MULTI_RMSD REFERENCE=file.pdb TYPE=MULTI-DRMSD
 \endplumedfile
+
+and remember to use a pdb file like the one below to define the reference structure
+
+\auxfile{file.pdb}
+ATOM      2  O   ALA     2      -0.926  -2.447  -0.497  1.00  1.00      DIA  O
+ATOM      4  HNT ALA     2       0.533  -0.396   1.184  1.00  1.00      DIA  H
+ATOM      6  HT1 ALA     2      -0.216  -2.590   1.371  1.00  1.00      DIA  H
+ATOM      7  HT2 ALA     2      -0.309  -1.255   2.315  1.00  1.00      DIA  H
+ATOM      8  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
+ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
+ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H
+TER
+ATOM     12  HY3 ALA     2      -0.520   2.679  -1.400  1.00  1.00      DIA  H
+ATOM     14  OY  ALA     2      -1.139   0.931  -0.973  1.00  1.00      DIA  O
+ATOM     16  HN  ALA     2       1.713   1.021  -0.873  1.00  1.00      DIA  H
+ATOM     18  HA  ALA     2       0.099  -0.774  -2.218  1.00  1.00      DIA  H
+ATOM     19  CB  ALA     2       2.063  -1.223  -1.276  1.00  1.00      DIA  C
+ATOM     20  HB1 ALA     2       2.670  -0.716  -2.057  1.00  1.00      DIA  H
+ATOM     21  HB2 ALA     2       2.556  -1.051  -0.295  1.00  1.00      DIA  H
+ATOM     22  HB3 ALA     2       2.070  -2.314  -1.490  1.00  1.00      DIA  H
+END
+\endauxfile
 
 */
 //+ENDPLUMEDOC
@@ -210,6 +232,12 @@ MultiRMSD::MultiRMSD(const ActionOptions&ao):
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
+  log.printf("  with indices : ");
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf("%d ",atoms[i].serial());
+  }
+  log.printf("\n");
   log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
 }

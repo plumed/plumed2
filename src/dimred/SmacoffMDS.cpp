@@ -41,7 +41,7 @@ private:
   double tol;
 public:
   static void registerKeywords( Keywords& keys );
-  SmacofMDS( const ActionOptions& );
+  explicit SmacofMDS( const ActionOptions& );
   void calculateProjections( const Matrix<double>&, Matrix<double>& );
 };
 
