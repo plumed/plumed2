@@ -65,6 +65,7 @@ class PythonCV : public Colvar {
     
     string py_file;
     string py_function="cv";
+    string py_style="NATIVE";
     int natoms;
     bool pbc;
 
@@ -84,9 +85,10 @@ PLUMED_REGISTER_ACTION(PythonCV,"PYTHONCV")
 void PythonCV::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the list of atoms to be passed to the function");
+  keys.add("optional","STYLE","Python types, one of NATIVE, NUMPY or JAX");
   keys.add("compulsory","FILE","the python file containing the function");
-  keys.add("optional","FUNCTION","the function to call");
-
+  keys.add("optional","FUNCTION","the function to call (defaults to CV)");
+  
   // Why is NOPBC not listed here?
 }
 
@@ -100,6 +102,8 @@ PythonCV::PythonCV(const ActionOptions&ao):
   parse("FILE",py_file);
 
   parse("FUNCTION",py_function);
+
+  parse("STYLE",py_style);
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
