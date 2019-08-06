@@ -60,17 +60,21 @@ if [ ! -f spelling_results ] ; then
    exit 0
 fi
 
+GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
+
 if test -z $TRAVIS ; then
     awk '{for(i=1;i<=NF;++i){ if($i=="\\n") {printf("\n"); } else {printf("%s ", $i)} }}' spelling_results
 # If not a pull request add a comment on the commit message
 elif [ $TRAVIS_PULL_REQUEST=="false" ] ; then
-    ASPELL_RESULTS=`cat spelling_results`
-    curl -i -H "Authorization: token $GIT_TOKEN" \
-    -H "Content-Type: application/json" \
-    -X POST -d "{\"body\":\"$ASPELL_RESULTS\"}" \
-    https://api.github.com/repos/plumed/plumed2/commits/$TRAVIS_COMMIT/comments
+    if [ "$GIT_OWNER" = plumed ] ; then 
+        ASPELL_RESULTS=`cat spelling_results`
+        curl -i -H "Authorization: token $GIT_TOKEN" \
+        -H "Content-Type: application/json" \
+        -X POST -d "{\"body\":\"$ASPELL_RESULTS\"}" \
+        https://api.github.com/repos/plumed/plumed2/commits/$TRAVIS_COMMIT/comments
+    fi
 # If it is a pull request comment on the pull request
-else
+elif [ "$GIT_OWNER" = plumed ] ; then
     ASPELL_RESULTS=`cat spelling_results`
     curl -i -H "Authorization: token $GIT_TOKEN" \
     -H "Content-Type: application/json" \
