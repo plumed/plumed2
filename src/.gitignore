@@ -43,6 +43,7 @@
 !/header.sh
 !/release.sh
 !/astyle.sh
+!/pycv
 
 
 # And just ignore these files
