@@ -65,7 +65,7 @@ class PythonCV : public Colvar {
     
     string py_file;
     string py_function="cv";
-    string py_style="NATIVE";
+    string py_style="NUMPY";
     int natoms;
     bool pbc;
 
