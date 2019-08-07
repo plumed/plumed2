@@ -30,7 +30,7 @@ namespace analysis {
 class CollectFrames : public AverageBase {
 private:
   unsigned ndata_for_norm, ndata;
-  std::vector<double> data, allweights, posdata;
+  std::vector<double> data, off_diag_bias, allweights, posdata;
   std::vector<std::vector<double> > alldata;
 public:
   static void registerKeywords( Keywords& keys );
@@ -39,6 +39,9 @@ public:
   void accumulateNorm( const double& cweight );
   void accumulateValue( const double& cweight, const std::vector<double>& dval );
   void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir );
+  unsigned getNumberOfStoredWeights() const ;
+  void retrieveDataPoint( const unsigned& ipoint, const unsigned& jval, std::vector<double>& old_data );
+  void storeRecomputedBias( const unsigned& ipoint, const unsigned& jframe, const double& data );
   void runFinalJobs();
 };
 
@@ -46,6 +49,7 @@ PLUMED_REGISTER_ACTION(CollectFrames,"COLLECT_FRAMES")
 
 void CollectFrames::registerKeywords( Keywords& keys ) {
   AverageBase::registerKeywords( keys ); ActionWithValue::useCustomisableComponents( keys );
+  keys.use("COMPUTE_WEIGHT_HISTORY");
   keys.add("optional","ARG","the data that you would like to collect to analyze later");
   keys.addOutputComponent("posx","ATOMS","these values store the x components of the atoms");
   keys.addOutputComponent("posy","ATOMS","these values store the y components of the atoms"); 
@@ -76,13 +80,14 @@ void CollectFrames::interpretDotStar( const std::string& ulab, unsigned& nargs, 
 
 void CollectFrames::accumulateNorm( const double& cweight ) {
   if( clearstride>0 ) {
-      getPntrToOutput(getNumberOfComponents()-1)->set( ndata, cweight ); 
+      Value* bval=getPntrToOutput(getNumberOfComponents()-1);
+      if( bval->getRank()==2 ) bval->set( ndata_for_norm*bval->getShape()[0] + ndata_for_norm, cweight );
+      else bval->set( ndata_for_norm, cweight ); 
       ndata_for_norm++; if( getStep()%clearstride==0 ) ndata_for_norm=0; 
   } else allweights.push_back( cweight );  
 }
 
 void CollectFrames::accumulateValue( const double& cweight, const std::vector<double>& dval ) {
-  unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() ); 
   // Now accumulate average
   if( clearstride>0 ) {
       for(unsigned j=0;j<dval.size();++j) getPntrToOutput(j)->set( ndata, dval[j] );
@@ -112,8 +117,35 @@ void CollectFrames::accumulateAtoms( const double& cweight, const std::vector<Ve
   }
 }
 
+unsigned CollectFrames::getNumberOfStoredWeights() const  {
+  if( clearstride>0 ) return ndata_for_norm; 
+  return allweights.size();
+}
+
+void CollectFrames::retrieveDataPoint( const unsigned& ipoint, const unsigned& jval, std::vector<double>& old_data ) {
+  unsigned nvals=getPntrToArgument(0)->getNumberOfValues( getLabel() ); 
+  if( clearstride>0 ) {
+      plumed_dbg_assert( ipoint*nvals + jval < ndata );
+      for(unsigned j=0;j<n_real_args;++j) old_data[j*nvals+jval] = getPntrToOutput(j)->get( ipoint*nvals + jval );
+  } else {
+      plumed_dbg_assert( ipoint*nvals + jval < alldata.size() );
+      for(unsigned j=0;j<n_real_args;++j) old_data[j*nvals+jval] = alldata[ipoint*nvals + jval][j];
+
+  }
+}
+
+void CollectFrames::storeRecomputedBias( const unsigned& ipoint, const unsigned& jframe, const double& biases ) {
+  if( clearstride>0 ) {
+      Value* bval=getPntrToOutput(getNumberOfComponents()-1);
+      bval->set( bval->getShape()[0]*(ndata_for_norm+jframe) + ipoint + jframe, biases ); 
+      bval->set( bval->getShape()[0]*(ipoint+jframe) + ndata_for_norm+jframe, biases );
+  } else {
+      off_diag_bias.push_back( biases );
+  }
+}
+
 void CollectFrames::runFinalJobs() {
-  transferCollectedDataToValue( alldata, allweights );
+  transferCollectedDataToValue( alldata, allweights, off_diag_bias );
 }
 
 }

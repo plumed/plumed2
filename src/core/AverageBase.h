@@ -42,15 +42,17 @@ private:
   Matrix<std::vector<Vector> > DRotDPos;
   std::vector<double> data;
   std::vector<Vector> atom_pos, der, direction, centeredpos, centeredreference;
+/// Calculate the current bias at this position
+  double computeCurrentBiasForData( const std::vector<double>& data );
 protected:
-  bool clearnorm;
+  bool clearnorm, save_all_bias;
   unsigned clearstride;
   unsigned n_real_args;
   std::vector<double> align, displace;
 /// This is used to setup the components for the actions that store data
   void setupComponents( const unsigned& nreplicas );
 /// This is used to transfer the data in runFinalJobs for actions that collect data
-  void transferCollectedDataToValue( const std::vector<std::vector<double> >& mydata, const std::vector<double>& myweights );
+  void transferCollectedDataToValue( const std::vector<std::vector<double> >& mydata, const std::vector<double>& myweights, const std::vector<double>& offdiag_weight );
 /// Get the number of atoms that we are averaging
   unsigned getNumberOfAtomsToAverage() const ;
 /// Get the position of the ith atom in the reference configuration
@@ -81,6 +83,9 @@ public:
   std::string getStrideClearAndWeights() const ;
   std::string getAtomsData() const ;
   virtual AtomNumber getAtomNumber(const AtomNumber& num ) const { plumed_merror("No virtual atoms " + getLabel() ); }
+  virtual unsigned getNumberOfStoredWeights() const { plumed_merror("Cannot use matrix store with this action"); }
+  virtual void retrieveDataPoint( const unsigned& ipoint, const unsigned& jval, std::vector<double>& old_data ) { plumed_error(); }
+  virtual void storeRecomputedBias( const unsigned& itime, const unsigned& jframe, const double& data ) { plumed_error(); }
 };
 
 inline

@@ -174,9 +174,9 @@ Print::Print(const ActionOptions&ao):
   }
   if(file.length()>0) {
     tstyle = Tools::extension( file ); 
-    if( tstyle!="xyz" && tstyle!="ndx" && tstyle!="grid" && tstyle!="cube" && tstyle!="dot" && tstyle!="pdb" ) tstyle="colvar";
+    if( tstyle!="xyz" && tstyle!="ndx" && tstyle!="grid" && tstyle!="cube" && tstyle!="dot" && tstyle!="matx" && tstyle!="pdb" ) tstyle="colvar";
     log.printf("  on file %s\n",file.c_str());
-    if( !timeseries && tstyle!="grid" && tstyle!="cube" && tstyle!="pdb" ) { ofile.link(*this); ofile.open(file); }
+    if( !timeseries && tstyle!="grid" && tstyle!="cube" && tstyle!="pdb" && tstyle!="matx" ) { ofile.link(*this); ofile.open(file); }
   } else {
     log.printf("  on plumed log file\n");
     ofile.link(log);
@@ -320,6 +320,13 @@ Print::Print(const ActionOptions&ao):
     if( getNumberOfArguments()!=1 ) error("when printing a grid you should only have one argument in input");
     if( getPntrToArgument(0)->getRank()!=3 || !getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a 3D grid");
     log.printf("  printing function labelled %s at points on a grid in a cube file \n", getPntrToArgument(0)->getName().c_str() );
+  } else if( tstyle=="matx" ) {
+    if( getNumberOfArguments()!=1 ) error("when printing a matrix to do a file you should only have one argument in input");
+    if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a matrix");
+    if( getStride()==0 ) {
+      setStride(10000); printAtEnd=true; log.printf("  printing final matrix only \n");
+    }
+    log.printf("  printing matrix labelled %s to file \n", getPntrToArgument(0)->getName().c_str() );
   } else if( tstyle=="dot" ) {
     if( getNumberOfArguments()!=1 ) error("when printing a matrix to do a dot file you should only have one argument in input");
     if( getPntrToArgument(0)->getRank()!=2 || getPntrToArgument(0)->hasDerivatives() ) error("input argument is not a matrix");
@@ -610,6 +617,17 @@ void Print::update() {
         }
         ogfile.printf("\n");
       }
+    }
+    ogfile.close();
+  } else if( tstyle=="matx" ) {
+    OFile ogfile; ogfile.link(*this);
+    ogfile.setBackupString("analysis");
+    ogfile.open( file ); Value* gval=getPntrToArgument(0);
+    // Now print connections
+    unsigned nrows = gval->getShape()[0], ncols = gval->getShape()[1];
+    for(unsigned i=0; i<nrows; ++i) {
+       for(unsigned j=0; j<ncols; ++j) ogfile.printf( fmt.c_str(), gval->get( i*nrows + j ) );
+       ogfile.printf("\n");
     }
     ogfile.close();
   } else if( tstyle=="dot" ) {

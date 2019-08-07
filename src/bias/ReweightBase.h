@@ -39,8 +39,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit ReweightBase(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const { return 0; }
-  void calculate(){};
-  void update();
+  virtual void calculate();
   virtual double getLogWeight() = 0;
   void setArguments( const std::vector<std::string>& c );
   void apply() {}

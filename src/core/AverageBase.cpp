@@ -22,7 +22,6 @@
 #include "AverageBase.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
-#include "ActionRegister.h"
 
 namespace PLMD {
 
@@ -39,6 +38,7 @@ void AverageBase::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
            "of 0 implies that all the data will be used and that the grid will never be cleared");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
+  keys.reserveFlag("COMPUTE_WEIGHT_HISTORY",false,"compute a full history of the weights of each config - this is used for reweighting metadynamics with ITRE");
 }
 
 AverageBase::AverageBase( const ActionOptions& ao):
@@ -90,6 +90,11 @@ AverageBase::AverageBase( const ActionOptions& ao):
   }
   if( wwstr.size()>0 ) log.printf("\n");
   else log.printf("  weights are all equal to one\n");
+  // Check if we are saving the bias history
+  save_all_bias=false;
+  if( keywords.exists("COMPUTE_WEIGHT_HISTORY") ) parseFlag("COMPUTE_WEIGHT_HISTORY",save_all_bias);
+  if( save_all_bias && all_atoms.size()>0 ) error("can only compute weight history if you are storing arguments required to recompute bias");
+  if( save_all_bias && biases.size()==0 ) error("using COMPUTE_WEIGHT_HISTORY without LOGWEIGHTS  makes no sense");
 
   // This makes the request to the atoms whose positions will be stored.
   // There are problems here if vatoms are used as they will be cleared 
@@ -132,9 +137,10 @@ void AverageBase::setupComponents( const unsigned& nreplicas ) {
       addComponent( "posy-" + num, shape ); componentIsNotPeriodic( "posy-" + num ); getPntrToOutput(n_real_args+3*j+1)->makeTimeSeries();
       addComponent( "posz-" + num, shape ); componentIsNotPeriodic( "posz-" + num ); getPntrToOutput(n_real_args+3*j+2)->makeTimeSeries(); 
   }
-  // And create a component to store the weights
+  // And create a component to store the weights -- if we store the history this is a matrix
+  if( save_all_bias ) { unsigned ss=shape[0]; shape.resize(2); shape[0]=shape[1]=ss; }
   addComponent( "logweights", shape ); componentIsNotPeriodic( "logweights" ); 
-  getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
+  if( !save_all_bias ) getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
 }
 
 std::string AverageBase::getStrideClearAndWeights() const {
@@ -211,6 +217,47 @@ void AverageBase::setReferenceConfig() {
   myrmsd.clear(); myrmsd.set(align,displace,atom_pos,rmsd_type,true,true);
 }
 
+double AverageBase::computeCurrentBiasForData( const std::vector<double>& values ) {
+  double logw = 0; const ActionSet & as=plumed.getActionSet(); 
+  std::vector<bool> foundbias( getNumberOfArguments() - n_real_args, false );
+  // Set the arguments equal to the values in the old frame
+  unsigned nvals = getPntrToArgument(0)->getNumberOfValues(getLabel());
+  for(unsigned j=0; j<n_real_args; ++j) {
+      for(unsigned i=0;i<nvals;++i) getPntrToArgument(j)->set( i, values[j*nvals+i] );  
+  }
+
+  for(const auto & pp : as ) {
+     Action* p(pp.get()); bool found=false;
+     // If this is one of actions for the the stored arguments then we skip as we set these values from the list
+     for(unsigned i=0; i<n_real_args; ++i) {
+         std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
+         if( name.substr(0,dot)==p->getLabel() ) { found=true; break; }
+     }
+     if( found || p->getName()=="READ" ) continue; 
+     ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>(p);
+     if( aa ) if( aa->getNumberOfAtoms()>0 ) continue;
+     // Recalculate the action
+     if( p->isActive() && p->getCaller()=="plumedmain" ) {
+         ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
+         if(av) { av->clearInputForces(); av->clearDerivatives(); }
+         p->calculate();
+      }
+      // If this is the final bias then get the value and get out
+      for(unsigned i=n_real_args;i<getNumberOfArguments();++i) {
+          std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
+          if( name.substr(0,dot)==p->getLabel() ) { foundbias[i]=true; logw += getPntrToArgument(i)->get(); }
+      }
+      // Check if we have recalculated all the things we need
+      bool foundall=true; 
+      for(unsigned i=0;i<foundbias.size();++i) { 
+          if( !foundbias[i] ) { foundall=false; break; }
+      }
+      if( foundall ) break;
+  }
+  return logw;
+}
+
+
 void AverageBase::update() {
   // Resize values if they need resizing
   if( firststep ) { resizeValues(); setReferenceConfig(); firststep=false; }
@@ -230,7 +277,26 @@ void AverageBase::update() {
   // Get the weight information
   double cweight=0.0; 
   if ( getNumberOfArguments()>n_real_args ) {
+       // This stores the current bias on the diagonal of the matrx
        for(unsigned i=n_real_args; i<getNumberOfArguments(); ++i) cweight+=getPntrToArgument(i)->get();
+       // This stores the new bias for the old configuration
+       if( save_all_bias ) {
+           unsigned nstored = getNumberOfStoredWeights(); double new_old_bias;
+           unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() );
+           std::vector<double> old_data( nvals*n_real_args ), current_data( nvals*n_real_args );
+           // Store the current values for all the arguments
+           for(unsigned i=0;i<nvals;++i) {
+               for(unsigned j=0;j<n_real_args;++j) current_data[j*nvals+i] = getPntrToArgument(j)->get(i);
+           }
+           // Compute the weights for all the old configurations
+           for(unsigned i=0;i<nstored;++i) {
+               for(unsigned j=0;j<nvals;++j) retrieveDataPoint( i, j, old_data );
+               new_old_bias = computeCurrentBiasForData( old_data );
+               for(unsigned j=0;j<nvals;++j) storeRecomputedBias( i*nvals, j, new_old_bias );
+           }
+           // And recompute the current bias
+           double ignore = computeCurrentBiasForData( current_data );
+       } 
   }
 
   if( atom_pos.size()>0 ) { 
@@ -266,14 +332,20 @@ void AverageBase::update() {
   if( (clearstride>0 && getStep()%clearstride==0) ) clearnextstep=true;
 }
 
-void AverageBase::transferCollectedDataToValue( const std::vector<std::vector<double> >& mydata, const std::vector<double>& myweights ) {
+void AverageBase::transferCollectedDataToValue( const std::vector<std::vector<double> >& mydata, const std::vector<double>& myweights, const std::vector<double>& offdiag_weight ) {
   if( clearstride>0 ) return;
   std::vector<unsigned> shape(1); shape[0]=myweights.size();
-  for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->setShape( shape );
+  for(unsigned i=0;i<getNumberOfComponents()-1;++i) getPntrToOutput(i)->setShape( shape );
+  if( save_all_bias ) { shape.resize(2); shape[0]=shape[1]=myweights.size(); }
+  getPntrToOutput(getNumberOfComponents()-1)->setShape( shape );
 
+  unsigned k=0;
   for(unsigned i=0;i<myweights.size();++i) {
       for(unsigned j=0;j<getNumberOfComponents()-1;++j) { getPntrToOutput(j)->set( i, mydata[i][j] ); }
-      getPntrToOutput(getNumberOfComponents()-1)->set( i, myweights[i] );
+      if( save_all_bias ) {
+          Value* myw=getPntrToOutput(getNumberOfComponents()-1); myw->set( myweights.size()*i + i, myweights[i] );
+          for(unsigned j=0;j<i;++j) { myw->set( myweights.size()*i + j, offdiag_weight[k] ); myw->set( myweights.size()*j + i, offdiag_weight[k] ); k++; }
+      } else getPntrToOutput(getNumberOfComponents()-1)->set( i, myweights[i] );
   }
 }
 

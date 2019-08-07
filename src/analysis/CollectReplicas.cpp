@@ -30,7 +30,7 @@ namespace analysis {
 class CollectReplicas : public AverageBase {
 private:
   unsigned ndata_for_norm, ndata, nreplicas;
-  std::vector<double> data, allweights;
+  std::vector<double> data, allweights, off_diag_bias;
   std::vector<std::vector<double> > alldata;
 public:
   static void registerKeywords( Keywords& keys );
@@ -39,6 +39,7 @@ public:
   void accumulateNorm( const double& cweight ); 
   void accumulateValue( const double& cweight, const std::vector<double>& dval );
   void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir );
+  void retrieveDataPoint( const unsigned& ipoint, const unsigned& jval, std::vector<double>& old_data ) { plumed_error(); }
   void runFinalJobs();
 };
 
@@ -116,7 +117,7 @@ void CollectReplicas::accumulateAtoms( const double& cweight, const std::vector<
 }
 
 void CollectReplicas::runFinalJobs() {
-  transferCollectedDataToValue( alldata, allweights );
+  transferCollectedDataToValue( alldata, allweights, off_diag_bias );
 }
 
 }
