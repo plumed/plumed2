@@ -1,15 +1,15 @@
-CXXFLAGS := $(shell python3-config --cflags)
+CXXFLAGS := $(shell python3-config --cflags) -I../pybind11/include  -std=c++14
 LDFLAGS := $(shell python3-config --ldflags)
 PYBINDINC := -I../pybind11/include
 
 default: mybind py
 
 
-mybind.o: mybind.cpp
-	$(CXX) -std=c++14 $(CXXFLAGS) $(PYBINDINC) -c $< -o $@
+# mybind.o: mybind.cpp
+# 	$(CXX) -std=c++14 $(CXXFLAGS) $(PYBINDINC) -c $< -o $@
 
-mybind: mybind.o
-	$(CXX) $(LDFLAGS) $^ -o $@
+# mybind: mybind.o
+# 	$(CXX) $(LDFLAGS) $^ -o $@
 
 
 py: py.cpp
