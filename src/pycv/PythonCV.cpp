@@ -26,14 +26,17 @@
 
 #include "PythonCV.h"
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#include <pybind11/embed.h> // everything needed for embedding
+#include <pybind11/numpy.h>
 
 #include <string>
 #include <cmath>
 
 
 using namespace std;
+namespace py = pybind11;
+
+typedef float pycv_t;
 
 namespace PLMD {
 namespace PythonCV {
@@ -61,16 +64,25 @@ upon PLUMED initialization.
 */
 //+ENDPLUMEDOC
 
+
+  // Unfortunately we can only have one interpreter globally. This is
+  // less than ideal because CVs can interfere with each other.
+  static py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+
 class PythonCV : public Colvar {
     
-    string py_file;
-    string py_function="cv";
-    string py_style="NUMPY";
-    int natoms;
-    bool pbc;
+  string style="NUMPY";
+  string import;
+  string function_name="cv";
 
-    PyObject *pName, *pModule, *pFunc;
-    PyObject *pArgs, *pValue;
+  py::module py_module;
+  py::object py_fcn;
+
+  py::array_t<pycv_t, py::array::c_style> py_X;
+  pycv_t *py_X_ptr;
+
+  int natoms;
+  bool pbc;
 
 
 public:
@@ -86,7 +98,7 @@ void PythonCV::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the list of atoms to be passed to the function");
   keys.add("optional","STYLE","Python types, one of NATIVE, NUMPY or JAX");
-  keys.add("compulsory","FILE","the python file containing the function");
+  keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("optional","FUNCTION","the function to call (defaults to CV)");
   
   // Why is NOPBC not listed here?
@@ -99,20 +111,17 @@ PythonCV::PythonCV(const ActionOptions&ao):
   parseAtomList("ATOMS",atoms);
   natoms = atoms.size();
   
-  parse("FILE",py_file);
-
-  parse("FUNCTION",py_function);
-
-  parse("STYLE",py_style);
+  parse("STYLE",style);
+  parse("IMPORT",import);
+  parse("FUNCTION",function_name);
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
 
-
   checkRead();
 
-  log << "  defined via the file " << py_file << "\n";
+  // log.printf("  some debug info here %s",py_import_file.c_str());
 
   log<<"  Bibliography "
      <<plumed.cite(PYTHONCV_CITATION)
@@ -125,33 +134,15 @@ PythonCV::PythonCV(const ActionOptions&ao):
 
   // ----------------------------------------
 
+  // Initialize the module and function pointer
+  py_module = py::module::import(import.c_str());
+  py_fcn = py_module.attr(function_name.c_str());
 
-  Py_Initialize();
-  pName = PyUnicode_DecodeFSDefault(py_file.c_str());
-  /* Error checking of pName left out */
-  pModule = PyImport_Import(pName);
-  Py_DECREF(pName);
 
-  if (pModule != NULL) {
-      pFunc = PyObject_GetAttrString(pModule, py_function.c_str());
-      /* pFunc is a new reference */
-      
-      if (pFunc && PyCallable_Check(pFunc)) {
-	  pArgs = PyTuple_New(3*natoms);
-      } else {
-	  if (PyErr_Occurred())
-	      PyErr_Print();
-	  string err("Cannot find function: ");
-	  err +=  py_function;
-	  error(err);
-      }
-  }
-  else {
-      PyErr_Print();
-      string err("Failed to load file: ");
-      err +=  py_file;
-      error(err);
-  }
+  // ...and the coordinates array
+  py_X = py::array_t<pycv_t, py::array::c_style>({natoms,3}); // check if optimal layout
+  // py_X_ptr = (pycv_t *) py_X.request().ptr;
+ 
   
 
 }
@@ -160,13 +151,42 @@ PythonCV::PythonCV(const ActionOptions&ao):
 // calculator
 void PythonCV::calculate() {
 
+  // Is there a faster way to get in bulk? We could even wrap a C++ array without copying.
+  // Also, it may be faster to access the pointer rather than use "at"
+  for(int i=0; i<natoms; i++) {
+    Vector xi=getPosition(i);
+    py_X.mutable_at(i,0) = xi[0];
+    py_X.mutable_at(i,1) = xi[1];
+    py_X.mutable_at(i,2) = xi[2];
+  }
+
+  // Call the function
+  py::list r = py_fcn(py_X);
+
+  // 1st return value: CV
+  pycv_t value = r[0].cast<pycv_t>(); 
+  setValue(value);
+
+  // 2nd return value: gradient: numpy array of (natoms, 3)
+  py::array_t<pycv_t> grad(r[1]);
+  if(grad.ndim() != 2 ||
+     grad.shape(0) != natoms ||
+     grad.shape(1) != 3) {
+    string e("Error: wrong shape for the second return argument - should be (natoms,3), is ");
+    e += grad.shape(0);
+    e += "x";
+    e += grad.shape(1);
+    error(e);
+  }
     
 
-    
-  setValue(value);
-  setAtomsDerivatives(0,ga);
-  setAtomsDerivatives(1,gb);
-  setAtomsDerivatives(2,gc);
+  // To optimize, see "direct access" https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
+  for(int i=0; i<natoms; i++) {
+    Vector3d gi(grad.at(i,0),
+		 grad.at(i,1),
+		 grad.at(i,2));
+    setAtomsDerivatives(i,gi);
+  }
 
   setBoxDerivativesNoPbc();	// ??
 
