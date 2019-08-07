@@ -1,7 +1,7 @@
 CXXFLAGS := $(shell python3-config --cflags) -I../pybind11/include  -std=c++14 -fPIC
-LDFLAGS := $(shell python3-config --ldflags) 
+LDFLAGS := $(shell python3-config --ldflags) -fno-lto
 PYBINDINC := -I../pybind11/include
-CXX=x86_64-conda_cos6-linux-gnu-g++
+#CXX=x86_64-conda_cos6-linux-gnu-g++
 
 default: mybind py
 

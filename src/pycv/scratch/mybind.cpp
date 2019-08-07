@@ -35,8 +35,25 @@ void main2() {
     }
   }
 
-  py::module calc = py::module::import("mybind");
-  auto result = calc.attr("callme")(arr);
+  py::module mod = py::module::import("mybind");
+  auto result = mod.attr("callme")(arr);
+
+  for(int i=0; i<N; i++) {
+    for(int j=0; j<M; j++) {
+      // arr.data(i,j) = i*100+j;
+      ptr[i*M+j]  = i*200+j;
+    }
+  }
+
+  result = mod.attr("callme")(arr);
+  py::array_t<float> result_a(result);
+
+  std::cout << ptr[0] << std::endl;
+
+  auto r= result_a.unchecked<2>();
+  std::cout << r(0,0) << std::endl;
+
+  
 }
 
 
