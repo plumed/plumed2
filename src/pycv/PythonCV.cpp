@@ -81,6 +81,8 @@ class PythonCV : public Colvar {
   py::array_t<pycv_t, py::array::c_style> py_X;
   pycv_t *py_X_ptr;
 
+  bool no_gradient=false;
+
   int natoms;
   bool pbc;
 
@@ -169,23 +171,28 @@ void PythonCV::calculate() {
 
   // 2nd return value: gradient: numpy array of (natoms, 3)
   py::array_t<pycv_t> grad(r[1]);
+  
   if(grad.ndim() != 2 ||
      grad.shape(0) != natoms ||
      grad.shape(1) != 3) {
-    string e("Error: wrong shape for the second return argument - should be (natoms,3), is ");
-    e += grad.shape(0);
-    e += "x";
-    e += grad.shape(1);
-    error(e);
+    if(!no_gradient) {
+      log.printf("Error: wrong shape for the second return argument - should be (natoms,3), is %d x %d",
+		  grad.shape(0), grad.shape(1));
+      no_gradient=true;
+    }
   }
     
 
   // To optimize, see "direct access" https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
   for(int i=0; i<natoms; i++) {
-    Vector3d gi(grad.at(i,0),
-		 grad.at(i,1),
-		 grad.at(i,2));
-    setAtomsDerivatives(i,gi);
+    if(!no_gradient) {
+      Vector3d gi(grad.at(i,0),
+		  grad.at(i,1),
+		  grad.at(i,2));
+      setAtomsDerivatives(i,gi);
+    } else {
+      setAtomsDerivatives(i,Vector3d(0.,0.,0.));
+    }
   }
 
   setBoxDerivativesNoPbc();	// ??
