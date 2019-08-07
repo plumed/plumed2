@@ -10,7 +10,7 @@ using namespace py::literals;
 
 py::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
-int main1() {
+void main1() {
     py::print("Hello, World!"); // use the Python API
 
     auto locals = py::dict("name"_a="World", "number"_a=42);
@@ -20,23 +20,25 @@ int main1() {
 
     auto message = locals["message"].cast<std::string>();
     std::cout << message;
-
 }
 
-int main2() {
+
+void main2() {
   const int N=3, M=5;
-  
+
   py::array_t<float, py::array::c_style> arr({ N, M });
   float * ptr= (float*) arr.request().ptr;
   for(int i=0; i<N; i++) {
     for(int j=0; j<M; j++) {
       // arr.data(i,j) = i*100+j;
-      ptr[i*N+j]  = i*100+j;
+      ptr[i*M+j]  = i*100+j;
     }
   }
 
-  
+  py::module calc = py::module::import("mybind");
+  auto result = calc.attr("callme")(arr);
 }
+
 
 
 int main() {
