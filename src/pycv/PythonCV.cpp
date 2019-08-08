@@ -47,9 +47,9 @@ Define collective variables in the Python language.
 A Python module named in the `IMPORT` keyword is first imported.  The
 function passed as the `FUNCTION` keyword is called at each time
 step. It is assumed to receive a numpy array of shape `(N,3)` with the
-coordinates of the `ATOMS` used in the action.
+coordinates of the `ATOMS` listed in the action.
 
-The function should return two values: a scalar (the CV value) and its
+The function should return two values: a scalar (the CV value), and its
 gradient with respect to each coordinate (an array of the same shape
 as the input).
 
@@ -67,37 +67,47 @@ and 4.
 \plumedfile 
 cv1: PYTHONCV ATOMS=1,4 IMPORT=jaxcv FUNCTION=cv1
 PRINT FILE=colvar.out ARG=*
+
 \endplumedfile
 
 The file `jaxcv.py` should contain something as follows.
 
-\verbatim
+@code{.py}
+# Import the JAX library
 import jax.numpy as np
 from jax import grad, jit, vmap
 
+# Define the distance function
 def dist(x):
     d = x[0,:]-x[1,:]
     d2 = np.dot(d,d)
     return np.sqrt(d2)
 
+# Use JAX to auto-gradient it
 grad_dist = grad(dist)
 
+# The CV function actually called
 def cv1(x):
     return dist(x), grad_dist(x)
 
-\endverbatim
+@endcode
 
 
 \par Installation
 
-It is best to compile the variable as a stand-alone dynamic object.
-It currently does not seem to work well with Conda under OSX
+Since the action embeds a Python interpreter (i.e., it must be linked
+to it), it is best to compile the variable as a stand-alone dynamic
+object.  It currently does not seem to work well with Conda under OSX
 (Homebrew's Python 3 is ok).
 
  1. Make sure you have Python 3 installed
- 2. Install the JAX library: `pip3 install --user jaxlib`
- 3. Go to `plumed2/src/pycv` and `make PythonCV.so` (or `.dylib` on OSX)
- 4. Use `LOAD` to dynamically load the action.
+ 2. Install the JAX library: `pip3 install jaxlib`
+ 3. Change directory `cd plumed2/src/pycv`
+ 4. This is the trickiest part: build the colvar, making sure the correct Python libraries are linked: `make PythonCV.so` (or `make PythonCV.dylib` on OSX). The compilation step should pick Python-specific compilation and
+linker flags. 
+
+Use Plumed's \ref LOAD action to load the generated object. You may need to set 
+the `PYTHONHOME` or other environment libraries.
 
 
 */
