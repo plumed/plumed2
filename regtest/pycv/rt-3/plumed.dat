@@ -1,4 +1,4 @@
-LOAD FILE=PythonCV.dylib
+LOAD FILE=./PythonCV.so
 
 cv1:  PYTHONCV ATOMS=1,4,3 IMPORT=jaxcv FUNCTION=cv1
 cv1a: ANGLE ATOMS=1,4,3

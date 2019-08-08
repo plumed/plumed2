@@ -10,11 +10,11 @@ include ../maketools/make.module
 #  - stack size not allowed when making dylib
 #  - need to pass export_dynamic to linker  https://bugs.python.org/issue21122
 remove_me := -Wl,-stack_size,1000000
-PYTHON_LDFLAGS_SO := $(subst $(remove_me),,$(shell python3-config --ldflags)) -fno-lto -Wl,-export_dynamic -undefined dynamic_lookup
+PYTHON_LDFLAGS_SO := $(subst $(remove_me),,$(shell python3-config --ldflags)) -fno-lto # -Wl,-export_dynamic -undefined dynamic_lookup
 
 # Uninstalled plumed dylib location (use $(libdir) for the installed one)
-#LIBPLUMEDKERNEL_SO := $(abspath ../lib/libplumedKernel.$(SOEXT))
-LIBPLUMEDKERNEL_SO := $(HOME)/compile/plumed2/src/lib/libplumedKernel.$(SOEXT)
+LIBPLUMEDKERNEL_SO := $(abspath ../lib/libplumedKernel.$(SOEXT))
+#LIBPLUMEDKERNEL_SO := $(HOME)/compile/plumed2/src/lib/libplumedKernel.$(SOEXT)
 
 PythonCV.$(SOEXT): PythonCV.o
 	@$(warning Warning: linking $@ to uninstalled kernel $(LIBPLUMEDKERNEL_SO))
