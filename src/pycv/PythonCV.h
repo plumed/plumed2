@@ -9,7 +9,7 @@
 namespace py = pybind11;
 
 namespace PLMD {
-namespace PythonCV {
+namespace pycv {
 
 
 }

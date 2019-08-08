@@ -19,12 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "PythonCV.h"
+
 #include "core/PlumedMain.h"
 #include "colvar/Colvar.h"
 #include "colvar/ActionRegister.h"
 #include "tools/Pbc.h"
-
-#include "PythonCV.h"
 
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
@@ -38,7 +38,7 @@ namespace py = pybind11;
 
 
 namespace PLMD {
-namespace PythonCV {
+namespace pycv {
 
 //+PLUMEDOC COLVAR PYTHONCV
 /*
