@@ -95,19 +95,25 @@ def cv1(x):
 
 \par Installation
 
-Since the action embeds a Python interpreter (i.e., it must be linked
-to it), it is best to compile the variable as a stand-alone dynamic
-object.  It currently does not seem to work well with Conda under OSX
-(Homebrew's Python 3 is ok).
+Linking is somewhat tricky. Make sure you have Python 3 installed. It
+currently does not seem to work well with Conda under OSX (Homebrew's
+Python 3 is ok).  If you are feeling lucky, this may work:
 
- 1. Make sure you have Python 3 installed
- 2. Install the JAX library: `pip3 install jaxlib`
- 3. Change directory `cd plumed2/src/pycv`
- 4. This is the trickiest part: build the colvar, making sure the correct Python libraries are linked: `make PythonCV.so` (or `make PythonCV.dylib` on OSX). The compilation step should pick Python-specific compilation and
-linker flags.
+\verbatim
+./configure --enable-modules=+pycv --enable-python PYTHON_BIN=python3 LDFLAGS="`python3-config --ldflags`"
+\endverbatim
+
+It may be useful to compile the variable as a stand-alone dynamic
+object.  Once in the `src/pycv` directory, try `make PythonCV.so` (or
+`make PythonCV.dylib` on OSX). The compilation step *should* pick
+Python-specific compilation and linker flags.
 
 Use Plumed's \ref LOAD action to load the generated object. You may need to set
 the `PYTHONHOME` or other environment libraries.
+
+Automatic differentiation examples require the JAX library: `pip3
+install jaxlib`.
+
 
 \par Possible improvements (developer)
 
