@@ -7,7 +7,8 @@ def angle(x):
     r1 = x[0,:]-x[1,:]
     r2 = x[2,:]-x[1,:]
 
-    costheta = np.dot(r1,r2) / np.linalg.norm(r1) / np.linalg.norm(r2)
+    # costheta = np.dot(r1,r2) / np.linalg.norm(r1) / np.linalg.norm(r2)
+    costheta = np.dot(r1,r2) / np.sqrt(np.dot(r1,r1) * np.dot(r2,r2))
     theta = np.arccos(costheta) 
     return theta
 

@@ -113,6 +113,7 @@ the `PYTHONHOME` or other environment libraries.
 
  * Pass the atom coordinates structure directly?
  * Multicolvar in some way?
+ * Pass a subset of pairwise distances instead of coordinates?
  * Also enable access to other CVs instead of coordinates?
  * Box derivatives?
  * Pass the jax array directly (check if it is being copied)
@@ -208,7 +209,8 @@ PythonCV::PythonCV(const ActionOptions&ao):
 
 
   // ...and the coordinates array
-  py_X = py::array_t<pycv_t, py::array::c_style>({natoms,3}); // check if optimal layout
+  py_X = py::array_t<pycv_t>({natoms,3});
+  // ^ 2nd template argument may be py::array::c_style if needed
   // py_X_ptr = (pycv_t *) py_X.request().ptr;
 
 }
@@ -229,6 +231,7 @@ void PythonCV::calculate() {
   // Call the function
   py::object r = py_fcn(py_X);
 
+  // Is there more than 1 return value?
   if(py::isinstance<py::tuple>(r)) {
     // 1st return value: CV
     py::list rl=r.cast<py::list>();
@@ -249,6 +252,7 @@ void PythonCV::calculate() {
     }
 
   } else {
+    // Only value returned. Might be an error as well.
     log.printf("Gradient not being returned as second return value. Biasing disabled\n");
     pycv_t value = r.cast<pycv_t>();
     setValue(value);
