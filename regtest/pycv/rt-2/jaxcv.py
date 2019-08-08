@@ -1,20 +1,16 @@
-
+# Import the JAX library
 import jax.numpy as np
 from jax import grad, jit, vmap
 
-
-log=open("pycv.log","w")
-
-print("Imported.",file=log)
-
-
+# Define the distance function
 def dist(x):
     d = x[0,:]-x[1,:]
     d2 = np.dot(d,d)
     return np.sqrt(d2)
 
+# Use JAX to auto-gradient it
 grad_dist = grad(dist)
 
+# The CV function actually called
 def cv1(x):
-    print(x,file=log)
     return dist(x), grad_dist(x)
