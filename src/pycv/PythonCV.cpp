@@ -44,20 +44,60 @@ namespace PythonCV {
 /*
 Define collective variables in the Python language.
 
-The CV function should be defined in a Python file and named `cv`. It
-is assumed to receive a (N,3) numpy array with the coordinates of the
-atoms defined in the action. It should return a scalar (the CV value).
+A Python module named in the `IMPORT` keyword is first imported.  The
+function passed as the `FUNCTION` keyword is called at each time
+step. It is assumed to receive a numpy array of shape `(N,3)` with the
+coordinates of the `ATOMS` used in the action.
+
+The function should return two values: a scalar (the CV value) and its
+gradient with respect to each coordinate (an array of the same shape
+as the input).
+
+Automatic differentiation and transparent compilation (also to GPU)
+can be performed via the [JAX
+library](https://jax.readthedocs.io/en/latest/): see the example
+below.
 
 
 \par Examples
 
-TBD
+The following input tells plumed to print the distance between atoms 1
+and 4.
+
+\plumedfile 
+cv1: PYTHONCV ATOMS=1,4 IMPORT=jaxcv FUNCTION=cv1
+PRINT FILE=colvar.out ARG=*
+\endplumedfile
+
+The file `jaxcv.py` should contain something as follows.
+
+\verbatim
+import jax.numpy as np
+from jax import grad, jit, vmap
+
+def dist(x):
+    d = x[0,:]-x[1,:]
+    d2 = np.dot(d,d)
+    return np.sqrt(d2)
+
+grad_dist = grad(dist)
+
+def cv1(x):
+    return dist(x), grad_dist(x)
+
+\endverbatim
 
 
-\par Notes
+\par Installation
 
-CVs are differentiated automatically and compiled to native code
-upon PLUMED initialization.
+It is best to compile the variable as a stand-alone dynamic object.
+It currently does not seem to work well with Conda under OSX
+(Homebrew's Python 3 is ok).
+
+ 1. Make sure you have Python 3 installed
+ 2. Install the JAX library: `pip3 install --user jaxlib`
+ 3. Go to `plumed2/src/pycv` and `make PythonCV.so` (or `.dylib` on OSX)
+ 4. Use `LOAD` to dynamically load the action.
 
 
 */
