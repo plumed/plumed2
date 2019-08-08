@@ -11,10 +11,6 @@ namespace py = pybind11;
 namespace PLMD {
 namespace PythonCV {
 
-  typedef float pycv_t;
-
-  const std::string PYTHONCV_CITATION = "(you wish)";
-
 
 }
 }

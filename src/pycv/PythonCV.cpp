@@ -114,6 +114,11 @@ the `PYTHONHOME` or other environment libraries.
 //+ENDPLUMEDOC
 
 
+  typedef float pycv_t;		// May need to adapt to the build precision?
+
+  const std::string PYTHONCV_CITATION = "(maybe?)";
+
+ 
   // Unfortunately we can only have one interpreter globally. This is
   // less than ideal because CVs can interfere with each other.
   static py::scoped_interpreter guard{}; // start the interpreter and keep it alive
