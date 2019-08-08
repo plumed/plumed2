@@ -115,9 +115,14 @@ the `PYTHONHOME` or other environment libraries.
  * Multicolvar in some way?
  * Pass a subset of pairwise distances instead of coordinates?
  * Also enable access to other CVs instead of coordinates?
- * Box derivatives?
+ * Box derivatives for PBC?
  * Pass the jax array directly (check if it is being copied)
  * Benchmark
+ * Provide access to Plumed data, e.g.
+   * Box size
+   * Topology information
+   * Functions for PBC wrapping/closest image
+
 
 */
 //+ENDPLUMEDOC
@@ -125,7 +130,7 @@ the `PYTHONHOME` or other environment libraries.
 
 typedef float pycv_t;		// May need to adapt to the build precision?
 
-const std::string PYTHONCV_CITATION = "(maybe?)";
+const std::string PYTHONCV_CITATION = "(???)";
 
 
 // Unfortunately we can only have one interpreter globally. This is
@@ -172,7 +177,7 @@ void PythonCV::registerKeywords( Keywords& keys ) {
 
 PythonCV::PythonCV(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  pbc(true)
+  pbc(false)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
