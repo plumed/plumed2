@@ -48,7 +48,7 @@ ReweightBase::ReweightBase(const ActionOptions&ao):
   addValue(); setNotPeriodic();
 }
 
-void ReweightBase::calculate() {
+void ReweightBase::update() {
   double weight = getLogWeight();
   setValue( weight );
 }

@@ -61,6 +61,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit AverageBase( const ActionOptions& );
   void clearDerivatives( const bool& force=false ) {}
+  void turnOnBiasHistory();
   virtual void resizeValues() {}
   unsigned getNumberOfDerivatives() const ;
   void getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,

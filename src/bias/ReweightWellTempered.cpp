@@ -38,8 +38,6 @@ public:
   static void registerKeywords(Keywords&);
   explicit ReweightWellTempered(const ActionOptions&ao);
   double getLogWeight();
-  void calculate(){}
-  void update();
 };
 
 PLUMED_REGISTER_ACTION(ReweightWellTempered,"REWEIGHT_WELLTEMPERED")
@@ -65,11 +63,6 @@ double ReweightWellTempered::getLogWeight() {
   // Retrieve the bias
   double bias=0.0; for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgumentScalar(i);
   return -bias / deltaT + logheight;
-}
-
-void ReweightWellTempered::update() {
-  double weight = getLogWeight();
-  setValue( weight );
 }
 
 }

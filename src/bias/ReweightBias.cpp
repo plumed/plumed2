@@ -72,6 +72,7 @@ class ReweightBias : public ReweightBase {
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightBias(const ActionOptions&ao);
+  void calculate();
   double getLogWeight();
 };
 
@@ -93,6 +94,10 @@ double ReweightBias::getLogWeight() {
   // Retrieve the bias
   double bias=0.0; for(unsigned i=0; i<getNumberOfArguments(); ++i) bias+=getArgumentScalar(i);
   return bias / simtemp;
+}
+
+void ReweightBias::calculate() {
+  update();
 }
 
 }

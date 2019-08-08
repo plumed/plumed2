@@ -4,5 +4,8 @@ PRINT ARG=d1.x,d1.y,rr_dist-1,rr_dist-2,rr_dist-3,rr_wkernel-1,rr_wkernel-2,rr_w
 
 # Reweight using recon bias, collect frames and output weights
 rw: REWEIGHT_BIAS ARG=rr TEMP=120.279047  # This is the inverse of boltzmann's constant in kJ mol-1
-cc: COLLECT_FRAMES ARG=d1.x,d1.y LOGWEIGHTS=rw STRIDE=10 COMPUTE_WEIGHT_HISTORY
+cc: COLLECT_FRAMES ARG=d1.x,d1.y LOGWEIGHTS=rw STRIDE=10 
+# This now does the ITRE business to get a single weight for each frame
+it: ITRE ARG=cc.logweights TEMP=300 
 PRINT ARG=cc.logweights FILE=logweights.matx FMT=%8.4f
+PRINT ARG=it FILE=finalweights FMT=%8.4f

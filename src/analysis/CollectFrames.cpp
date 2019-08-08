@@ -49,7 +49,6 @@ PLUMED_REGISTER_ACTION(CollectFrames,"COLLECT_FRAMES")
 
 void CollectFrames::registerKeywords( Keywords& keys ) {
   AverageBase::registerKeywords( keys ); ActionWithValue::useCustomisableComponents( keys );
-  keys.use("COMPUTE_WEIGHT_HISTORY");
   keys.add("optional","ARG","the data that you would like to collect to analyze later");
   keys.addOutputComponent("posx","ATOMS","these values store the x components of the atoms");
   keys.addOutputComponent("posy","ATOMS","these values store the y components of the atoms"); 

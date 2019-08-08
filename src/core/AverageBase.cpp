@@ -38,7 +38,6 @@ void AverageBase::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
            "of 0 implies that all the data will be used and that the grid will never be cleared");
   keys.add("optional","LOGWEIGHTS","list of actions that calculates log weights that should be used to weight configurations when calculating averages");
-  keys.reserveFlag("COMPUTE_WEIGHT_HISTORY",false,"compute a full history of the weights of each config - this is used for reweighting metadynamics with ITRE");
 }
 
 AverageBase::AverageBase( const ActionOptions& ao):
@@ -52,6 +51,7 @@ AverageBase::AverageBase( const ActionOptions& ao):
   DRotDPos(3,3),
   data(getNumberOfArguments()),
   clearnorm(false),
+  save_all_bias(false),
   n_real_args(getNumberOfArguments())
 {
   plumed_assert( keywords.exists("ARG") );
@@ -90,11 +90,6 @@ AverageBase::AverageBase( const ActionOptions& ao):
   }
   if( wwstr.size()>0 ) log.printf("\n");
   else log.printf("  weights are all equal to one\n");
-  // Check if we are saving the bias history
-  save_all_bias=false;
-  if( keywords.exists("COMPUTE_WEIGHT_HISTORY") ) parseFlag("COMPUTE_WEIGHT_HISTORY",save_all_bias);
-  if( save_all_bias && all_atoms.size()>0 ) error("can only compute weight history if you are storing arguments required to recompute bias");
-  if( save_all_bias && biases.size()==0 ) error("using COMPUTE_WEIGHT_HISTORY without LOGWEIGHTS  makes no sense");
 
   // This makes the request to the atoms whose positions will be stored.
   // There are problems here if vatoms are used as they will be cleared 
@@ -138,9 +133,15 @@ void AverageBase::setupComponents( const unsigned& nreplicas ) {
       addComponent( "posz-" + num, shape ); componentIsNotPeriodic( "posz-" + num ); getPntrToOutput(n_real_args+3*j+2)->makeTimeSeries(); 
   }
   // And create a component to store the weights -- if we store the history this is a matrix
-  if( save_all_bias ) { unsigned ss=shape[0]; shape.resize(2); shape[0]=shape[1]=ss; }
   addComponent( "logweights", shape ); componentIsNotPeriodic( "logweights" ); 
-  if( !save_all_bias ) getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
+  getPntrToOutput( getNumberOfComponents()-1 )->makeTimeSeries();
+}
+
+void AverageBase::turnOnBiasHistory() {
+  if( getNumberOfArguments()==n_real_args ) error("cannot compute bias history if no bias is stored");
+  save_all_bias=true; std::vector<unsigned> shape(2);
+  shape[0]=shape[1]=getPntrToOutput( getNumberOfComponents()-1 )->getShape()[0]; 
+  getPntrToOutput( getNumberOfComponents()-1 )->setShape( shape );
 }
 
 std::string AverageBase::getStrideClearAndWeights() const {
