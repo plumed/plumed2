@@ -64,7 +64,7 @@ below.
 The following input tells plumed to print the distance between atoms 1
 and 4.
 
-\plumedfile 
+\plumedfile
 cv1: PYTHONCV ATOMS=1,4 IMPORT=jaxcv FUNCTION=cv1
 PRINT FILE=colvar.out ARG=*
 
@@ -104,27 +104,35 @@ object.  It currently does not seem to work well with Conda under OSX
  2. Install the JAX library: `pip3 install jaxlib`
  3. Change directory `cd plumed2/src/pycv`
  4. This is the trickiest part: build the colvar, making sure the correct Python libraries are linked: `make PythonCV.so` (or `make PythonCV.dylib` on OSX). The compilation step should pick Python-specific compilation and
-linker flags. 
+linker flags.
 
-Use Plumed's \ref LOAD action to load the generated object. You may need to set 
+Use Plumed's \ref LOAD action to load the generated object. You may need to set
 the `PYTHONHOME` or other environment libraries.
 
+\par Possible improvements (developer)
+
+ * Pass the atom coordinates structure directly?
+ * Multicolvar in some way?
+ * Also enable access to other CVs instead of coordinates?
+ * Box derivatives?
+ * Pass the jax array directly (check if it is being copied)
+ * Benchmark
 
 */
 //+ENDPLUMEDOC
 
 
-  typedef float pycv_t;		// May need to adapt to the build precision?
+typedef float pycv_t;		// May need to adapt to the build precision?
 
-  const std::string PYTHONCV_CITATION = "(maybe?)";
+const std::string PYTHONCV_CITATION = "(maybe?)";
 
- 
-  // Unfortunately we can only have one interpreter globally. This is
-  // less than ideal because CVs can interfere with each other.
-  static py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+
+// Unfortunately we can only have one interpreter globally. This is
+// less than ideal because CVs can interfere with each other.
+static py::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
 class PythonCV : public Colvar {
-    
+
   string style="NUMPY";
   string import;
   string function_name="cv";
@@ -157,7 +165,7 @@ void PythonCV::registerKeywords( Keywords& keys ) {
   keys.add("optional","STYLE","Python types, one of NATIVE, NUMPY or JAX [not implemented]");
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","FUNCTION","the function to call (defaults to CV)");
-  
+
   // Why is NOPBC not listed here?
 }
 
@@ -168,7 +176,7 @@ PythonCV::PythonCV(const ActionOptions&ao):
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   natoms = atoms.size();
-  
+
   parse("STYLE",style);
   parse("IMPORT",import);
   parse("FUNCTION",function_name);
@@ -180,7 +188,7 @@ PythonCV::PythonCV(const ActionOptions&ao):
   checkRead();
 
   log.printf("  will import %s and call function %s with style %s\n",
-	     import.c_str(), function_name.c_str(), style.c_str()     );
+             import.c_str(), function_name.c_str(), style.c_str()     );
   log.printf("  the function will receive an array of %d x 3\n",natoms);
 
   log<<"  Bibliography "
@@ -202,10 +210,10 @@ PythonCV::PythonCV(const ActionOptions&ao):
   // ...and the coordinates array
   py_X = py::array_t<pycv_t, py::array::c_style>({natoms,3}); // check if optimal layout
   // py_X_ptr = (pycv_t *) py_X.request().ptr;
- 
+
 }
 
-  
+
 // calculator
 void PythonCV::calculate() {
 
@@ -224,7 +232,7 @@ void PythonCV::calculate() {
   if(py::isinstance<py::tuple>(r)) {
     // 1st return value: CV
     py::list rl=r.cast<py::list>();
-    pycv_t value = rl[0].cast<pycv_t>(); 
+    pycv_t value = rl[0].cast<pycv_t>();
     setValue(value);
 
     // 2nd return value: gradient: numpy array of (natoms, 3)
@@ -235,35 +243,35 @@ void PythonCV::calculate() {
     // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
     for(int i=0; i<natoms; i++) {
       Vector3d gi(grad.at(i,0),
-		  grad.at(i,1),
-		  grad.at(i,2));
+                  grad.at(i,1),
+                  grad.at(i,2));
       setAtomsDerivatives(i,gi);
     }
-    
+
   } else {
     log.printf("Gradient not being returned as second return value. Biasing disabled\n");
-    pycv_t value = r.cast<pycv_t>(); 
+    pycv_t value = r.cast<pycv_t>();
     setValue(value);
   }
 
   setBoxDerivativesNoPbc();	// ??
 
 }
-  
 
-  // Assert correct gradient shape
-  void PythonCV::check_dim(py::array_t<pycv_t> grad) {
-    if(grad.ndim() != 2 ||
-       grad.shape(0) != natoms ||
-       grad.shape(1) != 3) {
-      log.printf("Error: wrong shape for the second return argument - should be (natoms,3), is %d x %d\n",
-		 grad.shape(0), grad.shape(1));
-      error("Python output shape error");
-    }
+
+// Assert correct gradient shape
+void PythonCV::check_dim(py::array_t<pycv_t> grad) {
+  if(grad.ndim() != 2 ||
+      grad.shape(0) != natoms ||
+      grad.shape(1) != 3) {
+    log.printf("Error: wrong shape for the second return argument - should be (natoms,3), is %d x %d\n",
+               grad.shape(0), grad.shape(1));
+    error("Python output shape error");
   }
+}
 
 
-  
+
 }
 }
 
