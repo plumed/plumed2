@@ -49,14 +49,14 @@ function passed as the `FUNCTION` keyword is called at each time
 step. It is assumed to receive a numpy array of shape `(N,3)` with the
 coordinates of the `ATOMS` listed in the action.
 
-The function should return two values: a scalar (the CV value), and its
-gradient with respect to each coordinate (an array of the same shape
-as the input).
+The function should return two values: a scalar (the CV value), and
+its gradient with respect to each coordinate (an array of the same
+shape as the input). Not returning the gradient will prevent biasing
+from working (with warnings).
 
-Automatic differentiation and transparent compilation (also to GPU)
-can be performed via the [JAX
-library](https://jax.readthedocs.io/en/latest/): see the example
-below.
+Automatic differentiation and transparent compilation (including to
+GPU) can be performed via Google's [JAX
+library](https://github.com/google/jax): see the example below.
 
 
 \par Examples
@@ -65,32 +65,82 @@ The following input tells plumed to print the distance between atoms 1
 and 4.
 
 \plumedfile
-cv1: PYTHONCV ATOMS=1,4 IMPORT=jaxcv FUNCTION=cv1
+cv1: PYTHONCV ATOMS=1,4 IMPORT=distcv FUNCTION=cv
 PRINT FILE=colvar.out ARG=*
 
 \endplumedfile
 
-The file `jaxcv.py` should contain something as follows.
+The file `distcv.py` should contain something as follows.
+
+@code{.py}
+import numpy as np
+
+# Define the distance function
+def dist(x):
+    r = x[0,:]-x[1,:]
+    d2 = np.dot(r,r)
+    return np.sqrt(d2)
+
+def grad_dist(x):
+    d = dist(x)
+    r = x[0,:]-x[1,:]
+    g = r/d
+    return np.array([g,-g])
+
+# The CV function actually called
+def cv(x):
+    return dist(x), grad_dist(x)
+
+@endcode
+
+
+
+\par JAX for automatic differentiation and compilation
+
+Automatic differentiation and transparent compilation (including to
+GPU) can be performed via Google's [JAX
+library](https://github.com/google/jax). In a nutshell, it's sufficient
+to replace `numpy` with `jax.numpy`. See the following example.
+
+
+\plumedfile
+cv1: PYTHONCV ATOMS=1,2,3 IMPORT=jaxcv FUNCTION=angle_cv
+PRINT FILE=colvar.out ARG=*
+
+\endplumedfile
+
+
+And, in `jaxcv.py`...
 
 @code{.py}
 # Import the JAX library
 import jax.numpy as np
 from jax import grad, jit, vmap
 
-# Define the distance function
-def dist(x):
-    d = x[0,:]-x[1,:]
-    d2 = np.dot(d,d)
-    return np.sqrt(d2)
+# Implementation of the angle function
+def angle(x):
+    r1 = x[0,:]-x[1,:]
+    r2 = x[2,:]-x[1,:]
+
+    costheta = np.dot(r1,r2) / np.linalg.norm(r1) / np.linalg.norm(r2)
+    theta = np.arccos(costheta) 
+    return theta
 
 # Use JAX to auto-gradient it
-grad_dist = grad(dist)
+grad_angle = grad(angle)
 
 # The CV function actually called
-def cv1(x):
-    return dist(x), grad_dist(x)
-
+def angle_cv(x):
+    return angle(x), grad_angle(x)
 @endcode
+
+
+There are however limitations, the most notable of which is that
+indexed assignments such as `x[i]=y` are not allowed, and should
+instead be replaced by functional equivalents such as
+`x=jax.ops.index_update(x, jax.ops.index[i], y)`.
+
+
 
 
 \par Installation
@@ -106,10 +156,9 @@ Python 3 is ok).  If you are feeling lucky, this may work:
 It may be useful to compile the variable as a stand-alone dynamic
 object.  Once in the `src/pycv` directory, try `make PythonCV.so` (or
 `make PythonCV.dylib` on OSX). The compilation step *should* pick
-Python-specific compilation and linker flags.
-
-Use Plumed's \ref LOAD action to load the generated object. You may need to set
-the `PYTHONHOME` or other environment libraries.
+Python-specific compilation and linker flags.  Use Plumed's \ref LOAD
+action to load the generated object. You may need to set the
+`PYTHONHOME` or other environment libraries.
 
 Automatic differentiation examples require the JAX library: `pip3
 install jaxlib`.
