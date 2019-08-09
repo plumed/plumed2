@@ -61,7 +61,7 @@ library](https://github.com/google/jax): see the example below.
 
 \par Examples
 
-The following input tells plumed to print the distance between atoms 1
+The following input tells PLUMED to print the distance between atoms 1
 and 4.
 
 \plumedfile
@@ -135,10 +135,11 @@ def angle_cv(x):
 @endcode
 
 
-There are however limitations, the most notable of which is that
-indexed assignments such as `x[i]=y` are not allowed, and should
-instead be replaced by functional equivalents such as
-`x=jax.ops.index_update(x, jax.ops.index[i], y)`.
+There are however
+[limitations](https://github.com/google/jax#current-gotchas), the most
+notable of which is that indexed assignments such as `x[i]=y` are not
+allowed, and should instead be replaced by functional equivalents such
+as `x=jax.ops.index_update(x, jax.ops.index[i], y)`.
 
 
 
@@ -237,6 +238,7 @@ PythonCV::PythonCV(const ActionOptions&ao):
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   natoms = atoms.size();
+  if(natoms==0) error("At least one atom is required");
 
   parse("STYLE",style);
   parse("IMPORT",import);
@@ -328,9 +330,9 @@ void PythonCV::check_dim(py::array_t<pycv_t> grad) {
   if(grad.ndim() != 2 ||
       grad.shape(0) != natoms ||
       grad.shape(1) != 3) {
-    log.printf("Error: wrong shape for the second return argument - should be (natoms,3), is %d x %d\n",
-               grad.shape(0), grad.shape(1));
-    error("Python output shape error");
+    log.printf("Error: wrong shape for the gradient return argument: should be (natoms=%d,3), received %d x %d\n",
+               natoms, grad.shape(0), grad.shape(1));
+    error("Python CV returned wrong gradient shape error");
   }
 }
 
