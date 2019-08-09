@@ -1,4 +1,4 @@
-LOAD FILE=PythonCV.dylib
+# LOAD FILE=PythonCV.dylib
 
 cv1: PYTHONCV ATOMS=1,4 IMPORT=jaxcv FUNCTION=cv1
 

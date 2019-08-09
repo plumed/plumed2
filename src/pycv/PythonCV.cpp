@@ -185,7 +185,7 @@ install jaxlib`.
 
 typedef float pycv_t;		// May need to adapt to the build precision?
 
-const std::string PYTHONCV_CITATION = "(???)";
+const std::string PYTHONCV_CITATION = "(?)";
 
 
 // Unfortunately we can only have one interpreter globally. This is
