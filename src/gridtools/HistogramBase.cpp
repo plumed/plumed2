@@ -175,20 +175,20 @@ void HistogramBase::getGridPointAsCoordinate( const unsigned& ind, const bool& s
 
 void HistogramBase::calculate() {
   // Everything is done elsewhere
-  if( actionInChain() || hasAverageAsArgument() ) return;
+  if( actionInChain() ) return;
   // This is done if we are calculating a function of multiple cvs
   runAllTasks();
 }
 
 void HistogramBase::update() {
-  if( !hasAverageAsArgument() ) return;
+  if( skipUpdate() ) return;
   plumed_dbg_assert( !actionInChain() );
   // This is done if we are doing a histogram from a time series
   runAllTasks();
 }
 
 void HistogramBase::runFinalJobs() {
-  if( !hasAverageAsArgument() ) return;
+  if( skipUpdate() ) return;
   plumed_assert( !actionInChain() );
   // Need to create tasks here
   if( getFullNumberOfTasks()==0 ) { setNumberOfKernels(); buildTasksFromBasedOnRankOfInputData(); runAllTasks(); }

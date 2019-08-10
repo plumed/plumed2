@@ -215,23 +215,12 @@ void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ) {
   }
 }
 
-void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool& allow_streams ) {
+void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool& allow_streams, const unsigned& argstart ) {
   plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
   thisAsActionWithValue = dynamic_cast<const ActionWithValue*>(this);
   bool firstcall=(arguments.size()==0);
   arguments=arg; clearDependencies();
   if( arguments.size()==0 ) return ;
-  // Check if we are evaluating a function on a grid if we are ignore first argument in many places
-  unsigned argstart=0; 
-  if( arguments[0]->getRank()>0 && arguments.size()==(1+arguments[0]->getRank()) && arguments[0]->hasDerivatives() ) {
-      Value* gval=arguments[0]; ActionWithValue* act=gval->getPntrToAction();
-      std::vector<unsigned> ind( gval->getRank() ), nbin( gval->getRank() ); std::string gtype;
-      std::vector<double> spacing( gval->getRank() ), xx( gval->getRank() ); std::vector<bool> pbc( gval->getRank() );
-      std::vector<std::string> argn( gval->getRank() ), min( gval->getRank() ), max( gval->getRank() );
-      act->getInfoForGridHeader( gtype, argn, min, max, nbin, spacing, pbc, false ); 
-      bool match=true; for(unsigned i=1;i<arguments.size();++i) { if( argn[i-1]!=arguments[i]->getName() ) match=false; }
-      if( match ) argstart = 1;
-  }
   distinct_arguments.resize(0); done_over_stream=false;
   bool storing=false; allrankzero=true;
   // This allows us to do some optimizing in getting values
@@ -258,11 +247,11 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
         }
         AverageBase* av = dynamic_cast<AverageBase*>( arguments[i]->getPntrToAction() );
         if( av ) { 
-            averageInArguments=true;
+            theAverageInArguments=av;
         } else {
             ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( arguments[i]->getPntrToAction() );
             if( aa ) {
-                if( aa->hasAverageAsArgument() ) averageInArguments=true;
+                if( aa->theAverageInArguments ) theAverageInArguments=aa->theAverageInArguments;
             }
         } 
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
@@ -453,7 +442,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
   allrankzero(true),
   lockRequestArguments(false),
-  averageInArguments(false),
+  theAverageInArguments(NULL),
   thisAsActionWithValue(NULL),
   numberedkeys(false),
   done_over_stream(false)
@@ -675,8 +664,11 @@ void ActionWithArguments::setForcesOnArguments( const unsigned& argstart, const 
   }
 }
 
-bool ActionWithArguments::hasAverageAsArgument() const {
-  return averageInArguments;
+bool ActionWithArguments::skipUpdate() const {
+  // If there is no average in the arguments calculation is done in calculate
+  if( !theAverageInArguments ) return true;
+  // Redo calculation in update if there is an average in the arguments
+  return !theAverageInArguments->isActive();
 }
 
 unsigned ActionWithArguments::getNumberOfArgumentsPerTask() const {

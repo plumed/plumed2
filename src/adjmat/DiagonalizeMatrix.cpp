@@ -136,22 +136,21 @@ void DiagonalizeMatrix::diagonalizeMatrix() {
 }
 
 void DiagonalizeMatrix::calculate() {
-  if( hasAverageAsArgument() ) return;
   diagonalizeMatrix();
 }
 
 void DiagonalizeMatrix::update() {
-  if( !hasAverageAsArgument() ) return;
+  if( skipUpdate() ) return;
   diagonalizeMatrix();
 }
 
 void DiagonalizeMatrix::runFinalJobs() {
-  if( !hasAverageAsArgument() ) return;
+  if( skipUpdate() ) return;
   diagonalizeMatrix();
 }
 
 void DiagonalizeMatrix::apply() {
-  if( hasAverageAsArgument() || doNotCalculateDerivatives() ) return;
+  if( doNotCalculateDerivatives() ) return;
 
   // Forces on eigenvalues
   std::fill(forcesToApply.begin(),forcesToApply.end(),0); unsigned ss=0;

@@ -75,7 +75,7 @@ CenterMatrix::CenterMatrix( const ActionOptions& ao):
 }
 
 void CenterMatrix::update() {
-  if( !hasAverageAsArgument() || getPntrToOutput(0)->getShape()[0]==0 ) return;
+  if( skipUpdate() || getPntrToOutput(0)->getShape()[0]==0 ) return;
   plumed_dbg_assert( !actionInChain() ); Value* arg0=getPntrToArgument(0); Value* val0=getPntrToOutput(0);
 
   // Apply centering transtion
@@ -97,7 +97,7 @@ void CenterMatrix::update() {
 }
 
 void CenterMatrix::runFinalJobs() {
-  if( !hasAverageAsArgument() || wasupdated ) return;
+  if( skipUpdate() || wasupdated ) return;
   plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 && getPntrToOutput(0)->getShape()[0]==0 );
   std::vector<unsigned> shape(2); shape[0]=shape[1] = getPntrToArgument(0)->getShape()[0]; 
   getPntrToOutput(0)->setShape(shape); update();

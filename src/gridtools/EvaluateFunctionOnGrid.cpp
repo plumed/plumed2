@@ -33,7 +33,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit EvaluateFunctionOnGrid(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() const ;
-  bool hasAverageAsArgument() const ;
   void prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList );
   void finishOutputSetup(){}
   void performTask( const unsigned& current, MultiValue& myvals ) const ;
@@ -76,7 +75,7 @@ ActionWithInputGrid(ao)
       log.printf(" %s", argv[i]->getName().c_str() );  
       req_arg.push_back( argv[i] );
   }
-  log.printf("\n"); requestArguments( req_arg, true );
+  log.printf("\n"); requestArguments( req_arg, true, 1 );
   parseFlag("ZERO_OUTSIDE_GRID_RANGE",set_zero_outside_range);
   if( set_zero_outside_range ) log.printf("  function is zero outside grid range \n");
 
@@ -98,10 +97,6 @@ ActionWithInputGrid(ao)
 
 unsigned EvaluateFunctionOnGrid::getNumberOfDerivatives() const {
   return nderivatives;
-}
-
-bool EvaluateFunctionOnGrid::hasAverageAsArgument() const {
-  return false;
 }
 
 void EvaluateFunctionOnGrid::prepareForTasks( const unsigned& nactive, const std::vector<unsigned>& pTaskList ) {

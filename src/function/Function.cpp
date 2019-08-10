@@ -361,19 +361,19 @@ void Function::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::strin
 
 void Function::calculate() {
   // Everything is done elsewhere
-  if( hasAverageAsArgument() || actionInChain() ) return;
+  if( actionInChain() ) return;
   // This is done if we are calculating a function of multiple cvs
   evaluateAllFunctions();
 }
 
 void Function::update() {
-  if( !hasAverageAsArgument() ) return;
+  if( skipUpdate() ) return;
   plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
   evaluateAllFunctions();
 }
 
 void Function::runFinalJobs() {
-  if( !hasAverageAsArgument() ) return;
+  if( skipUpdate() ) return;
   plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
   if( getFullNumberOfTasks()==0 ) {
       unsigned nscalars=0, npoints;

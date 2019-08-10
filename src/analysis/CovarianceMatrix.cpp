@@ -128,13 +128,13 @@ void CovarianceMatrix::gatherStoredValue( const unsigned& valindex, const unsign
 }
 
 void CovarianceMatrix::update() {
-  if( !hasAverageAsArgument() ) return;
+  if( skipUpdate() ) return;
   plumed_dbg_assert( !actionInChain() );
   runAllTasks();
 }
 
 void CovarianceMatrix::runFinalJobs() {
-  if( !hasAverageAsArgument() ) return;
+  if( skipUpdate() ) return;
   plumed_assert( !actionInChain() );
   // Need to create tasks here
   if( getFullNumberOfTasks()==0 ) { buildTaskList(); runAllTasks(); }

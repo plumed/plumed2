@@ -73,7 +73,7 @@ public:
   void lockRequests();
   void unlockRequests();
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ) { plumed_error(); }
-  void calculate() {}
+  void calculate(); 
   void apply() {}
   void update();
   virtual void accumulateNorm( const double& cweight ) = 0 ;

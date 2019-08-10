@@ -258,10 +258,14 @@ double AverageBase::computeCurrentBiasForData( const std::vector<double>& values
   return logw;
 }
 
+void AverageBase::calculate() {
+  if( !firststep ) return;
+  resizeValues();  // This is called in calculate to ensure that values are set to the right size the first time they are used
+}
 
 void AverageBase::update() {
   // Resize values if they need resizing
-  if( firststep ) { resizeValues(); setReferenceConfig(); firststep=false; }
+  if( firststep ) { setReferenceConfig(); firststep=false; }
   // Check if we need to accumulate
   if( (clearstride!=1 && getStep()==0) || !onStep() ) return;
 

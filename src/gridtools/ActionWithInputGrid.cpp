@@ -116,17 +116,17 @@ void ActionWithInputGrid::doTheCalculation() {
 }
 
 void ActionWithInputGrid::calculate() {
-  if( hasAverageAsArgument() || actionInChain() ) return ;
+  if( actionInChain() ) return ;
   doTheCalculation();
 }
 
 void ActionWithInputGrid::update() {
-  if( !hasAverageAsArgument() ) return;
+  if( skipUpdate() ) return;
   doTheCalculation();
 }
 
 void ActionWithInputGrid::runFinalJobs() {
-  if( !hasAverageAsArgument() ) return;
+  if( skipUpdate() ) return;
   doTheCalculation();
 }
 

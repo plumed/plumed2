@@ -40,6 +40,8 @@ This is used in PLMD::Function and PLMD::Bias
  when you use parseArgumentList.
 */
 
+class AverageBase;
+
 class ActionWithArguments : public virtual Action {
   friend class ActionWithValue;
 private:
@@ -47,7 +49,7 @@ private:
   std::vector<bool> usingAllArgs;
   std::vector<Value*> arguments;
   bool lockRequestArguments;
-  bool averageInArguments;
+  AverageBase* theAverageInArguments;
   const ActionWithValue* thisAsActionWithValue;
   ActionWithValue* getFirstNonStream();
   Value* getArgumentForScalar(const unsigned n) const ;
@@ -63,9 +65,9 @@ protected:
   unsigned getNumberOfScalarArguments() const ;
 /// This is used to create a chain of actions that can be used to calculate a function/multibias
   unsigned setupActionInChain( const unsigned& argstart ) ;
+/// Should we skip running update for this action
+  bool skipUpdate() const ;
 public:
-/// Is an average used as an argument of this function
-  virtual bool hasAverageAsArgument() const ;
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;
 /// Registers the list of keywords
@@ -87,7 +89,7 @@ public:
 /// Parse a numbered list of arguments
   bool parseArgumentList(const std::string&key,int i,std::vector<Value*>&args);
 /// Setup the dependencies
-  void requestArguments(const std::vector<Value*> &arg, const bool& allow_streams);
+  void requestArguments(const std::vector<Value*> &arg, const bool& allow_streams, const unsigned& argstart=0 );
 /// Set the forces on the arguments
   void setForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& start );
 /// This sets the forces on if the action is in a chain
