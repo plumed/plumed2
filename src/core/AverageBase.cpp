@@ -228,7 +228,7 @@ double AverageBase::computeCurrentBiasForData( const std::vector<double>& values
   }
 
   for(const auto & pp : as ) {
-     Action* p(pp.get()); bool found=false;
+     Action* p(pp.get()); bool found=false, savemp, savempi;
      // If this is one of actions for the the stored arguments then we skip as we set these values from the list
      for(unsigned i=0; i<n_real_args; ++i) {
          std::string name = getPntrToArgument(i)->getName(); std::size_t dot = name.find_first_of(".");
@@ -240,8 +240,13 @@ double AverageBase::computeCurrentBiasForData( const std::vector<double>& values
      // Recalculate the action
      if( p->isActive() && p->getCaller()=="plumedmain" ) {
          ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
-         if(av) { av->clearInputForces(); av->clearDerivatives(); }
+         if(av) { 
+           av->clearInputForces(); av->clearDerivatives();
+           savemp = av->no_openmp; savempi=av->serial;
+           av->no_openmp = true; av->serial=true;
+         }
          p->calculate();
+         if( av ) { av->no_openmp=savemp; av->serial=savempi; }
       }
       // If this is the final bias then get the value and get out
       for(unsigned i=n_real_args;i<getNumberOfArguments();++i) {
@@ -286,7 +291,7 @@ void AverageBase::update() {
        for(unsigned i=n_real_args; i<getNumberOfArguments(); ++i) cweight+=getPntrToArgument(i)->get();
        // This stores the new bias for the old configuration
        if( save_all_bias ) {
-           unsigned nstored = getNumberOfStoredWeights(); double new_old_bias;
+           unsigned nstored = getNumberOfStoredWeights(); 
            unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() );
            std::vector<double> old_data( nvals*n_real_args ), current_data( nvals*n_real_args );
            // Store the current values for all the arguments
@@ -294,10 +299,17 @@ void AverageBase::update() {
                for(unsigned j=0;j<n_real_args;++j) current_data[j*nvals+i] = getPntrToArgument(j)->get(i);
            }
            // Compute the weights for all the old configurations
-           for(unsigned i=0;i<nstored;++i) {
+           unsigned stride=comm.Get_size(), rank=comm.Get_rank();
+           if( runInSerial() ) { stride=1; rank=0; } 
+           std::vector<double> new_old_bias( nstored, 0 );
+           for(unsigned i=rank;i<nstored;i+=stride) {
                for(unsigned j=0;j<nvals;++j) retrieveDataPoint( i, j, old_data );
-               new_old_bias = computeCurrentBiasForData( old_data );
-               for(unsigned j=0;j<nvals;++j) storeRecomputedBias( i*nvals, j, new_old_bias );
+               new_old_bias[i] = computeCurrentBiasForData( old_data );
+           }
+           if( !runInSerial() ) comm.Sum( new_old_bias );
+
+           for(unsigned i=0;i<nstored;++i) {
+               for(unsigned j=0;j<nvals;++j) storeRecomputedBias( i*nvals, j, new_old_bias[i] );
            }
            // And recompute the current bias
            double ignore = computeCurrentBiasForData( current_data );

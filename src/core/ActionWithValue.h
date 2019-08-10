@@ -73,6 +73,7 @@ class ActionWithVirtualAtom;
 class ActionWithValue :
   public virtual Action
 {
+  friend class AverageBase;
   friend class ActionWithArguments;
 private:
 /// An array containing the values for this action
