@@ -65,7 +65,6 @@ library](https://github.com/google/jax): see \ref PYTHONCV.
 \par Examples
 
 The following example mimics the one in \ref CUSTOM.
-and 4.
 
 \plumedfile
 dAB: DISTANCE ATOMS=10,12
@@ -80,15 +79,18 @@ The file `pythonfunction.py` should contain something as follows.
 @code{.py}
 import jax.numpy as np
 
-def diff_f(x):
-    return x[1]-x[0]
+def diff_f(X):
+    x, y = X
+    return y-x
+
 
 # Just to demonstrate how auto grad is done.
 # In this specific case it is just np.array([-1., 1.])
 
 diff_grad = grad(diff_f)
 
-# The CV function actually called
+
+# The function actually being called
 def diff(x):
     return diff_f(x), diff_grad(x)
 
