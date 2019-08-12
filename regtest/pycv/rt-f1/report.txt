@@ -1,6 +1,0 @@
-Mon Aug 12 16:27:06 CEST 2019
-Running regtest in /Users/toni/compile/plumed2-pycv/regtest/pycv/rt-f1
-++ Test type: driver
-++ Arguments: --plumed plumed.dat --ixyz traj.xyz --dump-forces forces --dump-forces-fmt=%10.6f
-++ Processors: 0
-/Users/toni/compile/plumed2-pycv/regtest/pycv/rt-f1/tmp
