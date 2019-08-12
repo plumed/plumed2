@@ -1,9 +1,13 @@
+#undef NDEBUG
+
 #include <iostream>
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
 
 namespace py = pybind11;
 using namespace py::literals;
+using namespace std;
+
 
 // https://pybind11.readthedocs.io/en/stable/advanced/embedding.html
 // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
@@ -73,7 +77,30 @@ void main3() {
     std::cout << r1 << std::endl;
 }
 
+void main4() {
+  
+  py::module mod = py::module::import("mybind");
+  py::object r = mod.attr("main4")();
+
+  if(py::isinstance<py::tuple>(r)) 
+    cout << "Tuple" << endl;
+  
+  if(py::isinstance<py::dict>(r)) {
+    // py::dict rd=r.cast<py::dict>();
+    cout << "Dict" << endl;
+    for(auto k: r) {
+      printf("key found: %s\n",k.cast<string>().c_str());
+    }
+    if(r.contains("a")) {
+      printf("key %s is present and equals %d\n",
+	     "a", r["a"].cast<int>());
+    }
+  }
+  
+}
+
+
 
 int main() {
-  main2();
+  main4();
 }

@@ -8,3 +8,8 @@ def callme(x):
 
 def main3():
     return 11,22
+
+def main4():
+    return {'a':2, 'b':3}
+
+

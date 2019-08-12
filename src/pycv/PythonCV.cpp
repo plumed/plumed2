@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "PythonCV.h"
+#include "pycv.h"
 
 #include "core/PlumedMain.h"
 #include "colvar/Colvar.h"
@@ -76,7 +76,7 @@ The file `distcv.py` should contain something as follows.
 import numpy as np
 
 # Define the distance function
-def dist(x):
+def dist_f(x):
     r = x[0,:]-x[1,:]
     d2 = np.dot(r,r)
     return np.sqrt(d2)
@@ -89,7 +89,7 @@ def grad_dist(x):
 
 # The CV function actually called
 def cv(x):
-    return dist(x), grad_dist(x)
+    return dist_f(x), grad_dist(x)
 
 @endcode
 
@@ -104,7 +104,7 @@ to replace `numpy` with `jax.numpy`. See the following example.
 
 
 \plumedfile
-cv1: PYTHONCV ATOMS=1,2,3 IMPORT=jaxcv FUNCTION=angle_cv
+cv1: PYTHONCV ATOMS=1,2,3 IMPORT=jaxcv FUNCTION=angle
 PRINT FILE=colvar.out ARG=*
 
 \endplumedfile
@@ -118,20 +118,20 @@ import jax.numpy as np
 from jax import grad, jit, vmap
 
 # Implementation of the angle function
-def angle(x):
+def angle_f(x):
     r1 = x[0,:]-x[1,:]
     r2 = x[2,:]-x[1,:]
 
     costheta = np.dot(r1,r2) / np.linalg.norm(r1) / np.linalg.norm(r2)
-    theta = np.arccos(costheta) 
+    theta = np.arccos(costheta)
     return theta
 
 # Use JAX to auto-gradient it
-grad_angle = grad(angle)
+angle_grad = grad(angle)
 
 # The CV function actually called
-def angle_cv(x):
-    return angle(x), grad_angle(x)
+def angle(x):
+    return angle_f(x), angle_grad(x)
 @endcode
 
 
@@ -154,23 +154,27 @@ Python 3 is ok).  If you are feeling lucky, this may work:
 ./configure --enable-modules=+pycv --enable-python PYTHON_BIN=python3 LDFLAGS="`python3-config --ldflags`"
 \endverbatim
 
-It may be useful to compile the variable as a stand-alone dynamic
-object.  Once in the `src/pycv` directory, try `make PythonCV.so` (or
-`make PythonCV.dylib` on OSX). The compilation step *should* pick
-Python-specific compilation and linker flags.  Use Plumed's \ref LOAD
-action to load the generated object. You may need to set the
-`PYTHONHOME` or other environment libraries.
+At run time, you may need to set the `PYTHONHOME` or other
+environment libraries.
 
 Automatic differentiation examples require the JAX library: `pip3
 install jaxlib`.
 
 
+It may be useful to compile the variable as a stand-alone dynamic
+object.  Once in the `src/pycv` directory, try `make PythonCV.so` (or
+`make PythonCV.dylib` on OSX). The compilation step *should* pick
+Python-specific compilation and linker flags.  Use Plumed's \ref LOAD
+action to load the generated object.
+
+
+
 \par Possible improvements (developer)
 
- * Pass the atom coordinates structure directly?
+ * DONE Also enable access to other CVs instead of coordinates?
+ * Pass the full atom coordinates structure directly?
  * Multicolvar in some way?
  * Pass a subset of pairwise distances instead of coordinates?
- * Also enable access to other CVs instead of coordinates?
  * Box derivatives for PBC?
  * Pass the jax array directly (check if it is being copied)
  * Benchmark
@@ -186,12 +190,7 @@ install jaxlib`.
 
 typedef float pycv_t;		// May need to adapt to the build precision?
 
-const std::string PYTHONCV_CITATION = "(?)";
 
-
-// Unfortunately we can only have one interpreter globally. This is
-// less than ideal because CVs can interfere with each other.
-static py::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
 class PythonCV : public Colvar {
 

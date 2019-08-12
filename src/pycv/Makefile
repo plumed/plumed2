@@ -1,9 +1,12 @@
-USE=core tools bias colvar
+USE=core tools bias colvar function
 ADDCPPFLAGS += $(shell python3-config --cflags)
 ADDCPPFLAGS += -Ipybind11-2.3.0/include
 
 # generic makefile
 include ../maketools/make.module
+
+# Note to myself: to run regtests,
+# export PLUMED_PROGRAM_NAME=/Users/toni/compile/plumed2-pycv/src/lib/plumed
 
 
 # Workaround conda bugs on OSX
