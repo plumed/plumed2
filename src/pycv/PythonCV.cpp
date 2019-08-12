@@ -192,8 +192,8 @@ typedef float pycv_t;		// May need to adapt to the build precision?
 
 
 
-  class PythonCV : public Colvar,
-		   public PythonPlumedBase {
+class PythonCV : public Colvar,
+  public PythonPlumedBase {
 
   string style="NUMPY";
   string import;
@@ -203,7 +203,7 @@ typedef float pycv_t;		// May need to adapt to the build precision?
   py::object py_fcn;
 
   py::array_t<pycv_t, py::array::c_style> py_X;
-    // pycv_t *py_X_ptr;    /* For when we want to speed up */
+  // pycv_t *py_X_ptr;    /* For when we want to speed up */
 
   int natoms;
   bool pbc;

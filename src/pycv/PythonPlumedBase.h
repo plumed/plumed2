@@ -9,11 +9,11 @@
 namespace PLMD {
 namespace pycv {
 
-  class PythonPlumedBase {
-  public:
-    const std::string PYTHONCV_CITATION = "(?)";
+class PythonPlumedBase {
+public:
+  const std::string PYTHONCV_CITATION = "(?)";
 
-  };
+};
 
 }
 }

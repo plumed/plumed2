@@ -112,8 +112,8 @@ typedef float pycv_t;		// May need to adapt to the build precision?
 
 
 class PythonFunction :
-    public function::Function,
-    public PythonPlumedBase {
+  public function::Function,
+  public PythonPlumedBase {
 
   string import;
   string function_name;

@@ -33,10 +33,10 @@ namespace py = pybind11;
 namespace PLMD {
 namespace pycv {
 
-  // Unfortunately we can only have one interpreter globally. This is
-  // less than ideal because CVs can interfere with each other. The
-  // whole purpose of this superclass is to uniquify it.
-  static py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+// Unfortunately we can only have one interpreter globally. This is
+// less than ideal because CVs can interfere with each other. The
+// whole purpose of this superclass is to uniquify it.
+static py::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
 }
 }
