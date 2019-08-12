@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "pycv.h"
+#include "PythonPlumedBase.h"
 
 #include "core/PlumedMain.h"
 #include "colvar/Colvar.h"
@@ -112,7 +112,8 @@ typedef float pycv_t;		// May need to adapt to the build precision?
 
 
 class PythonFunction :
-  public function::Function {
+    public function::Function,
+    public PythonPlumedBase {
 
   string import;
   string function_name;
@@ -139,7 +140,7 @@ public:
 PLUMED_REGISTER_ACTION(PythonFunction,"PYTHONFUNCTION")
 
 void PythonFunction::registerKeywords( Keywords& keys ) {
-  Colvar::registerKeywords( keys );
+  Function::registerKeywords( keys );
   keys.use("ARG"); keys.use("PERIODIC");
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","FUNC","the function to call");
@@ -156,11 +157,18 @@ PythonFunction::PythonFunction(const ActionOptions&ao):
 {
 
   nargs = getNumberOfArguments();
+
+  parse("IMPORT",import);
   parse("FUNC",function_name);
+
   addValueWithDerivatives();
   checkRead();
 
   log.printf("  with function : %s\n",function_name.c_str());
+
+  log<<"  Bibliography "
+     <<plumed.cite(PYTHONCV_CITATION)
+     <<"\n";
 
 
   // ----------------------------------------
