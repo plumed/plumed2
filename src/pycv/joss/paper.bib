@@ -1,0 +1,126 @@
+
+@article{tribello_plumed_2014,
+	title = {{PLUMED} 2: {New} feathers for an old bird},
+	volume = {185},
+	issn = {0010-4655},
+	shorttitle = {{PLUMED} 2},
+	url = {http://www.sciencedirect.com/science/article/pii/S0010465513003196},
+	doi = {10.1016/j.cpc.2013.09.018},
+	abstract = {Abstract
+Enhancing sampling and analyzing simulations are central issues in molecular simulation. Recently, we introduced PLUMED, an open-source plug-in that provides some of the most popular molecular dynamics (MD) codes with implementations of a variety of different enhanced sampling algorithms and collective variables (CVs). The rapid changes in this field, in particular new directions in enhanced sampling and dimensionality reduction together with new hardware, require a code that is more flexible and more efficient. We therefore present PLUMED 2 here—a complete rewrite of the code in an object-oriented programming language (C++). This new version introduces greater flexibility and greater modularity, which both extends its core capabilities and makes it far easier to add new methods and CVs. It also has a simpler interface with the MD engines and provides a single software library containing both tools and core facilities. Ultimately, the new code better serves the ever-growing community of users and contributors in coping with the new challenges arising in the field.
+Program summary
+Program title: PLUMED 2
+
+Catalogue identifier: AEEE\_v2\_0
+
+Program summary URL:http://cpc.cs.qub.ac.uk/summaries/AEEE\_v2\_0.html
+
+Program obtainable from: CPC Program Library, Queen’s University, Belfast, N. Ireland
+
+Licensing provisions: Yes
+
+No. of lines in distributed program, including test data, etc.: 700646
+
+No. of bytes in distributed program, including test data, etc.: 6618136
+
+Distribution format: tar.gz
+
+Programming language: ANSI-C++.
+
+Computer: Any computer capable of running an executable produced by a C++ compiler.
+
+Operating system: Linux operating system, Unix OSs.
+
+Has the code been vectorized or parallelized?: Yes, parallelized using MPI.
+
+RAM: Depends on the number of atoms, the method chosen and the collective variables used.
+
+Classification: 3, 7.7, 23.
+
+Catalogue identifier of previous version: AEEE\_v1\_0.
+
+Journal reference of previous version: Comput. Phys. Comm. 180 (2009) 1961.
+
+External routines: GNU libmatheval, Lapack, Blas, MPI.
+
+Does the new version supersede the previous version?: This version supersedes the previous version for the most part. There are a small number of very specific situations where the previous version is better, due to performance or to non-ported features. We are actively working on porting these last few features into the new code.
+
+Nature of problem:
+
+Calculation of free-energy surfaces for molecular systems of interest in biology, chemistry and materials science, on the fly and a posteriori analysis of molecular dynamics trajectories using advanced collective variables.
+
+Solution method:
+
+Implementations of various collective variables and enhanced sampling techniques.
+
+Reasons for new version:
+
+The old version was difficult to maintain and its design was not as flexible as this new version. This lack of flexibility made it difficult to implement a number of novel methods that have emerged since the release of the original code.
+
+Summary of revisions:
+
+The new version of the code has a completely redesigned architecture, which allows for several important enhancements. This allows for a much simpler and robust input syntax and for improved performance. In addition, it provides several, more-complex collective variables which could not have been written using the previous implementation. Furthermore, the entire code is fully documented so it is easier to extend. Finally, the code is designed so that users can implement new variables directly in the input files and thus develop bespoke applications of these powerful algorithms.
+
+Unusual features:
+
+PLUMED 2 can be used either as a standalone program, e.g. for a posteriori analysis of trajectories, or as a library embedded in a molecular dynamics code (such as GROMACS, NAMD, Quantum ESPRESSO, and LAMMPS). Interfaces with these particular codes are provided in patches, which a simple script will insert into the underlying molecular dynamics codes source code files. For other molecular dynamics codes there is extensive documentation on how to add PLUMED in our manual.
+
+Additional comments:
+
+The distribution file contains a test suite, user and developer documentation and a collection of patches and utilities.
+
+Running time:
+
+Depends on the number of atoms, the method chosen and the collective variables used. The regression test suite provided takes approximately 1 min to run.},
+	number = {2},
+	urldate = {2013-12-06},
+	journal = {Computer Physics Communications},
+	author = {Tribello, Gareth A. and Bonomi, Massimiliano and Branduardi, Davide and Camilloni, Carlo and Bussi, Giovanni},
+	month = feb,
+	year = {2014},
+	keywords = {Dimensional reduction, Enhanced sampling, Molecular dynamics, free energy, molecular dynamics, Free energy},
+	pages = {604--613},
+	file = {PLUMED 2\: New feathers for an old bird:/Users/toni/Zotero/storage/8FGEJSMP/S0010465513003196.html:text/html;Tribello et al_2014_PLUMED 2.pdf:/Users/toni/Sync/literature/zotero/MD/Metadynamics/Tribello et al_2014_PLUMED 2.pdf:application/pdf}
+}
+
+
+@article{the_plumed_consortium_promoting_2019,
+	title = {Promoting transparency and reproducibility in enhanced molecular simulations},
+	volume = {16},
+	copyright = {2019 Springer Nature America, Inc.},
+	issn = {1548-7105},
+	url = {https://www.nature.com/articles/s41592-019-0506-8},
+	doi = {10.1038/s41592-019-0506-8},
+	abstract = {The PLUMED consortium unifies developers and contributors to PLUMED, an open-source library for enhanced-sampling, free-energy calculations and the analysis of molecular dynamics simulations. Here, we outline our efforts to promote transparency and reproducibility by disseminating protocols for enhanced-sampling molecular simulations.},
+	language = {En},
+	number = {8},
+	urldate = {2019-07-31},
+	journal = {Nature Methods},
+	author = {{The PLUMED consortium}},
+	month = aug,
+	year = {2019},
+	pages = {670},
+	file = {Snapshot:/Users/toni/Zotero/storage/CMXUMYDD/s41592-019-0506-8.html:text/html}
+}
+
+
+@article{giorgino_how_2018,
+	title = {How to differentiate collective variables in free energy codes: {Computer}-algebra code generation and automatic differentiation},
+	volume = {228},
+	issn = {0010-4655},
+	shorttitle = {How to differentiate collective variables in free energy codes},
+	url = {http://www.sciencedirect.com/science/article/pii/S0010465518300468},
+	doi = {10.1016/j.cpc.2018.02.017},
+	abstract = {The proper choice of collective variables (CVs) is central to biased-sampling free energy reconstruction methods in molecular dynamics simulations. The PLUMED 2 library, for instance, provides several sophisticated CV choices, implemented in a C++ framework; however, developing new CVs is still time consuming due to the need to provide code for the analytical derivatives of all functions with respect to atomic coordinates. We present two solutions to this problem, namely (a) symbolic differentiation and code generation, and (b) automatic code differentiation, in both cases leveraging open-source libraries (SymPy and Stan Math, respectively). The two approaches are demonstrated and discussed in detail implementing a realistic example CV, the local radius of curvature of a polymer. Users may use the code as a template to streamline the implementation of their own CVs using high-level constructs and automatic gradient computation.
+Program summary
+Program Title: Practical approaches to the differentiation of collective variables in free energy codes: computer-algebra code generation and automatic differentiation Program Files doi:http://dx.doi.org/10.17632/r4r67bvkdn.1 Licensing provisions: GNU Lesser General Public License Version 3 (LGPL-3) Programming languages: C++, Python Nature of problem: The C++ implementation of collective variables (CVs, functions of atomic coordinates to be used in biased sampling applications) in biasing libraries for atomistic simulations, such as PLUMED [1], requires computation of both the variable and its gradient with respect to the atomic coordinates; coding and testing the analytical derivatives complicate the implementation of new CVs. Solution method: The paper shows two approaches to automate the computation of CV gradients, namely, symbolic differentiation with code generation and automatic code differentiation, demonstrating their implementation entirely with open-source software (respectively, SymPy and the Stan Math Library). Additional comments: The paper’s accompanying code serves as an example and template for the methods described in the paper; it is distributed as the two modules curvature\_codegen and curvature\_autodiff integrated in PLUMED 2’s source tree; the latest version is available at https://github.com/tonigi/plumed2-automatic-gradients . [1] Tribello GA, Bonomi M, Branduardi D, Camilloni C, Bussi G. PLUMED 2: New feathers for an old bird. Computer Physics Communications. 2014 Feb;185(2):604-13.},
+	urldate = {2018-04-27},
+	journal = {Computer Physics Communications},
+	author = {Giorgino, Toni},
+	month = jul,
+	year = {2018},
+	note = {2-s2.0-85043302064},
+	keywords = {C++, Molecular dynamics, Metadynamics, Free energy, Biased sampling, Symbolic},
+	pages = {258--263},
+	file = {ScienceDirect Snapshot:/Users/toni/Zotero/storage/43EN4QZQ/S0010465518300468.html:text/html}
+}

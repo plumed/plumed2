@@ -1,10 +1,10 @@
-The PYCV (Python-CV) module for PLUMED 2
+The PYCV module for PLUMED 2
 ====================================
 
 Enables the implementation of PLUMED collective variables (`PYTHONCV`
 action) or functions (`PYTHONFUNCTION` action) in the Python language.
 
-Transparent auto-differentiation and JIT compilation are available
+Transparent auto-differentiation and JIT compilation are provided
 through Google's [JAX library](https://github.com/google/jax).
 
 
@@ -18,23 +18,28 @@ flags:
 ./configure --enable-modules=+pycv --enable-python PYTHON_BIN=python3 LDFLAGS="`python3-config --ldflags`"
 ```
 
-Python 3 is required. Conda is known to create problems (slow
-compilation, linking failures) particularly under OSX. There,
-[Homebrew](https://brew.sh) Python 3 is known to work.
-
-Automatic differentiation examples require the JAX library: install
-with `pip3 install jaxlib`.
-
-At run time, you may need to set the `PYTHONHOME` 
-environment libraries.
-
-
-It may be useful to compile the variable as a stand-alone dynamic
-object.  Once in the `src/pycv` directory, try `make PYCV.so` (or
-`make PYCV.dylib` on OSX). The compilation step *should* pick
-Python-specific compilation and linker flags.  Use Plumed's \ref LOAD
+It is also possible to compile the module as a stand-alone dynamic
+object.  Once in the `src/pycv` directory, try `make PYCV.so` (`make
+PYCV.dylib` under OSX). The compilation step *should* pick
+Python-specific compilation and linker flags as long as the
+`python3-config` executable is in your path.  Use Plumed's `LOAD`
 action to load the generated object.
 
+
+Prerequisites
+------------------------------------
+
+Python 3 is required. The version distributed with Conda is known to
+create problems (slow compilation, linking failures), particularly
+under OSX. There, [Homebrew](https://brew.sh)'s Python 3 package is
+known to work. You will also need to install `numpy`, either via `pip3
+install numpy` or your distribution's packages.
+
+Automatic differentiation examples require the JAX library: install
+it with `pip3 install jax`.
+
+At run time, you may need to set the `PYTHONHOME` environment
+variable.
 
 
 
@@ -50,8 +55,10 @@ Toni Giorgino <toni.giorgino@cnr.it>
 
 Copyright
 ------------------------------------
-See COPYRIGHT. This software relies on the
-[pybind11](https://github.com/pybind/pybind11) library, which is
-distributed under its own license terms (BSD-3).
+Distributed under the LGPL terms: see COPYRIGHT.
+
+The software includes the
+[pybind11](https://github.com/pybind/pybind11) library, distributed
+under its own license terms (BSD-3).
 
 
