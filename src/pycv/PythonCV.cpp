@@ -184,9 +184,9 @@ def cv(X):
 
 \par Installation
 
-Linking is somewhat tricky. Make sure you have Python 3 installed. It
-currently does not seem to work well with Conda under OSX (Homebrew's
-Python 3 is ok).  If you are feeling lucky, this may work:
+Make sure you have Python 3 installed. It currently does not seem to
+work well with Conda under OSX (Homebrew's Python 3 is ok).  If you
+are feeling lucky, this may work:
 
 \verbatim
 ./configure --enable-modules=+pycv --enable-python PYTHON_BIN=python3 LDFLAGS="`python3-config --ldflags`"
@@ -199,31 +199,10 @@ Automatic differentiation examples require the JAX library: `pip3
 install jaxlib`.
 
 
-It may be useful to compile the variable as a stand-alone dynamic
-object.  Once in the `src/pycv` directory, try `make PythonCV.so` (or
-`make PythonCV.dylib` on OSX). The compilation step *should* pick
-Python-specific compilation and linker flags.  Use Plumed's \ref LOAD
-action to load the generated object.
-
-
-
-\par Possible improvements (developer)
-
- * DONE Also enable access to other CVs instead of coordinates?
- * DONE Multicolvar in some way?
- * Pass the full atom coordinates structure directly?
- * Pass a subset of pairwise distances instead of coordinates?
- * Box derivatives for PBC?
- * Pass the jax array directly (check how may copies are being done)
- * Benchmark
- * More access to Plumed data, e.g.
-   * Box size
-   * Topology information
-   * Functions for PBC wrapping/closest image
-
 
 */
 //+ENDPLUMEDOC
+			 
 
 
 
@@ -439,3 +418,20 @@ void PythonCV::check_dim(py::array_t<pycv_t> grad) {
 
 
 
+/*
+  Ideas for further developments
+
+ * DONE Also enable access to other CVs instead of coordinates?
+ * DONE Multicolvar in some way?
+ * Pass the full atom coordinates structure directly?
+ * Pass a subset of pairwise distances instead of coordinates?
+ * Box derivatives for PBC?
+ * Pass the jax array directly (check how may copies are being done)
+ * Benchmark
+ * More access to Plumed data, e.g.
+   * Box size
+   * Topology information
+   * Functions for PBC wrapping/closest image
+
+   */
+			
