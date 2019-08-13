@@ -2,7 +2,8 @@
 import jax.numpy as np
 from jax import grad, jit, vmap
 
-# Implementation of the angle function
+# Implementation of the angle function. @jit really improves speed
+@jit
 def angle(x):
     r1 = x[0,:]-x[1,:]
     r2 = x[2,:]-x[1,:]

@@ -154,8 +154,9 @@ expected to provide two return values: (a) a dictionary of values; and (b)
 a dictionary of gradients. Dictionary keys must be the same names indicated
 in the `COMPONENTS` keyword.
 
-Note that you can use the `jax.jacrev()` function to conveniently
-compute the gradients all at once (see regtests). For example:
+Note that you can use JAX's Jacobian function `jax.jacrev()` to
+conveniently compute the gradients all at once (see regtests). For
+example:
 
 \plumedfile
 cv1:  PYTHONCV ATOMS=1,3,4 IMPORT=distcv FUNCTION=cv COMPONENTS=d12,d13
@@ -399,7 +400,7 @@ void PythonCV::calculateMultiComponent(py::object &r) {
 
     for(auto c: components) {
       const char *cp = c.c_str();
-      Value *cv=getPntrToComponent(cp);
+      Value *cv=getPntrToComponent(c);
 
       pycv_t value = vdict[cp].cast<pycv_t>();
       cv->set(value);
