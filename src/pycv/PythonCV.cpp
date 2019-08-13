@@ -194,7 +194,7 @@ class PythonCV : public Colvar,
 
   string style="NUMPY";
   string import;
-  string function_name="cv";
+  string function_name;
 
   py::array_t<pycv_t, py::array::c_style> py_X;
   // pycv_t *py_X_ptr;    /* For when we want to speed up */
@@ -220,7 +220,7 @@ void PythonCV::registerKeywords( Keywords& keys ) {
   keys.add("atoms","ATOMS","the list of atoms to be passed to the function");
   keys.add("optional","STYLE","Python types, one of NATIVE, NUMPY or JAX [not implemented]");
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
-  keys.add("compulsory","FUNCTION","the function to call (defaults to CV)");
+  keys.add("compulsory","FUNCTION","the function to call");
 
   // Why is NOPBC not listed here?
 }
