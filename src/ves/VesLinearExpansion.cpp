@@ -294,7 +294,7 @@ public:
   explicit VesLinearExpansion(const ActionOptions&);
   ~VesLinearExpansion();
   void calculate() override;
-  void update();
+  void update() override;
   void updateTargetDistributions() override;
   void restartTargetDistributions() override;
   //
