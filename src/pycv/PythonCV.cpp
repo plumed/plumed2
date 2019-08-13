@@ -94,7 +94,6 @@ def cv(x):
 @endcode
 
 
-
 \par JAX for automatic differentiation and compilation
 
 Automatic differentiation and transparent compilation (including to
@@ -142,6 +141,17 @@ allowed, and should instead be replaced by functional equivalents such
 as `x=jax.ops.index_update(x, jax.ops.index[i], y)`.
 
 
+\par Multiple return values
+
+It is possible to return multiple components at a time. This may be
+useful if they can reuse part of the computation. To do so, pass the
+`COMPONENTS=comp1,comp2,...` keyword. In this case, the function is
+expected to provide two return values: (a) a dictionary of values; and (b) 
+a dictionary of gradients. Dictionary keys must be the same names indicated
+in the `COMPONENTS` keyword. 
+
+Note that you can use the `jax.jacrev()` function to conveniently
+compute the gradients all at once (see regtests).
 
 
 \par Installation
@@ -196,15 +206,18 @@ class PythonCV : public Colvar,
   string import;
   string function_name;
 
+  vector<string> components;
+  int ncomponents;
+
   py::array_t<pycv_t, py::array::c_style> py_X;
   // pycv_t *py_X_ptr;    /* For when we want to speed up */
 
   int natoms;
   bool pbc;
 
-  void check_dim(py::array_t<pycv_t> grad);
-
-
+  void check_dim(py::array_t<pycv_t>);
+  void calculateSingleComponent(py::object &);
+  void calculateMultiComponent(py::object &);
 
 public:
   explicit PythonCV(const ActionOptions&);
@@ -221,6 +234,7 @@ void PythonCV::registerKeywords( Keywords& keys ) {
   keys.add("optional","STYLE","Python types, one of NATIVE, NUMPY or JAX [not implemented]");
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","FUNCTION","the function to call");
+  keys.add("optional","COMPONENTS","if provided, the function will return multiple components, with the names given");
 
   // Why is NOPBC not listed here?
 }
@@ -238,6 +252,9 @@ PythonCV::PythonCV(const ActionOptions&ao):
   parse("IMPORT",import);
   parse("FUNCTION",function_name);
 
+  parseVector("COMPONENTS",components);
+  ncomponents=components.size();
+
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
@@ -247,13 +264,25 @@ PythonCV::PythonCV(const ActionOptions&ao):
   log.printf("  will import %s and call function %s with style %s\n",
              import.c_str(), function_name.c_str(), style.c_str()     );
   log.printf("  the function will receive an array of %d x 3\n",natoms);
+  if(ncomponents) {
+    log.printf("  it is expected to return dictionaries with %d components\n", ncomponents);
+  }
 
+  
   log<<"  Bibliography "
      <<plumed.cite(PYTHONCV_CITATION)
      <<"\n";
 
-  addValueWithDerivatives();
-  setNotPeriodic();
+  if(ncomponents>0) {
+    for(auto c: components) {
+      addComponentWithDerivatives(c.c_str());
+      componentIsNotPeriodic(c.c_str());
+    }
+    log<<"  WARNING: components will not have the proper periodicity - see manual\n";
+  } else {
+    addValueWithDerivatives();
+    setNotPeriodic();
+  }
 
   requestAtoms(atoms);
 
@@ -275,6 +304,8 @@ PythonCV::PythonCV(const ActionOptions&ao):
 // calculator
 void PythonCV::calculate() {
 
+  if(pbc) makeWhole();
+
   // Is there a faster way to get in bulk? We could even wrap a C++ array without copying.
   // Also, it may be faster to access the pointer rather than use "at"
   for(int i=0; i<natoms; i++) {
@@ -287,37 +318,80 @@ void PythonCV::calculate() {
   // Call the function
   py::object r = py_fcn(py_X);
 
-  // Is there more than 1 return value?
-  if(py::isinstance<py::tuple>(r)) {
-    // 1st return value: CV
-    py::list rl=r.cast<py::list>();
-    pycv_t value = rl[0].cast<pycv_t>();
-    setValue(value);
-
-    // 2nd return value: gradient: numpy array of (natoms, 3)
-    py::array_t<pycv_t> grad(rl[1]);
-    check_dim(grad);
-
-    // To optimize, see "direct access"
-    // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
-    for(int i=0; i<natoms; i++) {
-      Vector3d gi(grad.at(i,0),
-                  grad.at(i,1),
-                  grad.at(i,2));
-      setAtomsDerivatives(i,gi);
-    }
-
-  } else {
-    // Only value returned. Might be an error as well.
-    log.printf("Gradient not being returned as second return value. Biasing disabled\n");
-    pycv_t value = r.cast<pycv_t>();
-    setValue(value);
+  if(ncomponents>0) {		// MULTIPLE NAMED COMPONENTS
+    calculateMultiComponent(r);
+  } else {			// SINGLE COMPONENT
+    calculateSingleComponent(r);
   }
-
-  setBoxDerivativesNoPbc();	// ??
 
 }
 
+
+void PythonCV::calculateSingleComponent(py::object &r) {
+        // Is there more than 1 return value?
+    if(py::isinstance<py::tuple>(r)) {
+      // 1st return value: CV
+      py::list rl=r.cast<py::list>();
+      pycv_t value = rl[0].cast<pycv_t>();
+      setValue(value);
+
+      // 2nd return value: gradient: numpy array of (natoms, 3)
+      py::array_t<pycv_t> grad(rl[1]);
+      check_dim(grad);
+
+      // To optimize, see "direct access"
+      // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
+      for(int i=0; i<natoms; i++) {
+	Vector3d gi(grad.at(i,0),
+		    grad.at(i,1),
+		    grad.at(i,2));
+	setAtomsDerivatives(i,gi);
+      }
+    } else {
+      // Only value returned. Might be an error as well.
+      log.printf("Gradient not being returned as second return value. Biasing disabled\n");
+      pycv_t value = r.cast<pycv_t>();
+      setValue(value);
+    }
+    setBoxDerivativesNoPbc();	// ??
+}
+
+  
+  void PythonCV::calculateMultiComponent(py::object &r) {
+    if(! py::isinstance<py::tuple>(r)) {        // Is there more than 1 return value?
+      error("Sorry, multi-components needs to return gradients too");
+    }
+    
+    // 1st return value: CV dict or array
+    py::list rl=r.cast<py::list>();
+    bool dictstyle=py::isinstance<py::dict>(rl[0]);
+
+    if(dictstyle) {
+      py::dict vdict=rl[0].cast<py::dict>();
+      py::dict gdict=rl[1].cast<py::dict>();
+      
+      for(auto c: components) {
+	const char *cp = c.c_str();
+	Value *cv=getPntrToComponent(cp);
+
+	pycv_t value = vdict[cp].cast<pycv_t>();
+        cv->set(value);
+
+	py::array_t<pycv_t> grad(gdict[cp]);
+	check_dim(grad);
+	
+	for(int i=0; i<natoms; i++) {
+	  Vector3d gi(grad.at(i,0),
+		      grad.at(i,1),
+		      grad.at(i,2));
+	  setAtomsDerivatives(cv,i,gi);
+	}
+	setBoxDerivativesNoPbc(cv);
+      }
+    }
+  }
+    
+  
 
 // Assert correct gradient shape
 void PythonCV::check_dim(py::array_t<pycv_t> grad) {
