@@ -188,9 +188,6 @@ action to load the generated object.
 //+ENDPLUMEDOC
 
 
-typedef float pycv_t;		// May need to adapt to the build precision?
-
-
 
 class PythonCV : public Colvar,
   public PythonPlumedBase {
@@ -198,9 +195,6 @@ class PythonCV : public Colvar,
   string style="NUMPY";
   string import;
   string function_name="cv";
-
-  py::module py_module;
-  py::object py_fcn;
 
   py::array_t<pycv_t, py::array::c_style> py_X;
   // pycv_t *py_X_ptr;    /* For when we want to speed up */

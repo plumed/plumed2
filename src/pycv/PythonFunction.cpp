@@ -110,8 +110,6 @@ See \ref CUSTOM for a non-Python equivalent.
 //+ENDPLUMEDOC
 
 
-typedef float pycv_t;		// May need to adapt to the build precision?
-
 
 class PythonFunction :
   public function::Function,
@@ -121,12 +119,7 @@ class PythonFunction :
   string function_name;
   size_t nargs;
 
-  py::module py_module;
-  py::object py_fcn;
-
   py::array_t<pycv_t, py::array::c_style> py_arg;
-
-
 
   void check_dim(py::array_t<pycv_t> grad);
 
