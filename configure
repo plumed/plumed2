@@ -8996,8 +8996,8 @@ done
   then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Python executable is $PYTHON_BIN" >&5
 $as_echo "$as_me: Python executable is $PYTHON_BIN" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (setuptools, cython, subprocess, os, shutil)" >&5
-$as_echo_n "checking support for required python modules (setuptools, cython, subprocess, os, shutil)... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (python3, setuptools, cython, subprocess, os, shutil)" >&5
+$as_echo_n "checking support for required python modules (python3, setuptools, cython, subprocess, os, shutil)... " >&6; }
 testimport="
 from setuptools import setup
 from setuptools import Extension
@@ -9007,6 +9007,8 @@ import os.path
 import sys
 from shutil import copyfile
 from Cython.Build import cythonize
+if sys.version_info < (3,):
+    raise ImportError('PLUMED 2.6 only supports Python 3')
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5

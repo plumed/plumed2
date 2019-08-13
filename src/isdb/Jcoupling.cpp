@@ -78,7 +78,7 @@ JCOUPLING ...
     LABEL=jhan
 ... JCOUPLING
 
-jhanst: STATS ARG=(jhan\.j_.*) PARARG=(jhan\.exp_.*)
+jhanst: STATS ARG=(jhan\.j-.*) PARARG=(jhan\.exp-.*)
 
 PRINT ARG=jhanst.*,jhan.* FILE=COLVAR STRIDE=100
 \endplumedfile
