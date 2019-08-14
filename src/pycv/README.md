@@ -72,6 +72,13 @@ Common errors
 
 
 
+Limitations
+------------------------------------
+
+Interaction with MPI is undefined.
+
+
+
 Author
 ------------------------------------
 

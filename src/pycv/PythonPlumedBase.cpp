@@ -34,13 +34,16 @@ namespace py = pybind11;
 namespace PLMD {
 namespace pycv {
 
-int PythonPlumedBase::use_count=0;
 
 // We can only have one interpreter globally. This is less than ideal
 // because CVs can interfere with each other. The whole purpose of
-// this superclass is to make a singleton.
+// this superclass is to make a singleton. Putting it in the
+// constructor makes it so that the interpreter is only initialized if
+// one of the PYCV actions are used.
 // https://pybind11.readthedocs.io/en/stable/reference.html#_CPPv422initialize_interpreterb
 
+int PythonPlumedBase::use_count=0; // static
+  
 PythonPlumedBase::PythonPlumedBase() {
   if(use_count==0) {
     // std::cout << "------ init" << std::endl;
