@@ -68,6 +68,44 @@ Python-specific flags as long as the correct `python3-config`
 executable is in your path.
 
 
+Quickstart
+------------------------------------
+
+Here's a quick example to whet your appetite (regression test `rt-jax2`).
+
+```
+cv1:  PYTHONCV ATOMS=1,4,3 IMPORT=jaxcv FUNCTION=cv1
+```
+
+```py
+# Import the JAX library
+import jax.numpy as np
+from jax import grad, jit, vmap
+
+# Implementation of the angle function. @jit really improves speed
+@jit
+def angle(x):
+    r1 = x[0,:]-x[1,:]
+    r2 = x[2,:]-x[1,:]
+
+    costheta = np.dot(r1,r2) / np.sqrt(np.dot(r1,r1) * np.dot(r2,r2))
+    # OR: costheta = np.dot(r1,r2) / np.linalg.norm(r1) / np.linalg.norm(r2)
+    theta = np.arccos(costheta)
+    return theta
+
+# Use JAX to auto-gradient it
+grad_angle = grad(angle)
+
+# The CV function actually called
+def cv1(x):
+    return angle(x), grad_angle(x)
+
+```
+
+
+
+
+
 Demos and regression tests
 ------------------------------------
 
