@@ -19,19 +19,16 @@ typedef float pycv_t;		// May need to adapt to the build precision?
 class PythonPlumedBase {
 public:
   const std::string PYTHONCV_CITATION = "(?)";
-  //  PythonPlumedBase();
+  const char * BIASING_DISABLED = "PYCV: Gradient was expected as a second return value but is missing. Biasing won't work\n";
+  PythonPlumedBase();
+  // ~PythonPlumedBase();
 
 protected:
   py::module py_module;
   py::object py_fcn;
 
-  // We can only have one interpreter globally. This is less than ideal
-  // because CVs can interfere with each other. The whole purpose of
-  // this superclass is to make a singleton.
-  static py::scoped_interpreter guard;
-
 private:
-  bool interpreter_initialized;
+  static int use_count;
 
 };
 

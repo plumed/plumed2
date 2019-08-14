@@ -202,7 +202,7 @@ install jaxlib`.
 
 */
 //+ENDPLUMEDOC
-			 
+
 
 
 
@@ -356,7 +356,7 @@ void PythonCV::calculateSingleComponent(py::object &r) {
     }
   } else {
     // Only value returned. Might be an error as well.
-    log.printf("Gradient not being returned as second return value. Biasing disabled\n");
+    log.printf(BIASING_DISABLED);
     pycv_t value = r.cast<pycv_t>();
     setValue(value);
   }
@@ -434,4 +434,4 @@ void PythonCV::check_dim(py::array_t<pycv_t> grad) {
    * Functions for PBC wrapping/closest image
 
    */
-			
+

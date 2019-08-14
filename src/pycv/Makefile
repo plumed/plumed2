@@ -6,13 +6,15 @@ ADDCPPFLAGS += -Ipybind11-2.3.0/include
 include ../maketools/make.module
 
 
+# ========================================
+# Stuff for building the dynamic object
+
 # Workaround conda bugs on OSX
 #  - stack size not allowed when making dylib
 #  - need to pass export_dynamic to linker  https://bugs.python.org/issue21122
 remove_flags := -Wl,-stack_size,1000000
-add_flags := -fno-lto  -Wl,-export_dynamic -undefined dynamic_lookup
+add_flags := -fno-lto  -Wl,-export_dynamic -undefined dynamic_lookup 
 PYTHON_LDFLAGS_SO := $(subst $(remove_flags),,$(shell python3-config --ldflags)) $(add_flags)
-
 
 # You may or may not want to pass this to the linking command. If you
 # do, you are giving an hint as to where to find the kernel at
@@ -28,6 +30,10 @@ PYCV.$(SOEXT): PythonCV.o PythonFunction.o PythonPlumedBase.o
 	@$(info  )
 	$(LDSHARED) $(PYTHON_LDFLAGS_SO) $(DYNAMIC_LIBS) $(LIBPLUMEDKERNEL_SO) $^ -o $@
 
+
+
+# ========================================
+# For debugging
 
 # https://www.cmcrossroads.com/article/dumping-every-makefile-variable
 .PHONY: printvars

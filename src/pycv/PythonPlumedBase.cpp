@@ -34,19 +34,27 @@ namespace py = pybind11;
 namespace PLMD {
 namespace pycv {
 
-  // py::scoped_interpreter PythonPlumedBase::guard{};
-  
-  // static py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+int PythonPlumedBase::use_count=0;
 
-  /*
-  PythonPlumedBase::PythonPlumedBase() {
-    std::cout << "------ Constructor" << std::endl;
-    if(!interpreter_initialized) {
-      interpreter_initialized = true;
-      // guard = py::scoped_interpreter{};
-    }
+// We can only have one interpreter globally. This is less than ideal
+// because CVs can interfere with each other. The whole purpose of
+// this superclass is to make a singleton.
+// https://pybind11.readthedocs.io/en/stable/reference.html#_CPPv422initialize_interpreterb
+
+PythonPlumedBase::PythonPlumedBase() {
+  if(use_count==0) {
+    // std::cout << "------ init" << std::endl;
+    py::initialize_interpreter();
+  } else {
+    // std::cout << "------ reusing" << std::endl;
   }
-  */
+  use_count++;
+}
+
+// Finalization is tricky, because it should happen AFTER the
+// destruction of the derived classes (which contain py::
+// objects). Not doing it.
+
 
 }
 }
