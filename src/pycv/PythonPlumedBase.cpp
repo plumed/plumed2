@@ -25,6 +25,7 @@
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
 
+#include <iostream>
 
 
 namespace py = pybind11;
@@ -33,10 +34,19 @@ namespace py = pybind11;
 namespace PLMD {
 namespace pycv {
 
-// Unfortunately we can only have one interpreter globally. This is
-// less than ideal because CVs can interfere with each other. The
-// whole purpose of this superclass is to make a singleton with it.
-static py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+  // py::scoped_interpreter PythonPlumedBase::guard{};
+  
+  // static py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+
+  /*
+  PythonPlumedBase::PythonPlumedBase() {
+    std::cout << "------ Constructor" << std::endl;
+    if(!interpreter_initialized) {
+      interpreter_initialized = true;
+      // guard = py::scoped_interpreter{};
+    }
+  }
+  */
 
 }
 }
