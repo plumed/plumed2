@@ -7,7 +7,6 @@ tags:
   - collective variables
   - biased sampling
   - gradient
-  - JAX
 authors:
   - name: Toni Giorgino
     orcid: 0000-0001-6449-0596
@@ -22,40 +21,40 @@ bibliography: paper.bib
 # Summary
 
 Collective variables (CVs) are functions of the coordinates of
-particles of a molecular system. The system-specific choice of CV is
+particles in a molecular system. The choice of CV is
 crucial to capture relevant degrees of freedom of the model being
 simulated [@barducci_metadynamics_2011]. This is especially important
 when employing *biased sampling* techniques such as umbrella sampling
 [@roux_calculation_1995] or metadynamics [@laio_escaping_2002], which
 apply generalized forces to CVs to enhance the sampling of events
-otherwise not observable by direct simulation.  Hence, CVs may be
+otherwise not observable by direct simulation.   CVs may be
 simple geometrical observables (distances, angles, torsions, etc.),
 but are often more complex functions designed to capture structural
 determinants, such as tertiary and quaternary structure of proteins,
-crystal arrangements, etc. [@branduardi_b_2007;
+experimental observables, crystal symmetries, etc. [@branduardi_b_2007;
 @bonomi_integrative_2017; @pipolo_navigating_2017].
 
 Iterative development of CVs therefore occupies a large fraction of
 the effort in the exploration of molecular systems. On the one hand,
-this task has been largely facilitated by biasing libraries such as
+the task has been largely facilitated by biasing libraries such as
 PLUMED [@tribello_plumed_2014], providing pre-defined functions and a
 *lingua franca* to express CV combinations, atom groups and biasing
-schemes. However, users willing to explore functions beyond the
-pre-defined ones have to implement them, together with the
-corresponding (often cumbersome) derivatives, in C++
+schemes. However, users willing to explore CVs beyond the
+pre-defined ones have to implement them in C++, together with the
+corresponding (often cumbersome) derivatives 
 [@giorgino_how_2018]. Compiled code is unwieldy for iterative
 analysis, because it is relatively low-level, error-prone, and
-generally inconvenient in exploratory stages.
+ inconvenient in exploratory stages.
 
-Here, we present **PYCV**, a module for the PLUMED 2 library which
-enables users to define CVs and arbitrary functions in Python.  CV
-implementations may thus be modified and tested independently of the
-main (compiled) code, with essentially no "coding impedance".  Of
-note, values are exchanged as convenient `numpy` arrays, making it
-convenient to access the vast array of numerical algorithms provided
-by `numpy`, `scipy`, and countless other modules. Furthermore,
+This paper introduces **PYCV**, a module for the PLUMED 2 library
+which enables users to define CVs and arbitrary functions in the
+Python language.  CV implementations may thus be modified and tested
+independently of the main code, with essentially no "test latency".
+Of note, coordinates are processed as `numpy` arrays, making it
+convenient to leverage the vast array of numerical algorithms provided
+by `numpy`, `scipy`, and countless other open-source modules. Furthermore,
 just-in-time compilation and reverse-mode automatic differentiation
-are supported via Google's JAX library.
+are available via Google's JAX library.
 
 
 # Usage
@@ -67,29 +66,29 @@ following actions:
  * `PYTHONFUNCTION`, to implement arbitrary functions.
 
 The actions are documented in the respective inline documentation
-(accessible e.g. with `plumed manual --action PYTHONCV`).  In both
+(e.g., `plumed manual --action PYTHONCV`).  In both
 cases, an interpreter is first started; the Python module indicated in
-the `IMPORT=` keyword is then imported; from it, an user-chosen
+the `IMPORT=` keyword is then loaded; from it, an user-chosen
 function (`FUNC=`) is called to perform the computations at each
-timestep. Modules can be shared for multiple functions, and contain
+timestep. Modules can contain multiple functions and 
 one-time initialization.
 
 
 
 # Example
 
-Here, a self-explanatory example is provided for illustration
+A self-explanatory example is provided for illustration
 below. Further examples are available in the manual and in
 `regtest/pycv`.
 
 
 ## Biasing script
 
-The actions are defined in the PLUMED input file (say,
+The actions are declared in the PLUMED input file (say,
 `plumed.dat`). Here, we define a CV labelled `cv1`, to be computed by
-the Python function `jaxcv.cv()`. The function will receive a 3-by-3
+the Python function `jaxcv.cv()`. It will receive a 3-by-3
 array with the coordinates of atoms 1, 4 and 3 (orderly, as rows).
-The CV value will be printed and subject to a constant generalized
+The CV value will be printed and the atoms subject to a constant generalized
 force in the positive direction.
 
 ```
@@ -101,19 +100,19 @@ cv1:  PYTHONCV ATOMS=1,4,3 IMPORT=jaxcv FUNCTION=cv
 ```
 
 
-## CV function definition
+## Function definition
 
-The actual function is defined in the `jaxcv.py` file. It computes the
+The actual function `cv` is defined in the `jaxcv.py` file. It computes the
 angle (in radians) formed at the second atom by the other two
 (respectively rows 1, 0 and 2 of the input, with 0-based
 indexing). Note how matrix operations make for a readable translation
 of the cosine formula.
 
 The function is expected to return two values, i.e. the value of the
-CV (a scalar), and its gradient with respect to each of the 9
-coordinates, computed automatically. (Although not directly
-comparable, an equivalent CV would need approximately 80 lines
-of complex C++ code.)
+CV itself at the given coordinates (a scalar), and its gradient with
+respect to each of the 9 coordinates, here computed
+automatically. (Although not directly comparable, an equivalent CV
+would need approximately 80 lines of complex C++ code.)
 
 
 ```py
@@ -147,8 +146,8 @@ def cv(X):
 # Conclusion
 
 **PYCV** enables Python-based prototyping of CVs in PLUMED 2. This
-model may be an advantage over standard C++-based development in that
-(a) functions may be prototyped in high-level code, using extensive
+programming model may be an advantage over standard C++-based development in that
+(a) functions may be prototyped in high-level language, using extensive
 mathematical libraries, without boilerplate; (b) just-in-time
 compilation occurs transparently: code changes incur in no compilation
 and link delays; and (c) CVs may be automatically differentiated in
