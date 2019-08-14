@@ -73,9 +73,13 @@ Quickstart
 
 Here's a quick example to whet your appetite (regression test `rt-jax2`).
 
+**File plumed.dat**
+
 ```
 cv1:  PYTHONCV ATOMS=1,4,3 IMPORT=jaxcv FUNCTION=cv1
 ```
+
+**File jaxcv.py**
 
 ```py
 # Import the JAX library
