@@ -9,14 +9,15 @@ in the Python language.
 Documentation
 ------------------------------------
 
-The PYCV module for PLUMED 2 defines the following actions:
+The PYCV module defines the following actions:
 
- * `PYTHONCV`, to implement single- and multi-component CVs in Python.
- * `PYTHONFUNCTION`, to implement arbitrary functions
+ * `PYTHONCV`, to implement single- and multi-component CVs in Python;
+ * `PYTHONFUNCTION`, to implement arbitrary functions.
 
-In both cases, the module indicated in the `IMPORT=` keyword is
-imported. The user-chosen function (`FUNC=`) is called to perform the
-computations. A module can be re-used for multiple functions and
+In both cases, a Python interpreter is first started; the Python file
+indicated in the `IMPORT=` keyword is then imported; from it, an
+user-chosen function (`FUNC=`) is called to perform the computations
+at each timestep. Modules can be shared for multiple functions, and
 contain one-time initialization.
 
 Transparent auto-differentiation, JIT compilation, and vectorization
@@ -37,10 +38,10 @@ Python-specific flags:
 ./configure --enable-modules=+pycv --enable-python PYTHON_BIN=python3 LDFLAGS="`python3-config --ldflags`"
 ```
 
-It is also possible to compile the module as a `LOAD`-able stand-alone
-dynamic object.  Once in the `src/pycv` directory, issue `make
-PYCV.so` (`make PYCV.dylib` under OSX). The compilation step *should*
-pick Python-specific flags as long as the correct `python3-config`
+It is also possible to compile the module as a `LOAD`-able dynamic
+object.  Once in the `src/pycv` directory, issue `make PYCV.so`
+(`PYCV.dylib` under OSX). The compilation step *should* pick
+Python-specific flags as long as the correct `python3-config`
 executable is in your path.
 
 
