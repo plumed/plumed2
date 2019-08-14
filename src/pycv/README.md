@@ -36,7 +36,7 @@ Please see the generated documentation and regression tests.
 
 The code is organized as a standard PLUMED module; hence, development
 occurs in a [fork of the original
-repository](https://github.com/giorginolab/plumed2-pycv/tree/v2.5.2-pycv/src/pycv). All
+Prepository](https://github.com/giorginolab/plumed2-pycv/tree/v2.5.2-pycv/src/pycv). All
 code is in the `src/pycv` and `regtest/pycv` directories.
 
 
