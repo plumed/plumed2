@@ -36,6 +36,21 @@ Please see the generated documentation and regression tests.
 
 
 
+Prerequisites
+------------------------------------
+
+Python 3 is required. Under OSX, [Homebrew](https://brew.sh)'s Python
+3 package is known to work well. The version distributed with Conda is
+problematic (slow compilation, linking failures).
+
+You will also need to install `numpy`, either via `pip3 install
+numpy` or your distribution's packages.
+
+Automatic differentiation examples require the JAX library: install
+it with `pip3 install jax`.
+
+
+
 Installation
 ------------------------------------
 
@@ -53,19 +68,34 @@ Python-specific flags as long as the correct `python3-config`
 executable is in your path.
 
 
-
-Prerequisites
+Testing
 ------------------------------------
 
-Python 3 is required. Under OSX, [Homebrew](https://brew.sh)'s Python
-3 package is known to work well. The version distributed with Conda is
-problematic (slow compilation, linking failures).
+PLUMED-style regression tests demonstrate and check the package
+features. To run them:
 
-You will also need to install `numpy`, either via `pip3 install
-numpy` or your distribution's packages.
+```
+cd [path_to_repository]
+export PLUMED_PROGRAM_NAME=$PWD/src/lib/plumed
+cd regtest/pycv
+make
+```
 
-Automatic differentiation examples require the JAX library: install
-it with `pip3 install jax`.
+Summary of the provided regression tests:
+
+Name   | Feature
+-------|------------
+`rt-1` | Basic test (distance of two atoms), pure Python, no gradient
+`rt-2` | CV and gradient explicitly coded, pure Python
+`rt-3` | Multiple PYTHON actions in the same file
+`rt-f1`| Function, pure Python
+`rt-f2`| Function, with JIT and auto-gradient, with MATHEVAL equivalent
+`rt-jax1` | Distance CV with JAX reverse-mode differentiation
+`rt-jax2` | Angle CV with JAX reverse-mode differentiation and JIT decorator
+`rt-multi1` | Multi-component CV, pure Python
+`rt-multi2` | Multi-component CV, with JAX reverse-mode differentiation
+
+
 
 
 Common errors
