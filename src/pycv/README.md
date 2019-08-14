@@ -5,12 +5,12 @@ Enable the implementation of PLUMED collective variables (CVs) and
 functions in the Python language.
 
 Advantages of using PYCV over standard development of CVs in C++ are:
- 1. code may be prototyped in a high-level language, with access to
-    extensive mathematical libraries, and almost no boilerplate;
- 2. there are no compilation and link delays (just-in-time compilation
-    occurs transparently);
- 3. the required gradients of CVs can be
-    computed autmatically.
+ 1. functions may be prototyped in  high-level code, using
+    extensive mathematical libraries, and no boilerplate;
+ 2. just-in-time compilation
+    occurs transparently: there are no compilation and link delays
+    for code changes;
+ 3. CVs may be automatically differentiated in common cases.
 
 
 
@@ -30,7 +30,7 @@ contain one-time initialization.
 
 Transparent auto-differentiation, JIT compilation, and vectorization
 are available through Google's [JAX
-library](https://github.com/google/jax).
+library](https://github.com/google/jax) (recommended).
 
 Please see the generated documentation and regression tests. 
 
@@ -40,8 +40,8 @@ Prerequisites
 ------------------------------------
 
 Python 3 is required. Under OSX, [Homebrew](https://brew.sh)'s Python
-3 package is known to work well. The version distributed with Conda is
-problematic (slow compilation, linking failures).
+3 package works well. The Conda version is problematic (slow
+compilation, linking failures).
 
 You will also need to install `numpy`, either via `pip3 install
 numpy` or your distribution's packages.
@@ -68,18 +68,11 @@ Python-specific flags as long as the correct `python3-config`
 executable is in your path.
 
 
-Testing
+Demos and regression tests
 ------------------------------------
 
-PLUMED-style regression tests demonstrate and check the package
-features. To run them:
-
-```
-cd [path_to_repository]
-export PLUMED_PROGRAM_NAME=$PWD/src/lib/plumed
-cd regtest/pycv
-make
-```
+A number of PLUMED-style regression tests are provided to test and
+demonstrate the package features.
 
 Summary of the provided regression tests:
 
@@ -94,6 +87,17 @@ Name   | Feature
 `rt-jax2` | Angle CV with JAX reverse-mode differentiation and JIT decorator
 `rt-multi1` | Multi-component CV, pure Python
 `rt-multi2` | Multi-component CV, with JAX reverse-mode differentiation
+
+
+To run:
+
+```
+cd [path_to_repository]
+export PLUMED_PROGRAM_NAME=$PWD/src/lib/plumed
+cd regtest/pycv
+make
+```
+
 
 
 
@@ -113,7 +117,7 @@ Common errors
 Limitations
 ------------------------------------
 
-Interaction with MPI is undefined.
+Behavior with MPI, and JAX's GPU/TPU offloading are untested.
 
 
 
