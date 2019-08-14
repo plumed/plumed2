@@ -1,7 +1,7 @@
 The PYCV module for PLUMED 2
 ====================================
 
-Enable the implementation of PLUMED collective variables (CVs) and
+Enable the implementation of collective variables (CVs) and
 functions in the Python language.
 
 Advantages of using PYCV over standard development of CVs in C++ are:
@@ -12,6 +12,10 @@ Advantages of using PYCV over standard development of CVs in C++ are:
     for code changes;
  3. CVs may be automatically differentiated in common cases.
 
+The code is organized as a standard PLUMED module: development occurs
+in a [fork of the original
+repository](https://github.com/giorginolab/plumed2-pycv/tree/v2.5.2-pycv/src/pycv). All
+code is in the `src/pycv` and `regtest/pycv` directories.
 
 
 Documentation
@@ -34,10 +38,6 @@ library](https://github.com/google/jax) (recommended).
 
 Please see the generated documentation and regression tests.
 
-The code is organized as a standard PLUMED module; hence, development
-occurs in a [fork of the original
-Prepository](https://github.com/giorginolab/plumed2-pycv/tree/v2.5.2-pycv/src/pycv). All
-code is in the `src/pycv` and `regtest/pycv` directories.
 
 
 
