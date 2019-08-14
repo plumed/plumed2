@@ -57,7 +57,7 @@ Installation
 Follow the usual PLUMED 2 configuration procedure, with added
 Python-specific flags:
 
-```
+```bash
 ./configure --enable-modules=+pycv --enable-python PYTHON_BIN=python3 LDFLAGS="`python3-config --ldflags`"
 ```
 
@@ -116,7 +116,6 @@ Demos and regression tests
 A number of PLUMED-style regression tests are provided to test and
 demonstrate the package features.
 
-Summary of the provided regression tests:
 
 Name   | Feature
 -------|------------
@@ -133,7 +132,7 @@ Name   | Feature
 
 To run:
 
-```
+```bash
 cd [path_to_repository]
 export PLUMED_PROGRAM_NAME=$PWD/src/lib/plumed
 cd regtest/pycv
@@ -167,6 +166,12 @@ Author
 ------------------------------------
 
 Toni Giorgino <toni.giorgino@cnr.it>
+
+
+Citation
+------------------------------------
+
+Giorgino T. PYCV: Python-based Rapid Collective Variable Development for PLUMED 2. (In preparation)
 
 
 Copyright
