@@ -1,8 +1,16 @@
 The PYCV module for PLUMED 2
 ====================================
 
-Enable the implementation of PLUMED collective variables and functions
-in the Python language.
+Enable the implementation of PLUMED collective variables (CVs) and
+functions in the Python language.
+
+Advantages of using PYCV over standard development of CVs in C++ are:
+ 1. code may be prototyped in a high-level language, with access to
+    extensive mathematical libraries, and almost no boilerplate;
+ 2. there are no compilation and link delays (just-in-time compilation
+    occurs transparently);
+ 3. the required gradients of CVs can be
+    computed autmatically.
 
 
 
