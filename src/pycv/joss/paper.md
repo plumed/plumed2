@@ -150,7 +150,7 @@ programming model may be an advantage over standard C++-based development in tha
 (a) functions may be prototyped in high-level language, using extensive
 mathematical libraries, without boilerplate; (b) just-in-time
 compilation occurs transparently: code changes incur in no compilation
-and link delays; and (c) CVs may be automatically differentiated in
+and link delays; and (c) CV code may be automatically differentiated in
 common cases.
 
 
