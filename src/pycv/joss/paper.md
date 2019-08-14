@@ -20,6 +20,12 @@ bibliography: paper.bib
 # Summary
 
 
+CVs are functions of the coordinates of particles of a molecular
+system designed to capture relevant degrees of freedom of the model
+being simulated.
+
+
+
 # Acknowledgements
 
 We acknowledge PLUMED's lead authors (Prof. Giovanni Bussi,
