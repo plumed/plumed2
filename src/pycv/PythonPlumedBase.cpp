@@ -43,7 +43,7 @@ namespace pycv {
 // https://pybind11.readthedocs.io/en/stable/reference.html#_CPPv422initialize_interpreterb
 
 int PythonPlumedBase::use_count=0; // static
-  
+
 PythonPlumedBase::PythonPlumedBase() {
   if(use_count==0) {
     // std::cout << "------ init" << std::endl;
