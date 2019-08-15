@@ -39,12 +39,12 @@ the effort in the exploration of molecular systems. On the one hand,
 the task has been largely facilitated by biasing libraries such as
 PLUMED [@tribello_plumed_2014], providing pre-defined functions and a
 *lingua franca* to express CV combinations, atom groups and biasing
-schemes. However, users willing to explore CVs beyond the
-pre-defined ones have to implement them in C++, together with the
-corresponding (often cumbersome) derivatives 
-[@giorgino_how_2018]. Compiled code is unwieldy for iterative
-analysis, because it is relatively low-level, error-prone, and
- inconvenient in exploratory stages.
+schemes, and its community [@the_plumed_consortium_promoting_2019].
+However, users willing to explore CVs beyond the pre-defined
+ones have to implement them in C++, together with the corresponding
+(often cumbersome) derivatives [@giorgino_how_2018]. Compiled code is
+unwieldy for iterative analysis, because it is relatively low-level,
+error-prone, and inconvenient in exploratory stages.
 
 This paper introduces **PYCV**, a module for the PLUMED 2 library
 which enables users to define CVs and arbitrary functions in the
@@ -77,68 +77,75 @@ one-time initialization.
 
 # Example
 
-A self-explanatory example is provided for illustration
-below. Further examples are available in the manual and in
-`regtest/pycv`.
+A self-explanatory example is provided for illustration below. It is
+an equivalent of the *radius of curvature* example shown in
+[@giorgino_how_2018]. Further examples are available in the manual and
+in `regtest/pycv`.
 
 
 ## Biasing script
 
 The actions are declared in the PLUMED input file (say,
-`plumed.dat`). Here, we define a CV labelled `cv1`, to be computed by
-the Python function `jaxcv.cv()`. It will receive a 3-by-3
-array with the coordinates of atoms 1, 4 and 3 (orderly, as rows).
-The CV value will be printed and the atoms subject to a constant generalized
-force in the positive direction.
+`plumed.dat`). Here, one declares a CV labelled `rc`, to be computed by
+the Python function `curvature.r()`. It will receive a 3-by-3 array
+with the coordinates of atoms 1, 4 and 3 (orderly, as rows).  The CV
+value will be `PRINT`ed, and the atoms subject to a constant generalized
+force pushing to increase the curvature.
 
 ```
 # Start plumed.dat -----------------------------------------
-cv1:  PYTHONCV ATOMS=1,4,3 IMPORT=jaxcv FUNCTION=cv
-      PRINT ARG=cv1 FILE=colvar.out
-      RESTRAINT ARG=cv1 AT=0 KAPPA=0 SLOPE=1
+rc: PYTHONCV ATOMS=1,4,3 IMPORT=curvature FUNCTION=r
+    PRINT ARG=rc FILE=colvar.out
+    RESTRAINT ARG=rc AT=0 KAPPA=0 SLOPE=1
 # End plumed.dat -------------------------------------------
 ```
 
 
 ## Function definition
 
-The actual function `cv` is defined in the `jaxcv.py` file. It computes the
-angle (in radians) formed at the second atom by the other two
-(respectively rows 1, 0 and 2 of the input, with 0-based
-indexing). Note how matrix operations make for a readable translation
-of the cosine formula.
+The actual function `r` is defined in the `curvature.py` file. It
+computes the radius of the circle passing through three given atom
+coordinates (the three rows of the input argument, with 0-based
+indexing). Note how matrix operations enable a readable translation of
+the sine formula.
 
-The function is expected to return two values, i.e. the value of the
-CV itself at the given coordinates (a scalar), and its gradient with
-respect to each of the 9 coordinates, here computed
-automatically. (Although not directly comparable, an equivalent CV
-would need approximately 80 lines of complex C++ code.)
+The function is expected to return two objects, i.e. the value of the
+CV at the given coordinates (a scalar), and its gradient with respect
+to each of the 9 coordinates (a 3-by-3 array); here the gradient
+function is obtained automatically. Although not directly comparable,
+the equivalent C++ implementation required approximately 160 lines of
+non-trivial code.
 
 
 ```py
-# Start jaxcv.py -------------------------------------------
-# Import the JAX library and numpy replacement
+# Start curvature.py ----------------------------------------
+# Same calculation (and results) as doi:10.1016/j.cpc.2018.02.017
+
+# Import the JAX library
 import jax.numpy as np
 from jax import grad, jit
 
-# Compute the angle between segments r12 and r32. @jit for speed
-@jit	      	    	       
-def angle(x):
-    r12 = x[0,:]-x[1,:]
-    r32 = x[2,:]-x[1,:]
-    costheta = ( np.dot(r12,r32) /
-    	         np.sqrt(np.dot(r12,r12) * np.dot(r32,r32)) )
-    theta = np.arccos(costheta)
-    return theta
+# Implementation of the angle function. @jit really improves speed
+@jit
+def r_f(x):
+    r21 = x[0,:]-x[1,:]
+    r23 = x[2,:]-x[1,:]
+    r13 = x[2,:]-x[0,:]
 
-# Get the corresponding reverse-mode gradient function via JAX 
-grad_angle = grad(angle)
+    cos2theta = np.dot(r21,r23)**2 / (np.dot(r21,r21) * np.dot(r23,r23))
+    sin2theta = 1-cos2theta
+    
+    R2= np.dot(r13,r13)/sin2theta/4.0
+    return np.sqrt(R2)
+
+# Use JAX to auto-gradient it
+r_g = grad(r_f)
 
 # The CV function actually called
-def cv(X):
-    return angle(X), grad_angle(X)
+def r(x):
+    return r_f(x), r_g(x)
 
-# End jaxcv.py ---------------------------------------------
+# End curvature.py ---------------------------------------------
 ```
 
 
@@ -158,7 +165,7 @@ common cases.
 
 # Acknowledgements
 
-We acknowledge PLUMED's lead authors (Prof. Giovanni Bussi,
+I would like to thank PLUMED's lead authors (Prof. Giovanni Bussi,
 Prof. Carlo Camilloni, Prof. Gareth Tribello and Prof. Massimiliano
 Bonomi) for inputs and discussions.
 
