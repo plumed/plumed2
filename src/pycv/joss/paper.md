@@ -25,7 +25,7 @@ particles in a molecular system. The choice of CV is
 crucial to capture relevant degrees of freedom of the model being
 simulated [@barducci_metadynamics_2011]. This is especially important
 when employing *biased sampling* techniques such as umbrella sampling
-[@roux_calculation_1995] or metadynamics [@laio_escaping_2002], which
+or metadynamics [@torrie_nonphysical_1977, @laio_escaping_2002], which
 apply generalized forces to CVs to enhance the sampling of events
 otherwise not observable by direct simulation.   CVs may be
 simple geometrical observables (distances, angles, torsions, etc.),
@@ -37,9 +37,9 @@ experimental observables, crystal symmetries, etc. [@branduardi_b_2007;
 Iterative development of CVs therefore occupies a large fraction of
 the effort in the exploration of molecular systems. On the one hand,
 the task has been largely facilitated by biasing libraries such as
-PLUMED [@tribello_plumed_2014], providing pre-defined functions and a
+PLUMED [@tribello_plumed_2014], which provides pre-defined functions and a
 *lingua franca* to express CV combinations, atom groups and biasing
-schemes, and its community [@the_plumed_consortium_promoting_2019].
+schemes, and its active community [@the_plumed_consortium_promoting_2019].
 However, users willing to explore CVs beyond the pre-defined
 ones have to implement them in C++, together with the corresponding
 (often cumbersome) derivatives [@giorgino_how_2018]. Compiled code is
@@ -51,10 +51,11 @@ which enables users to define CVs and arbitrary functions in the
 Python language.  CV implementations may thus be modified and tested
 independently of the main code, with essentially no "test latency".
 Of note, coordinates are processed as `numpy` arrays, making it
-convenient to leverage the vast array of numerical algorithms provided
-by `numpy`, `scipy`, and countless other open-source modules. Furthermore,
-just-in-time compilation and reverse-mode automatic differentiation
-are available via Google's JAX library.
+convenient to leverage the vast set of linear algebra and numerical
+algorithms provided by `numpy`, `scipy`, and many other open-source
+modules. Furthermore, just-in-time compilation and reverse-mode
+automatic differentiation are easily accessible using Google's JAX
+library.
 
 
 # Usage
@@ -65,20 +66,19 @@ following actions:
  * `PYTHONCV`, to implement single- and multi-component CVs;
  * `PYTHONFUNCTION`, to implement arbitrary functions.
 
-The actions are documented in the respective inline documentation
-(e.g., `plumed manual --action PYTHONCV`).  In both
-cases, an interpreter is first started; the Python module indicated in
-the `IMPORT=` keyword is then loaded; from it, an user-chosen
-function (`FUNC=`) is called to perform the computations at each
-timestep. Modules can contain multiple functions and 
-one-time initialization.
+The actions are documented in the respective inline manuals (e.g.,
+`plumed manual --action PYTHONCV`).  In both cases, an interpreter is
+first started; the Python module indicated in the `IMPORT=` keyword is
+then loaded; from it, an user-chosen function (`FUNCTION=`) is called
+to perform the computations at each timestep. Modules can contain
+multiple functions and one-time initialization.
 
 
 
 # Example
 
 A self-explanatory example is provided for illustration below. It is
-an equivalent of the *radius of curvature* example shown in
+equivalent to the *radius of curvature* example shown in
 [@giorgino_how_2018]. Further examples are available in the manual and
 in `regtest/pycv`.
 

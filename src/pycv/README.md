@@ -131,6 +131,7 @@ Name   | Feature
 `rt-f2`| Function, with JIT and auto-gradient, with MATHEVAL equivalent
 `rt-jax1` | Distance CV with JAX reverse-mode differentiation
 `rt-jax2` | Angle CV with JAX reverse-mode differentiation and JIT decorator
+`rt-jax3` | Radius of curvature, as in [doi:10.1016/j.cpc.2018.02.017](http://doi.org/10.1016/j.cpc.2018.02.017)
 `rt-multi1` | Multi-component CV, pure Python
 `rt-multi2` | Multi-component CV, with JAX reverse-mode differentiation
 
