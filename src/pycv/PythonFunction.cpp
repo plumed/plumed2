@@ -69,7 +69,7 @@ The following example mimics the one in \ref CUSTOM.
 \plumedfile
 dAB: DISTANCE ATOMS=10,12
 dAC: DISTANCE ATOMS=10,15
-diff: PYTHONFUNCTION ARG=dAB,dAC IMPORT=pythonfunction FUNC=diff PERIODIC=NO
+diff: PYTHONFUNCTION ARG=dAB,dAC IMPORT=pythonfunction FUNCTION=diff PERIODIC=NO
 METAD ARG=diff WIDTH=0.1 HEIGHT=0.5 BIASFACTOR=10 PACE=100
 
 \endplumedfile
@@ -138,7 +138,7 @@ void PythonFunction::registerKeywords( Keywords& keys ) {
   Function::registerKeywords( keys );
   keys.use("ARG"); keys.use("PERIODIC");
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
-  keys.add("compulsory","FUNC","the function to call");
+  keys.add("compulsory","FUNCTION","the function to call");
 
   // Why is NOPBC not listed here?
 }
@@ -154,7 +154,7 @@ PythonFunction::PythonFunction(const ActionOptions&ao):
   nargs = getNumberOfArguments();
 
   parse("IMPORT",import);
-  parse("FUNC",function_name);
+  parse("FUNCTION",function_name);
 
   addValueWithDerivatives();
   checkRead();
