@@ -88,7 +88,7 @@ bfC: BF_CHEBYSHEV MINIMUM=0.0 MAXIMUM=10.0 ORDER=20
 
 
 class BF_Chebyshev : public BasisFunctions {
-  virtual void setupUniformIntegrals() override;
+  void setupUniformIntegrals() override;
 public:
   static void registerKeywords(Keywords&);
   explicit BF_Chebyshev(const ActionOptions&);

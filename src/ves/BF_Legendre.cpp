@@ -95,7 +95,7 @@ bf_leg: BF_LEGENDRE MINIMUM=-4.0 MAXIMUM=8.0 ORDER=20
 
 class BF_Legendre : public BasisFunctions {
   bool scaled_;
-  virtual void setupUniformIntegrals() override;
+  void setupUniformIntegrals() override;
 public:
   static void registerKeywords(Keywords&);
   explicit BF_Legendre(const ActionOptions&);

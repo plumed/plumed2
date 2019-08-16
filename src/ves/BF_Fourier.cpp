@@ -83,8 +83,8 @@ BF_FOURIER MINIMUM=-pi MAXIMUM=+pi ORDER=10 LABEL=bf_fourier
 //+ENDPLUMEDOC
 
 class BF_Fourier : public BasisFunctions {
-  virtual void setupLabels() override;
-  virtual void setupUniformIntegrals() override;
+  void setupLabels() override;
+  void setupUniformIntegrals() override;
 public:
   static void registerKeywords(Keywords&);
   explicit BF_Fourier(const ActionOptions&);

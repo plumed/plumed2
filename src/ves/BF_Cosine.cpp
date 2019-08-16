@@ -82,8 +82,8 @@ BF_COSINE MINIMUM=-pi MAXIMUM=+pi ORDER=10 LABEL=bf1
 
 
 class BF_Cosine : public BasisFunctions {
-  virtual void setupLabels() override;
-  virtual void setupUniformIntegrals() override;
+  void setupLabels() override;
+  void setupUniformIntegrals() override;
 public:
   static void registerKeywords(Keywords&);
   explicit BF_Cosine(const ActionOptions&);

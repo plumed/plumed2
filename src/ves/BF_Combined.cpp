@@ -64,8 +64,8 @@ coefficients.
 
 class BF_Combined : public BasisFunctions {
   std::vector<BasisFunctions*> basisf_pntrs_;
-  virtual void setupLabels() override;
-  virtual void setupUniformIntegrals() override;
+  void setupLabels() override;
+  void setupUniformIntegrals() override;
   // void getBFandValueIndices(const unsigned int, unsigned int&, unsigned int&) const;
 public:
   static void registerKeywords(Keywords&);

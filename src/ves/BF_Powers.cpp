@@ -79,7 +79,7 @@ BF_POWERS MINIMUM=-2.0 MAXIMUM=2.0 ORDER=5 LABEL=bf_pow
 
 class BF_Powers : public BasisFunctions {
   double inv_normfactor_;
-  virtual void setupLabels() override;
+  void setupLabels() override;
 public:
   static void registerKeywords( Keywords&);
   explicit BF_Powers(const ActionOptions&);
