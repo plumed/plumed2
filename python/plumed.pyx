@@ -30,12 +30,19 @@ cimport cplumed  # This imports information from pxd file - including contents o
 
 from cpython cimport array
 import array
+import sys
 
 try:
      import numpy as np
      HAS_NUMPY=True
 except ImportError:
      HAS_NUMPY=False
+
+if sys.version_info < (3,):
+     type_str=basestring
+else:
+     type_str=str
+
 
 cdef class Plumed:
      cdef cplumed.Plumed c_plumed
@@ -117,7 +124,7 @@ cdef class Plumed:
                self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
             else :
                raise ValueError("ndarrays should be double (size=8) or int")
-         elif isinstance(val, basestring ) :
+         elif isinstance(val, type_str ) :
               py_bytes = val.encode()
               cval = py_bytes
               self.c_plumed.cmd( ckey, <void*>cval )
