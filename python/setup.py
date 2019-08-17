@@ -39,7 +39,11 @@ def is_platform_mac():
 
 if os.getenv("plumed_macports") is not None:
     copyfile("../VERSION","VERSION")
-    copyfile("../src/wrapper/Plumed.h","Plumed.h")
+    try:
+        os.mkdir("include")
+    except OSError:
+        pass
+    copyfile("../src/wrapper/Plumed.h","include/Plumed.h")
 
 plumedname = os.getenv("plumed_program_name")
 if plumedname is None:
@@ -80,7 +84,7 @@ def readme():
 try:
     include_dirs=[os.environ["plumed_include_dir"]]
 except KeyError:
-    include_dirs=["."]
+    include_dirs=["./include"]
 
 # allow one to force using cython with env var plumed_force_cython=yes
 USE_CYTHON = False
