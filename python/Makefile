@@ -29,8 +29,9 @@ all:
 endif
 
 pip:
-	cp ../src/wrapper/Plumed.h .
 	cp ../VERSION .
+	mkdir -p include
+	cp ../src/wrapper/Plumed.h include/
 
 ifndef python_bin
 python_bin=python
@@ -40,10 +41,12 @@ endif
 
 pypi:
 	mkdir -p pypi
+	mkdir -p pypi/include
 	cp -r test pypi/
-	cp ../src/wrapper/Plumed.h README.rst MANIFEST.in cplumed.pxd plumed.pyx setup.py ../VERSION pypi/
+	cp ../src/wrapper/Plumed.h pypi/include/
+	cp README.rst MANIFEST.in cplumed.pxd plumed.pyx setup.py ../VERSION pypi/
 	cd pypi ; plumed_language_level=2 $(python_bin) setup.py sdist
 	echo "now use: $(python_bin) -m twine upload dist/plumed-$(VERSION).tar.gz"
 
 clean:
-	rm -fr *.so plumed.cpp build Plumed.h VERSION pypi test/logfile test/bck* pypi
+	rm -fr *.so plumed.cpp build Plumed.h VERSION pypi test/logfile test/bck* pypi include
