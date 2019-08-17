@@ -125,7 +125,7 @@ cdef class Plumed:
                self.c_plumed.cmd( ckey, <void*> ar.data.as_voidptr)
             else :
                raise ValueError("ndarrays should be double (size=8) or int")
-         elif isinstance(val, basestring ) :
+         elif isinstance(val, str ) :
               py_bytes = val.encode()
               cval = py_bytes
               self.c_plumed.cmd( ckey, <void*>cval )
