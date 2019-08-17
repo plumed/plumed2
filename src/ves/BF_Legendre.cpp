@@ -95,11 +95,11 @@ bf_leg: BF_LEGENDRE MINIMUM=-4.0 MAXIMUM=8.0 ORDER=20
 
 class BF_Legendre : public BasisFunctions {
   bool scaled_;
-  virtual void setupUniformIntegrals();
+  void setupUniformIntegrals() override;
 public:
   static void registerKeywords(Keywords&);
   explicit BF_Legendre(const ActionOptions&);
-  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
+  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const override;
 };
 
 

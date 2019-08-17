@@ -175,11 +175,11 @@ class TD_Uniform : public TargetDistribution {
   std::vector<double> sigma_min_;
   std::vector<double> sigma_max_;
   double GaussianSwitchingFunc(const double, const double, const double) const;
-  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&);
+  void setupAdditionalGrids(const std::vector<Value*>&, const std::vector<std::string>&, const std::vector<std::string>&, const std::vector<unsigned int>&) override;
 public:
   static void registerKeywords( Keywords&);
   explicit TD_Uniform(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const;
+  double getValue(const std::vector<double>&) const override;
 };
 
 

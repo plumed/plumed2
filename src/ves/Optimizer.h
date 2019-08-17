@@ -188,10 +188,10 @@ public:
   void setIterationCounter(const unsigned int);
   void increaseIterationCounter();
   //
-  void apply() {};
-  void calculate() {};
-  void update();
-  unsigned int getNumberOfDerivatives() {return 0;}
+  void apply() override {};
+  void calculate() override {};
+  void update() override;
+  unsigned int getNumberOfDerivatives() override {return 0;}
   //
   bool fixedStepSize() const {return fixed_stepsize_;}
   bool dynamicStepSize() const {return !fixed_stepsize_;}
