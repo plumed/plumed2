@@ -87,8 +87,8 @@ class OutputBasisFunctions :
 public:
   explicit OutputBasisFunctions(const ActionOptions&);
   TargetDistribution* setupTargetDistPntr(std::string keyword) const;
-  void calculate() {}
-  void apply() {}
+  void calculate() override {}
+  void apply() override {}
   static void registerKeywords(Keywords& keys);
 };
 

@@ -88,9 +88,9 @@ class OutputFesBias : public Action {
 public:
   static void registerKeywords(Keywords&);
   explicit OutputFesBias(const ActionOptions&);
-  void update() {}
-  void calculate() {}
-  void apply() {}
+  void update() override {}
+  void calculate() override {}
+  void apply() override {}
 };
 
 

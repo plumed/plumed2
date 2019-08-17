@@ -104,8 +104,8 @@ private:
 public:
   static void registerKeywords(Keywords&);
   explicit TD_WellTempered(const ActionOptions& ao);
-  void updateGrid();
-  double getValue(const std::vector<double>&) const;
+  void updateGrid() override;
+  double getValue(const std::vector<double>&) const override;
   ~TD_WellTempered() {}
 };
 
