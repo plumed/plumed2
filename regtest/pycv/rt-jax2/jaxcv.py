@@ -1,6 +1,6 @@
 # Import the JAX library
 import jax.numpy as np
-from jax import grad, jit, vmap
+from jax import grad, jit
 
 # Implementation of the angle function. @jit really improves speed
 @jit

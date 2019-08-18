@@ -1,5 +1,5 @@
 ---
-title: 'PYCV: Python-based Rapid Development of Collective Variables for PLUMED 2'
+title: 'PYCV: a PLUMED 2 module enabling Rapid Development of Python-based Collective Variables'
 tags:
   - Python
   - PLUMED

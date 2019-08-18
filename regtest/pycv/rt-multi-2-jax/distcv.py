@@ -1,5 +1,5 @@
 import jax.numpy as np
-from jax import grad, jacrev, jit
+from jax import jacrev, jit
 
 
 # Define the distance function

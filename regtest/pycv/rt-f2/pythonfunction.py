@@ -1,4 +1,4 @@
-import jax.numpy as np
+#import jax.numpy as np
 from jax import grad,jit
 
 @jit
