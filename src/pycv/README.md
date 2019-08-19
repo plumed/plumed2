@@ -28,9 +28,9 @@ The PYCV module defines the following actions:
 
 In both cases, a Python interpreter is first started; the Python file
 indicated in the `IMPORT=` keyword is then imported; from it, an
-user-chosen function (`FUNC=`) is called to perform the computations
-at each timestep. Modules can be shared for multiple functions, and
-contain one-time initialization.
+user-chosen function (`FUNCTION=`) is called to perform the
+computations at each timestep. Modules can be shared for multiple
+functions, and contain one-time initialization.
 
 Transparent auto-differentiation, JIT compilation, and vectorization
 are available through Google's [JAX
@@ -52,7 +52,7 @@ You will also need to install `numpy`, either via `pip3 install
 numpy` or your distribution's packages.
 
 Automatic differentiation examples require the JAX library: install
-it with `pip3 install jax`.
+it with `pip3 install jax`. 
 
 
 
@@ -63,7 +63,7 @@ Follow the usual PLUMED 2 configuration procedure, with added
 Python-specific flags:
 
 ```bash
-./configure --enable-modules=+pycv --enable-python PYTHON_BIN=python3 LDFLAGS="`python3-config --ldflags`"
+./configure --enable-modules=+pycv --enable-python PYTHON_BIN=python3
 ```
 
 It is also possible to compile the module as a `LOAD`-able dynamic

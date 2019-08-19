@@ -8877,14 +8877,16 @@ fi
 # https://www.gnu.org/software/autoconf-archive/ax_python_embed.html
 pycv_ok=true
 if test -f src/pycv.on ; then
-   { $as_echo "$as_me:${as_lineno-$LINENO}: Using Python: $PYTHON_BIN" >&5
-$as_echo "$as_me: Using Python: $PYTHON_BIN" >&6;}
+   { $as_echo "$as_me:${as_lineno-$LINENO}: Performing PYCV-related checks with Python set to: $PYTHON_BIN" >&5
+$as_echo "$as_me: Performing PYCV-related checks with Python set to: $PYTHON_BIN" >&6;}
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for PYCV required python modules (jax)" >&5
 $as_echo_n "checking support for PYCV required python modules (jax)... " >&6; }
    if ! "$PYTHON_BIN" -c 'import jax'  1>/dev/null 2>/dev/null ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-      pycv_ok=false
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: JAX module not found. Install with \"pip3 install jax\". Continuing anyway." >&5
+$as_echo "$as_me: WARNING: JAX module not found. Install with \"pip3 install jax\". Continuing anyway." >&2;}
+      # pycv_ok=false
    else
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -8934,8 +8936,8 @@ fi
       pycv_ok=false
    fi
    if test "$pycv_ok" == false ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable PYCV module" >&5
-$as_echo "$as_me: WARNING: cannot enable PYCV module" >&2;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: disabling PYCV module; see possible reasons above" >&5
+$as_echo "$as_me: WARNING: disabling PYCV module; see possible reasons above" >&2;}
       rm src/pycv.on
    else
       pycv_embedding_ldflags=$("$ac_cv_path_python3_config" --ldflags)

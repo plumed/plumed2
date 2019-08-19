@@ -804,11 +804,12 @@ fi
 # https://www.gnu.org/software/autoconf-archive/ax_python_embed.html
 pycv_ok=true
 if test -f src/pycv.on ; then
-   AC_MSG_NOTICE([Using Python: $PYTHON_BIN])
+   AC_MSG_NOTICE([Performing PYCV-related checks with Python set to: $PYTHON_BIN])
    AC_MSG_CHECKING([support for PYCV required python modules (jax)])
    if ! "$PYTHON_BIN" -c 'import jax'  1>/dev/null 2>/dev/null ; then
       AC_MSG_RESULT([no])
-      pycv_ok=false
+      AC_MSG_WARN([JAX module not found. Install with "pip3 install jax". Continuing anyway.])
+      # pycv_ok=false
    else	
       AC_MSG_RESULT([yes])
    fi
@@ -817,7 +818,7 @@ if test -f src/pycv.on ; then
       pycv_ok=false
    fi
    if test "$pycv_ok" == false ; then
-      AC_MSG_WARN([cannot enable PYCV module])
+      AC_MSG_WARN([disabling PYCV module; see possible reasons above])
       rm src/pycv.on
    else
       pycv_embedding_ldflags=$("$ac_cv_path_python3_config" --ldflags)
