@@ -8942,6 +8942,10 @@ $as_echo "$as_me: WARNING: cannot enable PYCV module" >&2;}
       { $as_echo "$as_me:${as_lineno-$LINENO}: adding the following LDFLAGS for Python embedding: $pycv_embedding_ldflags" >&5
 $as_echo "$as_me: adding the following LDFLAGS for Python embedding: $pycv_embedding_ldflags" >&6;}
       LDFLAGS="$LDFLAGS $pycv_embedding_ldflags"
+      pycv_embedding_cflags=$("$ac_cv_path_python3_config" --cflags)
+      { $as_echo "$as_me:${as_lineno-$LINENO}: adding the following CPPFLAGS for Python embedding: $pycv_embedding_cflags" >&5
+$as_echo "$as_me: adding the following CPPFLAGS for Python embedding: $pycv_embedding_cflags" >&6;}
+      CPPFLAGS="$CPPFLAGS $pycv_embedding_cflags"
    fi
 fi
 

@@ -1,5 +1,4 @@
 USE=core tools bias colvar function
-ADDCPPFLAGS += $(shell python3-config --cflags)
 ADDCPPFLAGS += -Ipybind11-2.3.0/include
 
 # generic makefile
