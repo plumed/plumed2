@@ -818,7 +818,7 @@ if test -f src/pycv.on ; then
    fi
    if test "$pycv_ok" == false ; then
       AC_MSG_WARN([cannot enable PYCV module])
-      rm src/pycv.ok
+      rm src/pycv.on
    else
       pycv_embedding_ldflags=$("$ac_cv_path_python3_config" --ldflags)
       AC_MSG_NOTICE([adding the following LDFLAGS for Python embedding: $pycv_embedding_ldflags])
