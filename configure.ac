@@ -798,6 +798,35 @@ from Cython.Build import cythonize
   fi
 fi
 
+# If pycv module is enabled, we need python3, python3-config and
+# jaxlib, and we need to add LDFLAGS. This may be useful too, but
+# looks overcomplicated to me.
+# https://www.gnu.org/software/autoconf-archive/ax_python_embed.html
+pycv_ok=true
+if test -f src/pycv.on ; then
+   AC_MSG_NOTICE([Using Python: $PYTHON_BIN])
+   AC_MSG_CHECKING([support for PYCV required python modules (jax)])
+   if ! "$PYTHON_BIN" -c 'import jax'  1>/dev/null 2>/dev/null ; then
+      AC_MSG_RESULT([no])
+      pycv_ok=false
+   else	
+      AC_MSG_RESULT([yes])
+   fi
+   AC_PATH_PROG([python3_config],[python3-config],[missing])
+   if test "$python3_config" == missing ; then
+      pycv_ok=false
+   fi
+   if test "$pycv_ok" == false ; then
+      AC_MSG_WARN([cannot enable PYCV module])
+      rm src/pycv.ok
+   else
+      pycv_embedding_ldflags=$("$ac_cv_path_python3_config" --ldflags)
+      AC_MSG_NOTICE([adding the following LDFLAGS for Python embedding: $pycv_embedding_ldflags])
+      LDFLAGS="$LDFLAGS $pycv_embedding_ldflags"
+   fi
+fi		   
+
+
 if test "$af_ocl" == true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
 fi
