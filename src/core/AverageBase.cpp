@@ -361,7 +361,7 @@ void AverageBase::transferCollectedDataToValue( const std::vector<std::vector<do
       for(unsigned j=0;j<getNumberOfComponents()-1;++j) { getPntrToOutput(j)->set( i, mydata[i][j] ); }
       if( save_all_bias ) {
           Value* myw=getPntrToOutput(getNumberOfComponents()-1); myw->set( myweights.size()*i + i, myweights[i] );
-          for(unsigned j=0;j<i;++j) { myw->set( myweights.size()*i + j, offdiag_weight[k] ); myw->set( myweights.size()*j + i, offdiag_weight[k] ); k++; }
+          for(unsigned j=0;j<i;++j) { myw->set( myweights.size()*i + j, offdiag_weight[k] ); k++; }
       } else getPntrToOutput(getNumberOfComponents()-1)->set( i, myweights[i] );
   }
 }

@@ -30,15 +30,15 @@
 namespace PLMD {
 namespace bias {
 
-class Recon : public ActionShortcut {
+class Atlas : public ActionShortcut {
 public:
   static void registerKeywords(Keywords& keys);
-  explicit Recon(const ActionOptions&);
+  explicit Atlas(const ActionOptions&);
 };
 
-PLUMED_REGISTER_ACTION(Recon,"RECON")
+PLUMED_REGISTER_ACTION(Atlas,"ATLAS")
 
-void Recon::registerKeywords(Keywords& keys) {
+void Atlas::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","ARG","the arguments that should be used as input to this method");
   keys.add("compulsory","REFERENCE","the input file containing the definitions of the clusters");
@@ -53,7 +53,7 @@ void Recon::registerKeywords(Keywords& keys) {
   keys.addFlag("TRUNCATE_GRIDS",false,"set all histograms equal to zero outside specified range");
 }
 
-Recon::Recon(const ActionOptions& ao):
+Atlas::Atlas(const ActionOptions& ao):
 Action(ao),
 ActionShortcut(ao)
 {

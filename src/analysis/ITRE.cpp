@@ -25,6 +25,7 @@
 #include "core/AverageBase.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
+#include <numeric>
 
 //+PLUMEDOC REWEIGHTING ITRE
 /*
@@ -37,7 +38,7 @@
 namespace PLMD {
 namespace analysis {
 
-class ITRE : 
+class ITRE :
 public ActionWithValue,
 public ActionWithArguments {
 private:
@@ -61,9 +62,8 @@ void ITRE::registerKeywords(Keywords& keys ) {
   Action::registerKeywords( keys ); ActionWithValue::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys ); keys.remove("ARG");
   keys.add("compulsory","ARG","the stored values for the bias");
-  keys.add("compulsory","MAXITER","1000","maximum number of iterations for WHAM algorithm");
-  keys.add("compulsory","ITRETOL","1e-10","threshold for convergence of WHAM algorithm");
-  keys.add("optional","TEMP","the system temperature.  This is not required if your MD code passes this quantity to PLUMED");
+  keys.add("compulsory","MAXITER","10","maximum number of iterations for iterative evaluation");
+  keys.add("optional","TEMP","the system temperature");
   keys.remove("NUMERICAL_DERIVATIVES");
 }
 
@@ -87,7 +87,7 @@ ITRE::ITRE(const ActionOptions&ao):
   else simtemp=plumed.getAtoms().getKbT();
   if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
   // Now read in parameters of WHAM
-  parse("MAXITER",maxiter); parse("ITRETOL",thresh);
+  parse("MAXITER",maxiter);
   // Now setup the value
   std::vector<unsigned> shape(1); shape[0] = getPntrToArgument(0)->getShape()[0];
   addValue( shape ); getPntrToOutput(0)->makeTimeSeries(); setNotPeriodic();
@@ -95,35 +95,35 @@ ITRE::ITRE(const ActionOptions&ao):
 
 void ITRE::calculateWeights() {
   Value* arg0=getPntrToArgument(0); unsigned nvals=arg0->getShape()[0];
-  // Set the shape of the output vector if we need to 
+  // Set the shape of the output vector if we need to
   if( getPntrToOutput(0)->getNumberOfValues( getLabel() )!=nvals ) {
       std::vector<unsigned> shape(1); shape[0]=nvals; getPntrToOutput(0)->setShape( shape );
   }
-  Matrix<double> mymatrix( nvals, nvals );
-  std::vector<double> in_weights( nvals ), new_weights( nvals ); 
+  Matrix<double> mymatrix( nvals, nvals ); // lower triangular exponential matrix
+  std::vector<double> in_weights( nvals ); // weights
   // Retrieve the weights from the input logweights
-  in_weights[0] = mymatrix(0,0) = exp( arg0->get(0) );
-  for(unsigned i=1;i<nvals;++i) {
-      in_weights[i] = mymatrix(i,i) = exp( arg0->get( i*nvals + i ) );
-      for(unsigned j=0;j<i;++j) mymatrix(i,j)=mymatrix(j,i) = exp( arg0->get( i*nvals + j ) );
+  in_weights[0] = 1.0;
+  for(unsigned i=0;i<nvals;++i) {
+      in_weights[i] = 1.0;
+      for(unsigned j=0;j<=i;++j) mymatrix(i,j) = exp( -simtemp*arg0->get( i*nvals + j ) );
+      for(unsigned j=i+1;j<nvals;++j) mymatrix(i,j)=0.0; // upper triangle empty
   }
+
+  std::vector<double> denominator(nvals); // will store e[V(s(t),t) - c(t)]
+  std::vector<double> normalization(nvals); // running integral of denominator
   // Now the iterative loop to calculate the ITRE weights
   for(unsigned iter=0; iter<maxiter; ++iter) {
+    for (size_t index_1 = 0; index_1 < nvals; index_1++) {
+      normalization[index_1] = 0.0; // I am doing this so that I am safe that normalization is 0
+      denominator[index_1] = in_weights[index_1] / mymatrix(index_1,index_1) ;
+    }
+    std::partial_sum(denominator.begin(), denominator.end(), normalization.begin());
     // This multiplies the vector in_weights by the matrix of weights -- the result is in new_weights
-    mult( mymatrix, in_weights, new_weights ); 
- 
-    // Compute change in weights
-    double change=0; 
-    for(unsigned k=0; k<in_weights.size(); ++k) {
-      double d = std::log( new_weights[k] / in_weights[k] ); change += d*d; in_weights[k] = new_weights[k];
-    }
-    change=epsilon;    // This is a tempory measure just to make this run and give something
-    if( change<thresh ) {
-        for(unsigned j=0; j<in_weights.size(); ++j) getPntrToOutput(0)->set( j, in_weights[j] );
-        return; 
-    }
+    mult( mymatrix, denominator, in_weights );
+    for (int index_1=0 ; index_1<nvals ; index_1++) in_weights[index_1] /= normalization[index_1];
   }
-  error("Too many iterations in ITRE" );
+  for(unsigned j=0; j<in_weights.size(); ++j) getPntrToOutput(0)->set( j, -std::log(in_weights[j])/simtemp);
+  return;
 }
 
 void ITRE::update() {

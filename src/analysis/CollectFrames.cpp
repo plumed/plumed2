@@ -137,7 +137,6 @@ void CollectFrames::storeRecomputedBias( const unsigned& ipoint, const unsigned&
   if( clearstride>0 ) {
       Value* bval=getPntrToOutput(getNumberOfComponents()-1);
       bval->set( bval->getShape()[0]*(ndata_for_norm+jframe) + ipoint + jframe, biases ); 
-      bval->set( bval->getShape()[0]*(ipoint+jframe) + ndata_for_norm+jframe, biases );
   } else {
       off_diag_bias.push_back( biases );
   }
