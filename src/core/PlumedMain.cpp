@@ -580,7 +580,8 @@ void PlumedMain::init() {
   log<<"PLUMED is starting\n";
   log<<"Version: "<<config::getVersionLong()<<" (git: "<<config::getVersionGit()<<") "
      <<"compiled on " <<config::getCompilationDate() << " at " << config::getCompilationTime() << "\n";
-  log<<"Please cite this paper when using PLUMED ";
+  log<<"Please cite these papers when using PLUMED ";
+  log<<cite("The PLUMED consortium, Nat. Methods 16, 670 (2019)");
   log<<cite("Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. 185, 604 (2014)");
   log<<"\n";
   log<<"For further information see the PLUMED web page at http://www.plumed.org\n";
