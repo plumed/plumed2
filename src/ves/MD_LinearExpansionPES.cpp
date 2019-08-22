@@ -139,6 +139,7 @@ public:
   int main( FILE* in, FILE* out, PLMD::Communicator& pc) override;
 private:
   unsigned int dim;
+  std::string dim_string_prefix;
   LinearBasisSetExpansion* potential_expansion_pntr;
   //
   double calc_energy( const std::vector<Vector>&, std::vector<Vector>& );
@@ -175,6 +176,7 @@ void MD_LinearExpansionPES::registerKeywords( Keywords& keys ) {
 MD_LinearExpansionPES::MD_LinearExpansionPES( const CLToolOptions& co ):
   CLTool(co),
   dim(0),
+  dim_string_prefix("dim"),
   potential_expansion_pntr(NULL)
 {
   inputdata=ifile; //commandline;
@@ -340,9 +342,9 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
       bf_keyword = bf_keyword.substr(1,bf_keyword.size()-2);
     }
     basisf_keywords[i] = bf_keyword;
-    plumed_bf->readInputLine(bf_keyword+" LABEL=dim"+is);
-    basisf_pntrs[i] = plumed_bf->getActionSet().selectWithLabel<BasisFunctions*>("dim"+is);
-    args[i] = new Value(NULL,"dim"+is,false);
+    plumed_bf->readInputLine(bf_keyword+" LABEL="+dim_string_prefix+is);
+    basisf_pntrs[i] = plumed_bf->getActionSet().selectWithLabel<BasisFunctions*>(dim_string_prefix+is);
+    args[i] = new Value(NULL,dim_string_prefix+is,false);
     args[i]->setNotPeriodic();
     periodic[i] = basisf_pntrs[i]->arePeriodic();
     interval_min[i] = basisf_pntrs[i]->intervalMin();
