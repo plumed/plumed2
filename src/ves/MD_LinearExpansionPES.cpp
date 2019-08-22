@@ -24,6 +24,7 @@
 #include "LinearBasisSetExpansion.h"
 #include "CoeffsVector.h"
 #include "GridIntegrationWeights.h"
+#include "GridProjWeights.h"
 
 #include "cltools/CLTool.h"
 #include "cltools/CLToolRegister.h"
@@ -418,6 +419,25 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   ofile_potential.open(output_potential_fname);
   potential_expansion_pntr->writeBiasGridToFile(ofile_potential);
   ofile_potential.close();
+  if(dim>1) {
+    for(unsigned int i=0; i<dim; i++) {
+      std::string is; Tools::convert(i+1,is);
+      std::vector<std::string> proj_arg(1);
+      proj_arg[0] = dim_string_prefix+is;
+      FesWeight* Fw = new FesWeight(1/temp);
+      Grid proj_grid = (potential_expansion_pntr->getPntrToBiasGrid())->project(proj_arg,Fw);
+      proj_grid.setMinToZero();
+
+      std::string output_potential_proj_fname = FileBase::appendSuffix(output_potential_fname,"."+dim_string_prefix+is);
+      OFile ofile_potential_proj;
+      ofile_potential_proj.link(pc);
+      ofile_potential_proj.open(output_potential_proj_fname);
+      proj_grid.writeToFile(ofile_potential_proj);
+      ofile_potential_proj.close();
+      delete Fw;
+    }
+  }
+
 
   Grid histo_grid(*potential_expansion_pntr->getPntrToBiasGrid());
   std::vector<double> integration_weights = GridIntegrationWeights::getIntegrationWeights(&histo_grid);
