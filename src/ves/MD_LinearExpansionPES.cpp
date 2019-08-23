@@ -364,7 +364,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
     ofile_coeffstmpl.open(template_coeffs_fname);
     coeffs_pntr->writeToFile(ofile_coeffstmpl,true);
     ofile_coeffstmpl.close();
-    error("Only generating a template coefficient file - Should stop now.");
+    printf("Only generating a template coefficient file - Should stop now.");
+    return 0;
   }
 
   std::vector<std::string> input_coeffs_fnames(0);
