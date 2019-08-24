@@ -354,7 +354,7 @@ void PCAVars::unlockRequests() {
 
 void PCAVars::calculate() {
 
-  if(!nopbc) makeWhole();
+  if(!nopbc && getNumberOfAtoms()>0) makeWhole();
 
   // Clear the reference value pack
   mypack.clear();
