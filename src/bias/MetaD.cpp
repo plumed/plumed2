@@ -1502,11 +1502,15 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
     }
     unsigned stride=comm.Get_size();
     unsigned rank=comm.Get_rank();
+    if( runInSerial() ) { stride=1; rank=0; }
+
     for(unsigned i=rank; i<hills_.size(); i+=stride) {
       bias+=evaluateGaussian(cv,hills_[i],der);
     }
-    comm.Sum(bias);
-    if(der) comm.Sum(der,getNumberOfArguments());
+    if( !runInSerial() ) {
+        comm.Sum(bias);
+        if(der) comm.Sum(der,getNumberOfArguments());
+    }
   } else {
     if(der) {
       vector<double> vder(getNumberOfArguments());
