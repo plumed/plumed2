@@ -105,7 +105,7 @@ void ITRE::calculateWeights() {
   in_weights[0] = 1.0;
   for(unsigned i=0;i<nvals;++i) {
       in_weights[i] = 1.0;
-      for(unsigned j=0;j<=i;++j) mymatrix(i,j) = exp( -simtemp*arg0->get( i*nvals + j ) );
+      for(unsigned j=0;j<=i;++j) mymatrix(i,j) = exp( -simtemp*simtemp*arg0->get( i*nvals + j ) );
       for(unsigned j=i+1;j<nvals;++j) mymatrix(i,j)=0.0; // upper triangle empty
   }
 
