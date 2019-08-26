@@ -379,6 +379,7 @@ Print::Print(const ActionOptions&ao):
     } else if( arg_ends.size()>0 ) {
         std::vector<AtomNumber> atlist; for(unsigned i=0;i<arg_ends.size()-1;++i) reference_atoms.push_back( atlist );
     } else {
+        
         unsigned nv=getPntrToArgument(0)->getNumberOfValues( getLabel() );
         for(unsigned i=0; i<getNumberOfArguments(); ++i) {
             if( getPntrToArgument(i)->getNumberOfValues( getLabel() )!=nv ) error("for printing to pdb files all arguments must have same number of values");
@@ -706,16 +707,40 @@ void Print::update() {
            opdbf.printf("END\n");
        }
     } else {
-       std::string argstr = "ARG=" + getPntrToArgument(0)->getName();
-       for(unsigned k=1;k<getNumberOfArguments();++k) argstr += "," + getPntrToArgument(k)->getName();
-       unsigned nvals = getPntrToArgument(0)->getNumberOfValues( getLabel() );
+       std::vector<unsigned> argnums, posnums;
+       for(unsigned k=0;k<getNumberOfArguments();++k) {
+           AverageBase* ab=dynamic_cast<AverageBase*>( getPntrToArgument(k)->getPntrToAction() );
+           if( !ab ) argnums.push_back( k ); 
+           else if( getPntrToArgument(k)->getName().find(".pos")!=std::string::npos ) {
+                if( posnums.size()%3==0 && getPntrToArgument(k)->getName().find(".posx-")==std::string::npos ) error("x coordinate of input positions in wrong place");
+                if( posnums.size()%3==1 && getPntrToArgument(k)->getName().find(".posy-")==std::string::npos ) error("y coordinate of input positions in wrong place");
+                if( posnums.size()%3==2 && getPntrToArgument(k)->getName().find(".posz-")==std::string::npos ) error("z coordinate of input positions in wrong place");
+                posnums.push_back(k);
+           } else argnums.push_back( k );
+       }
+       if( posnums.size()%3!=0 ) error("found misleading number of stored positions for output");
+
+       std::string argstr = "ARG=" + getPntrToArgument(argnums[0])->getName();
+       for(unsigned k=1;k<argnums.size();++k) argstr += "," + getPntrToArgument(argnums[k])->getName();
+       unsigned nvals = getPntrToArgument(argnums[0])->getNumberOfValues( getLabel() );
        for(unsigned j=0;j<nvals;++j) {
            opdbf.printf("REMARK %s \n", argstr.c_str() );
            opdbf.printf("REMARK ");
-           for(unsigned k=0;k<getNumberOfArguments();++k) {
-               Value* thisarg=getPntrToArgument(k); opdbf.printf( descr2.c_str(), (thisarg->getName()).c_str(), thisarg->get(j) ); 
+           for(unsigned k=0;k<argnums.size();++k) {
+               Value* thisarg=getPntrToArgument(argnums[k]); opdbf.printf( descr2.c_str(), (thisarg->getName()).c_str(), thisarg->get(j) ); 
            }
-           opdbf.printf("\nEND\n");
+           opdbf.printf("\n");
+           double lenunits = atoms.getUnits().getLength()/0.1;
+           Vector pos; unsigned npos = posnums.size() / 3;
+           for(unsigned k=0;k<npos;++k) {
+               pos[0]=getPntrToArgument(posnums[3*k+0])->get(j);
+               pos[1]=getPntrToArgument(posnums[3*k+1])->get(j);
+               pos[2]=getPntrToArgument(posnums[3*k+2])->get(j);
+               opdbf.printf("ATOM  %4d  X    RES  %4u  %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                            k, k,
+                            lenunits*pos[0], lenunits*pos[1], lenunits*pos[2], 1.0, 1.0 );
+           }
+           opdbf.printf("END\n");
        }
     }
     opdbf.close();
