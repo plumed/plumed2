@@ -67,6 +67,8 @@ protected:
   unsigned setupActionInChain( const unsigned& argstart ) ;
 /// Should we skip running update for this action
   bool skipUpdate() const ;
+/// Resize all the values for the final task
+  void resizeForFinalTasks();
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;

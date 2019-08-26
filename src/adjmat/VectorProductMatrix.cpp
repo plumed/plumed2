@@ -153,6 +153,12 @@ void VectorProductMatrix::update() {
   runAllTasks();
 }
 
+void VectorProductMatrix::runFinalJobs() {
+  if( skipUpdate() ) return;
+  plumed_dbg_assert( !actionInChain() );
+  resizeForFinalTasks(); runAllTasks();
+}
+
 void VectorProductMatrix::updateCentralMatrixIndex( const unsigned& ind, MultiValue& myvals ) const {
   if( doNotCalculateDerivatives() ) return;
 

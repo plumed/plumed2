@@ -182,18 +182,24 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
   Action(ao),
   ActionShortcut(ao)
 {
-  std::string arg; parse("ARG",arg); unsigned anum=1; std::string argstr; 
-  AverageBase* mydata = plumed.getActionSet().selectWithLabel<AverageBase*>(arg);
+  std::string arg; parse("ARG",arg); unsigned anum=1, natoms3=0; std::string argstr; 
+  AverageBase* mydata = plumed.getActionSet().selectWithLabel<AverageBase*>(arg); bool isatoms=true;
   if( !mydata ) error("input to PCA should be a COLLECT_FRAMES or COLLECT_REPLICAS object");
   for(unsigned i=0;i<mydata->getNumberOfComponents();++i) {
       std::string thislab = mydata->copyOutput(i)->getName();
-      if( thislab.find(".logweights")==std::string::npos && thislab.find(".pos")==std::string::npos ) {
+      if( thislab.find(".logweights")==std::string::npos ) {
           std::string num; Tools::convert( anum, num );
           argstr += " GROUP" + num + "=" + thislab; anum++;
+          if( thislab.find(".pos")!=std::string::npos ) natoms3++;
+          else isatoms=false;
       }
   }
   // Calculate the dissimilarity matrix
-  readInputLine( getShortcutLabel() + "_mat: DISSIMILARITIES SQUARED " + argstr ); 
+  if( isatoms ) {
+      std::string nat_str;
+      readInputLine( getShortcutLabel() + "_matful: DISSIMILARITIES SQUARED " + argstr ); Tools::convert( natoms3/3, nat_str );
+      readInputLine( getShortcutLabel() + "_mat: MATHEVAL PERIODIC=NO ARG1=" + getShortcutLabel() + "_matful FUNC=x/" + nat_str ); 
+  } else readInputLine( getShortcutLabel() + "_mat: DISSIMILARITIES SQUARED " + argstr );  
   // Center the dissimilarity matrix
   readInputLine( getShortcutLabel() + "_cmat: CENTER_MATRIX ARG=" + getShortcutLabel() + "_mat" );
   // Diagonalize the centered dissimilarity matrix

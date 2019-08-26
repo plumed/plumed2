@@ -69,8 +69,8 @@ CenterMatrix::CenterMatrix( const ActionOptions& ao):
   if( getPntrToArgument(0)->getShape()[0]!=getPntrToArgument(0)->getShape()[1] ) error("input to CENTER_MATRIX should be a square matrix");
 
   // Re-request the arguments as we do in diagonalize for similar reasons
-  std::vector<Value*> args( getArguments() ); requestArguments(args, false );
-  std::vector<unsigned> shape(2); shape[0]=shape[1] = getPntrToArgument(0)->getShape()[0];
+  std::vector<Value*> args( getArguments() ); arg_ends.push_back(0); arg_ends.push_back(1); 
+  requestArguments(args, false ); std::vector<unsigned> shape(2); shape[0]=shape[1] = getPntrToArgument(0)->getShape()[0];
   addValue(shape); setNotPeriodic(); getPntrToOutput(0)->alwaysStoreValues();
 }
 
@@ -99,8 +99,7 @@ void CenterMatrix::update() {
 void CenterMatrix::runFinalJobs() {
   if( skipUpdate() || wasupdated ) return;
   plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 && getPntrToOutput(0)->getShape()[0]==0 );
-  std::vector<unsigned> shape(2); shape[0]=shape[1] = getPntrToArgument(0)->getShape()[0]; 
-  getPntrToOutput(0)->setShape(shape); update();
+  resizeForFinalTasks(); update();
 }
 
 }

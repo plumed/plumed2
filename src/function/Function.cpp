@@ -367,33 +367,14 @@ void Function::calculate() {
 }
 
 void Function::update() {
-  if( skipUpdate() ) return;
+  if( skipUpdate() || actionInChain() ) return;
   plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
   evaluateAllFunctions();
 }
 
 void Function::runFinalJobs() {
-  if( skipUpdate() ) return;
-  plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
-  if( getFullNumberOfTasks()==0 ) {
-      unsigned nscalars=0, npoints;
-      for(unsigned i=0; i<arg_ends.size()-1; ++i) {
-        for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
-            if( getPntrToArgument(j)->getNumberOfValues( getLabel() )==1 ) nscalars++;
-            else npoints=getPntrToArgument(j)->getNumberOfValues( getLabel() );
-        }
-      }
-      if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
-      // Now create a task list for the function
-      for(unsigned j=0; j<npoints; ++j) addTaskToList(j); 
-      // And resize the output values
-      std::vector<unsigned> shape(1); shape[0]=npoints;
-      for(unsigned i=0;i<getNumberOfComponents();++i) {
-          if( getPntrToOutput(i)->getRank()!=1 ) error("should only be rank one variables");
-          getPntrToOutput(i)->setShape(shape);
-      }
-  }
-  evaluateAllFunctions();
+  if( skipUpdate() || actionInChain() ) return;
+  resizeForFinalTasks(); evaluateAllFunctions();
 }
 
 void Function::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,

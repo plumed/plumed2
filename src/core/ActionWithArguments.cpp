@@ -703,4 +703,28 @@ unsigned ActionWithArguments::getArgumentPositionInStream( const unsigned& jder,
   return arguments[jder]->getPositionInStream();
 }
 
+void ActionWithArguments::resizeForFinalTasks() {
+  ActionWithValue* av = dynamic_cast<ActionWithValue*>( this ); plumed_assert( av );
+  if( av->getFullNumberOfTasks()==0 ) { 
+      unsigned nscalars=0, nvalues;
+      for(unsigned i=0; i<arg_ends.size()-1; ++i) {
+        for(unsigned j=arg_ends[i];j<arg_ends[i+1];++j) {
+            if( arguments[j]->getNumberOfValues( getLabel() )==1 ) nscalars++;
+            else nvalues=arguments[j]->getShape()[0];
+        }
+      }
+      if( nscalars>1 ) error("can only multiply/divide a vector/matrix by one scalar at a time");
+      // Now resize everything for analysis
+      std::vector<unsigned> r1shape(1), r2shape(2); r1shape[0]=r2shape[0]=r2shape[1]=nvalues;
+      for(unsigned i=0;i<av->getNumberOfComponents();++i) {
+          Value* myval = av->getPntrToOutput(i);
+          if( myval->getRank()==1 && !myval->hasDerivatives() ) myval->setShape( r1shape );
+          else if( myval->getRank()==2 && !myval->hasDerivatives() ) myval->setShape( r2shape );
+      }
+      for(unsigned i=0;i<nvalues;++i) av->addTaskToList( i );
+  } 
+  ActionWithArguments* aa = dynamic_cast<ActionWithArguments*>( av->action_to_do_after );
+  if( aa ) aa->resizeForFinalTasks();
+}
+
 }
