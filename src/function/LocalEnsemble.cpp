@@ -82,7 +82,7 @@ class LocalEnsemble :
   unsigned narg;
 public:
   explicit LocalEnsemble(const ActionOptions&);
-  void     calculate();
+  void     calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -93,7 +93,7 @@ void LocalEnsemble::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","NUM","the number of local replicas");
-  ActionWithValue::useCustomisableComponents(keys);
+  useCustomisableComponents(keys);
 }
 
 LocalEnsemble::LocalEnsemble(const ActionOptions&ao):

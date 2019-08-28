@@ -44,7 +44,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit GridToXYZ(const ActionOptions&ao);
-  void printGrid( OFile& ofile ) const ;
+  void printGrid( OFile& ofile ) const override;
 };
 
 PLUMED_REGISTER_ACTION(GridToXYZ,"GRID_TO_XYZ")

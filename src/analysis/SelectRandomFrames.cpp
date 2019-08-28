@@ -40,8 +40,8 @@ private:
   unsigned seed;
 public:
   static void registerKeywords( Keywords& keys );
-  SelectRandomFrames( const ActionOptions& ao );
-  void selectLandmarks();
+  explicit SelectRandomFrames( const ActionOptions& ao );
+  void selectLandmarks() override;
 };
 
 PLUMED_REGISTER_ACTION(SelectRandomFrames,"LANDMARK_SELECT_RANDOM")

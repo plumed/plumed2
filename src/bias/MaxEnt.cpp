@@ -104,15 +104,15 @@ PACE=200
 TSTART=100
 TEND=500
 LABEL=restraint
-PRINT ARG=restraint.bias
 ... MAXENT
+PRINT ARG=restraint.bias
 \endplumedfile
 Lagrangian multipliers will be printed on a file called restraint.bias
 The following input tells plumed to restrain the distance between atoms 7 and 15
 to be greater than 0.2 and to print the energy of the restraint
 \plumedfile
 DISTANCE ATOMS=7,15 LABEL=d
-MAXENT ARG=d TYPE=INEQUAL> AT=0.02 KAPPA=35000.0 TAU= LABEL=restraint
+MAXENT ARG=d TYPE=INEQUAL> AT=0.02 KAPPA=35000.0 TAU=3 LABEL=restraint
 PRINT ARG=restraint.bias
 \endplumedfile
 
@@ -142,7 +142,6 @@ class MaxEnt : public Bias {
   double totalWork;
   double BetaReweightBias;
   double simtemp;
-  double reweight_bias2;
   vector<ActionWithValue*> biases;
   std::string type;
   std::string error_type;
@@ -164,8 +163,8 @@ class MaxEnt : public Bias {
   int myrep,nrep;
 public:
   explicit MaxEnt(const ActionOptions&);
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   void update_lambda();
   static void registerKeywords(Keywords& keys);
   void ReadLagrangians(IFile &ifile);

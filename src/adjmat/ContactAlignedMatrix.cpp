@@ -78,10 +78,10 @@ public:
   static void registerKeywords( Keywords& keys );
   ///
   explicit ContactAlignedMatrix(const ActionOptions&);
-  void readOrientationConnector( const unsigned& i, const unsigned& j, const std::vector<std::string>& desc );
+  void readOrientationConnector( const unsigned& i, const unsigned& j, const std::vector<std::string>& desc ) override;
   double computeVectorFunction( const unsigned& iv, const unsigned& jv,
                                 const Vector& conn, const std::vector<double>& vec1, const std::vector<double>& vec2,
-                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const ;
+                                Vector& dconn, std::vector<double>& dvec1, std::vector<double>& dvec2 ) const override;
 };
 
 PLUMED_REGISTER_ACTION(ContactAlignedMatrix,"ALIGNED_MATRIX")

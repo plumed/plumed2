@@ -91,7 +91,7 @@ private:
 public:
   static void registerKeywords(Keywords& keys);
   explicit Gyration(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(Gyration,"GYRATION")

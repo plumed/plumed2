@@ -52,7 +52,7 @@ public:
 /// Constructor
   explicit AveragingVessel( const vesselbase::VesselOptions& );
 /// Copy data from an accumulated buffer into the grid
-  virtual void finish( const std::vector<double>& );
+  void finish( const std::vector<double>& ) override;
 /// Was the grid cleared on the last step
   bool wasreset() const ;
 /// Clear all the data stored on the grid
@@ -62,7 +62,7 @@ public:
 /// Functions for dealing with normalisation constant
   void setNorm( const double& snorm );
   double getNorm() const ;
-  virtual bool applyForce(  std::vector<double>& forces ) { return false; }
+  bool applyForce(  std::vector<double>& forces ) override { return false; }
 };
 
 inline

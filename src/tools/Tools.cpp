@@ -225,12 +225,19 @@ void Tools::trimComments(string & s) {
   s=s.substr(0,n);
 }
 
+bool Tools::caseInSensStringCompare(const std::string & str1, const std::string &str2)
+{
+  return ((str1.size() == str2.size()) && std::equal(str1.begin(), str1.end(), str2.begin(), [](char c1, char c2) {
+    return (c1 == c2 || std::toupper(c1) == std::toupper(c2));
+  }));
+}
+
 bool Tools::getKey(vector<string>& line,const string & key,string & s,int rep) {
   s.clear();
   for(auto p=line.begin(); p!=line.end(); ++p) {
     if((*p).length()==0) continue;
     string x=(*p).substr(0,key.length());
-    if(x==key) {
+    if(caseInSensStringCompare(x,key)) {
       if((*p).length()==key.length())return false;
       string tmp=(*p).substr(key.length(),(*p).length());
       line.erase(p);
@@ -294,6 +301,7 @@ void Tools::interpretLabel(vector<string>&s) {
     s[0]=s[1];
     s[1]="LABEL="+s0.substr(0,l-1);
   }
+  std::transform(s[0].begin(), s[0].end(), s[0].begin(), ::toupper);
 }
 
 vector<string> Tools::ls(const string&d) {

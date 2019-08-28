@@ -130,7 +130,6 @@ HISTOGRAM ...
   GRID_MAX=3.14,3.14
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05
-  GRID_WFILE=histo
   LABEL=hh
 ... HISTOGRAM
 
@@ -144,7 +143,7 @@ class DumpGrid : public GridPrintingBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit DumpGrid(const ActionOptions&ao);
-  void printGrid( OFile& ofile ) const ;
+  void printGrid( OFile& ofile ) const override;
 };
 
 PLUMED_REGISTER_ACTION(DumpGrid,"DUMPGRID")

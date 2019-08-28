@@ -32,9 +32,9 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   explicit AltMin( const vesselbase::VesselOptions& da );
-  std::string value_descriptor();
-  double calcTransform( const double& val, double& dv ) const ;
-  double finalTransform( const double& val, double& dv );
+  std::string value_descriptor() override;
+  double calcTransform( const double& val, double& dv ) const override;
+  double finalTransform( const double& val, double& dv ) override;
 };
 
 PLUMED_REGISTER_VESSEL(AltMin,"ALT_MIN")

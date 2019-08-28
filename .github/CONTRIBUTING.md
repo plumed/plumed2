@@ -23,6 +23,8 @@ If you want to contribute some large change, please consider adding a new module
 Documentation about adding new modules is still limited, but you can get inspiration
 from the existing ones. This procedure will allow you to keep the ownership on your code.
 On the other hand, we expect that you will maintain it in the future.
+In order to incorporate a new module into the main repository, we ask contributors to declare that
+the module is available with an open source license.
 
 Finally, notice that you can always share modified versions of PLUMED with your changes.
 We are happy if you want to host on github a fork of PLUMED with additional features.

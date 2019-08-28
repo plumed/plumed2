@@ -43,8 +43,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit BondOrientation( const ActionOptions& ao );
-  double calculateWeight( const unsigned& current, const double& weight, multicolvar::AtomValuePack& myatoms ) const ;
-  void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
+  double calculateWeight( const unsigned& current, const double& weight, multicolvar::AtomValuePack& myatoms ) const override;
+  void calculateVector( multicolvar::AtomValuePack& myatoms ) const override;
 };
 
 PLUMED_REGISTER_ACTION(BondOrientation,"BOND_DIRECTIONS")

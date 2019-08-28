@@ -49,9 +49,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeGradientBase(const ActionOptions&);
 /// Do jobs required before tasks are undertaken
-  void doJobsRequiredBeforeTaskList();
+  void doJobsRequiredBeforeTaskList() override;
 /// Actually do what we are asked
-  void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const ;
+  void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const override;
 /// Calculate what is in the volumes
   virtual void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const=0;
 /// Setup the regions that this is based on

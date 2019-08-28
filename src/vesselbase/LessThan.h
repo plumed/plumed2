@@ -36,8 +36,8 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   explicit LessThan( const VesselOptions& da );
-  std::string value_descriptor();
-  double calcTransform( const double& val, double& dv ) const ;
+  std::string value_descriptor() override;
+  double calcTransform( const double& val, double& dv ) const override;
   double getCutoff();
 };
 

@@ -259,7 +259,7 @@ public:
 // When destructing, stopwatch is logged.
 // Make sure that log survives stopwatch. Typically, it should be declared earlier, in order
 // to be destroyed later.
-  Stopwatch(Log&log): mylog(&log) {}
+  explicit Stopwatch(Log&log): mylog(&log) {}
 // Destructor.
   ~Stopwatch();
 /// Start timer named "name"
@@ -338,7 +338,15 @@ inline
 Stopwatch::Handler & Stopwatch::Handler::operator=(Handler && handler) noexcept {
   if(this!=&handler) {
     if(watch) {
-      if(stop) watch->stop();
+      if(stop) {
+        try {
+          watch->stop();
+        } catch(...) {
+// this is to avoid problems with cppcheck, given than this method is declared as
+// noexcept and stop might throw in case of an internal bug
+          std::terminate();
+        }
+      }
       else watch->pause();
     }
 // cppcheck complains about this:

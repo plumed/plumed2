@@ -44,9 +44,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarProduct(const ActionOptions&);
 /// Actually do the calculation
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Is the variable periodic
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarProduct,"MCOLV_PRODUCT")
@@ -75,7 +75,7 @@ double MultiColvarProduct::compute( const unsigned& tindex, AtomValuePack& myato
     dot *= tval[1];
   }
   if( !doNotCalculateDerivatives() ) {
-    MultiValue& myvals = myatoms.getUnderlyingMultiValue(); std::vector<double> cc(2);
+    myatoms.getUnderlyingMultiValue(); std::vector<double> cc(2);
     for(unsigned i=0; i<getNumberOfBaseMultiColvars(); ++i) {
       getInputData( i, false, myatoms, cc ); cc[1] = dot / cc[1];
       MultiValue& myder=getInputDerivatives( i, false, myatoms );

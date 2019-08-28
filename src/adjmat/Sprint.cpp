@@ -100,9 +100,9 @@ public:
 /// Constructor
   explicit Sprint(const ActionOptions&);
 /// Do the matrix calculation
-  void calculate();
+  void calculate() override;
 /// Sprint needs its only apply routine as it creates values
-  void apply();
+  void apply() override;
 };
 
 PLUMED_REGISTER_ACTION(Sprint,"SPRINT")

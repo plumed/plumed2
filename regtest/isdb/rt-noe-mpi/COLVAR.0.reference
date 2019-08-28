@@ -1,4 +1,4 @@
-#! FIELDS time inver1 inver2 test prova.exp_0 prova.exp_1 st1.sqdevsum st2.sqdevsum
+#! FIELDS time inver1 inver2 test prova.exp-0 prova.exp-1 st1.sqdevsum st2.sqdevsum
  0.000000 0.097100 0.133453 0.133462 0.500000 0.400000 0.233376 0.233376
  0.050000 0.097120 0.133441 0.133431 0.500000 0.400000 0.233366 0.233366
  0.100000 0.097098 0.133449 0.133478 0.500000 0.400000 0.233379 0.233379

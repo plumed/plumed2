@@ -113,6 +113,7 @@ like in the previous examples, and each replica will read its own DSIGMA value. 
 a unique plumed.dat is given, DSIGMA has to be a list containing a value for each replica.
 For 4 replicas:
 \plumedfile
+#SETTINGS NREPLICAS=4
 dim: DIMER TEMP=300 Q=0.5 ATOMS1=1,5,7 ATOMS2=23,27,29 DSIGMA=0.002,0.002,0.004,0.01
 \endplumedfile
 
@@ -136,7 +137,7 @@ class Dimer : public Colvar {
 public:
   static void registerKeywords( Keywords& keys);
   explicit Dimer(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
 protected:
   bool trimer,useall;
   int myrank, nranks;

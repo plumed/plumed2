@@ -69,7 +69,7 @@ class MatrixRowSums : public ActionWithInputMatrix {
 public:
   static void registerKeywords( Keywords& keys );
   explicit MatrixRowSums(const ActionOptions&);
-  double compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tinded, multicolvar::AtomValuePack& myatoms ) const override;
 };
 
 PLUMED_REGISTER_ACTION(MatrixRowSums,"ROWSUMS")
@@ -85,7 +85,7 @@ MatrixRowSums::MatrixRowSums(const ActionOptions& ao):
   Action(ao),
   ActionWithInputMatrix(ao)
 {
-  if( (mymatrix->getMatrixAction())->mybasemulticolvars.size()>0 ) error("matrix row sums should only be calculated when inputs are atoms");
+  if( (mymatrix->getMatrixAction())->mybasemulticolvars.size()>0 ) warning("matrix row may be problematic when inputs are not atoms");
   // Setup the tasks
   unsigned nrows = mymatrix->getNumberOfRows();
   ablocks.resize(1); ablocks[0].resize( nrows );

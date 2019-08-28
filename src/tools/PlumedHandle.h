@@ -77,7 +77,7 @@ class PlumedHandle {
 /// Default construct as nullptr
     DlHandle() {}
 /// Construct from a void*
-    DlHandle(void*h): handle(h) {}
+    explicit DlHandle(void*h): handle(h) {}
 /// Destructor will call dlclose if necessary
     ~DlHandle();
 /// Covertible to void* so that it can be used directly

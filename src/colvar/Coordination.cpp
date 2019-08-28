@@ -41,7 +41,7 @@ and is defined as
 \f]
 where \f$s_{ij}\f$ is 1 if the contact between atoms \f$i\f$ and \f$j\f$ is formed,
 zero otherwise.
-In actuality, \f$s_{ij}\f$ is replaced with a switching function to make it differentiable.
+In actuality, \f$s_{ij}\f$ is replaced with a switching function so as to ensure that the calculated CV has continuous derivatives.
 The default switching function is:
 \f[
 s_{ij} = \frac{ 1 - \left(\frac{{\bf r}_{ij}-d_0}{r_0}\right)^n } { 1 - \left(\frac{{\bf r}_{ij}-d_0}{r_0}\right)^m }
@@ -84,7 +84,7 @@ c1: COORDINATION GROUPA=group GROUPB=group R_0=0.3
 # Here's coordination within a single group:
 x: COORDINATION GROUPA=group R_0=0.3
 # This is just multiplying times 2 the variable x:
-c2: COMBINE ARG=x COEFFICIENTS=2
+c2: COMBINE ARG=x COEFFICIENTS=2 PERIODIC=NO
 
 # the two variables c1 and c2 should be identical, but the calculation of c2 is twice faster
 # since it runs on half of the pairs.
@@ -103,7 +103,7 @@ public:
   explicit Coordination(const ActionOptions&);
 // active methods:
   static void registerKeywords( Keywords& keys );
-  virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const;
+  double pairing(double distance,double&dfunc,unsigned i,unsigned j)const override;
 };
 
 PLUMED_REGISTER_ACTION(Coordination,"COORDINATION")

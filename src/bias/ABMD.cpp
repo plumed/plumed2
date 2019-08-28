@@ -90,7 +90,7 @@ class ABMD : public Bias {
   vector<Random> random;
 public:
   explicit ABMD(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

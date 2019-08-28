@@ -65,6 +65,7 @@ namespace colvar {
 
  This input tells plumed to print the puckering phase angle of the 3rd nucleotide of a RNA molecule on file COLVAR.
  \plumedfile
+ #SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
  MOLINFO STRUCTURE=rna.pdb MOLTYPE=rna
  PUCKERING ATOMS=@sugar-3 LABEL=puck
  PRINT ARG=puck.phs FILE=COLVAR
@@ -77,7 +78,7 @@ class Puckering : public Colvar {
 
 public:
   explicit Puckering(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
   void calculate5m();
   void calculate6m();

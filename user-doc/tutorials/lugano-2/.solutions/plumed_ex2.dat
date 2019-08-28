@@ -1,0 +1,22 @@
+# vim:ft=plumed
+MOLINFO STRUCTURE=diala.pdb
+phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
+
+CUSTOM ...
+ARG=phi 
+LABEL=doubleg
+FUNC=exp(-3.58*cos(x-0.53))+exp(-3.59*cos(x-1.87))
+PERIODIC=NO
+... CUSTOM 
+
+b: BIASVALUE ARG=doubleg
+
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1
+ffphi: CONVERT_TO_FES GRID=hhphi
+ffpsi: CONVERT_TO_FES GRID=hhpsi
+
+DUMPGRID GRID=ffphi FILE=fes_phi STRIDE=100000
+DUMPGRID GRID=ffpsi FILE=fes_psi STRIDE=100000
+PRINT ARG=phi,psi,b.bias FILE=colvar.dat STRIDE=50

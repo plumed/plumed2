@@ -43,7 +43,7 @@ class RMSD : public Colvar {
 
 public:
   explicit RMSD(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -149,6 +149,17 @@ position.  The Kearsley algorithm is used so this is done optimally.
 RMSD REFERENCE=file.pdb TYPE=OPTIMAL
 \endplumedfile
 
+The reference configuration is specified in a pdb file that will have a format similar to the one shown below:
+
+\auxfile{file.pdb}
+ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
+ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
+ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
+ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
+ATOM      8  HL  ALA     1      -1.845   0.961  -0.011  1.00  1.00
+END
+\endauxfile
+
 ...
 
 */
@@ -201,6 +212,12 @@ RMSD::RMSD(const ActionOptions&ao):
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
+  log.printf("  with indices : ");
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf("%d ",atoms[i].serial());
+  }
+  log.printf("\n");
   log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
   if(nopbc) log.printf("  without periodic boundary conditions\n");

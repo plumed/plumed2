@@ -88,6 +88,7 @@ action. However, this latter choice will affect all your input and output.
 The following input is very similar but dumps a .gro (gromacs) file,
 which also contains atom and residue names.
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 # this is required to have proper atom names:
 MOLINFO STRUCTURE=reference.pdb
 # if omitted, atoms will have "X" name...
@@ -141,9 +142,9 @@ public:
   explicit DumpAtoms(const ActionOptions&);
   ~DumpAtoms();
   static void registerKeywords( Keywords& keys );
-  void calculate() {}
-  void apply() {}
-  void update();
+  void calculate() override {}
+  void apply() override {}
+  void update() override ;
 };
 
 PLUMED_REGISTER_ACTION(DumpAtoms,"DUMPATOMS")

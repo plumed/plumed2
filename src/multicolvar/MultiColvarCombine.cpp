@@ -45,9 +45,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarCombine(const ActionOptions&);
 /// Actually do the calculation
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Is the variable periodic
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarCombine,"MCOLV_COMBINE")
@@ -82,7 +82,7 @@ double MultiColvarCombine::compute( const unsigned& tindex, AtomValuePack& myato
     dot += coeff[i]*tval[1];
   }
   if( !doNotCalculateDerivatives() ) {
-    MultiValue& myvals = myatoms.getUnderlyingMultiValue(); std::vector<double> cc(2);
+    myatoms.getUnderlyingMultiValue(); std::vector<double> cc(2);
     for(unsigned i=0; i<coeff.size(); ++i) {
       cc[1]=coeff[i]; MultiValue& myder=getInputDerivatives( i, false, myatoms );
       splitInputDerivatives( 1, 1, 2, i, cc, myder, myatoms );

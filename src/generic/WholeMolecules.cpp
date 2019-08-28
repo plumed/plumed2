@@ -92,6 +92,7 @@ This command instructs plumed to reconstruct the chain of backbone atoms in a
 protein
 
 \plumedfile
+#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES RESIDUES=all MOLTYPE=protein
 \endplumedfile
@@ -110,8 +111,8 @@ class WholeMolecules:
 public:
   explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
-  void calculate();
-  void apply() {}
+  void calculate() override;
+  void apply() override {}
 };
 
 PLUMED_REGISTER_ACTION(WholeMolecules,"WHOLEMOLECULES")

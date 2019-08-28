@@ -43,8 +43,8 @@ private:
   std::vector<unsigned> npoints, nfgrid;
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMapPointwise( const ActionOptions& ao );
-  void minimise( Matrix<double>& );
+  explicit SketchMapPointwise( const ActionOptions& ao );
+  void minimise( Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(SketchMapPointwise,"SKETCHMAP_POINTWISE")

@@ -81,7 +81,16 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
         if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
         unsigned nat=mypdb.getAtomNumbers().size();
         if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
-        if(aaa.empty()) aaa=mypdb.getAtomNumbers();
+        if(aaa.empty()) {
+          aaa=mypdb.getAtomNumbers();
+          log.printf("  found %z atoms in input \n",aaa.size());
+          log.printf("  with indices : ");
+          for(unsigned i=0; i<aaa.size(); ++i) {
+            if(i%25==0) log<<"\n";
+            log.printf("%d ",aaa[i].serial());
+          }
+          log.printf("\n");
+        }
         if(aaa!=mypdb.getAtomNumbers()) error("frames should contain same atoms in same order");
         log<<"Found PDB: "<<nframes<<" containing  "<<mypdb.getAtomNumbers().size()<<" atoms\n";
         pdbv.push_back(mypdb);

@@ -87,14 +87,14 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit DistanceFromContour( const ActionOptions& );
-  bool isDensity() const { return true; }
-  void calculate();
-  unsigned getNumberOfQuantities() const ;
-  bool isPeriodic() { return false; }
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  bool isDensity() const override { return true; }
+  void calculate() override;
+  unsigned getNumberOfQuantities() const override;
+  bool isPeriodic() override { return false; }
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
   double getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der );
 // We need an apply action as we are using an independent value
-  void apply();
+  void apply() override;
 };
 
 PLUMED_REGISTER_ACTION(DistanceFromContour,"DISTANCE_FROM_CONTOUR")

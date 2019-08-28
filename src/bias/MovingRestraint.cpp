@@ -114,7 +114,7 @@ class MovingRestraint : public Bias {
   double tot_work;
 public:
   explicit MovingRestraint(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords( Keywords& keys );
 };
 

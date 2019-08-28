@@ -43,8 +43,8 @@ private:
   double gamma;
 public:
   static void registerKeywords( Keywords& keys );
-  LandmarkStaged( const ActionOptions& ao );
-  void selectLandmarks();
+  explicit LandmarkStaged( const ActionOptions& ao );
+  void selectLandmarks() override;
 };
 
 PLUMED_REGISTER_ACTION(LandmarkStaged,"LANDMARK_SELECT_STAGED")

@@ -133,10 +133,10 @@ PRINT ARG=p.x,p.y,ene FILE=colvar.data FMT=%8.4f
 
 class MD_LinearExpansionPES : public PLMD::CLTool {
 public:
-  std::string description() const {return "MD of a one particle on a linear expansion PES";}
+  std::string description() const override {return "MD of a one particle on a linear expansion PES";}
   static void registerKeywords( Keywords& keys );
   explicit MD_LinearExpansionPES( const CLToolOptions& co );
-  int main( FILE* in, FILE* out, PLMD::Communicator& pc);
+  int main( FILE* in, FILE* out, PLMD::Communicator& pc) override;
 private:
   unsigned int dim;
   LinearBasisSetExpansion* potential_expansion_pntr;

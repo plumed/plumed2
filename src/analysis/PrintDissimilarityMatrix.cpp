@@ -42,9 +42,9 @@ private:
   std::string fname;
 public:
   static void registerKeywords( Keywords& keys );
-  PrintDissimilarityMatrix( const ActionOptions& ao );
-  void performAnalysis();
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const { plumed_error(); }
+  explicit PrintDissimilarityMatrix( const ActionOptions& ao );
+  void performAnalysis() override;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override { plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(PrintDissimilarityMatrix,"PRINT_DISSIMILARITY_MATRIX")

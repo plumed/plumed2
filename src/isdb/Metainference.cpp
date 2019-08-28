@@ -112,7 +112,7 @@ NOISETYPE=MGAUSS
 PARAMETERS=1.9190,2.9190,3.9190,4.9190
 SCALEDATA SCALE0=1 SCALE_MIN=0.1 SCALE_MAX=3 DSCALE=0.01
 SIGMA0=0.01 SIGMA_MIN=0.00001 SIGMA_MAX=3 DSIGMA=0.01
-SIGMA_MEAN=0.001
+SIGMA_MEAN0=0.001
 LABEL=spe
 ... METAINFERENCE
 
@@ -124,6 +124,16 @@ a single uncertainty value in a long-tailed gaussian to take into account for ou
 the data are weighted for the bias applied to other variables of the system.
 
 \plumedfile
+RDC ...
+LABEL=rdc
+SCALE=0.0001
+GYROM=-72.5388
+ATOMS1=22,23
+ATOMS2=25,27
+ATOMS3=29,31
+ATOMS4=33,34
+... RDC
+
 cv1: TORSION ATOMS=1,2,3,4
 cv2: TORSION ATOMS=2,3,4,5
 mm: METAD ARG=cv1,cv2 HEIGHT=0.5 SIGMA=0.3,0.3 PACE=200 BIASFACTOR=8 WALKERS_MPI
@@ -259,8 +269,8 @@ class Metainference : public bias::Bias
 public:
   explicit Metainference(const ActionOptions&);
   ~Metainference();
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -305,11 +315,11 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.add("optional","SELECTOR","name of selector");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
   keys.use("RESTART");
-  useCustomisableComponents(keys);
   keys.addOutputComponent("sigma",        "default",      "uncertainty parameter");
   keys.addOutputComponent("sigmaMean",    "default",      "uncertainty in the mean estimate");
-  keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance");
-  keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance");
+  keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance for sigma values");
+  keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance for scale value");
+  keys.addOutputComponent("acceptFT",     "GENERIC",      "MC acceptance for general metainference f tilde value");
   keys.addOutputComponent("weight",       "REWEIGHT",     "weights of the weighted average");
   keys.addOutputComponent("biasDer",      "REWEIGHT",     "derivatives with respect to the bias");
   keys.addOutputComponent("scale",        "SCALEDATA",    "scale parameter");
@@ -773,15 +783,15 @@ Metainference::Metainference(const ActionOptions&ao):
   if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
     for(unsigned i=0; i<sigma_mean2_.size(); ++i) {
       std::string num; Tools::convert(i,num);
-      addComponent("sigmaMean_"+num); componentIsNotPeriodic("sigmaMean_"+num);
-      valueSigmaMean.push_back(getPntrToComponent("sigmaMean_"+num));
-      getPntrToComponent("sigmaMean_"+num)->set(sqrt(sigma_mean2_[i]));
-      addComponent("sigma_"+num); componentIsNotPeriodic("sigma_"+num);
-      valueSigma.push_back(getPntrToComponent("sigma_"+num));
-      getPntrToComponent("sigma_"+num)->set(sigma_[i]);
+      addComponent("sigmaMean-"+num); componentIsNotPeriodic("sigmaMean-"+num);
+      valueSigmaMean.push_back(getPntrToComponent("sigmaMean-"+num));
+      getPntrToComponent("sigmaMean-"+num)->set(sqrt(sigma_mean2_[i]));
+      addComponent("sigma-"+num); componentIsNotPeriodic("sigma-"+num);
+      valueSigma.push_back(getPntrToComponent("sigma-"+num));
+      getPntrToComponent("sigma-"+num)->set(sigma_[i]);
       if(noise_type_==GENERIC) {
-        addComponent("ftilde_"+num); componentIsNotPeriodic("ftilde_"+num);
-        valueFtilde.push_back(getPntrToComponent("ftilde_"+num));
+        addComponent("ftilde-"+num); componentIsNotPeriodic("ftilde-"+num);
+        valueFtilde.push_back(getPntrToComponent("ftilde-"+num));
       }
     }
   } else {

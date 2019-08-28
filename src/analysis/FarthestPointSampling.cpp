@@ -40,8 +40,8 @@ private:
   unsigned seed;
 public:
   static void registerKeywords( Keywords& keys );
-  FarthestPointSampling( const ActionOptions& ao );
-  void selectLandmarks();
+  explicit FarthestPointSampling( const ActionOptions& ao );
+  void selectLandmarks() override;
 };
 
 PLUMED_REGISTER_ACTION(FarthestPointSampling,"LANDMARK_SELECT_FPS")

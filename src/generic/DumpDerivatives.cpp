@@ -44,8 +44,8 @@ can be done by outputting the derivatives calculated analytically and numericall
 The following input instructs plumed to write a file called deriv that contains both the
 analytical and numerical derivatives of the distance between atoms 1 and 2.
 \plumedfile
-DISTANCE ATOM=1,2 LABEL=distance
-DISTANCE ATOM=1,2 LABEL=distanceN NUMERICAL_DERIVATIVES
+DISTANCE ATOMS=1,2 LABEL=distance
+DISTANCE ATOMS=1,2 LABEL=distanceN NUMERICAL_DERIVATIVES
 DUMPDERIVATIVES ARG=distance,distanceN STRIDE=1 FILE=deriv
 \endplumedfile
 
@@ -62,11 +62,11 @@ class DumpDerivatives :
   string fmt;
   OFile of;
 public:
-  void calculate() {}
+  void calculate() override {}
   explicit DumpDerivatives(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply() {}
-  void update();
+  void apply() override {}
+  void update() override;
   ~DumpDerivatives();
 };
 

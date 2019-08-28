@@ -37,11 +37,11 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithIntegral(const ActionOptions&ao);
-  unsigned getNumberOfDerivatives();
-  void turnOnDerivatives();
+  unsigned getNumberOfDerivatives() override;
+  void turnOnDerivatives() override;
 /// Unless I am mistaken an integral should never be a periodic function
-  bool isPeriodic() { return false; }
-  void apply();
+  bool isPeriodic() override { return false; }
+  void apply() override;
 };
 
 inline

@@ -64,7 +64,7 @@ class Stats :
   bool upperd;
 public:
   explicit Stats(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -73,7 +73,6 @@ PLUMED_REGISTER_ACTION(Stats,"STATS")
 
 void Stats::registerKeywords(Keywords& keys) {
   Function::registerKeywords(keys);
-  useCustomisableComponents(keys);
   keys.use("ARG");
   keys.add("optional","PARARG","the input for this action is the scalar output from one or more other actions without derivatives.");
   keys.add("optional","PARAMETERS","the parameters of the arguments in your function");
@@ -132,8 +131,8 @@ Stats::Stats(const ActionOptions&ao):
     if(components) {
       for(unsigned i=0; i<parameters.size(); i++) {
         std::string num; Tools::convert(i,num);
-        addComponentWithDerivatives("sqd_"+num);
-        componentIsNotPeriodic("sqd_"+num);
+        addComponentWithDerivatives("sqd-"+num);
+        componentIsNotPeriodic("sqd-"+num);
       }
     } else {
       addComponentWithDerivatives("sqdevsum");

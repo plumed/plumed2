@@ -127,8 +127,8 @@ class ExtendedLagrangian : public Bias {
   Random rand;
 public:
   explicit ExtendedLagrangian(const ActionOptions&);
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   static void registerKeywords(Keywords& keys);
 };
 

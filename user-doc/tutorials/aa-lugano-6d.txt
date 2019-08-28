@@ -1,0 +1,93 @@
+/**
+\page lugano-6d Lugano tutorial: Folding free energy for a protein described by a go-model 
+
+\section lugano-6d-aims Aims
+
+The aim of this tutorial is to train users to 
+learn the syntax of complex collective variables and use them to analyze 
+MD trajectories of realistic biological systems and bias them with metadynamics. 
+
+\section lugano-6d-objectives Objectives
+
+Once this tutorial is completed students will be able to:
+- Write the PLUMED input file to use complex CVs for analysis 
+- Analyze trajectories and calculate the free energy of complex biological systems  
+- Perform error analysis and evaluate convergence in realistic situations
+- Setup, run, and analyze metadynamics simulations of a complex system 
+
+\section lugano-6d-resources Resources
+
+The \tarball{lugano-6d} for this tutorial contains the following files:
+- GB1.tpr: a GROMACS run file to perform MD simulation of GB1
+- GB1_native.pdb: a PDB file for the folded structure of GB1 
+- GB1_smog.top: the GROMACS topology file 
+- GB1.mdp: the gromacs simulation parameters file 
+- GB1_start.gro: the starting configuration of the simulation 
+
+\section lugano-6d-intro Introduction
+
+In this tutorial we propose exercises on the protein G B1 domain described using a structure-based potential obtained using SMOG (smog-server.org)
+
+\section lugano-6d-ex-1 Exercise 1: Protein G folding simulations
+GB1 is a small protein domain with a simple beta-alpha-beta fold. It is a well studied protein that folds on the millisecond time scale.
+Here we use a structure based potential and well-tempered metadynamics to study the free energy of folding and unfolding.
+In the TARBALL of this exercise we provide the files needed to run the simulation, the user should write the plumed input file needed
+to bias the sampling.
+
+\anchor lugano-6d-pgb
+\image html lugano-6d-gb.png "The crystal structure of the protein G B1 domain"
+
+The users are expected to:
+- setup and perform a well-tempered metadynamics simulation
+- evaluate convergence and error calculation of the metadynamics simulation
+- calculate the free energy difference between the folded and unfolded state of this protein
+- evaluate the robustness of the former by reweighting the resulting free energy as function of different CVs
+
+The users are free to choose his/her favorite CVs and they are encouraged to use the
+on-line manual to create their own PLUMED input file.
+However, we encourage all the users to experiment at least with the following CVs to characterize
+the free-energy landscape of GB1:
+
+- \ref RMSD with respect to the folded state
+- \ref DRMSD with respect to the folded state
+- \ref GYRATION
+- \ref ALPHABETA 
+- \ref DIHCOR
+
+Unfortunately secondary structure collective variables cannot be used in this case because the model does not include hydrogen atoms.
+
+The users should first perform a preliminary simulations and use this to select one or more CV to be later employed for a \ref METAD or \ref RESTRAINT (umbrella sampling) simulation. 
+Once you are satisfied by the convergence of your simulation, you can use one of the reweighting algorithms proposed
+to evaluate the free-energy difference between folded and unfolded state as a function of multiple collective variables. 
+
+\plumedfile
+#SETTINGS MOLFILE=user-doc/tutorials/lugano-6d/GB1_native.pdb
+#this allows you to use short-cut for dihedral angles
+MOLINFO STRUCTURE=GB1_native.pdb
+
+#add here the collective variables you want to bias
+
+#add here the RESTRAINT or METAD bias, remember that for METAD you need to set: one SIGMA per CV, one single HEIGHT, one BIASFACTOR and one PACE. 
+#Using GRIDS can increase the performances, so set a as many GRID_MIN and GRID_MAX as the number of CVs with reasonable ranges 
+#(i.e an RMSD will range between 0 and 3, while ALPHABETA and DIHCOR will range between 0 and N of dihedrals). 
+
+#add here the printing and/or other analyssi
+
+\endplumedfile
+
+\section lugano-6d-conclusions Conclusions
+
+In summary, in this tutorial you should have learned how to use PLUMED to:
+- Analyze trajectories of realistic biological systems using complex CVs 
+- Extract conformations that correspond to local free-energy minima 
+- Apply block analysis to estimate error in the reconstructed free-energy profiles
+- Calculate ensemble averages of experimental CVs 
+- Reweight well-tempered metadynamics simulations 
+
+*/
+
+link: @subpage lugano-6d
+
+description: This tutorial propose a more complex case to test your own skill with a more realistic example 
+
+additional-files: lugano-6d

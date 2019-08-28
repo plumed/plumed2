@@ -102,7 +102,7 @@ QVALUE14=0.41 EXPINT14=0.0210131
 QVALUE15=0.44 EXPINT15=0.0220506
 ... SAXS
 
-PRINT ARG=(saxs\.q_.*),(saxs\.exp_.*) FILE=colvar STRIDE=1
+PRINT ARG=(saxs\.q-.*),(saxs\.exp-.*) FILE=colvar STRIDE=1
 
 \endplumedfile
 
@@ -141,15 +141,14 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit SAXS(const ActionOptions&);
-  virtual void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(SAXS,"SAXS")
 
 void SAXS::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
-  useCustomisableComponents(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
@@ -321,29 +320,29 @@ SAXS::SAXS(const ActionOptions&ao):
   if(!getDoScore()) {
     for(unsigned i=0; i<numq; i++) {
       std::string num; Tools::convert(i,num);
-      addComponentWithDerivatives("q_"+num);
-      componentIsNotPeriodic("q_"+num);
+      addComponentWithDerivatives("q-"+num);
+      componentIsNotPeriodic("q-"+num);
     }
     if(exp) {
       for(unsigned i=0; i<numq; i++) {
         std::string num; Tools::convert(i,num);
-        addComponent("exp_"+num);
-        componentIsNotPeriodic("exp_"+num);
-        Value* comp=getPntrToComponent("exp_"+num);
+        addComponent("exp-"+num);
+        componentIsNotPeriodic("exp-"+num);
+        Value* comp=getPntrToComponent("exp-"+num);
         comp->set(expint[i]);
       }
     }
   } else {
     for(unsigned i=0; i<numq; i++) {
       std::string num; Tools::convert(i,num);
-      addComponent("q_"+num);
-      componentIsNotPeriodic("q_"+num);
+      addComponent("q-"+num);
+      componentIsNotPeriodic("q-"+num);
     }
     for(unsigned i=0; i<numq; i++) {
       std::string num; Tools::convert(i,num);
-      addComponent("exp_"+num);
-      componentIsNotPeriodic("exp_"+num);
-      Value* comp=getPntrToComponent("exp_"+num);
+      addComponent("exp-"+num);
+      componentIsNotPeriodic("exp-"+num);
+      Value* comp=getPntrToComponent("exp-"+num);
       comp->set(expint[i]);
     }
   }
@@ -465,7 +464,7 @@ void SAXS::calculate_gpu(vector<Vector> &deriv)
 
   for(unsigned k=0; k<numq; k++) {
     string num; Tools::convert(k,num);
-    Value* val=getPntrToComponent("q_"+num);
+    Value* val=getPntrToComponent("q-"+num);
     val->set(sum[k]);
     if(getDoScore()) setCalcData(k, sum[k]);
     for(unsigned i=0; i<size; i++) {
@@ -552,7 +551,7 @@ void SAXS::calculate_cpu(vector<Vector> &deriv)
       const unsigned kN = k*size;
       sum[k] *= 4.*M_PI;
       string num; Tools::convert(k,num);
-      Value* val=getPntrToComponent("q_"+num);
+      Value* val=getPntrToComponent("q-"+num);
       val->set(sum[k]);
       if(getDoScore()) setCalcData(k, sum[k]);
       for(unsigned i=0; i<size; i++) deriv[kN+i] *= 8.*M_PI*q_list[k];
@@ -563,7 +562,7 @@ void SAXS::calculate_cpu(vector<Vector> &deriv)
     for (unsigned k=algorithm+1; k<numq; k++) {
       sum[k]+=FF_rank[k];
       string num; Tools::convert(k,num);
-      Value* val=getPntrToComponent("q_"+num);
+      Value* val=getPntrToComponent("q-"+num);
       val->set(sum[k]);
       if(getDoScore()) setCalcData(k, sum[k]);
     }
@@ -593,7 +592,7 @@ void SAXS::calculate()
     Value* val;
     if(!getDoScore()) {
       string num; Tools::convert(k,num);
-      val=getPntrToComponent("q_"+num);
+      val=getPntrToComponent("q-"+num);
       for(unsigned i=0; i<size; i++) {
         setAtomsDerivatives(val, i, deriv[kdx+i]);
         deriv_box += Tensor(getPosition(i),deriv[kdx+i]);

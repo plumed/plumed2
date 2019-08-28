@@ -42,8 +42,8 @@ private:
   LandmarkSelectionBase* mylandmarks;
 public:
   static void registerKeywords( Keywords& keys );
-  ReselectLandmarks( const ActionOptions& ao );
-  void selectLandmarks();
+  explicit ReselectLandmarks( const ActionOptions& ao );
+  void selectLandmarks() override;
 };
 
 PLUMED_REGISTER_ACTION(ReselectLandmarks,"RESELECT_LANDMARKS")

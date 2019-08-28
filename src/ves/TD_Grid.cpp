@@ -78,6 +78,24 @@ file.
 td: TD_GRID FILE=input-grid.data
 \endplumedfile
 
+The input grid is then specified using the usual format employed by PLUMED an example of which
+is shown below:
+
+\auxfile{input-grid.data}
+#! FIELDS d1 external.bias der_d1
+#! SET min_d1 1.14
+#! SET max_d1 1.32
+#! SET nbins_d1 6
+#! SET periodic_d1 false
+   1.1400   0.0031   0.1101
+   1.1700   0.0086   0.2842
+   1.2000   0.0222   0.6648
+   1.2300   0.0521   1.4068
+   1.2600   0.1120   2.6873
+   1.2900   0.2199   4.6183
+   1.3200   0.3948   7.1055
+\endauxfile
+
 */
 //+ENDPLUMEDOC
 
@@ -92,7 +110,7 @@ class TD_Grid : public TargetDistribution {
 public:
   static void registerKeywords( Keywords&);
   explicit TD_Grid(const ActionOptions& ao);
-  double getValue(const std::vector<double>&) const ;
+  double getValue(const std::vector<double>&) const override;
 };
 
 

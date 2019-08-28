@@ -631,15 +631,15 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
 }
 
 bool Keywords::outputComponentExists( const std::string& name, const bool& custom ) const {
-  if( custom && cstring.find("customizable")!=std::string::npos ) return true;
+  if( custom && cstring.find("customize")!=std::string::npos ) return true;
 
-  std::string sname; std::size_t num=name.find_first_of("-");
-  if( num!=std::string::npos ) sname=name.substr(0,num);
-  else {
-    std::size_t num2=name.find_first_of("_");
-    if( num2!=std::string::npos ) sname=name.substr(num2);
-    else sname=name;
-  }
+  std::string sname;
+  std::size_t num=name.find_first_of("-");
+  std::size_t num2=name.find_last_of("_");
+
+  if( num2!=std::string::npos ) sname=name.substr(num2);
+  else if( num!=std::string::npos ) sname=name.substr(0,num);
+  else sname=name;
 
   for(unsigned i=0; i<cnames.size(); ++i) {
     if( sname==cnames[i] ) return true;

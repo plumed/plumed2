@@ -51,7 +51,7 @@ that are specified in the DENSITY action that are within a region where the dens
 \plumedfile
 d1: DENSITY SPECIES=14401-74134:3 LOWMEM
 fi: INENVELOPE DATA=d1 ATOMS=1-14400 CONTOUR={RATIONAL D_0=2.0 R_0=1.0} BANDWIDTH=0.1,0.1,0.1 LOWMEM
-PRINT ARG=fi,rr.* FILE=colvar
+PRINT ARG=fi FILE=colvar
 \endplumedfile
 
 */
@@ -71,8 +71,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeInEnvelope(const ActionOptions& ao);
-  void setupRegions();
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
+  void setupRegions() override;
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
 PLUMED_REGISTER_ACTION(VolumeInEnvelope,"INENVELOPE")

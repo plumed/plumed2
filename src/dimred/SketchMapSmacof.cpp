@@ -42,8 +42,8 @@ private:
   double recalculateWeights( const Matrix<double>& projections, Matrix<double>& weights );
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMapSmacof( const ActionOptions& ao );
-  void minimise( Matrix<double>& );
+  explicit SketchMapSmacof( const ActionOptions& ao );
+  void minimise( Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(SketchMapSmacof,"SKETCHMAP_SMACOF")

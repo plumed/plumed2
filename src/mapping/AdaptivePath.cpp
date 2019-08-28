@@ -59,19 +59,27 @@ MD based on the data accumulated during the preceding 50 time steps.
 
 \plumedfile
 d1: DISTANCE ATOMS=1,2 COMPONENTS
-pp: ADAPTIVE_PATH TYPE=EUCLIDEAN FIXED=5,15 UPDATE=50 WFILE=out-path.pdb WSTRIDE=50 REFERENCE=mypath.pdb
+pp: ADAPTIVE_PATH TYPE=EUCLIDEAN FIXED=2,5 UPDATE=50 WFILE=out-path.pdb WSTRIDE=50 REFERENCE=mypath.pdb
 PRINT ARG=d1.x,d1.y,pp.* FILE=colvar
 \endplumedfile
 
 In the case above the distance between frames is calculated based on the \f$x\f$ and \f$y\f$ components of the vector connecting
 atoms 1 and 2.  As such an extract from the input reference path (mypath.pdb) would look as follows:
 
-\verbatim
+\auxfile{mypath.pdb}
 REMARK ARG=d1.x,d1.y d1.x=1.12 d1.y=-.60
 END
 REMARK ARG=d1.x,d1.y d1.x=.99 d1.y=-.45
 END
-\endverbatim
+REMARK ARG=d1.x,d1.y d1.x=.86 d1.y=-.30
+END
+REMARK ARG=d1.x,d1.y d1.x=.73 d1.y=-.15
+END
+REMARK ARG=d1.x,d1.y d1.x=.60 d1.y=0
+END
+REMARK ARG=d1.x,d1.y d1.x=.47 d1.y=.15
+END
+\endauxfile
 
 Notice that one can also use RMSD frames in place of arguments like those above.
 
@@ -95,11 +103,11 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdaptivePath(const ActionOptions&);
-  void calculate();
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const ;
-  double getLambda() { return 0.0; }
-  double transformHD( const double& dist, double& df ) const ;
-  void update();
+  void calculate() override;
+  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
+  double getLambda() override { return 0.0; }
+  double transformHD( const double& dist, double& df ) const override;
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(AdaptivePath,"ADAPTIVE_PATH")

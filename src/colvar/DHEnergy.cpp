@@ -75,7 +75,7 @@ public:
   explicit DHEnergy(const ActionOptions&);
 // active methods:
   static void registerKeywords( Keywords& keys );
-  virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const;
+  double pairing(double distance,double&dfunc,unsigned i,unsigned j)const override;
 };
 
 PLUMED_REGISTER_ACTION(DHEnergy,"DHENERGY")

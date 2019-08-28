@@ -44,7 +44,7 @@ class MultiRMSD : public Colvar {
 
 public:
   explicit MultiRMSD(const ActionOptions&);
-  virtual void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -71,7 +71,7 @@ configuration.  \f$w_i\f$ is an optional weight.
 The distances for each of the domains in the above sum can be calculated using the \ref DRMSD or \ref RMSD measures or
 using a combination of these distance.  The reference configuration is specified in a pdb file like the one below:
 
-\verbatim
+\auxfile{file1.pdb}
 ATOM      2  O   ALA     2      -0.926  -2.447  -0.497  1.00  1.00      DIA  O
 ATOM      4  HNT ALA     2       0.533  -0.396   1.184  1.00  1.00      DIA  H
 ATOM      6  HT1 ALA     2      -0.216  -2.590   1.371  1.00  1.00      DIA  H
@@ -89,7 +89,7 @@ ATOM     20  HB1 ALA     2       2.670  -0.716  -2.057  1.00  1.00      DIA  H
 ATOM     21  HB2 ALA     2       2.556  -1.051  -0.295  1.00  1.00      DIA  H
 ATOM     22  HB3 ALA     2       2.070  -2.314  -1.490  1.00  1.00      DIA  H
 END
-\endverbatim
+\endauxfile
 
 with the TER keyword being used to separate the various domains in you protein.
 
@@ -120,7 +120,7 @@ UPPER_CUTOFF=# only pairs of atoms further than UPPER_CUTOFF are considered in t
 \endverbatim
 as shown in the following example
 
-\verbatim
+\auxfile{file2.pdb}
 REMARK NOPBC
 REMARK LOWER_CUTOFF=0.1
 REMARK UPPER_CUTOFF=0.8
@@ -141,7 +141,7 @@ ATOM     20  HB1 ALA     2       2.670  -0.716  -2.057  1.00  1.00      DIA  H
 ATOM     21  HB2 ALA     2       2.556  -1.051  -0.295  1.00  1.00      DIA  H
 ATOM     22  HB3 ALA     2       2.070  -2.314  -1.490  1.00  1.00      DIA  H
 END
-\endverbatim
+\endauxfile
 
 
 */
@@ -188,6 +188,12 @@ MultiRMSD::MultiRMSD(const ActionOptions&ao):
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
+  log.printf("  with indices : ");
+  for(unsigned i=0; i<atoms.size(); ++i) {
+    if(i%25==0) log<<"\n";
+    log.printf("%d ",atoms[i].serial());
+  }
+  log.printf("\n");
   log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
 }

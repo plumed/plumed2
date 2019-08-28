@@ -1,4 +1,4 @@
-#! FIELDS time c1 saxs_va.q_0 saxs_va.q_1 saxs_va.q_2 saxs_va.exp_0 saxs_va.exp_1 saxs_va.exp_2 saxs_va.score saxs_va.biasDer saxs_va.weight saxs_va.acceptSigma saxs_va.sigmaMean saxs_va.sigma
+#! FIELDS time c1 saxs_va.q-0 saxs_va.q-1 saxs_va.q-2 saxs_va.exp-0 saxs_va.exp-1 saxs_va.exp-2 saxs_va.score saxs_va.biasDer saxs_va.weight saxs_va.acceptSigma saxs_va.sigmaMean saxs_va.sigma
  0.000000 5.99172 1.06774 0.98638 0.86041 1.09020 0.79063 0.45381 12.42995 0.01473 0.37775 1.00000 0.00010 1.00000
  0.005000 6.71514 1.06284 0.95868 0.80122 1.09020 0.79063 0.45381 12.37627 0.00348 0.41976 1.00000 0.00010 1.00000
  0.010000 6.41986 1.05815 0.93315 0.75047 1.09020 0.79063 0.45381 12.36466 -0.01125 0.39045 1.00000 0.00010 1.00000

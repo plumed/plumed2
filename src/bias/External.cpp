@@ -43,17 +43,24 @@ The following is an input for a calculation with an external potential that is
 defined in the file bias.dat and that acts on the distance between atoms 3 and 5.
 \plumedfile
 DISTANCE ATOMS=3,5 LABEL=d1
-EXTERNAL ARG=d1 FILE=bias.dat LABEL=external
+EXTERNAL ARG=d1 FILE=bias.grid LABEL=external
 \endplumedfile
 
-The header in the file bias.dat should read:
-\verbatim
+The bias.grid will then look something like this:
+\auxfile{bias.grid}
 #! FIELDS d1 external.bias der_d1
-#! SET min_d1 0.0
-#! SET max_d1 1.0
-#! SET nbins_d1 100
+#! SET min_d1 1.14
+#! SET max_d1 1.32
+#! SET nbins_d1 6
 #! SET periodic_d1 false
-\endverbatim
+   1.1400   0.0031   0.1101
+   1.1700   0.0086   0.2842
+   1.2000   0.0222   0.6648
+   1.2300   0.0521   1.4068
+   1.2600   0.1120   2.6873
+   1.2900   0.2199   4.6183
+   1.3200   0.3948   7.1055
+\endauxfile
 
 This should then be followed by the value of the potential and its derivative
 at 100 equally spaced points along the distance between 0 and 1.
@@ -64,21 +71,32 @@ potential acting on two torsional angles:
 \plumedfile
 TORSION ATOMS=4,5,6,7 LABEL=t1
 TORSION ATOMS=6,7,8,9 LABEL=t2
-EXTERNAL ARG=t1,t2 FILE=bias.dat LABEL=ext
+EXTERNAL ARG=t1,t2 FILE=bias2.grid LABEL=ext
 \endplumedfile
 
-The header in the file bias.dat for this calculation would read:
-\verbatim
+The file bias2.grid for this calculation would need to look something like this:
+\auxfile{bias2.grid}
 #! FIELDS t1 t2 ext.bias der_t1 der_t2
 #! SET min_t1 -pi
-#! SET max_t1 +pi
-#! SET nbins_t1 100
+#! SET max_t1 pi
+#! SET nbins_t1 3
 #! SET periodic_t1 true
 #! SET min_t2 -pi
-#! SET max_t2 +pi
-#! SET nbins_t2 100
+#! SET max_t2 pi
+#! SET nbins_t2 3
 #! SET periodic_t2 true
-\endverbatim
+ -3.141593 -3.141593 0.000000 -0.000000 -0.000000
+ -1.047198 -3.141593 0.000000 0.000000 -0.000000
+ 1.047198 -3.141593 0.000000 -0.000000 -0.000000
+
+ -3.141593 -1.047198 0.000000 -0.000000 0.000000
+ -1.047198 -1.047198 0.007922 0.033185 0.033185
+ 1.047198 -1.047198 0.007922 -0.033185 0.033185
+
+ -3.141593 1.047198 0.000000 -0.000000 -0.000000
+ -1.047198 1.047198 0.007922 0.033185 -0.033185
+ 1.047198 1.047198 0.007922 -0.033185 -0.033185
+\endauxfile
 
 This would be then followed by 100 blocks of data.  In the first block of data the
 value of t1 (the value in the first column) is kept fixed and the value of
@@ -101,7 +119,7 @@ private:
 
 public:
   explicit External(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

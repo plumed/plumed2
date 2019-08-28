@@ -101,37 +101,66 @@ PRINT ARG=dist,dist2,eds.dist_coupling,eds.dist2_coupling,eds.bias,eds.force2 FI
 
 Rather than trying to find the coupling constants adaptively, one can ramp up to a constant value.
 \plumedfile
+dist: DISTANCE ATOMS=1,2
+dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
+
 #ramp couplings from 0,0 to -1,1 over 50000 steps
 eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 RAMP PERIOD=50000 TEMP=1.0
 
 #same as above, except starting at -0.5,0.5 rather than default of 0,0
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
+eds2: EDS ARG=dist,dist2 CENTER=2.0,1.0 FIXED=-1,1 INIT=-0.5,0.5 RAMP PERIOD=50000 TEMP=1.0
 \endplumedfile
 
 A restart file can be added to dump information needed to restart/continue simulation using these parameters every PERIOD.
 \plumedfile
+dist: DISTANCE ATOMS=1,2
+dist2: COMBINE ARG=dist POWERS=2 PERIODIC=NO
+
 #add the option to write to a restart file
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 OUT_RESTART=restart.dat
+eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 OUT_RESTART=checkpoint.eds
 \endplumedfile
+
+The first few lines of the restart file that is output if we run a calculation with one CV will look something like this:
+
+\auxfile{restart.eds}
+#! FIELDS time d1_center d1_set d1_target d1_coupling d1_maxrange d1_maxgrad d1_accum d1_mean d1_std
+#! SET adaptive  1
+#! SET update_period  1
+#! SET seed  0
+#! SET kbt    2.4943
+   0.0000   1.0000   0.0000   0.0000   0.0000   7.4830   0.1497   0.0000   0.0000   0.0000
+   1.0000   1.0000   0.0000   0.0000   0.0000   7.4830   0.1497   0.0000   0.0000   0.0000
+   2.0000   1.0000  -7.4830   0.0000   0.0000   7.4830   0.1497   0.0224   0.0000   0.0000
+   3.0000   1.0000  -7.4830   0.0000  -7.4830   7.4830   0.1497   0.0224   0.0000   0.0000
+   4.0000   1.0000  -7.4830   0.0000  -7.4830   7.4830   0.1497   0.0224   0.0000   0.0000
+\endauxfile
 
 Read in a previous restart file. Adding RESTART flag makes output append
 \plumedfile
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat RESTART
+d1: DISTANCE ATOMS=1,2
+
+eds: EDS ARG=d1 CENTER=2.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.eds RESTART=YES
 \endplumedfile
 
 Read in a previous restart file and freeze the bias at the final level from the previous simulation
 \plumedfile
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 TEMP=1.0 IN_RESTART=restart.dat FREEZE
+d1: DISTANCE ATOMS=1,2
+
+eds: EDS ARG=d1 CENTER=2.0 TEMP=1.0 IN_RESTART=restart.eds FREEZE
 \endplumedfile
 
 Read in a previous restart file and freeze the bias at the mean from the previous simulation
 \plumedfile
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 TEMP=1.0 IN_RESTART=restart.dat FREEZE MEAN
+d1: DISTANCE ATOMS=1,2
+
+eds: EDS ARG=d1 CENTER=2.0 TEMP=1.0 IN_RESTART=restart.eds FREEZE MEAN
 \endplumedfile
 
 Read in a previous restart file and continue the bias, but use the mean from the previous run as the starting point
 \plumedfile
-eds: EDS ARG=dist,dist2 CENTER=2.0,1.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.dat MEAN
+d1: DISTANCE ATOMS=1,2
+
+eds: EDS ARG=d1 CENTER=2.0 PERIOD=50000 TEMP=1.0 IN_RESTART=restart.eds FREEZE MEAN
 \endplumedfile
 
 
@@ -260,7 +289,7 @@ void EDS::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
 
   keys.addOutputComponent("force2","default","squared value of force from the bias");
-  keys.addOutputComponent("pressure","default","If using virial keyword, this is the curent sum of virials. It is in units of pressure (energy / vol^3)");
+  keys.addOutputComponent("pressure","default","If using virial keyword, this is the current sum of virial terms. It is in units of pressure (energy / vol^3)");
   keys.addOutputComponent("_coupling","default", "For each named CV biased, there will be a corresponding output CV_coupling storing the current linear bias prefactor.");
 }
 
@@ -540,7 +569,7 @@ EDS::EDS(const ActionOptions&ao):
 }
 
 void EDS::readInRestart(const bool b_mean) {
-  int adaptive_i;
+  int adaptive_i=0;
 
   in_restart_.open(in_restart_name_);
 

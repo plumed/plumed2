@@ -51,12 +51,10 @@ The following command instructs plumed to construct a classical multidimensional
 The RMSD distance between atoms 1-256 have moved is used to measure the distances in the high-dimensional space.
 
 \plumedfile
-CLASSICAL_MDS ...
-  ATOMS=1-256
-  METRIC=OPTIMAL-FAST
-  NLOW_DIM=2
-  OUTPUT_FILE=rmsd-embed
-... CLASSICAL_MDS
+data: COLLECT_FRAMES ATOMS=1-256
+mat: EUCLIDEAN_DISSIMILARITIES USE_OUTPUT_DATA_FROM=data
+mds: CLASSICAL_MDS USE_OUTPUT_DATA_FROM=mat NLOW_DIM=2
+OUTPUT_ANALYSIS_DATA_TO_COLVAR USE_OUTPUT_DATA_FROM=mds FILE=rmsd-embed
 \endplumedfile
 
 The following section is for people who are interested in how this method works in detail. A solid understanding of this material is
@@ -165,7 +163,7 @@ class ClassicalMultiDimensionalScaling : public DimensionalityReductionBase {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ClassicalMultiDimensionalScaling( const ActionOptions& ao );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& );
+  void calculateProjections( const Matrix<double>&, Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(ClassicalMultiDimensionalScaling,"CLASSICAL_MDS")

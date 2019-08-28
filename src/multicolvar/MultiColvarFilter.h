@@ -42,11 +42,11 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit MultiColvarFilter(const ActionOptions&);
 /// Do everything required to setup the derivatives
-  void doJobsRequiredBeforeTaskList();
+  void doJobsRequiredBeforeTaskList() override;
 /// Get the number of quantities in the colvar
-  unsigned getNumberOfQuantities() const ;
+  unsigned getNumberOfQuantities() const override;
 /// Actually do what we are asked
-  void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const ;
+  void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const override;
 /// Do the filtering
   virtual double applyFilter( const double& val, double& df ) const=0;
 /// Just checks there are no bridging forces

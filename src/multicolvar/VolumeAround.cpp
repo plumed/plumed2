@@ -57,7 +57,7 @@ that have x (in fractional coordinates) within 2.0 nm of the com of mass c1. The
 \plumedfile
 COM ATOMS=1-100 LABEL=c1
 COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 LABEL=c
-AROUND DATA=c ORIGIN=c1 XLOWER=-2.0 XUPPER=2.0 SIGMA=0.1 MEAN LABEL=s
+AROUND DATA=c ATOM=c1 XLOWER=-2.0 XUPPER=2.0 SIGMA=0.1 MEAN LABEL=s
 \endplumedfile
 
 */
@@ -76,8 +76,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit VolumeAround(const ActionOptions& ao);
-  void setupRegions();
-  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
+  void setupRegions() override;
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const override;
 };
 
 PLUMED_REGISTER_ACTION(VolumeAround,"AROUND")

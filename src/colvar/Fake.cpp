@@ -51,7 +51,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit ColvarFake(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(ColvarFake,"FAKE")
@@ -62,6 +62,7 @@ void ColvarFake::registerKeywords( Keywords& keys ) {
   keys.reserve("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO,NO (one for the lower and the other for the upper boundary). For multicomponents then it is PERIODIC=mincomp1,maxcomp1,mincomp2,maxcomp2  etc ");
   keys.use("PERIODIC");
   keys.add("optional","COMPONENTS","additional components that this variable is supposed to have. Periodicity is ruled by PERIODIC keyword ");
+  useCustomisableComponents(keys);
 }
 
 ColvarFake::ColvarFake(const ActionOptions&ao):

@@ -42,7 +42,7 @@ factor and the grid over which we calculate c(t) in the input to the METAD comma
 \plumedfile
 a: ANGLE ATOMS=1,2,3
 x: DISTANCE ATOMS=1,2
-METAD ARG=x PACE=100 SIGMA=0.1 HEIGHT=1.5 BIASFACTOR=5 GRID_MIN=0 GRID_MAX=10 GRID_BIN=100 REWEIGHTING_NGRID=100 REWEIGHTING_NHILLS=50
+METAD ARG=x PACE=100 SIGMA=0.1 HEIGHT=1.5 BIASFACTOR=5 GRID_MIN=0 GRID_MAX=10 GRID_BIN=100 CALC_RCT RCT_USTRIDE=50
 
 bias: REWEIGHT_METAD TEMP=300
 
@@ -69,7 +69,7 @@ class ReweightMetad : public ReweightBase {
 public:
   static void registerKeywords(Keywords&);
   explicit ReweightMetad(const ActionOptions&ao);
-  double getLogWeight();
+  double getLogWeight() override;
 };
 
 PLUMED_REGISTER_ACTION(ReweightMetad,"REWEIGHT_METAD")

@@ -40,8 +40,8 @@ private:
   double cgtol;
 public:
   static void registerKeywords( Keywords& keys );
-  SketchMapConjGrad( const ActionOptions& ao );
-  void minimise( Matrix<double>& );
+  explicit SketchMapConjGrad( const ActionOptions& ao );
+  void minimise( Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(SketchMapConjGrad,"SKETCHMAP_CONJGRAD")

@@ -52,8 +52,8 @@ that are bridging between atoms 1-10 and atoms 11-20 and to print the value
 to a file
 
 \plumedfile
-BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 LABEL=w1
-PRINT ARG=a1.mean FILE=colvar
+w1: BRIDGE BRIDGING_ATOMS=100-200 GROUPA=1-10 GROUPB=11-20 SWITCH={RATIONAL R_0=0.2}
+PRINT ARG=w1 FILE=colvar
 \endplumedfile
 
 */
@@ -68,8 +68,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Bridge(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic() { return false; }
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(Bridge,"BRIDGE")

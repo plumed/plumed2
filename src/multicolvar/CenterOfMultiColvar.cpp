@@ -56,7 +56,7 @@ numbers should have a high weight in the weighted average you are using to calcu
 You can thus calculate the position of the droplet using an input like the one shown below:
 
 \plumedfile
-c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5}
+c1: COORDINATIONNUMBER LOWMEM SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5}
 cc: CENTER_OF_MULTICOLVAR DATA=c1
 \endplumedfile
 
@@ -92,7 +92,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit CenterOfMultiColvar(const ActionOptions&ao);
-  void calculate();
+  void calculate() override;
 };
 
 PLUMED_REGISTER_ACTION(CenterOfMultiColvar,"CENTER_OF_MULTICOLVAR")

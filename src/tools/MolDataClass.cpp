@@ -278,8 +278,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
         auto atomname=mypdb.getAtomName(a);
         Tools::stripLeadingAndTrailingBlanks(atomname);
         auto notnumber=atomname.find_first_not_of("0123456789");
-        if(notnumber!=std::string::npos && atomname[notnumber]=='H') {
-        } else numbers.push_back(a);
+        if(!(notnumber!=std::string::npos && atomname[notnumber]=='H')) numbers.push_back(a);
       }
       return;
     }

@@ -120,7 +120,7 @@ public:
   static void registerKeywords( Keywords&);
   explicit BF_Custom(const ActionOptions&);
   ~BF_Custom() {};
-  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const;
+  void getAllValues(const double, double&, bool&, std::vector<double>&, std::vector<double>&) const override;
 };
 
 PLUMED_REGISTER_ACTION(BF_Custom,"BF_CUSTOM")

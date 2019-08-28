@@ -228,7 +228,7 @@ private:
     Gaussian(const vector<double> & center,const vector<double> & sigma, double height, bool multivariate):
       center(center),sigma(sigma),height(height),multivariate(multivariate),invsigma(sigma) {
       // to avoid troubles from zero element in flexible hills
-      for(unsigned i=0; i<invsigma.size(); ++i) abs(invsigma[i])>1.e-20?invsigma[i]=1.0/invsigma[i]:0.;
+        for(unsigned i=0; i<invsigma.size(); ++i) if(abs(invsigma[i])>1.e-20) invsigma[i]=1.0/invsigma[i] ; else invsigma[i]=0.0;
     }
   };
   vector<double> sigma0_;
@@ -278,10 +278,10 @@ private:
 
 public:
   explicit PBMetaD(const ActionOptions&);
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   static void registerKeywords(Keywords& keys);
-  bool checkNeedsGradients()const {if(adaptive_==FlexibleBin::geometry) {return true;} else {return false;}}
+  bool checkNeedsGradients()const override {if(adaptive_==FlexibleBin::geometry) {return true;} else {return false;}}
 };
 
 PLUMED_REGISTER_ACTION(PBMetaD,"PBMETAD")

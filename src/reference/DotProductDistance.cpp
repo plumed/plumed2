@@ -28,8 +28,8 @@ namespace PLMD {
 class DotProductDistance : public ArgumentOnlyDistance {
 public:
   explicit DotProductDistance( const ReferenceConfigurationOptions& ro );
-  void read( const PDB& );
-  double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
+  void read( const PDB& ) override;
+  double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const override;
 };
 
 PLUMED_REGISTER_METRIC(DotProductDistance,"DOTPRODUCT")

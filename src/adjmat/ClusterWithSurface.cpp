@@ -74,25 +74,25 @@ public:
 /// Constructor
   explicit ClusterWithSurface(const ActionOptions&);
 ///
-  unsigned getNumberOfDerivatives();
+  unsigned getNumberOfDerivatives() override;
 ///
-  unsigned getNumberOfNodes() const ;
+  unsigned getNumberOfNodes() const override;
 ///
-  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const ;
+  AtomNumber getAbsoluteIndexOfCentralAtom(const unsigned& i) const override;
 ///
-  void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const ;
+  void retrieveAtomsInCluster( const unsigned& clust, std::vector<unsigned>& myatoms ) const override;
 ///
-  void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const ;
+  void getInputData( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms, std::vector<double>& orient0 ) const override;
 ///
-  MultiValue& getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const ;
+  MultiValue& getInputDerivatives( const unsigned& ind, const bool& normed, const multicolvar::AtomValuePack& myatoms ) const override;
 ///
-  unsigned getNumberOfQuantities() const ;
+  unsigned getNumberOfQuantities() const override;
 /// Do the calculation
-  void performClustering() {};
+  void performClustering() override {};
 ///
-  double  getCutoffForConnection() const ;
+  double  getCutoffForConnection() const override;
 ///
-  Vector getPositionOfAtomForLinkCells( const unsigned& taskIndex ) const ;
+  Vector getPositionOfAtomForLinkCells( const unsigned& taskIndex ) const override;
 };
 
 PLUMED_REGISTER_ACTION(ClusterWithSurface,"CLUSTER_WITHSURFACE")

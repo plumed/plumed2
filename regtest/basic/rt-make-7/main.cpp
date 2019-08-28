@@ -68,7 +68,7 @@ int main(){
     plumed->cmd("prepareCalc");
     plumed->cmd("performCalcNoUpdate");
     positions[0]=0;
-    double bias;
+    double bias=0;
     plumed->cmd("getBias",&bias);
     ofs<<bias<<"\n";
 // first compute using regular positions:

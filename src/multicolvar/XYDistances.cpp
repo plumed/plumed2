@@ -44,7 +44,7 @@ to atom 5 projected in the xy-plane and the projection of the length of the vect
 the vector connecting atom 1 to atom 2 in the xy-plane.  The minimum of these two quantities is then
 printed
 \plumedfile
-XYDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+d1: XYDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -66,7 +66,7 @@ to atom 5 projected in the xz-plane and the projection of the length of the vect
 the vector connecting atom 1 to atom 2 in the xz-plane.  The minimum of these two quantities is then
 printed
 \plumedfile
-XZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+d1: XZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -88,7 +88,7 @@ to atom 5 in the yz-plane and the projection of the length of the vector
 the vector connecting atom 1 to atom 2 in the yz-plane.  The minimum of these two quantities is then
 printed
 \plumedfile
-YZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+d1: YZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -104,9 +104,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit XYDistances(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(XYDistances,"XYDISTANCES")

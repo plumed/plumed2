@@ -67,8 +67,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit InPlaneDistances(const ActionOptions&);
 // active methods:
-  virtual double compute(const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  bool isPeriodic() { return false; }
+  double compute(const unsigned& tindex, AtomValuePack& myatoms ) const override;
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(InPlaneDistances,"INPLANEDISTANCES")
@@ -90,12 +90,12 @@ InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;
   readThreeGroups("GROUP","VECTORSTART","VECTOREND",false,false,all_atoms);
-
-  // Check atoms are OK
-  if( getFullNumberOfTasks()!=getNumberOfAtoms()-2 ) error("you should specify one atom for VECTORSTART and one atom for VECTOREND only");
+  setupMultiColvarBase( all_atoms );
 
   // Setup the multicolvar base
   setupMultiColvarBase( all_atoms ); readVesselKeywords();
+  // Check atoms are OK
+  if( getFullNumberOfTasks()!=getNumberOfAtoms()-2 ) error("you should specify one atom for VECTORSTART and one atom for VECTOREND only");
   // And check everything has been read in correctly
   checkRead();
 

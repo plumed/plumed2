@@ -41,8 +41,8 @@ private:
   double tol;
 public:
   static void registerKeywords( Keywords& keys );
-  SmacofMDS( const ActionOptions& );
-  void calculateProjections( const Matrix<double>&, Matrix<double>& );
+  explicit SmacofMDS( const ActionOptions& );
+  void calculateProjections( const Matrix<double>&, Matrix<double>& ) override;
 };
 
 PLUMED_REGISTER_ACTION(SmacofMDS,"SMACOF_MDS")

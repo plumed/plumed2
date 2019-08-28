@@ -43,7 +43,7 @@ Calculate the distances between one or many pairs of atoms.  You can then calcul
 The following input tells plumed to calculate the distances between atoms 3 and 5 and between atoms 1 and 2 and to
 print the minimum for these two distances.
 \plumedfile
-DISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+d1: DISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -52,15 +52,15 @@ The following input tells plumed to calculate the distances between atoms 3 and 
 and then to calculate the number of these distances that are less than 0.1 nm.  The number of distances
 less than 0.1nm is then printed to a file.
 \plumedfile
-DISTANCES ATOMS1=3,5 ATOMS2=1,2 LABEL=d1 LESS_THAN={RATIONAL R_0=0.1}
-PRINT ARG=d1.lt0.1
+d1: DISTANCES ATOMS1=3,5 ATOMS2=1,2 LESS_THAN={RATIONAL R_0=0.1}
+PRINT ARG=d1.lessthan
 \endplumedfile
 (See also \ref PRINT \ref switchingfunction).
 
 The following input tells plumed to calculate all the distances between atoms 1, 2 and 3 (i.e. the distances between atoms
 1 and 2, atoms 1 and 3 and atoms 2 and 3).  The average of these distances is then calculated.
 \plumedfile
-DISTANCES GROUP=1-3 MEAN LABEL=d1
+d1: DISTANCES GROUP=1-3 MEAN
 PRINT ARG=d1.mean
 \endplumedfile
 (See also \ref PRINT)
@@ -69,8 +69,8 @@ The following input tells plumed to calculate all the distances between the atom
 In other words the distances between atoms 1 and 2 and the distance between atoms 1 and 3.  The number of distances
 more than 0.1 is then printed to a file.
 \plumedfile
-DISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
-PRINT ARG=d1.gt0.1
+d1: DISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
+PRINT ARG=d1.morethan
 \endplumedfile
 (See also \ref PRINT \ref switchingfunction)
 
@@ -103,13 +103,13 @@ can calculate the number of distances less than 1.0, the minimum distance, the n
 2.0 and the number of distances between 1.0 and 2.0 by using the following command:
 
 \plumedfile
-DISTANCES ...
+d1: DISTANCES ...
  GROUPA=1-10 GROUPB=11-20
  LESS_THAN={RATIONAL R_0=1.0}
  MORE_THAN={RATIONAL R_0=2.0}
  BETWEEN={GAUSSIAN LOWER=1.0 UPPER=2.0}
  MIN={BETA=500.}
-... DISTANCES
+...
 PRINT ARG=d1.lessthan,d1.morethan,d1.between,d1.min FILE=colvar STRIDE=10
 \endplumedfile
 (see \ref DISTANCES and \ref PRINT)
@@ -129,9 +129,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit Distances(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(Distances,"DISTANCES")

@@ -238,6 +238,8 @@ ALIASES                = \
                          "tarball{1}=\htmlonly<span style=\"background-color:yellow\">\endhtmlonly<a href=\"tutorial-resources/\1.tar.gz\" style=\"font-weight:bold\" style=\"color:green\" download=\"\1.tar.gz\"> TARBALL </a>\htmlonly</span>\endhtmlonly" \
                          "plumedfile=\verbatim BEGIN_PLUMED_FILE" \
                          "endplumedfile=\endverbatim" \
+                         "auxfile{1}=\verbatim" \
+                         "endauxfile=\endverbatim" \
                          "plumednotmaintained=\warning This branch is not maintained. Users are invited to upgrade to a newer version"
 
 # This tag can be used to specify a number of word-keyword mappings (TCL only).

@@ -42,7 +42,7 @@ The following input tells plumed to calculate the x-component of the vector conn
 the x-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
 printed
 \plumedfile
-XDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+d1: XDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -52,8 +52,8 @@ The following input tells plumed to calculate the x-component of the vector conn
 the x-component of the vector connecting atom 1 to atom 2.  The number of values that are
 less than 0.1nm is then printed to a file.
 \plumedfile
-XDISTANCES ATOMS1=3,5 ATOMS2=1,2 LABEL=d1 LESS_THAN={RATIONAL R_0=0.1}
-PRINT ARG=d1.lt0.1
+d1: XDISTANCES ATOMS1=3,5 ATOMS2=1,2 LESS_THAN={RATIONAL R_0=0.1}
+PRINT ARG=d1.lessthan
 \endplumedfile
 (See also \ref PRINT \ref switchingfunction).
 
@@ -61,8 +61,8 @@ The following input tells plumed to calculate the x-components of all the distin
 between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).
 The average of these quantities is then calculated.
 \plumedfile
-XDISTANCES GROUP=1-3 AVERAGE LABEL=d1
-PRINT ARG=d1.average
+d1: XDISTANCES GROUP=1-3 MEAN
+PRINT ARG=d1.mean
 \endplumedfile
 (See also \ref PRINT)
 
@@ -70,8 +70,8 @@ The following input tells plumed to calculate all the vectors connecting the the
 In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
 \plumedfile
-XDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
-PRINT ARG=d1.gt0.1
+d1: XDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
+PRINT ARG=d1.morethan
 \endplumedfile
 (See also \ref PRINT \ref switchingfunction)
 */
@@ -88,7 +88,7 @@ The following input tells plumed to calculate the y-component of the vector conn
 the y-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
 printed
 \plumedfile
-YDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+d1: YDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -98,8 +98,8 @@ The following input tells plumed to calculate the y-component of the vector conn
 the y-component of the vector connecting atom 1 to atom 2.  The number of values that are
 less than 0.1nm is then printed to a file.
 \plumedfile
-YDISTANCES ATOMS1=3,5 ATOMS2=1,2 LABEL=d1 LESS_THAN={RATIONAL R_0=0.1}
-PRINT ARG=d1.lt0.1
+d1: YDISTANCES ATOMS1=3,5 ATOMS2=1,2 LESS_THAN={RATIONAL R_0=0.1}
+PRINT ARG=d1.lessthan
 \endplumedfile
 (See also \ref PRINT \ref switchingfunction).
 
@@ -107,8 +107,8 @@ The following input tells plumed to calculate the y-components of all the distin
 between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).
 The average of these quantities is then calculated.
 \plumedfile
-YDISTANCES GROUP=1-3 AVERAGE LABEL=d1
-PRINT ARG=d1.average
+d1: YDISTANCES GROUP=1-3 MEAN
+PRINT ARG=d1.mean
 \endplumedfile
 (See also \ref PRINT)
 
@@ -116,8 +116,8 @@ The following input tells plumed to calculate all the vectors connecting the the
 In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
 \plumedfile
-YDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
-PRINT ARG=d1.gt0.1
+d1: YDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
+PRINT ARG=d1.morethan
 \endplumedfile
 (See also \ref PRINT \ref switchingfunction)
 
@@ -135,7 +135,7 @@ The following input tells plumed to calculate the z-component of the vector conn
 the z-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then
 printed
 \plumedfile
-ZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+d1: ZDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1}
 PRINT ARG=d1.min
 \endplumedfile
 (See also \ref PRINT).
@@ -145,8 +145,8 @@ The following input tells plumed to calculate the z-component of the vector conn
 the z-component of the vector connecting atom 1 to atom 2.  The number of values that are
 less than 0.1nm is then printed to a file.
 \plumedfile
-ZDISTANCES ATOMS1=3,5 ATOMS2=1,2 LABEL=d1 LESS_THAN={RATIONAL R_0=0.1}
-PRINT ARG=d1.lt0.1
+d1: ZDISTANCES ATOMS1=3,5 ATOMS2=1,2 LESS_THAN={RATIONAL R_0=0.1}
+PRINT ARG=d1.lessthan
 \endplumedfile
 (See also \ref PRINT \ref switchingfunction).
 
@@ -154,8 +154,8 @@ The following input tells plumed to calculate the z-components of all the distin
 between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).
 The average of these quantities is then calculated.
 \plumedfile
-ZDISTANCES GROUP=1-3 AVERAGE LABEL=d1
-PRINT ARG=d1.average
+d1: ZDISTANCES GROUP=1-3 MEAN
+PRINT ARG=d1.mean
 \endplumedfile
 (See also \ref PRINT)
 
@@ -163,8 +163,8 @@ The following input tells plumed to calculate all the vectors connecting the the
 In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
 \plumedfile
-ZDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
-PRINT ARG=d1.gt0.1
+d1: ZDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
+PRINT ARG=d1.morethan
 \endplumedfile
 (See also \ref PRINT \ref switchingfunction)
 
@@ -179,9 +179,9 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit XDistances(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const override;
 /// Returns the number of coordinates of the field
-  bool isPeriodic() { return false; }
+  bool isPeriodic() override { return false; }
 };
 
 PLUMED_REGISTER_ACTION(XDistances,"XDISTANCES")

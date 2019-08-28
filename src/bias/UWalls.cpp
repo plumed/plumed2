@@ -72,7 +72,7 @@ class UWalls : public Bias {
   std::vector<double> offset;
 public:
   explicit UWalls(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

@@ -46,7 +46,7 @@ It then tells plumed to print the energy of the restraint
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=3,6 LABEL=d2
 BIASVALUE ARG=d1,d2 LABEL=b
-PRINT ARG=d1,d2,b.d1,b.d2
+PRINT ARG=d1,d2,b.d1_bias,b.d2_bias
 \endplumedfile
 
 Another thing one can do is asking one system to follow
@@ -70,7 +70,7 @@ vv1:  MATHEVAL ARG=mycos,mysin,cos,sin VAR=mc,ms,c,s  FUNC=100*((mc-c)^2+(ms-s)^
 # this takes the value calculated with matheval and uses as a bias
 cc: BIASVALUE ARG=vv1
 # some printout
-PRINT ARG=t,cos,sin,d.x,d.y,d.z,mycos,mysin,cc.bias.vv1 STRIDE=1 FILE=colvar FMT=%8.4f
+PRINT ARG=t,cos,sin,d.x,d.y,d.z,mycos,mysin,cc.vv1_bias STRIDE=1 FILE=colvar FMT=%8.4f
 \endplumedfile
 
 */
@@ -79,7 +79,7 @@ PRINT ARG=t,cos,sin,d.x,d.y,d.z,mycos,mysin,cc.bias.vv1 STRIDE=1 FILE=colvar FMT
 class BiasValue : public Bias {
 public:
   explicit BiasValue(const ActionOptions&);
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

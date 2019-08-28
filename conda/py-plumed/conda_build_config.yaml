@@ -1,4 +1,5 @@
+CONDA_BUILD_SYSROOT:
+  - /var/tmp/MacOSX-SDKs/MacOSX10.9.sdk   # [osx]
 python:
-    - 2.7
     - 3.6
     - 3.7

@@ -36,10 +36,10 @@ public:
 /// Constructor
   explicit AverageVessel( const vesselbase::VesselOptions& );
 /// Set the size of the data vessel
-  void resize();
+  void resize() override;
 /// This does nothing
-  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
-  std::string description() { return ""; }
+  void calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const override;
+  std::string description() override { return ""; }
 /// Accumulate the average
   void accumulate( const double& weight, const double& val );
 /// Get the average value
