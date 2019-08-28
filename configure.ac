@@ -256,6 +256,7 @@ PLUMED_CONFIG_ENABLE([cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([chdir],[search for chdir function],[yes])
+PLUMED_CONFIG_ENABLE([subprocess],[search for functions needed to manage a subprocess],[yes])
 PLUMED_CONFIG_ENABLE([getcwd],[search for getcwd function],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
@@ -487,8 +488,22 @@ fi
 
 # first look for blas
 if test "$external_blas" == true ; then
-  PLUMED_SEARCH_LIBS([dgemv],[blas],[blas_found=nounderscore], [
-    PLUMED_SEARCH_LIBS([dgemv_],[blas],[blas_found=underscore])
+  AC_MSG_CHECKING([whether dgemv can be linked with no library])
+  AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv])],[
+    AC_MSG_RESULT([yes])
+    blas_found=nounderscore
+    ],[
+    AC_MSG_RESULT([no])
+    AC_MSG_CHECKING([whether dgemv_ can be linked with no library])
+    AC_LINK_IFELSE([AC_LANG_CALL([], [dgemv_])],[
+      AC_MSG_RESULT([yes])
+      blas_found=underscore
+    ],[
+      AC_MSG_RESULT([no])
+      PLUMED_SEARCH_LIBS([dgemv],[blas],[blas_found=nounderscore],[
+        PLUMED_SEARCH_LIBS([dgemv_],[blas],[blas_found=underscore])
+      ])
+    ])
   ])
 fi
 
@@ -642,8 +657,19 @@ fi
 AC_OPENMP
 
 if test $asmjit == true ; then
-  AC_MSG_NOTICE([Enabling embedded asmjit])
-  AC_DEFINE([__PLUMED_HAS_ASMJIT])
+  found=ko
+# asmjit calls clock_gettime and thus should be linked to rt on Linux
+  if test `(uname)` = Linux ; then
+    PLUMED_SEARCH_LIBS([clock_gettime],[rt],[found=ok])
+  else
+    found=ok
+  fi
+  if test "$found" = ok ; then
+    AC_MSG_NOTICE([Enabling embedded asmjit])
+    AC_DEFINE([__PLUMED_HAS_ASMJIT])
+  else
+    AC_MSG_WARN([cannot link clock_gettime on this Linux, asmjit will not be enabled])
+  fi
 fi
 
 
@@ -671,6 +697,41 @@ fi
 
 if test $chdir == true ; then
   PLUMED_CHECK_PACKAGE([unistd.h],[chdir],[__PLUMED_HAS_CHDIR])
+fi
+
+if test $subprocess == true ; then
+  PLUMED_CHECK_CXX_PACKAGE([subprocess],[
+/* random program calling all the functions needed to manage a subprocess */
+#include <cstdio>
+#include <unistd.h>
+#include <csignal>
+
+int
+main ()
+{
+// notice that [[]] is required to cheat autoconf
+  int cp[[2]];
+  FILE* fp;
+  char* arr[[3]];
+  arr[[0]]=NULL;
+  arr[[1]]=NULL;
+  arr[[2]]=NULL;
+  arr[[3]]=NULL;
+  if(pipe(cp)>=0)
+  if(fork()>=0)
+  if(close(1)>=0)
+  if(dup(cp[[1]])>=0) {
+    fp=fdopen(cp[[0]],"w");
+    execv(arr[[0]],arr);
+  }
+  auto p=fork();
+  kill(p,SIGINT);
+  kill(p,SIGCONT);
+  kill(p,SIGSTOP);
+  return 0;
+}
+
+  ], [__PLUMED_HAS_SUBPROCESS])
 fi
 
 if test $getcwd == true ; then

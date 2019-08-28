@@ -324,7 +324,7 @@ void Plumed::prepare() {
   bool redo=(index.size()!=n);
   if(first) redo=true;
   first=false;
-  if(!redo) for(int i=0; i<n; i++) if(index[i]!=pointer[i]) { redo=true; break;};
+  if(root && !redo) for(int i=0; i<n; i++) if(index[i]!=pointer[i]) { redo=true; break;};
   if(root && redo) {
     index.resize(n);
     masses.resize(n);

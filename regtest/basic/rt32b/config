@@ -1,0 +1,18 @@
+type=driver
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz ala12_trajectory.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+
+function plumed_custom_skip() {
+   if test -n "$PLUMED_PYTHON_SELECT" ; then
+      export PLUMED_PYTHON_BIN="$PLUMED_PYTHON_SELECT"
+      return 1
+   fi
+   for python_bin in python python2.7 python3.6 python3.7 ; do
+     if $python_bin -c "import MDAnalysis; import mdtraj" 2>/dev/null ; then
+       if [ $python_bin != python ] ; then
+         export PLUMED_PYTHON_BIN=$python_bin
+       fi
+       return 1
+     fi
+   done
+   return 0
+}

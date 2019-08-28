@@ -39,12 +39,15 @@ grep -v "bool-operation" | # this is giving too many warnings on travis-ci
 awk '
 BEGIN{
 print "#ifdef __PLUMED_HAS_ASMJIT"
+print "#pragma GCC diagnostic push"
+print "#pragma GCC diagnostic ignored \"-Wpedantic\""
 }
 {
 if($1=="namespace" && $2=="asmjit") print "namespace PLMD {"
 print
 if($1=="}" && $2=="//" && $3=="asmjit") print "} // namespace PLMD"
 }END{
+print "#pragma GCC diagnostic pop"
 print "#endif // __PLUMED_HAS_ASMJIT"
 }' > $move
 done

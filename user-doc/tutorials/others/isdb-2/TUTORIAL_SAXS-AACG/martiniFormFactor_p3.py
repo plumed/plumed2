@@ -4,11 +4,8 @@
 ###################################
 ## 1 # OPTIONS AND DOCUMENTATION ##  -> @DOC <-
 ###################################
-
 import sys,logging
 logging.basicConfig(format='%(levelname)-7s    %(message)s',level=9)
-import os.path
-import re
 
     
 # This is a simple and versatily option class that allows easy
@@ -283,7 +280,6 @@ def aver(b):
 # [ name, resname, resid, chain, x, y, z ]
 def mapCG(r):
     p = CoarseGrained.mapping[r[0][1]]     # Mapping for this residue 
-    flat_p = [item for sublist in p for item in sublist]
     # Get the atom_name, mass, coordinates (x,y,z), atom id for all atoms in the residue
     a = [(i[0],CoarseGrained.mass.get(i[0][0],0),i[4:7],i[7]) for i in r]               
     # Store weight, coordinate and index for atoms that match a bead
@@ -298,7 +294,7 @@ def mapCG(r):
 #######################
 ## 4 # STRUCTURE I/O ##  -> @IO <-
 #######################
-import logging,math,random,sys
+import math,sys
 
 #----+---------+
 ## A | PDB I/O |
@@ -531,8 +527,7 @@ class Residue(list):
             for i in self:
                 if i[0] == tag:
                     return i
-            else:
-                return 
+            return
         if tag[1]:
             return [i for i in self if tag[0] in i[0]] # Return partial matches
         else:
@@ -634,6 +629,10 @@ class Chain:
     def __eq__(self,other):
         return (self.seq        == other.seq    and 
                 self.breaks     == other.breaks )
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
 
     # Extract a residue by number or the list of residues of a given type
     # This facilitates selecting residues for links, like chain["CYS"]
@@ -649,12 +648,10 @@ class Chain:
             for i in self.cg():
                 if other == i[:4]:
                     return i
-            else:
-                for i in self.atoms():
-                    if other[:3] == i[:3]:
-                        return i
-                else:
-                    return []
+            for i in self.atoms():
+                if other[:3] == i[:3]:
+                    return i
+            return []
         elif type(other) == slice:
             # This implements the old __getslice__ method 
             i, j = other.start, other.stop
@@ -671,23 +668,6 @@ class Chain:
             # Return the chain slice
             return newchain
         return self.sequence[other]
-        return self.sequence[other]
-
-    # Extract a piece of a chain as a new chain
-    def __getslice__(self,i,j):
-        newchain = Chain(self.options,name=self.id)        
-        # Extract the slices from all lists
-        for attr in self._attributes:           
-            setattr(newchain, attr, getattr(self,attr)[i:j])
-        # Breaks that fall within the start and end of this chain need to be passed on.
-        # Residue numbering is increased by 20 bits!!
-        # XXX I don't know if this works.
-        ch_sta,ch_end = newchain.residues[0][0][2],newchain.residues[-1][0][2]
-        newchain.breaks     = [crack for crack in self.breaks if ch_sta < (crack<<20) < ch_end]
-        newchain.natoms     = len(newchain.atoms())
-        newchain.type()
-        # Return the chain slice
-        return newchain
 
     def _contains(self,atomlist,atom):
         atnm,resn,resi,chn = atom
@@ -839,7 +819,7 @@ class Chain:
 #############
 ## 8 # MAIN #  -> @MAIN <-
 #############
-import sys,logging,random,math,os,re
+import sys,math
 
 def main(options):
     # Check whether to read from a gro/pdb file or from stdin
@@ -1062,7 +1042,7 @@ def main(options):
 
 if __name__ == '__main__':
 
-    import sys,logging,time
+    import sys,time
 
     start = time.time()
     stloc = time.localtime(start)
@@ -1073,7 +1053,6 @@ if __name__ == '__main__':
         logging.error("NO INPUT! Try to use the option -h for help.")
         sys.exit(1)
 
-    options = options
     options = option_parser(args,options)
 
     if options["-f"].value is None:
@@ -1084,7 +1063,7 @@ if __name__ == '__main__':
         logging.error("No input data file. Try to use the option -h for help.")
         sys.exit(1)
 
-    main(options) 
+    main(options)
 
     stop = time.time()
     stoploc = time.localtime(stop)

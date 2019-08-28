@@ -83,7 +83,7 @@ td: TD_GRID FILE=input-grid.data
 
 
 class TD_Grid : public TargetDistribution {
-  std::unique_ptr<Grid> distGrid_;
+  std::unique_ptr<GridBase> distGrid_;
   std::vector<double> minima_;
   std::vector<double> maxima_;
   std::vector<bool> periodic_;
@@ -157,10 +157,10 @@ TD_Grid::TD_Grid(const ActionOptions& ao):
 
   IFile gridfile; gridfile.open(filename);
   if(has_deriv) {
-    distGrid_=Grid::create(gridlabel,arguments,gridfile,false,true,true);
+    distGrid_=GridBase::create(gridlabel,arguments,gridfile,false,true,true);
   }
   else {
-    distGrid_=Grid::create(gridlabel,arguments,gridfile,false,false,false);
+    distGrid_=GridBase::create(gridlabel,arguments,gridfile,false,false,false);
   }
   gridfile.close();
 

@@ -19,6 +19,8 @@ See the GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with maze. If not, see <https://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifndef __PLUMED_maze_Core_h
+#define __PLUMED_maze_Core_h
 
 /**
  * @file Core.h
@@ -27,9 +29,6 @@ along with maze. If not, see <https://www.gnu.org/licenses/>.
  *
  * @brief Header with needed includes from std and PLMD.
  */
-
-#ifndef __PLUMED_maze_Core_h
-#define __PLUMED_maze_Core_h
 
 namespace PLMD {
 namespace maze {

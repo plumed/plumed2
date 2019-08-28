@@ -52,6 +52,28 @@ cdef class Plumed:
                  raise RuntimeError("Error loading PLUMED kernel at path " + kernel)
          cdef int pres = 8
          self.c_plumed.cmd( "setRealPrecision", <void*>&pres )
+     def finalize(self):
+         """ Explicitly finalize a Plumed object.
+
+             Can be used in cases where one wants to make sure the Plumed object is finalized
+             (so that all output files are flushed and all calculations are finalized) but there is
+             a dangling reference to that Plumed object. Notice that after this call the self object
+             will be invalid so that using cmd will raise an exception.
+
+             It is also called by __exit__ in order to allow the following usage:
+             ````
+             with plumed.Plumed() as p:
+                 p.cmd("init")
+                 # ETC
+
+             # p object will be finalized when exiting from this context
+             ````
+         """
+         self.c_plumed=cplumed.Plumed()
+     def __enter__(self):
+         return self
+     def __exit__(self, type, value, traceback):
+        self.finalize()
      def cmd_ndarray_real(self, ckey, val):
          cdef double [:] abuffer = val.ravel()
          self.c_plumed.cmd( ckey, <void*>&abuffer[0])

@@ -96,7 +96,7 @@ the order of arguments in the header of the grid file.
 class External : public Bias {
 
 private:
-  std::unique_ptr<Grid> BiasGrid_;
+  std::unique_ptr<GridBase> BiasGrid_;
   double scale_;
 
 public:
@@ -139,7 +139,7 @@ External::External(const ActionOptions& ao):
 // read grid
   IFile gridfile; gridfile.open(filename);
   std::string funcl=getLabel() + ".bias";
-  BiasGrid_=Grid::create(funcl,getArguments(),gridfile,sparsegrid,spline,true);
+  BiasGrid_=GridBase::create(funcl,getArguments(),gridfile,sparsegrid,spline,true);
   if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");

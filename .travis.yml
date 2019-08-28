@@ -7,43 +7,44 @@ matrix:
 # this is the "master" one, it is going to update the manual every time
 # Variable PLUMED_ALL_TESTS=yes ensures that all the regtests can be run.
 # If some of them is not enabled, the whole suite will fail.
-  - os: linux
+  - name: Run all tests and build doc. All features enabled (system blas and lapack + asmjit)
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes PLUMED_ALL_TESTS=yes LAPACK=yes ASMJIT=yes
-# coverage scan
-  - os: linux
+  - name: Run all tests and scan coverage
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKECOVERAGE=yes PLUMED_ALL_TESTS=yes
-# the following are with debug flags
-  - os: linux
+  - name: Debug flags, no MPI
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=gcc   PLUMED_CXX=g++    CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-  - os: linux
+  - name: Debug flags, MPI
+    os: linux
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-# cppcheck
-  - os: linux
+  - name: Cppcheck and codecheck
+    os: linux
     dist: trusty
     sudo: required
     env: CPPCHECK=yes CPPCHECK_VERSION=1.87
-# test using external blas with internal lapack
-  - os: linux
+  - name: External blas with internal lapack, including asmjit
+    os: linux
     if: branch =~ ^test- OR type IN(pull_request)
     dist: trusty
     sudo: required
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack" ASMJIT=yes
-# test using docker image.
-# currently it means ubuntu 17, with gcc6
-  - sudo: required
+  - name: Docker image (ubuntu 17, with gcc6)
+    sudo: required
     if: branch =~ ^test- OR type IN(pull_request)
     services: docker
     env: PLUMED_DOCKER=yes
-# osx serial
-  - os: osx
+  - name: MacOS, serial build
+    os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3
@@ -51,8 +52,8 @@ matrix:
     cache:
       directories:
       - $HOME/.ccache
-# osx parallel
-  - os: osx
+  - name: MacOS, MPI build
+    os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3
@@ -60,29 +61,42 @@ matrix:
     cache:
       directories:
       - $HOME/.ccache
-# osx serial macports
-  - os: osx
+  - name: MacPorts, default modules
+    os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_MACPORTS="plumed" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
       - $HOME/.macports-ci-ccache
-# osx serial macports debug variant
-  - os: osx
+  - name: MacPorts, all modules
+    os: osx
     if: branch =~ ^test- OR type IN(pull_request)
     osx_image: xcode7.3
     env: PLUMED_MACPORTS="plumed +allmodules" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
       - $HOME/.macports-ci-ccache
-# osx serial macports debug variant
-  - os: osx
+  - name: MacPorts 8.3, all modules
+    os: osx
     osx_image: xcode8.3
     env: PLUMED_MACPORTS="plumed +allmodules" PLUMED_PYTHON="2.7 3.6 3.7"
     cache:
       directories:
       - $HOME/.macports-ci-ccache
+# linux conda package
+  - name: Conda build, linux
+    os: linux
+    if: branch =~ ^test- OR tag IS present OR type IN(pull_request) OR type IN(cron)
+    dist: trusty
+    sudo: required
+    env: PLUMED_CONDA=yes
+# osx conda package
+  - name: Conda build, MacOS
+    os: osx
+    if: branch =~ ^test- OR tag IS present OR type IN(pull_request) OR type IN(cron)
+    osx_image: xcode8.3
+    env: PLUMED_CONDA=yes
 # I don't put any mpi variant with macports since it takes too long to compile
 ## This command can be used to allow failures:
   allow_failures:
@@ -108,7 +122,7 @@ install:
   - export PLUMED_NUM_THREADS=2
   - ./.travis/check.log valgrind || VALGRIND=no
 # update packages
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -z "$PLUMED_MACPORTS" ; then
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && test -n "$PLUMED_CXX" ; then
       brew update > /dev/null ;
       brew install ccache ;
       export PLUMED_MPIRUN="mpirun --oversubscribe" ;
@@ -138,13 +152,21 @@ install:
   - if test "$MAKEDOC" == yes ; then sudo apt-get install -y aspell aspell-en  ; fi
 # install lcov
   - if test "$MAKECOVERAGE" == yes ; then ./.travis/install.lcov v1.14 ; fi
-# install numpy and cython for python interface
+# install cython for python interface
+# nose and other packages are needed for running tests
 # only for linux and homebrew (no macports)
+# pandas: needed by mdtraj
   - if test "$PLUMED_CXX" ; then
       sudo pip install --upgrade pip ;
-      sudo pip install numpy ;
       sudo pip install Cython ;
       sudo pip install nose ;
+      sudo pip install numpy ;
+      sudo pip install six ;
+      sudo pip install pandas ;
+      sudo pip install mdtraj==1.9.2 ;
+      sudo pip install MDAnalysis ;
+      python -c "import MDAnalysis" ;
+      python -c "import mdtraj" ;
     fi
 # then replace doxygen with the desided version
 # I use 1.8.10 instead of 1.8.11 since it looks like 1.8.11 have troubles with
@@ -205,6 +227,23 @@ script:
       done
     fi
 
+  - CONDA_VERSION=none
+  - export CONDA_LABEL=
+# set CONDA_VERSION to TRAVIS_TAG, if available
+  - if test -n "${TRAVIS_TAG}" ; then
+       CONDA_VERSION="${TRAVIS_TAG//-/_}" ;
+       CONDA_VERSION="${CONDA_VERSION#v}" ;
+       CONDA_LABEL=tags ;
+    fi
+# set CONDA_VERSION to branch + date when on nightly build
+  - if test "$TRAVIS_EVENT_TYPE" = cron ; then
+       if test "$TRAVIS_BRANCH" = master ; then CONDA_VERSION=2.99.$(date +%y%m%d) ; fi ;
+       if [[ "$TRAVIS_BRANCH" =~ ^v2.[0-9]+$ ]] ; then CONDA_VERSION=${TRAVIS_BRANCH#v}.$(date +%y%m%d) ; fi ;
+       CONDA_LABEL=nightly ;
+    fi
+# build conda package
+  - if test -n "$PLUMED_CONDA" ; then VERSION="$CONDA_VERSION" make -C conda ; fi
+
 # build docker container
   - if test "$PLUMED_DOCKER" = yes ; then make -C docker ; fi
 
@@ -245,3 +284,5 @@ after_success:
   - if test "$MAKEDOC" == yes ; then ./.travis/push doc ; fi 
   - if test "$MAKECOVERAGE" == yes ; then ./.travis/push coverage ; fi 
   - if test "$MAKECOVERAGE" == yes ; then bash <(curl -s https://codecov.io/bash) > /dev/null ; fi
+# upload conda package
+  - if test -n "$PLUMED_CONDA" && test -n "$CONDA_LABEL" ; then make -C conda upload ; fi
