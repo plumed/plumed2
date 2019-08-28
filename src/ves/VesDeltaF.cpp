@@ -115,6 +115,7 @@ private:
   unsigned rank_;
   unsigned NumWalkers_;
   bool isFirstStep_;
+  bool afterCalculate_;
 
 //prob
   double tot_prob_;
@@ -209,6 +210,7 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
 VesDeltaF::VesDeltaF(const ActionOptions&ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
+  , afterCalculate_(false)
   , mean_counter_(0)
   , av_counter_(0)
   , work_(0)
@@ -513,6 +515,7 @@ void VesDeltaF::calculate()
       dProb_dCV_s+=der_prob_[i+1][s]*exp_alpha_[i];
     setOutputForce(s,-(1-inv_gamma_)/beta_/tot_prob_*dProb_dCV_s);
   }
+  afterCalculate_=true;
 }
 
 void VesDeltaF::update()
@@ -523,6 +526,8 @@ void VesDeltaF::update()
     isFirstStep_=false;
     return;
   }
+  plumed_massert(afterCalculate_,"VesDeltaF::update() must be called after VesDeltaF::calculate() to work properly");
+  afterCalculate_=false;
 
 //calculate derivatives for ensemble averages
   std::vector<double> dV_dAlpha(alpha_size_);
