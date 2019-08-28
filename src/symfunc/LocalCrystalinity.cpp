@@ -73,8 +73,8 @@ ActionShortcut(ao)
     readInputLine( getShortcutLabel() + "_dot" + istr + ": COMBINE ARG1=" + getShortcutLabel() + "_mat.x ARG2=" + getShortcutLabel() + 
                                                         "_mat.y ARG3=" + getShortcutLabel() + "_mat.z PERIODIC=NO COEFFICIENTS=" + gvec[0] + "," + gvec[1] + "," + gvec[2] );  
     // Now calculate the sine and cosine of the dot product
-    readInputLine( getShortcutLabel() + "_cos" + istr + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dot" + istr + " FUNC=cos(x) PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_sin" + istr + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dot" + istr + " FUNC=sin(x) PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_cos" + istr + ": MATHEVAL ARG1=" + getShortcutLabel() +"_mat.w ARG2=" + getShortcutLabel() + "_dot" + istr + " FUNC=x*cos(y) PERIODIC=NO");
+    readInputLine( getShortcutLabel() + "_sin" + istr + ": MATHEVAL ARG1=" + getShortcutLabel() +"_mat.w ARG2=" + getShortcutLabel() + "_dot" + istr + " FUNC=x*sin(y) PERIODIC=NO");
     // And sum up the sine and cosine over the coordination spheres
     readInputLine( getShortcutLabel() + "_cossum" + istr + ": COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_cos" + istr );
     readInputLine( getShortcutLabel() + "_sinsum" + istr + ": COORDINATIONNUMBER WEIGHT=" + getShortcutLabel() + "_sin" + istr );
