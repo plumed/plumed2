@@ -97,9 +97,9 @@ void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vec
     if( spacing.size()==dimension && binsin.size()==dimension ) {
       if( spacing[i]==0 ) nbin[i] = binsin[i];
       else {
-          double range = max[i] - min[i]; nbin[i] = std::ceil( range / spacing[i]);
-          // This check ensures that nbins is set correctly if spacing is set the same as the number of bins
-          if( nbin[i]!=binsin[i] ) plumed_merror("mismatch between input spacing and input number of bins");
+        double range = max[i] - min[i]; nbin[i] = std::ceil( range / spacing[i]);
+        // This check ensures that nbins is set correctly if spacing is set the same as the number of bins
+        if( nbin[i]!=binsin[i] ) plumed_merror("mismatch between input spacing and input number of bins");
       }
     } else if( binsin.size()==dimension ) nbin[i]=binsin[i];
     else if( spacing.size()==dimension ) nbin[i] = std::floor(( max[i] - min[i] ) / spacing[i]) + 1;

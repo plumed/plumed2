@@ -35,7 +35,7 @@ analysis technique.  For more detail on how this technique works see \ref REWEIG
 \par Examples
 
 The following input can be used to analyze the output from a series of umbrella sampling calculations.
-The trajectory from each of the simulations run with the different biases should be concatenated into a 
+The trajectory from each of the simulations run with the different biases should be concatenated into a
 single trajectory before running the following analysis script on the concatenated trajectory using PLUMED
 driver.  The umbrella sampling simulations that will be analyzed using the script below applied a harmonic
 restraint that restrained the torsional angle involving atoms 5, 7, 9 and 15 to particular values.  The script
