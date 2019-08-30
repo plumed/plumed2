@@ -150,15 +150,15 @@ ANN::ANN(const ActionOptions&ao):
       break;
     }
     weights.push_back(temp_single_coeff);
-    log.printf("size of temp_single_coeff = %u\n", temp_single_coeff.size());
-    log.printf("size of weights = %u\n", weights.size());
+    log.printf("size of temp_single_coeff = %lu\n", temp_single_coeff.size());
+    log.printf("size of weights = %lu\n", weights.size());
     // parse bias
     if( !parseNumberedVector("BIASES", ii, temp_single_bias) ) {
       temp_single_bias=biases[ii-1];
     }
     biases.push_back(temp_single_bias);
-    log.printf("size of temp_single_bias = %u\n", temp_single_bias.size());
-    log.printf("size of biases = %u\n", biases.size());
+    log.printf("size of temp_single_bias = %lu\n", temp_single_bias.size());
+    log.printf("size of biases = %lu\n", biases.size());
   }
 
   if(getNumberOfArguments() != num_nodes[0]) {
