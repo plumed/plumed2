@@ -35,21 +35,21 @@ P( \vec{T} ) \propto \prod_{j=1}^M \prod_{k=1}^N (c_k w_{kj} p_j)^{t_{kj}}
 \f]
 In this expression the second product runs over the biases that were used when calculating the \f$N\f$ trajectories.  The first product then runs over the 
 \f$M\f$ bins in our histogram.  The \f$p_j\f$ variable that is inside this product is the quantity we wish to extract; namely, the unbiased probability of 
-having a set of CV values that lie within the range for the jth bin.
+having a set of CV values that lie within the range for the \f$j\f$th bin.
 
-The quantity that we can easily extract from our simulations, \f$t_{kj}\f$, however, measures the number of frames from trajectory \f$k\f$ that are inside the jth bin.  
+The quantity that we can easily extract from our simulations, \f$t_{kj}\f$, however, measures the number of frames from trajectory \f$k\f$ that are inside the \f$j\f$th bin.  
 To interpret this quantity we must consider the bias that acts on each of the replicas so the \f$w_{kj}\f$ term is introduced.  This quantity is calculated as:
 \f[
 w_{kj} = 
 \f]
 and is essentially the factor that we have to multiply the unbiased probability of being in the bin by in order to get the probability that we would be inside this same bin in 
-the kth of our biased simulations.  Obviously, these \f$w_{kj}\f$ values depend on the value that the CVs take and also on the particular trajectory that we are investigating 
+the \f$k\f$th of our biased simulations.  Obviously, these \f$w_{kj}\f$ values depend on the value that the CVs take and also on the particular trajectory that we are investigating 
 all of which, remember, have different simulation biases.  Finally, \f$c_k\f$ is a free parameter that ensures that, for each \f$k\f$, the biased probability is normalized.
 
-We can use the equation for the probablity that was given above to find a set of values for \f$p_j\f$ that maximizes the likelihood of observing the trajectory. 
+We can use the equation for the probability that was given above to find a set of values for \f$p_j\f$ that maximizes the likelihood of observing the trajectory. 
 This constrained optimization must be performed using a set of Lagrange multipliers, \f$\lambda_k\f$, that ensure that each of the biased probability distributions 
 are normalized, that is \f$\sum_j c_kw_{kj}p_j=1\f$.  Furthermore, as the problem is made easier if the quantity in the equation above is replaced by its logarithm 
-we actually chose to minimise
+we actually chose to minimize
 \f[
 \mathcal{L}= \sum_{j=1}^M \sum_{k=1}^N t_{kj} \ln c_k  w_{kj} p_j + \sum_k\lambda_k \left( \sum_{j=1}^N c_k w_{kj} p_j - 1 \right)
 \f]
@@ -63,7 +63,7 @@ c_k & =\frac{1}{\sum_{j=1}^M w_{kj} p_j}
 which can be solved by computing the \f$p_j\f$ values using the first of the two equations above with an initial guess for the \f$c_k\f$ values and by then refining 
 these \f$p_j\f$ values using the \f$c_k\f$ values that are obtained by inserting the \f$p_j\f$ values obtained into the second of the two equations above.  
 
-Notice that only \f$\sum_k t_{kj}\f$, which is the total number of configurations from all the replicas that enter the jth bin, enters the WHAM equations above.  
+Notice that only \f$\sum_k t_{kj}\f$, which is the total number of configurations from all the replicas that enter the \f$j\f$th bin, enters the WHAM equations above.  
 There is thus no need to record which replica generated each of the frames.  One can thus simply gather the trajectories from all the replicas together at the outset.
 This observation is important as it is the basis of the binless formulation of WHAM that is implemented within PLUMED.
 
