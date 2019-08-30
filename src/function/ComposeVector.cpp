@@ -52,6 +52,7 @@ ActionWithValue(ao),
 ActionWithArguments(ao)
 { 
   std::vector<unsigned> shape(1); shape[0]=getNumberOfScalarArguments();
+  for(unsigned i=0;i<getNumberOfArguments();++i) getPntrToArgument(i)->buildDataStore( getLabel() );
   addValue( shape ); setNotPeriodic();
 }
 
