@@ -30,18 +30,18 @@ namespace analysis {
 This can be used to output the a histogram using the weighted histogram technique
 
 This shortcut action allows you to calculate a histogram using the weighted histogram
-analysis technique.  For more detail on how this the weights for configurations are 
+analysis technique.  For more detail on how this the weights for configurations are
 computed see \ref REWEIGHT_WHAM
 
 \par Examples
 
 The following input can be used to analyse the output from a series of umbrella sampling calculations.
-The trajectory from each of the simulations run with the different biases should be concatenated into a 
+The trajectory from each of the simulations run with the different biases should be concatenated into a
 single trajectory before running the following analysis script on the concetanated trajectory using PLUMED
 driver.  The umbrella sampling simulations that will be analysed using the script below applied a harmonic
 restraint that restrained the torsional angle involving atoms 5, 7, 9 and 15 to particular values.  The script
 below calculates the reweighting weights for each of the trajectories and then applies the binless WHAM algorithm
-to determine a weight for each configuration in the concatenated trajectory.  A histogram is then constructed from 
+to determine a weight for each configuration in the concatenated trajectory.  A histogram is then constructed from
 the configurations visited and their weights.  This histogram is then converted into a free energy surface and output
 to a file called fes.dat
 
