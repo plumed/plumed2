@@ -161,8 +161,12 @@ public:
   void addOutputComponent( const std::string& name, const std::string& key, const std::string& descr );
 /// Has a component with this name been added?
   bool outputComponentExists( const std::string& name, const bool& custom ) const ;
+/// Get the description of this component
+  std::string getOutputComponentDescription( const std::string& name ) const ;
 /// Reference to keys
   std::vector<std::string> getKeys() const { return keys; }
+/// Get the description of a particular keyword
+  std::string getTooltip( const std::string& name ) const ;
 };
 
 }

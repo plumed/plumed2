@@ -87,9 +87,14 @@ std::unique_ptr<Action> ActionRegister::create(const ActionOptions&ao) {
   return action;
 }
 
+bool ActionRegister::getKeywords( const std::string& action, Keywords& keys ) {
+  if ( check(action) ) {  mk[action](keys); return true; }
+  return false;
+}
+
 bool ActionRegister::printManual( const std::string& action, const bool& vimout, const bool& spellout ) {
   if ( check(action) ) {
-    Keywords keys; mk[action](keys);
+    Keywords keys; getKeywords( action, keys ); 
     if( vimout ) {
       printf("%s",action.c_str()); keys.print_vim(); printf("\n");
     } else if( spellout ) {

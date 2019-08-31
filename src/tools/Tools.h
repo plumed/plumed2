@@ -71,7 +71,7 @@ public:
 /// Get a parsed line from the file pointer ifile
 /// This function already takes care of joining continued lines and splitting the
 /// resulting line into an array of words
-  static bool getParsedLine(IFile&ifile,std::vector<std::string> & line);
+  static bool getParsedLine(IFile&ifile,std::vector<std::string> & line, const bool trimcomments=true);
 /// compare two string in a case insensitive manner
   static bool caseInSensStringCompare(const std::string & str1, const std::string &str2);
 /// Convert a string to a double, reading it

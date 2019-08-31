@@ -161,7 +161,7 @@ vector<string> Tools::getWords(const string & line,const char* separators,int * 
   return words;
 }
 
-bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
+bool Tools::getParsedLine(IFile& ifile,vector<string> & words, bool trimcomments) {
   string line("");
   words.clear();
   bool stat;
@@ -169,7 +169,7 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
   int parlevel=0;
   bool mergenext=false;
   while((stat=ifile.getline(line))) {
-    trimComments(line);
+    if(trimcomments) trimComments(line);
     trim(line);
     if(line.length()==0) continue;
     vector<string> w=getWords(line,NULL,&parlevel);
@@ -178,7 +178,7 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
         inside=false;
         if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" "+w[1]+" line, if present, should be equal to first word of directive: "+words[0]);
         plumed_massert(w.size()<=2,"terminating \"...\" lines cannot consist of more than two words");
-        w.clear();
+        w.clear(); if(!trimcomments) words.push_back("...");
       } else if(*(w.end()-1)=="...") {
         inside=true;
         w.erase(w.end()-1);
@@ -192,6 +192,7 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words) {
     }
     mergenext=(parlevel>0);
     if(!inside)break;
+    if(!trimcomments) words.push_back("@newline");
   }
   plumed_massert(parlevel==0,"non matching parenthesis");
   if(words.size()>0) return true;
