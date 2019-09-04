@@ -118,8 +118,8 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Makefile" << \EOF_EO
  depends:
 EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/mdin_ctrl_dat.F90" << \EOF_EOF
---- ./src/pmemd/src/mdin_ctrl_dat.F90.preplumed	2019-06-07 02:45:26.266309842 +0300
-+++ ./src/pmemd/src/mdin_ctrl_dat.F90	2019-06-07 02:45:26.266309842 +0300
+--- ./src/pmemd/src/mdin_ctrl_dat.F90.preplumed	2019-09-04 16:00:08.961863395 +0300
++++ ./src/pmemd/src/mdin_ctrl_dat.F90	2019-09-04 15:56:51.620251830 +0300
 @@ -35,10 +35,11 @@
                                  scaledMD, icnstph, ntcnstph, ntrelax, icnste, &
                                  ntcnste, ntrelaxe, ntwf, &
@@ -135,15 +135,15 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/mdin_ctrl_dat.F90" <
 @@ -75,13 +76,14 @@
                                  mask_from_ref, mbar_states,           &   ! 96
                                  geq_nstep, ginit_vel,  gsyn_mass, & !99
-                                 gremd_acyc, gti_cpu_output, & !101
-                                 mcint,nmd,mcrescyc,nmc,mcverbosity, & !106
-                                 ineb,skmin,skmax,tmode,vv,  & !111
--                                iphmd, midpoint !113
-+                                iphmd, midpoint, & !113
-+                                plumed !114 (PLUMED)
+                                 gremd_acyc, gti_cpu_output, gti_add_sc, & !102
+                                 mcint,nmd,mcrescyc,nmc,mcverbosity, & !107
+                                 ineb,skmin,skmax,tmode,vv,nebfreq,  & !113
+-                                iphmd, midpoint !115
++                                iphmd, midpoint, & !115
++                                plumed !116 PLUMED
  
--  integer, parameter    :: mdin_ctrl_int_cnt = 113
-+  integer, parameter    :: mdin_ctrl_int_cnt = 114 ! 113 + 1 (with PLUMED)
+-  integer, parameter    :: mdin_ctrl_int_cnt = 115
++  integer, parameter    :: mdin_ctrl_int_cnt = 116 ! 115 + 1 (with PLUMED)
  
    save  :: / mdin_ctrl_int /
  
@@ -175,14 +175,14 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/mdin_ctrl_dat.F90" <
                          es_cutoff, vdw_cutoff, &
                          dtemp, dxm, heat, alpb, arad, &
                          ifqnt, icnstph, ntcnstph, solvph, ntrelax, &
-@@ -518,10 +524,15 @@
+@@ -519,10 +525,15 @@
    itgtmd = 0            ! not supported...
    tgtrmsd = 0.d0        ! not actually used...
    tgtmdfrc = 0.d0       ! not actually used...
    tgtrmsmask = ''       ! not actually used...
    tgtfitmask = ''       ! not actually used...
 +
-+! PLUMED
++  ! PLUMED
 +  plumed = 0
 +  plumedfile = 'plumed.dat'
 +
@@ -191,7 +191,7 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/mdin_ctrl_dat.F90" <
    ntmin = 1
    dx0 = 0.01d0
    drms = 1.0d-4
-@@ -1509,10 +1520,16 @@
+@@ -1512,10 +1523,16 @@
      write(mdout, '(a,a)') error_hdr, 'tgtfitmask is only used if itgtmd != 0!'
      inerr = 1
    end if
@@ -199,8 +199,8 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/mdin_ctrl_dat.F90" <
  
 +  ! PLUMED
 +  if (plumed .eq. 1) then
-+    write(mdout, '(a)') 'PLUMED is on'
-+    write(mdout, '(a,a)') 'PLUMED file is ', plumedfile
++      write(mdout, '(a)') 'PLUMED is on'
++      write(mdout, '(a,a)') 'PLUMED file is ', plumedfile
 +  endif
 +
    if (ifqnt .ne. 0) then
@@ -208,13 +208,13 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/mdin_ctrl_dat.F90" <
      write(mdout, '(a,a,a)') extra_line_hdr, prog_name, &
        ' does not support QM/MM calculations.'
      write(mdout, '(a)') use_sander
-@@ -2876,10 +2893,14 @@
+@@ -2885,10 +2902,14 @@
    call mpi_bcast(imin, mdin_ctrl_int_cnt, mpi_integer, 0, &
                   pmemd_comm, err_code_mpi)
    call mpi_bcast(dielc, mdin_ctrl_dbl_cnt, mpi_double_precision, 0, &
                   pmemd_comm, err_code_mpi)
  
-+! PLUMED
++  ! PLUMED
 +  call mpi_bcast(plumed, 1, mpi_integer, 0, pmemd_comm, err_code_mpi)
 +  call mpi_bcast(plumedfile, 256, mpi_character, 0, pmemd_comm, err_code_mpi)
 +
