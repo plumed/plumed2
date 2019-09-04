@@ -40,9 +40,10 @@ namespace PLMD {
 namespace function {
 namespace annfunc {
 
-//+PLUMEDOC Function ANN
-
+//+PLUMEDOC ANNMOD_Function ANN
 /*
+Calculates the ANN-function.
+
 This module implements ANN class, which is a subclass of Function class.
 ANN class takes multi-dimensional arrays as inputs for a fully-connected feedforward neural network
 with specified neural network weights and generates corresponding outputs.
@@ -84,6 +85,7 @@ To access its components, we use "ann.node-0", "ann.node-1", ..., which represen
 
 
 */
+//+ENDPLUMEDOC
 
 class ANN : public Function
 {
