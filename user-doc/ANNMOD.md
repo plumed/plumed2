@@ -1,4 +1,4 @@
-\page ANNfuncMOD ANN (Artificial Neural Network) function
+\page ANNMOD ANN (Artificial Neural Network) function
 
 <!-- 
 description: ANN (Artificial Neural Network) function
