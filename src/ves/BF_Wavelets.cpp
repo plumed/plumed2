@@ -314,7 +314,7 @@ std::vector<double> BF_Wavelets::getCutoffPoints(const double& threshold) {
   double threshold_value = threshold * waveletGrid_->getMaxValue();
   std::vector<double> cutoffpoints;
 
-  for (unsigned i = 0; i < waveletGrid_->getSize(); ++i) {
+  for (size_t i = 0; i < waveletGrid_->getSize(); ++i) {
     if (fabs(waveletGrid_->getValue(i)) >= threshold_value) {
       cutoffpoints.push_back(waveletGrid_->getPoint(i)[0]);
       break;
