@@ -56,7 +56,6 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit SymmetryFunctionBase(const ActionOptions&);
   bool mustBeTreatedAsDistinctArguments() const ;
-  void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
   virtual unsigned getNumberOfDerivatives() const ;
   virtual void calculate(){}
   virtual void compute( const double& weight, const Vector& vec, MultiValue& myvals ) const = 0;

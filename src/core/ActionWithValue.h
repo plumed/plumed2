@@ -180,8 +180,6 @@ public:
 /// Retrieve all the scalar values calculated in the loop
   void retrieveAllScalarValuesInLoop( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
 ///
-  virtual void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {}
-///
   const std::vector<unsigned>& getCurrentTasks() const ;
 protected:
 /// Get a pointer to the output value

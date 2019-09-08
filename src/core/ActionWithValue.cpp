@@ -355,10 +355,8 @@ void ActionWithValue::interpretDataLabel( const std::string& mystr, Action* myus
     // args.push_back( values[0] );
     values[0]->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
   } else if( mystr==getLabel() + ".*" ) {
-    // Retrieve all scalar values
-    if( !action_to_do_after ) retrieveAllScalarValuesInLoop( myuser->getLabel(), nargs, args );
-    // This interprets scalar values for many shortcuts
-    interpretDotStar( myuser->getLabel(), nargs, args );
+    plumed_assert( !action_to_do_after );
+    for(unsigned i=0; i<values.size(); ++i ) values[i]->interpretDataRequest( myuser->getLabel(), nargs, args, "" );
   } else if( mystr.find(".")!=std::string::npos && exists( mystr ) ) {
     // Retrieve value with specific name
     copyOutput( mystr )->interpretDataRequest( myuser->getLabel(), nargs, args, "" );

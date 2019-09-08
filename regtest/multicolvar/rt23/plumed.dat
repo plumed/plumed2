@@ -212,7 +212,7 @@ AROUND ORIGIN=1 DATA=d1 SIGMA=0.2 XLOWER=-1.0 XUPPER=1.0 YLOWER=-1.0 YUPPER=1.0 
 
 PRINT ARG=a1.*,a2.*,a3.*,a4.*,a5.*,a6.*,a7.* FILE=colvar FMT=%8.4f
 
-RESTRAINT ARG=a1_lessthan AT=25.0 KAPPA=10
+RESTRAINT ARG=a1.lessthan AT=25.0 KAPPA=10
 RESTRAINT ARG=a7_mean AT=0.5 KAPPA=10
 
-DUMPDERIVATIVES ARG=a1_lessthan,a2_lessthan,a3_lessthan,a4_lessthan,a5_lessthan,a6_lessthan,a7_lessthan FILE=derivatives FMT=%8.4f
+DUMPDERIVATIVES ARG=a1.lessthan,a2.lessthan,a3.lessthan,a4.lessthan,a5_lessthan,a6.lessthan,a7_lessthan FILE=derivatives FMT=%8.4f

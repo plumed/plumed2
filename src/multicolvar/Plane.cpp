@@ -102,7 +102,7 @@ public:
 PLUMED_REGISTER_ACTION(PlaneShortcut,"PLANES")
 
 void PlaneShortcut::registerKeywords( Keywords& keys ) {
-  Plane::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys );
   keys.addFlag("VMEAN",false,"calculate the norm of the mean vector.");
   keys.addOutputComponent("_vmean","VMEAN","the norm of the mean vector");
   keys.addFlag("VSUM",false,"calculate the norm of the sum of all the vectors");

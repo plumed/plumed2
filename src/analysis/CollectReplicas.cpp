@@ -35,7 +35,6 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit CollectReplicas( const ActionOptions& );
-  void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
   void accumulateNorm( const double& cweight ); 
   void accumulateValue( const double& cweight, const std::vector<double>& dval );
   void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir );
@@ -69,10 +68,6 @@ CollectReplicas::CollectReplicas( const ActionOptions& ao):
   if( n_real_args>0 ) error("have not implemented collecting arguments from replicas yet");
   // Setup the components
   setupComponents( nreplicas );
-}
-
-void CollectReplicas::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) copyOutput(i)->interpretDataRequest( ulab, nargs, myvals, "" );
 }
 
 void CollectReplicas::accumulateNorm( const double& cweight ) {

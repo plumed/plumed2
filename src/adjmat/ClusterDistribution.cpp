@@ -78,8 +78,6 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ClusterDistribution(const ActionOptions&);
-/// Interpret the * keyword for this action
-  void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
 /// The number of derivatives
   unsigned getNumberOfDerivatives() const ;
 /// Work out what needs to be done in this action
@@ -132,10 +130,6 @@ ClusterDistribution::ClusterDistribution(const ActionOptions&ao):
   // Create a group for this action so we can associate atoms to these weights easily
   const auto m=plumed.getAtoms().getAllGroups().find(clusters[0]->getPntrToAction()->getLabel());
   plumed.getAtoms().insertGroup( getLabel(), m->second );
-}
-
-void ClusterDistribution::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
-  multicolvar::MultiColvarBase::interpretDotStar( getLabel(), ulab, nargs, myvals, plumed.getActionSet() );
 }
 
 void ClusterDistribution::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {

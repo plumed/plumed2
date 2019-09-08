@@ -94,7 +94,6 @@ PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD_CALC")
 
 void AlphaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
-  keys.addOutputComponent("_lessthan","default","the number of residues that have an rmsd less than a threshold");
 } 
 
 AlphaRMSD::AlphaRMSD(const ActionOptions&ao):

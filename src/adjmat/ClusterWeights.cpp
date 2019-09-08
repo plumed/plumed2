@@ -76,8 +76,6 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ClusterWeights(const ActionOptions&);
-/// Interpret the label.* to get all the actions that are created by the action if it is a CLUSTER_PROPERTIES 
-  void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
 /// The number of derivatives
   unsigned getNumberOfDerivatives() const ;
 /// Work out what needs to be done in this action
@@ -129,11 +127,6 @@ ClusterWeights::ClusterWeights(const ActionOptions&ao):
   // Create a group for this action so we can associate atoms to these weights easily
   const auto m=plumed.getAtoms().getAllGroups().find(clusters[0]->getPntrToAction()->getLabel());
   plumed.getAtoms().insertGroup( getLabel(), m->second );
-}
-
-void ClusterWeights::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
-  if( !properties ) return;
-  multicolvar::MultiColvarBase::interpretDotStar( getLabel(), ulab, nargs, myvals, plumed.getActionSet() );
 }
 
 void ClusterWeights::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {

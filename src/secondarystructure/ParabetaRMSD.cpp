@@ -101,7 +101,6 @@ void ParabetaRMSD::registerKeywords( Keywords& keys ) {
            "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
            "only sheet-like configurations involving a single chain are counted");
   keys.use("STRANDS_CUTOFF");
-  keys.addOutputComponent("_lessthan","default","the number of residues that have an rmsd less than a threshold");
 }
 
 ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):

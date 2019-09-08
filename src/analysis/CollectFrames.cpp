@@ -35,7 +35,6 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit CollectFrames( const ActionOptions& );
-  void interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals );
   void accumulateNorm( const double& cweight );
   void accumulateValue( const double& cweight, const std::vector<double>& dval );
   void accumulateAtoms( const double& cweight, const std::vector<Vector>& dir );
@@ -71,10 +70,6 @@ CollectFrames::CollectFrames( const ActionOptions& ao):
   }
   // Setup the components
   setupComponents( 1 ); 
-}
-
-void CollectFrames::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
-  for(unsigned i=0; i<getNumberOfComponents(); ++i) copyOutput(i)->interpretDataRequest( ulab, nargs, myvals, "" );
 }
 
 void CollectFrames::accumulateNorm( const double& cweight ) {

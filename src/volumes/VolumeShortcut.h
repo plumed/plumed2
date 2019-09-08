@@ -37,17 +37,17 @@ public:
 template <const char* v>
 void VolumeShortcut<v>::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
-  keys.addFlag("SUM",false,"calculate the sum of all the quantities.");
-  keys.addOutputComponent("_sum","SUM","the sum of all the colvars weighted by the function that determines if we are in the region");
-  keys.addFlag("MEAN",false,"calculate the average value of the colvar inside the region of interest");
-  keys.addOutputComponent("_mean","MEAN","the average values of the colvar in the region of interest");
   keys.add("optional","DATA","the label of an action that calculates multicolvars.  Weighted sums based on the location of the colvars calculated by this action will be calcualted");
   keys.add("optional","LESS_THAN","calcualte the number of colvars that are inside the region of interest and that are less than a certain threshold");
-  keys.addOutputComponent("_lessthan","LESS_THAN","the number of cvs in the region of interest that are less than a certain threshold");
+  keys.addOutputComponent("lessthan","LESS_THAN","the number of cvs in the region of interest that are less than a certain threshold");
   keys.add("optional","MORE_THAN","calcualte the number of colvars that are inside the region of interest and that are greater that a certain threshold");
-  keys.addOutputComponent("_morethan","MORE_THAN","the number of cvs in the region of interest that are more than a certain threshold");
+  keys.addOutputComponent("morethan","MORE_THAN","the number of cvs in the region of interest that are more than a certain threshold");
   keys.add("optional","BETWEEN","calculate the number of colvars that are inside the region of interest and that have a CV value that is between a particular set of bounds");
-  keys.addOutputComponent("_between","BETWEEN","the number of cvs in the region of interest that are within a certain range");
+  keys.addOutputComponent("between","BETWEEN","the number of cvs in the region of interest that are within a certain range");
+  keys.addFlag("SUM",false,"calculate the sum of all the quantities.");
+  keys.addOutputComponent("sum","SUM","the sum of all the colvars weighted by the function that determines if we are in the region");
+  keys.addFlag("MEAN",false,"calculate the average value of the colvar inside the region of interest");
+  keys.addOutputComponent("mean","MEAN","the average values of the colvar in the region of interest");
 }
 
 template <const char* v>

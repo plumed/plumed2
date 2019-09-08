@@ -23,6 +23,7 @@
 #define __PLUMED_core_ActionSet_h
 
 #include "Action.h"
+#include "ActionShortcut.h"
 #include <memory>
 
 namespace PLMD {
@@ -72,6 +73,8 @@ public:
 /// Get the final action in the set of a particular type
   template<class T>
   T getFinalActionOfType() const;  
+/// Get any shortcuts with this shortcut label 
+  ActionShortcut* getShortcutActionWithLabel( const std::string& s ) const ;
 };
 
 /////

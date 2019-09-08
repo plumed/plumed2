@@ -31,40 +31,40 @@ void MultiColvarBase::shortcutKeywords( Keywords& keys ) {
   keys.add("numbered","LESS_THAN","calculate the number of variables that are less than a certain target value. "
            "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
            "is a \\ref switchingfunction.");
-  keys.addOutputComponent("_lessthan","LESS_THAN","the number of colvars that have a value less than a threshold");
+  keys.addOutputComponent("lessthan","LESS_THAN","the number of colvars that have a value less than a threshold");
   keys.add("numbered","MORE_THAN","calculate the number of variables that are more than a certain target value. "
            "This quantity is calculated using \\f$\\sum_i 1 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
            "is a \\ref switchingfunction.");
-  keys.addOutputComponent("_morethan","MORE_THAN","the number of colvars that have a value more than a threshold");
+  keys.addOutputComponent("morethan","MORE_THAN","the number of colvars that have a value more than a threshold");
   keys.add("optional","ALT_MIN","calculate the minimum value. "
            "To make this quantity continuous the minimum is calculated using "
            "\\f$ \\textrm{min} = -\\frac{1}{\\beta} \\log \\sum_i \\exp\\left( -\\beta s_i \\right)  \\f$ "
            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$).");
-  keys.addOutputComponent("_altmin","ALT_MIN","the minimum value of the cv");
+  keys.addOutputComponent("altmin","ALT_MIN","the minimum value of the cv");
   keys.add("optional","MIN","calculate the minimum value. "
            "To make this quantity continuous the minimum is calculated using "
            "\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ "
            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
-  keys.addOutputComponent("_min","MIN","the minimum colvar");
+  keys.addOutputComponent("min","MIN","the minimum colvar");
   keys.add("optional","MAX","calculate the maximum value. "
            "To make this quantity continuous the maximum is calculated using "
            "\\f$ \\textrm{max} = \\beta \\log \\sum_i \\exp\\left( \\frac{s_i}{\\beta}\\right) \\f$ "
            "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
-  keys.addOutputComponent("_max","MAX","the maximum colvar");
+  keys.addOutputComponent("max","MAX","the maximum colvar");
   keys.add("numbered","BETWEEN","calculate the number of values that are within a certain range. "
            "These quantities are calculated using kernel density estimation as described on "
            "\\ref histogrambead.");
-  keys.addOutputComponent("_between","BETWEEN","the number of colvars that have a value that lies in a particular interval");
+  keys.addOutputComponent("between","BETWEEN","the number of colvars that have a value that lies in a particular interval");
   keys.addFlag("HIGHEST",false,"this flag allows you to recover the highest of these variables.");
-  keys.addOutputComponent("_highest","HIGHEST","the largest of the colvars");
+  keys.addOutputComponent("highest","HIGHEST","the largest of the colvars");
   keys.add("optional","HISTOGRAM","calculate a discretized histogram of the distribution of values. "
            "This shortcut allows you to calculates NBIN quantites like BETWEEN.");
   keys.addFlag("LOWEST",false,"this flag allows you to recover the lowest of these variables.");
-  keys.addOutputComponent("_lowest","LOWEST","the smallest of the colvars");
+  keys.addOutputComponent("lowest","LOWEST","the smallest of the colvars");
   keys.addFlag("SUM",false,"calculate the sum of all the quantities.");
-  keys.addOutputComponent("_sum","SUM","the sum of the colvars");
+  keys.addOutputComponent("sum","SUM","the sum of the colvars");
   keys.addFlag("MEAN",false,"calculate the mean of all the quantities.");
-  keys.addOutputComponent("_mean","MEAN","the mean of the colvars");
+  keys.addOutputComponent("mean","MEAN","the mean of the colvars");
 }
 
 void MultiColvarBase::expandFunctions( const std::string& labout, const std::string& argin, const std::string& weights, ActionShortcut* action ) {
@@ -340,30 +340,6 @@ MultiColvarBase::MultiColvarBase(const ActionOptions& ao):
 MultiColvarBase::~MultiColvarBase() {
   if(catom_indices.size()==0 ) atoms.removeVirtualAtom( this );
   atoms.removeGroup( getLabel() );
-}
-
-void MultiColvarBase::interpretDotStar( const std::string& mylabel, const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals, const ActionSet& actset ) {
-  Keywords skeys; MultiColvarBase::shortcutKeywords( skeys );
-  std::vector<std::string> out_comps( skeys.getAllOutputComponents() );
-  for(unsigned i=0; i<out_comps.size(); ++i) {
-    std::string keyname; bool donumtest = skeys.getKeywordForThisOutput( out_comps[i], keyname );
-    if( donumtest ) {
-      if( skeys.numbered( keyname ) ) {
-        for(unsigned j=1;; ++j) {
-          std::string numstr; Tools::convert( j, numstr );
-          ActionWithValue* action=actset.selectWithLabel<ActionWithValue*>( mylabel + out_comps[i] + numstr );
-          if( !action ) break;
-          (action->copyOutput(0))->interpretDataRequest( ulab, nargs, myvals, "" );
-        }
-      }
-    }
-    ActionWithValue* action=actset.selectWithLabel<ActionWithValue*>( mylabel + out_comps[i] );
-    if( action ) (action->copyOutput(0))->interpretDataRequest( ulab, nargs, myvals, "" );
-  }
-} 
-
-void MultiColvarBase::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
-  MultiColvarBase::interpretDotStar( getLabel(), ulab, nargs, myvals, plumed.getActionSet() );
 }
 
 void MultiColvarBase::addValueWithDerivatives() {

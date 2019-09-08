@@ -186,10 +186,6 @@ SymmetryFunctionBase::SymmetryFunctionBase(const ActionOptions&ao):
   }
 }
 
-void SymmetryFunctionBase::interpretDotStar( const std::string& ulab, unsigned& nargs, std::vector<Value*>& myvals ) {
-  multicolvar::MultiColvarBase::interpretDotStar( getLabel(), ulab, nargs, myvals, plumed.getActionSet() );
-}
-
 void SymmetryFunctionBase::addValueWithDerivatives() {
   std::vector<unsigned> shape;
   if( getPntrToArgument(0)->getRank()==2 ) {
