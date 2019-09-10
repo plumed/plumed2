@@ -368,8 +368,8 @@ void Function::calculate() {
 
 void Function::update() {
   if( skipUpdate() || actionInChain() ) return;
-  plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
-  evaluateAllFunctions();
+  plumed_dbg_assert( !actionInChain() );
+  if( getFullNumberOfTasks()>0 ) evaluateAllFunctions();
 }
 
 void Function::runFinalJobs() {

@@ -91,10 +91,12 @@ void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, con
     Tools::convert( str_min[i], min[i] );
     Tools::convert( str_max[i], max[i] );
     if( spacing.size()==dimension && binsin.size()==dimension ) {
-      double range = max[i] - min[i]; unsigned spc = std::floor( range / spacing[i]); dx[i]=spacing[i];
-      // This check ensures that nbins is set correctly if spacing is set the same as the number of bins
-      if( fabs( binsin[i]*spacing[i]-range )>0.5*spacing[i] ) { spc += 1; }
-      if( spc>binsin[i] ) nbin[i]=spc; else nbin[i]=binsin[i];
+      if( spacing[i]==0 ) nbin[i] = binsin[i];
+      else {
+        double range = max[i] - min[i]; nbin[i] = std::round( range / spacing[i]); dx[i]=spacing[i];
+        // This check ensures that nbins is set correctly if spacing is set the same as the number of bins
+        if( nbin[i]!=binsin[i] ) plumed_merror("mismatch between input spacing and input number of bins");
+      } 
     } else if( binsin.size()==dimension ) {
       nbin[i]=binsin[i]; dx[i] = ( max[i] - min[i] ) / static_cast<double>( nbin[i] );
     } else if( spacing.size()==dimension ) {

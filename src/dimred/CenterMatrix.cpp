@@ -98,7 +98,7 @@ void CenterMatrix::update() {
 
 void CenterMatrix::runFinalJobs() {
   if( skipUpdate() || wasupdated ) return;
-  plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 && getPntrToOutput(0)->getShape()[0]==0 );
+  plumed_dbg_assert( !actionInChain() && getPntrToOutput(0)->getShape()[0]==0 );
   resizeForFinalTasks(); update();
 }
 

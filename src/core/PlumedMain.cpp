@@ -591,6 +591,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
            for(unsigned i=0;i<srank[0];++i) shape[i]=srank[i+1];
            values.emplace_back(new Value(NULL, words[1], false, shape) );
            values[values.size()-1]->created_in_plumedmain=true;
+           values[values.size()-1]->setShape( shape );
            fixed_vals.insert(std::pair<std::string,bool>(words[1],false));
         }
         break;

@@ -131,7 +131,7 @@ void HistogramBase::setNumberOfKernels() {
 }
 
 void HistogramBase::buildTasksFromBasedOnRankOfInputData() {
-  plumed_dbg_assert( getRank()>0 );
+  plumed_dbg_assert( getPntrToArgument(0)->getRank()>0 );
   // Now build the data task list based on the rank of the input data
   if( getPntrToArgument(0)->getRank()==2 ) {
      bool symmetric=true; std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );

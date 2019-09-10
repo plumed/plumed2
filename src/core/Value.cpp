@@ -88,11 +88,13 @@ void Value::setShape( const std::vector<unsigned>&ss ) {
   shape.resize( ss.size() );
   for(unsigned i=0; i<shape.size(); ++i) shape[i]=ss[i];
 
-  if( shape.size()>0 ) data.resize(getSize());
-  else if( hasDeriv ) data.resize( 1 +  action->getNumberOfDerivatives() );
-  else data.resize(1);
-  unsigned fsize=1; for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
-  inputForces.resize( fsize );
+  if( (hasDeriv || storedata || istimeseries || created_in_plumedmain) && shape.size()>0 ) {
+     data.resize(getSize()); unsigned fsize=1; 
+     for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
+     inputForces.resize(fsize); 
+  } else if( hasDeriv ) {
+     data.resize( 1 +  action->getNumberOfDerivatives() ); inputForces.resize(1);
+  } else if( shape.size()==0 ) { data.resize(1); inputForces.resize(1); }
 }
 
 void Value::setupPeriodicity() {
@@ -108,20 +110,31 @@ void Value::setupPeriodicity() {
 
 void Value::buildDataStore( const std::string& actlabel ) {
   if( neverstore ) return ;
-  bool found=false;
+  bool found=false; 
   for(unsigned i=0; i<store_data_for.size(); ++i) {
     if( actlabel==store_data_for[i].first ) found=true;
   }
   if( !found ) store_data_for.push_back( std::pair<std::string,int>(actlabel,-1) );
   storedata=true;
+  if( getRank()>0 && !hasDeriv ) {
+      unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss); 
+      unsigned fsize=1; for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
+      if( fsize!=inputForces.size() ) inputForces.resize(fsize);
+  }
 }
 
 void Value::alwaysStoreValues() {
   plumed_assert( !neverstore); alwaysstore=true; storedata=true;
+  if( getRank()>0 && !hasDeriv ) {
+      unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss); 
+      unsigned fsize=1; for(unsigned i=0; i<shape.size(); ++i) fsize *= shape[i];
+      if( fsize!=inputForces.size() ) inputForces.resize(fsize); 
+  }
 }
 
 void Value::makeTimeSeries() {
   plumed_assert( shape.size()==1 ); istimeseries=true;
+  unsigned ss=getSize(); if( data.size()!=ss ) data.resize(ss);
 }
 
 void Value::neverStoreValues() {

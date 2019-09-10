@@ -138,7 +138,10 @@ PathDisplacements::PathDisplacements(const ActionOptions& ao):
   log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
   // And create a value to hold the displacements
   std::vector<unsigned> shape(2); shape[0]=nrows; shape[1]=ncols;
-  addValue( shape ); setNotPeriodic(); getPntrToOutput(0)->clearDerivatives();
+  addValue( shape ); setNotPeriodic(); 
+  getPntrToOutput(0)->alwaysStoreValues(); 
+  getPntrToOutput(0)->setShape( shape ); 
+  getPntrToOutput(0)->clearDerivatives();
 }
 
 unsigned PathDisplacements::getNumberOfDerivatives() const {

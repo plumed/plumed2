@@ -111,6 +111,18 @@ VectorProductMatrix::VectorProductMatrix(const ActionOptions& ao):
 
   if( ncol_args>0 ) narg_derivatives = ( tnum + cnum ) * ncol_args; 
   else narg_derivatives = tnum * ( arg_ends.size() - 1 );
+
+  // Now do some stuff for time series
+  bool timeseries=getPntrToArgument(0)->isTimeSeries();
+  if( timeseries ) {
+      for(unsigned i=1;i<getNumberOfArguments();++i) {
+          if( !getPntrToArgument(0)->isTimeSeries() ) error("all arguments should either be time series or not time series");
+      }
+  } else {
+      for(unsigned i=1;i<getNumberOfArguments();++i) {
+          if( getPntrToArgument(0)->isTimeSeries() ) error("all arguments should either be time series or not time series");
+      }
+  }
 }
 
 unsigned VectorProductMatrix::getNumberOfDerivatives() const {
@@ -149,8 +161,8 @@ void VectorProductMatrix::calculate() {
 
 void VectorProductMatrix::update() {
   if( skipUpdate() ) return;
-  plumed_dbg_assert( !actionInChain() && getFullNumberOfTasks()>0 );
-  runAllTasks();
+  plumed_dbg_assert( !actionInChain() );
+  if( getFullNumberOfTasks()>0 ) runAllTasks();
 }
 
 void VectorProductMatrix::runFinalJobs() {
