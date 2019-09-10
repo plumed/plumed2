@@ -274,23 +274,38 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed.c" << \EOF_EO
 +#include "Plumed.h"
 EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed_force.inc" << \EOF_EOF
---- ./src/pmemd/src/Plumed_force.inc.preplumed	2019-06-07 02:43:16.946879378 +0300
-+++ ./src/pmemd/src/Plumed_force.inc	2019-06-07 02:45:26.266309842 +0300
-@@ -0,0 +1,59 @@
-+
-+    plumed_stopflag=0
-+    call plumed_f_gcmd("setStep"//char(0), nstep)
+--- ./src/pmemd/src/Plumed_force.inc.preplumed	2019-09-04 17:37:24.883213440 +0300
++++ ./src/pmemd/src/Plumed_force.inc	2019-09-10 18:01:05.364825443 +0300
+@@ -0,0 +1,85 @@
 +    call plumed_f_gcmd("setPositions"//char(0), crd)
 +    call plumed_f_gcmd("setMasses"//char(0), mass)
 +    call plumed_f_gcmd("setCharges"//char(0), atm_qterm)
++
++
 +    if (using_pme_potential) then
 +        call plumed_f_gcmd("setEnergy"//char(0), pme_pot_ene)
 +    else if (using_gb_potential) then
 +        call plumed_f_gcmd("setEnergy"//char(0), gb_pot_ene)
 +    end if
++
++
++#ifdef CUDA
++    if (plumed_need_pot_enes > 0) then
++        call plumed_f_gcmd("setForces"//char(0), frc)
++    else
++        plumed_frc(:,:) = 0.d0
++        call plumed_f_gcmd("setForces"//char(0), plumed_frc)
++    end if
++#else
 +    call plumed_f_gcmd("setForces"//char(0), frc)
++#endif
++
++
 +    call plumed_f_gcmd("setStopFlag"//char(0), plumed_stopflag)
++
++
 +    plumed_box = 0.0
++
 +    if (ifbox == 0) then
 +      continue
 +    else if (ifbox == 1) then
@@ -318,6 +333,8 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed_force.inc" <<
 +      write (6,*) "!!!!! ABORTING RUN"
 +      call mexit(6, 1)
 +    endif
++
++
 +    plumed_virial=0.0
 +
 +    ! It's not completely clear where the factor 2.0 comes from.
@@ -326,13 +343,22 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed_force.inc" <<
 +    plumed_virial(1,1)=2.0*virial(1)
 +    plumed_virial(2,2)=2.0*virial(2)
 +    plumed_virial(3,3)=2.0*virial(3)
++
++
 +    call plumed_f_gcmd("setVirial"//char(0), plumed_virial)
 +    call plumed_f_gcmd("setBox"//char(0), plumed_box)
-+    call plumed_f_gcmd("calc"//char(0), 0);
++
++
++    call plumed_f_gcmd("shareData"//char(0), 0)
++    call plumed_f_gcmd("performCalc"//char(0), 0)
++
++
 +#ifdef MPI
 +    ! This is required since PLUMED only updates virial on master processor
 +    call mpi_bcast(plumed_virial, 9, mpi_double_precision, 0, pmemd_comm, err_code_mpi)
 +#endif
++
++
 +    virial(1)=0.5*plumed_virial(1,1)
 +    virial(2)=0.5*plumed_virial(2,2)
 +    virial(3)=0.5*plumed_virial(3,3)
@@ -3202,9 +3228,9 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/Plumed_init.inc" << 
 +
 EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/runmd.F90" << \EOF_EOF
---- ./src/pmemd/src/runmd.F90.preplumed	2019-06-07 02:45:26.269643246 +0300
-+++ ./src/pmemd/src/runmd.F90	2019-06-07 02:52:59.555733252 +0300
-@@ -255,10 +255,16 @@
+--- ./src/pmemd/src/runmd.F90.preplumed	2019-09-04 17:37:24.889880042 +0300
++++ ./src/pmemd/src/runmd.F90	2019-09-10 17:59:19.169107755 +0300
+@@ -255,10 +255,18 @@
    logical               :: update_gamd
    double precision      :: VmaxDt,VminDt,VavgDt,sigmaVDt
    double precision      :: VmaxPt,VminPt,VavgPt,sigmaVPt
@@ -3215,13 +3241,15 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/runmd.F90" << \EOF_E
 +  integer               :: plumed_version, plumed_stopflag
 +  double precision      :: plumed_energyUnits, plumed_timeUnits, plumed_lengthUnits
 +  double precision      :: plumed_chargeUnits
++  integer               :: plumed_need_pot_enes
++  double precision      :: plumed_frc(3,atm_cnt)
 +
  ! Runmd operates in kcal/mol units for energy, amu for masses,
  ! and angstoms for distances.  To convert the input time parameters
  ! from picoseconds to internal units, multiply by 20.455
  ! (which is 10.0 * sqrt(4.184)).
  
-@@ -493,10 +499,15 @@
+@@ -493,10 +501,15 @@
  
  ! Clean up the velocity if belly run:
  
@@ -3237,25 +3265,58 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/runmd.F90" << \EOF_E
    irespa = 1    ! PME respa step counter.
    if (usemidpoint) then
     proc_new_list = .true.
-@@ -648,10 +659,26 @@
+@@ -515,10 +528,27 @@
+ 
+     if(.not.usemidpoint) then
+        if (infe .ne. 0) nfe_real_mdstep = .False.
+     end if
+ 
++! PLUMED
++  if (plumed == 1) then
++    plumed_stopflag = 0
++    plumed_need_pot_enes = 0
++
++    call plumed_f_gcmd("setStep"//char(0), nstep)
++    call plumed_f_gcmd("prepareDependencies"//char(0), 0)
++
++    ! May be call to isEnergyNeeded isn't necessary here because of explicit assignment above.
++    ! However, it could change in future so I'll let it be here
++    call plumed_f_gcmd("isEnergyNeeded"//char(0), plumed_need_pot_enes)
++
++    if (plumed_need_pot_enes > 0) then
++      need_pot_enes = .true.
++    end if
++  end if
++
+     ! Calculate the force.  This also does ekcmt if a regular pme run:
+ 
+     call update_time(runmd_time)
+ 
+     if (using_pme_potential) then
+@@ -648,10 +678,31 @@
      ! local NMR step counter:
      if (.not. usemidpoint) then
        call nmrdcp
      end if
  
 +! PLUMED
-+    plumed_stopflag = 0
-+
 +    if (plumed == 1) then
 +#ifdef CUDA
 +      call gpu_download_crd(crd)
-+      call gpu_download_frc(frc)
++
++      if (plumed_need_pot_enes > 0) then
++        call gpu_download_frc(frc)
++      end if
 +#endif
 +
 +#     include "Plumed_force.inc"
 +
 +#ifdef CUDA
-+      call gpu_upload_frc(frc)
++      if (plumed_need_pot_enes > 0) then
++        call gpu_upload_frc(frc)
++      else
++        call gpu_upload_frc_add(plumed_frc)
++      end if
 +#endif
 +    end if
 +
@@ -3264,27 +3325,32 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/runmd.F90" << \EOF_E
      ! The coordinates will not be changed between here and the next
      ! run of force, so we can just set new_list to .false.
  
-@@ -1298,10 +1325,19 @@
-                         (mod(total_nstep+1, ntwe) .eq. 0 .and. onstep)
-       else
-         need_pot_enes = mod(total_nstep+1, steps_per_avg) .eq. 0
-       end if
+@@ -1347,10 +1398,24 @@
+ 
+       ! Need the potential energy for MC barostat steps and SGLD reweighting
+       ! calculation
+       if (do_mcbar_trial .or. isgld .gt. 0) need_pot_enes = .true.
  
 +! PLUMED
-+! Actually it's disputed if we should always retrieve potential energies
-+! (seems like it's only needed if one want to apply bias to the energy itself;
-+! may be additional flag in config file is needed because calculation of
-+! potential energies is very costly)
 +      if (plumed == 1) then
++        plumed_stopflag = 0
++        plumed_need_pot_enes = 0
++
++        call plumed_f_gcmd("setStep"//char(0), nstep)
++        call plumed_f_gcmd("prepareDependencies"//char(0), 0)
++        call plumed_f_gcmd("isEnergyNeeded"//char(0), plumed_need_pot_enes)
++
++        if (plumed_need_pot_enes > 0) then
 +          need_pot_enes = .true.
++        end if
 +      end if
 +
- #ifdef EMIL
-       if ( emil_do_calc .gt. 0 ) then
-         need_pot_enes = .true.
-       end if
- #endif
-@@ -1547,10 +1583,25 @@
+       call update_time(runmd_time)
+ 
+       if (using_pme_potential) then
+ 
+         ! Monte Carlo water movement and exchange - mcint > 0
+@@ -1547,10 +1612,32 @@
  #endif
          end if
          ti_ekin0(1) = ti_fac(1,1) * temp0
@@ -3295,13 +3361,20 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/runmd.F90" << \EOF_E
 +      if (plumed == 1) then
 +#ifdef CUDA
 +        call gpu_download_crd(crd)
-+        call gpu_download_frc(frc)
++
++        if (plumed_need_pot_enes > 0) then
++          call gpu_download_frc(frc)
++        end if
 +#endif
 +
 +#       include "Plumed_force.inc"
 +
 +#ifdef CUDA
-+        call gpu_upload_frc(frc)
++        if (plumed_need_pot_enes > 0) then
++          call gpu_upload_frc(frc)
++        else
++          call gpu_upload_frc_add(plumed_frc)
++        end if
 +#endif
 +      end if
 +
@@ -3310,7 +3383,7 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/runmd.F90" << \EOF_E
        if (ntp .gt. 0) then
  
          si(si_volume) = uc_volume
-@@ -4041,11 +4092,15 @@
+@@ -4041,11 +4128,15 @@
            end if
          end if  ! end timlim check
  
@@ -3326,7 +3399,7 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/pmemd/src/runmd.F90" << \EOF_E
        ! If timlim has been exceeded exit the REMD loop
        if (timlim_exceeded .and.local_remd_method .ne. 0) then
          local_numexchg = mdloop
-@@ -4174,10 +4229,13 @@
+@@ -4174,10 +4265,13 @@
  
    if (ti_mode .ne. 0) call ti_cleanup
  
