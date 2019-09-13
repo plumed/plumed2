@@ -57,21 +57,19 @@ std::unique_ptr<Grid> WaveletGrid::setupGrid(const unsigned order, unsigned grid
   std::vector<double> values_at_integers = calcIntegerValues(h_Matvec[0], 0);
   std::vector<double> derivs_at_integers = calcIntegerValues(h_Matvec[0], 1);
 
-
-  std::unique_ptr<Grid> grid;
-  if (!use_mother_wavelet) {
-    // Set up the scaling grid with correct properties
-    grid.reset(new Grid("db"+std::to_string(order)+"_phi", {"position"}, {"0"},
-    {std::to_string(maxsupport)}, {gridsize}, false, true, {false}, {"0."}, {"0."}));
-  }
-  else {
-    // if wavelet is wanted: get the needed coefficients as well
+  std::string gridvarname; // stores the name of the grid variable
+  if (use_mother_wavelet) { // get the highpass filter coefficients as well
     std::vector<double> g_coeffs = getFilterCoefficients(order, false, type);
     g_Matvec = setupMatrices(g_coeffs);
-
-    grid.reset(new Grid("db"+std::to_string(order)+"_psi", {"position"}, {"0"},
-    {std::to_string(maxsupport)}, {gridsize}, false, true, {false}, {"0."}, {"0."}));
+    gridvarname = "wvlt"+std::to_string(order)+"_psi";
   }
+  else {
+    gridvarname = "wvlt"+std::to_string(order)+"_phi";
+  }
+
+  // Set up the grid with correct properties
+  auto grid = std::unique_ptr<Grid>(new Grid(gridvarname, {"position"}, {"0"},
+    {std::to_string(maxsupport)}, {gridsize}, false, true, {false}, {"0."}, {"0."}));
 
   BinaryMap values = cascade(h_Matvec, g_Matvec, values_at_integers, recursion_number, bins_per_int, 0, use_mother_wavelet);
   BinaryMap derivs = cascade(h_Matvec, g_Matvec, derivs_at_integers, recursion_number, bins_per_int, 1, use_mother_wavelet);

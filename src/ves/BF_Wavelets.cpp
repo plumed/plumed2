@@ -33,7 +33,7 @@ namespace PLMD {
 namespace ves {
 
 
-//+PLUMEDOC VES_BASISF BF_DB_WAVELETS
+//+PLUMEDOC VES_BASISF BF_WAVELETS
 /*
 Daubechies Wavelets as basis functions.
 
