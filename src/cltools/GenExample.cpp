@@ -88,11 +88,17 @@ GenExample::GenExample(const CLToolOptions& co ):
 
 int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
 
+  std::string version="master"; if( config::getVersion()!="2.6") version=config::getVersion();
   PlumedMain myplumed; int rr=sizeof(double), natoms=10000000; 
   myplumed.cmd("setRealPrecision",&rr); myplumed.cmd("setNatoms",&natoms); myplumed.cmd("init");
   std::string fname, egname, outfile; parse("--plumed",fname); parse("--name",egname); parse("--out",outfile);
   IFile ifile; ifile.open(fname); ifile.allowNoEOL(); std::ofstream ofile; ofile.open(outfile);
-  ofile<<"<div id=\"value_details_"<<egname<<"\"></div>\n<pre class=\"fragment\">\n"; 
+  ofile<<"<div style=\"width: 90%; float:left\" id=\"value_details_"<<egname<<"\"> Click on the labels of the actions for more information on what each action computes </div>\n";
+  ofile<<"<div style=\"width: 5%; float:left\">";
+  ofile<<"<img src=\"https://img.shields.io/badge/"<<version<<"-";
+  ofile<<"passing-green";
+  ofile<<".svg\" alt=\"tested on "<<version<<"\" />";
+  ofile<<"</div> <pre style=\"width: 97%;\" class=\"fragment\">\n"; 
   std::vector<std::string> labellist, words; 
   while( Tools::getParsedLine(ifile, words, false) ) {
      if( words.empty() ) continue; 
@@ -113,7 +119,6 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
          Keywords keys; actionRegister().getKeywords( interpreted[0], keys );
          // Handle conversion of action names to links
          std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c){ return std::tolower(c); });
-         std::string version="master"; if( config::getVersion()!="2.6") version=config::getVersion(); 
          ofile<<"<a href=\"https://www.plumed.org/doc-"<<version<<"/user-doc/html/"; 
          for(unsigned n=0;;++n) {
              std::size_t und=action.find_first_of("_");
