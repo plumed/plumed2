@@ -637,6 +637,17 @@ double ActionWithArguments::retrieveRequiredArgument( const unsigned& iarg, cons
   }
 }
 
+void ActionWithArguments::setForceOnScalarArgument(const unsigned n, const double& ff) {
+  unsigned nt = 0, nn = 0, j=0;
+  for(unsigned i=0; i<arguments.size(); ++i) {
+    nt += arguments[i]->getNumberOfValues( getLabel() );
+    if( n<nt ) { j=i; break ; }
+    nn += arguments[i]->getNumberOfValues( getLabel() );
+  }
+  if( usingAllArgs[j] ) arguments[j]->addForce( n-nn, ff );
+  else arguments[j]->addForceOnRequiredValue( getLabel(), n-nn, ff );
+}
+
 void ActionWithArguments::setForcesOnActionChain( const std::vector<double>& forces, unsigned& start, ActionWithValue* av ) {
   plumed_dbg_massert( start<forces.size(), "not enough forces have been saved" );
   ParallelPlumedActions* pp = dynamic_cast<ParallelPlumedActions*>( av );

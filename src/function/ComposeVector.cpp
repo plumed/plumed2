@@ -65,7 +65,8 @@ void ComposeVector::calculate() {
 }
 
 void ComposeVector::apply() {
-
+  Value* val=getPntrToOutput(0);
+  for(unsigned i=0;i<getNumberOfScalarArguments();++i) setForceOnScalarArgument( i, val->getForce(i) ); 
 }
 
 }

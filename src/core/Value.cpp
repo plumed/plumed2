@@ -370,6 +370,11 @@ double Value::getRequiredValue(  const std::string& alabel, const unsigned& num 
   return get( userdata.find(alabel)->second[num].first );
 }
 
+void Value::addForceOnRequiredValue( const std::string& alabel, const unsigned& num, const double& ff  ) {
+  if( usingAllVals(alabel) ) addForce( num, ff );
+  else addForce( userdata.find(alabel)->second[num].first, ff );
+}
+
 void Value::getRequiredValue(  const std::string& alabel, const unsigned& num, std::vector<double>& args ) const {
   if( usingAllVals(alabel) ) {
     args[userdata.find(alabel)->second[0].second+num] = getRequiredValue( alabel, num );

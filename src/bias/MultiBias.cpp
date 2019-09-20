@@ -42,7 +42,7 @@ MultiBias::MultiBias(const ActionOptions&ao):
   ActionWithArguments(ao),
   forcesToApply(getNumberOfScalarArguments(),0.0)
 {
-  createTasksFromArguments(); nderivatives = getNumberOfArguments();
+  createTasksFromArguments(); nderivatives = getNumberOfScalarArguments();
   if( distinct_arguments.size()>0 ) {
     // Create the chain of actions that will calculate the function
     nderivatives = setupActionInChain(0);
@@ -113,7 +113,7 @@ void MultiBias::performTask( const unsigned& current, MultiValue& myvals ) const
     }
   } else {
     unsigned ostrn = getPntrToOutput(0)->getPositionInStream();
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) myvals.updateIndex( ostrn, i );
+    for(unsigned i=0; i<getNumberOfScalarArguments(); ++i) myvals.updateIndex( ostrn, i );
   }
 }
 

@@ -78,6 +78,8 @@ public:
   double getArgumentScalar( const unsigned n ) const;
 /// Return a pointer to specific argument
   Value* getPntrToArgument( const unsigned n ) const ;
+/// Set the force on the nth scalar argumetn
+  void setForceOnScalarArgument(const unsigned n, const double& ff);
 /// Returns the number of arguments
   virtual unsigned getNumberOfArguments() const ;
 /// Get the number of arguments in each task
