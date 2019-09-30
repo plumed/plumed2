@@ -98,6 +98,7 @@ For protein residues, the following groups are available:
 @chi3-#
 @chi4-#
 @chi5-#
+@sidechain-#
 \endverbatim
 
 that select the appropriate atoms that define each dihedral angle for residue #.

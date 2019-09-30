@@ -396,6 +396,21 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("NE",resnum,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CZ",resnum,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("NH1",resnum,chainid));
+      } else if( name=="sidechain" && !isTerminalGroup("protein",resname) ) {
+        if(resname=="GLY") plumed_merror("sidechain is not defined for GLY");
+        std::vector<AtomNumber> tmpnum1(mypdb.getAtomsInResidue(resnum,chainid));
+        for(unsigned i=0; i<tmpnum1.size(); i++) {
+          if(mypdb.getAtomName(tmpnum1[i])!="N"&&mypdb.getAtomName(tmpnum1[i])!="CA"&&
+              mypdb.getAtomName(tmpnum1[i])!="C"&&mypdb.getAtomName(tmpnum1[i])!="O"&&
+              mypdb.getAtomName(tmpnum1[i])!="HA"&&mypdb.getAtomName(tmpnum1[i])!="H"&&
+              mypdb.getAtomName(tmpnum1[i])!="HN"&&mypdb.getAtomName(tmpnum1[i])!="H1"&&
+              mypdb.getAtomName(tmpnum1[i])!="H2"&&mypdb.getAtomName(tmpnum1[i])!="H3"&&
+              mypdb.getAtomName(tmpnum1[i])!="OXT"&&mypdb.getAtomName(tmpnum1[i])!="OT1"&&
+              mypdb.getAtomName(tmpnum1[i])!="OT2"&&mypdb.getAtomName(tmpnum1[i])!="OC1"&&
+              mypdb.getAtomName(tmpnum1[i])!="OC2") {
+            numbers.push_back( tmpnum1[i] );
+          }
+        }
       } else numbers.push_back(mypdb.getNamedAtomFromResidueAndChain(name,resnum,chainid));
 
     } else if( allowedResidue("rna",resname) || allowedResidue("dna",resname)) {
