@@ -420,6 +420,8 @@ std::string PDB::getResidueName( const unsigned& resnum ) const {
   for(unsigned i=0; i<size(); ++i) {
     if( residue[i]==resnum ) return residuenames[i];
   }
+  std::string num; Tools::convert( resnum, num );
+  plumed_merror("residue " + num + " not found" );
   return "";
 }
 
@@ -427,6 +429,8 @@ std::string PDB::getResidueName(const unsigned& resnum,const std::string& chaini
   for(unsigned i=0; i<size(); ++i) {
     if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) return residuenames[i];
   }
+  std::string num; Tools::convert( resnum, num );
+  plumed_merror("residue " + num + " not found in chain " + chainid );
   return "";
 }
 
