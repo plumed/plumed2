@@ -249,20 +249,29 @@ const Tensor & PDB::getBoxVec()const {
 
 std::string PDB::getAtomName(AtomNumber a)const {
   const auto p=number2index.find(a);
-  if(p==number2index.end()) return "";
-  else return atomsymb[p->second];
+  if(p==number2index.end()) {
+    std::string num; Tools::convert( a.serial(), num );
+    plumed_merror("Name of atom " + num + " not found" );
+    return "";
+  } else return atomsymb[p->second];
 }
 
 unsigned PDB::getResidueNumber(AtomNumber a)const {
   const auto p=number2index.find(a);
-  if(p==number2index.end()) return 0;
-  else return residue[p->second];
+  if(p==number2index.end()) {
+    std::string num; Tools::convert( a.serial(), num );
+    plumed_merror("Residue for atom " + num + " not found" );
+    return 0;
+  } else return residue[p->second];
 }
 
 std::string PDB::getResidueName(AtomNumber a) const {
   const auto p=number2index.find(a);
-  if(p==number2index.end()) return "";
-  else return residuenames[p->second];
+  if(p==number2index.end()) {
+    std::string num; Tools::convert( a.serial(), num );
+    plumed_merror("Residue for atom " + num + " not found" );
+    return "";
+  } else return residuenames[p->second];
 }
 
 unsigned PDB::size()const {
