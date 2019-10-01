@@ -61,6 +61,7 @@ public:
   void getBackbone( std::vector<std::string>& resstrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone );
   std::string getAtomName(AtomNumber a)const;
   unsigned getResidueNumber(AtomNumber a)const;
+  unsigned getPDBsize()const ;
   std::string getResidueName(AtomNumber a)const;
   void interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms );
 /// Calculate is used to kill the python interpreter.

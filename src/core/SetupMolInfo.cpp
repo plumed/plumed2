@@ -289,6 +289,10 @@ unsigned SetupMolInfo::getResidueNumber(AtomNumber a)const {
   return pdb.getResidueNumber(a);
 }
 
+unsigned SetupMolInfo::getPDBsize()const {
+  return pdb.size();
+}
+
 std::string SetupMolInfo::getResidueName(AtomNumber a)const {
   return pdb.getResidueName(a);
 }
