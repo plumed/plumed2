@@ -90,6 +90,7 @@ In the following are listed the current available definitions:
 For protein residues, the following groups are available:
 
 \verbatim
+# quadruplets for dihedral angles
 @phi-#
 @psi-#
 @omega-#
@@ -98,7 +99,11 @@ For protein residues, the following groups are available:
 @chi3-#
 @chi4-#
 @chi5-#
+
+# all sidechain atoms (excluding glycine, including all hydrogens)
 @sidechain-#
+# all backbone atoms (including hydrogens)
+@back-#
 \endverbatim
 
 that select the appropriate atoms that define each dihedral angle for residue #.
