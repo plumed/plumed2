@@ -500,7 +500,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ) {
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATADIR","data/","The folder with the experimental chemical shifts.");
-  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system to initialize ALMOST.");
+  keys.add("compulsory","TEMPLATE","template.pdb","A PDB file of the protein system.");
   keys.add("compulsory","NEIGH_FREQ","20","Period in step for neighbor list update.");
   keys.addFlag("CAMSHIFT",false,"Set to TRUE if you to calculate a single CamShift score.");
   keys.addFlag("NOEXP",false,"Set to TRUE if you don't want to have fixed components with the experimental values.");
