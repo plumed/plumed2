@@ -82,7 +82,7 @@ a set of function from the GNU Scientific Library (GSL). (With SVD forces are no
 Replica-Averaged simulations can be performed using RDCs, \ref ENSEMBLE, \ref STATS and \ref RESTRAINT .
 \ref METAINFERENCE can be activated using DOSCORE and the other relevant keywords.
 
-Additional material and examples can be also found in the tutorial \ref belfast-9
+Additional material and examples can be also found in the tutorial \ref isdb-1
 
 \par Examples
 In the following example five N-H RDCs are defined and averaged over multiple replicas,

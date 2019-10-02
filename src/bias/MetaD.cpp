@@ -150,11 +150,9 @@ This option requires that a grid is used.
 
 Additional material and examples can be also found in the tutorials:
 
-- \ref belfast-6
-- \ref belfast-7
-- \ref belfast-8
+- \ref lugano-3
 
-Notice that at variance with PLUMED 1.3 it is now straightforward to apply concurrent metadynamics
+Concurrent metadynamics
 as done e.g. in Ref. \cite gil2015enhanced . This indeed can be obtained by using the METAD
 action multiple times in the same input file.
 

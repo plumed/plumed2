@@ -78,7 +78,7 @@ are replaced by Dirac delta functions.   When this method is used the final func
 density - it is instead a probability mass function as each element of the function tells you the value of an integral
 between two points on your grid rather than the value of a (continuous) function on a grid.
 
-Additional material and examples can be also found in the tutorials \ref belfast-1 and \ref lugano-1.
+Additional material and examples can be also found in the tutorials \ref lugano-1.
 
 \par A note on block averaging and errors
 
