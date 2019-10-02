@@ -43,7 +43,7 @@ respectively.  The resulting potential is given by:
 The number of components for any vector of force constants must be equal to the number
 of arguments to the action.
 
-Additional material and examples can be also found in the tutorial \ref belfast-4
+Additional material and examples can be also found in the tutorial \ref lugano-2
 
 \par Examples
 

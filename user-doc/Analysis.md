@@ -205,7 +205,7 @@ Euclidean distances between pairs of them, \f$d_{ij}\f$, resemble the dissimilar
 where \f$F(D_{ij})\f$ is some transformation of the distance between point \f$X^{i}\f$ and point \f$X^{j}\f$ and \f$f(d_{ij})\f$ is some transformation
 of the distance between the projection of \f$X^{i}\f$, \f$x^i\f$, and the projection of \f$X^{j}\f$, \f$x^j\f$.  \f$w_i\f$ and \f$w_j\f$ are the weights
 of configurations \f$X^i\f$ and \f$^j\f$ respectively.  These weights are calculated using the reweighting and Voronoi polyhedron approaches described in
-previous sections.  A tutorial on dimensionality reduction and how it can be used to analyze simulations can be found in the tutorial \ref belfast-3 and in 
+previous sections.  A tutorial on dimensionality reduction and how it can be used to analyze simulations can be found in the tutorial \ref lugano-5 and in 
 the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be" > short video.</a>
 
 Within PLUMED running an input to run a dimensionality reduction algorithm can be as simple as:

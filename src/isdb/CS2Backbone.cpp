@@ -103,7 +103,7 @@ to only store the back-calculated values, where # includes a chain and residue n
 One additional file is always needed in the folder DATADIR: camshift.db. This file includes all the parameters needed to
 calculate the chemical shifts and can be found in regtest/isdb/rt-cs2backbone/data/ .
 
-Additional material and examples can be also found in the tutorial \ref belfast-9 as well as in the cs2backbone regtests
+Additional material and examples can be also found in the tutorial \ref isdb-1 as well as in the cs2backbone regtests
 in the isdb folder.
 
 \par Examples
