@@ -1436,7 +1436,7 @@ Optional Features:
   --enable-boost_serialization
                           enable search for boost serialization, default: no
   --enable-asmjit         enable search for asmjit, default: no
-  --enable-fftw           enable search for fftw, default: no
+  --enable-fftw           enable search for fftw, default: yes
   --enable-python         enable search for python, default: yes
   --enable-af_ocl         enable arrayfire_opencl, default: search for
                           arrayfire
@@ -3170,7 +3170,7 @@ if test "${enable_fftw+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-fftw" "$LINENO" 5 ;;
   esac
 else
-  case "no" in
+  case "yes" in
              (yes) fftw=true ;;
              (no)  fftw=false ;;
   esac
