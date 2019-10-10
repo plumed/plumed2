@@ -165,10 +165,10 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
 }
 
 void FourierTransform::clearAverage() {
-  std::vector<double> fspacing; 
+  std::vector<double> fspacing;
   std::vector<std::string> ft_min( ingrid->getMin() ), ft_max( ingrid->getMax() );
   for(unsigned i=0; i<ingrid->getDimension(); ++i) {
-    Tools::convert( 0.0, ft_min[i] ); Tools::convert( 2.0*pi*ingrid->getNbin()[i]/ ingrid->getGridExtent(i), ft_max[i] ); 
+    Tools::convert( 0.0, ft_min[i] ); Tools::convert( 2.0*pi*ingrid->getNbin()[i]/ ingrid->getGridExtent(i), ft_max[i] );
   }
   mygrid->setBounds( ft_min, ft_max, ingrid->getNbin(), fspacing); resizeFunctions();
   ActionWithAveraging::clearAverage();
