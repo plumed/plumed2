@@ -190,7 +190,7 @@ void FourierTransform::performOperations( const bool& from_update ) {
 
   // Get the size of the input data arrays (to allocate FFT data)
   size_t fft_dimension=static_cast<size_t>( ingrid->getNumberOfPoints() );
-  std::vector<unsigned> N_input_data( ingrid->getNbin() ); 
+  std::vector<unsigned> N_input_data( ingrid->getNbin() );
   for(unsigned i=0; i<N_input_data.size(); ++i) if( !ingrid->isPeriodic(i) ) N_input_data[i]++;
   // size_t fft_dimension=1; for(unsigned i=0; i<N_input_data.size(); ++i) fft_dimension*=static_cast<size_t>( N_input_data[i] );
 
