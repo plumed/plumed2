@@ -70,7 +70,6 @@ class FourierTransform : public ActionWithInputGrid {
 private:
   std::string output_type;
   bool real_output, store_norm;
-  std::vector<unsigned> gdirs;
   std::vector<int> fourier_params;
 public:
   static void registerKeywords( Keywords& keys );
@@ -139,27 +138,20 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
 
   // Create the input from the old string
   std::string vstring;
-  unsigned n=0; gdirs.resize( ingrid->getDimension() );
-  for(unsigned i=0; i<ingrid->getDimension(); ++i) {
-    gdirs[n]=i; n++;
-  }
-
-  plumed_assert( n==ingrid->getDimension() );
-
   if (real_output) {
     if (!store_norm) vstring="COMPONENTS=" + getLabel() + "_abs";
     else vstring="COMPONENTS=" + getLabel() + "_norm";
   } else vstring="COMPONENTS=" + getLabel() + "_real," + getLabel() + "_imag";
 
   // Set COORDINATES keyword
-  vstring += " COORDINATES=" + ingrid->getComponentName( gdirs[0] );
-  for(unsigned i=1; i<gdirs.size(); ++i) vstring += "," + ingrid->getComponentName( gdirs[i] );
+  vstring += " COORDINATES=" + ingrid->getComponentName( 0 );
+  for(unsigned i=1; i<ingrid->getDimension(); ++i) vstring += "," + ingrid->getComponentName( i );
 
   // Set PBC keyword
   vstring += " PBC=";
-  if( ingrid->isPeriodic(gdirs[0]) ) vstring+="T"; else vstring+="F";
-  for(unsigned i=1; i<gdirs.size(); ++i) {
-    if( ingrid->isPeriodic(gdirs[i]) ) vstring+=",T"; else vstring+=",F";
+  if( ingrid->isPeriodic(0) ) vstring+="T"; else vstring+="F";
+  for(unsigned i=1; i<ingrid->getDimension(); ++i) {
+    if( ingrid->isPeriodic(i) ) vstring+=",T"; else vstring+=",F";
   }
 
 
@@ -197,8 +189,10 @@ void FourierTransform::performOperations( const bool& from_update ) {
   //    <<"  max_x: "<<ft_max[0]<<"  max_y: "<<ft_max[1]<<"\n";
 
   // Get the size of the input data arrays (to allocate FFT data)
-  std::vector<unsigned> N_input_data( ingrid->getNbin() );
-  size_t fft_dimension=1; for(unsigned i=0; i<N_input_data.size(); ++i) fft_dimension*=static_cast<size_t>( N_input_data[i] );
+  size_t fft_dimension=static_cast<size_t>( ingrid->getNumberOfPoints() );
+  std::vector<unsigned> N_input_data( ingrid->getNbin() ); 
+  for(unsigned i=0; i<N_input_data.size(); ++i) if( !ingrid->isPeriodic(i) ) N_input_data[i]++;
+  // size_t fft_dimension=1; for(unsigned i=0; i<N_input_data.size(); ++i) fft_dimension*=static_cast<size_t>( N_input_data[i] );
 
   // FFT arrays
   std::vector<std::complex<double> > input_data(fft_dimension), fft_data(fft_dimension);
