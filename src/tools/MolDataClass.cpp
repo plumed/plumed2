@@ -168,7 +168,7 @@ void MolDataClass::getBackboneForResidue( const std::string& type, const unsigne
       atoms.resize(5);
       atoms[0]=mypdb.getNamedAtomFromResidue("N",residuenum);
       atoms[1]=mypdb.getNamedAtomFromResidue("CA",residuenum);
-      atoms[2]=mypdb.getNamedAtomFromResidue("HA1",residuenum);
+      atoms[2]=mypdb.getNamedAtomFromResidue("HA2",residuenum);
       atoms[3]=mypdb.getNamedAtomFromResidue("C",residuenum);
       atoms[4]=mypdb.getNamedAtomFromResidue("O",residuenum);
     } else if( residuename=="ACE") {
