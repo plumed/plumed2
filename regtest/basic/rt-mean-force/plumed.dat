@@ -1,0 +1,10 @@
+# Read in the position_1 file
+p: READ FILE=position_1 VALUES=p.x IGNORE_TIME IGNORE_FORCES
+
+# Now create a metadynamics action
+mm: NEW_METAD ARG=p.x PACE=500 HEIGHT=0.1 SIGMA=0.05 GRID_MIN=-2.5 GRID_MAX=2.5 GRID_BIN=250 TEMP=300
+
+# Now create the action to compute the bias force
+fes: MEAN_FORCE_INTEGRATION ARG=mm BANDWIDTH=0.05 STRIDE=50 
+
+PRINT ARG=fes FILE=myfes.grid FMT=%8.4f 

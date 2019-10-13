@@ -207,6 +207,7 @@ void KDE::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
            "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
+  keys.addFlag("UNORMALIZED_KERNELS",false,"do not normalize the kernels that are being add to the grid");
   keys.addFlag("IGNORE_IF_OUT_OF_RANGE",false,"if a kernel is outside of the range of the grid it is safe to ignore");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
 }
@@ -270,8 +271,11 @@ KDE::KDE(const ActionOptions&ao):
 
   parseVector("GRID_BIN",nbin); parseVector("GRID_SPACING",gspacing); parse("CUTOFF",dp2cutoff);
   parse("KERNEL",kerneltype); if( kerneltype!="DISCRETE" ) parseVector("BANDWIDTH",bandwidth);
-  double det=1; for(unsigned i=0; i<bandwidth.size(); ++i) det*=bandwidth[i]*bandwidth[i];
-  if( kerneltype=="GAUSSIAN" ) gvol=pow( 2*pi, 0.5*bandwidth.size() ) * pow( det, 0.5 );
+  bool ukernels; parseFlag("UNORMALIZED_KERNELS",ukernels);
+  if( !ukernels ) {
+      double det=1; for(unsigned i=0; i<bandwidth.size(); ++i) det*=bandwidth[i]*bandwidth[i];
+      if( kerneltype=="GAUSSIAN" ) gvol=pow( 2*pi, 0.5*bandwidth.size() ) * pow( det, 0.5 );
+  } else log.printf("  kernels used to construct density are unormalized \n");
 
   if( kerneltype.find("bin")==std::string::npos && kerneltype!="DISCRETE" ) {
      std::string errors; switchingFunction.set( kerneltype + " R_0=1.0 NOSTRETCH RETURN_DERIV", errors ); 

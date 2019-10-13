@@ -101,10 +101,10 @@ void Function::addDerivative( const unsigned& ival, const unsigned& jder, const 
       myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), getPntrToOutput(ival)->getRank()+jder, der );
     } else {
       unsigned np = myvals.getTaskIndex(), ostrn = getPntrToOutput(ival)->getPositionInStream();
-      myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), getPntrToOutput(ival)->getRank()+jder, der );
       for(unsigned i=0; i<getPntrToArgument(jder)->getRank(); ++i) {
         myvals.addDerivative( ostrn, i, der*getPntrToArgument(jder)->getGridDerivative( np, i ) );
-      }
+      } 
+      if( nderivatives>getPntrToArgument(jder)->getRank() ) myvals.addDerivative( getPntrToOutput(ival)->getPositionInStream(), getPntrToOutput(ival)->getRank()+jder, der );
     }
     return;
   }
