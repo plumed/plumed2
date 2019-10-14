@@ -74,7 +74,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit FourierTransform(const ActionOptions&ao);
-  void clearAverage();
+  void clearAverage() override;
 #ifndef __PLUMED_HAS_FFTW
   void performOperations( const bool& from_update ) override {}
 #else
