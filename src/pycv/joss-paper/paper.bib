@@ -1,0 +1,248 @@
+
+@article{tribello_plumed_2014,
+	title = {{PLUMED} 2: {New} feathers for an old bird},
+	volume = {185},
+	issn = {0010-4655},
+	shorttitle = {{PLUMED} 2},
+	url = {http://www.sciencedirect.com/science/article/pii/S0010465513003196},
+	doi = {10.1016/j.cpc.2013.09.018},
+	abstract = {Abstract
+Enhancing sampling and analyzing simulations are central issues in molecular simulation. Recently, we introduced PLUMED, an open-source plug-in that provides some of the most popular molecular dynamics (MD) codes with implementations of a variety of different enhanced sampling algorithms and collective variables (CVs). The rapid changes in this field, in particular new directions in enhanced sampling and dimensionality reduction together with new hardware, require a code that is more flexible and more efficient. We therefore present PLUMED 2 here—a complete rewrite of the code in an object-oriented programming language (C++). This new version introduces greater flexibility and greater modularity, which both extends its core capabilities and makes it far easier to add new methods and CVs. It also has a simpler interface with the MD engines and provides a single software library containing both tools and core facilities. Ultimately, the new code better serves the ever-growing community of users and contributors in coping with the new challenges arising in the field.
+Program summary
+Program title: PLUMED 2
+
+Catalogue identifier: AEEE\_v2\_0
+
+Program summary URL:http://cpc.cs.qub.ac.uk/summaries/AEEE\_v2\_0.html
+
+Program obtainable from: CPC Program Library, Queen’s University, Belfast, N. Ireland
+
+Licensing provisions: Yes
+
+No. of lines in distributed program, including test data, etc.: 700646
+
+No. of bytes in distributed program, including test data, etc.: 6618136
+
+Distribution format: tar.gz
+
+Programming language: ANSI-C++.
+
+Computer: Any computer capable of running an executable produced by a C++ compiler.
+
+Operating system: Linux operating system, Unix OSs.
+
+Has the code been vectorized or parallelized?: Yes, parallelized using MPI.
+
+RAM: Depends on the number of atoms, the method chosen and the collective variables used.
+
+Classification: 3, 7.7, 23.
+
+Catalogue identifier of previous version: AEEE\_v1\_0.
+
+Journal reference of previous version: Comput. Phys. Comm. 180 (2009) 1961.
+
+External routines: GNU libmatheval, Lapack, Blas, MPI.
+
+Does the new version supersede the previous version?: This version supersedes the previous version for the most part. There are a small number of very specific situations where the previous version is better, due to performance or to non-ported features. We are actively working on porting these last few features into the new code.
+
+Nature of problem:
+
+Calculation of free-energy surfaces for molecular systems of interest in biology, chemistry and materials science, on the fly and a posteriori analysis of molecular dynamics trajectories using advanced collective variables.
+
+Solution method:
+
+Implementations of various collective variables and enhanced sampling techniques.
+
+Reasons for new version:
+
+The old version was difficult to maintain and its design was not as flexible as this new version. This lack of flexibility made it difficult to implement a number of novel methods that have emerged since the release of the original code.
+
+Summary of revisions:
+
+The new version of the code has a completely redesigned architecture, which allows for several important enhancements. This allows for a much simpler and robust input syntax and for improved performance. In addition, it provides several, more-complex collective variables which could not have been written using the previous implementation. Furthermore, the entire code is fully documented so it is easier to extend. Finally, the code is designed so that users can implement new variables directly in the input files and thus develop bespoke applications of these powerful algorithms.
+
+Unusual features:
+
+PLUMED 2 can be used either as a standalone program, e.g. for a posteriori analysis of trajectories, or as a library embedded in a molecular dynamics code (such as GROMACS, NAMD, Quantum ESPRESSO, and LAMMPS). Interfaces with these particular codes are provided in patches, which a simple script will insert into the underlying molecular dynamics codes source code files. For other molecular dynamics codes there is extensive documentation on how to add PLUMED in our manual.
+
+Additional comments:
+
+The distribution file contains a test suite, user and developer documentation and a collection of patches and utilities.
+
+Running time:
+
+Depends on the number of atoms, the method chosen and the collective variables used. The regression test suite provided takes approximately 1 min to run.},
+	number = {2},
+	urldate = {2013-12-06},
+	journal = {Computer Physics Communications},
+	author = {Tribello, Gareth A. and Bonomi, Massimiliano and Branduardi, Davide and Camilloni, Carlo and Bussi, Giovanni},
+	month = feb,
+	year = {2014},
+	keywords = {Dimensional reduction, Enhanced sampling, Molecular dynamics, free energy, molecular dynamics, Free energy},
+	pages = {604--613},
+	file = {PLUMED 2\: New feathers for an old bird:/Users/toni/Zotero/storage/8FGEJSMP/S0010465513003196.html:text/html;Tribello et al_2014_PLUMED 2.pdf:/Users/toni/Sync/literature/zotero/MD/Metadynamics/Tribello et al_2014_PLUMED 2.pdf:application/pdf}
+}
+
+
+@article{the_plumed_consortium_promoting_2019,
+	title = {Promoting transparency and reproducibility in enhanced molecular simulations},
+	volume = {16},
+	copyright = {2019 Springer Nature America, Inc.},
+	issn = {1548-7105},
+	url = {https://www.nature.com/articles/s41592-019-0506-8},
+	doi = {10.1038/s41592-019-0506-8},
+	abstract = {The PLUMED consortium unifies developers and contributors to PLUMED, an open-source library for enhanced-sampling, free-energy calculations and the analysis of molecular dynamics simulations. Here, we outline our efforts to promote transparency and reproducibility by disseminating protocols for enhanced-sampling molecular simulations.},
+	language = {En},
+	number = {8},
+	urldate = {2019-07-31},
+	journal = {Nature Methods},
+	author = {{The PLUMED consortium}},
+	month = aug,
+	year = {2019},
+	pages = {670},
+	file = {Snapshot:/Users/toni/Zotero/storage/CMXUMYDD/s41592-019-0506-8.html:text/html}
+}
+
+
+@article{giorgino_how_2018,
+	title = {How to differentiate collective variables in free energy codes: {Computer}-algebra code generation and automatic differentiation},
+	volume = {228},
+	issn = {0010-4655},
+	shorttitle = {How to differentiate collective variables in free energy codes},
+	url = {http://www.sciencedirect.com/science/article/pii/S0010465518300468},
+	doi = {10.1016/j.cpc.2018.02.017},
+	abstract = {The proper choice of collective variables (CVs) is central to biased-sampling free energy reconstruction methods in molecular dynamics simulations. The PLUMED 2 library, for instance, provides several sophisticated CV choices, implemented in a C++ framework; however, developing new CVs is still time consuming due to the need to provide code for the analytical derivatives of all functions with respect to atomic coordinates. We present two solutions to this problem, namely (a) symbolic differentiation and code generation, and (b) automatic code differentiation, in both cases leveraging open-source libraries (SymPy and Stan Math, respectively). The two approaches are demonstrated and discussed in detail implementing a realistic example CV, the local radius of curvature of a polymer. Users may use the code as a template to streamline the implementation of their own CVs using high-level constructs and automatic gradient computation.
+Program summary
+Program Title: Practical approaches to the differentiation of collective variables in free energy codes: computer-algebra code generation and automatic differentiation Program Files doi:http://dx.doi.org/10.17632/r4r67bvkdn.1 Licensing provisions: GNU Lesser General Public License Version 3 (LGPL-3) Programming languages: C++, Python Nature of problem: The C++ implementation of collective variables (CVs, functions of atomic coordinates to be used in biased sampling applications) in biasing libraries for atomistic simulations, such as PLUMED [1], requires computation of both the variable and its gradient with respect to the atomic coordinates; coding and testing the analytical derivatives complicate the implementation of new CVs. Solution method: The paper shows two approaches to automate the computation of CV gradients, namely, symbolic differentiation with code generation and automatic code differentiation, demonstrating their implementation entirely with open-source software (respectively, SymPy and the Stan Math Library). Additional comments: The paper’s accompanying code serves as an example and template for the methods described in the paper; it is distributed as the two modules curvature\_codegen and curvature\_autodiff integrated in PLUMED 2’s source tree; the latest version is available at https://github.com/tonigi/plumed2-automatic-gradients . [1] Tribello GA, Bonomi M, Branduardi D, Camilloni C, Bussi G. PLUMED 2: New feathers for an old bird. Computer Physics Communications. 2014 Feb;185(2):604-13.},
+	urldate = {2018-04-27},
+	journal = {Computer Physics Communications},
+	author = {Giorgino, Toni},
+	month = jul,
+	year = {2018},
+	note = {2-s2.0-85043302064},
+	keywords = {C++, Molecular dynamics, Metadynamics, Free energy, Biased sampling, Symbolic},
+	pages = {258--263},
+	file = {ScienceDirect Snapshot:/Users/toni/Zotero/storage/43EN4QZQ/S0010465518300468.html:text/html}
+}
+
+
+@article{roux_calculation_1995,
+	title = {The calculation of the potential of mean force using computer simulations},
+	volume = {91},
+	url = {Roux1995.pdf},
+	doi = {10.1016/0010-4655(95)00053-I},
+	abstract = {The problem of unbiasing and combining the results of umbrella sampling calculations is reviewed. The weighted histogram analysis method (WHAM) of S. Kumar et al. (J. Comp. Chem. 13 (1992) 1011) is described and compared with other approaches. The method is illustrated with molecular dynamics simulations of the alanine dipeptide for one-and two-dimensional free energy surfaces. The results show that the WHAM approach simplifies considerably the task of recombining the various windows in complex systems.},
+	number = {1-3},
+	journal = {Computer Physics Communications},
+	author = {Roux, Benoît},
+	year = {1995},
+	keywords = {Computer simulations},
+	pages = {275--282},
+	annote = {Added to JabRef: 2009.01.09},
+	annote = {Owner: toni}
+}
+
+
+@article{laio_escaping_2002,
+	title = {Escaping free-energy minima},
+	volume = {99},
+	issn = {0027-8424},
+	url = {http://www.ncbi.nlm.nih.gov/pubmed/12271136},
+	doi = {10.1073/pnas.202427399},
+	abstract = {We introduce a powerful method for exploring the properties of the multidimensional free energy surfaces (FESs) of complex many-body systems by means of coarse-grained non-Markovian dynamics in the space defined by a few collective coordinates. A characteristic feature of these dynamics is the presence of a history-dependent potential term that, in time, fills the minima in the FES, allowing the efficient exploration and accurate determination of the FES as a function of the collective coordinates. We demonstrate the usefulness of this approach in the case of the dissociation of a NaCl molecule in water and in the study of the conformational changes of a dialanine in solution.},
+	number = {20},
+	urldate = {2009-09-26},
+	journal = {Proceedings of the National Academy of Sciences of the United States of America},
+	author = {Laio, Alessandro and Parrinello, Michele},
+	month = oct,
+	year = {2002},
+	pmid = {12271136},
+	keywords = {metadynamics, Sodium Chloride, Overcoming, Chemistry, Normal Distribution, Models, Statistical, Thermodynamics, Alanine, Water},
+	pages = {12562--12566}
+}
+
+
+@article{barducci_metadynamics_2011,
+	title = {Metadynamics},
+	volume = {1},
+	issn = {1759-0884},
+	url = {http://onlinelibrary.wiley.com/doi/10.1002/wcms.31/abstract},
+	doi = {10.1002/wcms.31},
+	abstract = {Metadynamics is a powerful technique for enhancing sampling in molecular dynamics simulations and reconstructing the free-energy surface as a function of few selected degrees of freedom, often referred to as collective variables (CVs). In metadynamics, sampling is accelerated by a history-dependent bias potential, which is adaptively constructed in the space of the CVs. Since its first appearance, significant improvements have been made to the original algorithm, leading to an efficient, flexible, and accurate method that has found many successful applications in several domains of science. Here, we discuss first the theory underlying metadynamics and its recent developments. In particular, we focus on the crucial issue of choosing an appropriate set of CVs and on the possible strategies to alleviate this difficulty. Later in the second part, we present a few recent representative applications, which we have classified into three main classes: solid-state physics, chemical reactions, and biomolecules. © 2011 John Wiley \& Sons, Ltd. WIREs Comput Mol Sci 2011 1 826-843 DOI: 10.1002/wcms.31},
+	language = {en},
+	number = {5},
+	urldate = {2017-09-04},
+	journal = {Wiley Interdisciplinary Reviews: Computational Molecular Science},
+	author = {Barducci, Alessandro and Bonomi, Massimiliano and Parrinello, Michele},
+	month = sep,
+	year = {2011},
+	pages = {826--843},
+	file = {Snapshot:/Users/toni/Zotero/storage/8JATVU52/abstract.html:text/html}
+}
+
+
+@article{branduardi_b_2007,
+	title = {From {A} to {B} in free energy space},
+	volume = {126},
+	issn = {0021-9606},
+	doi = {10.1063/1.2432340},
+	abstract = {The authors present a new method for searching low free energy paths in complex molecular systems at finite temperature. They introduce two variables that are able to describe the position of a point in configurational space relative to a preassigned path. With the help of these two variables the authors combine features of approaches such as metadynamics or umbrella sampling with those of path based methods. This allows global searches in the space of paths to be performed and a new variational principle for the determination of low free energy paths to be established. Contrary to metadynamics or umbrella sampling the path can be described by an arbitrary large number of variables, still the energy profile along the path can be calculated. The authors exemplify the method numerically by studying the conformational changes of alanine dipeptide.},
+	language = {eng},
+	number = {5},
+	journal = {The Journal of Chemical Physics},
+	author = {Branduardi, Davide and Gervasio, Francesco Luigi and Parrinello, Michele},
+	month = feb,
+	year = {2007},
+	pmid = {17302470},
+	keywords = {Dipeptides, Energy Transfer, Computer Simulation, Molecular Conformation, Algorithms, Thermodynamics},
+	pages = {054103}
+}
+
+
+@article{bonomi_integrative_2017,
+	title = {Integrative structural and dynamical biology with {PLUMED}-{ISDB}},
+	volume = {33},
+	issn = {1367-4803},
+	url = {https://academic.oup.com/bioinformatics/article/33/24/3999/4085774},
+	doi = {10.1093/bioinformatics/btx529},
+	abstract = {SummaryAccurate structural models of biological systems can be obtained by properly combining experimental data with a priori physico–chemical knowledge. Here we present PLUMED-ISDB, an open-source, freely-available module of the popular PLUMED library, which enables the simultaneous determination of structure and dynamics of conformationally heterogeneous systems by integrating experimental data with a priori information. This integration is achieved using metainference, a general Bayesian framework that accounts for both noise in the data and their ensemble-averaged nature. PLUMED-ISDB implements different types of experimental data, such as several NMR observables, FRET, SAXS and cryo-electron microscopy data, and enables modelling structure and dynamics of individual proteins, protein complexes, membrane proteins, RNA and DNA, using a variety of enhanced sampling methods and resolutions of the system.Availability and implementationPLUMED-ISDB is freely available at www.plumed.org.Contactmb2006@cam.ac.uk or carlo.camilloni@unimi.itSupplementary informationSupplementary data are available at Bioinformatics online.},
+	language = {en},
+	number = {24},
+	urldate = {2018-02-04},
+	journal = {Bioinformatics},
+	author = {Bonomi, Massimiliano and Camilloni, Carlo},
+	month = dec,
+	year = {2017},
+	keywords = {Software, Molecular Conformation, Models, Molecular, Bayes Theorem},
+	pages = {3999--4000},
+	file = {Bonomi_Camilloni_2017_Integrative structural and dynamical biology with PLUMED-ISDB.pdf:/Users/toni/Sync/literature/zotero/MD/Metainference/Bonomi_Camilloni_2017_Integrative structural and dynamical biology with PLUMED-ISDB.pdf:application/pdf;Snapshot:/Users/toni/Zotero/storage/VVLH4JVX/4085774.html:text/html}
+}
+
+
+@article{pipolo_navigating_2017,
+	title = {Navigating at {Will} on the {Water} {Phase} {Diagram}},
+	volume = {119},
+	url = {https://link.aps.org/doi/10.1103/PhysRevLett.119.245701},
+	doi = {10.1103/PhysRevLett.119.245701},
+	abstract = {Despite the simplicity of its molecular unit, water is a challenging system because of its uniquely rich polymorphism and predicted but yet unconfirmed features. Introducing a novel space of generalized coordinates that capture changes in the topology of the interatomic network, we are able to systematically track transitions among liquid, amorphous, and crystalline forms throughout the whole phase diagram of water, including the nucleation of crystals above and below the melting point. Our approach, based on molecular dynamics and enhanced sampling or free energy calculation techniques, is not specific to water and could be applied to very different structural phase transitions, paving the way towards the prediction of kinetic routes connecting polymorphic structures in a range of materials.},
+	number = {24},
+	urldate = {2019-08-14},
+	journal = {Physical Review Letters},
+	author = {Pipolo, S. and Salanne, M. and Ferlat, G. and Klotz, S. and Saitta, A. M. and Pietrucci, F.},
+	month = dec,
+	year = {2017},
+	pages = {245701}
+}
+
+
+@article{torrie_nonphysical_1977,
+	title = {Nonphysical sampling distributions in {Monte} {Carlo} free-energy estimation: {Umbrella} sampling},
+	volume = {23},
+	doi = {10.1016/0021-9991(77)90121-8},
+	abstract = {The free energy difference between a model system and some reference system can easily be written as an ensemble average, but the conventional Monte Carlo methods of obtaining such averages are inadequate for the free-energy case. That is because the Boltzmann-weighted sampling distribution ordinarily used is extremely inefficient for the purpose. This paper describes the use of arbitrary sampling distributions chosen to facilitate such estimates. The methods have been tested successfully on the Lennard-Jones system over a wide range of temperature and density, including the gas-liquid coexistence region, and are found to be extremely powerful and economical.},
+	number = {2},
+	journal = {Journal of Computational Physics},
+	author = {Torrie, G. M. and Valleau, J. P.},
+	year = {1977},
+	pages = {187--199}
+}
