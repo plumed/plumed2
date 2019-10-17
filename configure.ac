@@ -829,6 +829,51 @@ if sys.version_info < (3,):
   fi
 fi
 
+# If pycv module is enabled, we need python3, python3-config and
+# jaxlib, and we need to add LDFLAGS. The following may be useful too, but
+# looks overcomplicated to me:
+# https://www.gnu.org/software/autoconf-archive/ax_python_devel.html
+pycv_ok=true
+if test -f src/pycv.on ; then
+   AC_MSG_NOTICE([Performing PYCV-related checks])
+   AC_PATH_PROG([pycv_python3],[python3],[missing])
+   if test "$pycv_python3" == missing ; then
+      pycv_ok=false
+   fi
+   AC_PATH_PROG([pycv_python3_config],[python3-config],[missing])
+   if test "$pycv_python3_config" == missing ; then
+      pycv_ok=false
+   fi
+   AC_MSG_CHECKING([support for PYCV required python modules (numpy)])
+   if ! "$pycv_python3" -c 'import numpy; print(numpy.__path__,numpy.__version__)' ; then
+      AC_MSG_RESULT([no])
+      AC_MSG_WARN([numpy not found. Install with "pip3 install numpy". Disabling PYCV.])
+      pycv_ok=false
+   else	
+      AC_MSG_RESULT([yes])
+   fi
+   AC_MSG_CHECKING([support for PYCV optional python modules (jax)])
+   if ! "$pycv_python3" -c 'import jax; print(jax.__path__,jax.__version__)' ; then
+      AC_MSG_RESULT([no])
+      AC_MSG_WARN([JAX module not found. Install with "pip3 install jax". Continuing anyway.])
+      #pycv_ok=false
+   else	
+      AC_MSG_RESULT([yes])
+   fi
+   if test "$pycv_ok" == false ; then
+      AC_MSG_WARN([disabling PYCV module; see possible reasons above])
+      rm src/pycv.on
+   else
+      pycv_embedding_ldflags=$("$pycv_python3_config" --ldflags)
+      AC_MSG_NOTICE([adding the following LDFLAGS for Python embedding: $pycv_embedding_ldflags])
+      LDFLAGS="$LDFLAGS $pycv_embedding_ldflags"
+      pycv_embedding_cflags=$("$pycv_python3_config" --cflags)
+      AC_MSG_NOTICE([adding the following CPPFLAGS for Python embedding: $pycv_embedding_cflags])
+      CPPFLAGS="$CPPFLAGS $pycv_embedding_cflags"
+   fi
+fi		   
+
+
 if test "$af_ocl" == true ; then
   PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
 fi

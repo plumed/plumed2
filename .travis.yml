@@ -196,7 +196,9 @@ install:
 # I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
   - if test -n "$LD_LIBRARY_PATH" ; then PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" ; fi
 # arrayfire
-  - if test "$ARRAYFIRE" == yes; then ./.travis/install.arrayfire ; fi 
+  - if test "$ARRAYFIRE" == yes; then ./.travis/install.arrayfire ; fi
+# PYCV requirements
+  - if test "$PYCV" == yes; then ./.travis/install.pycv.prereqs ; fi
 # macports related stuff
 # configure macports
   - if test -n "$PLUMED_MACPORTS" ; then
