@@ -143,11 +143,12 @@ as `x=jax.ops.index_update(x, jax.ops.index[i], y)`.
 \par Multiple components
 
 It is possible to return multiple components at a time. This may be
-useful if they can reuse part of the computation. To do so, pass the
+useful e.g. if they reuse part of the computation. To do so, pass the
 `COMPONENTS=comp1,comp2,...` keyword. In this case, the function is
-expected to provide two return values: (a) a dictionary of values; and (b)
-a dictionary of gradients. Dictionary keys must be the same names indicated
-in the `COMPONENTS` keyword.
+expected to provide two return values: (a) a dictionary of values; and
+(b) a dictionary of gradients. Dictionary keys must be the same names
+indicated in the `COMPONENTS` keyword. Inside PLUMED, component names
+will be prefixed by `py-`.
 
 Note that you can use JAX's Jacobian function `jax.jacrev()` to
 conveniently compute the gradients all at once (see regtests). For
@@ -185,7 +186,7 @@ are feeling lucky, this may work:
 
 \verbatim
 pip3 install numpy jax jaxlib
-./configure --enable-modules=+pycv 
+./configure --enable-modules=+pycv
 \endverbatim
 
 At run time, you may need to set the `PYTHONHOME` or other
@@ -234,7 +235,7 @@ void PythonCV::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","IMPORT","the python file to import, containing the function");
   keys.add("compulsory","FUNCTION","the function to call");
   keys.add("optional","COMPONENTS","if provided, the function will return multiple components, with the names given");
-
+  keys.addOutputComponent("py","COMPONENTS","Each of the components output py the Python code, prefixed by py-");
   // Why is NOPBC not listed here?
 }
 
@@ -272,12 +273,13 @@ PythonCV::PythonCV(const ActionOptions&ao):
      <<plumed.cite(PYTHONCV_CITATION)
      <<"\n";
 
-  if(ncomponents>0) {
+  if(ncomponents) {
     for(auto c: components) {
-      addComponentWithDerivatives(c.c_str());
-      componentIsNotPeriodic(c.c_str());
+      auto c_pfx="py-"+c;
+      addComponentWithDerivatives(c_pfx);
+      componentIsNotPeriodic(c_pfx);
     }
-    log<<"  WARNING: components will not have the proper periodicity - see manual\n";
+    log<<"  WARNING: components will not have a periodicity set - see manual\n";
   } else {
     addValueWithDerivatives();
     setNotPeriodic();
@@ -366,13 +368,13 @@ void PythonCV::calculateMultiComponent(py::object &r) {
   bool dictstyle=py::isinstance<py::dict>(rl[0]);
 
   if(dictstyle) {
-    py::dict vdict=rl[0].cast<py::dict>();
-    py::dict gdict=rl[1].cast<py::dict>();
+    py::dict vdict=rl[0].cast<py::dict>(); // values
+    py::dict gdict=rl[1].cast<py::dict>(); // gradients
 
     for(auto c: components) {
-      const char *cp = c.c_str();
-      Value *cv=getPntrToComponent(c);
+      Value *cv=getPntrToComponent("py-"+c);
 
+      const char *cp = c.c_str();
       pycv_t value = vdict[cp].cast<pycv_t>();
       cv->set(value);
 
@@ -387,6 +389,9 @@ void PythonCV::calculateMultiComponent(py::object &r) {
       }
       setBoxDerivativesNoPbc(cv);
     }
+  } else {
+    // In principle one could handle a "list" return case.
+    error("Sorry, multi-components needs to return dictionaries");
   }
 }
 
