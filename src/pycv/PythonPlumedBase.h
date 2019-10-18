@@ -33,7 +33,7 @@ typedef float pycv_t;		// May need to adapt to the build precision?
 
 class PythonPlumedBase {
 public:
-  const std::string PYTHONCV_CITATION = "T. Giorgino. PYCV: Python-based Rapid Development of Collective Variables for PLUMED 2 (in preparation).";
+  const std::string PYTHONCV_CITATION = "Giorgino, (2019). PYCV: a PLUMED 2 Module Enabling the Rapid Prototyping of Collective Variables in Python. Journal of Open Source Software, 4(42), 1773. doi:10.21105/joss.01773";
   const char * BIASING_DISABLED = "PYCV: Gradient was expected as a second return value but is missing. Biasing won't work\n";
   PythonPlumedBase();
   // ~PythonPlumedBase();
