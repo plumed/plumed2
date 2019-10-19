@@ -1,4 +1,4 @@
-#! FIELDS time iv b.bias b.force2
+#! FIELDS time iv b_bias b_force2
  0.000000   0.9994   0.3110   6.2200
  1.000000   0.9998   0.3121   6.2421
  2.000000   0.9959   0.3023   6.0462

@@ -12,7 +12,7 @@ cn: COORDINATIONNUMBER SPECIES=1-13 SWITCH={RATIONAL R_0=1.391 NN=8 MM=16}
 cn2: COMPOSE_VECTOR ARG=cn.1,cn.2,cn.3,cn.4,cn.5,cn.6,cn.7,cn.8,cn.9,cn.10,cn.11,cn.12,cn.13
 
 # Changing ARG=cn to ARG=cn2 should give the same result
-RESTRAINT ARG=cn2 AT=5.0 KAPPA=10.0 LABEL=restraint_cn
+RESTRAINT ARG=cn2 AT=5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0,5.0 KAPPA=10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0 LABEL=restraint_cn
 
 PRINT ...
  ARG=dists_highest,uw.bias,restraint_cn.bias

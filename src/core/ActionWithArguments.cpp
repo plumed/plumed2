@@ -152,7 +152,9 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
           if( all.empty() && shortcuts.empty() ) error("your input file is not telling plumed to calculate anything");
           unsigned carg = nargs;
-          for(unsigned j=0; j<shortcuts.size(); ++j) shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + "." + name, this, nargs, arg );
+          if( name!="bias" ) {
+              for(unsigned j=0; j<shortcuts.size(); ++j) shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + "." + name, this, nargs, arg );
+          }
           for(unsigned j=0; j<all.size(); j++) {
             if( name=="*" || all[j]->exists(all[j]->getLabel() + "." + name) ) all[j]->interpretDataLabel( all[j]->getLabel() + "." + name, this, nargs, arg );
           }
@@ -191,7 +193,6 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
           std::vector<ActionShortcut*> shortcuts=plumed.getActionSet().select<ActionShortcut*>();
           if( all.empty() && shortcuts.empty() ) error("your input file is not telling plumed to calculate anything");
           unsigned carg = nargs;
-          for(unsigned j=0; j<shortcuts.size(); ++j) shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + ".*", this, nargs, arg );
           for(unsigned j=0; j<all.size(); j++) {
               bool found=false;
               for(unsigned k=0; k<shortcuts.size(); ++k) {
@@ -199,6 +200,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
               }
               if( !found ) all[j]->interpretDataLabel( all[j]->getLabel() + ".*", this, nargs, arg );
           }
+          for(unsigned j=0; j<shortcuts.size(); ++j) shortcuts[j]->interpretDataLabel( shortcuts[j]->getShortcutLabel() + ".*", this, nargs, arg );
           if( nargs==carg ) warning("no arguments in input");
         } else {
           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);

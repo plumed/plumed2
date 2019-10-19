@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiBias.h"
 #include "ActionRegister.h"
+#include "core/ActionShortcut.h"
 
 
 using namespace std;
@@ -60,66 +60,51 @@ PRINT ARG=restraint.bias
 */
 //+ENDPLUMEDOC
 
-class Restraint : public MultiBias {
-  std::vector<double> at;
-  std::vector<double> kappa;
-  std::vector<double> slope;
+class Restraint : public ActionShortcut {
 public:
-  explicit Restraint(const ActionOptions&);
-  void calculateBias( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys);
+  explicit Restraint(const ActionOptions&);
 };
 
 PLUMED_REGISTER_ACTION(Restraint,"RESTRAINT")
 
 void Restraint::registerKeywords(Keywords& keys) {
-  MultiBias::registerKeywords(keys); keys.use("ARG");
+  ActionShortcut::registerKeywords( keys );
+  keys.add("numbered","ARG","the arguments on which the bias is acting");
   keys.add("compulsory","SLOPE","0.0","specifies that the restraint is linear and what the values of the force constants on each of the variables are");
   keys.add("compulsory","KAPPA","0.0","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
   keys.add("compulsory","AT","the position of the restraint");
+  keys.add("hidden","STRIDE","1","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
 }
 
 Restraint::Restraint(const ActionOptions&ao):
   Action(ao),
-  MultiBias(ao),
-  at(getNumberOfArguments()),
-  kappa(getNumberOfArguments(),0.0),
-  slope(getNumberOfArguments(),0.0)
+  ActionShortcut(ao)
 {
-  parseVector("SLOPE",slope);
-  parseVector("KAPPA",kappa);
-  parseVector("AT",at);
-  checkRead();
+  std::string stride; parse("STRIDE",stride);
+  std::vector<std::string> at; parseVector("AT",at);
+  std::vector<std::string> slope(at.size()); parseVector("SLOPE",slope);
+  std::vector<double> kappa(at.size()); parseVector("KAPPA",kappa);
+  // This should just be the arguments
+  std::string argstr=convertInputLineToString();
+  // This makes us the list of centers
+  std::string atstr=" PARAMETERS=" + at[0]; for(unsigned i=1;i<at.size();++i) atstr += "," + at[i];
 
-  log.printf("  at");
-  for(unsigned i=0; i<at.size(); i++) log.printf(" %f",at[i]);
-  log.printf("\n");
-  log.printf("  with harmonic force constant");
-  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
-  log.printf("\n");
-  log.printf("  and linear force constant");
-  for(unsigned i=0; i<slope.size(); i++) log.printf(" %f",slope[i]);
-  log.printf("\n");
-
-  addComponent("force2"); componentIsNotPeriodic("force2");
-}
-
-
-void Restraint::calculateBias( const std::vector<double>& args, MultiValue& myvals ) const {
-  double ene=0.0;
-  double totf2=0.0;
-  for(unsigned i=0; i<args.size(); ++i) {
-    const double cv=difference(i,at[i],args[i]);
-    const double k=kappa[i];
-    const double m=slope[i];
-    const double f=-(k*cv+m);
-    addBiasDerivative( i, -f, myvals );
-    ene+=0.5*k*cv*cv+m*cv;
-    totf2+=f*f;
-  }
-  setBias( ene, myvals );
-  setNonBiasComponent( 0, totf2, myvals );
+  // Sort the calculation of the bias
+  std::string kstr; Tools::convert( 0.5*kappa[0], kstr ); 
+  std::string powstr=" POWERS=2", coefs=" COEFFICIENTS=" + kstr, slopes=" COEFFICIENTS=" + slope[0];
+  for(unsigned i=1;i<kappa.size();++i) { powstr += ",2"; Tools::convert( 0.5*kappa[i], kstr ); coefs += "," + kstr; slopes += "," + slope[i]; }
+  readInputLine( getShortcutLabel() + "_kap: COMBINE PERIODIC=NO " + argstr + powstr + atstr + coefs );
+  readInputLine( getShortcutLabel() + "_slope: COMBINE PERIODIC=NO " + argstr + atstr + slopes );
+  readInputLine( getShortcutLabel() + "_bias: COMBINE ARG1=" + getShortcutLabel() + "_kap ARG2=" + getShortcutLabel() + "_slope PERIODIC=NO");
+  readInputLine( getShortcutLabel() + ": BIASVALUE ARG=" + getShortcutLabel() + "_bias STRIDE=" + stride );
+  // And now the force squared
+  Tools::convert( kappa[0]*kappa[0], kstr ); coefs=" COEFFICIENTS=" + kstr; double sltmp, slsum; Tools::convert( slope[0], sltmp ); slsum=sltmp*sltmp;
+  for(unsigned i=1;i<kappa.size();++i) { Tools::convert( kappa[i]*kappa[i], kstr ); coefs += "," + kstr; Tools::convert( slope[i], sltmp ); slsum+=sltmp*sltmp; }
+  readInputLine( getShortcutLabel() + "_der2: COMBINE PERIODIC=NO " + argstr + powstr + coefs + atstr ); 
+  Tools::convert( slsum, kstr ); readInputLine( getShortcutLabel() + "_force2: MATHEVAL PERIODIC=NO ARG=" + getShortcutLabel() + "_der2 FUNC=x+" + kstr );
 }
 
 }
