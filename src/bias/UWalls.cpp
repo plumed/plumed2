@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiBias.h"
+#include "core/ActionShortcut.h"
 #include "ActionRegister.h"
 
 
@@ -64,88 +64,65 @@ PRINT ARG=uwall.bias,lwall.bias
 */
 //+ENDPLUMEDOC
 
-class UWalls : public MultiBias {
-  std::vector<double> at;
-  std::vector<double> kappa;
-  std::vector<double> exp;
-  std::vector<double> eps;
-  std::vector<double> offset;
+class UWalls : public ActionShortcut {
 public:
   explicit UWalls(const ActionOptions&);
-  void calculateBias( const std::vector<double>& args, MultiValue& myvals ) const ;
   static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(UWalls,"UPPER_WALLS")
 
 void UWalls::registerKeywords(Keywords& keys) {
-  MultiBias::registerKeywords(keys);
-  keys.use("ARG");
+  ActionShortcut::registerKeywords(keys);
+  keys.add("numbered","ARG","the arguments on which the bias is acting");
   keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
   keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
   keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
 }
 
 UWalls::UWalls(const ActionOptions&ao):
   Action(ao),
-  MultiBias(ao),
-  at(getNumberOfArguments(),0),
-  kappa(getNumberOfArguments(),0.0),
-  exp(getNumberOfArguments(),2.0),
-  eps(getNumberOfArguments(),1.0),
-  offset(getNumberOfArguments(),0.0)
+  ActionShortcut(ao)
 {
   // Note : the sizes of these vectors are checked automatically by parseVector
-  parseVector("OFFSET",offset);
-  parseVector("EPS",eps);
-  parseVector("EXP",exp);
-  parseVector("KAPPA",kappa);
-  parseVector("AT",at);
-  checkRead();
-
-  log.printf("  at");
-  for(unsigned i=0; i<at.size(); i++) log.printf(" %f",at[i]);
-  log.printf("\n");
-  log.printf("  with an offset");
-  for(unsigned i=0; i<offset.size(); i++) log.printf(" %f",offset[i]);
-  log.printf("\n");
-  log.printf("  with force constant");
-  for(unsigned i=0; i<kappa.size(); i++) log.printf(" %f",kappa[i]);
-  log.printf("\n");
-  log.printf("  and exponent");
-  for(unsigned i=0; i<exp.size(); i++) log.printf(" %f",exp[i]);
-  log.printf("\n");
-  log.printf("  rescaled");
-  for(unsigned i=0; i<eps.size(); i++) log.printf(" %f",eps[i]);
-  log.printf("\n");
-
-  addComponent("force2"); componentIsNotPeriodic("force2");
-}
-
-void UWalls::calculateBias( const std::vector<double>& args, MultiValue& myvals ) const {
-  double ene=0.0;
-  double totf2=0.0;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    double f = 0.0;
-    const double cv=difference(i,at[i],args[i]);
-    const double epsilon=eps[i];
-    const double off=offset[i];
-    const double uscale = (cv+off)/epsilon;
-    if( uscale > 0.) {
-      const double k=kappa[i];
-      const double exponent=exp[i];
-      double power = pow( uscale, exponent );
-      f = -( k / epsilon ) * exponent * power / uscale;
-      ene += k * power;
-      totf2 += f * f;
-    }
-    addBiasDerivative( i, -f, myvals );
+  std::vector<std::string> kappa; parseVector("KAPPA",kappa);
+  std::vector<std::string> offset(kappa.size()); parseVector("OFFSET",offset);
+  std::vector<std::string> eps(kappa.size()); parseVector("EPS",eps);
+  std::vector<std::string> exp(kappa.size()); parseVector("EXP",exp);
+  std::vector<std::string> at(kappa.size()); parseVector("AT",at);
+  // Read in the args
+  std::vector<std::string> args; parseVector("ARG",args); std::string biasinp, forceinp;
+  if( args.size()==0 ) { 
+      args.resize(kappa.size() ); 
+      for(unsigned i=0;i<kappa.size();++i) {
+          if( !parseNumbered("ARG",i+1,args[i]) ) error("failed to find sufficient numbered ARG keywords");
+      }
   }
-  setBias(ene, myvals);
-  setNonBiasComponent( 0, totf2, myvals );
+  
+  for(unsigned i=0;i<args.size();++i) {
+      std::string argn=args[i]; std::size_t dot=argn.find_first_of("."); if(dot!=std::string::npos) argn = argn.substr(0,dot) + "_" + argn.substr(dot+1);  
+      readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG1=" + args[i] + " PARAMETERS=" + at[i] );
+      readInputLine( getShortcutLabel() + "_scale_" + argn + ": MATHEVAL PERIODIC=NO FUNC=(x+" + offset[i] +")/" + eps[i] + " ARG1=" + getShortcutLabel() + "_cv_" + argn );
+      readInputLine( getShortcutLabel() + "_pow_" + argn + ": MATHEVAL PERIODIC=NO FUNC=step(x)*x^" + exp[i] + " ARG1=" + getShortcutLabel() + "_scale_" + argn );
+      readInputLine( getShortcutLabel() + "_wall_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] +"*x" + " ARG1=" + getShortcutLabel() + "_pow_" + argn );
+      readInputLine( getShortcutLabel() + "_force_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] + "*" + exp[i] + "*x/(y*" + eps[i] + ") " +
+                     "ARG1=" + getShortcutLabel() + "_pow_" + argn + " ARG2=" + getShortcutLabel() + "_scale_" + argn ); 
+      readInputLine( getShortcutLabel() + "_force2_" + argn + ": MATHEVAL PERIODIC=NO FUNC=x*x ARG1=" + getShortcutLabel() + "_force_" + argn );
+      if(i==0) {
+         biasinp = " ARG=" + getShortcutLabel() + "_wall_" + argn; 
+         forceinp = " ARG=" + getShortcutLabel() + "_force2_" + argn;
+      } else {
+         biasinp += "," + getShortcutLabel() + "_wall_" + argn;
+         forceinp += "," + getShortcutLabel() + "_force2_" + argn;
+      }
+  }
+  readInputLine( getShortcutLabel() + "_bias: COMBINE PERIODIC=NO " + biasinp );
+  readInputLine( "BIASVALUE ARG=" + getShortcutLabel() + "_bias" );
+  readInputLine( getShortcutLabel() + "_force2: COMBINE PERIODIC=NO " + forceinp  );
 }
 
 }

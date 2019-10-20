@@ -1,4 +1,4 @@
-#! FIELDS time dists_highest uw.bias restraint_cn_bias
+#! FIELDS time dists_highest uw_bias restraint_cn_bias
  0.000000 1.082136 0.000000 174.569346
  0.100000 1.147621 0.000000 155.766526
  0.200000 1.236512 0.000000 133.460860

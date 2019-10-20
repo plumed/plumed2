@@ -1,4 +1,4 @@
-#! FIELDS time parameter sr.bias
+#! FIELDS time parameter sr_bias
  0.000000 0   0.0000
  0.000000 1   0.0000
  0.000000 2   0.0000
