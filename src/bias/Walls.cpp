@@ -71,6 +71,7 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(UWalls,"UPPER_WALLS")
+PLUMED_REGISTER_ACTION(UWalls,"LOWER_WALLS")
 
 void UWalls::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords(keys);
@@ -106,8 +107,13 @@ UWalls::UWalls(const ActionOptions&ao):
   for(unsigned i=0;i<args.size();++i) {
       std::string argn=args[i]; std::size_t dot=argn.find_first_of("."); if(dot!=std::string::npos) argn = argn.substr(0,dot) + "_" + argn.substr(dot+1);  
       readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG1=" + args[i] + " PARAMETERS=" + at[i] );
-      readInputLine( getShortcutLabel() + "_scale_" + argn + ": MATHEVAL PERIODIC=NO FUNC=(x+" + offset[i] +")/" + eps[i] + " ARG1=" + getShortcutLabel() + "_cv_" + argn );
-      readInputLine( getShortcutLabel() + "_pow_" + argn + ": MATHEVAL PERIODIC=NO FUNC=step(x)*x^" + exp[i] + " ARG1=" + getShortcutLabel() + "_scale_" + argn );
+      if( getName()=="UPPER_WALLS" ) {
+          readInputLine( getShortcutLabel() + "_scale_" + argn + ": MATHEVAL PERIODIC=NO FUNC=(x+" + offset[i] +")/" + eps[i] + " ARG1=" + getShortcutLabel() + "_cv_" + argn );
+          readInputLine( getShortcutLabel() + "_pow_" + argn + ": MATHEVAL PERIODIC=NO FUNC=step(x)*x^" + exp[i] + " ARG1=" + getShortcutLabel() + "_scale_" + argn );
+      } else if( getName()=="LOWER_WALLS" ) {
+          readInputLine( getShortcutLabel() + "_scale_" + argn + ": MATHEVAL PERIODIC=NO FUNC=(x-" + offset[i] +")/" + eps[i] + " ARG1=" + getShortcutLabel() + "_cv_" + argn );
+          readInputLine( getShortcutLabel() + "_pow_" + argn + ": MATHEVAL PERIODIC=NO FUNC=step(-x)*x^" + exp[i] + " ARG1=" + getShortcutLabel() + "_scale_" + argn );
+      }
       readInputLine( getShortcutLabel() + "_wall_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] +"*x" + " ARG1=" + getShortcutLabel() + "_pow_" + argn );
       readInputLine( getShortcutLabel() + "_force_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] + "*" + exp[i] + "*x/(y*" + eps[i] + ") " +
                      "ARG1=" + getShortcutLabel() + "_pow_" + argn + " ARG2=" + getShortcutLabel() + "_scale_" + argn ); 
