@@ -18,6 +18,9 @@ in a [fork of the original
 repository](https://github.com/giorginolab/plumed2-pycv/tree/v2.5.2-pycv/src/pycv). All
 code is in the `src/pycv` and `regtest/pycv` directories.
 
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.01773/status.svg)](https://doi.org/10.21105/joss.01773)
+[![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
+
 
 Documentation
 ------------------------------------
@@ -204,6 +207,7 @@ Collective Variables in Python. The Journal of Open Source Software
 4(42):1773 
 
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.01773/status.svg)](https://doi.org/10.21105/joss.01773)
+[![plumID:19.075](https://www.plumed-nest.org/eggs/19/075/badge.svg)](https://www.plumed-nest.org/eggs/19/075/)
 
 
 Copyright
