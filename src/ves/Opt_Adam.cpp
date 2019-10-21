@@ -47,12 +47,13 @@ private:
   double beta_2_;
   double epsilon_;
   // 1st moment uses the "AuxCoeffs", so only 2nd moment needs new coeff vectors
-  std::vector<std::unique_ptr<CoeffsVector>> var_coeffs_pntrs_;
+  std::vector<CoeffsVector*> var_coeffs_pntrs_;
 protected:
   CoeffsVector& VarCoeffs(const unsigned int coeffs_id = 0) const;
 public:
   static void registerKeywords(Keywords&);
   explicit Opt_Adam(const ActionOptions&);
+  ~Opt_Adam() override;
   void coeffsUpdate(const unsigned int c_id = 0);
 };
 
@@ -79,7 +80,8 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
   time_(0),
   beta_1_(0.9),
   beta_2_(0.999),
-  epsilon_(0.00000001)
+  epsilon_(0.00000001),
+  var_coeffs_pntrs_(0)
 {
   // add citation and print it to log
   log.printf("  Adam type stochastic gradient decent\n");
@@ -91,7 +93,7 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
   // set up the coeff vector for the 2nd moment (variance)
   for (unsigned i = 0; i < numberOfCoeffsSets(); ++i)
   {
-      std::unique_ptr<CoeffsVector> var_coeffs_tmp(new CoeffsVector(Coeffs(i)));
+      auto var_coeffs_tmp = new CoeffsVector(Coeffs(i));
       std::string var_label = Coeffs(i).getLabel();
       if(var_label.find("coeffs")!=std::string::npos) {
         var_label.replace(var_label.find("coeffs"), std::string("coeffs").length(), "var_coeffs");
@@ -105,6 +107,13 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
   }
 
   checkRead();
+}
+
+
+Opt_Adam::~Opt_Adam() {
+  for (auto coeffvector : var_coeffs_pntrs_) {
+    delete coeffvector;
+  }
 }
 
 
