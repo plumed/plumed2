@@ -103,7 +103,7 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
       }
       var_coeffs_tmp->setLabels(var_label);
       var_coeffs_pntrs_.push_back(var_coeffs_tmp);
-      AuxCoeffs(i).setValues(0.0);
+      VarCoeffs(i).setValues(0.0);
   }
 
   checkRead();
