@@ -188,7 +188,7 @@ private:
   int updatePIV;
   unsigned Nprec,Natm,Nlist,NLsize;
   // Fvol: volume scaling factor for distances
-  double Fvol,Vol0,m_PIVdistance;
+  double Fvol,Fvol_init,Vol0,m_PIVdistance;
   std::string ref_file;
   // std:: vector<string> atype;
   NeighborList *nlall;
@@ -265,6 +265,7 @@ PIV::PIV(const ActionOptions&ao):
   NLsize(1),
   Nlist(1),
   Fvol(1.),
+  Fvol_init(1.),
   Vol0(0.),
   m_PIVdistance(0.),
   m_deriv(std:: vector<Vector>(1)),
@@ -602,6 +603,7 @@ PIV::PIV(const ActionOptions&ao):
   //Compute scaling factor
   if(Svol) {
     Fvol=cbrt(Vol0/mypbc.getBox().determinant());
+    Fvol_init=Fvol;
     log << "Scaling atom distances by  " << Fvol << " \n";
   } else {
     log << "Using unscaled atom distances \n";
@@ -755,7 +757,8 @@ void PIV::calculate()
     //if(prev_stp!=-1) {init_stp=0;}
     // Calculate the volume scaling factor
     if(Svol) {
-      Fvol=cbrt(Vol0/getBox().determinant());
+//      Fvol=cbrt(Vol0/getBox().determinant());
+      Fvol=Fvol_init;
     }
     //Set switching function parameters
     log << "\n";
