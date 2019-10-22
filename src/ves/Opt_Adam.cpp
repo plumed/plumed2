@@ -35,6 +35,7 @@ namespace ves {
 /*
 Adaptive moment estimation (adam) optimizer.
 
+
 \par Examples
 
 */
@@ -54,7 +55,7 @@ public:
   static void registerKeywords(Keywords&);
   explicit Opt_Adam(const ActionOptions&);
   ~Opt_Adam() override;
-  void coeffsUpdate(const unsigned int c_id = 0);
+  void coeffsUpdate(const unsigned int c_id = 0) override;
 };
 
 inline
@@ -126,14 +127,14 @@ void Opt_Adam::coeffsUpdate(const unsigned int c_id) {
   VarCoeffs(c_id) += (1 - beta_2_ ) * Gradient(c_id) * Gradient(c_id) * CoeffsMask(c_id);
 
   // store sqrt of VarCoeffs in vector, easier than writing a CoeffsVector::sqrt() function
-  // also can directly add epsilon and invert to multiply with the Coeffs in last step
+  // also directly add epsilon and invert to multiply with the Coeffs in last step
   std::vector<double> var_coeffs_sqrt;
   for (size_t i = 0; i< VarCoeffs(c_id).getSize(); ++i) {
     var_coeffs_sqrt.push_back(1 / (sqrt(VarCoeffs(c_id).getValue(i)) + epsilon));
   }
 
   // bias correction
-  double scalefactor = StepSize(c_id) * sqrt(1 - pow(beta_2_, time_));
+  double scalefactor = StepSize(c_id) * sqrt(1 - pow(beta_2_, time_)) / (1 - pow(beta_1_, time_));
 
   // coeff update
   Coeffs(c_id) -= scalefactor * AuxCoeffs(c_id) * var_coeffs_sqrt;
