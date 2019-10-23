@@ -70,6 +70,7 @@ void Opt_Adam::registerKeywords(Keywords& keys) {
   Optimizer::useFixedStepSizeKeywords(keys);
   Optimizer::useMultipleWalkersKeywords(keys);
   Optimizer::useMaskKeywords(keys);
+  Optimizer::useDynamicTargetDistributionKeywords(keys);
   keys.add("optional","BETA_1","parameter for the first moment estimate. Defaults to 0.9");
   keys.add("optional","BETA_2","parameter for the second moment estimate. Defaults to 0.999");
   keys.add("optional","EPSILON","-parameter for the second moment estimate. Defaults to 1e-8");
