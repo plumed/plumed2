@@ -47,14 +47,13 @@ private:
   double beta_1_;
   double beta_2_;
   double epsilon_;
-  // 1st moment uses the "AuxCoeffs", so only 2nd moment needs new coeff vectors
+  // 1st moment uses the "AuxCoeffs", so only 2nd moment needs new CoeffVectors
   std::vector<std::unique_ptr<CoeffsVector>> var_coeffs_pntrs_;
 protected:
   CoeffsVector& VarCoeffs(const unsigned int coeffs_id = 0) const;
 public:
   static void registerKeywords(Keywords&);
   explicit Opt_Adam(const ActionOptions&);
-  ~Opt_Adam() override =default;
   void coeffsUpdate(const unsigned int c_id = 0) override;
 };
 
@@ -93,19 +92,17 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
   parse("EPSILON",epsilon_);
 
   // set up the coeff vector for the 2nd moment (variance)
-  for (unsigned i = 0; i < numberOfCoeffsSets(); ++i)
-  {
-      auto var_coeffs_tmp = new CoeffsVector(Coeffs(i));
-      std::string var_label = Coeffs(i).getLabel();
-      if(var_label.find("coeffs")!=std::string::npos) {
-        var_label.replace(var_label.find("coeffs"), std::string("coeffs").length(), "var_coeffs");
-      }
-      else {
-        var_label += "_var";
-      }
-      var_coeffs_tmp->setLabels(var_label);
-      var_coeffs_pntrs_.push_back(std::unique_ptr<CoeffsVector>(var_coeffs_tmp));
-      VarCoeffs(i).setValues(0.0);
+  for (unsigned i = 0; i < numberOfCoeffsSets(); ++i) {
+    var_coeffs_pntrs_.emplace_back(std::unique_ptr<CoeffsVector>(new CoeffsVector(Coeffs(i))));
+    std::string var_label = Coeffs(i).getLabel();
+    if(var_label.find("coeffs")!=std::string::npos) {
+      var_label.replace(var_label.find("coeffs"), std::string("coeffs").length(), "var_coeffs");
+    }
+    else {
+      var_label += "_var";
+    }
+    VarCoeffs(i).setLabels(var_label);
+    VarCoeffs(i).setAllValuesToZero(); // can Coeffs(i) even be non-zero at this point?
   }
 
   checkRead();
