@@ -48,13 +48,13 @@ private:
   double beta_2_;
   double epsilon_;
   // 1st moment uses the "AuxCoeffs", so only 2nd moment needs new coeff vectors
-  std::vector<CoeffsVector*> var_coeffs_pntrs_;
+  std::vector<std::unique_ptr<CoeffsVector>> var_coeffs_pntrs_;
 protected:
   CoeffsVector& VarCoeffs(const unsigned int coeffs_id = 0) const;
 public:
   static void registerKeywords(Keywords&);
   explicit Opt_Adam(const ActionOptions&);
-  ~Opt_Adam() override;
+  ~Opt_Adam() override =default;
   void coeffsUpdate(const unsigned int c_id = 0) override;
 };
 
@@ -104,18 +104,11 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
         var_label += "_var";
       }
       var_coeffs_tmp->setLabels(var_label);
-      var_coeffs_pntrs_.push_back(var_coeffs_tmp);
+      var_coeffs_pntrs_.push_back(std::unique_ptr<CoeffsVector>(var_coeffs_tmp));
       VarCoeffs(i).setValues(0.0);
   }
 
   checkRead();
-}
-
-
-Opt_Adam::~Opt_Adam() {
-  for (auto coeffvector : var_coeffs_pntrs_) {
-    delete coeffvector;
-  }
 }
 
 
