@@ -47,10 +47,15 @@ private:
   double beta_1_;
   double beta_2_;
   double epsilon_;
-  // 1st moment uses the "AuxCoeffs", so only 2nd moment needs new CoeffVectors
+  bool amsgrad_;
+  // 1st gradient moment uses the "AuxCoeffs", so only 2nd moment needs new CoeffVectors
   std::vector<std::unique_ptr<CoeffsVector>> var_coeffs_pntrs_;
+  // used only for AMSGrad variant
+  std::vector<std::unique_ptr<CoeffsVector>> varmax_coeffs_pntrs_;
 protected:
   CoeffsVector& VarCoeffs(const unsigned int coeffs_id = 0) const;
+  CoeffsVector& VarmaxCoeffs(const unsigned int coeffs_id = 0) const;
+  static std::string changeCoeffsLabel(const CoeffsVector&, const std::string&);
 public:
   static void registerKeywords(Keywords&);
   explicit Opt_Adam(const ActionOptions&);
@@ -59,6 +64,9 @@ public:
 
 inline
 CoeffsVector& Opt_Adam::VarCoeffs(const unsigned int coeffs_id) const {return *var_coeffs_pntrs_[coeffs_id];}
+
+inline
+CoeffsVector& Opt_Adam::VarmaxCoeffs(const unsigned int coeffs_id) const {return *varmax_coeffs_pntrs_[coeffs_id];}
 
 
 PLUMED_REGISTER_ACTION(Opt_Adam,"OPT_ADAM")
@@ -70,9 +78,10 @@ void Opt_Adam::registerKeywords(Keywords& keys) {
   Optimizer::useMultipleWalkersKeywords(keys);
   Optimizer::useMaskKeywords(keys);
   Optimizer::useDynamicTargetDistributionKeywords(keys);
-  keys.add("optional","BETA_1","parameter for the first moment estimate. Defaults to 0.9");
-  keys.add("optional","BETA_2","parameter for the second moment estimate. Defaults to 0.999");
-  keys.add("optional","EPSILON","-parameter for the second moment estimate. Defaults to 1e-8");
+  keys.add("optional","BETA_1","Parameter for the first moment estimate. Defaults to 0.9");
+  keys.add("optional","BETA_2","Parameter for the second moment estimate. Defaults to 0.999");
+  keys.add("optional","EPSILON","Small parameter to avoid division by zero. Defaults to 1e-8");
+  keys.addFlag("AMSGRAD", false, "Use the AMSGrad variant");
 }
 
 
@@ -82,27 +91,40 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
   beta_1_(0.9),
   beta_2_(0.999),
   epsilon_(0.00000001),
+  amsgrad_(false),
   var_coeffs_pntrs_(0)
 {
   // add citation and print it to log
-  log.printf("  Adam type stochastic gradient decent\n");
+  log << "  Adam type stochastic gradient decent\n";
+  parseFlag("AMSGRAD",amsgrad_);
+  if (amsgrad_) {
+    log << "  Using the AMSGrad variant of the Adam algorithm, see and cite\n";
+  log << plumed.cite("Bach and Moulines, NIPS 26, 773-781 (2013)");
 
+  }
+
+  log << "  Parameters:\n";
   parse("BETA_1",beta_1_);
-  parse("BETA_2",beta_1_);
+  log << "    beta_1: " << beta_1_ << "\n";
+  parse("BETA_2",beta_2_);
+  log << "    beta_2: " << beta_2_ << "\n";
   parse("EPSILON",epsilon_);
+  log << "    epsilon: " << epsilon_ << "\n";
 
-  // set up the coeff vector for the 2nd moment (variance)
+  // set up the coeff vector for the 2nd moment of the gradient (variance)
   for (unsigned i = 0; i < numberOfCoeffsSets(); ++i) {
     var_coeffs_pntrs_.emplace_back(std::unique_ptr<CoeffsVector>(new CoeffsVector(Coeffs(i))));
-    std::string var_label = Coeffs(i).getLabel();
-    if(var_label.find("coeffs")!=std::string::npos) {
-      var_label.replace(var_label.find("coeffs"), std::string("coeffs").length(), "var_coeffs");
-    }
-    else {
-      var_label += "_var";
-    }
-    VarCoeffs(i).setLabels(var_label);
+    VarCoeffs(i).setLabels(changeCoeffsLabel(Coeffs(i), "grad_var"));
     VarCoeffs(i).setAllValuesToZero(); // can Coeffs(i) even be non-zero at this point?
+
+    // add second set of coefficients to store the maximum values of the 2nd moment
+    if (amsgrad_) {
+      varmax_coeffs_pntrs_.emplace_back(std::unique_ptr<CoeffsVector>(new CoeffsVector(VarCoeffs(i))));
+      VarmaxCoeffs(i).setLabels(changeCoeffsLabel(Coeffs(i), "grad_varmax"));
+    }
+
+    // also rename the Coeffs used for the mean of the gradient
+    AuxCoeffs(i).setLabels(changeCoeffsLabel(Coeffs(i), "grad_mean"));
   }
 
   checkRead();
@@ -117,11 +139,26 @@ void Opt_Adam::coeffsUpdate(const unsigned int c_id) {
   VarCoeffs(c_id) *= beta_2_;
   VarCoeffs(c_id) += (1 - beta_2_ ) * Gradient(c_id) * Gradient(c_id) * CoeffsMask(c_id);
 
+  if (amsgrad_) {
+    for (size_t i = 0; i< VarCoeffs(c_id).getSize(); ++i) {
+      if (VarCoeffs(c_id).getValue(i) > VarmaxCoeffs(c_id).getValue(i)) {
+        VarmaxCoeffs(c_id)[i] = VarCoeffs(c_id).getValue(i);
+      }
+    }
+  }
+
   // store sqrt of VarCoeffs in vector, easier than writing a CoeffsVector::sqrt() function
   // also directly add epsilon and invert to multiply with the Coeffs in last step
   std::vector<double> var_coeffs_sqrt;
-  for (size_t i = 0; i< VarCoeffs(c_id).getSize(); ++i) {
-    var_coeffs_sqrt.push_back(1 / (sqrt(VarCoeffs(c_id).getValue(i)) + epsilon));
+  if (!amsgrad_) {
+    for (size_t i = 0; i< VarCoeffs(c_id).getSize(); ++i) {
+      var_coeffs_sqrt.push_back(1 / (sqrt(VarCoeffs(c_id).getValue(i)) + epsilon));
+    }
+  }
+  else { // use VarmaxCoffs instead of VarCoeffs
+    for (size_t i = 0; i< VarmaxCoeffs(c_id).getSize(); ++i) {
+      var_coeffs_sqrt.push_back(1 / (sqrt(VarmaxCoeffs(c_id).getValue(i)) + epsilon));
+    }
   }
 
   // bias correction
@@ -129,6 +166,19 @@ void Opt_Adam::coeffsUpdate(const unsigned int c_id) {
 
   // coeff update
   Coeffs(c_id) -= scalefactor * AuxCoeffs(c_id) * var_coeffs_sqrt;
+}
+
+
+// return label with "name" instead of coeff
+std::string Opt_Adam::changeCoeffsLabel(const CoeffsVector& Coeffs, const std::string& name) {
+  std::string label = Coeffs.getLabel();
+  if(label.find("coeffs")!=std::string::npos) {
+    label.replace(label.find("coeffs"), std::string("coeffs").length(), name);
+  }
+  else {
+    label += "_" + name;
+  }
+  return label;
 }
 
 
