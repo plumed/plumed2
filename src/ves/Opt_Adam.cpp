@@ -99,8 +99,6 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
   parseFlag("AMSGRAD",amsgrad_);
   if (amsgrad_) {
     log << "  Using the AMSGrad variant of the Adam algorithm, see and cite\n";
-  log << plumed.cite("Bach and Moulines, NIPS 26, 773-781 (2013)");
-
   }
 
   log << "  Parameters:\n";
