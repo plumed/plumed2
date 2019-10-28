@@ -181,11 +181,11 @@ void Opt_Adam::coeffsUpdate(const unsigned int c_id) {
   double scalefactor = StepSize(c_id) * sqrt(1 - pow(beta_2_, time_)) / (1 - pow(beta_1_, time_));
 
   if (adamw_) { // check is not necessary but probably faster than always multiplying by 1
-    Coeffs(c_id) *= one_minus_weight_decay_;
+    Coeffs(c_id) *= one_minus_weight_decay_ * CoeffsMask(c_id);
   }
 
   // coeff update
-  Coeffs(c_id) -= scalefactor * AuxCoeffs(c_id) * var_coeffs_sqrt;
+  Coeffs(c_id) -= scalefactor * AuxCoeffs(c_id) * var_coeffs_sqrt * CoeffsMask(c_id);
 }
 
 
