@@ -123,7 +123,7 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
   log << "    beta_2: " << beta_2_ << "\n";
 
   parse("EPSILON",epsilon_);
-  plumed_massert(beta_2_ > 0 && beta_2_ <= 1, "EPSILON must be between 0 and 1");
+  plumed_massert(epsilon_ > 0 && epsilon_ <= 1, "EPSILON must be between 0 and 1");
   log << "    epsilon: " << epsilon_ << "\n";
 
 
