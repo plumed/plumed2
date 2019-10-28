@@ -47,7 +47,9 @@ private:
   double beta_1_;
   double beta_2_;
   double epsilon_;
+  double one_minus_weight_decay_;
   bool amsgrad_;
+  bool adamw_;
   // 1st gradient moment uses the "AuxCoeffs", so only 2nd moment needs new CoeffVectors
   std::vector<std::unique_ptr<CoeffsVector>> var_coeffs_pntrs_;
   // used only for AMSGrad variant
@@ -81,6 +83,7 @@ void Opt_Adam::registerKeywords(Keywords& keys) {
   keys.add("optional","BETA_1","Parameter for the first moment estimate. Defaults to 0.9");
   keys.add("optional","BETA_2","Parameter for the second moment estimate. Defaults to 0.999");
   keys.add("optional","EPSILON","Small parameter to avoid division by zero. Defaults to 1e-8");
+  keys.add("optional","ADAMW_WEIGHT_DECAY","Weight decay parameter for the AdamW variant. Defaults to 0");
   keys.addFlag("AMSGRAD", false, "Use the AMSGrad variant");
 }
 
@@ -91,7 +94,9 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
   beta_1_(0.9),
   beta_2_(0.999),
   epsilon_(0.00000001),
+  one_minus_weight_decay_(1.0),
   amsgrad_(false),
+  adamw_(false),
   var_coeffs_pntrs_(0)
 {
   // add citation and print it to log
@@ -101,13 +106,28 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
     log << "  Using the AMSGrad variant of the Adam algorithm, see and cite\n";
   }
 
-  log << "  Parameters:\n";
+  double tmp_weight_decay = 0.0;
+  parse("ADAMW_WEIGHT_DECAY",tmp_weight_decay);
+  if (tmp_weight_decay != 0.0) {
+    adamw_ = true;
+    log << "  Using the AdamW variant (Adam with weight decay), see and cite\n";
+    one_minus_weight_decay_ = 1 - tmp_weight_decay;
+    log << "    weight decay parameter: " << tmp_weight_decay << "\n";
+  }
+
+  log << "  Adam parameters:\n";
   parse("BETA_1",beta_1_);
+  plumed_massert(beta_1_ > 0 && beta_1_ <= 1, "BETA_1 must be between 0 and 1");
   log << "    beta_1: " << beta_1_ << "\n";
+
   parse("BETA_2",beta_2_);
+  plumed_massert(beta_2_ > 0 && beta_2_ <= 1, "BETA_2 must be between 0 and 1");
   log << "    beta_2: " << beta_2_ << "\n";
+
   parse("EPSILON",epsilon_);
+  plumed_massert(beta_2_ > 0 && beta_2_ <= 1, "EPSILON must be between 0 and 1");
   log << "    epsilon: " << epsilon_ << "\n";
+
 
   // set up the coeff vector for the 2nd moment of the gradient (variance)
   for (unsigned i = 0; i < numberOfCoeffsSets(); ++i) {
@@ -161,6 +181,10 @@ void Opt_Adam::coeffsUpdate(const unsigned int c_id) {
 
   // bias correction
   double scalefactor = StepSize(c_id) * sqrt(1 - pow(beta_2_, time_)) / (1 - pow(beta_1_, time_));
+
+  if (adamw_) { // check is not necessary but probably faster than always multiplying by 1
+    Coeffs(c_id) *= one_minus_weight_decay_;
+  }
 
   // coeff update
   Coeffs(c_id) -= scalefactor * AuxCoeffs(c_id) * var_coeffs_sqrt;
