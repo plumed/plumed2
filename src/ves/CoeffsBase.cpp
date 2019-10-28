@@ -500,5 +500,18 @@ bool CoeffsBase::getIterationCounterAndTimeFromFile(IFile& ifile) {
 }
 
 
+// replace string in Label, if old string was not found simply add the new string to the label
+void CoeffsBase::replaceLabelString(const std::string& oldstring, const std::string& newstring) {
+  std::string label = getLabel();
+  if(label.find(oldstring)!=std::string::npos) {
+    label.replace(label.find(oldstring), std::string(oldstring).length(), newstring);
+  }
+  else {
+    label += "_" + newstring;
+  }
+  setLabels(label);
+}
+
+
 }
 }

@@ -25,7 +25,6 @@
 
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
-#include <memory>
 
 
 namespace PLMD {
@@ -57,7 +56,6 @@ private:
 protected:
   CoeffsVector& VarCoeffs(const unsigned int coeffs_id = 0) const;
   CoeffsVector& VarmaxCoeffs(const unsigned int coeffs_id = 0) const;
-  static std::string changeCoeffsLabel(const CoeffsVector&, const std::string&);
 public:
   static void registerKeywords(Keywords&);
   explicit Opt_Adam(const ActionOptions&);
@@ -132,17 +130,17 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
   // set up the coeff vector for the 2nd moment of the gradient (variance)
   for (unsigned i = 0; i < numberOfCoeffsSets(); ++i) {
     var_coeffs_pntrs_.emplace_back(std::unique_ptr<CoeffsVector>(new CoeffsVector(Coeffs(i))));
-    VarCoeffs(i).setLabels(changeCoeffsLabel(Coeffs(i), "grad_var"));
+    VarCoeffs(i).replaceLabelString("coeffs","grad_var");
     VarCoeffs(i).setAllValuesToZero(); // can Coeffs(i) even be non-zero at this point?
 
     // add second set of coefficients to store the maximum values of the 2nd moment
     if (amsgrad_) {
       varmax_coeffs_pntrs_.emplace_back(std::unique_ptr<CoeffsVector>(new CoeffsVector(VarCoeffs(i))));
-      VarmaxCoeffs(i).setLabels(changeCoeffsLabel(Coeffs(i), "grad_varmax"));
+      VarmaxCoeffs(i).replaceLabelString("coeffs","grad_varmax");
     }
 
     // also rename the Coeffs used for the mean of the gradient
-    AuxCoeffs(i).setLabels(changeCoeffsLabel(Coeffs(i), "grad_mean"));
+    AuxCoeffs(i).replaceLabelString("coeffs","grad_mean");
   }
 
   checkRead();
@@ -188,19 +186,6 @@ void Opt_Adam::coeffsUpdate(const unsigned int c_id) {
 
   // coeff update
   Coeffs(c_id) -= scalefactor * AuxCoeffs(c_id) * var_coeffs_sqrt;
-}
-
-
-// return label with "name" instead of coeff
-std::string Opt_Adam::changeCoeffsLabel(const CoeffsVector& Coeffs, const std::string& name) {
-  std::string label = Coeffs.getLabel();
-  if(label.find("coeffs")!=std::string::npos) {
-    label.replace(label.find("coeffs"), std::string("coeffs").length(), name);
-  }
-  else {
-    label += "_" + name;
-  }
-  return label;
 }
 
 
