@@ -374,8 +374,8 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg, const bool
           if( argno>=0 ) {
             arg_deriv_starts.push_back( arg_deriv_starts[argno] );
           } else {
-            arg_deriv_starts.push_back( nder );
-            if( !distinct_but_stored ) {
+            arg_deriv_starts.push_back( nder ); ActionSetup* as=dynamic_cast<ActionSetup*>( myval );
+            if( !as && !distinct_but_stored ) {
               distinct_arguments.push_back( std::pair<ActionWithValue*,unsigned>(myval,0) );
               nder += myval->getNumberOfDerivatives();
             } else {
@@ -552,7 +552,7 @@ void ActionWithArguments::createTasksFromArguments() {
                //  (getPntrToArgument(j)->getPntrToAction())->getFullNumberOfTasks();
           } else nt += getPntrToArgument(j)->getNumberOfValues( getLabel() );
       }
-      plumed_assert( nt==ntasks );
+      plumed_assert( nt==1 || nt==ntasks );
     }
   } else if( getNumberOfArguments()==1 && arguments[0]->usingAllVals( getLabel() ) ) {
     arg_ends.push_back(0); arg_ends.push_back(1);
@@ -599,8 +599,7 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const {
 
 void ActionWithArguments::retrieveArguments( const MultiValue& myvals, std::vector<double>& args, const unsigned& argstart ) const {
   if( done_over_stream ) {
-    plumed_dbg_assert( args.size()==(arguments.size()-argstart) );
-    for(unsigned i=argstart; i<arguments.size(); ++i) {
+    for(unsigned i=argstart; i<(argstart+args.size()); ++i) {
       plumed_dbg_massert( usingAllArgs[i], "cannot stream in " + getLabel() );
       if( !arguments[i]->value_set ) args[i-argstart]=myvals.get( arguments[i]->streampos );
       else if( arguments[i]->getRank()==0 ) args[i-argstart]=arguments[i]->get();
@@ -724,7 +723,7 @@ unsigned ActionWithArguments::getArgumentPositionInStream( const unsigned& jder,
   for(unsigned j=0; j<arguments[jder]->store_data_for.size(); ++j) {
     if( arguments[jder]->store_data_for[j].first==getLabel() ) {
       unsigned istrn = arguments[jder]->store_data_for[j].second;
-      unsigned task_index = myvals.getTaskIndex();
+      unsigned task_index = 0; if( arguments[jder]->getRank()>0 ) task_index=myvals.getTaskIndex();
       myvals.addDerivative( istrn, task_index, 1.0 );
       if( myvals.getNumberActive(istrn)==0 ) myvals.updateIndex( istrn, task_index );
       return istrn;

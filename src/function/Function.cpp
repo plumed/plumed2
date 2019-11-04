@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
 #include "core/AverageBase.h"
+#include "core/ActionSetup.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/OpenMP.h"
@@ -91,8 +92,10 @@ Function::Function(const ActionOptions&ao):
         for(unsigned i=0; i<arg_ends.size()-1; ++i ) {
             if( arg_ends[i+1]-arg_ends[i]==1 ) {
                 plumed_assert( arg_ends[i]<getNumberOfArguments() );
-                if( getPntrToArgument(arg_ends[i])->getNumberOfValues( getLabel() )==1 ) hasscalar=true;
-                else hasrank=true;
+                if( getPntrToArgument(arg_ends[i])->getNumberOfValues( getLabel() )==1 ) {
+                    ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(arg_ends[i])->getPntrToAction() );
+                    if(!as) hasscalar=true; else getPntrToArgument(arg_ends[i])->buildDataStore( getLabel() );
+                } else hasrank=true;
             } else hasrank=true;
         }
     }
@@ -142,7 +145,9 @@ Function::Function(const ActionOptions&ao):
   if( actionInChain() ) {
     matinp=getPntrToArgument(0)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives();
     if( matinp ) {
-      for(unsigned i=1; i<getNumberOfArguments(); ++i) plumed_dbg_assert( getPntrToArgument(i)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives() );
+      for(unsigned i=1; i<getNumberOfArguments(); ++i) {
+          if( getPntrToArgument(i)->getRank()>0 ) plumed_massert( getPntrToArgument(i)->getRank()==2 && !getPntrToArgument(0)->hasDerivatives(), "problem in " + getLabel() );
+      }
     }
   }
 }
@@ -439,7 +444,8 @@ void Function::performTask( const unsigned& current, MultiValue& myvals ) const 
       std::vector<unsigned>& mat_indices( myvals.getMatrixIndices( nmat ) ); unsigned der_start=0, ntot_mat=0;
       if( mat_indices.size()<getNumberOfDerivatives() ) mat_indices.resize( getNumberOfDerivatives() );
       for(unsigned i=0; i<distinct_arguments.size(); ++i) {
-        unsigned istrn = (distinct_arguments[i].first->copyOutput(0))->getPositionInMatrixStash();
+        Value* myval = distinct_arguments[i].first->copyOutput(0); if( myval->getRank()==0 ) continue;
+        unsigned istrn = myval->getPositionInMatrixStash();
         std::vector<unsigned>& imat_indices( myvals.getMatrixIndices( istrn ) );
         for(unsigned k=0; k<myvals.getNumberOfMatrixIndices( istrn ); ++k) mat_indices[ntot_mat + k] = der_start + imat_indices[k];
         ntot_mat += myvals.getNumberOfMatrixIndices( istrn ); der_start += distinct_arguments[i].first->getNumberOfDerivatives();

@@ -46,6 +46,7 @@ protected:
   unsigned heights_index, numberOfKernels;
   bool one_kernel_at_a_time, unorm;
   GridCoordinatesObject gridobject;
+  void createTaskList();
   void addValueWithDerivatives( const std::vector<unsigned>& shape );
 public:
   static void histogramKeywords( Keywords& keys );
@@ -70,7 +71,7 @@ public:
   void gatherStoredValue( const unsigned& valindex, const unsigned& code, const MultiValue& myvals, const unsigned& bufstart, std::vector<double>& buffer ) const ;
   void apply();
   void gatherForces( const unsigned& itask, const MultiValue& myvals, std::vector<double>& forces ) const ;
-  virtual void addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const double& height, std::vector<double>& forces ) const = 0;
+  virtual void addKernelForces( const unsigned& heights_index, const unsigned& itask, const std::vector<double>& args, const unsigned& htask, const double& height, std::vector<double>& forces ) const = 0;
 };
 
 }

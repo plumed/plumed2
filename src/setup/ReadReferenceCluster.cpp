@@ -47,9 +47,12 @@ SetupReferenceBase(ao)
   if( reference.length()==0 ) {
       // Read in the position of the center
       std::vector<double> center; parseVector("CENTER",center); std::vector<unsigned> shape( 1 ); shape[0] = getNumberOfArguments();
-      if( !numberedkeys ) {
+      if( getNumberOfArguments()==0 ) { 
+          shape[0]=read_args.size(); 
+      } else if( !numberedkeys ) {
           shape[0]=0; for(unsigned i=0;i<getNumberOfArguments();++i) shape[0] += getPntrToArgument(i)->getNumberOfValues( getLabel() );
       }
+      log.printf("  read in center of cluster in space of dimension %d \n", shape[0] );
       addComponent( "center", shape ); componentIsNotPeriodic("center"); getPntrToComponent(0)->buildDataStore( getLabel() );
       if( center.size()!=shape[0] ) error("size of center does not match number of arguments");
       for(unsigned i=0;i<shape[0];++i) getPntrToComponent(0)->set( i, center[i] );

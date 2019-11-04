@@ -35,7 +35,39 @@ void HistogramBase::histogramKeywords( Keywords& keys ) {
 }
 
 void HistogramBase::createKDEObject( const std::string& lab, const std::string& command, ActionShortcut* action ) {
-  std::string inp, height; action->parse("HEIGHTS",height); bool uflag; action->parseFlag("UNORMALIZED",uflag);
+  std::string inp, height, height_str, kernel=""; action->parse("HEIGHTS",height); bool uflag; action->parseFlag("UNORMALIZED",uflag);
+  if( command=="KDE" ) {
+      std::string ktype; action->parse("KERNEL",ktype);
+      if( ktype!="DISCRETE" ) { 
+          std::vector<std::string> bwidths; action->parseVector("BANDWIDTH",bwidths); double bnum;
+          if( bwidths.size()>1 || Tools::convert( bwidths[0], bnum ) ) {
+              double bw; std::string center=" CENTER=0.0", band=" SIGMA=" + bwidths[0], argstr=" READ_ARG=cv1";
+              for(unsigned i=0;i<bwidths.size();++i) {
+                  if( !Tools::convert( bwidths[i], bw ) ) action->error("could not convert input bandwidth to real number");
+                  if( i>0 ) { center += ",0.0"; band += "," + bwidths[i]; std::string nn; Tools::convert(i+1,nn); argstr += ",cv" + nn; } 
+              } 
+              action->readInputLine( lab + "_ref: READ_CLUSTER " + argstr + center + band );
+              action->readInputLine( lab + "_icov: CALCULATE_REFERENCE CONFIG=" + lab + "_ref INPUT={MATHEVAL ARG1=" + lab + "_ref.variance FUNC=1/x PERIODIC=NO}" );
+              kernel = " KERNEL=" + ktype + " METRIC=" + lab + "_icov";
+              // Compute the normalizing constant
+              std::string pstr; Tools::convert( sqrt(pow(2*pi,bwidths.size())), pstr );
+              if( ktype=="gaussian" || ktype=="GAUSSIAN" ) {   
+                  action->readInputLine( lab + "_vol: CALCULATE_REFERENCE CONFIG=" + lab + "_ref " + 
+                                 "INPUT={ det: PRODUCT ARG=" + lab + "_ref.variance ; MATHEVAL ARG1=det FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO}"); 
+                  if( height.length()>0 ) action->readInputLine( lab + "_height: MATHEVAL ARG1=" + height + " ARG2=" + lab + "_vol FUNC=x/y PERIODIC=NO"); 
+                  else action->readInputLine( lab + "_height: MATHEVAL ARG1=" + lab + "_vol FUNC=1/x PERIODIC=NO");
+                  height_str = " HEIGHTS=" + lab + "_height";
+              } else if( height.length()>0 ) height_str = " HEIGHTS=" + height;
+              else if( ktype.find("bin")!=std::string::npos ) {
+                  action->readInputLine( lab + "_height: CONSTANT VALUE=1.0"); height_str = " HEIGHTS=" + lab + "_height";                  
+              } else action->error("you need to set the heights of the kernel functions you are using from the covariance so they are normalised");
+          } else {
+              kernel = " KERNEL=DISCRETE METRIC=" + bwidths[0]; if( height.length()>0 ) height_str = " HEIGHTS=" + height;
+          }
+      } else {
+          kernel = " KERNEL=DISCRETE"; if( height.length()>0 ) height_str = " HEIGHTS=" + height;
+      }
+  } else { height_str = " HEIGHTS=" + height; }
   // Deal with the weights if we are doing averages on a grid
   if( height.length()>0  && !uflag ) {
     inp = lab + "_unorm: " + command + "_CALC " + action->convertInputLineToString(); 
@@ -46,8 +78,8 @@ void HistogramBase::createKDEObject( const std::string& lab, const std::string& 
   } else {
      inp = lab + ": " + command + "_CALC UNORMALIZED " + action->convertInputLineToString();
   }
-  if( height.length()>0 ) inp = inp + " HEIGHTS=" + height;
-  action->readInputLine( inp );
+  // if( height.length()>0 ) inp = inp + " HEIGHTS=" + height;
+  action->readInputLine( inp + kernel + height_str );
   if( height.length()>0 && !uflag ) {
     action->readInputLine(  lab + ": MATHEVAL ARG1=" + lab + "_unorm ARG2=" + lab + "_hsum FUNC=x/y PERIODIC=NO"); 
   }
@@ -99,7 +131,7 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
       tvals += weight_args[i]->getNumberOfValues( getLabel() );
       args.push_back( weight_args[i] );
     }
-    if( numberOfKernels!=tvals ) error("mismatch between numbers of values in input arguments and HEIGHTS");
+    if( tvals>1 && numberOfKernels!=tvals ) error("mismatch between numbers of values in input arguments and HEIGHTS");
     arg_ends.push_back( args.size() ); requestArguments( args, true );
   }
 
@@ -107,19 +139,21 @@ HistogramBase::HistogramBase(const ActionOptions&ao):
   if( unorm ) log.printf("  calculating unormalized distribution \n");
   else log.printf("  calculating normalized distribution \n");
 
+  // Resize the forces vector
+  unsigned nvals_t=0;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) nvals_t += getPntrToArgument(i)->getNumberOfValues( getLabel() );
+  forcesToApply.resize( nvals_t );
+}
+
+void HistogramBase::createTaskList() {
   bool hasrank = getPntrToArgument(0)->getRank()>0; done_over_stream = false;
   if( hasrank ) {
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) { getPntrToArgument(i)->buildDataStore( getLabel() ); plumed_assert( getPntrToArgument(i)->getRank()>0 ); }
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) { getPntrToArgument(i)->buildDataStore( getLabel() ); }
     buildTasksFromBasedOnRankOfInputData();
   } else {
     one_kernel_at_a_time=true; for(unsigned i=0; i<arg_ends.size(); ++i) { if( arg_ends[i]!=i ) { one_kernel_at_a_time=false; break; } }
     if( !one_kernel_at_a_time ) for(unsigned i=0; i<numberOfKernels; ++i) addTaskToList(i);
   }
-
-  // Resize the forces vector
-  unsigned nvals_t=0;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) nvals_t += getPntrToArgument(i)->getNumberOfValues( getLabel() );
-  forcesToApply.resize( nvals_t );
 }
 
 void HistogramBase::setNumberOfKernels() {
@@ -134,8 +168,9 @@ void HistogramBase::buildTasksFromBasedOnRankOfInputData() {
   plumed_dbg_assert( getPntrToArgument(0)->getRank()>0 );
   // Now build the data task list based on the rank of the input data
   if( getPntrToArgument(0)->getRank()==2 ) {
-     bool symmetric=true; std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
-     for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+     std::vector<unsigned> shape( getPntrToArgument(0)->getShape() );
+     bool symmetric=getPntrToArgument(arg_ends[getNumberOfDerivatives()])->isSymmetric(); 
+     for(unsigned i=0; i<getNumberOfDerivatives(); ++i) {
          if( !getPntrToArgument(i)->isSymmetric() ) symmetric=false;
      }
      if( symmetric ) {
@@ -197,8 +232,9 @@ void HistogramBase::runFinalJobs() {
 void HistogramBase::buildCurrentTaskList( bool& forceAllTasks, std::vector<std::string>& actionsThatSelectTasks, std::vector<unsigned>& tflags ) {
   completeGridObjectSetup(); actionsThatSelectTasks.push_back( getLabel() );
   if( !one_kernel_at_a_time ) { 
-      if( heights_index==2 ) {
-          tflags.assign(tflags.size(),1); unsigned hind = getNumberOfDerivatives();
+      unsigned hind = getNumberOfDerivatives();
+      if( heights_index==2 && getPntrToArgument(arg_ends[hind])->getRank()>0 ) {
+          tflags.assign(tflags.size(),1);
           for(unsigned i=0;i<tflags.size();++i) {
               if( fabs(getPntrToArgument(arg_ends[hind])->get( getTaskCode(i) ))<epsilon ) tflags[i]=0;
           }
@@ -264,7 +300,8 @@ void HistogramBase::gatherForces( const unsigned& itask, const MultiValue& myval
   std::vector<double> args( getNumberOfDerivatives() ); double height;
   retrieveArgumentsAndHeight( myvals, args, height );
   if( fabs(height)>epsilon ) {
-    if( getPntrToOutput(0)->forcesWereAdded() ) addKernelForces( heights_index, itask, args, height, forces );
+    unsigned htask = 0; if( arg_ends[arg_ends.size()-1]-arg_ends[arg_ends.size()-2]>1 || getPntrToArgument(arg_ends[arg_ends.size()-2])->getRank()>0 ) htask=itask;
+    if( getPntrToOutput(0)->forcesWereAdded() ) addKernelForces( heights_index, itask, args, htask, height, forces );
   }
 }
 

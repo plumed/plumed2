@@ -110,6 +110,7 @@ SetupReferenceBase(ao)
        std::vector<long> ishape( rank ); shapes[i].resize( rank ); 
        p.cmd("getDataShape " + name, &ishape[0] );
        nvals[i]=1; for(unsigned j=0;j<ishape.size();++j){ shapes[i][j]=ishape[j]; nvals[i] *= shapes[i][j]; } 
+       if( nvals[i]==1 ) shapes[i].resize(0);
        data[i].resize( nvals[i] ); p.cmd("setMemoryForData " + name, &data[i][0] );
    }
    // Do the calculation using the Plumed object

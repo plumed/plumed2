@@ -276,7 +276,7 @@ void AverageBase::update() {
 
   if( clearnextstep ) { 
       for(unsigned i=0;i<getNumberOfComponents();++i) {
-          getPntrToOutput(i)->clearDerivatives(); getPntrToOutput(i)->set(0.0); 
+          getPntrToOutput(i)->clearDerivatives(); getPntrToOutput(i)->set(0,0.0);
       }
       if( clearnorm ) {
           for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToOutput(i)->setNorm(0.0);

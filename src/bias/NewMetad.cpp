@@ -67,16 +67,25 @@ ActionShortcut(ao)
   std::vector<std::string> gmin( args.size() ), gmax( args.size() ), grid_nbins(args.size()), sigma(args.size()); 
   parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax); 
   parseVector("GRID_BIN",grid_nbins); parseVector("SIGMA",sigma); 
-  std::string input = getShortcutLabel() + "_grid: HISTOGRAM UNORMALIZED_KERNELS NORMALIZATION=false STRIDE=" + pacestr +
-                          " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact ARG1=" + args[0];
-  std::string gminstr=" GRID_MIN=" + gmin[0]; std::string gmaxstr=" GRID_MAX=" + gmax[0];
-  std::string bandstr=" BANDWIDTH=" + sigma[0]; std::string gbinstr=" GRID_BIN=" + grid_nbins[0];
+  // This bit we are going to rewrite in KDE
+  double bw; std::string center=" CENTER=0.0", band=" SIGMA=" + sigma[0], argstr=" READ_ARG=cv1";
+  for(unsigned i=0;i<sigma.size();++i) {
+      if( !Tools::convert( sigma[i], bw ) ) error("could not convert input bandwidth to real number");
+      if( i>0 ) { center += ",0.0"; band += "," + sigma[i]; std::string nn; Tools::convert(i+1,nn); argstr += ",cv" + nn; }
+  } 
+  readInputLine( getShortcutLabel() + "_ref: READ_CLUSTER " + argstr + center + band );
+  readInputLine( getShortcutLabel() + "_icov: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref INPUT={MATHEVAL ARG1=" + getShortcutLabel() + "_ref.variance FUNC=1/x PERIODIC=NO}" ); 
+  // This bit is good again
+  readInputLine( getShortcutLabel() + "_height: CONSTANT VALUE=1.0");
+  std::string input = getShortcutLabel() + "_kde: KDE_CALC METRIC=" + getShortcutLabel() + "_icov ARG1=" + args[0] + " HEIGHTS=" + getShortcutLabel() + "_height";
+  std::string gminstr=" GRID_MIN=" + gmin[0]; std::string gmaxstr=" GRID_MAX=" + gmax[0]; std::string gbinstr=" GRID_BIN=" + grid_nbins[0];
   for(unsigned i=1;i<args.size();++i) { 
     std::string num; Tools::convert( i+1, num ); input += " ARG" + num + "=" + args[i]; 
-    gminstr += "," + gmin[i]; gmaxstr += "," + gmax[i]; bandstr += "," + sigma[i]; gbinstr += "," + grid_nbins[i]; 
+    gminstr += "," + gmin[i]; gmaxstr += "," + gmax[i]; gbinstr += "," + grid_nbins[i]; 
 
   }
-  readInputLine( input + " " + gminstr + " " + gmaxstr + " " + bandstr + " " + gbinstr );
+  readInputLine( input + " " + gminstr + " " + gmaxstr + " " + " " + gbinstr );
+  readInputLine( getShortcutLabel() + "_grid: AVERAGE ARG=" + getShortcutLabel() + "_kde NORMALIZATION=false STRIDE=" + pacestr + " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact");
   // Evaluate the instantaneous value of the bias potential 
   readInputLine( getShortcutLabel() + "_bias: EVALUATE_FUNCTION_FROM_GRID ARG=" + getShortcutLabel() + "_grid" );
   // Bias the simulation using this bias potentital

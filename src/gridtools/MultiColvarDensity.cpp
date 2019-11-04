@@ -75,11 +75,11 @@ ActionShortcut(ao)
     std::string inputLine = convertInputLineToString();
     // Make the kde object for the numerator if needed
     if( hasheights ) {
-      readInputLine( getShortcutLabel() + "_inumer: KDE_CALC HEIGHTS=" + data_str + " " + direction_string + " " + inputLine );
+      readInputLine( getShortcutLabel() + "_inumer: KDE UNORMALIZED HEIGHTS=" + data_str + " " + direction_string + " " + inputLine );
       HistogramBase::createAveragingObject( getShortcutLabel() + "_inumer", getShortcutLabel() + "_numer", keymap, this );
     }
     // Make the kde object
-    readInputLine( getShortcutLabel() + "_kde: KDE_CALC " + inputLine  + " " + direction_string );
+    readInputLine( getShortcutLabel() + "_kde: KDE " + inputLine  + " " + direction_string );
     // Make the division object if it is required
     if( hasheights ) {
       HistogramBase::createAveragingObject( getShortcutLabel() + "_kde", getShortcutLabel() + "_denom", keymap, this);
