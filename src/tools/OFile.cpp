@@ -333,7 +333,7 @@ OFile& OFile::rewind() {
     gzclose((gzFile)gzfp);
 #endif
   } else fclose(fp);
- 
+
   if(!comm || comm->Get_rank()==0) {
     std::string fname=this->path;
     size_t found=fname.find_last_of("/\\");
