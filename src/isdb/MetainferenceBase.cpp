@@ -417,6 +417,17 @@ void MetainferenceBase::Initialise(const unsigned input)
     log.printf("  Restarting from %s\n", status_file_name_.c_str());
     double dummy;
     if(restart_sfile.scanField("time",dummy)) {
+      // check for syncronisation
+      vector<double> dummy_time(nrep_,0);
+      if(master&&nrep_>1) {
+        dummy_time[replica_] = dummy;
+        multi_sim_comm.Sum(dummy_time);
+      }
+      comm.Sum(dummy_time);
+      for(unsigned i=1; i<nrep_; i++) {
+        string msg = "METAINFERENCE restart files " + status_file_name_ + "  are not in sync";
+        if(dummy_time[i]!=dummy_time[0]) plumed_merror(msg);
+      }
       // nsel
       for(unsigned i=0; i<sigma_mean2_last_.size(); i++) {
         std::string msg_i;
@@ -558,6 +569,17 @@ void MetainferenceBase::Initialise(const unsigned input)
   }
 
   if(doscale_) {
+    // check that the scale value is the same for all replicas
+    vector<double> dummy_scale(nrep_,0);
+    if(master&&nrep_>1) {
+      dummy_scale[replica_] = scale_;
+      multi_sim_comm.Sum(dummy_scale);
+    }
+    comm.Sum(dummy_scale);
+    for(unsigned i=1; i<nrep_; i++) {
+      string msg = "The SCALE value must be the same for all replicas: check your input or restart file";
+      if(dummy_scale[i]!=dummy_scale[0]) plumed_merror(msg);
+    }
     log.printf("  sampling a common scaling factor with:\n");
     log.printf("    initial scale parameter %f\n",scale_);
     if(scale_prior_==SC_GAUSS) {
@@ -570,6 +592,17 @@ void MetainferenceBase::Initialise(const unsigned input)
   }
 
   if(dooffset_) {
+    // check that the offset value is the same for all replicas
+    vector<double> dummy_offset(nrep_,0);
+    if(master&&nrep_>1) {
+      dummy_offset[replica_] = offset_;
+      multi_sim_comm.Sum(dummy_offset);
+    }
+    comm.Sum(dummy_offset);
+    for(unsigned i=1; i<nrep_; i++) {
+      string msg = "The OFFSET value must be the same for all replicas: check your input or restart file";
+      if(dummy_offset[i]!=dummy_offset[0]) plumed_merror(msg);
+    }
     log.printf("  sampling a common offset with:\n");
     log.printf("    initial offset parameter %f\n",offset_);
     if(offset_prior_==SC_GAUSS) {
