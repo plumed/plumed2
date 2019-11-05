@@ -342,6 +342,9 @@ OFile& OFile::rewind() {
     int check=rename(fname.c_str(),backup.c_str());
     plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+strerror(errno));
   }
+
+  if(comm) comm->Barrier();
+
   if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
     gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"w9");
