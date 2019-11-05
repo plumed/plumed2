@@ -749,7 +749,7 @@ void MetainferenceBase::moveTilde(const vector<double> &mean_, double old_energy
   vector<double> new_ftilde(sigma_.size());
   new_ftilde = ftilde_;
 
-  // change all tildes 
+  // change all tildes
   for(unsigned j=0; j<sigma_.size(); j++) {
     const double r3 = random[0].Gaussian();
     const double ds3 = Dftilde_*sqrt(sigma_mean2_[j])*r3;
@@ -993,7 +993,7 @@ double MetainferenceBase::doMonteCarlo(const vector<double> &mean_)
       // propose move for sigma
       moveSigmas(mean_, old_energy, i, indices, breaknow);
       // exit from the loop if this is the case
-      if(breaknow) break; 
+      if(breaknow) break;
     }
 
     /* save the result of the sampling */
