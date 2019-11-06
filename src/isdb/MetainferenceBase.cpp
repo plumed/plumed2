@@ -154,9 +154,6 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   // initialise firstTimeW
   firstTimeW.resize(nsel_, true);
 
-  // random
-  struct timespec ts;
-
   // reweight implies a different number of arguments (the latest one must always be the bias)
   parseFlag("REWEIGHT", do_reweight_);
   if(do_reweight_&&getNumberOfArguments()!=1) error("To REWEIGHT one must provide one single bias as an argument");
@@ -323,6 +320,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   if(kbt_==0.0&&doscore_) error("Unless the MD engine passes the temperature to plumed, you must specify it using TEMP");
 
   // initialize random seed
+  struct timespec ts;
   unsigned iseed;
   if(master) {
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -626,6 +624,9 @@ void MetainferenceBase::Initialise(const unsigned input)
       log.printf("    maximum MC move of offset parameter %f\n",Doffset_);
     }
   }
+
+  if(doregres_zero_)
+    log.printf("  doing regression with zero intercept with stride: %d\n", nregres_zero_);
 
   log.printf("  number of experimental data points %u\n",narg);
   log.printf("  number of replicas %u\n",nrep_);
