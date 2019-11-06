@@ -24,6 +24,7 @@
 #include <cmath>
 #include <ctime>
 #include <numeric>
+#include <sys/time.h>
 
 using namespace std;
 
@@ -319,24 +320,34 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   if(kbt_==0.0&&doscore_) error("Unless the MD engine passes the temperature to plumed, you must specify it using TEMP");
 
   // initialize random seed
+  struct timespec ts;
   unsigned iseed;
-  if(master) iseed = time(NULL)+replica_;
-  else iseed = 0;
+  if(master) {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    iseed = static_cast<unsigned>(ts.tv_nsec)+replica_;
+  } else {
+    iseed = 0;
+  }
   comm.Sum(&iseed, 1);
   // this is used for ftilde and sigma both the move and the acceptance
   // this is different for each replica
   random[0].setSeed(-iseed);
   if(doscale_||dooffset_) {
     // in this case we want the same seed everywhere
-    iseed = time(NULL);
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    iseed = static_cast<unsigned>(ts.tv_nsec);
     if(master&&nrep_>1) multi_sim_comm.Bcast(iseed,0);
     comm.Bcast(iseed,0);
     // this is used for scale and offset sampling and acceptance
     random[1].setSeed(-iseed);
   }
   // this is used for random chunk of sigmas, and it is different for each replica
-  if(master) iseed = time(NULL)+replica_;
-  else iseed = 0;
+  if(master) {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    iseed = static_cast<unsigned>(ts.tv_nsec)+replica_;
+  } else {
+    iseed = 0;
+  }
   comm.Sum(&iseed, 1);
   random[2].setSeed(-iseed);
 
@@ -613,6 +624,9 @@ void MetainferenceBase::Initialise(const unsigned input)
       log.printf("    maximum MC move of offset parameter %f\n",Doffset_);
     }
   }
+
+  if(doregres_zero_)
+    log.printf("  doing regression with zero intercept with stride: %d\n", nregres_zero_);
 
   log.printf("  number of experimental data points %u\n",narg);
   log.printf("  number of replicas %u\n",nrep_);
