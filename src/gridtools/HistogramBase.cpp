@@ -34,42 +34,10 @@ void HistogramBase::histogramKeywords( Keywords& keys ) {
            "these options are explained in the manual page for \\ref HISTOGRAM");
 }
 
-void HistogramBase::createKDEObject( const std::string& lab, const std::string& command, ActionShortcut* action ) {
-  std::string inp, height, height_str, kernel=""; action->parse("HEIGHTS",height); bool uflag; action->parseFlag("UNORMALIZED",uflag);
-  if( command=="KDE" ) {
-      std::string ktype; action->parse("KERNEL",ktype);
-      if( ktype!="DISCRETE" ) { 
-          std::vector<std::string> bwidths; action->parseVector("BANDWIDTH",bwidths); double bnum;
-          if( bwidths.size()>1 || Tools::convert( bwidths[0], bnum ) ) {
-              double bw; std::string center=" CENTER=0.0", band=" SIGMA=" + bwidths[0], argstr=" READ_ARG=cv1";
-              for(unsigned i=0;i<bwidths.size();++i) {
-                  if( !Tools::convert( bwidths[i], bw ) ) action->error("could not convert input bandwidth to real number");
-                  if( i>0 ) { center += ",0.0"; band += "," + bwidths[i]; std::string nn; Tools::convert(i+1,nn); argstr += ",cv" + nn; } 
-              } 
-              action->readInputLine( lab + "_ref: READ_CLUSTER " + argstr + center + band );
-              action->readInputLine( lab + "_icov: CALCULATE_REFERENCE CONFIG=" + lab + "_ref INPUT={MATHEVAL ARG1=" + lab + "_ref.variance FUNC=1/x PERIODIC=NO}" );
-              kernel = " KERNEL=" + ktype + " METRIC=" + lab + "_icov";
-              // Compute the normalizing constant
-              std::string pstr; Tools::convert( sqrt(pow(2*pi,bwidths.size())), pstr );
-              if( ktype=="gaussian" || ktype=="GAUSSIAN" ) {   
-                  action->readInputLine( lab + "_vol: CALCULATE_REFERENCE CONFIG=" + lab + "_ref " + 
-                                 "INPUT={ det: PRODUCT ARG=" + lab + "_ref.variance ; MATHEVAL ARG1=det FUNC=(sqrt(x)*" + pstr + ") PERIODIC=NO}"); 
-                  if( height.length()>0 ) action->readInputLine( lab + "_height: MATHEVAL ARG1=" + height + " ARG2=" + lab + "_vol FUNC=x/y PERIODIC=NO"); 
-                  else action->readInputLine( lab + "_height: MATHEVAL ARG1=" + lab + "_vol FUNC=1/x PERIODIC=NO");
-                  height_str = " HEIGHTS=" + lab + "_height";
-              } else if( height.length()>0 ) height_str = " HEIGHTS=" + height;
-              else if( ktype.find("bin")!=std::string::npos ) {
-                  action->readInputLine( lab + "_height: CONSTANT VALUE=1.0"); height_str = " HEIGHTS=" + lab + "_height";                  
-              } else action->error("you need to set the heights of the kernel functions you are using from the covariance so they are normalised");
-          } else {
-              kernel = " KERNEL=DISCRETE METRIC=" + bwidths[0]; if( height.length()>0 ) height_str = " HEIGHTS=" + height;
-          }
-      } else {
-          kernel = " KERNEL=DISCRETE"; if( height.length()>0 ) height_str = " HEIGHTS=" + height;
-      }
-  } else { height_str = " HEIGHTS=" + height; }
+void HistogramBase::createKDEObject( const std::string& lab, const std::string& command, const std::string& height, const std::string& height_str, ActionShortcut* action ) {
+  std::string inp; bool uflag; action->parseFlag("UNORMALIZED",uflag);
   // Deal with the weights if we are doing averages on a grid
-  if( height.length()>0  && !uflag ) {
+  if( height.length()>0 && !uflag ) {
     inp = lab + "_unorm: " + command + "_CALC " + action->convertInputLineToString(); 
     action->readInputLine( lab + "_hsum: COMBINE ARG=" + height + " PERIODIC=NO");
     inp = inp + " UNORMALIZED";
@@ -78,8 +46,7 @@ void HistogramBase::createKDEObject( const std::string& lab, const std::string& 
   } else {
      inp = lab + ": " + command + "_CALC UNORMALIZED " + action->convertInputLineToString();
   }
-  // if( height.length()>0 ) inp = inp + " HEIGHTS=" + height;
-  action->readInputLine( inp + kernel + height_str );
+  action->readInputLine( inp + height_str );
   if( height.length()>0 && !uflag ) {
     action->readInputLine(  lab + ": MATHEVAL ARG1=" + lab + "_unorm ARG2=" + lab + "_hsum FUNC=x/y PERIODIC=NO"); 
   }

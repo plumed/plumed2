@@ -51,7 +51,7 @@ protected:
 public:
   static void histogramKeywords( Keywords& keys );
   static void registerKeywords( Keywords& keys );
-  static void createKDEObject( const std::string& lab, const std::string& command, ActionShortcut* action );
+  static void createKDEObject( const std::string& lab, const std::string& command, const std::string& height, const std::string& height_inp, ActionShortcut* action );
   static void readHistogramKeywords( std::map<std::string,std::string>& keymap, ActionShortcut* action );
   static void createAveragingObject( const std::string& ilab, const std::string& olab,
                                      const std::map<std::string,std::string>& keymap, ActionShortcut* action );

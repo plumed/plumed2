@@ -125,24 +125,5 @@ void SphericalKDE::addKernelForces( const unsigned& heights_index, const unsigne
   }
 }
 
-class SphericalKDEShortcut : public ActionShortcut {
-public:
-  static void registerKeywords(Keywords& keys);
-  explicit SphericalKDEShortcut(const ActionOptions&);
-};
-
-PLUMED_REGISTER_ACTION(SphericalKDEShortcut,"SPHERICAL_KDE")
-    
-void SphericalKDEShortcut::registerKeywords( Keywords& keys ) {
-  SphericalKDE::registerKeywords( keys ); 
-}
-
-SphericalKDEShortcut::SphericalKDEShortcut(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
-{
-  HistogramBase::createKDEObject( getShortcutLabel(), "SPHERICAL_KDE", this );
-}
-
 }
 }

@@ -24,7 +24,6 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/Pbc.h"
-#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -530,28 +529,6 @@ void KDE::addKernelForces( const unsigned& heights_index, const unsigned& itask,
       unsigned n=itask; for(unsigned j=0; j<der.size(); ++j) { forces[n] += -der[j]*fforce; n += numberOfKernels; }
     }
   }
-}
-
-class KDEShortcut : public ActionShortcut {
-public:
-  static void registerKeywords(Keywords& keys);
-  explicit KDEShortcut(const ActionOptions&);
-};
-    
-PLUMED_REGISTER_ACTION(KDEShortcut,"KDE")
-    
-void KDEShortcut::registerKeywords( Keywords& keys ) {
-  HistogramBase::registerKeywords( keys );
-  keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
-           "in plumed plumed can be found in \\ref kernelfunctions.");
-  keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
-}
-
-KDEShortcut::KDEShortcut(const ActionOptions& ao):
-Action(ao),
-ActionShortcut(ao)
-{
-  HistogramBase::createKDEObject( getShortcutLabel(), "KDE", this );
 }
 
 }

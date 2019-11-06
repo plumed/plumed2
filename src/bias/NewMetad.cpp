@@ -25,6 +25,7 @@
 #include "core/ActionSet.h"
 #include "core/ActionWithValue.h"
 #include "tools/IFile.h"
+#include "gridtools/KDEShortcut.h"
 #include "ReweightBase.h"
 
 namespace PLMD {
@@ -67,15 +68,9 @@ ActionShortcut(ao)
   std::vector<std::string> gmin( args.size() ), gmax( args.size() ), grid_nbins(args.size()), sigma(args.size()); 
   parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax); 
   parseVector("GRID_BIN",grid_nbins); parseVector("SIGMA",sigma); 
-  // This bit we are going to rewrite in KDE
-  double bw; std::string center=" CENTER=0.0", band=" SIGMA=" + sigma[0], argstr=" READ_ARG=cv1";
-  for(unsigned i=0;i<sigma.size();++i) {
-      if( !Tools::convert( sigma[i], bw ) ) error("could not convert input bandwidth to real number");
-      if( i>0 ) { center += ",0.0"; band += "," + sigma[i]; std::string nn; Tools::convert(i+1,nn); argstr += ",cv" + nn; }
-  } 
-  readInputLine( getShortcutLabel() + "_ref: READ_CLUSTER " + argstr + center + band );
-  readInputLine( getShortcutLabel() + "_icov: CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_ref INPUT={MATHEVAL ARG1=" + getShortcutLabel() + "_ref.variance FUNC=1/x PERIODIC=NO}" ); 
-  // This bit is good again
+  // Convert the bandwidth to something constant actions
+  gridtools::KDEShortcut::convertBandwiths( getShortcutLabel(), sigma, this );
+  // Now create the height
   readInputLine( getShortcutLabel() + "_height: CONSTANT VALUE=1.0");
   std::string input = getShortcutLabel() + "_kde: KDE_CALC METRIC=" + getShortcutLabel() + "_icov ARG1=" + args[0] + " HEIGHTS=" + getShortcutLabel() + "_height";
   std::string gminstr=" GRID_MIN=" + gmin[0]; std::string gmaxstr=" GRID_MAX=" + gmax[0]; std::string gbinstr=" GRID_BIN=" + grid_nbins[0];
