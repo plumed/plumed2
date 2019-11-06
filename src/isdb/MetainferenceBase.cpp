@@ -24,6 +24,7 @@
 #include <cmath>
 #include <ctime>
 #include <numeric>
+#include <sys/time.h>
 
 using namespace std;
 
@@ -152,6 +153,9 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
 
   // initialise firstTimeW
   firstTimeW.resize(nsel_, true);
+
+  // random
+  struct timespec ts;
 
   // reweight implies a different number of arguments (the latest one must always be the bias)
   parseFlag("REWEIGHT", do_reweight_);
@@ -320,23 +324,32 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
 
   // initialize random seed
   unsigned iseed;
-  if(master) iseed = time(NULL)+replica_;
-  else iseed = 0;
+  if(master) {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    iseed = static_cast<unsigned>(ts.tv_nsec)+replica_;
+  } else {
+    iseed = 0;
+  }
   comm.Sum(&iseed, 1);
   // this is used for ftilde and sigma both the move and the acceptance
   // this is different for each replica
   random[0].setSeed(-iseed);
   if(doscale_||dooffset_) {
     // in this case we want the same seed everywhere
-    iseed = time(NULL);
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    iseed = static_cast<unsigned>(ts.tv_nsec);
     if(master&&nrep_>1) multi_sim_comm.Bcast(iseed,0);
     comm.Bcast(iseed,0);
     // this is used for scale and offset sampling and acceptance
     random[1].setSeed(-iseed);
   }
   // this is used for random chunk of sigmas, and it is different for each replica
-  if(master) iseed = time(NULL)+replica_;
-  else iseed = 0;
+  if(master) {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    iseed = static_cast<unsigned>(ts.tv_nsec)+replica_;
+  } else {
+    iseed = 0;
+  }
   comm.Sum(&iseed, 1);
   random[2].setSeed(-iseed);
 
