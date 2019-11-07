@@ -86,25 +86,34 @@ Restraint::Restraint(const ActionOptions&ao):
   std::string stride; parse("STRIDE",stride);
   std::vector<std::string> at; parseVector("AT",at);
   std::vector<std::string> slope(at.size()); parseVector("SLOPE",slope);
-  std::vector<double> kappa(at.size()); parseVector("KAPPA",kappa);
-  // This should just be the arguments
-  std::string argstr=convertInputLineToString();
-  // This makes us the list of centers
-  std::string atstr=" PARAMETERS=" + at[0]; for(unsigned i=1;i<at.size();++i) atstr += "," + at[i];
-
-  // Sort the calculation of the bias
-  std::string kstr; Tools::convert( 0.5*kappa[0], kstr ); 
-  std::string powstr=" POWERS=2", coefs=" COEFFICIENTS=" + kstr, slopes=" COEFFICIENTS=" + slope[0];
-  for(unsigned i=1;i<kappa.size();++i) { powstr += ",2"; Tools::convert( 0.5*kappa[i], kstr ); coefs += "," + kstr; slopes += "," + slope[i]; }
-  readInputLine( getShortcutLabel() + "_kap: COMBINE PERIODIC=NO " + argstr + powstr + atstr + coefs );
-  readInputLine( getShortcutLabel() + "_slope: COMBINE PERIODIC=NO " + argstr + atstr + slopes );
-  readInputLine( getShortcutLabel() + "_bias: COMBINE ARG1=" + getShortcutLabel() + "_kap ARG2=" + getShortcutLabel() + "_slope PERIODIC=NO");
+  std::vector<std::string> kappa(at.size()); parseVector("KAPPA",kappa);
+  // Read in the args
+  std::vector<std::string> args; parseVector("ARG",args); std::string biasinp, forceinp;
+  if( args.size()==0 ) {
+      args.resize(kappa.size() );
+      for(unsigned i=0;i<kappa.size();++i) {
+          if( !parseNumbered("ARG",i+1,args[i]) ) error("failed to find sufficient numbered ARG keywords");
+      }
+  }
+  
+  std::string biasargs, forceargs;
+  for(unsigned i=0;i<args.size();++i) {
+      std::string argn=args[i]; std::size_t dot=argn.find_first_of("."); if(dot!=std::string::npos) argn = argn.substr(0,dot) + "_" + argn.substr(dot+1);
+      readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG1=" + args[i] + " PARAMETERS=" + at[i] );
+      readInputLine( getShortcutLabel() + "_harm_" + argn + ": MATHEVAL PERIODIC=NO FUNC=0.5*" + kappa[i] + "*x^2 ARG1=" + getShortcutLabel() + "_cv_" + argn );
+      readInputLine( getShortcutLabel() + "_kap_" + argn + ": COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_harm_" + argn ); 
+      if( i==0 ) biasargs = "ARG=" + getShortcutLabel() + "_kap_" + argn; else biasargs += "," + getShortcutLabel() + "_kap_" + argn;
+      readInputLine( getShortcutLabel() + "_linear_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + slope[i] + "*x ARG1=" + getShortcutLabel() + "_cv_" + argn );
+      readInputLine( getShortcutLabel() + "_slope_" + argn + ": COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_linear_" + argn );
+      biasargs += "," + getShortcutLabel() + "_slope_" + argn;
+      readInputLine( getShortcutLabel() + "_f2_" + argn + ": MATHEVAL PERIODIC=NO FUNC=" + kappa[i] + "*2*x+" + slope[i] + "*" + slope[i] + 
+                       " ARG1=" + getShortcutLabel() + "_harm_" + argn );
+      if( i==0 ) forceargs = "ARG=" + getShortcutLabel() + "_f2_" + argn; else forceargs += "," + getShortcutLabel() + "_f2_" + argn;
+  }
+  // This is the bias
+  readInputLine( getShortcutLabel() + "_bias: COMBINE PERIODIC=NO " + biasargs );
   readInputLine( getShortcutLabel() + ": BIASVALUE ARG=" + getShortcutLabel() + "_bias STRIDE=" + stride );
-  // And now the force squared
-  Tools::convert( kappa[0]*kappa[0], kstr ); coefs=" COEFFICIENTS=" + kstr; double sltmp, slsum; Tools::convert( slope[0], sltmp ); slsum=sltmp*sltmp;
-  for(unsigned i=1;i<kappa.size();++i) { Tools::convert( kappa[i]*kappa[i], kstr ); coefs += "," + kstr; Tools::convert( slope[i], sltmp ); slsum+=sltmp*sltmp; }
-  readInputLine( getShortcutLabel() + "_der2: COMBINE PERIODIC=NO " + argstr + powstr + coefs + atstr ); 
-  Tools::convert( slsum, kstr ); readInputLine( getShortcutLabel() + "_force2: MATHEVAL PERIODIC=NO ARG=" + getShortcutLabel() + "_der2 FUNC=x+" + kstr );
+  readInputLine( getShortcutLabel() + "_force2: COMBINE PERIODIC=NO " + forceargs );
 }
 
 }
