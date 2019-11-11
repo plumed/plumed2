@@ -20,7 +20,7 @@ mkdir hands_on_2
 cd hands_on_2
 \endverbatim
 
-The \tarball{lugano-3} for this project contains the following files:
+The \tarball{master-ISDD-2} for this project contains the following files:
 - diala.pdb: a PDB file for alanine dipeptide in vacuo
 - topol.tpr: a GROMACS run file to perform MD of alanine dipeptide
 
@@ -375,4 +375,4 @@ link: @subpage master-ISDD-2
 
 description: This tutorial explains how to use PLUMED to run metadynamics simulations 
 
-additional-files: lugano-3 
+additional-files: master-ISDD-2 
