@@ -306,7 +306,7 @@ Are the results identical?
 \section master-ISDD-1-conclusions Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
-- Analyze previously calculated trajectories using the `driver` utility
+- Analyze previously calculated trajectories using the \ref driver utility
 - Defining virtual atoms and using \ref MOLINFO shortcuts
 
 */
