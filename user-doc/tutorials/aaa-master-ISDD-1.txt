@@ -16,42 +16,13 @@ Once this tutorial is completed, students will be able to:
 - Use \ref MOLINFO shortcuts.
 - Define and use virtual atoms, such as \ref CENTER.
 
-\section master-ISDD-1-install Install PLUMED
+\section master-ISDD-1-install PLUMED installation and overview
 
 You can find detailed instructions about how to install PLUMED here:
 
 \verbatim
 https://github.com/plumed/conda
 \endverbatim
-
-\section master-ISDD-1-resources Resources
-
-Before starting the tutorial, please create a separate directory, named `handson_1`, and enter it:
-\verbatim
-mkdir handson_1 
-cd handson_1
-\endverbatim
-
-The reference trajectories and other files needed for the exercises proposed in this tutorial
-can be downloaded from `GitHub` using the following command:
-
-\verbatim
-wget https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz 
-\endverbatim
-
-The archive contains the following files:
-- GB1_native.pdb : A PDB file with the native structure of the GB1 protein.
-- traj-whole.xtc: A trajectory in xtc format. To make the exercise easier, GB1 has been made whole already.
-- traj-broken.xtc: The same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions and should be fixed.
-
-The archive can be unpacked using the following command:
-\verbatim
-tar xvzf handson_1.tgz
-\endverbatim
-
-This tutorial has been tested on PLUMED version 2.5.1.
-
-\section master-ISDD-1-instructions Instructions
 
 PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
 Once it is incorporated you can use PLUMED to perform a variety of different analyzes on the fly and to bias 
@@ -80,7 +51,6 @@ plumed driver --help
 As you can see we can do a number of things with PLUMED \ref driver. For all of these options, however, we are going to need to write 
 a PLUMED input file. The syntax of the PLUMED input file is the same that we will use later to run enhanced sampling simulations,
 so all the things that you will learn now will be useful later when you will run PLUMED coupled to an MD code.
-In the following we are going to see how to write an input file for PLUMED.
 
 \subsection master-ISDD-1-units The PLUMED internal units
 
@@ -92,7 +62,34 @@ By default the PLUMED inputs and outputs quantities in the following units:
 
 If you want to change these units you can do this using the \ref UNITS keyword. 
 
-\section master-ISDD-1-structure The syntax of the PLUMED input file
+\section master-ISDD-1-resources Resources
+
+Before starting the tutorial, please create a separate directory, named `handson_1`, and enter it:
+\verbatim
+mkdir handson_1 
+cd handson_1
+\endverbatim
+
+The reference trajectories and other files needed for the exercises proposed in this tutorial
+can be downloaded from `GitHub` using the following command:
+
+\verbatim
+wget https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz 
+\endverbatim
+
+The archive contains the following files:
+- GB1_native.pdb : A PDB file with the native structure of the GB1 protein.
+- traj-whole.xtc: A trajectory in xtc format. To make the exercise easier, GB1 has been made whole already.
+- traj-broken.xtc: The same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions and should be fixed.
+
+The archive can be unpacked using the following command:
+\verbatim
+tar xvzf handson_1.tgz
+\endverbatim
+
+This tutorial has been tested on PLUMED version 2.5.1.
+
+\section master-ISDD-1-structure A first look to the PLUMED input file
 
 The main goal of PLUMED is to compute collective variables, which are complex descriptors than can be used
 to analyze a conformational change or a chemical reaction. This can be done either on-the-fly during
