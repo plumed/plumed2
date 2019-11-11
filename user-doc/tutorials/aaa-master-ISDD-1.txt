@@ -56,7 +56,7 @@ This tutorial has been tested on PLUMED version 2.5.1.
 PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
 Once it is incorporated you can use PLUMED to perform a variety of different analyzes on the fly and to bias 
 the sampling in the molecular dynamics engine.  PLUMED can also, however, be used as a standalone code for analyzing trajectories.
-If you are using the code in this way you can, once PLUMED is compiled, run the plumed executable by issuing the command:
+If you are using the code in this way you can, once PLUMED is compiled, run the PLUMED executable by issuing the command:
 
 \verbatim
 plumed <instructions>
@@ -71,13 +71,13 @@ plumed --help
 What is output when this command is run is a list of the tasks you can use PLUMED to perform.  There are commands that allow you
 to patch an MD code, commands that allow you to run molecular dynamics and commands that allow you to build the manual.  In this
 tutorial we will mostly be using PLUMED to analyze trajectories, however.  As such most of the calculations we will perform will be performed 
-using the driver tool.  Let's look at the options we can issue to plumed driver by issuing the following command:  
+using the driver tool.  Let's look at the options we can issue to PLUMED \ref driver by issuing the following command:  
 
 \verbatim
 plumed driver --help
 \endverbatim
 
-As you can see we can do a number of things with plumed driver. For all of these options, however, we are going to need to write 
+As you can see we can do a number of things with PLUMED \ref driver. For all of these options, however, we are going to need to write 
 a PLUMED input file. The syntax of the PLUMED input file is the same that we will use later to run enhanced sampling simulations,
 so all the things that you will learn now will be useful later when you will run PLUMED coupled to an MD code.
 In the following we are going to see how to write an input file for PLUMED.
