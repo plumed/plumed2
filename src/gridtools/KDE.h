@@ -32,7 +32,7 @@ namespace gridtools {
 class KDE : public HistogramBase {
 private:
   std::string kerneltype;
-  bool firststep;
+  bool firststep, fixed_width;
   bool ignore_out_of_bounds;
   double cheight, gvol, dp2cutoff;
   std::vector<Value> grid_diff_value;

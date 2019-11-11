@@ -1,0 +1,2 @@
+type=driver
+arg="--plumed plumed.dat --noatoms --timestep 0.05 --initial-step 1"

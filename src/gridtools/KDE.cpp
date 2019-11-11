@@ -24,6 +24,7 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/Pbc.h"
+#include "core/ActionSetup.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
@@ -214,6 +215,7 @@ KDE::KDE(const ActionOptions&ao):
   Action(ao),
   HistogramBase(ao),
   firststep(false),
+  fixed_width(false),
   ignore_out_of_bounds(false),
   gmin( getNumberOfDerivatives() ),
   gmax( getNumberOfDerivatives() )
@@ -307,7 +309,11 @@ KDE::KDE(const ActionOptions&ao):
         if( gridobject.isPeriodic(i) ) grid_diff_value[i].setDomain( gmin[i], gmax[i] );
         else grid_diff_value[i].setNotPeriodic();
     }
-    addValueWithDerivatives( shape ); setupNeighborsVector();
+    addValueWithDerivatives( shape ); 
+    if( kerneltype!="DISCRETE" ) {
+        ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(arg_ends[arg_ends.size()-1])->getPntrToAction() );
+        if(as) { fixed_width=true; setupNeighborsVector(); }
+    }
   } else {
     std::vector<unsigned> shape( getNumberOfDerivatives(), 1 );
     addValueWithDerivatives( shape );
@@ -316,7 +322,7 @@ KDE::KDE(const ActionOptions&ao):
 
 void KDE::setupNeighborsVector() {
   if( kerneltype!="DISCRETE" ) {
-    std::vector<double> point(gmin.size(), 0), support(gmin.size(),0); nneigh.resize( gmin.size() );
+    std::vector<double> point(gmin.size(), 0), support(gmin.size(),0); nneigh.resize( gmin.size() ); 
     if( kerneltype.find("bin")!=std::string::npos ) {
       std::size_t dd = kerneltype.find("-bin"); 
       HistogramBead bead; bead.setKernelType( kerneltype.substr(0,dd) );
@@ -370,10 +376,13 @@ void KDE::completeGridObjectSetup() {
       for(unsigned i=0; i<gridobject.getNumberOfPoints(); ++i) addTaskToList(i);
     }
     // And setup the neighbors
-    setupNeighborsVector();
+    if( kerneltype!="DISCRETE" ) {
+        ActionSetup* as=dynamic_cast<ActionSetup*>( getPntrToArgument(arg_ends[arg_ends.size()-1])->getPntrToAction() );
+        if(as) { fixed_width=true; setupNeighborsVector(); }
+    }
     // And never do this again
     firststep=false;
-  }
+  } else if( !fixed_width ) setupNeighborsVector();
 }
 
 void KDE::getInfoForGridHeader( std::string& gtype, std::vector<std::string>& argn, std::vector<std::string>& min,
