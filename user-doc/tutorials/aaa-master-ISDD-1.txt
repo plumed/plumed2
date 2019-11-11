@@ -39,12 +39,12 @@ can be downloaded from `GitHub` using the following command:
 wget https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz 
 \endverbatim
 
-The zip archive contains the following files:
+The archive contains the following files:
 - GB1_native.pdb : A PDB file with the native structure of the GB1 protein.
 - traj-whole.xtc: A trajectory in xtc format. To make the exercise easier, GB1 has been made whole already.
 - traj-broken.xtc: The same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions and should be fixed.
 
-The archive can be opened with the following command:
+The archive can be unpacked using the following command:
 \verbatim
 tar xvzf handson_1.tgz
 \endverbatim
