@@ -263,7 +263,8 @@ suggest that the simulation most likely converged.
 of your metadynamics simulation!
 
 \note The two observations above are necessary, but qualitative conditions for convergence.
-
+For a quantitative analysis, please have a look at one of our tutorials about error analysis, such as 
+\ref trieste-4 . 
 
 \subsection master-ISDD-2-ex-4 Exercise 3: reweighting
 
