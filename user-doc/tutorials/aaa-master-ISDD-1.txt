@@ -26,10 +26,10 @@ https://github.com/plumed/conda
 
 \section master-ISDD-1-resources Resources
 
-Before starting the tutorial, please create a separate directory, named `hands_on_1`, and enter it:
+Before starting the tutorial, please create a separate directory, named `handson_1`, and enter it:
 \verbatim
-mkdir hands_on_1
-cd hands_on_1
+mkdir handson_1 
+cd handson_1
 \endverbatim
 
 The reference trajectories and other files needed for the exercises proposed in this tutorial

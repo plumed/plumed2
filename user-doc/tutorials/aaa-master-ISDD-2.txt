@@ -14,10 +14,10 @@ Once this tutorial is completed students will be able to:
 
 \section master-ISDD-2-resources Resources
 
-Before starting the tutorial, please create a separate directory, named `hands_on_2`, and enter it:
+Before starting the tutorial, please create a separate directory, named `handson_2`, and enter it:
 \verbatim
-mkdir hands_on_2
-cd hands_on_2
+mkdir handson_2 
+cd handson_2
 \endverbatim
 
 The \tarball{master-ISDD-2} for this project contains the following files:
