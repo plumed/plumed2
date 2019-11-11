@@ -5,7 +5,7 @@
 
 The aim of this tutorial is to train users to perform metadynamics simulations with PLUMED.
 
-\section master-ISDD-2-objectives Objectives
+\section master-ISDD-2-objectives Learning Outcomes 
 
 Once this tutorial is completed students will be able to:
 - Write the PLUMED input file to perform metadynamics simulations
