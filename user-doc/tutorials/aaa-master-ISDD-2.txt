@@ -325,7 +325,7 @@ PRINT ARG=phi,psi,metad.bias FILE=COLVAR STRIDE=1  # <- also change this one!
 
 Then run the driver using this command
 \verbatim
-> plumed driver --ixtc traj_comp.xtc --plumed plumed.dat --kt 2.5
+> plumed driver --ixtc traj_comp.xtc --plumed plumed_reweight.dat --kt 2.494339
 \endverbatim
 Notice that you have to specify the value of \f$k_BT\f$ in energy units. While running your simulation
 this information was taken from the MD code.
@@ -349,7 +349,7 @@ You can easily obtain the weight of each frame using the expression \f$w\propto\
 (umbrella-sampling-like reweighting). You might want to read the `COLVAR` file in python and compute a weighted histogram.
 
 If you want PLUMED to do the histograms for you, you can just add the following
-lines to the previous PLUMED input file:
+lines to the `plumed_reweight.dat` PLUMED input file:
 
 \plumedfile
 # use the metadynamics bias as argument
