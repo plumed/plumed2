@@ -52,16 +52,6 @@ As you can see we can do a number of things with PLUMED \ref driver. For all of 
 a PLUMED input file. The syntax of the PLUMED input file is the same that we will use later to run enhanced sampling simulations,
 so all the things that you will learn now will be useful later when you will run PLUMED coupled to an MD code.
 
-\subsection master-ISDD-1-units The PLUMED internal units
-
-By default the PLUMED inputs and outputs quantities in the following units:
-
-- Energy - kJ/mol
-- Length - nanometers
-- Time - picoseconds
-
-If you want to change these units you can do this using the \ref UNITS keyword. 
-
 \section master-ISDD-1-structure A first look to the PLUMED input file
 
 The main goal of PLUMED is to compute collective variables, which are complex descriptors than can be used
@@ -118,6 +108,17 @@ comma separated numbers, with no space. Virtual atoms can be created and assigne
 You can find more information on the PLUMED syntax
 at \ref Syntax page of the manual. The complete documentation for all the supported
 collective variables can be found at the \ref colvarintro page.
+
+\subsection master-ISDD-1-units The PLUMED internal units
+
+By default the PLUMED inputs and outputs quantities in the following units:
+
+- Energy - kJ/mol
+- Length - nanometers
+- Time - picoseconds
+
+If you want to change these units you can do this using the \ref UNITS keyword. 
+
 
 
 \section master-ISDD-1-resources Resources
