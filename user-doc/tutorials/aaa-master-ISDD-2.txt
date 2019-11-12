@@ -11,6 +11,8 @@ Once this tutorial is completed students will be able to:
 - Write the PLUMED input file to perform metadynamics simulations
 - Calculate the free energy from a metadynamics run
 - Monitor the behavior of variables in a metadynamics run
+- Estimating the error in reconstructing free energies using block analysis
+- Assess the convergence of a metadynamics simulation
 
 \section master-ISDD-2-resources Resources
 
@@ -23,6 +25,7 @@ cd handson_2
 The \tarball{master-ISDD-2} for this project contains the following files:
 - diala.pdb: a PDB file for alanine dipeptide in vacuo
 - topol.tpr: a GROMACS run file to perform MD of alanine dipeptide
+- do_block_fes.py: a python script to perform error analysis
 
 The archive can be unpacked using the following command:
 \verbatim
@@ -109,7 +112,7 @@ We will play with a toy system, alanine dipeptide simulated in vacuo using the A
 force field (see Fig. \ref master-ISDD-2-ala-fig).
 This rather simple molecule is useful to understand data analysis and free-energy methods.
 This system is a nice example because it presents two metastable states separated by a high free-energy barrier.
-It is conventional use to characterize the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \Phi \f$ and \f$ \Psi \f$ in Fig. \ref master-ISDD-2-transition-fig .
+It is conventional use to characterize the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \Phi \f$ and \f$ \Psi \f$ in Fig. \ref master-ISDD-2-transition-fig.
 
 \anchor master-ISDD-2-ala-fig
 \image html belfast-2-ala.png "The molecule of the day: alanine dipeptide."
@@ -227,7 +230,7 @@ plumed sum_hills --hills HILLS
 
 The command above generates a file called `fes.dat` in which the free-energy surface as function
 of \f$ \phi \f$ is calculated on a regular grid. One can modify the default name for the free energy file,
-as well as the boundaries and bin size of the grid, by using the following options of \ref sum_hills :
+as well as the boundaries and bin size of the grid, by using the following options of \ref sum_hills:
 
 \verbatim
 --outfile - specify the outputfile for sumhills
@@ -269,9 +272,9 @@ of your metadynamics simulation!
 
 \note The two observations above are necessary, but qualitative conditions for convergence.
 For a quantitative analysis, please have a look at one of our tutorials about error analysis, such as 
-\ref trieste-4 . 
+\ref trieste-4 , or wait for \ref master-ISDD-2-ex-4. 
 
-\subsection master-ISDD-2-ex-4 Exercise 3: reweighting
+\subsection master-ISDD-2-ex-3 Exercise 3: reweighting
 
 In the previous exercise we biased \f$\phi\f$ and compute the free energy as a function of
 the same variable. Many times you want to decide which variable you want to analyze _after_
@@ -342,13 +345,14 @@ of the file should look like this:
 \endverbatim
 
 The last column will give as, in energy units, the logarithm of the weight of each frame.
-You can easily obtain the weight of each frame using the expression \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$.
-You might want to read the `COLVAR` file in python and compute a weighted histogram.
+You can easily obtain the weight of each frame using the expression \f$w\propto\exp\left(\frac{V(s)}{k_BT}\right)\f$
+(umbrella-sampling-like reweighting). You might want to read the `COLVAR` file in python and compute a weighted histogram.
 
 If you want PLUMED to do the histograms for you, you can just add the following
-lines to the PLUMED input file:
+lines to the previous PLUMED input file:
 
 \plumedfile
+# use the metadynamics bias as argument
 as: REWEIGHT_BIAS ARG=__FILL__
 
 hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=600 BANDWIDTH=0.1 LOGWEIGHTS=as
@@ -367,12 +371,83 @@ gnuplot> p "ffphi.dat"
 gnuplot> p "ffpsi.dat"
 \endverbatim
 
+\subsection master-ISDD-2-ex-4 Exercise 4: estimating the error in free-energies using block-analysis
+
+In the previous exercise, we calculated the final bias on the entire metadynamics simulations and we used
+this quantity to reweight the (biased) simulation. The same quantity is useful to calculate the error in 
+reconstructed free energies and assess whether our simulation is converged.
+Let's calculate the "un-biasing weights" using the umbrella-sampling-like approach and the COLVAR file obtained
+at the end of \ref master-ISDD-2-ex-3:
+
+\verbatim
+# find maximum value of bias
+bmax=`awk 'BEGIN{max=0.}{if($1!="#!" && $4>max)max=$4}END{print max}' COLVAR`
+
+# print phi values and weights
+awk '{if($1!="#!") print $2,exp(($4-bmax)/kbt)}' kbt=2.494339 bmax=$bmax COLVAR > phi.weight
+\endverbatim
+
+If you inspect the `phi.weight` file, you will see that each line contains the value of the
+dihedral \f$ \phi \f$ along with the corresponding weight:
+
+\verbatim
+0.907347 0.0400579
+0.814296 0.0169656
+1.118951 0.0651276
+1.040781 0.0714174
+1.218571 0.0344903
+1.090823 0.0700568
+1.130800 0.0622998
+\endverbatim  
+
+At this point we can apply the block-analysis technique (more info in the 
+\ref trieste-2 tutorial) to calculate for different block sizes the average free-energy
+and the error. For your convenience, you can use the `do_block_fes.py` python
+script to read the `phi.weight` file and produce the desired output.
+We use a bash loop to use block sizes ranging from 1 to 1000:
+
+\verbatim
+for i in `seq 1 10 1000`; do python3 do_block_fes.py phi.weight 1 -3.141593 3.018393 51 2.494339 $i; done
+\endverbatim 
+
+For each value of block length `N`, you will obtain a separate `fes.N.dat` file, containing the value
+of the \f$ \phi \f$ variable on a grid, the average free-energy, and the associated error (in kJ/mol):
+
+\verbatim
+   -3.141593       23.184653     0.080659
+   -3.018393       17.264462     0.055181
+   -2.895194       13.360259     0.047751
+   -2.771994       10.772696     0.043548
+   -2.648794        9.403544     0.042022
+\endverbatim
+
+Finally, we can calculate the average error along the free-energy profile as a function of the block length:
+
+\verbatim
+for i in `seq 1 10 1000`; do a=`awk '{tot+=$3}END{print tot/NR}' fes.$i.dat`; echo $i $a; done > err.blocks
+\endverbatim
+ 
+and visualize it using `gnuplot`:
+
+\verbatim
+gnuplot> p "err.blocks" u 1:2 w lp
+\endverbatim
+
+As expected, the error increases with the block length until it reaches a plateau in correspondence of a dimension
+of the block that exceeds the correlation between data points (Fig. \ref master-ISDD-2-block-phi).
+
+\anchor master-ISDD-2-block-phi 
+\image html trieste-4-block-phi.png "Block analysis of a metadynamics simulation using phi as CV"
+
+What can we learn from this analysis about the convergence of the metadynamics simulation?
+
 \section master-ISDD-2-conclusions Conclusions
 
 In summary, in this tutorial you should have learned how to use PLUMED to:
 - Setup and run a metadynamics calculation.
 - Compute free energies from the metadynamics bias potential using the \ref sum_hills utility.
 - Reweight a metadynamics simulation 
+- Calculate errors and assess convergence
 
 */
 
