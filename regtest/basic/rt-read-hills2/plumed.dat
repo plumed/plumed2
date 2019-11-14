@@ -1,0 +1,4 @@
+hh: SUM_HILLS FILE=INHILLS GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=64,81
+tt: MULTIPLY_MATRICES ARG1=hh_bias_sigma ARG2=hh_bias_icov
+PRINT ARG=tt FILE=identity FMT=%8.4f
+PRINT ARG=hh FILE=fes.grid FMT=%8.4f

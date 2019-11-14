@@ -274,7 +274,7 @@ KDE::KDE(const ActionOptions&ao):
       std::vector<Value*> bw_args; interpretArgumentList( bandwidth, bw_args );
       if( bw_args[0]->hasDerivatives() ) error("bandwidth should not have derivatives");
       if( bw_args[0]->getRank()==1 && bw_args[0]->getNumberOfValues( getLabel() )!=getNumberOfDerivatives() ) error("size of bandwidth vector is incorrect");
-      if( bw_args[0]->getRank()==2 ) error("not implemented KDE with matrices for bandwidth yet");
+      if( bw_args[0]->getRank()>2 ) error("bandwidths cannot have rank greater than 2");
       log.printf("  bandwidths are taken from : %s \n", bandwidth[0].c_str() );
       std::vector<Value*> args( getArguments() ); args.push_back( bw_args[0] );
       requestArguments( args, true );
@@ -322,13 +322,13 @@ KDE::KDE(const ActionOptions&ao):
 
 void KDE::setupNeighborsVector() {
   if( kerneltype!="DISCRETE" ) {
-    std::vector<double> point(gmin.size(), 0), support(gmin.size(),0); nneigh.resize( gmin.size() ); 
+    std::vector<double> support(gmin.size(),0); nneigh.resize( gmin.size() ); 
     if( kerneltype.find("bin")!=std::string::npos ) {
       std::size_t dd = kerneltype.find("-bin"); 
       HistogramBead bead; bead.setKernelType( kerneltype.substr(0,dd) );
       Value* bw_arg=getPntrToArgument(arg_ends[arg_ends.size()-1]);
       if( bw_arg->getRank()<2 ) {
-          for(unsigned i=0; i<point.size(); ++i) {
+          for(unsigned i=0; i<support.size(); ++i) {
             bead.set( 0, gridobject.getGridSpacing()[i], 1./sqrt(bw_arg->get(i)) );
             support[i] = bead.getCutoff(); nneigh[i] = static_cast<unsigned>( ceil( support[i]/gridobject.getGridSpacing()[i] ));
           } 
@@ -339,6 +339,20 @@ void KDE::setupNeighborsVector() {
           for(unsigned i=0; i<support.size(); ++i) {
              support[i] = sqrt(2.0*dp2cutoff)*(1.0/sqrt(bw_arg->get(i)));
              nneigh[i] = static_cast<unsigned>( ceil( support[i] / gridobject.getGridSpacing()[i] ) );
+          }
+      } else if( bw_arg->getRank()==2 ) {
+          Matrix<double> metric(support.size(),support.size()); unsigned k=0;
+          for(unsigned i=0;i<support.size();++i) {
+              for(unsigned j=0;j<support.size();++j) { metric(i,j)=bw_arg->get(k); k++; }
+          }
+          Matrix<double> myautovec(support.size(),support.size()); std::vector<double> myautoval(support.size()); 
+          diagMat(metric,myautoval,myautovec); double maxautoval=1/myautoval[0]; unsigned ind_maxautoval=0; 
+          for(unsigned i=1; i<support.size(); i++) {
+            double neweig=1/myautoval[i]; if(neweig>maxautoval) { maxautoval=neweig; ind_maxautoval=i; }
+          }
+          for(unsigned i=0; i<support.size(); i++) {
+            support[i] = sqrt(2.0*dp2cutoff)*fabs(sqrt(maxautoval)*myautovec(i,ind_maxautoval));
+            nneigh[i] = static_cast<unsigned>( ceil( support[i] / gridobject.getGridSpacing()[i] ) );
           }
       } else plumed_error();
     }
@@ -453,6 +467,15 @@ double KDE::evaluateKernel( const std::vector<double>& gpoint, const std::vector
       for(unsigned j=0; j<der.size(); ++j) {
          double tmp = -grid_diff_value[j].difference( gpoint[j], args[j] );
          der[j] = tmp*bw_arg->get(j); r2 += tmp*der[j]; 
+      }
+  } else if( bw_arg->getRank()==2 ) {
+      for(unsigned j=0; j<der.size(); ++j) {
+          der[j]=0; double dp_j, dp_k; dp_j = -grid_diff_value[j].difference( gpoint[j], args[j] );  
+          for(unsigned k=0; k<der.size(); ++k ) {
+              if(j==k) dp_k = dp_j;
+              else dp_k = -grid_diff_value[k].difference( gpoint[k], args[k] );
+              der[j] += bw_arg->get(j*der.size()+k)*dp_k; r2 += dp_j*dp_k*bw_arg->get(j*der.size()+k);
+          }
       }
   } else plumed_error();
   double dval, val=hval*switchingFunction.calculateSqr( r2, dval ); 

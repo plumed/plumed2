@@ -63,13 +63,33 @@ ActionShortcut(ao)
   }
   // Do we have multivariate hills
   bool multivariate=false;
-  if( !ifile.FieldExist("multivariate")) {
+  if( ifile.FieldExist("multivariate")) {
       std::string sss; ifile.scanField("multivariate",sss);
       if(sss=="true") { multivariate=true;}
       else if(sss=="false") { multivariate=false;}
   }
   if( multivariate ) {
-      error("do not have functionality to read multivariate hills"); 
+      std::string num, col_string;
+      readInputLine( getShortcutLabel() + "_zero: CONSTANT VALUES=0.0");
+      for(unsigned i=0; i<values.size(); i++) {
+          for(unsigned j=0;j<=i;++j) {
+              readInputLine( getShortcutLabel() + "_sigma_" + values[i] + "_" + values[j] + ": READ IGNORE_FORCES FILE=" + hillsfile +  
+                             " VALUES=sigma_" + values[i] + "_" + values[j]  );
+          }
+          Tools::convert( i+1, num ); col_string += " ARG" + num + "=" + getShortcutLabel() + "_sigma_" + values[i] + "_" + values[0];
+          for(unsigned j=1; j<values.size(); ++j) {
+              if( j<=i ) col_string += "," + getShortcutLabel() + "_sigma_" + values[i] + "_" + values[j];
+              else col_string += "," + getShortcutLabel() + "_zero"; 
+          }
+      }
+      // This is cholesky decomposition of matrix    
+      readInputLine( getShortcutLabel() + "_chol: COMPOSE_MATRIX " + col_string );
+      // Transpose
+      readInputLine( getShortcutLabel() + "_cholT: TRANSPOSE ARG=" + getShortcutLabel() + "_chol");
+      // Recompose sigma matrix
+      readInputLine( getShortcutLabel() + "_sigma: MULTIPLY_MATRICES ARG1=" + getShortcutLabel() + "_chol ARG2=" + getShortcutLabel() + "_cholT"); 
+      // And compute final metric matrix
+      readInputLine( getShortcutLabel() + "_icov: INVERT_MATRIX ARG=" + getShortcutLabel() + "_sigma");
   } else {
       std::string col_string = "ARG=" + getShortcutLabel() + "_icov_" + values[0];
       for(unsigned i=0; i<values.size(); i++) {
@@ -78,8 +98,8 @@ ActionShortcut(ao)
           if( i>0 ) col_string += "," + getShortcutLabel() + "_icov_" + values[i];
       }
       readInputLine( getShortcutLabel() + "_icov: COMPOSE_VECTOR " + col_string );
-      readInputLine( getShortcutLabel() + "_height: READ IGNORE_FORCES FILE=" + hillsfile + " VALUES=height");
   }
+  readInputLine( getShortcutLabel() + "_height: READ IGNORE_FORCES FILE=" + hillsfile + " VALUES=height");
   // And sum the hills
   std::vector<std::string> gmin(values.size()), gmax(values.size()), grid_nbins(values.size());
   parseVector("GRID_MIN",gmin); parseVector("GRID_MAX",gmax); parseVector("GRID_BIN",grid_nbins);
