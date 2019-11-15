@@ -18,7 +18,14 @@ Once this tutorial is completed, students will be able to:
 
 \section master-ISDD-1-install PLUMED installation and overview
 
-You can find detailed instructions about how to install PLUMED here:
+PLUMED and GROMACS should be already installed on your machines and can be activated
+using:
+
+\verbatim
+conda activate accamproux-metadynamique-2019
+\endverbatim
+
+In case this is not working, you can find detailed instructions about how to install PLUMED here:
 
 \verbatim
 https://github.com/plumed/conda
