@@ -18,18 +18,13 @@ Once this tutorial is completed, students will be able to:
 
 \section master-ISDD-1-install PLUMED installation and overview
 
-PLUMED and GROMACS should be already installed on your machines and can be activated
-using:
-
-\verbatim
-conda activate accamproux-metadynamique-2019
-\endverbatim
-
-In case this is not working, you can find detailed instructions about how to install PLUMED here:
+You can find detailed instructions about how to install PLUMED here:
 
 \verbatim
 https://github.com/plumed/conda
 \endverbatim
+
+Let's compile it together!
 
 PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
 Once it is incorporated you can use PLUMED to perform a variety of different analyzes on the fly and to bias 
