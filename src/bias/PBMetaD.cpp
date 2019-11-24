@@ -281,7 +281,7 @@ public:
   void calculate() override;
   void update() override;
   static void registerKeywords(Keywords& keys);
-  bool checkNeedsGradients()const override {if(adaptive_==FlexibleBin::geometry) {return true;} else {return false;}}
+  bool checkNeedsGradients()const override;
 };
 
 PLUMED_REGISTER_ACTION(PBMetaD,"PBMETAD")
@@ -1167,6 +1167,15 @@ bool PBMetaD::scanOneHill(unsigned iarg, IFile *ifile, vector<Value> &tmpvalues,
   } else {
     return false;
   }
+
+}
+
+bool PBMetaD::checkNeedsGradients()const
+{
+  if(adaptive_==FlexibleBin::geometry) {
+    if(getStep()%stride_==0 && !isFirstStep) return true;
+    else return false;
+  } else return false;
 }
 
 }
