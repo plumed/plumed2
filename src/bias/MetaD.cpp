@@ -434,6 +434,7 @@ public:
   void update();
   static void registerKeywords(Keywords& keys);
   bool checkNeedsGradients()const {if(adaptive_==FlexibleBin::geometry) {return true;} else {return false;}}
+  bool checkNeedsGradients()const;
 };
 
 PLUMED_REGISTER_ACTION(MetaD,"METAD")
@@ -1909,6 +1910,14 @@ double MetaD::getTransitionBarrierBias() {
     }
     return least_transition_bias;
   }
+}
+
+bool MetaD::checkNeedsGradients()const
+{
+  if(adaptive_==FlexibleBin::geometry) {
+    if(getStep()%stride_==0 && !isFirstStep) return true;
+    else return false;
+  } else return false;
 }
 
 }
