@@ -1,24 +1,22 @@
 /**
-\page lugano-1 Lugano tutorial: Brief guide to PLUMED syntax and analyzing trajectories
+\page master-ISDD-1 Master ISDD tutorial: Brief introduction to PLUMED
 
-\section lugano-1-aims Aims
+\section master-ISDD-1-aims Aims
 
 The aim of this tutorial is to introduce you to the PLUMED syntax. We will go through the writing of input files to calculate
 and print simple collective variables on a pre-calculated trajectory.
 
-\section lugano-1-lo Learning Outcomes
+\section master-ISDD-1-lo Learning Outcomes
 
 Once this tutorial is completed, students will be able to:
 
 - Write a simple PLUMED input file and use it with the PLUMED \ref driver to analyze a trajectory.
 - Print collective variables such as distances.
-  (\ref DISTANCE), torsional angles (\ref TORSION), gyration radius (\ref GYRATION), and RMSD (\ref RMSD) using the \ref PRINT action.
+  (\ref DISTANCE), torsional angles (\ref TORSION), and gyration radius (\ref GYRATION) using the \ref PRINT action.
 - Use \ref MOLINFO shortcuts.
 - Define and use virtual atoms, such as \ref CENTER.
-- Take care of periodic boundary conditions within PLUMED using \ref WHOLEMOLECULES and be able to verify the result with \ref DUMPATOMS.
-- Write their own CVs directly in the input file using the \ref CUSTOM action.
 
-\section lugano-1-install Install PLUMED
+\section master-ISDD-1-install PLUMED installation and overview
 
 You can find detailed instructions about how to install PLUMED here:
 
@@ -26,39 +24,12 @@ You can find detailed instructions about how to install PLUMED here:
 https://github.com/plumed/conda
 \endverbatim
 
-\section lugano-1-resources Resources
-
-Before starting the tutorial, please create a separate directory, named `hands_on_1`, and enter it:
-\verbatim
-mkdir hands_on_1
-cd hands_on_1
-\endverbatim
-
-The reference trajectories and other files needed for the exercises proposed in this tutorial
-can be downloaded from `github` using the following command:
-
-\verbatim
-wget https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz 
-\endverbatim
-
-The zip archive contains the following files:
-- GB1_native.pdb : A PDB file with the native structure of the GB1 protein.
-- traj-whole.xtc: A trajectory in xtc format. To make the exercise easier, GB1 has been made whole already.
-- traj-broken.xtc: The same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions and should be fixed.
-
-The archive can be opened with the following command:
-\verbatim
-tar xvzf handson_1.tgz
-\endverbatim
-
-This tutorial has been tested on PLUMED version 2.5.1.
-
-\section lugano-1-instructions Instructions
+Let's compile it together!
 
 PLUMED is a library that can be incorporated into many MD codes by adding a relatively simple and well documented interface.
 Once it is incorporated you can use PLUMED to perform a variety of different analyzes on the fly and to bias 
 the sampling in the molecular dynamics engine.  PLUMED can also, however, be used as a standalone code for analyzing trajectories.
-If you are using the code in this way you can, once PLUMED is compiled, run the plumed executable by issuing the command:
+If you are using the code in this way you can, once PLUMED is compiled, run the PLUMED executable by issuing the command:
 
 \verbatim
 plumed <instructions>
@@ -73,28 +44,17 @@ plumed --help
 What is output when this command is run is a list of the tasks you can use PLUMED to perform.  There are commands that allow you
 to patch an MD code, commands that allow you to run molecular dynamics and commands that allow you to build the manual.  In this
 tutorial we will mostly be using PLUMED to analyze trajectories, however.  As such most of the calculations we will perform will be performed 
-using the driver tool.  Let's look at the options we can issue to plumed driver by issuing the following command:  
+using the driver tool.  Let's look at the options we can issue to PLUMED \ref driver by issuing the following command:  
 
 \verbatim
 plumed driver --help
 \endverbatim
 
-As you can see we can do a number of things with plumed driver. For all of these options, however, we are going to need to write 
+As you can see we can do a number of things with PLUMED \ref driver. For all of these options, however, we are going to need to write 
 a PLUMED input file. The syntax of the PLUMED input file is the same that we will use later to run enhanced sampling simulations,
 so all the things that you will learn now will be useful later when you will run PLUMED coupled to an MD code.
-In the following we are going to see how to write an input file for PLUMED.
 
-\subsection lugano-1-units The PLUMED internal units
-
-By default the PLUMED inputs and outputs quantities in the following units:
-
-- Energy - kJ/mol
-- Length - nanometers
-- Time - picoseconds
-
-If you want to change these units you can do this using the \ref UNITS keyword. 
-
-\section lugano-1-structure The syntax of the PLUMED input file
+\section master-ISDD-1-structure A first look to the PLUMED input file
 
 The main goal of PLUMED is to compute collective variables, which are complex descriptors than can be used
 to analyze a conformational change or a chemical reaction. This can be done either on-the-fly during
@@ -151,10 +111,48 @@ You can find more information on the PLUMED syntax
 at \ref Syntax page of the manual. The complete documentation for all the supported
 collective variables can be found at the \ref colvarintro page.
 
-\section lugano-1-ex Exercises
+\subsection master-ISDD-1-units The PLUMED internal units
+
+By default the PLUMED inputs and outputs quantities in the following units:
+
+- Energy - kJ/mol
+- Length - nanometers
+- Time - picoseconds
+
+If you want to change these units you can do this using the \ref UNITS keyword. 
 
 
-\subsection lugano-1-ex-1 Exercise 1: Computing and printing simple collective variables
+
+\section master-ISDD-1-resources Resources
+
+Before starting the tutorial, please create a separate directory, named `handson_1`, and enter it:
+\verbatim
+mkdir handson_1 
+cd handson_1
+\endverbatim
+
+The reference trajectories and other files needed for the exercises proposed in this tutorial
+can be downloaded from `GitHub` using the following command:
+
+\verbatim
+wget https://github.com/plumed/lugano2019/raw/master/handson_1/handson_1.tgz 
+\endverbatim
+
+The archive contains the following files:
+- GB1_native.pdb : A PDB file with the native structure of the GB1 protein.
+- traj-whole.xtc: A trajectory in xtc format. To make the exercise easier, GB1 has been made whole already.
+- traj-broken.xtc: The same trajectory as it was originally produced by GROMACS. Here GB1 is broken by periodic boundary conditions and should be fixed.
+
+The archive can be unpacked using the following command:
+\verbatim
+tar xvzf handson_1.tgz
+\endverbatim
+
+This tutorial has been tested on PLUMED version 2.5.1.
+
+\section master-ISDD-1-ex Exercises
+
+\subsection master-ISDD-1-ex-1 Exercise 1: Computing and printing simple collective variables
 
 In this exercise, we will make practice with computing and printing collective variables.
 To analyze the trajectories provided here, you should:
@@ -221,7 +219,7 @@ of your input file.
 Finally, let's try to use the same input file with `traj-whole.xtc` and examine the results.
 Did you find the same results as with the previous trajectory? Why?
 
-\subsection lugano-1-ex-2 Exercise 2:  MOLINFO shortcuts
+\subsection master-ISDD-1-ex-2 Exercise 2:  MOLINFO shortcuts
 
 PLUMED provides some shortcuts to select atoms with specific properties.
 To use this feature, you should specify the \ref MOLINFO action along with a reference
@@ -250,7 +248,7 @@ PRINT ARG=__FILL__ FILE=COLVAR STRIDE=10
 After completing the PLUMED input file above, let's use it to analyze the trajectory `traj-whole.xtc` that you downloaded at the start of this exercise. Now, let's plot the trajectory of the two CVs above.
 If you executed this exercise correctly, these two trajectories should be identical.
 
-\subsection lugano-1-ex-3 Exercise 3: Virtual atoms
+\subsection master-ISDD-1-ex-3 Exercise 3: Virtual atoms
 
 Sometimes, when calculating a CV, you may not want to use the positions of a number of atoms directly. 
 Instead you may want to define a virtual atom whose position is generated based on the positions 
@@ -306,162 +304,14 @@ Are they identical? What do you think is happening in those frames in which the 
 You can repeat the same analysis on `traj-whole.xtc` and compare with the previous trajectory.
 Are the results identical?  
 
+\section master-ISDD-1-conclusions Conclusions
 
-\subsection lugano-1-ex-4 Exercise 4: Taking care of periodic boundary conditions
-
-As you should have noticed, in this tutorial we are working with two different trajectories of
-the GB1 protein:
-- traj-broken.xtc: the original GROMACS trajectory in which GB1 is broken by periodic boundary conditions
-- traj-whole.xtc: the trajectory processed by the `gmx trjconv` utility to fix discontinuities due to periodic boundary conditions
-
-In many PLUMED CVs, periodic boundary conditions are automatically taken into account unless a special option (NOPBC) is used.
-In this way, the user can work directly with the raw trajectory `traj-broken.xtc`.
-Alternatively, PLUMED can reconstruct internally the coordinates of the system and thus fix discontinuities due to the periodic boundary conditions.
-In order to do so, the \ref WHOLEMOLECULES action should be used.
-
-In this exercise, we will learn how to use the \ref WHOLEMOLECULES action.
-Let's ask PLUMED to internally make the structure of GB1 whole and print the new atoms positions
-on a new file, called `dump.gro`, every 10 steps.
-
-\plumedfile
-# use WHOLEMOLECULES to make the entire protein whole
-# let's use the range syntax to specify all GB1 atoms
-WHOLEMOLECULES ENTITY0=__FILL__
-# print the positions of all atoms every 10 steps
-DUMPATOMS FILE=dump.gro ATOMS=__FILL__ STRIDE=__FILL__
-\endplumedfile
-
-Once your `plumed.dat` file is complete, you can use it with the following command
-\verbatim
-> plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
-\endverbatim
-
-and look at the output file with vmd. Have the problems with the periodic boundary conditions been fixed?
-
-At this point, we can repeat  \ref lugano-1-ex-3 after adding the \ref WHOLEMOLECULES action
-at the beginning of the PLUMED input file:
-
-\plumedfile
-# make protein whole
-WHOLEMOLECULES ENTITY0=__FILL__
-
-# geometric center of first residue
-first: CENTER ATOMS=1,2,3,4,5,6,7,8
-# geometric center of last residue
-last: CENTER ATOMS=427-436
-
-# distance between centers of first and last residues, with PBCs
-d1: DISTANCE ATOMS=first,last
-# distance between centers of first and last residues, without PBCs
-d2: DISTANCE ATOMS=first,last NOPBC
-
-# print the two distances every step
-PRINT ARG=d1,d2 STRIDE=1 FILE=COLVAR 
-\endplumedfile
-
-We can now visualize the time line of the two CVs and compare it with the results of
-\ref lugano-1-ex-3. Which CVs are identical and which are not? Why?
-
-\subsection lugano-1-ex-5 Exercise 5: Using CVs that measure the distance from a reference conformation
-
-In many cases, it is useful to define a CV that quantifies the distance of the system from a reference conformation. In PLUMED, this can be achieved using a variety of different CVs.
-Please, have a look <a href="../../user-doc/html/dists.html"> here </a>
-for more info.
-
-In this exercise, we will learn how to use the \ref RMSD and \ref DRMSD CVs.
-In order to do so, we need to edit a reference pdb file and identify:
-- for \ref RMSD, the atoms that you want to use for alignment and RMSD calculation
-- for \ref DRMSD, the atoms that you want to use for the DRMSD calculation
-
-Please refer to the manual to understand how to specify the atoms needed to calculate
-the CA-RMSD and CA-DRMSD with respect to the native GB1 structure.
-After editing the reference pdb file, please complete the following input file:
-
-\plumedfile
-# RMSD on CA atoms, after optimal alignment
-rmsd: RMSD REFERENCE=__FILL__ TYPE=OPTIMAL
-
-# DRMSD on CA atoms
-# Only pairs of atoms whose distance in the reference structure
-# is within 0.1 and 0.8 nm are considered
-drmsd: DRMSD REFERENCE=__FILL__ LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
-
-# print both CVs to file
-PRINT ARG=__FILL__ STRIDE=1 FILE=COLVAR 
-\endplumedfile
-
-Once your `plumed.dat` file is complete, you can use it with the following command
-\verbatim
-> plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
-\endverbatim
-
-and also on the trajectory file in which problems due to the periodic boundaries have been fixed:
-
-\verbatim
-> plumed driver --plumed plumed.dat --mf_xtc traj-whole.xtc
-\endverbatim
-
-Can you comment the results obtained and the differences - if any - between the two trajectories?
-What is happening to the protein during the course of the simulation? Are the two metrics,
-\ref RMSD and \ref DRMSD, equivalent?
-
-
-\subsection lugano-1-ex-6 Exercise 6: Creating your own CV directly in the PLUMED input file
-
-In PLUMED, you can define your own CV directly in the input file by writing it as a function
-of existing CVs using the \ref CUSTOM action. PLUMED will then automatically calculate the derivatives with the respect to the atoms positions.
-
-Let's look at the following example.
-
-\plumedfile
-# distance between atoms 10 and 12
-dAB: DISTANCE ATOMS=10,12
-# distance between atoms 10 and 15
-dAC: DISTANCE ATOMS=10,15
-
-# custom CV defined as the difference between dAC->y and dAB->x
-diff: CUSTOM ARG=dAB,dAC FUNC=y-x PERIODIC=NO
-
-# print the 3 CVs to file every 10 steps
-PRINT ARG=dAB,dAC,diff FILE=COLVAR STRIDE=10
-\endplumedfile
-
-In this example, a custom CV is defined as the difference of two distances between pairs of atoms.
-
-Please complete the following input file to calculate two new CVs from those defined in \ref lugano-1-ex-5:
-- the average of \ref RMSD and \ref DRMSD, calculated on all the CA atoms of GB1 (easy)
-- the minimum distance between \ref RMSD and \ref DRMSD (a bit more difficult).
-To define this function, you can creatively take inspiration from the path CV `s` (see \ref PATH).
-
-\plumedfile
-# RMSD on CA atoms, after optimal alignment
-rmsd: RMSD REFERENCE=__FILL__ TYPE=OPTIMAL
-
-# DRMSD on CA atoms
-# Only pairs of atoms whose distance in the reference structure
-# is within 0.1 and 0.8 nm are considered
-drmsd: DRMSD REFERENCE=__FILL__ LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
-
-# average of RMSD and DRMSD
-ave: CUSTOM ARG=rmsd,drmsd FUNC=__FILL__ PERIODIC=NO
-
-# minimum distance between RMSD and DRMSD
-min: CUSTOM ARG=rmsd,drmsd FUNC=__FILL__ PERIODIC=NO
-
-# print all 4 CVs to file every step
-PRINT ARG=__FILL__ STRIDE=1 FILE=COLVAR 
-\endplumedfile
-
-Once your `plumed.dat` file is complete, you can use it with the following command
-\verbatim
-> plumed driver --plumed plumed.dat --mf_xtc traj-broken.xtc
-\endverbatim
-
-and then check that the custom CVs are indeed what they are expected by plotting the `COLVAR` file with `gnuplot`.
-
+In summary, in this tutorial you should have learned how to use PLUMED to:
+- Analyze previously calculated trajectories using the \ref driver utility
+- Defining virtual atoms and using \ref MOLINFO shortcuts
 
 */
 
-link: @subpage lugano-1
+link: @subpage master-ISDD-1
 
 description: This tutorial explains the syntax of the PLUMED input file and how to use PLUMED to analyze CVs
