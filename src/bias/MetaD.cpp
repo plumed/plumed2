@@ -433,7 +433,6 @@ public:
   void calculate();
   void update();
   static void registerKeywords(Keywords& keys);
-  bool checkNeedsGradients()const {if(adaptive_==FlexibleBin::geometry) {return true;} else {return false;}}
   bool checkNeedsGradients()const;
 };
 
