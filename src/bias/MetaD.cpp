@@ -2010,6 +2010,7 @@ void MetaD::updateFrequencyAdaptiveStride() {
     current_stride=fa_max_stride_;
   }
   getPntrToComponent("pace")->set(current_stride);
+}
 
 bool MetaD::checkNeedsGradients()const
 {
