@@ -2020,13 +2020,5 @@ bool MetaD::checkNeedsGradients()const
   } else return false;
 }
 
-bool MetaD::checkNeedsGradients()const
-{
-  if(adaptive_==FlexibleBin::geometry) {
-    if(getStep()%stride_==0 && !isFirstStep) return true;
-    else return false;
-  } else return false;
-}
-
 }
 }
