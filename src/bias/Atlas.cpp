@@ -49,7 +49,7 @@ void Atlas::registerKeywords(Keywords& keys) {
   keys.add("compulsory","BIASFACTOR","the bias factor for the well tempered metadynamics");
   keys.add("compulsory","GRID_MAX","the maximum value to use for all the grids");
   keys.add("compulsory","GRID_BIN","the number of bins to use for all the grids");
-  keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value"); 
+  keys.add("compulsory","REGULARISE","0.001","don't allow the denominator to be smaller then this value");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.addFlag("TRUNCATE_GRIDS",false,"set all histograms equal to zero outside specified range");
 }
@@ -60,23 +60,23 @@ ActionShortcut(ao)
 {
   // Read the reference file and determine how many clusters we have
   bool truncate=false; parseFlag("TRUNCATE_GRIDS",truncate);
-  std::string argstr; parse("ARG",argstr); std::vector<unsigned> neigv; std::vector<bool> resid; 
+  std::string argstr; parse("ARG",argstr); std::vector<unsigned> neigv; std::vector<bool> resid;
   std::string fname; parse("REFERENCE",fname); std::vector<double> weights;
   IFile ifile; ifile.open(fname); ifile.allowIgnoredFields(); double h;
   for(unsigned k=0;; ++k) {
      if( !ifile.scanField("height",h) ) break;
      int meig; ifile.scanField("neigv",meig); neigv.push_back( meig );
      if( meig>0 ) {
-         std::string ires; ifile.scanField("residual",ires); 
+         std::string ires; ifile.scanField("residual",ires);
          if( ires=="true" ) resid.push_back( true );
          else if( ires=="false" ) resid.push_back( false );
          else error("residual flag should be set to true/false");
      } else resid.push_back( false );
      // Create a Kernel for this cluster
      std::string num, wstr; Tools::convert( k+1, num ); Tools::convert( h, wstr );
-     readInputLine( getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED ARG=" + argstr + " NUMBER=" + num + " REFERENCE=" + fname + " WEIGHT=" + wstr ); 
-     // Compute eigenvalues and eigenvectors for the input covariance matrix if required 
-     if( meig>0 ) { 
+     readInputLine( getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED ARG=" + argstr + " NUMBER=" + num + " REFERENCE=" + fname + " WEIGHT=" + wstr );
+     // Compute eigenvalues and eigenvectors for the input covariance matrix if required
+     if( meig>0 ) {
          std::string seig="1"; for(int j=1;j<meig;++j) { std::string eignum; Tools::convert( j+1, eignum ); seig += "," + eignum; }
          readInputLine( getShortcutLabel() + "_eigv" + num + ": CALCULATE_REFERENCE CONFIG=" + getShortcutLabel() + "_kernel-" + num + "_ref" +
                         " INPUT={DIAGONALIZE ARG=" + getShortcutLabel() + "_kernel-" + num + "_ref.covariance VECTORS=" + seig + "}");
@@ -88,7 +88,7 @@ ActionShortcut(ao)
 
   // Now build the basins
   for(unsigned k=0;k<weights.size();++k) {
-      std::string num; Tools::convert( k+1, num ); 
+      std::string num; Tools::convert( k+1, num );
       // Compute the distance between the center of the basin and the current configuration
       readInputLine( getShortcutLabel() + "_dist-" + num + ": MATHEVAL ARG=" + getShortcutLabel() + "_kernel-" + num + "_dist_2 FUNC=sqrt(x) PERIODIC=NO");
       // Get the negative of the distance from the center of the basin
@@ -97,9 +97,9 @@ ActionShortcut(ao)
         readInputLine( getShortcutLabel() + "_pdist-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_dist-" + num + " FUNC=0-x PERIODIC=NO");
       } else {
         // This computes the projections of the difference between the current point and the origin on the various eigenvectors
-        std::string argstr = "ARG1=" + getShortcutLabel() + "_dist-" + num; std::string coeffstr="COEFFICIENTS=1"; std::string powstr="POWERS=2";  
+        std::string argstr = "ARG1=" + getShortcutLabel() + "_dist-" + num; std::string coeffstr="COEFFICIENTS=1"; std::string powstr="POWERS=2";
         for(unsigned i=0;i<neigv[k];++i) {
-            coeffstr +=",-1"; powstr +=",2"; std::string anum, eignum; Tools::convert( i+1, eignum ); 
+            coeffstr +=",-1"; powstr +=",2"; std::string anum, eignum; Tools::convert( i+1, eignum );
             Tools::convert( i+2, anum ); argstr += " ARG" + anum + "=" + getShortcutLabel() + "_proj" + eignum + "-" + num + " ";
             // Multiply difference in CVs by eigenvector - returns a vector
             readInputLine( getShortcutLabel() + "_dproj" + eignum + "-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + "_dist_2_diff"
@@ -107,7 +107,7 @@ ActionShortcut(ao)
             // Sum the components of the vector
             readInputLine( getShortcutLabel() + "_udproj" + eignum + "-" + num + ": COMBINE ARG=" + getShortcutLabel() + "_dproj" + eignum + "-" + num + " PERIODIC=NO");
             // And divide the projection on the eigenvector by the eigenvalue so that gaussian widths are in units of covariance
-            readInputLine( getShortcutLabel() + "_proj" + eignum + "-" + num + ": MATHEVAL ARG1="+  getShortcutLabel() + "_udproj" + eignum + "-" + num 
+            readInputLine( getShortcutLabel() + "_proj" + eignum + "-" + num + ": MATHEVAL ARG1="+  getShortcutLabel() + "_udproj" + eignum + "-" + num
                + " ARG2=" + getShortcutLabel() + "_eigv" + num + ".vals-" + eignum + " FUNC=x/sqrt(y) PERIODIC=NO");
         }
         // Add this command to compute the residual distance
@@ -120,9 +120,26 @@ ActionShortcut(ao)
 
   // Create the well-tempered weight
   std::string biasfactor, height; parse("HEIGHT",height); parse("BIASFACTOR",biasfactor);
-  double temp=0.0; parse("TEMP",temp); std::string tempstr=""; 
+  double temp=0.0; parse("TEMP",temp); std::string tempstr="";
   if( temp>0.0 ) { std::string tstr; Tools::convert( temp, tstr); tempstr = " TEMP=" + tstr; }
   readInputLine( getShortcutLabel() + "_wtfact: REWEIGHT_WELLTEMPERED HEIGHT=" + height + " BIASFACTOR=" + biasfactor + tempstr);
+
+  // And sum the kernels
+  std::string cinput = getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_kernel-1", pwrs=" POWERS=2";
+  for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); cinput += "," + getShortcutLabel() + "_kernel-" + num; pwrs += ",2"; }
+  readInputLine( cinput + pwrs ); readInputLine(getShortcutLabel() + "_sqrt_ksum: MATHEVAL ARG1="+getShortcutLabel()+"_ksum FUNC=sqrt(x)"+ " PERIODIC=NO");
+
+  // Add a small number to regularize the sum
+  std::string regparam; parse("REGULARISE",regparam);
+  readInputLine( getShortcutLabel() + "_rksum: MATHEVAL ARG1=" + getShortcutLabel() + "_sqrt_ksum FUNC=x+" + regparam + " PERIODIC=NO");
+
+  // Normalize the weights for each of the kernels and compute the final bias
+  for(unsigned k=0;k<weights.size();++k) {
+      std::string num; Tools::convert( k+1, num );
+      // And now compute the final weights of the basins
+      readInputLine( getShortcutLabel() + "_wkernel-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + " ARG2=" + getShortcutLabel() +
+                     "_rksum FUNC=x/y PERIODIC=NO");
+  }
 
   // Setup the histograms that will store the bias potential for each basin and compute the instantaneous bias from each basin
   std::string truncflag1="", truncflag2=""; if( truncate ) { truncflag1="IGNORE_IF_OUT_OF_RANGE"; truncflag2="ZERO_OUTSIDE_GRID_RANGE"; } 
@@ -163,21 +180,9 @@ ActionShortcut(ao)
       readInputLine( getShortcutLabel() + "_bias-" + num + ": EVALUATE_FUNCTION_FROM_GRID ARG=" + getShortcutLabel() + "_histo-" + num + " " + truncflag2 );
   }
 
-  // And sum the kernels
-  std::string cinput = getShortcutLabel() + "_ksum: COMBINE PERIODIC=NO ARG=" + getShortcutLabel() + "_kernel-1";
-  for(unsigned k=1;k<weights.size();++k) { std::string num; Tools::convert( k+1, num ); cinput += "," + getShortcutLabel() + "_kernel-" + num; }
-  readInputLine( cinput );
-
-  // Add a small number to regularize the sum
-  std::string regparam; parse("REGULARISE",regparam);
-  readInputLine( getShortcutLabel() + "_rksum: MATHEVAL ARG1=" + getShortcutLabel() + "_ksum FUNC=x+" + regparam + " PERIODIC=NO");
-
   // Normalize the weights for each of the kernels and compute the final bias
   for(unsigned k=0;k<weights.size();++k) {
       std::string num; Tools::convert( k+1, num );
-      // And now compute the final weights of the basins
-      readInputLine( getShortcutLabel() + "_wkernel-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_kernel-" + num + " ARG2=" + getShortcutLabel() + 
-                     "_rksum FUNC=x/y PERIODIC=NO");
       // And the bias due to each basin (product of bias due to basin and kernel weight)
       readInputLine( getShortcutLabel() + "_wbias-" + num + ": MATHEVAL ARG1=" + getShortcutLabel() + "_bias-" + num + " ARG2=" +
                      getShortcutLabel() + "_wkernel-" + num + " FUNC=x*y PERIODIC=NO");
