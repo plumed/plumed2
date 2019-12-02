@@ -60,7 +60,7 @@ ActionShortcut(ao)
 {
   // Read the reference file and determine how many clusters we have
   bool truncate=false; parseFlag("TRUNCATE_GRIDS",truncate);
-  std::string argstr; parse("ARG",argstr); std::vector<unsigned> neigv; std::vector<bool> resid;
+  std::string ktype, argstr; parse("ARG",argstr); std::vector<unsigned> neigv; std::vector<bool> resid;
   std::string fname; parse("REFERENCE",fname); std::vector<double> weights;
   IFile ifile; ifile.open(fname); ifile.allowIgnoredFields(); double h;
   for(unsigned k=0;; ++k) {
@@ -73,8 +73,8 @@ ActionShortcut(ao)
          else error("residual flag should be set to true/false");
      } else resid.push_back( false );
      // Create a Kernel for this cluster
-     std::string num, wstr; Tools::convert( k+1, num ); Tools::convert( h, wstr );
-     readInputLine( getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED ARG=" + argstr + " NUMBER=" + num + " REFERENCE=" + fname + " WEIGHT=" + wstr );
+     std::string num, wstr; Tools::convert( k+1, num ); Tools::convert( h, wstr ); ifile.scanField("kerneltype",ktype);
+     readInputLine( getShortcutLabel() + "_kernel-" + num + ": KERNEL NORMALIZED ARG=" + argstr + " NUMBER=" + num + " REFERENCE=" + fname + " WEIGHT=" + wstr + " TYPE=" + ktype );
      // Compute eigenvalues and eigenvectors for the input covariance matrix if required
      if( meig>0 ) {
          std::string seig="1"; for(int j=1;j<meig;++j) { std::string eignum; Tools::convert( j+1, eignum ); seig += "," + eignum; }
