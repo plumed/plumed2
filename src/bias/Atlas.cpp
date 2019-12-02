@@ -25,6 +25,7 @@
 #include "core/ActionSet.h"
 #include "core/ActionWithValue.h"
 #include "tools/IFile.h"
+#include "gridtools/KDEShortcut.h"
 #include "ReweightBase.h"
 
 namespace PLMD {
@@ -125,31 +126,39 @@ ActionShortcut(ao)
 
   // Setup the histograms that will store the bias potential for each basin and compute the instantaneous bias from each basin
   std::string truncflag1="", truncflag2=""; if( truncate ) { truncflag1="IGNORE_IF_OUT_OF_RANGE"; truncflag2="ZERO_OUTSIDE_GRID_RANGE"; } 
-  std::string gmax, grid_nbins, sigma, pacestr; parse("GRID_MAX",gmax); parse("GRID_BIN",grid_nbins); parse("SIGMA",sigma); parse("PACE",pacestr);
+  std::string gmax, grid_nbins, pacestr; std::vector<std::string> sigma(1); 
+  parse("GRID_MAX",gmax); parse("GRID_BIN",grid_nbins); parse("SIGMA",sigma[0]); parse("PACE",pacestr);
+  // Build the histograms for the bias potential 
+  readInputLine( getShortcutLabel() + "_height: CONSTANT VALUE=1.0");
   for(unsigned k=0;k<weights.size();++k) {
       std::string num; Tools::convert( k+1, num ); 
-      // Build the histograms for the bias potential 
-      if( neigv[k]==0 ) {
-          readInputLine( getShortcutLabel() + "_histo-" + num + ": HISTOGRAM ARG1=" + getShortcutLabel() + "_dist-" + num + "," + 
-                         getShortcutLabel() + "_pdist-" + num + " NORMALIZATION=false GRID_MIN=0 GRID_MAX=" + gmax + " GRID_BIN=" + 
-                         grid_nbins + " BANDWIDTH=" + sigma + " STRIDE=" + pacestr + " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact " + truncflag1); 
+      if( neigv[k]==0 ) { 
+          // Convert the bandwidth to something constant actions
+          gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, sigma, this );
+          readInputLine( getShortcutLabel() + "_kde-" + num + ": KDE_CALC METRIC=" + getShortcutLabel() + "-" + num + "_icov ARG1=" + getShortcutLabel() + "_dist-" + num + "," +
+                         getShortcutLabel() + "_pdist-" + num + " HEIGHTS=" + getShortcutLabel() + "_height GRID_MIN=0 GRID_MAX=" + gmax + " GRID_BIN=" + grid_nbins + truncflag1 ); 
       } else {
-          std::string gminstr=" GRID_MIN=-" + gmax; std::string gmaxstr=" GRID_MAX=" + gmax;
-          std::string bandstr=" BANDWIDTH=" + sigma; std::string gbinstr=" GRID_BIN=" + grid_nbins;
-          std::string input = getShortcutLabel() + "_histo-" + num + ": HISTOGRAM NORMALIZATION=false STRIDE=" + pacestr + 
-                              " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact ARG1=" + getShortcutLabel() + "_proj1-" + num;
+          std::vector<std::string> bw_str( neigv[k], sigma[0] ); if( resid[k] ) bw_str.push_back( sigma[0] );
+          // Convert the bandwidth to something constant actions 
+          gridtools::KDEShortcut::convertBandwiths( getShortcutLabel() + "-" + num, bw_str, this );
+          std::string gminstr=" GRID_MIN=-" + gmax, gmaxstr=" GRID_MAX=" + gmax, gbinstr=" GRID_BIN=" + grid_nbins;
+          std::string input = getShortcutLabel() + "_kde-" + num + ": KDE_CALC METRIC=" + getShortcutLabel() + "-" + num + "_icov HEIGHTS=" + getShortcutLabel() + "_height" + 
+               " ARG1=" + getShortcutLabel() + "_proj1-" + num;
           for(unsigned i=1;i<neigv[k];++i) {
               std::string eignum; Tools::convert( i+1, eignum );
               input += " ARG" + eignum + "=" + getShortcutLabel() + "_proj" + eignum + "-" + num;
-              gminstr += ",-" + gmax; gmaxstr += "," + gmax; bandstr += "," + sigma; gbinstr += "," + grid_nbins; 
+              gminstr += ",-" + gmax; gmaxstr += "," + gmax; gbinstr += "," + grid_nbins; 
           }
           if( resid[k] ) {
               std::string eignum; Tools::convert( neigv[k]+1, eignum );
               input += " ARG" + eignum + "=" + getShortcutLabel() + "_resid-" + num;
-              gminstr += ",-" + gmax; gmaxstr += "," + gmax; bandstr += "," + sigma; gbinstr += "," + grid_nbins;
+              gminstr += ",-" + gmax; gmaxstr += "," + gmax; gbinstr += "," + grid_nbins;
           }
-          readInputLine( input + " " + gminstr + " " + gmaxstr + " " + bandstr + " " + gbinstr );
+          readInputLine( input + " " + gminstr + " " + gmaxstr + " " + gbinstr );
       }
+      // This accumulates the bias in each bin
+      readInputLine( getShortcutLabel() + "_histo-" + num + ": AVERAGE ARG=" + getShortcutLabel() + "_kde-" + num + " NORMALIZATION=false " +
+                     "STRIDE=" + pacestr + " LOGWEIGHTS=" + getShortcutLabel() + "_wtfact"); 
       // Evaluate the bias potential for each basin
       readInputLine( getShortcutLabel() + "_bias-" + num + ": EVALUATE_FUNCTION_FROM_GRID ARG=" + getShortcutLabel() + "_histo-" + num + " " + truncflag2 );
   }
