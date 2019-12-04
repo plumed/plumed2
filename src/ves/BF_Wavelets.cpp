@@ -185,6 +185,7 @@ PLUMED_REGISTER_ACTION(BF_Wavelets,"BF_WAVELETS")
 void BF_Wavelets::registerKeywords(Keywords& keys) {
   BasisFunctions::registerKeywords(keys);
   keys.add("optional","GRID_SIZE","The number of grid bins of the Wavelet function. Because of the used construction algorithm this value definess the minimum number, while the true number will probably be larger. Defaults to 1000.");
+  keys.add("optional","NUM_BF","The number of basis functions that should be used. Includes the constant one and N-1 shifted wavelets within the specified range.");
   keys.add("optional","FUNCTION_LENGTH","The length of the support of the scaled basis functions. This can be used to alter the scaling of the basis functions. Is by default set to the total size of the interval. This also influences the number of actually used basis functions, as all shifted functions that are partially supported in the CV space are used.");
   keys.add("optional","TAILS_THRESHOLD","The threshold for cutting off tail wavelets with respect to the maximum value. All shifted wavelet functions that will only have values lower below the threshold in the CV space will be excluded from the basis set. Defaults to 0 (include all).");
   keys.addFlag("MOTHER_WAVELET", false, "If this flag is set the \"true\" wavelet function (mother wavelet) will be used instead of the scaling function (father wavelet). Makes only sense for multiresolution, which is at the moment not implemented.");
@@ -228,12 +229,9 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
     waveletGrid_->writeToFile(wavelet_gridfile);
   }
 
-  // calculate the number of basis functions from the specified length
-  unsigned intrinsic_length = 2*getOrder() - 1;
-  double length = intervalMax() - intervalMin(); // intervalRange() is not yet set
-  parse("FUNCTION_LENGTH",length);
-  if(length != intervalMax() - intervalMin()) {addKeywordToList("FUNCTION_LENGTH",length);}
-  scale_ = intrinsic_length / length;
+
+  unsigned intrinsic_length = 2*getOrder() - 1; // length of unscaled wavelet
+  double bias_length = intervalMax() - intervalMin(); // intervalRange() is not yet set
 
   // parse threshold for tail wavelets and get respective cutoff points
   double threshold = 0.0;
@@ -248,14 +246,39 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
     cutoffpoints = getCutoffPoints(threshold);
   };
 
-  // calculate number of Basis functions and the shifts
-  unsigned int num_BFs = 1; // constant one
-  num_BFs += static_cast<unsigned>(ceil(cutoffpoints[1])); // left shifts including 0
-  num_BFs += static_cast<unsigned>(ceil((intervalMax()-intervalMin())*scale_ - cutoffpoints[0] - 1)); // right shifts
+  double function_length = bias_length;
+  parse("FUNCTION_LENGTH",function_length);
+  if(function_length != bias_length) {
+    addKeywordToList("FUNCTION_LENGTH",function_length);
+  }
+
+  // determine number of BFs and needed scaling
+  unsigned int num_BFs = 0;
+  parse("NUM_BF",num_BFs);
+  if(num_BFs == 0) { // get from function length
+    scale_ = intrinsic_length / function_length;
+    num_BFs = 1; // constant one
+    // left shifts (w/o left cutoff) + right shifts - right cutoff - 1
+    num_BFs += static_cast<unsigned>(ceil(cutoffpoints[1] + (bias_length)*scale_ - cutoffpoints[0]) - 1);
+
+  }
+  else {
+    // check does not work if function length was given as intrinsic length, but can't check for keyword use directly
+    plumed_massert(function_length==bias_length,"The keywords \"NUM_BF\" and \"FUNCTION_LENGTH\" cannot be used at the same time");
+    addKeywordToList("NUM_BF",num_BFs);
+
+    double cutoff_length = cutoffpoints[1] - cutoffpoints [0];
+    double intrinsic_bias_length = num_BFs - cutoff_length + 1; // length of bias in intrinsic scale of wavelets
+    scale_ = intrinsic_bias_length / bias_length;
+  }
+  log.printf("  Each basisfunction spans %f in CV space\n", intrinsic_length/scale_);
+
   setNumberOfBasisFunctions(num_BFs);
+
+  // now set up the starting points of the basis functions
   shifts_.push_back(0.0); // constant BF – never used, just for clearer notation
   for(unsigned int i = 1; i < getNumberOfBasisFunctions(); ++i) {
-    shifts_.push_back(-intervalMin()*scale_ + ceil(cutoffpoints[1]) - i);
+    shifts_.push_back(-intervalMin()*scale_ + cutoffpoints[1] - i);
   }
 
   // set some properties
